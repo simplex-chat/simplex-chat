@@ -1050,20 +1050,24 @@ let foreverConfirmationWord = "yes"
 
 func removeBannedMember(_ gInfo: GroupInfo, _ mem: GroupMember, _ duration: BanDuration, withMessages: Bool, dismiss: DismissAction?) {
     if duration == .forever {
-        let name = mem.chatViewName
-        let format = gInfo.useRelays
-            ? NSLocalizedString("%1$@ will be removed without notification and won't be able to rejoin via the channel link from this app, with no end time. You can't lift this block.\nThe block is stored only in %1$@'s app: %1$@ can still join from another device, or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "remove forever alert")
-            : NSLocalizedString("%1$@ will be removed without notification and won't be able to rejoin via the group link from this app, with no end time. You can't lift this block.\nThe block is stored only in %1$@'s app: %1$@ can still join from another device, or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "remove forever alert")
-        showTypedConfirmationAlert(
-            NSLocalizedString("Remove forever?", comment: "alert title"),
-            message: String.localizedStringWithFormat(format, name, foreverConfirmationWord),
-            word: foreverConfirmationWord,
-            confirmTitle: NSLocalizedString("Remove", comment: "alert action")
-        ) {
-            removeMember(gInfo, mem, withMessages: withMessages, notice: duration.notice, dismiss: dismiss)
-        }
+        getTopViewController()?.present(removeForeverAlert(gInfo, mem, withMessages: withMessages, dismiss: dismiss), animated: true)
     } else {
         removeMember(gInfo, mem, withMessages: withMessages, notice: duration.notice, dismiss: dismiss)
+    }
+}
+
+func removeForeverAlert(_ gInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, dismiss: DismissAction?) -> UIAlertController {
+    let name = mem.chatViewName
+    let format = gInfo.useRelays
+        ? NSLocalizedString("%1$@ will be removed without notification and won't be able to rejoin via the channel link from this app, with no end time. You can't lift this block.\nThe block is stored only in %1$@'s app: %1$@ can still join from another device, or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "remove forever alert")
+        : NSLocalizedString("%1$@ will be removed without notification and won't be able to rejoin via the group link from this app, with no end time. You can't lift this block.\nThe block is stored only in %1$@'s app: %1$@ can still join from another device, or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "remove forever alert")
+    return typedConfirmationAlert(
+        NSLocalizedString("Remove forever?", comment: "alert title"),
+        message: String.localizedStringWithFormat(format, name, foreverConfirmationWord),
+        word: foreverConfirmationWord,
+        confirmTitle: NSLocalizedString("Remove", comment: "alert action")
+    ) {
+        removeMember(gInfo, mem, withMessages: withMessages, notice: BanDuration.forever.notice, dismiss: dismiss)
     }
 }
 
@@ -1094,7 +1098,7 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
     }
 }
 
-private func previewBannableMember() -> GroupMember {
+func previewBannableMember() -> GroupMember {
     var member = GroupMember.sampleData
     member.memberRole = .member
     member.activeConn?.peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)
@@ -1103,36 +1107,35 @@ private func previewBannableMember() -> GroupMember {
 
 struct BanMemberDialog_Previews: PreviewProvider {
     static var previews: some View {
+        banMemberDialog(previewGroup(.owner), previewBannableMember(), dismiss: nil, close: { _ in })
         banMemberDialog(previewGroup(.moderator), previewBannableMember(), dismiss: nil, close: { _ in })
-        banMemberDialog(previewGroup(.admin), previewBannableMember(), dismiss: nil, close: { _ in })
     }
 }
 
 struct BanMemberForeverDialog_Previews: PreviewProvider {
     static var previews: some View {
+        banMemberDialog(previewGroup(.owner), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
         banMemberDialog(previewGroup(.moderator), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
-        banMemberDialog(previewGroup(.admin), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
     }
 }
 
 struct BanSubscriberDialog_Previews: PreviewProvider {
     static var previews: some View {
         banMemberDialog(previewGroup(.owner, channel: true), previewBannableMember(), dismiss: nil, close: { _ in })
-        banMemberDialog(previewGroup(.owner, channel: true), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
+        banMemberDialog(previewGroup(.moderator, channel: true), previewBannableMember(), dismiss: nil, close: { _ in })
     }
 }
 
 struct RemoveBannedMemberDialog_Previews: PreviewProvider {
     static var previews: some View {
-        removeBannedMemberDialog(previewGroup(.admin), previewBannableMember(), dismiss: nil, close: { _ in })
-        removeBannedMemberDialog(previewGroup(.admin), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
+        removeBannedMemberDialog(previewGroup(.owner), previewBannableMember(), dismiss: nil, close: { _ in })
+        removeBannedMemberDialog(previewGroup(.owner), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
     }
 }
 
 struct RemoveBannedSubscriberDialog_Previews: PreviewProvider {
     static var previews: some View {
         removeBannedMemberDialog(previewGroup(.owner, channel: true), previewBannableMember(), dismiss: nil, close: { _ in })
-        removeBannedMemberDialog(previewGroup(.owner, channel: true), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
     }
 }
 

@@ -944,6 +944,10 @@ enum LinkNoticeTarget {
 }
 
 func showLinkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: (() -> Void)? = nil) {
+    getTopViewController()?.present(linkNoticeAlert(target, expiresAt: expiresAt, cleanup: cleanup), animated: true)
+}
+
+func linkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: (() -> Void)?) -> UIAlertController {
     let (banned, againAfter) = switch target {
     case .group: (
         NSLocalizedString("Banned by the admins of this group.", comment: "alert message"),
@@ -964,16 +968,16 @@ func showLinkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: 
     }
     let noIds = NSLocalizedString("No IDs shared, see How it works.", comment: "alert message")
     let endTime = expiresAt.map { String.localizedStringWithFormat(againAfter, $0.formatted(date: .abbreviated, time: .shortened)) }
-    showAlert(
+    return alertController(
         NSLocalizedString("Not allowed", comment: "alert title"),
         message: banned + "\n" + noIds + (endTime.map { "\n\n" + $0 } ?? ""),
-        actions: {[
+        actions: [
             okCleanupAlertAction(cleanup: cleanup),
             UIAlertAction(title: NSLocalizedString("How it works", comment: "alert button"), style: .default) { _ in
                 cleanup?()
                 UIApplication.shared.open(bansGuideLink)
             }
-        ]}
+        ]
     )
 }
 

@@ -294,6 +294,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(FramedItemView_Previews.self, allSizes: true),
         SnapshotScene(GetStakeBanner_Previews.self),
         SnapshotScene(GroupChatInfoView_DeleteAndBan_Previews.self),
+        SnapshotScene(GroupChatInfoView_Members_Previews.self),
         SnapshotScene(GroupChatInfoView_Previews.self, device: true),
         SnapshotScene(GroupLinkView_Previews.self),
         SnapshotScene(GroupMemberInfoView_Previews.self, device: true),
@@ -307,6 +308,8 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(LargeLinkPreview_Previews.self, allSizes: true),
         SnapshotScene(LiftBanAlert_Previews.self, alert: true),
         SnapshotScene(LiftBanSubscriberAlert_Previews.self, alert: true),
+        SnapshotScene(LinkNoticeContactAlert_Previews.self, alert: true),
+        SnapshotScene(LinkNoticeGroupAlert_Previews.self, alert: true),
         SnapshotScene(LocalAuthView_Previews.self),
         SnapshotScene(MarkdownHelp_Previews.self),
         SnapshotScene(MarkedDeletedItemView_Previews.self, allSizes: true),
@@ -337,6 +340,8 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(QRCode_Previews.self),
         SnapshotScene(RemoveBannedMemberDialog_Previews.self),
         SnapshotScene(RemoveBannedSubscriberDialog_Previews.self),
+        SnapshotScene(RemoveForeverAlert_Previews.self, alert: true),
+        SnapshotScene(RemoveSubscriberForeverAlert_Previews.self, alert: true),
         SnapshotScene(RTCServers_Previews.self),
         SnapshotScene(ScanCodeView_Previews.self),
         SnapshotScene(ScanProtocolServer_Previews.self),
@@ -582,6 +587,71 @@ private struct SwipeActionsRow: View {
         .foregroundColor(.white)
         .frame(width: 80, height: 80)
         .background(tint ?? Color(uiColor: .systemGray))
+    }
+}
+
+struct LinkNoticeGroupAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview {
+            linkNoticeAlert(.group, expiresAt: previewDate.addingTimeInterval(24 * 60 * 60), cleanup: nil)
+        })
+    }
+}
+
+struct LinkNoticeContactAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview {
+            linkNoticeAlert(.contact, expiresAt: nil, cleanup: nil)
+        })
+    }
+}
+
+struct RemoveForeverAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview(typedText: foreverConfirmationWord) {
+            removeForeverAlert(previewGroup(.owner), previewBannableMember(), withMessages: false, dismiss: nil)
+        })
+    }
+}
+
+struct RemoveSubscriberForeverAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview(typedText: foreverConfirmationWord) {
+            removeForeverAlert(previewGroup(.owner, channel: true), previewBannableMember(), withMessages: false, dismiss: nil)
+        })
+    }
+}
+
+private struct AlertControllerPreview: UIViewControllerRepresentable {
+    var typedText: String? = nil
+    var alert: () -> UIAlertController
+
+    func makeUIViewController(context: Context) -> AlertPresenter {
+        AlertPresenter(alert(), typedText: typedText)
+    }
+
+    func updateUIViewController(_ presenter: AlertPresenter, context: Context) {}
+}
+
+private final class AlertPresenter: UIViewController {
+    private let alert: UIAlertController
+
+    init(_ alert: UIAlertController, typedText: String?) {
+        self.alert = alert
+        super.init(nibName: nil, bundle: nil)
+        if let typedText, let field = alert.textFields?.first {
+            field.text = typedText
+            field.sendActions(for: .editingChanged)
+        }
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if alert.presentingViewController == nil {
+            present(alert, animated: false)
+        }
     }
 }
 

@@ -1339,6 +1339,36 @@ struct DeleteBusinessChatAlert_Previews: PreviewProvider {
     }
 }
 
+struct GroupChatInfoView_Members_Previews: PreviewProvider {
+    static var previews: some View {
+        let groupInfo = previewGroup(.owner)
+        let member = { (id: Int64, name: String) -> GroupMember in
+            var m = previewBannableMember()
+            m.groupMemberId = id
+            m.memberId = name
+            m.localDisplayName = name
+            m.memberProfile = LocalProfile(profileId: id, displayName: name, fullName: "", localAlias: "")
+            return m
+        }
+        var banned = member(3, "carol")
+        banned.blockedByAdmin = true
+        var hidden = member(4, "dan")
+        hidden.memberSettings.showMessages = false
+        let chatModel = ChatModel()
+        chatModel.groupMembers = [GMember(member(2, "bob")), GMember(banned), GMember(hidden)]
+        return GroupChatInfoView(
+            chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: []),
+            groupInfo: Binding.constant(groupInfo),
+            scrollToItemId: Binding.constant(nil),
+            composeState: Binding.constant(ComposeState()),
+            onSearch: {},
+            localAlias: ""
+        )
+        .environmentObject(chatModel)
+        .frame(height: 1800)
+    }
+}
+
 struct DeleteChannelAlert_Previews: PreviewProvider {
     static var previews: some View {
         let channel = previewGroup(.owner, channel: true)
