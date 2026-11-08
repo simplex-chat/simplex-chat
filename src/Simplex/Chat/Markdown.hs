@@ -449,7 +449,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       pure $ if T.null punct then res else res :|: unmarked punct
     sowLinkP = do
       t <- enclosedP '[' ']' (\c -> c == '[' || c == '\n')
-      l <- enclosedP '(' ')' isSpace
+      l <- linkTargetP
       let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
       when (hasPunct && t /= l && ("https://" <> t) /= l) $ fail "punctuation in hyperlink text"
       f <- hyperLinkFormat t l
@@ -466,6 +466,9 @@ markdownP = joinMarkdown <$> A.many' fragmentP
         Right _ -> pure $ HyperLink (Just t) l
         Left e -> fail $ "not uri: " <> T.unpack e
     enclosedP open close stop = A.char open *> A.takeWhile1 (\c -> c /= close && not (stop c)) <* A.char close
+    linkTargetP = A.char '(' *> (T.concat <$> A.many1' targetPieceP) <* A.char ')'
+      where
+        targetPieceP = A.takeWhile1 (\c -> c /= ')' && not (isSpace c) && c /= '\\') <|> (notP escapeP *> A.string "\\")
     colorP =
       A.anyChar >>= \case
         'r' -> optional "ed" $> Red

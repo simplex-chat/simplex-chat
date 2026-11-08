@@ -7,11 +7,12 @@
 module MarkdownTests where
 
 import Control.Applicative ((<|>))
+import Control.Exception (evaluate)
 import Control.Monad (forM_)
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -23,6 +24,7 @@ import Simplex.Messaging.Agent.Protocol (SimplexDomain (..), SimplexNameInfo (..
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$$>))
 import System.Console.ANSI.Types
+import System.Timeout (timeout)
 import Test.Hspec
 import qualified URI.ByteString as U
 
@@ -1102,6 +1104,9 @@ linearTimeParsing = describe "bounded scans for linear-time parsing" do
     "[a [b](https://simplex.chat)" <==> "[a " <> web "b" "https://simplex.chat" "[b](https://simplex.chat)"
     "[a](https://simplex.chat x)" <==> "[a](" <> uri "https://simplex.chat" <> " x)"
     "<https://simplex.chat x>" <==> "<https://simplex.chat x>"
+  it "a link target stops before an escape, as a word does" do
+    "[a](https://simplex.chat\\!)" <==> "[a](" <> uri "https://simplex.chat" <> markdown Escape "\\" <> "!)"
+    "[a](b\\!)" <==> "[a](b" <> markdown Escape "\\" <> "!)"
   it "a text with more than 2000 markup tokens has no blocks" do
     let ParsedMarkdown _ blocks = parsedMarkdown $ T.replicate 1000 "- a\n"
     length <$> blocks `shouldBe` Just 1
@@ -1111,9 +1116,10 @@ linearTimeParsing = describe "bounded scans for linear-time parsing" do
     length <$> paragraphs `shouldBe` Just 2000
     parseMaybeMarkdownList (T.replicate 2001 "a\n\n") `shouldBe` Nothing
     length . filter (\(FormattedText f _) -> f == Just boldF) <$> parseMaybeMarkdownList (T.replicate 2001 "*a*\n\n") `shouldBe` Just 2001
-  it "large adversarial texts" do
-    forM_ (["1 ", "[ ", "[a]( ", "< ", "a\n", ">\n", "- a\n", "|\n", "|-|\n", "*a\n"] :: [Text]) $ \p ->
-      length (show $ parseMaybeMarkdownList $ "|a|\n|-|\n" <> T.replicate 4000 p) `shouldSatisfy` (> 0)
+  it "large adversarial texts parse in bounded time" do
+    forM_ (["1 ", "[ ", "[a]( ", "[a](b\\!", "< ", "a\n", ">\n", "- a\n", "|\n", "|-|\n", "*a\n"] :: [Text]) $ \p -> do
+      parsed <- timeout 10000000 $ evaluate $ length $ show $ parseMaybeMarkdownList $ "|a|\n|-|\n" <> T.replicate 20000 p
+      parsed `shouldSatisfy` isJust
 
 markdownConsumers :: Spec
 markdownConsumers = describe "consumers of parsed Markdown" do
