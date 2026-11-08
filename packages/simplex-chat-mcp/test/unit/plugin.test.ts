@@ -16,7 +16,7 @@ describe("plugin", () => {
     expect(plugin.userConfig.main_group.default).toBe(defaultConfig.mainGroup)
     expect(plugin.userConfig.approve.default).toBe(defaultConfig.approve)
     expect(plugin.userConfig.expire_hours.default).toBe(defaultConfig.expireHours)
-    expect(plugin.userConfig.approve_files).toMatchObject({type: "boolean", default: defaultConfig.approveFiles})
+    expect(Object.keys(plugin.userConfig)).toEqual(["main_group", "approve", "expire_hours"])
   })
 
   it("starts the session server of the plugin's own build with the options as variables", () => {
@@ -27,7 +27,6 @@ describe("plugin", () => {
       [configVariables.mainGroup]: "${user_config.main_group}",
       [configVariables.approve]: "${user_config.approve}",
       [configVariables.expireHours]: "${user_config.expire_hours}",
-      [configVariables.approveFiles]: "${user_config.approve_files}",
     })
   })
 

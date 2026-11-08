@@ -18,7 +18,6 @@ const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke,
 const unknownCommand = "Unknown command. To send a command to Claude, start it with //."
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
-  reply: "text: too long for its approval card; shorten it.",
   connect: "message: too long for its approval card; shorten it.",
   download: "item: the names of its file and chat are too long for its approval card.",
 }
@@ -36,9 +35,6 @@ const noOwners = "No owners in the agent control chat."
 const qrCodeHint = "If the QR code does not scan, restart with --qr-code large, or paste the link into the app."
 const noSessionApprover = `The group of this session has no member who can approve actions. Members of the Main group join it by /join N there; without members, run ${linkCommand} in a terminal.`
 const sessionApproversOnly = "Only members who joined from the Main group approve actions here."
-const filesOwnersOnly = "Only owners of the Main group approve files here."
-const noFilesApprover = `The group of this session has no owner of the Main group to approve files. Members of the Main group join it by /join N there; without members, run ${linkCommand} in a terminal.`
-const repliesKey = "simplexMcpReplies"
 const roleOrder: T.GroupMemberRole[] = [T.GroupMemberRole.Relay, T.GroupMemberRole.Observer, T.GroupMemberRole.Author, T.GroupMemberRole.Member, T.GroupMemberRole.Moderator, T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 
 export interface ControlData {
@@ -56,7 +52,6 @@ export interface ControlOptions {
 
 export interface SessionOptions {
   approves: (member: T.GroupMember) => boolean
-  approvesFiles: (groupMemberId: number) => boolean
   ownerOf: (session: number) => string | undefined
   isUser: (member: T.GroupMember) => boolean
 }
@@ -78,9 +73,8 @@ type OwnerRequest =
   | {type: "approveChat" | "revoke"; chat: string; standing: Standing}
   | {type: "leave" | "deleteFiles"; chat: string}
   | {type: "give"; chat: string; session: number}
-  | {type: "approveReplies"; action: number}
   | {type: "observer"; group: string; member: number}
-  | {type: "pending" | "list" | "revokeReplies"}
+  | {type: "pending" | "list"}
 
 interface Shown {
   name: (name: string) => string
@@ -144,7 +138,6 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (action.tool === "connect") action.linkTextBytes = maxCardLength - largestCard({...action, linkTextBytes: 0}, mode, approver)
     if (action.tool === "permission") action.previewBytes = maxCardLength - largestCard({...action, previewBytes: 0}, mode, approver)
     if (action.tool !== "leave" && action.tool !== "mode" && action.tool !== "permission" && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
-    if (action.tool === "reply" && !this.humans().some(member => this.approvesFiles(member))) return noFilesApprover
     if (this.approvers().length > 0) return undefined
     if (this.options.session !== undefined) return noSessionApprover
     return this.options.owners === undefined
@@ -159,11 +152,6 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   standingApprover(chatInfo: T.ChatInfo, standing: Standing): string | undefined {
     const approval = approvalOf(customDataOf(chatInfo), standings[standing].key)
     return this.actions.mode === "requests" && approval !== undefined && this.approvers().some(({groupMemberId}) => groupMemberId === approval.approvedById) ? safeName(approval.approvedBy) : undefined
-  }
-
-  repliesApprover(): string | undefined {
-    const approval = approvalOf(this.group.customData, repliesKey)
-    return approval !== undefined && this.humans().some(member => member.groupMemberId === approval.approvedById && this.approvesFiles(member)) ? safeName(approval.approvedBy) : undefined
   }
 
   saveCounter(nextAction: number): Promise<void> {
@@ -263,16 +251,6 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         return this.deleteFiles(request.chat)
       case "give":
         return this.give(sender, request.chat, request.session)
-      case "approveReplies": {
-        const action = this.actions.get(request.action)
-        if (action === undefined || action.state !== "pending" || action.card === undefined) return `Action ${request.action} is not pending.`
-        if (action.tool !== "reply") return `Action ${request.action} is not a file to this group.`
-        if (!this.approvesFiles(sender)) return filesOwnersOnly
-        return this.approveReplies(sender)
-      }
-      case "revokeReplies":
-        if (!this.approvesFiles(sender)) return filesOwnersOnly
-        return this.revokeReplies()
       case "observer":
         return this.setObserver(sender, request.group, request.member)
       case "approve":
@@ -283,7 +261,6 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         const action = this.actions.get(request.action)
         if (action === undefined || action.state !== "pending" || action.card === undefined) return `Action ${request.action} is not pending.`
         if (request.chat !== undefined && (action.tool === "connect" || action.chat !== request.chat)) return `Action ${request.action} is not for ${request.chat}.`
-        if (action.tool === "reply" && !this.approvesFiles(sender)) return filesOwnersOnly
         const approver = safeName(sender.memberProfile.displayName)
         if (request.type === "reject") this.actions.reject(action, approver)
         else if (action.tool !== "download") {
@@ -318,23 +295,6 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const {[key]: _, ...customData} = customDataOf(chatInfo) as {[key: string]: unknown}
     await this.setCustomData(chat, customData)
     return `${scope} ${chatName(chatSubject(chatInfo))} (${chat}) need approval again.`
-  }
-
-  private async approveReplies(sender: T.GroupMember): Promise<string> {
-    const approvedBy = sender.memberProfile.displayName
-    const approval: ChatApproval = {approvedBy, approvedById: sender.groupMemberId, approvedAt: new Date().toISOString()}
-    await this.saveData({[repliesKey]: approval})
-    const approver = safeName(approvedBy)
-    for (const action of this.actions.pending()) {
-      if (action.tool === "reply" && action.card !== undefined) this.actions.approve(action, approver)
-    }
-    return `Files approved for this group by ${approver}. /'revoke'`
-  }
-
-  private async revokeReplies(): Promise<string> {
-    if (approvalOf(this.group.customData, repliesKey) === undefined) return "Files to this group have no standing approval."
-    await this.saveData({[repliesKey]: undefined})
-    return "Files to this group need approval again."
   }
 
   private forward(action: DownloadAction): void {
@@ -542,7 +502,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   private async cardContent(action: Action): Promise<T.MsgContent> {
     const text = cardText(action, action.mode)
-    const file = action.tool === "download" || action.tool === "send" || action.tool === "reply" ? action.file : undefined
+    const file = action.tool === "download" || action.tool === "send" ? action.file : undefined
     const content = file === undefined ? undefined : fileContent(file, text)
     if (content?.type !== "image" && content?.type !== "video") return {type: "text", text}
     action.cardImage ??= await this.fittedImage(action, content)
@@ -592,10 +552,6 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (session !== undefined) return session.approves(member)
     const owner = member.memberRole === T.GroupMemberRole.Owner
     return owners === undefined ? owner : owner && owners.some(entry => listsMember(entry, member))
-  }
-
-  private approvesFiles(member: T.GroupMember): boolean {
-    return this.options.session?.approvesFiles(member.groupMemberId) ?? false
   }
 }
 
@@ -678,7 +634,7 @@ export function cardText(action: Action, mode: Actions["mode"]): string {
     case "performing":
       return [...request, `${approval}; interrupted: the server stopped.`].join("\n")
     case "done":
-      return [...request, action.standing ? `${approval}. /'${action.tool === "reply" ? "revoke" : `revoke ${action.chat}`}'` : `${approval}.`].join("\n")
+      return [...request, action.standing ? `${approval}. /'revoke ${action.chat}'` : `${approval}.`].join("\n")
     case "failed":
       return [...request, `${approval}; failed: ${codeSpan(oneLine(action.error ?? ""))}.`].join("\n")
     case "rejected":
@@ -710,10 +666,6 @@ function requestLines(action: Action): string[] {
       const mentioning = mentions.length === 0 ? [] : [`mentioning ${mentions.map(({name}) => mentionText(name)).join(", ")}`]
       return [`${done ? "I sent" : "I want to send"} a message to ${subject}${action.subject.incognito ? ", where I am incognito" : ""}:`, ...codeLines(action.input.text), ...attaching, ...reply, ...mentioning]
     }
-    case "reply": {
-      const {file} = action
-      return [`${done ? "I sent" : "I want to send"} a file to ${subject}:`, ...codeLines(action.input.text), `${file.type} ${codeSpan(oneLine(file.path))}, ${sizeText(file.size)}`]
-    }
     case "leave": {
       const {present, past} = leaveVerbs(action)
       return [`${done ? `I ${past}` : `I want to ${present}`} ${chatName(action.subject)} (${action.chat}).`]
@@ -733,8 +685,6 @@ function commandsLine(action: Action): string {
     case "mode":
     case "permission":
       return `/'approve ${action.n}' or /'reject ${action.n}'`
-    case "reply":
-      return `/'approve ${action.n}', /'approve ${action.n} all' or /'reject ${action.n}'`
     case "send":
       return `/'approve ${action.chat} ${action.n}', /'approve ${action.chat} all' or /'reject ${action.chat} ${action.n}'`
     case "leave":
@@ -846,8 +796,6 @@ function ownerRequest({keyword, params}: Command, session: boolean): OwnerReques
   if (keyword === "leave" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value}
   if (keyword === "delete" && chat !== undefined && value === "files") return {type: "deleteFiles", chat}
   if (keyword === "give" && chat !== undefined && value !== undefined && /^\d+$/.test(value)) return {type: keyword, chat, session: Number(value)}
-  if (session && keyword === "approve" && words.length === 2 && /^\d+$/.test(words[0]) && words[1] === "all") return {type: "approveReplies", action: Number(words[0])}
-  if (session && keyword === "revoke" && words.length === 0) return {type: "revokeReplies"}
   if (session && keyword === "observer" && chat?.startsWith("#") && value !== undefined && /^\d+$/.test(value)) return {type: "observer", group: chat, member: Number(value)}
   if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
   return undefined

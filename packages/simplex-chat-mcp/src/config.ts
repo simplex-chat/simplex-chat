@@ -5,21 +5,19 @@ export interface Config {
   mainGroup: string
   approve: Mode
   expireHours: number
-  approveFiles: boolean
 }
 
 type Key = keyof Config
 
-export const defaultConfig: Config = {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23, approveFiles: true}
+export const defaultConfig: Config = {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}
 
 export const configVariables: {[key in Key]: string} = {
   mainGroup: "CLAUDE_PLUGIN_OPTION_MAIN_GROUP",
   approve: "CLAUDE_PLUGIN_OPTION_APPROVE",
   expireHours: "CLAUDE_PLUGIN_OPTION_EXPIRE_HOURS",
-  approveFiles: "CLAUDE_PLUGIN_OPTION_APPROVE_FILES",
 }
 
-const optionNames: {[key in Key]: string} = {mainGroup: "main_group", approve: "approve", expireHours: "expire_hours", approveFiles: "approve_files"}
+const optionNames: {[key in Key]: string} = {mainGroup: "main_group", approve: "approve", expireHours: "expire_hours"}
 const configurePath = "/plugin > Installed > simplex > Configure options"
 const unattendedEntrypoints = ["sdk-cli", "sdk-ts", "sdk-py"]
 
@@ -38,7 +36,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     const given = env[configVariables[key]]?.trim()
     return given === undefined || given === "" ? undefined : given
   }
-  return {mainGroup: mainGroup(value("mainGroup")), approve: approve(value("approve")), expireHours: expireHours(value("expireHours")), approveFiles: approveFiles(value("approveFiles"))}
+  return {mainGroup: mainGroup(value("mainGroup")), approve: approve(value("approve")), expireHours: expireHours(value("expireHours"))}
 }
 
 function mainGroup(value: string | undefined): string {
@@ -59,12 +57,6 @@ function expireHours(value: string | undefined): number {
   const hours = Number(value)
   if (!/^\d+$/.test(value) || hours < 1 || hours > 23) throw configError("expireHours", value, "hours from 1 to 23")
   return hours
-}
-
-function approveFiles(value: string | undefined): boolean {
-  if (value === undefined) return defaultConfig.approveFiles
-  if (value !== "true" && value !== "false") throw configError("approveFiles", value, "true or false")
-  return value === "true"
 }
 
 function configError(key: Key, value: string, expected: string): ConfigError {

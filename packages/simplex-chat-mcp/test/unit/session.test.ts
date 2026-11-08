@@ -95,7 +95,7 @@ function listCall(client: LineClient): Promise<any> {
 
 const listed = {chats: [], actions: []}
 const listResult = {content: [{type: "text", text: JSON.stringify(listed)}], structuredContent: listed}
-const registered = `session ${JSON.stringify({id, pid: process.ppid, project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23, approveFiles: true}})}`
+const registered = `session ${JSON.stringify({id, pid: process.ppid, project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}})}`
 const stdins: PassThrough[] = []
 
 beforeEach(() => {
@@ -224,7 +224,7 @@ describe("session server", () => {
     expect(initialized.capabilities.experimental).toEqual({"claude/channel": {}, "claude/channel/permission": {}})
     expect(initialized.instructions).toContain("Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name")
     const {result} = await client.request("tools/list")
-    expect(result.tools.find(({name}: {name: string}) => name === "reply").description).toMatch(/^Sends a file to the members of the SimpleX group of this session, with text as its caption\.[^]*an owner of the Main group approves the file there first/)
+    expect(result.tools.find(({name}: {name: string}) => name === "reply").description).toMatch(/^Sends a file to the members of the SimpleX group of this session, with text as its caption\.[^]*The file is sent at once/)
     const [attachment] = await attached
     const channel = (method: string) => client.notifications.filter(notification => notification.method === method).map(({params}) => params)
     await until(() => channel("notifications/claude/channel").length === 1)

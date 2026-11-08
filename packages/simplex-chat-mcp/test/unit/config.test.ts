@@ -1,17 +1,17 @@
 import {ConfigError, configVariables, defaultConfig, readConfig} from "../../src/config"
 
-const env = (values: {mainGroup?: string; approve?: string; expireHours?: string; approveFiles?: string}): NodeJS.ProcessEnv =>
+const env = (values: {mainGroup?: string; approve?: string; expireHours?: string}): NodeJS.ProcessEnv =>
   Object.fromEntries(Object.entries(values).map(([key, value]) => [configVariables[key as keyof typeof configVariables], value]))
 
 describe("plugin config", () => {
   it("has defaults for missing and empty options", () => {
     expect(readConfig({})).toEqual(defaultConfig)
-    expect(readConfig(env({mainGroup: "", approve: "  ", expireHours: "", approveFiles: ""}))).toEqual({mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23, approveFiles: true})
+    expect(readConfig(env({mainGroup: "", approve: "  ", expireHours: ""}))).toEqual({mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23})
   })
 
-  it("reads every option", () => {
-    expect(readConfig(env({mainGroup: "My Agents", approve: "host", expireHours: "4", approveFiles: "false"}))).toEqual({mainGroup: "My Agents", approve: "host", expireHours: 4, approveFiles: false})
-    expect(readConfig(env({approveFiles: "true"})).approveFiles).toBe(true)
+  it("reads every option, and no option for Claude's files", () => {
+    expect(readConfig(env({mainGroup: "My Agents", approve: "host", expireHours: "4"}))).toEqual({mainGroup: "My Agents", approve: "host", expireHours: 4})
+    expect(readConfig({CLAUDE_PLUGIN_OPTION_APPROVE_FILES: "yes"})).toEqual(defaultConfig)
   })
 
   it("names the option, the value and where to change it", () => {
@@ -20,7 +20,6 @@ describe("plugin config", () => {
     expect(() => readConfig(env({expireHours: "24"}))).toThrow(new ConfigError(`Plugin option expire_hours: hours from 1 to 23 expected, got 24. ${where}`))
     expect(() => readConfig(env({expireHours: "1.5"}))).toThrow(new ConfigError(`Plugin option expire_hours: hours from 1 to 23 expected, got 1.5. ${where}`))
     expect(() => readConfig(env({expireHours: "0"}))).toThrow(ConfigError)
-    expect(() => readConfig(env({approveFiles: "yes"}))).toThrow(new ConfigError(`Plugin option approve_files: true or false expected, got yes. ${where}`))
   })
 
   it("refuses a Main group name that is not a valid SimpleX name, with the valid form", () => {

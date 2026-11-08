@@ -6,7 +6,7 @@ import {basename, dirname, extname, isAbsolute, join, sep} from "path"
 import {CallToolResult, JsonSchemaType, McpServer, ServerContext, fromJsonSchema} from "@modelcontextprotocol/server"
 import {CEvt, CR, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
-import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, NewAction, ReplyAction, SendAction, Standing, Subject, ToolError, hasUnknownServers, isDecided} from "./actions"
+import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, NewAction, SendAction, Standing, Subject, ToolError, hasUnknownServers, isDecided} from "./actions"
 import {chatErrorOf, chatErrorText, errorText, fileError, fullDomainName, logError, oneLine} from "./log"
 import {
   Changes,
@@ -126,8 +126,6 @@ export interface Agent {
   dataRoot?: string
   owner?: string
   replyChat?: string
-  replyAtOnce?: () => Promise<boolean>
-  repliesApprover?: () => string | undefined
   setMode?: (mode: Mode) => void
   pending?: (connId: number) => void
 }
@@ -464,7 +462,7 @@ export interface ToolDefinition {
 export const replyTool: ToolDefinition = {
   name: "reply",
   description: `Sends a file to the members of the SimpleX group of this session, with text as its caption. Your final answer of each turn reaches them without this tool.
-While the plugin option approve_files is on, an owner of the Main group approves the file there first, and the call waits for the decision: result status done (item), rejected, expired or failed (error). If the call ends without a result, repeat it with the same arguments: it attaches to the same action.`,
+The file is sent at once, and the result has its item; the group's preference for files and media can refuse it, and the call then returns the refusal.`,
   inputSchema: {
     type: "object",
     properties: {
@@ -477,11 +475,9 @@ While the plugin option approve_files is on, an owner of the Main group approves
   outputSchema: {
     type: "object",
     properties: {
-      action: actionField,
-      status: {type: "string", enum: ["done", "failed", "rejected", "expired"], description: "With action: done: the file was sent; rejected or expired: a member rejected it or did not decide in time; failed: see error."},
       item: {type: "integer", description: "Item ID of the sent message."},
-      error: errorField,
     },
+    required: ["item"],
   },
   action: false,
 }
@@ -560,9 +556,6 @@ export class AgentTools {
         return this.performConnect(action, signal)
       case "send":
         return this.performSend(action)
-      case "reply":
-        action.item = await this.sendFile(action.chat, action.file, action.input.text)
-        return
       case "leave":
         return this.leaveChat(action.chat)
       case "download":
@@ -713,26 +706,17 @@ export class AgentTools {
       case "list":
         return this.listChats()
       case "reply":
-        return this.reply(input as ReplyInput, call)
+        return this.reply(input as ReplyInput)
     }
   }
 
-  private async reply(input: ReplyInput, call: ToolCall): Promise<object | undefined> {
+  private async reply(input: ReplyInput): Promise<object> {
     const chat = this.agent.replyChat
     if (chat === undefined) throw new ToolError("reply: this server has no group to reply to.")
-    const key = actionKey(this.session, "reply", {file: input.file, text: input.text ?? null})
-    const attached = this.agent.actions.find(key)
-    if (attached !== undefined) return this.replyResult(attached as ReplyAction, call)
     const {chatInfo} = await getChat(this.agent.chat, chat, 0)
     const file = await this.attachment(input.file, undefined, chatInfo, chat)
     if (!fitsMessage(sentContent(file, input.text ?? ""), file.name, undefined)) throw new ToolError(tooLongText(file))
-    if ((await this.agent.replyAtOnce?.()) === true) return {item: await this.sendFile(chat, file, input.text)}
-    if (call.signal.aborted) return undefined
-    return this.replyResult(this.agent.actions.create(key, {tool: "reply", input, subject: chatSubject(chatInfo), chat, file}, this.agent.repliesApprover?.(), this.session, "requests") as ReplyAction, call)
-  }
-
-  private replyResult(action: ReplyAction, call: ToolCall): Promise<object | undefined> {
-    return this.actionResult(action, call, async () => ({item: action.item}))
+    return {item: await this.sendFile(chat, file, input.text)}
   }
 
   private async sendFile(chat: string, file: Attachment, text = ""): Promise<number> {

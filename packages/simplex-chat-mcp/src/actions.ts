@@ -1,6 +1,6 @@
 import {errorText, log, logError, oneLine} from "./log"
 import {Changes, Collected, FileOffer, FileType, ToolCall, maxTimer, nextChange, reportProgress, utcMinutes} from "./messages"
-import type {ConnectInput, DownloadInput, LeaveInput, PlanSummary, ReplyInput, SendInput} from "./tools"
+import type {ConnectInput, DownloadInput, LeaveInput, PlanSummary, SendInput} from "./tools"
 
 export type Mode = "requests" | "host"
 export type State = "pending" | "performing" | "done" | "failed" | "rejected" | "expired"
@@ -95,15 +95,6 @@ export interface SendAction extends ActionRecord {
   sentAt?: number
 }
 
-export interface ReplyAction extends ActionRecord {
-  readonly tool: "reply"
-  readonly input: ReplyInput
-  readonly subject: Subject
-  readonly chat: string
-  readonly file: Attachment
-  item?: number
-}
-
 export interface LeaveAction extends ActionRecord {
   readonly tool: "leave"
   readonly input: LeaveInput
@@ -139,9 +130,9 @@ export interface PermissionAction extends ActionRecord {
   previewBytes?: number
 }
 
-export type Action = ConnectAction | SendAction | ReplyAction | LeaveAction | DownloadAction | ModeAction | PermissionAction
+export type Action = ConnectAction | SendAction | LeaveAction | DownloadAction | ModeAction | PermissionAction
 
-export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<ReplyAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord> | Omit<DownloadAction, keyof ActionRecord> | Omit<ModeAction, keyof ActionRecord> | Omit<PermissionAction, keyof ActionRecord>
+export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord> | Omit<DownloadAction, keyof ActionRecord> | Omit<ModeAction, keyof ActionRecord> | Omit<PermissionAction, keyof ActionRecord>
 
 export interface ActionHooks {
   refusal(action: Action): string | undefined
@@ -394,8 +385,6 @@ export function summary(action: Action, showName: (name: string) => string): {wh
       return {what: `connect to ${target}`, detail: `, ${action.subject.incognito ? "incognito" : "as itself"}`}
     case "send":
       return {what: `send to ${target}`, detail: ` (${action.chat})`}
-    case "reply":
-      return {what: `send ${showName(action.file.name)} to ${target}`, detail: ` (${action.chat})`}
     case "leave":
       return {what: `${leaveVerbs(action).present} ${target}`, detail: ` (${action.chat})`}
     case "download":
@@ -411,7 +400,7 @@ function performedText(action: Action): string {
   const failure = action.state === "failed" ? `; failed: ${oneLine(action.error ?? "")}` : ""
   if (action.mode === "host") return `performed without approval (mode host)${failure}.`
   if (failure !== "") return `failed: ${oneLine(action.error ?? "")}.`
-  if (action.tool === "send" || action.tool === "reply") return "sent."
+  if (action.tool === "send") return "sent."
   if (action.tool === "leave") return `${leaveVerbs(action).past}.`
   if (action.tool === "download") return "downloaded."
   if (action.tool === "mode") return `mode ${action.input.mode}.`

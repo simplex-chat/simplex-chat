@@ -300,7 +300,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
 }, 600_000)
 
-test("a member of the Main group joins a session's group by /join, prompts and approves there, also after removal from the Main group; a member added to the group directly prompts and approves too; files of reply wait for an owner of the Main group, and /approve N all sends later files at once until /revoke; after a reset of the owners the members still prompt and approve there", async () => {
+test("a member of the Main group joins a session's group by /join, prompts and approves there, also after removal from the Main group; a member added to the group directly prompts and approves too; files of reply reach the group at once, and the group's preference for files makes the core refuse them; after a reset of the owners the members still prompt and approve there", async () => {
   const root = join(dir, "trust", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("trust", "Alice")
@@ -354,24 +354,14 @@ test("a member of the Main group joins a session's group by /join, prompts and a
   await until(() => attached.some(({prompt}) => prompt?.text === "Write the docs" && prompt.from === "Carol"))
   const notes = join(dir, "trust", "notes.txt")
   writeFileSync(notes, "trail notes")
-  const request = "I want to send a file to group 1 · one:"
-  const card = aliceSees(request)
-  const replying = callTool(client, one, "reply", {file: notes, text: "Trail notes"})
-  const shown = await card
-  const n = cardNumber(shown)
-  expect(lines(shown)).toEqual([request, "`Trail notes`", `file \`${notes}\`, 11 bytes`, `/'approve ${n}', /'approve ${n} all' or /'reject ${n}'`])
-  const bobRefused = bobSees("Only owners of the Main group approve files here.")
-  await bobSends(`/approve ${n}`)
-  await bobRefused
   const delivered = received(carol.chat, inGroup(carolGroupOne, ({chatItem}) => chatItem.file?.fileName === "notes.txt"))
-  const approvedAll = aliceSees("Files approved for this group by Alice.")
-  await aliceSends(`/approve ${n} all`)
-  expect(lines(await approvedAll)).toEqual(["Files approved for this group by Alice. /'revoke'"])
-  expect((await replying).result).toMatchObject({action: n, status: "done"})
+  expect((await callTool(client, one, "reply", {file: notes, text: "Trail notes"})).result).toEqual({item: expect.any(Number)})
   await delivered
-  const later = aliceSees("I sent a file to group 1 · one:")
-  expect((await callTool(client, one, "reply", {file: notes, text: "Again"})).result).toMatchObject({action: n + 1, status: "done"})
-  expect(lines(await later).at(-1)).toBe("Approved for this chat by Alice. /'revoke'")
+  const groupOneInfo = (await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === groupOne)!
+  await alice.chat.apiUpdateGroupProfile(groupOne, {...groupOneInfo.groupProfile, groupPreferences: {...groupOneInfo.groupProfile.groupPreferences, files: {enable: T.GroupFeatureEnabled.Off}}})
+  let refused: {isError?: boolean; text: string} | undefined
+  await until(async () => (refused = await callTool(client, one, "reply", {file: notes})).isError === true)
+  expect(refused!.text).toMatch(/feature not allowed/)
 
   const bobInAlice = (await alice.chat.apiListMembers(mainGroupId)).find(({memberProfile}) => memberProfile.displayName === "Bob")!
   const bobRemoved = bob.chat.wait("deletedMemberUser", ({groupInfo}) => groupInfo.groupId === bobMain, 60_000)
@@ -382,13 +372,6 @@ test("a member of the Main group joins a session's group by /join, prompts and a
   await sessionsListed
   await bobSends("Run the tests")
   await until(() => attached.some(({prompt}) => prompt?.text === "Run the tests" && prompt.from === "Bob"))
-  const revoked = aliceSees("Files to this group need approval again.")
-  await aliceSends("/revoke")
-  await revoked
-  const again = aliceSees(request)
-  const rejecting = callTool(client, one, "reply", {file: notes})
-  await aliceSends(`/reject ${cardNumber(await again)}`)
-  expect((await rejecting).result).toMatchObject({status: "rejected"})
   const posted = async (groupId: number, start: string) => (await alice.chat.apiGetChat(T.ChatType.Group, groupId, 200)).chatItems.filter(({meta}) => meta.itemText.startsWith(start)).length
   expect(await Promise.all([posted(mainGroupId, "Alice joined. "), posted(mainGroupId, "Bob joined. ")])).toEqual([1, 1])
   expect(await Promise.all(["Alice", "Bob", "Carol"].map(name => posted(groupOne, `${name} can send prompts to Claude and approve tool use.`)))).toEqual([1, 1, 1])

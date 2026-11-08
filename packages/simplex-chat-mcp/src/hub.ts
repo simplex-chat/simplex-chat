@@ -3,7 +3,7 @@ import {dirname, join} from "path"
 import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, HostTexts, Mode, isDecided} from "./actions"
-import {Config, defaultConfig} from "./config"
+import {Config} from "./config"
 import {Control, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, parseCommand, safeName} from "./control"
 import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
@@ -97,15 +97,12 @@ export class Session {
       dataRoot: root,
       owner: id,
       replyChat: `#${group.groupId}`,
-      replyAtOnce: async () => !hub.approveFiles,
-      repliesApprover: () => this.control.repliesApprover(),
       setMode: (next: Mode) => this.setMode(next),
       pending: (connId: number) => this.savePending(connId),
     }
     this.tools = new AgentTools(agent, () => this.actions.mode, number)
     const session = {
       approves: (member: T.GroupMember) => this.approves(member),
-      approvesFiles: (groupMemberId: number) => this.mainOwner(groupMemberId),
       ownerOf: (n: number) => hub.sessionId(n),
       isUser: (member: T.GroupMember) => this.isUser(member),
     }
@@ -344,7 +341,6 @@ export class Hub implements SessionGroups {
   user?: User
   userContactId?: number
   promptsHeldUntil = 0
-  approveFiles = defaultConfig.approveFiles
   private readonly sessions = new Map<number, Session>()
   private stopped = false
   private controlEvents: Promise<void> = Promise.resolve()
@@ -366,7 +362,6 @@ export class Hub implements SessionGroups {
       const {chat, user} = core
       const group = (await findMainGroup(chat, user.userId)) ?? (await createMainGroup(chat, user.userId, config.mainGroup))
       const hub = new Hub(chat, user, root, config.expireHours, group, config.mainGroup)
-      hub.approveFiles = config.approveFiles
       await hub.main.load()
       await hub.main.start()
       hub.user = await User.open(root, chat, user).catch(error => (logError("User", error), undefined))
@@ -392,7 +387,6 @@ export class Hub implements SessionGroups {
 
   async configure(config: Config): Promise<void> {
     this.expireHours = config.expireHours
-    this.approveFiles = config.approveFiles
     for (const {actions} of this.sessions.values()) actions.expireHours = config.expireHours
     if (config.mainGroup !== this.main.displayName) await this.main.rename(config.mainGroup)
   }
