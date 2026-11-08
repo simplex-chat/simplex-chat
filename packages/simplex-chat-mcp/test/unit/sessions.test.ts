@@ -13,7 +13,7 @@ import {User} from "../../src/user"
 import {version} from "../../src/version"
 import {FakeChat, contact, direct, event, fileItem, group, groupChat, item, member, signal, until, user} from "./fixtures"
 
-const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /give, /pending, /list. Each card shows its commands."
+const unknownCommand = "Unknown command."
 
 const id1 = "11111111-1111-4111-8111-111111111111"
 const id2 = "22222222-2222-4222-8222-222222222222"
@@ -763,7 +763,7 @@ describe("session channel", () => {
     session.onMessage(event(sessionGroup, item(45, "/approve x", from(invitedBob))))
     await until(() => lines.length === 2 && chat.replies.length === 2 && answers(chat).length === 2)
     expect(lines).toEqual([{prompt: {text: "/model sonnet", from: "Alice", item: 41}}, {prompt: {text: "!git status", from: "Alice", item: 42}}])
-    expect(chat.replies).toEqual([commandsReply, commandsReply])
+    expect(chat.replies).toEqual([unknownCommand, unknownCommand])
     expect(answers(chat)).toEqual([[{text: "Only owners of the Main group can send ! commands to Claude.", quotedItemId: 43}], [{text: "Messages starting with ! reach Claude only from owners, as /!command.", quotedItemId: 44}]])
   })
 

@@ -15,7 +15,7 @@ export const controlCommands: T.ChatBotCommand[] = [
 ]
 
 const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
-const sessionCommandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /give, /pending, /list. Each card shows its commands."
+const unknownCommand = "Unknown command."
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
   reply: "text: too long for its approval card; shorten it.",
@@ -242,7 +242,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   async ownerCommand(sender: T.GroupMember, command: Command): Promise<string | undefined> {
     this.actions.expireDue()
     const request = ownerRequest(command, this.options.session !== undefined)
-    if (request === undefined) return this.options.session === undefined ? commandsReply : sessionCommandsReply
+    if (request === undefined) return this.options.session === undefined ? commandsReply : unknownCommand
     if (!this.isApprover(sender)) return this.options.session !== undefined ? sessionApproversOnly : this.options.owners === undefined ? "Only owners approve actions." : "Only the owners listed in --owners approve actions."
     switch (request.type) {
       case "pending": {
