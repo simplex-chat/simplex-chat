@@ -187,7 +187,7 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Document | Contents |
 |---|---|
 | [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits; the plugin in section 8 |
-| [Flows](flows.md) | sequence diagrams of the main flows with source locations; the plugin in flows 17-27 |
+| [Flows](flows.md) | sequence diagrams of the main flows with source locations; the plugin in flows 17-30 |
 | [API](api.md) | the six tools, the control chat commands, replies and cards, the CLI; the plugin's tools, groups, channel, socket protocol, commands and files in section 4 |
 
 ---
