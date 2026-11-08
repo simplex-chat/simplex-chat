@@ -518,7 +518,7 @@ To replace the owners, run `/simplex:reset-owners` in Claude Code, or `npx -y @s
 With the channel, a message of an owner in a session's group is a prompt of the running session, as one typed in the terminal.
 
 - A file in the message is received without a card into `_sessions/<session ID>/files/group/` of the data folder, and Claude gets its path.
-- Messages that start with `/` are commands, not prompts. Messages of members who are not owners of the Main group are not prompts.
+- One-line messages that start with `/` are commands, not prompts. Messages of members who are not owners of the Main group are not prompts.
 - When the session's Claude Code is not running, Claude replies `Session N is not running.` while the daemon runs.
 - Claude posts its final answer of each turn in the group, as a reply to the prompt when the prompt came from the group. `User` posts the prompts typed in the terminal. A text over 12000 bytes is posted as several messages.
 - The `reply` tool sends a file to the group, with its text as the caption, under the file rules of `send`.
