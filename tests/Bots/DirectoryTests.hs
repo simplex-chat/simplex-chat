@@ -2364,6 +2364,16 @@ testOwnerCardInContactRequest ps =
                    ConsoleString cSig
                  ]
           cath .<## ": contact is connected"
+          let notOwner = "'SimpleX Directory'> To add a channel to directory you must be the owner."
+          notOwnerFirst <- (notOwner ==) . dropTime <$> peekTermLine cath
+          when notOwnerFirst $ cath <# notOwner
+          cath .<# "> Welcome to SimpleX Directory!"
+          cath <## ""
+          cath <## "🔍 Send search string to find groups - try security."
+          cath <## "/help - how to submit your group or channel."
+          cath <## "/new - recent groups."
+          cath <## ""
+          cath <## "[Directory rules](https://simplex.chat/docs/directory.html)."
           bob ##> "/share chat #news @'SimpleX Directory'"
           bob <# "@'SimpleX Directory' link to join channel #news (signed):"
           _ <- getTermLine bob
