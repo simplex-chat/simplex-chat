@@ -463,8 +463,8 @@ export interface ToolDefinition {
 
 export const replyTool: ToolDefinition = {
   name: "reply",
-  description: `Sends a file to your owners in the SimpleX group of this session, with text as its caption. Your final answer of each turn reaches them without this tool.
-While the group has a guest, a member added without the Main group, a member from the Main group approves the file there first, and the call waits for the decision: result status done (item), rejected, expired or failed (error). If the call ends without a result, repeat it with the same arguments: it attaches to the same action.`,
+  description: `Sends a file to the SimpleX group of this session, for the members who joined it from the Main group, with text as its caption. Your final answer of each turn reaches them without this tool.
+While the group has a guest, a member added without the Main group, a member who joined from the Main group approves the file there first, and the call waits for the decision: result status done (item), rejected, expired or failed (error). If the call ends without a result, repeat it with the same arguments: it attaches to the same action.`,
   inputSchema: {
     type: "object",
     properties: {

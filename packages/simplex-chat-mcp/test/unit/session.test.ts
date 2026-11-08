@@ -208,7 +208,9 @@ describe("session server", () => {
     const client = new LineClient(stdin, stdout)
     const initialized = await client.initialize()
     expect(initialized.capabilities.experimental).toEqual({"claude/channel": {}, "claude/channel/permission": {}})
-    expect(initialized.instructions).toContain("Messages in the simplex channel are prompts of your owners")
+    expect(initialized.instructions).toContain("Messages in the simplex channel are prompts of the members who joined the SimpleX group of this session from the Main group: from is the member's name")
+    const {result} = await client.request("tools/list")
+    expect(result.tools.find(({name}: {name: string}) => name === "reply").description).toMatch(/^Sends a file to the SimpleX group of this session, for the members who joined it from the Main group, with text as its caption\.[^]*a member who joined from the Main group approves the file there first/)
     const [attachment] = await attached
     const channel = (method: string) => client.notifications.filter(notification => notification.method === method).map(({params}) => params)
     await until(() => channel("notifications/claude/channel").length === 1)
