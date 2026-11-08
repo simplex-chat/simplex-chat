@@ -205,15 +205,15 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Tool registration | [`src/tools.ts`](../src/tools.ts#L502) | `registerTools` | [502](../src/tools.ts#L502) |
 | Downloads | [`src/tools.ts`](../src/tools.ts#L594) | `AgentTools.downloadFile` | [594](../src/tools.ts#L594) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L154) | `Actions` | [154](../src/actions.ts#L154) |
-| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L87) | `Control` | [87](../src/control.ts#L87) |
-| Card text | [`src/control.ts`](../src/control.ts#L647) | `cardText` | [647](../src/control.ts#L647) |
+| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L88) | `Control` | [88](../src/control.ts#L88) |
+| Card text | [`src/control.ts`](../src/control.ts#L648) | `cardText` | [648](../src/control.ts#L648) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L98) | `createDataFolder`, `acquireLock` | [98](../src/files.ts#L98), [103](../src/files.ts#L103) |
 | Session server | [`src/session.ts`](../src/session.ts#L40) | `startSession` | [40](../src/session.ts#L40) |
 | Session to daemon link | [`src/session.ts`](../src/session.ts#L69) | `DaemonLink` | [69](../src/session.ts#L69) |
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L35) | `DaemonClient.ensureDaemon` | [35](../src/client.ts#L35) |
-| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L431) | `runDaemon` | [431](../src/daemon.ts#L431) |
+| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L433) | `runDaemon` | [433](../src/daemon.ts#L433) |
 | Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L138) | `Daemon.routes` | [138](../src/daemon.ts#L138) |
 | Hub | [`src/hub.ts`](../src/hub.ts#L365) | `Hub.open` | [365](../src/hub.ts#L365) |
 | Session and its group | [`src/hub.ts`](../src/hub.ts#L50) | `Session` | [50](../src/hub.ts#L50) |
