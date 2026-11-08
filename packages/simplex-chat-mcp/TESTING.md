@@ -111,13 +111,14 @@ Stop and restart:
 
 The plugin's server, hooks and commands run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, with the modules that Claude Code installs into the plugin's folder from `npm-shrinkwrap.json`. Step 1 lays out a packed build the same way; `test/e2e/launch.test.ts` checks that layout.
 
-1. In `packages/simplex-chat-mcp`, pack the build, unpack it into a new folder, and install its modules from the shrinkwrap without scripts, as Claude Code does:
+1. In `packages/simplex-chat-mcp`, pack the build, unpack it into a new folder, and install its modules from the shrinkwrap with the command of Claude Code 2.1.319, which stops it after 60 seconds:
 
    ```
    npm pack --pack-destination /tmp
    mkdir /tmp/simplex-plugin
    tar -xzf /tmp/simplex-chat-mcp-0.3.0.tgz -C /tmp/simplex-plugin --strip-components 1
-   npm ci --prefix /tmp/simplex-plugin --ignore-scripts
+   cd /tmp/simplex-plugin
+   npm ci --ignore-scripts --workspaces=false --no-audit --no-fund
    ```
 
 2. Start Claude Code in any project folder, with the plugin and its channel, and with its own data folder:
@@ -133,11 +134,11 @@ The plugin's server, hooks and commands run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli
 ### Automated tests
 
 - `npm test`: unit tests of the plugin's parts: the session server and its channel, the daemon, the hub with its Main group, sessions' groups and tool-use cards, the hooks and the plugin files.
-- `npm run test:e2e`, file `test/e2e/launch.test.ts`: the packed `package.json` has no development dependencies, its shrinkwrap has no development entry and lists the dependencies of `package.json`, and the folder's files are restored after the pack; the packed build, laid out as Claude Code installs a plugin, runs a hook and the session server with the commands of `hooks/hooks.json` and `.mcp.json`; installed into a project, `simplex-mcp` runs.
+- `npm run test:e2e`, file `test/e2e/launch.test.ts`: the packed `package.json` has no development dependencies, its shrinkwrap has no development entry and lists the dependencies of `package.json`, and the folder's files are restored after the pack; the packed build, installed with the command of Claude Code within 60 seconds, runs a hook and the session server with the commands of `hooks/hooks.json` and `.mcp.json`; installed into a project, `simplex-mcp` runs.
 - `npm run test:e2e`, file `test/e2e/daemon.test.ts`, with a local smp-server and xftp-server:
   - an owner joins the Main group and the groups of two sessions, and approves `connect`, `send`, `download` and `leave` there; chats belong to their sessions, `/give` moves one, and `/list` works after a daemon restart;
   - the hooks post a terminal prompt as `User` and the answer as Claude; an owner's message to a session without Claude Code gets `Session 1 is not running.`; with the session attached, it reaches the session's channel stream, it is not posted again by `User`, raw or in the channel tag, and the answer quotes it;
-  - hooks with a new session ID from the process of an attached session post in its group; a tool-use card approved by the owner reaches the session's stream as `allow`; a contact that accepts after `connect` returned `connected: false` is in the session's `list`; mode `host` applies after the owner approves its card; after a daemon restart, a prompt sent before the session attached again reaches it, without `Session 1 is not running.`;
+  - hooks with a new session ID from the process of an attached session post in its group; a tool-use card approved by the owner reaches the session's stream as `allow`; a contact and a group that accept after `connect` returned `connected: false` are in the session's `list`; mode `host` applies after the owner approves its card; after a daemon restart, a prompt sent before the session attached again reaches it, without `Session 1 is not running.`;
   - a new session has no chats;
   - a stdio session starts the daemon, recovers after the daemon is killed during a call, and starts it again and attaches without a call.
 
@@ -155,4 +156,5 @@ In a session started as in step 2 above:
 8. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`. Without a tool call, send `Reply with the word back.` in the group after 30 seconds: the answer comes in the group.
 9. Exit Claude Code, and send a message in the group within 10 minutes, while the daemon runs: Claude replies `Session 1 is not running.`
 10. Start Claude Code again as in step 2, with `--continue`: the session start opens no new group, and a prompt from "1 · <folder>" reaches the session.
-11. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.
+11. In a second terminal, start Claude Code as in step 2 in another folder, and exit it: the group "2 · <other folder>" appears. In the first session, `/resume` that session, and send `Reply with the word resumed.` in "1 · <folder>": the answer comes there. Exit, and start Claude Code with `--resume` of that session: a prompt from "2 · <other folder>" reaches it.
+12. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.
