@@ -660,6 +660,21 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: undefined}], [{text: "Session 1 is not running.", quotedItemId: undefined}]])
   })
 
+  it("posts the replies to a member's message without the quote when the core refuses them as too large with it", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const send = chat.apiSendMessages.bind(chat)
+    chat.apiSendMessages = async (ref, messages) => {
+      if (messages.some(({quotedItemId}) => quotedItemId !== undefined)) throw new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "largeMsg"}} as unknown as T.ChatError)
+      return send(ref, messages)
+    }
+    session.onLine = undefined
+    session.onMessage(event(sessionGroup, item(43, "a".repeat(15_400), from(invitedAlice))))
+    session.onMessage(event(sessionGroup, item(44, "!ls", from(invitedAlice))))
+    await until(() => answers(chat).length === 2)
+    expect(answers(chat)).toEqual([[{text: "Session 1 is not running.", quotedItemId: undefined}], [{text: "Messages starting with ! reach Claude only from owners, as /!command.", quotedItemId: undefined}]])
+  })
+
   it("posts an answer with a new effort level before the prompt of the next turn, and then the description", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)

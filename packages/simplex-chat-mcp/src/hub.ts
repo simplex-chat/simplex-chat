@@ -550,7 +550,7 @@ function textParts(text: string, quote?: Parameters<typeof fitsMessage>[2]): str
 
 function isRefusedQuote(error: unknown): boolean {
   const chatError = chatErrorOf(error)
-  return chatError?.type === "errorStore" && (chatError.storeError.type === "invalidQuote" || chatError.storeError.type === "chatItemNotFound")
+  return chatError?.type === "errorStore" && (chatError.storeError.type === "invalidQuote" || chatError.storeError.type === "chatItemNotFound" || chatError.storeError.type === "largeMsg")
 }
 
 function sessionDataOf(customData: object | undefined): SessionGroupData | undefined {
