@@ -3,6 +3,8 @@
 > Technical specification of `@simplex-chat/mcp` 0.2.0 in `packages/simplex-chat-mcp`. Statements are checked against the source at commit `937a975a6`, and each section links to the code.
 >
 > Related: [README](../README.md) (user manual) | [PLAN](../PLAN.md) (design record) | [TESTING](../TESTING.md) (local build and test)
+>
+> It specifies `serve`. The Claude Code plugin of 0.3.0 is described in [REFERENCE](../REFERENCE.md#claude-code-plugin), section "Claude Code plugin".
 
 ## Table of contents
 

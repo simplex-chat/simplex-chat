@@ -1,4 +1,4 @@
-# Testing @simplex-chat/mcp v0.2
+# Testing @simplex-chat/mcp v0.3
 
 Node.js 22. Claude Code runs on the same computer as `serve`: the server listens on 127.0.0.1 only.
 
@@ -104,3 +104,48 @@ Stop and restart:
 4. C5, register again: `node dist/cli.js register my-agent` prints `Added to Claude Code: scope user, server simplex-my-agent.`; `claude mcp list` shows one `simplex-my-agent`.
 5. C6, Esc: ask for a send, and press Esc while its card waits; `List your pending actions.` shows the action with `open: false`; the same request again attaches to it, and `/approve` returns the result to that call.
 6. Host mode: restart with `node dist/cli.js serve my-agent --approve host`, then `/mcp reconnect all`. `Send /help to the directory.` makes Claude Code prompt, despite the allow rule; so does `leave`. After you allow it, the agent control chat gets `I sent a message to bot SimpleX Directory:`, `` `/help` `` and `Performed without approval (mode host).` A `connect` to a link not yet joined gets the same prompt and an outcome card; a target already joined returns `status: known`, with no card.
+
+## Claude Code plugin
+
+### Install the plugin before it is published
+
+The plugin's commands run `npx -y @simplex-chat/mcp@0.3.0` in the plugin's folder. Installed from a packed build into a folder, the plugin runs that build: npx takes the version from the `node_modules` around the plugin's folder (checked with npm 10.9.9). From the checkout itself, the same npx command fails with `simplex-mcp: not found`.
+
+1. In `packages/simplex-chat-mcp`, pack the build, and install it into a new folder:
+
+   ```
+   npm pack --pack-destination /tmp
+   npm install --prefix /tmp/simplex-plugin --no-save /tmp/simplex-chat-mcp-0.3.0.tgz
+   ```
+
+2. Start Claude Code in any project folder, with the installed plugin and its channel, and with its own data folder:
+
+   ```
+   SIMPLEX_MCP_HOME=/tmp/simplex-mcp-test claude --plugin-dir /tmp/simplex-plugin/node_modules/@simplex-chat/mcp --dangerously-load-development-channels plugin:simplex@inline
+   ```
+
+   `--plugin-dir` loads the plugin for that session only, as `simplex@inline`.
+
+3. After a change in `src/`, repeat step 1 and stop the daemon, which a daemon of the same version doesn't replace: `kill $(cat /tmp/simplex-mcp-test/lock)`.
+
+### Automated tests
+
+- `npm test`: unit tests of the plugin's parts: the session server and its channel, the daemon, the hub with its Main group, sessions' groups and tool-use cards, the hooks and the plugin files.
+- `npm run test:e2e`, file `test/e2e/daemon.test.ts`, with a local smp-server and xftp-server:
+  - an owner joins the Main group and the groups of two sessions, and approves `connect`, `send`, `download` and `leave` there; chats belong to their sessions, `/give` moves one, and `/list` works after a daemon restart;
+  - the hooks post a terminal prompt as `User` and the answer as Claude; an owner's message to a session without Claude Code gets `Session 1 is not running.`; with the session attached, it reaches the session's channel stream, it is not posted again by `User`, raw or in the channel tag, and the answer quotes it;
+  - a new session has no chats;
+  - a stdio session starts the daemon, and recovers after the daemon is killed.
+
+### Checks in a real session
+
+In a session started as in step 2 above:
+
+1. The session start shows `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "SimpleX MCP":`, a QR code and the link. Ask Claude which link the session start showed: Claude doesn't know it. If the development flag refuses `plugin:simplex@inline`, checks 3 and 5, and `/model sonnet` in check 6, wait for the published plugin and `plugin:simplex@simplex-chat`.
+2. Scan the QR code in the SimpleX app and tap Join. In "SimpleX MCP", tap the invitation to "1 · <folder>" and join it.
+3. Send `Reply with the word ready.` in "1 · <folder>". The answer comes from Claude, as a reply to your message.
+4. Type a prompt in the terminal. It appears in the group from `User`, and the answer from Claude. Record whether a prompt from the group also appears from `User`: the UserPromptSubmit hook of a channel prompt is not documented.
+5. Send `Run ls with Bash.` in the group. The terminal shows the permission dialog, and the group gets the card ``I want to use `Bash`: ...`` with `/approve N or /reject N`. Tap `/approve N`: `ls` runs. Ask again and tap `/reject N`: Claude reports the refusal. Answer a third request in the terminal: its card ends with `Expired.` when the turn ends.
+6. The short description of the group shows `MODEL · effort LEVEL` after the first answer. `/model` in the terminal changes it; a change of the effort level shows after the next answer. Send `/model sonnet` in the group, and record whether Claude Code runs it as a command.
+7. Exit Claude Code, and send a message in the group within 10 minutes, while the daemon runs: Claude replies `Session 1 is not running.`
+8. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.

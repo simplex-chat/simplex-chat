@@ -11,6 +11,29 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
   <img src="https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/packages/simplex-chat-mcp/images/prompts.png" alt="Prompting the agent from the SimpleX app" width="320">
 </p>
 
+## Run Claude Code from the app
+
+You need Node.js 22 or later, Claude Code and the [SimpleX Chat app](https://simplex.chat/downloads/) 7.1 or later.
+
+1. Install the plugin in Claude Code:
+
+   ```
+   /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/.claude-plugin/marketplace.json
+   /plugin install simplex@simplex-chat
+   ```
+
+2. Start Claude Code with the SimpleX channel:
+
+   ```
+   claude --dangerously-load-development-channels plugin:simplex@simplex-chat
+   ```
+
+   Scan the QR code it shows with the SimpleX app, and tap Join. The group "SimpleX MCP" appears.
+
+3. Each Claude Code session gets its own group, such as "1 · my-project", and you get its invitation in "SimpleX MCP". Join it.
+
+4. Send a prompt in the session's group. Claude answers there. It asks there before it connects, sends, downloads a file or leaves a chat, and before it uses a tool such as Bash: one tap approves. Your prompts typed in the terminal appear in the group too.
+
 ## Try it
 
 You need Node.js 22 or later, Claude Code and the [SimpleX Chat app](https://simplex.chat/downloads/).
@@ -57,6 +80,7 @@ Approve the connection in "My Agent", and accept the request in the app if it as
 - The agent asks in "My Agent" before it connects, sends a message or a file, downloads a file or leaves; you approve or reject. On a download card, `/receive` gives the agent the file, and `/forward` sends it only to you.
 - `all` approves every message to one chat; `/revoke` ends it. `/receive CHAT N all` lets the agent receive that file and later files from one chat on the agent's servers; `/receive CHAT off` ends it.
 - Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you write.
+- With the plugin, only owners of "SimpleX MCP" prompt a session and approve its actions and tool use.
 - The agent runs on your computer and has no address in SimpleX Network, so nobody can contact it first.
 
 ## Only Claude Code, for now
@@ -65,7 +89,7 @@ The agent is tested with Claude Code. Tell us which other apps and models you wa
 
 ## Reference
 
-Approval modes, owners, several agents, other MCP hosts, recovery and all options: [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md).
+The plugin, approval modes, owners, several agents, other MCP hosts, recovery and all options: [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md).
 
 ## Own a part of SimpleX
 
