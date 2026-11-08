@@ -142,6 +142,19 @@ describe("session server", () => {
     expect(spawn).not.toHaveBeenCalled()
   })
 
+  it("answers every call without the daemon in a run whose environment marks it unattended, and in claude -p under the mark of the attended session that started it", async () => {
+    await fakeDaemon(async res => endWithResult(res, listResult))
+    const spawn = jest.fn(noSpawn)
+    const refused = {content: [{type: "text", text: "This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions."}], isError: true}
+    for (const env of [{CLAUDE_CODE_ENTRYPOINT: "claude-vscode", CLAUDE_CODE_SESSION_ATTENDED: "0"}, {CLAUDE_CODE_ENTRYPOINT: "sdk-cli", CLAUDE_CODE_SESSION_ATTENDED: "1"}]) {
+      const {client} = await session(env, spawn)
+      expect((await listCall(client)).result).toEqual(refused)
+    }
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(seen).toEqual([])
+    expect(spawn).not.toHaveBeenCalled()
+  })
+
   it("lists tools while the daemon is still starting", async () => {
     let spawned!: () => void
     const spawning = new Promise<void>(resolve => (spawned = resolve))

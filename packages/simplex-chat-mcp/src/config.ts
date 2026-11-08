@@ -24,7 +24,7 @@ const unattendedEntrypoints = ["sdk-cli", "sdk-ts", "sdk-py"]
 export class ConfigError extends Error {}
 
 export function interactive(env: NodeJS.ProcessEnv = process.env): boolean {
-  return !unattendedEntrypoints.includes(env.CLAUDE_CODE_ENTRYPOINT ?? "")
+  return env.CLAUDE_CODE_SESSION_ATTENDED !== "0" && !unattendedEntrypoints.includes(env.CLAUDE_CODE_ENTRYPOINT ?? "")
 }
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
