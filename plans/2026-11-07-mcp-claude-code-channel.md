@@ -9,6 +9,28 @@ Outcome:
 - Owners approve the session's tool use (`Bash`, `Write`, `Edit`) in its group.
 - `simplex-mcp serve` keeps serving other MCP hosts over HTTP.
 
+## Implementation goal
+
+One PR that publishes `@simplex-chat/mcp` 0.3.0: Claude Code users install the plugin, join one Main group, and run each Claude Code session from its own SimpleX group, with prompts from the phone, the session mirrored, and tool use approved there; `serve` is unchanged for other hosts.
+
+Done when:
+```
+#   criterion                                                                                   checked by
+1   /plugin install; first session shows the QR code in the terminal, never in Claude's context  unit test of the hook output; real session
+2   an owner joins the Main group and gets a "Tap to join" card for each session's group          end-to-end test
+3   an owner's message in a session group reaches the running session as a channel event          real session with the development flag
+4   Claude's answer is posted by Claude; a prompt typed in the terminal is posted by User          end-to-end test of the hooks; real session
+5   a Bash prompt becomes a card; /approve runs the tool, /reject refuses it                      real session
+6   connect, send, download and leave cards in the session group; chats owned by sessions; /give  end-to-end tests
+7   the group description shows the model and effort and follows a change                         unit test; real session
+8   decisions 17-23 hold                                                                          unit tests
+9   serve: all 0.2 unit and end-to-end tests pass unchanged                                      CI
+10  source lines written on top of sh/mcp-known: at most 1,200                                    diff count
+11  one page presents the PR; an independent reviewer confirms it matches the diff               review report
+```
+
+Real-session checks run in an interactive Claude Code session started with `--dangerously-load-development-channels plugin:simplex@simplex-chat`; the user runs them or allows them.
+
 ## Decisions
 
 Agreed on 2026-11-06:
