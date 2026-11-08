@@ -1519,6 +1519,11 @@ export function isActive({memberStatus}: T.GroupMember): boolean {
   return memberStatus === T.GroupMemberStatus.Connected || memberStatus === T.GroupMemberStatus.Complete
 }
 
+export function isGone({memberStatus}: T.GroupMember): boolean {
+  const gone: T.GroupMemberStatus[] = [T.GroupMemberStatus.Rejected, T.GroupMemberStatus.Removed, T.GroupMemberStatus.Left, T.GroupMemberStatus.Deleted]
+  return gone.includes(memberStatus)
+}
+
 export function memberCurrent({memberStatus}: T.GroupMember): boolean {
   const current: T.GroupMemberStatus[] = [
     T.GroupMemberStatus.Introduced,

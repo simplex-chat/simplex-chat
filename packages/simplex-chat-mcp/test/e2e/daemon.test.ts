@@ -90,7 +90,7 @@ async function joinSessionGroups(owner: Person, names: string[]): Promise<Map<st
   return groups
 }
 
-test("an owner joins the Main group and each session's group, and approves its connect, send, download and leave there; chats belong to their sessions", async () => {
+test("an owner joins the Main group and each session's group, and approves its connect, send, download and leave there; chats belong to their sessions; an owner who leaves the Main group is removed from the sessions' groups", async () => {
   const root = join(dir, "sessions", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("sessions", "Alice")
@@ -106,7 +106,7 @@ test("an owner joins the Main group and each session's group, and approves its c
   const greeting = received(alice.chat, textStarts("I'm Claude. Each Claude Code session has its own group"))
   const invitations = joinSessionGroups(alice, ["1 · one", "2 · two"])
   await joinByLink(alice, owner.link!)
-  await greeting
+  const mainGroupId = ((await greeting).chatInfo as T.ChatInfo.Group).groupInfo.groupId
   const groups = await invitations
   const [groupOne, groupTwo] = [groups.get("1 · one")!, groups.get("2 · two")!]
   expect((await client.request<StatusReply>("GET", "/status")).owner).toEqual({owners: ["Alice"]})
@@ -169,6 +169,10 @@ test("an owner joins the Main group and each session's group, and approves its c
   await listedOne
   expect(await openSession(client, two, "two")).toMatchObject({number: 2, displayName: "2 · two", owner: {owners: ["Alice"]}})
   expect((await chatsOf(two)).sort()).toEqual([directoryChat, shopChat].sort())
+
+  const removed = Promise.all([groupOne, groupTwo].map(groupId => alice.chat.wait("deletedMemberUser", ({groupInfo}) => groupInfo.groupId === groupId, 60_000)))
+  await alice.chat.apiLeaveGroup(mainGroupId)
+  await removed
 }, 600_000)
 
 test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {

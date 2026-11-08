@@ -494,6 +494,7 @@ The link reaches only you: Claude's context and tool results never contain it. S
 - Whoever joins by the link first becomes an owner, and the link is deleted. The link works once, and stays the same across daemon restarts until someone joins.
 - Owners of the Main group get an invitation to the group of each session, in the Main group, for them only.
 - `/sessions` lists the sessions, with `, closed` after the closed ones. `/join N` sends you an invitation to the group of session N. A member who is not an owner of the Main group reads a session's group, and can't prompt or approve there.
+- A member who leaves the Main group, or is removed from it, is removed from the groups of all sessions at once. A member whose role in the Main group is lowered, such as an owner made a member, gets that role in the groups of all sessions, also in an invitation not yet accepted. Changes made while the daemon was stopped apply at its next start.
 - When no owner remains, the daemon creates a new link. `npx -y @simplex-chat/mcp@VERSION link` in a terminal prints it with a QR code; `/simplex:link` in Claude Code shows the owners, or asks you to run that command.
 
 To replace the owners, run `/simplex:reset-owners` in Claude Code, or `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal:

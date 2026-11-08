@@ -19,7 +19,7 @@ export interface SessionGroups {
   sessionsText(): string
   join(member: T.GroupMember, session: number): Promise<string>
   inviteOwner(member: T.GroupMember): Promise<void>
-  removeOwners(): Promise<void>
+  applyMembers(): Promise<void>
 }
 
 export class MainGroup {
@@ -56,6 +56,10 @@ export class MainGroup {
 
   isOwner(groupMemberId: number): boolean {
     return this.owners().some(member => member.groupMemberId === groupMemberId)
+  }
+
+  member(groupMemberId: number): T.GroupMember | undefined {
+    return this.members.find(member => member.groupMemberId === groupMemberId)
   }
 
   async load(): Promise<void> {
@@ -112,7 +116,7 @@ export class MainGroup {
       this.group = await createMainGroup(this.chat, this.userId, this.name)
       this.lost = false
       await this.load()
-      await this.sessions.removeOwners()
+      await this.sessions.applyMembers()
       await this.openLink()
       return this.linkText!
     })
@@ -142,6 +146,7 @@ export class MainGroup {
     if (losesControl(event)) return this.lose()
     const before = this.owners()
     await this.refreshMembers()
+    await this.sessions.applyMembers()
     if (event.type === "joinedGroupMember" && this.isHuman(event.member) && this.owners().length === 0) await this.ownerJoined(event.member)
     else if (before.length > 0 && this.owners().length === 0) {
       log(noOwners)
