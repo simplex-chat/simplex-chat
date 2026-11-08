@@ -521,14 +521,16 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`; th
 
 ### Prompts and answers
 
-With the channel, a message of a member who joined a session's group from the Main group is a prompt of the running session, as one typed in the terminal.
+With the channel, a message of a member of a session's group, other than `User`, is a prompt of the running session, as one typed in the terminal; a guest's message too.
 
 - A file in the message is received without a card into `_sessions/<session ID>/files/group/` of the data folder, and Claude gets its path. When the file fails or does not arrive in 10 minutes, Claude replies `The file of this message was not received: ERROR`, and the session gets the text.
 - The session gets the prompts in the order they were sent: a later prompt waits for the file of an earlier one.
-- One-line messages with a command of the group, such as `/approve 5` or `/list`, are commands, not prompts; other messages are prompts, also one-line messages that start with `/`. Messages of guests are not prompts.
+- A one-line message that starts with `/` is a command of the group, such as `/approve 5` or `/list`, not a prompt; one that is not a command of the group gets `Unknown command.`
+- A message that starts with `//` reaches Claude without its first `/`: `//model sonnet` arrives as `/model sonnet`.
+- A message that starts with `/!` from a member whose member in the Main group is an owner reaches Claude without the `/`: `/!git status` arrives as `!git status`. From another member it gets `Only owners of the Main group can send ! commands to Claude.` A message that starts with `!` is not passed to Claude, and gets `Messages starting with ! reach Claude only from owners, as /!command.`
 - When the session's Claude Code is not running, also when it ends while the file of a prompt arrives, Claude replies `Session N is not running.` while the daemon runs. In the first 30 seconds after a daemon start, a prompt waits for its session to attach again, so a prompt sent while the daemon was stopped reaches the session.
-- Claude posts its final answer of each turn in the group, as a reply to the prompt of that turn when the prompt came from the group, also when the next prompt arrives while Claude answers. When the prompt was deleted, the answer and Claude's replies are posted without the quote. `User` posts the prompts typed in the terminal, except commands such as `/simplex:link`, empty prompts, such as one with images only, and prompts made only of the plugin's `<channel source="plugin:simplex:simplex" ...>` tags. A text over 12000 bytes is posted as several messages; a prompt or an answer over 250,000 characters is posted up to there, ending with `…`.
-- The `reply` tool sends a file to the group, with its text as the caption, under the file rules of `send`. When every member of the group, other than Claude, `User` and members who left or were removed, joined it from the Main group, the file is sent at once. While the group has a guest, Claude posts `I want to send a file to group N · NAME, where guests see it:` with the caption, the file's type, path and size, the preview of an image or a video, and `/approve N, /approve N all or /reject N`, also in mode `host`; the file is sent after a member from the Main group approves it, and the call returns `status` as `send` does. A guest invited and not yet joined counts as a guest.
+- Claude posts its final answer of each turn in the group, as a reply to the prompt of that turn when the prompt came from the group, also when the next prompt arrives while Claude answers. When the prompt was deleted, the answer and Claude's replies are posted without the quote. `User` posts the prompts typed in the terminal, except commands such as `/simplex:link`, empty prompts, such as one with images only, and prompts made only of the plugin's `<channel source="plugin:simplex:simplex" ...>` tags. A text that does not fit one message is posted as several messages, each as long as a message can be, measured as for `send`, with the quote in the first part of an answer: a part without a quote holds up to 14,962 Latin, 7,481 Cyrillic or 4,987 CJK characters. A prompt or an answer over 250,000 characters is posted up to there, ending with `…`.
+- The `reply` tool sends a file to the group, with its text as the caption, under the file rules of `send`. When every member of the group, other than Claude, `User` and members who left or were removed, joined it from the Main group, the file is sent at once; so it is with the option `approve_guest_files` off. While the group has a guest and the option is on, Claude posts `I want to send a file to group N · NAME, where guests see it:` with the caption, the file's type, path and size, the preview of an image or a video, and `/approve N, /approve N all or /reject N`, also in mode `host`; the file is sent after a member from the Main group approves it, and the call returns `status` as `send` does. A guest invited and not yet joined counts as a guest.
 - `/approve N all` sends that file, approves the other pending files of `reply`, and sends every later one at once, each with a card `I sent a file to group N · NAME, where guests see it:` that ends `Approved for this chat by NAME. /revoke`. `/revoke` in the group ends it. The approval is kept in the custom data of the group, survives restarts, and lasts while its approver is in the group.
 
 ### Tool use
@@ -556,6 +558,7 @@ Set in `/plugin` > Installed > simplex > Configure options:
 | `main_group` | `SimpleX MCP` | a valid SimpleX display name | The name of the Main group. |
 | `approve` | `requests` | `requests`, `host` | The approval mode of the sessions. |
 | `expire_hours` | `23` | 1 to 23 | How long an action waits for a decision, see [Expiry](#expiry). |
+| `approve_guest_files` | on | on, off | On: while a session's group has a guest, a file of `reply` waits for a member from the Main group to approve its card. Off: such a file is sent at once. |
 
 A changed option applies from the next session start. An invalid value is shown at the session start, and every tool call of that session returns the same text, for example `Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /plugin > Installed > simplex > Configure options.`
 
@@ -599,10 +602,10 @@ The folders are readable only by the user, and so are the files the daemon write
 
 - The daemon listens only on its local socket, in a folder readable only by the user, and every request needs the token. On Windows, where the named pipe has no folder permissions, the token is the only check.
 - The daemon gets only the environment variables it uses: the paths of the home, temporary and cache folders, the locale, the proxy and certificate settings, `NODE_OPTIONS`, the `SIMPLEX_` variables and the plugin options.
-- Everyone in the Main group is trusted with all sessions. Prompts, approvals and tool-use decisions count only from members who joined a session's group from the Main group, whatever their role. `User`, Claude and guests never count.
+- Everyone in the Main group is trusted with all sessions. Approvals and tool-use decisions count only from members who joined a session's group from the Main group, whatever their role; `User`, Claude and guests never count. Prompts come from every member of the group but `User`, guests included; `!` commands reach Claude only from owners of the Main group, as `/!`.
 - The Main group link reaches only you: the session start shows it, and `link` prints it in a terminal.
 - A session runs in mode `host` only after a member from the Main group approves it in the session's group.
-- A file of `reply` reaches guests only after a member from the Main group approves it, or all files of the group.
+- A file of `reply` reaches guests only after a member from the Main group approves it, or all files of the group, while the option `approve_guest_files` is on.
 - While owners exist, the owners are replaced only after an owner approves it in the Main group.
 - The plugin refuses to send private keys and the files of its data folder, except the files under `files/` of the session's own folder.
 - Peers of a chat see the profile `Claude`, or a random profile in a chat connected incognito.
