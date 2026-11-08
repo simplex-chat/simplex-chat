@@ -750,8 +750,8 @@ flowchart LR
 Data flow of a tool call:
 
 1. Claude Code calls a tool of the MCP server `simplex`; the SDK validates the arguments ([session.ts:57](../src/session.ts#L57), [tools.ts:501-511](../src/tools.ts#L501-L511)).
-2. Without a connection, the session process checks the daemon's status and version, spawns it when it is not running, sends `POST /session` and holds `POST /attach` open ([session.ts:158-180](../src/session.ts#L158-L180), [client.ts:35-47](../src/client.ts#L35-L47)).
-3. The session process sends `POST /call` with the session ID, the tool and the input, relays each `{progress}` line as an MCP progress notification, and returns the `{result}` line ([session.ts:129-148](../src/session.ts#L129-L148)).
+2. Without a connection, the session process checks the daemon's status and version, spawns it when it is not running, sends `POST /session` and holds `POST /attach` open ([session.ts:159-181](../src/session.ts#L159-L181), [client.ts:35-47](../src/client.ts#L35-L47)).
+3. The session process sends `POST /call` with the session ID, the tool and the input, relays each `{progress}` line as an MCP progress notification, and returns the `{result}` line ([session.ts:130-149](../src/session.ts#L130-L149)).
 4. The daemon checks the token, finds or opens the entry of the session or of its alias, and runs the session's `AgentTools.call` with a signal tied to the request ([socket.ts:18-48](../src/socket.ts#L18-L48), [daemon.ts:342-361](../src/daemon.ts#L342-L361)).
 5. `AgentTools` sends chat commands to the core `_hub`; actions are created in the session's `Actions` and posted as cards in the session's group by its `Control` ([hub.ts:75-106](../src/hub.ts#L75-L106)).
 6. The core emits events to `Hub.onEvent`, which passes them to the Main group, to each session's `AgentTools.onEvent` and to the `Control` of the session group they belong to ([hub.ts:499-529](../src/hub.ts#L499-L529)).
@@ -760,7 +760,7 @@ Data flow of a prompt from the session group:
 
 1. An owner's message in the group of session N reaches `Session.onMessage`, which queues its delivery after the earlier prompts of the session ([hub.ts:503-508](../src/hub.ts#L503-L508), [:156-162](../src/hub.ts#L156-L162)).
 2. In the first 30 s after the hub opened, a delivery without an attachment waits for one. With an attachment, its file, when it has one, is received. Then, without an attachment, the hub replies `Session N is not running.`; with one, the prompt is pushed, and the line `{prompt}` is written to every `/attach` stream of the session ([hub.ts:254-268](../src/hub.ts#L254-L268), [daemon.ts:330](../src/daemon.ts#L330)).
-3. The session process sends it to Claude Code as `notifications/claude/channel` ([session.ts:53-56](../src/session.ts#L53-L56), [:192-196](../src/session.ts#L192-L196)).
+3. The session process sends it to Claude Code as `notifications/claude/channel` ([session.ts:53-56](../src/session.ts#L53-L56), [:193-197](../src/session.ts#L193-L197)).
 4. The hooks post the terminal prompts and the final answer of each turn with `POST /turn` ([hook.ts:59-78](../src/hook.ts#L59-L78), [hub.ts:182-201](../src/hub.ts#L182-L201)).
 
 ### 8.2 Modules
@@ -771,14 +771,14 @@ Data flow of a prompt from the session group:
 |---|---|---|
 | `channelInstructions`, `permissionRequest` | [21-23](../src/session.ts#L21-L23) | instructions of the channel; schema of a permission request |
 | `startSession` | [40](../src/session.ts#L40) | session ID check, the text of a run that is not interactive, options, `McpServer` with the instructions and the capabilities `claude/channel` and `claude/channel/permission`, tools with `reply`, the permission request handler, stdio transport, background connect unless a text of the run or the options answers every call |
-| `DaemonLink.connect`, `start`, `close`, `reconnect` | [77-109](../src/session.ts#L77-L109) | one shared connect promise; `start` logs a failure on stderr and, unless it is a `ProtocolError`, connects again later; `close` ends the attachment and the retries; `reconnect` sets one timer that starts again after the delay, 1 s, and doubles it when it fires, up to 30 s |
-| `DaemonLink.permission` | [111](../src/session.ts#L111) | `POST /permission` after the connect |
-| `DaemonLink.call` | [116](../src/session.ts#L116) | forward; one repeat after status 409; failures to tool errors |
-| `DaemonLink.forward` | [129](../src/session.ts#L129) | `/call` stream: progress lines, the result line; a broken stream drops the connection |
-| `DaemonLink.disconnect` | [151](../src/session.ts#L151) | drops the connection only when it is the current one |
-| `DaemonLink.open` | [158](../src/session.ts#L158) | `ensureDaemon`, `/session` with the parent process ID, `/attach` until its first line; each line to the channel; the end of `/attach` to `reconnect` |
-| `failureText` | [183](../src/session.ts#L183) | not running or status 503: `The SimpleX daemon stopped; repeat the call.` |
-| `channelNotification` | [192](../src/session.ts#L192) | attach lines to `notifications/claude/channel` and `notifications/claude/channel/permission` |
+| `DaemonLink.connect`, `start`, `close`, `reconnect` | [78-110](../src/session.ts#L78-L110) | one shared connect promise; `start` logs a failure on stderr and, unless it is a `ProtocolError`, connects again later; `close` ends the attachment and the retries; `reconnect` sets one timer that starts again after the delay, 1 s, and doubles it when it fires, up to 30 s |
+| `DaemonLink.permission` | [112](../src/session.ts#L112) | `POST /permission` after the connect |
+| `DaemonLink.call` | [117](../src/session.ts#L117) | forward; one repeat after status 409; failures to tool errors |
+| `DaemonLink.forward` | [130](../src/session.ts#L130) | `/call` stream: progress lines, the result line; a broken stream drops the connection |
+| `DaemonLink.disconnect` | [152](../src/session.ts#L152) | drops the connection only when it is the current one |
+| `DaemonLink.open` | [159](../src/session.ts#L159) | `ensureDaemon`, `/session` with the parent process ID, `/attach` until its first line; each line to the channel; the end of `/attach` to `reconnect` |
+| `failureText` | [184](../src/session.ts#L184) | not running or status 503: `The SimpleX daemon stopped; repeat the call.` |
+| `channelNotification` | [193](../src/session.ts#L193) | attach lines to `notifications/claude/channel` and `notifications/claude/channel/permission` |
 
 #### [`client.ts`](../src/client.ts)
 
@@ -960,7 +960,7 @@ Memory of the daemon:
 | The requested mode | `Session.requested` ([hub.ts:62](../src/hub.ts#L62)) | `requestMode`, a rejected or expired `mode` card | `askMode` |
 | Members of the Main group, its link, the reset card | `MainGroup` ([main-group.ts:27-31](../src/main-group.ts#L27-L31)) | `refreshMembers`, `openLink`, `askReset` | owner checks, `Session.applyMembers`, `/status`, `/title`, `/link` |
 
-Memory of a session process: one connection promise, one attachment, and the retry delay with its timer ([session.ts:68-75](../src/session.ts#L68-L75)).
+Memory of a session process: one connection promise, one attachment, and the retry delay with its timer ([session.ts:69-76](../src/session.ts#L69-L76)).
 
 Chat database custom data, all in the core `_hub` unless noted:
 
@@ -997,7 +997,7 @@ Files:
 2. `/title` resolves the ID to a session as in [API 4.6](api.md#46-socket-protocol), so that `/clear`, `/resume` and `--continue` keep the session of the running Claude Code process, with an alias only for an ID without `session.json`; a new ID from a process without a known session waits, after the reply, for the server of that process to register, up to 10 s; then `/title` opens the session: from `session.json`, or with a new number and the name from the title or the folder; `Hub.session` finds the group of `session.json` or creates one, adds `User`, invites the Main group's owners, and loads its `Control` ([daemon.ts:248-278](../src/daemon.ts#L248-L278), [:409-424](../src/daemon.ts#L409-L424), [hub.ts:403-421](../src/hub.ts#L403-L421)).
 3. A new title renames the group and `session.json`; the model is written to the group's short description ([daemon.ts:276-277](../src/daemon.ts#L276-L277)).
 4. The hook prints the link message while the Main group has no owner, else `{}`.
-5. The session process connects in the background: `/session` resolves its ID, waiting up to 10 s for the title of its process when the ID is new, registers the options and its parent process, and requests the mode; `/attach` sets the session's line writer ([daemon.ts:233-246](../src/daemon.ts#L233-L246), [:320-340](../src/daemon.ts#L320-L340)). When `/attach` ends or the connection fails, except with a `ProtocolError`, the session process connects again ([session.ts:85-109](../src/session.ts#L85-L109)).
+5. The session process connects in the background: `/session` resolves its ID, waiting up to 10 s for the title of its process when the ID is new, registers the options and its parent process, and requests the mode; `/attach` sets the session's line writer ([daemon.ts:233-246](../src/daemon.ts#L233-L246), [:320-340](../src/daemon.ts#L320-L340)). When `/attach` ends or the connection fails, except with a `ProtocolError`, the session process connects again ([session.ts:86-110](../src/session.ts#L86-L110)).
 
 #### Daemon spawn and version check
 
@@ -1093,9 +1093,9 @@ stateDiagram-v2
 | Direction | Message | Code |
 |---|---|---|
 | daemon to session | `{prompt: {text, from, item, file?}}`, `{permission: {requestId, behavior}}` on `/attach` | [protocol.ts:55-58](../src/protocol.ts#L55-L58) |
-| session to Claude Code | `notifications/claude/channel` `{content, meta: {from, item, file?}}`; `notifications/claude/channel/permission` `{request_id, behavior}` | [session.ts:192-196](../src/session.ts#L192-L196) |
-| Claude Code to session | `notifications/claude/channel/permission_request` `{request_id, tool_name, description, input_preview}` | [session.ts:58-61](../src/session.ts#L58-L61) |
-| session to daemon | `POST /permission` | [session.ts:111-114](../src/session.ts#L111-L114) |
+| session to Claude Code | `notifications/claude/channel` `{content, meta: {from, item, file?}}`; `notifications/claude/channel/permission` `{request_id, behavior}` | [session.ts:193-197](../src/session.ts#L193-L197) |
+| Claude Code to session | `notifications/claude/channel/permission_request` `{request_id, tool_name, description, input_preview}` | [session.ts:58-62](../src/session.ts#L58-L62) |
+| session to daemon | `POST /permission` | [session.ts:112-115](../src/session.ts#L112-L115) |
 | hooks to daemon | `POST /turn` `{id, pid?, at?, prompt?, answer?, model?, effort?}`, `at` the hook's `performance.timeOrigin`, `prompt` and `answer` cut to 250,000 characters | [hook.ts:59-82](../src/hook.ts#L59-L82) |
 
 ```

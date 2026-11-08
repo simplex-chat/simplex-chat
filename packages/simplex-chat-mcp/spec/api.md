@@ -645,7 +645,7 @@ stderr: `CONTEXT: ERROR` from `logError` ([log.ts:41-43](../src/log.ts#L41-L43))
 | `connect` to a chat of another session: `The chat of TARGET belongs to another session; an owner can give it to this session with /give.` | [tools.ts:760-765](../src/tools.ts#L760-L765) |
 | Actions are numbered per session group, from 1, and the action key holds the session number | [hub.ts:81](../src/hub.ts#L81), [tools.ts:1713-1715](../src/tools.ts#L1713-L1715) |
 | Downloads are saved under `ROOT/_sessions/ID/files/` | [hub.ts:96](../src/hub.ts#L96), [messages.ts:225-227](../src/messages.ts#L225-L227) |
-| A run with `CLAUDE_CODE_SESSION_ATTENDED` `0`, which Claude Code sets for the hooks of a run nobody attends, or with `CLAUDE_CODE_ENTRYPOINT` `sdk-cli`, which Claude Code sets for `claude -p`, or `sdk-ts` or `sdk-py`, the Agent SDK, has no session: its session process does not connect to the daemon, every call returns `This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions.`, before an invalid option's text, and its hooks return `{}` without a request | [config.ts:22-28](../src/config.ts#L22-L28), [session.ts:15](../src/session.ts#L15), [:45-51](../src/session.ts#L45-L51), [:65](../src/session.ts#L65), [hook.ts:42](../src/hook.ts#L42), [:60](../src/hook.ts#L60) |
+| A run with `CLAUDE_CODE_SESSION_ATTENDED` `0`, which Claude Code sets for the hooks of a run nobody attends, or with `CLAUDE_CODE_ENTRYPOINT` `sdk-cli`, which Claude Code sets for `claude -p`, or `sdk-ts` or `sdk-py`, the Agent SDK, has no session: its session process does not connect to the daemon, every call returns `This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions.`, before an invalid option's text, and its hooks return `{}` without a request | [config.ts:22-28](../src/config.ts#L22-L28), [session.ts:15](../src/session.ts#L15), [:45-51](../src/session.ts#L45-L51), [:66](../src/session.ts#L66), [hook.ts:42](../src/hook.ts#L42), [:60](../src/hook.ts#L60) |
 
 `reply` ([`replyTool`](../src/tools.ts#L463-L486), [`AgentTools.reply`](../src/tools.ts#L719-L740)):
 
@@ -801,7 +801,7 @@ Refusals of a new action, first match, in place of those of [1.9](#19-action-ref
 | the 20-action limits and the card size texts of [1.9](#19-action-refusals) | per session | [actions.ts:206-211](../src/actions.ts#L206-L211) |
 | `The group of this session has no owner. An owner of the Main group joins it by its invitation there; without owners, run npx -y @simplex-chat/mcp@VERSION link in a terminal.`, VERSION the plugin's version | the session group has no approver | [control.ts:37](../src/control.ts#L37), [:139](../src/control.ts#L139), [owner.ts:7](../src/owner.ts#L7) |
 
-Errors of the session process ([session.ts:40-66](../src/session.ts#L40-L66), [:116-148](../src/session.ts#L116-L148), [:183-190](../src/session.ts#L183-L190)):
+Errors of the session process ([session.ts:40-67](../src/session.ts#L40-L67), [:117-149](../src/session.ts#L117-L149), [:184-191](../src/session.ts#L184-L191)):
 
 | Text | Condition |
 |---|---|
@@ -812,7 +812,7 @@ Errors of the session process ([session.ts:40-66](../src/session.ts#L40-L66), [:
 | `Unknown session; restart the Claude Code session.` | after one repeat, the daemon has no folder for the session |
 | `Cancelled.` | the daemon returned `{result: null}` for a call that was not aborted |
 
-When its `/attach` ends or its start fails, also with a spawn error, the session server starts the daemon when none runs and attaches again: after 1 s, and after each failure twice as late, up to 30 s, until its stdin closes or the daemon speaks another protocol version, the `ProtocolError` ([session.ts:85-109](../src/session.ts#L85-L109), [:172-178](../src/session.ts#L172-L178), [client.ts:17](../src/client.ts#L17), [:45](../src/client.ts#L45)).
+When its `/attach` ends or its start fails, also with a spawn error, the session server starts the daemon when none runs and attaches again: after 1 s, and after each failure twice as late, up to 30 s, until its stdin closes or the daemon speaks another protocol version, the `ProtocolError` ([session.ts:86-110](../src/session.ts#L86-L110), [:173-179](../src/session.ts#L173-L179), [client.ts:17](../src/client.ts#L17), [:45](../src/client.ts#L45)).
 
 ### 4.5 Channel
 
@@ -820,9 +820,9 @@ Capabilities of the session server: `experimental: {"claude/channel": {}, "claud
 
 | Direction | Method | Params | Code |
 |---|---|---|---|
-| to Claude Code | `notifications/claude/channel` | `content`: the prompt's text<br>`meta.from`: the owner's display name<br>`meta.item`: the item ID in the session group, as a string<br>`meta.file`: the path of the prompt's file, when it has one | [session.ts:193](../src/session.ts#L193) |
-| to Claude Code | `notifications/claude/channel/permission` | `request_id`<br>`behavior`: `allow` or `deny` | [session.ts:194](../src/session.ts#L194) |
-| from Claude Code | `notifications/claude/channel/permission_request` | `request_id`, `tool_name`, `description`, `input_preview`, all strings | [session.ts:22-23](../src/session.ts#L22-L23), [:58-61](../src/session.ts#L58-L61) |
+| to Claude Code | `notifications/claude/channel` | `content`: the prompt's text<br>`meta.from`: the owner's display name<br>`meta.item`: the item ID in the session group, as a string<br>`meta.file`: the path of the prompt's file, when it has one | [session.ts:194](../src/session.ts#L194) |
+| to Claude Code | `notifications/claude/channel/permission` | `request_id`<br>`behavior`: `allow` or `deny` | [session.ts:195](../src/session.ts#L195) |
+| from Claude Code | `notifications/claude/channel/permission_request` | `request_id`, `tool_name`, `description`, `input_preview`, all strings | [session.ts:22-23](../src/session.ts#L22-L23), [:58-62](../src/session.ts#L58-L62) |
 
 Channel instructions: `Messages in the simplex channel are prompts of your owners in the SimpleX group of this session: from is the owner's name, item the message ID, and file the path of a file they sent. Your final answer of each turn reaches them in that group; reply sends them a file.` ([session.ts:21](../src/session.ts#L21)).
 
@@ -925,7 +925,7 @@ Environment: `SIMPLEX_MCP_HOME`, ROOT; `CLAUDE_CODE_SESSION_ID` and `CLAUDE_PROJ
 | actions | as in [3.4](#34-terminal-lines), with ` of session N` after `Action N`; `allowed.` for a tool use | [actions.ts:217](../src/actions.ts#L217), [:418](../src/actions.ts#L418) |
 | stop | `Cancelled K action(s).`, `Stopping: sending K cancelled card(s), up to 10 s. Ctrl-C to stop now.`, `Stopped.` | [daemon.ts:220](../src/daemon.ts#L220), [serve.ts:164](../src/serve.ts#L164), [daemon.ts:223](../src/daemon.ts#L223) |
 
-stderr: `CONTEXT: ERROR` from `logError`, with CONTEXT among `Main group command`, `EVENT in the Main group`, `EVENT in the group of session N`, `prompt of session N`, `invitation to session N`, `members of session N`, `User`, `User in session N`, `group of session N`, `session N`, `owner of CHAT`, `mode host of session N`, `title`, `closed sessions`, `ROOT/_sessions/ID/session.json`, `ROOT/titles.json`, `ROOT/daemon.log`, `METHOD PATH` and those of [3.4](#34-terminal-lines). A session process writes `SimpleX daemon: ERROR`, `SimpleX channel: ERROR` and `permission relay: ERROR` to its own stderr, and the turn hook `SimpleX MCP turn: ERROR` ([session.ts:55](../src/session.ts#L55), [:60](../src/session.ts#L60), [:90](../src/session.ts#L90), [hook.ts:75](../src/hook.ts#L75)).
+stderr: `CONTEXT: ERROR` from `logError`, with CONTEXT among `Main group command`, `EVENT in the Main group`, `EVENT in the group of session N`, `prompt of session N`, `invitation to session N`, `members of session N`, `User`, `User in session N`, `group of session N`, `session N`, `owner of CHAT`, `mode host of session N`, `title`, `closed sessions`, `ROOT/_sessions/ID/session.json`, `ROOT/titles.json`, `ROOT/daemon.log`, `METHOD PATH` and those of [3.4](#34-terminal-lines). A session process writes `SimpleX daemon: ERROR`, `SimpleX channel: ERROR` and `permission relay: ERROR` to its own stderr, and the turn hook `SimpleX MCP turn: ERROR` ([session.ts:55](../src/session.ts#L55), [:61](../src/session.ts#L61), [:91](../src/session.ts#L91), [hook.ts:75](../src/hook.ts#L75)).
 
 ### 4.8 Plugin options, files and hook output
 

@@ -839,11 +839,11 @@ sequenceDiagram
 
 Notes:
 
-- An invalid option, or before it the text of a run that is not interactive, is kept as the result of every call, and the session process does not connect ([session.ts:44-51](../src/session.ts#L44-L51), [:65](../src/session.ts#L65)); see [flow 30](#30-the-group-of-a-session-closed-for-7-days-and-a-run-that-is-not-interactive).
-- `/session` for a session without a folder creates it; `/attach`, `/call`, `/permission` and `/turn` answer 409 for it, and `call` registers again once ([daemon.ts:409-424](../src/daemon.ts#L409-L424), [session.ts:116-127](../src/session.ts#L116-L127)).
-- The end of the `/attach` stream, or a failed connection, also a failed spawn, drops the connection and connects again, so the channel works again without a call; one timer serves each attempt, so the delay doubles once per failed attempt; another protocol version, the `ProtocolError`, ends the retries ([session.ts:85-109](../src/session.ts#L85-L109), [:172-178](../src/session.ts#L172-L178), [client.ts:45](../src/client.ts#L45)).
+- An invalid option, or before it the text of a run that is not interactive, is kept as the result of every call, and the session process does not connect, also at a permission request of Claude Code ([session.ts:44-51](../src/session.ts#L44-L51), [:59](../src/session.ts#L59), [:66](../src/session.ts#L66)); see [flow 30](#30-the-group-of-a-session-closed-for-7-days-and-a-run-that-is-not-interactive).
+- `/session` for a session without a folder creates it; `/attach`, `/call`, `/permission` and `/turn` answer 409 for it, and `call` registers again once ([daemon.ts:409-424](../src/daemon.ts#L409-L424), [session.ts:117-128](../src/session.ts#L117-L128)).
+- The end of the `/attach` stream, or a failed connection, also a failed spawn, drops the connection and connects again, so the channel works again without a call; one timer serves each attempt, so the delay doubles once per failed attempt; another protocol version, the `ProtocolError`, ends the retries ([session.ts:86-110](../src/session.ts#L86-L110), [:173-179](../src/session.ts#L173-L179), [client.ts:45](../src/client.ts#L45)).
 
-Source: [session.ts:40-66](../src/session.ts#L40-L66), [:158-180](../src/session.ts#L158-L180), [daemon.ts:233-340](../src/daemon.ts#L233-L340).
+Source: [session.ts:40-67](../src/session.ts#L40-L67), [:159-181](../src/session.ts#L159-L181), [daemon.ts:233-340](../src/daemon.ts#L233-L340).
 
 ---
 
@@ -926,7 +926,7 @@ Notes:
 - After a daemon start, a prompt that arrives before its session attaches again waits up to 30 s from the hub's open, so a prompt sent while the daemon was stopped reaches the session ([hub.ts:254-256](../src/hub.ts#L254-L256), [:373](../src/hub.ts#L373)).
 - A session started without the channel flag gets the notification and drops it.
 
-Source: [hub.ts:156-162](../src/hub.ts#L156-L162), [:254-278](../src/hub.ts#L254-L278), [daemon.ts:330](../src/daemon.ts#L330), [session.ts:53-56](../src/session.ts#L53-L56), [:192-196](../src/session.ts#L192-L196).
+Source: [hub.ts:156-162](../src/hub.ts#L156-L162), [:254-278](../src/hub.ts#L254-L278), [daemon.ts:330](../src/daemon.ts#L330), [session.ts:53-56](../src/session.ts#L53-L56), [:193-197](../src/session.ts#L193-L197).
 
 ---
 
@@ -1015,7 +1015,7 @@ Notes:
 - The input preview is cut to fit the card ([control.ts:136](../src/control.ts#L136), [:736-750](../src/control.ts#L736-L750)).
 - The card is posted in mode `requests` also for a session in mode `host` ([hub.ts:172](../src/hub.ts#L172)).
 
-Source: [session.ts:58-61](../src/session.ts#L58-L61), [:111-114](../src/session.ts#L111-L114), [daemon.ts:174-178](../src/daemon.ts#L174-L178), [hub.ts:171-179](../src/hub.ts#L171-L179), [control.ts:656-659](../src/control.ts#L656-L659).
+Source: [session.ts:58-62](../src/session.ts#L58-L62), [:112-115](../src/session.ts#L112-L115), [daemon.ts:174-178](../src/daemon.ts#L174-L178), [hub.ts:171-179](../src/hub.ts#L171-L179), [control.ts:656-659](../src/control.ts#L656-L659).
 
 ---
 
@@ -1311,4 +1311,4 @@ Notes:
 - Claude Code also sets `CLAUDE_CODE_SESSION_ATTENDED`, `1` or `0`, for its hooks, `0` for a run nobody attends, such as that `claude -p` run. Its MCP servers get the variable only from the environment of the command that started Claude Code, the value of another session; a `1` there leaves the decision to the entrypoint. Claude Code 2.1.319, checked with a `claude -p` run from the Bash tool of a session: the hooks got `0`, the MCP server the parent's `1`.
 - The session process of such a run sees `claude-vscode` and its parent's `1`, so it registers: its hooks send no title, and its `/session` creates a session and a group after 10 s.
 
-Source: [daemon.ts:23](../src/daemon.ts#L23), [:92-95](../src/daemon.ts#L92-L95), [:113](../src/daemon.ts#L113), [:120](../src/daemon.ts#L120), [:139-160](../src/daemon.ts#L139-L160), [:434](../src/daemon.ts#L434), [hub.ts:248-252](../src/hub.ts#L248-L252), [config.ts:22-28](../src/config.ts#L22-L28), [hook.ts:42](../src/hook.ts#L42), [:60](../src/hook.ts#L60), [session.ts:45](../src/session.ts#L45), [:65](../src/session.ts#L65).
+Source: [daemon.ts:23](../src/daemon.ts#L23), [:92-95](../src/daemon.ts#L92-L95), [:113](../src/daemon.ts#L113), [:120](../src/daemon.ts#L120), [:139-160](../src/daemon.ts#L139-L160), [:434](../src/daemon.ts#L434), [hub.ts:248-252](../src/hub.ts#L248-L252), [config.ts:22-28](../src/config.ts#L22-L28), [hook.ts:42](../src/hook.ts#L42), [:60](../src/hook.ts#L60), [session.ts:45](../src/session.ts#L45), [:66](../src/session.ts#L66).

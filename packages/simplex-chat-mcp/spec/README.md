@@ -211,7 +211,7 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L99) | `createDataFolder`, `acquireLock` | [99](../src/files.ts#L99), [104](../src/files.ts#L104) |
 | Session server | [`src/session.ts`](../src/session.ts#L40) | `startSession` | [40](../src/session.ts#L40) |
-| Session to daemon link | [`src/session.ts`](../src/session.ts#L68) | `DaemonLink` | [68](../src/session.ts#L68) |
+| Session to daemon link | [`src/session.ts`](../src/session.ts#L69) | `DaemonLink` | [69](../src/session.ts#L69) |
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L35) | `DaemonClient.ensureDaemon` | [35](../src/client.ts#L35) |
 | Daemon process | [`src/daemon.ts`](../src/daemon.ts#L453) | `runDaemon` | [453](../src/daemon.ts#L453) |
 | Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L168) | `Daemon.routes` | [168](../src/daemon.ts#L168) |
