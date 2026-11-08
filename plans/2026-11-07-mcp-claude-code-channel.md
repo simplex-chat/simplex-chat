@@ -77,7 +77,7 @@ Decided on 2026-11-08:
 35. A UserPromptSubmit prompt is not posted by `User` when a channel tag of this server in it holds a pushed prompt with its item ID, when it equals a prompt pushed in the last 60 s, or when it is a one-line `/` command.
 
 Decided on 2026-11-08, review round 1:
-36. The hooks and the session server of one Claude Code process share one session: the hooks send `CLAUDE_PID`, the session server its parent PID. The daemon maps a session ID without `session.json` to the session of that process and records the alias in `session.json`. A hook of an ID with `session.json` goes to the session attached from its process, without an alias.
+36. The hooks and the session server of one Claude Code process share one session: the hooks send `CLAUDE_PID`, the session server its parent PID. The daemon maps a session ID without `session.json` to the session of that process and records the alias in `session.json`. A hook of an ID with `session.json` goes to the session attached from its process, without an alias. A title of a new ID from a process without a known session waits for the session server of that process to register, up to 10 s; the turn hooks repeat a refused turn up to 15 times, 1 s apart.
 37. When `/attach` ends or a start fails, the session server starts the daemon if needed and attaches again: after 1 s, twice as late after each failure, at most 30 s apart, until its stdin closes or the daemon speaks another protocol.
 38. A pending connection of `connect` is recorded in the session group's data for one day; its chat becomes the session's when it connects within that day. A `connect` to a known chat without an owner gives it to the session.
 39. Owners' prompts are kept until a turn's prompt matches them, at most 20. Each prompt hook records its start time with the oldest prompt it matched, or none. An answer, also an empty one, quotes the newest record whose hook started before its own; without one, it quotes the oldest kept prompt not quoted yet, and that prompt stays kept for its prompt hook.
@@ -313,9 +313,15 @@ on /title or /turn (id, pid), /session (id, pid):
   target = entry with that pid, attached or seen in the last 10 s
         ?? title of pid in the last 10 s
   target ?? id; target ≠ id: alias id → target, in aliases of the target's session.json
+on /title (id, pid), no alias, no session.json for id, no entry or title for pid:
+                                             title of pid = id, now, its name; the waits of pid end; the reply at once;
+                                             the title resolves as above after a /session of pid, or after 10 s
 on /title (id, pid):                         after the entry exists: title of pid = id, now; the waits of pid end
+on /session (id, pid) that creates a session: the name of the held title of id
+on a new session.json:                       the aliases that already point to its ID
 on /attach, /call, /permission (id):        alias of id ?? id
 on the daemon's start:                       aliases read from every session.json
+on POST /turn refused with 409:              the hook repeats it up to 15 times, 1 s apart, past the 10 s wait
 ```
 
 ```mermaid
@@ -338,6 +344,10 @@ sequenceDiagram
   HK->>D: POST /turn {id: R2}: session A
   Note over HK,D: later, claude --resume R2 in process Q
   S->>D: POST /session {id: R2, pid: Q}: session R2, its own group
+  Note over HK,D: --fork-session with the title first, or /clear during a re-attach: new ID F, stored session A
+  HK->>D: POST /title {id: F, pid: P}: held, the reply at once
+  S->>D: POST /session {id: A, pid: P}: session A
+  D->>D: the held title resolves: entry A has pid P: alias F → A
 ```
 
 ## Channel
@@ -413,7 +423,7 @@ Stop               last_assistant_message            POST /turn {id, pid, at, an
 PostModelSwitch    to_model                          POST /turn {id, pid, at, model}
 ```
 
-`pid` is `CLAUDE_PID`; `at` is `performance.timeOrigin`, the start time of the hook process. The hook cuts a prompt or an answer over 250,000 characters there, ending with `…` (decision 51), starts the daemon when none runs, and repeats a turn refused with 409 up to 10 times, 1 s apart.
+`pid` is `CLAUDE_PID`; `at` is `performance.timeOrigin`, the start time of the hook process. The hook cuts a prompt or an answer over 250,000 characters there, ending with `…` (decision 51), starts the daemon when none runs, and repeats a turn refused with 409 up to 15 times, 1 s apart (decision 36).
 
 ```
 Turn record
