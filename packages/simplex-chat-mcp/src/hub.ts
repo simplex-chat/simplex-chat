@@ -230,12 +230,6 @@ export class Session {
       : `${name} joined as a guest, not from the Main group: their messages are not prompts, and Claude's files reach this group only after a member from the Main group approves them.`])
   }
 
-  async removeOwners(): Promise<void> {
-    const members = this.data.invited.map(({groupMemberId}) => groupMemberId)
-    if (members.length > 0) await this.hub.chat.apiRemoveMembers(this.control.groupId, members).catch(error => logError(`members of session ${this.number}`, error))
-    await this.saveData({...this.data, invited: []})
-  }
-
   private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
     if (await this.isUser(member)) return
     const item = ci.chatItem.meta.itemId
@@ -450,10 +444,6 @@ export class Hub implements SessionGroups {
     for (const session of this.sessions.values()) {
       if (session.open) await session.invite(member, T.GroupMemberRole.Owner).catch(error => logError(`invitation to session ${session.number}`, error))
     }
-  }
-
-  async removeOwners(): Promise<void> {
-    for (const session of this.sessions.values()) await session.removeOwners()
   }
 
   expireDue(): void {

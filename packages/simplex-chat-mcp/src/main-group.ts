@@ -22,7 +22,6 @@ export interface SessionGroups {
   sessionsText(): string
   join(member: T.GroupMember, session: number): Promise<string>
   inviteOwner(member: T.GroupMember): Promise<void>
-  removeOwners(): Promise<void>
 }
 
 export class MainGroup {
@@ -115,7 +114,6 @@ export class MainGroup {
       this.group = await createMainGroup(this.chat, this.userId, this.name)
       this.lost = false
       await this.load()
-      await this.sessions.removeOwners()
       await this.openLink()
       return this.linkText!
     })
