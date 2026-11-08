@@ -874,7 +874,7 @@ Data flow of a prompt from the session group:
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `mainCommands`, texts | [8-19](../src/main-group.ts#L8-L19) | command menu; greeting, help reply, reset card, log line; the statement of trust, the welcome message and the short description |
+| `mainCommands`, texts | [8-19](../src/main-group.ts#L8-L19) | command menu; greeting, reply to an unknown command, reset card, log line; the welcome message, the text of the join post and the short description |
 | `SessionGroups` | [21](../src/main-group.ts#L21) | what the Main group asks of the hub |
 | `MainGroup.owners`, `isOwner` | [55-61](../src/main-group.ts#L55-L61) | human members with role `owner` while the group is not lost |
 | `MainGroup.load`, `start` | [63-82](../src/main-group.ts#L63-L82) | lost check, name, short description, welcome message and menu from the group's current profile, members; without owners, the existing link, or a new one |
