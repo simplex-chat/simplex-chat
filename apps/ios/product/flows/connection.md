@@ -162,7 +162,8 @@ Delete (`deleteContactDialog`):
 2. Dialog 1 by the Contact deletion setting (`privacyContactDeletionDefault`): Notify shows "Delete contact?" with Delete; Ask shows "Delete contact?" with "Delete and notify" and "Delete silently". The message: the name, "Contact will be deleted - this cannot be undone!", "You won't be able to reconnect unless <name> sends you a new link."
 3. Dialog 2 (`KeepConversationDialog`): "Keep conversation", Delete, Cancel; the footer "<name> will be notified." or "<name> won't be notified.", and "<name> can connect to you again via your address." when the user has an address.
 4. "Keep conversation" off: `apiDeleteChat` with `.full(notify:)`; on: `.entity(notify:)`, and an archived contact stays in Archived contacts.
-5. Other contacts: "Confirm contact deletion?" with Confirm, as before.
+5. After `.entity`, "Contact deleted!" with "Don't show again" (`showDeleteContactNoticeDefault`): "You can still view conversation with <name> in the list of chats." or, for an archived contact, "You can still view conversation with <name> in Archived contacts."
+6. Other contacts: "Confirm contact deletion?" with Confirm, as before.
 
 Archive (`archiveContact`):
 1. `apiDeleteChat` with `.archive`: the contact moves to Archived contacts and keeps the conversation.

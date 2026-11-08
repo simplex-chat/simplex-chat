@@ -572,7 +572,7 @@ ready and active    deleteActiveContactDialog: privacyContactDeletionDefault
 otherwise           deleteNotReadyContact: Confirm contact deletion?
 ```
 
-`deleteContactMessage` is the message of both dialog 1 forms. `deleteContactMaybeErrorAlert` deletes with `deleteContactChat` and an optional `LinkNotice`, then shows "Contact deleted!" after `.entity`.
+`deleteContactMessage` is the message of both dialog 1 forms. `deleteContactMaybeErrorAlert` deletes with `deleteContactChat` and an optional `LinkNotice`, then shows `deleteContactNotice` after `.entity`: "Contact deleted!", with "in Archived contacts" for an archived contact (`chatDeleted`) and "in the list of chats" otherwise.
 
 Archive (`archiveContact`): `deleteContactChat` with `.archive` (`/_delete @<id> archive`), then `deleteConversationNotice` through `AlertManager`: "Contact archived!", with the text for an active contact or for a deleted one. `deleteContactChat` replaces the chat in `ChatModel` with the returned contact and the same items for `.entity` and `.archive`.
 

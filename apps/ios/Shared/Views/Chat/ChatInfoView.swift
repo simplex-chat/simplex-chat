@@ -1377,7 +1377,9 @@ private func deleteConversationNotice(_ contact: Contact) -> Alert {
 private func deleteContactNotice(_ contact: Contact) -> Alert {
     return Alert(
         title: Text("Contact deleted!"),
-        message: Text("You can still view conversation with \(contact.displayName) in the list of chats."),
+        message: contact.chatDeleted
+            ? Text("You can still view conversation with \(contact.displayName) in Archived contacts.")
+            : Text("You can still view conversation with \(contact.displayName) in the list of chats."),
         primaryButton: .default(Text("Don't show again")) {
             showDeleteContactNoticeDefault.set(false)
         },
@@ -1634,6 +1636,16 @@ struct ContactArchivedAlert_Previews: PreviewProvider {
     static var previews: some View {
         Color.clear.alert(isPresented: .constant(true)) {
             deleteConversationNotice(Contact.sampleData)
+        }
+    }
+}
+
+struct ArchivedContactDeletedAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        var contact = Contact.sampleData
+        contact.chatDeleted = true
+        return Color.clear.alert(isPresented: .constant(true)) {
+            deleteContactNotice(contact)
         }
     }
 }

@@ -212,6 +212,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(AddGroupMembersView_Previews.self),
         SnapshotScene(AddGroupView_Previews.self, device: true),
         SnapshotScene(AdvancedNetworkSettings_Previews.self, device: true),
+        SnapshotScene(ArchivedContactDeletedAlert_Previews.self, alert: true),
         SnapshotScene(BadgesCheckOrderView_Previews.self),
         SnapshotScene(BadgesHowItWorksView_Previews.self),
         SnapshotScene(BadgesHowLongView_Previews.self),
