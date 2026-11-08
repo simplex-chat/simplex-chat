@@ -171,6 +171,9 @@ Recommended on the UX page (https://claude.ai/artifact/YCN4kj2ZRujUnUhNSxwMea), 
 97. K10, K11: the rights texts name `/` commands in place of `//` and `/!`; the post for an owner has no `/observer` command.
 98. A session group's description, set at its creation: `The Claude Code session N. Members send it prompts; admins and owners also send / commands and approve tool use.`
 
+Approved by the user on the PR page on 2026-11-08 (B1, B2):
+99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
+
 The user's rule on reviews, 2026-11-08: "reviewers should have no discretion to drive product changes - the UX was approved, and it must not be changing simply because security reviewers said so."
 
 Pack of the package (decision 44):
@@ -372,7 +375,7 @@ approver of group N:            an active member other than Claude and User, rol
 prompter of group N:            a member other than User whose role sends; the prompt rules in Session mirroring
 Main group, at its creation and load: shortDescr = SHORT, description = WELCOME, updated when they differ
 on joinedGroupMember or connectedToGroupMember in the Main group:
-                                the joiner among the members read again, a human: post "NAME joined. " + TRUST
+                                the joiner among the members read again, a human: post "NAME joined. " + JOINED
 a join raises one of the two:   joinedGroupMember for a member who joined through the hub,
                                 connectedToGroupMember for a member another member added
 on "/join N" by member m:       invitation through the Main group, role owner when m is an owner there, else admin (decision 85)
@@ -420,11 +423,11 @@ stateDiagram-v2
 
 Each join and each transition between roles posts RIGHTS of the new role.
 
-Texts for the user's approval:
+Texts of the Main group:
 ```
-TRUST     Everyone in this group is trusted with all Claude Code sessions here: they can join each session's group by /join N,
-          prompt Claude and approve its actions. Invite only people you trust with them.
-WELCOME   Supervise your Claude Code sessions: each one has its own group, and you get its invitation here. TRUST
+WELCOME   Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.
+          Invite only people you trust with that. (decision 99)
+JOINED    They can join the group of any Claude Code session here, prompt Claude and approve its actions. (decision 99)
 SHORT     Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.
 ```
 
