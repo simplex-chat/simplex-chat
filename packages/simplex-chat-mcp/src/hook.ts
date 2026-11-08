@@ -12,6 +12,7 @@ const daemonStopped = "The SimpleX daemon stopped; it starts again with the next
 const unknownSession = 409
 const turnAttempts = 10
 const turnRetryMs = 1_000
+const maxText = 250_000
 
 interface SessionStartInput {
   session_id: string
@@ -57,7 +58,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
 export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = DaemonClient.forRoot(dataRoot(env)), retryMs = turnRetryMs, at = performance.timeOrigin): Promise<HookOutput> {
   try {
     const input = JSON.parse(stdin) as TurnInput
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: input.prompt, answer: input.last_assistant_message, model: input.to_model, effort: input.effort?.level}
+    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: cut(input.last_assistant_message), model: input.to_model, effort: input.effort?.level}
     await client.ensureDaemon(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -72,6 +73,10 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
     logError("SimpleX MCP turn", error)
   }
   return {}
+}
+
+function cut(text: string | undefined): string | undefined {
+  return text === undefined || text.length <= maxText ? text : `${text.slice(0, maxText).replace(/[\ud800-\udbff]$/, "")}…`
 }
 
 function claudePid(env: NodeJS.ProcessEnv): number | undefined {

@@ -110,6 +110,15 @@ describe("turn hooks", () => {
     expect(errors).toEqual(["SimpleX MCP turn: connect ENOENT"])
   })
 
+  it("cut a prompt or an answer over 250,000 characters, so that the request fits the socket's 1 MiB", async () => {
+    const {client, requests} = turnClient()
+    await turn(JSON.stringify({session_id: id, last_assistant_message: `${"a".repeat(249_999)}😀${"b".repeat(1_000_000)}`}), {}, client)
+    await turn(JSON.stringify({session_id: id, prompt: "x".repeat(250_000)}), {}, client)
+    const [cutAnswer, whole] = requests.map(request => (request as {body: {answer?: string; prompt?: string}}).body)
+    expect(cutAnswer.answer).toBe(`${"a".repeat(249_999)}…`)
+    expect(whole.prompt).toBe("x".repeat(250_000))
+  })
+
   it("start the daemon and repeat a turn of a session the daemon does not know yet, 10 times at most", async () => {
     const errors = captureStderr()
     const late = turnClient(2)
