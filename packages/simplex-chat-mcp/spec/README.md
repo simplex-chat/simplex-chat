@@ -27,7 +27,7 @@ The server keeps actions and downloads in memory, and they are lost when the pro
 
 The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server, which forwards tool calls over a local socket to one daemon per data root, `simplex-mcp daemon`. The socket carries HTTP/1.1 with a bearer token. The daemon runs two cores: `Claude`, the profile peers see, which holds the Main group, one group per session and the chats with peers; and `User`, a member of every session group, which posts the prompts typed in the terminal.
 
-Each session has the six tools and `reply`, its own `Actions` and `Control` in its group, and its own chats: a chat belongs to the session that connected it, and owners move it with `/give`. Every member of the Main group is trusted with all sessions: owners are invited to each session group through the Main group, and every member joins one through it by `/join N`; every member of a session group but `User` and observers prompts and approves there, whatever way they joined, and members with the role admin or owner make others observers by `/observer #G ID`. Claude's files of `reply` reach a session group after an owner of the Main group approves them, unless the option `approve_files` is off. The session server is also a Claude Code channel: a message of a member other than `User` in the session group reaches the running session as a prompt, `//` and `/!` sending `/` and owners' `!` commands, and Claude Code's permission prompts are posted there as cards. The plugin's hooks post the terminal prompts and the final answer of each turn in the group, and keep the model and effort level in its short description.
+Each session has the six tools and `reply`, its own `Actions` and `Control` in its group, and its own chats: a chat belongs to the session that connected it, and owners move it with `/give`. Every member of the Main group is trusted with all sessions: owners are invited to each session group through the Main group as owners, and every member joins one through it by `/join N` as an admin. Rights in a session group follow the member's role there, whatever way they joined: admins and owners prompt, approve and send `//` and `/!` commands; moderators, members and authors prompt; Claude posts the member's rights at each join and role change, and members with the role admin or owner make others observers by `/observer #G ID`. Claude's files of `reply` reach a session group at once, under the group's preference for files and media, which the core enforces. The session server is also a Claude Code channel: a message of a member other than `User` in the session group reaches the running session as a prompt, `//` and `/!` of admins and owners sending `/` and `!` commands, and Claude Code's permission prompts are posted there as cards. The plugin's hooks post the terminal prompts and the final answer of each turn in the group, and keep the model and effort level in its short description.
 
 ---
 
@@ -202,11 +202,11 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Server start | [`src/serve.ts`](../src/serve.ts#L64) | `startServer` | [64](../src/serve.ts#L64) |
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L87) | `startAgent` | [87](../src/serve.ts#L87) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L502) | `registerTools` | [502](../src/tools.ts#L502) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L594) | `AgentTools.downloadFile` | [594](../src/tools.ts#L594) |
-| Action store | [`src/actions.ts`](../src/actions.ts#L154) | `Actions` | [154](../src/actions.ts#L154) |
-| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L93) | `Control` | [93](../src/control.ts#L93) |
-| Card text | [`src/control.ts`](../src/control.ts#L670) | `cardText` | [670](../src/control.ts#L670) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L498) | `registerTools` | [498](../src/tools.ts#L498) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L587) | `AgentTools.downloadFile` | [587](../src/tools.ts#L587) |
+| Action store | [`src/actions.ts`](../src/actions.ts#L145) | `Actions` | [145](../src/actions.ts#L145) |
+| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L91) | `Control` | [91](../src/control.ts#L91) |
+| Card text | [`src/control.ts`](../src/control.ts#L634) | `cardText` | [634](../src/control.ts#L634) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L98) | `createDataFolder`, `acquireLock` | [98](../src/files.ts#L98), [103](../src/files.ts#L103) |
@@ -215,8 +215,8 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L35) | `DaemonClient.ensureDaemon` | [35](../src/client.ts#L35) |
 | Daemon process | [`src/daemon.ts`](../src/daemon.ts#L433) | `runDaemon` | [433](../src/daemon.ts#L433) |
 | Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L138) | `Daemon.routes` | [138](../src/daemon.ts#L138) |
-| Hub | [`src/hub.ts`](../src/hub.ts#L363) | `Hub.open` | [363](../src/hub.ts#L363) |
-| Session and its group | [`src/hub.ts`](../src/hub.ts#L50) | `Session` | [50](../src/hub.ts#L50) |
+| Hub | [`src/hub.ts`](../src/hub.ts#L348) | `Hub.open` | [348](../src/hub.ts#L348) |
+| Session and its group | [`src/hub.ts`](../src/hub.ts#L44) | `Session` | [44](../src/hub.ts#L44) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L27) | `MainGroup` | [27](../src/main-group.ts#L27) |
 | Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
 | Hooks | [`src/hook.ts`](../src/hook.ts#L41) | `sessionStart`, `turn` | [41](../src/hook.ts#L41), [74](../src/hook.ts#L74) |
