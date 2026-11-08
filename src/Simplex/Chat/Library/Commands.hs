@@ -2210,7 +2210,8 @@ processChatCommand cxt nm = \case
     pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan
   APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
   APIPrepareContact userId accLink verifiedDomain contactSLinkData -> withUserId userId $ \user -> do
-    let ContactShortLinkData {profile, message, business, chatLayout} = contactSLinkData
+    let ContactShortLinkData {profile, message = message_, business, chatLayout} = contactSLinkData
+        message = dropLinkOwnerSig <$> message_
     welcomeSharedMsgId <- forM message $ \_ -> getSharedMsgId
     case accLink of
       ACCL SCMContact ccLink
@@ -2226,7 +2227,7 @@ processChatCommand cxt nm = \case
                 createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing Nothing
                 cInfo = GroupChat gInfo Nothing
             void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
-            aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent . dropLinkOwnerSig) message
+            aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
             let chat = case aci of
                   Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
                   _ -> Chat cInfo [] emptyChatStats
@@ -2240,7 +2241,7 @@ processChatCommand cxt nm = \case
             cInfo = DirectChat ct
         void $ createItem Nothing $ CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ connRequestPQEncryption cReq
         void $ createFeatureEnabledItems_ user ct
-        aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent . dropLinkOwnerSig) message
+        aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
         let chat = case aci of
               Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
               _ -> Chat cInfo [] emptyChatStats
