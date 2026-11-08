@@ -499,9 +499,9 @@ The link reaches only you: Claude's context and tool results never contain it. S
 To replace the owners, run `/simplex:reset-owners` in Claude Code, or `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal:
 
 - While owners exist, Claude posts in the Main group `A terminal asks to replace the owners: this group is deleted, and a new Main group with a new link replaces it.`, with `/approve reset or /reject reset`. After an owner approves it, the Main group is deleted for all its members, a new one replaces it, and the owners are removed from the sessions' groups. `npx -y @simplex-chat/mcp@VERSION link` in a terminal then prints the new link.
+- Without owners, the command in a terminal replaces the Main group at once and prints the new link; in Claude Code it asks you to run it in a terminal.
 
 VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`; the plugin's messages print these commands with it. A newer version from npm would replace the plugin's daemon.
-- Without owners, the command in a terminal replaces the Main group at once and prints the new link; in Claude Code it asks you to run it in a terminal.
 
 ### Sessions and their groups
 
@@ -523,7 +523,7 @@ With the channel, a message of an owner in a session's group is a prompt of the 
 - The session gets the prompts in the order they were sent: a later prompt waits for the file of an earlier one.
 - One-line messages with a command of the group, such as `/approve 5` or `/list`, are commands, not prompts; other messages are prompts, also one-line messages that start with `/`. Messages of members who are not owners of the Main group are not prompts.
 - When the session's Claude Code is not running, also when it ends while the file of a prompt arrives, Claude replies `Session N is not running.` while the daemon runs. In the first 30 seconds after a daemon start, a prompt waits for its session to attach again, so a prompt sent while the daemon was stopped reaches the session.
-- Claude posts its final answer of each turn in the group, as a reply to the prompt of that turn when the prompt came from the group, also when the next prompt arrives while Claude answers. `User` posts the prompts typed in the terminal, except commands such as `/simplex:link`. A text over 12000 bytes is posted as several messages.
+- Claude posts its final answer of each turn in the group, as a reply to the prompt of that turn when the prompt came from the group, also when the next prompt arrives while Claude answers. When the prompt was deleted, the answer and Claude's replies are posted without the quote. `User` posts the prompts typed in the terminal, except commands such as `/simplex:link` and empty prompts, such as one with images only. A text over 12000 bytes is posted as several messages; a prompt or an answer over 250,000 characters is posted up to there, ending with `…`.
 - The `reply` tool sends a file to the group, with its text as the caption, under the file rules of `send`.
 
 ### Tool use
@@ -580,7 +580,8 @@ The folders are readable only by the user, and so are the files the daemon write
 | Node.js is older than 22 | The session start shows `SimpleX MCP needs Node.js 22 or later; found <version>.` |
 | The daemon stopped during a call | The call returns `The SimpleX daemon stopped; repeat the call.`, and the next call starts the daemon again. The actions of the stopped daemon are lost; a repeated call creates a new action. |
 | The daemon stopped between calls, or its start failed | The session starts it again and attaches to it after 1 second, and while that fails, at intervals that double up to 30 seconds. |
-| The `lock` file of the data folder names a running process that is not the daemon | The session start shows `SimpleX MCP: Another daemon uses FOLDER (PID N). If no daemon runs, remove FOLDER/lock.` |
+| A session starts while the daemon stops | The new daemon waits up to 15 seconds for the stopping one to release its lock, and then starts. |
+| The `lock` file of the data folder names a running process that is not the daemon | After 15 seconds, the session start shows `SimpleX MCP: Another daemon uses FOLDER (PID N). If no daemon runs, remove FOLDER/lock.` |
 | A newer plugin version starts | It stops the older daemon and starts its own. When the two versions can't talk to each other, tool calls return `Restart Claude Code to update the SimpleX plugin.` |
 | A session's group has no owner | Its actions are refused with `The group of this session has no owner. An owner of the Main group joins it by its invitation there; without owners, run npx -y @simplex-chat/mcp@VERSION link in a terminal.` |
 | A session's group was deleted, or Claude lost its owner role there | The session's actions fail with `The group of this session is lost. Start a new Claude Code session.` |

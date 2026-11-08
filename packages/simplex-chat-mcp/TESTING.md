@@ -146,15 +146,16 @@ The plugin's server, hooks and commands run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli
 
 In a session started as in step 2 above:
 
-1. The session start shows `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "SimpleX MCP":`, a QR code and the link. Ask Claude which link the session start showed: Claude doesn't know it. If the development flag refuses `plugin:simplex@inline`, checks 3 and 5 wait for the published plugin and `plugin:simplex@simplex-chat`.
+1. The session start shows `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "SimpleX MCP":`, a QR code and the link. Ask Claude which link the session start showed: Claude doesn't know it. If the development flag refuses `plugin:simplex@inline`, checks 3, 5 and 6 wait for the published plugin and `plugin:simplex@simplex-chat`.
 2. Scan the QR code in the SimpleX app and tap Join. In "SimpleX MCP", tap the invitation to "1 · <folder>" and join it.
 3. Send `Reply with the word ready.` in "1 · <folder>". The answer comes from Claude, as a reply to your message.
 4. Type a prompt in the terminal. It appears in the group from `User`, and the answer from Claude. Record whether a prompt from the group also appears from `User`: the UserPromptSubmit hook of a channel prompt is not documented.
-5. Send `Run ls with Bash.` in the group. The terminal shows the permission dialog, and the group gets the card ``I want to use `Bash`: ...`` with `/approve N or /reject N`. Tap `/approve N`: `ls` runs. Ask again and tap `/reject N`: Claude reports the refusal. Answer a third request in the terminal: its card ends with `Ended.` when the turn ends.
-6. The short description of the group shows `MODEL · effort LEVEL` after the first answer. `/model` in the terminal changes it; a change of the effort level shows after the next answer.
-7. Run `/clear`, then send `Reply with the word cleared.` in the group: the answer comes in the same group, and no group "2 · <folder>" appears.
-8. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`. Without a tool call, send `Reply with the word back.` in the group after 30 seconds: the answer comes in the group.
-9. Exit Claude Code, and send a message in the group within 10 minutes, while the daemon runs: Claude replies `Session 1 is not running.`
-10. Start Claude Code again as in step 2, with `--continue`: the session start opens no new group, and a prompt from "1 · <folder>" reaches the session.
-11. In a second terminal, start Claude Code as in step 2 in another folder, and exit it: the group "2 · <other folder>" appears. In the first session, `/resume` that session, and send `Reply with the word resumed.` in "1 · <folder>": the answer comes there. Exit, and start Claude Code with `--resume` of that session: a prompt from "2 · <other folder>" reaches it.
-12. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.
+5. Send `Count from 1 to 300, one number per line.` in the group and, at once, `Reply with the word two.`: the second prompt waits in Claude Code's queue. The answer with the numbers quotes the first message and `two` quotes the second; neither prompt appears from `User`. The answers quote their prompts by the start times of the Stop and UserPromptSubmit hooks, which this check confirms.
+6. Send `Run ls with Bash.` in the group. The terminal shows the permission dialog, and the group gets the card ``I want to use `Bash`: ...`` with `/approve N or /reject N`. Tap `/approve N`: `ls` runs. Ask again and tap `/reject N`: Claude reports the refusal. Answer a third request in the terminal: its card ends with `Ended.` when the turn ends.
+7. The short description of the group shows `MODEL · effort LEVEL` after the first answer. `/model` in the terminal changes it; a change of the effort level shows after the next answer.
+8. Run `/clear`, then send `Reply with the word cleared.` in the group: the answer comes in the same group, and no group "2 · <folder>" appears.
+9. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`. Without a tool call, send `Reply with the word back.` in the group after 30 seconds: the answer comes in the group.
+10. Exit Claude Code, and send a message in the group within 10 minutes, while the daemon runs: Claude replies `Session 1 is not running.`
+11. Start Claude Code again as in step 2, with `--continue`: the session start opens no new group, and a prompt from "1 · <folder>" reaches the session.
+12. In a second terminal, start Claude Code as in step 2 in another folder, and exit it: the group "2 · <other folder>" appears. In the first session, `/resume` that session, and send `Reply with the word resumed.` in "1 · <folder>": the answer comes there. Exit, and start Claude Code with `--resume` of that session: a prompt from "2 · <other folder>" reaches it.
+13. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.
