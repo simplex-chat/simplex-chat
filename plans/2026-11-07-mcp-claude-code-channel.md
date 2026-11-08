@@ -167,6 +167,9 @@ Decided on 2026-11-08, review round 7:
 95. Claude's profile updates of a session group run one at a time, so a rename and a change of the model or effort that overlap both stay.
 96. The code has no comments.
 
+Recommended on the UX page (https://claude.ai/artifact/YCN4kj2ZRujUnUhNSxwMea), implemented until the user answers, one commit each:
+97. K10, K11: the rights texts name `/` commands in place of `//` and `/!`; the post for an owner has no `/observer` command.
+
 The user's rule on reviews, 2026-11-08: "reviewers should have no discretion to drive product changes - the UX was approved, and it must not be changing simply because security reviewers said so."
 
 Pack of the package (decision 44):
@@ -375,10 +378,10 @@ on "/join N" by member m:       invitation through the Main group, role owner wh
 on joinedGroupMember, connectedToGroupMember or memberRole in group N, the member not User:
                                 post RIGHTS(member) (decision 86)
 RIGHTS(m):                      "NAME is a ROLE and " + RIGHTS of the role + "."
-                                + " You can change role to observer to stop it: /'observer #G ID'" when the role sends
-RIGHTS of a role:               admin, owner:               can send prompts and // and /! commands to Claude, and approve tool use
-                                moderator, member, author:  can send prompts to Claude; // and /! commands and approvals of tool use
-                                                            need the role admin or owner
+                                + " You can change role to observer to stop it: /'observer #G ID'" when the role sends and is not owner
+RIGHTS of a role:               admin, owner:               can send prompts and / commands to Claude, and approve tool use
+                                moderator, member, author:  can send prompts to Claude; / commands and approvals need the role
+                                                            admin or owner
                                 observer:                   can't send messages
 on /observer #G ID by member s: #G not this group, no current member ID, ID Claude, s, a relay or pending: a reply
                                 rank(s) < max(rank(admin), rank(member ID)): a reply
@@ -440,10 +443,11 @@ approval from another role  Only admins and owners of this group approve actions
 "!"                         Messages starting with ! reach Claude only from admins and owners, as /!command.
 no approver                 The group of this session has no admin or owner to approve actions. Members of the Main group join it
                             by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.
-rights of admin, owner      NAME is an admin and can send prompts and // and /! commands to Claude, and approve tool use.
-                            You can change role to observer to stop it: /'observer #G ID'   (an owner for an owner)
-rights of moderator,        NAME is a member and can send prompts to Claude; // and /! commands and approvals of tool use need
-member, author              the role admin or owner. You can change role to observer to stop it: /'observer #G ID'
+rights of owner            NAME is an owner and can send prompts and / commands to Claude, and approve tool use.   (decision 97)
+rights of admin            NAME is an admin and can send prompts and / commands to Claude, and approve tool use.
+                            You can change role to observer to stop it: /'observer #G ID'   (decision 97)
+rights of moderator,        NAME is a member and can send prompts to Claude; / commands and approvals need the role admin or owner.
+member, author              You can change role to observer to stop it: /'observer #G ID'   (decision 97)
 rights of observer          NAME is an observer and can't send messages.   (also the reply to an accepted /observer)
 ```
 
