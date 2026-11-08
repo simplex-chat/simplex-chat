@@ -52,7 +52,7 @@ export class Session {
   readonly control: Control
   readonly number: number
   private name: string
-  private readonly pushed: {text: string; item: T.ChatItem; at: number}[] = []
+  private readonly pushed: {text: string; item: T.ChatItem; at: number; quoted?: boolean}[] = []
   private readonly receiving = new Map<number, {resolve: () => void; reject: (error: Error) => void}>()
   private description: {model?: string; effort?: string}
   private turns: {at: number; item: T.ChatItem | null}[] = []
@@ -181,14 +181,16 @@ export class Session {
     const matched = prompt === undefined ? [] : this.pushedIn(prompt)
     if (prompt !== undefined) this.turns.push({at: at ?? Date.now(), item: matched[0]?.item ?? null})
     this.pushed.splice(0, this.pushed.length, ...this.pushed.filter(entry => !matched.includes(entry)))
-    if ((model !== undefined && model !== this.description.model) || (effort !== undefined && effort !== this.description.effort)) {
+    const described = (model !== undefined && model !== this.description.model) || (effort !== undefined && effort !== this.description.effort)
+    if (described) {
       this.description = {model: model ?? this.description.model, effort: effort ?? this.description.effort}
       this.store(this.description)
-      const {model: shown, effort: level} = this.description
-      await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
     }
-    if (prompt !== undefined && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt))
+    if (prompt !== undefined && prompt.trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt))
     if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
+    if (!described) return
+    const {model: shown, effort: level} = this.description
+    await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
   }
 
   endPermissions(before = Infinity): void {
@@ -221,11 +223,11 @@ export class Session {
     if (this.onLine === undefined && left > 0) await nextChange(this.attaching, new AbortController().signal, left)
     const {chatItem} = ci
     const file = this.onLine === undefined || chatItem.file === undefined ? undefined : await this.receive(chatItem.file).catch(async error => {
-      await this.hub.chat.apiSendTextReply(ci, `The file of this message was not received: ${oneLine(errorText(error))}`)
+      await this.post([`The file of this message was not received: ${oneLine(errorText(error))}`], chatItem.meta.itemId)
       return undefined
     })
     if (this.onLine === undefined) {
-      await this.hub.chat.apiSendTextReply(ci, `Session ${this.number} is not running.`)
+      await this.post([`Session ${this.number} is not running.`], chatItem.meta.itemId)
       return
     }
     if (this.pushed.push({text, item: chatItem, at: Date.now()}) > maxPushed) this.pushed.shift()
@@ -244,7 +246,11 @@ export class Session {
 
   private turnQuote(at: number): T.ChatItem | undefined {
     const earlier = this.turns.filter(turn => turn.at < at)
-    if (earlier.length === 0) return this.pushed.shift()?.item
+    if (earlier.length === 0) {
+      const oldest = this.pushed.find(entry => !entry.quoted)
+      if (oldest !== undefined) oldest.quoted = true
+      return oldest?.item
+    }
     this.turns = this.turns.filter(turn => turn.at >= at)
     return earlier.reduce((newest, turn) => (turn.at > newest.at ? turn : newest)).item ?? undefined
   }
@@ -252,7 +258,15 @@ export class Session {
   private async answer(text: string, quoted: T.ChatItem | undefined): Promise<void> {
     const parts = textParts(text)
     const quotedItemId = quoted?.content.type === "rcvMsgContent" && fitsMessage({type: "text", text: parts[0]}, undefined, {content: quoted.content.msgContent, fileName: quoted.file?.fileName}) ? quoted.meta.itemId : undefined
-    await this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => ({msgContent: {type: "text", text: part}, quotedItemId: i === 0 ? quotedItemId : undefined, mentions: {}})))
+    await this.post(parts, quotedItemId)
+  }
+
+  private async post(parts: string[], quotedItemId?: number): Promise<void> {
+    const send = (quote?: number) => this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => ({msgContent: {type: "text", text: part}, quotedItemId: i === 0 ? quote : undefined, mentions: {}})))
+    await send(quotedItemId).catch(error => {
+      if (quotedItemId === undefined || !isRefusedQuote(error)) throw error
+      return send()
+    })
   }
 
   private pushedIn(prompt: string): {text: string; item: T.ChatItem; at: number}[] {
@@ -493,6 +507,11 @@ function textParts(text: string): string[] {
     bytes += size
   }
   return [...parts, part]
+}
+
+function isRefusedQuote(error: unknown): boolean {
+  const chatError = chatErrorOf(error)
+  return chatError?.type === "errorStore" && (chatError.storeError.type === "invalidQuote" || chatError.storeError.type === "chatItemNotFound")
 }
 
 function sessionDataOf(customData: object | undefined): SessionGroupData | undefined {

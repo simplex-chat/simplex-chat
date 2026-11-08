@@ -3,7 +3,7 @@ import {tmpdir} from "os"
 import {join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {CEvt, ChatEvent, T} from "@simplex-chat/types"
-import {api} from "simplex-chat"
+import {api, core} from "simplex-chat"
 import {controlCommands} from "../../src/control"
 import {SessionFile, createDataFolder, readSessionFile, sessionFolder, writeSessionFile} from "../../src/files"
 import {Hub, Session} from "../../src/hub"
@@ -12,7 +12,7 @@ import {User} from "../../src/user"
 import {version} from "../../src/version"
 import {FakeChat, contact, direct, event, fileItem, group, groupChat, item, member, signal, until, user} from "./fixtures"
 
-const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /give, /pending, /list. Each card shows its commands."
 
 const id1 = "11111111-1111-4111-8111-111111111111"
 const id2 = "22222222-2222-4222-8222-222222222222"
@@ -342,6 +342,7 @@ describe("session channel", () => {
   const from = (sender: T.GroupMember): T.CIDirection => ({type: "groupRcv", groupMember: sender})
   const tag = (n: number, text: string): string => `<channel source="plugin:simplex:simplex" from="Alice" item="${n}">\n${text}\n</channel>`
   const answers = (chat: FakeChat) => chat.sent.filter(({chat: [, groupId]}) => groupId === 20).map(({messages}) => messages.map(({msgContent, quotedItemId}) => ({text: msgContent.text, quotedItemId})))
+  const quotingPosts = (chat: FakeChat) => answers(chat).flatMap(([first]) => (first.quotedItemId === undefined ? [] : [first.text]))
   const ownerPrompt = async (session: Session, n: number, text: string): Promise<void> => {
     session.onMessage(event(sessionGroup, item(n, text, from(invitedAlice))))
     await until(() => session["pushed"].some(({item: pushed}) => pushed.meta.itemId === n))
@@ -408,8 +409,8 @@ describe("session channel", () => {
     expect(lines[1]).toEqual({prompt: {text: "See the log", from: "Alice", item: 43, file: path}})
     session.onLine = undefined
     session.onMessage(event(sessionGroup, item(44, "Run the tests", from(invitedAlice))))
-    await until(() => chat.replies.length === 2)
-    expect(chat.replies[1]).toBe("Session 1 is not running.")
+    await until(() => quotingPosts(chat).length === 1)
+    expect(answers(chat).at(-1)).toEqual([{text: "Session 1 is not running.", quotedItemId: 44}])
     expect(lines).toHaveLength(2)
   })
 
@@ -487,6 +488,68 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([[{text: "Green.", quotedItemId: 43}]])
   })
 
+  it("does not post an owner's prompt again as User when the Stop request of its turn is handled before its prompt request", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posts: string[] = []
+    hub.user = {post: async (_n: number, parts: string[]) => void posts.push(...parts)} as unknown as User
+    await ownerPrompt(session, 42, "Fix the build")
+    await session.turn({id: id1, at: 2, answer: "Fixed."})
+    await session.turn({id: id1, at: 1, prompt: tag(42, "Fix the build")})
+    await ownerPrompt(session, 43, "Then run the tests")
+    await session.turn({id: id1, at: 3, prompt: tag(43, "Then run the tests")})
+    await session.turn({id: id1, at: 4, answer: "Tests pass."})
+    expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "Tests pass.", quotedItemId: 43}]])
+    expect(posts).toEqual([])
+  })
+
+  it("posts the answer and the replies without the quote when the core refuses to quote the prompt, as after the owner deleted it", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const refused = (type: string) => new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type}} as unknown as T.ChatError)
+    const send = chat.apiSendMessages.bind(chat)
+    chat.apiSendMessages = async (ref, messages) => {
+      if (messages.some(({quotedItemId}) => quotedItemId !== undefined)) throw refused(messages[0].msgContent.text === "Fixed." ? "invalidQuote" : "chatItemNotFound")
+      return send(ref, messages)
+    }
+    chat.apiSendTextReply = async () => {
+      throw refused("chatItemNotFound")
+    }
+    await ownerPrompt(session, 42, "Fix the build")
+    await session.turn({id: id1, at: 1, prompt: tag(42, "Fix the build")})
+    await session.turn({id: id1, at: 2, answer: "Fixed."})
+    session.onLine = undefined
+    session.onMessage(event(sessionGroup, item(43, "Run the tests", from(invitedAlice))))
+    await until(() => answers(chat).length === 2)
+    expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: undefined}], [{text: "Session 1 is not running.", quotedItemId: undefined}]])
+  })
+
+  it("posts an answer with a new effort level before the prompt of the next turn, and then the description", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posted: string[] = []
+    hub.user = {post: async (_n: number, parts: string[]) => void posted.push(`User: ${parts.join("")}`)} as unknown as User
+    const send = chat.apiSendMessages.bind(chat)
+    chat.apiSendMessages = async (ref, messages) => {
+      posted.push(`Claude: ${messages[0].msgContent.text}`)
+      return send(ref, messages)
+    }
+    await session.turn({id: id1, at: 1, prompt: "Fix the build"})
+    await Promise.all([session.turn({id: id1, at: 2, answer: "Fixed.", effort: "high"}), session.turn({id: id1, at: 3, prompt: "Run the tests"})])
+    expect(posted).toEqual(["User: Fix the build", "Claude: Fixed.", "User: Run the tests"])
+    expect(chat.profiles.at(-1)!.groupProfile.shortDescr).toBe("effort high")
+  })
+
+  it("posts no empty terminal prompt as User, as Claude Code sends for a prompt with images only", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posts: string[] = []
+    hub.user = {post: async (_n: number, parts: string[]) => void posts.push(...parts)} as unknown as User
+    await session.turn({id: id1, at: 1, prompt: ""})
+    await session.turn({id: id1, at: 2, prompt: " \n"})
+    expect(posts).toEqual([])
+  })
+
   it("delivers an owner's prompts in their order after a prompt with a file, and replies that the session is not running when it detaches during the transfer", async () => {
     const chat = new FakeChat()
     const {hub, session, lines} = await channel(chat)
@@ -507,8 +570,8 @@ describe("session channel", () => {
     await until(() => chat.commands.some(command => command.startsWith("/freceive 9 ")))
     session.onLine = undefined
     await hub["onEvent"]({type: "rcvFileComplete", user, chatItem: event(sessionGroup, second)} as unknown as ChatEvent)
-    await until(() => chat.replies.length === 1)
-    expect(chat.replies).toEqual(["Session 1 is not running."])
+    await until(() => quotingPosts(chat).length === 1)
+    expect(answers(chat)).toEqual([[{text: "Session 1 is not running.", quotedItemId: 45}]])
     expect(lines).toHaveLength(2)
   })
 
@@ -537,7 +600,7 @@ describe("session channel", () => {
     session.onMessage(event(sessionGroup, fileItem(43, {type: "file", text: "See the log"}, {type: "rcvInvitation"}, {chatDir: from(invitedAlice), fileId: 8})))
     await until(() => lines.length === 1)
     expect(lines).toEqual([{prompt: {text: "See the log", from: "Alice", item: 43}}])
-    expect(chat.replies).toEqual(["The file of this message was not received: SimpleX error: unexpected response cmdOk"])
+    expect(answers(chat)).toEqual([[{text: "The file of this message was not received: SimpleX error: unexpected response cmdOk", quotedItemId: 43}]])
   })
 
   it("passes an owner's prompt without its file when the file does not arrive in 10 minutes", async () => {
@@ -552,7 +615,7 @@ describe("session channel", () => {
     expect(lines).toEqual([])
     await jest.advanceTimersByTimeAsync(1)
     expect(lines).toEqual([{prompt: {text: "See the log", from: "Alice", item: 43}}])
-    expect(chat.replies).toEqual(["The file of this message was not received: not received in 10 minutes"])
+    expect(answers(chat)).toEqual([[{text: "The file of this message was not received: not received in 10 minutes", quotedItemId: 43}]])
   })
 
   it("holds an owner's prompt after the daemon start until the session attaches, and replies that it is not running after 30 s without an attachment", async () => {
@@ -563,19 +626,19 @@ describe("session channel", () => {
     hub.promptsHeldUntil = Date.now() + 30_000
     session.onMessage(event(sessionGroup, item(42, "Fix the build", from(invitedAlice))))
     await jest.advanceTimersByTimeAsync(10_000)
-    expect(chat.replies).toEqual([])
+    expect(quotingPosts(chat)).toEqual([])
     session.onLine = line => lines.push(line)
     await jest.advanceTimersByTimeAsync(0)
     expect(lines).toEqual([{prompt: {text: "Fix the build", from: "Alice", item: 42}}])
     session.onLine = undefined
     session.onMessage(event(sessionGroup, item(43, "Run the tests", from(invitedAlice))))
     await jest.advanceTimersByTimeAsync(19_999)
-    expect(chat.replies).toEqual([])
+    expect(quotingPosts(chat)).toEqual([])
     await jest.advanceTimersByTimeAsync(1)
-    expect(chat.replies).toEqual(["Session 1 is not running."])
+    expect(quotingPosts(chat)).toEqual(["Session 1 is not running."])
     session.onMessage(event(sessionGroup, item(44, "Status?", from(invitedAlice))))
     await jest.advanceTimersByTimeAsync(0)
-    expect(chat.replies).toEqual(["Session 1 is not running.", "Session 1 is not running."])
+    expect(quotingPosts(chat)).toEqual(["Session 1 is not running.", "Session 1 is not running."])
     expect(lines).toHaveLength(1)
   })
 
