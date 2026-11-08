@@ -370,6 +370,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (groupMemberId === this.group.membership.groupMemberId || groupMemberId === sender.groupMemberId || target.memberRole === T.GroupMemberRole.Relay || pending) return `${name}'s role can't be changed.`
     if (roleRank(sender.memberRole) < Math.max(roleRank(T.GroupMemberRole.Admin), roleRank(target.memberRole))) return `Your role does not let you change the role of ${name}.`
     await this.chat.apiSetMembersRole(this.groupId, [groupMemberId], T.GroupMemberRole.Observer)
+    await this.refreshMembers()
     return rightsText(name, T.GroupMemberRole.Observer)
   }
 

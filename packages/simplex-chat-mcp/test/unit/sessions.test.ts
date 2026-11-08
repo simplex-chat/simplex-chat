@@ -309,6 +309,25 @@ describe("session groups", () => {
     expect(await observer(member(9, "Mallory", T.GroupMemberRole.Observer), "#20 13")).toBe(approversOnly)
   })
 
+  it("count the standing approval of a chat no more once /observer made its approver an observer", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "auth"))
+    const dan = member(12, "Dan", T.GroupMemberRole.Admin)
+    chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1, {simplexMcp: {approvedBy: "Dan", approvedById: 12, approvedAt: "2026-11-08T10:00:00.000Z"}}), items: []})
+    chat.members.set(20, [self, invitedAlice, dan])
+    await session.control.load()
+    const list = () => session.control.ownerCommand(invitedAlice, {keyword: "list", params: ""})
+    expect(await list()).toBe("@4  bot SimpleX Directory, approved for this chat by Dan")
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "observer", params: "#20 12"})).toBe("Dan is an observer and can't send messages.")
+    expect(await list()).toBe("@4  bot SimpleX Directory")
+    const {controller, call} = signal()
+    const sending = session.call("send", {chat: "@4", text: "hi"}, call)
+    await until(() => session.actions.pending().some(({tool}) => tool === "send"))
+    controller.abort()
+    await sending
+  })
+
   it("end a pending mode card when the option returns to requests", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)

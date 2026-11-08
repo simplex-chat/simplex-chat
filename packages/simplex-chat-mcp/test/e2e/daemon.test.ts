@@ -415,6 +415,52 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   expect((await alice.chat.apiListMembers(groupOne)).filter(({memberProfile}) => memberProfile.displayName === "Bob").map(({memberStatus}) => memberStatus)).toEqual([expect.stringMatching(/^(connected|complete)$/)])
 }, 600_000)
 
+test("/observer ends the standing approvals of the member it makes an observer", async () => {
+  const root = join(dir, "observer", "root")
+  await prepareRoot(smpServer.address, root)
+  const alice = await personIn("observer", "Alice")
+  const bob = await personIn("observer", "Bob")
+  const directory = await botIn("observer", "Directory")
+  await startDaemon(root)
+  const client = DaemonClient.forRoot(root)
+  await openSession(client, one, "one")
+  const owner = await client.request<OwnerState>("GET", "/link")
+  const aliceInvited = joinSessionGroups(alice, ["1 · one"])
+  const mainGroupId = await joinByLink(alice, owner.link!)
+  const groupOne = (await aliceInvited).get("1 · one")!
+  const aliceSees = (text: string): Promise<T.AChatItem> => received(alice.chat, inGroup(groupOne, textStarts(text)))
+  const aliceSends = (text: string) => alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], text)
+  const mainLink = await alice.chat.apiCreateGroupLink(mainGroupId, T.GroupMemberRole.Member)
+
+  const bobConnected = bob.chat.wait("connectedToGroupMember", ({member}) => member.memberProfile.displayName === "Claude", 60_000)
+  const bobMain = await joinByLink(bob, mainLink)
+  await bobConnected
+  const bobInvited = joinSessionGroups(bob, ["1 · one"])
+  const bobRights = aliceSees("Bob is an admin and ")
+  await bob.chat.apiSendTextMessage([T.ChatType.Group, bobMain], "/join 1")
+  const bobGroupOne = (await bobInvited).get("1 · one")!
+  const [, makeBobObserver] = /\/'(observer #\d+ \d+)'$/.exec((await bobRights).chatItem.meta.itemText)!
+
+  const connectCard = aliceSees("I want to connect to bot Directory")
+  const connecting = callTool(client, one, "connect", {target: directory.link, idle: 2})
+  await aliceSends(`/approve ${cardNumber(await connectCard)}`)
+  const chat = (await connecting).result.chat as string
+  const approved = received(bob.chat, inGroup(bobGroupOne, textStarts("Approved for bot Directory")))
+  await bob.chat.apiSendTextMessage([T.ChatType.Group, bobGroupOne], `/approve ${chat} all`)
+  await approved
+  const listed = async (): Promise<string> => {
+    const shown = aliceSees(`${chat}  `)
+    await aliceSends("/list")
+    return (await shown).chatItem.meta.itemText
+  }
+  expect(await listed()).toBe(`${chat}  bot Directory, approved for this chat by Bob`)
+
+  const bobObserver = aliceSees("Bob is an observer and can't send messages.")
+  await aliceSends(`/${makeBobObserver}`)
+  await bobObserver
+  expect(await listed()).toBe(`${chat}  bot Directory`)
+}, 600_000)
+
 test("a new session has no chats", async () => {
   const root = join(dir, "fresh", "root")
   await prepareRoot(smpServer.address, root)
