@@ -1189,7 +1189,7 @@ fun banMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, 
         }
       )
     }
-    (listOf(if (gInfo.useRelays) MR.strings.subscribers_wont_be_notified else MR.strings.members_wont_be_notified) + lines).joinToString("\n") { generalGetString(it) }
+    (listOf(MR.strings.members_wont_be_notified) + lines).joinToString("\n") { generalGetString(it) }
   }
 }
 
@@ -1198,7 +1198,7 @@ fun removeBannedMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<Group
     if (members.size == 1) {
       if (gInfo.useRelays) MR.strings.button_remove_subscriber_question else MR.strings.button_remove_member_question
     } else {
-      if (gInfo.useRelays) MR.strings.button_remove_subscribers_question else MR.strings.button_remove_members_question
+      MR.strings.button_remove_members_question
     }
   )
   showBanDialog(
@@ -1487,25 +1487,9 @@ fun PreviewBanSubscriberDialogModerator() {
 
 @Preview
 @Composable
-fun PreviewBanSubscribersDialog() {
-  SimpleXTheme {
-    AlertPreview { banMembersDialog(null, previewChannelInfo, listOf(previewBanMember, previewBanMember.copy(groupMemberId = 3))) }
-  }
-}
-
-@Preview
-@Composable
 fun PreviewRemoveBannedSubscriberDialog() {
   SimpleXTheme {
     AlertPreview { removeBannedMembersDialog(null, previewChannelInfo, previewBannedMembers.take(1)) }
-  }
-}
-
-@Preview
-@Composable
-fun PreviewRemoveBannedSubscribersDialog() {
-  SimpleXTheme {
-    AlertPreview { removeBannedMembersDialog(null, previewChannelInfo, previewBannedMembers) }
   }
 }
 
@@ -1522,13 +1506,5 @@ fun PreviewRemoveSubscriberForeverDialog() {
 fun PreviewLiftBanSubscriberAlert() {
   SimpleXTheme {
     AlertPreview { unblockForAllAlert(null, previewChannelInfo, previewBannedMembers.first()) }
-  }
-}
-
-@Preview
-@Composable
-fun PreviewLiftBanSubscribersAlert() {
-  SimpleXTheme {
-    AlertPreview { unblockForAllAlert(null, previewChannelInfo, previewBannedMembers.map { it.groupMemberId }) }
   }
 }
