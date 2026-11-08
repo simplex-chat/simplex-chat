@@ -15,7 +15,7 @@ export const controlCommands: T.ChatBotCommand[] = [
 ]
 
 const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
-const unknownCommand = "Unknown command."
+const unknownCommand = "Unknown command. To send a command to Claude, start it with //."
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
   reply: "text: too long for its approval card; shorten it.",

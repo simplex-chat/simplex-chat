@@ -15,7 +15,7 @@ import {User} from "../../src/user"
 import {version} from "../../src/version"
 import {FakeChat, contact, direct, event, fileItem, group, groupChat, item, member, signal, until, user} from "./fixtures"
 
-const unknownCommand = "Unknown command."
+const unknownCommand = "Unknown command. To send a command to Claude, start it with //."
 
 const id1 = "11111111-1111-4111-8111-111111111111"
 const id2 = "22222222-2222-4222-8222-222222222222"
