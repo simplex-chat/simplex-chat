@@ -82,7 +82,6 @@ import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, nominalDay)
 import Data.Time.Clock.System (systemToUTCTime, utcToSystemTime)
-import Simplex.Chat.Types.Shared (checkTimeRange)
 import Simplex.FileTransfer.Description (gb, maxFileSize)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
@@ -91,6 +90,7 @@ import Simplex.Messaging.Crypto.Entitlement (Entitlement (Entitlement), Entitlem
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
+import Simplex.Messaging.SystemTime (checkTimeRange)
 import Simplex.Messaging.Util ((<$?>))
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple.FromField (FromField (..))
