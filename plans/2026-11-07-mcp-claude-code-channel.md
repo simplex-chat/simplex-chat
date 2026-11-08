@@ -54,7 +54,7 @@ Decided on 2026-11-07:
 
 Design:
 16. One code base: `serve` and the plugin share `Control`, `Actions` and `AgentTools`.
-17. Prompts, approvals and tool-use verdicts count only from session group members whose Main group member is an owner.
+17. Prompts, approvals and tool-use verdicts count from the session group members who came through the hub, whatever their role: the members invited through the Main group at the session's start or by `/join N` (rewritten on 2026-11-08 by the [trust model](#trust-model)).
 18. The owner link reaches the person only: the `systemMessage` of the SessionStart hook and `simplex-mcp link` in a terminal; hook context and tool results never contain it.
 19. A session's approval mode changes to `host` only after an owner approves a card in the session's group.
 20. While owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
@@ -109,19 +109,21 @@ Decided on 2026-11-08, review round 4:
 59. A title's rename writes `session.json` as read after the group's rename.
 
 Proposed on 2026-11-08, each in its own commit, until the user decides:
-60. The group of a session closed for 7 days is deleted for all its members, with the standing approvals of the session's chats; the daemon checks at its start and every hour. A run whose `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli` (`claude -p`), `sdk-ts` or `sdk-py` (the Agent SDK), or whose `CLAUDE_CODE_SESSION_ATTENDED` is `0`, gets no session and no group.
+60. Removed by the user's rule on reviews: every session keeps its group, `claude -p` runs included. It was: the group of a session closed for 7 days is deleted; a run with `CLAUDE_CODE_ENTRYPOINT` `sdk-cli`, `sdk-ts` or `sdk-py`, or `CLAUDE_CODE_SESSION_ATTENDED` `0`, gets no session and no group.
 61. The approved mode is kept in the session group's custom data, not in `session.json`. `GET /status` returns the owners without the Main group link; `GET /link` returns the link. These protections hold against Claude's tools, not against a shell running as the same user.
-62. Leaving, removal or demotion in the Main group is applied at once to every session group: a member who left or was removed is removed, and a lowered role is set there, also in a pending invitation. Changes made while the daemon was stopped apply when the session group opens.
-63. `reply` posts a file without a card only when every member of the session group is Claude, `User`, gone or an owner; otherwise an owner approves its card first, in mode `requests`. The card shows the file's name and size only; the caption and the preview reach the group with the file after the approval.
+62. Removed by the user's rule on reviews; rule 4 of the [trust model](#trust-model) holds. It was: leaving, removal or demotion in the Main group is applied to every session group.
+63. Removed by the user's rule on reviews; rule 5 of the [trust model](#trust-model) holds. It was: `reply` posts a file without a card only while every member is Claude, `User`, gone or an owner; the card shows the file's name and size only.
 
 Decided on 2026-11-08, review round 5:
-64. A resume of a session whose group the daemon deletes waits for the deletion and opens a new group. A failed deletion is logged, and the deletions of the other sessions go on.
-65. `User` posts in the newest group of the session where its membership is current.
-66. Claude Code sets `CLAUDE_CODE_SESSION_ATTENDED` for the hooks of a run; its MCP servers get only the value of the session whose command started the run. `0` makes a run non-interactive; otherwise the entrypoint decides. A real-session check in TESTING records the values.
+64. Removed with decision 60. It was: a resume during the deletion of its group waits for it; a failed deletion is logged.
+65. Removed with decision 60. It was: `User` posts in the newest group of the session where its membership is current.
+66. Removed with decision 60. It was: `CLAUDE_CODE_SESSION_ATTENDED` `0` makes a run non-interactive.
 67. `serve` lists its tools with the metadata of 0.2.
 
 Proposed on 2026-11-08 with the round 5 fixes, until the user decides:
 68. `list` returns the session's actions without its tool-use and mode cards.
+
+The user's rule on reviews, 2026-11-08: "reviewers should have no discretion to drive product changes - the UX was approved, and it must not be changing simply because security reviewers said so."
 
 Pack of the package (decision 44):
 ```
@@ -270,6 +272,68 @@ User                  inside the daemon                       membership in ever
 simplex-mcp serve     one per agent, HTTP 127.0.0.1           agent profile, control chat
 ```
 
+## Trust model
+
+Set by the user on 2026-11-08. It rewrites decision 17 and takes the place of decisions 62 and 63.
+
+```
+principal       who                                                           trusted with
+hub member      every member of the Main group, any role                      all sessions, on par with owners
+session guest   a member of a session group who did not come through the hub  nothing: not a prompter, not an approver
+                (added to that group directly)
+peer            anyone in Claude's other chats                                nothing: messages are data
+```
+
+A member came through the hub when the hub invited them through the Main group: at a session's start, or by `/join N`.
+
+Rules:
+1. The Main group is the trust boundary. A hub member, whatever their role in it:
+   - joins any session's group at once by `/join N`, without approval;
+   - prompts the session, approves and rejects its actions and tool use, uses every session group command;
+   - receives Claude's files without a card.
+2. The hub states the boundary, in its description, its welcome message, and a message on every join: everyone in this group is trusted with all Claude Code sessions here; they can join each session's group, prompt Claude and approve its actions; invite only people you trust with them.
+3. A session group states each joiner's standing: a member who came through the hub, and a guest added directly, whose messages are not prompts and who receives Claude's files only after approval.
+4. Changes of membership or role in the Main group do not change session groups.
+5. While a session group has a guest, Claude's files (`reply`) go there after a hub member approves the card; `/approve N all` approves this file and every later file of that session group, until `/revoke`.
+6. Unchanged: the owner link reaches the person only; mode `host` needs a card; an owner reset while owners exist needs an approval in the Main group; the approved mode lives in the session group; `/status` carries no link.
+
+An owner's prompt, approval or verdict in a session group, in the decisions and sections of this plan, is that of a hub member.
+
+```mermaid
+flowchart LR
+  O[owner] -- own group link, or a contact invited --> M[Main group: hub members]
+  M -- invitation at the session start: owners --> G[group of session N]
+  M -- /join N: any member, its role --> G
+  X[person added to group N directly] --> Q[guest of group N]
+  G --> A[prompts, approvals, files at once]
+  Q --> B[messages as data; Claude's files after an approval]
+```
+
+Mechanics:
+```
+approver of group N:                 a member recorded in invited of N (decision 17)
+Main group, at its creation and load: shortDescr = SHORT, description = WELCOME, updated when they differ
+on joinedGroupMember or connectedToGroupMember in the Main group:
+                                     the joiner among the members read again, a human: post "NAME joined. " + TRUST
+on joinedGroupMember or connectedToGroupMember in group N, the member not User:
+  member in invited:                 post "NAME joined from the Main group: their messages are prompts of this session,
+                                           and they can approve its actions."
+  else:                              post "NAME joined as a guest, not from the Main group: their messages are not prompts,
+                                           and Claude's files reach this group only after a member from the Main group approves them."
+group N, its description:            "The Claude Code session N: members who join from the Main group prompt it and approve its actions here."
+reply:                               see Channel, reply
+```
+
+Texts for the user's approval:
+```
+TRUST     Everyone in this group is trusted with all Claude Code sessions here: they can join each session's group by /join N,
+          prompt Claude and approve its actions. Invite only people you trust with them.
+WELCOME   Supervise your Claude Code sessions: each one has its own group, and you get its invitation here. TRUST
+SHORT     Everyone in this group is trusted with all Claude Code sessions: they join their groups, prompt Claude and approve its actions.
+```
+
+The other new texts, also for the user's approval: the two joiner posts and the session group's description above; the reply card's first line `I want to send a file to group N · NAME, where guests see it:` and its commands `/'approve K', /'approve K all' or /'reject K'`; `Files approved for this group by NAME. /'revoke'`, `Files to this group need approval again.`, `Files to this group have no standing approval.`, `Action K is not a file to this group.`; `Only members who joined from the Main group approve actions here.`; `The group of this session has no member who joined from the Main group. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.`; in the `reply` tool's description, `While the group has a guest, a member added without the Main group, a member from the Main group approves the file there first`.
+
 ## Groups
 
 ```
@@ -277,6 +341,7 @@ group            host  members                                     holds
 Main group       hub   owners and other members                    QR link, invitation cards, /join, /sessions, owner reset
 session N group  hub   Main group owners, invited by the hub       prompts, replies, action and tool-use cards of session N
                        Main group members who sent /join N
+                       guests, added by its members directly
 ```
 
 ```
@@ -308,37 +373,17 @@ PendingConnection
 on session start (new id):   create the session group; for each Main group owner: apiAddMemberViaGroup(group, main, owner, owner); record InvitedMember
 on owner joined Main group:  for each open session: invite the owner as above
 on "/join N" by member m:    if session N exists: apiAddMemberViaGroup(group N, main, m, role of m in the Main group); record InvitedMember
-on message in group N:       m = InvitedMember of sender; if m and Main group member m.mainMemberId is an owner: handle; else ignore
+on message in group N:       m = InvitedMember of sender; if m: handle; else ignore (decision 17)
 on session resume:           reuse the group recorded in session.json
 on connect with a pending connection c:          pending += (c, now); entries older than one day dropped
 on contactConnected or userJoinedGroup of c:     the session whose pending has c, recorded in the last day: drop it; claim the chat
 on connect to a known chat without an owner:     claim the chat
 ```
 
-Membership of the Main group in the session groups (decision 62):
+Membership of the Main group in the session groups (rule 4 of the [trust model](#trust-model)):
 ```
-when:  a membership event of the Main group, after its members are read again
-       the open of a stored session group, as at the daemon's start
-       the replacement of the Main group
-for each InvitedMember e of each session group:
-  main = Main group member e.mainMemberId; gone: absent, or rejected, removed, left, deleted
-  member = session group member e.groupMemberId
-  main gone:                                    member present and not gone: remove it, one member per request; drop e
-  member present, not gone, role above main's:  invited: send the invitation again with main's role
-                                                else: set its role to main's role
-  a failed request:                             log it; keep e
-roles, lowest first: observer, author, member, moderator, admin, owner
-```
-
-```mermaid
-sequenceDiagram
-  participant B as owner Bob
-  participant H as hub
-  participant G as session groups
-  B->>H: removes Alice from the Main group
-  H->>G: removes Alice's member from each session group
-  B->>H: makes Carol a member in the Main group
-  H->>G: Carol's role member in each session group, or her invitation sent again as member
+on a membership or role change in the Main group:   the session groups and their invited lists stay as they are
+on the replacement of the Main group (decision 20): the invited members removed from every session group; invited = []
 ```
 
 ```mermaid
@@ -426,71 +471,6 @@ sequenceDiagram
   D->>D: the held title resolves: entry A has pid P: alias F → A
 ```
 
-### Closed sessions and runs that are not interactive
-
-Decisions 60, 64 and 66:
-```
-SessionFile, added
-  closed           time the session closed, optional
-Daemon, added
-  deleting         session ID to the running deletion of its group
-
-on the idle close of a session:     closed = now
-on the daemon's start:              closed = now for each stored session without it
-on the open of a session:           the running deletion of its group awaited; closed removed
-at the start and every hour:        each stored session with a group, closed 7 days ago or earlier, not open, not in deleting:
-                                      deleting += the deletion
-                                      standing approvals of its chats removed; its group deleted for all members
-                                      group and closed removed from session.json
-                                      a failure: logged; the next session
-                                      deleting -= the deletion
-on the hub's open:                  the stored sessions with a group only
-on CLAUDE_CODE_SESSION_ATTENDED 0, or CLAUDE_CODE_ENTRYPOINT sdk-cli, sdk-ts or sdk-py:
-  hooks:                            {} without a request
-  session server:                   no daemon connection; every call: "This Claude Code run is not interactive,
-                                    so it has no SimpleX group; the SimpleX tools work in interactive sessions."
-```
-
-```mermaid
-stateDiagram-v2
-  [*] --> open: session start
-  open --> closed: idle close, closed = now
-  closed --> open: resume, closed removed
-  closed --> deleting: 7 days, the deletion of its group starts
-  deleting --> closed: the deletion failed, logged
-  deleting --> without_group: group deleted, group and closed removed
-  without_group --> open: resume, a new group; a resume during deleting waits for its end
-```
-
-```mermaid
-sequenceDiagram
-  participant S as session server
-  participant D as daemon
-  participant H as hub
-  D->>H: delete the group of session N, closed 7 days
-  S->>D: POST /session N
-  D->>D: openAgent awaits the deletion of N
-  H-->>D: deleted; session.json without group
-  D->>H: Hub.session N: a new group, the owners invited
-```
-
-```
-variable                       set by Claude Code for                    values
-CLAUDE_CODE_ENTRYPOINT         hooks and MCP servers                     sdk-cli for claude -p, cli for an interactive session;
-                                                                         one set before the start is kept, except cli
-CLAUDE_CODE_SESSION_ATTENDED   hooks; an MCP server gets the value of    1, or 0 for a run nobody attends
-                               the session whose command started the run
-```
-
-```mermaid
-flowchart LR
-  E[hook or session server] --> A{CLAUDE_CODE_SESSION_ATTENDED 0}
-  A -- yes --> N[not interactive]
-  A -- no --> P{entrypoint sdk-cli, sdk-ts or sdk-py}
-  P -- yes --> N
-  P -- no --> I[interactive]
-```
-
 ## Channel
 
 Session server capabilities:
@@ -528,28 +508,40 @@ notifications/claude/channel/permission_request    POST /permission {id, request
 New tool:
 ```
 tool    input                       action
-reply   file, text?                 sends the file to the session group, text as its caption; a card while members who are not owners are in it
+reply   file, text?                 sends the file to the session group, text as its caption; a card while a guest is in it
 ```
 
-`reply` (decision 63):
+`reply` (rule 5 of the [trust model](#trust-model)):
 ```
 on reply {file, text}:   an action of the same session, file and text: attach to it
                          the file checked as for send
                          every member of the group is Claude, User, gone or an approver: send   -> {item}
-                         else: action reply, mode requests; text card "I want to send a file to group N · NAME,
-                               where members who are not owners see it:", `NAME`, SIZE of the file; /approve K /reject K
+                         else, with a guest: action reply, mode requests
+                           simplexMcpReplies in the group's data, its approver an approver: performed at once, standing
+                           else: card "I want to send a file to group N · NAME, where guests see it:", the caption,
+                                 TYPE `PATH`, SIZE, an image's or a video's preview; /approve K, /approve K all, /reject K
                          approved: send, with the caption and the preview                      -> {action, status: done, item}
                          rejected, expired, failed                                             -> {action, status, error?}
-a member invited and not yet joined counts as a member
+a guest invited and not yet joined counts as a guest
+on /approve K all by an approver, K a pending reply:
+                         simplexMcpReplies = {approvedBy, approvedById, approvedAt} in the group's data
+                         each pending reply with a card approved
+                         reply "Files approved for this group by NAME. /'revoke'"
+on /revoke by an approver:
+                         simplexMcpReplies removed; reply "Files to this group need approval again."
+a standing reply:        its outcome card "I sent a file ...", last line "Approved for this chat by NAME. /'revoke'"
 ```
 
 ```mermaid
-flowchart LR
-  R[reply] --> C{only Claude, User, gone members and approvers}
-  C -- yes --> S[file sent with its caption and preview]
-  C -- no --> K[card with the file's name and size, mode requests]
-  K -- /approve K --> S
-  K -- /reject K, expiry --> E[no file]
+stateDiagram-v2
+  [*] --> sent: reply, no guest in the group
+  [*] --> card: reply, a guest, no approval of all files
+  [*] --> sent: reply, a guest, approval of all files
+  card --> sent: /approve K
+  card --> sent: /approve K all, the approval stored
+  card --> refused: /reject K, expiry
+  sent --> [*]
+  refused --> [*]
 ```
 
 Server instructions, added: messages in a `simplex` channel are the owners' prompts; the final answer of the turn reaches them; `reply` sends them files.
@@ -612,7 +604,7 @@ on POST /turn, before any await:
                                    pushed -= matched
 on POST /turn model or effort:     a changed value: description in memory and session.json
 on POST /turn prompt p:            nothing matched; p not blank, not only channel tags of this server, not a one-line "/" command:
-                                   User posts parts(p) (decision 35), in the newest group of N where it is a current member (decision 65)
+                                   User posts parts(p) (decision 35)
 on POST /turn answer a, not blank: Claude posts parts(a), the first part quoting quoted when it fits with the quote
 then, also after a failed post, a changed value: the group short description (decisions 54, 58)
 Claude's post with a quote:        the core refuses the quote: the same post without it (decision 50)
@@ -650,21 +642,11 @@ UserProfile
   folder           ROOT/_user
   name             User
   contact          Claude, connected once at the first start: the contact of the connection of Claude's invitation
-  groups           every session group, added by Claude through the contact, joins automatically,
-                   marked with the session number; a group that Claude deleted stays with membership deleted
-  posts in         the newest group marked with the session number where its membership is current
+  groups           every session group, added by Claude through the contact, joins automatically
   visible to       session group members only
 ```
 
-```mermaid
-flowchart LR
-  P[terminal prompt of session N] --> G[User's groups marked N]
-  G --> C{membership current}
-  C -- no: deleted by Claude --> X[skipped]
-  C -- yes --> L[posted in the newest of them]
-```
-
-Claude ignores User's messages as prompts: User was not invited through a Main group owner (decision 17).
+Claude ignores User's messages as prompts: User was not invited through the Main group (decision 17).
 
 A prompt to a session started without the channel flag is dropped by Claude Code; the hub cannot detect it.
 
