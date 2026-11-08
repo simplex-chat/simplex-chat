@@ -133,7 +133,7 @@ export function serverToken(dir: string, renew = false): string {
     return token
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "EEXIST" && createLock(file, `${token}\n`)) return token
-    if (process.platform !== "win32") chmodSync(file, 0o600)
+    if (process.platform !== "win32" && statSync(file).uid === process.getuid?.()) chmodSync(file, 0o600)
     return readFileSync(file, "utf8").trim()
   } finally {
     rmSync(temp, {force: true})

@@ -81,6 +81,19 @@ describe("data folder", () => {
     expect(statSync(file).mode & 0o777).toBe(0o600)
   })
 
+  it("reads an existing token of another user without changing its mode, as 0.2 did", () => {
+    const file = join(dir, "token")
+    writeFileSync(file, "existing\n")
+    chmodSync(file, 0o644)
+    const uid = jest.spyOn(process, "getuid").mockReturnValue(statSync(file).uid + 1)
+    try {
+      expect(serverToken(dir)).toBe("existing")
+    } finally {
+      uid.mockRestore()
+    }
+    expect(statSync(file).mode & 0o777).toBe(0o644)
+  })
+
   it("writes the headers for the MCP host, readable only by the user, and rewrites them", () => {
     writeHeadersFile(dir, "first")
     expect(readFileSync(join(dir, "headers.json"), "utf8")).toBe('{"Authorization":"Bearer first"}\n')
