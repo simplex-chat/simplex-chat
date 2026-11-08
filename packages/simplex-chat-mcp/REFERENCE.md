@@ -523,7 +523,7 @@ With the channel, a message of an owner in a session's group is a prompt of the 
 - The session gets the prompts in the order they were sent: a later prompt waits for the file of an earlier one.
 - One-line messages with a command of the group, such as `/approve 5` or `/list`, are commands, not prompts; other messages are prompts, also one-line messages that start with `/`. Messages of members who are not owners of the Main group are not prompts.
 - When the session's Claude Code is not running, also when it ends while the file of a prompt arrives, Claude replies `Session N is not running.` while the daemon runs. In the first 30 seconds after a daemon start, a prompt waits for its session to attach again, so a prompt sent while the daemon was stopped reaches the session.
-- Claude posts its final answer of each turn in the group, as a reply to the prompt of that turn when the prompt came from the group, also when the next prompt arrives while Claude answers. When the prompt was deleted, the answer and Claude's replies are posted without the quote. `User` posts the prompts typed in the terminal, except commands such as `/simplex:link` and empty prompts, such as one with images only. A text over 12000 bytes is posted as several messages; a prompt or an answer over 250,000 characters is posted up to there, ending with `…`.
+- Claude posts its final answer of each turn in the group, as a reply to the prompt of that turn when the prompt came from the group, also when the next prompt arrives while Claude answers. When the prompt was deleted, the answer and Claude's replies are posted without the quote. `User` posts the prompts typed in the terminal, except commands such as `/simplex:link`, empty prompts, such as one with images only, and prompts made only of the plugin's `<channel source="plugin:simplex:simplex" ...>` tags. A text over 12000 bytes is posted as several messages; a prompt or an answer over 250,000 characters is posted up to there, ending with `…`.
 - The `reply` tool sends a file to the group, with its text as the caption, under the file rules of `send`.
 
 ### Tool use
@@ -566,6 +566,7 @@ In mode `host`, a session posts in its group `I want to run in mode host: Claude
 | `lock` | The PID of the running daemon. |
 | `daemon.sock` | The daemon's Unix socket. On Windows it is the named pipe `\\.\pipe\simplex-mcp-<hash>`; for a path over 103 bytes, `simplex-mcp-<hash>.sock` in the system temporary folder. |
 | `daemon.log` | The daemon's log, emptied when it is over 10 MB, at a daemon start and every hour. |
+| `titles.json` | The titles of new sessions whose session server had not registered when the daemon stopped; the next start reads and removes it. |
 | `_hub/` | The databases of the profile `Claude`: the Main group, the sessions' groups and the chats with peers. |
 | `_user/` | The databases of the profile `User`. |
 | `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, mode, a rejected mode `host`, model, effort level and its other session IDs, and `files/` with the files of its chats and of its group. |

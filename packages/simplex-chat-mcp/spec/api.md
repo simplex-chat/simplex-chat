@@ -593,7 +593,7 @@ Server name: `simplex-NAME` ([register.ts:36](../src/register.ts#L36)).
 | 2 | `--port: a port from 1 to 65535 expected, got VALUE` | [cli.ts:115](../src/cli.ts#L115), [:202](../src/cli.ts#L202) |
 | 2 | `--reset-owners takes --owners without a list: member IDs change in a new agent control chat.` | [cli.ts:125](../src/cli.ts#L125) |
 | 2 | `--owners: member ENTRY is not in the agent control chat. Start with --reset-owners --owners, or use the IDs of current members.` | [control.ts:401](../src/control.ts#L401) |
-| 1 | `Another server uses DATA (PID N). If no server runs, remove DATA/lock.` | [files.ts:109-111](../src/files.ts#L109-L111), [:169-171](../src/files.ts#L169-L171) |
+| 1 | `Another server uses DATA (PID N). If no server runs, remove DATA/lock.` | [files.ts:109-110](../src/files.ts#L109-L110), [:175-177](../src/files.ts#L175-L177) |
 | 1 | `Port PORT is in use. Start with --port N.` | [serve.ts:188](../src/serve.ts#L188) |
 | 1 | `Agent "NAME" was never started. Start it with: npx -y @simplex-chat/mcp serve NAME` | [register.ts:35](../src/register.ts#L35) |
 | 1 | `Add this entry under LOCATION in ~/.claude.json: {"simplex-NAME": ENTRY}` | [register.ts:55-58](../src/register.ts#L55-L58) |
@@ -643,8 +643,8 @@ stderr: `CONTEXT: ERROR` from `logError` ([log.ts:41-43](../src/log.ts#L41-L43))
 | Instructions: those of [1.1](#11-common-rules) for the display name `Claude` and the host `SimpleX daemon`, followed by the channel's | [session.ts:20](../src/session.ts#L20), [:51](../src/session.ts#L51), [tools.ts:441-452](../src/tools.ts#L441-L452) |
 | `send`, `receive`, `download`, `leave` and `list` see the session's own chats only; another session's chat is `No chat CHAT. list shows the agent's chats.` | [tools.ts:570-572](../src/tools.ts#L570-L572), [:1280-1289](../src/tools.ts#L1280-L1289) |
 | `connect` to a chat of another session: `The chat of TARGET belongs to another session; an owner can give it to this session with /give.` | [tools.ts:734-739](../src/tools.ts#L734-L739) |
-| Actions are numbered per session group, from 1, and the action key holds the session number | [hub.ts:78](../src/hub.ts#L78), [tools.ts:1678-1680](../src/tools.ts#L1678-L1680) |
-| Downloads are saved under `ROOT/_sessions/ID/files/` | [hub.ts:93](../src/hub.ts#L93), [messages.ts:225-227](../src/messages.ts#L225-L227) |
+| Actions are numbered per session group, from 1, and the action key holds the session number | [hub.ts:79](../src/hub.ts#L79), [tools.ts:1678-1680](../src/tools.ts#L1678-L1680) |
+| Downloads are saved under `ROOT/_sessions/ID/files/` | [hub.ts:94](../src/hub.ts#L94), [messages.ts:225-227](../src/messages.ts#L225-L227) |
 
 `reply` ([`replyTool`](../src/tools.ts#L462-L476), [`AgentTools.reply`](../src/tools.ts#L706-L714)):
 
@@ -661,11 +661,11 @@ Commands ([`MainGroup.command`](../src/main-group.ts#L121-L126)), one line `/KEY
 
 | Request | Condition | Reply | Code |
 |---|---|---|---|
-| `/sessions` | no session | `No sessions.` | [hub.ts:394-397](../src/hub.ts#L394-L397) |
-| `/sessions` | otherwise | one line per session of the hub: `N · NAME`, with `, closed` when it has no entry | [hub.ts:394-397](../src/hub.ts#L394-L397) |
-| `/join N` | no session N | `No session N. /sessions lists the sessions.` | [hub.ts:401](../src/hub.ts#L401) |
-| `/join N` | the sender is a member of its group | `You are a member of "N · NAME".` | [hub.ts:402-407](../src/hub.ts#L402-L407) |
-| `/join N` | otherwise: an invitation through the Main group, with the sender's role there, recorded in `invited` | `Sent you an invitation to "N · NAME".` | [hub.ts:409](../src/hub.ts#L409), [:209-213](../src/hub.ts#L209-L213) |
+| `/sessions` | no session | `No sessions.` | [hub.ts:398-401](../src/hub.ts#L398-L401) |
+| `/sessions` | otherwise | one line per session of the hub: `N · NAME`, with `, closed` when it has no entry | [hub.ts:398-401](../src/hub.ts#L398-L401) |
+| `/join N` | no session N | `No session N. /sessions lists the sessions.` | [hub.ts:405](../src/hub.ts#L405) |
+| `/join N` | the sender is a member of its group | `You are a member of "N · NAME".` | [hub.ts:406-411](../src/hub.ts#L406-L411) |
+| `/join N` | otherwise: an invitation through the Main group, with the sender's role there, recorded in `invited` | `Sent you an invitation to "N · NAME".` | [hub.ts:413](../src/hub.ts#L413), [:213-217](../src/hub.ts#L213-L217) |
 | `/approve reset`, `/reject reset` | sender not an owner | `Only owners decide a reset of the owners.` | [main-group.ts:129](../src/main-group.ts#L129) |
 | `/approve reset`, `/reject reset` | no reset card | `No reset of the owners is requested.` | [main-group.ts:131](../src/main-group.ts#L131) |
 | `/approve reset`, `/reject reset` | accepted | none; the card is edited to `Approved by NAME.` or `Rejected by NAME.`; after an approval the group is replaced | [main-group.ts:132-137](../src/main-group.ts#L132-L137) |
@@ -703,7 +703,7 @@ Commands and replies are those of [2.1](#21-commands-and-replies), from approver
 | `/give CHAT N` | accepted: CHAT's owner set to session N; the pending actions of CHAT with a card are rejected by the sender | `Gave KIND NAME (CHAT) to session N.` | [control.ts:346-351](../src/control.ts#L346-L351) |
 | `/list`, `/revoke`, `/leave` | | the chats of this session, also while it is closed | [tools.ts:1270-1289](../src/tools.ts#L1270-L1289) |
 | `/give CHAT N` in the control chat of `serve` | | the help reply | [control.ts:341](../src/control.ts#L341) |
-| one-line `/` text whose KEYWORD is none of `approve`, `reject`, `receive`, `forward`, `revoke`, `leave`, `delete`, `give`, `pending`, `list` | the sender is an approver | none: the message is a prompt of the session | [control.ts:19](../src/control.ts#L19), [:204](../src/control.ts#L204), [hub.ts:156](../src/hub.ts#L156) |
+| one-line `/` text whose KEYWORD is none of `approve`, `reject`, `receive`, `forward`, `revoke`, `leave`, `delete`, `give`, `pending`, `list` | the sender is an approver | none: the message is a prompt of the session | [control.ts:19](../src/control.ts#L19), [:204](../src/control.ts#L204), [hub.ts:157](../src/hub.ts#L157) |
 
 Cards of [2.2](#22-cards), and two more:
 
@@ -718,29 +718,30 @@ Posts:
 
 | Poster | Text | Code |
 |---|---|---|
-| Claude | the final answer of each turn, in parts of 12000 bytes, the first quoting the turn's prompt from the group when it fits, by the turn records below; then a changed short description | [hub.ts:178-194](../src/hub.ts#L178-L194), [:247-270](../src/hub.ts#L247-L270) |
-| Claude | `Session N is not running.`, as a reply to an approver's message that has no attachment at its delivery, after the earlier prompts and its own file; in the first 30 s after the daemon's start, only when the session does not attach by their end | [hub.ts:152-158](../src/hub.ts#L152-L158), [:221-235](../src/hub.ts#L221-L235), [:340](../src/hub.ts#L340) |
-| Claude | `The file of this message was not received: ERROR`, as a reply to an approver's message whose file failed or did not arrive in 10 minutes; the prompt is pushed without the file | [hub.ts:221-245](../src/hub.ts#L221-L245) |
-| `User` | each prompt typed in the terminal, in parts of 12000 bytes, except blank prompts, the prompts pushed from the group and one-line `/` commands | [hub.ts:181-189](../src/hub.ts#L181-L189), [user.ts:29-32](../src/user.ts#L29-L32) |
+| Claude | the final answer of each turn, in parts of 12000 bytes, the first quoting the turn's prompt from the group when it fits, by the turn records below; then a changed short description | [hub.ts:179-198](../src/hub.ts#L179-L198), [:251-274](../src/hub.ts#L251-L274) |
+| Claude | `Session N is not running.`, as a reply to an approver's message that has no attachment at its delivery, after the earlier prompts and its own file; in the first 30 s after the daemon's start, only when the session does not attach by their end | [hub.ts:153-159](../src/hub.ts#L153-L159), [:225-239](../src/hub.ts#L225-L239), [:344](../src/hub.ts#L344) |
+| Claude | `The file of this message was not received: ERROR`, as a reply to an approver's message whose file failed or did not arrive in 10 minutes; the prompt is pushed without the file | [hub.ts:225-249](../src/hub.ts#L225-L249) |
+| `User` | each prompt typed in the terminal, in parts of 12000 bytes, except blank prompts, prompts made only of this server's channel tags, the prompts pushed from the group and one-line `/` commands | [hub.ts:183-192](../src/hub.ts#L183-L192), [user.ts:29-32](../src/user.ts#L29-L32) |
 | Claude | files sent by `reply` | [tools.ts:706-714](../src/tools.ts#L706-L714) |
 
-Claude's posts with a quote, the answer and both replies, are sent again without the quote when the core refuses it with `errorStore` `invalidQuote` or `chatItemNotFound`, as for a deleted prompt ([hub.ts:264-270](../src/hub.ts#L264-L270), [:512-515](../src/hub.ts#L512-L515)).
+Claude's posts with a quote, the answer and both replies, are sent again without the quote when the core refuses it with `errorStore` `invalidQuote` or `chatItemNotFound`, as for a deleted prompt ([hub.ts:268-274](../src/hub.ts#L268-L274), [:516-519](../src/hub.ts#L516-L519)).
 
-Turn records, one per `/turn` with `prompt`, read before any await of the `/turn` ([hub.ts:58](../src/hub.ts#L58), [:178-183](../src/hub.ts#L178-L183), [:247-256](../src/hub.ts#L247-L256)):
+Turn records, one per `/turn` with `prompt`, read before any await of the `/turn` ([hub.ts:58](../src/hub.ts#L58), [:179-185](../src/hub.ts#L179-L185), [:251-260](../src/hub.ts#L251-L260)):
 
 ```
 on /turn {at, prompt}:
   item = oldest pushed prompt that prompt contains in a channel tag of this server,
          or that equals prompt and was pushed in the last 60 s; else null
-  turns += {at, item}; the matched pushed prompts are removed
+  turns += {at, item}, unless at is below answeredAt; the matched pushed prompts are removed
 on /turn {at, answer}, also an empty answer:
   earlier = turns with at below the answer's at
   quote = newest of earlier, its item; earlier leave turns
        ?? the oldest pushed prompt not quoted yet, marked quoted; it stays in pushed for its prompt
-at = performance.timeOrigin of the hook process; absent: Infinity for an answer, now for a prompt
+  answeredAt = max(answeredAt, at)
+at = performance.timeOrigin of the hook process; absent: Infinity for an answer's quote, now otherwise
 ```
 
-Group profile ([`createSessionGroup`](../src/hub.ts#L445-L457), [`Control.load`](../src/control.ts#L105-L112), [`describe`](../src/control.ts#L119-L122)):
+Group profile ([`createSessionGroup`](../src/hub.ts#L449-L461), [`Control.load`](../src/control.ts#L105-L112), [`describe`](../src/control.ts#L119-L122)):
 
 | Field | Value |
 |---|---|
@@ -788,23 +789,23 @@ Capabilities of the session server: `experimental: {"claude/channel": {}, "claud
 
 Channel instructions: `Messages in the simplex channel are prompts of your owners in the SimpleX group of this session: from is the owner's name, item the message ID, and file the path of a file they sent. Your final answer of each turn reaches them in that group; reply sends them a file.` ([session.ts:20](../src/session.ts#L20)).
 
-The prompts of a session are delivered one at a time, in arrival order ([hub.ts:157](../src/hub.ts#L157), [:221-235](../src/hub.ts#L221-L235)). A prompt's file is received without a card, with relays approved, into `ROOT/_sessions/ID/files/group/<file ID><extension>`, while a session is attached; the prompt is pushed after `rcvFileComplete`, and without `file` after `rcvFileError`, a failed receive or 10 minutes; the next prompt waits until then ([hub.ts:221-245](../src/hub.ts#L221-L245), [:202-207](../src/hub.ts#L202-L207)). Pushed prompts are kept until a turn's `prompt` matches them, at most 20 ([hub.ts:24](../src/hub.ts#L24), [:183](../src/hub.ts#L183), [:233](../src/hub.ts#L233), [:249-253](../src/hub.ts#L249-L253)).
+The prompts of a session are delivered one at a time, in arrival order ([hub.ts:158](../src/hub.ts#L158), [:225-239](../src/hub.ts#L225-L239)). A prompt's file is received without a card, with relays approved, into `ROOT/_sessions/ID/files/group/<file ID><extension>`, while a session is attached; the prompt is pushed after `rcvFileComplete`, and without `file` after `rcvFileError`, a failed receive or 10 minutes; the next prompt waits until then ([hub.ts:225-249](../src/hub.ts#L225-L249), [:206-211](../src/hub.ts#L206-L211)). Pushed prompts are kept until a turn's `prompt` matches them, at most 20 ([hub.ts:24](../src/hub.ts#L24), [:185](../src/hub.ts#L185), [:237](../src/hub.ts#L237), [:253-257](../src/hub.ts#L253-L257)).
 
 ### 4.6 Socket protocol
 
-HTTP/1.1 over `ROOT/daemon.sock`, the fallback path or the Windows pipe, protocol version `1`. Every request carries `Authorization: Bearer TOKEN`; bodies are JSON; streamed replies are NDJSON with the content type `application/x-ndjson`. Errors are `{"error": TEXT}` with a status other than 200. Types: [`protocol.ts`](../src/protocol.ts); routes: [`Daemon.routes`](../src/daemon.ts#L135-L158).
+HTTP/1.1 over `ROOT/daemon.sock`, the fallback path or the Windows pipe, protocol version `1`. Every request carries `Authorization: Bearer TOKEN`; bodies are JSON; streamed replies are NDJSON with the content type `application/x-ndjson`. Errors are `{"error": TEXT}` with a status other than 200. Types: [`protocol.ts`](../src/protocol.ts); routes: [`Daemon.routes`](../src/daemon.ts#L137-L160).
 
 | Route | Request | Reply | Code |
 |---|---|---|---|
-| `POST /session` | `{id, pid?, project, name?, config: {mainGroup, approve, expireHours}}`, `pid` the session server's parent process | `{number, displayName, version, protocol, owner: {owners, link?}}` | [daemon.ts:198-211](../src/daemon.ts#L198-L211) |
-| `POST /title` | `{id, pid?, name?, project, model?, config}`, `pid` from `CLAUDE_PID` | `{mainGroup, owner, version, protocol}`, after the title applied, or at once for a held title | [daemon.ts:213-239](../src/daemon.ts#L213-L239) |
-| `POST /attach` | `{id}` | stream held open: first line `{version, protocol}`, then `{prompt}` and `{permission}` lines | [daemon.ts:281-301](../src/daemon.ts#L281-L301) |
-| `POST /call` | `{id, tool, input}` | lines `{progress: TEXT}`, then one line `{result: CallToolResult or null}`; closing the request aborts the call | [daemon.ts:303-322](../src/daemon.ts#L303-L322) |
-| `POST /permission` | `{id, requestId, toolName, description, inputPreview}` | `{}` after the card's action is created | [daemon.ts:141-145](../src/daemon.ts#L141-L145) |
-| `POST /turn` | `{id, pid?, at?, prompt?, answer?, model?, effort?}`, `at` the time the hook started | `{}` after the posts | [daemon.ts:146-150](../src/daemon.ts#L146-L150) |
-| `GET /status` | none | `{version, protocol, mainGroup, owner, sessions: [{number, name, attached}]}`, the open sessions | [daemon.ts:402-405](../src/daemon.ts#L402-L405) |
-| `POST /reset-owners` | none | `{link}` after a reset without owners; `{}` after the card | [daemon.ts:152](../src/daemon.ts#L152), [hub.ts:364-368](../src/hub.ts#L364-L368) |
-| `POST /stop` | none | `{}` after the stop sequence; the process exits after the reply | [daemon.ts:153-156](../src/daemon.ts#L153-L156) |
+| `POST /session` | `{id, pid?, project, name?, config: {mainGroup, approve, expireHours}}`, `pid` the session server's parent process | `{number, displayName, version, protocol, owner: {owners, link?}}` | [daemon.ts:201-214](../src/daemon.ts#L201-L214) |
+| `POST /title` | `{id, pid?, name?, project, model?, config}`, `pid` from `CLAUDE_PID` | `{mainGroup, owner, version, protocol}`, after the title applied, or at once for a held title | [daemon.ts:216-246](../src/daemon.ts#L216-L246) |
+| `POST /attach` | `{id}` | stream held open: first line `{version, protocol}`, then `{prompt}` and `{permission}` lines | [daemon.ts:288-308](../src/daemon.ts#L288-L308) |
+| `POST /call` | `{id, tool, input}` | lines `{progress: TEXT}`, then one line `{result: CallToolResult or null}`; closing the request aborts the call | [daemon.ts:310-329](../src/daemon.ts#L310-L329) |
+| `POST /permission` | `{id, requestId, toolName, description, inputPreview}` | `{}` after the card's action is created | [daemon.ts:143-147](../src/daemon.ts#L143-L147) |
+| `POST /turn` | `{id, pid?, at?, prompt?, answer?, model?, effort?}`, `at` the time the hook started | `{}` after the posts | [daemon.ts:148-152](../src/daemon.ts#L148-L152) |
+| `GET /status` | none | `{version, protocol, mainGroup, owner, sessions: [{number, name, attached}]}`, the open sessions | [daemon.ts:409-412](../src/daemon.ts#L409-L412) |
+| `POST /reset-owners` | none | `{link}` after a reset without owners; `{}` after the card | [daemon.ts:154](../src/daemon.ts#L154), [hub.ts:368-372](../src/hub.ts#L368-L372) |
+| `POST /stop` | none | `{}` after the stop sequence; the process exits after the reply | [daemon.ts:155-158](../src/daemon.ts#L155-L158) |
 
 | Status | Error | Condition |
 |---|---|---|
@@ -818,7 +819,7 @@ HTTP/1.1 over `ROOT/daemon.sock`, the fallback path or the Windows pipe, protoco
 | 503 | `The SimpleX daemon is stopping.` | a session route while the daemon stops |
 | 500 | the error message | any other error, also a refused `permission` action |
 
-Session routes are `/session`, `/title`, `/attach`, `/call`, `/permission` and `/turn` ([daemon.ts:335-368](../src/daemon.ts#L335-L368)). Their ID is that of a session, or an alias of one ([daemon.ts:241-272](../src/daemon.ts#L241-L272)):
+Session routes are `/session`, `/title`, `/attach`, `/call`, `/permission` and `/turn` ([daemon.ts:342-375](../src/daemon.ts#L342-L375)). Their ID is that of a session, or an alias of one ([daemon.ts:248-279](../src/daemon.ts#L248-L279)):
 
 ```
 attached(pid) = the entry whose session server sent that pid and is attached
@@ -834,14 +835,16 @@ on /session, /title or /turn with id, pid:
                 ?? the session of the /title with that pid in the last 10 s
   session of pid ?? id; a session other than id records id as an alias, in aliases of its session.json
 on /attach, /call or /permission with id:        alias of id ?? id
-on /title with id, pid: no alias, no session.json for id, session of pid unknown:
-  the title of pid = id, its name; the reply at once
-  the title resolves as above once a /session with that pid arrives, or after 10 s
+on /title with id, pid: no alias, no session.json for id, session of pid unknown or a held title of pid:
+  held; the title of pid = id, its name; the reply at once
+  the title resolves as above once a /session with that pid arrives, or after 10 s, while the daemon runs
 on /session that creates the session of a held title: the title's name
 a new session.json:                              the aliases that already point to its ID
+on a daemon stop:                                the held titles into ROOT/titles.json
+on the next start:                               each one taken as a new /title
 ```
 
-`/session` and `/title` apply `config` to the hub: the expiry of all sessions, and a rename of the Main group when `mainGroup` differs ([hub.ts:358-362](../src/hub.ts#L358-L362)). `/session` also requests its session's mode: `requests` applies at once, ends a pending mode card and clears `hostDeclined`; `host` posts the mode card when the group has an approver and `hostDeclined` is unset, at once or after the next membership event of the group. A rejected mode card sets `hostDeclined` in session.json ([hub.ts:131-150](../src/hub.ts#L131-L150), [:288-291](../src/hub.ts#L288-L291), [:486](../src/hub.ts#L486)). `/title` opens or creates the session, renames it for a non-blank name, and passes `model` to `turn`, at once or, for a held title, after the wait ([daemon.ts:213-239](../src/daemon.ts#L213-L239), [:444-454](../src/daemon.ts#L444-L454)).
+`/session` and `/title` apply `config` to the hub: the expiry of all sessions, and a rename of the Main group when `mainGroup` differs ([hub.ts:362-366](../src/hub.ts#L362-L366)). `/session` also requests its session's mode: `requests` applies at once, ends a pending mode card and clears `hostDeclined`; `host` posts the mode card when the group has an approver and `hostDeclined` is unset, at once or after the next membership event of the group. A rejected mode card sets `hostDeclined` in session.json ([hub.ts:132-151](../src/hub.ts#L132-L151), [:292-295](../src/hub.ts#L292-L295), [:490](../src/hub.ts#L490)). `/title` opens or creates the session, renames it for a non-blank name, and passes `model` to `turn`, at once or, for a held title, after the wait ([daemon.ts:216-246](../src/daemon.ts#L216-L246), [:451-461](../src/daemon.ts#L451-L461)).
 
 ### 4.7 Plugin commands
 
@@ -860,30 +863,30 @@ Environment: `SIMPLEX_MCP_HOME`, ROOT; `CLAUDE_CODE_SESSION_ID` and `CLAUDE_PROJ
 
 | Code | Message | Code location |
 |---|---|---|
-| 0 | the hooks, also after errors; `link` and `reset-owners`; the daemon after a stop or with `running` | [hook.ts:53-55](../src/hook.ts#L53-L55), [:72-75](../src/hook.ts#L72-L75), [daemon.ts:418](../src/daemon.ts#L418) |
+| 0 | the hooks, also after errors; `link` and `reset-owners`; the daemon after a stop or with `running` | [hook.ts:53-55](../src/hook.ts#L53-L55), [:72-75](../src/hook.ts#L72-L75), [daemon.ts:425](../src/daemon.ts#L425) |
 | 2 | `simplex-mcp session runs from the Claude Code plugin.` | [session.ts:41](../src/session.ts#L41) |
 | 2 | `Not a Claude Code session ID: ID` | [session.ts:42](../src/session.ts#L42) |
 | 1 | `Restart Claude Code to update the SimpleX plugin.`, a spawn error (`link`, `reset-owners`) | [client.ts:45](../src/client.ts#L45), [:84](../src/client.ts#L84), [:111](../src/client.ts#L111) |
-| 1 | daemon start failed: ready line `error: TEXT`, also `error: Another daemon uses ROOT (PID N). If no daemon runs, remove ROOT/lock.` for a lock that its holder neither releases nor answers for in 150 checks | [daemon.ts:416-420](../src/daemon.ts#L416-L420), [:456-463](../src/daemon.ts#L456-L463), [files.ts:170](../src/files.ts#L170) |
-| 1 | `stop: ERROR` for a failed stop after a signal | [daemon.ts:424-429](../src/daemon.ts#L424-L429) |
+| 1 | daemon start failed: ready line `error: TEXT`, also `error: Another daemon uses ROOT (PID N). If no daemon runs, remove ROOT/lock.` for a lock that its holder neither releases nor answers for in 150 checks | [daemon.ts:423-427](../src/daemon.ts#L423-L427), [:463-470](../src/daemon.ts#L463-L470), [files.ts:176](../src/files.ts#L176) |
+| 1 | `stop: ERROR` for a failed stop after a signal | [daemon.ts:431-436](../src/daemon.ts#L431-L436) |
 
-`daemon.log` receives the daemon's stdout and stderr ([client.ts:77](../src/client.ts#L77)); it is emptied when over 10 MB, at each spawn and every hour while the daemon runs ([files.ts:88-97](../src/files.ts#L88-L97), [daemon.ts:105-111](../src/daemon.ts#L105-L111)). stdout lines:
+`daemon.log` receives the daemon's stdout and stderr ([client.ts:77](../src/client.ts#L77)); it is emptied when over 10 MB, at each spawn and every hour while the daemon runs ([files.ts:88-97](../src/files.ts#L88-L97), [daemon.ts:107-113](../src/daemon.ts#L107-L113)). stdout lines:
 
 | Moment | Line | Code |
 |---|---|---|
-| start | `SimpleX MCP daemon VERSION, data folder ROOT` | [daemon.ts:422](../src/daemon.ts#L422) |
+| start | `SimpleX MCP daemon VERSION, data folder ROOT` | [daemon.ts:429](../src/daemon.ts#L429) |
 | Main group created | `Main group "NAME" created.` | [main-group.ts:224](../src/main-group.ts#L224) |
 | link opened | `Main group link created. Whoever joins by it first becomes an owner of "NAME".` | [main-group.ts:171](../src/main-group.ts#L171) |
 | no owners, members present | `No owners in the Main group.` | [main-group.ts:16](../src/main-group.ts#L16), [:72](../src/main-group.ts#L72), [:147](../src/main-group.ts#L147) |
 | owner joined | `NAME joined (member ID) and is now an owner. The link is deleted.` | [main-group.ts:160](../src/main-group.ts#L160) |
 | Main group lost | `The Main group is lost. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` | [main-group.ts:165](../src/main-group.ts#L165) |
 | reset card, decision | `The reset of the owners waits for an owner's approval in the Main group.`, `Reset of the owners: Approved by NAME.` | [main-group.ts:104](../src/main-group.ts#L104), [:135](../src/main-group.ts#L135) |
-| session group created | `Group "N · NAME" of session N created.` | [hub.ts:455](../src/hub.ts#L455) |
+| session group created | `Group "N · NAME" of session N created.` | [hub.ts:459](../src/hub.ts#L459) |
 | session group lost | `The group "N · NAME" is lost.` | [control.ts:448](../src/control.ts#L448) |
 | actions | as in [3.4](#34-terminal-lines), with ` of session N` after `Action N`; `allowed.` for a tool use | [actions.ts:208](../src/actions.ts#L208), [:407](../src/actions.ts#L407) |
-| stop | `Cancelled K action(s).`, `Stopping: sending K cancelled card(s), up to 10 s. Ctrl-C to stop now.`, `Stopped.` | [daemon.ts:185](../src/daemon.ts#L185), [serve.ts:164](../src/serve.ts#L164), [daemon.ts:188](../src/daemon.ts#L188) |
+| stop | `Cancelled K action(s).`, `Stopping: sending K cancelled card(s), up to 10 s. Ctrl-C to stop now.`, `Stopped.` | [daemon.ts:188](../src/daemon.ts#L188), [serve.ts:164](../src/serve.ts#L164), [daemon.ts:191](../src/daemon.ts#L191) |
 
-stderr: `CONTEXT: ERROR` from `logError`, with CONTEXT among `Main group command`, `EVENT in the Main group`, `EVENT in the group of session N`, `prompt of session N`, `invitation to session N`, `members of session N`, `User`, `User in session N`, `group of session N`, `session N`, `owner of CHAT`, `mode host of session N`, `ROOT/_sessions/ID/session.json`, `ROOT/daemon.log`, `METHOD PATH` and those of [3.4](#34-terminal-lines). A session process writes `SimpleX daemon: ERROR`, `SimpleX channel: ERROR` and `permission relay: ERROR` to its own stderr, and the turn hook `SimpleX MCP turn: ERROR` ([session.ts:54](../src/session.ts#L54), [:59](../src/session.ts#L59), [:89](../src/session.ts#L89), [hook.ts:73](../src/hook.ts#L73)).
+stderr: `CONTEXT: ERROR` from `logError`, with CONTEXT among `Main group command`, `EVENT in the Main group`, `EVENT in the group of session N`, `prompt of session N`, `invitation to session N`, `members of session N`, `User`, `User in session N`, `group of session N`, `session N`, `owner of CHAT`, `mode host of session N`, `title`, `ROOT/_sessions/ID/session.json`, `ROOT/titles.json`, `ROOT/daemon.log`, `METHOD PATH` and those of [3.4](#34-terminal-lines). A session process writes `SimpleX daemon: ERROR`, `SimpleX channel: ERROR` and `permission relay: ERROR` to its own stderr, and the turn hook `SimpleX MCP turn: ERROR` ([session.ts:54](../src/session.ts#L54), [:59](../src/session.ts#L59), [:89](../src/session.ts#L89), [hook.ts:73](../src/hook.ts#L73)).
 
 ### 4.8 Plugin options, files and hook output
 
