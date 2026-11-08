@@ -269,6 +269,14 @@ describe("session groups", () => {
     expect(await session.control.ownerCommand(dan, {keyword: "pending", params: ""})).toBe(approversOnly)
   })
 
+  it("keep both the new name and the new model in the group's profile when a rename and a model change of the session overlap", async () => {
+    const chat = new FakeChat()
+    const session = await openSession(await hubWith(chat), id1, stored(1, "auth"))
+    await Promise.all([session.turn({id: id1, model: "claude-opus-5"}), session.rename("deploy")])
+    const {groupInfo} = chat.chats.get("#20")!.chatInfo as T.ChatInfo.Group
+    expect(groupInfo.groupProfile).toMatchObject({displayName: "1 · deploy", shortDescr: "claude-opus-5"})
+  })
+
   it("keep the profile an owner changed, its preference for files and media included, at the next update of the model and at a rename, from the group's current profile", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)

@@ -91,6 +91,7 @@ const inChat: Shown = {name: safeName, command: codeSpan}
 export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "postCard" | "outcome"> {
   private members: T.GroupMember[] = []
   private writes: Promise<unknown> = Promise.resolve()
+  private profileUpdates: Promise<unknown> = Promise.resolve()
   private ownerCommands: Promise<unknown> = Promise.resolve()
 
   constructor(
@@ -112,10 +113,9 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   async load(): Promise<void> {
     if (isLost(this.group)) return this.lose()
     const {displayName} = this.options
-    const group = await updateGroupProfile(this.chat, this.group, profile =>
+    await this.updateProfile(profile =>
       profile.displayName !== displayName || JSON.stringify(profile.groupPreferences?.commands) !== JSON.stringify(controlCommands) ? {...profile, displayName, groupPreferences: {...profile.groupPreferences, commands: controlCommands}} : undefined,
     )
-    this.group = {...group, customData: this.group.customData}
     await this.refreshMembers()
   }
 
@@ -125,8 +125,16 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   async describe(shortDescr: string): Promise<void> {
-    const group = await updateGroupProfile(this.chat, this.group, profile => (profile.shortDescr === shortDescr ? undefined : {...profile, shortDescr}))
-    this.group = {...group, customData: this.group.customData}
+    await this.updateProfile(profile => (profile.shortDescr === shortDescr ? undefined : {...profile, shortDescr}))
+  }
+
+  private updateProfile(change: (profile: T.GroupProfile) => T.GroupProfile | undefined): Promise<void> {
+    const update = this.profileUpdates.then(async () => {
+      const group = await updateGroupProfile(this.chat, this.group, change)
+      this.group = {...group, customData: this.group.customData}
+    })
+    this.profileUpdates = update.catch(() => undefined)
+    return update
   }
 
   async start(): Promise<void> {
