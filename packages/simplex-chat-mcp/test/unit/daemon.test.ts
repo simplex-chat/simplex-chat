@@ -11,7 +11,7 @@ import {LockedError, createDataFolder, readSessionFile, serverToken, sessionFold
 import {protocolVersion} from "../../src/protocol"
 import * as socket from "../../src/socket"
 import {requestJson, streamLines} from "../../src/socket"
-import {closeServer, until} from "./fixtures"
+import {closeServer, recordedRun, until} from "./fixtures"
 
 const id1 = "11111111-1111-4111-8111-111111111111"
 const id2 = "22222222-2222-4222-8222-222222222222"
@@ -825,6 +825,25 @@ describe("daemon", () => {
     await turnsUntil(() => agents.length === 2)
     expect(agents.map(({displayName}) => displayName)).toEqual(["1 · app", "2 · docs"])
     expect(readSessionFile(sessionFolder(root, id1))!.aliases).toBeUndefined()
+  })
+
+  it("refuses the session server of a process whose SessionStart hook marked its run unattended, before or after the server registers, and opens no session for it", async () => {
+    const {ppid} = recordedRun("claude-vscode", "mcp")
+    const pid = Number(recordedRun("claude-vscode", "SessionStart").env.CLAUDE_PID)
+    expect(pid).toBe(ppid)
+    const {d, agents} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    const unattended = {id: id1, pid, project: "/p/app", config: defaultConfig, unattended: true}
+    expect(await post("/title", unattended)).toEqual(titleReply)
+    const started = Date.now()
+    await expect(post("/session", {id: id2, pid, project: "/p/app", config: defaultConfig})).rejects.toMatchObject({status: 403})
+    expect(Date.now() - started).toBeLessThan(5_000)
+    const early = post("/session", {id: id3, pid: pid + 1, project: "/p/app", config: defaultConfig}).catch(error => error)
+    await turnsUntil(() => daemon!["titled"].listenerCount(String(pid + 1)) === 1)
+    await post("/title", {...unattended, pid: pid + 1})
+    expect(await early).toMatchObject({status: 403})
+    expect(agents).toHaveLength(0)
+    expect([id1, id2, id3].map(id => existsSync(sessionFolder(root, id)))).toEqual([false, false, false])
   })
 
   it.each(["/session", "/title"])("answers 400 to %s with an invalid config", async route => {

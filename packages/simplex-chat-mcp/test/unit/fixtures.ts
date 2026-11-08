@@ -1,3 +1,4 @@
+import {readFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
 import {ChatResponse, T} from "@simplex-chat/types"
@@ -8,6 +9,14 @@ import {Action, Actions, ActionHooks, Mode, NewAction} from "../../src/actions"
 import {ToolCall} from "../../src/messages"
 
 export const user = {userId: 1, profile: {displayName: "agent", peerType: "agent", profileId: 1}} as unknown as T.User
+
+const recordedRuns: {[field: string]: string | number | null}[] = readFileSync(join(__dirname, "claude-p-runs.jsonl"), "utf8").trim().split("\n").map(line => JSON.parse(line))
+
+export function recordedRun(entrypoint: string, kind: string): {ppid: number; env: NodeJS.ProcessEnv} {
+  const record = recordedRuns.find(entry => entry.CLAUDE_CODE_ENTRYPOINT === entrypoint && entry.kind === kind)!
+  const env = Object.fromEntries(Object.entries(record).filter((entry): entry is [string, string] => entry[0].startsWith("CLAUDE") && typeof entry[1] === "string"))
+  return {ppid: record.ppid as number, env}
+}
 
 export const data = join(tmpdir(), `simplex-mcp-unit-${process.pid}`)
 

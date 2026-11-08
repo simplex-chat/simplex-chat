@@ -1,5 +1,5 @@
 import {DaemonClient} from "./client"
-import {interactive, readConfig} from "./config"
+import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError} from "./log"
 import {TitleReply} from "./protocol"
@@ -39,7 +39,10 @@ export interface HookDeps {
 }
 
 export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = process.env, deps?: HookDeps): Promise<HookOutput> {
-  if (!interactive(env)) return {}
+  if (!interactive(env)) {
+    if (interactiveEntrypoint(env)) await markUnattended(stdin, env, deps?.client)
+    return {}
+  }
   const nodeVersion = deps?.nodeVersion ?? process.versions.node
   if (Number(nodeVersion.split(".")[0]) < minNodeMajor) return {systemMessage: `SimpleX MCP needs Node.js ${minNodeMajor} or later; found ${nodeVersion}.`}
   try {
@@ -53,6 +56,18 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
     return {systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "${mainGroup}":\n${qrCodeText(link, "plain")}\n${link}`}
   } catch (error) {
     return {systemMessage: `SimpleX MCP: ${isNotRunning(error) ? daemonStopped : errorText(error)}`}
+  }
+}
+
+async function markUnattended(stdin: string, env: NodeJS.ProcessEnv, client: HookDeps["client"] = DaemonClient.forRoot(dataRoot(env))): Promise<void> {
+  const pid = claudePid(env)
+  if (pid === undefined) return
+  try {
+    const input = JSON.parse(stdin) as SessionStartInput
+    await client.ensureDaemon(version)
+    await client.request("POST", "/title", {id: input.session_id, pid, project: input.cwd, config: readConfig(env), unattended: true})
+  } catch (error) {
+    logError("SimpleX MCP session start", error)
   }
 }
 

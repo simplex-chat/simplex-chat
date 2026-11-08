@@ -3,6 +3,7 @@ import {Config} from "./config"
 import {ToolName} from "./tools"
 
 export const protocolVersion = 1
+export const unattendedStatus = 403
 
 export interface DaemonInfo {
   version: string
@@ -32,6 +33,7 @@ export interface TitleRequest {
   project: string
   model?: string
   config: Config
+  unattended?: boolean
 }
 
 export interface PermissionRequest {

@@ -4,6 +4,7 @@ import {linkText, resetOwners, resetOwnersText, showLink} from "../../src/owner"
 import {qrCodeText} from "../../src/qr"
 import {SocketError} from "../../src/socket"
 import {version} from "../../src/version"
+import {recordedRun} from "./fixtures"
 
 function captureStderr(): string[] {
   const errors: string[] = []
@@ -64,18 +65,23 @@ describe("SessionStart hook", () => {
     expect(sent).toHaveLength(1)
   })
 
-  it("starts no daemon and posts nothing in a run that Claude Code marks unattended, as a claude -p run started by a command of a VS Code session, which keeps its entrypoint", async () => {
-    const ensured = jest.fn()
-    const requests: unknown[] = []
-    const client = {ensureDaemon: ensured, request: async (...args: unknown[]) => void requests.push(args)} as unknown as HookDeps["client"]
-    const env = {CLAUDE_CODE_ENTRYPOINT: "claude-vscode", CLAUDE_CODE_SESSION_ATTENDED: "0", CLAUDE_PID: "4321"}
+  it("marks at the daemon the Claude Code process of a run that Claude Code marks unattended, as a claude -p run started by a command of a VS Code session, which keeps its entrypoint, shows nothing, and its turn hooks post nothing", async () => {
+    const {env} = recordedRun("claude-vscode", "SessionStart")
+    const {client, requests} = fakeClient({owners: [], link: "https://simplex.chat/g#link"})
+    const ensured = jest.spyOn(client, "ensureDaemon")
     expect(await sessionStart(input, env, {client, nodeVersion: "22.1.0"})).toEqual({})
-    expect(await turn(JSON.stringify({session_id: "11111111-1111-4111-8111-111111111111", prompt: "Fix the build"}), env, client)).toEqual({})
-    expect(ensured).not.toHaveBeenCalled()
-    expect(requests).toEqual([])
+    expect(ensured).toHaveBeenCalledTimes(1)
+    expect(requests).toEqual([{method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 1769596, project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}, unattended: true}}])
+    const {env: turnEnv} = recordedRun("claude-vscode", "UserPromptSubmit")
+    expect(await turn(JSON.stringify({session_id: "11111111-1111-4111-8111-111111111111", prompt: "Fix the build"}), turnEnv, client)).toEqual({})
+    expect(requests).toHaveLength(1)
+    const errors = captureStderr()
+    const failing = fakeClient({owners: []}, new Error("no daemon"))
+    expect(await sessionStart(input, env, {client: failing.client, nodeVersion: "22.1.0"})).toEqual({})
+    expect(errors).toEqual(["SimpleX MCP session start: no daemon"])
     const {client: attended, requests: sent} = fakeClient({owners: ["Alice"]})
     await sessionStart(input, {...env, CLAUDE_CODE_SESSION_ATTENDED: "1"}, {client: attended, nodeVersion: "22.1.0"})
-    expect(sent).toHaveLength(1)
+    expect(sent).toMatchObject([{route: "/title", body: {name: "auth"}}])
   })
 
   it("needs Node.js 22", async () => {

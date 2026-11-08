@@ -9,7 +9,7 @@ import {LockedError, SessionFile, acquireLock, createDataFolder, dataRoot, logFi
 import {Hub, StoredSession, hubTexts} from "./hub"
 import {ExitError, errorText, log, logError} from "./log"
 import {ToolCall, validName} from "./messages"
-import {AttachLine, AttachRequest, CallRequest, OwnerState, PermissionRequest, ResetReply, SessionReply, SessionRequest, StatusReply, TitleReply, TitleRequest, TurnRequest, protocolVersion} from "./protocol"
+import {AttachLine, AttachRequest, CallRequest, OwnerState, PermissionRequest, ResetReply, SessionReply, SessionRequest, StatusReply, TitleReply, TitleRequest, TurnRequest, protocolVersion, unattendedStatus} from "./protocol"
 import {Handler, SocketError, isNotRunning, listen, requestJson, sendJson, startLines} from "./socket"
 import {ToolName} from "./tools"
 import {version} from "./version"
@@ -75,6 +75,7 @@ export class Daemon {
   private readonly titled = new EventEmitter()
   private readonly registered = new EventEmitter()
   private readonly held = new Map<number, TitleRequest>()
+  private readonly unattended = new Map<number, number>()
   private nextNumber: number
   private stopTimer?: NodeJS.Timeout
   private logTimer?: NodeJS.Timeout
@@ -201,7 +202,9 @@ export class Daemon {
 
   private async onSession(request: SessionRequest): Promise<SessionReply> {
     validConfig(request.config)
+    this.refuseUnattended(request.pid)
     const id = await this.resolve(request.id, request.pid, true)
+    this.refuseUnattended(request.pid)
     const title = request.pid === undefined ? undefined : this.titles.get(request.pid)
     const entry = this.entry(id, {...request, id, name: request.name ?? (title?.id === id ? title.name : undefined)})
     entry.pid = request.pid
@@ -217,7 +220,8 @@ export class Daemon {
   private async onTitle(request: TitleRequest): Promise<TitleReply> {
     validConfig(request.config)
     const {id, pid} = request
-    if (pid !== undefined && !this.aliases.has(id) && readSessionFile(this.folder(id)) === undefined && (this.held.has(pid) || this.processSession(pid) === undefined)) {
+    if (request.unattended === true) this.markUnattended(pid)
+    else if (pid !== undefined && !this.aliases.has(id) && readSessionFile(this.folder(id)) === undefined && (this.held.has(pid) || this.processSession(pid) === undefined)) {
       this.held.set(pid, request)
       this.titles.set(pid, {id, at: Date.now(), name: request.name?.trim() || undefined})
       this.titled.emit(String(pid))
@@ -230,6 +234,17 @@ export class Daemon {
       await this.hub.configure(request.config)
     } else await this.applyTitle(request)
     return {mainGroup: this.hub.mainGroup, owner: this.hub.owner(), version: this.deps.version, protocol: protocolVersion}
+  }
+
+  private markUnattended(pid: number | undefined): void {
+    if (pid === undefined) return
+    this.unattended.set(pid, Date.now())
+    this.titled.emit(String(pid))
+  }
+
+  private refuseUnattended(pid: number | undefined): void {
+    const marked = pid === undefined ? undefined : this.unattended.get(pid)
+    if (marked !== undefined && marked > Date.now() - processWait) throw new SocketError("The SessionStart hook of this process marked its run unattended.", unattendedStatus)
   }
 
   private async applyTitle({id: given, pid, name, project, model, config}: TitleRequest): Promise<void> {

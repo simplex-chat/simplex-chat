@@ -10,7 +10,7 @@ import {ExitError} from "../../src/log"
 import {protocolVersion} from "../../src/protocol"
 import {startSession} from "../../src/session"
 import {SocketError, listen, sendJson, startLines} from "../../src/socket"
-import {LineClient, closeServer, until} from "./fixtures"
+import {LineClient, closeServer, recordedRun, until} from "./fixtures"
 
 const id = "11111111-1111-4111-8111-111111111111"
 const unknownSession = "Unknown session; restart the Claude Code session."
@@ -25,7 +25,7 @@ type OnCall = (res: ServerResponse, n: number) => Promise<void>
 
 const attachLine = (res: ServerResponse): void => startLines(res)({version: "0.2.0", protocol: protocolVersion})
 
-async function fakeDaemon(onCall: OnCall, onAttach: (res: ServerResponse) => void = attachLine, protocol = protocolVersion): Promise<void> {
+async function fakeDaemon(onCall: OnCall, onAttach: (res: ServerResponse) => void = attachLine, protocol = protocolVersion, sessionRefusal?: SocketError): Promise<void> {
   let calls = 0
   server = await listen(socketPath(root), serverToken(root), {
     "GET /status": async (_b, res) => {
@@ -34,6 +34,7 @@ async function fakeDaemon(onCall: OnCall, onAttach: (res: ServerResponse) => voi
     },
     "POST /session": async (body, res) => {
       seen.push(`session ${JSON.stringify(body)}`)
+      if (sessionRefusal !== undefined) throw sessionRefusal
       sendJson(res, 200, {number: 1, displayName: "SimpleX MCP - app", version: "0.2.0", protocol: protocolVersion, owner: {owners: ["Alice"]}})
     },
     "POST /attach": async (_b, res) => {
@@ -167,6 +168,21 @@ describe("session server", () => {
     await new Promise(resolve => setTimeout(resolve, 100))
     expect(seen).toEqual([])
     expect(spawn).not.toHaveBeenCalled()
+  })
+
+  it("answers every call with the text of a run that is not interactive, and registers no more, after the daemon refuses its process as marked unattended, as the server of a claude -p run started by a command of a VS Code session, with the session's environment", async () => {
+    await fakeDaemon(async res => endWithResult(res, listResult), attachLine, protocolVersion, new SocketError("marked unattended", 403))
+    const errors = captureStderr()
+    const {env} = recordedRun("claude-vscode", "mcp")
+    const {client} = await session(env)
+    const refused = {content: [{type: "text", text: "This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions."}], isError: true}
+    await until(() => seen.length === 1)
+    expect((await listCall(client)).result).toEqual(refused)
+    expect((await client.request("tools/call", {name: "receive", arguments: {chat: "@1"}})).result).toEqual(refused)
+    client.notify("notifications/claude/channel/permission_request", {request_id: "abcde", tool_name: "Bash", description: "Run shell command", input_preview: "ls"})
+    await new Promise(resolve => setTimeout(resolve, 1_500))
+    expect(seen).toEqual([registered])
+    expect(errors).toEqual([])
   })
 
   it("lists tools while the daemon is still starting", async () => {

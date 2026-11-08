@@ -6,7 +6,7 @@ import {Config, ConfigError, defaultConfig, interactive, readConfig} from "./con
 import {dataRoot, isSessionId} from "./files"
 import {ExitError, errorText, logError} from "./log"
 import {ToolCall} from "./messages"
-import {AttachLine, CallLine, PermissionRequest, SessionRequest} from "./protocol"
+import {AttachLine, CallLine, PermissionRequest, SessionRequest, unattendedStatus} from "./protocol"
 import {SocketError, isNotRunning} from "./socket"
 import {ToolName, instructions, registerTools, replyTool} from "./tools"
 import {version} from "./version"
@@ -70,12 +70,14 @@ class DaemonLink {
   private connecting?: Promise<void>
   private attach?: AbortController
   private closed = false
+  private refused = false
   private retry = firstRetry
   private retryTimer?: NodeJS.Timeout
 
   constructor(private readonly client: DaemonClient, private readonly request: SessionRequest, private readonly io: SessionIo, private readonly onLine: (line: unknown) => void) {}
 
   connect(): Promise<void> {
+    if (this.refused) return Promise.reject(new Error(unattendedRun))
     this.connecting ??= this.open().catch(error => {
       this.connecting = undefined
       throw error
@@ -87,7 +89,7 @@ class DaemonLink {
     this.connect().then(
       () => (this.retry = firstRetry),
       error => {
-        if (this.closed) return
+        if (this.closed || this.refused) return
         logError("SimpleX daemon", error)
         if (!(error instanceof ProtocolError)) this.reconnect()
       },
@@ -110,6 +112,7 @@ class DaemonLink {
   }
 
   async permission(request: PermissionRequest): Promise<void> {
+    if (this.refused) return
     await this.connect()
     await this.client.request("POST", "/permission", request)
   }
@@ -122,7 +125,7 @@ class DaemonLink {
         if (call.signal.aborted) return undefined
         // the daemon refuses an unknown session before it runs the call, so repeating it is safe
         if (attempt < callAttempts && error instanceof SocketError && error.status === unknownSessionStatus) continue
-        return toolError(failureText(error))
+        return toolError(this.refused ? unattendedRun : failureText(error))
       }
     }
   }
@@ -158,7 +161,10 @@ class DaemonLink {
 
   private async open(): Promise<void> {
     await this.client.ensureDaemon(this.io.version, this.io.spawnDaemon)
-    await this.client.request("POST", "/session", this.request)
+    await this.client.request("POST", "/session", this.request).catch(error => {
+      if (error instanceof SocketError && error.status === unattendedStatus) this.refused = true
+      throw error
+    })
     if (this.closed) return
     const controller = new AbortController()
     this.attach?.abort()
