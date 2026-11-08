@@ -342,6 +342,7 @@ chatGroupTests = do
       it "should ignore relay invitation without the owner's signature" testChannelRelayInvUnsigned
       it "should ignore relay invitation sent to non-relay user" testChannelRelayInvNonRelayUser
       it "should not process relay requests of non-relay user on start" testChannelRelayRequestNonRelayUser
+      it "should process relay requests of relay user on start" testChannelRelayRequestRelayUser
       it "should not process relay requests of non-relay user on relay" testChannelRelayRequestOtherUser
       it "should remove relay from channel" testChannelRemoveRelay
       it "should remove left relay from channel" testChannelRemoveLeftRelay
@@ -12214,6 +12215,21 @@ testChannelRelayRequestNonRelayUser ps = do
     bob <## "to add members use /a team <name> or /create link #team"
     withCCTransaction bob $ \db -> DB.execute_ db "UPDATE groups SET relay_own_status = 'invited'"
   withTestChat ps "bob" $ \bob -> (bob </)
+
+testChannelRelayRequestRelayUser :: HasCallStack => TestParams -> IO ()
+testChannelRelayRequestRelayUser ps = do
+  withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+    bob ##> "/ad"
+    _ <- getContactLinks bob True
+    bob ##> "/g team"
+    bob <## "group #team is created"
+    bob <## "to add members use /a team <name> or /create link #team"
+    withCCTransaction bob $ \db -> DB.execute_ db "UPDATE groups SET relay_own_status = 'invited'"
+  withTestChatOpts ps relayTestOpts "bob" $ \bob ->
+    bob
+      <### [ "subscribed 1 connections on server localhost",
+             "internal error: SEInternalError {message = \"missing relay request data\"}"
+           ]
 
 testChannelRelayRequestOtherUser :: HasCallStack => TestParams -> IO ()
 testChannelRelayRequestOtherUser ps =
