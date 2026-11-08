@@ -188,7 +188,7 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Document | Contents |
 |---|---|
 | [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits; the plugin in section 8 |
-| [Flows](flows.md) | sequence diagrams of the main flows with source locations; the plugin in flows 17-29 |
+| [Flows](flows.md) | sequence diagrams of the main flows with source locations; the plugin in flows 17-30 |
 | [API](api.md) | the six tools, the control chat commands, replies and cards, the CLI; the plugin's tools, groups, channel, socket protocol, commands and files in section 4 |
 
 ---
@@ -210,16 +210,16 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L98) | `createDataFolder`, `acquireLock` | [98](../src/files.ts#L98), [103](../src/files.ts#L103) |
-| Session server | [`src/session.ts`](../src/session.ts#L39) | `startSession` | [39](../src/session.ts#L39) |
-| Session to daemon link | [`src/session.ts`](../src/session.ts#L68) | `DaemonLink` | [68](../src/session.ts#L68) |
+| Session server | [`src/session.ts`](../src/session.ts#L40) | `startSession` | [40](../src/session.ts#L40) |
+| Session to daemon link | [`src/session.ts`](../src/session.ts#L69) | `DaemonLink` | [69](../src/session.ts#L69) |
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L35) | `DaemonClient.ensureDaemon` | [35](../src/client.ts#L35) |
-| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L416) | `runDaemon` | [416](../src/daemon.ts#L416) |
-| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L137) | `Daemon.routes` | [137](../src/daemon.ts#L137) |
+| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L431) | `runDaemon` | [431](../src/daemon.ts#L431) |
+| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L138) | `Daemon.routes` | [138](../src/daemon.ts#L138) |
 | Hub | [`src/hub.ts`](../src/hub.ts#L346) | `Hub.open` | [346](../src/hub.ts#L346) |
 | Session and its group | [`src/hub.ts`](../src/hub.ts#L49) | `Session` | [49](../src/hub.ts#L49) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L28) | `MainGroup` | [28](../src/main-group.ts#L28) |
 | Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
-| Hooks | [`src/hook.ts`](../src/hook.ts#L41) | `sessionStart`, `turn` | [41](../src/hook.ts#L41), [58](../src/hook.ts#L58) |
+| Hooks | [`src/hook.ts`](../src/hook.ts#L41) | `sessionStart`, `turn` | [41](../src/hook.ts#L41), [74](../src/hook.ts#L74) |
 | `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts#L22) | `showLink`, `resetOwners` | [22](../src/owner.ts#L22), [28](../src/owner.ts#L28) |
 | SimpleX core | [`src/core.ts`](../src/core.ts#L20) | `openCore` | [20](../src/core.ts#L20) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |

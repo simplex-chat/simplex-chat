@@ -751,19 +751,19 @@ flowchart LR
 
 Data flow of a tool call:
 
-1. Claude Code calls a tool of the MCP server `simplex`; the SDK validates the arguments ([session.ts:56](../src/session.ts#L56), [tools.ts:502-512](../src/tools.ts#L502-L512)).
-2. Without a connection, the session process checks the daemon's status and version, spawns it when it is not running, sends `POST /session` and holds `POST /attach` open ([session.ts:158-180](../src/session.ts#L158-L180), [client.ts:35-47](../src/client.ts#L35-L47)).
-3. The session process sends `POST /call` with the session ID, the tool and the input, relays each `{progress}` line as an MCP progress notification, and returns the `{result}` line ([session.ts:129-148](../src/session.ts#L129-L148)).
-4. The daemon checks the token, finds or opens the entry of the session or of its alias, and runs the session's `AgentTools.call` with a signal tied to the request ([socket.ts:18-48](../src/socket.ts#L18-L48), [daemon.ts:311-330](../src/daemon.ts#L311-L330)).
+1. Claude Code calls a tool of the MCP server `simplex`; the SDK validates the arguments ([session.ts:57](../src/session.ts#L57), [tools.ts:502-512](../src/tools.ts#L502-L512)).
+2. Without a connection, the session process checks the daemon's status and version, spawns it when it is not running, sends `POST /session` and holds `POST /attach` open ([session.ts:162-187](../src/session.ts#L162-L187), [client.ts:35-47](../src/client.ts#L35-L47)).
+3. The session process sends `POST /call` with the session ID, the tool and the input, relays each `{progress}` line as an MCP progress notification, and returns the `{result}` line ([session.ts:133-152](../src/session.ts#L133-L152)).
+4. The daemon checks the token, finds or opens the entry of the session or of its alias, and runs the session's `AgentTools.call` with a signal tied to the request ([socket.ts:18-48](../src/socket.ts#L18-L48), [daemon.ts:326-345](../src/daemon.ts#L326-L345)).
 5. `AgentTools` sends chat commands to the core `_hub`; actions are created in the session's `Actions` and posted as cards in the session's group by its `Control` ([hub.ts:74-106](../src/hub.ts#L74-L106)).
 6. The core emits events to `Hub.onEvent`, which passes them to the Main group, to each session's `AgentTools.onEvent` and to the `Control` of the session group they belong to ([hub.ts:475-505](../src/hub.ts#L475-L505)).
 
 Data flow of a prompt from the session group:
 
 1. A message of a member from the Main group in the group of session N reaches `Session.onMessage`, which queues its delivery after the earlier prompts of the session ([hub.ts:479-484](../src/hub.ts#L479-L484), [:156-162](../src/hub.ts#L156-L162)).
-2. In the first 30 s after the hub opened, a delivery without an attachment waits for one. With an attachment, its file, when it has one, is received. Then, without an attachment, the hub replies `Session N is not running.`; with one, the prompt is pushed, and the line `{prompt}` is written to every `/attach` stream of the session ([hub.ts:238-252](../src/hub.ts#L238-L252), [daemon.ts:299](../src/daemon.ts#L299)).
-3. The session process sends it to Claude Code as `notifications/claude/channel` ([session.ts:52-55](../src/session.ts#L52-L55), [:192-196](../src/session.ts#L192-L196)).
-4. The hooks post the terminal prompts and the final answer of each turn with `POST /turn` ([hook.ts:58-76](../src/hook.ts#L58-L76), [hub.ts:182-201](../src/hub.ts#L182-L201)).
+2. In the first 30 s after the hub opened, a delivery without an attachment waits for one. With an attachment, its file, when it has one, is received. Then, without an attachment, the hub replies `Session N is not running.`; with one, the prompt is pushed, and the line `{prompt}` is written to every `/attach` stream of the session ([hub.ts:238-252](../src/hub.ts#L238-L252), [daemon.ts:314](../src/daemon.ts#L314)).
+3. The session process sends it to Claude Code as `notifications/claude/channel` ([session.ts:53-56](../src/session.ts#L53-L56), [:199-203](../src/session.ts#L199-L203)).
+4. The hooks post the terminal prompts and the final answer of each turn with `POST /turn` ([hook.ts:74-93](../src/hook.ts#L74-L93), [hub.ts:182-201](../src/hub.ts#L182-L201)).
 
 ### 8.2 Modules
 
@@ -771,16 +771,16 @@ Data flow of a prompt from the session group:
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `channelInstructions`, `permissionRequest` | [20-22](../src/session.ts#L20-L22) | instructions of the channel; schema of a permission request |
-| `startSession` | [39](../src/session.ts#L39) | session ID check, options, `McpServer` with the instructions and the capabilities `claude/channel` and `claude/channel/permission`, tools with `reply`, the permission request handler, stdio transport, background connect unless the text of invalid options answers every call |
-| `DaemonLink.connect`, `start`, `close`, `reconnect` | [77-109](../src/session.ts#L77-L109) | one shared connect promise; `start` logs a failure on stderr and, unless it is a `ProtocolError`, connects again later; `close` ends the attachment and the retries; `reconnect` sets one timer that starts again after the delay, 1 s, and doubles it when it fires, up to 30 s |
-| `DaemonLink.permission` | [111](../src/session.ts#L111) | `POST /permission` after the connect |
-| `DaemonLink.call` | [116](../src/session.ts#L116) | forward; one repeat after status 409; failures to tool errors |
-| `DaemonLink.forward` | [129](../src/session.ts#L129) | `/call` stream: progress lines, the result line; a broken stream drops the connection |
-| `DaemonLink.disconnect` | [151](../src/session.ts#L151) | drops the connection only when it is the current one |
-| `DaemonLink.open` | [158](../src/session.ts#L158) | `ensureDaemon`, `/session` with the parent process ID, `/attach` until its first line; each line to the channel; the end of `/attach` to `reconnect` |
-| `failureText` | [183](../src/session.ts#L183) | not running or status 503: `The SimpleX daemon stopped; repeat the call.` |
-| `channelNotification` | [192](../src/session.ts#L192) | attach lines to `notifications/claude/channel` and `notifications/claude/channel/permission` |
+| `unattendedRun`, `channelInstructions`, `permissionRequest` | [15-23](../src/session.ts#L15-L23) | the text of a run that is not interactive; instructions of the channel; schema of a permission request |
+| `startSession` | [40](../src/session.ts#L40) | session ID check, the text of a run that is not interactive, options, `McpServer` with the instructions and the capabilities `claude/channel` and `claude/channel/permission`, tools with `reply`, the permission request handler, stdio transport, background connect unless a text of the run or the options answers every call |
+| `DaemonLink.connect`, `start`, `close`, `reconnect` | [79-112](../src/session.ts#L79-L112) | one shared connect promise, refused at once after a 403 of `/session`; `start` logs a failure on stderr and, unless it is a `ProtocolError` or that refusal, connects again later; `close` ends the attachment and the retries; `reconnect` sets one timer that starts again after the delay, 1 s, and doubles it when it fires, up to 30 s |
+| `DaemonLink.permission` | [114](../src/session.ts#L114) | `POST /permission` after the connect; nothing after the refusal |
+| `DaemonLink.call` | [120](../src/session.ts#L120) | forward; one repeat after status 409; failures to tool errors, the text of a run that is not interactive after the refusal |
+| `DaemonLink.forward` | [133](../src/session.ts#L133) | `/call` stream: progress lines, the result line; a broken stream drops the connection |
+| `DaemonLink.disconnect` | [155](../src/session.ts#L155) | drops the connection only when it is the current one |
+| `DaemonLink.open` | [162](../src/session.ts#L162) | `ensureDaemon`, `/session` with the parent process ID, a 403 of it recorded as the refusal, `/attach` until its first line; each line to the channel; the end of `/attach` to `reconnect` |
+| `failureText` | [190](../src/session.ts#L190) | not running or status 503: `The SimpleX daemon stopped; repeat the call.` |
+| `channelNotification` | [199](../src/session.ts#L199) | attach lines to `notifications/claude/channel` and `notifications/claude/channel/permission` |
 
 #### [`client.ts`](../src/client.ts)
 
@@ -807,13 +807,13 @@ Data flow of a prompt from the session group:
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `protocolVersion` | [5](../src/protocol.ts#L5) | `1` |
-| `Owners`, `OwnerState` | [12-18](../src/protocol.ts#L12-L18) | the owners' names; with the Main group link, for `/title` and `/link` only |
-| `SessionRequest`, `TitleRequest` | [20-35](../src/protocol.ts#L20-L35) | `/session`, `/title` |
-| `PermissionRequest`, `TurnRequest` | [37-53](../src/protocol.ts#L37-L53) | `/permission`, `/turn` |
-| `AttachLine` | [55](../src/protocol.ts#L55) | `{prompt}` and `{permission}` lines of `/attach` |
-| `TitleReply`, `SessionReply`, `AttachRequest`, `CallRequest`, `CallLine` | [60-81](../src/protocol.ts#L60-L81) | replies and `/call` |
-| `StatusReply`, `ResetReply` | [83-91](../src/protocol.ts#L83-L91) | `/status`, `/reset-owners` |
+| `protocolVersion`, `unattendedStatus` | [5-6](../src/protocol.ts#L5-L6) | `1`; 403, the status of `/session` from a process marked unattended |
+| `Owners`, `OwnerState` | [13-19](../src/protocol.ts#L13-L19) | the owners' names; with the Main group link, for `/title` and `/link` only |
+| `SessionRequest`, `TitleRequest` | [21-37](../src/protocol.ts#L21-L37) | `/session`, `/title`, with `unattended` for the mark of a process |
+| `PermissionRequest`, `TurnRequest` | [39-55](../src/protocol.ts#L39-L55) | `/permission`, `/turn` |
+| `AttachLine` | [57](../src/protocol.ts#L57) | `{prompt}` and `{permission}` lines of `/attach` |
+| `TitleReply`, `SessionReply`, `AttachRequest`, `CallRequest`, `CallLine` | [62-83](../src/protocol.ts#L62-L83) | replies and `/call` |
+| `StatusReply`, `ResetReply` | [85-93](../src/protocol.ts#L85-L93) | `/status`, `/reset-owners` |
 
 #### [`daemon.ts`](../src/daemon.ts)
 
@@ -821,22 +821,22 @@ Data flow of a prompt from the session group:
 |---|---|---|
 | `HubLike`, `SessionLike`, `DaemonDeps` | [26-56](../src/daemon.ts#L26-L56) | interfaces the daemon uses; tests replace the hub |
 | `Entry` | [58](../src/daemon.ts#L58) | opening promise, session, open attachments, their writers, running calls, idle timer, the session server's parent process ID and the time it was last seen |
-| `Daemon.start` | [92](../src/daemon.ts#L92) | lock, stored sessions with their aliases and the next number, listener before the hub opens, hub, stop timer, the titles held at the last stop, hourly log trim |
-| `Daemon.routes`, `withHub`, `expiring` | [137-175](../src/daemon.ts#L137-L175) | the ten routes; requests wait for the hub; due actions expire first |
-| `Daemon.shutdown` | [177](../src/daemon.ts#L177) | stop sequence; the held titles saved |
-| `onSession`, `onTitle`, `applyTitle` | [202-247](../src/daemon.ts#L202-L247) | options checked; registration with the parent process ID, named by a held title of its ID, and its signal; a title of a new ID from a process without a known session, or from a process whose title is held, held until the server of that process registers, 10 s at most, and applied only while the daemon runs; a session opened or created at its title, its name and model, and the process of the title recorded |
-| `canonical`, `resolve`, `attachedSession`, `processSession`, `alias` | [249-280](../src/daemon.ts#L249-L280) | the session of an ID: its alias; for an ID with `session.json`, the ID, or for a hook the attached session of its Claude Code process, without an alias; else the session of the same Claude Code process, recorded as an alias in `session.json`; the wait of a session server for the title of its process |
-| `rename` | [282](../src/daemon.ts#L282) | a new name of the session, written into `session.json` as read after the group's rename |
-| `onAttach`, `onCall`, `hold` | [289-341](../src/daemon.ts#L289-L341) | attachment with the session's line writer; call stream; streams refused while stopping |
-| `entry`, `refuseWhenStopping`, `folder`, `openAgent` | [343-388](../src/daemon.ts#L343-L388) | session registry; status 503 while stopping, 400 for an ID that is not a session ID, 409 for an unknown one without a request; a new number and name, and the aliases that already point to the new session |
-| `scheduleIdle`, `scheduleStop` | [390-408](../src/daemon.ts#L390-L408) | idle close of a session, idle stop of the daemon |
-| `runDaemon` | [416](../src/daemon.ts#L416) | process entry: ROOT, start, ready line, signal handlers; for a held lock, a new start once it is released, `running` when its holder answers |
-| `productionDeps` | [442](../src/daemon.ts#L442) | token, `Hub.open` |
-| `processEvent` | [452](../src/daemon.ts#L452) | the next event of a PID on `titled` or `registered`, 10 s at most |
-| `lockHolder` | [464](../src/daemon.ts#L464) | up to 150 checks, 100 ms apart: `released` when ROOT/lock is gone, `answers` for any reply of the socket but ENOENT and ECONNREFUSED |
-| `sessionName` | [479](../src/daemon.ts#L479) | session title, else the project folder name, else `Claude Code` |
-| `validConfig` | [473](../src/daemon.ts#L473) | `config` of `/session` and `/title`: a valid Main group name, the mode, hours from 1 to 23; else status 400 |
-| `readyChannel` | [485](../src/daemon.ts#L485) | ready line to fd `SIMPLEX_MCP_READY_FD`, or stdout |
+| `Daemon.start` | [93](../src/daemon.ts#L93) | lock, stored sessions with their aliases and the next number, listener before the hub opens, hub, stop timer, the titles held at the last stop, hourly log trim |
+| `Daemon.routes`, `withHub`, `expiring` | [138-176](../src/daemon.ts#L138-L176) | the ten routes; requests wait for the hub; due actions expire first |
+| `Daemon.shutdown` | [178](../src/daemon.ts#L178) | stop sequence; the held titles saved |
+| `onSession`, `onTitle`, `markUnattended`, `refuseUnattended`, `applyTitle` | [203-262](../src/daemon.ts#L203-L262) | options checked; a title with `unattended` marks its process, ends a server's wait for the title of that process and opens nothing; a registration from a process marked in the last 10 s refused with 403, before and after its wait; registration with the parent process ID, named by a held title of its ID, and its signal; a title of a new ID from a process without a known session, or from a process whose title is held, held until the server of that process registers, 10 s at most, and applied only while the daemon runs; a session opened or created at its title, its name and model, and the process of the title recorded |
+| `canonical`, `resolve`, `attachedSession`, `processSession`, `alias` | [264-295](../src/daemon.ts#L264-L295) | the session of an ID: its alias; for an ID with `session.json`, the ID, or for a hook the attached session of its Claude Code process, without an alias; else the session of the same Claude Code process, recorded as an alias in `session.json`; the wait of a session server for the title of its process |
+| `rename` | [297](../src/daemon.ts#L297) | a new name of the session, written into `session.json` as read after the group's rename |
+| `onAttach`, `onCall`, `hold` | [304-356](../src/daemon.ts#L304-L356) | attachment with the session's line writer; call stream; streams refused while stopping |
+| `entry`, `refuseWhenStopping`, `folder`, `openAgent` | [358-403](../src/daemon.ts#L358-L403) | session registry; status 503 while stopping, 400 for an ID that is not a session ID, 409 for an unknown one without a request; a new number and name, and the aliases that already point to the new session |
+| `scheduleIdle`, `scheduleStop` | [405-423](../src/daemon.ts#L405-L423) | idle close of a session, idle stop of the daemon |
+| `runDaemon` | [431](../src/daemon.ts#L431) | process entry: ROOT, start, ready line, signal handlers; for a held lock, a new start once it is released, `running` when its holder answers |
+| `productionDeps` | [457](../src/daemon.ts#L457) | token, `Hub.open` |
+| `processEvent` | [467](../src/daemon.ts#L467) | the next event of a PID on `titled` or `registered`, 10 s at most |
+| `lockHolder` | [479](../src/daemon.ts#L479) | up to 150 checks, 100 ms apart: `released` when ROOT/lock is gone, `answers` for any reply of the socket but ENOENT and ECONNREFUSED |
+| `sessionName` | [494](../src/daemon.ts#L494) | session title, else the project folder name, else `Claude Code` |
+| `validConfig` | [488](../src/daemon.ts#L488) | `config` of `/session` and `/title`: a valid Main group name, the mode, hours from 1 to 23; else status 400 |
+| `readyChannel` | [500](../src/daemon.ts#L500) | ready line to fd `SIMPLEX_MCP_READY_FD`, or stdout |
 
 #### [`hub.ts`](../src/hub.ts)
 
@@ -902,8 +902,9 @@ Data flow of a prompt from the session group:
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `sessionStart` | [hook.ts:41](../src/hook.ts#L41) | Node.js check, options, `ensureDaemon`, `POST /title` with the title, the folder and the model, the link message |
-| `turn` | [hook.ts:58](../src/hook.ts#L58) | `ensureDaemon`, then `POST /turn` with `CLAUDE_PID`, the hook process's start time `performance.timeOrigin`, the prompt and the last answer, each cut to 250,000 characters, the new model and the effort level, repeated after status 409 up to 15 times 1 s apart; output `{}` |
+| `sessionStart` | [hook.ts:41](../src/hook.ts#L41) | `{}` for a run that is not interactive, after the mark of its process when only `CLAUDE_CODE_SESSION_ATTENDED` makes it so; Node.js check, options, `ensureDaemon`, `POST /title` with the title, the folder and the model, the link message |
+| `markUnattended` | [hook.ts:62](../src/hook.ts#L62) | with `CLAUDE_PID`: `ensureDaemon`, `POST /title` with `unattended`; a failure logged |
+| `turn` | [hook.ts:74](../src/hook.ts#L74) | `{}` for a run that is not interactive; `ensureDaemon`, then `POST /turn` with `CLAUDE_PID`, the hook process's start time `performance.timeOrigin`, the prompt and the last answer, each cut to 250,000 characters, the new model and the effort level, repeated after status 409 up to 15 times 1 s apart; output `{}` |
 | `linkCommand`, `resetCommand` | [owner.ts:7-8](../src/owner.ts#L7-L8) | `npx -y @simplex-chat/mcp@VERSION link` and `reset-owners`, VERSION of this package |
 | `linkText`, `resetOwnersText` | [owner.ts:10-20](../src/owner.ts#L10-L20) | the Main group's name with the owners, or with the link and a QR code on a terminal only |
 | `showLink`, `resetOwners` | [owner.ts:22-35](../src/owner.ts#L22-L35) | `link`, with the link from `GET /link` while the Main group has no owner; `reset-owners`, from a terminal only without owners |
@@ -913,7 +914,8 @@ Data flow of a prompt from the session group:
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `readConfig` | [config.ts:25](../src/config.ts#L25) | `CLAUDE_PLUGIN_OPTION_*` to `Config`, defaults for blank values, `ConfigError` texts |
+| `interactiveEntrypoint`, `interactive` | [config.ts:26-32](../src/config.ts#L26-L32) | `false` for `CLAUDE_CODE_ENTRYPOINT` `sdk-cli`, `sdk-ts` or `sdk-py`; `interactive` also `false` for `CLAUDE_CODE_SESSION_ATTENDED` `0` |
+| `readConfig` | [config.ts:34](../src/config.ts#L34) | `CLAUDE_PLUGIN_OPTION_*` to `Config`, defaults for blank values, `ConfigError` texts |
 | `dataRoot`, `hubFolder`, `sessionFolder` | [files.ts:32-48](../src/files.ts#L32-L48) | ROOT, `ROOT/_hub`, `ROOT/_sessions/<lower-case ID>` |
 | `SessionFile`, `readSessionFile`, `writeSessionFile`, `storedSessions` | [files.ts:12-73](../src/files.ts#L12-L73) | `session.json`: number, name, project, creation time, group, aliases, model, effort, a rejected mode `host`; an unparsable file is skipped with a log line; a write goes to `session.json.tmp`, renamed into place |
 | `socketPath` | [files.ts:75](../src/files.ts#L75) | `ROOT/daemon.sock`; over 103 bytes `TMP/simplex-mcp-HASH.sock`; Windows `\\.\pipe\simplex-mcp-HASH` |
@@ -939,11 +941,12 @@ Memory of the daemon:
 |---|---|---|---|
 | Entries of open sessions | `Daemon.entries` ([daemon.ts:70](../src/daemon.ts#L70)) | `entry`, idle close, stop | routes, `status` |
 | Line writers of the attachments | `Entry.writers` ([daemon.ts:63](../src/daemon.ts#L63)) | `onAttach` | `Session.onLine` |
-| Stored sessions, next number | `Daemon.stored`, `nextNumber` ([daemon.ts:72-78](../src/daemon.ts#L72-L78)) | `Daemon` constructor, `openAgent` | `openHub`, `openAgent` |
+| Stored sessions, next number | `Daemon.stored`, `nextNumber` ([daemon.ts:72-79](../src/daemon.ts#L72-L79)) | `Daemon` constructor, `openAgent` | `openHub`, `openAgent` |
 | Aliases of sessions | `Daemon.aliases`, ID to session ID ([daemon.ts:73](../src/daemon.ts#L73)) | `Daemon` constructor, `alias` | `canonical`, `resolve` |
 | Titles by process | `Daemon.titles`, PID to session ID, time and the name of a held title, and the `titled` signal ([daemon.ts:74-75](../src/daemon.ts#L74-L75)) | `onTitle`, `applyTitle` | `processSession`, the wait of `resolve`, `onSession` |
 | Registrations by process | `Daemon.registered`, the signal of a `/session` with that PID ([daemon.ts:76](../src/daemon.ts#L76)) | `onSession` | the wait of a held title |
 | Held titles | `Daemon.held`, PID to its last held `/title` request ([daemon.ts:77](../src/daemon.ts#L77)) | `onTitle`, the end of its wait | `onTitle`, `shutdown` |
+| Processes of unattended runs | `Daemon.unattended`, PID to the time of its mark ([daemon.ts:78](../src/daemon.ts#L78)) | `onTitle` with `unattended` | `onSession` |
 | Process of a session server | `Entry.pid`, `Entry.seen` ([daemon.ts:65-66](../src/daemon.ts#L65-L66)) | `onSession`, the end of the last attachment | `processSession` |
 | Sessions | `Hub.sessions`, by number ([hub.ts:331](../src/hub.ts#L331)) | `Hub.session` | events, Main group commands |
 | End of the held prompts | `Hub.promptsHeldUntil`, 30 s after the stored sessions opened ([hub.ts:330](../src/hub.ts#L330), [:356](../src/hub.ts#L356)) | `Hub.open` | `Session.deliver` |
@@ -957,7 +960,7 @@ Memory of the daemon:
 | The requested mode | `Session.requested` ([hub.ts:61](../src/hub.ts#L61)) | `requestMode`, a rejected or expired `mode` card | `askMode` |
 | Members of the Main group, its link, the reset card | `MainGroup` ([main-group.ts:30-34](../src/main-group.ts#L30-L34)) | `refreshMembers`, `openLink`, `askReset` | owner checks, the statement of trust at a join, `/status`, `/title`, `/link` |
 
-Memory of a session process: one connection promise, one attachment, and the retry delay with its timer ([session.ts:68-75](../src/session.ts#L68-L75)).
+Memory of a session process: one connection promise, one attachment, the refusal of the daemon, and the retry delay with its timer ([session.ts:69-77](../src/session.ts#L69-L77)).
 
 Chat database custom data, all in the core `_hub` unless noted:
 
@@ -977,25 +980,25 @@ Files:
 
 | Path | Contents | Written | Read |
 |---|---|---|---|
-| `ROOT/` | data root, mode 0700 | every client and the daemon ([client.ts:23](../src/client.ts#L23), [daemon.ts:421](../src/daemon.ts#L421)) | |
+| `ROOT/` | data root, mode 0700 | every client and the daemon ([client.ts:23](../src/client.ts#L23), [daemon.ts:436](../src/daemon.ts#L436)) | |
 | `ROOT/token` | the bearer token, 0600 | the first client or daemon ([files.ts:119-129](../src/files.ts#L119-L129)) | every client, the daemon |
-| `ROOT/lock` | PID of the daemon, linked from `ROOT/lock.PID.HEX.tmp`; a stopped daemon's lock is claimed through `ROOT/lock.PID.claim`, removed after the takeover | `Daemon.start` ([daemon.ts:93](../src/daemon.ts#L93), [files.ts:177-216](../src/files.ts#L177-L216)) | the next daemon |
-| `ROOT/titles.json` | the `/title` requests held at a stop, 0600 | `shutdown` ([daemon.ts:180](../src/daemon.ts#L180)) | the next `Daemon.start`, which removes it ([daemon.ts:106](../src/daemon.ts#L106)) |
+| `ROOT/lock` | PID of the daemon, linked from `ROOT/lock.PID.HEX.tmp`; a stopped daemon's lock is claimed through `ROOT/lock.PID.claim`, removed after the takeover | `Daemon.start` ([daemon.ts:94](../src/daemon.ts#L94), [files.ts:177-216](../src/files.ts#L177-L216)) | the next daemon |
+| `ROOT/titles.json` | the `/title` requests held at a stop, 0600 | `shutdown` ([daemon.ts:181](../src/daemon.ts#L181)) | the next `Daemon.start`, which removes it ([daemon.ts:107](../src/daemon.ts#L107)) |
 | `ROOT/daemon.sock` | the socket | `listen` ([socket.ts:40-43](../src/socket.ts#L40-L43)) | clients |
 | `ROOT/daemon.log` | the daemon's stdout and stderr, emptied over 10 MB at a spawn and every hour | `spawnDaemon` ([client.ts:71-79](../src/client.ts#L71-L79)), [`trimLog`](../src/files.ts#L86-L89) | people |
 | `ROOT/_hub/`, `ROOT/_user/` | databases and `tmp/` of the profiles `Claude` and `User` | [`openCore`](../src/core.ts#L20-L36) | the cores |
-| `ROOT/_sessions/ID/session.json` | `{number, name, project, created, group?, aliases?, model?, effort?, hostDeclined?}`, 0600, replaced whole through `session.json.tmp` | `openAgent`, `rename`, `alias`, `Hub.session`, `declineHost`, `store` ([daemon.ts:378-388](../src/daemon.ts#L378-L388), [:282-287](../src/daemon.ts#L282-L287), [:275-280](../src/daemon.ts#L275-L280), [hub.ts:396](../src/hub.ts#L396), [:304-313](../src/hub.ts#L304-L313)) | `Daemon` constructor, `resolve`, `Hub.session`, `alias`, `store` |
+| `ROOT/_sessions/ID/session.json` | `{number, name, project, created, group?, aliases?, model?, effort?, hostDeclined?}`, 0600, replaced whole through `session.json.tmp` | `openAgent`, `rename`, `alias`, `Hub.session`, `declineHost`, `store` ([daemon.ts:393-403](../src/daemon.ts#L393-L403), [:297-302](../src/daemon.ts#L297-L302), [:290-295](../src/daemon.ts#L290-L295), [hub.ts:396](../src/hub.ts#L396), [:304-313](../src/hub.ts#L304-L313)) | `Daemon` constructor, `resolve`, `Hub.session`, `alias`, `store` |
 | `ROOT/_sessions/ID/files/` | downloads of the session's chats as in [3.3](#33-files); `group/` with the files of the prompts from the group; `sent/`, deleted when the session opens | the core ([hub.ts:254-262](../src/hub.ts#L254-L262), [:393](../src/hub.ts#L393)) | tools, Claude |
 
 ### 8.4 Process lifecycle
 
 #### Session start
 
-1. The SessionStart hook checks Node.js 22, reads the options, starts the daemon when it is not running, and sends `POST /title` with the session ID, `CLAUDE_PID`, title, project folder, model and options ([hook.ts:41-56](../src/hook.ts#L41-L56)).
-2. `/title` resolves the ID to a session as in [API 4.6](api.md#46-socket-protocol), so that `/clear`, `/resume` and `--continue` keep the session of the running Claude Code process, with an alias only for an ID without `session.json`; a new ID from a process without a known session waits, after the reply, for the server of that process to register, up to 10 s; then `/title` opens the session: from `session.json`, or with a new number and the name from the title or the folder; `Hub.session` finds the group of `session.json` or creates one, adds `User`, invites the Main group's owners, and loads its `Control` ([daemon.ts:217-247](../src/daemon.ts#L217-L247), [:378-388](../src/daemon.ts#L378-L388), [hub.ts:386-404](../src/hub.ts#L386-L404)).
-3. A new title renames the group and `session.json`; the model is written to the group's short description ([daemon.ts:245-246](../src/daemon.ts#L245-L246)).
+1. The SessionStart hook checks Node.js 22, reads the options, starts the daemon when it is not running, and sends `POST /title` with the session ID, `CLAUDE_PID`, title, project folder, model and options ([hook.ts:41-60](../src/hook.ts#L41-L60)). In a run that is not interactive, it returns `{}`; when only `CLAUDE_CODE_SESSION_ATTENDED` `0` makes the run so, it first sends `POST /title` with `unattended`, and `/session` from that `CLAUDE_PID` gets 403 for 10 s ([flow 30](flows.md#30-a-run-that-is-not-interactive)).
+2. `/title` resolves the ID to a session as in [API 4.6](api.md#46-socket-protocol), so that `/clear`, `/resume` and `--continue` keep the session of the running Claude Code process, with an alias only for an ID without `session.json`; a new ID from a process without a known session waits, after the reply, for the server of that process to register, up to 10 s; then `/title` opens the session: from `session.json`, or with a new number and the name from the title or the folder; `Hub.session` finds the group of `session.json` or creates one, adds `User`, invites the Main group's owners, and loads its `Control` ([daemon.ts:220-262](../src/daemon.ts#L220-L262), [:393-403](../src/daemon.ts#L393-L403), [hub.ts:386-404](../src/hub.ts#L386-L404)).
+3. A new title renames the group and `session.json`; the model is written to the group's short description ([daemon.ts:260-261](../src/daemon.ts#L260-L261)).
 4. The hook prints the link message while the Main group has no owner, else `{}`.
-5. The session process connects in the background: `/session` resolves its ID, waiting up to 10 s for the title of its process when the ID is new, registers the options and its parent process, and requests the mode; `/attach` sets the session's line writer ([daemon.ts:202-215](../src/daemon.ts#L202-L215), [:289-309](../src/daemon.ts#L289-L309)). When `/attach` ends or the connection fails, except with a `ProtocolError`, the session process connects again ([session.ts:85-109](../src/session.ts#L85-L109)).
+5. The session process connects in the background: `/session` resolves its ID, waiting up to 10 s for the title of its process when the ID is new, registers the options and its parent process, and requests the mode; `/attach` sets the session's line writer ([daemon.ts:203-218](../src/daemon.ts#L203-L218), [:304-324](../src/daemon.ts#L304-L324)). When `/attach` ends or the connection fails, except with a `ProtocolError` or a 403 of `/session`, the session process connects again ([session.ts:88-112](../src/session.ts#L88-L112)).
 
 #### Daemon spawn and version check
 
@@ -1014,12 +1017,12 @@ ensureDaemon(VERSION):                               client.ts:32
 
 #### Daemon start
 
-1. `ROOT` is created, the options are read, and the lock is taken. A lock held by another live process is checked for up to 15 s: when it is released, the start runs again; when the socket answers, the ready line is `running`; otherwise `error: Another daemon uses ROOT (PID N). If no daemon runs, remove ROOT/lock.` and exit code 1 ([daemon.ts:416-428](../src/daemon.ts#L416-L428), [:464-471](../src/daemon.ts#L464-L471), [:92-95](../src/daemon.ts#L92-L95)).
-2. The stored sessions are read, with their aliases, and the next number set ([daemon.ts:86-90](../src/daemon.ts#L86-L90)).
-3. The socket listens before the hub opens; requests wait for the hub ([daemon.ts:97-98](../src/daemon.ts#L97-L98), [:163-168](../src/daemon.ts#L163-L168)).
-4. `Hub.open`: core `_hub` with profile `Claude`; the Main group found by its marker or created; `MainGroup.load` and `start`, with a link while it has no owner; core `_user` and its connection to `Claude` at the first start; a `Session` for each stored session; prompts held for 30 s; events ([hub.ts:346-363](../src/hub.ts#L346-L363), [daemon.ts:126-129](../src/daemon.ts#L126-L129)).
-5. A failed hub open closes the listener and releases the lock; the requests that waited get status 500 ([daemon.ts:99-118](../src/daemon.ts#L99-L118)).
-6. The stop timer and the hourly log trim start; the titles held at the last stop are read from `ROOT/titles.json` and taken as new `/title` requests; the log line `SimpleX MCP daemon VERSION, data folder ROOT`; the ready line `ready` ([daemon.ts:105-113](../src/daemon.ts#L105-L113), [:430-431](../src/daemon.ts#L430-L431)).
+1. `ROOT` is created, the options are read, and the lock is taken. A lock held by another live process is checked for up to 15 s: when it is released, the start runs again; when the socket answers, the ready line is `running`; otherwise `error: Another daemon uses ROOT (PID N). If no daemon runs, remove ROOT/lock.` and exit code 1 ([daemon.ts:431-443](../src/daemon.ts#L431-L443), [:479-486](../src/daemon.ts#L479-L486), [:93-96](../src/daemon.ts#L93-L96)).
+2. The stored sessions are read, with their aliases, and the next number set ([daemon.ts:87-91](../src/daemon.ts#L87-L91)).
+3. The socket listens before the hub opens; requests wait for the hub ([daemon.ts:98-99](../src/daemon.ts#L98-L99), [:164-169](../src/daemon.ts#L164-L169)).
+4. `Hub.open`: core `_hub` with profile `Claude`; the Main group found by its marker or created; `MainGroup.load` and `start`, with a link while it has no owner; core `_user` and its connection to `Claude` at the first start; a `Session` for each stored session; prompts held for 30 s; events ([hub.ts:346-363](../src/hub.ts#L346-L363), [daemon.ts:127-130](../src/daemon.ts#L127-L130)).
+5. A failed hub open closes the listener and releases the lock; the requests that waited get status 500 ([daemon.ts:100-119](../src/daemon.ts#L100-L119)).
+6. The stop timer and the hourly log trim start; the titles held at the last stop are read from `ROOT/titles.json` and taken as new `/title` requests; the log line `SimpleX MCP daemon VERSION, data folder ROOT`; the ready line `ready` ([daemon.ts:106-114](../src/daemon.ts#L106-L114), [:445-446](../src/daemon.ts#L445-L446)).
 
 #### Event dispatch
 
@@ -1038,13 +1041,13 @@ ensureDaemon(VERSION):                               client.ts:32
 
 #### Attach, idle close and idle stop
 
-- An attachment cancels the session's idle timer; its end, when no other attachment remains, records the time, clears the line writer, ends the pending permissions and starts the timer ([daemon.ts:289-309](../src/daemon.ts#L289-L309)).
-- The idle timer, 10 minutes, closes the entry when the session has no running call and no action in memory; otherwise it starts again ([daemon.ts:390-400](../src/daemon.ts#L390-L400)). A closed session keeps its `Session` in the hub, so its group answers `/list` and `/revoke` ([hub.ts:386-391](../src/hub.ts#L386-L391)).
-- When no entry remains, the stop timer, 10 minutes, stops the daemon ([daemon.ts:402-408](../src/daemon.ts#L402-L408)).
+- An attachment cancels the session's idle timer; its end, when no other attachment remains, records the time, clears the line writer, ends the pending permissions and starts the timer ([daemon.ts:304-324](../src/daemon.ts#L304-L324)).
+- The idle timer, 10 minutes, closes the entry when the session has no running call and no action in memory; otherwise it starts again ([daemon.ts:405-415](../src/daemon.ts#L405-L415)). A closed session keeps its `Session` in the hub, so its group answers `/list` and `/revoke` ([hub.ts:386-391](../src/hub.ts#L386-L391)).
+- When no entry remains, the stop timer, 10 minutes, stops the daemon ([daemon.ts:417-423](../src/daemon.ts#L417-L423)).
 
 #### Stop
 
-On `SIGINT`, `SIGTERM`, `POST /stop` or the stop timer ([daemon.ts:177-200](../src/daemon.ts#L177-L200)):
+On `SIGINT`, `SIGTERM`, `POST /stop` or the stop timer ([daemon.ts:178-201](../src/daemon.ts#L178-L201)):
 
 1. Timers are cleared, the held titles are saved in `ROOT/titles.json`, the listener closes, and open streams are destroyed.
 2. `Hub.stop`: the actions of every session are stopped, cards edited to `Cancelled: the server stopped.`; queued group events are awaited; cancelled cards get 10 s to be sent; the download checks stop; the cores `_user` and `_hub` close ([hub.ts:442-452](../src/hub.ts#L442-L452)).
@@ -1071,7 +1074,7 @@ Tool-use state machine, one action of tool `permission` per request:
 | `permission_request` | | `pending`, card posted | [hub.ts:171-172](../src/hub.ts#L171-L172) |
 | `/approve N` | `pending` | `performing`, `allow` pushed, then `done` | [hub.ts:174-175](../src/hub.ts#L174-L175), [tools.ts:557-573](../src/tools.ts#L557-L573) |
 | `/reject N` | `pending` | `rejected`, `deny` pushed | [hub.ts:174-175](../src/hub.ts#L174-L175) |
-| a prompt or an answer of a hook that started after the card's creation, end of the last attachment | `pending` | `expired`, card edited to `Ended.` | [hub.ts:183](../src/hub.ts#L183), [:203-207](../src/hub.ts#L203-L207), [daemon.ts:306](../src/daemon.ts#L306), [actions.ts:244-248](../src/actions.ts#L244-L248) |
+| a prompt or an answer of a hook that started after the card's creation, end of the last attachment | `pending` | `expired`, card edited to `Ended.` | [hub.ts:183](../src/hub.ts#L183), [:203-207](../src/hub.ts#L203-L207), [daemon.ts:321](../src/daemon.ts#L321), [actions.ts:244-248](../src/actions.ts#L244-L248) |
 | expiry | `pending` | `expired`, card edited to `Expired.` | [actions.ts:309-318](../src/actions.ts#L309-L318) |
 | `done`, `rejected` or `expired` | | removed from the session's actions | [hub.ts:176-178](../src/hub.ts#L176-L178) |
 
@@ -1091,11 +1094,11 @@ stateDiagram-v2
 
 | Direction | Message | Code |
 |---|---|---|
-| daemon to session | `{prompt: {text, from, item, file?}}`, `{permission: {requestId, behavior}}` on `/attach` | [protocol.ts:55-58](../src/protocol.ts#L55-L58) |
-| session to Claude Code | `notifications/claude/channel` `{content, meta: {from, item, file?}}`; `notifications/claude/channel/permission` `{request_id, behavior}` | [session.ts:192-196](../src/session.ts#L192-L196) |
-| Claude Code to session | `notifications/claude/channel/permission_request` `{request_id, tool_name, description, input_preview}` | [session.ts:57-61](../src/session.ts#L57-L61) |
-| session to daemon | `POST /permission` | [session.ts:111-114](../src/session.ts#L111-L114) |
-| hooks to daemon | `POST /turn` `{id, pid?, at?, prompt?, answer?, model?, effort?}`, `at` the hook's `performance.timeOrigin`, `prompt` and `answer` cut to 250,000 characters | [hook.ts:58-80](../src/hook.ts#L58-L80) |
+| daemon to session | `{prompt: {text, from, item, file?}}`, `{permission: {requestId, behavior}}` on `/attach` | [protocol.ts:57-60](../src/protocol.ts#L57-L60) |
+| session to Claude Code | `notifications/claude/channel` `{content, meta: {from, item, file?}}`; `notifications/claude/channel/permission` `{request_id, behavior}` | [session.ts:199-203](../src/session.ts#L199-L203) |
+| Claude Code to session | `notifications/claude/channel/permission_request` `{request_id, tool_name, description, input_preview}` | [session.ts:58-62](../src/session.ts#L58-L62) |
+| session to daemon | `POST /permission` | [session.ts:114-118](../src/session.ts#L114-L118) |
+| hooks to daemon | `POST /turn` `{id, pid?, at?, prompt?, answer?, model?, effort?}`, `at` the hook's `performance.timeOrigin`, `prompt` and `answer` cut to 250,000 characters | [hook.ts:74-97](../src/hook.ts#L74-L97) |
 
 ```
 on an approver's message m in N:   one-line "/" with a keyword of ownerKeywords: a command, not a prompt
@@ -1138,7 +1141,7 @@ Sources: [hub.ts:156-207](../src/hub.ts#L156-L207), [:238-293](../src/hub.ts#L23
 | Rule | Code |
 |---|---|
 | The socket is in ROOT, mode 0700, or a named pipe on Windows; every request needs the token, compared with `timingSafeEqual` | [socket.ts:19-25](../src/socket.ts#L19-L25), [files.ts:75-80](../src/files.ts#L75-L80) |
-| The Main group link is shown only in the hook's `systemMessage` and by `link` on a terminal; tool results, refusals and other output name the command instead; of the socket's routes, only `/title` and `/link` return it | [hook.ts:50-52](../src/hook.ts#L50-L52), [owner.ts:7-15](../src/owner.ts#L7-L15), [control.ts:38](../src/control.ts#L38), [daemon.ts:154](../src/daemon.ts#L154), [:214](../src/daemon.ts#L214), [:412](../src/daemon.ts#L412) |
+| The Main group link is shown only in the hook's `systemMessage` and by `link` on a terminal; tool results, refusals and other output name the command instead; of the socket's routes, only `/title` and `/link` return it | [hook.ts:54-56](../src/hook.ts#L54-L56), [owner.ts:7-15](../src/owner.ts#L7-L15), [control.ts:38](../src/control.ts#L38), [daemon.ts:155](../src/daemon.ts#L155), [:217](../src/daemon.ts#L217), [:427](../src/daemon.ts#L427) |
 | `reset-owners` without owners runs only on a terminal | [owner.ts:31](../src/owner.ts#L31) |
 | The plugin runs its own `dist/cli.js`, and Node.js loads its modules from the plugin's folder, so the `node_modules` of a project can't replace them | [.mcp.json:5](../.mcp.json#L5), [hooks.json:3-7](../hooks/hooks.json#L3-L7) |
 | The daemon gets only the environment variables of `daemonVariables` | [client.ts:13](../src/client.ts#L13), [:78](../src/client.ts#L78) |
@@ -1161,9 +1164,9 @@ Sources: [hub.ts:156-207](../src/hub.ts#L156-L207), [:238-293](../src/hub.ts#L23
 | file of a prompt | 10 min | [hub.ts:25](../src/hub.ts#L25) |
 | prompts held for an attachment after the hub opens | 30 s | [hub.ts:27](../src/hub.ts#L27) |
 | record of a pending connection | 1 day | [hub.ts:26](../src/hub.ts#L26) |
-| wait of a session server for the title of its process; a detached session server's process kept | 10 s | [daemon.ts:19](../src/daemon.ts#L19) |
+| wait of a session server for the title of its process; a detached session server's process kept; the mark of an unattended run's process | 10 s | [daemon.ts:19](../src/daemon.ts#L19) |
 | attempts of a turn the daemon refuses with status 409 | 15, 1 s apart | [hook.ts:12-14](../src/hook.ts#L12-L14) |
-| attachment retries of a session server | 1 s, doubled up to 30 s | [session.ts:18-19](../src/session.ts#L18-L19) |
+| attachment retries of a session server | 1 s, doubled up to 30 s | [session.ts:19-20](../src/session.ts#L19-L20) |
 | part of an answer or a terminal prompt | 12000 bytes JSON-escaped | [hub.ts:23](../src/hub.ts#L23), [:511-526](../src/hub.ts#L511-L526) |
 | cancelled cards wait at stop | 10 s | [hub.ts:21](../src/hub.ts#L21) |
 | `daemon.log` | emptied over 10 MB, at a spawn and every hour | [files.ts:10](../src/files.ts#L10), [:86-89](../src/files.ts#L86-L89), [daemon.ts:20](../src/daemon.ts#L20) |
