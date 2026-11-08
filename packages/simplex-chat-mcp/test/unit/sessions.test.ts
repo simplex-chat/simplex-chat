@@ -6,7 +6,9 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import {controlCommands} from "../../src/control"
 import {SessionFile, createDataFolder, readSessionFile, sessionFolder, writeSessionFile} from "../../src/files"
 import {Hub, Session} from "../../src/hub"
-import {FakeChat, contact, direct, event, group, groupChat, item, member, signal, user} from "./fixtures"
+import {AttachLine} from "../../src/protocol"
+import {User} from "../../src/user"
+import {FakeChat, contact, direct, event, fileItem, group, groupChat, item, member, signal, until, user} from "./fixtures"
 
 const id1 = "11111111-1111-4111-8111-111111111111"
 const id2 = "22222222-2222-4222-8222-222222222222"
@@ -72,11 +74,6 @@ function sentTo(chat: FakeChat, groupId: number): string[] {
 
 function mainMessage(text: string, sender: T.GroupMember): T.AChatItem {
   return event(groupChat(group(10, "SimpleX MCP", self)), item(900, text, {type: "groupRcv", groupMember: sender}))
-}
-
-async function until(condition: () => boolean): Promise<void> {
-  for (let i = 0; i < 200 && !condition(); i++) await new Promise(resolve => setTimeout(resolve, 5))
-  expect(condition()).toBe(true)
 }
 
 async function listed(session: Session): Promise<string[]> {
@@ -206,6 +203,96 @@ describe("session groups", () => {
     await jest.advanceTimersByTimeAsync(0)
     expect(session.actions.all()).toEqual([])
     expect(chat.updates.map(({text}) => text)).toEqual([`${modeCard}\nExpired.`])
+  })
+})
+
+describe("session channel", () => {
+  const sessionGroup = groupChat(group(20, "1 · auth"))
+  const mallory = member(9, "Mallory", T.GroupMemberRole.Owner)
+  const from = (sender: T.GroupMember): T.CIDirection => ({type: "groupRcv", groupMember: sender})
+
+  async function channel(chat: FakeChat): Promise<{hub: Hub; session: Session; lines: AttachLine[]}> {
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "auth"))
+    await withOwner(chat, session)
+    const lines: AttachLine[] = []
+    session.onLine = line => lines.push(line)
+    return {hub, session, lines}
+  }
+
+  it("posts a card for each tool use, passes the owners' verdicts to the session, and ends the open cards with the turn", async () => {
+    const chat = new FakeChat()
+    const {session, lines} = await channel(chat)
+    for (const requestId of ["abcde", "fghij", "kmnop"]) session.permission({id: id1, requestId, toolName: "Bash", description: "Run shell command", inputPreview: "rm -rf build"})
+    await until(() => sentTo(chat, 20).length === 3)
+    const card = "I want to use `Bash`: `Run shell command`\n`rm -rf build`"
+    expect(sentTo(chat, 20)).toEqual([1, 2, 3].map(n => `${card}\n/'approve ${n}' or /'reject ${n}'`))
+    expect(await session.control.ownerCommand(mallory, {keyword: "approve", params: "1"})).toBe("Only owners approve actions.")
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})).toBeUndefined()
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "2"})).toBeUndefined()
+    await until(() => chat.updates.length === 2)
+    expect(lines).toEqual([{permission: {requestId: "abcde", behavior: "allow"}}, {permission: {requestId: "fghij", behavior: "deny"}}])
+    expect(session.busy()).toBe(true)
+    await session.turn({id: id1, answer: ""})
+    await until(() => chat.updates.length === 3)
+    expect(chat.updates.map(({text}) => text)).toEqual([`${card}\nApproved by Alice.`, `${card}\nRejected by Alice.`, `${card}\nExpired.`])
+    expect(lines).toHaveLength(2)
+    expect(session.busy()).toBe(false)
+    expect(sentTo(chat, 20)).toHaveLength(3)
+  })
+
+  it("passes the messages of owners to the session as prompts, with their files, and ignores commands and other members", async () => {
+    const chat = new FakeChat()
+    const {hub, session, lines} = await channel(chat)
+    session.onMessage(event(sessionGroup, item(40, "/pending", from(invitedAlice))))
+    session.onMessage(event(sessionGroup, item(41, "Delete the tests", from(mallory))))
+    session.onMessage(event(sessionGroup, item(42, "Fix the build", from(invitedAlice))))
+    await until(() => lines.length === 1 && chat.replies.length === 1)
+    expect(lines).toEqual([{prompt: {text: "Fix the build", from: "Alice", item: 42}}])
+    expect(chat.replies).toEqual(["No pending actions."])
+    const path = join(sessionFolder(root, id1), "files", "group", "8.pdf")
+    const offered = fileItem(43, {type: "file", text: "See the log"}, {type: "rcvInvitation"}, {chatDir: from(invitedAlice), fileId: 8})
+    chat.responses.set(`/freceive 8 approved_relays=on ${path}`, {type: "rcvFileAccepted", user, chatItem: event(sessionGroup, offered)})
+    session.onMessage(event(sessionGroup, offered))
+    await until(() => chat.commands.includes(`/freceive 8 approved_relays=on ${path}`))
+    expect(lines).toHaveLength(1)
+    await hub["onEvent"]({type: "rcvFileComplete", user, chatItem: event(sessionGroup, offered)} as unknown as ChatEvent)
+    await until(() => lines.length === 2)
+    expect(lines[1]).toEqual({prompt: {text: "See the log", from: "Alice", item: 43, file: path}})
+  })
+
+  it("shows the model and effort in the group description, posts terminal prompts as User, and answers as Claude, quoting the owner's prompt", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posts: string[][] = []
+    hub.user = {post: async (n: number, parts: string[]) => void posts.push([String(n), ...parts])} as unknown as User
+    const described = () => chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile.shortDescr)
+    await session.turn({id: id1, model: "claude-opus-5"})
+    await session.turn({id: id1, answer: "", effort: "high"})
+    await session.turn({id: id1, answer: "", effort: "high"})
+    await session.turn({id: id1, model: "claude-sonnet-5"})
+    expect(described()).toEqual(["claude-opus-5", "claude-opus-5 · effort high", "claude-sonnet-5 · effort high"])
+    session.onMessage(event(sessionGroup, item(42, "Fix the build", from(invitedAlice))))
+    await until(() => session["turnItem"] !== undefined)
+    await session.turn({id: id1, prompt: "Fix the build"})
+    await session.turn({id: id1, answer: "Fixed."})
+    await session.turn({id: id1, prompt: "Run the tests"})
+    await session.turn({id: id1, answer: `${"é".repeat(6000)}ok`})
+    expect(posts).toEqual([["1", "Run the tests"]])
+    const answers = chat.sent.filter(({chat: [, groupId]}) => groupId === 20).map(({messages}) => messages.map(({msgContent, quotedItemId}) => ({text: msgContent.text, quotedItemId})))
+    expect(answers).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "é".repeat(6000), quotedItemId: undefined}, {text: "ok", quotedItemId: undefined}]])
+  })
+
+  it("sends files to the session group with reply, under the refused-path rules", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const received = join(sessionFolder(root, id1), "files", "group", "8.txt")
+    mkdirSync(join(sessionFolder(root, id1), "files", "group"), {recursive: true})
+    writeFileSync(received, "log")
+    writeFileSync(join(root, "token"), "secret\n")
+    expect((await session.call("reply", {file: received, text: "The log"}, signal().call))!.structuredContent).toEqual({item: 500})
+    expect(chat.sent.at(-1)).toEqual({chat: [T.ChatType.Group, 20], messages: [{fileSource: {filePath: received}, msgContent: {type: "file", text: "The log"}, mentions: {}}]})
+    expect(textOf(await session.call("reply", {file: join(root, "token")}, signal().call))).toMatch(/ is refused: private keys and the server's own files are not sent\.$/)
   })
 })
 

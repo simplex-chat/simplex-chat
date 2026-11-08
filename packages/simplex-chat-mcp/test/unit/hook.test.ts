@@ -1,5 +1,5 @@
 import {DaemonClient} from "../../src/client"
-import {HookDeps, sessionStart} from "../../src/hook"
+import {HookDeps, sessionStart, turn} from "../../src/hook"
 import {linkText, resetOwners, resetOwnersText} from "../../src/owner"
 import {qrCodeText} from "../../src/qr"
 
@@ -22,11 +22,12 @@ function fakeClient(owner: {owners: string[]; link?: string}, ensureError?: Erro
 }
 
 describe("SessionStart hook", () => {
-  it("records the session title and stays quiet when the Main group has an owner", async () => {
+  it("starts the session with its title, folder and model, and stays quiet when the Main group has an owner", async () => {
     const {client, requests} = fakeClient({owners: ["Alice"]})
-    expect(await sessionStart(input, {}, {client, nodeVersion: "22.1.0"})).toEqual({})
+    const started = JSON.stringify({...JSON.parse(input), model: "claude-opus-5"})
+    expect(await sessionStart(started, {}, {client, nodeVersion: "22.1.0"})).toEqual({})
     expect(requests).toEqual([
-      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", name: "auth", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}},
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}},
     ])
   })
 
@@ -62,6 +63,24 @@ describe("SessionStart hook", () => {
   it("reports other daemon errors with their text", async () => {
     const {client} = fakeClient({owners: []}, new Error("spawn failed"))
     expect(await sessionStart(input, {}, {client, nodeVersion: "22.1.0"})).toEqual({systemMessage: "SimpleX MCP: spawn failed"})
+  })
+})
+
+describe("turn hooks", () => {
+  it("pass the prompt, the final answer with the effort, and the new model to the session, and stay quiet without a daemon", async () => {
+    const requests: unknown[] = []
+    const client = {request: async (method: string, route: string, body: unknown) => requests.push({method, route, body})} as unknown as HookDeps["client"]
+    const id = "11111111-1111-4111-8111-111111111111"
+    expect(await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", prompt: "fix the build"}), {}, client)).toEqual({})
+    expect(await turn(JSON.stringify({session_id: id, hook_event_name: "Stop", last_assistant_message: "Fixed.", effort: {level: "high"}}), {}, client)).toEqual({})
+    expect(await turn(JSON.stringify({session_id: id, hook_event_name: "PostModelSwitch", to_model: "claude-sonnet-5"}), {}, client)).toEqual({})
+    expect(requests).toEqual([
+      {method: "POST", route: "/turn", body: {id, prompt: "fix the build"}},
+      {method: "POST", route: "/turn", body: {id, answer: "Fixed.", effort: "high"}},
+      {method: "POST", route: "/turn", body: {id, model: "claude-sonnet-5"}},
+    ])
+    const stopped = {request: async () => Promise.reject(Object.assign(new Error("connect ENOENT"), {code: "ENOENT"}))} as unknown as HookDeps["client"]
+    expect(await turn(JSON.stringify({session_id: id, prompt: "x"}), {}, stopped)).toEqual({})
   })
 })
 

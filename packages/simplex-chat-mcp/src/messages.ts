@@ -213,9 +213,13 @@ export function receivedPath(data: string, chat: string, {fileId, fileName}: T.C
 }
 
 export function filePaths(data: string, chat: string, fileId: number, name: string): {path: string; forwarded: string} {
-  const extension = extname(name)
-  const file = `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`
+  const file = storedName(fileId, name)
   return {path: join(chatFolder(data, chat), file), forwarded: join(chatFolder(data, chat, "forwarded"), file)}
+}
+
+export function storedName(fileId: number, name: string): string {
+  const extension = extname(name)
+  return `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`
 }
 
 export function chatFolder(data: string, chat: string, root: FilesRoot = "files"): string {

@@ -7,8 +7,9 @@ import {DaemonClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
 import {Daemon, productionDeps} from "../../src/daemon"
 import {hubFolder, sessionFolder} from "../../src/files"
+import {turn} from "../../src/hook"
 import {SessionReply, StatusReply, TitleReply} from "../../src/protocol"
-import {Bot, ItemCheck, callTool, captureLog, cardNumber, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until} from "./helpers"
+import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until} from "./helpers"
 import {SmpServer, startSmpServer, startXftpServer} from "./smpServer"
 import {daemonPid, killDaemon, spawnSession} from "./stdio"
 
@@ -16,6 +17,7 @@ const one = "11111111-1111-4111-8111-111111111111"
 const two = "22222222-2222-4222-8222-222222222222"
 const three = "33333333-3333-4333-8333-333333333333"
 const four = "44444444-4444-4444-8444-444444444444"
+const five = "55555555-5555-4555-8555-555555555555"
 const daemonStopped = "The SimpleX daemon stopped; repeat the call."
 
 let smpServer: SmpServer
@@ -168,6 +170,45 @@ test("an owner joins the Main group and each session's group, and approves its c
   expect((await chatsOf(two)).sort()).toEqual([directoryChat, shopChat].sort())
 }, 600_000)
 
+test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; an owner's prompt reaches the session and the answer quotes it", async () => {
+  const root = join(dir, "mirror", "root")
+  await prepareRoot(smpServer.address, root)
+  const alice = await personIn("mirror", "Alice")
+  await startDaemon(root)
+  const client = DaemonClient.forRoot(root)
+  await openSession(client, five, "five")
+  const {owner} = await client.request<StatusReply>("GET", "/status")
+  const invitations = joinSessionGroups(alice, ["1 · five"])
+  await joinByLink(alice, owner.link!)
+  const groupId = (await invitations).get("1 · five")!
+  await until(async () => (await alice.chat.apiListMembers(groupId)).some(member => member.memberProfile.displayName === "User" && isActive(member)))
+  const message = (text: string, sender: string, quoted?: number): ItemCheck =>
+    inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === text && chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === sender && chatItem.quotedItem?.itemId === quoted)
+  const hook = (input: object) => turn(JSON.stringify({session_id: five, ...input}), {}, client)
+
+  const typed = received(alice.chat, message("Fix the build", "User"))
+  expect(await hook({hook_event_name: "UserPromptSubmit", prompt: "Fix the build"})).toEqual({})
+  await typed
+  const fixed = received(alice.chat, message("Fixed.", "Claude"))
+  await hook({hook_event_name: "Stop", last_assistant_message: "Fixed."})
+  await fixed
+
+  const attached: unknown[] = []
+  const controller = new AbortController()
+  closing.push(async () => controller.abort())
+  client.stream("/attach", {id: five}, line => attached.push(line), controller.signal).catch(() => undefined)
+  await until(() => attached.length === 1)
+  const [sent] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Run the tests")
+  await until(() => attached.length === 2)
+  expect(attached[1]).toEqual({prompt: {text: "Run the tests", from: "Alice", item: expect.any(Number)}})
+  const passed = received(alice.chat, message("Tests pass.", "Claude", sent.chatItem.meta.itemId))
+  await hook({hook_event_name: "UserPromptSubmit", prompt: "Run the tests"})
+  await hook({hook_event_name: "Stop", last_assistant_message: "Tests pass."})
+  await passed
+  const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 50)
+  expect(chatItems.filter(({meta}) => meta.itemText === "Run the tests").map(({chatDir}) => chatDir.type)).toEqual(["groupSnd"])
+}, 600_000)
+
 test("a new session has no chats", async () => {
   const root = join(dir, "fresh", "root")
   await prepareRoot(smpServer.address, root)
@@ -198,7 +239,7 @@ test("stdio session spawns the daemon and recovers after the daemon is killed", 
 
   expect(await session.client.initialize()).toMatchObject({serverInfo: {name: "simplex-mcp"}})
   const {result} = await session.client.request("tools/list")
-  expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave"])
+  expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave", "reply"])
   const listed = await session.call("list", {})
   expect(listed.isError).toBeUndefined()
   expect(listed.structuredContent.actions).toEqual([])

@@ -3,7 +3,7 @@ import {homedir} from "os"
 import {join, resolve} from "path"
 import {Mode} from "./actions"
 import {runDaemon} from "./daemon"
-import {sessionStart} from "./hook"
+import {sessionStart, turn} from "./hook"
 import {ExitError, log, logError} from "./log"
 import {validName} from "./messages"
 import {resetOwners, showLink} from "./owner"
@@ -17,6 +17,7 @@ export const helpText = `Usage:
   simplex-mcp session                  MCP server of one Claude Code session (run by the plugin)
   simplex-mcp daemon                   the shared SimpleX daemon of the plugin (started on demand)
   simplex-mcp hook session-start       Claude Code SessionStart hook (run by the plugin)
+  simplex-mcp hook turn                Claude Code hooks of prompts, answers and model changes (run by the plugin)
   simplex-mcp link                     show the Main group link, or its owners
   simplex-mcp reset-owners             replace the Main group and its owners
 
@@ -51,7 +52,7 @@ register options:
 --reset-owners takes --owners without a list.
 `
 
-const pluginCommands = ["session", "daemon", "hook session-start", "link", "reset-owners"] as const
+const pluginCommands = ["session", "daemon", "hook session-start", "hook turn", "link", "reset-owners"] as const
 
 export type Command =
   | {command: "help"}
@@ -230,6 +231,9 @@ async function main(args: string[]): Promise<void> {
       return runDaemon()
     case "hook session-start":
       process.stdout.write(`${JSON.stringify(await sessionStart(await readStdin()))}\n`)
+      return
+    case "hook turn":
+      process.stdout.write(`${JSON.stringify(await turn(await readStdin()))}\n`)
       return
     case "link":
       process.stdout.write(`${await showLink()}\n`)

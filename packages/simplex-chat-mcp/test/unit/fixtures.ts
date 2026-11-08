@@ -125,6 +125,11 @@ export async function settled(): Promise<void> {
   for (let i = 0; i < 10; i++) await Promise.resolve()
 }
 
+export async function until(condition: () => boolean): Promise<void> {
+  for (let i = 0; i < 200 && !condition(); i++) await new Promise(resolve => setTimeout(resolve, 5))
+  expect(condition()).toBe(true)
+}
+
 interface FakeChatData {
   chatInfo: T.ChatInfo
   items: T.ChatItem[]
@@ -256,6 +261,15 @@ export class FakeChat {
   async apiAddMemberViaGroup(groupId: number, viaGroupId: number, groupMemberId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
     this.invitations.push({groupId, viaGroupId, groupMemberId, memberRole})
     return member(1000 + groupMemberId, `invited ${groupMemberId}`, memberRole, T.GroupMemberStatus.Invited)
+  }
+
+  async apiListContacts(): Promise<T.Contact[]> {
+    return [...this.chats.values()].flatMap(({chatInfo}) => (chatInfo.type === "direct" ? [chatInfo.contact] : []))
+  }
+
+  async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    this.invitations.push({groupId, viaGroupId: 0, groupMemberId: contactId, memberRole})
+    return member(2000 + contactId, `contact ${contactId}`, memberRole, T.GroupMemberStatus.Invited)
   }
 
   async apiRemoveMembers(groupId: number, memberIds: number[]): Promise<T.GroupMember[]> {

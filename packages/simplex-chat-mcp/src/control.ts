@@ -113,6 +113,11 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     await this.load()
   }
 
+  async describe(shortDescr: string): Promise<void> {
+    if (this.group.groupProfile.shortDescr === shortDescr) return
+    this.group = await this.chat.apiUpdateGroupProfile(this.groupId, {...this.group.groupProfile, shortDescr})
+  }
+
   async start(): Promise<void> {
     if (this.actions.lost) return
     const {owners} = this.options
@@ -125,7 +130,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const {mode} = action
     const approver = this.longestApproverName()
     if (action.tool === "connect") action.linkTextBytes = maxCardLength - largestCard({...action, linkTextBytes: 0}, mode, approver)
-    if (action.tool !== "leave" && action.tool !== "mode" && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
+    if (action.tool !== "leave" && action.tool !== "mode" && action.tool !== "permission" && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
     if (this.approvers().length > 0) return undefined
     if (this.options.session !== undefined) return noSessionOwner
     return this.options.owners === undefined
@@ -616,6 +621,10 @@ export function cardText(action: Action, mode: Actions["mode"]): string {
 function requestLines(action: Action): string[] {
   const done = action.state === "done"
   if (action.tool === "mode") return [`${done ? "I run" : "I want to run"} in mode ${action.input.mode}: Claude Code asks you before each of my actions, and they are performed without approval here.`]
+  if (action.tool === "permission") {
+    const {toolName, description, inputPreview} = action.input
+    return [`I want to use ${codeSpan(oneLine(toolName))}: ${codeSpan(oneLine(description))}`, ...codeLines(inputPreview)]
+  }
   const subject = subjectText(action.subject, safeName)
   switch (action.tool) {
     case "connect": {
@@ -648,6 +657,7 @@ function commandsLine(action: Action): string {
   switch (action.tool) {
     case "connect":
     case "mode":
+    case "permission":
       return `/'approve ${action.n}' or /'reject ${action.n}'`
     case "send":
       return `/'approve ${action.chat} ${action.n}', /'approve ${action.chat} all' or /'reject ${action.chat} ${action.n}'`

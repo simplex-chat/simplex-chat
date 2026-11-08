@@ -121,9 +121,16 @@ export interface ModeAction extends ActionRecord {
   readonly chat?: undefined
 }
 
-export type Action = ConnectAction | SendAction | LeaveAction | DownloadAction | ModeAction
+export interface PermissionAction extends ActionRecord {
+  readonly tool: "permission"
+  readonly input: {requestId: string; toolName: string; description: string; inputPreview: string}
+  readonly subject?: undefined
+  readonly chat?: undefined
+}
 
-export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord> | Omit<DownloadAction, keyof ActionRecord> | Omit<ModeAction, keyof ActionRecord>
+export type Action = ConnectAction | SendAction | LeaveAction | DownloadAction | ModeAction | PermissionAction
+
+export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord> | Omit<DownloadAction, keyof ActionRecord> | Omit<ModeAction, keyof ActionRecord> | Omit<PermissionAction, keyof ActionRecord>
 
 export interface ActionHooks {
   refusal(action: Action): string | undefined
@@ -221,6 +228,11 @@ export class Actions {
   closeCall(action: Action): void {
     action.open--
     this.forgetExpired(action)
+  }
+
+  end(action: Action): void {
+    this.decide(action, "expired")
+    this.updateCard(action)
   }
 
   expireDue(): void {
@@ -363,6 +375,7 @@ export function subjectText({kind, name, simplexName}: Subject, showName: (name:
 
 export function summary(action: Action, showName: (name: string) => string): {what: string; detail: string} {
   if (action.tool === "mode") return {what: `run in mode ${action.input.mode}`, detail: ""}
+  if (action.tool === "permission") return {what: `use ${showName(action.input.toolName)}`, detail: ""}
   const target = subjectText({...action.subject, simplexName: undefined}, showName)
   switch (action.tool) {
     case "connect":
@@ -388,6 +401,7 @@ function performedText(action: Action): string {
   if (action.tool === "leave") return `${leaveVerbs(action).past}.`
   if (action.tool === "download") return "downloaded."
   if (action.tool === "mode") return `mode ${action.input.mode}.`
+  if (action.tool === "permission") return "allowed."
   return action.connected ? "connected." : "connection requested."
 }
 

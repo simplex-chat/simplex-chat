@@ -11,6 +11,7 @@ import {LockedError, createDataFolder, readSessionFile, sessionFolder, socketPat
 import {protocolVersion} from "../../src/protocol"
 import * as socket from "../../src/socket"
 import {requestJson, streamLines} from "../../src/socket"
+import {until} from "./fixtures"
 
 const id1 = "11111111-1111-4111-8111-111111111111"
 const id2 = "22222222-2222-4222-8222-222222222222"
@@ -23,6 +24,7 @@ interface FakeSession extends SessionLike {
   displayName: string
   modes: Mode[]
   calls: string[]
+  turns: unknown[]
 }
 
 function deferred<T = void>() {
@@ -63,11 +65,21 @@ function deps(root: string) {
         open: false,
         modes: [],
         calls: [],
+        turns: [],
         busy: () => busy.has(number),
         rename: async (newName: string) => {
           agent.displayName = `${number} · ${newName}`
         },
-        requestMode: mode => agent.modes.push(mode),
+        requestMode: mode => {
+          agent.modes.push(mode)
+        },
+        permission: request => agent.turns.push(request),
+        turn: async request => {
+          agent.turns.push(request)
+        },
+        endPermissions: () => {
+          agent.turns.push("ended")
+        },
         call: async (tool: string, _input: unknown, call: {signal: AbortSignal; progress: (m: string) => void}) => {
           agent.calls.push(tool)
           calling.resolve()
@@ -133,7 +145,7 @@ afterEach(async () => {
 
 const post = <T>(route: string, body?: unknown) => requestJson<T>(socketPath(root), token, "POST", route, body)
 const register = (id: string) => post("/session", {id, project: "/p/app", config: defaultConfig})
-const title = (id: string, name?: string, config = defaultConfig) => post("/title", {id, name, config})
+const title = (id: string, name?: string, config = defaultConfig, model?: string) => post("/title", {id, name, project: "/p/app", model, config})
 const titleReply = {mainGroup: "SimpleX MCP", owner: {owners: [], link: "https://simplex.chat/g#link"}, version: "0.2.0", protocol: protocolVersion}
 const sessionsFolder = () => join(root, "_sessions")
 const lockFile = () => join(root, "lock")
@@ -541,53 +553,44 @@ describe("daemon", () => {
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, name: "auth"})
   })
 
-  it("renames a stored session in its file without opening it", async () => {
+  it("opens a stored session on its title, renames it and passes the model", async () => {
     storeSession(id1, 1, "app")
     const {d, agents, configs} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
-    expect(await title(id1, "auth", {...defaultConfig, approve: "host"})).toEqual(titleReply)
+    expect(await title(id1, "auth", {...defaultConfig, approve: "host"}, "claude-opus-5")).toEqual(titleReply)
     expect(configs.at(-1)).toEqual({...defaultConfig, approve: "host"})
-    expect(agents).toHaveLength(0)
+    expect(agents).toMatchObject([{number: 1, displayName: "1 · auth", modes: [], turns: [{id: id1, model: "claude-opus-5"}]}])
     expect(readSessionFile(sessionFolder(root, id1))).toEqual({number: 1, name: "auth", project: "/p/app", created: "2026-10-24T00:00:00.000Z"})
-    expect(await requestJson(socketPath(root), token, "GET", "/status")).toMatchObject({sessions: []})
+    expect(await requestJson(socketPath(root), token, "GET", "/status")).toMatchObject({sessions: [{number: 1, name: "1 · auth"}]})
+  })
+
+  it("creates an unknown session at its title, named by the title", async () => {
+    const {d} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    expect(await title(id1, "auth")).toEqual(titleReply)
+    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, name: "auth", project: "/p/app"})
+    expect(await register(id2)).toMatchObject({number: 2, displayName: "2 · app"})
     expect(await register(id1)).toMatchObject({number: 1, displayName: "1 · auth"})
   })
 
-  it("remembers the title of an unknown session without a folder or a number, and uses it once", async () => {
+  it("passes permission requests, turns and the end of the attachments to the session", async () => {
     const {d, agents} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
-    expect(await title(id1, "auth")).toEqual(titleReply)
-    expect(agents).toHaveLength(0)
-    expect(existsSync(sessionsFolder())).toBe(false)
-    expect(await requestJson(socketPath(root), token, "GET", "/status")).toMatchObject({sessions: []})
-    expect(await register(id2)).toMatchObject({number: 1, displayName: "1 · app"})
-    expect(await register(id1)).toMatchObject({number: 2, displayName: "2 · auth"})
-    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 2, name: "auth", project: "/p/app"})
-    expect(daemon["titles"].size).toBe(0)
-  })
-
-  it("remembers at most 100 titles, dropping the oldest", async () => {
-    const {d} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
-    const ids = Array.from({length: 101}, (_, n) => `${n.toString(16).padStart(8, "0")}-0000-4000-8000-000000000000`)
-    for (const [n, id] of ids.entries()) await title(id, `title ${n}`)
-    expect(daemon["titles"].size).toBe(100)
-    expect(await register(ids[0])).toMatchObject({displayName: "1 · app"})
-    expect(await register(ids[1])).toMatchObject({displayName: "2 · title 1"})
-    expect(await register(ids[100])).toMatchObject({displayName: "3 · title 100"})
-  })
-
-  it("keeps a re-titled ID as the newest and drops the next oldest", async () => {
-    const {d} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
-    const ids = Array.from({length: 101}, (_, n) => `${n.toString(16).padStart(8, "0")}-0000-4000-8000-000000000000`)
-    for (const [n, id] of ids.slice(0, 100).entries()) await title(id, `title ${n}`)
-    await title(ids[0], "renamed 0")
-    await title(ids[100], "title 100")
-    expect(daemon["titles"].size).toBe(100)
-    expect(await register(ids[1])).toMatchObject({displayName: "1 · app"})
-    expect(await register(ids[0])).toMatchObject({displayName: "2 · renamed 0"})
-    expect(await register(ids[2])).toMatchObject({displayName: "3 · title 2"})
+    await register(id1)
+    const permission = {id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"}
+    expect(await post("/permission", permission)).toEqual({})
+    expect(await post("/turn", {id: id1, answer: "Done."})).toEqual({})
+    const controller = new AbortController()
+    const {attached, firstLine, lines} = attach(id1, controller.signal)
+    await firstLine
+    agents[0].onLine!({prompt: {text: "hi", from: "Alice", item: 7}})
+    await until(() => lines.length === 2)
+    expect(lines[1]).toEqual({prompt: {text: "hi", from: "Alice", item: 7}})
+    controller.abort()
+    await attached
+    await until(() => agents[0].turns.length === 3)
+    expect(agents[0].turns).toEqual([permission, {id: id1, answer: "Done."}, "ended"])
+    await expect(post("/turn", {id: id2, answer: "x"})).rejects.toMatchObject({status: 409})
   })
 
   it("does not delay the idle close of an open session with a title", async () => {
@@ -602,13 +605,15 @@ describe("daemon", () => {
     expect(agents[0].open).toBe(false)
   })
 
-  it("does not delay the idle stop with a title", async () => {
+  it("stops 10 minutes after a titled session closes", async () => {
     jest.useFakeTimers(fakeTimers)
-    const {d, stoppedCode} = deps(root)
+    const {d, onStopped, stoppedCode} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
     await jest.advanceTimersByTimeAsync(5 * minutes)
     await title(id1, "auth")
-    await jest.advanceTimersByTimeAsync(5 * minutes)
+    await jest.advanceTimersByTimeAsync(19 * minutes)
+    expect(onStopped).not.toHaveBeenCalled()
+    await jest.advanceTimersByTimeAsync(1 * minutes)
     expect(await stoppedCode).toBe(0)
     daemon = undefined
   })

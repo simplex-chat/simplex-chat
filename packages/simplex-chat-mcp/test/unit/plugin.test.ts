@@ -41,6 +41,7 @@ describe("plugin", () => {
     expect(hooks.SessionStart[0].hooks[0]).toEqual({type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/plugin/launch.js" hook session-start', timeout: 600})
     expect(hooks.PreToolUse[0].matcher).toBe("mcp__plugin_simplex_simplex__.*")
     expect(hooks.PreToolUse[0].hooks[0]).toEqual({type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/plugin/allow.js"'})
+    for (const event of ["UserPromptSubmit", "Stop", "PostModelSwitch"]) expect(hooks[event]).toEqual([{hooks: [{type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/plugin/launch.js" hook turn', async: true}]}])
   })
 
   it("ships the plugin files in the package", () => {

@@ -1,6 +1,6 @@
 {
   "name": "@simplex-chat/mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MCP server and Claude Code plugin that give AI agents a SimpleX profile, approved in your app",
   "bin": {
     "simplex-mcp": "dist/cli.js"

@@ -5,7 +5,7 @@
   "plugins": [
     {
       "name": "simplex",
-      "description": "Each Claude Code session chats on SimpleX with its own profile; you approve its actions in the SimpleX app.",
+      "description": "Run each Claude Code session from its own SimpleX group: prompt it, approve its actions and tool use, and get its answers in the SimpleX app.",
       "source": {"source": "npm", "package": "@simplex-chat/mcp"}
     }
   ]

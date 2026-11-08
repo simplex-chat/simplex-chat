@@ -1,20 +1,23 @@
 import {Readable, Writable} from "stream"
-import {CallToolResult, McpServer} from "@modelcontextprotocol/server"
+import {CallToolResult, JsonSchemaType, McpServer, fromJsonSchema} from "@modelcontextprotocol/server"
 import {StdioServerTransport} from "@modelcontextprotocol/server/stdio"
 import {DaemonClient, SpawnDaemon, spawnDaemon} from "./client"
 import {Config, ConfigError, defaultConfig, readConfig} from "./config"
 import {dataRoot, isSessionId} from "./files"
 import {ExitError, errorText, logError} from "./log"
 import {ToolCall} from "./messages"
-import {CallLine, SessionRequest} from "./protocol"
+import {AttachLine, CallLine, PermissionRequest, SessionRequest} from "./protocol"
 import {SocketError, isNotRunning} from "./socket"
-import {ToolName, instructions, registerTools} from "./tools"
+import {ToolName, instructions, registerTools, replyTool} from "./tools"
 import {version} from "./version"
 
 const daemonStopped = "The SimpleX daemon stopped; repeat the call."
 const unknownSessionStatus = 409
 const stoppingStatus = 503
 const callAttempts = 2
+const channelInstructions = "Messages in the simplex channel are prompts of your owners in the SimpleX group of this session: from is the owner's name, item the message ID, and file the path of a file they sent. Your final answer of each turn reaches them in that group; reply sends them a file."
+const permissionFields = ["request_id", "tool_name", "description", "input_preview"] as const
+const permissionRequest = fromJsonSchema({type: "object", properties: Object.fromEntries(permissionFields.map(field => [field, {type: "string"}])), required: [...permissionFields]} as JsonSchemaType)
 
 class DaemonStoppedError extends Error {
   constructor() {
@@ -43,9 +46,16 @@ export async function startSession(env: NodeJS.ProcessEnv = process.env, io: Ses
     if (!(error instanceof ConfigError)) throw error
     configError = error.message
   }
-  const link = new DaemonLink(DaemonClient.forRoot(dataRoot(env)), {id, project: env.CLAUDE_PROJECT_DIR || process.cwd(), config}, io)
-  const server = new McpServer({name: "simplex-mcp", version: io.version}, {instructions: instructions("Claude", "SimpleX daemon")})
-  registerTools(server, config.approve, async (name, input, call) => (configError === undefined ? link.call(name, input, call) : toolError(configError)))
+  const server = new McpServer({name: "simplex-mcp", version: io.version}, {instructions: `${instructions("Claude", "SimpleX daemon")}\n${channelInstructions}`, capabilities: {experimental: {"claude/channel": {}, "claude/channel/permission": {}}}})
+  const link = new DaemonLink(DaemonClient.forRoot(dataRoot(env)), {id, project: env.CLAUDE_PROJECT_DIR || process.cwd(), config}, io, line => {
+    const notification = channelNotification(line as AttachLine)
+    if (notification !== undefined) server.server.notification(notification).catch(error => logError("SimpleX channel", error))
+  })
+  registerTools(server, config.approve, async (name, input, call) => (configError === undefined ? link.call(name, input, call) : toolError(configError)), [replyTool])
+  server.server.setNotificationHandler("notifications/claude/channel/permission_request", {params: permissionRequest}, params => {
+    const {request_id, tool_name, description, input_preview} = params as {[field in (typeof permissionFields)[number]]: string}
+    link.permission({id, requestId: request_id, toolName: tool_name, description, inputPreview: input_preview}).catch(error => logError("permission relay", error))
+  })
   const transport = new StdioServerTransport(io.stdin, io.stdout)
   transport.onclose = () => link.close()
   await server.connect(transport)
@@ -57,7 +67,7 @@ class DaemonLink {
   private attach?: AbortController
   private closed = false
 
-  constructor(private readonly client: DaemonClient, private readonly request: SessionRequest, private readonly io: SessionIo) {}
+  constructor(private readonly client: DaemonClient, private readonly request: SessionRequest, private readonly io: SessionIo, private readonly onLine: (line: unknown) => void) {}
 
   connect(): Promise<void> {
     this.connecting ??= this.open().catch(error => {
@@ -76,6 +86,11 @@ class DaemonLink {
   close(): void {
     this.closed = true
     this.attach?.abort()
+  }
+
+  async permission(request: PermissionRequest): Promise<void> {
+    await this.connect()
+    await this.client.request("POST", "/permission", request)
   }
 
   async call(name: ToolName, input: unknown, call: ToolCall): Promise<CallToolResult | undefined> {
@@ -129,7 +144,10 @@ class DaemonLink {
     this.attach = controller
     await new Promise<void>((resolve, reject) => {
       this.client
-        .stream("/attach", {id: this.request.id}, () => resolve(), controller.signal)
+        .stream("/attach", {id: this.request.id}, line => {
+          resolve()
+          this.onLine(line)
+        }, controller.signal)
         .then(() => reject(new DaemonStoppedError()), reject)
         .finally(() => {
           if (this.attach !== controller) return
@@ -147,4 +165,10 @@ function failureText(error: unknown): string {
 
 function toolError(text: string): CallToolResult {
   return {content: [{type: "text", text}], isError: true}
+}
+
+function channelNotification({prompt, permission}: AttachLine): {method: string; params: {[key: string]: unknown}} | undefined {
+  if (prompt !== undefined) return {method: "notifications/claude/channel", params: {content: prompt.text, meta: {from: prompt.from, item: String(prompt.item), ...(prompt.file === undefined ? {} : {file: prompt.file})}}}
+  if (permission !== undefined) return {method: "notifications/claude/channel/permission", params: {request_id: permission.requestId, behavior: permission.behavior}}
+  return undefined
 }

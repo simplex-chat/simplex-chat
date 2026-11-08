@@ -17,13 +17,37 @@ export interface OwnerState {
 export interface SessionRequest {
   id: string
   project: string
+  name?: string
   config: Config
 }
 
 export interface TitleRequest {
   id: string
   name?: string
+  project: string
+  model?: string
   config: Config
+}
+
+export interface PermissionRequest {
+  id: string
+  requestId: string
+  toolName: string
+  description: string
+  inputPreview: string
+}
+
+export interface TurnRequest {
+  id: string
+  prompt?: string
+  answer?: string
+  model?: string
+  effort?: string
+}
+
+export interface AttachLine {
+  prompt?: {text: string; from: string; item: number; file?: string}
+  permission?: {requestId: string; behavior: "allow" | "deny"}
 }
 
 export interface TitleReply extends DaemonInfo {

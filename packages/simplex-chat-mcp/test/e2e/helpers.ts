@@ -28,9 +28,10 @@ export async function profileWithServer(smpAddress: string, filePrefix: string, 
 }
 
 export async function prepareRoot(smpAddress: string, root: string, xftpAddress?: string): Promise<void> {
-  const folder = hubFolder(root)
-  createDataFolder(folder)
-  await profileWithServer(smpAddress, join(folder, "simplex"), {displayName: "Claude", fullName: "", peerType: T.ChatPeerType.Agent}, xftpAddress)
+  for (const [folder, displayName] of [[hubFolder(root), "Claude"], [join(root, "_user"), "User"]]) {
+    createDataFolder(folder)
+    await profileWithServer(smpAddress, join(folder, "simplex"), {displayName, fullName: "", peerType: T.ChatPeerType.Agent}, xftpAddress)
+  }
 }
 
 export async function callTool(client: DaemonClient, id: string, tool: string, input: object): Promise<{isError?: boolean; text: string; result: any}> {

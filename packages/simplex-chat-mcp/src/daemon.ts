@@ -8,14 +8,13 @@ import {LockedError, SessionFile, acquireLock, createDataFolder, dataRoot, readS
 import {Hub, StoredSession, hubTexts} from "./hub"
 import {ExitError, errorText, log, logError} from "./log"
 import {ToolCall} from "./messages"
-import {AttachRequest, CallRequest, OwnerState, ResetReply, SessionReply, SessionRequest, StatusReply, TitleReply, TitleRequest, protocolVersion} from "./protocol"
+import {AttachLine, AttachRequest, CallRequest, OwnerState, PermissionRequest, ResetReply, SessionReply, SessionRequest, StatusReply, TitleReply, TitleRequest, TurnRequest, protocolVersion} from "./protocol"
 import {Handler, SocketError, listen, sendJson, startLines} from "./socket"
 import {ToolName} from "./tools"
 import {version} from "./version"
 
 const idleClose = 10 * 60_000
 const idleStop = 10 * 60_000
-const maxTitles = 100
 const firstFreeFd = 3
 const unnamedSession = "Claude Code"
 
@@ -33,10 +32,14 @@ export interface SessionLike {
   readonly number: number
   readonly displayName: string
   open: boolean
+  onLine?: (line: AttachLine) => void
   busy(): boolean
   rename(name: string): Promise<void>
   requestMode(mode: Mode): void
   call(tool: ToolName, input: unknown, call: ToolCall): Promise<CallToolResult | undefined>
+  permission(request: PermissionRequest): void
+  turn(request: TurnRequest): Promise<void>
+  endPermissions(): void
 }
 
 export interface DaemonDeps {
@@ -52,13 +55,13 @@ interface Entry {
   agent?: SessionLike
   attached: number
   calls: number
+  writers: Set<(line: AttachLine) => void>
   idle?: NodeJS.Timeout
 }
 
 export class Daemon {
   private readonly entries = new Map<string, Entry>()
   private readonly streams = new Set<ServerResponse>()
-  private readonly titles = new Map<string, string>()
   private readonly stored: StoredSession[]
   private nextNumber: number
   private stopTimer?: NodeJS.Timeout
@@ -115,6 +118,16 @@ export class Daemon {
       "POST /title": this.expiring(async (body, res) => sendJson(res, 200, await this.onTitle(body as TitleRequest))),
       "POST /attach": this.expiring((body, res) => this.onAttach(body as AttachRequest, res)),
       "POST /call": this.expiring((body, res) => this.onCall(body as CallRequest, res)),
+      "POST /permission": this.expiring(async (body, res) => {
+        const request = body as PermissionRequest
+        ;(await this.entry(request.id).opening).permission(request)
+        sendJson(res, 200, {})
+      }),
+      "POST /turn": this.expiring(async (body, res) => {
+        const request = body as TurnRequest
+        await (await this.entry(request.id).opening).turn(request)
+        sendJson(res, 200, {})
+      }),
       "GET /status": this.expiring(async (_body, res) => sendJson(res, 200, this.status())),
       "POST /reset-owners": this.withHub(async (_body, res) => sendJson(res, 200, await this.hub.resetOwners())),
       "POST /stop": this.withHub(async (_body, res) => {
@@ -170,21 +183,13 @@ export class Daemon {
     return {number: agent.number, displayName: agent.displayName, version: this.deps.version, protocol: protocolVersion, owner: this.hub.owner()}
   }
 
-  private async onTitle({id, name, config}: TitleRequest): Promise<TitleReply> {
-    this.refuseWhenStopping()
-    const folder = this.folder(id)
+  private async onTitle({id, name, project, model, config}: TitleRequest): Promise<TitleReply> {
+    const title = name?.trim() || undefined
+    const agent = await this.entry(id, {id, project, name: title, config}).opening
     await this.hub.configure(config)
-    const title = name?.trim()
-    if (title) await this.applyTitle(id, folder, title)
+    if (title !== undefined) await this.rename(this.folder(id), agent, title)
+    if (model !== undefined) await agent.turn({id, model})
     return {mainGroup: this.hub.mainGroup, owner: this.hub.owner(), version: this.deps.version, protocol: protocolVersion}
-  }
-
-  private async applyTitle(id: string, folder: string, title: string): Promise<void> {
-    const entry = this.entries.get(id)
-    if (entry !== undefined) return this.rename(folder, await entry.opening, title)
-    const stored = readSessionFile(folder)
-    if (stored === undefined) this.rememberTitle(id, title)
-    else if (title !== stored.name) writeSessionFile(folder, {...stored, name: title})
   }
 
   private async rename(folder: string, agent: SessionLike, name: string): Promise<void> {
@@ -194,30 +199,21 @@ export class Daemon {
     writeSessionFile(folder, {...stored, name})
   }
 
-  private rememberTitle(id: string, name: string): void {
-    const key = id.toLowerCase()
-    this.titles.delete(key)
-    this.titles.set(key, name)
-    if (this.titles.size > maxTitles) this.titles.delete(this.titles.keys().next().value!)
-  }
-
-  private takeTitle(id: string): string | undefined {
-    const key = id.toLowerCase()
-    const title = this.titles.get(key)
-    this.titles.delete(key)
-    return title
-  }
-
   private async onAttach({id}: AttachRequest, res: ServerResponse): Promise<void> {
     const entry = this.entry(id)
-    await entry.opening
+    const agent = await entry.opening
     if (!this.hold(res)) return
     entry.attached++
     clearTimeout(entry.idle)
-    startLines(res)({version: this.deps.version, protocol: protocolVersion})
+    const write = startLines(res)
+    write({version: this.deps.version, protocol: protocolVersion})
+    entry.writers.add(write)
     res.once("close", () => {
       entry.attached--
-      if (entry.attached === 0) this.scheduleIdle(id, entry)
+      entry.writers.delete(write)
+      if (entry.attached > 0) return
+      agent.endPermissions()
+      this.scheduleIdle(id, entry)
     })
   }
 
@@ -257,13 +253,14 @@ export class Daemon {
     const existing = this.entries.get(id)
     if (existing !== undefined) return existing
     clearTimeout(this.stopTimer)
-    const entry: Entry = {attached: 0, calls: 0, opening: this.openAgent(id, folder, request)}
+    const entry: Entry = {attached: 0, calls: 0, writers: new Set(), opening: this.openAgent(id, folder, request)}
     this.entries.set(id, entry)
     this.scheduleIdle(id, entry)
     entry.opening.then(
       agent => {
         entry.agent = agent
         agent.open = true
+        agent.onLine = line => entry.writers.forEach(write => write(line))
       },
       () => {
         clearTimeout(entry.idle)
@@ -290,9 +287,8 @@ export class Daemon {
     let stored = readSessionFile(folder)
     if (stored === undefined) {
       if (request === undefined) throw new SocketError("Unknown session; restart the Claude Code session.", 409)
-      const title = this.takeTitle(id)
       createDataFolder(folder)
-      stored = {number: this.nextNumber++, name: sessionName(title, request.project), project: request.project, created: new Date().toISOString()}
+      stored = {number: this.nextNumber++, name: sessionName(request.name, request.project), project: request.project, created: new Date().toISOString()}
       writeSessionFile(folder, stored)
     }
     return this.hub.session(id, stored)

@@ -79,6 +79,11 @@ export interface DownloadInput {
   wait?: number
 }
 
+export interface ReplyInput {
+  file: string
+  text?: string
+}
+
 export type ChatKind = "contact" | "business" | "group" | "channel"
 
 export type Command = {keyword: string; label: string; params?: string} | {label: string; commands: Command[]}
@@ -120,6 +125,7 @@ export interface Agent {
   data: string
   dataRoot?: string
   owner?: string
+  replyChat?: string
   setMode?: (mode: Mode) => void
 }
 
@@ -140,7 +146,7 @@ type Quoted = {from: string; text: string; content: T.MsgContent; fileName?: str
 
 type DownloadRequest = Pick<DownloadAction, "chat" | "item" | "file" | "unknownServers"> & Partial<Pick<DownloadAction, "mode">>
 
-export type ToolName = "connect" | "send" | "receive" | "download" | "list" | "leave"
+export type ToolName = "connect" | "send" | "receive" | "download" | "list" | "leave" | "reply"
 
 const maxChats = 1_000_000
 const editWindow = 24 * 3_600_000 - 10 * 60_000
@@ -444,12 +450,28 @@ Your messages reach other people, businesses and bots. Share nothing about your 
 Chat references are @N for contacts and #N for groups and channels.`
 }
 
-interface ToolDefinition {
+export interface ToolDefinition {
   name: ToolName
   description: string
   inputSchema: Schema
   outputSchema: Schema
   action: boolean
+}
+
+export const replyTool: ToolDefinition = {
+  name: "reply",
+  description: "Sends a file to your owners in the SimpleX group of this session, with text as its caption. Your final answer of each turn reaches them without this tool.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      file: {type: "string", minLength: 1, description: "Path of the file on this computer."},
+      text: {type: "string", minLength: 1, maxLength: 12000, description: "Caption of the file."},
+    },
+    required: ["file"],
+    additionalProperties: false,
+  },
+  outputSchema: {type: "object", properties: {item: {type: "integer", description: "Item ID of the sent message."}}, required: ["item"]},
+  action: false,
 }
 
 const definitions: ToolDefinition[] = [
@@ -465,8 +487,8 @@ const cancelled: CallToolResult = {content: [{type: "text", text: "Cancelled."}]
 
 export type ToolHandler = (name: ToolName, input: unknown, call: ToolCall) => Promise<CallToolResult | undefined>
 
-export function registerTools(server: McpServer, mode: Mode, handler: ToolHandler): void {
-  for (const {name, description, inputSchema, outputSchema, action} of definitions) {
+export function registerTools(server: McpServer, mode: Mode, handler: ToolHandler, extra: ToolDefinition[] = []): void {
+  for (const {name, description, inputSchema, outputSchema, action} of [...definitions, ...extra]) {
     const config = {
       description,
       inputSchema: fromJsonSchema(inputSchema as JsonSchemaType),
@@ -675,7 +697,19 @@ export class AgentTools {
         return this.leave(input as LeaveInput, call)
       case "list":
         return this.listChats()
+      case "reply":
+        return this.reply(input as ReplyInput)
     }
+  }
+
+  private async reply({file, text}: ReplyInput): Promise<object> {
+    const chat = this.agent.replyChat
+    if (chat === undefined) throw new ToolError("reply: this server has no group to reply to.")
+    const {chatInfo} = await getChat(this.agent.chat, chat, 0)
+    const attachment = await this.attachment(file, undefined, chatInfo, chat)
+    const filePath = await this.fileToSend(attachment)
+    const [sent] = await this.agent.chat.apiSendMessages([chatType(chat), chatNumber(chat)], [{fileSource: {filePath}, msgContent: sentContent(attachment, text ?? ""), mentions: {}}])
+    return {item: sent.chatItem.meta.itemId}
   }
 
   private async connect(input: ConnectInput, call: ToolCall): Promise<object | undefined> {

@@ -10,7 +10,7 @@ import {ExitError} from "../../src/log"
 import {protocolVersion} from "../../src/protocol"
 import {startSession} from "../../src/session"
 import {SocketError, listen, sendJson, startLines} from "../../src/socket"
-import {LineClient, closeServer} from "./fixtures"
+import {LineClient, closeServer, until} from "./fixtures"
 
 const id = "11111111-1111-4111-8111-111111111111"
 const unknownSession = "Unknown session; restart the Claude Code session."
@@ -41,6 +41,10 @@ async function fakeDaemon(onCall: OnCall, onAttach: (res: ServerResponse) => voi
       seen.push(`call ${(body as {tool: string}).tool}`)
       daemon.emit("call", res)
       await onCall(res, ++calls)
+    },
+    "POST /permission": async (body, res) => {
+      seen.push(`permission ${JSON.stringify(body)}`)
+      sendJson(res, 200, {})
     },
   })
 }
@@ -124,7 +128,32 @@ describe("session server", () => {
     const {client} = await session({}, () => (spawned(), pending))
     await spawning
     const {result} = await client.request("tools/list")
-    expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave"])
+    expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave", "reply"])
+  })
+
+  it("is a channel: it passes prompts and verdicts of the daemon to Claude Code, and permission requests to the daemon", async () => {
+    const attached = next("attach")
+    await fakeDaemon(async res => endWithResult(res, listResult), res => {
+      attachLine(res)
+      res.write(`${JSON.stringify({prompt: {text: "Fix the build", from: "Alice", item: 41, file: "/r/files/group/7_log.txt"}})}\n`)
+    })
+    const stdin = new PassThrough()
+    const stdout = new PassThrough()
+    await startSession({CLAUDE_CODE_SESSION_ID: id, CLAUDE_PROJECT_DIR: "/p/app", SIMPLEX_MCP_HOME: root}, {stdin, stdout, spawnDaemon: noSpawn, version: "0.2.0"})
+    const client = new LineClient(stdin, stdout)
+    const initialized = await client.initialize()
+    expect(initialized.capabilities.experimental).toEqual({"claude/channel": {}, "claude/channel/permission": {}})
+    expect(initialized.instructions).toContain("Messages in the simplex channel are prompts of your owners")
+    const [attachment] = await attached
+    const channel = (method: string) => client.notifications.filter(notification => notification.method === method).map(({params}) => params)
+    await until(() => channel("notifications/claude/channel").length === 1)
+    expect(channel("notifications/claude/channel")).toEqual([{content: "Fix the build", meta: {from: "Alice", item: "41", file: "/r/files/group/7_log.txt"}}])
+    client.notify("notifications/claude/channel/permission_request", {request_id: "abcde", tool_name: "Bash", description: "Run shell command", input_preview: "rm -rf build"})
+    await until(() => seen.some(line => line.startsWith("permission ")))
+    expect(seen).toEqual([registered, "attach", `permission ${JSON.stringify({id, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "rm -rf build"})}`])
+    attachment.write(`${JSON.stringify({permission: {requestId: "abcde", behavior: "deny"}})}\n`)
+    await until(() => channel("notifications/claude/channel/permission").length === 1)
+    expect(channel("notifications/claude/channel/permission")).toEqual([{request_id: "abcde", behavior: "deny"}])
   })
 
   it("registers, attaches and forwards a call with progress", async () => {
