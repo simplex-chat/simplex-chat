@@ -251,7 +251,7 @@ Search is available via pull-down gesture or search button in the navigation bar
 
 ```
 contact                       ChatListActions.contact   Delete, Ban, More (Clear, Archive)
-business chat, owner          ChatListActions.group     Delete, Ban, More (Clear, Archive reports, Leave)
+business chat, owner          ChatListActions.group     Delete, Ban, More (Clear, Leave, Archive reports)
 group, channel, other         ChatListActions.group     Delete, Leave, More (Clear, Archive reports)
 ```
 

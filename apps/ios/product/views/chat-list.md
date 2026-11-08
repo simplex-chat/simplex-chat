@@ -93,7 +93,7 @@ Contacts and groups the user is a member of; contact requests, contact cards, in
   | Chat | Actions |
   |---|---|
   | Contact | Delete, Ban, More (Clear, Archive) |
-  | Business chat, owner on the business side | Delete, Ban, More (Clear, Archive reports, Leave) |
+  | Business chat, owner on the business side | Delete, Ban, More (Clear, Leave, Archive reports) |
   | Group, channel, other business chats | Delete, Leave, More (Clear, Archive reports) |
 
 - "More" is shown when it holds two actions; a single action is shown in its place, and "More" is an action sheet without a title

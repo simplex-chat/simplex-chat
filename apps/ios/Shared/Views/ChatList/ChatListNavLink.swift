@@ -631,7 +631,7 @@ struct ChatListActions {
         let clear: [ChatListAction] = chat.chatItems.isEmpty ? [] : [.clear]
         let archiveReports: [ChatListAction] = chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator ? [.archiveReports] : []
         if groupInfo.isCustomerChatOwner {
-            return ChatListActions(delete + [.banCustomer(groupInfo)], more: clear + archiveReports + leave)
+            return ChatListActions(delete + [.banCustomer(groupInfo)], more: clear + leave + archiveReports)
         } else {
             return ChatListActions(delete + leave, more: clear + archiveReports)
         }
