@@ -84,6 +84,7 @@ Decided on 2026-11-08, review round 1:
 40. A session in mode `host` posts its mode card when its group has an approver: at the session start or after a membership event. A change to `requests` ends a pending mode card.
 41. An owner's one-line `/` message is a prompt when its keyword is not a command of the session group.
 42. The daemon is spawned with an allowlist of environment variables.
+43. For 30 s after a daemon start, an owner's prompt to a session without an attachment waits for the session to attach; the reply `Session N is not running.` follows only when it does not.
 
 Chat ownership, D8 (a):
 ```
@@ -350,7 +351,8 @@ PostModelSwitch    to_model                          POST /turn {id, pid, at, mo
 
 ```
 on owner's message m in group N:   one-line "/" with a keyword of the group's commands: a command (decision 41)
-                                   N has no attachment: reply to m "Session N is not running."
+                                   N has no attachment: wait for one until 30 s after the daemon start (decision 43);
+                                                        still none: reply to m "Session N is not running."
                                    else: receive its file in 10 min, or reply that it was not received;
                                          pushed += (m.text, m.item, now), at most 20; push {prompt}
 on POST /turn prompt p, at:        end open tool-use cards created before at
@@ -393,6 +395,9 @@ sequenceDiagram
   participant C as Claude Code
   O->>H: message in session N's group
   H->>H: sender's Main group member an owner?
+  opt no attachment, within 30 s of the daemon start
+    H->>H: wait for session N to attach
+  end
   alt session N has no attachment
     H->>O: reply "Session N is not running."
   else
