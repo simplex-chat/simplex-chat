@@ -80,7 +80,7 @@ Approve the connection in "My Agent", and accept the request in the app if it as
 - The agent asks in "My Agent" before it connects, sends a message or a file, downloads a file or leaves; you approve or reject. On a download card, `/receive` gives the agent the file, and `/forward` sends it only to you.
 - `all` approves every message to one chat; `/revoke` ends it. `/receive CHAT N all` lets the agent receive that file and later files from one chat on the agent's servers; `/receive CHAT off` ends it.
 - Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you write.
-- With the plugin, everyone in "SimpleX MCP" can join each session's group, prompt the session and approve its actions and tool use: invite there only people you trust with all your sessions. A person added to a session's group directly is a guest: their messages are prompts too, but they can't approve actions, and Claude's files reach the group only after an approval, unless the option `approve_guest_files` is off. Add a person as an observer to let them only read.
+- With the plugin, everyone in "SimpleX MCP" can join each session's group, prompt the session and approve its actions and tool use: invite there only people you trust with all your sessions. Everyone in a session's group prompts the session and approves its actions and tool use, also a person added to it directly; Claude's files reach the group after an owner of the Main group approves them, unless the option `approve_files` is off. Make a person an observer to let them only read: Claude's post at their join names the command.
 - The agent runs on your computer and has no address in SimpleX Network, so nobody can contact it first.
 
 ## Only Claude Code, for now
