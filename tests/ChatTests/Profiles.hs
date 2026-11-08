@@ -3665,6 +3665,8 @@ testEnableTimedMessagesGroup =
       bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
       bob <## "Disappearing messages: on (1 week)"
+      alice ##> "/set disappear #team on 2147483648"
+      alice <##. "bad chat command: "
 
 testTimedMessagesEnabledGlobally :: HasCallStack => TestParams -> IO ()
 testTimedMessagesEnabledGlobally =

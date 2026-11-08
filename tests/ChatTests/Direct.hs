@@ -75,6 +75,7 @@ chatDirectTests = do
     it "direct message delete multiple (many chat batches)" testDirectMessageDeleteMultipleManyBatches
     it "direct live message" testDirectLiveMessage
     it "direct timed message" testDirectTimedMessage
+    it "stored TTL outside 0 to 2147483647 seconds sets no deletion time when the chat is read" testTimedMessageStoredTTLOutOfRange
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
@@ -971,6 +972,23 @@ testDirectTimedMessage =
       alice ##> "/_send @2 live=off text hi"
       alice <# "@bob hi"
       bob <# "alice> hi"
+
+      alice ##> "/_send @2 ttl=2147483648 text hi"
+      alice <##. "bad chat command: "
+      alice ##> "/set disappear @bob yes 2147483648"
+      alice <##. "bad chat command: "
+
+testTimedMessageStoredTTLOutOfRange :: HasCallStack => TestParams -> IO ()
+testTimedMessageStoredTTLOutOfRange =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #> "@bob hello"
+      bob <# "alice> hello"
+      withCCTransaction bob $ \db ->
+        DB.execute_ db "UPDATE chat_items SET item_status = 'rcv_new', timed_ttl = -100000000000 WHERE item_text = 'hello'"
+      bob #$> ("/_read chat @2", id, "ok")
+      bob #$> ("/_get chat @2 count=1", chat, [(0, "hello")])
 
 testRepeatAuthErrorsDisableContact :: HasCallStack => TestParams -> IO ()
 testRepeatAuthErrorsDisableContact =

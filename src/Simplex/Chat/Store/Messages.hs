@@ -175,6 +175,7 @@ import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences (validTimedTTL)
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
@@ -2087,7 +2088,7 @@ setDirectChatItemRead_ db User {userId} contactId itemId currentTs =
     (CISRcvRead, currentTs, userId, contactId, CISRcvNew, itemId)
 
 setDirectChatItemsDeleteAt :: DB.Connection -> User -> ContactId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
-setDirectChatItemsDeleteAt db User {userId} contactId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do
+setDirectChatItemsDeleteAt db User {userId} contactId itemIds currentTs = forM (filter (validTimedTTL . snd) itemIds) $ \(chatItemId, ttl) -> do
   let deleteAt = addUTCTime (realToFrac ttl) currentTs
   DB.execute
     db
@@ -2264,7 +2265,7 @@ updateGroupScopeUnreadStats db cxt user g@GroupInfo {membership} scopeInfo (unre
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
 setGroupChatItemsDeleteAt :: DB.Connection -> User -> GroupId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
-setGroupChatItemsDeleteAt db User {userId} groupId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do
+setGroupChatItemsDeleteAt db User {userId} groupId itemIds currentTs = forM (filter (validTimedTTL . snd) itemIds) $ \(chatItemId, ttl) -> do
   let deleteAt = addUTCTime (realToFrac ttl) currentTs
   DB.execute
     db
@@ -2585,7 +2586,7 @@ updatedChatItem ci@ChatItem {meta = meta@CIMeta {itemStatus, itemEdited, itemTim
         Just timed -> Just timed
         Nothing -> case (itemStatus, itemTimed, itemLive, live) of
           (CISRcvNew, _, _, _) -> itemTimed
-          (_, Just CITimed {ttl, deleteAt = Nothing}, Just True, False) ->
+          (_, Just CITimed {ttl, deleteAt = Nothing}, Just True, False) | validTimedTTL ttl ->
             -- timed item, sent or read, not set for deletion, was live, now not live
             let deleteAt' = addUTCTime (realToFrac ttl) currentTs
              in Just CITimed {ttl, deleteAt = Just deleteAt'}

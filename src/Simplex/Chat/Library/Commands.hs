@@ -7152,7 +7152,7 @@ chatCommandP =
     updatedMessagesTextP = (`UpdatedMessage` []) <$> mcTextP
     liveMessageP = " live=" *> onOffP <|> pure False
     signMessagesP = " sign=" *> onOffP <|> pure False
-    sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
+    sendMessageTTLP = " ttl=" *> ((Just <$> mfilter validTimedTTL A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
     receiptSettings = do
       enable <- onOffP
       clearOverrides <- (" clear_overrides=" *> onOffP) <|> pure False
@@ -7295,7 +7295,7 @@ chatCommandP =
         <|> ("day" $> 86400)
         <|> ("week" $> (7 * 86400))
         <|> ("month" $> (30 * 86400))
-        <|> A.decimal
+        <|> mfilter validTimedTTL A.decimal
     timedTTLOnOffP =
       optional ("on" *> A.space) *> (Just <$> timedTTLP)
         <|> ("off" $> Nothing)
