@@ -19,7 +19,6 @@ const sessionCommandsReply = "Commands: /approve, /reject, /receive, /forward, /
 const ownerKeywords = ["approve", "reject", "receive", "forward", "revoke", "leave", "delete", "give", "pending", "list"]
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
-  reply: "text: too long for its approval card; shorten it.",
   connect: "message: too long for its approval card; shorten it.",
   download: "item: the names of its file and chat are too long for its approval card.",
 }
@@ -135,7 +134,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const approver = this.longestApproverName()
     if (action.tool === "connect") action.linkTextBytes = maxCardLength - largestCard({...action, linkTextBytes: 0}, mode, approver)
     if (action.tool === "permission") action.previewBytes = maxCardLength - largestCard({...action, previewBytes: 0}, mode, approver)
-    if (action.tool !== "leave" && action.tool !== "mode" && action.tool !== "permission" && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
+    if (action.tool !== "leave" && action.tool !== "mode" && action.tool !== "permission" && action.tool !== "reply" && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
     if (this.approvers().length > 0) return undefined
     if (this.options.session !== undefined) return noSessionOwner
     return this.options.owners === undefined
@@ -505,7 +504,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   private async cardContent(action: Action): Promise<T.MsgContent> {
     const text = cardText(action, action.mode)
-    const file = action.tool === "download" || action.tool === "send" || action.tool === "reply" ? action.file : undefined
+    const file = action.tool === "download" || action.tool === "send" ? action.file : undefined
     const content = file === undefined ? undefined : fileContent(file, text)
     if (content?.type !== "image" && content?.type !== "video") return {type: "text", text}
     action.cardImage ??= await this.fittedImage(action, content)
@@ -675,7 +674,7 @@ function requestLines(action: Action): string[] {
     }
     case "reply": {
       const {file} = action
-      return [`${done ? "I sent" : "I want to send"} a file to ${subject}, where members who are not owners see it:`, ...codeLines(action.input.text), `${file.type} ${codeSpan(oneLine(file.path))}, ${sizeText(file.size)}`]
+      return [`${done ? "I sent" : "I want to send"} a file to ${subject}, where members who are not owners see it:`, `${codeSpan(oneLine(file.name))}, ${sizeText(file.size)}`]
     }
     case "leave": {
       const {present, past} = leaveVerbs(action)

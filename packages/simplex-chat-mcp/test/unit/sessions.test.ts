@@ -759,7 +759,7 @@ describe("session channel", () => {
     const first = signal()
     const unanswered = session.call("reply", {file: received, text: "The log"}, first.call)
     await until(() => sentTo(chat, 20).length === 2)
-    expect(sentTo(chat, 20)[1]).toBe(`I want to send a file to group 1 · auth, where members who are not owners see it:\n\`The log\`\nfile \`${received}\`, 3 bytes\n/'approve 1' or /'reject 1'`)
+    expect(sentTo(chat, 20)[1]).toBe("I want to send a file to group 1 · auth, where members who are not owners see it:\n`8.txt`, 3 bytes\n/'approve 1' or /'reject 1'")
     first.controller.abort()
     expect(await unanswered).toBeUndefined()
     const replied = session.call("reply", {file: received, text: "The log"}, signal().call)
@@ -771,6 +771,24 @@ describe("session channel", () => {
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "2"})).toBeUndefined()
     expect((await rejected)!.structuredContent).toEqual({action: 2, status: "rejected"})
     expect(sentTo(chat, 20)).toHaveLength(4)
+  })
+
+  it("shows on the card of a reply only the name and size of its file, and sends its caption and preview with the file after the approval", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const map = join(sessionFolder(root, id1), "files", "group", "map.gif")
+    mkdirSync(join(sessionFolder(root, id1), "files", "group"), {recursive: true})
+    writeFileSync(map, "GIF89a")
+    chat.members.set(20, [self, invitedAlice, mallory])
+    const replied = session.call("reply", {file: map, text: "The trail map"}, signal().call)
+    await until(() => sentTo(chat, 20).length === 1)
+    const request = "I want to send a file to group 1 · auth, where members who are not owners see it:\n`map.gif`, 6 bytes"
+    expect(chat.sent).toEqual([{chat: [T.ChatType.Group, 20], messages: [{msgContent: {type: "text", text: `${request}\n/'approve 1' or /'reject 1'`}, mentions: {}}]}])
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})).toBeUndefined()
+    expect((await replied)!.structuredContent).toEqual({action: 1, status: "done", item: 501})
+    expect(chat.sent.at(-1)).toEqual({chat: [T.ChatType.Group, 20], messages: [{fileSource: {filePath: map}, msgContent: {type: "image", text: "The trail map", image: expect.stringMatching(/^data:image\/png;base64,/)}, mentions: {}}]})
+    await until(() => chat.updates.length === 1)
+    expect(chat.updates[0].text).toBe(`${request.replace("I want to send", "I sent")}\nApproved by Alice.`)
   })
 })
 
