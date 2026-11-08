@@ -127,6 +127,7 @@ export interface Agent {
   owner?: string
   replyChat?: string
   setMode?: (mode: Mode) => void
+  pending?: (connId: number) => void
 }
 
 type JoinMethod =
@@ -570,7 +571,7 @@ export class AgentTools {
     return this.agent.owner === undefined || ownerOf(chatInfo) === this.agent.owner
   }
 
-  private async claim(chat: string): Promise<void> {
+  async claim(chat: string): Promise<void> {
     if (this.agent.owner === undefined) return
     const {chatInfo} = await getChat(this.agent.chat, chat, 0)
     if (ownerOf(chatInfo) === undefined) await setChatData(this.agent.chat, chat, {...customDataOf(chatInfo), [ownerKey]: {session: this.agent.owner}})
@@ -717,7 +718,7 @@ export class AgentTools {
     const attached = this.agent.actions.find(key)
     if (attached !== undefined) return this.connectResult(attached as ConnectAction, input, call)
     const plan = await this.plan(input)
-    if ("known" in plan) return {status: "known", ...(await this.chatFields(this.ownChat(plan.known, input.target), plan.summary))}
+    if ("known" in plan) return {status: "known", ...(await this.chatFields(await this.ownChat(plan.known, input.target), plan.summary))}
     const summary = plan.join
     if (input.message !== undefined && !summary.takesMessage) throw new ToolError(`message: ${input.target} is not a contact or business address with short link data, or its contact exists without a connection.`)
     const subject: Subject = {kind: summary.cardKind, name: summary.name, simplexName: summary.simplexName, incognito: input.incognito ?? false}
@@ -730,8 +731,10 @@ export class AgentTools {
     return this.agent.actions.find(key) ?? this.agent.actions.create(key, fields, approvedBy, this.session, this.mode)
   }
 
-  private ownChat(chatInfo: T.ChatInfo, target: string): T.ChatInfo {
-    if (!this.owns(chatInfo)) throw new ToolError(`The chat of ${target} belongs to another session; an owner can give it to this session with /give.`)
+  private async ownChat(chatInfo: T.ChatInfo, target: string): Promise<T.ChatInfo> {
+    const chat = chatRef(chatInfo)
+    if (ownerOf(chatInfo) === undefined && chat !== undefined) await this.claim(chat)
+    else if (!this.owns(chatInfo)) throw new ToolError(`The chat of ${target} belongs to another session; an owner can give it to this session with /give.`)
     return chatInfo
   }
 
@@ -795,7 +798,7 @@ export class AgentTools {
     action.connectUntil = Math.min(action.startedAt + (input.wait ?? connectWait) * 1000, action.created + editWindow)
     const plan = await this.plan(input)
     if ("known" in plan) {
-      const fields = await this.chatFields(this.ownChat(plan.known, input.target), plan.summary)
+      const fields = await this.chatFields(await this.ownChat(plan.known, input.target), plan.summary)
       action.knownAs = fields.known_as
       action.chat = fields.chat
       if (fields.connected) this.markConnected(action, fields.chat!)
@@ -804,11 +807,12 @@ export class AgentTools {
     }
     const response = await this.join(plan.method, input, action)
     action.conn = {...action.conn, ...connRef(response)}
+    if (action.conn.pcc !== undefined) this.agent.pending?.(action.conn.pcc)
     if ("customUserProfile" in response && response.customUserProfile !== undefined) action.knownAs = response.customUserProfile.displayName
     const {contact, group} = action.conn
     action.chat ??= contact !== undefined ? `@${contact}` : group !== undefined ? `#${group}` : undefined
     if (response.type === "contactAlreadyExists") {
-      action.knownAs = (await this.chatFields(this.ownChat({type: "direct", contact: response.contact}, input.target))).known_as
+      action.knownAs = (await this.chatFields(await this.ownChat({type: "direct", contact: response.contact}, input.target))).known_as
       this.markConnected(action, `@${response.contact.contactId}`)
       return
     }

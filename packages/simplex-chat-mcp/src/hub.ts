@@ -4,10 +4,10 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, HostTexts, Mode, isDecided} from "./actions"
 import {Config} from "./config"
-import {Control, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, parseCommand} from "./control"
+import {Control, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, isOwnerCommand, parseCommand} from "./control"
 import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
-import {chatErrorOf, errorText, log, logError} from "./log"
+import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
 import {ChatItemsWatch, ToolCall, getChat, storedName, validName} from "./messages"
 import {AttachLine, OwnerState, PermissionRequest, ResetReply, TurnRequest} from "./protocol"
@@ -21,7 +21,10 @@ const firstAction = 1
 const cardsWait = 10
 const promptEcho = 60_000
 const maxPart = 12_000
-const channelPrompt = /^<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*)\n<\/channel>$/
+const maxPushed = 20
+const fileWait = 10 * 60_000
+const pendingDays = 1
+const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX daemon is stopping."}
 
@@ -33,6 +36,7 @@ export interface StoredSession {
 interface SessionGroupData {
   session: number
   invited: InvitedMember[]
+  pending?: {connId: number; at: number}[]
 }
 
 interface InvitedMember {
@@ -46,21 +50,26 @@ export class Session {
   readonly actions: Actions
   readonly tools: AgentTools
   readonly control: Control
-  private readonly prompts: {text: string; item: number; at: number}[] = []
+  readonly number: number
+  private name: string
+  private readonly pushed: {text: string; item: T.ChatItem; at: number}[] = []
   private readonly receiving = new Map<number, {resolve: () => void; reject: (error: Error) => void}>()
-  private description: {model?: string; effort?: string} = {}
-  private turnItem?: T.ChatItem
+  private description: {model?: string; effort?: string}
+  private turnItem?: T.ChatItem | null
+  private requested?: Mode
 
   constructor(
     private readonly hub: Hub,
     readonly id: string,
-    readonly number: number,
-    private name: string,
+    stored: SessionFile,
     group: T.GroupInfo,
     private data: SessionGroupData,
-    mode: Mode,
   ) {
     const {chat, profile: user, root} = hub
+    const {number, name, mode = "requests", model, effort} = stored
+    this.number = number
+    this.name = name
+    this.description = {model, effort}
     this.actions = new Actions(mode, hub.expireHours, controlDataOf(group.customData)?.nextAction ?? firstAction, {
       refusal: action => this.control.refusal(action),
       saveCounter: next => this.control.saveCounter(next),
@@ -81,6 +90,7 @@ export class Session {
       owner: id,
       replyChat: `#${group.groupId}`,
       setMode: (next: Mode) => this.setMode(next),
+      pending: (connId: number) => this.savePending(connId),
     }
     this.tools = new AgentTools(agent, () => this.actions.mode, number)
     const session = {approves: (member: T.GroupMember) => this.approves(member), ownerOf: (n: number) => hub.sessionId(n)}
@@ -92,7 +102,7 @@ export class Session {
   }
 
   busy(): boolean {
-    return this.actions.all().length > 0
+    return this.actions.all().some(({tool}) => tool !== "mode")
   }
 
   call(tool: ToolName, input: unknown, call: ToolCall): ReturnType<AgentTools["call"]> {
@@ -105,13 +115,21 @@ export class Session {
   }
 
   requestMode(mode: Mode): void {
-    if (mode === this.actions.mode) return
-    if (mode === "requests") return this.setMode(mode)
-    if (this.actions.pending().some(({tool}) => tool === "mode")) return
+    this.requested = mode
+    if (mode === "host") return this.askMode()
+    for (const action of this.actions.pending()) if (action.tool === "mode") this.actions.end(action)
+    if (this.actions.mode !== mode) this.setMode(mode)
+  }
+
+  askMode(): void {
+    if (this.requested !== "host" || this.actions.mode === "host" || !this.control.hasApprover() || this.actions.pending().some(({tool}) => tool === "mode")) return
     try {
-      this.actions.create("mode", {tool: "mode", input: {mode}}, undefined, this.number)
+      const action = this.actions.create("mode", {tool: "mode", input: {mode: "host"}}, undefined, this.number)
+      action.changes.subscribe(() => {
+        if (action.state === "rejected" || action.state === "expired") this.requested = undefined
+      })
     } catch (error) {
-      logError(`mode ${mode} of session ${this.number}`, error)
+      logError(`mode host of session ${this.number}`, error)
     }
   }
 
@@ -119,9 +137,15 @@ export class Session {
     this.control.onMessage(ci)
     const {chatItem} = ci
     const {chatDir, content} = chatItem
-    if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent" || parseCommand(content.msgContent.text) !== undefined || !this.approves(chatDir.groupMember)) return
-    const prompted = this.onLine === undefined ? this.hub.chat.apiSendTextReply(ci, `Session ${this.number} is not running.`) : this.prompt(chatItem, content.msgContent.text, chatDir.groupMember)
+    if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent" || isOwnerCommand(content.msgContent.text) || !this.approves(chatDir.groupMember)) return
+    const prompted = this.onLine === undefined ? this.hub.chat.apiSendTextReply(ci, `Session ${this.number} is not running.`) : this.prompt(ci, content.msgContent.text, chatDir.groupMember)
     prompted.catch(error => logError(`prompt of session ${this.number}`, error))
+  }
+
+  claimPending(connId: number, chat: string): void {
+    if (!this.data.pending?.some(entry => entry.connId === connId)) return
+    this.saveData({...this.data, pending: this.data.pending.filter(entry => entry.connId !== connId)}).catch(error => logError(`session ${this.number}`, error))
+    this.tools.claim(chat).catch(error => logError(`owner of ${chat}`, error))
   }
 
   permission({requestId, toolName, description, inputPreview}: PermissionRequest): void {
@@ -135,24 +159,28 @@ export class Session {
     })
   }
 
-  async turn({prompt, answer, model, effort}: TurnRequest): Promise<void> {
-    if (model !== undefined || effort !== undefined) {
+  async turn({at, prompt, answer, model, effort}: TurnRequest): Promise<void> {
+    if ((model !== undefined && model !== this.description.model) || (effort !== undefined && effort !== this.description.effort)) {
       this.description = {model: model ?? this.description.model, effort: effort ?? this.description.effort}
+      this.store(this.description)
       const {model: shown, effort: level} = this.description
       await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
     }
-    if (prompt !== undefined && !this.pushed(prompt)) {
-      this.turnItem = undefined
-      await this.hub.user?.post(this.number, textParts(prompt))
+    if (prompt !== undefined) {
+      this.endPermissions(at)
+      const matched = this.pushedIn(prompt)
+      this.turnItem = matched[0]?.item ?? null
+      this.pushed.splice(0, this.pushed.length, ...this.pushed.filter(entry => !matched.includes(entry)))
+      if (matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt))
     }
     if (answer === undefined) return
-    this.endPermissions()
+    this.endPermissions(at)
     if (answer.trim() !== "") await this.answer(answer)
   }
 
-  endPermissions(): void {
+  endPermissions(before = Infinity): void {
     for (const action of this.actions.pending()) {
-      if (action.tool === "permission") this.actions.end(action)
+      if (action.tool === "permission" && action.created < before) this.actions.end(action)
     }
   }
 
@@ -175,11 +203,13 @@ export class Session {
     await this.saveData({...this.data, invited: []})
   }
 
-  private async prompt(chatItem: T.ChatItem, text: string, member: T.GroupMember): Promise<void> {
-    const file = chatItem.file === undefined ? undefined : await this.receive(chatItem.file)
-    const now = Date.now()
-    this.prompts.splice(0, this.prompts.length, ...this.prompts.filter(({at}) => at > now - promptEcho), {text, item: chatItem.meta.itemId, at: now})
-    this.turnItem = chatItem
+  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
+    const {chatItem} = ci
+    const file = chatItem.file === undefined ? undefined : await this.receive(chatItem.file).catch(async error => {
+      await this.hub.chat.apiSendTextReply(ci, `The file of this message was not received: ${oneLine(errorText(error))}`)
+      return undefined
+    })
+    if (this.pushed.push({text, item: chatItem, at: Date.now()}) > maxPushed) this.pushed.shift()
     this.onLine?.({prompt: {text, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file})}})
   }
 
@@ -187,23 +217,24 @@ export class Session {
     const path = join(sessionFolder(this.hub.root, this.id), "files", "group", storedName(fileId, fileName))
     mkdirSync(dirname(path), {recursive: true, mode: 0o700})
     const received = new Promise<void>((resolve, reject) => this.receiving.set(fileId, {resolve, reject}))
+    const timer = setTimeout(() => this.fileDone(fileId, "not received in 10 minutes"), fileWait).unref()
     await this.hub.chat.apiReceiveFile(fileId, path, true).catch(error => this.fileDone(fileId, errorText(error)))
-    await received
+    await received.finally(() => clearTimeout(timer))
     return path
   }
 
   private async answer(text: string): Promise<void> {
-    const quoted = this.turnItem
+    const quoted = this.turnItem === undefined ? this.pushed.shift()?.item : (this.turnItem ?? undefined)
     this.turnItem = undefined
     const parts = textParts(text)
     const quotedItemId = quoted?.content.type === "rcvMsgContent" && fitsMessage({type: "text", text: parts[0]}, undefined, {content: quoted.content.msgContent, fileName: quoted.file?.fileName}) ? quoted.meta.itemId : undefined
     await this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => ({msgContent: {type: "text", text: part}, quotedItemId: i === 0 ? quotedItemId : undefined, mentions: {}})))
   }
 
-  private pushed(prompt: string): boolean {
+  private pushedIn(prompt: string): {text: string; item: T.ChatItem; at: number}[] {
     const recent = Date.now() - promptEcho
-    const [, item, content] = channelPrompt.exec(prompt) ?? []
-    return this.prompts.some(pushed => pushed.at > recent && (pushed.text === prompt || (String(pushed.item) === item && pushed.text.trim() === content.trim())))
+    const tags = [...prompt.matchAll(channelPrompt)].map(([, item, content]) => ({item: Number(item), content: content.trim()}))
+    return this.pushed.filter(entry => (entry.text === prompt && entry.at > recent) || tags.some(({item, content}) => item === entry.item.meta.itemId && content === entry.text.trim()))
   }
 
   private approves(member: T.GroupMember): boolean {
@@ -213,8 +244,19 @@ export class Session {
 
   private setMode(mode: Mode): void {
     this.actions.mode = mode
+    this.store({mode})
+  }
+
+  private store(fields: Partial<SessionFile>): void {
     const folder = sessionFolder(this.hub.root, this.id)
-    writeSessionFile(folder, {...readSessionFile(folder)!, mode})
+    const stored = readSessionFile(folder)
+    if (stored !== undefined) writeSessionFile(folder, {...stored, ...fields})
+  }
+
+  private savePending(connId: number): void {
+    const recent = Date.now() - pendingDays * 86_400_000
+    const pending = [...(this.data.pending ?? []).filter(({at}) => at > recent), {connId, at: Date.now()}]
+    this.saveData({...this.data, pending}).catch(error => logError(`session ${this.number}`, error))
   }
 
   private saveData(data: SessionGroupData): Promise<void> {
@@ -249,7 +291,7 @@ export class Hub implements SessionGroups {
       const hub = new Hub(chat, user, root, config.expireHours, group, config.mainGroup)
       await hub.main.load()
       await hub.main.start()
-      hub.user = await User.open(root, chat, user)
+      hub.user = await User.open(root, chat, user).catch(error => (logError("User", error), undefined))
       for (const {id, session} of stored) await hub.session(id, session)
       await core.events(event => hub.onEvent(event))
       return hub
@@ -290,8 +332,8 @@ export class Hub implements SessionGroups {
     rmSync(join(folder, "files", "sent"), {recursive: true, force: true})
     const known = await this.storedGroup(stored)
     const group = known ?? (await this.createSessionGroup(stored))
-    if (known === undefined) writeSessionFile(folder, {...stored, group: group.groupId})
-    const session = new Session(this, id, stored.number, stored.name, group, sessionDataOf(group.customData) ?? {session: stored.number, invited: []}, stored.mode ?? "requests")
+    if (known === undefined) writeSessionFile(folder, {...(readSessionFile(folder) ?? stored), group: group.groupId})
+    const session = new Session(this, id, stored, group, sessionDataOf(group.customData) ?? {session: stored.number, invited: []})
     this.sessions.set(stored.number, session)
     await session.control.load()
     if (known === undefined) {
@@ -382,16 +424,21 @@ export class Hub implements SessionGroups {
     const {file} = event.type === "rcvFileComplete" ? event.chatItem.chatItem : {}
     if (file !== undefined) sessions.forEach(session => session.fileDone(file.fileId))
     if (event.type === "rcvFileError") sessions.forEach(session => session.fileDone(event.rcvFileTransfer.fileId, errorText(event.agentError)))
+    const connected = event.type === "contactConnected" ? {connId: event.contact.activeConn?.connId, chat: `@${event.contact.contactId}`} : event.type === "userJoinedGroup" ? {connId: event.hostMember.activeConn?.connId, chat: `#${event.groupInfo.groupId}`} : undefined
+    if (connected?.connId !== undefined) sessions.forEach(session => session.claimPending(connected.connId!, connected.chat))
     for (const {tools} of sessions) tools.onEvent(event)
     if (event.type === "sndFileError") {
       const {chatItem_} = event
       const sending = chatItem_ === undefined ? undefined : sessions.find(({id, control}) => ownerOf(chatItem_.chatInfo) === id || isGroupMessage(chatItem_, control.groupId))
       sending?.control.fileNotSent(event)
     }
-    if (isControlEvent(event, this.main.groupId)) return this.main.onEvent(event).catch(error => logError(`${event.type} in the Main group`, error))
+    if (isControlEvent(event, this.main.groupId)) {
+      this.main.onEvent(event).catch(error => logError(`${event.type} in the Main group`, error))
+      return
+    }
     const session = sessions.find(({control}) => isControlEvent(event, control.groupId))
     if (session !== undefined) {
-      this.controlEvents = this.controlEvents.then(() => session.control.onEvent(event)).catch(error => logError(`${event.type} in the group of session ${session.number}`, error))
+      this.controlEvents = this.controlEvents.then(() => session.control.onEvent(event)).then(() => session.askMode()).catch(error => logError(`${event.type} in the group of session ${session.number}`, error))
     }
   }
 }

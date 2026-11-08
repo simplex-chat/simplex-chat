@@ -69,7 +69,11 @@ export class MainGroup {
   async start(): Promise<void> {
     if (this.lost || this.owners().length > 0) return
     if (this.humans().length > 0) log(noOwners)
-    await this.openLink()
+    this.linkText = await this.chat.apiGetGroupLinkStr(this.groupId).catch(error => {
+      if (!isMissingLink(error)) throw error
+      return undefined
+    })
+    if (this.linkText === undefined) await this.openLink()
   }
 
   rename(name: string): Promise<void> {
@@ -171,8 +175,7 @@ export class MainGroup {
     try {
       await this.chat.apiDeleteGroupLink(this.groupId)
     } catch (error) {
-      const chatError = chatErrorOf(error)
-      if (chatError?.type !== "errorStore" || chatError.storeError.type !== "groupLinkNotFound") throw error
+      if (!isMissingLink(error)) throw error
     }
   }
 
@@ -203,6 +206,11 @@ export class MainGroup {
 export async function findMainGroup(chat: api.ChatApi, userId: number): Promise<T.GroupInfo | undefined> {
   const groups = (await chat.apiListGroups(userId)).filter(({customData}) => (customData as {[mainKey]?: boolean} | undefined)?.[mainKey] === true)
   return groups.reduce<T.GroupInfo | undefined>((latest, group) => (latest === undefined || group.groupId > latest.groupId ? group : latest), undefined)
+}
+
+function isMissingLink(error: unknown): boolean {
+  const chatError = chatErrorOf(error)
+  return chatError?.type === "errorStore" && chatError.storeError.type === "groupLinkNotFound"
 }
 
 export async function createMainGroup(chat: api.ChatApi, userId: number, displayName: string): Promise<T.GroupInfo> {

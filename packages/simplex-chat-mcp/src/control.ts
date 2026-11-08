@@ -1,6 +1,6 @@
 import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
-import {Action, ActionHooks, Actions, ConnectAction, DownloadAction, Standing, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
+import {Action, ActionHooks, Actions, DownloadAction, Standing, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
 import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import {qrCodeText} from "./qr"
@@ -14,6 +14,7 @@ export const controlCommands: T.ChatBotCommand[] = [
 ]
 
 const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+const ownerKeywords = ["approve", "reject", "receive", "forward", "revoke", "leave", "delete", "give", "pending", "list"]
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
   connect: "message: too long for its approval card; shorten it.",
@@ -130,12 +131,17 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const {mode} = action
     const approver = this.longestApproverName()
     if (action.tool === "connect") action.linkTextBytes = maxCardLength - largestCard({...action, linkTextBytes: 0}, mode, approver)
+    if (action.tool === "permission") action.previewBytes = maxCardLength - largestCard({...action, previewBytes: 0}, mode, approver)
     if (action.tool !== "leave" && action.tool !== "mode" && action.tool !== "permission" && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
     if (this.approvers().length > 0) return undefined
     if (this.options.session !== undefined) return noSessionOwner
     return this.options.owners === undefined
       ? "The agent has no owner. The person who runs it has to join its control chat with the link the server printed."
       : "The agent has no approving owner. The person who runs it has to restart it with the --owners options it printed."
+  }
+
+  hasApprover(): boolean {
+    return this.approvers().length > 0
   }
 
   standingApprover(chatInfo: T.ChatInfo, standing: Standing): string | undefined {
@@ -193,6 +199,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const command = parseCommand(chatItem.content.msgContent.text)
     if (command === undefined) return
     const sender = chatItem.chatDir.groupMember
+    if (this.options.session !== undefined && !ownerKeywords.includes(command.keyword) && this.isApprover(sender)) return
     this.ownerCommands = this.ownerCommands
       .then(() => this.ownerCommand(sender, command))
       .then(reply => (reply === undefined ? undefined : this.chat.apiSendTextReply(ci, reply)))
@@ -597,6 +604,11 @@ export function parseCommand(text: string): Command | undefined {
   return match ? {keyword: match[1], params: match[2].trim()} : undefined
 }
 
+export function isOwnerCommand(text: string): boolean {
+  const command = parseCommand(text)
+  return command !== undefined && ownerKeywords.includes(command.keyword)
+}
+
 export function cardText(action: Action, mode: Actions["mode"]): string {
   const request = requestLines(action)
   const approval = mode === "host" ? "Performed without approval (mode host)" : action.standing ? `Approved for this chat by ${action.decidedBy}` : `Approved by ${action.decidedBy}`
@@ -614,7 +626,7 @@ export function cardText(action: Action, mode: Actions["mode"]): string {
     case "rejected":
       return [...request, `Rejected by ${action.decidedBy}.`].join("\n")
     case "expired":
-      return [...request, "Expired."].join("\n")
+      return [...request, action.ended ? "Ended." : "Expired."].join("\n")
   }
 }
 
@@ -623,7 +635,7 @@ function requestLines(action: Action): string[] {
   if (action.tool === "mode") return [`${done ? "I run" : "I want to run"} in mode ${action.input.mode}: Claude Code asks you before each of my actions, and they are performed without approval here.`]
   if (action.tool === "permission") {
     const {toolName, description, inputPreview} = action.input
-    return [`I want to use ${codeSpan(oneLine(toolName))}: ${codeSpan(oneLine(description))}`, ...codeLines(inputPreview)]
+    return [`I want to use ${codeSpan(oneLine(toolName))}: ${codeSpan(oneLine(description))}`, ...fittedLines(codeLines(inputPreview), action.previewBytes)]
   }
   const subject = subjectText(action.subject, safeName)
   switch (action.tool) {
@@ -631,7 +643,7 @@ function requestLines(action: Action): string[] {
       const {input} = action
       const verb = !done ? "I want to connect" : action.connected ? "I connected" : "I asked to connect"
       const message = input.message === undefined ? [] : ["With the message:", ...codeLines(input.message)]
-      return [`${verb} to ${subject}, ${action.subject.incognito ? "incognito" : "as myself"}.`, ...linkLines(action), ...message]
+      return [`${verb} to ${subject}, ${action.subject.incognito ? "incognito" : "as myself"}.`, ...fittedLines([...codeLines(action.plan.description), ...codeLines(action.plan.welcome)], action.linkTextBytes), ...message]
     }
     case "send": {
       const {file, replyTo, mentions} = action
@@ -696,20 +708,20 @@ function truncatedLine(line: string, maxLength: number): string {
   return `${kept}${truncationMark}`
 }
 
-function linkLines({plan, linkTextBytes = Infinity}: ConnectAction): string[] {
-  const lines: string[] = []
-  let left = linkTextBytes
-  for (const line of [...codeLines(plan.description), ...codeLines(plan.welcome)]) {
+function fittedLines(lines: string[], budget = Infinity): string[] {
+  const fitted: string[] = []
+  let left = budget
+  for (const line of lines) {
     const length = encodedLength(`\n${line}`)
     if (length > left) {
       const room = left - encodedLength("\n``")
-      if (room >= encodedLength(truncationMark)) lines.push(`\`${truncatedLine(line.slice(1, -1), room)}\``)
+      if (room >= encodedLength(truncationMark)) fitted.push(`\`${truncatedLine(line.slice(1, -1), room)}\``)
       break
     }
-    lines.push(line)
+    fitted.push(line)
     left -= length
   }
-  return lines
+  return fitted
 }
 
 function chatName(subject: Subject, showName: (name: string) => string = safeName): string {

@@ -15,6 +15,8 @@ const daemonStopped = "The SimpleX daemon stopped; repeat the call."
 const unknownSessionStatus = 409
 const stoppingStatus = 503
 const callAttempts = 2
+const firstRetry = 1_000
+const lastRetry = 30_000
 const channelInstructions = "Messages in the simplex channel are prompts of your owners in the SimpleX group of this session: from is the owner's name, item the message ID, and file the path of a file they sent. Your final answer of each turn reaches them in that group; reply sends them a file."
 const permissionFields = ["request_id", "tool_name", "description", "input_preview"] as const
 const permissionRequest = fromJsonSchema({type: "object", properties: Object.fromEntries(permissionFields.map(field => [field, {type: "string"}])), required: [...permissionFields]} as JsonSchemaType)
@@ -47,7 +49,7 @@ export async function startSession(env: NodeJS.ProcessEnv = process.env, io: Ses
     configError = error.message
   }
   const server = new McpServer({name: "simplex-mcp", version: io.version}, {instructions: `${instructions("Claude", "SimpleX daemon")}\n${channelInstructions}`, capabilities: {experimental: {"claude/channel": {}, "claude/channel/permission": {}}}})
-  const link = new DaemonLink(DaemonClient.forRoot(dataRoot(env)), {id, project: env.CLAUDE_PROJECT_DIR || process.cwd(), config}, io, line => {
+  const link = new DaemonLink(DaemonClient.forRoot(dataRoot(env)), {id, pid: process.ppid, project: env.CLAUDE_PROJECT_DIR || process.cwd(), config}, io, line => {
     const notification = channelNotification(line as AttachLine)
     if (notification !== undefined) server.server.notification(notification).catch(error => logError("SimpleX channel", error))
   })
@@ -66,6 +68,8 @@ class DaemonLink {
   private connecting?: Promise<void>
   private attach?: AbortController
   private closed = false
+  private retry = firstRetry
+  private retryTimer?: NodeJS.Timeout
 
   constructor(private readonly client: DaemonClient, private readonly request: SessionRequest, private readonly io: SessionIo, private readonly onLine: (line: unknown) => void) {}
 
@@ -78,14 +82,27 @@ class DaemonLink {
   }
 
   start(): void {
-    this.connect().catch(error => {
-      if (!this.closed) logError("SimpleX daemon", error)
-    })
+    this.connect().then(
+      () => (this.retry = firstRetry),
+      error => {
+        if (this.closed) return
+        logError("SimpleX daemon", error)
+        if (!(error instanceof ExitError)) this.reconnect()
+      },
+    )
   }
 
   close(): void {
     this.closed = true
+    clearTimeout(this.retryTimer)
     this.attach?.abort()
+  }
+
+  private reconnect(): void {
+    if (this.closed) return
+    clearTimeout(this.retryTimer)
+    this.retryTimer = setTimeout(() => this.start(), this.retry).unref()
+    this.retry = Math.min(this.retry * 2, lastRetry)
   }
 
   async permission(request: PermissionRequest): Promise<void> {
@@ -150,9 +167,11 @@ class DaemonLink {
         }, controller.signal)
         .then(() => reject(new DaemonStoppedError()), reject)
         .finally(() => {
-          if (this.attach !== controller) return
-          this.attach = undefined
-          this.connecting = undefined
+          if (this.attach === controller) {
+            this.attach = undefined
+            this.connecting = undefined
+          }
+          this.reconnect()
         })
     })
   }

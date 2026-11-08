@@ -1,13 +1,14 @@
+import {EventEmitter} from "events"
 import {writeSync} from "fs"
 import {Server, ServerResponse} from "http"
 import {basename} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {Action, Mode} from "./actions"
 import {Config, readConfig} from "./config"
-import {LockedError, SessionFile, acquireLock, createDataFolder, dataRoot, readSessionFile, releaseLock, serverToken, sessionFolder, socketPath, storedSessions, writeSessionFile} from "./files"
+import {LockedError, SessionFile, acquireLock, createDataFolder, dataRoot, logFile, readSessionFile, releaseLock, serverToken, sessionFolder, socketPath, storedSessions, trimLog, writeSessionFile} from "./files"
 import {Hub, StoredSession, hubTexts} from "./hub"
 import {ExitError, errorText, log, logError} from "./log"
-import {ToolCall} from "./messages"
+import {ToolCall, validName} from "./messages"
 import {AttachLine, AttachRequest, CallRequest, OwnerState, PermissionRequest, ResetReply, SessionReply, SessionRequest, StatusReply, TitleReply, TitleRequest, TurnRequest, protocolVersion} from "./protocol"
 import {Handler, SocketError, listen, sendJson, startLines} from "./socket"
 import {ToolName} from "./tools"
@@ -15,6 +16,8 @@ import {version} from "./version"
 
 const idleClose = 10 * 60_000
 const idleStop = 10 * 60_000
+const processWait = 10_000
+const logCheck = 3_600_000
 const firstFreeFd = 3
 const unnamedSession = "Claude Code"
 
@@ -57,14 +60,20 @@ interface Entry {
   calls: number
   writers: Set<(line: AttachLine) => void>
   idle?: NodeJS.Timeout
+  pid?: number
+  seen?: number
 }
 
 export class Daemon {
   private readonly entries = new Map<string, Entry>()
   private readonly streams = new Set<ServerResponse>()
   private readonly stored: StoredSession[]
+  private readonly aliases = new Map<string, string>()
+  private readonly titles = new Map<number, {id: string; at: number}>()
+  private readonly titled = new EventEmitter()
   private nextNumber: number
   private stopTimer?: NodeJS.Timeout
+  private logTimer?: NodeJS.Timeout
   private stopping?: Promise<void>
   private hub!: HubLike
   private hubReady!: Promise<HubLike>
@@ -73,6 +82,7 @@ export class Daemon {
   private constructor(private readonly deps: DaemonDeps) {
     this.stored = storedSessions(deps.root)
     this.nextNumber = Math.max(0, ...this.stored.map(({session}) => session.number)) + 1
+    for (const {id, session} of this.stored) for (const alias of session.aliases ?? []) this.aliases.set(alias, id)
   }
 
   static async start(deps: DaemonDeps, config: () => Config): Promise<Daemon> {
@@ -89,6 +99,13 @@ export class Daemon {
         throw error
       }
       daemon.scheduleStop()
+      daemon.logTimer = setInterval(() => {
+        try {
+          trimLog(deps.root)
+        } catch (error) {
+          logError(logFile(deps.root), error)
+        }
+      }, logCheck).unref()
       return daemon
     } catch (error) {
       releaseLock(deps.root)
@@ -120,12 +137,12 @@ export class Daemon {
       "POST /call": this.expiring((body, res) => this.onCall(body as CallRequest, res)),
       "POST /permission": this.expiring(async (body, res) => {
         const request = body as PermissionRequest
-        ;(await this.entry(request.id).opening).permission(request)
+        ;(await this.entry(this.canonical(request.id)).opening).permission(request)
         sendJson(res, 200, {})
       }),
       "POST /turn": this.expiring(async (body, res) => {
         const request = body as TurnRequest
-        await (await this.entry(request.id).opening).turn(request)
+        await (await this.entry(await this.resolve(request.id, request.pid)).opening).turn(request)
         sendJson(res, 200, {})
       }),
       "GET /status": this.expiring(async (_body, res) => sendJson(res, 200, this.status())),
@@ -153,6 +170,7 @@ export class Daemon {
 
   private async shutdown(reply: ServerResponse | undefined): Promise<void> {
     clearTimeout(this.stopTimer)
+    clearInterval(this.logTimer)
     for (const entry of this.entries.values()) clearTimeout(entry.idle)
     const closed = new Promise<void>(resolve => this.server.close(() => resolve()))
     for (const res of this.streams) res.destroy()
@@ -175,21 +193,69 @@ export class Daemon {
   }
 
   private async onSession(request: SessionRequest): Promise<SessionReply> {
-    const entry = this.entry(request.id, request)
+    validConfig(request.config)
+    const id = await this.resolve(request.id, request.pid, true)
+    const entry = this.entry(id, {...request, id})
+    entry.pid = request.pid
+    entry.seen = Date.now()
     const agent = await entry.opening
-    if (entry.attached === 0) this.scheduleIdle(request.id, entry)
+    if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
     agent.requestMode(request.config.approve)
     return {number: agent.number, displayName: agent.displayName, version: this.deps.version, protocol: protocolVersion, owner: this.hub.owner()}
   }
 
-  private async onTitle({id, name, project, model, config}: TitleRequest): Promise<TitleReply> {
+  private async onTitle(request: TitleRequest): Promise<TitleReply> {
+    const {name, project, model, config} = request
+    validConfig(config)
+    const id = await this.resolve(request.id, request.pid)
     const title = name?.trim() || undefined
-    const agent = await this.entry(id, {id, project, name: title, config}).opening
+    const entry = this.entry(id, {id, project, name: title, config})
+    if (request.pid !== undefined) {
+      this.titles.set(request.pid, {id, at: Date.now()})
+      this.titled.emit(String(request.pid))
+    }
+    const agent = await entry.opening
     await this.hub.configure(config)
     if (title !== undefined) await this.rename(this.folder(id), agent, title)
     if (model !== undefined) await agent.turn({id, model})
     return {mainGroup: this.hub.mainGroup, owner: this.hub.owner(), version: this.deps.version, protocol: protocolVersion}
+  }
+
+  private canonical(id: string): string {
+    return this.aliases.get(id) ?? id
+  }
+
+  private async resolve(id: string, pid: number | undefined, fromServer = false): Promise<string> {
+    const known = (): string | undefined => this.aliases.get(id) ?? (pid === undefined ? undefined : this.processSession(pid))
+    if (fromServer && pid !== undefined && known() === undefined && readSessionFile(this.folder(id)) === undefined) {
+      await new Promise<void>(resolve => {
+        const done = (): void => {
+          clearTimeout(timer)
+          this.titled.off(String(pid), done)
+          resolve()
+        }
+        const timer = setTimeout(done, processWait)
+        this.titled.on(String(pid), done)
+      })
+    }
+    const target = known() ?? id
+    if (target !== id) this.alias(id, target)
+    return target
+  }
+
+  private processSession(pid: number): string | undefined {
+    const recent = Date.now() - processWait
+    for (const [id, entry] of this.entries) if (entry.pid === pid && (entry.attached > 0 || (entry.seen ?? 0) > recent)) return id
+    const title = this.titles.get(pid)
+    return title !== undefined && title.at > recent ? title.id : undefined
+  }
+
+  private alias(id: string, target: string): void {
+    this.aliases.set(id, target)
+    const folder = this.folder(target)
+    const stored = readSessionFile(folder)
+    if (stored !== undefined && !stored.aliases?.includes(id)) writeSessionFile(folder, {...stored, aliases: [...(stored.aliases ?? []), id]})
   }
 
   private async rename(folder: string, agent: SessionLike, name: string): Promise<void> {
@@ -199,7 +265,8 @@ export class Daemon {
     writeSessionFile(folder, {...stored, name})
   }
 
-  private async onAttach({id}: AttachRequest, res: ServerResponse): Promise<void> {
+  private async onAttach(request: AttachRequest, res: ServerResponse): Promise<void> {
+    const id = this.canonical(request.id)
     const entry = this.entry(id)
     const agent = await entry.opening
     if (!this.hold(res)) return
@@ -213,13 +280,16 @@ export class Daemon {
       entry.attached--
       entry.writers.delete(write)
       if (entry.attached > 0) return
+      entry.seen = Date.now()
       agent.onLine = undefined
       agent.endPermissions()
       this.scheduleIdle(id, entry)
     })
   }
 
-  private async onCall({id, tool, input}: CallRequest, res: ServerResponse): Promise<void> {
+  private async onCall(request: CallRequest, res: ServerResponse): Promise<void> {
+    const {tool, input} = request
+    const id = this.canonical(request.id)
     const entry = this.entry(id)
     const agent = await entry.opening
     if (!this.hold(res)) return
@@ -353,6 +423,12 @@ export function productionDeps(root: string): DaemonDeps {
     openHub: (config, stored) => Hub.open(root, config, stored),
     onStopped: code => process.exit(code),
   }
+}
+
+function validConfig(config: Config | undefined): void {
+  const {mainGroup, approve, expireHours} = config ?? {}
+  const valid = typeof mainGroup === "string" && validName(mainGroup) === mainGroup && (approve === "requests" || approve === "host") && Number.isInteger(expireHours) && expireHours! >= 1 && expireHours! <= 23
+  if (!valid) throw new SocketError("Invalid config.", 400)
 }
 
 export function sessionName(title: string | undefined, project: string): string {

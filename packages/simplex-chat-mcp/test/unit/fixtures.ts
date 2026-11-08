@@ -163,6 +163,7 @@ export class FakeChat {
   profiles: {groupId: number; groupProfile: T.GroupProfile}[] = []
   roles: {groupId: number; members: number[]; role: T.GroupMemberRole}[] = []
   links: {groupId: number; role: T.GroupMemberRole}[] = []
+  groupLinks = new Set<number>()
   newGroups: {userId: number; groupProfile: T.GroupProfile}[] = []
   invitations: {groupId: number; viaGroupId: number; groupMemberId: number; memberRole: T.GroupMemberRole}[] = []
   removed: {groupId: number; memberIds: number[]}[] = []
@@ -238,10 +239,18 @@ export class FakeChat {
     this.setCustomData(`#${groupId}`, customData)
   }
 
-  async apiDeleteGroupLink(): Promise<void> {}
+  async apiDeleteGroupLink(groupId: number): Promise<void> {
+    this.groupLinks.delete(groupId)
+  }
 
   async apiCreateGroupLink(groupId: number, role: T.GroupMemberRole): Promise<string> {
     this.links.push({groupId, role})
+    this.groupLinks.add(groupId)
+    return "https://simplex.chat/g#link"
+  }
+
+  async apiGetGroupLinkStr(groupId: number): Promise<string> {
+    if (!this.groupLinks.has(groupId)) throw new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "groupLinkNotFound"}} as unknown as T.ChatError)
     return "https://simplex.chat/g#link"
   }
 

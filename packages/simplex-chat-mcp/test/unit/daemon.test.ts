@@ -173,6 +173,11 @@ function serverRequests(server: Server, count: number): Promise<void> {
   })
 }
 
+async function turnsUntil(condition: () => boolean): Promise<void> {
+  for (let i = 0; i < 1000 && !condition(); i++) await new Promise(resolve => setImmediate(resolve))
+  expect(condition()).toBe(true)
+}
+
 function storeSession(id: string, number: number, name: string) {
   const folder = sessionFolder(root, id)
   createDataFolder(folder)
@@ -651,6 +656,85 @@ describe("daemon", () => {
     await daemon.stop()
     expect(await stoppedCode).toBe(0)
     daemon = undefined
+  })
+
+  it("keeps one session for a Claude Code process whose hooks change the session ID, as after /clear, and after a restart", async () => {
+    const {d, agents} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await post("/title", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})
+    await post("/session", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})
+    const controller = new AbortController()
+    const {attached, firstLine} = attach(id1, controller.signal)
+    await firstLine
+    expect(await post("/title", {id: id2, pid: 100, name: "auth", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
+    await post("/turn", {id: id2, pid: 100, prompt: "Fix the build"})
+    expect(agents).toMatchObject([{number: 1, displayName: "1 · auth", turns: [{id: id2, pid: 100, prompt: "Fix the build"}]}])
+    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({name: "auth", aliases: [id2]})
+    expect(existsSync(sessionFolder(root, id2))).toBe(false)
+    controller.abort()
+    await attached
+    await daemon.stop()
+    const restarted = deps(root)
+    daemon = await Daemon.start(restarted.d, readDefaultConfig)
+    await post("/turn", {id: id2, answer: "Fixed."})
+    expect(restarted.agents).toMatchObject([{number: 1, turns: [{id: id2, answer: "Fixed."}]}])
+  })
+
+  it("joins the startup ID of a session server to the session of the title from its process, as with --continue", async () => {
+    const {d, agents} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    const registered = post("/session", {id: id2, pid: 200, project: "/p/app", config: defaultConfig})
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(await post("/title", {id: id1, pid: 200, name: "auth", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
+    expect(await registered).toMatchObject({number: 1, displayName: "1 · auth"})
+    await streamLines(socketPath(root), token, "/call", {id: id2, tool: "list", input: {}}, () => undefined)
+    expect(agents).toMatchObject([{number: 1, calls: ["list"]}])
+    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({aliases: [id2]})
+    expect(await post("/session", {id: id2, pid: 201, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
+  })
+
+  it("starts its own session for a server whose process sends no title in 10 seconds, and for a title from a process whose session left over 10 seconds ago", async () => {
+    jest.useFakeTimers(fakeTimers)
+    const {d, agents} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    let registered: unknown
+    post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig}).then(reply => (registered = reply))
+    await turnsUntil(() => daemon!["titled"].listenerCount("300") === 1)
+    await jest.advanceTimersByTimeAsync(9_999)
+    expect(registered).toBeUndefined()
+    await jest.advanceTimersByTimeAsync(1)
+    await turnsUntil(() => registered !== undefined)
+    expect(registered).toMatchObject({number: 1, displayName: "1 · app"})
+    const controller = new AbortController()
+    const {attached, firstLine} = attach(id1, controller.signal)
+    await firstLine
+    controller.abort()
+    await attached
+    await turnsUntil(() => agents[0].turns.includes("ended"))
+    await jest.advanceTimersByTimeAsync(10_001)
+    expect(await post("/title", {id: id2, pid: 300, name: "docs", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
+    expect(agents.map(({displayName}) => displayName)).toEqual(["1 · app", "2 · docs"])
+    expect(readSessionFile(sessionFolder(root, id1))!.aliases).toBeUndefined()
+  })
+
+  it.each(["/session", "/title"])("answers 400 to %s with an invalid config", async route => {
+    const {d, agents} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    for (const config of [undefined, {...defaultConfig, mainGroup: undefined}, {...defaultConfig, approve: "always"}, {...defaultConfig, expireHours: "23"}, {...defaultConfig, expireHours: 24}]) {
+      await expect(post(route, {id: id1, project: "/p/app", config})).rejects.toMatchObject({message: "Invalid config.", status: 400})
+    }
+    expect(agents).toHaveLength(0)
+  })
+
+  it("trims its log every hour while it runs", async () => {
+    jest.useFakeTimers(fakeTimers)
+    const {d, busy} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await register(id1)
+    busy.add(1)
+    writeFileSync(join(root, "daemon.log"), "x".repeat(10 * 1_048_576 + 1))
+    await jest.advanceTimersByTimeAsync(60 * minutes)
+    expect(readFileSync(join(root, "daemon.log"), "utf8")).toBe("")
   })
 
   it("reports status, resets owners and stops on request", async () => {

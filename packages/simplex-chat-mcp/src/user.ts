@@ -1,5 +1,5 @@
 import {join} from "path"
-import {ChatEvent, T} from "@simplex-chat/types"
+import {CC, ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {openCore} from "./core"
 import {logError} from "./log"
@@ -36,9 +36,11 @@ export class User {
   }
 
   private async connect(hub: api.ChatApi, hubUser: T.User): Promise<void> {
-    const link = await hub.apiCreateLink(hubUser.userId)
-    const connected = hub.wait("contactConnected", connectTimeout)
-    const [, connLink] = await this.chat.apiConnectPlan(this.user.userId, link)
+    const r = await hub.sendChatCmd(CC.APIAddContact.cmdString({userId: hubUser.userId, incognito: false}))
+    if (r.type !== "invitation") throw new api.ChatCommandError("error creating link", r)
+    const {connLinkInvitation, connection} = r
+    const connected = hub.wait("contactConnected", ({contact}) => contact.activeConn?.connId === connection.pccConnId, connectTimeout)
+    const [, connLink] = await this.chat.apiConnectPlan(this.user.userId, connLinkInvitation.connShortLink || connLinkInvitation.connFullLink)
     await this.chat.apiConnect(this.user.userId, false, connLink)
     const event = await connected
     if (event === undefined) throw new Error("The User profile did not connect to Claude.")

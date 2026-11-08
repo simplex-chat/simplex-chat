@@ -16,6 +16,7 @@ export interface OwnerState {
 
 export interface SessionRequest {
   id: string
+  pid?: number
   project: string
   name?: string
   config: Config
@@ -23,6 +24,7 @@ export interface SessionRequest {
 
 export interface TitleRequest {
   id: string
+  pid?: number
   name?: string
   project: string
   model?: string
@@ -39,6 +41,8 @@ export interface PermissionRequest {
 
 export interface TurnRequest {
   id: string
+  pid?: number
+  at?: number
   prompt?: string
   answer?: string
   model?: string

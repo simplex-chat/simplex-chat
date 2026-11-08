@@ -18,16 +18,20 @@ const stoppedResult = {content: [{type: "text", text: "The SimpleX daemon stoppe
 let root: string
 let server: Server | undefined
 const seen: string[] = []
+let statuses = 0
 const daemon = new EventEmitter()
 
 type OnCall = (res: ServerResponse, n: number) => Promise<void>
 
 const attachLine = (res: ServerResponse): void => startLines(res)({version: "0.2.0", protocol: protocolVersion})
 
-async function fakeDaemon(onCall: OnCall, onAttach: (res: ServerResponse) => void = attachLine): Promise<void> {
+async function fakeDaemon(onCall: OnCall, onAttach: (res: ServerResponse) => void = attachLine, protocol = protocolVersion): Promise<void> {
   let calls = 0
   server = await listen(socketPath(root), serverToken(root), {
-    "GET /status": async (_b, res) => sendJson(res, 200, {version: "0.2.0", protocol: protocolVersion, mainGroup: "SimpleX MCP", owner: {owners: ["Alice"]}, sessions: []}),
+    "GET /status": async (_b, res) => {
+      statuses++
+      sendJson(res, 200, {version: "0.2.0", protocol, mainGroup: "SimpleX MCP", owner: {owners: ["Alice"]}, sessions: []})
+    },
     "POST /session": async (body, res) => {
       seen.push(`session ${JSON.stringify(body)}`)
       sendJson(res, 200, {number: 1, displayName: "SimpleX MCP - app", version: "0.2.0", protocol: protocolVersion, owner: {owners: ["Alice"]}})
@@ -77,6 +81,7 @@ const noSpawn: SpawnDaemon = async () => undefined
 async function session(env: NodeJS.ProcessEnv = {}, spawnDaemon: SpawnDaemon = noSpawn): Promise<{client: LineClient; stdin: PassThrough}> {
   const stdin = new PassThrough()
   const stdout = new PassThrough()
+  stdins.push(stdin)
   await startSession({CLAUDE_CODE_SESSION_ID: id, CLAUDE_PROJECT_DIR: "/p/app", SIMPLEX_MCP_HOME: root, ...env}, {stdin, stdout, spawnDaemon, version: "0.2.0"})
   const client = new LineClient(stdin, stdout)
   await client.initialize()
@@ -89,15 +94,19 @@ function listCall(client: LineClient): Promise<any> {
 
 const listed = {chats: [], actions: []}
 const listResult = {content: [{type: "text", text: JSON.stringify(listed)}], structuredContent: listed}
-const registered = `session ${JSON.stringify({id, project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}})}`
+const registered = `session ${JSON.stringify({id, pid: process.ppid, project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}})}`
+const stdins: PassThrough[] = []
 
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), "simplex-mcp-session-"))
   seen.length = 0
+  statuses = 0
   DaemonClient.forRoot(root)
 })
 
 afterEach(async () => {
+  for (const stdin of stdins.splice(0)) stdin.end()
+  await new Promise(resolve => setImmediate(resolve))
   if (server) await closeServer(server)
   server = undefined
   daemon.removeAllListeners()
@@ -139,6 +148,7 @@ describe("session server", () => {
     })
     const stdin = new PassThrough()
     const stdout = new PassThrough()
+    stdins.push(stdin)
     await startSession({CLAUDE_CODE_SESSION_ID: id, CLAUDE_PROJECT_DIR: "/p/app", SIMPLEX_MCP_HOME: root}, {stdin, stdout, spawnDaemon: noSpawn, version: "0.2.0"})
     const client = new LineClient(stdin, stdout)
     const initialized = await client.initialize()
@@ -254,6 +264,41 @@ describe("session server", () => {
     await DaemonClient.forRoot(root).request("GET", "/status")
     expect((await listCall(client)).result).toEqual(listResult)
     expect(seen).toEqual([registered, "attach", "call list", registered, "attach", "call list"])
+  })
+
+  it("attaches again after /attach ends, without a call", async () => {
+    await fakeDaemon(async res => endWithResult(res, listResult), res => {
+      attachLine(res)
+      res.write(`${JSON.stringify({prompt: {text: "Fix the build", from: "Alice", item: 41}})}\n`)
+    })
+    const attached = next("attach")
+    const {client} = await session()
+    const [res] = await attached
+    await until(() => client.notifications.some(({method}) => method === "notifications/claude/channel"))
+    const again = next("attach")
+    res.destroy()
+    await again
+    expect(seen).toEqual([registered, "attach", registered, "attach"])
+  })
+
+  it("attaches once the daemon is back after a failed start, without a call", async () => {
+    const errors = captureStderr()
+    await session()
+    await until(() => errors.length === 1)
+    const attached = next("attach")
+    await fakeDaemon(async res => endWithResult(res, listResult))
+    await attached
+    expect(seen).toEqual([registered, "attach"])
+  })
+
+  it("stops attaching when the daemon speaks another protocol", async () => {
+    const errors = captureStderr()
+    await fakeDaemon(async res => endWithResult(res, listResult), attachLine, protocolVersion + 1)
+    await session()
+    await until(() => errors.length === 1)
+    await new Promise(resolve => setTimeout(resolve, 1_500))
+    expect(statuses).toBe(1)
+    expect(errors).toEqual(["SimpleX daemon: Restart Claude Code to update the SimpleX plugin."])
   })
 
   it("keeps a newer connection when an older call fails after it", async () => {

@@ -48,6 +48,7 @@ interface ActionRecord {
   decidedBy?: string
   open: number
   interrupted: boolean
+  ended?: boolean
   error?: string
   stopCollecting?: () => void
   cardImage?: string
@@ -126,6 +127,7 @@ export interface PermissionAction extends ActionRecord {
   readonly input: {requestId: string; toolName: string; description: string; inputPreview: string}
   readonly subject?: undefined
   readonly chat?: undefined
+  previewBytes?: number
 }
 
 export type Action = ConnectAction | SendAction | LeaveAction | DownloadAction | ModeAction | PermissionAction
@@ -231,6 +233,7 @@ export class Actions {
   }
 
   end(action: Action): void {
+    action.ended = true
     this.decide(action, "expired")
     this.updateCard(action)
   }

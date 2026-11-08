@@ -6,9 +6,9 @@ import {api} from "simplex-chat"
 import {DaemonClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
 import {Daemon, productionDeps} from "../../src/daemon"
-import {hubFolder, sessionFolder} from "../../src/files"
-import {turn} from "../../src/hook"
-import {SessionReply, StatusReply, TitleReply} from "../../src/protocol"
+import {hubFolder, readSessionFile, sessionFolder} from "../../src/files"
+import {sessionStart, turn} from "../../src/hook"
+import {AttachLine, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until} from "./helpers"
 import {SmpServer, startSmpServer, startXftpServer} from "./smpServer"
 import {daemonPid, killDaemon, spawnSession} from "./stdio"
@@ -170,7 +170,7 @@ test("an owner joins the Main group and each session's group, and approves its c
   expect((await chatsOf(two)).sort()).toEqual([directoryChat, shopChat].sort())
 }, 600_000)
 
-test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; an owner's prompt reaches an attached session, raw or in the channel tag it is not posted again, and the answer quotes it", async () => {
+test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -206,13 +206,68 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   const {item} = (attached[1] as {prompt: {item: number}}).prompt
   expect(attached[1]).toEqual({prompt: {text: "Run the tests", from: "Alice", item}})
   const passed = received(alice.chat, message("Tests pass.", "Claude", sent.chatItem.meta.itemId))
-  await hook({hook_event_name: "UserPromptSubmit", prompt: "Run the tests"})
   await hook({hook_event_name: "UserPromptSubmit", prompt: `<channel source="plugin:simplex:simplex" from="Alice" item="${item}">\nRun the tests\n</channel>`})
   await hook({hook_event_name: "Stop", last_assistant_message: "Tests pass."})
   await passed
+  const [lint] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Run the linter")
+  await until(() => attached.length === 3)
+  const linted = received(alice.chat, message("Lint passes.", "Claude", lint.chatItem.meta.itemId))
+  await hook({hook_event_name: "UserPromptSubmit", prompt: "Run the linter"})
+  await hook({hook_event_name: "Stop", last_assistant_message: "Lint passes."})
+  await linted
   const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 50)
   const fromUser = chatItems.filter(({chatDir, content}) => chatDir.type === "groupRcv" && chatDir.groupMember.memberProfile.displayName === "User" && content.type === "rcvMsgContent")
   expect(fromUser.map(({meta}) => meta.itemText)).toEqual(["Fix the build"])
+}, 600_000)
+
+test("a session keeps its group for hooks with a new ID from its process, relays tool use to its owners, owns a contact that accepts after connect returned, and asks for mode host", async () => {
+  const root = join(dir, "channel", "root")
+  await prepareRoot(smpServer.address, root)
+  const alice = await personIn("channel", "Alice")
+  const bob = await personIn("channel", "Bob")
+  await startDaemon(root)
+  const client = DaemonClient.forRoot(root)
+  const pid = 4242
+  const env = {CLAUDE_PID: String(pid), SIMPLEX_MCP_HOME: root}
+  await client.request<TitleReply>("POST", "/title", {id: one, pid, name: "one", config: defaultConfig})
+  await client.request<SessionReply>("POST", "/session", {id: one, pid, project: "/p", config: defaultConfig})
+  const attached: AttachLine[] = []
+  const controller = new AbortController()
+  closing.push(async () => controller.abort())
+  client.stream("/attach", {id: one}, line => attached.push(line as AttachLine), controller.signal).catch(() => undefined)
+  await until(() => attached.length === 1)
+  const {owner} = await client.request<StatusReply>("GET", "/status")
+  const invitations = joinSessionGroups(alice, ["1 · one"])
+  await joinByLink(alice, owner.link!)
+  const groupId = (await invitations).get("1 · one")!
+  const card = (text: string): Promise<T.AChatItem> => received(alice.chat, inGroup(groupId, textStarts(text)))
+  const ownerSends = (text: string) => alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], text)
+
+  expect(await sessionStart(JSON.stringify({session_id: two, cwd: "/p", source: "clear"}), env, {client, nodeVersion: process.versions.node})).toEqual({})
+  const cleared = received(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "Cleared." && chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === "Claude"))
+  await turn(JSON.stringify({session_id: two, hook_event_name: "Stop", last_assistant_message: "Cleared."}), env, client)
+  await cleared
+  expect((await client.request<StatusReply>("GET", "/status")).sessions).toEqual([{number: 1, name: "1 · one", attached: 1}])
+
+  const toolUse = card("I want to use `Bash`: `Run shell command`")
+  await client.request("POST", "/permission", {id: one, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+  await ownerSends(`/approve ${cardNumber(await toolUse)}`)
+  await until(() => attached.some(({permission}) => permission !== undefined))
+  expect(attached.filter(({permission}) => permission !== undefined)).toEqual([{permission: {requestId: "abcde", behavior: "allow"}}])
+
+  const address = await bob.chat.apiCreateUserAddress(bob.user.userId)
+  const requested = bob.chat.wait("receivedContactRequest", 60_000)
+  const connectCard = card("I want to connect to")
+  const connecting = callTool(client, one, "connect", {target: address.connShortLink ?? address.connFullLink, wait: 0})
+  await ownerSends(`/approve ${cardNumber(await connectCard)}`)
+  expect((await connecting).result).toMatchObject({status: "done", connected: false})
+  await bob.chat.apiAcceptContactRequest((await requested)!.contactRequest.contactRequestId)
+  await until(async () => (await callTool(client, one, "list", {})).result.chats.some(({name, connected}: {name: string; connected: boolean}) => name === "Bob" && connected))
+
+  const modeCard = card("I want to run in mode host")
+  await client.request("POST", "/session", {id: one, pid, project: "/p", config: {...defaultConfig, approve: "host"}})
+  await ownerSends(`/approve ${cardNumber(await modeCard)}`)
+  await until(() => readSessionFile(sessionFolder(root, one))?.mode === "host")
 }, 600_000)
 
 test("a new session has no chats", async () => {
@@ -264,5 +319,10 @@ test("stdio session spawns the daemon and recovers after the daemon is killed", 
   const relisted = await session.call("list", {})
   expect(relisted.isError).toBeUndefined()
   expect(relisted.structuredContent.chats).toEqual(listed.structuredContent.chats.map((chat: object) => ({...chat, unread: 0})))
-  expect(daemonPid(root)).not.toBe(firstDaemon)
+  const secondDaemon = daemonPid(root)
+  expect(secondDaemon).not.toBe(firstDaemon)
+
+  await killDaemon(root)
+  await until(async () => (await DaemonClient.forRoot(root).request<StatusReply>("GET", "/status").catch(() => undefined))?.sessions[0]?.attached === 1)
+  expect(daemonPid(root)).not.toBe(secondDaemon)
 }, 600_000)
