@@ -110,6 +110,7 @@ Decided on 2026-11-08, review round 4:
 
 Proposed on 2026-11-08, each in its own commit, until the user decides:
 60. The group of a session closed for 7 days is deleted for all its members, with the standing approvals of the session's chats; the daemon checks at its start and every hour. A run whose `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli` (`claude -p`), `sdk-ts` or `sdk-py` (the Agent SDK) gets no session and no group.
+61. The approved mode is kept in the session group's custom data, not in `session.json`. `GET /status` returns the owners without the Main group link; `GET /link` returns the link. These protections hold against Claude's tools, not against a shell running as the same user.
 
 Pack of the package (decision 44):
 ```
@@ -281,6 +282,7 @@ SessionGroupData
   session          session number
   invited          list of InvitedMember
   pending          list of PendingConnection, optional
+  mode             approved mode, optional: requests without it (decision 61)
 InvitedMember
   groupMemberId    member in the session group
   mainMemberId     member in the Main group it was invited through
@@ -665,14 +667,32 @@ The first answer, at the terminal or in the group, applies; Claude Code closes t
 
 ```
 on /session with approve a:                 requested = a
-                                            a = requests: pending mode cards end ("Ended."); hostDeclined = false; mode = requests
+                                            a = requests: pending mode cards end ("Ended."); hostDeclined = false; mode = requests, in the session group's data
                                             a = host: ask
 on a membership event of the session group: ask
 ask:                                        requested = host, not hostDeclined, mode = requests, an approver in the group,
                                             no pending mode card: post the mode card
 on the mode card rejected:                  requested = none; hostDeclined = true, in session.json
 on the mode card expired:                   requested = none
-on the mode card approved:                  mode = host, in session.json
+on the mode card approved:                  mode = host, in the session group's data (decision 61)
+on the session's open:                      mode = the session group's data, or requests
+```
+
+Main group link on the socket (decision 61):
+```
+route           owner field
+POST /title     {owners, link?}: the hook shows the link
+GET /link       {owners, link?}: simplex-mcp link reads it while the Main group has no owner
+GET /status     {owners}
+POST /session   {owners}
+```
+
+```mermaid
+flowchart LR
+  HK[SessionStart hook] -- POST /title --> L[owners and link]
+  LK[simplex-mcp link] -- GET /status --> O[owners]
+  LK -- no owner: GET /link --> L
+  S[session server] -- GET /status, POST /session --> O
 ```
 
 ```mermaid
