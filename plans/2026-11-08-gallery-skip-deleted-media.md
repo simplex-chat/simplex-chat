@@ -25,4 +25,4 @@ On iOS, `nextChatItemData` already starts from the current item and does not fil
 - Android and iOS: the platforms where the viewer changes media by swiping.
 - Desktop: the same Kotlin filter; its viewer shows only the opened image or video.
 - A revealed message opens in the viewer. On Android it stays reachable by swiping until the viewer closes; on iOS swiping back to it skips it.
-- Media marked deleted while the viewer is open stays shown while it is the item the viewer counts from: the page on screen, or, on Android after a swipe back to the opened position, the page settled on before it. On Android the opened media stays reachable until the viewer closes.
+- Media marked deleted while the viewer is open: on Android it stays reachable while `providerForGallery` is anchored on it (the page on screen, a neighbour shown during a cancelled drag, or, after a swipe back to the opened position, the page settled on before it), and other pages skip it.
