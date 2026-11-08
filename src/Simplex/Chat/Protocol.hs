@@ -1074,7 +1074,13 @@ instance ToField MsgContent where
   toField = toField . encodeJSON
 
 instance FromField MsgContent where
-  fromField = fromTextField_ decodeJSON
+  fromField = fromTextField_ $ JT.parseMaybe storedContent <=< decodeJSON
+    where
+      storedContent v = parseJSON v <|> J.withObject "MsgContent" unknownContent v
+      unknownContent o = do
+        tag <- o .: "type"
+        text <- fromMaybe unknownMsgType <$> o .:? "text"
+        pure MCUnknown {tag, text, json = o}
 
 data ACMEventTag = forall e. MsgEncodingI e => ACMEventTag (SMsgEncoding e) (CMEventTag e)
 

@@ -91,7 +91,8 @@ chatProfileTests = do
     it "supporter badge sent in a retried request to an address" testUserBadgeAddressConnectRetry
     it "supporter badge sent in a retried join of a one-time link" testUserBadgeInvitationConnectRetry
     it "supporter badge bound to another chat is ignored, stored badge is kept" testUserBadgeOtherBinding
-    it "supporter badge expiring before year 1 is rejected, contact stays readable" testUserBadgeExpiryOutOfRange
+    it "supporter badge expiring before year 1 is rejected" testUserBadgeExpiryOutOfRange
+    it "quoted contact card with supporter badge expiring before year 1 is loaded from the database" testQuotedCardBadgeExpiryOutOfRange
     it "supporter badge of member bound to another member is ignored, stored badge is kept" testUserBadgeMemberOtherBinding
     it "supporter badge of member joining via group link, at request and after handshake" testUserBadgeGroupLinkJoiner
     it "supporter badge of introduced member is taken from the introduction" testUserBadgeIntroduced
@@ -912,9 +913,7 @@ testUserBadgeExpiryOutOfRange ps = do
   where
     test pk sk alice bob = do
       connectUsers alice bob
-      cred <- issueTestBadge sk futureDate
-      Right (BadgeProof keyIdx presHdr bbsProof info) <- badgeProof pk cred (PHTest "nonce")
-      let farBadge = BadgeProof keyIdx presHdr bbsProof info {badgeExpiry = UTCTime (fromGregorian (-1) 1 1) 0}
+      farBadge <- badgeProofBeforeYear1 pk sk
       withCCUser alice $ \user -> do
         ct <- getTestCCContact alice 2
         let p = (userProfileDirect user Nothing (Just ct) True) {badge = Just farBadge}
@@ -925,6 +924,36 @@ testUserBadgeExpiryOutOfRange ps = do
       bob <# "alice> hi"
       bob ##> "/contacts"
       bob <## "alice (Alice)"
+
+testQuotedCardBadgeExpiryOutOfRange :: HasCallStack => TestParams -> IO ()
+testQuotedCardBadgeExpiryOutOfRange ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChat2 aliceProfile bobProfile (test pk sk) ps
+  where
+    test pk sk alice bob = do
+      connectUsers alice bob
+      alice ##> "/ad"
+      (sLink, _) <- getContactLinks alice True
+      bob #> "@alice hello"
+      alice <# "bob> hello"
+      alice `send` "> @bob (hello) hi"
+      alice <# "@bob > hello"
+      alice <## "      hi"
+      bob <# "alice> > hello"
+      bob <## "      hi"
+      farBadge <- badgeProofBeforeYear1 pk sk
+      let cardProfile = (profileFromName "alice") {badge = Just farBadge}
+          card = MCChat "card" (MCLContact (either error id $ strDecode $ B.pack sLink) cardProfile False) Nothing
+      withCCTransaction bob $ \db ->
+        DB.execute db "UPDATE chat_items SET quoted_content = ? WHERE quoted_content IS NOT NULL" (Only card)
+      bob #$> ("/_get chat @2 count=1", chat', [((0, "hi"), Just (1, "card"))])
+      bob @@@ [("@alice", "hi")]
+
+badgeProofBeforeYear1 :: BBSPublicKey -> BBSSecretKey -> IO BadgeProof
+badgeProofBeforeYear1 pk sk = do
+  cred <- issueTestBadge sk futureDate
+  Right (BadgeProof keyIdx presHdr bbsProof info) <- badgeProof pk cred (PHTest "nonce")
+  pure $ BadgeProof keyIdx presHdr bbsProof info {badgeExpiry = UTCTime (fromGregorian (-1) 1 1) 0}
 
 testUserBadgeGroupLinkJoiner :: HasCallStack => TestParams -> IO ()
 testUserBadgeGroupLinkJoiner ps = do
