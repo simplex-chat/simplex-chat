@@ -367,7 +367,7 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   await alice.chat.apiUpdateGroupProfile(groupOne, {...groupOneInfo.groupProfile, groupPreferences: {...groupOneInfo.groupProfile.groupPreferences, files: {enable: T.GroupFeatureEnabled.Off}}})
   let refused: {isError?: boolean; text: string} | undefined
   await until(async () => (refused = await callTool(client, one, "reply", {file: notes})).isError === true)
-  expect(refused!.text).toMatch(/feature not allowed/)
+  expect(refused!.text).toBe("Files and media are off in the group of this session; its owners can turn them on in the group's preferences.")
 
   const bobInAlice = (await alice.chat.apiListMembers(mainGroupId)).find(({memberProfile}) => memberProfile.displayName === "Bob")!
   const bobRemoved = bob.chat.wait("deletedMemberUser", ({groupInfo}) => groupInfo.groupId === bobMain, 60_000)

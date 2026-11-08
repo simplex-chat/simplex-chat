@@ -985,19 +985,22 @@ describe("session channel", () => {
     expect(textOf(await session.call("reply", {file: join(root, "token")}, signal().call))).toMatch(/ is refused: private keys and the server's own files are not sent\.$/)
   })
 
-  it("returns the core's refusal of a file by reply, as when the group's preference forbids files", async () => {
+  it("answers that files and media are off when the core refuses a file of reply under the group's preference, and returns the core's other refusals", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const received = join(sessionFolder(root, id1), "files", "group", "8.txt")
     mkdirSync(join(sessionFolder(root, id1), "files", "group"), {recursive: true})
     writeFileSync(received, "log")
-    chat.apiSendMessages = async () => {
-      throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "commandError", message: "feature not allowed Files and media"}} as unknown as T.ChatError)
+    const refusal = (message: string) => async () => {
+      throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "commandError", message}} as unknown as T.ChatError)
     }
+    chat.apiSendMessages = refusal("feature not allowed Files and media")
     const result = await session.call("reply", {file: received}, signal().call)
     expect(result!.isError).toBe(true)
-    expect(textOf(result)).toMatch(/feature not allowed Files and media/)
+    expect(textOf(result)).toBe("Files and media are off in the group of this session; its owners can turn them on in the group's preferences.")
     expect(session.actions.all()).toEqual([])
+    chat.apiSendMessages = refusal("feature not allowed Voice messages")
+    expect(textOf(await session.call("reply", {file: received}, signal().call))).toMatch(/feature not allowed Voice messages/)
   })
 
   it("sends an image by reply at once with its caption and preview, as send does", async () => {

@@ -202,8 +202,8 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Server start | [`src/serve.ts`](../src/serve.ts#L64) | `startServer` | [64](../src/serve.ts#L64) |
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L87) | `startAgent` | [87](../src/serve.ts#L87) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L498) | `registerTools` | [498](../src/tools.ts#L498) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L587) | `AgentTools.downloadFile` | [587](../src/tools.ts#L587) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L499) | `registerTools` | [499](../src/tools.ts#L499) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L588) | `AgentTools.downloadFile` | [588](../src/tools.ts#L588) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L145) | `Actions` | [145](../src/actions.ts#L145) |
 | Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L91) | `Control` | [91](../src/control.ts#L91) |
 | Card text | [`src/control.ts`](../src/control.ts#L647) | `cardText` | [647](../src/control.ts#L647) |
