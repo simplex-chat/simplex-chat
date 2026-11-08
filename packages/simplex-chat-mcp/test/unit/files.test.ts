@@ -149,6 +149,28 @@ describe("session files", () => {
     expect(storedSessions(root)).toEqual([{id: id.toLowerCase(), session: file}])
     expect(storedSessions(join(root, "missing"))).toEqual([])
   })
+
+  it("skip an unparsable file with a log line, and are replaced whole", () => {
+    const errors: string[] = []
+    const stderr = jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
+    const rename = jest.spyOn(fs, "renameSync")
+    try {
+      const root = tempRoot("simplex-mcp-files-")
+      const folder = sessionFolder(root, id)
+      const file = join(folder, "session.json")
+      mkdirSync(folder, {recursive: true})
+      writeFileSync(file, "")
+      expect(storedSessions(root)).toEqual([])
+      expect(errors).toEqual([expect.stringMatching(new RegExp(`^${file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}: `))])
+      writeSessionFile(folder, {number: 3, name: "app", project: "/p/app", created: "2026-10-24T10:00:00.000Z"})
+      expect(rename).toHaveBeenCalledWith(`${file}.tmp`, file)
+      expect(readdirSync(folder)).toEqual(["session.json"])
+      expect(readSessionFile(folder)).toMatchObject({number: 3})
+    } finally {
+      stderr.mockRestore()
+      rename.mockRestore()
+    }
+  })
 })
 
 describe("socket path", () => {
@@ -188,6 +210,21 @@ describe("token creation", () => {
       fs.rmSync(join(root, "winner"))
       expect(readdirSync(root)).toEqual(["token"])
       expect(readFileSync(join(root, "token"), "utf8")).toBe("winner\n")
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it("is written exclusively where the file system has no hard links", () => {
+    const root = tempRoot("simplex-mcp-token-")
+    const spy = jest.spyOn(fs, "linkSync").mockImplementation(() => {
+      throw Object.assign(new Error("operation not permitted"), {code: "EPERM"})
+    })
+    try {
+      const token = serverToken(root)
+      expect(readFileSync(join(root, "token"), "utf8")).toBe(`${token}\n`)
+      expect(serverToken(root)).toBe(token)
+      expect(readdirSync(root)).toEqual(["token"])
     } finally {
       spy.mockRestore()
     }

@@ -1,9 +1,9 @@
 import {createHash, randomBytes} from "crypto"
-import {chmodSync, existsSync, fchmodSync, mkdirSync, linkSync, openSync, readFileSync, readdirSync, rmSync, statSync, truncateSync, unlinkSync, writeFileSync} from "fs"
+import {chmodSync, existsSync, fchmodSync, mkdirSync, linkSync, openSync, readFileSync, readdirSync, renameSync, rmSync, statSync, truncateSync, unlinkSync, writeFileSync} from "fs"
 import {homedir, tmpdir} from "os"
 import {join, resolve} from "path"
 import type {Mode} from "./actions"
-import {ExitError} from "./log"
+import {ExitError, logError} from "./log"
 
 const sessionIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 // sockaddr_un.sun_path holds 104 bytes on macOS (108 on Linux), including the terminating NUL
@@ -17,6 +17,9 @@ export interface SessionFile {
   created: string
   group?: number
   mode?: Mode
+  aliases?: string[]
+  model?: string
+  effort?: string
 }
 
 export interface ServerFile {
@@ -47,11 +50,18 @@ export function sessionFolder(root: string, id: string): string {
 
 export function readSessionFile(folder: string): SessionFile | undefined {
   const file = join(folder, "session.json")
-  return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined
+  try {
+    return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined
+  } catch (error) {
+    logError(file, error)
+    return undefined
+  }
 }
 
 export function writeSessionFile(folder: string, session: SessionFile): void {
-  writePrivateFile(join(folder, "session.json"), `${JSON.stringify(session)}\n`)
+  const file = join(folder, "session.json")
+  writePrivateFile(`${file}.tmp`, `${JSON.stringify(session)}\n`)
+  renameSync(`${file}.tmp`, file)
 }
 
 export function storedSessions(root: string): {id: string; session: SessionFile}[] {
@@ -74,10 +84,14 @@ export function logFile(root: string): string {
   return join(root, "daemon.log")
 }
 
-export function openLog(root: string): number {
+export function trimLog(root: string): void {
   const file = logFile(root)
-  if (existsSync(file) && statSync(file).size > maxLogBytes) truncateSync(file)
-  const fd = openSync(file, "a", 0o600)
+  if ((statSync(file, {throwIfNoEntry: false})?.size ?? 0) > maxLogBytes) truncateSync(file)
+}
+
+export function openLog(root: string): number {
+  trimLog(root)
+  const fd = openSync(logFile(root), "a", 0o600)
   if (process.platform !== "win32") fchmodSync(fd, 0o600)
   return fd
 }
@@ -117,7 +131,7 @@ export function serverToken(dir: string, renew = false): string {
     linkSync(temp, file)
     return token
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST" && createLock(file, `${token}\n`)) return token
     if (process.platform !== "win32") chmodSync(file, 0o600)
     return readFileSync(file, "utf8").trim()
   } finally {
@@ -155,9 +169,9 @@ function lockedError(dir: string, file: string, pid: number | undefined, user: s
   return new LockedError(`Another ${user} uses ${dir} (PID ${pid}). If no ${user} runs, remove ${file}.`, 1)
 }
 
-function createLock(file: string): boolean {
+function createLock(file: string, text = `${process.pid}\n`): boolean {
   try {
-    writeFileSync(file, `${process.pid}\n`, {flag: "wx", mode: 0o600})
+    writeFileSync(file, text, {flag: "wx", mode: 0o600})
     return true
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "EEXIST") return false
