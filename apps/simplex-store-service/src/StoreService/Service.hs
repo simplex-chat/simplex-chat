@@ -53,7 +53,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Contracts (Contracts, Terms (..), communityName, fetchCurrentTerms, namePolicy, termsLinkAllowed, termsLinks, termsOf)
+import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, runTermsFetch, termsLinkAllowed, termsLinks, termsOf)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -68,7 +68,6 @@ import StoreService.Poller (expiryGrace, newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
-import StoreService.Safely (safely)
 import StoreService.Store
 import StoreService.Store.Invoices (seedCatalog, truncateToSecond)
 import StoreService.Store.Migrate (runStoreServiceMigrations)
@@ -80,7 +79,6 @@ import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Bucket, takeFrom)
 import StoreService.Web.Server (checkSiteDirs, exportWebapp, newWebEnv, runWebListeners)
 import Control.Applicative (optional)
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad
@@ -371,12 +369,6 @@ namesLanes :: NamesEnv -> IO [IO ()]
 namesLanes ne@NamesEnv {neChain, neContracts, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neChain neSender
   pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runTermsFetch neContracts]
-
-runTermsFetch :: Contracts -> IO ()
-runTermsFetch ct = forever $ safely "names terms fetch" (fetchCurrentTerms ct) >> threadDelay termsFetchInterval
-
-termsFetchInterval :: Int
-termsFetchInterval = 3600 * 1000000
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do

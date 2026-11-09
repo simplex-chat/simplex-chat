@@ -27,6 +27,7 @@ module StoreService.Names.Contracts
     termsLinkAllowed,
     termsText,
     fetchCurrentTerms,
+    runTermsFetch,
     policyNonce,
     acceptedTerms,
     confirmedTag,
@@ -41,10 +42,11 @@ module StoreService.Names.Contracts
 where
 
 import Control.Applicative ((<|>))
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Concurrently (..))
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Logger.Simple (logError, logWarn)
-import Control.Monad (guard)
+import Control.Monad (forever, guard)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bifunctor (first)
@@ -73,6 +75,7 @@ import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), Ch
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey, labelNode, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
+import StoreService.Safely (safely)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
@@ -137,6 +140,9 @@ maxTermsBackoffSeconds = 3600
 
 maxTermsBytes :: Int
 maxTermsBytes = 256 * 1024
+
+termsFetchInterval :: Int
+termsFetchInterval = 3600 * 1000000
 
 -- | Reads nothing: the registrar's constants, the commitment ages and the name policy are read on first use and kept once read.
 newContracts :: DBStore -> SimplexTLD -> ChainClient -> IO Contracts
@@ -243,6 +249,9 @@ fetchCurrentTerms ct =
   termsLinks ct >>= \case
     Right (generalLink, communityLink) -> mapM_ (termsText ct) $ mapMaybe termsOf [generalLink, communityLink]
     Left e -> logWarn $ "names: the terms links could not be read to fetch their texts: " <> tshow e
+
+runTermsFetch :: Contracts -> IO ()
+runTermsFetch ct = forever $ safely "names terms fetch" (fetchCurrentTerms ct) >> threadDelay termsFetchInterval
 
 fetchTerms :: Contracts -> Terms -> IO (Either TermsRefusal Text)
 fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash} =
