@@ -6,6 +6,7 @@
 module Bots.StoreService.NamesContractsTests
   ( namesContractsTests,
     withContracts,
+    testMinPriceCentsPerYear,
     answerRegistrar,
     answerRegistered,
     registrarOf,
@@ -72,7 +73,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads the default resolver's records and the owner's nonce" $ testRecords g
     it "reads no records from another resolver" $ testOtherResolver g
   describe "prices" $ do
-    it "quotes 6, 7 and 12 letters at the launch list for 2 years, and refuses a price under a cent" $ testLaunchPrices g
+    it "quotes 6, 7 and 12 letters at the launch list for 2 years, and refuses a price under the floor for the years" $ testLaunchPrices g
   describe "other reads" $ do
     it "reads the sponsor's and the resolver's nonces from their own contracts" $ testNonces g
     it "reads ownerOf's revert without data as nobody" $ testOwnerOfNobody g
@@ -164,8 +165,8 @@ testTermsTextKept g = withContracts g $ \node ct -> do
 testTermsLinkForms :: TVar ChaChaDRG -> IO ()
 testTermsLinkForms g = withFakeEthNode $ \node -> do
   c <- fakeChainClient g node
-  ct <- (\x -> x {ctTermsBackoff = 0}) <$> newContracts TLDSimplex c
-  otherChain <- newContracts TLDSimplex c {ccConfig = (ccConfig c) {cChainId = 1}}
+  ct <- (\x -> x {ctTermsBackoff = 0}) <$> newContracts TLDSimplex testMinPriceCentsPerYear c
+  otherChain <- newContracts TLDSimplex testMinPriceCentsPerYear c {ccConfig = (ccConfig c) {cChainId = 1}}
   let digest = T.drop 2 $ hex $ C.sha256Hash fakeGeneralTermsText
       commit = T.replicate 40 "a"
       commitPath path = "/simplex-chat/simplex-chat/raw/commit/" <> commit <> path
@@ -226,7 +227,7 @@ testTermsBackoff g = withContracts g $ \node ct -> do
   termsText ct (termsAt fakeGeneralTermsText) >>= (`shouldSatisfy` waitsUpTo 30)
   termsText ct (termsAt fakeCommunityTermsText) >>= (`shouldSatisfy` waitsUpTo 30)
   fetchedTexts node `shouldReturn` [generalPath]
-  short <- (\x -> x {ctTermsBackoff = 1}) <$> (newContracts TLDSimplex =<< fakeChainClient g node)
+  short <- (\x -> x {ctTermsBackoff = 1}) <$> (newContracts TLDSimplex testMinPriceCentsPerYear =<< fakeChainClient g node)
   answerText node generalPath $ TextAnswer status503 [] ""
   termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 1)
   termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 1)
@@ -239,14 +240,14 @@ testTermsBackoff g = withContracts g $ \node ct -> do
   threadDelay 1000000
   termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Right "SimpleX general terms v1"
   length <$> fetchedTexts node `shouldReturn` 4
-  capped <- newContracts TLDSimplex =<< fakeChainClient g node
+  capped <- newContracts TLDSimplex testMinPriceCentsPerYear =<< fakeChainClient g node
   answerText node generalPath $ TextAnswer status429 [("Retry-After", "999999999")] ""
   termsText capped (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 3600)
 
 testTermsTimeout :: TVar ChaChaDRG -> IO ()
 testTermsTimeout g = withFakeEthNode $ \node -> do
   c <- fakeChainClient g node
-  ct <- newContracts TLDSimplex c {ccTimeout = testDeadline}
+  ct <- newContracts TLDSimplex testMinPriceCentsPerYear c {ccTimeout = testDeadline}
   setFault node "GET" $ Slow 2000000
   elapsed <- timed $ termsText ct (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 30)
   elapsed `shouldSatisfy` (< 1)
@@ -300,8 +301,10 @@ testLaunchPrices g = withContracts g $ \node ct -> do
   answerCall node fakeController (rentPriceCall 7) $ Returns $ rentPriceAnswer 20000
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   mapM (\len -> chainPriceCents ct len 2) [6, 7, 12] `shouldReturn` [Right 40000, Right 20000, Right 10000]
+  answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 9999
+  chainPriceCents ct 12 2 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 9999 cents for 2 years, under names.min_price_cents_per_year")
   answerCall node fakeController (rentPriceCall 11) $ Returns $ rentPriceAnswer 0
-  chainPriceCents ct 11 2 `shouldReturn` Left (ChainUnavailable "eth_call: rentPriceUSD(string,uint256) answered AERange")
+  chainPriceCents ct 11 2 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 0 cents for 2 years, under names.min_price_cents_per_year")
 
 testNonces :: TVar ChaChaDRG -> IO ()
 testNonces g = withContracts g $ \node ct -> do
@@ -426,6 +429,9 @@ concurrentDeadline = 1500000
 testDeadline :: Int
 testDeadline = 300000
 
+testMinPriceCentsPerYear :: Int
+testMinPriceCentsPerYear = 5000
+
 timed :: IO () -> IO NominalDiffTime
 timed action = do
   start <- getCurrentTime
@@ -434,7 +440,7 @@ timed action = do
 
 withContracts :: TVar ChaChaDRG -> (FakeEthNode -> Contracts -> IO a) -> IO a
 withContracts g action = withFakeEthNode $ \node -> do
-  ct <- newContracts TLDSimplex =<< fakeChainClient g node
+  ct <- newContracts TLDSimplex testMinPriceCentsPerYear =<< fakeChainClient g node
   action node ct
 
 answerRegistrar :: FakeEthNode -> IO ()

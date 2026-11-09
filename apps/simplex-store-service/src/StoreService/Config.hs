@@ -177,6 +177,7 @@ data NamesConfig = NamesConfig
     nCodesOnly :: Bool,
     -- | The owner record edits relayed for one name in any 365 days, each a transaction whose gas the service pays.
     nRecordEditsPerYear :: Int,
+    nMinPriceCentsPerYear :: Int,
     -- | What each community name is for, keyed by the label hash's bytes, as search receives a name.
     nCommunity :: Map ByteString Text,
     nChain :: ChainConfig
@@ -287,6 +288,9 @@ defaultRecordEditsPerYear, minRecordEditsPerYear, maxRecordEditsPerYear :: Int
 defaultRecordEditsPerYear = 3
 minRecordEditsPerYear = 1
 maxRecordEditsPerYear = 100
+
+defaultMinPriceCentsPerYear :: Int
+defaultMinPriceCentsPerYear = 5000
 
 -- | The controller refuses a registration under 730 days.
 minNameYears :: Int
@@ -407,7 +411,7 @@ knownSettings =
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
     ("log", ["level"]),
-    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves", "codes_only", "record_edits_per_year"]),
+    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves", "codes_only", "record_edits_per_year", "min_price_cents_per_year"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
@@ -655,9 +659,10 @@ parseConfig ini = do
           nMaxOrderMoves <- atLeast 0 "names" "max_order_moves" 3
           nCodesOnly <- bool "names" "codes_only" False
           nRecordEditsPerYear <- recordEditsPerYear
+          nMinPriceCentsPerYear <- atLeast 1 "names" "min_price_cents_per_year" defaultMinPriceCentsPerYear
           nCommunity <- communityList nTLD
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nCodesOnly, nRecordEditsPerYear, nCommunity, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nCodesOnly, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex

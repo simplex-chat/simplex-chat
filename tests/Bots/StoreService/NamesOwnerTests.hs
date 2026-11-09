@@ -31,7 +31,7 @@ module Bots.StoreService.NamesOwnerTests
 where
 
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, unhex)
+import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rentPriceCall, unhex)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, order, ownerA, paidOrder, t0)
 import Bots.StoreService.NamesPhasesTests (registrationPath)
@@ -99,7 +99,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken, name_check_unavailable" testMoveOrderChecks
     it "registers a failed order whose register went through, by its mined register or by ownerOf, answering registration_changed and spending a code" testMoveLanded
     it "spends a released code still unused when its failed order turns out registered, and alerts once when it was spent elsewhere meanwhile" testMoveLandedReleasedCode
-    it "answers a dearer name price_too_high with its price, and moves to a cheaper one at its price, crediting the difference to its balance" testMovePrice
+    it "answers a dearer name price_too_high with its price, one priced under the floor name_check_unavailable crediting nothing, and moves to a cheaper one at its price, crediting the difference to its balance" testMovePrice
     it "keeps fromBalance through a move to a cheaper name" testMoveKeepsFromBalance
     it "checks a code order's code again: code_not_covering for a shorter name, a held code kept though revoked and expired since" testMoveCodeOrder
     it "reserves a released code again while unused, else answers code_used, code_reserved, code_invalid or code_expired" testMoveReleasedCode
@@ -650,6 +650,10 @@ testMovePrice = withOwner $ \ctx -> do
   balanceOf ctx cheap `shouldReturn` Nothing
   dear <- paidIn ctx (byB dynamisOrder) failedPhase
   toCheaper <- moveTo ctx "alicebakers" 11
+  answerCallOnce (cNode ctx) fakeController (rentPriceCall 11) $ Returns $ rentPriceAnswer 9999
+  move ctx keyB dear toCheaper `shouldReturn` refusedWith 503 "name_check_unavailable"
+  stored ctx dear `shouldReturn` dear
+  balanceOf ctx dear `shouldReturn` Nothing
   v <- moved ctx keyB dear toCheaper
   (field "price" v, field "phase" v, field "fromBalance" v) `shouldBe` (Just (J.Number 10000), Just "queued", Just (J.Number 0))
   field "balance" v `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= (0 :: Int)])

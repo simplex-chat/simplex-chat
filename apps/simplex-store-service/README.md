@@ -913,6 +913,21 @@ ini and a restart, with the same build. Codes for investors come from the group 
 [From the group](#from-the-group)) or from `//issue name` in `--run-cli` (see
 [From the command line](#from-the-command-line)).
 
+### Price floor
+
+Prices come from the chain, as the controller's `rentPriceUSD` answers them, with one exception:
+`[names] min_price_cents_per_year` (default 5000, at least 1, read at startup) is the lowest price, in
+cents a year, at which the service sells a name. A chain price under it for the name's paid years
+fails the price read, and the service logs a warning with the price:
+
+- a search answers `503 provider_unavailable`;
+- an order or a spend answers `503 name_check_unavailable` before any payment;
+- a move answers `503 name_check_unavailable` and credits nothing.
+
+Code orders and their moves read no price, so the floor does not apply to them. The default is the
+launch price of a name of 8 letters or more, $100 for 2 years. To lower prices on chain below the
+floor, lower the setting and restart first.
+
 ### Link edits
 
 Each "Edit links" save is one request, relayed by the service as one transaction whose gas it pays
