@@ -358,7 +358,7 @@ struct ChatPreviewView: View {
             let (t, hasSecrets) = chatItemPreview(cItem)
             chatPreviewLayout(itemStatusMark(cItem) + t, hasFilePreview: hasFilePreview, hasSecrets: hasSecrets)
         } else {
-            chatPreviewLayout(nil, hasSecrets: false)
+            chatPreviewLayout(Text(""), hasSecrets: false)
         }
     }
 
