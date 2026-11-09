@@ -34,6 +34,7 @@ import chat.simplex.common.AppLock
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
 import SectionItemView
@@ -46,6 +47,8 @@ import chat.simplex.common.views.badges.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
+import chat.simplex.common.views.usersettings.networkAndServers.ConditionsLinkButton
+import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -239,13 +242,36 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   LaunchedEffect(Unit) {
+    if (chatModel.noticesShown) return@LaunchedEffect
     val showWhatsNew = shouldShowWhatsNew(chatModel)
-    val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
+    val conditionsAction = chatModel.conditions.value.conditionsAction
+    val showUpdatedConditions = conditionsAction is UsageConditionsAction.Review
     if (showWhatsNew || showUpdatedConditions) {
       // Requested here, so that the country is known by the time the modal opens
       platform.androidLoadPlayStoreCountry()
       delay(1000L)
-      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
+      chatModel.noticesShown = true
+      val rhId = chatModel.remoteHostId()
+      if (showWhatsNew) {
+        ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
+      } else {
+        ModalManager.center.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
+          UsageConditionsView(
+            userServers = mutableStateOf(emptyList()),
+            currUserServers = mutableStateOf(emptyList()),
+            close = close,
+            rhId = rhId
+          )
+        }
+      }
+      if (conditionsAction?.shouldShowNotice == true) {
+        val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
+        try {
+          setConditionsNotified(rh = rhId, conditionsId = conditionsId)
+        } catch (e: Exception) {
+          Log.d(TAG, "ChatListView setConditionsNotified error: ${e.message}")
+        }
+      }
     }
   }
 

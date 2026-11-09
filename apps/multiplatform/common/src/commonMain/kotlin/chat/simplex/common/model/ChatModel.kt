@@ -207,6 +207,8 @@ object ChatModel {
   // another in its place; only the badge alert shows regardless. Set while rendering, so not a state.
   var chatListBanner: ChatListBanner? = null
 
+  var noticesShown = false
+
   var fileToOpen: FileToOpen? = null
 
   fun bannerSlotFree(banner: ChatListBanner): Boolean = chatListBanner == null || chatListBanner == banner

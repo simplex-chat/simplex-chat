@@ -12,10 +12,12 @@ import SimpleXChat
 
 private enum NoticesSheet: Identifiable {
     case whatsNew(updatedConditions: Bool)
+    case updatedConditions
 
     var id: String {
         switch self {
         case .whatsNew: return "whatsNew"
+        case .updatedConditions: return "updatedConditions"
         }
     }
 }
@@ -273,10 +275,16 @@ struct ContentView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                             if !noticesShown {
                                 let showWhatsNew = shouldShowWhatsNew()
-                                let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
+                                let conditionsAction = chatModel.conditions.conditionsAction
+                                let showUpdatedConditions = if case .review = conditionsAction { true } else { false }
                                 noticesShown = showWhatsNew || showUpdatedConditions
-                                if showWhatsNew || showUpdatedConditions {
+                                if showWhatsNew {
                                     noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
+                                } else if showUpdatedConditions {
+                                    noticesSheetItem = .updatedConditions
+                                }
+                                if conditionsAction?.showNotice ?? false {
+                                    Task { await setConditionsNotified_() }
                                 }
                             }
                         }
@@ -292,9 +300,12 @@ struct ContentView: View {
                 case let .whatsNew(updatedConditions):
                     WhatsNewView(updatedConditions: updatedConditions)
                         .modifier(ThemedBackground())
-                        .if(updatedConditions) { v in
-                            v.task { await setConditionsNotified_() }
-                        }
+                case .updatedConditions:
+                    UsageConditionsView(
+                        currUserServers: Binding.constant([]),
+                        userServers: Binding.constant([])
+                    )
+                    .modifier(ThemedBackground(grouped: true))
                 }
             }
             if chatModel.setDeliveryReceipts {
