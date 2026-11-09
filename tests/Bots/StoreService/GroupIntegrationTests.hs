@@ -16,7 +16,7 @@ import StoreService.Group.Command (CmdAction (..), groupCmdAction, maxUses)
 import StoreService.Names.Abi (selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode, spendLandedPrepaidCode)
+import StoreService.Names.Store (CodeIssuer (..), PrepaidCode (..), getPrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice)
@@ -346,7 +346,7 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
 namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
   it "issues a 2-year prepaid code on /issue name, answering the usage to /bulk name and to other years" testGroupNameCodes
-  it "issues at most 10 name codes a day in the group" testGroupNameCodesPerDay
+  it "issues at most 10 name codes a day in the group, not counting console codes" testGroupNameCodesPerDay
   it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
   it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
 
@@ -366,9 +366,11 @@ testGroupNameCodesPerDay :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesPerDay ps = do
   svc <- prepareGroupService ps
   runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
+    replicateM_ 2 $ issueNameRaw cc "name 6"
     replicateM_ 10 $ T.isPrefixOf "Code: " <$> replyTo cc alice "/issue name 6" `shouldReturn` True
     replyTo cc alice "/issue name 6" `shouldReturn` "At most 10 name codes are issued in a day, 10 so far. Issue more with //issue name in --run-cli."
-    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 10
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 12
+    countRows cc "sx_badge_service_name_prepaid_codes WHERE issued_in_group = 1" `shouldReturn` 10
 
 testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
 testOperatorNameCodes ps = do
@@ -379,7 +381,7 @@ testOperatorNameCodes ps = do
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis", "name 6 unpaid"] $ \args ->
       (args,) <$> issueRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
     forM_ [(5, 2), (64, 2), (7, 1), (7, 11)] $ \(len, years) ->
-      ((len, years),) . isLeft <$> issueNameCode cc len years CPSFree `shouldReturn` ((len, years), True)
+      ((len, years),) . isLeft <$> issueNameCode cc IssuedInConsole len years CPSFree `shouldReturn` ((len, years), True)
     countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 0
     paid <- issueNameRaw cc "name 7 years 3 paid"
     prepaidTerms cc paid `shouldReturn` Just (7, 3, CPSPaid)

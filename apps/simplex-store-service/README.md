@@ -590,7 +590,7 @@ from `scripts/store-service/`. The database `badge_service`,
 
 A badge-service database upgrades in place: the store's own migrations run after every badge
 migration, `20261012_badge_subscriptions` included. A database that ran the names migrations of
-an earlier draft (`20261010_names`, or the steps dated after `20261013_names`) does not start, as
+an earlier draft (`20261010_names`, or the steps dated `20261022` to `20261102`) does not start, as
 the service refuses to roll back migrations it does not list. Recreate such a database.
 
 ### Two sites
@@ -1287,8 +1287,8 @@ console, is in [Refunding a name balance](#refunding-a-name-balance).
 With `[group]` in `store_service.ini`, the service manages one group and serves three commands in
 it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners. Name codes
 need an admin or owner too, as each one registers at the sponsor allowance's and the gas key's cost,
-and the group issues at most 10 of them in 24 hours (`//issue name` in `--run-cli` has no limit). The
-code commands take these forms:
+and the group issues at most 10 of them in 24 hours (`//issue name` in `--run-cli` has no limit, and
+its codes are not counted). The code commands take these forms:
 
 ```
 /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]

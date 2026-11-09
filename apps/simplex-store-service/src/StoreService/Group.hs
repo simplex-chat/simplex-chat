@@ -29,7 +29,7 @@ import StoreService.Codes (issueFailedText, issueOneCode, revokeBadgeCode, singl
 import StoreService.Config (GroupConfig (..))
 import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction, groupCommands)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Store (nameCodesIssuedSince)
+import StoreService.Names.Store (CodeIssuer (..), groupNameCodesIssuedSince)
 import StoreService.Names.Turns (Turns)
 import StoreService.Store (CodeTracker (..), ManagedGroup (..), RevokeResult (..), clearCodeGroupItems, getCodeTracker, getEditableTrackers, getManagedGroup, insertManagedGroup, markOwnerBootstrapped, setCodeGroupItem)
 import StoreService.Store.Invoices (truncateToSecond)
@@ -274,7 +274,7 @@ runGroupCmd cc turns namesOn groupId = \case
   GCBulk bt months count -> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
   GCIssueName {} | not namesOn -> reply namesOffText
   GCIssueName len years ->
-    withinNameCodes $ issueNameCode cc len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode . NCPrepaid)
+    withinNameCodes $ issueNameCode cc IssuedInGroup len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode . NCPrepaid)
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> do
     outcome <- either id id <$> revokeWithTracker cc code
@@ -286,7 +286,7 @@ runGroupCmd cc turns namesOn groupId = \case
     reply = void . sendGroupText cc groupId "reply, any codes in it are lost"
     withinNameCodes issue = do
       since <- addUTCTime (negate nominalDay) <$> getCurrentTime
-      withDB' "nameCodesIssuedSince" cc (`nameCodesIssuedSince` since) >>= \case
+      withDB' "groupNameCodesIssuedSince" cc (`groupNameCodesIssuedSince` since) >>= \case
         Right issued
           | issued < maxNameCodesPerDay -> issue
           | otherwise -> reply $ "At most " <> tshow maxNameCodesPerDay <> " name codes are issued in a day, " <> tshow issued <> " so far. Issue more with //issue name in --run-cli."
