@@ -1001,8 +1001,8 @@ REGISTRAR=$(cast wallet address "$(ini service_key)")
 ```
 
 cast reads the node from `ETH_RPC_URL`, so no command below names it. The address check reads the
-ini on disk, not the running service, which logs no address. To confirm the service runs with the
-key, check that `cast nonce $REGISTRAR --block pending` rises after its next transaction.
+ini on disk. The running service logs its key's address in its hourly report, see
+[Registration paused](#registration-paused).
 
 #### Grant the allowance
 
@@ -1138,10 +1138,11 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   used up; the guardian raises it with setRegistrarAllowance` when the sponsor refuses a register
   with `InsufficientAllowance`. The order keeps its phase and its register is tried again every 15
   seconds, so a top-up before its commitment lapses registers it with no restart. The line is
-  logged once per order. An order whose commitment lapses first fails, and the buyer can Try again.
-  This holds when the register's dry run is refused. A register that passes its dry run and reverts
-  once mined, as two registers sent while the allowance covers one can, fails its order with no
-  such line; the next order's dry run logs it, and the buyer can Try again.
+  logged once per order, and registration is paused, see
+  [Registration paused](#registration-paused). This holds when the register's dry run is refused. A
+  register that passes its dry run and reverts once mined, as two registers sent while the allowance
+  covers one can, fails its order with no such line; the next order's dry run logs it, and the buyer
+  can Try again.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
   the transaction waits` when fees are above the cap. Nothing is signed until they fall.
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
@@ -1157,6 +1158,36 @@ Try again or a move of a failed order, and the worker's judgment of a register t
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
 depth shows the order's owner holding the name, even if this order's register never landed: an
 owner who got the name another way counts as served, and a code order spends its code.
+
+#### Registration paused
+
+The first register refused with `InsufficientAllowance` pauses registration, with that order as the
+probe. At start, registration is paused when the allowance cannot cover the register of the oldest
+order in `queued` to `registering`, or cannot be read. While it is paused:
+
+- `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
+  `503 {"error": "registration_paused"}` before any chain read, so no order takes money;
+- code orders, Try again and another name are taken and queued;
+- queued orders are not committed. A committed order whose commitment lapses after its reveal goes
+  back to `queued`, its reveal cleared, and the buyer signs again once it is committed again;
+- a queued order's view has `queue: {"position": n, "of": m, "paused": true}`, oldest first by
+  creation; `paused` is false, and the queue short, while registration runs.
+
+Every 15 seconds the service reads `registrarAllowance` and the probe order's register price
+(`rentPriceUSD` for its length and duration). Registration resumes once the allowance covers it, and
+the queued orders are committed. A top-up by the guardian needs no restart.
+
+The service logs a report at start, hourly and at each pause and resume:
+
+```
+names: 3 queued, the oldest from 2026-11-09 10:00 UTC, 2 committing to registering; registration paused since 2026-11-09 09:41 UTC, probe order <id>; registrar 0x…, 1.250000 ETH, allowance $40.00; alert: registration paused
+```
+
+It is an error, with `alert:` and its reasons, while registration is paused, above
+`[names] queue_alert` (default 20) queued orders, below 5 × `gas_limit_cap` × `max_fee_per_gas`
+of ETH (4 ETH with the defaults), or below the price of one order of a 6-letter name for
+`[names] years`. With `[group]`, an alert and each pause and resume are also sent to the group. An
+unread figure shows as `unread` and raises no alert.
 
 #### Rotate the key
 

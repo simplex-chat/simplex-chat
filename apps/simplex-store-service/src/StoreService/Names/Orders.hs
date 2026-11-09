@@ -27,6 +27,7 @@ module StoreService.Names.Orders
     placeOrder,
     placeCodeOrder,
     codeOrderInsert,
+    checkNotPaused,
     checkTimestamp,
     checkDuration,
     orderYears,
@@ -43,6 +44,7 @@ module StoreService.Names.Orders
   )
 where
 
+import Control.Concurrent.STM (TVar, readTVarIO)
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM, unless, when)
@@ -73,7 +75,7 @@ import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, res
 import StoreService.Names.Community (agreedTermsHash, communityJSON, communityTermsPrefix, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
 import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
-import StoreService.Names.Phases (Phases, RegistrationId (..))
+import StoreService.Names.Phases (Pause, Phases, RegistrationId (..))
 import StoreService.Names.Abi (abiWordSize, bytes32FromHex, hex)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
 import StoreService.Names.Store (Balance, LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), RegistrationRefused (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
@@ -85,12 +87,13 @@ data OrdersEnv = OrdersEnv
     oeContracts :: Contracts,
     oeTurns :: Turns,
     oePhases :: Phases,
+    oePause :: TVar (Maybe Pause),
     oeNow :: IO UTCTime
   }
 
 ordersEnv :: NamesEnv -> OrdersEnv
-ordersEnv NamesEnv {neStore, neConfig, neContracts, neTurns, nePhases} =
-  OrdersEnv {oeStore = neStore, oeConfig = neConfig, oeContracts = neContracts, oeTurns = neTurns, oePhases = nePhases, oeNow = getCurrentTime}
+ordersEnv NamesEnv {neStore, neConfig, neContracts, neTurns, nePhases, nePause} =
+  OrdersEnv {oeStore = neStore, oeConfig = neConfig, oeContracts = neContracts, oeTurns = neTurns, oePhases = nePhases, oePause = nePause, oeNow = getCurrentTime}
 
 -- | The fields both kinds of order carry, with the owner's signature over them.
 data OrderRequest = OrderRequest
@@ -114,6 +117,7 @@ data OrderRefusal
     ORTermsChanged J.Value J.Value
   | ORTermsUnavailable (Maybe Int)
   | ORCodesOnly
+  | ORRegistrationPaused
   deriving (Eq, Show)
 
 newtype OrderRefused = OrderRefused OrderRefusal
@@ -262,6 +266,9 @@ codeOrderInsert new@NewRegistration {nrgId, nrgOrder = OrderFields {ofLength}} c
     Left RRCodeNotReservable -> Left . ORCode <$> reserveRefusal db now pcCodeHash nrgId ofLength
     -- a code order holds no balance
     Left RRBalanceChanged -> pure $ Left OROrderExists
+
+checkNotPaused :: TVar (Maybe Pause) -> IO (Either OrderRefusal ())
+checkNotPaused pause = maybe (Right ()) (const $ Left ORRegistrationPaused) <$> readTVarIO pause
 
 checkTimestamp :: UTCTime -> Word64 -> Either OrderRefusal ()
 checkTimestamp now timestamp =

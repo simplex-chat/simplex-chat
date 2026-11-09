@@ -14,6 +14,7 @@ module StoreService.Service
     redactPassword,
     checkUnverifiedReceipts,
     logNamePolicy,
+    reportAlerts,
     requireDevKeys,
     checkIssuerKey,
     readConfigOrExit,
@@ -47,27 +48,28 @@ where
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
 import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
-import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
+import StoreService.Group (GroupEvent (..), ensureManagedGroup, fmtTime, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, textTokenP)
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
-import StoreService.Names.Chain (newChainClient, nodeChainId)
+import StoreService.Names.Chain (ChainClient (..), ethBalance, newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, termsLinkAllowed, termsLinks, termsOf)
+import StoreService.Names.Contracts (Contracts, Terms (..), attoUsdPerCent, communityName, namePolicy, registerCost, registrarAllowance, secondsPerYear, termsLinkAllowed, termsLinks, termsOf)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
-import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Phases (Pause (..), RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (runSender)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText, queueCounts)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
-import StoreService.Names.Worker (newWorker, runCodeSweep, runWorkers)
+import StoreService.Names.Worker (newWorker, pauseUncovered, runCodeSweep, runProbe, runWorkers)
 import StoreService.Options
 import StoreService.Poller (expiryGrace, newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
+import StoreService.Safely (safely)
 import StoreService.Store
 import StoreService.Store.Invoices (seedCatalog, truncateToSecond)
 import StoreService.Store.Migrate (runStoreServiceMigrations)
@@ -79,6 +81,7 @@ import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Bucket, takeFrom)
 import StoreService.Web.Server (checkSiteDirs, exportWebapp, newWebEnv, runWebListeners)
 import Control.Applicative (optional)
+import Control.Concurrent.Async (Concurrently (..))
 import Control.Concurrent.STM
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad
@@ -90,11 +93,13 @@ import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import Data.Char (isSpace)
 import Data.Either (fromRight, isRight)
+import Data.Fixed (Micro, showFixed)
 import Data.Functor (($>), (<&>))
 import Data.Int (Int64)
 import Data.List (findIndex, isPrefixOf, tails)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, maybeToList)
+import Data.Ratio ((%))
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word32)
@@ -115,13 +120,13 @@ import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), 
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types (AgentInvId (..), User (..))
-import Simplex.Messaging.Agent.Store.Common (DBStore)
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (catchOwn, catchOwn', raceAny_, safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (catchOwn, catchOwn', eitherToMaybe, raceAny_, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version (isCompatible)
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
@@ -313,7 +318,7 @@ storeService opts serviceCfg baseCfg env = do
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> raceAny_ [readEvents cc, startLanes cc]
   where
     serviceLanes :: Waiters -> Turns -> ChatController -> ServiceConfig -> IO [IO ()]
-    serviceLanes ws turns cc@ChatController {chatStore} sc = do
+    serviceLanes ws turns cc@ChatController {chatStore} sc@ServiceConfig {group} = do
       -- Seed before the listener accepts anything, since every checkout is priced from these.
       seedServiceCatalog chatStore
       btc <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
@@ -324,7 +329,7 @@ storeService opts serviceCfg baseCfg env = do
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       exportWebapp sc
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
-      nameLanes <- maybe (pure []) namesLanes namesEnv
+      nameLanes <- maybe (pure []) (namesLanes $ groupEventQ env <$ group) namesEnv
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes
 
 startNames :: ChatController -> Turns -> Waiters -> [Provider] -> NamesConfig -> IO NamesEnv
@@ -364,10 +369,62 @@ logNamePolicy NamesConfig {nCommunity} ct =
           False -> logWarn $ "names: the name policy's " <> what <> " are not a link the service takes, so " <> sold <> " cannot be ordered: " <> link
 
 -- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
-namesLanes :: NamesEnv -> IO [IO ()]
-namesLanes ne@NamesEnv {neChain, neSender, neRecords} = do
+namesLanes :: Maybe (TQueue GroupEvent) -> NamesEnv -> IO [IO ()]
+namesLanes groupQ_ ne@NamesEnv {neChain, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neChain neSender
-  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker]
+  pauseUncovered worker
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runProbe worker, runNamesReport groupQ_ ne]
+
+runNamesReport :: Maybe (TQueue GroupEvent) -> NamesEnv -> IO ()
+runNamesReport groupQ_ ne@NamesEnv {nePause} = readTVarIO nePause >>= report False
+  where
+    report changed pause = do
+      void $ safely "names report" $ namesReport groupQ_ ne changed pause
+      hour <- registerDelay namesReportInterval
+      next <- atomically $ (readTVar nePause >>= \p -> if p /= pause then pure (Just p) else retry) `orElse` (Nothing <$ (readTVar hour >>= check))
+      maybe (report False pause) (report True) next
+
+namesReport :: Maybe (TQueue GroupEvent) -> NamesEnv -> Bool -> Maybe Pause -> IO ()
+namesReport groupQ_ NamesEnv {neConfig = cfg@NamesConfig {nYears}, neStore, neChain = chain@ChainClient {ccRegistrar}, neContracts} changed pause = do
+  (queued, oldest, inFlight) <- withTransaction neStore queueCounts
+  (wei, allowance, floorCost) <-
+    runConcurrently $
+      (,,)
+        <$> Concurrently (ethBalance chain ccRegistrar)
+        <*> Concurrently (registrarAllowance neContracts)
+        <*> Concurrently (registerCost neContracts minNameLength $ fromInteger $ toInteger nYears * secondsPerYear)
+  let alerts = reportAlerts cfg pause queued (eitherToMaybe wei) (eitherToMaybe $ (,) <$> allowance <*> floorCost)
+      line = T.intercalate "; " $ [queueText queued oldest inFlight, pauseText, registrarText wei allowance] <> ["alert: " <> T.intercalate ", " alerts | not (null alerts)]
+  (if null alerts then logNote else logError) line
+  when (changed || not (null alerts)) $ forM_ groupQ_ $ \q -> atomically $ writeTQueue q $ GENotice line
+  where
+    queueText queued oldest inFlight = "names: " <> tshow queued <> " queued" <> maybe "" ((", the oldest from " <>) . fmtTime) oldest <> ", " <> tshow inFlight <> " committing to registering"
+    pauseText = case pause of
+      Nothing -> "registration running"
+      Just Pause {paSince, paProbe = RegistrationId probe} -> "registration paused since " <> fmtTime paSince <> ", probe order " <> probe
+    registrarText wei allowance =
+      "registrar " <> addressText ccRegistrar <> ", " <> either (const "ETH unread") ethText wei
+        <> ", allowance " <> either (const "unread") (dollars . fromInteger . (`div` attoUsdPerCent)) allowance
+
+reportAlerts :: NamesConfig -> Maybe Pause -> Int -> Maybe Integer -> Maybe (Integer, Integer) -> [T.Text]
+reportAlerts NamesConfig {nQueueAlert, nChain = ChainConfig {cGasLimitCap, cMaxFeePerGas}} pause queued wei allowance =
+  ["registration paused" | isJust pause]
+    <> ["more than " <> tshow nQueueAlert <> " queued" | queued > nQueueAlert]
+    <> ["ETH below " <> tshow ethAlertTransactions <> " transactions at gas_limit_cap and max_fee_per_gas" | any (< ethFloor) wei]
+    <> ["allowance below one order of the shortest name" | any (uncurry (<)) allowance]
+  where
+    ethFloor = toInteger ethAlertTransactions * toInteger cGasLimitCap * toInteger cMaxFeePerGas
+
+ethAlertTransactions :: Int
+ethAlertTransactions = 5
+
+namesReportInterval :: Int
+namesReportInterval = 3600 * 1000000
+
+ethText :: Integer -> T.Text
+ethText wei = T.pack (showFixed False (fromRational (wei % weiPerEth) :: Micro)) <> " ETH"
+  where
+    weiPerEth = 10 ^ (18 :: Int)
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do

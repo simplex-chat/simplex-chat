@@ -179,6 +179,7 @@ data NamesConfig = NamesConfig
     nRecordEditsPerYear :: Int,
     -- | What each community name is for, keyed by the label hash's bytes, as search receives a name.
     nCommunity :: Map ByteString Text,
+    nQueueAlert :: Int,
     nChain :: ChainConfig
   }
   deriving (Eq, Show)
@@ -407,7 +408,7 @@ knownSettings =
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
     ("log", ["level"]),
-    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves", "codes_only", "record_edits_per_year"]),
+    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves", "codes_only", "record_edits_per_year", "queue_alert"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
@@ -656,8 +657,9 @@ parseConfig ini = do
           nCodesOnly <- bool "names" "codes_only" False
           nRecordEditsPerYear <- recordEditsPerYear
           nCommunity <- communityList nTLD
+          nQueueAlert <- atLeast 1 "names" "queue_alert" 20
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nCodesOnly, nRecordEditsPerYear, nCommunity, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nCodesOnly, nRecordEditsPerYear, nCommunity, nQueueAlert, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex

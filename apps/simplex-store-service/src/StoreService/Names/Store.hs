@@ -56,6 +56,8 @@ module StoreService.Names.Store
     findRegistrations,
     isLabelRegistering,
     activeRegistrations,
+    queuePlace,
+    queueCounts,
     unpaidCleanupCandidates,
     deleteUnpaidRegistration,
     failedCodeOrdersBefore,
@@ -107,7 +109,7 @@ import qualified Data.ByteString as B
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (isJust, listToMaybe)
+import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -851,6 +853,17 @@ activeRegistrations db =
       db
       "SELECT registration_id FROM sx_badge_service_name_registrations WHERE phase IN (?,?,?,?) ORDER BY created_at, registration_id"
       (PQueued, PCommitting, PCommitted, PRegistering)
+
+queuePlace :: DB.Connection -> NameRegistration -> IO (Int, Int)
+queuePlace db NameRegistration {nrId = RegistrationId rid, nrCreatedAt} =
+  maybe (1, 1) (\(before, others) -> (before + 1, others + 1)) <$> maybeFirstRow id (DB.query db q (nrCreatedAt, nrCreatedAt, rid, rid, PQueued))
+  where
+    q = "SELECT COUNT(CASE WHEN created_at < ? OR (created_at = ? AND registration_id < ?) THEN 1 END), COUNT(CASE WHEN registration_id <> ? THEN 1 END) FROM sx_badge_service_name_registrations WHERE phase = ?"
+
+queueCounts :: DB.Connection -> IO (Int, Maybe UTCTime, Int)
+queueCounts db = fromMaybe (0, Nothing, 0) <$> maybeFirstRow id (DB.query db q (PQueued, PQueued, PQueued, PQueued, PCommitting, PCommitted, PRegistering))
+  where
+    q = "SELECT COUNT(CASE WHEN phase = ? THEN 1 END), MIN(CASE WHEN phase = ? THEN created_at END), COUNT(CASE WHEN phase <> ? THEN 1 END) FROM sx_badge_service_name_registrations WHERE phase IN (?,?,?,?)"
 
 -- | Unpaid orders whose invoice expired before the cutoff, without a recorded payment.
 unpaidCleanupCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, InvoiceId)]

@@ -88,7 +88,7 @@ foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCre
 
 -- | POST /api/registration/:id/name, another name or other links, under the turns of both names.
 retargetHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived
-retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} ridText req respond =
+retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePause, oeNow} ridText req respond =
   readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
     rid = RegistrationId ridText
@@ -111,7 +111,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
           | nrLabelHash stored `notElem` held -> changed
           | otherwise -> moveTo now (registrationAt now stored) fields timestamp
     moveTo now r@NameRegistration {nrPhase} fields timestamp
-      | orderFieldsOf r == fields = answerNow . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts now r
+      | orderFieldsOf r == fields = answerNow . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts oePause now r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
       | not (movable r) = refuse ORBadRequest
       | nrPhase == PFailed =
@@ -142,7 +142,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
         Left (WRRefused refusal) -> refuse refusal
     movedAnswer now v =
       withTransaction oeStore (`getRegistration` rid) >>= \case
-        Just r -> written env rid v . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts now (registrationAt now r)
+        Just r -> written env rid v . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts oePause now (registrationAt now r)
         Nothing -> answerNow internalError <$ logError ("POST /api/registration/:id/name: order " <> ridText <> " is not readable after its move")
     changed = answerNow <$> registrationChangedResponse env rid
     refuse = refused "POST /api/registration/:id/name"

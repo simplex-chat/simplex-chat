@@ -19,13 +19,13 @@ import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.Async (wait, withAsync)
 import qualified Control.Exception as E
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM (atomically, check)
+import Control.Concurrent.STM (atomically, check, readTVar, readTVarIO, writeTVar)
 import Control.Monad (forM_, replicateM_, void, when)
 import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.IORef (readIORef)
-import Data.Maybe (fromJust, fromMaybe, isJust)
+import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
@@ -42,10 +42,10 @@ import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig)
 import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), hex, selector, uint256)
-import StoreService.Names.Chain (Block (..), ChainClient, TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
+import StoreService.Names.Chain (Block (..), ChainClient (..), TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
-import StoreService.Names.Phases (RegistrationId (..), awaitChange)
+import StoreService.Names.Phases (Pause (..), RegistrationId (..), awaitChange)
 import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Sender
@@ -53,6 +53,7 @@ import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
 import StoreService.Names.Worker
+import StoreService.Service (reportAlerts)
 import StoreService.Web.Http (createLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Owner (retargetHandler)
@@ -90,7 +91,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits while the name reads taken only above the confirmation depth, and ends taken once it reads so at the depth" testTakenAtDepth
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "ends failed on a revert while the name is available, keeping a code" testRevertFailed
-    it "keeps an order committed while the sponsor allowance is used up, and registers it after a top-up" testAllowanceUsedUp
+    it "keeps an order committed while the sponsor allowance is used up, pausing registration with it as the probe, and registers it after a top-up" testAllowanceUsedUp
     it "fails an order that sent the most registers an order may, sending nothing, refuses its Try again and a move, and registers it on a move once its owner holds the name" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, ending failed" testExpiredIntent
@@ -110,6 +111,12 @@ workerTests = describe "StoreService names: worker" $ do
     it "relays no acceptance once the commitment lapsed, so the policy commits nothing again" testAcceptanceLapsed
   describe "lapse" $ do
     it "ends a committed order not revealed by revealBefore failed, keeping its code" testLapseFailed
+  describe "pause" $ do
+    it "holds a queued order while registration is paused, sending nothing, and commits it once registration resumes" testPausedQueue
+    it "returns a revealed order whose commitment lapsed while paused to the queue, its reveal and commit cleared" testLapsePaused
+    it "pauses at start while the allowance cannot cover the oldest active order's register, or cannot be read" testPauseAtStart
+    it "resumes registration once the allowance covers the probe order's register" testProbeResumes
+    it "alerts on a pause, a queue above queue_alert, and the registrar's ETH or allowance below its floor, never on an unread figure" testReportAlerts
   describe "restart" $ do
     it "resumes every phase after a restart, a commit saved but not recorded included" testRestart
     it "waits for a register saved but not recorded before a restart, sending no other" testRestartRegisterSaved
@@ -222,6 +229,7 @@ shape = \case
   Retry v reason -> "Retry " <> show v <> " " <> T.unpack reason
   Stalled v reason -> "Stalled " <> show v <> " " <> T.unpack reason
   Await p -> "Await " <> show (ptHash p)
+  Paused -> "Paused"
 
 awaiting :: Next -> IO PendingTx
 awaiting = \case
@@ -247,6 +255,26 @@ done :: Next -> IO ()
 done = \case
   Done -> pure ()
   next -> fail $ "not done: " <> shape next
+
+pausedNext :: Next -> IO ()
+pausedNext = \case
+  Paused -> pure ()
+  next -> fail $ "not paused: " <> shape next
+
+pauseFor :: Ctx -> NameRegistration -> IO ()
+pauseFor Ctx {cOrders} NameRegistration {nrId} = atomically $ writeTVar (oePause cOrders) $ Just Pause {paSince = orderTime, paProbe = nrId}
+
+pauseOf :: Ctx -> IO (Maybe Pause)
+pauseOf Ctx {cOrders} = readTVarIO $ oePause cOrders
+
+allowanceCall :: W -> ByteString
+allowanceCall W {wChain = ChainClient {ccRegistrar}} = unhex "ee4042fa" <> addressWord ccRegistrar
+
+answerAllowance :: W -> Integer -> IO ()
+answerAllowance w@W {wCtx = Ctx {cNode}} cents = answerCall cNode fakeSponsor (allowanceCall w) $ Returns $ uint256 $ cents * 10 ^ (16 :: Int)
+
+twoYears :: NameRegistration -> NameRegistration
+twoYears r = r {nrDuration = 2 * 31536000}
 
 -- | The raw transactions the node received, in the order they were sent.
 sent :: W -> IO [ByteString]
@@ -663,6 +691,10 @@ testAllowanceUsedUp = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   x <- stored ctx r
   (nrPhase x, nrError x, nrVersion x) `shouldBe` (PCommitted, Nothing, nrVersion r)
   sent w `shouldReturn` []
+  pauseOf ctx `shouldReturn` Just Pause {paSince = orderTime, paProbe = nrId r}
+  advance ctx 60
+  void $ steps w r >>= stalled
+  pauseOf ctx `shouldReturn` Just Pause {paSince = orderTime, paProbe = nrId r}
   dryRunsPass w
   void $ steps w r >>= awaiting
   length <$> sent w `shouldReturn` 1
@@ -895,6 +927,78 @@ testLapseFailed = withWorker $ \w@W {wCtx = ctx} -> do
   x <- stored ctx r
   (nrPhase x, nrFailedAt x, nrError x, nrLive x) `shouldBe` (PFailed, Just now, Just "The name was not signed in time", True)
   pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
+
+testPausedQueue :: IO ()
+testPausedQueue = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wWorker} -> do
+  r <- paidIn ctx aliceOrder id
+  answerCommitment w r 0
+  pauseFor ctx r
+  steps w r >>= pausedNext
+  stored ctx r `shouldReturn` r
+  withAsync (runWorkers wWorker) $ \_ -> do
+    timeout 1000000 (awaitSent cNode 1) `shouldReturn` Nothing
+    atomically $ writeTVar (oePause cOrders) Nothing
+    timeout prompt (awaitSent cNode 1) >>= maybe (fail "no commit was sent once registration resumed") (const $ pure ())
+    changed <- awaitChange (oePhases cOrders) (nrId r) (nrVersion <$> stored ctx r) (nrVersion r) prompt
+    changed `shouldBe` True
+  nrPhase <$> stored ctx r `shouldReturn` PCommitting
+
+testLapsePaused :: IO ()
+testLapsePaused = withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealBefore = Just (rvDeadline reveal)}) >>= revealed ctx keyA "alicebakery"
+  pauseFor ctx r
+  advance ctx $ fromIntegral (rvDeadline reveal - orderSeconds) + 1
+  published w r (steps w r) >>= pausedNext
+  x <- stored ctx r
+  (nrPhase x, nrReveal x, nrCommitTx x, nrRevealAfter x, nrRevealBefore x, nrFailedAt x) `shouldBe` (PQueued, Nothing, Nothing, Nothing, Nothing, Nothing)
+  sent w `shouldReturn` []
+
+testPauseAtStart :: IO ()
+testPauseAtStart = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wWorker} -> do
+  let restart = atomically (writeTVar (oePause cOrders) Nothing) >> pauseUncovered wWorker
+  restart
+  pauseOf ctx `shouldReturn` Nothing
+  oldest <- paidIn ctx aliceOrder twoYears
+  advance ctx 60
+  void $ paidIn ctx dynamisOrder id
+  now <- nowOf ctx
+  answerAllowance w 9999
+  restart
+  pauseOf ctx `shouldReturn` Just Pause {paSince = now, paProbe = nrId oldest}
+  answerAllowance w 10000
+  restart
+  pauseOf ctx `shouldReturn` Nothing
+  forgetCall cNode fakeSponsor $ allowanceCall w
+  restart
+  pauseOf ctx `shouldReturn` Just Pause {paSince = now, paProbe = nrId oldest}
+
+testProbeResumes :: IO ()
+testProbeResumes = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wWorker} -> do
+  r <- paidIn ctx aliceOrder twoYears
+  answerAllowance w 10000
+  pauseFor ctx r
+  withAsync (runProbe wWorker) $ \_ ->
+    timeout prompt (atomically $ readTVar (oePause cOrders) >>= check . isNothing) `shouldReturn` Just ()
+
+testReportAlerts :: IO ()
+testReportAlerts = withFakeEthNode $ \node -> do
+  let alerts = reportAlerts $ testNamesConfig node
+      paused = Just Pause {paSince = orderTime, paProbe = RegistrationId "probe"}
+      ethFloor = 5 * 8000000 * fakeMaxFeePerGas
+  [ alerts Nothing 20 (Just ethFloor) (Just (100, 100)),
+    alerts paused 0 (Just ethFloor) (Just (100, 100)),
+    alerts Nothing 21 (Just ethFloor) (Just (100, 100)),
+    alerts Nothing 0 (Just $ ethFloor - 1) (Just (100, 100)),
+    alerts Nothing 0 (Just ethFloor) (Just (99, 100)),
+    alerts paused 21 Nothing Nothing
+    ]
+    `shouldBe` [ [],
+                 ["registration paused"],
+                 ["more than 20 queued"],
+                 ["ETH below 5 transactions at gas_limit_cap and max_fee_per_gas"],
+                 ["allowance below one order of the shortest name"],
+                 ["registration paused", "more than 20 queued"]
+               ]
 
 testRestart :: IO ()
 testRestart = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}, wSender} -> do
