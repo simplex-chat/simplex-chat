@@ -199,7 +199,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | `expireDue` | [243](../src/actions.ts#L243) | expiry of every action past its expiry time |
 | `decided` | [249](../src/actions.ts#L249) | wait with progress until a decided state, `until`, or the abort signal |
 | `stop` | [284](../src/actions.ts#L284) | cancellation of pending and performing actions |
-| `scheduleExpiry`, `expire`, `forgetExpired` | [297-316](../src/actions.ts#L297-L316) | the expiry timer of one action, at most 60 s; its expiry, or a new timer when the timer, on the monotonic clock, fires before the expiry time on the wall clock; its removal once decided, without open calls and past its expiry time; an action of `serve` that expires is kept until its next check, 60 s later, as in 0.2 |
+| `scheduleExpiry`, `expire`, `forgetExpired` | [297-316](../src/actions.ts#L297-L316) | the expiry timer of one action, at most 60 s; its expiry, or a new timer when the timer, on the monotonic clock, fires before the expiry time on the wall clock; its removal once decided, without open calls and past its expiry time; an action of `serve` that expires is kept until the next owner command or its check 60 s later, as in 0.2 |
 | `summary`, `performedText`, `progressText` | [382-425](../src/actions.ts#L382-L425) | log and progress texts |
 
 Hooks are bound in [`serve.ts:96-102`](../src/serve.ts#L96-L102): `refusal`, `saveCounter`, `postCard` and `outcome` to `Control`; `perform` to `AgentTools`.
@@ -533,7 +533,7 @@ stateDiagram-v2
   performing --> pending: stop during the counter write
 ```
 
-An action is removed from memory when its result is returned to a call ([tools.ts:768](../src/tools.ts#L768)), or once it is decided, its open call count is 0 and its expiry time has passed: checked at each decision, at the close of each call and at its expiry timer ([actions.ts:314-316](../src/actions.ts#L314-L316), [:232-235](../src/actions.ts#L232-L235), [:351-355](../src/actions.ts#L351-L355)). `serve` has one session, `undefined`, so the limits of 20 count all its actions; a pending action of `serve` that expires is kept until the check 60 s later, so a repeated call in that time gets `expired`, as in 0.2 ([actions.ts:307-309](../src/actions.ts#L307-L309)). A `download` still performing at the end of `wait` is returned as `performing` and kept ([tools.ts:765](../src/tools.ts#L765)).
+An action is removed from memory when its result is returned to a call ([tools.ts:768](../src/tools.ts#L768)), or once it is decided, its open call count is 0 and its expiry time has passed: checked at each decision, at the close of each call and at its expiry timer ([actions.ts:314-316](../src/actions.ts#L314-L316), [:232-235](../src/actions.ts#L232-L235), [:351-355](../src/actions.ts#L351-L355)). `serve` has one session, `undefined`, so the limits of 20 count all its actions; a pending action of `serve` that expires is kept until the next owner command or its check 60 s later, so a repeated call before them gets `expired`, as in 0.2 ([actions.ts:307-309](../src/actions.ts#L307-L309), [:243-247](../src/actions.ts#L243-L247), [control.ts:246](../src/control.ts#L246)). A `download` still performing at the end of `wait` is returned as `performing` and kept ([tools.ts:765](../src/tools.ts#L765)).
 
 ### 5.4 Cards
 
@@ -562,7 +562,7 @@ The plugin's approval of all files of `reply` in a session group is described in
 | `expires = created + expireHours × 3600000`, `expireHours` 1 to 23, default 23 | [actions.ts:190](../src/actions.ts#L190), [cli.ts:79](../src/cli.ts#L79), [:102-104](../src/cli.ts#L102-L104) |
 | one unreferenced timer per action, set at its creation for `expires - now`, at most 60 s, and set again until the expiry time; all actions past `expires` are also expired before each owner command | [actions.ts:11](../src/actions.ts#L11), [:297-300](../src/actions.ts#L297-L300), [control.ts:246](../src/control.ts#L246) |
 | pending and due: `expired`, log `Action N expired.`, card edited to `Expired.` | [actions.ts:302-312](../src/actions.ts#L302-L312) |
-| decided, no open call, due: removed from memory; a pending action of `serve` that expires stays until its next check, 60 s later | [actions.ts:314-316](../src/actions.ts#L314-L316), [:307-309](../src/actions.ts#L307-L309) |
+| decided, no open call, due: removed from memory; a pending action of `serve` that expires stays until the next owner command or its check 60 s later, as in 0.2 | [actions.ts:314-316](../src/actions.ts#L314-L316), [:307-309](../src/actions.ts#L307-L309), [:243-247](../src/actions.ts#L243-L247) |
 | connect wait for the other side: at most until `created + 24 h - 10 min` | [tools.ts:153](../src/tools.ts#L153), [:814](../src/tools.ts#L814) |
 
 A timer follows the monotonic clock and `expires` the wall clock: a timer that fires before `expires` is set again, so an action whose expiry time passes while the computer sleeps expires within 60 s after it wakes ([actions.ts:305](../src/actions.ts#L305)).
