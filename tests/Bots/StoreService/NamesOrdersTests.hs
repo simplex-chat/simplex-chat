@@ -144,7 +144,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "cancels the provider invoice and logs it when the order's insert fails" testInsertFailureCancels
     it "checks the duration within the slack, before and after the term start" testDurationSlack
     it "answers catalog_changed with the chain price" testCatalogChanged
-    it "counts toward the checkouts of every client only an order that reaches the provider" testOrdersLimitForAll
+    it "counts toward the checkouts of every client only an order that reaches the provider, and a card order past the spent BTCPay ones" testOrdersLimitForAll
     it "answers name_taken for a registered, reserved or being registered name" testNameTaken
     it "answers name_check_unavailable when a status or price read fails" testNameCheckUnavailable
     it "refuses a body over 16384 bytes, accepting the longest order" testSizes
@@ -425,11 +425,11 @@ dynamisExpiresCall, dynamisReservedCall :: ByteString
 dynamisExpiresCall = unhex "d6e4fa8678b602f03f164366531da963764c1f2fdfd588d0487daf2aa261ca799e5ffe33"
 dynamisReservedCall = unhex "389c074878b602f03f164366531da963764c1f2fdfd588d0487daf2aa261ca799e5ffe33"
 
--- | Each request from its own client address, so the create limit counts none twice.
+-- | Each request from its own client network, so the create and checkout limits count none twice.
 post :: Ctx -> String -> LB.ByteString -> IO (Int, Maybe J.Object)
 post Ctx {cClient, cIps} path body = do
   n <- atomicModifyIORef' cIps (\i -> (i + 1, i))
-  let ip = "198.51." <> show (n `div` 250) <> "." <> show (n `mod` 250 + 1)
+  let ip = "198." <> show (n `div` 250) <> "." <> show (n `mod` 250 + 1) <> ".1"
   r <- webRequestBody cClient "POST" path [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ip)] body
   pure (statusOf r, J.decode (responseBody r))
 
@@ -674,11 +674,15 @@ testCatalogChanged = withOrders $ \ctx -> do
 
 testOrdersLimitForAll :: IO ()
 testOrdersLimitForAll = withOrders $ \ctx -> do
-  replicateM_ (lmPerMinute invoicesLimit) $ fst <$> placeOrder ctx aliceOrder {oPrice = 9000} `shouldReturn` 409
+  replicateM_ (lmPerMinute btcpayLimit) $ fst <$> placeOrder ctx aliceOrder {oPrice = 9000} `shouldReturn` 409
   void $ placed ctx aliceOrder
-  replicateM_ (lmPerMinute invoicesLimit - 1) $ takeToken (weHttp $ cWeb ctx) invoicesLimit ""
-  placeOrder ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2} `shouldReturn` refusedWith 429 "rate_limited"
-  length <$> stubCalls (cStub ctx) `shouldReturn` 1
+  replicateM_ (lmPerMinute btcpayLimit - 1) $ takeToken (weHttp $ cWeb ctx) btcpayLimit ""
+  let dynamis = aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
+  placeOrder ctx dynamis `shouldReturn` refusedWith 429 "rate_limited"
+  void $ placed ctx dynamis {oMethod = "card"}
+  length <$> stubCalls (cStub ctx) `shouldReturn` 2
+  where
+    btcpayLimit = invoicesLimit (SPMCrypto CCBtc)
 
 testNameTaken :: IO ()
 testNameTaken = withOrders $ \ctx@Ctx {cNode = node} -> do

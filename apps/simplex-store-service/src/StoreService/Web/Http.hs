@@ -12,7 +12,7 @@ module StoreService.Web.Http
     takeToken,
     limited,
     only,
-    clientKey,
+    checkoutClient,
     maxBuckets,
     readLimit,
     createLimit,
@@ -21,8 +21,9 @@ module StoreService.Web.Http
     codeLimit,
     findLimit,
     recordsLimit,
+    checkoutLimit,
     invoicesLimit,
-    limitedForAll,
+    limitedCheckout,
     holdMicros,
     maxHolds,
     withHoldSlot,
@@ -82,7 +83,7 @@ import Network.Socket (SockAddr (..), hostAddress6ToTuple, hostAddressToTuple)
 import Network.Wai
 import Numeric (readHex, showHex)
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
 import StoreService.Providers (Provider (..))
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), cryptoCurrencyText, invoiceStatusText, paymentHolds)
@@ -148,10 +149,15 @@ codeLimit = Limit {lmName = "code", lmPerMinute = 10}
 findLimit = Limit {lmName = "find", lmPerMinute = 5}
 recordsLimit = Limit {lmName = "records", lmPerMinute = 10}
 
+checkoutLimit :: Limit
+checkoutLimit = Limit {lmName = "checkout", lmPerMinute = 5}
+
 -- | Checkouts of every client together, each a provider invoice or card PaymentIntent, so a flood from many addresses
 -- still meets a ceiling.
-invoicesLimit :: Limit
-invoicesLimit = Limit {lmName = "invoices", lmPerMinute = 30}
+invoicesLimit :: ServicePaymentMethod -> Limit
+invoicesLimit = \case
+  SPMCard CPStripe -> Limit {lmName = "card invoices", lmPerMinute = 60}
+  SPMCrypto _ -> Limit {lmName = "crypto invoices", lmPerMinute = 30}
 
 maxBodyBytes :: Int
 maxBodyBytes = 8192
@@ -208,7 +214,7 @@ takeToken HttpEnv {heBuckets} Limit {lmName, lmPerMinute} client = do
 
 limited :: HttpEnv -> Limit -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
 limited env limit req respond action =
-  takeToken env limit (clientKey env req) >>= \case
+  takeToken env limit (clientKey hostPrefix env req) >>= \case
     Nothing -> action
     Just seconds -> respond (rateLimited seconds)
 
@@ -216,22 +222,37 @@ limited env limit req respond action =
 limitedForAll :: HttpEnv -> Limit -> (Response -> IO a) -> IO a -> IO a
 limitedForAll env limit refuse action = takeToken env limit "" >>= maybe action (refuse . rateLimited)
 
+limitedCheckout :: HttpEnv -> Text -> ServicePaymentMethod -> (Response -> IO a) -> IO a -> IO a
+limitedCheckout env client method refuse action =
+  takeToken env checkoutLimit client >>= maybe (limitedForAll env (invoicesLimit method) refuse action) (refuse . rateLimited)
+
 only :: Method -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
 only method req respond action
   | requestMethod req == method = action
   | otherwise = respond (methodNotAllowed method)
 
+data KeyPrefix = KeyPrefix {kpOctets :: Int, kpGroups :: Int}
+
+-- | An IPv6 client is keyed by its /64, as one host holds a whole /64.
+hostPrefix :: KeyPrefix
+hostPrefix = KeyPrefix {kpOctets = 4, kpGroups = 4}
+
+networkPrefix :: KeyPrefix
+networkPrefix = KeyPrefix {kpOctets = 3, kpGroups = 3}
+
+checkoutClient :: HttpEnv -> Request -> Text
+checkoutClient = clientKey networkPrefix
+
 -- | Every line is joined first, so a second header line a caller adds cannot leave its own line the one we read.
--- An IPv6 client is keyed by its /64, as one host holds a whole /64.
-clientKey :: HttpEnv -> Request -> Text
-clientKey HttpEnv {heTrustForwardedFor} req = fromMaybe (peerText (remoteHost req)) forwarded
+clientKey :: KeyPrefix -> HttpEnv -> Request -> Text
+clientKey prefix HttpEnv {heTrustForwardedFor} req = fromMaybe (peerText prefix (remoteHost req)) forwarded
   where
     forwarded
       | not heTrustForwardedFor = Nothing
       | otherwise = case reverse (concatMap entries (requestHeaders req)) of
           (ip : _)
-            | isIPv4 ip -> Just ip
-            | isIPv6 ip -> v6Key <$> v6Groups ip
+            | isIPv4 ip -> Just (v4Key prefix (T.splitOn "." ip))
+            | isIPv6 ip -> v6Key prefix <$> v6Groups ip
           _ -> Nothing
     entries (name, raw)
       | name /= "x-forwarded-for" = []
@@ -278,14 +299,14 @@ groupCount endsAddress gs
     plainGroups ps = if all hexGroup ps then Just (length ps) else Nothing
     hexGroup g = not (T.null g) && T.length g <= 4 && T.all asciiHexDigit g
 
-peerText :: SockAddr -> Text
-peerText = \case
+peerText :: KeyPrefix -> SockAddr -> Text
+peerText prefix = \case
   SockAddrInet _ addr ->
     let (a, b, c, d) = hostAddressToTuple addr
-     in v4Text [a, b, c, d]
+     in v4Key prefix (map tshow [a, b, c, d])
   SockAddrInet6 _ _ addr _ ->
     let (a, b, c, d, e, f, g, h) = hostAddress6ToTuple addr
-     in v6Key [a, b, c, d, e, f, g, h]
+     in v6Key prefix [a, b, c, d, e, f, g, h]
   SockAddrUnix p -> "unix:" <> T.pack p
 
 -- | The eight groups of an address isIPv6 accepts.
@@ -306,14 +327,14 @@ v6Groups t = case T.splitOn "::" t of
       | otherwise = (: []) . fst <$> listToMaybe (readHex $ T.unpack g)
     exactly n gs = gs >>= \xs -> if length xs == n then Just xs else Nothing
 
--- | The /64 an address is in, or the IPv4 address an IPv4-mapped one carries.
-v6Key :: [Word16] -> Text
-v6Key gs = case splitAt 6 gs of
-  ([0, 0, 0, 0, 0, 0xffff], [ab, cd]) -> v4Text [ab `div` 256, ab `mod` 256, cd `div` 256, cd `mod` 256]
-  _ -> T.intercalate ":" (map (T.pack . (`showHex` "")) (take 4 gs)) <> "::/64"
+-- | The prefix of an address, or of the IPv4 address in an IPv4-mapped one.
+v6Key :: KeyPrefix -> [Word16] -> Text
+v6Key prefix@KeyPrefix {kpGroups} gs = case splitAt 6 gs of
+  ([0, 0, 0, 0, 0, 0xffff], [ab, cd]) -> v4Key prefix (map tshow [ab `div` 256, ab `mod` 256, cd `div` 256, cd `mod` 256])
+  _ -> T.intercalate ":" (map (T.pack . (`showHex` "")) (take kpGroups gs)) <> "::"
 
-v4Text :: Show a => [a] -> Text
-v4Text = T.intercalate "." . map (T.pack . show)
+v4Key :: KeyPrefix -> [Text] -> Text
+v4Key KeyPrefix {kpOctets} = T.intercalate "." . take kpOctets
 
 apiHeaders :: [Header]
 apiHeaders = [(hContentType, "application/json"), (hCacheControl, "no-store")]

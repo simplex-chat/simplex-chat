@@ -259,6 +259,7 @@ badgeWebTests = do
     it "uses a forwarded client only when it parses as an IP address" testForwardedForMustBeAnAddress
     it "keys an IPv6 client by its /64 and an IPv4-mapped one by its IPv4 address" testIPv6ClientKey
     it "caps checkouts of every client together, counting only those that reach the provider" testInvoicesLimitForAll
+    it "caps checkouts per IPv4 /24 and IPv6 /48 before the shared cap, so the refused ones take none of it" testCheckoutLimitPerNetwork
     it "refuses every badly signed webhook, logging only the first few of a minute" testWebhookRefusalLogCapped
     it "answers a poll at once with rate_limited while every hold slot is taken, and frees each slot after its hold" testHoldSlots
     it "runs a search's chain reads only in a free search slot, and frees each slot after them" testSearchSlots
@@ -1924,9 +1925,25 @@ testInvoicesLimitForAll = bounded "checkouts for all" $ withSeededCheckout $ \cl
   let malformed i = statusOf <$> postCreateAs client i "{}"
       checkout i = statusOf <$> postCreateAs client i (createBody "price_legend" (Just "offer_12m") "btc" (codeHashText $ "code" <> tshow i))
   -- refused requests never reach the provider, so they take none of the shared checkouts
-  mapM malformed [1 .. lmPerMinute invoicesLimit + 1] >>= (`shouldSatisfy` all (== 400))
-  mapM checkout [1 .. lmPerMinute invoicesLimit] >>= (`shouldSatisfy` notElem 429)
-  checkout (lmPerMinute invoicesLimit + 1) `shouldReturn` 429
+  mapM malformed [1 .. checkouts + 1] >>= (`shouldSatisfy` all (== 400))
+  mapM checkout [1 .. checkouts] >>= (`shouldSatisfy` notElem 429)
+  checkout (checkouts + 1) `shouldReturn` 429
+  where
+    checkouts = lmPerMinute (invoicesLimit (SPMCrypto CCBtc))
+
+testCheckoutLimitPerNetwork :: IO ()
+testCheckoutLimitPerNetwork = bounded "checkouts per network" $ withCheckoutProvider distinctProviderRefs $ \_ _ client -> do
+  let checkout address = statusOf <$> webRequestBody client "POST" "/api/invoice" [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack address)] (createBody supporterPriceId Nothing "btc" (codeHashText (T.pack address)))
+      perNetwork = lmPerMinute checkoutLimit
+      inV4Network i = "198.51.100." <> show i
+      inV6Network i = "2001:db8:1:" <> show i <> "::1"
+  mapM (checkout . inV4Network) [1 .. perNetwork] >>= (`shouldSatisfy` all (== 200))
+  mapM (checkout . inV4Network) [perNetwork + 1 .. perNetwork + lmPerMinute (invoicesLimit (SPMCrypto CCBtc))] >>= (`shouldSatisfy` all (== 429))
+  checkout "::ffff:198.51.100.250" `shouldReturn` 429
+  checkout "198.51.101.1" `shouldReturn` 200
+  mapM (checkout . inV6Network) [1 .. perNetwork] >>= (`shouldSatisfy` all (== 200))
+  checkout (inV6Network (perNetwork + 1)) `shouldReturn` 429
+  checkout "2001:db8:2::1" `shouldReturn` 200
 
 testHoldSlots :: IO ()
 testHoldSlots = bounded "hold slots" $ withWebApp $ \env client -> do
@@ -2096,7 +2113,7 @@ postCreateAs client i body =
     client
     "POST"
     "/api/invoice"
-    [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ("203.0.113." <> show i))]
+    [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ("203.0." <> show i <> ".1"))]
     body
 
 withCheckout :: (IORef StubState -> WebEnv -> WebClient -> IO a) -> IO a
