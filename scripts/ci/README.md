@@ -163,7 +163,7 @@ The scope commands run in build-linux after the core tests, with Node 22 and Pyt
 
 ## Starting a run
 
-Pushes start none of the app workflows: a run is started by hand, on any branch, with inputs that are off by default and combine.
+Pushes start none of the app workflows: a run is started by hand, on any branch, with inputs that combine, each empty or off by default.
 
 | Input | iOS | Desktop | Android |
 |---|---|---|---|
