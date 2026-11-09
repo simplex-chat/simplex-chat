@@ -771,7 +771,7 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
   (\r -> (nrPhase r, nrBalanceSource r, nrBalanceUsed r)) <$> registrationById ctx covering `shouldReturn` (PQueued, Just dearer, 10000)
   dearerRef <- providerRef ctx dearerInv
   srcRef <- providerRef ctx srcInv
-  owner <-addressText . nrOwner <$> registrationById ctx dearer
+  owner <- addressText . nrOwner <$> registrationById ctx dearer
   let paidBy =
         "order " <> d <> " of " <> owner <> ": $100.00 by btc on invoice " <> dearerInvText <> " (provider reference " <> dearerRef <> "), $100.00 from the balance of order " <> s
           <> "; order " <> s <> " of " <> owner <> ": $100.00 by btc on invoice " <> srcInvText <> " (provider reference " <> srcRef <> ")"
