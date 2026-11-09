@@ -1330,8 +1330,9 @@ group command the service received but had not run when it stopped, or received 
 `--run-cli` mode, is dropped with no reply, so resend it, or use `//revoke`.
 
 The first member to join through the link is promoted to owner, so the operator joins before sharing
-it. Keep the service an owner too: below owner it cannot update the group's command menu or require
-member review, and below author it cannot post codes or replies. A failed promotion is logged at
+it. Keep the service an owner too: below owner it cannot update the group's command menu or its member
+review setting, though as an admin it still holds joiners for review; below admin it ignores join
+requests, and below author it cannot post codes or replies. A failed promotion is logged at
 once, and an owner who left is logged at the next start or join. Then make the member you choose
 owner with the `/mr` command that the log line names, in `--run-cli` mode; a member pending review
 is accepted as owner with the log line's `/accept member #<group> @<member> owner` instead, as `/mr`
@@ -1351,8 +1352,10 @@ moderator, admin or owner accepts them, and receives no group messages until the
 this from its own record when the join request arrives, so a request handled at start, before the group
 lane runs, and one that arrives while an owner has turned review off are held too. The first member is
 not reviewed, as only the service could accept them. The group's member review setting is turned on
-with that promotion, or at the next start for a group promoted before, and again whenever an owner
-turns it off. A database copy holds the link, as it holds the codes.
+with that promotion, or at the next start for a group promoted before. In service mode it is turned
+on again when an owner turns it off, and at every join while the group has an owner; an owner's
+change made while the service runs in `--run-cli` mode stays until the next start in service mode. A
+database copy holds the link, as it holds the codes.
 
 If an owner deletes the group, or removes the service from it, the service logs an error on start
 and stops serving the group. To create a new group, stop the service, delete the row, and start it
