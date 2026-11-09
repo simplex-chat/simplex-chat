@@ -332,9 +332,9 @@ is shown as their reference and asked to quote, so support sees it: losing it le
 an invoice, which is why the code, which lets them take the badge, is never printed until the
 service says the invoice is paid. The service keeps it out of its own logs: a line about an invoice
 names the provider's reference (the BTCPay invoice id or the Stripe PaymentIntent id), which opens
-nothing in this service's API. A line about a name order without its invoice, from the worker, the
-cleanup or `//refund`, names the registration id, which reads the order and asks Try again, so keep
-the logs to the service's operators.
+nothing in this service's API. A line about a name order without its invoice, from the worker or
+`//refund`, names the registration id, which reads the order and asks Try again, so keep the logs to
+the service's operators.
 
 | Route | Answers |
 |---|---|

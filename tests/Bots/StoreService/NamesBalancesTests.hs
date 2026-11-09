@@ -551,7 +551,7 @@ testCleanupKeepsHolder = withOrders $ \Ctx {cStore = st, cWeb} -> do
   let due = addUTCTime (unpaidRetention + 1) t0
   poller <- newPollerEnv st (weWaiters cWeb) Nothing (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
   logs <- capturingStderr $ cleanupUnpaid poller due
-  logs `shouldSatisfy` T.isInfixOf "unpaid registration h is kept because it still holds the balance of registration s"
+  logs `shouldSatisfy` T.isInfixOf "the unpaid order of invoice ref-inv-h is kept because it still holds the balance of registration s"
   nrLive <$> reg st "h" `shouldReturn` True
   figures st "s" due `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" t0 True)
 

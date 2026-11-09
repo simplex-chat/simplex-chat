@@ -856,13 +856,13 @@ activeRegistrations db =
       (PQueued, PCommitting, PCommitted, PRegistering)
 
 -- | Unpaid orders whose invoice expired before the cutoff, without a recorded payment.
-unpaidCleanupCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, InvoiceId)]
+unpaidCleanupCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, InvoiceId, Text)]
 unpaidCleanupCandidates db expiredBefore =
-  map (\(rid, invId) -> (RegistrationId rid, InvoiceId invId))
+  map (\(rid, invId, ref) -> (RegistrationId rid, InvoiceId invId, ref))
     <$> DB.query
       db
       [sql|
-        SELECT r.registration_id, ni.invoice_id
+        SELECT r.registration_id, ni.invoice_id, ni.provider_ref
         FROM sx_badge_service_name_registrations r
         JOIN sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id
         JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id

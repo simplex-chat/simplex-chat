@@ -132,7 +132,7 @@ data PollerEnv = PollerEnv
     peReadFailed :: TVar (Map Text ReadFailure),
     peCleanedAt :: TVar (Maybe UTCTime),
     -- | The orders of the day's cleanup not read yet.
-    peCleanupLeft :: TVar [(RegistrationId, InvoiceId)],
+    peCleanupLeft :: TVar [(RegistrationId, InvoiceId, Text)],
     peCreditedAt :: TVar (Maybe UTCTime),
     -- | The rates read in this pass or hinted read, by provider and coin.
     peRates :: TVar (Map (Text, Text) (Either ProviderError Rate))
@@ -382,10 +382,10 @@ cleanupUnpaid env@PollerEnv {peStore, peCleanedAt, peCleanupLeft} now = do
       atomically $ writeTVar peCleanedAt (Just now)
       void $ safely "names: the late payment alerts" (alertLatePayments env now)
   candidates <- atomically $ stateTVar peCleanupLeft (splitAt cleanupReadsPerPass)
-  deleted <- filterM (\c@(RegistrationId rid, _) -> safelyWith ("names cleanup: registration " <> rid) False (cleanOne c)) candidates
+  deleted <- filterM (\c@(_, _, ref) -> safelyWith ("names cleanup: invoice " <> ref) False (cleanOne c)) candidates
   unless (null deleted) $ logNote ("names cleanup: deleted " <> tshow (length deleted) <> " unpaid order(s)")
   where
-    cleanOne (rid@(RegistrationId ridText), invId) =
+    cleanOne (rid, invId, ref) =
       getInvoice peStore invId >>= \case
         Nothing -> pure False
         Just InvoiceRow {irProvider, irProviderRef} -> case find ((== irProvider) . pProvider) (peProviders env) of
@@ -397,10 +397,10 @@ cleanupUnpaid env@PollerEnv {peStore, peCleanedAt, peCleanupLeft} now = do
                 mapM_ (\signal -> settleMoved env irProvider now (irProviderRef, signal)) signal_
                 withTransaction peStore (`deleteUnpaidRegistration` rid) >>= \case
                   Right () -> pure True
-                  Left CKPaid -> False <$ logNote ("names cleanup: unpaid registration " <> ridText <> " is kept with its balance, because its invoice received a payment")
-                  Left (CKHolder (RegistrationId source)) -> False <$ logError ("names cleanup: unpaid registration " <> ridText <> " is kept because it still holds the balance of registration " <> source)
+                  Left CKPaid -> False <$ logNote ("names cleanup: the unpaid order of invoice " <> ref <> " is kept with its balance, because the invoice received a payment")
+                  Left (CKHolder (RegistrationId source)) -> False <$ logError ("names cleanup: the unpaid order of invoice " <> ref <> " is kept because it still holds the balance of registration " <> source)
       where
-        keep why = False <$ logWarn ("names cleanup: unpaid registration " <> ridText <> " is kept until the next run, " <> why)
+        keep why = False <$ logWarn ("names cleanup: the unpaid order of invoice " <> ref <> " is kept until the next run, " <> why)
 
 -- | At the idle cadence, so a failing rate read costs one read per coin per pass while browsers wait.
 creditDue :: PollerEnv -> UTCTime -> IO Bool

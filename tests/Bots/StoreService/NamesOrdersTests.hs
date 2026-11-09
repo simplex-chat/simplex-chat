@@ -1498,8 +1498,8 @@ testCleanupIn ctx@Ctx {cStore = st} = do
   isNothing <$> getInvoice st (InvoiceId "inv-gone") `shouldReturn` True
   Just InvoiceRow {irPayment = latePayment} <- getInvoice st (InvoiceId "inv-late")
   (ipCryptoPaid <$> latePayment) `shouldBe` Just (Just "0.00078")
-  logs `shouldSatisfy` T.isInfixOf "registration late is kept with its balance, because its invoice received a payment"
-  logs `shouldSatisfy` T.isInfixOf "registration unread is kept until the next run"
+  logs `shouldSatisfy` T.isInfixOf ("the unpaid order of invoice " <> ref "late" <> " is kept with its balance, because the invoice received a payment")
+  logs `shouldSatisfy` T.isInfixOf ("the unpaid order of invoice " <> ref "unread" <> " is kept until the next run")
   reads' <- stubReads
   sort reads' `shouldBe` [ref "gone", ref "late"]
   writeIORef failing False
