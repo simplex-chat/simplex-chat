@@ -323,7 +323,7 @@ export class Actions {
     } catch (error) {
       action.error = errorText(error)
       this.decide(action, "failed")
-      log(sentence(`Action ${action.n}: failed: ${oneLine(action.error)}`))
+      log(sentence(action, `Action ${action.n}: failed: ${oneLine(action.error)}`))
       return false
     }
   }
@@ -401,8 +401,8 @@ export function leaveVerbs({chat}: Pick<LeaveAction, "chat">): {present: string;
 
 function performedText(action: Action): string {
   const failure = action.state === "failed" ? `; failed: ${oneLine(action.error ?? "")}` : ""
-  if (action.mode === "host") return sentence(`performed without approval (mode host)${failure}`)
-  if (failure !== "") return sentence(`failed: ${oneLine(action.error ?? "")}`)
+  if (action.mode === "host") return sentence(action, `performed without approval (mode host)${failure}`)
+  if (failure !== "") return sentence(action, `failed: ${oneLine(action.error ?? "")}`)
   if (action.tool === "send") return "sent."
   if (action.tool === "leave") return `${leaveVerbs(action).past}.`
   if (action.tool === "download") return "downloaded."
@@ -424,6 +424,6 @@ function progressText(action: Action): string {
   }
 }
 
-function sentence(text: string): string {
-  return text.endsWith(".") ? text : `${text}.`
+function sentence({session}: Action, text: string): string {
+  return session !== undefined && text.endsWith(".") ? text : `${text}.`
 }

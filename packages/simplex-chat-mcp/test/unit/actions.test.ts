@@ -89,23 +89,28 @@ describe("actions in mode requests", () => {
     expect(logLines.at(-1)).toBe("Action 1 approved by Alice: failed: bad ]52;c;eA== next.")
   })
 
-  it("logs a failure whose error ends with a period with one period, after a perform, in mode host and after a card post", async () => {
-    const error = "SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences."
+  it.each([
+    ["of a session with one period", 1, ""],
+    ["of serve with a second period, as 0.2", undefined, "."],
+  ] as const)("logs a failure whose error ends with a period %s, after a perform, in mode host and after a card post", async (_, session, period) => {
+    const error = "Message is too large! Please reduce the message size and send again."
     const fake = fakeHooks()
     const actions = actionsWith("requests", fake)
-    actions.approve(await pendingAction(actions), "Alice")
+    const approved = actions.create("a", sendFields(), undefined, session)
+    await settled()
+    actions.approve(approved, "Alice")
     fake.performs[0].reject(new Error(error))
     await settled()
-    createIn(actions, 1, "host", "h", sendFields("in mode host"))
+    actions.create("h", sendFields("in mode host"), undefined, session, "host")
     await settled()
     fake.performs[1].reject(new Error(error))
     await settled()
     fake.hooks.postCard = async () => {
       throw new Error(error)
     }
-    createIn(actions, 1, "requests", "c", sendFields("with a card"))
+    actions.create("c", sendFields("with a card"), undefined, session)
     await settled()
-    expect(logLines.filter(line => line.includes(" failed: "))).toEqual([`Action 1 approved by Alice: failed: ${error}`, `Action 2: performed without approval (mode host); failed: ${error}`, `Action 3: failed: ${error}`])
+    expect(logLines.filter(line => line.includes(" failed: "))).toEqual([`Action 1 approved by Alice: failed: ${error}${period}`, `Action 2: performed without approval (mode host); failed: ${error}${period}`, `Action 3: failed: ${error}${period}`])
   })
 
   it("reports connect outcomes", async () => {

@@ -631,7 +631,7 @@ stdout ([log.ts:37-39](../src/log.ts#L37-L39)):
 | stop | `Cancelled K action.` or `Cancelled K actions.` when K > 0<br>`Stopping: sending K cancelled card(s), up to S s. Ctrl-C to stop now.` when cards were edited or posted and S > 0<br>`Stopped.` | [serve.ts:148](../src/serve.ts#L148), [:161-175](../src/serve.ts#L161-L175), [:152](../src/serve.ts#L152) |
 | membership messages | see [2.4](#24-membership-messages) | |
 
-In the lines with `failed: ERROR.`, the last period is added only when ERROR does not end with one ([actions.ts:427-429](../src/actions.ts#L427-L429)); the line of a file not sent ends with a period after every REASON, as in 0.2.
+In the plugin's lines with `failed: ERROR.`, the actions of a session, the last period is added only when ERROR does not end with one ([actions.ts:427-429](../src/actions.ts#L427-L429)); in `serve` these lines end with a period after every ERROR, and the line of a file not sent after every REASON, as in 0.2.
 
 stderr: `CONTEXT: ERROR` from `logError` ([log.ts:41-43](../src/log.ts#L41-L43)), with CONTEXT one of `action N`, `action N card`, `action N card image`, `action N file`, `control chat command`, `EVENT in the agent control chat`, `EVENT event`, `refused file`, `file not sent`, `download of file N`, `file N`, `moving file N`, `cancelling file N`, `resizing PATH`, `preview`, `MCP`, `HTTP request`, `stop`, `simplex-mcp`. The library's download lines are written to stderr.
 

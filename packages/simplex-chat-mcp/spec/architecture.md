@@ -201,7 +201,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | `decided` | [249](../src/actions.ts#L249) | wait with progress until a decided state, `until`, or the abort signal |
 | `stop` | [284](../src/actions.ts#L284) | cancellation of pending and performing actions |
 | `scheduleExpiry`, `expire`, `forgetExpired` | [297-316](../src/actions.ts#L297-L316) | the expiry timer of one action, at most 60 s; its expiry, or a new timer when the timer, on the monotonic clock, fires before the expiry time on the wall clock; its removal once decided, without open calls and past its expiry time; an action of `serve` that expires is kept until the next owner command or its check 60 s later, as in 0.2 |
-| `summary`, `performedText`, `progressText`, `sentence` | [382-429](../src/actions.ts#L382-L429) | log and progress texts; a log line ended with one period, also after an error that ends with one |
+| `summary`, `performedText`, `progressText`, `sentence` | [382-429](../src/actions.ts#L382-L429) | log and progress texts; a log line ended with a period: for an action of a session, one also after an error that ends with one; for an action of `serve`, a period after every error, as in 0.2 |
 
 Hooks are bound in [`serve.ts:96-102`](../src/serve.ts#L96-L102): `refusal`, `saveCounter`, `postCard` and `outcome` to `Control`; `perform` to `AgentTools`.
 
