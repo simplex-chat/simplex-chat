@@ -42,7 +42,10 @@ codeLifetime = 365 * 24 * 60 * 60
 
 -- | Thrown inside the transaction that read the registration, so the invoice's own change is rolled back with it.
 newtype RegistrationChanged = RegistrationChanged RegistrationId
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show RegistrationChanged where
+  show _ = "RegistrationChanged"
 
 instance Exception RegistrationChanged
 
