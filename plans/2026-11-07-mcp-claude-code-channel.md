@@ -24,7 +24,7 @@ Done when:
 6   connect, send, download and leave cards in the session group; chats owned by sessions; /give  end-to-end tests
 7   the group description shows the model and effort and follows a change                         unit test; real session
 8   decisions 17-23 hold                                                                          unit tests
-9   serve: all 0.2 unit and end-to-end tests pass unchanged                                      CI
+9   serve: all 0.2 unit and end-to-end tests pass unchanged                                      the run "The tests of 0.2" of TESTING.md
 10  feature complete and tested; the source lines are an estimate, not a limit                     review report
 11  one page presents the PR; an independent reviewer confirms it matches the diff               review report
 ```
@@ -181,6 +181,7 @@ Decided on 2026-11-09, review round 8:
 106. The expiry timer of an action waits at most 60 s and is set again until the expiry time, so an action whose expiry time passes while the computer sleeps expires within 60 s after it wakes, in `serve` as in 0.2.
 107. Question 2 (a) of review round 8, recommended until the user decides on the UX page: in a session group, a card the core refuses with `feature not allowed Files and media` is posted again as text, without the preview, and its later edits are text; sends and downloads of images and videos to other chats go on. `serve` keeps 0.2's behaviour: the action fails with the core's error.
 108. Question 3 (a) of review round 8: in a session group, `/forward` whose post the core refuses with `feature not allowed Files and media` gets `Action N: ` + FILES OFF; `serve` keeps ``Action N: the file was not received: `ERROR`.``
+109. Question 1 (b) of review round 8, recommended until the user decides: the unit and end-to-end tests of 0.2 (be668564d) pass unchanged on this source. `qrCodeText` is exported from `control.ts` again; `serve` updates its control chat from the profile read at the start, the plugin's groups from the current profile in the chat database (decision 90); a pending action of `serve` that expires is kept until its next check, 60 s later, while the plugin's is removed at once when no call is open. An action without a session is an action of `serve`.
 
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
