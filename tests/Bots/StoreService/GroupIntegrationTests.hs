@@ -13,7 +13,7 @@ module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, name
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..), ServiceConfig (devAcceptUnverifiedStoreReceipts), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
 import StoreService.Group.Command (CmdAction (..), groupCmdAction, maxUses)
-import StoreService.Names.Abi (selector, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode, spendLandedPrepaidCode)
@@ -25,7 +25,7 @@ import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
-import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection)
+import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, sponsorAddr)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), answerCall, awaitSent, plainTerms, setFault, withFakeEthNode)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
@@ -330,9 +330,13 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   svc <- prepareGroupService ps
   let onFakeNode line = if "rpc_url" `T.isPrefixOf` line then "rpc_url = " <> T.pack fnUrl else line
       controller = either error id $ strDecode $ encodeUtf8 controllerAddr
+      sponsor = either error id $ strDecode $ encodeUtf8 sponsorAddr
+      registrar = either error id $ strDecode "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
   -- the order's commitment, digestFixture 1, not yet committed
   forM_ [("minCommitmentAge()", "", 60 :: Int), ("maxCommitmentAge()", "", 86400), ("commitments(bytes32)", digestFixture 1, 0)] $ \(signature, args, value) ->
     answerCall node controller (selector signature <> args) $ Returns $ uint256 value
+  answerCall node controller (selector "rentPriceUSD(string,uint256)" <> abiTuple [Dynamic $ abiBytes "aaaaaaaaaaa", Static $ uint256 (69292800 :: Int)]) $ Returns $ uint256 (100 :: Int) <> uint256 (0 :: Int)
+  answerCall node sponsor (selector "registrarAllowance(address)" <> addressWord registrar) $ Returns $ uint256 (100 :: Int)
   (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> map onFakeNode chainSection} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
