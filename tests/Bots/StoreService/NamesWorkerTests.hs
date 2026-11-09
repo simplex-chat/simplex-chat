@@ -143,7 +143,8 @@ workerTests = describe "StoreService names: worker" $ do
     it "registers a failed order whose owner holds the name, and one whose register row mined while the owner no longer holds it, refunding nothing" testCloseLanded
     it "refuses an unknown reference, an order not failed, a failed code order and a failed chain read, changing nothing" testCloseRefused
     it "refuses an order changed during its chain check as changed, writing nothing" testCloseLostRace
-    it "refuses a balance another order holds, rolling back the taken write and the credit, and refunds the whole balance once released" testCloseHeld
+    it "refuses a balance another order holds, writing nothing, and refunds the whole balance once released" testCloseHeld
+    it "rolls back the taken write and the credit when the refund is refused" testCloseRollback
 
 -- fixtures
 
@@ -1358,6 +1359,13 @@ testCloseLostRace = withWorker $ \W {wCtx = ctx@Ctx {cNode}} -> do
   releaseGate gate
   timeout prompt (wait closing) >>= maybe (fail "the close did not finish") pure >>= (`shouldBe` CLRefused CFChanged)
   stored ctx r `shouldReturn` changed
+  figuresOf ctx r `shouldReturn` Nothing
+
+testCloseRollback :: IO ()
+testCloseRollback = withWorker $ \W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder $ \o -> (failedPhase o) {nrPrice = 0}
+  closeOf ctx r `shouldReturn` CLRefused CFBalanceChanged
+  stored ctx r `shouldReturn` r
   figuresOf ctx r `shouldReturn` Nothing
 
 testCloseHeld :: IO ()
