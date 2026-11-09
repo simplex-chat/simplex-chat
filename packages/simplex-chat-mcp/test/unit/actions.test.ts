@@ -154,6 +154,17 @@ describe("actions in mode requests", () => {
     expect(logLines.filter(line => line === "Action 1 expired.")).toHaveLength(1)
   })
 
+  it("expires an action of serve within a minute after the computer wakes from a sleep past its expiry time, without an owner command", async () => {
+    jest.useFakeTimers()
+    const actions = actionsWith("requests", fakeHooks(), 1, 1)
+    const action = actions.create("k", sendFields())
+    await settled()
+    jest.setSystemTime(Date.now() + 3_600_000)
+    expect(action.state).toBe("pending")
+    jest.advanceTimersByTime(60_000)
+    expect(action.state).toBe("expired")
+  })
+
   it("clears the timer of an action expired by the wall clock", async () => {
     jest.useFakeTimers()
     const fake = fakeHooks()

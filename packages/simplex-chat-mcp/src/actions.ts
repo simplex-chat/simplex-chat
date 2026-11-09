@@ -1,5 +1,5 @@
 import {errorText, log, logError, oneLine} from "./log"
-import {Changes, Collected, FileOffer, FileType, ToolCall, maxTimer, nextChange, reportProgress, utcMinutes} from "./messages"
+import {Changes, Collected, FileOffer, FileType, ToolCall, nextChange, reportProgress, utcMinutes} from "./messages"
 import type {ConnectInput, DownloadInput, LeaveInput, PlanSummary, SendInput} from "./tools"
 
 export type Mode = "requests" | "host"
@@ -8,6 +8,7 @@ export type Standing = "messages" | "files"
 
 export const maxPending = 20
 const maxPerforming = 20
+const expiryCheck = 60_000
 
 export const lostMessage = "The agent lost its control chat. The person who runs it has to restart it with --reset-owners."
 export const stoppingMessage = "The server is stopping."
@@ -294,7 +295,7 @@ export class Actions {
   }
 
   private scheduleExpiry(action: Action): void {
-    const timer = setTimeout(() => this.expire(action), Math.min(action.expires - Date.now(), maxTimer))
+    const timer = setTimeout(() => this.expire(action), Math.min(action.expires - Date.now(), expiryCheck))
     this.expiries.set(action.n, timer.unref())
   }
 

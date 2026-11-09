@@ -76,7 +76,7 @@ Data flow of a tool call:
 2. The server checks Host, Origin, token, path and readiness, then passes the request to the SDK handler ([`http.ts:19-28`](../src/http.ts#L19-L28)).
 3. An `McpServer` is built from the factory for each request, and the arguments are validated against the input schema by the SDK ([`serve.ts:107-111`](../src/serve.ts#L107-L111), [`mcp-BumlNux0.cjs:1812-1817`](../node_modules/@modelcontextprotocol/server/dist/mcp-BumlNux0.cjs#L1812-L1817)).
 4. The handler result is returned by `AgentTools.call` as `structuredContent` and as JSON text ([`tools.ts:545-552`](../src/tools.ts#L545-L552)).
-5. The server calls `ChatApi` methods of the core ([`messages.ts:271-287`](../src/messages.ts#L271-L287)); actions are created in `Actions` and shown to the owner by `Control` ([`actions.ts:179-214`](../src/actions.ts#L179-L214)).
+5. The server calls `ChatApi` methods of the core ([`messages.ts:271-287`](../src/messages.ts#L271-L287)); actions are created in `Actions` and shown to the owner by `Control` ([`actions.ts:180-215`](../src/actions.ts#L180-L215)).
 6. The core emits events; the handler of `serve.ts` passes them to the agent control chat and to `AgentTools.onEvent`, which passes them to the tools and the item watch ([`serve.ts:125-137`](../src/serve.ts#L125-L137), [`tools.ts:666-693`](../src/tools.ts#L666-L693)).
 
 ---
@@ -185,22 +185,22 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | `Mode` | [5](../src/actions.ts#L5) | `requests`, `host` |
 | `State` | [6](../src/actions.ts#L6) | `pending`, `performing`, `done`, `failed`, `rejected`, `expired` |
 | `Standing` | [7](../src/actions.ts#L7) | `messages`, `files` |
-| `ToolError` | [17](../src/actions.ts#L17) | errors the model can correct; text returned as is |
-| `Subject` | [25](../src/actions.ts#L25) | kind, name, SimpleX name, incognito flag of a card |
-| `ConnRef` | [32](../src/actions.ts#L32) | pending connection, contact or group of a connect action |
-| `HostTexts` | [19](../src/actions.ts#L19) | refusal texts of a lost control chat, of a stop and of the limit of pending actions: `lostMessage`, `stoppingMessage` and the owner's text for `serve`, the hub's texts for the plugin |
-| `ActionRecord` | [38](../src/actions.ts#L38) | number, session number of the plugin, mode, key, times, change signal, standing flag, state, card, decider, open calls, interrupted flag, ended flag, error, card image |
-| `ConnectAction`, `SendAction`, `LeaveAction`, `DownloadAction` | [58-117](../src/actions.ts#L58-L117) | per-tool fields; `Attachment`, the file of a send |
-| `ModeAction`, `PermissionAction` | [119-132](../src/actions.ts#L119-L132) | the plugin's actions: a switch to mode `host`; a tool use of Claude Code, with the bytes left for its input preview |
-| `ActionHooks` | [138](../src/actions.ts#L138) | `refusal`, `saveCounter`, `postCard`, `perform`, `outcome` |
-| `Actions` | [146](../src/actions.ts#L146) | action map, one expiry timer per action, posting and outcome promises |
-| `create` | [179](../src/actions.ts#L179) | state by the action's mode, refusal checks, number, log line, counter write, card |
-| `ofSession`, `remove`, `openCall`, `closeCall`, `end` | [216-240](../src/actions.ts#L216-L240) | the actions of one session; removal; open call count; an expiry before the expiry time, marked ended |
-| `expireDue` | [242](../src/actions.ts#L242) | expiry of every action past its expiry time |
-| `decided` | [248](../src/actions.ts#L248) | wait with progress until a decided state, `until`, or the abort signal |
-| `stop` | [283](../src/actions.ts#L283) | cancellation of pending and performing actions |
-| `scheduleExpiry`, `expire`, `forgetExpired` | [296-313](../src/actions.ts#L296-L313) | the expiry timer of one action; its expiry, or a new timer when the timer, on the monotonic clock, fires before the expiry time on the wall clock; its removal once decided, without open calls and past its expiry time |
-| `summary`, `performedText`, `progressText` | [379-422](../src/actions.ts#L379-L422) | log and progress texts |
+| `ToolError` | [18](../src/actions.ts#L18) | errors the model can correct; text returned as is |
+| `Subject` | [26](../src/actions.ts#L26) | kind, name, SimpleX name, incognito flag of a card |
+| `ConnRef` | [33](../src/actions.ts#L33) | pending connection, contact or group of a connect action |
+| `HostTexts` | [20](../src/actions.ts#L20) | refusal texts of a lost control chat, of a stop and of the limit of pending actions: `lostMessage`, `stoppingMessage` and the owner's text for `serve`, the hub's texts for the plugin |
+| `ActionRecord` | [39](../src/actions.ts#L39) | number, session number of the plugin, mode, key, times, change signal, standing flag, state, card, decider, open calls, interrupted flag, ended flag, error, card image |
+| `ConnectAction`, `SendAction`, `LeaveAction`, `DownloadAction` | [59-118](../src/actions.ts#L59-L118) | per-tool fields; `Attachment`, the file of a send |
+| `ModeAction`, `PermissionAction` | [120-133](../src/actions.ts#L120-L133) | the plugin's actions: a switch to mode `host`; a tool use of Claude Code, with the bytes left for its input preview |
+| `ActionHooks` | [139](../src/actions.ts#L139) | `refusal`, `saveCounter`, `postCard`, `perform`, `outcome` |
+| `Actions` | [147](../src/actions.ts#L147) | action map, one expiry timer per action, posting and outcome promises |
+| `create` | [180](../src/actions.ts#L180) | state by the action's mode, refusal checks, number, log line, counter write, card |
+| `ofSession`, `remove`, `openCall`, `closeCall`, `end` | [217-241](../src/actions.ts#L217-L241) | the actions of one session; removal; open call count; an expiry before the expiry time, marked ended |
+| `expireDue` | [243](../src/actions.ts#L243) | expiry of every action past its expiry time |
+| `decided` | [249](../src/actions.ts#L249) | wait with progress until a decided state, `until`, or the abort signal |
+| `stop` | [284](../src/actions.ts#L284) | cancellation of pending and performing actions |
+| `scheduleExpiry`, `expire`, `forgetExpired` | [297-314](../src/actions.ts#L297-L314) | the expiry timer of one action; its expiry, or a new timer when the timer, on the monotonic clock, fires before the expiry time on the wall clock; its removal once decided, without open calls and past its expiry time |
+| `summary`, `performedText`, `progressText` | [380-423](../src/actions.ts#L380-L423) | log and progress texts |
 
 Hooks are bound in [`serve.ts:96-102`](../src/serve.ts#L96-L102): `refusal`, `saveCounter`, `postCard` and `outcome` to `Control`; `perform` to `AgentTools`.
 
@@ -311,17 +311,17 @@ Hooks are bound in [`serve.ts:96-102`](../src/serve.ts#L96-L102): `refusal`, `sa
 
 | Item | Holder | Written by | Read by |
 |---|---|---|---|
-| Actions | `Actions.actions` map ([actions.ts:150](../src/actions.ts#L150)) | `create`, `remove`, `forgetExpired` | tools, `Control` |
-| Expiry timers | `Actions.expiries`, one per action ([actions.ts:151](../src/actions.ts#L151)) | `scheduleExpiry`, `expire`, `remove` | |
-| Open calls of an action | `ActionRecord.open` ([:50](../src/actions.ts#L50)) | `openCall` and `closeCall` from `actionResult` ([tools.ts:762](../src/tools.ts#L762), [:771](../src/tools.ts#L771)) | `list`, `forgetExpired` |
-| Collected replies | `ConnectAction.messages`, `SendAction.responses` ([:63](../src/actions.ts#L63), [:94](../src/actions.ts#L94)) | `ChatItemsWatch.collect` | `connect`, `send` results |
+| Actions | `Actions.actions` map ([actions.ts:151](../src/actions.ts#L151)) | `create`, `remove`, `forgetExpired` | tools, `Control` |
+| Expiry timers | `Actions.expiries`, one per action ([actions.ts:152](../src/actions.ts#L152)) | `scheduleExpiry`, `expire`, `remove` | |
+| Open calls of an action | `ActionRecord.open` ([:51](../src/actions.ts#L51)) | `openCall` and `closeCall` from `actionResult` ([tools.ts:762](../src/tools.ts#L762), [:771](../src/tools.ts#L771)) | `list`, `forgetExpired` |
+| Collected replies | `ConnectAction.messages`, `SendAction.responses` ([:64](../src/actions.ts#L64), [:95](../src/actions.ts#L95)) | `ChatItemsWatch.collect` | `connect`, `send` results |
 | Item listeners | `ChatItemsWatch.listeners` ([messages.ts:87](../src/messages.ts#L87)) | `collect` | event dispatch |
 | Downloads | `AgentTools.downloads`, one per file ID ([tools.ts:529](../src/tools.ts#L529)) | `downloadTo` | file events, checks, `/delete CHAT files` |
 | Forwards | `AgentTools.forwarding`, the copy for the post per file ID ([tools.ts:530](../src/tools.ts#L530)) | `forwardFile` | `downloadFile`, before it moves a forwarded file |
 | Rejected files | `AgentTools.rejectedFiles` ([tools.ts:531](../src/tools.ts#L531)) | `downloadResult` ([:1136-1137](../src/tools.ts#L1136-L1137)) | the file field; `download`, which then skips the files approval ([:1099](../src/tools.ts#L1099)) |
 | Count of file descriptions | `AgentTools.describedFiles` ([tools.ts:532-533](../src/tools.ts#L532-L533)) | `onFileDescription` | `fileServers` |
 | Members of the control chat | `Control.members` ([control.ts:91](../src/control.ts#L91)) | `refreshMembers` ([:538-540](../src/control.ts#L538-L540)) | approver checks |
-| Mode, expiry, owners list, stop wait | `ServeOptions` of the run; the mode also in `Actions.mode` and in each action ([actions.ts:41](../src/actions.ts#L41)) | CLI | all modules |
+| Mode, expiry, owners list, stop wait | `ServeOptions` of the run; the mode also in `Actions.mode` and in each action ([actions.ts:42](../src/actions.ts#L42)) | CLI | all modules |
 
 ### 3.2 Chat database custom data
 
@@ -402,14 +402,14 @@ Owner commands are queued in a second chain, independent of the membership chain
 On `SIGINT` or `SIGTERM` the server runs one stop; a later signal ends its wait for cancelled cards ([serve.ts:46-62](../src/serve.ts#L46-L62)). `RunningServer.stop` ([serve.ts:143-153](../src/serve.ts#L143-L153)):
 
 1. Events are ignored from now on.
-2. `Actions.stop` starts: new actions are refused with `The server is stopping.`; the expiry timers are cleared; cards being posted are awaited; pending and performing actions are marked interrupted; the stop signal of the performs is aborted, which ends the wait of a `connect` for its connection; their cards are edited, or posted when they have no card; outcome edits already in progress are awaited ([actions.ts:283-313](../src/actions.ts#L283-L313)).
+2. `Actions.stop` starts: new actions are refused with `The server is stopping.`; the expiry timers are cleared; cards being posted are awaited; pending and performing actions are marked interrupted; the stop signal of the performs is aborted, which ends the wait of a `connect` for its connection; their cards are edited, or posted when they have no card; outcome edits already in progress are awaited ([actions.ts:284-314](../src/actions.ts#L284-L314)).
 3. In parallel with step 2, the HTTP server is closed with all connections, and open calls are aborted ([http.ts:48-52](../src/http.ts#L48-L52)).
 4. `Cancelled K action(s).` when K > 0 ([serve.ts:148](../src/serve.ts#L148)).
 5. When cards were edited or posted at the stop and the control chat is not lost, the server waits `--stop-wait` seconds, 10 by default, for them to be sent; a second signal ends the wait ([serve.ts:149](../src/serve.ts#L149), [:161-175](../src/serve.ts#L161-L175)).
 6. `chat.close()`: the chat is stopped, then the store is closed ([api.ts:165-170](../../simplex-chat-nodejs/src/api.ts#L165-L170)).
 7. The lock is removed, `Stopped.` is logged, and the process exits with code 0, or 1 after an error ([serve.ts:151-152](../src/serve.ts#L151-L152), [:52-58](../src/serve.ts#L52-L58)).
 
-Performs in progress are not awaited; when one ends, its card stays as edited at the stop and no line is logged, because the action is interrupted ([actions.ts:343](../src/actions.ts#L343)).
+Performs in progress are not awaited; when one ends, its card stays as edited at the stop and no line is logged, because the action is interrupted ([actions.ts:344](../src/actions.ts#L344)).
 
 ### 4.4 The lock
 
@@ -440,9 +440,9 @@ The mode is set by `--approve` for one run ([cli.ts:96-98](../src/cli.ts#L96-L98
 | `requests` | `pending`<br>`performing` for a send under a standing approval, and for a download under a files approval | card with commands<br>outcome as a new message after a standing send; none after a download without a card | none |
 | `host` | `performing` | outcome as a new message after the perform; none for a download | `{"anthropic/requiresUserInteraction": true}` |
 
-An action keeps the mode it was created in, `ActionRecord.mode`; its card and its log line follow that mode ([actions.ts:179](../src/actions.ts#L179), [:192](../src/actions.ts#L192), [control.ts:148](../src/control.ts#L148)).
+An action keeps the mode it was created in, `ActionRecord.mode`; its card and its log line follow that mode ([actions.ts:180](../src/actions.ts#L180), [:193](../src/actions.ts#L193), [control.ts:148](../src/control.ts#L148)).
 
-Sources: [actions.ts:192](../src/actions.ts#L192), [tools.ts:505](../src/tools.ts#L505), [control.ts:187-194](../src/control.ts#L187-L194), [:571-573](../src/control.ts#L571-L573). In both modes a new action is refused unless the control chat has an approver ([control.ts:153-157](../src/control.ts#L153-L157)).
+Sources: [actions.ts:193](../src/actions.ts#L193), [tools.ts:505](../src/tools.ts#L505), [control.ts:187-194](../src/control.ts#L187-L194), [:571-573](../src/control.ts#L571-L573). In both modes a new action is refused unless the control chat has an approver ([control.ts:153-157](../src/control.ts#L153-L157)).
 
 ### 5.2 Owners and approvers
 
@@ -481,19 +481,19 @@ Transitions, one per row:
 
 | Event | From | To | Code |
 |---|---|---|---|
-| call creates the action, mode `requests` | | `pending` | [actions.ts:192](../src/actions.ts#L192) |
-| call creates the action, mode `host` | | `performing` | [actions.ts:192](../src/actions.ts#L192) |
-| `send` call under a standing approval, or `download` call under a files approval | | `performing` | [actions.ts:192](../src/actions.ts#L192) |
-| counter write or card post fails | `pending`<br>`performing` | `failed` | [actions.ts:315-326](../src/actions.ts#L315-L326) |
-| stop arrives while the counter of a `performing` action is written | `performing` | `pending`, interrupted | [actions.ts:328-333](../src/actions.ts#L328-L333) |
-| control chat lost | `pending` | `failed` | [actions.ts:275-281](../src/actions.ts#L275-L281) |
-| `/reject`, or `/leave CHAT` for a pending action of CHAT with a card | `pending` | `rejected` | [actions.ts:268-273](../src/actions.ts#L268-L273), [control.ts:338-340](../src/control.ts#L338-L340) |
-| expiry time passes | `pending` | `expired` | [actions.ts:301-309](../src/actions.ts#L301-L309) |
-| `/approve N`, `/approve CHAT N` and `/approve CHAT all` for other actions; `/receive N`, `/receive CHAT N` and `/receive CHAT N all` for downloads | `pending` | `performing` | [actions.ts:262-266](../src/actions.ts#L262-L266), [control.ts:276-285](../src/control.ts#L276-L285) |
-| perform throws | `performing` | `failed` | [actions.ts:339-342](../src/actions.ts#L339-L342) |
-| perform ends | `performing` | `done` | [actions.ts:337-338](../src/actions.ts#L337-L338) |
+| call creates the action, mode `requests` | | `pending` | [actions.ts:193](../src/actions.ts#L193) |
+| call creates the action, mode `host` | | `performing` | [actions.ts:193](../src/actions.ts#L193) |
+| `send` call under a standing approval, or `download` call under a files approval | | `performing` | [actions.ts:193](../src/actions.ts#L193) |
+| counter write or card post fails | `pending`<br>`performing` | `failed` | [actions.ts:316-327](../src/actions.ts#L316-L327) |
+| stop arrives while the counter of a `performing` action is written | `performing` | `pending`, interrupted | [actions.ts:329-334](../src/actions.ts#L329-L334) |
+| control chat lost | `pending` | `failed` | [actions.ts:276-282](../src/actions.ts#L276-L282) |
+| `/reject`, or `/leave CHAT` for a pending action of CHAT with a card | `pending` | `rejected` | [actions.ts:269-274](../src/actions.ts#L269-L274), [control.ts:338-340](../src/control.ts#L338-L340) |
+| expiry time passes | `pending` | `expired` | [actions.ts:302-310](../src/actions.ts#L302-L310) |
+| `/approve N`, `/approve CHAT N` and `/approve CHAT all` for other actions; `/receive N`, `/receive CHAT N` and `/receive CHAT N all` for downloads | `pending` | `performing` | [actions.ts:263-267](../src/actions.ts#L263-L267), [control.ts:276-285](../src/control.ts#L276-L285) |
+| perform throws | `performing` | `failed` | [actions.ts:340-343](../src/actions.ts#L340-L343) |
+| perform ends | `performing` | `done` | [actions.ts:338-339](../src/actions.ts#L338-L339) |
 
-`create` ([actions.ts:179-214](../src/actions.ts#L179-L214)):
+`create` ([actions.ts:180-215](../src/actions.ts#L180-L215)):
 
 ```
 create(key, fields, standingApprover?, session?, mode = Actions.mode):
@@ -531,13 +531,13 @@ stateDiagram-v2
   performing --> pending: stop during the counter write
 ```
 
-An action is removed from memory when its result is returned to a call ([tools.ts:768](../src/tools.ts#L768)), or once it is decided, its open call count is 0 and its expiry time has passed: checked at each decision, at the close of each call and at its expiry timer ([actions.ts:311-313](../src/actions.ts#L311-L313), [:231-234](../src/actions.ts#L231-L234), [:348-352](../src/actions.ts#L348-L352)). `serve` has one session, `undefined`, so the limits of 20 count all its actions. A `download` still performing at the end of `wait` is returned as `performing` and kept ([tools.ts:765](../src/tools.ts#L765)).
+An action is removed from memory when its result is returned to a call ([tools.ts:768](../src/tools.ts#L768)), or once it is decided, its open call count is 0 and its expiry time has passed: checked at each decision, at the close of each call and at its expiry timer ([actions.ts:312-314](../src/actions.ts#L312-L314), [:232-235](../src/actions.ts#L232-L235), [:349-353](../src/actions.ts#L349-L353)). `serve` has one session, `undefined`, so the limits of 20 count all its actions. A `download` still performing at the end of `wait` is returned as `performing` and kept ([tools.ts:765](../src/tools.ts#L765)).
 
 ### 5.4 Cards
 
-The server posts a card when a `pending` action is created, and edits it with `apiUpdateChatItem` at the outcome ([actions.ts:318](../src/actions.ts#L318), [control.ts:187-194](../src/control.ts#L187-L194)). For a `connect`, `send` or `leave` without a card (mode `host`, standing sends) the server posts the outcome as a new message; a `download` without a card gets none ([control.ts:571-573](../src/control.ts#L571-L573)). The text per state is built by [`cardText`](../src/control.ts#L646-L665); a card of a `send`, `reply` or `download` of an image or video file is an image or video message with the file's preview ([control.ts:516-536](../src/control.ts#L516-L536)); forms are listed in [API: cards](api.md#22-cards).
+The server posts a card when a `pending` action is created, and edits it with `apiUpdateChatItem` at the outcome ([actions.ts:319](../src/actions.ts#L319), [control.ts:187-194](../src/control.ts#L187-L194)). For a `connect`, `send` or `leave` without a card (mode `host`, standing sends) the server posts the outcome as a new message; a `download` without a card gets none ([control.ts:571-573](../src/control.ts#L571-L573)). The text per state is built by [`cardText`](../src/control.ts#L646-L665); a card of a `send`, `reply` or `download` of an image or video file is an image or video message with the file's preview ([control.ts:516-536](../src/control.ts#L516-L536)); forms are listed in [API: cards](api.md#22-cards).
 
-Outcomes are posted after `done` and `failed` ([actions.ts:345](../src/actions.ts#L345)), after `rejected` and `expired` ([:272](../src/actions.ts#L272), [:308](../src/actions.ts#L308)), and at stop ([:291](../src/actions.ts#L291)). They are skipped after the control chat is lost ([:291](../src/actions.ts#L291), [:345](../src/actions.ts#L345), [:355](../src/actions.ts#L355)).
+Outcomes are posted after `done` and `failed` ([actions.ts:346](../src/actions.ts#L346)), after `rejected` and `expired` ([:273](../src/actions.ts#L273), [:309](../src/actions.ts#L309)), and at stop ([:292](../src/actions.ts#L292)). They are skipped after the control chat is lost ([:292](../src/actions.ts#L292), [:346](../src/actions.ts#L346), [:356](../src/actions.ts#L356)).
 
 ### 5.5 Standing approvals
 
@@ -557,24 +557,24 @@ The plugin's approval of all files of `reply` in a session group is described in
 
 | Rule | Code |
 |---|---|
-| `expires = created + expireHours × 3600000`, `expireHours` 1 to 23, default 23 | [actions.ts:189](../src/actions.ts#L189), [cli.ts:79](../src/cli.ts#L79), [:102-104](../src/cli.ts#L102-L104) |
-| one unreferenced timer per action, set at its creation for `expires - now`, at most `maxTimer` ms; all actions past `expires` are also expired before each owner command | [actions.ts:296-299](../src/actions.ts#L296-L299), [messages.ts:8](../src/messages.ts#L8), [control.ts:244](../src/control.ts#L244) |
-| pending and due: `expired`, log `Action N expired.`, card edited to `Expired.` | [actions.ts:301-309](../src/actions.ts#L301-L309) |
-| decided, no open call, due: removed from memory | [actions.ts:311-313](../src/actions.ts#L311-L313) |
+| `expires = created + expireHours × 3600000`, `expireHours` 1 to 23, default 23 | [actions.ts:190](../src/actions.ts#L190), [cli.ts:79](../src/cli.ts#L79), [:102-104](../src/cli.ts#L102-L104) |
+| one unreferenced timer per action, set at its creation for `expires - now`, at most 60 s, and set again until the expiry time; all actions past `expires` are also expired before each owner command | [actions.ts:11](../src/actions.ts#L11), [:297-300](../src/actions.ts#L297-L300), [control.ts:244](../src/control.ts#L244) |
+| pending and due: `expired`, log `Action N expired.`, card edited to `Expired.` | [actions.ts:302-310](../src/actions.ts#L302-L310) |
+| decided, no open call, due: removed from memory | [actions.ts:312-314](../src/actions.ts#L312-L314) |
 | connect wait for the other side: at most until `created + 24 h - 10 min` | [tools.ts:153](../src/tools.ts#L153), [:814](../src/tools.ts#L814) |
 
-A timer follows the monotonic clock and `expires` the wall clock: a timer that fires before `expires` is set again ([actions.ts:304](../src/actions.ts#L304)).
+A timer follows the monotonic clock and `expires` the wall clock: a timer that fires before `expires` is set again, so an action whose expiry time passes while the computer sleeps expires within 60 s after it wakes ([actions.ts:305](../src/actions.ts#L305)).
 
 ### 5.7 Action counter
 
 | Rule | Code |
 |---|---|
 | initial value: `nextAction` of the control marker, or 1 | [serve.ts:96](../src/serve.ts#L96) |
-| a new action takes `next`, then `next` grows by 1 | [actions.ts:180](../src/actions.ts#L180), [:205](../src/actions.ts#L205) |
-| the new `next` is written before the card is posted | [actions.ts:317-318](../src/actions.ts#L317-L318) |
+| a new action takes `next`, then `next` grows by 1 | [actions.ts:181](../src/actions.ts#L181), [:206](../src/actions.ts#L206) |
+| the new `next` is written before the card is posted | [actions.ts:318-319](../src/actions.ts#L318-L319) |
 | one write at a time, also after a failed write | [control.ts:169-181](../src/control.ts#L169-L181) |
 | `--reset-owners` copies the value into the new control chat | [serve.ts:180-181](../src/serve.ts#L180-L181), [control.ts:609-612](../src/control.ts#L609-L612) |
-| a refused call leaves the counter unchanged | [actions.ts:204](../src/actions.ts#L204) |
+| a refused call leaves the counter unchanged | [actions.ts:205](../src/actions.ts#L205) |
 
 ---
 
@@ -618,7 +618,7 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 | mention names | valid name: `@name` or `@'name'`; others a code span | [`mentionText`](../src/control.ts#L793-L796) |
 | errors on cards | folded to one line, one code span | [control.ts:659](../src/control.ts#L659) |
 | `--owners` part of restart lines in the chat | one code span | [control.ts:88](../src/control.ts#L88), [:878-880](../src/control.ts#L878-L880) |
-| terminal names and errors of actions | folded to one line | [actions.ts:208-209](../src/actions.ts#L208-L209), [:399-409](../src/actions.ts#L399-L409), [control.ts:87](../src/control.ts#L87) |
+| terminal names and errors of actions | folded to one line | [actions.ts:209-210](../src/actions.ts#L209-L210), [:400-410](../src/actions.ts#L400-L410), [control.ts:87](../src/control.ts#L87) |
 | tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, file names, downloaded files, `description`, `welcome` and `commands` with their labels and params as data, not instructions; the instructions take a chat's messages as prompts only when the user said so in the session, and limit what the agent shares about its user | [tools.ts:196](../src/tools.ts#L196), [:200](../src/tools.ts#L200), [:205](../src/tools.ts#L205), [:230-231](../src/tools.ts#L230-L231), [:241-246](../src/tools.ts#L241-L246), [:409](../src/tools.ts#L409), [:451](../src/tools.ts#L451) |
 
 The server writes the tappable form `/'...'` only in the card's command line ([control.ts:702-717](../src/control.ts#L702-L717)), in `/'revoke CHAT'` of standing cards and replies ([:657](../src/control.ts#L657), [:300](../src/control.ts#L300)), and in `/'delete CHAT files'` of the kept-files message ([:348](../src/control.ts#L348)).
@@ -692,7 +692,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | stop wait | 0 to 60 s, default 10 | [cli.ts:84](../src/cli.ts#L84), [:105-107](../src/cli.ts#L105-L107) |
 | error details | 500 characters | [log.ts:4](../src/log.ts#L4) |
 | progress interval | 60 s | [messages.ts:7](../src/messages.ts#L7) |
-| longest expiry timer | 2147483647 ms, set again when it fires early | [messages.ts:8](../src/messages.ts#L8), [actions.ts:297](../src/actions.ts#L297) |
+| expiry timer | at most 60 s, set again until the expiry time | [actions.ts:11](../src/actions.ts#L11), [:298](../src/actions.ts#L298) |
 | HTTP body | 4 MiB | [server index.cjs:254](../node_modules/@modelcontextprotocol/server/dist/index.cjs#L254) |
 | SSE keep-alive | 15 s | [mcp-BumlNux0.cjs:64](../node_modules/@modelcontextprotocol/server/dist/mcp-BumlNux0.cjs#L64) |
 | agent NAME | 1 to 32 characters | [cli.ts:170](../src/cli.ts#L170) |
@@ -1079,8 +1079,8 @@ Tool-use state machine, one action of tool `permission` per request:
 | `permission_request` | | `pending`, card posted | [hub.ts:169-170](../src/hub.ts#L169-L170) |
 | `/approve N` | `pending` | `performing`, `allow` pushed, then `done` | [hub.ts:172-173](../src/hub.ts#L172-L173), [tools.ts:554-567](../src/tools.ts#L554-L567) |
 | `/reject N` | `pending` | `rejected`, `deny` pushed | [hub.ts:172-173](../src/hub.ts#L172-L173) |
-| a prompt or an answer of a hook that started after the card's creation, end of the last attachment | `pending` | `expired`, card edited to `Ended.` | [hub.ts:181](../src/hub.ts#L181), [:201-205](../src/hub.ts#L201-L205), [daemon.ts:321](../src/daemon.ts#L321), [actions.ts:236-240](../src/actions.ts#L236-L240) |
-| expiry | `pending` | `expired`, card edited to `Expired.` | [actions.ts:301-309](../src/actions.ts#L301-L309) |
+| a prompt or an answer of a hook that started after the card's creation, end of the last attachment | `pending` | `expired`, card edited to `Ended.` | [hub.ts:181](../src/hub.ts#L181), [:201-205](../src/hub.ts#L201-L205), [daemon.ts:321](../src/daemon.ts#L321), [actions.ts:237-241](../src/actions.ts#L237-L241) |
+| expiry | `pending` | `expired`, card edited to `Expired.` | [actions.ts:302-310](../src/actions.ts#L302-L310) |
 | `done`, `rejected` or `expired` | | removed from the session's actions | [hub.ts:174-176](../src/hub.ts#L174-L176) |
 
 ```mermaid
@@ -1183,4 +1183,4 @@ Sources: [hub.ts:153-205](../src/hub.ts#L153-L205), [:227-291](../src/hub.ts#L22
 | cancelled cards wait at stop | 10 s | [hub.ts:21](../src/hub.ts#L21) |
 | `daemon.log` | emptied over 10 MB, at a spawn and every hour | [files.ts:9](../src/files.ts#L9), [:85-88](../src/files.ts#L85-L88), [daemon.ts:20](../src/daemon.ts#L20) |
 | socket path | 103 bytes: `sun_path` of `sockaddr_un` holds 104 bytes on macOS and 108 on Linux, with the terminating NUL | [files.ts:8](../src/files.ts#L8) |
-| actions per session | 20 pending, 20 performing | [actions.ts:9-10](../src/actions.ts#L9-L10), [:198-202](../src/actions.ts#L198-L202) |
+| actions per session | 20 pending, 20 performing | [actions.ts:9-10](../src/actions.ts#L9-L10), [:199-203](../src/actions.ts#L199-L203) |

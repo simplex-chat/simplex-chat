@@ -58,7 +58,7 @@
 | An aborted call ends with the result `Cancelled.`, `isError: true`, which the SDK discards | [tools.ts:495](../src/tools.ts#L495), [:507](../src/tools.ts#L507) |
 | With a `progressToken` in `_meta`, `notifications/progress` is sent at the start of each wait and every 60 s, with `progress` 0, 1, 2, ... and a `message` | [tools.ts:1709-1719](../src/tools.ts#L1709-L1719), [messages.ts:305-309](../src/messages.ts#L305-L309) |
 | The call is aborted when the client closes the response stream or sends `notifications/cancelled`; the action is kept | [src-BhnGYybN.cjs:6338-6341](../node_modules/@modelcontextprotocol/server/dist/src-BhnGYybN.cjs#L6338-L6341), [:6425](../node_modules/@modelcontextprotocol/server/dist/src-BhnGYybN.cjs#L6425) |
-| A call with the same tool and action fields as an action in memory is attached to it; the key is the JSON of the session number, `undefined` for `serve`, the tool and the fields | [tools.ts:1701-1703](../src/tools.ts#L1701-L1703), [:746-748](../src/tools.ts#L746-L748), [actions.ts:175-177](../src/actions.ts#L175-L177) |
+| A call with the same tool and action fields as an action in memory is attached to it; the key is the JSON of the session number, `undefined` for `serve`, the tool and the fields | [tools.ts:1701-1703](../src/tools.ts#L1701-L1703), [:746-748](../src/tools.ts#L746-L748), [actions.ts:176-178](../src/actions.ts#L176-L178) |
 | Messages are marked read after the last wait of a call that is not aborted | [tools.ts:792](../src/tools.ts#L792), [:937](../src/tools.ts#L937), [:1266](../src/tools.ts#L1266) |
 
 Action fields of the key:
@@ -363,7 +363,7 @@ Command ([`commandsOf`](../src/tools.ts#L1553-L1560), [schema](../src/tools.ts#L
 
 ### 1.9 Action refusals
 
-Refusals of a new `connect`, `send`, `download` or `leave` action of `serve`, first match ([actions.ts:199-204](../src/actions.ts#L199-L204), [control.ts:147-162](../src/control.ts#L147-L162)); the plugin's texts are in [4.4](#44-tool-results-in-the-plugin):
+Refusals of a new `connect`, `send`, `download` or `leave` action of `serve`, first match ([actions.ts:200-205](../src/actions.ts#L200-L205), [control.ts:147-162](../src/control.ts#L147-L162)); the plugin's texts are in [4.4](#44-tool-results-in-the-plugin):
 
 | Text | Condition |
 |---|---|
@@ -444,7 +444,7 @@ The server reads commands from members' messages in the main conversation of the
 | `list` | no chats | `No chats.` | [control.ts:400](../src/control.ts#L400) |
 | `list` | otherwise | one line per chat of the 100 most recent: `CHAT  KIND NAME`, then `, approved for this chat by APPROVER`, `, files approved by APPROVER` and `, not connected` when applicable, cut to 100 bytes with `…`; then `K older chats are not shown.` (`1 older chat is not shown.`) | [control.ts:388-401](../src/control.ts#L388-L401) |
 
-KIND is `contact`, `bot`, `agent`, `business`, `group` or `channel` ([tools.ts:1499-1506](../src/tools.ts#L1499-L1506)). WHAT is `connect to SUBJECT`, `send to SUBJECT`, `download NAME from SUBJECT`, `delete SUBJECT` or `leave SUBJECT` ([actions.ts:379-393](../src/actions.ts#L379-L393)). SIZE is in bytes, KB, MB or GB, by 1000, with one decimal ([control.ts:771-774](../src/control.ts#L771-L774)). Names are shown by `safeName` ([control.ts:788-791](../src/control.ts#L788-L791)).
+KIND is `contact`, `bot`, `agent`, `business`, `group` or `channel` ([tools.ts:1499-1506](../src/tools.ts#L1499-L1506)). WHAT is `connect to SUBJECT`, `send to SUBJECT`, `download NAME from SUBJECT`, `delete SUBJECT` or `leave SUBJECT` ([actions.ts:380-394](../src/actions.ts#L380-L394)). SIZE is in bytes, KB, MB or GB, by 1000, with one decimal ([control.ts:771-774](../src/control.ts#L771-L774)). Names are shown by `safeName` ([control.ts:788-791](../src/control.ts#L788-L791)).
 
 A standing approval is stored in the chat's custom data, `simplexMcp` for messages and `simplexMcpFiles` for files, as `{approvedBy, approvedById, approvedAt}`; it applies in mode `requests` while member `approvedById` is an approver ([control.ts:24-27](../src/control.ts#L24-L27), [:164-167](../src/control.ts#L164-L167)).
 
@@ -461,7 +461,7 @@ Request lines:
 | `download` | `I want to download a file from SENDER in KIND NAME (CHAT):`, without `SENDER in ` outside groups<br>done: `I downloaded a file from ...` | ``` `NAME`, SIZE ```<br>an XFTP file: `Servers: known.`, or ``Servers: `HOST`, `HOST`, unknown: downloading shows them this computer's IP address.`` (`it` for one) |
 | `leave` | `I want to delete KIND NAME (@N).` or `I want to leave KIND NAME (#N).`<br>done: `I deleted ...` or `I left ...` | |
 
-SUBJECT is `KIND NAME`, or `an unnamed KIND`, followed by ` (SIMPLEX_NAME)` when known ([actions.ts:374-377](../src/actions.ts#L374-L377)). For `connect`, SIMPLEX_NAME is the target when it is a name; for `send`, the chat's verified SimpleX name.
+SUBJECT is `KIND NAME`, or `an unnamed KIND`, followed by ` (SIMPLEX_NAME)` when known ([actions.ts:375-378](../src/actions.ts#L375-L378)). For `connect`, SIMPLEX_NAME is the target when it is a name; for `send`, the chat's verified SimpleX name.
 
 A card of a `send` with an image or video file, or of a `download` of an image or video, is an image or video message with the file's preview and the card text as its caption; the preview is resized to fit the card, and the card is text when it can't be resized ([control.ts:516-536](../src/control.ts#L516-L536)).
 
@@ -619,12 +619,12 @@ stdout ([log.ts:37-39](../src/log.ts#L37-L39)):
 | listed owners set | `Owners: ENTRIES.` | [control.ts:442](../src/control.ts#L442) |
 | approvers gone, `--owners` absent | `No owners in the agent control chat.` | [control.ts:34](../src/control.ts#L34), [:237](../src/control.ts#L237), [:418](../src/control.ts#L418) |
 | control chat lost | `The agent lost its control chat. Restart the server with --reset-owners.` | [control.ts:478](../src/control.ts#L478) |
-| action created | `Action N: WHAT` with `, as itself` or `, incognito` for `connect` and ` (CHAT)` for the other tools | [actions.ts:208-209](../src/actions.ts#L208-L209), [:379-393](../src/actions.ts#L379-L393) |
-| counter write or card post failed | `Action N: failed: ERROR.` | [actions.ts:323](../src/actions.ts#L323) |
-| perform ended, not interrupted by the stop, mode `requests` | `Action N approved by NAME: RESULT` with RESULT `sent.`, `downloaded.`, `deleted.`, `left.`, `connected.`, `connection requested.` or `failed: ERROR.` | [actions.ts:344](../src/actions.ts#L344), [:399-409](../src/actions.ts#L399-L409) |
-| perform ended, not interrupted by the stop, mode `host` | `Action N: performed without approval (mode host).`, or `...; failed: ERROR.` | [actions.ts:401](../src/actions.ts#L401) |
-| rejected | `Action N rejected by NAME.` | [actions.ts:271](../src/actions.ts#L271) |
-| expired | `Action N expired.` | [actions.ts:307](../src/actions.ts#L307) |
+| action created | `Action N: WHAT` with `, as itself` or `, incognito` for `connect` and ` (CHAT)` for the other tools | [actions.ts:209-210](../src/actions.ts#L209-L210), [:380-394](../src/actions.ts#L380-L394) |
+| counter write or card post failed | `Action N: failed: ERROR.` | [actions.ts:324](../src/actions.ts#L324) |
+| perform ended, not interrupted by the stop, mode `requests` | `Action N approved by NAME: RESULT` with RESULT `sent.`, `downloaded.`, `deleted.`, `left.`, `connected.`, `connection requested.` or `failed: ERROR.` | [actions.ts:345](../src/actions.ts#L345), [:400-410](../src/actions.ts#L400-L410) |
+| perform ended, not interrupted by the stop, mode `host` | `Action N: performed without approval (mode host).`, or `...; failed: ERROR.` | [actions.ts:402](../src/actions.ts#L402) |
+| rejected | `Action N rejected by NAME.` | [actions.ts:272](../src/actions.ts#L272) |
+| expired | `Action N expired.` | [actions.ts:308](../src/actions.ts#L308) |
 | `/leave CHAT` | `Left KIND NAME (CHAT), requested by NAME.` or `Deleted ...` | [control.ts:336](../src/control.ts#L336) |
 | refused file, file not sent | as in [2.3](#23-other-posts), names and paths on one line | [control.ts:198](../src/control.ts#L198), [:209](../src/control.ts#L209) |
 | stop | `Cancelled K action.` or `Cancelled K actions.` when K > 0<br>`Stopping: sending K cancelled card(s), up to S s. Ctrl-C to stop now.` when cards were edited or posted and S > 0<br>`Stopped.` | [serve.ts:148](../src/serve.ts#L148), [:161-175](../src/serve.ts#L161-L175), [:152](../src/serve.ts#L152) |
@@ -764,7 +764,7 @@ Cards of [2.2](#22-cards), and two more:
 | `mode` | `I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.`<br>done: `I run in mode host: ...` | `/'approve N' or /'reject N'` |
 | `permission` | ``I want to use `TOOL`: `DESCRIPTION` ``, then the input preview, one code span per line, cut to fit the card ([1.9](#19-action-refusals)) | `/'approve N' or /'reject N'` |
 
-`mode` and `permission` are exempt from the card size check ([control.ts:152](../src/control.ts#L152), [:667-673](../src/control.ts#L667-L673), [:702-707](../src/control.ts#L702-L707)). In `/pending` their WHAT is `run in mode MODE` and `use TOOL` ([actions.ts:380-381](../src/actions.ts#L380-L381)). A card of `mode` or `permission` that a turn, a detach or the option `requests` ends has the last line `Ended.`; an expired card has `Expired.` ([actions.ts:236-240](../src/actions.ts#L236-L240), [control.ts:662-663](../src/control.ts#L662-L663)).
+`mode` and `permission` are exempt from the card size check ([control.ts:152](../src/control.ts#L152), [:667-673](../src/control.ts#L667-L673), [:702-707](../src/control.ts#L702-L707)). In `/pending` their WHAT is `run in mode MODE` and `use TOOL` ([actions.ts:381-382](../src/actions.ts#L381-L382)). A card of `mode` or `permission` that a turn, a detach or the option `requests` ends has the last line `Ended.`; an expired card has `Expired.` ([actions.ts:237-241](../src/actions.ts#L237-L241), [control.ts:662-663](../src/control.ts#L662-L663)).
 
 Posts:
 
@@ -828,8 +828,8 @@ Refusals of a new action, first match, in place of those of [1.9](#19-action-ref
 |---|---|---|
 | `The SimpleX daemon is stopping.` | the daemon stops | [hub.ts:31](../src/hub.ts#L31) |
 | `The group of this session is lost. Start a new Claude Code session.` | the session group was deleted, Claude was removed from it or lost its owner role | [hub.ts:31](../src/hub.ts#L31), [control.ts:824-839](../src/control.ts#L824-L839) |
-| `20 actions are pending; wait for the approvers' decisions.` | 20 actions of the session in state `pending` | [hub.ts:31](../src/hub.ts#L31), [actions.ts:198-203](../src/actions.ts#L198-L203) |
-| the limit of 20 performed actions and the card size texts of [1.9](#19-action-refusals) | per session | [actions.ts:198-203](../src/actions.ts#L198-L203) |
+| `20 actions are pending; wait for the approvers' decisions.` | 20 actions of the session in state `pending` | [hub.ts:31](../src/hub.ts#L31), [actions.ts:199-204](../src/actions.ts#L199-L204) |
+| the limit of 20 performed actions and the card size texts of [1.9](#19-action-refusals) | per session | [actions.ts:199-204](../src/actions.ts#L199-L204) |
 | `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.`, VERSION the plugin's version | the session group has no approver | [control.ts:36](../src/control.ts#L36), [:154](../src/control.ts#L154), [owner.ts:7](../src/owner.ts#L7) |
 
 Errors of the session process ([session.ts:40-67](../src/session.ts#L40-L67), [:120-151](../src/session.ts#L120-L151), [:188-195](../src/session.ts#L188-L195)):
@@ -956,7 +956,7 @@ Environment: `SIMPLEX_MCP_HOME`, ROOT; `CLAUDE_CODE_SESSION_ID` and `CLAUDE_PROJ
 | reset card, decision | `The reset of the owners waits for an owner's approval in the Main group.`, `Reset of the owners: Approved by NAME.` | [main-group.ts:108](../src/main-group.ts#L108), [:138](../src/main-group.ts#L138) |
 | session group created | `Group "N · NAME" of session N created.` | [hub.ts:479](../src/hub.ts#L479) |
 | session group lost | `The group "N · NAME" is lost.` | [control.ts:478](../src/control.ts#L478) |
-| actions | as in [3.4](#34-terminal-lines), with ` of session N` after `Action N`; `allowed.` for a tool use | [actions.ts:209](../src/actions.ts#L209), [:407](../src/actions.ts#L407) |
+| actions | as in [3.4](#34-terminal-lines), with ` of session N` after `Action N`; `allowed.` for a tool use | [actions.ts:210](../src/actions.ts#L210), [:408](../src/actions.ts#L408) |
 | stop | `Cancelled K action(s).`, `Stopping: sending K cancelled card(s), up to 10 s. Ctrl-C to stop now.`, `Stopped.` | [daemon.ts:189](../src/daemon.ts#L189), [serve.ts:164](../src/serve.ts#L164), [daemon.ts:192](../src/daemon.ts#L192) |
 
 stderr: `CONTEXT: ERROR` from `logError`, with CONTEXT among `Main group command`, `EVENT in the Main group`, `EVENT in the group of session N`, `prompt of session N`, `invitation to session N`, `User`, `User in session N`, `group of session N`, `session N`, `owner of CHAT`, `mode host of session N`, `title`, `ROOT/_sessions/ID/session.json`, `ROOT/titles.json`, `ROOT/daemon.log`, `METHOD PATH` and those of [3.4](#34-terminal-lines). A session process writes `SimpleX daemon: ERROR`, `SimpleX channel: ERROR` and `permission relay: ERROR` to its own stderr, the SessionStart hook of an unattended run `SimpleX MCP session start: ERROR`, and the turn hook `SimpleX MCP turn: ERROR` ([session.ts:55](../src/session.ts#L55), [:61](../src/session.ts#L61), [:93](../src/session.ts#L93), [hook.ts:70](../src/hook.ts#L70), [:90](../src/hook.ts#L90)).
