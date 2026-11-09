@@ -194,7 +194,9 @@ registerCost :: Int -> Word64 -> Integer
 registerCost centsPerYear duration = toInteger centsPerYear * attoUsdPerCent * toInteger duration `div` secondsPerYear
 
 registrarAllowance :: Contracts -> IO (Either ChainError Integer)
-registrarAllowance ct@Contracts {ctChain = ChainClient {ccRegistrar}} = call ct (cSponsor $ chainConfig ct) ("registrarAllowance(address)", addressWord ccRegistrar) decodeUint256
+registrarAllowance ct@Contracts {ctChain = ChainClient {ccRegistrar}} = runExceptT $ do
+  tag <- ExceptT $ confirmedTag ct
+  ExceptT $ callAt ct tag (cSponsor $ chainConfig ct) ("registrarAllowance(address)", addressWord ccRegistrar) decodeUint256
 
 sponsorNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", addressWord owner) decodeWord64

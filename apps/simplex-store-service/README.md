@@ -1141,8 +1141,7 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   logged once per order, and registration is paused, see
   [Registration paused](#registration-paused). A register that passes its dry run and reverts once
   mined, as two registers sent while the allowance covers one can, returns its order to `committed`
-  and pauses registration when the allowance cannot cover the registers in flight; otherwise it
-  fails its order, and the buyer can Try again.
+  while the name is available, and the next register's dry run finds the cause.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
   the transaction waits` when fees are above the cap. Nothing is signed until they fall.
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
@@ -1161,8 +1160,8 @@ owner who got the name another way counts as served, and a code order spends its
 
 #### Registration paused
 
-A queued order, paid or by code, is committed only while the registrar's allowance on the sponsor
-covers the registers of every order in `committing` to `registering` and of the queued orders up
+A queued order, paid or by code, is committed only while the registrar's allowance on the sponsor,
+read at the confirmation depth, covers the registers of every order in `committing` to `registering` and of the queued orders up
 to it, oldest first by creation; a register's price is the price list's price per year for the
 label's length over the order's duration. An order it does not cover stays queued and pauses
 registration, as does a register refused with `InsufficientAllowance`. At start, registration is

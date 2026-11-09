@@ -41,7 +41,7 @@ import StoreService.Names.Community (AcceptanceAsked (..), agreedTermsHash, comm
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (ActiveOrder (..), Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), activeOrders, getBalance, getRegistration, heldBy, lateWait)
+import StoreService.Names.Store (ActiveOrder (..), Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), activeOrders, getBalance, getRegistration, heldBy, lateWait, queuedOrders)
 
 -- | The view's chain reads; a field whose read failed is null and named in vrUnread.
 data ViewReads = ViewReads
@@ -67,7 +67,7 @@ registrationView OrdersEnv {oeStore, oeConfig, oeContracts, oePause} now r = do
 queuePlace :: RegistrationId -> [ActiveOrder] -> Maybe (Int, Int)
 queuePlace rid orders = (\i -> (i + 1, length queued)) <$> findIndex ((== rid) . aoId) queued
   where
-    queued = filter ((== PQueued) . aoPhase) orders
+    queued = queuedOrders orders
 
 -- | The intent nonce only in committed; the acceptance too, until a reveal is stored.
 readViewChain :: Contracts -> NameRegistration -> IO ViewReads

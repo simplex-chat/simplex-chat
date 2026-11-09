@@ -58,6 +58,7 @@ module StoreService.Names.Store
     activeRegistrations,
     ActiveOrder (..),
     activeOrders,
+    queuedOrders,
     unpaidCleanupCandidates,
     deleteUnpaidRegistration,
     failedCodeOrdersBefore,
@@ -855,14 +856,12 @@ isLabelRegistering db (LabelHash lh) =
             IO [Only Int]
         )
 
--- | The registrations a worker moves on, oldest first, by id alone, so a row that does not decode stops only its own worker.
+-- | The registrations a worker moves on, oldest first.
 activeRegistrations :: DB.Connection -> IO [RegistrationId]
-activeRegistrations db =
-  map (RegistrationId . fromOnly)
-    <$> DB.query
-      db
-      "SELECT registration_id FROM sx_badge_service_name_registrations WHERE phase IN (?,?,?,?) ORDER BY created_at, registration_id"
-      (PQueued, PCommitting, PCommitted, PRegistering)
+activeRegistrations db = map aoId <$> activeOrders db
+
+queuedOrders :: [ActiveOrder] -> [ActiveOrder]
+queuedOrders = filter ((== PQueued) . aoPhase)
 
 activeOrders :: DB.Connection -> IO [ActiveOrder]
 activeOrders db =

@@ -348,10 +348,10 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} =
 -- | A register that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
 -- with status 1 or the owner holds the name; committed again on InvalidNonce or a refused terms acceptance, for the page to sign again, the name
 -- policy read again on TermsNotAccepted; kept waiting, registration paused, while the sponsor allowance is used up; taken on any revert while the name is not
--- available at the confirmation depth; committed again, registration paused, when a register without a known revert finds the allowance
--- short of the registers in flight; failed otherwise, unless the dry run named the name as gone.
+-- available at the confirmation depth; committed again after a register mined with status 0, for the next dry run to find the cause;
+-- failed otherwise, unless the dry run named the name as gone.
 judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO Next
-judge w@Worker {wkOrders = oe@OrdersEnv {oeStore, oeContracts}} now r@NameRegistration {nrCommitment, nrReveal} reason =
+judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrPhase, nrCommitment, nrReveal} reason =
   inTurn w r $
     confirmLanded oe r >>= \case
       LRegistered v -> pure (Just v, Again)
@@ -374,11 +374,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeStore, oeContracts}} now r@NameRegist
               -- the dry run runs on the pending block, where a competitor's register that may never mine can hold the name
               Right (True, _)
                 | reason `elem` map Just [RNNameNotAvailable, RNNameReserved] -> pure (Nothing, Retry (nrVersion r) "the dry run reverted the name as gone, but it reads available")
-                | isNothing reason ->
-                    withTransaction oeStore activeOrders >>= covered w . inFlight >>= \case
-                      Right False -> pause w now nrCommitment >> store w now r {nrPhase = PCommitted, nrRegisterTx = Nothing, nrRegisterBlock = Nothing}
-                      Right True -> failed w now r
-                      Left e -> pure (Nothing, failure r e)
+                | isNothing reason && nrPhase == PRegistering -> store w now r {nrPhase = PCommitted, nrRegisterTx = Nothing, nrRegisterBlock = Nothing}
                 | otherwise -> failed w now r
           Nothing -> failed w now r
   where
@@ -587,4 +583,4 @@ inFlight = filter ((/= PQueued) . aoPhase)
 throughOrder :: RegistrationId -> [ActiveOrder] -> [ActiveOrder]
 throughOrder rid orders = inFlight orders <> before <> take 1 rest
   where
-    (before, rest) = break ((== rid) . aoId) $ filter ((== PQueued) . aoPhase) orders
+    (before, rest) = break ((== rid) . aoId) $ queuedOrders orders

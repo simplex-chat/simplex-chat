@@ -62,7 +62,7 @@ import StoreService.Names.Orders (OrdersEnv (..), ordersEnv, unixSeconds)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (runSender)
-import StoreService.Names.Store (ActiveOrder (..), Balance (..), BalanceHold (..), BalanceLink (..), LateCredit (..), NamePhase (..), RegistrationPayment (..), activeOrders, balanceByReference, balanceChain, methodText)
+import StoreService.Names.Store (ActiveOrder (..), Balance (..), BalanceHold (..), BalanceLink (..), LateCredit (..), RegistrationPayment (..), activeOrders, balanceByReference, balanceChain, methodText, queuedOrders)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (newWorker, pauseUncovered, runCodeSweep, runProbe, runWorkers)
@@ -396,7 +396,7 @@ namesReport groupQ_ OrdersEnv {oeStore, oeConfig = cfg@NamesConfig {nYears, nTer
         <$> Concurrently (ethBalance chain ccRegistrar)
         <*> Concurrently (registrarAllowance oeContracts)
         <*> Concurrently (chainPriceCents oeContracts minNameLength 1)
-  let queued = filter ((== PQueued) . aoPhase) orders
+  let queued = queuedOrders orders
       floorCost cents = registerCost cents $ fromInteger $ toInteger nYears * secondsPerYear + max 0 (unixSeconds nTermStart - unixSeconds now)
       alerts = reportAlerts cfg pause (length queued) (eitherToMaybe wei) (eitherToMaybe $ (,) <$> allowance <*> (floorCost <$> floorCents))
       shown = T.intercalate "; " $ [queueText queued (length orders - length queued), pauseText, registrarText wei allowance] <> ["alert: " <> T.intercalate ", " alerts | not (null alerts)]

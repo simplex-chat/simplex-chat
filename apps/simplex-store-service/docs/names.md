@@ -348,11 +348,11 @@ sequenceDiagram
     K->>D: reveal cleared, phase stays committed, the page signs again
   else InsufficientAllowance
     K->>K: error logged, registration paused, retried every 15 s
-  else mined with status 0 while the allowance cannot cover the registers in flight
-    K->>D: phase committed, register cleared, registration paused
   else name taken at the latest block and at the confirmation depth
     K->>D: phase taken, a paid order's price kept as its balance
-  else name available
+  else mined with status 0, name available
+    K->>D: phase committed, register cleared, the next dry run finds the cause
+  else dry run reverted, name available
     K->>D: phase failed, error "The name could not be registered"
   end
 ```
@@ -360,7 +360,7 @@ sequenceDiagram
 Notes:
 
 - Whether the name was registered after all is checked first: on a register mined with status 1, or with the name held by the owner at the confirmation depth, the order is set `registered` ([`Names/Orders.hs:365-400`](../src/StoreService/Names/Orders.hs#L365-L400), [`Names/Worker.hs:329-336`](../src/StoreService/Names/Worker.hs#L329-L336)).
-- An `InsufficientAllowance` revert pauses registration and waits for the registrar key's allowance on the sponsor to be raised outside the service. A register without a known revert, as one mined with status 0, returns its order to `committed` and pauses registration when the allowance cannot cover the registers in flight ([`Names/Worker.hs:365-381`](../src/StoreService/Names/Worker.hs#L365-L381)).
+- An `InsufficientAllowance` revert pauses registration and waits for the registrar key's allowance on the sponsor to be raised outside the service. A register mined with status 0 while the name is available returns its order to `committed`, for the next register's dry run to find the cause ([`Names/Worker.hs:365-377`](../src/StoreService/Names/Worker.hs#L365-L377)).
 - On `CommitmentTooNew` the register is retried 1 s later. While the name is taken only above the confirmation depth, or is reported gone by the dry run while `available(label)` is true, the order is retried every 15 s ([`Names/Worker.hs:340-352`](../src/StoreService/Names/Worker.hs#L340-L352)).
 - A code order set `taken` has its code released instead of a balance credited ([`Names/Worker.hs:361-368`](../src/StoreService/Names/Worker.hs#L361-L368)).
 
