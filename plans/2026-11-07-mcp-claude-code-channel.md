@@ -179,6 +179,7 @@ Recommended on the UX page (https://claude.ai/artifact/YCN4kj2ZRujUnUhNSxwMea), 
 
 Decided on 2026-11-09, review round 8:
 106. The expiry timer of an action waits at most 60 s and is set again until the expiry time, so an action whose expiry time passes while the computer sleeps expires within 60 s after it wakes, in `serve` as in 0.2.
+107. Question 2 (a) of review round 8, recommended until the user decides on the UX page: in a session group, a card the core refuses with `feature not allowed Files and media` is posted again as text, without the preview, and its later edits are text; sends and downloads of images and videos to other chats go on. `serve` keeps 0.2's behaviour: the action fails with the core's error.
 
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
