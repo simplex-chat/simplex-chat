@@ -24,6 +24,7 @@ where
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, asyncWithUnmask, cancel, poll)
+import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Concurrent.STM
 import Control.Exception (finally, mask_)
 import Control.Logger.Simple (logError, logNote, logWarn)
@@ -44,7 +45,7 @@ import Simplex.Messaging.Util (tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient, ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
-import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy, sponsorNonce)
+import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, communityName, concurrent, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy, registerSpend, registrarAllowance, sponsorNonce, together)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, unixSeconds, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
@@ -61,7 +62,8 @@ data Worker = Worker
     wkChain :: ChainClient,
     wkSender :: Sender,
     -- | the thread following each registration, kept by the scan
-    wkThreads :: TVar (Map RegistrationId (Async ()))
+    wkThreads :: TVar (Map RegistrationId (Async ())),
+    wkCommits :: MVar ()
   }
 
 -- | What a step leaves to the next one.
@@ -109,7 +111,7 @@ notRegistered :: Text
 notRegistered = "The name could not be registered"
 
 newWorker :: OrdersEnv -> ChainClient -> Sender -> IO Worker
-newWorker wkOrders wkChain wkSender = Worker wkOrders wkChain wkSender <$> newTVarIO M.empty
+newWorker wkOrders wkChain wkSender = Worker wkOrders wkChain wkSender <$> newTVarIO M.empty <*> newMVar ()
 
 -- | A thread for each registration in the worker's phases, started by a scan every scanInterval; they stop with it.
 runWorkers :: Worker -> IO ()
@@ -229,12 +231,22 @@ ourCommit Worker {wkOrders = OrdersEnv {oeStore}, wkChain} NameRegistration {nrI
     [] -> pure $ Right Nothing
 
 sendCommit :: Worker -> UTCTime -> NameRegistration -> IO Next
-sendCommit w@Worker {wkOrders = OrdersEnv {oeConfig}, wkSender} now r@NameRegistration {nrId, nrCommitment} =
-  withinSends w now r isCommit $ submitTransaction wkSender (TxCommit nrId) (cController $ nChain oeConfig) (commitCalldata nrCommitment) >>= \case
-    Right p -> commitSent w now r p
-    Left SEInFlight -> pure Again
-    -- UnexpiredCommitmentExists among them: a commit mined since the read, or a latest block still at the lapse second
-    Left e -> pure $ failure r e
+sendCommit w@Worker {wkOrders = OrdersEnv {oeConfig}, wkSender, wkCommits} now r@NameRegistration {nrId, nrCommitment} =
+  withinSends w now r isCommit $ withMVar wkCommits $ \_ ->
+    allowanceCovers w r >>= \case
+      Left e -> pure $ failure r e
+      Right False -> pure $ Stalled (nrVersion r) "the registrar's allowance on the sponsor does not cover this order's register with those of the orders committed; the guardian raises it with setRegistrarAllowance"
+      Right True ->
+        submitTransaction wkSender (TxCommit nrId) (cController $ nChain oeConfig) (commitCalldata nrCommitment) >>= \case
+          Right p -> commitSent w now r p
+          Left SEInFlight -> pure Again
+          -- UnexpiredCommitmentExists among them: a commit mined since the read, or a latest block still at the lapse second
+          Left e -> pure $ failure r e
+
+allowanceCovers :: Worker -> NameRegistration -> IO (Either ChainError Bool)
+allowanceCovers Worker {wkOrders = OrdersEnv {oeStore, oeContracts}} NameRegistration {nrId} = do
+  registers <- withTransaction oeStore (`pendingRegisters` nrId)
+  together $ (\allowance spends -> sum spends <= allowance) <$> concurrent (registrarAllowance oeContracts) <*> traverse (concurrent . uncurry (registerSpend oeContracts)) registers
 
 -- | Recorded with the newest signature's hash, so a fee-bumped replacement is the one the view shows.
 commitSent :: Worker -> UTCTime -> NameRegistration -> PendingTx -> IO Next

@@ -6,7 +6,7 @@
 module Bots.StoreService.NamesWorkerTests (namesWorkerTests) where
 
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, noncesCall, registrarOf, unhex)
+import Bots.StoreService.NamesContractsTests (allowanceCall, availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, noncesCall, registrarOf, unhex)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
@@ -81,6 +81,8 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits a second at the lapse second, retries as usual when the dry run still reverts, then commits" testLapseSecond
     it "clears a requeued order's stale intent before committing again after a lapse, and a third party's commitment's" testStaleIntent
     it "keeps the phase while the latest block needs more than the fee cap, then commits" testFeeAboveCap
+    it "keeps an order queued, sending no commit, while the sponsor allowance does not cover its register with those of the orders committed, and commits it after a top-up" testAllowanceShort
+    it "commits one of two orders queued at once while the sponsor allowance covers one register" testAllowanceForOne
   describe "writes" $ do
     it "writes nothing when the registration changed since it was read" testLostRace
     it "writes in the name's turn" testInNameTurn
@@ -154,6 +156,8 @@ withWorkerAs settings action = withOrders $ \open -> do
   let ctx@Ctx {cNode, cOrders, cWeb} = configured settings open
   answerCall cNode fakeController minCommitmentAgeCall $ Returns $ uint256 minAge
   answerCall cNode fakeController maxCommitmentAgeCall $ Returns $ uint256 maxAge
+  answerCall cNode fakeController aliceSpendCall $ Returns $ uint256 aliceSpend <> uint256 (0 :: Int)
+  answerAllowance ctx $ 100 * aliceSpend
   answerUnowned ctx "alicebakery"
   let web = cWeb {weOrders = Just cOrders}
       routes path = registrationRoute path <|> codeRoutes cOrders (weProviders web) (weWaiters web) path
@@ -176,6 +180,15 @@ started wCtx@Ctx {cNode, cStore, cRandom, cClock, cOrders} = do
 minAge, maxAge :: Word64
 minAge = 60
 maxAge = 86400
+
+aliceSpendCall :: ByteString
+aliceSpendCall = selector "rentPriceUSD(string,uint256)" <> abiTuple [Dynamic $ abiBytes "aaaaaaaaaaa", Static $ uint256 $ yearsDuration 2 orderTime]
+
+aliceSpend :: Integer
+aliceSpend = 10000 * 10 ^ (16 :: Int)
+
+answerAllowance :: Ctx -> Integer -> IO ()
+answerAllowance Ctx {cNode} = answerCall cNode fakeSponsor allowanceCall . Returns . uint256
 
 orderSeconds :: Word64
 orderSeconds = floor $ utcTimeToPOSIXSeconds orderTime
@@ -466,6 +479,28 @@ testFeeAboveCap = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   setFees cNode fakeTip fakeBaseFee
   void $ steps w r >>= awaiting
   nrPhase <$> stored ctx r `shouldReturn` PCommitting
+
+testAllowanceShort :: IO ()
+testAllowanceShort = withWorker $ \w@W {wCtx = ctx} -> do
+  void $ paidIn ctx aliceOrder committedPhase
+  r <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} id
+  answerCommitment w r 0
+  answerAllowance ctx $ 2 * aliceSpend - 1
+  steps w r >>= stalled >>= (`shouldSatisfy` T.isInfixOf "setRegistrarAllowance")
+  stored ctx r `shouldReturn` r
+  sent w `shouldReturn` []
+  answerAllowance ctx $ 2 * aliceSpend
+  void $ steps w r >>= awaiting
+  nrPhase <$> stored ctx r `shouldReturn` PCommitting
+
+testAllowanceForOne :: IO ()
+testAllowanceForOne = withWorker $ \w@W {wCtx = ctx} -> do
+  orders <- mapM (\o -> paidIn ctx o id) [aliceOrder, (byB aliceOrder) {oCommitment = commitmentOf 2}]
+  forM_ orders $ \r -> answerCommitment w r 0
+  answerAllowance ctx aliceSpend
+  nexts <- Async.mapConcurrently (steps w) orders
+  map (takeWhile (/= ' ') . shape) nexts `shouldMatchList` ["Await", "Stalled"]
+  length <$> sent w `shouldReturn` 1
 
 testLostRace :: IO ()
 testLostRace = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wWorker} -> do

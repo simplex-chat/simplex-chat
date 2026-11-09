@@ -17,7 +17,9 @@ module StoreService.Names.Contracts
     nameRecords,
     textRecord,
     chainPriceCents,
+    registerSpend,
     sponsorNonce,
+    registrarAllowance,
     resolverNonce,
     namePolicy,
     forgetNamePolicy,
@@ -180,15 +182,22 @@ textRecord ct lh key = call ct (resolver ct) ("text(bytes32,string)", abiTuple [
 -- so a placeholder label of that length keeps the label from the RPC node. A price under a cent is refused: a node
 -- answering one would sell names for nothing while the sponsor allowance pays their rent.
 chainPriceCents :: Contracts -> Int -> Int -> IO (Either ChainError Int)
-chainPriceCents ct len years = call ct (controller ct) ("rentPriceUSD(string,uint256)", args) $ \ret -> do
+chainPriceCents ct len years = rentPriceCall ct len (toInteger years * secondsPerYear) $ \ret -> do
   base <- decodeUint256 ret
   let cents = base `div` attoUsdPerCent
   if cents >= 1 && cents <= toInteger (maxBound :: Int) then Right (fromInteger cents) else Left AERange
-  where
-    args = abiTuple [Dynamic $ abiBytes $ B.replicate len 'a', Static $ uint256 $ toInteger years * secondsPerYear]
+
+registerSpend :: Contracts -> Int -> Word64 -> IO (Either ChainError Integer)
+registerSpend ct len duration = rentPriceCall ct len (toInteger duration) $ \ret -> (+) <$> decodeUint256 ret <*> decodeUint256 (B.drop abiWordSize ret)
+
+rentPriceCall :: Contracts -> Int -> Integer -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
+rentPriceCall ct len seconds = call ct (controller ct) ("rentPriceUSD(string,uint256)", abiTuple [Dynamic $ abiBytes $ B.replicate len 'a', Static $ uint256 seconds])
 
 sponsorNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", addressWord owner) decodeWord64
+
+registrarAllowance :: Contracts -> IO (Either ChainError Integer)
+registrarAllowance ct@Contracts {ctChain = ChainClient {ccRegistrar}} = call ct (cSponsor $ chainConfig ct) ("registrarAllowance(address)", addressWord ccRegistrar) decodeUint256
 
 resolverNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 resolverNonce ct owner = call ct (resolver ct) ("nonces(address)", addressWord owner) decodeWord64

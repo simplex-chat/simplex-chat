@@ -56,6 +56,7 @@ module StoreService.Names.Store
     findRegistrations,
     isLabelRegistering,
     activeRegistrations,
+    pendingRegisters,
     unpaidCleanupCandidates,
     deleteUnpaidRegistration,
     failedCodeOrdersBefore,
@@ -851,6 +852,14 @@ activeRegistrations db =
       db
       "SELECT registration_id FROM sx_badge_service_name_registrations WHERE phase IN (?,?,?,?) ORDER BY created_at, registration_id"
       (PQueued, PCommitting, PCommitted, PRegistering)
+
+pendingRegisters :: DB.Connection -> RegistrationId -> IO [(Int, Word64)]
+pendingRegisters db (RegistrationId rid) =
+  map (fmap word64)
+    <$> DB.query
+      db
+      "SELECT length, duration FROM sx_badge_service_name_registrations WHERE phase IN (?,?,?) OR registration_id = ?"
+      (PCommitting, PCommitted, PRegistering, rid)
 
 -- | Unpaid orders whose invoice expired before the cutoff, without a recorded payment.
 unpaidCleanupCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, InvoiceId)]

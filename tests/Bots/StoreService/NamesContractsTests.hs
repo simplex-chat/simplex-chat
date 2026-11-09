@@ -21,6 +21,7 @@ module Bots.StoreService.NamesContractsTests
     contactTextCall,
     channelTextCall,
     noncesCall,
+    allowanceCall,
     alice,
     availableCall,
     minCommitmentAgeCall,
@@ -73,8 +74,10 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads no records from another resolver" $ testOtherResolver g
   describe "prices" $ do
     it "quotes 6, 7 and 12 letters at the launch list for 2 years, and refuses a price under a cent" $ testLaunchPrices g
+    it "quotes a register's spend as the base plus the premium for its duration" $ testRegisterSpend g
   describe "other reads" $ do
     it "reads the sponsor's and the resolver's nonces from their own contracts" $ testNonces g
+    it "reads the registrar key's allowance from the sponsor" $ testAllowance g
     it "reads ownerOf's revert without data as nobody" $ testOwnerOfNobody g
     it "reads any other ownerOf revert or failure as a failed read" $ testOwnerOfFailed g
     it "reads a commitment's time, none as Nothing" $ testCommitmentTime g
@@ -303,6 +306,21 @@ testLaunchPrices g = withContracts g $ \node ct -> do
   answerCall node fakeController (rentPriceCall 11) $ Returns $ rentPriceAnswer 0
   chainPriceCents ct 11 2 `shouldReturn` Left (ChainUnavailable "eth_call: rentPriceUSD(string,uint256) answered AERange")
 
+testRegisterSpend :: TVar ChaChaDRG -> IO ()
+testRegisterSpend g = withContracts g $ \node ct -> do
+  answerCall node fakeController (rentPriceCall 11) $ Returns $ uint256 base <> uint256 premium
+  registerSpend ct 11 (2 * 31536000) `shouldReturn` Right (base + premium)
+  where
+    base = 10000 * 10 ^ (16 :: Int) :: Integer
+    premium = 25 * 10 ^ (16 :: Int)
+
+testAllowance :: TVar ChaChaDRG -> IO ()
+testAllowance g = withContracts g $ \node ct -> do
+  answerCall node fakeSponsor allowanceCall $ Returns $ uint256 allowance
+  registrarAllowance ct `shouldReturn` Right allowance
+  where
+    allowance = 1000 * 10 ^ (18 :: Int) :: Integer
+
 testNonces :: TVar ChaChaDRG -> IO ()
 testNonces g = withContracts g $ \node ct -> do
   answerCall node fakeSponsor noncesCall $ Returns $ uint256 (5 :: Int)
@@ -500,6 +518,9 @@ contactTextCall, channelTextCall, noncesCall :: ByteString
 contactTextCall = unhex "59d1d43c0f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000f73696d706c65782e636f6e746163740000000000000000000000000000000000"
 channelTextCall = unhex "59d1d43c0f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000f73696d706c65782e6368616e6e656c0000000000000000000000000000000000"
 noncesCall = unhex "7ecebe00000000000000000000000000014f9c09cceedef1b713110d04d3a07d5b5d9b73"
+
+allowanceCall :: ByteString
+allowanceCall = unhex "ee4042fa0000000000000000000000009d8a62f656a8d1615c1294fd71e9cfb3e4855a4f"
 
 -- | rentPriceUSD("a" × length, 2 years)
 rentPriceCall :: Int -> ByteString
