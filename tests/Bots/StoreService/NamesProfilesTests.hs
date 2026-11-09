@@ -76,6 +76,7 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "bounds the lookups in flight across searches and previews, and a lookup with no slot in time is unavailable" testLookupBound
     H.it "leaves search its lookups while previews hold all of theirs" testPreviewLookupShare
     H.it "remembers a refused host until its time passes, also when its lookup answers after the caller gave up" testRefusedHostCache
+    H.it "answers a host whose lookup passed the deadline unread without a new lookup, until that lookup answers or its time passes" testUnansweredHostCache
 
 namesProfilesChatTests :: SpecWith TestParams
 namesProfilesChatTests =
@@ -524,6 +525,32 @@ testRefusedHostCache = do
   preview fake (addressLinkAt "held.test" 2) `shouldReturn` ProfileUnavailable
   lookups "held.test" `shouldReturn` 1
   fetchCount fake `shouldReturn` 1
+
+testUnansweredHostCache :: IO ()
+testUnansweredHostCache = do
+  asked <- newTVarIO []
+  started <- newTQueueIO
+  gate <- newEmptyTMVarIO
+  let resolver name
+        | name == "slow.test" = do
+            atomically $ modifyTVar' asked (name :) >> writeTQueue started ()
+            ["1.1.1.1"] <$ uninterruptibleMask_ (atomically $ readTMVar gate)
+        | otherwise = stubResolver asked name
+  fake@Fake {clockAt} <- newFake testLimits {hostLookupSlots = 2} answerAll resolver
+  let lookups = length . filter (== "slow.test") <$> readTVarIO asked
+      slow = addressLinkAt "slow.test"
+  search fake (slow 1) `shouldReturn` ProfileUnread
+  atomically $ readTQueue started
+  search fake (slow 2) `shouldReturn` ProfileUnread
+  lookups `shouldReturn` 1
+  atomically $ writeTVar clockAt 60
+  search fake (slow 3) `shouldReturn` ProfileUnread
+  atomically $ readTQueue started
+  lookups `shouldReturn` 2
+  atomically $ putTMVar gate ()
+  search fake (addressLink 1) `shouldReturn` ProfileOk (profileFor (addressLink 1))
+  search fake (slow 4) `shouldReturn` ProfileOk (profileFor (slow 4))
+  lookups `shouldReturn` 3
 
 -- Through the chat core
 
