@@ -145,7 +145,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | `ConnectInput`, `SendInput`, `ReceiveInput`, `LeaveInput`, `DownloadInput` | [46-80](../src/tools.ts#L46-L80) | tool inputs |
 | `PlanSummary` | [91](../src/tools.ts#L91) | card kind, chat type, name, SimpleX name, peer type, description, welcome, commands, `takesMessage` |
 | `ChatFields` | [103](../src/tools.ts#L103) | chat fields of `connect` and `list` results |
-| `Agent` | [117](../src/tools.ts#L117) | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder; for the plugin also the data root, the owning session ID, the group of `reply`, the check that its files are sent at once, the approver of all its files, the mode setter and the record of a pending connection |
+| `Agent` | [117](../src/tools.ts#L117) | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder; for the plugin also the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection |
 | `JoinMethod` | [133](../src/tools.ts#L133) | `prepared`, `prepareChannel`, `viaAddress`, `prepareContact`, `connect` |
 | schemas | [189-412](../src/tools.ts#L189-L412) | input and output JSON schemas |
 | descriptions, `instructions` | [414-452](../src/tools.ts#L414-L452) | tool descriptions and server instructions; `instructions` names the host whose restart cancels actions, `server` by default |
@@ -554,7 +554,7 @@ Outcomes are posted after `done` and `failed` ([actions.ts:348](../src/actions.t
 | decider shown | `safeName(approvedBy)` | the same | [control.ts:169](../src/control.ts#L169) |
 | storage | the chat's custom data; removed with the chat by `leave` | the same | [tools.ts:1074-1082](../src/tools.ts#L1074-L1082) |
 
-The plugin's approval of all files of `reply` in a session group is described in [8.5](#85-approval-model).
+Files of `reply` in a session group need no approval and have no standing approval; the group's preference for files and media controls them ([8.5](#85-approval-model)).
 
 ### 5.6 Expiry
 
