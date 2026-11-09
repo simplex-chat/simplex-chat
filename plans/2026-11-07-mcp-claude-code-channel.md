@@ -174,6 +174,7 @@ Recommended on the UX page (https://claude.ai/artifact/YCN4kj2ZRujUnUhNSxwMea), 
 101. G6: the Main group replies `Unknown command.` to a one-line `/` text other than `/sessions`, `/join N`, `/approve reset` and `/reject reset`.
 102. `reply` answers the core's refusal `feature not allowed Files and media` of decision 87 with FILES OFF: `Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` Other refusals of the core are returned as the core's text.
 103. UX-F3 a: the Main group's short description and welcome message are set when the group is created, a reset of the owners included; Claude's later profile updates of the Main group change only its name and commands, so an owner's edits of both stay. Of decision 90, the Main group's short description and description leave Claude's fields.
+104. Rule 3 in texts outside the group. The option `approve` reads `requests: you approve connections and messages in the SimpleX app. host: Claude Code asks you instead, after an admin or owner approves this in the session's group.` `connect` to a chat of another session returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` The plugin's limit of pending actions returns `20 actions are pending; wait for the approvers' decisions.`, a text of the hub; `serve` keeps `20 actions are pending; wait for the owner's decisions.`
 
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
@@ -257,7 +258,7 @@ ChatOwner, in the chat's custom data
 ```
 on connect by session s:     owner = s
 on any tool call by s:       chats with owner = s only
-on "/give CHAT N" by owner:  owner of CHAT = session N
+on "/give CHAT N" by an admin or owner of the session's group:   owner of CHAT = session N
 on resume of s:              its chats are shown again
 ```
 
