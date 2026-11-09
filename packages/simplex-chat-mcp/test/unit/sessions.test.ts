@@ -353,6 +353,22 @@ describe("session groups", () => {
     await sending
   })
 
+  it("count the standing approval of a member made an observer by /observer again once that member is an admin again", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "auth"))
+    const dan = member(12, "Dan", T.GroupMemberRole.Admin)
+    chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1, {simplexMcp: {approvedBy: "Dan", approvedById: 12, approvedAt: "2026-11-08T10:00:00.000Z"}}), items: []})
+    chat.members.set(20, [self, invitedAlice, dan])
+    await session.control.load()
+    const list = () => session.control.ownerCommand(invitedAlice, {keyword: "list", params: ""})
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "observer", params: "#20 12"})).toBe("Dan is an observer and can't send messages.")
+    expect(await list()).toBe("@4  bot SimpleX Directory")
+    chat.members.set(20, [self, invitedAlice, dan])
+    await hub["onEvent"]({type: "memberRole", groupInfo: group(20, "1 · auth"), byMember: invitedAlice, member: dan, fromRole: T.GroupMemberRole.Observer, toRole: T.GroupMemberRole.Admin} as unknown as ChatEvent)
+    expect(await list()).toBe("@4  bot SimpleX Directory, approved for this chat by Dan")
+  })
+
   it("end a pending mode card when the option returns to requests", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
