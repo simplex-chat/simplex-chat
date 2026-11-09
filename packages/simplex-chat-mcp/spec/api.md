@@ -501,6 +501,7 @@ An action performed without a card, in mode `host` or under a standing approval,
 | `send` with a refused file; logged too | ``Refused to send `PATH` to KIND NAME (CHAT): private keys and the server's own files are not sent.`` | [control.ts:196-200](../src/control.ts#L196-L200) |
 | `sndFileError` of a sent file; logged too | ``The file `NAME` was not sent to KIND NAME (CHAT): `REASON`.`` | [control.ts:202-211](../src/control.ts#L202-L211), [serve.ts:133](../src/serve.ts#L133) |
 | `/forward` of a file that is not received or not posted | ``Action N: the file was not received: `ERROR`.`` | [control.ts:326](../src/control.ts#L326) |
+| `/forward` in a plugin session group whose post the core refuses with `feature not allowed Files and media` | `Action N: Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` | [control.ts:326](../src/control.ts#L326), [tools.ts:175](../src/tools.ts#L175) |
 | after the reply to `/leave CHAT`, and after the outcome of a done `leave`, when the folder of CHAT has files | ``Files from KIND NAME (CHAT) are kept in `FOLDER`: K files, SIZE. /'delete CHAT files'`` | [control.ts:192-193](../src/control.ts#L192-L193), [:341-349](../src/control.ts#L341-L349) |
 
 ### 2.4 Membership messages

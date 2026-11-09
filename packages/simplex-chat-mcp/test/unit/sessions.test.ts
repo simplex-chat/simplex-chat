@@ -1,4 +1,4 @@
-import {mkdirSync, mkdtempSync, rmSync, writeFileSync} from "fs"
+import {existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
@@ -1103,17 +1103,36 @@ describe("session channel", () => {
       expect(groupPosts(chat)).toEqual([{type: "text", text: expect.stringMatching(/^I sent a message to bot SimpleX Directory:\n/)}])
     })
 
+    const download = (session: Session, name: string, type: "image" | "video" | "file") =>
+      session.actions.create("d", {tool: "download", input: {chat: "@4", item: 30}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4", item: 30, from: "SimpleX Directory", file: {fileId: 7, name, size: 2400, type, preview: "data:image/jpg;base64,/9j/small"}}, undefined, 1, "requests")
+
     it.each([["map.jpg", "image"], ["trail.mp4", "video"]] as const)("posts the card of a download of %s as text and edits it as text", async (name, type) => {
       const chat = new FakeChat()
       const {session} = await channel(chat)
       const edits = filesOff(chat)
-      const file = {fileId: 7, name, size: 2400, type, preview: "data:image/jpg;base64,/9j/small"}
-      const action = session.actions.create("d", {tool: "download", input: {chat: "@4", item: 30}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4", item: 30, from: "SimpleX Directory", file}, undefined, 1, "requests")
+      const action = download(session, name, type)
       await until(() => action.card !== undefined)
       expect(groupPosts(chat)).toEqual([{type: "text", text: expect.stringMatching(/^I want to download a file /)}])
       session.actions.reject(action, "Alice")
       await until(() => edits.length === 1)
       expect(edits).toEqual([{type: "text", text: expect.stringMatching(/\nRejected by Alice\.$/)}])
+    })
+
+    it("answers a /forward whose file the core refuses that files and media are off, and deletes the copy", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      filesOff(chat)
+      const action = download(session, "report.pdf", "file")
+      await until(() => action.card !== undefined)
+      const copy = join(sessionFolder(root, id1), "files", "sent", "copy", "report.pdf")
+      mkdirSync(join(sessionFolder(root, id1), "files", "sent", "copy"), {recursive: true})
+      writeFileSync(copy, "report")
+      session.tools.forwardFile = async () => copy
+      expect(await session.control.ownerCommand(invitedAlice, {keyword: "forward", params: "@4 1"})).toBeUndefined()
+      await until(() => groupPosts(chat).length === 2)
+      expect(groupPosts(chat)[1]).toEqual({type: "text", text: "Action 1: Files and media are off in the group of this session; its owners can turn them on in the group's preferences."})
+      expect(existsSync(copy)).toBe(false)
+      expect(action.state).toBe("pending")
     })
   })
 })

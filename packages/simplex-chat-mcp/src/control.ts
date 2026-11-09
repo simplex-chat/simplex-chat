@@ -6,7 +6,7 @@ import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "
 import {linkCommand} from "./owner"
 import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, isFilesOff, memberCurrent, memberCurrentOrPending, refusedFileReason, setChatData} from "./tools"
+import {AgentTools, chatSubject, customDataOf, filesOff, fitsMessage, isActive, isConnected, isFilesOff, memberCurrent, memberCurrentOrPending, refusedFileReason, setChatData} from "./tools"
 
 export const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
@@ -323,7 +323,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
             throw error
           }),
       )
-      .catch(error => this.post(`Action ${action.n}: the file was not received: ${codeSpan(oneLine(errorText(error)))}.`))
+      .catch(error => this.post(this.options.session !== undefined && isFilesOff(error) ? `Action ${action.n}: ${filesOff}` : `Action ${action.n}: the file was not received: ${codeSpan(oneLine(errorText(error)))}.`))
       .catch(error => logError(`action ${action.n} file`, error))
   }
 

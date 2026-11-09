@@ -172,7 +172,7 @@ const ownerKey = "simplexMcpOwner"
 const deletedItem = "The message or its chat was deleted."
 const deletedFiles = "Your owner deleted the files of this chat."
 const unapprovedServers = "The file is on unknown servers that were not approved."
-const filesOff = "Files and media are off in the group of this session; its owners can turn them on in the group's preferences."
+export const filesOff = "Files and media are off in the group of this session; its owners can turn them on in the group's preferences."
 const notFoundErrors: T.StoreError["type"][] = ["chatItemNotFound", "contactNotFound", "groupNotFound"]
 const stalledDownload = `The download made no progress for ${downloadStall / 60_000} minutes and was cancelled.`
 
