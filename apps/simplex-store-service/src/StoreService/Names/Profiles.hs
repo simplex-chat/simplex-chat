@@ -112,7 +112,7 @@ data Profiles = Profiles
     previewLookups :: TVar Int,
     cache :: TVar (Map Text (Word64, LinkProfile)),
     refusedHosts :: TVar (Map HostName (Word64, ())),
-    runningLookups :: TVar (Map HostName (TMVar Bool))
+    runningLookups :: TVar (Map HostName (Deadline, TMVar Bool))
   }
 
 newProfiles :: ProfileLimits -> IO Word64 -> ProfileFetcher -> HostResolver -> IO Profiles
@@ -131,6 +131,7 @@ monotonicSeconds = (`div` 1000000000) <$> getMonotonicTimeNSec
 
 -- | A time on the monotonic clock, in nanoseconds.
 newtype Deadline = Deadline Word64
+  deriving (Eq, Ord)
 
 nanosPerMicro :: Word64
 nanosPerMicro = 1000
@@ -352,23 +353,23 @@ checkHostsIn ps pools deadline = checkAll . L.toList
 -- | getAddrInfo is a foreign call that a timeout cannot interrupt, so each lookup runs in its own thread,
 -- which holds its lookup slot until the resolver answers, also after the caller has given up.
 lookupHost :: Profiles -> [TVar Int] -> Deadline -> HostName -> IO HostCheck
-lookupHost Profiles {limits = ProfileLimits {refusedHostSeconds, maxRefusedHosts}, clock, resolveHost, lookupSlots, refusedHosts, runningLookups} pools deadline name = do
+lookupHost Profiles {limits = ProfileLimits {fetchTimeout, refusedHostSeconds, maxRefusedHosts}, clock, resolveHost, lookupSlots, refusedHosts, runningLookups} pools deadline name = do
   now <- clock
   cachedRefusal <- isJust . freshEntry now name <$> readTVarIO refusedHosts
   if cachedRefusal
     then pure HostRefused
     else do
-      answer <- newEmptyTMVarIO
-      running <- mask_ $ waitUntil deadline (runningOrStarted answer) >>= mapM (started answer)
+      lookup' <- (,) <$> deadlineIn fetchTimeout <*> newEmptyTMVarIO
+      running <- mask_ $ waitUntil deadline (runningOrStarted lookup') >>= mapM (started lookup')
       case running of
         Nothing -> pure HostRefused
-        Just lookup' -> maybe HostUnanswered (bool HostRefused HostPublic) <$> waitUntil deadline (readTMVar lookup')
+        Just (lookupDeadline, answer) -> maybe HostUnanswered (bool HostRefused HostPublic) <$> waitUntil (min deadline lookupDeadline) (readTMVar answer)
   where
-    runningOrStarted answer =
+    runningOrStarted lookup' =
       Map.lookup name <$> readTVar runningLookups >>= \case
-        Just lookup' -> pure $ Just lookup'
-        Nothing -> Nothing <$ (mapM_ takeSlot slots >> modifyTVar' runningLookups (Map.insert name answer))
-    started answer = maybe (answer <$ forkIOWithUnmask (\unmask -> try (unmask $ resolveHost name) >>= finish answer)) pure
+        Just running -> pure $ Just running
+        Nothing -> Nothing <$ (mapM_ takeSlot slots >> modifyTVar' runningLookups (Map.insert name lookup'))
+    started lookup'@(_, answer) = maybe (lookup' <$ forkIOWithUnmask (\unmask -> try (unmask $ resolveHost name) >>= finish answer)) pure
     finish answer resolved = do
       let public = either (\(_ :: SomeException) -> True) (all publicAddress) resolved
       now <- clock
