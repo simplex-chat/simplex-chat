@@ -19,6 +19,8 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     private static let enableEncryption: Bool = true
     private static let reconnectTimeout: UInt64 = 30_000_000_000
     private static let iceRestartInterval: UInt64 = 10_000_000_000
+    private static let peerCloseTimeout: UInt64 = 5_000_000_000
+    private static let peerCloseCheckInterval: UInt64 = 100_000_000
     private var chat_ctrl = getChatCtrl()
 
     struct Call {
@@ -787,12 +789,28 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         logger.debug("WebRTCClient: ending the call")
         call.reconnection?.cancel()
         call.iceRestarts?.cancel()
-        call.connection.close()
-        call.connection.delegate = nil
+        closeAfterPeerCloses(call.connection)
         call.frameEncryptor?.delegate = nil
         call.frameDecryptor?.delegate = nil
         (call.localCamera as? RTCCameraVideoCapturer)?.stopCapture()
         audioSessionToDefaults()
+    }
+
+    private func closeAfterPeerCloses(_ connection: RTCPeerConnection) {
+        let connected: () -> Bool = { [RTCIceConnectionState.connected, .completed].contains(connection.iceConnectionState) }
+        Task {
+            if connected() {
+                connection.delegate = nil
+                connection.transceivers.forEach { $0.stopInternal() }
+                var waited: UInt64 = 0
+                while waited < WebRTCClient.peerCloseTimeout && connected() {
+                    try? await Task.sleep(nanoseconds: WebRTCClient.peerCloseCheckInterval)
+                    waited += WebRTCClient.peerCloseCheckInterval
+                }
+            }
+            connection.close()
+            connection.delegate = nil
+        }
     }
 
     func untilIceComplete(timeoutMs: UInt64, stepMs: UInt64, action: @escaping () async -> Void) async {
