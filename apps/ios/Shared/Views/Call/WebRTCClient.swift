@@ -13,10 +13,7 @@ import SimpleXChat
 final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDelegate, RTCFrameDecryptorDelegate {
     private static let factory: RTCPeerConnectionFactory = {
         RTCInitializeSSL()
-        let videoEncoderFactory = RTCDefaultVideoEncoderFactory()
-        let videoDecoderFactory = RTCDefaultVideoDecoderFactory()
-        videoEncoderFactory.preferredCodec = RTCVideoCodecInfo(name: kRTCVp8CodecName)
-        return RTCPeerConnectionFactory(encoderFactory: videoEncoderFactory, decoderFactory: videoDecoderFactory)
+        return RTCPeerConnectionFactory(encoderFactory: VP8EncoderFactory(), decoderFactory: VP8DecoderFactory())
     }()
     private static let ivTagBytes: Int = 28
     private static let enableEncryption: Bool = true
@@ -66,6 +63,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     private let rtcAudioSession =  RTCAudioSession.sharedInstance()
     private let audioQueue = DispatchQueue(label: "chat.simplex.app.audio")
+    private let endCallLock = NSLock()
     private var sendCallResponse: (WVAPIMessage) async -> Void
     var activeCall: Call?
     var notConnectedCall: NotConnectedCall?
@@ -585,6 +583,21 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                 }
             }
         }
+        setAudioSendersActive(pc)
+    }
+
+    // WebRTC starts an audio sender's stream without a track too, and sends the microphone on it unmuted (M156): the screen
+    // audio sender, which has no track, sent the microphone, also when it was muted. So only senders with a track are active.
+    func setAudioSendersActive(_ connection: RTCPeerConnection) {
+        for transceiver in connection.transceivers where transceiver.mediaType == .audio {
+            let sender = transceiver.sender
+            let active = sender.track != nil
+            let parameters = sender.parameters
+            if parameters.encodings.contains(where: { $0.isActive != active }) {
+                parameters.encodings.forEach { $0.isActive = active }
+                sender.parameters = parameters
+            }
+        }
     }
 
     func mediaSourceFromTransceiverMid(_ mid: String?) -> CallMediaSource {
@@ -618,8 +631,11 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         if var key: [CChar] = activeCall?.aesKey?.cString(using: .utf8),
            let pointer: UnsafeMutableRawPointer = malloc(encrypted.count) {
             memcpy(pointer, (encrypted as NSData).bytes, encrypted.count)
-            logCrypto("decrypt", chat_decrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(encrypted.count - clearTextBytesSize)))
-            return Data(bytes: pointer, count: encrypted.count - WebRTCClient.ivTagBytes)
+            guard checkCrypto("decrypt", chat_decrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(encrypted.count - clearTextBytesSize))) else {
+                free(pointer)
+                return nil
+            }
+            return Data(bytesNoCopy: pointer, count: encrypted.count - WebRTCClient.ivTagBytes, deallocator: .free)
         } else {
             return nil
         }
@@ -633,22 +649,24 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         if var key: [CChar] = activeCall?.aesKey?.cString(using: .utf8),
            let pointer: UnsafeMutableRawPointer = malloc(unencrypted.count + WebRTCClient.ivTagBytes) {
             memcpy(pointer, (unencrypted as NSData).bytes, unencrypted.count)
-            logCrypto("encrypt", chat_encrypt_media(chat_ctrl, &key, pointer.advanced(by: clearTextBytesSize), Int32(unencrypted.count + WebRTCClient.ivTagBytes - clearTextBytesSize)))
-            return Data(bytes: pointer, count: unencrypted.count + WebRTCClient.ivTagBytes)
+            guard checkCrypto("encrypt", chat_encrypt_media(chat_ctrl, &key, pointer.advanced(by: clearTextBytesSize), Int32(unencrypted.count + WebRTCClient.ivTagBytes - clearTextBytesSize))) else {
+                free(pointer)
+                return nil
+            }
+            return Data(bytesNoCopy: pointer, count: unencrypted.count + WebRTCClient.ivTagBytes, deallocator: .free)
         } else {
             return nil
         }
     }
 
-    private func logCrypto(_ op: String, _ r: UnsafeMutablePointer<CChar>?) {
-        if let r = r {
-            let err = fromCString(r)
-            if err != "" {
-                logger.error("\(op) error: \(err)")
-//            } else {
-//                logger.debug("\(op) ok")
-            }
+    private func checkCrypto(_ op: String, _ r: UnsafeMutablePointer<CChar>?) -> Bool {
+        guard let r = r else { return true }
+        let err = fromCString(r)
+        if err != "" {
+            logger.error("\(op) error: \(err)")
+            return false
         }
+        return true
     }
 
     func addRemoteCameraRenderer(_ renderer: RTCVideoRenderer) {
@@ -687,7 +705,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     func startCaptureLocalVideo(_ device: AVCaptureDevice.Position?, _ capturer: RTCVideoCapturer?) {
 #if targetEnvironment(simulator)
         guard
-            let capturer = (activeCall?.localCamera ?? notConnectedCall?.localCameraAndTrack?.0) as? RTCFileVideoCapturer
+            let capturer = (capturer ?? activeCall?.localCamera ?? notConnectedCall?.localCameraAndTrack?.0) as? RTCFileVideoCapturer
         else {
             logger.error("Unable to work with a file capturer")
             return
@@ -759,7 +777,13 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     private func _endCall() {
         (notConnectedCall?.localCameraAndTrack?.0 as? RTCCameraVideoCapturer)?.stopCapture()
-        guard let call = activeCall else { return }
+        // The end command and the call view ending it on disappearing both end the call: closing the connection from
+        // both at once froze the app (CI run 41311546712), so only the first takes the call.
+        endCallLock.lock()
+        let call = activeCall
+        activeCall = nil
+        endCallLock.unlock()
+        guard let call else { return }
         logger.debug("WebRTCClient: ending the call")
         call.reconnection?.cancel()
         call.iceRestarts?.cancel()
@@ -769,7 +793,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         call.frameDecryptor?.delegate = nil
         (call.localCamera as? RTCCameraVideoCapturer)?.stopCapture()
         audioSessionToDefaults()
-        activeCall = nil
     }
 
     func untilIceComplete(timeoutMs: UInt64, stepMs: UInt64, action: @escaping () async -> Void) async {
@@ -1062,6 +1085,9 @@ extension WebRTCClient {
         if activeCall != nil {
             activeCall?.localAudioTrack = enabled ? createAudioTrack() : nil
             activeCall?.connection.transceivers.first(where: { t in mediaSourceFromTransceiverMid(t.mid) == .mic })?.sender.track = activeCall?.localAudioTrack
+            if let connection = activeCall?.connection {
+                setAudioSendersActive(connection)
+            }
         } else if notConnectedCall != nil {
             notConnectedCall?.audioTrack = enabled ? createAudioTrack() : nil
         }
@@ -1245,4 +1271,18 @@ extension RTCSignalingState {
         default: return nil // unknown
         }
     }
+}
+
+// The frame encryption leaves only VP8's header in the clear for WebRTC's packetizer, so calls send and receive VP8 alone:
+// with the default factories two apps on WebRTC M156 chose H.264, and no video arrived.
+private final class VP8EncoderFactory: NSObject, RTCVideoEncoderFactory {
+    func createEncoder(_ info: RTCVideoCodecInfo) -> RTCVideoEncoder? { RTCVideoEncoderVP8.vp8Encoder() }
+
+    func supportedCodecs() -> [RTCVideoCodecInfo] { RTCVideoEncoderVP8.supportedCodecs() }
+}
+
+private final class VP8DecoderFactory: NSObject, RTCVideoDecoderFactory {
+    func createDecoder(_ info: RTCVideoCodecInfo) -> RTCVideoDecoder? { RTCVideoDecoderVP8.vp8Decoder() }
+
+    func supportedCodecs() -> [RTCVideoCodecInfo] { RTCVideoDecoderVP8.supportedCodecs() }
 }

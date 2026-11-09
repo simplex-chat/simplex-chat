@@ -1,9 +1,13 @@
+import {tmpdir} from "os"
+import {join} from "path"
 import {ChatResponse, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
 import {Actions, ActionHooks} from "../../src/actions"
 import {ToolCall} from "../../src/messages"
 
 export const user = {userId: 1, profile: {displayName: "agent", peerType: "agent", profileId: 1}} as unknown as T.User
+
+export const data = join(tmpdir(), `simplex-mcp-unit-${process.pid}`)
 
 export function contact(contactId: number, displayName: string, extra: object = {}): T.Contact {
   return {
@@ -53,6 +57,12 @@ export function item(itemId: number, text: string, chatDir: T.CIDirection = {typ
     reactions: [],
     ...(extra.quoted === undefined ? {} : {quotedItem: {itemId: extra.quoted, sentAt: "", content: {type: "text", text: ""}}}),
   } as unknown as T.ChatItem
+}
+
+export function fileItem(itemId: number, msgContent: object, fileStatus: object, extra: {chatDir?: T.CIDirection; fileSource?: object; fileId?: number} = {}): T.ChatItem {
+  const chatItem = item(itemId, "", extra.chatDir)
+  const file = {fileId: extra.fileId ?? 7, fileName: "report.pdf", fileSize: 2400000, fileStatus, fileProtocol: "xftp", ...(extra.fileSource === undefined ? {} : {fileSource: extra.fileSource})}
+  return {...chatItem, content: {...chatItem.content, msgContent}, file} as unknown as T.ChatItem
 }
 
 export function event(chatInfo: T.ChatInfo, chatItem: T.ChatItem): T.AChatItem {
@@ -108,7 +118,24 @@ interface FakeChatData {
   items: T.ChatItem[]
 }
 
+const library = api.ChatApi.prototype
+
 export class FakeChat {
+  apiGetChat = library.apiGetChat
+  apiChatItemsRead = library.apiChatItemsRead
+  apiGetChats = library.apiGetChats
+  apiContactInfo = library.apiContactInfo
+  apiConnectPlan = library.apiConnectPlan
+  apiPrepareContact = library.apiPrepareContact
+  apiPrepareGroup = library.apiPrepareGroup
+  apiConnectPreparedContact = library.apiConnectPreparedContact
+  apiConnectPreparedGroup = library.apiConnectPreparedGroup
+  apiConnectContactViaAddress = library.apiConnectContactViaAddress
+  apiConnectPreparedLink = library.apiConnectPreparedLink
+  apiReceiveFile = library.apiReceiveFile
+  apiCancelFile = library.apiCancelFile
+  apiGetChatItemInfo = library.apiGetChatItemInfo
+  apiGetUserServers = library.apiGetUserServers
   commands: string[] = []
   sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]}[] = []
   updates: {chatId: number; itemId: number; text: string}[] = []
@@ -129,7 +156,7 @@ export class FakeChat {
     const getChat = /^\/_get chat ([@#]\d+) (.+)$/.exec(cmd)
     if (getChat) return this.getChat(getChat[1], getChat[2])
     if (cmd.startsWith("/_get chats ")) {
-      const [, before, count] = /(?: before=(\S+))? count=(\d+)$/.exec(cmd)!
+      const [, before, count] = /(?: before=(\S+))? count=(\d+) /.exec(cmd)!
       const chats = [...this.chats.values()]
         .filter(({chatInfo}) => before === undefined || chatTs(chatInfo) < before)
         .slice(0, Number(count))
@@ -218,14 +245,17 @@ export class FakeChat {
     if (data === undefined) throw storeError(ref)
     const around = /^around=(\d+) count=0$/.exec(pagination)
     const after = /^after=(\d+) count=(\d+)$/.exec(pagination)
+    const before = /^before=(\d+) count=(\d+)$/.exec(pagination)
     const last = /^count=(\d+)$/.exec(pagination)
     const chatItems = around
       ? data.items.filter(({meta}) => meta.itemId === Number(around[1]))
       : after
         ? data.items.filter(({meta}) => meta.itemId > Number(after[1])).slice(0, Number(after[2]))
-        : last && Number(last[1]) > 0
-          ? data.items.slice(-Number(last[1]))
-          : []
+        : before
+          ? data.items.filter(({meta}) => meta.itemId < Number(before[1])).slice(-Number(before[2]))
+          : last && Number(last[1]) > 0
+            ? data.items.slice(-Number(last[1]))
+            : []
     if (around && chatItems.length === 0) throw storeError(ref)
     return structuredClone({type: "apiChat", chat: {chatInfo: data.chatInfo, chatItems, chatStats: chatStats(data.items)}}) as unknown as ChatResponse
   }
