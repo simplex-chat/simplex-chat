@@ -16,6 +16,7 @@ import java.io.*
 import java.net.URI
 import java.util.*
 import javax.imageio.*
+import javax.imageio.stream.ImageInputStream
 import javax.imageio.stream.MemoryCacheImageOutputStream
 
 private fun errorBitmap(): ImageBitmap =
@@ -27,6 +28,12 @@ private val base64BitmapCache = Collections.synchronizedMap(object : LinkedHashM
 
 private const val MAX_IMAGE_DIMENSION = 4320
 
+private val receivedImageFormats = setOf("png", "jpeg", "gif")
+
+internal fun receivedImageReader(stream: ImageInputStream): ImageReader =
+  ImageIO.getImageReaders(stream).asSequence().firstOrNull { it.formatName.lowercase() in receivedImageFormats }
+    ?: throw IOException("Unsupported image format")
+
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   base64BitmapCache[base64ImageString]?.let { return it }
   val imageString = base64ImageString
@@ -35,7 +42,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   return try {
     val bytes = Base64.getMimeDecoder().decode(imageString)
     val stream = ImageIO.createImageInputStream(ByteArrayInputStream(bytes))
-    val reader = ImageIO.getImageReaders(stream).next()
+    val reader = receivedImageReader(stream)
     reader.setInput(stream)
     val width = reader.getWidth(0)
     val height = reader.getHeight(0)
