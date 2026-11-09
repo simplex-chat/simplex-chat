@@ -12,6 +12,7 @@ module StoreService.Web.Http
     takeToken,
     limited,
     only,
+    CheckoutClient,
     checkoutClient,
     maxBuckets,
     readLimit,
@@ -60,7 +61,7 @@ where
 
 import Control.Concurrent.STM
 import Control.Exception (bracket)
-import Control.Monad (when)
+import Control.Monad (foldM, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import Data.Aeson.Types (Pair)
@@ -202,15 +203,20 @@ takeFrom limit now = \case
   _ -> Right Bucket {bkCount = 1, bkStarted = now}
 
 takeToken :: HttpEnv -> Limit -> Text -> IO (Maybe Int)
-takeToken HttpEnv {heBuckets} Limit {lmName, lmPerMinute} client = do
+takeToken env limit client = takeTokens env [(limit, client)]
+
+takeTokens :: HttpEnv -> [(Limit, Text)] -> IO (Maybe Int)
+takeTokens HttpEnv {heBuckets} limits = do
   now <- getCurrentTime
   atomically $ do
     buckets <- reclaim now <$> readTVar heBuckets
-    let key = lmName <> "\t" <> client
-        count bucket = writeTVar heBuckets (Map.insert key bucket buckets) >> pure Nothing
+    let takeOne taken (Limit {lmName, lmPerMinute}, client) =
+          let key = lmName <> "\t" <> client
+           in (\bucket -> Map.insert key bucket taken) <$> takeFrom lmPerMinute now (Map.lookup key taken)
+        count taken = writeTVar heBuckets taken >> pure Nothing
         -- write the reclaimed map back here too, or a refused request redoes the filtering every time and the map stays at the limit
         refuse seconds = writeTVar heBuckets buckets >> pure (Just seconds)
-    either (refuse . max 1 . ceiling) count (takeFrom lmPerMinute now (Map.lookup key buckets))
+    either (refuse . max 1 . ceiling) count (foldM takeOne buckets limits)
 
 limited :: HttpEnv -> Limit -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
 limited env limit req respond action =
@@ -218,13 +224,10 @@ limited env limit req respond action =
     Nothing -> action
     Just seconds -> respond (rateLimited seconds)
 
--- | A limit every client shares, taken just before the provider is asked, so refused requests do not use it.
-limitedForAll :: HttpEnv -> Limit -> (Response -> IO a) -> IO a -> IO a
-limitedForAll env limit refuse action = takeToken env limit "" >>= maybe action (refuse . rateLimited)
-
-limitedCheckout :: HttpEnv -> Text -> ServicePaymentMethod -> (Response -> IO a) -> IO a -> IO a
-limitedCheckout env client method refuse action =
-  takeToken env checkoutLimit client >>= maybe (limitedForAll env (invoicesLimit method) refuse action) (refuse . rateLimited)
+-- | The client network's limit and the one every client shares, taken just before the provider is asked, so refused requests do not use them.
+limitedCheckout :: HttpEnv -> CheckoutClient -> ServicePaymentMethod -> (Response -> IO a) -> IO a -> IO a
+limitedCheckout env (CheckoutClient client) method refuse action =
+  takeTokens env [(checkoutLimit, client), (invoicesLimit method, "")] >>= maybe action (refuse . rateLimited)
 
 only :: Method -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
 only method req respond action
@@ -240,8 +243,11 @@ hostPrefix = KeyPrefix {kpOctets = 4, kpGroups = 4}
 networkPrefix :: KeyPrefix
 networkPrefix = KeyPrefix {kpOctets = 3, kpGroups = 3}
 
-checkoutClient :: HttpEnv -> Request -> Text
-checkoutClient = clientKey networkPrefix
+newtype CheckoutClient = CheckoutClient Text
+  deriving (Eq, Show)
+
+checkoutClient :: HttpEnv -> Request -> CheckoutClient
+checkoutClient env = CheckoutClient . clientKey networkPrefix env
 
 -- | Every line is joined first, so a second header line a caller adds cannot leave its own line the one we read.
 clientKey :: KeyPrefix -> HttpEnv -> Request -> Text

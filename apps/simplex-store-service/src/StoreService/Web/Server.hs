@@ -432,7 +432,7 @@ createInvoiceHandler env@WebEnv {weStore, weConfig, weProviders, weWaiters} req 
               Just provider -> createAtProvider env client provider cr priced respond
 
 -- | Once the provider call succeeds an invoice exists at BTCPay, and any path below that does not write our rows leaves it stranded.
-createAtProvider :: WebEnv -> Text -> Provider -> CreateRequest -> PricedOffer -> Respond -> IO ResponseReceived
+createAtProvider :: WebEnv -> CheckoutClient -> Provider -> CreateRequest -> PricedOffer -> Respond -> IO ResponseReceived
 createAtProvider WebEnv {weStore, weConfig, weHttp} client provider CreateRequest {crPriceId, crOfferId, crMethod, crCodeHash} priced respond =
   limitedCheckout weHttp client crMethod respond $ do
       invId@(InvoiceId orderId) <- newInvoiceId

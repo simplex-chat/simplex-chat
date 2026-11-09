@@ -97,13 +97,15 @@ import GHC.IO.Handle.FD (handleToFd)
 import Network.HTTP.Client (Manager, Request (..), RequestBody (..), Response, defaultManagerSettings, httpLbs, newManager, parseRequest, responseBody, responseHeaders, responseStatus, responseTimeoutMicro)
 import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
 import Network.HTTP.Types.Status (statusCode)
+import Network.Socket (SockAddr (..), tupleToHostAddress, tupleToHostAddress6)
 import Network.Wai (Application)
+import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
 import Simplex.Chat.Badges.Ledger (addMonths, debitEntry, emptyEntry, grantEntry, issueEntry)
 import Simplex.Chat.StoreService (BadgeOffer (..), BadgePrice (..), StatementCreditType (..), StatementDebitType (..), StatementEntry (..), SubscriptionState (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
-import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
+import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore (..), withConnection, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface
@@ -260,6 +262,8 @@ badgeWebTests = do
     it "keys an IPv6 client by its /64 and an IPv4-mapped one by its IPv4 address" testIPv6ClientKey
     it "caps checkouts of every client together, counting only those that reach the provider" testInvoicesLimitForAll
     it "caps checkouts per IPv4 /24 and IPv6 /48 before the shared cap, so the refused ones take none of it" testCheckoutLimitPerNetwork
+    it "admits a card checkout while the BTCPay ones are used up, the refused BTCPay ones taking none of the network's" testCardCheckoutPastSpentBTCPay
+    it "keys a checkout by the socket's IPv4 /24 or IPv6 /48 while forwarded addresses are not trusted" testCheckoutClientOfPeer
     it "refuses every badly signed webhook, logging only the first few of a minute" testWebhookRefusalLogCapped
     it "answers a poll at once with rate_limited while every hold slot is taken, and frees each slot after its hold" testHoldSlots
     it "runs a search's chain reads only in a free search slot, and frees each slot after them" testSearchSlots
@@ -1933,7 +1937,7 @@ testInvoicesLimitForAll = bounded "checkouts for all" $ withSeededCheckout $ \cl
 
 testCheckoutLimitPerNetwork :: IO ()
 testCheckoutLimitPerNetwork = bounded "checkouts per network" $ withCheckoutProvider distinctProviderRefs $ \_ _ client -> do
-  let checkout address = statusOf <$> webRequestBody client "POST" "/api/invoice" [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack address)] (createBody supporterPriceId Nothing "btc" (codeHashText (T.pack address)))
+  let checkout = checkoutFrom client "btc"
       perNetwork = lmPerMinute checkoutLimit
       inV4Network i = "198.51.100." <> show i
       inV6Network i = "2001:db8:1:" <> show i <> "::1"
@@ -1944,6 +1948,34 @@ testCheckoutLimitPerNetwork = bounded "checkouts per network" $ withCheckoutProv
   mapM (checkout . inV6Network) [1 .. perNetwork] >>= (`shouldSatisfy` all (== 200))
   checkout (inV6Network (perNetwork + 1)) `shouldReturn` 429
   checkout "2001:db8:2::1" `shouldReturn` 200
+
+testCardCheckoutPastSpentBTCPay :: IO ()
+testCardCheckoutPastSpentBTCPay = bounded "card past spent btcpay" $ withCheckoutProviders (\ref -> [distinctProviderRefs ref, card ref]) $ \_ env client -> do
+  let crypto = invoicesLimit (SPMCrypto CCBtc)
+      fromNetwork i = "198.51.100." <> show i
+  replicateM_ (lmPerMinute crypto) $ takeToken (weHttp env) crypto ""
+  mapM (checkoutFrom client "btc" . fromNetwork) [1 .. lmPerMinute checkoutLimit] >>= (`shouldSatisfy` all (== 429))
+  checkoutFrom client "card" (fromNetwork (lmPerMinute checkoutLimit + 1)) `shouldReturn` 200
+  where
+    card ref =
+      let p = distinctProviderRefs ref
+       in p {pProvider = PPStripe, pCreateInvoice = \spm draft -> fmap (\inv -> inv {piDestination = SPDCard CPStripe "pi_secret"}) <$> pCreateInvoice p spm draft}
+
+testCheckoutClientOfPeer :: IO ()
+testCheckoutClientOfPeer = do
+  http <- newHttpEnv (listener (testServiceConfig "" False))
+  let from addr = checkoutClient http Wai.defaultRequest {Wai.remoteHost = addr, Wai.requestHeaders = [("X-Forwarded-For", "203.0.113.1")]}
+      v4 a b c d = SockAddrInet 0 (tupleToHostAddress (a, b, c, d))
+      v6 a b c d = SockAddrInet6 0 0 (tupleToHostAddress6 (a, b, c, d, 0, 0, 0, 1)) 0
+  from (v4 198 51 100 1) `shouldBe` from (v4 198 51 100 200)
+  from (v4 198 51 100 1) `shouldNotBe` from (v4 198 51 101 1)
+  from (v6 0x2001 0xdb8 1 1) `shouldBe` from (v6 0x2001 0xdb8 1 0xffff)
+  from (v6 0x2001 0xdb8 1 1) `shouldNotBe` from (v6 0x2001 0xdb8 2 1)
+  from (SockAddrInet6 0 0 (tupleToHostAddress6 (0, 0, 0, 0, 0, 0xffff, 0xc633, 0x6407)) 0) `shouldBe` from (v4 198 51 100 1)
+
+checkoutFrom :: WebClient -> Text -> String -> IO Int
+checkoutFrom client methodText address =
+  statusOf <$> webRequestBody client "POST" "/api/invoice" [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack address)] (createBody supporterPriceId Nothing methodText (codeHashText (T.pack address)))
 
 testHoldSlots :: IO ()
 testHoldSlots = bounded "hold slots" $ withWebApp $ \env client -> do
@@ -2120,7 +2152,10 @@ withCheckout :: (IORef StubState -> WebEnv -> WebClient -> IO a) -> IO a
 withCheckout = withCheckoutProvider stubProvider
 
 withCheckoutProvider :: (IORef StubState -> Provider) -> (IORef StubState -> WebEnv -> WebClient -> IO a) -> IO a
-withCheckoutProvider mkProvider action =
+withCheckoutProvider mkProvider = withCheckoutProviders (\ref -> [mkProvider ref])
+
+withCheckoutProviders :: (IORef StubState -> [Provider]) -> (IORef StubState -> WebEnv -> WebClient -> IO a) -> IO a
+withCheckoutProviders mkProviders action =
   withServiceStore $ \st -> do
     createDirectoryIfMissing True "tests/tmp"
     withTempDirectory "tests/tmp" "badge-checkout" $ \root -> do
@@ -2128,7 +2163,7 @@ withCheckoutProvider mkProvider action =
       seedCheckoutCatalog st
       ref <- newIORef (newStubState (Right sampleProviderInvoice))
       let cfg = (testServiceConfig staticDir True) {btcpay = Just testBTCPayConfig}
-      withListener [mkProvider ref] True holdMicros st cfg (action ref)
+      withListener (mkProviders ref) True holdMicros st cfg (action ref)
 
 invoiceCount :: DBStore -> IO Int
 invoiceCount st = withConnection st $ \db -> do
