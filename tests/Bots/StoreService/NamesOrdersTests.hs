@@ -1251,7 +1251,7 @@ testLatePaymentAfterNewOrder = withOrders $ \ctx -> do
   closed <- invoiceRegistration ctx oldInv
   (nrPhase closed, nrLive closed) `shouldBe` (PUnpaid, False)
   logs <- capturingStderr $ settleNow ctx oldInv settled `shouldReturn` Right ISPaid
-  logs `shouldSatisfy` T.isInfixOf "credited to its balance"
+  logs `shouldSatisfy` T.isInfixOf "credited to the order's balance"
   invoiceRegistration ctx oldInv `shouldReturn` closed
   new <- invoiceRegistration ctx newInv
   (nrPhase new, nrLive new, nrVersion new) `shouldBe` (PUnpaid, True, 1)
@@ -1321,7 +1321,7 @@ testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
   setSignals (cStub ctx) [(ref, SigClosed paid PaidInPart)]
   logs <- readWith poller
   refunds logs `shouldBe` 1
-  logs `shouldSatisfy` T.isInfixOf "it stays unpaid, and its money is credited to its balance once confirmed, else alerted"
+  logs `shouldSatisfy` T.isInfixOf "it stays unpaid, and its money is credited to the order's balance once confirmed, else alerted"
   restarted <- newPoller
   refunds <$> readWith restarted `shouldReturn` 0
   (nrPhase &&& nrLive) <$> invoiceRegistration ctx inv `shouldReturn` (PUnpaid, False)
