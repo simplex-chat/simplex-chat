@@ -18,7 +18,6 @@ module Bots.StoreService.FakeBTCPay
     ignoreListPaging,
     answerOversize,
     answerStalled,
-    stalledAnswer,
     fakeRequests,
     apiRequests,
     fakeInvoiceIds,
@@ -30,10 +29,10 @@ module Bots.StoreService.FakeBTCPay
 where
 
 import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), providerTimeoutMicros)
+import Bots.StoreService.FakeHttp (setSwitch, stalledAnswer)
 import Control.Applicative ((<|>))
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
-import Control.Monad (forever, join)
+import Control.Monad (join)
 import Crypto.Hash (Digest, SHA256)
 import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)
 import qualified Data.Aeson as J
@@ -43,7 +42,6 @@ import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types (Pair)
 import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString (ByteString)
-import Data.ByteString.Builder (byteString)
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
 import Data.List (isPrefixOf, nub)
@@ -73,7 +71,7 @@ import Network.HTTP.Types
     unauthorized401,
   )
 import Network.HTTP.Types.Header (Header)
-import Network.Wai (Application, Response, pathInfo, queryString, requestHeaders, requestMethod, responseLBS, responseStream, strictRequestBody)
+import Network.Wai (Application, Response, pathInfo, queryString, requestHeaders, requestMethod, responseLBS, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Util (tshow)
 import System.FilePath ((</>))
@@ -293,8 +291,8 @@ fakeApp stv req respond = do
     ["_fail"] | isPost -> control body setFail
     ["_fixtures"] | isPost -> control body setFixtures
     ["_paging"] | isPost -> control body setPaging
-    ["_oversize"] | isPost -> control body (setSwitch "_oversize" (\on st -> st {fsOversize = on}))
-    ["_stalled"] | isPost -> control body (setSwitch "_stalled" (\on st -> st {fsStalled = on}))
+    ["_oversize"] | isPost -> control body (setSwitch stv "_oversize" (\on st -> st {fsOversize = on}))
+    ["_stalled"] | isPost -> control body (setSwitch stv "_stalled" (\on st -> st {fsStalled = on}))
     ["_rates"] | isPost -> setRatesAnswer body
     "api" : "v1" : "stores" : storeId : rest -> apiCall body storeId rest
     _ -> refuse notFound404 "no such path on the fake btcpay"
@@ -362,14 +360,6 @@ fakeApp stv req respond = do
     setRatesAnswer body = case J.decode body of
       Just v -> atomically (modifyTVar' stv (\st -> st {fsRates = Just v})) >> ok
       Nothing -> refuse badRequest400 "_rates takes the answer to serve, as JSON"
-
-    setSwitch path set o = case unknownKeys ["on"] o of
-      Just message -> pure (Just message)
-      Nothing -> case KM.lookup "on" o of
-        Just (J.Bool on) -> do
-          atomically (modifyTVar' stv (set on))
-          pure Nothing
-        _ -> pure (Just (path <> " takes {\"on\": <bool>}"))
 
     setPaging o = case unknownKeys ["ignore"] o of
       Just message -> pure (Just message)
@@ -547,14 +537,6 @@ jsonResponse st v = responseLBS st [(hContentType, "application/json")] (J.encod
 
 errorResponse :: Status -> Text -> Response
 errorResponse st message = jsonResponse st (J.object ["code" J..= TE.decodeUtf8 (statusMessage st), "message" J..= message])
-
-stalledAnswer :: Response
-stalledAnswer = responseStream ok200 [(hContentType, "application/json")] $ \write flush -> do
-  write (byteString "[") >> flush
-  forever $ threadDelay trickleMicros >> write (byteString " ") >> flush
-
-trickleMicros :: Int
-trickleMicros = 100000
 
 controlPost :: FakeBTCPay -> String -> J.Value -> IO ()
 controlPost FakeBTCPay {fbBaseUrl, fbManager} path v = do

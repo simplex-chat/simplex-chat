@@ -23,7 +23,7 @@ module Bots.StoreService.FakeStripe
 where
 
 import StoreService.Config (StripeConfig (..), providerTimeoutMicros)
-import Bots.StoreService.FakeBTCPay (stalledAnswer)
+import Bots.StoreService.FakeHttp (setSwitch, stalledAnswer)
 import Control.Concurrent.STM
 import Control.Monad (forM_, when)
 import Crypto.Hash (Digest, SHA256)
@@ -216,7 +216,7 @@ fakeApp stv req respond0 = do
     ["_fail"] | isPost -> control body setFail
     ["_paging"] | isPost -> control body setPaging
     ["_fixtures"] | isPost -> control body setFixtures
-    ["_stalled"] | isPost -> control body setStalled
+    ["_stalled"] | isPost -> control body (setSwitch stv "_stalled" (\on st -> st {fsStalled = on}))
     "v1" : "payment_intents" : rest -> apiCall body rest
     ["v1", "charges"] | isGet -> listCharges
     _ -> refuse notFound404 "no such path on the fake stripe"
@@ -278,14 +278,6 @@ fakeApp stv req respond0 = do
           atomically (modifyTVar' stv (\st -> st {fsList = name}))
           pure Nothing
         Nothing -> pure (Just "_fixtures takes {\"list\": <fixture name>}")
-
-    setStalled o = case unknownKeys ["on"] o of
-      Just message -> pure (Just message)
-      Nothing -> case KM.lookup "on" o of
-        Just (J.Bool on) -> do
-          atomically (modifyTVar' stv (\st -> st {fsStalled = on}))
-          pure Nothing
-        _ -> pure (Just "_stalled takes {\"on\": <bool>}")
 
     apiCall b rest = do
       atomically $
