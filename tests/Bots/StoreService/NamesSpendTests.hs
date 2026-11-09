@@ -306,7 +306,7 @@ testDifferenceLimitedPerNetwork :: IO ()
 testDifferenceLimitedPerNetwork = withSpend $ \ctx@Ctx {cClient, cWeb, cStub} -> do
   src <- sourceOf ctx "src" 6000
   let http = weHttp cWeb
-      fromNetwork address = checkoutClient http Wai.defaultRequest {Wai.requestHeaders = [("X-Forwarded-For", address)]}
+      fromNetwork forwardedFor = checkoutClient http Wai.defaultRequest {Wai.requestHeaders = [("X-Forwarded-For", forwardedFor)]}
   replicateM_ (lmPerMinute checkoutLimit) $ limitedCheckout http (fromNetwork "203.0.113.7") (SPMCrypto CCBtc) (const $ pure ()) (pure ())
   signed <- spendBody ctx src (difference 6000)
   r <- webRequestBody cClient "POST" "/api/registration/src/spend" [(hContentType, "application/json"), ("X-Forwarded-For", "203.0.113.9")] (J.encode signed)
