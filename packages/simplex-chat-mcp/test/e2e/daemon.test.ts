@@ -91,6 +91,49 @@ async function joinSessionGroups(owner: Person, names: string[]): Promise<Map<st
   return groups
 }
 
+const linksOff = "SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences."
+const presetLink = "https://smp4.simplex.im/g#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
+
+interface LinkSession {
+  alice: Person
+  client: DaemonClient
+  hub: Hub
+  groupOne: number
+  claudeGroup: number
+}
+
+async function linkSession(scenario: string): Promise<LinkSession> {
+  const root = join(dir, scenario, "root")
+  await prepareRoot(smpServer.address, root, xftpServer.address)
+  const alice = await personIn(scenario, "Alice")
+  const daemon = await startDaemon(root)
+  const client = DaemonClient.forRoot(root)
+  await openSession(client, one, "one")
+  const owner = await client.request<OwnerState>("GET", "/link")
+  const invitations = joinSessionGroups(alice, ["1 · one"])
+  await joinByLink(alice, owner.link!)
+  const groupOne = (await invitations).get("1 · one")!
+  await until(async () => (await alice.chat.apiListMembers(groupOne)).some(member => member.memberProfile.displayName === "User" && isActive(member)))
+  const hub = daemon["hub"] as unknown as Hub
+  return {alice, client, hub, groupOne, claudeGroup: hub["sessions"].get(1)!.control.groupId}
+}
+
+async function connectBot({alice, client, groupOne}: LinkSession, bot: Bot): Promise<string> {
+  const card = received(alice.chat, inGroup(groupOne, textStarts("I want to connect to bot ")))
+  const connecting = callTool(client, one, "connect", {target: bot.link, idle: 2})
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], `/approve ${cardNumber(await card)}`)
+  return (await connecting).result.chat as string
+}
+
+async function setLinks({alice, hub, groupOne, claudeGroup}: LinkSession, preference: T.RoleGroupPreference): Promise<void> {
+  const info = (await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === groupOne)!
+  await alice.chat.apiUpdateGroupProfile(groupOne, {...info.groupProfile, groupPreferences: {...info.groupProfile.groupPreferences, simplexLinks: preference}})
+  await until(async () => {
+    const links = (await hub.chat.apiListGroups(hub.profile.userId)).find(({groupId}) => groupId === claudeGroup)?.groupProfile.groupPreferences?.simplexLinks
+    return links?.enable === preference.enable && links?.role === preference.role
+  })
+}
+
 test("an owner joins the Main group and each session's group, and approves its connect, send, download and leave there; chats belong to their sessions; the owner's short description and welcome message of the Main group stay after a daemon restart", async () => {
   const root = join(dir, "sessions", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
@@ -251,6 +294,23 @@ test("while SimpleX links are off in a session's group, a send card with a Simpl
   const notices = ["User's prompt was not posted: ", "Claude's answer was not posted: "].map(subject => received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText === `${subject}SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences.`)))
   await client.request("POST", "/turn", {id: one, prompt: `Open ${directory.link}`, answer: `The bot's address is ${directory.link}`})
   await Promise.all(notices)
+}, 600_000)
+
+test("while SimpleX links are off in a session's group, a send with a preset server's SimpleX link under a standing approval is sent and stays done, and Claude posts that it was performed and its card was not posted", async () => {
+  const session = await linkSession("standing")
+  const {alice, client, groupOne} = session
+  const plain = await botIn("standing", "Plain")
+  const plainChat = await connectBot(session, plain)
+  const approvedAll = received(alice.chat, inGroup(groupOne, textStarts("Approved for bot Plain")))
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], `/approve ${plainChat} all`)
+  await approvedAll
+  await setLinks(session, {enable: T.GroupFeatureEnabled.Off})
+  const notice = received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText === `Action 2 was performed; its card was not posted: ${linksOff}`))
+  const delivered = received(plain.chat, ({chatItem}) => chatItem.meta.itemText === `Our group: ${presetLink}`)
+  const sent = await callTool(client, one, "send", {chat: plainChat, text: `Our group: ${presetLink}`, idle: 2})
+  expect(sent.result).toMatchObject({action: 2, status: "done", chat: plainChat})
+  await notice
+  await delivered
 }, 600_000)
 
 test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {

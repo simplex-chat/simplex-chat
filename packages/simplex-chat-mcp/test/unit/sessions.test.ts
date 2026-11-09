@@ -1196,6 +1196,18 @@ describe("session channel", () => {
       expect(groupPosts(chat)).toEqual([{type: "text", text: `Action 1: ${off("SimpleX links")}`}])
     })
 
+    it("posts that an action performed in mode host was performed and its card was not posted, naming the preference, and the action stays done", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1), items: []})
+      refuseInGroup(chat)
+      session.actions.mode = "host"
+      const result = (await session.call("send", {chat: "@4", text: `Join ${link}`, wait: 0}, signal().call))!.structuredContent
+      await until(() => groupPosts(chat).length === 1)
+      expect(groupPosts(chat)).toEqual([{type: "text", text: `Action 1 was performed; its card was not posted: ${off("SimpleX links")}`}])
+      expect(result).toMatchObject({status: "done", chat: "@4"})
+    })
+
     it("posts that a card's edit was refused, naming the preference", async () => {
       const chat = new FakeChat()
       const {session} = await channel(chat)

@@ -528,7 +528,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         action.cardImage = ""
         return this.postCardContent(action, {type: "text", text: msgContent.text})
       }
-      await this.post(`Action ${action.n}: ${featureOff(feature)}`)
+      await this.post(`Action ${action.n}${action.state === "done" ? " was performed; its card was not posted" : ""}: ${featureOff(feature)}`)
       throw new ToolError(featureOff(feature))
     }
   }
