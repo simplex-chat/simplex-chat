@@ -116,7 +116,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "names a status the provider invented" testFakeUnknownStatus
     it "reads paymentMethodPaid over the wire, never totalPaid" testFakePaymentMethodPaid
     it "makes a 500 at checkout a ProviderError" testFakeCreate500
-    it "abandons an invoice it created but could not learn the address of" testFakeCreatePostFailure
+    it "cancels an invoice it created but could not learn the address of, naming it" testFakeCreatePostFailure
     it "names the payment method a created invoice does not offer" testFakeCreateWrongMethod
     it "names a payment method with no destination, and writes nothing" testFakeCreateNoDestination
     it "names a payment method with no amount, and writes nothing" testFakeCreateNoAmount
@@ -819,9 +819,9 @@ testFakeCreatePostFailure = withProvider $ \fake p -> do
   failAfterCalls 1 fake 1 500
   r <- pCreateInvoice p (SPMCrypto CCBtc) fiftyFourDollars
   r `shouldSatisfy` namesInError "500"
-  ids <- fakeInvoiceIds fake
-  length ids `shouldBe` 1
-  r `shouldSatisfy` \case Right _ -> False; Left _ -> True
+  [created] <- fakeInvoiceIds fake
+  r `shouldSatisfy` namesInError ("; invoice " <> created <> " is cancelled")
+  map frBody <$> apiRequests fake "POST" ["invoices", created, "status"] `shouldReturn` [J.encode (J.object ["status" .= ("Invalid" :: Text)])]
 
 testFakeCreateWrongMethod :: IO ()
 testFakeCreateWrongMethod = withProvider $ \fake p -> do

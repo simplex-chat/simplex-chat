@@ -310,13 +310,16 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
       created <- greenfield env what methodPost ["invoices"] [] (Just (body methodId))
       case created >>= decodeGreenfield what of
         Left e@(ProviderError m) -> do
-          logWarn ("btcpay: the refused request was " <> safeDecodeUtf8 (LB.toStrict (J.encode (body methodId))) <> " -- " <> m)
+          logWarn ("btcpay: the failed request was " <> safeDecodeUtf8 (LB.toStrict (J.encode (body methodId))) <> " -- " <> m)
           pure (Left e)
         Right GCreated {gcId} -> do
           ms <- greenfield env what methodGet ["invoices", gcId, "payment-methods"] [] Nothing
-          pure (ms >>= destination methodId cc gcId)
+          either (cancelCreated gcId) (pure . Right) (ms >>= destination methodId cc gcId)
   where
     what = "create invoice"
+    cancelCreated ref (ProviderError e) = do
+      cancelled <- cancelInvoice env ref
+      pure $ Left $ ProviderError $ e <> "; invoice " <> ref <> either (\(ProviderError c) -> " is left open, as its cancel failed: " <> c) (const " is cancelled") cancelled
     body methodId =
       J.object
         [ "amount" J..= minorToDecimal odAmount,

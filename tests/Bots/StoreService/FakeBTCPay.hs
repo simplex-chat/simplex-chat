@@ -421,6 +421,11 @@ fakeApp stv req respond = do
         withInvoice invId $ \inv -> do
           override <- fsMethods <$> readTVarIO stv
           serve (fromMaybe (methodsFixture (isMethodId inv)) override) (patchMethods inv)
+      ["invoices", invId, "status"] | isPost ->
+        withInvoice invId $ \inv -> do
+          let marked = inv {isStatus = fromMaybe (isStatus inv) (J.decode body >>= objectField "status" >>= asText)}
+          atomically $ modifyTVar' stv $ \st -> st {fsInvoices = M.insert invId marked (fsInvoices st)}
+          serve (invoiceFixture (isStatus marked)) (patchInvoice invId marked)
       _ -> refuse notFound404 "no such greenfield path on the fake btcpay"
 
     rates = do

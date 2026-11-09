@@ -441,7 +441,7 @@ createAtProvider WebEnv {weStore, weConfig, weHttp} client provider CreateReques
       let expiresAt = addUTCTime (invoiceWindow weConfig crMethod) now
           draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced, odReference = orderId}
       pCreateInvoice provider crMethod draft >>= \case
-        Left (ProviderError e) -> failed ("provider refused to create an invoice: " <> e) providerUnavailable
+        Left (ProviderError e) -> failed ("the provider did not create an invoice: " <> e) providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           let atProvider = "providerRef " <> piProviderRef
               ni =
