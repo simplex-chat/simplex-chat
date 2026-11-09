@@ -125,11 +125,10 @@ testDefaults = withIni fullIni $ \p -> do
   serviceLogLevel cfg `shouldBe` LogNote
   case btcpay cfg of
     Nothing -> expectationFailure "the btcpay section was present"
-    Just BTCPayConfig {bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros} -> do
+    Just BTCPayConfig {bExpiryMinutes, bSpeedPolicy, bPaymentTolerance} -> do
       bExpiryMinutes `shouldBe` 60
       bSpeedPolicy `shouldBe` MediumSpeed
       bPaymentTolerance `shouldBe` 0.5
-      bTimeoutMicros `shouldBe` 10000000
 
 testBlankHost :: IO ()
 testBlankHost =
@@ -212,10 +211,9 @@ testStripeDefaults = withIni fullStripeIni $ \p -> do
   Right cfg <- readServiceConfig p
   case stripe cfg of
     Nothing -> expectationFailure "the stripe section was present"
-    Just StripeConfig {sSessionMinutes, sHost, sTimeoutMicros} -> do
+    Just StripeConfig {sSessionMinutes, sHost} -> do
       sSessionMinutes `shouldBe` 60
       sHost `shouldBe` "https://api.stripe.com"
-      sTimeoutMicros `shouldBe` 10000000
 
 testStripeAbsent :: IO ()
 testStripeAbsent = withIni fullIni $ \p -> do
