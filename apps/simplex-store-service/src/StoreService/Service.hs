@@ -535,7 +535,7 @@ dollars cents = "$" <> tshow whole <> "." <> T.justifyRight 2 '0' (tshow part)
 -- | Nothing marks a name code paid later, so an unpaid one would be refused for good.
 issueNameCmdP :: A.Parser (Int, Int, BadgeCodePaymentStatus)
 issueNameCmdP = do
-  (len, years) <- "issue " *> nameCodeP maxNameYears
+  (len, years) <- "issue " *> nameCodeP
   paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)
   when (paymentStatus == CPSUnpaid) $ fail "unpaid name code"
   A.skipSpace

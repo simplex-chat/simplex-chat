@@ -35,17 +35,16 @@ import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (minNameYears)
 
-maxBulk, maxUses, maxMonths, maxNameYears, maxGroupNameYears :: Int
+maxBulk, maxUses, maxMonths, maxNameYears :: Int
 maxBulk = 100
 maxUses = 1000
 maxMonths = 255
 maxNameYears = 10
-maxGroupNameYears = 2
 
 data GroupCmd
   = GCIssue BadgeType Int Int
   | GCBulk BadgeType Int Int
-  | GCIssueName Int Int
+  | GCIssueName Int
   | GCRevoke BadgeCode
   | GCRevokeName NamePrepaidCode
   deriving (Eq, Show)
@@ -82,7 +81,7 @@ cmdActionP = A.choice (map cmdP [minBound .. maxBound])
 
 cmdArgsP :: CmdTag -> A.Parser GroupCmd
 cmdArgsP = \case
-  CTIssue -> uncurry GCIssueName <$> nameCodeP maxGroupNameYears <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> optP usesOpt
+  CTIssue -> GCIssueName <$> nameArgP <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> optP usesOpt
   CTBulk -> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
   CTRevoke -> GCRevoke <$> codeP <|> GCRevokeName <$> prepaidCodeP
   where
@@ -91,15 +90,12 @@ cmdArgsP = \case
 -- | An option's keyword, its placeholder in the usage reply and its bounds; an omitted option takes the lowest value.
 data CmdOpt = CmdOpt {optKey :: Text, optVar :: Text, optMin :: Int, optMax :: Int}
 
-lengthOpt, groupYearsOpt, monthsOpt, usesOpt, countOpt :: CmdOpt
+lengthOpt, yearsOpt, monthsOpt, usesOpt, countOpt :: CmdOpt
 lengthOpt = CmdOpt "length" "<length>" minNameLength maxNameLength
-groupYearsOpt = yearsOpt maxGroupNameYears
+yearsOpt = CmdOpt "years" "<Y>" minNameYears maxNameYears
 monthsOpt = CmdOpt "months" "<M>" 1 maxMonths
 usesOpt = CmdOpt "uses" "<N>" 1 maxUses
 countOpt = CmdOpt "count" "<N>" 1 maxBulk
-
-yearsOpt :: Int -> CmdOpt
-yearsOpt = CmdOpt "years" "<Y>" minNameYears
 
 optP :: CmdOpt -> A.Parser Int
 optP opt = fromMaybe (optMin opt) <$> optional (A.space *> optValueP opt)
@@ -108,8 +104,11 @@ optValueP :: CmdOpt -> A.Parser Int
 optValueP opt = A.string (encodeUtf8 (optKey opt)) *> A.space *> boundedInt opt
 
 -- | "name <length> [years <Y>]", the length and years of a prepaid name code.
-nameCodeP :: Int -> A.Parser (Int, Int)
-nameCodeP maxYears = A.string (encodeUtf8 nameKind) *> A.char ' ' *> ((,) <$> nameLengthP <*> optP (yearsOpt maxYears))
+nameCodeP :: A.Parser (Int, Int)
+nameCodeP = (,) <$> nameArgP <*> optP yearsOpt
+
+nameArgP :: A.Parser Int
+nameArgP = A.string (encodeUtf8 nameKind) *> A.char ' ' *> nameLengthP
 
 -- | A code's text carries the length as typed, so a leading zero is refused.
 nameLengthP :: A.Parser Int
@@ -177,19 +176,19 @@ cmdLabel = \case
 -- The menu hints and the usage replies are built from the same kinds, options and bounds, so they cannot drift apart.
 cmdParams :: CmdTag -> Text
 cmdParams = \case
-  CTIssue -> kindParams (nameArg : badgeKinds) [groupYearsOpt, monthsOpt] <> " [" <> optArg usesOpt <> "]"
-  CTBulk -> kindParams badgeKinds [monthsOpt] <> " " <> optArg countOpt
+  CTIssue -> kindParams (nameArg : badgeKinds) <> " [" <> optArg usesOpt <> "]"
+  CTBulk -> kindParams badgeKinds <> " " <> optArg countOpt
   CTRevoke -> "<code>"
   where
-    kindParams kinds units = "<" <> T.intercalate "|" kinds <> "> [" <> T.intercalate "|" (map optKey units) <> " <N>]"
+    kindParams kinds = "<" <> T.intercalate "|" kinds <> "> [" <> optKey monthsOpt <> " <N>]"
 
 cmdUsage :: CmdTag -> Text
 cmdUsage = \case
   CTIssue ->
     kindUsage
       CTIssue
-      ("[" <> optVar lengthOpt <> "] [" <> optArg groupYearsOpt <> " | " <> optArg monthsOpt <> "] [" <> optArg usesOpt <> "]")
-      [(nameArg, [lengthOpt, groupYearsOpt]), (badgeKindsText, [monthsOpt, usesOpt])]
+      ("[" <> optVar lengthOpt <> "] [" <> optArg monthsOpt <> "] [" <> optArg usesOpt <> "]")
+      [(nameArg, [lengthOpt]), (badgeKindsText, [monthsOpt, usesOpt])]
       ["name 6", "supporter months 12"]
   CTBulk -> kindUsage CTBulk ("[" <> optArg monthsOpt <> "] " <> optArg countOpt) [(badgeKindsText, [monthsOpt, countOpt])] ["legend months 3 count 10"]
   CTRevoke -> "Usage: " <> cmdText CTRevoke (cmdParams CTRevoke)

@@ -1291,20 +1291,20 @@ and the group issues at most 10 of them in 24 hours (`//issue name` in `--run-cl
 its codes are not counted). The code commands take these forms:
 
 ```
-/issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]
+/issue <kind> [<length>] [months <M>] [uses <N>]
 /bulk <kind> [months <M>] count <N>
 ```
 
 `/issue` makes one code and `/bulk` makes `<N>` single-use badge codes. `<kind>` is `name` with a
 length, in `/issue` only, or a badge type: `supporter`, `legend` or `investor`. A name takes a length
-of 6 to 63 and `years` of 2 only, so a name code for more years is issued with `//issue name`; a name
-code issued in the group is single-use and `free`. A badge takes `months`, 1 to 255 and 1 by default,
-and in `/issue` also `uses`, 1 to 1000. `count` is 1 to 100. A value outside these bounds, a length
-for a badge, the other kind's unit, or `name` in `/bulk` gets the usage reply, which lists the form,
-each kind's bounds and an example of each. The group's command menu shows the kinds of each command
-in its hint and fills the hint into the message box. Without `[names]`, `/issue name` gets a reply
-that names are not enabled, and issues nothing. `/revoke` takes badge and name codes, so a name code issued before names
-were turned off can still be withdrawn. The group has no `/refund`. A member's role
+of 6 to 63 and no other option; a name code issued in the group is for 2 years, single-use and
+`free`, and one for more years is issued with `//issue name`. A badge takes `months`, 1 to 255 and 1
+by default, and in `/issue` also `uses`, 1 to 1000. `count` is 1 to 100. A value outside these
+bounds, a length for a badge, an option for a name, or `name` in `/bulk` gets the usage reply, which
+lists the form, each kind's bounds and an example of each. The group's command menu shows the kinds
+of each command in its hint and fills the hint into the message box. Without `[names]`, `/issue name`
+gets a reply that names are not enabled, and issues nothing. `/revoke` takes badge and name codes, so
+a name code issued before names were turned off can still be withdrawn. The group has no `/refund`. A member's role
 is checked as the service last saw it, so a command sent by a moderator just demoted or removed can still run if it
 reaches the service first; revoke any code the service posts for them after the change. `uses`
 above 1 makes a multi-use code, tracked by a group message showing its remaining uses and the time
