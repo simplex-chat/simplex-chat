@@ -1149,8 +1149,8 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
 
 An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the
-service's gas. Past that the order fails, Try again and a move answer `400 bad_request`, and support refunds it
-at the provider: `//refund` records nothing for such an order, which has no balance.
+service's gas. Past that the order fails, Try again and a move answer `400 bad_request`, and support closes it
+with `//close` (see [Closing a failed order](#closing-a-failed-order)).
 The log line is `[WARN …] names worker: registration <id> failed: it sent <n> transactions of one kind`.
 
 Try again or a move of a failed order, and the worker's judgment of a register that did not go
@@ -1279,8 +1279,9 @@ were already given out, and the command answers with an error. A multi-use code 
 be revoked, which stops the uses that remain.
 
 Core parses `//...` into `CustomChatCommand` and leaves it to the service's `preCmdHook`, which is
-why issuing codes lives in the service rather than in core. `//refund`, the other command of this
-console, is in [Refunding a name balance](#refunding-a-name-balance).
+why issuing codes lives in the service rather than in core. `//refund` and `//close`, the other
+commands of this console, are in [Refunding a name balance](#refunding-a-name-balance) and
+[Closing a failed order](#closing-a-failed-order).
 
 ### From the group
 
@@ -1420,7 +1421,7 @@ expiry unless money reached the invoice:
   once the invoice expires and the poller, in service mode, closes the order. Run the command again
   then.
 - `its invoice expired at <time>; start the service so the poller closes that order, 10 minutes
-  after the expiry at the earliest, then stop it and run //refund again`: the poller runs only in
+  after the expiry at the earliest, then stop it and run the command again`: the poller runs only in
   service mode. Its first pass from 10 minutes after the expiry closes the order and releases the
   hold; a card order closes only once Stripe accepts the cancel.
 - `whose invoice holds money`: a payment reached the invoice, before or after its expiry; the hold
@@ -1430,6 +1431,39 @@ expiry unless money reached the invoice:
 The command also answers when the reference matches no order, when the order has no balance, and
 when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in
 Your names; a later late payment credits it again, and a second refund adds to `refunded`.
+
+## Closing a failed order
+
+A failed paid order stays live and keeps its money uncredited, so its wallet cannot order the name
+again. When Try again cannot register it, as after 5 sends of a kind or refused links, support closes
+it in `--run-cli` mode with the service stopped:
+
+```
+//close <reference>
+```
+
+The reference is the order's invoice id, or its registration id. The command reads the chain, so it
+needs `[names]` and `[chain]` in `store_service.ini`; without `[names]` it answers that names are not
+enabled. It:
+
+1. checks the chain first, as Try again does: when the order's register mined, or its owner holds the
+   name at the confirmation depth, the order is set `registered` and nothing is refunded;
+2. otherwise, in one transaction, sets the order `taken`, credits its price to its balance, which may
+   already hold a move's difference or an overpayment, and records all of that balance as refunded,
+   as `//refund` does.
+
+The answer, `Closed order <id> as taken and recorded a refund of $100.00. Refund it now, by: …`,
+lists what paid for the order, as the answer of `//refund` does. Pay the amount back now by those
+methods. The service logs each closed order at note with its registration id and the cents. An order
+refunded at the provider by hand before `//close` existed is closed the same way, and not paid again.
+
+A closed order reads `taken` in Your names, with its refund. Try again and a move answer
+`400 bad_request`, `//refund` finds nothing to refund, and the wallet can order the name again.
+
+The command records nothing for an order that is not failed or was paid with a prepaid code, whose
+code is released 30 days after the order failed; for a failed chain read; for a balance an open
+order holds, worded as for `//refund`; and for an order that changed meanwhile. Run the command
+again after the last three.
 
 ## Running the webapp's cases against the service
 

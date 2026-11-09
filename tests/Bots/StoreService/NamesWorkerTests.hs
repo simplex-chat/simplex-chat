@@ -42,6 +42,7 @@ import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig)
 import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), hex, selector, uint256)
+import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (Block (..), ChainClient, TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
@@ -51,7 +52,7 @@ import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Sender
 import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store
-import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
+import StoreService.Names.Turns (labelTurnCount, turnsCount, withLabelTurn)
 import StoreService.Names.Worker
 import StoreService.Web.Http (createLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -134,6 +135,11 @@ workerTests = describe "StoreService names: worker" $ do
     it "requeues a lapsed committed order, which reads failed, answering an old version at once after it" testRetryLapsed
     it "answers registration_changed with the current view when the order changed during its checks, writing nothing" testRetryLostRace
     it "runs in the name's turn, answering registration_changed for an order moved to another name meanwhile" testRetryInNameTurn
+  describe "close" $ do
+    it "closes a failed paid order taken, not live, its price credited and refunded, then refuses Try again, a move and a second refund, and accepts a new order for the name" testCloseFailed
+    it "registers a failed order whose owner holds the name, refunding nothing" testCloseLanded
+    it "refuses an unknown reference, an order not failed, a failed code order and a failed chain read, changing nothing" testCloseRefused
+    it "refuses a balance another order holds, rolling back the taken write and the credit, and refunds the whole balance once released" testCloseHeld
 
 -- fixtures
 
@@ -1249,3 +1255,75 @@ testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
   (status', v') <- whileHeld (retryOf ctx moving) (void $ rewrite ctx moving $ \o -> o {nrLabelHash = labelHash "dynamis", nrLength = 7})
   (status', field "error" =<< v') `shouldBe` (409, Just "registration_changed")
   nrPhase <$> stored ctx moving `shouldReturn` PFailed
+
+refundFigures :: Ctx -> RegistrationId -> IO (Maybe (Int, Int, Int))
+refundFigures Ctx {cStore} rid = fmap (\Balance {blAmount, blCredited, blRefunded} -> (blAmount, blCredited, blRefunded)) <$> withTransaction cStore (\db -> getBalance db rid orderTime)
+
+closeOf :: Ctx -> NameRegistration -> IO Closed
+closeOf Ctx {cOrders} NameRegistration {nrId = RegistrationId rid} = closeRegistration cOrders rid
+
+testCloseFailed :: IO ()
+testCloseFailed = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}} -> do
+  r <- paidIn ctx aliceOrder failedPhase
+  let again = aliceOrder {oCommitment = commitmentOf 9, oSealed = "sealed-alicebakery-9"}
+      price = oPrice aliceOrder
+      RegistrationId rid = nrId r
+  placeOrder ctx again `shouldReturn` refusedWith 409 "order_exists"
+  closeOf ctx r
+    `shouldReturn` CLRefunded RefundRecord {rdRegistration = nrId r, rdCents = price, rdChain = [BalanceLink {lkRegistration = nrId r, lkPayment = nrPayment r, lkPaid = price, lkFromBalance = 0, lkLateCredits = []}]}
+  x <- stored ctx r
+  (nrPhase x, nrLive x, nrVersion x, nrError x) `shouldBe` (PTaken, False, nrVersion r + 1, Nothing)
+  refundFigures ctx (nrId r) `shouldReturn` Just (0, price, price)
+  turnsCount (oeTurns cOrders) `shouldReturn` 0
+  recordRefund (oeTurns cOrders) cStore rid price orderTime `shouldReturn` Left (RefundAmount 0)
+  retryOf ctx x `shouldReturn` refusedWith 400 "bad_request"
+  answerFree ctx "alicebakers"
+  to <- moveTo ctx "alicebakers" 10
+  move ctx keyA x to `shouldReturn` refusedWith 400 "bad_request"
+  closeOf ctx x `shouldReturn` CLRefused CFNotFailedPaid
+  stored ctx r `shouldReturn` x
+  refundFigures ctx (nrId r) `shouldReturn` Just (0, price, price)
+  fst <$> placeOrder ctx again `shouldReturn` 200
+
+testCloseLanded :: IO ()
+testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder failedPhase
+  answerOwner ctx "alicebakery" (nrOwner r)
+  answerExpiry ctx "alicebakery" expiry
+  closeOf ctx r `shouldReturn` CLRegistered
+  x <- stored ctx r
+  (nrPhase x, nrExpiresAt x, nrLive x) `shouldBe` (PRegistered, Just expiry, False)
+  refundFigures ctx (nrId r) `shouldReturn` Nothing
+
+testCloseRefused :: IO ()
+testCloseRefused = withWorker $ \W {wCtx = ctx@Ctx {cNode, cOrders}} -> do
+  closeRegistration cOrders "t2Jk8RmQ4vXw9NcP3yLb6g" `shouldReturn` CLRefused CFNoOrder
+  queued <- paidIn ctx aliceOrder id
+  (failedCode, _) <- codeIn ctx 8 (byB aliceOrder) {oCommitment = commitmentOf 2} failedPhase
+  unread <- paidIn ctx dynamisOrder failedPhase
+  answerCall cNode (registrarOf cNode) (ownerOfSelector <> labelBytes "dynamis") $ Reverts $ unhex "37ed32e8"
+  forM_ [(queued, CFNotFailedPaid), (failedCode, CFNotFailedPaid), (unread, CFUnread)] $ \(r, refusal) -> do
+    (nrId r,) <$> closeOf ctx r `shouldReturn` (nrId r, CLRefused refusal)
+    stored ctx r `shouldReturn` r
+    refundFigures ctx (nrId r) `shouldReturn` Nothing
+
+testCloseHeld :: IO ()
+testCloseHeld = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
+  r <- paidIn ctx dynamisOrder failedPhase
+  answerUnowned ctx "dynamis"
+  let diffPrice = oPrice aliceOrder
+      expiresAt = addUTCTime 3600 orderTime
+      whole = 4000 + oPrice dynamisOrder
+  withTransaction cStore $ \db -> do
+    creditBalance db (nrId r) 4000 orderTime
+    insertInvoiceRow db "inv-diff" expiresAt "open"
+    createPaidRegistration db (aliceRegistration "diff" 2) (OTBalance (nrId r) diffPrice 4000 (Just btc)) (paidOrder "inv-diff") {poPrice = diffPrice} orderTime `shouldReturn` Right ()
+  closeOf ctx r `shouldReturn` CLRefused (CFHeld BalanceHold {bhHolder = RegistrationId "diff", bhUntil = expiresAt, bhOverdue = False, bhFunded = False})
+  stored ctx r `shouldReturn` r
+  refundFigures ctx (nrId r) `shouldReturn` Just (4000, 4000, 0)
+  withTransaction cStore (\db -> releaseHeldBalance db (RegistrationId "diff") orderTime) `shouldReturn` True
+  closeOf ctx r >>= \case
+    CLRefunded RefundRecord {rdCents} -> rdCents `shouldBe` whole
+    other -> expectationFailure $ "not refunded: " <> show other
+  nrPhase <$> stored ctx r `shouldReturn` PTaken
+  refundFigures ctx (nrId r) `shouldReturn` Just (0, whole, whole)
