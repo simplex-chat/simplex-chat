@@ -2,19 +2,27 @@
 ; bind locally; the reverse proxy terminates TLS. It must pass the query string through:
 ; the long poll's `wait`, `seenPaid` and `seenFull` all travel in it
 host = 127.0.0.1
-port = 8080
-; required: the directory `npm run build` writes in apps/simplex-store-service/web
-static_dir = ./apps/simplex-store-service/web/dist
-; serve the webapp over HTTP. On (default) is the all-in-one deployment. Off is a split deployment
-; where a reverse proxy serves the exported folder and this service is only the API and webhooks.
+; the API, the webhooks and the badges site
+badges_port = 8080
+; the directory `npm run build` writes in apps/simplex-store-service/web. The default, /srv/badges,
+; is the Docker image's path, so a local run sets it
+badges_static_dir = ./apps/simplex-store-service/web/dist
+; serve the sites over HTTP. On (default) is the all-in-one deployment. Off is a split deployment
+; where a reverse proxy serves the exported folders and this service is only the API and webhooks.
 serve_webapp = on
-; when set, the webapp is written here at boot with the publishable key injected, copied from
-; static_dir, for a reverse proxy to serve. Leave unset in the all-in-one deployment.
-; webapp_export_dir = /srv/webapp
+; when set, the badges site is written here at boot with the publishable key injected, copied from
+; badges_static_dir, for a reverse proxy to serve. Leave unset in the all-in-one deployment.
+; badges_export_dir = /srv/badges-export
 ; on behind the reverse proxy above: without it every request keys the rate limiter on the
 ; proxy's own address, so one bucket is shared by everyone. Set it off only where this
 ; listener is reached directly, since a client can write the header itself.
 trust_forwarded_for = on
+; the names site (simplex.domains), with [names] only: its build directory (the default, /srv/names,
+; is the Docker image's path), the directory it is exported to for a reverse proxy, and its port in
+; the all-in-one deployment, which also answers the API and the webhooks
+; names_static_dir = ./apps/simplex-domains/webapp/dist
+; names_export_dir = /srv/names-export
+; names_port = 8081
 
 ; omit this whole section to disable Bitcoin and Monero (the browser shows the provider-unavailable screen)
 [btcpay]
@@ -30,7 +38,7 @@ payment_tolerance = 0.5
 [stripe]
 ; restricted key (rk_): Payment Intents write + Charges read — never a full secret key (sk_)
 secret_key = rk_test_replace-me
-publishable_key = pk_test_replace-me
+publishable_key = pk_test_REPLACEME
 ; the signing secret of the /webhooks/stripe endpoint configured in the Dashboard
 webhook_secret = whsec_replace-me
 ; minutes the service holds an unpaid card invoice open before it expires it; 1-1440
@@ -89,6 +97,61 @@ idle_seconds = 60
 ;[group]
 ;display_name = SimpleX Badges
 ;description = Welcome to the badges group
+;
+; the names store: omit [names] and [chain] together to turn it off.
+;[names]
+; testing until the .simplex TLD is deployed
+;tld = testing
+; the paid years of a name; at least 2, the controller's minimum
+;years = 2
+; a name's term starts here; the days until then are free
+;term_start = 2027-01-01T00:00:00Z
+; how far an order's duration may be from the one the service computes
+;term_slack_seconds = 3600
+; a commitment with less than this left before its reveal deadline is not reused
+;reveal_margin_seconds = 900
+; how many times one order may move to another name
+;max_order_moves = 3
+; on: only prepaid codes register names, and every paid name order answers 403 codes_only
+;codes_only = off
+; the owner's link edits relayed for one name in any 365 days, each a transaction whose gas the
+; service pays; 1 to 100. A request refused, never sent or reverted on chain does not count
+;record_edits_per_year = 3
+;
+; what each community name is for, with [names] only (the name policy on chain lists the names):
+; one line per name, `<label> = <what it is for>`, the label in
+; lower case and listed once, the text 1 to 200 characters without a full stop at the end, which
+; the page adds; read only at startup, see apps/simplex-store-service/README.md
+;[community]
+;bakers = bakers and bakeries in Portugal
+;
+; the chain the names are registered on. rpc_url can carry a provider's API key and service_key
+; pays for every commit and register: keep both secret. Neither is ever logged. rpc_url must be
+; https unless the node is on loopback (127.0.0.1, ::1 or localhost)
+;[chain]
+;rpc_url = http://127.0.0.1:8545
+;chain_id = 31337
+;controller = 0x...
+;sponsor = 0x...
+;base_registrar = 0x...
+;resolver = 0x...
+; 0x and 64 hex digits: the registrar key the service sends transactions with; create, fund and
+; rotate it as apps/simplex-store-service/README.md, "The gas key", says
+;service_key = 0x...
+; blocks after a register's receipt before a name counts as registered, at least 1, which is the
+; receipt's own block
+;confirmations = 3
+; the most gas any one transaction may use
+;gas_limit_cap = 8000000
+; the most wei per gas any transaction may pay (100 gwei); a transaction that needs more waits
+;max_fee_per_gas = 100000000000
+
+; the lowest level of the lines printed: trace, debug, info, note, warn or error. The service's
+; routine lines are note, so warn and error hide them, the group's join link included. The level
+; applies to the whole process, so below note the SMP agent's lines print too.
+; --log-agent or -l debug sets the level from -l instead.
+[log]
+level = note
 
 ; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
 ; verifying it, so anyone who can reach this service can mint badges. The service refuses to start

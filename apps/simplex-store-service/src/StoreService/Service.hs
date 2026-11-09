@@ -9,7 +9,14 @@ module StoreService.Service
     newServiceState,
     configureStoreVerifier,
     welcomeGetOpts,
+    trustDevKeys,
+    checkNodeChain,
+    redactPassword,
+    checkUnverifiedReceipts,
+    logNamePolicy,
+    requireDevKeys,
     checkIssuerKey,
+    readConfigOrExit,
     storeService,
     storeServiceCLI,
     storeServiceResponse,
@@ -32,17 +39,33 @@ module StoreService.Service
     survive,
     IssueCodeOpts (..),
     issueBadgeCode,
+    heldText,
+    chainText,
   )
 where
 
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
-import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
-import StoreService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
-import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, textTokenP)
-import StoreService.Log (logError, logInfo, logWarn)
+import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
+import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
+import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, textTokenP)
+import StoreService.Names.Abi (hex)
+import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
+import StoreService.Names.Chain (newChainClient, nodeChainId)
+import StoreService.Names.Codes (issueNameCode, revokeNameCode)
+import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, termsLinkAllowed, termsLinks, termsOf)
+import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
+import StoreService.Names.Orders (ordersEnv)
+import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Records (runRecordEdits)
+import StoreService.Names.Sender (runSender)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText)
+import StoreService.Names.Turns (Turns, newTurns)
+import StoreService.Names.View (addressText)
+import StoreService.Names.Worker (newWorker, runCodeSweep, runWorkers)
 import StoreService.Options
-import StoreService.Poller (newPollerEnv, newReadHints, runPoller)
+import StoreService.Poller (expiryGrace, newPollerEnv, newReadHints, runPoller)
+import StoreService.Providers (Provider)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store
@@ -53,18 +76,23 @@ import StoreService.StoreReceipts.Apple (appleSubscriptionChecker, readAppleRoot
 import StoreService.StoreReceipts.Google (PlayVerifier (..), playStoreVerifier)
 import StoreService.StoreReceipts.Mock (newMockStoreVerifier)
 import StoreService.Waiters (Waiters, newWaiters)
-import StoreService.Web.Server (Bucket, exportWebapp, newWebEnv, runWebListener, takeFrom)
+import StoreService.Web.Http (Bucket, takeFrom)
+import StoreService.Web.Server (checkSiteDirs, exportWebapp, newWebEnv, runWebListeners)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
+import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
-import Data.Either (fromRight)
+import Data.Char (isSpace)
+import Data.Either (fromRight, isRight)
 import Data.Functor (($>), (<&>))
 import Data.Int (Int64)
+import Data.List (findIndex, isPrefixOf, tails)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, maybeToList)
 import qualified Data.Text as T
@@ -80,9 +108,10 @@ import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Bot.Store (withDB, withDB')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
-import Simplex.Chat.Options (printDbOpts)
+import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Options.DB (dbString)
 import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts)
-import Simplex.Chat.PaymentService.Types (PaymentProvider (..), StoreTransactionRef (..))
+import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types (AgentInvId (..), User (..))
@@ -91,7 +120,8 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (catchOwn', raceAny_, safeDecodeUtf8, tshow)
+import Simplex.Messaging.SimplexName (LabelHash (..))
+import Simplex.Messaging.Util (catchOwn, catchOwn', raceAny_, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version (isCompatible)
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
@@ -118,9 +148,50 @@ welcomeGetOpts = do
   opts@StoreServiceOpts {coreOptions, testing, serviceName} <- getStoreServiceOpts appDir "simplex_badge_service"
   unless testing $ do
     putStrLn $ "SimpleX Store Service v" ++ versionNumber
-    printDbOpts coreOptions
+    putStrLn $ "db: " <> redactPassword (dbString $ dbOptions coreOptions)
     putStrLn $ "Service name: " ++ T.unpack serviceName
   pure opts
+
+-- | The ini's dev_keys, trusted beside the clients' keys; the config accepts them only on the local chain.
+trustDevKeys :: Maybe ServiceConfig -> ChatConfig -> IO (Either String ChatConfig)
+trustDevKeys serviceCfg cfg@ChatConfig {badgePublicKeys} = do
+  r <- fmap trusted . sequence <$> mapM publicKey devKeys
+  when (isRight r && not (null devKeys)) $
+    logWarn $ "trusting issuer dev_keys at indexes " <> T.intercalate ", " (map (\BadgeIssuerKey {keyIdx} -> tshow keyIdx) devKeys) <> "; no client trusts them, never set them in production"
+  pure r
+  where
+    devKeys = maybe [] devIssuerKeys serviceCfg
+    trusted ks = cfg {badgePublicKeys = M.union badgePublicKeys (M.fromList ks)}
+    publicKey BadgeIssuerKey {keyIdx, secretKey}
+      | M.member keyIdx badgePublicKeys = pure $ Left $ "issuer.dev_keys index " <> show keyIdx <> " is the index of a key clients trust"
+      | otherwise = fmap (keyIdx,) . first (("issuer.dev_keys secret at index " <> show keyIdx <> " is not a valid key: ") <>) <$> bbsPublicKey secretKey
+
+-- | The node at rpc_url must serve chain_id. One that does not answer is only warned of, unless dev keys need it to be the local chain.
+checkNodeChain :: Maybe ServiceConfig -> IO (Either String ())
+checkNodeChain = \case
+  Just ServiceConfig {devIssuerKeys, names = Just NamesConfig {nChain = cc@ChainConfig {cChainId}}} -> do
+    chain <- C.newRandom >>= (`newChainClient` cc)
+    nodeChainId chain >>= \case
+      Right chainId
+        | chainId == cChainId -> pure $ Right ()
+        | otherwise -> pure $ Left $ "chain.chain_id is " <> show cChainId <> ", but the node at chain.rpc_url serves chain " <> show chainId
+      Left e
+        | null devIssuerKeys -> Right () <$ logWarn ("names: the node's chain id could not be read, so it is not checked: " <> tshow e)
+        | otherwise -> pure $ Left "issuer.dev_keys is refused: the node's chain id could not be read"
+  _ -> pure $ Right ()
+
+-- | The connection string with its password masked, as the start line reaches the logs: in a URI's user info or as a
+-- password= keyword.
+redactPassword :: String -> String
+redactPassword s = case (\i -> (take i s, drop (i + 3) s)) <$> findIndex ("://" `isPrefixOf`) (tails s) of
+  Just (scheme, rest) -> let (authority, path) = break (== '/') rest in scheme <> "://" <> maskUserInfo authority <> path
+  Nothing -> unwords $ map maskKeyword $ words s
+  where
+    maskUserInfo authority = case break (== '@') (reverse authority) of
+      (hostRev, _ : infoRev)
+        | (user, _ : _) <- break (== ':') (reverse infoRev) -> user <> ":***@" <> reverse hostRev
+      _ -> authority
+    maskKeyword w = if "password=" `isPrefixOf` w then "password=***" else w
 
 checkIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO (Either String BadgeIssuerKey)
 checkIssuerKey StoreServiceOpts {issuerKey} serviceCfg cfg = case issuerKey of
@@ -141,7 +212,23 @@ checkOne ChatConfig {badgePublicKeys} k@BadgeIssuerKey {keyIdx, secretKey} =
 
 requireIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO BadgeIssuerKey
 requireIssuerKey opts serviceCfg cfg =
-  checkIssuerKey opts serviceCfg cfg >>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) (\k@BadgeIssuerKey {keyIdx} -> logInfo ("signing badges with issuer key " <> tshow keyIdx) $> k)
+  checkIssuerKey opts serviceCfg cfg >>= orExit >>= \k@BadgeIssuerKey {keyIdx} -> logNote ("signing badges with issuer key " <> tshow keyIdx) $> k
+
+-- | Unverified store receipts would mint badges, so they are refused with an issuer key clients trust, as dev_keys are.
+checkUnverifiedReceipts :: Maybe ServiceConfig -> ChatConfig -> BadgeIssuerKey -> Either String ()
+checkUnverifiedReceipts serviceCfg ChatConfig {badgePublicKeys} BadgeIssuerKey {keyIdx} = case serviceCfg of
+  Just ServiceConfig {devAcceptUnverifiedStoreReceipts = True}
+    | M.member keyIdx badgePublicKeys ->
+        Left $ "[dev] accept_unverified_store_receipts is refused: issuer key index " <> show keyIdx <> " is one clients trust, so any receipt would mint badges they accept"
+  _ -> Right ()
+
+requireDevKeys :: Maybe ServiceConfig -> ChatConfig -> IO ChatConfig
+requireDevKeys serviceCfg cfg = do
+  checkNodeChain serviceCfg >>= orExit
+  trustDevKeys serviceCfg cfg >>= orExit
+
+orExit :: Either String a -> IO a
+orExit = either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure
 
 readConfigOrExit :: FilePath -> IO ServiceConfig
 readConfigOrExit path =
@@ -162,13 +249,13 @@ configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v
   Just ServiceConfig {appleStore, playStore, devCheckStoreDuringCoverage, devCreditTestPurchases} -> do
     when devCreditTestPurchases $ logWarn "[dev] credit_test_purchases is on: a purchase the store calls a test is credited as a real one"
     apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificates, aServerApi} -> do
-      roots <- mapM (orExit . readAppleRoot) aRootCertificates
-      appleSubscriptions <- forM aServerApi $ orExit . appleSubscriptionChecker roots aBundleId
+      roots <- mapM ((>>= orExit) . readAppleRoot) aRootCertificates
+      appleSubscriptions <- forM aServerApi $ (>>= orExit) . appleSubscriptionChecker roots aBundleId
       pure (verifyAppleTransaction roots aBundleId, appleSubscriptions)
-    google <- forM playStore $ orExit . playStoreVerifier
+    google <- forM playStore $ (>>= orExit) . playStoreVerifier
     forM_ appleStore $ \AppleStoreConfig {aBundleId, aServerApi} ->
-      logInfo $ "verifying App Store receipts for " <> aBundleId <> maybe ", but not its subscriptions: [apple] sets no API key" (const "") aServerApi
-    forM_ playStore $ \PlayStoreConfig {gPackageName} -> logInfo $ "verifying Play purchases for " <> gPackageName
+      logNote $ "verifying App Store receipts for " <> aBundleId <> maybe ", but not its subscriptions: [apple] sets no API key" (const "") aServerApi
+    forM_ playStore $ \PlayStoreConfig {gPackageName} -> logNote $ "verifying Play purchases for " <> gPackageName
     pure
       env
         { storeVerifier =
@@ -188,17 +275,21 @@ configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v
         }
   Nothing -> pure env
   where
-    orExit = (>>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure)
     notConfigured = pure $ Left SRNotConfigured
 
-storeService :: StoreServiceOpts -> ChatConfig -> ServiceState -> IO ()
-storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
-  serviceCfg <- traverse readConfigOrExit serviceConfigFile
+storeService :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> ServiceState -> IO ()
+storeService opts serviceCfg baseCfg env = do
+  forM_ serviceCfg $ \sc -> checkSiteDirs (listener sc) >>= orExit
+  cfg <- requireDevKeys serviceCfg baseCfg
   key <- requireIssuerKey opts serviceCfg cfg
+  orExit $ checkUnverifiedReceipts serviceCfg baseCfg key
   waiters <- newWaiters
+  -- The hooks' //revoke takes a prepaid code's turn, so the turns exist before the chat starts.
+  turns <- newTurns
   requestEnv <- configureStoreVerifier serviceCfg env
   let groupCfg = serviceCfg >>= \ServiceConfig {group} -> group
       trackerQ_ = groupEventQ env <$ groupCfg
+      namesOn = isJust (serviceCfg >>= names)
       readEvents cc =
         forever $
           atomically (readTBQueue $ outputQ cc) >>= \case
@@ -208,46 +299,93 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
               | isJust groupCfg -> forM_ (groupEvent ev) $ atomically . writeTQueue (groupEventQ env)
             _ -> pure ()
       startLanes cc = do
-        lanes <- maybe (pure []) (serviceLanes waiters cc) serviceCfg
+        lanes <- maybe (pure []) (serviceLanes waiters turns cc) serviceCfg
         -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
-        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc (groupEventQ env) <$> ensureManagedGroup cc gc
+        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns namesOn (groupEventQ env) <$> ensureManagedGroup cc gc
         raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
             postStartHook = Just $ badgePostStartHook opts env,
-            preCmdHook = Just badgeCmdHook
+            preCmdHook = Just $ badgeCmdHook turns
           }
   -- The reader runs from the start and must not block, since outputQ carries every chat event and a full queue stalls the core.
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> raceAny_ [readEvents cc, startLanes cc]
   where
-    serviceLanes :: Waiters -> ChatController -> ServiceConfig -> IO [IO ()]
-    serviceLanes ws ChatController {chatStore} sc = do
+    serviceLanes :: Waiters -> Turns -> ChatController -> ServiceConfig -> IO [IO ()]
+    serviceLanes ws turns cc@ChatController {chatStore} sc = do
       -- Seed before the listener accepts anything, since every checkout is priced from these.
       seedServiceCatalog chatStore
       btc <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
       str <- maybe (pure []) (fmap (: []) . stripeProvider) (stripe sc)
       let providers = btc <> str
       hints <- newReadHints
-      webEnv <- newWebEnv chatStore sc ws hints providers
-      exportWebapp (listener sc) (stripe sc)
-      pollerEnv <- newPollerEnv chatStore ws hints providers (poll sc)
-      pure [runWebListener webEnv, runPoller pollerEnv]
+      namesEnv <- forM (names sc) (startNames cc turns ws providers)
+      webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
+      exportWebapp sc
+      pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
+      nameLanes <- maybe (pure []) namesLanes namesEnv
+      pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes
+
+startNames :: ChatController -> Turns -> Waiters -> [Provider] -> NamesConfig -> IO NamesEnv
+startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig {nTLD, nCodesOnly, nChain = ChainConfig {cChainId}} =
+  readTVarIO (currentUser cc) >>= \case
+    Nothing -> putStrLn "No current user" >> exitFailure
+    Just User {userId} -> do
+      logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> codesOnlyNote
+      ne@NamesEnv {neContracts} <- newNamesEnv cc userId nc chatStore turns waiters providers
+      logNamePolicy nc neContracts
+      pure ne
+  where
+    codesOnlyNote = if nCodesOnly then ", codes only: registration needs a prepaid code" else ""
+
+logNamePolicy :: NamesConfig -> Contracts -> IO ()
+logNamePolicy NamesConfig {nCommunity} ct =
+  namePolicy ct >>= \case
+    Left e -> logWarn ("names: the controller's name policy could not be read, it is read on first use: " <> tshow e)
+    Right policy -> do
+      logNote $ "names: name policy " <> addressText policy
+      forM_ (M.toList nCommunity) $ \(h, text) ->
+        communityName ct (LabelHash h) >>= \case
+          Right False -> logWarn $ "names: [community] lists a name the name policy does not list, so it is sold as a plain name: " <> text
+          Right True -> pure ()
+          Left e -> logWarn $ "names: a [community] name's listing could not be read: " <> text <> ": " <> tshow e
+      termsLinks ct >>= \case
+        Right (generalLink, communityLink) -> do
+          logTerms "general terms" "plain names" generalLink
+          logTerms "community terms" "community names" communityLink
+        Left e -> logWarn $ "names: the name policy's terms could not be read: " <> tshow e
+  where
+    logTerms what sold link = case termsOf link of
+      Nothing -> logWarn $ "names: the name policy has no " <> what <> " yet, so " <> sold <> " cannot be ordered until the owner sets them"
+      Just t@Terms {tmHash} ->
+        termsLinkAllowed ct t >>= \case
+          True -> logNote $ "names: " <> what <> " " <> link <> ", hash " <> hex tmHash
+          False -> logWarn $ "names: the name policy's " <> what <> " are not a link the service takes, so " <> sold <> " cannot be ordered: " <> link
+
+-- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
+namesLanes :: NamesEnv -> IO [IO ()]
+namesLanes ne@NamesEnv {neChain, neSender, neRecords} = do
+  worker <- newWorker (ordersEnv ne) neChain neSender
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker]
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do
   now <- truncateToSecond <$> getCurrentTime
   let (prices, offers) = defaultCatalog now
   (seededPrices, seededOffers) <- seedCatalog st prices offers
-  logInfo $
+  logNote $
     "badge catalog: " <> tshow (length prices) <> " prices and " <> tshow (length offers) <> " offers compiled in, "
       <> tshow seededPrices <> " prices and " <> tshow seededOffers <> " offers inserted"
 
-storeServiceCLI :: StoreServiceOpts -> IO ()
-storeServiceCLI opts@StoreServiceOpts {serviceConfigFile} = do
-  serviceCfg <- traverse readConfigOrExit serviceConfigFile
-  key <- requireIssuerKey opts serviceCfg terminalChatConfig
+storeServiceCLI :: StoreServiceOpts -> Maybe ServiceConfig -> IO ()
+storeServiceCLI opts serviceCfg = do
+  cfg <- requireDevKeys serviceCfg terminalChatConfig
+  key <- requireIssuerKey opts serviceCfg cfg
+  orExit $ checkUnverifiedReceipts serviceCfg terminalChatConfig key
   env <- newServiceState >>= configureStoreVerifier serviceCfg
+  -- This mode runs no names lanes, so only its own //revoke takes these turns.
+  turns <- newTurns
   let eventHook _cc = \case
         Right (CEvtServiceRequest u reqId sigKey reqData) -> do
           atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
@@ -257,11 +395,11 @@ storeServiceCLI opts@StoreServiceOpts {serviceConfigFile} = do
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
             postStartHook = Just $ badgePostStartHook opts env,
-            preCmdHook = Just badgeCmdHook,
+            preCmdHook = Just $ badgeCmdHook turns,
             eventHook = Just eventHook
           }
   raceAny_
-    [ simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing,
+    [ simplexChatCLI' cfg {chatHooks} (mkChatOpts opts) Nothing,
       processQueuedRequests key Nothing env
     ]
 
@@ -271,25 +409,138 @@ shownServiceRequest reqData = case KM.lookup "request" reqData of
   Just (J.Object cmd) | Just t <- KM.lookup "type" cmd -> KM.singleton "request" $ J.object ["type" J..= t]
   _ -> KM.empty
 
-badgeCmdHook :: ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
-badgeCmdHook cc = \case
-  CustomChatCommand cmd -> Left <$> runBadgeCmd cc cmd
+badgeCmdHook :: Turns -> ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
+badgeCmdHook turns cc = \case
+  CustomChatCommand cmd -> Left <$> runBadgeCmd turns cc cmd
   cmd -> pure $ Right cmd
 
-runBadgeCmd :: ChatController -> ByteString -> IO (Either ChatError ChatResponse)
-runBadgeCmd cc cmd
+runBadgeCmd :: Turns -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
+runBadgeCmd turns cc cmd
   | Right issueOpts <- A.parseOnly issueCmdP cmd =
-      issueBadgeCode cc issueOpts >>= \case
-        Right code -> pure $ Right CRCustomChatResponse {user_ = Nothing, response = "Code: " <> formatBadgeCode code}
-        Left _ -> pure $ chatCmdError (T.unpack issueFailedText)
-  | Right code <- A.parseOnly revokeCmdP cmd =
-      revokeWithTracker cc code <&> \case
-        Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
-        Left e -> chatCmdError (T.unpack e)
-  | otherwise = pure $ chatCmdError $ "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], or //revoke <code>"
+      issuedReply formatBadgeCode <$> issueBadgeCode cc issueOpts
+  | Right (len, years, paymentStatus) <- A.parseOnly issueNameCmdP cmd =
+      issuedReply (formatNameCode . NCPrepaid) <$> issueNameCode cc len years paymentStatus
+  | Right code <- A.parseOnly revokeCmdP cmd = textReply <$> revokeWithTracker cc code
+  | Right code <- A.parseOnly revokeNameCmdP cmd = textReply <$> revokeNameCode turns cc code
+  | Right (ref, cents_) <- A.parseOnly refundCmdP cmd = textReply <$> maybe (showRefund cc ref) (refundBalanceCmd turns cc ref) cents_
+  | otherwise =
+      pure $ chatCmdError $
+        "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], //issue name <length "
+          <> show minNameLength <> "-" <> show maxNameLength <> "> [years " <> show minNameYears <> "-" <> show maxNameYears
+          <> "] [paid|free], //revoke <code>, or //refund <reference> [<cents>]"
+  where
+    issuedReply :: (c -> T.Text) -> Either String c -> Either ChatError ChatResponse
+    issuedReply format = \case
+      Right code -> Right CRCustomChatResponse {user_ = Nothing, response = "Code: " <> format code}
+      Left _ -> chatCmdError (T.unpack issueFailedText)
+    textReply = \case
+      Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
+      Left e -> chatCmdError (T.unpack e)
 
 revokeCmdP :: A.Parser BadgeCode
 revokeCmdP = "revoke " *> codeP <* (A.skipSpace *> A.endOfInput)
+
+revokeNameCmdP :: A.Parser NamePrepaidCode
+revokeNameCmdP = "revoke " *> prepaidCodeP <* (A.skipSpace *> A.endOfInput)
+
+-- | The reference, and the cents of the balance to refund; without them the balance is shown.
+refundCmdP :: A.Parser (T.Text, Maybe Int)
+refundCmdP = do
+  ref <- "refund " *> (safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace))
+  cents_ <- optional (A.space *> (A.decimal :: A.Parser Integer))
+  A.skipSpace
+  A.endOfInput
+  (ref,) <$> mapM checkCents cents_
+  where
+    -- Integer, as in issueCmdP, so a figure past Int is refused rather than wrapped.
+    checkCents n
+      | n >= 1 && n <= toInteger (maxBound :: Int) = pure (fromInteger n)
+      | otherwise = fail "cents out of range"
+
+-- | Left is a refusal or a failure; both sides are the text to show the operator.
+showRefund :: ChatController -> T.Text -> IO (Either T.Text T.Text)
+showRefund cc ref = do
+  now <- getCurrentTime
+  withDB' "showRefund" cc (\db -> balanceByReference db ref now >>= mapM (withChain db)) <&> \case
+    Right Nothing -> Left $ "No order has the reference " <> ref <> "."
+    Right (Just (RegistrationId rid, Nothing)) -> Left $ "Order " <> rid <> " has no balance."
+    Right (Just (RegistrationId rid, Just (balance@Balance {blAmount, blCredited, blRefunded}, chain))) ->
+      Right $
+        "Order " <> rid <> ": balance " <> dollars blAmount <> " (credited " <> dollars blCredited <> ", refunded " <> dollars blRefunded
+          <> "). Paid by: " <> chainText chain <> ". " <> nextStep balance
+    Left _ -> Left "The balance could not be read."
+  where
+    withChain db (rid, balance_) = (rid,) <$> mapM (\balance -> (balance,) <$> balanceChain db rid) balance_
+    nextStep Balance {blAmount, blHold} = case blHold of
+      Just hold -> "It cannot be refunded now: " <> heldText hold <> "."
+      Nothing
+        | blAmount > 0 -> "To record its refund: //refund " <> ref <> " " <> tshow blAmount
+        | otherwise -> "Nothing to refund."
+
+-- | The refund is recorded before support pays it, so the balance cannot be spent meanwhile.
+refundBalanceCmd :: Turns -> ChatController -> T.Text -> Int -> IO (Either T.Text T.Text)
+refundBalanceCmd turns ChatController {chatStore} ref cents = do
+  now <- getCurrentTime
+  ((Right <$> recordRefund turns chatStore ref cents now) `catchOwn` (pure . Left)) >>= \case
+    Right (Right RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
+      -- The registration id, not the reference, since an invoice id is kept out of the logs.
+      logNote $ "names: recorded a refund of " <> tshow rdCents <> " cents for order " <> rid
+      pure $ Right $ "Recorded a refund of " <> dollars rdCents <> " for order " <> rid <> ". Refund it now, by: " <> chainText rdChain <> "."
+    Right (Left refusal) -> pure $ Left $ "Nothing recorded: " <> refusalText refusal <> "."
+    Left e -> Left "The refund could not be recorded." <$ logError ("names: recording a refund failed: " <> tshow e)
+  where
+    refusalText = \case
+      RefundNoOrder -> "no order has the reference " <> ref
+      RefundNoBalance -> "the order of " <> ref <> " has no balance"
+      RefundAmount amount -> "the balance is " <> dollars amount <> " now, not " <> dollars cents
+      RefundHeld hold -> heldText hold
+
+heldText :: BalanceHold -> T.Text
+heldText BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue, bhFunded}
+  | bhOverdue = heldBy <> "its invoice expired at " <> fmtTime bhUntil <> "; start the service so the poller closes that order, " <> tshow graceMinutes <> " minutes after the expiry at the earliest, then stop it and run //refund again"
+  | bhFunded = heldBy <> "whose invoice holds money; it holds until that payment settles or the invoice closes; run the command again then"
+  | otherwise = heldBy <> "its invoice open until " <> fmtTime bhUntil <> "; run the command again then"
+  where
+    heldBy = "held by order " <> holder <> ", "
+    graceMinutes = round (expiryGrace / minute) :: Int
+    minute = 60 :: NominalDiffTime
+
+-- | From the balance's own order back to the first; a part paid from a balance names the next order, whose balance paid it.
+chainText :: [BalanceLink] -> T.Text
+chainText chain = T.intercalate "; " $ zipWith linkText chain (map (Just . lkRegistration) (drop 1 chain) <> [Nothing])
+  where
+    linkText BalanceLink {lkRegistration = RegistrationId rid, lkPayment, lkPaid, lkFromBalance, lkLateCredits} source_ =
+      "order " <> rid <> ": " <> case paid lkPayment lkPaid lkLateCredits <> fromBalance lkFromBalance source_ of
+        [] -> "no payment recorded"
+        parts -> T.intercalate ", " parts
+    paid payment cents lateCredits = case payment of
+      RPInvoice method (InvoiceId invId) ->
+        let by = " by " <> methodText method <> " on invoice " <> invId
+            late = sum $ map lcCents lateCredits
+            -- an order its invoice paid is credited only the extra of an overpayment
+            kind = if cents > 0 then " overpaid" else " late"
+         in [dollars cents <> by | cents > 0] <> [dollars late <> kind <> by | late > 0]
+      RPCode _ -> ["a prepaid code"]
+      RPBalance -> []
+    fromBalance cents = \case
+      Just (RegistrationId source) | cents > 0 -> [dollars cents <> " from the balance of order " <> source]
+      _ -> []
+
+dollars :: Int -> T.Text
+dollars cents = "$" <> tshow whole <> "." <> T.justifyRight 2 '0' (tshow part)
+  where
+    (whole, part) = cents `quotRem` centsPerDollar
+    centsPerDollar = 100
+
+-- | Nothing marks a name code paid later, so an unpaid one would be refused for good.
+issueNameCmdP :: A.Parser (Int, Int, BadgeCodePaymentStatus)
+issueNameCmdP = do
+  (len, years) <- "issue " *> nameCodeP
+  paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)
+  when (paymentStatus == CPSUnpaid) $ fail "unpaid name code"
+  A.skipSpace
+  A.endOfInput
+  pure (len, years, paymentStatus)
 
 issueCmdP :: A.Parser IssueCodeOpts
 issueCmdP =
@@ -396,11 +647,11 @@ badgePostStartHook StoreServiceOpts {noAddress, testing} env cc = do
 handleServiceRequest :: BadgeIssuerKey -> StoreVerifier -> PurchaseChecks -> ChatController -> Maybe (TQueue GroupEvent) -> User -> AgentInvId -> Maybe C.PublicKeyEd25519 -> J.Object -> IO ()
 handleServiceRequest key verifier checks cc trackerQ_ User {userId} reqId sigKey reqData = do
   let reqIdT = safeDecodeUtf8 (strEncode reqId)
-  logInfo $ "store service request " <> reqIdT
+  logNote $ "store service request " <> reqIdT
   resp <-
     storeServiceResponse key verifier checks cc trackerQ_ sigKey reqData `catchOwn'` \_ ->
       logError ("store service request " <> reqIdT <> " failed") $> errorResponse STEInternal
-  logInfo $ "badge answer: " <> responseName resp
+  logNote $ "badge answer: " <> responseName resp
   sendChatCmd cc (APISendServiceResponse userId reqId (responseObject resp)) >>= \case
     Right _ -> pure ()
     Left e -> logError $ "store service response failed for " <> reqIdT <> ": " <> tshow e
@@ -420,7 +671,6 @@ badgeErrorRetryAfter = \case
   STERateLimited -> Just 60
   _ -> Nothing
 
-
 -- | The agent verified the signature, so sigKey is a key the sender holds; a differing purchaseKey would let a client claim a purchase it cannot sign for.
 storeServiceResponse :: BadgeIssuerKey -> StoreVerifier -> PurchaseChecks -> ChatController -> Maybe (TQueue GroupEvent) -> Maybe C.PublicKeyEd25519 -> J.Object -> IO StoreServiceResponse
 storeServiceResponse key verifier checks cc trackerQ_ sigKey reqData = case J.fromJSON (J.Object reqData) of
@@ -428,7 +678,7 @@ storeServiceResponse key verifier checks cc trackerQ_ sigKey reqData = case J.fr
   J.Success StoreServiceRequest {version, purchaseKey, request}
     | not (version `isCompatible` supportedStoreServiceVRange) -> pure $ errorResponse STEUnsupportedVersion
     | purchaseKey /= sigKey -> pure $ errorResponse STEBadRequest
-    | otherwise -> logInfo ("badge request: " <> commandName request) >> case request of
+    | otherwise -> logNote ("badge request: " <> commandName request) >> case request of
         STCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
           Just k -> redeemCode key cc trackerQ_ k masterKey code
           Nothing -> pure $ errorResponse STEBadRequest
@@ -680,7 +930,7 @@ purchaseWithReceipt key cc verifier checks use purchaseKey masterKey StoreReceip
                         setSubscriptionState db paymentId subscriptionState now
                         Just <$> firstMonthResponse db purchaseId Nothing (Just subscriptionState) firstMonth
                   case r of
-                    Right (Just resp) -> logInfo "store subscription moved to another key" $> resp
+                    Right (Just resp) -> logNote "store subscription moved to another key" $> resp
                     Right Nothing -> logError "store service: a subscription moved, or its ledger changed, while its transfer was signed" $> errorResponse STEInternal
                     Left _ -> pure $ errorResponse STEInternal
     providerToken = case subscriptionRef of
@@ -756,7 +1006,7 @@ firstChargeNotGranted provider = \case
   NGEnded | PPGoogle <- provider -> storeRefusalResponse $ SRInvalid "the subscription ended"
   NGNotStarted -> storeRefusalResponse SRPending
   -- a later charge, or an Apple resubscription under the same original id, may yet be credited from this receipt
-  reason -> logInfo ("store subscription not credited yet: " <> tshow reason) $> STPError {code = STEPaymentPending, message = Nothing, retryAfter = Just 86400}
+  reason -> logNote ("store subscription not credited yet: " <> tshow reason) $> STPError {code = STEPaymentPending, message = Nothing, retryAfter = Just 86400}
 
 -- | What each request was answered, to pair with its command in a log. No payload: a credential,
 -- an invoice and a statement are the client's, and an error's message can quote what it refused.
@@ -792,10 +1042,10 @@ commandName = \case
 -- forger could iterate on. A test purchase is named, since the device that made it already knows.
 storeRefusalResponse :: StoreRefusal -> IO StoreServiceResponse
 storeRefusalResponse = \case
-  -- warn, not info: every one of these ends a purchase for good, and one of them (a store that no longer
+  -- warn, not note: every one of these ends a purchase for good, and one of them (a store that no longer
   -- knows a subscription it once sold) can do that to a purchase the user really paid for
   SRInvalid reason -> logWarn ("store receipt refused for good: " <> reason) $> errorResponse STEReceiptInvalid
-  SRTestPurchase -> logInfo "store receipt refused: test purchase" $> errorResponse STETestPurchase
+  SRTestPurchase -> logNote "store receipt refused: test purchase" $> errorResponse STETestPurchase
   SRPending -> pure $ errorResponse STEPaymentPending
   SRUnreachable reason -> logWarn ("store unreachable: " <> reason) $> errorResponse STEProviderUnavailable
   SRVerifierFailed reason -> logError ("store receipt not verified: " <> reason) $> errorResponse STEInternal
@@ -918,7 +1168,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
                 Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider now checked >>= fundsMonthNow purchaseKey now (Just tip) of
                   Left NGMalformedPeriod -> storeRefusalResponse $ SRVerifierFailed "a charge whose period does not end after its start"
                   Left reason -> do
-                    forM_ latestCharge $ \_ -> logInfo $ "store subscription charge not granted: " <> tshow reason
+                    forM_ latestCharge $ \_ -> logNote $ "store subscription charge not granted: " <> tshow reason
                     recordCheck latestCharge subscriptionState
                   Right (charge@StoreCharge {chargeRef, periodStart}, (badgeType, months)) ->
                     withDB' "getSubscriptionCharge" cc (\db -> getSubscriptionCharge db paymentId chargeRef) >>= \case
@@ -1032,14 +1282,14 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
             setSubscriptionState db paymentId SSEnded now
             Just . withoutCredential <$> issueResponse db badgePurchaseId now (Just SSEnded)
       case r of
-        Right (Just resp) -> resp <$ unless (refunded == 0) (logInfo $ "store subscription ended during coverage: " <> tshow (negate refunded) <> " months refunded")
+        Right (Just resp) -> resp <$ unless (refunded == 0) (logNote $ "store subscription ended during coverage: " <> tshow (negate refunded) <> " months refunded")
         Right Nothing -> logError "store service: a subscription's ledger moved while its refund was written" $> errorResponse STEInternal
         Left _ -> pure $ errorResponse STEInternal
     answered what action = fromRight (errorResponse STEInternal) <$> withDB' what cc action
     withoutCredential = \case
       STPBadgeCredential {receipt, statement, subscription} -> STPBadgeCredential {credential = Nothing, receipt, statement, subscription}
       resp -> resp
-    logBanked months = logInfo $ "store subscription charge banked: " <> tshow months <> " months"
+    logBanked months = logNote $ "store subscription charge banked: " <> tshow months <> " months"
     -- Only the asserted entry's identity is read, never the months it claims.
     issueResponse db purchaseId t subscription = do
       let StatementEntry {entryId = assertedUuid} = lastEntry

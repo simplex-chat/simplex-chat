@@ -10,6 +10,7 @@ module Bots.StoreService.FakeBTCPay
     fakeApiKey,
     fakeExpiryMinutes,
     setInvoiceState,
+    setRates,
     failNextCalls,
     failAfterCalls,
     useListFixture,
@@ -98,12 +99,18 @@ data FakeRequest = FakeRequest
   }
   deriving (Eq, Show)
 
+-- | isSpeedPolicy: the checkout's speedPolicy the invoice was created with. isPayments: the payments set by a test, else one of all
+-- that was paid, Settled once the invoice is.
 data InvoiceState = InvoiceState
   { isMethodId :: Text,
     isStatus :: Text,
     isAdditionalStatus :: Text,
     isPaid :: Maybe Text,
-    isDue :: Maybe Text
+    isDue :: Maybe Text,
+    -- | The method's amount, when a test sets one other than the fixture's.
+    isAmount :: Maybe Text,
+    isSpeedPolicy :: Maybe Text,
+    isPayments :: Maybe J.Value
   }
   deriving (Eq, Show)
 
@@ -118,6 +125,8 @@ data FakeState = FakeState
     fsMethods :: Maybe Text,
     fsIgnorePaging :: Bool,
     fsOversize :: Bool,
+    -- | The rates answer set by a test, else each pair asked at the fixtures' rate.
+    fsRates :: Maybe J.Value,
     fsRequests :: [FakeRequest]
   }
 
@@ -131,6 +140,7 @@ initialState =
       fsMethods = Nothing,
       fsIgnorePaging = False,
       fsOversize = False,
+      fsRates = Nothing,
       fsRequests = []
     }
 
@@ -222,30 +232,43 @@ btcMethod = "BTC-CHAIN"
 xmrMethod = "XMR-CHAIN"
 
 patchInvoice :: Text -> InvoiceState -> J.Value -> J.Value
-patchInvoice invId InvoiceState {isStatus, isAdditionalStatus} =
+patchInvoice invId InvoiceState {isStatus, isAdditionalStatus, isSpeedPolicy} v =
   setField "id" (J.String invId)
     . setField "status" (J.String isStatus)
     . setField "additionalStatus" (J.String isAdditionalStatus)
+    . setField "checkout" (setField "speedPolicy" (maybe J.Null J.String isSpeedPolicy) (fromMaybe (J.object []) (objectField "checkout" v)))
+    $ v
 
+-- | The fixtures' payments were written for a settled invoice, so the payments follow the state instead.
 patchMethods :: InvoiceState -> J.Value -> J.Value
-patchMethods InvoiceState {isPaid, isDue} = \case
+patchMethods InvoiceState {isStatus, isPaid, isDue, isAmount, isPayments} = \case
   J.Array vs -> J.Array (fmap one vs)
   other -> other
   where
+    paidStatus = if isStatus == "Settled" then "Settled" else "Processing" :: Text
     one = \case
-      J.Object o ->
-        let paid = fromMaybe (fixturePaid o) isPaid
+      J.Object fixture ->
+        let o = maybe fixture (\a -> KM.insert "amount" (J.String a) fixture) isAmount
+            paid = fromMaybe (fixturePaid o) isPaid
             -- With nothing received the whole amount is owed. The fixtures were written for a
             -- settled invoice, so without this a freshly created one would serve their `due` of
             -- zero and the fake would report nothing left to send on an unpaid invoice.
             due = if isZero paid then isDue <|> textField "amount" o else isDue
             withPaid = KM.insert "paymentMethodPaid" (J.String paid) o
             withDue = maybe withPaid (\d -> KM.insert "due" (J.String d) withPaid) due
-         in J.Object (if isZero paid then KM.insert "payments" (J.Array mempty) withDue else withDue)
+            payments
+              | Just ps <- isPayments = ps
+              | isZero paid = J.Array mempty
+              | otherwise = J.toJSON [J.object ["id" J..= ("faketx-" <> paid), "receivedDate" J..= settledDate, "value" J..= paid, "fee" J..= ("0.00000000" :: Text), "status" J..= paidStatus]]
+         in J.Object (KM.insert "payments" payments withDue)
       v -> v
     fixturePaid o = case KM.lookup "paymentMethodPaid" o of
       Just (J.String t) -> t
       _ -> "0"
+
+-- | The fixtures' settlement time.
+settledDate :: Int
+settledDate = 1700003600
 
 isZero :: Text -> Bool
 isZero t = (J.decodeStrict (TE.encodeUtf8 t) :: Maybe Scientific) == Just 0
@@ -264,6 +287,7 @@ fakeApp stv req respond = do
     ["_fixtures"] | isPost -> control body setFixtures
     ["_paging"] | isPost -> control body setPaging
     ["_oversize"] | isPost -> control body setOversize
+    ["_rates"] | isPost -> setRatesAnswer body
     "api" : "v1" : "stores" : storeId : rest -> apiCall body storeId rest
     _ -> refuse notFound404 "no such path on the fake btcpay"
   where
@@ -292,7 +316,9 @@ fakeApp stv req respond = do
                     { isStatus = fromMaybe (isStatus inv) (textField "status" o),
                       isAdditionalStatus = fromMaybe (isAdditionalStatus inv) (textField "additionalStatus" o),
                       isPaid = maybe (isPaid inv) Just (textField "paymentMethodPaid" o),
-                      isDue = maybe (isDue inv) Just (textField "due" o)
+                      isDue = maybe (isDue inv) Just (textField "due" o),
+                      isAmount = maybe (isAmount inv) Just (textField "amount" o),
+                      isPayments = maybe (isPayments inv) Just (KM.lookup "payments" o)
                     }
             writeTVar stv st {fsInvoices = M.insert invId inv' (fsInvoices st)}
             pure Nothing
@@ -324,6 +350,10 @@ fakeApp stv req respond = do
             | otherwise -> Left ("not a " <> K.toText k <> " fixture: " <> name)
         fsListOf name st = st {fsList = name}
         fsMethodsOf name st = st {fsMethods = Just name}
+
+    setRatesAnswer body = case J.decode body of
+      Just v -> atomically (modifyTVar' stv (\st -> st {fsRates = Just v})) >> ok
+      Nothing -> refuse badRequest400 "_rates takes the answer to serve, as JSON"
 
     setOversize o = case unknownKeys ["on"] o of
       Just message -> pure (Just message)
@@ -370,6 +400,7 @@ fakeApp stv req respond = do
 
     greenfield body = \case
       ["payment-methods"] | isGet -> serve "store-payment-methods" id
+      ["rates"] | isGet -> rates
       ["invoices"] | isPost -> createInvoice body
       ["invoices"] | isGet -> listInvoices
       ["invoices", invId] | isGet ->
@@ -379,6 +410,13 @@ fakeApp stv req respond = do
           override <- fsMethods <$> readTVarIO stv
           serve (fromMaybe (methodsFixture (isMethodId inv)) override) (patchMethods inv)
       _ -> refuse notFound404 "no such greenfield path on the fake btcpay"
+
+    rates = do
+      answer <- fsRates <$> readTVarIO stv
+      let asked = [TE.decodeUtf8 pair | ("currencyPair", Just pair) <- queryString req]
+      respond . jsonResponse ok200 $ fromMaybe (J.toJSON (map fixtureRate asked)) answer
+    fixtureRate pair = J.object ["currencyPair" J..= pair, "errors" J..= ([] :: [Text]), "rate" J..= lookup pair fixtureRates]
+    fixtureRates = [("BTC_USD", "108000.12"), ("XMR_USD", "168.25") :: (Text, Text)]
 
     listInvoices = do
       st <- readTVarIO stv
@@ -429,7 +467,11 @@ fakeApp stv req respond = do
                   { isMethodId = methodId,
                     isStatus = "New",
                     isAdditionalStatus = "None",
-                    isPaid = Just "0.00000000", isDue = Nothing
+                    isPaid = Just "0.00000000",
+                    isDue = Nothing,
+                    isAmount = Nothing,
+                    isSpeedPolicy = J.decode body >>= objectField "checkout" >>= objectField "speedPolicy" >>= asText,
+                    isPayments = Nothing
                   }
           writeTVar stv st {fsNextId = fsNextId st + 1, fsInvoices = M.insert invId inv (fsInvoices st)}
           pure (invId, inv)
@@ -447,7 +489,7 @@ intQuery :: ByteString -> Query -> Maybe Int
 intQuery k q = join (lookup k q) >>= readMaybe . B8.unpack
 
 stateKeys :: [Key]
-stateKeys = ["status", "additionalStatus", "paymentMethodPaid", "due"]
+stateKeys = ["status", "additionalStatus", "paymentMethodPaid", "due", "amount", "payments"]
 
 unknownKeys :: [Key] -> J.Object -> Maybe Text
 unknownKeys known o = case filter (`notElem` known) (KM.keys o) of
@@ -459,6 +501,11 @@ chosenMethod v = case objectField "checkout" v >>= objectField "paymentMethods" 
   Just (J.Array ms) -> case foldr (:) [] ms of
     [J.String m] | m `elem` [btcMethod, xmrMethod] -> Just m
     _ -> Nothing
+  _ -> Nothing
+
+asText :: J.Value -> Maybe Text
+asText = \case
+  J.String t -> Just t
   _ -> Nothing
 
 objectField :: Key -> J.Value -> Maybe J.Value
@@ -504,6 +551,10 @@ failAfterCalls skip fake calls code =
 
 answerOversize :: FakeBTCPay -> Bool -> IO ()
 answerOversize fake on = controlPost fake "/_oversize" (J.object ["on" J..= on])
+
+-- | The rates call answers this from now on.
+setRates :: FakeBTCPay -> J.Value -> IO ()
+setRates fake = controlPost fake "/_rates"
 
 useListFixture :: FakeBTCPay -> Text -> IO ()
 useListFixture fake name = controlPost fake "/_fixtures" (J.object ["list" J..= name])
