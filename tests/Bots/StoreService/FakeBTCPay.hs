@@ -17,6 +17,8 @@ module Bots.StoreService.FakeBTCPay
     usePaymentMethodsFixture,
     ignoreListPaging,
     answerOversize,
+    answerStalled,
+    stalledAnswer,
     fakeRequests,
     apiRequests,
     fakeInvoiceIds,
@@ -27,10 +29,11 @@ module Bots.StoreService.FakeBTCPay
   )
 where
 
-import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..))
+import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), providerTimeoutMicros)
 import Control.Applicative ((<|>))
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
-import Control.Monad (join)
+import Control.Monad (forever, join)
 import Crypto.Hash (Digest, SHA256)
 import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)
 import qualified Data.Aeson as J
@@ -40,6 +43,7 @@ import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types (Pair)
 import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString (ByteString)
+import Data.ByteString.Builder (byteString)
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
 import Data.List (isPrefixOf, nub)
@@ -69,7 +73,7 @@ import Network.HTTP.Types
     unauthorized401,
   )
 import Network.HTTP.Types.Header (Header)
-import Network.Wai (Application, Response, pathInfo, queryString, requestHeaders, requestMethod, responseLBS, strictRequestBody)
+import Network.Wai (Application, Response, pathInfo, queryString, requestHeaders, requestMethod, responseLBS, responseStream, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Util (tshow)
 import System.FilePath ((</>))
@@ -125,6 +129,7 @@ data FakeState = FakeState
     fsMethods :: Maybe Text,
     fsIgnorePaging :: Bool,
     fsOversize :: Bool,
+    fsStalled :: Bool,
     -- | The rates answer set by a test, else each pair asked at the fixtures' rate.
     fsRates :: Maybe J.Value,
     fsRequests :: [FakeRequest]
@@ -140,6 +145,7 @@ initialState =
       fsMethods = Nothing,
       fsIgnorePaging = False,
       fsOversize = False,
+      fsStalled = False,
       fsRates = Nothing,
       fsRequests = []
     }
@@ -170,7 +176,8 @@ fakeConfig host =
       bWebhookSecret = fakeWebhookSecret,
       bExpiryMinutes = fakeExpiryMinutes,
       bSpeedPolicy = MediumSpeed,
-      bPaymentTolerance = 0.5
+      bPaymentTolerance = 0.5,
+      bTimeoutMicros = providerTimeoutMicros
     }
 
 -- | A BTCPay webhook delivery shaped as its documentation shows. Both suites sign this exact
@@ -286,7 +293,8 @@ fakeApp stv req respond = do
     ["_fail"] | isPost -> control body setFail
     ["_fixtures"] | isPost -> control body setFixtures
     ["_paging"] | isPost -> control body setPaging
-    ["_oversize"] | isPost -> control body setOversize
+    ["_oversize"] | isPost -> control body (setSwitch "_oversize" (\on st -> st {fsOversize = on}))
+    ["_stalled"] | isPost -> control body (setSwitch "_stalled" (\on st -> st {fsStalled = on}))
     ["_rates"] | isPost -> setRatesAnswer body
     "api" : "v1" : "stores" : storeId : rest -> apiCall body storeId rest
     _ -> refuse notFound404 "no such path on the fake btcpay"
@@ -355,13 +363,13 @@ fakeApp stv req respond = do
       Just v -> atomically (modifyTVar' stv (\st -> st {fsRates = Just v})) >> ok
       Nothing -> refuse badRequest400 "_rates takes the answer to serve, as JSON"
 
-    setOversize o = case unknownKeys ["on"] o of
+    setSwitch path set o = case unknownKeys ["on"] o of
       Just message -> pure (Just message)
       Nothing -> case KM.lookup "on" o of
         Just (J.Bool on) -> do
-          atomically (modifyTVar' stv (\st -> st {fsOversize = on}))
+          atomically (modifyTVar' stv (set on))
           pure Nothing
-        _ -> pure (Just "_oversize takes {\"on\": <bool>}")
+        _ -> pure (Just (path <> " takes {\"on\": <bool>}"))
 
     setPaging o = case unknownKeys ["ignore"] o of
       Just message -> pure (Just message)
@@ -378,10 +386,14 @@ fakeApp stv req respond = do
       if storeId /= fakeStoreId
         then refuse notFound404 ("no store " <> storeId <> " on the fake btcpay")
         else case lookup hAuthorization (requestHeaders req) of
-          Just given | given == expectedAuth -> injectingFailure (greenfield body rest)
+          Just given | given == expectedAuth -> unlessStalled (injectingFailure (greenfield body rest))
           _ -> refuse unauthorized401 "Authorization must be `token <api-key>`"
 
     expectedAuth = "token " <> TE.encodeUtf8 fakeApiKey
+
+    unlessStalled act = do
+      stalled <- fsStalled <$> readTVarIO stv
+      if stalled then respond stalledAnswer else act
 
     injectingFailure act = do
       failing <- atomically $ do
@@ -531,6 +543,14 @@ jsonResponse st v = responseLBS st [(hContentType, "application/json")] (J.encod
 errorResponse :: Status -> Text -> Response
 errorResponse st message = jsonResponse st (J.object ["code" J..= TE.decodeUtf8 (statusMessage st), "message" J..= message])
 
+stalledAnswer :: Response
+stalledAnswer = responseStream ok200 [(hContentType, "application/json")] $ \write flush -> do
+  write (byteString "[") >> flush
+  forever $ threadDelay trickleMicros >> write (byteString " ") >> flush
+
+trickleMicros :: Int
+trickleMicros = 100000
+
 controlPost :: FakeBTCPay -> String -> J.Value -> IO ()
 controlPost FakeBTCPay {fbBaseUrl, fbManager} path v = do
   req <- HTTP.parseRequest (fbBaseUrl <> path)
@@ -551,6 +571,9 @@ failAfterCalls skip fake calls code =
 
 answerOversize :: FakeBTCPay -> Bool -> IO ()
 answerOversize fake on = controlPost fake "/_oversize" (J.object ["on" J..= on])
+
+answerStalled :: FakeBTCPay -> Bool -> IO ()
+answerStalled fake on = controlPost fake "/_stalled" (J.object ["on" J..= on])
 
 -- | The rates call answers this from now on.
 setRates :: FakeBTCPay -> J.Value -> IO ()

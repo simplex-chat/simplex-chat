@@ -10,6 +10,7 @@ module Bots.StoreService.FakeStripe
     fakeSessionMinutes,
     setIntentState,
     failNextCalls,
+    answerStalled,
     useListPageSize,
     useListFixture,
     apiRequests,
@@ -21,7 +22,8 @@ module Bots.StoreService.FakeStripe
   )
 where
 
-import StoreService.Config (StripeConfig (..))
+import StoreService.Config (StripeConfig (..), providerTimeoutMicros)
+import Bots.StoreService.FakeBTCPay (stalledAnswer)
 import Control.Concurrent.STM
 import Control.Monad (forM_, when)
 import Crypto.Hash (Digest, SHA256)
@@ -107,6 +109,7 @@ data FakeState = FakeState
     fsFail :: FailPlan,
     fsList :: Text,
     fsPageSize :: Maybe Int,
+    fsStalled :: Bool,
     fsRequests :: [FakeRequest],
     -- | The first answer to each Idempotency-Key, which Stripe replays to every later call with it.
     fsReplies :: M.Map ByteString Response
@@ -120,6 +123,7 @@ initialState =
       fsFail = FailPlan {fpCalls = 0, fpStatus = 0},
       fsList = "intent-list",
       fsPageSize = Nothing,
+      fsStalled = False,
       fsRequests = [],
       fsReplies = M.empty
     }
@@ -148,7 +152,8 @@ fakeConfig host =
       sPublishableKey = "pk_test_x",
       sWebhookSecret = fakeWebhookSecret,
       sSessionMinutes = fakeSessionMinutes,
-      sHost = host
+      sHost = host,
+      sTimeoutMicros = providerTimeoutMicros
     }
 
 -- | Stripe-Signature: t=<unix>,v1=<hex HMAC-SHA256 of "t.body">.
@@ -211,6 +216,7 @@ fakeApp stv req respond0 = do
     ["_fail"] | isPost -> control body setFail
     ["_paging"] | isPost -> control body setPaging
     ["_fixtures"] | isPost -> control body setFixtures
+    ["_stalled"] | isPost -> control body setStalled
     "v1" : "payment_intents" : rest -> apiCall body rest
     ["v1", "charges"] | isGet -> listCharges
     _ -> refuse notFound404 "no such path on the fake stripe"
@@ -273,13 +279,25 @@ fakeApp stv req respond0 = do
           pure Nothing
         Nothing -> pure (Just "_fixtures takes {\"list\": <fixture name>}")
 
+    setStalled o = case unknownKeys ["on"] o of
+      Just message -> pure (Just message)
+      Nothing -> case KM.lookup "on" o of
+        Just (J.Bool on) -> do
+          atomically (modifyTVar' stv (\st -> st {fsStalled = on}))
+          pure Nothing
+        _ -> pure (Just "_stalled takes {\"on\": <bool>}")
+
     apiCall b rest = do
       atomically $
         modifyTVar' stv $ \st ->
           st {fsRequests = FakeRequest verb (pathInfo req) (queryString req) (requestHeaders req) b : fsRequests st}
       case lookup hAuthorization (requestHeaders req) of
-        Just given | given == expectedAuth -> replaying (injectingFailure (route b rest))
+        Just given | given == expectedAuth -> unlessStalled (replaying (injectingFailure (route b rest)))
         _ -> refuse unauthorized401 "Authorization must be HTTP Basic with the secret key as username"
+
+    unlessStalled act = do
+      stalled <- fsStalled <$> readTVarIO stv
+      if stalled then respond0 stalledAnswer else act
 
     -- Stripe authenticates the secret key as the Basic username with an empty password, which is
     -- how http-client's applyBasicAuth builds the header.
@@ -431,6 +449,9 @@ setIntentState fake pid fields = controlPost fake ("/_state/" <> T.unpack pid) (
 
 failNextCalls :: FakeStripe -> Int -> Int -> IO ()
 failNextCalls fake calls code = controlPost fake "/_fail" (J.object ["calls" J..= calls, "status" J..= code])
+
+answerStalled :: FakeStripe -> Bool -> IO ()
+answerStalled fake on = controlPost fake "/_stalled" (J.object ["on" J..= on])
 
 useListPageSize :: FakeStripe -> Int -> IO ()
 useListPageSize fake size = controlPost fake "/_paging" (J.object ["size" J..= size])

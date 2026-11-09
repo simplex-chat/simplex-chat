@@ -183,6 +183,7 @@ by its IPv4 address.
 Checkouts that reach the provider (`POST /api/invoice` and `POST /api/registration/:id/spend` with a
 difference to pay, each a provider invoice or card PaymentIntent) are also capped at 30 a minute for
 all clients together.
+A call to BTCPay or Stripe, its body read included, fails as a provider error after 10 seconds.
 Searches read the chain at most 16 at a time and long polls hold at most 500 at a time, for all clients
 together; past that they answer `429 rate_limited` with a short `Retry-After` at once.
 

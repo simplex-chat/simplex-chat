@@ -78,6 +78,7 @@ import Simplex.Chat.PaymentService.Types
     ServicePaymentMethod (..),
   )
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import System.Timeout (timeout)
 
 -- Shapes cited from BTCPay Server v2.4.5 (https://github.com/btcpayserver/btcpayserver/tree/v2.4.5):
 -- - payment methods, GET stores/{storeId}/invoices/{invoiceId}/payment-methods: BTCPayServer.Client/Models/InvoicePaymentMethodDataModel.cs,
@@ -579,7 +580,7 @@ verifyBTCPaySig secret hdrs body = do
 
 greenfield :: BTCPayEnv -> Text -> Method -> [Text] -> Query -> Maybe J.Value -> IO (Either ProviderError LB.ByteString)
 greenfield BTCPayEnv {beCfg, beManager} what verb segments query body = do
-  r <- try $ do
+  r <- timeout (bTimeoutMicros beCfg) $ try $ do
     req <- parseRequest (T.unpack url)
     let asked =
           req
@@ -596,9 +597,10 @@ greenfield BTCPayEnv {beCfg, beManager} what verb segments query body = do
       taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
       pure (statusCode (responseStatus resp), taken)
   pure $ case r of
+    Nothing -> Left (ProviderError (what <> " failed: timed out"))
     -- http-client hides the Authorization header when showing a Request
-    Left (e :: HttpException) -> Left (ProviderError (what <> " failed: " <> tshow e))
-    Right (code, taken)
+    Just (Left (e :: HttpException)) -> Left (ProviderError (what <> " failed: " <> tshow e))
+    Just (Right (code, taken))
       | LB.length taken > maxProviderBytes ->
           Left . ProviderError $
             what <> " failed: HTTP " <> tshow code <> ", and the answer is over " <> tshow maxProviderBytes <> " bytes"

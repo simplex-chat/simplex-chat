@@ -41,7 +41,7 @@ module Bots.StoreService.WebTests
 where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
-import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig, PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultLogLevel)
+import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig, PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultLogLevel, providerTimeoutMicros)
 import StoreService.Orders (cancelOpenInvoice, codeLifetime, expireOverdue, settleOrder)
 import StoreService.Poller
 import StoreService.Providers
@@ -307,6 +307,7 @@ badgeWebTests = do
     it "hands every signal the pass returned to settleOrder, unless the row answers it" testEverySignalSettles
     it "passes over a listed invoice this service does not hold" testForeignRefIsPassedOver
     it "changes nothing when the provider fails, and settles on the next pass" testProviderFailureLosesNothing
+    it "settles a card invoice in the pass where a stalled BTCPay answer times out" testStalledBTCPayHoldsNoCardSettlement
     it "reads the cadence fresh from the waiters each pass" testCadenceFollowsTheWaiters
     it "cuts an idle sleep short when a browser arrives during it" testWaiterCutsTheIdleSleepShort
     it "serves a hint batch without postponing a pass that falls due" testHintsDoNotPostponeThePass
@@ -1275,7 +1276,7 @@ testExportWebapp = do
     staticDir <- prepareStaticDir root
     let outDir = root </> "out"
         lc = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = staticDir, lServeWebapp = False, lBadgesExportDir = Just outDir, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing}
-        stripeCfg = Just StripeConfig {sSecretKey = "rk_test_x", sPublishableKey = "pk_test_injected", sWebhookSecret = "whsec_x", sSessionMinutes = 60, sHost = "https://api.stripe.com"}
+        stripeCfg = Just StripeConfig {sSecretKey = "rk_test_x", sPublishableKey = "pk_test_injected", sWebhookSecret = "whsec_x", sSessionMinutes = 60, sHost = "https://api.stripe.com", sTimeoutMicros = providerTimeoutMicros}
     exportWebapp (testServiceConfig staticDir False) {listener = lc, stripe = stripeCfg}
     idx <- LB.readFile (outDir </> "index.html")
     LB.toStrict idx `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
@@ -1637,7 +1638,8 @@ publishTestStripe =
       sPublishableKey = "pk_test_injected",
       sWebhookSecret = "whsec_x",
       sSessionMinutes = 60,
-      sHost = "https://api.stripe.com"
+      sHost = "https://api.stripe.com",
+      sTimeoutMicros = providerTimeoutMicros
     }
 
 testServesTheBuild :: IO ()
@@ -2050,7 +2052,8 @@ testBTCPayConfig =
       bWebhookSecret = "webhook-secret",
       bExpiryMinutes = testExpiryMinutes,
       bSpeedPolicy = MediumSpeed,
-      bPaymentTolerance = 0.5
+      bPaymentTolerance = 0.5,
+      bTimeoutMicros = providerTimeoutMicros
     }
 
 supporterPriceId, legendPriceId, disabledPriceId :: Text
@@ -3076,6 +3079,18 @@ testProviderFailureLosesNothing = bounded "provider outage" $ withStubPoller rac
   runOnePass poller
   invoiceStatus (weStore env) iid `shouldReturn` ISPaid
   stubCalls ref `shouldReturn` [StubRead "p-1", StubListOpen, StubRead "p-1"]
+
+testStalledBTCPayHoldsNoCardSettlement :: IO ()
+testStalledBTCPayHoldsNoCardSettlement = bounded "stalled btcpay" $ withFakePoller $ \fake poller env _ -> do
+  stalled <- btcpayProvider (fbConfig fake) {bTimeoutMicros = 300000}
+  ref <- newIORef (newStubState (Right sampleProviderInvoice))
+  seedBadgePrice (weStore env) "price1"
+  btcpayRow <- seedOpenRef (weStore env) 1 "p-btcpay" someExpiry
+  cardRow <- seedOpenRefOf PPStripe (weStore env) 2 "p-stripe" someExpiry
+  setSignals ref [("p-stripe", settledSignal)]
+  answerStalled fake True
+  runOnePass poller {peProviders = [stalled, (stubProvider ref) {pProvider = PPStripe}]}
+  mapM (invoiceStatus (weStore env)) [btcpayRow, cardRow] `shouldReturn` [ISOpen, ISPaid]
 
 testCadenceFollowsTheWaiters :: IO ()
 testCadenceFollowsTheWaiters = bounded "cadence" $ withStubPoller raceHold $ \_ poller env client -> do

@@ -39,7 +39,7 @@ import Data.Scientific (Scientific, scientific)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Network.HTTP.Types.Header (Header, hAuthorization)
 import Simplex.Chat.PaymentService.Types
@@ -121,6 +121,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "names a payment method with no destination, and writes nothing" testFakeCreateNoDestination
     it "names a payment method with no amount, and writes nothing" testFakeCreateNoAmount
     it "refuses an answer past the size it will hold, and reads again after" testFakeOversizeAnswer
+    it "ends a call whose answer stalls in its body after the configured timeout, and reads again after" testFakeStalledAnswer
     it "makes a 500 on a read a ProviderError the next read recovers from" testFakeRead500
     it "verifies a webhook with the secret it was configured with" testFakeWebhookSecretWiring
     it "keeps totalPaid distinguishable in every fixture an amount is asserted from" testFixturesGuardTotalPaid
@@ -847,6 +848,20 @@ testFakeOversizeAnswer = withProvider $ \fake p -> do
   answerOversize fake True
   pReadInvoice p invRef >>= (`shouldSatisfy` namesInError "over 10485760 bytes")
   answerOversize fake False
+  pReadInvoice p invRef >>= \case
+    Right _ -> pure ()
+    Left e -> expectationFailure ("the next read must recover, and got " <> show e)
+
+testFakeStalledAnswer :: IO ()
+testFakeStalledAnswer = withProviderConfigured (\cfg -> cfg {bTimeoutMicros = 300000}) $ \fake p -> do
+  ProviderInvoice {piProviderRef = invRef} <- createdInvoice p (SPMCrypto CCBtc)
+  answerStalled fake True
+  start <- getCurrentTime
+  pReadInvoice p invRef >>= (`shouldSatisfy` namesInError "read invoice failed: timed out")
+  pCreateInvoice p (SPMCrypto CCBtc) fiftyFourDollars >>= (`shouldSatisfy` namesInError "create invoice failed: timed out")
+  elapsed <- (`diffUTCTime` start) <$> getCurrentTime
+  elapsed `shouldSatisfy` (< 2)
+  answerStalled fake False
   pReadInvoice p invRef >>= \case
     Right _ -> pure ()
     Left e -> expectationFailure ("the next read must recover, and got " <> show e)
