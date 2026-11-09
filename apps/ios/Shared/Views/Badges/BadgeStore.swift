@@ -40,6 +40,11 @@ var badgeBrowserAllowed: Bool {
     SKPaymentQueue.default().storefront?.countryCode == "USA"
 }
 
+// Checks that build is from App Store, supported in iOS 15
+private var appStoreReceiptIsProduction: Bool {
+    Bundle.main.appStoreReceiptURL?.lastPathComponent == "receipt"
+}
+
 enum BadgePrice {
     case loading
     case price(String)
@@ -139,6 +144,8 @@ final class BadgeStore: ObservableObject {
     // the original ids of the Apple ID's subscriptions; nil until load() has read them. Apple folds a new subscription
     // of an Apple ID that subscribed before into the earlier one, which core resumes only for the profile it retired
     @Published private(set) var priorSubscriptions: Set<String>? = nil
+    // right from the first frame, and confirmed by readEnvironment on iOS 16
+    @Published private(set) var servedByAppStore = appStoreReceiptIsProduction
     // the sweep has no buyer waiting and runs at four triggers, so a failure that cannot clear is told once a run
     private var sweepFailureShown = false
     private var transactionUpdates: Task<Void, Never>? = nil
@@ -211,6 +218,17 @@ final class BadgeStore: ObservableObject {
             subscriptionsForSale: forSale(level, .monthly),
             subscribedBefore: subscribedBefore
         )
+    }
+
+    // iOS 16 includes the environment in the app transaction
+    func readEnvironment() async {
+        if #available(iOS 16.0, *) {
+            if let verification = try? await AppTransaction.shared,
+               case .verified(let appTransaction) = verification {
+                let served = appTransaction.environment == .production
+                await MainActor.run { servedByAppStore = served }
+            }
+        }
     }
 
     func load() async {
