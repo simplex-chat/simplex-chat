@@ -523,7 +523,7 @@ closeOrderCmd turns ct ChatController {chatStore} ref =
       CFNotFailedPaid -> "the order of " <> ref <> " is not a failed order paid by invoice or balance"
       CFUnread -> "the chain could not be read; run //close again"
       CFChanged -> "the order of " <> ref <> " changed meanwhile; run //close again"
-      CFWriteRefused refusal -> "the order of " <> ref <> " could not be written: " <> tshow refusal
+      CFWriteRefused _ -> "the order of " <> ref <> " could not be set taken; run //close again"
       CFHeld hold -> heldText hold
       CFBalanceChanged -> "the balance of the order of " <> ref <> " changed meanwhile; run //close again"
 
