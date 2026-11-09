@@ -35,6 +35,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (balanceTurnCount, newTurns, turnsCount, withBalanceTurn, withLabelTurn)
+import StoreService.Names.View (addressText)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupUnpaid, newPollerEnv, unpaidRetention)
 import StoreService.Service (chainText, heldText)
@@ -414,9 +415,9 @@ testChain = withServiceStore $ \st -> do
   credit st "b" holdPrice
   coveredSpend st "c" "b" 10000 holdPrice `shouldReturn` Right ()
   withTransaction st (\db -> balanceChain db (RegistrationId "c"))
-    `shouldReturn` [ BalanceLink {lkRegistration = RegistrationId "c", lkPayment = RPBalance, lkPaid = 0, lkFromBalance = 10000, lkLateCredits = []},
-                     BalanceLink {lkRegistration = RegistrationId "b", lkPayment = RPInvoice btc (InvoiceId "inv-b"), lkPaid = holdPrice - 20000, lkFromBalance = 20000, lkLateCredits = []},
-                     BalanceLink {lkRegistration = RegistrationId "a", lkPayment = RPInvoice btc (InvoiceId "inv-a"), lkPaid = 20000, lkFromBalance = 0, lkLateCredits = []}
+    `shouldReturn` [ BalanceLink {lkRegistration = RegistrationId "c", lkOwner = ownerA, lkPayment = RPBalance, lkProviderRef = Nothing, lkPaid = 0, lkFromBalance = 10000, lkLateCredits = []},
+                     BalanceLink {lkRegistration = RegistrationId "b", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-b"), lkProviderRef = Just "ref-inv-b", lkPaid = holdPrice - 20000, lkFromBalance = 20000, lkLateCredits = []},
+                     BalanceLink {lkRegistration = RegistrationId "a", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-a"), lkProviderRef = Just "ref-inv-a", lkPaid = 20000, lkFromBalance = 0, lkLateCredits = []}
                    ]
 
 testChainOfClosed :: IO ()
@@ -429,7 +430,7 @@ testChainOfClosed = withServiceStore $ \st -> do
   let late = lateCredit "d" 1 (Just 40000) 2400
   creditLate st late `shouldReturn` True
   withTransaction st (\db -> balanceChain db (RegistrationId "d"))
-    `shouldReturn` [BalanceLink {lkRegistration = RegistrationId "d", lkPayment = RPInvoice btc (InvoiceId "inv-d"), lkPaid = 0, lkFromBalance = 0, lkLateCredits = [late]}]
+    `shouldReturn` [BalanceLink {lkRegistration = RegistrationId "d", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-d"), lkProviderRef = Just "ref-inv-d", lkPaid = 0, lkFromBalance = 0, lkLateCredits = [late]}]
 
 testChainOfOverpaid :: IO ()
 testChainOfOverpaid = withServiceStore $ \st -> do
@@ -439,7 +440,7 @@ testChainOfOverpaid = withServiceStore $ \st -> do
   let late = lateCredit "o" 1 (Just 40000) 2400
   creditLate st late `shouldReturn` True
   withTransaction st (\db -> balanceChain db (RegistrationId "o"))
-    `shouldReturn` [BalanceLink {lkRegistration = RegistrationId "o", lkPayment = RPInvoice btc (InvoiceId "inv-o"), lkPaid = 20000, lkFromBalance = 0, lkLateCredits = [late]}]
+    `shouldReturn` [BalanceLink {lkRegistration = RegistrationId "o", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-o"), lkProviderRef = Just "ref-inv-o", lkPaid = 20000, lkFromBalance = 0, lkLateCredits = [late]}]
 
 testBalanceOrderHash :: IO ()
 testBalanceOrderHash = withServiceStore $ \st -> do
@@ -573,7 +574,7 @@ testRecordRefund = withServiceStore $ \st -> do
   cancelOpenInvoice st waiters Nothing (InvoiceId "inv-h") (at 2) `shouldReturn` True
   refundOf "s" 9000 t0 `shouldReturn` Left (RefundAmount 10000)
   chain <- withTransaction st $ \db -> balanceChain db (RegistrationId "s")
-  chain `shouldBe` [BalanceLink {lkRegistration = RegistrationId "s", lkPayment = RPInvoice btc (InvoiceId "inv-s"), lkPaid = 10000, lkFromBalance = 0, lkLateCredits = []}]
+  chain `shouldBe` [BalanceLink {lkRegistration = RegistrationId "s", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-s"), lkProviderRef = Just "ref-inv-s", lkPaid = 10000, lkFromBalance = 0, lkLateCredits = []}]
   refundOf "inv-s" 10000 t0 `shouldReturn` Right RefundRecord {rdRegistration = RegistrationId "s", rdCents = 10000, rdChain = chain}
   figures st "s" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
   refundOf "s" 10000 t0 `shouldReturn` Left (RefundAmount 0)
@@ -588,15 +589,17 @@ testHeldText = do
 
 testChainText :: IO ()
 testChainText = do
-  let link rid pay paid fromBalance lateCents =
-        BalanceLink {lkRegistration = RegistrationId rid, lkPayment = pay, lkPaid = paid, lkFromBalance = fromBalance, lkLateCredits = map (lateCredit rid 1 Nothing) lateCents}
-      byBtc = RPInvoice btc . InvoiceId . ("inv-" <>)
-  chainText [link "c" RPBalance 0 10000 [], link "b" (byBtc "b") 20000 20000 [], link "a" (byBtc "a") 20000 0 []]
-    `shouldBe` "order c: $100.00 from the balance of order b; order b: $200.00 by btc on invoice inv-b, $200.00 from the balance of order a; order a: $200.00 by btc on invoice inv-a"
-  chainText [link "d" (byBtc "d") 0 0 [2400]] `shouldBe` "order d: $24.00 late by btc on invoice inv-d"
-  chainText [link "o" (byBtc "o") 20000 0 [2400]] `shouldBe` "order o: $200.00 by btc on invoice inv-o, $24.00 overpaid by btc on invoice inv-o"
-  chainText [link "p" (RPCode 1) 0 0 []] `shouldBe` "order p: a prepaid code"
-  chainText [link "x" RPBalance 0 0 []] `shouldBe` "order x: no payment recorded"
+  let link rid (pay, ref_) paid fromBalance lateCents =
+        BalanceLink {lkRegistration = RegistrationId rid, lkOwner = ownerA, lkPayment = pay, lkProviderRef = ref_, lkPaid = paid, lkFromBalance = fromBalance, lkLateCredits = map (lateCredit rid 1 Nothing) lateCents}
+      byBtc r = (RPInvoice btc (InvoiceId $ "inv-" <> r), Just $ "ref-" <> r)
+      unbilled pay = (pay, Nothing)
+      order r = "order " <> r <> " of " <> addressText ownerA <> ": "
+  chainText [link "c" (unbilled RPBalance) 0 10000 [], link "b" (byBtc "b") 20000 20000 [], link "a" (byBtc "a") 20000 0 []]
+    `shouldBe` order "c" <> "$100.00 from the balance of order b; " <> order "b" <> "$200.00 by btc on invoice inv-b (provider reference ref-b), $200.00 from the balance of order a; " <> order "a" <> "$200.00 by btc on invoice inv-a (provider reference ref-a)"
+  chainText [link "d" (byBtc "d") 0 0 [2400]] `shouldBe` order "d" <> "$24.00 late by btc on invoice inv-d (provider reference ref-d)"
+  chainText [link "o" (byBtc "o") 20000 0 [2400]] `shouldBe` order "o" <> "$200.00 by btc on invoice inv-o (provider reference ref-o), $24.00 overpaid by btc on invoice inv-o (provider reference ref-o)"
+  chainText [link "p" (unbilled $ RPCode 1) 0 0 []] `shouldBe` order "p" <> "a prepaid code"
+  chainText [link "x" (unbilled RPBalance) 0 0 []] `shouldBe` order "x" <> "no payment recorded"
 
 -- late credits
 

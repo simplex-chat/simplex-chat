@@ -509,13 +509,13 @@ heldText BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue, bhFu
 chainText :: [BalanceLink] -> T.Text
 chainText chain = T.intercalate "; " $ zipWith linkText chain (map (Just . lkRegistration) (drop 1 chain) <> [Nothing])
   where
-    linkText BalanceLink {lkRegistration = RegistrationId rid, lkPayment, lkPaid, lkFromBalance, lkLateCredits} source_ =
-      "order " <> rid <> ": " <> case paid lkPayment lkPaid lkLateCredits <> fromBalance lkFromBalance source_ of
+    linkText BalanceLink {lkRegistration = RegistrationId rid, lkOwner, lkPayment, lkProviderRef, lkPaid, lkFromBalance, lkLateCredits} source_ =
+      "order " <> rid <> " of " <> addressText lkOwner <> ": " <> case paid lkPayment lkProviderRef lkPaid lkLateCredits <> fromBalance lkFromBalance source_ of
         [] -> "no payment recorded"
         parts -> T.intercalate ", " parts
-    paid payment cents lateCredits = case payment of
+    paid payment providerRef_ cents lateCredits = case payment of
       RPInvoice method (InvoiceId invId) ->
-        let by = " by " <> methodText method <> " on invoice " <> invId
+        let by = " by " <> methodText method <> " on invoice " <> invId <> maybe "" (\ref -> " (provider reference " <> ref <> ")") providerRef_
             late = sum $ map lcCents lateCredits
             -- an order its invoice paid is credited only the extra of an overpayment
             kind = if cents > 0 then " overpaid" else " late"

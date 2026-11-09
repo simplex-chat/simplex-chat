@@ -1378,10 +1378,11 @@ after the invoice closed, and when its invoice was paid more crypto than it aske
 buyer spends a balance on another name from Your names, or asks for it back: the page tells them to
 write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
 id for an order without an invoice. Nothing is refunded automatically, and the service never learns
-where to send money. A reference is not proof of who paid: it is in the service's logs, the
-provider's Dashboard and its emails, and anyone holding it reads the balance and the order's name
-from `/api/invoice/:id`, or from `/api/registration/:id` for a registration id. Only a card refund is
-safe on the reference alone, as Stripe returns it to
+where to send money. A reference is not proof of who paid: a registration id is in the service's
+logs, and anyone holding a reference reads the balance and the order's name from `/api/invoice/:id`,
+or from `/api/registration/:id` for a registration id. Neither provider holds a reference: a Stripe
+payment carries `name:0x<order hash>`, and a BTCPay invoice nothing of the order. Only a card refund
+is safe on the reference alone, as Stripe returns it to
 the card that paid; a crypto refund goes to an address the buyer gives, which nothing here ties to
 the order. Support records each refund in `--run-cli` mode with the service stopped, like the other
 `//` commands:
@@ -1395,14 +1396,16 @@ the order. Support records each refund in `--run-cli` mode with the service stop
    balance, what paid for it and the command that refunds it:
 
    ```
-   Order <id>: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order <id>: $100.00 by btc on invoice <invoice id>. To record its refund: //refund <reference> 10000
+   Order <id>: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order <id> of <owner>: $100.00 by btc on invoice <invoice id> (provider reference <provider reference>). To record its refund: //refund <reference> 10000
    ```
 
    `Paid by` starts at this order and follows every balance the money came through back to the
-   first order: each order with what its invoice paid and by which method (`card`, `btc` or
-   `xmr`), the part paid from the balance of the next order listed, and money credited from its
-   invoice later: marked `late` when it arrived after the invoice closed, and `overpaid` when it is
-   the extra of an invoice that paid the order.
+   first order: each order with its owner, the address that signed it, what its invoice paid and by
+   which method (`card`, `btc` or `xmr`), the part paid from the balance of the next order listed,
+   and money credited from its invoice later: marked `late` when it arrived after the invoice
+   closed, and `overpaid` when it is the extra of an invoice that paid the order. The provider
+   reference is the BTCPay invoice id or the Stripe PaymentIntent id, which finds the payment in the
+   provider's Dashboard.
 2. Run the command the answer ends with. The cents must equal the whole balance: a refund zeroes it,
    and part of a balance is never refunded. Other cents record nothing, and the answer gives the
    balance.

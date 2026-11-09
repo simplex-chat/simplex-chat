@@ -285,7 +285,9 @@ data BalanceHold = BalanceHold
 -- since closing an unpaid one released its source's balance.
 data BalanceLink = BalanceLink
   { lkRegistration :: RegistrationId,
+    lkOwner :: Address,
     lkPayment :: RegistrationPayment,
+    lkProviderRef :: Maybe Text,
     lkPaid :: Int,
     lkFromBalance :: Int,
     lkLateCredits :: [LateCredit]
@@ -969,16 +971,20 @@ balanceChain :: DB.Connection -> RegistrationId -> IO [BalanceLink]
 balanceChain db rid =
   getRegistration db rid >>= \case
     Nothing -> pure []
-    Just NameRegistration {nrPhase, nrPayment, nrBalanceSource, nrBalanceUsed} -> do
+    Just NameRegistration {nrPhase, nrOwner, nrPayment, nrBalanceSource, nrBalanceUsed} -> do
       let pastUnpaid = nrPhase /= PUnpaid
       lkPaid <- case nrPayment of
         RPInvoice _ (InvoiceId invId) | pastUnpaid -> maybe 0 fromOnly . listToMaybe <$> (DB.query db "SELECT amount FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invId) :: IO [Only Int])
         _ -> pure 0
-      lkLateCredits <- case nrPayment of
-        RPInvoice _ invId -> lateCredits db invId
-        _ -> pure []
-      let link = BalanceLink {lkRegistration = rid, lkPayment = nrPayment, lkPaid, lkFromBalance = if pastUnpaid then nrBalanceUsed else 0, lkLateCredits}
+      (lkProviderRef, lkLateCredits) <- case nrPayment of
+        RPInvoice _ invId -> (,) <$> providerRef db invId <*> lateCredits db invId
+        _ -> pure (Nothing, [])
+      let link = BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPayment = nrPayment, lkProviderRef, lkPaid, lkFromBalance = if pastUnpaid then nrBalanceUsed else 0, lkLateCredits}
       (link :) <$> maybe (pure []) (balanceChain db) (if pastUnpaid then nrBalanceSource else Nothing)
+
+providerRef :: DB.Connection -> InvoiceId -> IO (Maybe Text)
+providerRef db (InvoiceId invId) =
+  maybeFirstRow fromOnly $ DB.query db "SELECT provider_ref FROM sx_badge_service_name_invoices WHERE invoice_id = ?" (Only invId)
 
 lateCredits :: DB.Connection -> InvoiceId -> IO [LateCredit]
 lateCredits db (InvoiceId invId) =
