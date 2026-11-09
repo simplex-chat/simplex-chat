@@ -1107,7 +1107,7 @@ reads, clears and logs its acceptance, as a community name's did:
   `max_fee_per_gas`.
 - A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
   transactions with links of 4096 bytes, and 28,082 less with short links.
-- `gas_limit_cap` (default 8,000,000) must stay above 6,791,417: a transaction whose estimate is
+- `gas_limit_cap` (default 8,000,000) must be at least 6,791,417: a transaction whose estimate is
   above it is not sent.
 - `gas_limit_cap` × `max_fee_per_gas` must be at most 1 ETH (0.8 ETH with the defaults), or the
   service refuses to start: reth and geth refuse a transaction whose gas limit × max fee is above
@@ -1261,8 +1261,12 @@ sends its register about a minute after its commit.
    The last balance prints `0`. A negative value, from fees above about 150 gwei, makes cast refuse
    the sweep; run it again when they fall.
 
-When the old key can no longer be started, as when its ini is lost, its `pending` rows keep every
-other key from starting. Stop the service and mark them dropped:
+The old key's `pending` rows keep every other key from starting until they settle. A key that
+starts but cannot pay for them, as its ETH is used up, settles them once funded, as in
+[Fund the key](#fund-the-key). When it is not to be funded, or cannot be started at all, as when its
+ini is lost, the guardian first zeroes its allowance, as in step 4, and anyone checks it reads 0, so
+that a register of the old key reverts wherever it lands. Then stop the service and mark the rows
+dropped:
 
 ```
 docker compose stop store-service
@@ -1272,8 +1276,9 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "UPDATE simplex_v1_c
 The sender no longer follows them, and at the next start each order is judged from the chain, as
 after a nonce taken by another transaction: a commit or terms acceptance not on chain is sent again
 from the new key, an order whose register did not land fails as after a reverted register and its
-buyer can Try again, and a link edit not applied is sent again before its deadline. The marked transactions stay
-signed and valid, so one can still be mined while the old address holds enough ETH.
+buyer can Try again, and a link edit not applied is sent again before its deadline. The marked
+transactions stay signed and valid: while the old address holds enough ETH, its commits, terms
+acceptances and link edits can still be mined, and its registers revert.
 
 ## Issuing codes
 
