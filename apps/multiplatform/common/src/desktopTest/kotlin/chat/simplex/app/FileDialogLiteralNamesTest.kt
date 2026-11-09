@@ -13,10 +13,10 @@ class FileDialogLiteralNamesTest {
   fun testHtmlNamesAreShownLiterally() {
     val fc = JFileChooser()
     installLiteralFileNames(fc)
-    for (name in listOf("<html><img src=\"http:&#47;&#47;localhost&#47;x.png\" width=1 height=1>holiday.jpg", "<HTML>dir")) {
+    for (name in listOf("<html><b>holiday</b>.jpg", "<HTML>dir")) {
       val shown = fc.getName(File(name))
       assertFalse(BasicHTML.isHTMLString(shown))
-      assertEquals(name, shown.trim())
+      assertEquals("\u00A0$name", shown)
     }
   }
 

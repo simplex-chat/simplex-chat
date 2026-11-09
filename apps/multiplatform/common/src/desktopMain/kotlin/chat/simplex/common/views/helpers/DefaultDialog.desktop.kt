@@ -151,7 +151,7 @@ internal fun installLiteralFileNames(fc: JFileChooser) {
   fc.fileView = object: FileView() {
     override fun getName(f: File): String? {
       val name = fc.fileSystemView.getSystemDisplayName(f)
-      return if (BasicHTML.isHTMLString(name)) " $name" else name
+      return if (BasicHTML.isHTMLString(name)) "\u00A0$name" else name
     }
   }
 }
