@@ -205,8 +205,8 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Tool registration | [`src/tools.ts`](../src/tools.ts#L499) | `registerTools` | [499](../src/tools.ts#L499) |
 | Downloads | [`src/tools.ts`](../src/tools.ts#L588) | `AgentTools.downloadFile` | [588](../src/tools.ts#L588) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L146) | `Actions` | [146](../src/actions.ts#L146) |
-| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L91) | `Control` | [91](../src/control.ts#L91) |
-| Card text | [`src/control.ts`](../src/control.ts#L647) | `cardText` | [647](../src/control.ts#L647) |
+| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L90) | `Control` | [90](../src/control.ts#L90) |
+| Card text | [`src/control.ts`](../src/control.ts#L646) | `cardText` | [646](../src/control.ts#L646) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L97) | `createDataFolder`, `acquireLock` | [97](../src/files.ts#L97), [102](../src/files.ts#L102) |
@@ -215,8 +215,8 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L35) | `DaemonClient.ensureDaemon` | [35](../src/client.ts#L35) |
 | Daemon process | [`src/daemon.ts`](../src/daemon.ts#L430) | `runDaemon` | [430](../src/daemon.ts#L430) |
 | Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L137) | `Daemon.routes` | [137](../src/daemon.ts#L137) |
-| Hub | [`src/hub.ts`](../src/hub.ts#L358) | `Hub.open` | [358](../src/hub.ts#L358) |
-| Session and its group | [`src/hub.ts`](../src/hub.ts#L45) | `Session` | [45](../src/hub.ts#L45) |
+| Hub | [`src/hub.ts`](../src/hub.ts#L357) | `Hub.open` | [357](../src/hub.ts#L357) |
+| Session and its group | [`src/hub.ts`](../src/hub.ts#L44) | `Session` | [44](../src/hub.ts#L44) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L27) | `MainGroup` | [27](../src/main-group.ts#L27) |
 | Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
 | Hooks | [`src/hook.ts`](../src/hook.ts#L41) | `sessionStart`, `turn` | [41](../src/hook.ts#L41), [74](../src/hook.ts#L74) |

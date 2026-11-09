@@ -26,7 +26,6 @@ const pendingDays = 1
 const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
 const bangText = "Messages starting with ! reach Claude only from admins and owners, as /!command."
-const commandsAdminsOnly = "Only admins and owners of this group can send // and /! commands to Claude."
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX daemon is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
@@ -229,7 +228,7 @@ export class Session {
     if (this.isUser(member)) return
     const item = ci.chatItem.meta.itemId
     const command = text.startsWith("//") || text.startsWith("/!")
-    if (command && !this.approves(member)) return this.post([commandsAdminsOnly], item)
+    if (command && !this.approves(member)) return
     if (text.startsWith("!")) return this.post([bangText], item)
     await this.deliver(ci, command ? text.slice(1) : text, member)
   }

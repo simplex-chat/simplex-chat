@@ -34,7 +34,6 @@ const greeting = "I'm your agent. I ask here before I connect, send, download a 
 const noOwners = "No owners in the agent control chat."
 const qrCodeHint = "If the QR code does not scan, restart with --qr-code large, or paste the link into the app."
 const noSessionApprover = `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run ${linkCommand} in a terminal.`
-const sessionApproversOnly = "Only admins and owners of this group approve actions here."
 const approverRights = "can send prompts and / commands to Claude, and approve tool use"
 const senderRights = "can send prompts to Claude; / commands and approvals need the role admin or owner"
 const observerRights = "can't send messages"
@@ -245,7 +244,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     this.actions.expireDue()
     const request = ownerRequest(command, this.options.session !== undefined)
     if (request === undefined) return this.options.session === undefined ? commandsReply : unknownCommand
-    if (!this.isApprover(sender)) return this.options.session !== undefined ? sessionApproversOnly : this.options.owners === undefined ? "Only owners approve actions." : "Only the owners listed in --owners approve actions."
+    if (!this.isApprover(sender)) return this.options.session !== undefined ? undefined : this.options.owners === undefined ? "Only owners approve actions." : "Only the owners listed in --owners approve actions."
     switch (request.type) {
       case "pending": {
         const lines = this.actions.pending().filter(({card}) => card !== undefined).map(pendingLine)

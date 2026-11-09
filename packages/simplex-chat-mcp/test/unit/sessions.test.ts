@@ -23,7 +23,6 @@ const alice = member(3, "Alice", T.GroupMemberRole.Owner)
 const bob = member(7, "Bob", T.GroupMemberRole.Member)
 const invitedAlice = member(1003, "Alice", T.GroupMemberRole.Owner)
 const noApprover = `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@${version} link in a terminal.`
-const approversOnly = "Only admins and owners of this group approve actions here."
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
 const bangText = "Messages starting with ! reach Claude only from admins and owners, as /!command."
 const modeCard = "I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here."
@@ -143,7 +142,7 @@ describe("session groups", () => {
     await session.control.load()
     const pending = {keyword: "pending", params: ""}
     for (const sender of [invitedAlice, invitedBob, mallory]) expect(await session.control.ownerCommand(sender, pending)).toBe("No pending actions.")
-    for (const sender of [mia, max, oscar, sessionUser]) expect(await session.control.ownerCommand(sender, pending)).toBe(approversOnly)
+    for (const sender of [mia, max, oscar, sessionUser]) expect(await session.control.ownerCommand(sender, pending)).toBeUndefined()
     chat.members.set(10, [self, {...alice, memberRole: T.GroupMemberRole.Member}, {...bob, memberStatus: T.GroupMemberStatus.Left}])
     await hub.main.onEvent({type: "memberRole", groupInfo: group(10, "SimpleX MCP", self), byMember: bob, member: alice, fromRole: T.GroupMemberRole.Owner, toRole: T.GroupMemberRole.Member} as unknown as ChatEvent)
     expect(await session.control.ownerCommand(invitedAlice, pending)).toBe("No pending actions.")
@@ -282,7 +281,7 @@ describe("session groups", () => {
     await hub["controlEvents"]
     expect(sentTo(chat, 20)).toEqual([`Mia is an admin and ${approverRights} You can change role to observer to stop it: /'observer #20 12'`, "Dan is an observer and can't send messages."])
     expect(await session.control.ownerCommand(mia, {keyword: "pending", params: ""})).toBe("No pending actions.")
-    expect(await session.control.ownerCommand(dan, {keyword: "pending", params: ""})).toBe(approversOnly)
+    expect(await session.control.ownerCommand(dan, {keyword: "pending", params: ""})).toBeUndefined()
   })
 
   it("keep both the new name and the new model in the group's profile when a rename and a model change of the session overlap", async () => {
@@ -318,7 +317,7 @@ describe("session groups", () => {
     chat.members.set(20, [self, invitedAlice, dan, eve, mallory, member(14, "Fay", T.GroupMemberRole.Member, T.GroupMemberStatus.Left), member(15, "Gus", T.GroupMemberRole.Admin, T.GroupMemberStatus.Invited)])
     await session.control.load()
     const observer = (sender: T.GroupMember, params: string) => session.control.ownerCommand(sender, {keyword: "observer", params})
-    expect(await observer(mallory, "#20 12")).toBe(approversOnly)
+    expect(await observer(mallory, "#20 12")).toBeUndefined()
     expect(await observer(dan, "#20 13")).toBe("Your role does not let you change the role of Eve.")
     expect(await observer(dan, "#21 9")).toBe("#21 is not this group.")
     expect(await observer(dan, "#20 99")).toBe("No member 99 in this group.")
@@ -331,7 +330,8 @@ describe("session groups", () => {
     expect(await observer(dan, "#20 9")).toBe("Mallory is an observer and can't send messages.")
     expect(await observer(invitedAlice, "#20 12")).toBe("Dan is an observer and can't send messages.")
     expect(chat.roles).toEqual([{groupId: 20, members: [9], role: T.GroupMemberRole.Observer}, {groupId: 20, members: [12], role: T.GroupMemberRole.Observer}])
-    expect(await observer(member(9, "Mallory", T.GroupMemberRole.Observer), "#20 13")).toBe(approversOnly)
+    expect(await observer(member(9, "Mallory", T.GroupMemberRole.Observer), "#20 13")).toBeUndefined()
+    expect(chat.roles).toHaveLength(2)
   })
 
   it("count the standing approval of a chat no more once /observer made its approver an observer", async () => {
@@ -959,6 +959,23 @@ describe("session channel", () => {
     expect(lines).toEqual([{prompt: {text: "/model sonnet", from: "Alice", item: 41}}, {prompt: {text: "!git status", from: "Dan", item: 42}}, {prompt: {text: "/tmp/build.log fails\nfix it", from: "Mia", item: 50}}])
     expect(chat.replies).toEqual([unknownCommand, unknownCommand])
     expect(answers(chat)).toEqual([43, 44].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]).concat([[{text: bangText, quotedItemId: 45}]], [47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}])))
+  })
+
+  it("answers nothing and performs nothing for a / command, // or /! of a member that reaches the commands or the prompt past the one refusal", async () => {
+    const chat = new FakeChat()
+    const {session, lines} = await channel(chat)
+    const mia = member(13, "Mia", T.GroupMemberRole.Member)
+    chat.members.set(20, [self, invitedAlice, mia])
+    await session.control.load()
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    await until(() => session.actions.get(1)?.card !== undefined)
+    expect(await session.control.ownerCommand(mia, {keyword: "approve", params: "1"})).toBeUndefined()
+    expect(session.actions.get(1)?.state).toBe("pending")
+    const posted = chat.sent.length
+    await session["prompt"](event(sessionGroup, item(43, "//compact", from(mia))), "//compact", mia)
+    await session["prompt"](event(sessionGroup, item(44, "/!ls", from(mia))), "/!ls", mia)
+    expect(chat.sent).toHaveLength(posted)
+    expect(lines).toEqual([])
   })
 
   it("answers nothing to a part of a terminal prompt that User posts as one line starting with /, and answers the next command", async () => {
