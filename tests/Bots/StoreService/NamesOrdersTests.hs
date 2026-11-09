@@ -1283,23 +1283,27 @@ testLateBTCPayPayments = withFakeBTCPay $ \fake -> do
     let refOf inv = maybe (error "no invoice") irProviderRef <$> getInvoice st inv
         readAt ref = queueReadHint (weHints cWeb) ref >> drainHints poller
         paidLate ref fields = capturingStderr $ setInvoiceState fake ref fields >> readAt ref
-        alerted (InvoiceId t) logs = T.isInfixOf ("invoice " <> t <> " received money after registration") logs
+        alertOf inv = (\NameRegistration {nrId = RegistrationId rid} -> "the invoice of registration " <> rid <> " received money after the registration closed") <$> invoiceRegistration ctx inv
         later = addUTCTime 3600 orderTime
     (expired, _) <- placed ctx aliceOrder
     expiredRef <- refOf expired
+    expiredAlert <- alertOf expired
     setInvoiceState fake expiredRef ["status" .= ("Expired" :: Text)]
     readAt expiredRef
     (irStatus <$>) <$> getInvoice st expired `shouldReturn` Just ISExpired
-    paidLate expiredRef ["additionalStatus" .= ("PaidLate" :: Text), "paymentMethodPaid" .= ("0.00050000" :: Text)] >>= (`shouldSatisfy` alerted expired)
-    capturingStderr (readAt expiredRef) >>= (`shouldNotSatisfy` alerted expired)
+    paidLate expiredRef ["additionalStatus" .= ("PaidLate" :: Text), "paymentMethodPaid" .= ("0.00050000" :: Text)] >>= (`shouldSatisfy` T.isInfixOf expiredAlert)
+    capturingStderr (readAt expiredRef) >>= (`shouldNotSatisfy` T.isInfixOf expiredAlert)
     (cancelled, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
     cancelledRef <- refOf cancelled
+    cancelledAlert <- alertOf cancelled
     cancelOpenInvoice st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) cancelled later `shouldReturn` True
-    paidLate cancelledRef ["status" .= ("Invalid" :: Text), "paymentMethodPaid" .= ("0.00078000" :: Text)] >>= (`shouldSatisfy` alerted cancelled)
+    paidLate cancelledRef ["status" .= ("Invalid" :: Text), "paymentMethodPaid" .= ("0.00078000" :: Text)] >>= (`shouldSatisfy` T.isInfixOf cancelledAlert)
     (swept, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 3}
     sweptRef <- refOf swept
-    expireOverdue st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) later later [swept] `shouldReturn` [swept]
-    paidLate sweptRef ["paymentMethodPaid" .= ("0.00025000" :: Text)] >>= (`shouldSatisfy` alerted swept)
+    sweptAlert <- alertOf swept
+    overdue <- overdueOf st swept
+    expireOverdue st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) later later [overdue] `shouldReturn` [swept]
+    paidLate sweptRef ["paymentMethodPaid" .= ("0.00025000" :: Text)] >>= (`shouldSatisfy` T.isInfixOf sweptAlert)
     forM_ [expired, cancelled, swept] $ \inv -> do
       r <- invoiceRegistration ctx inv
       (nrPhase r, nrLive r) `shouldBe` (PUnpaid, False)
@@ -1308,12 +1312,11 @@ testLateBTCPayPayments = withFakeBTCPay $ \fake -> do
 testOneLateAlert :: IO ()
 testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
   (inv, _) <- placed ctx aliceOrder
-  Just InvoiceRow {irProviderRef = ref} <- getInvoice st inv
+  Just InvoiceRow {irProviderRef = ref, irProduct = IPName (RegistrationId rid)} <- getInvoice st inv
   let paid = rcv 5000 (Just "0.00078")
       newPoller = newPollerEnv st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
       readWith poller = capturingStderr $ queueReadHint (weHints cWeb) ref >> drainHints poller
-      InvoiceId invText = inv
-      refunds = length . T.breakOnAll ("invoice " <> invText <> " received money after")
+      refunds = length . T.breakOnAll ("the invoice of registration " <> rid <> " received money after")
   poller <- newPoller
   setSignals (cStub ctx) [(ref, SigFunded paid PaidInPart)]
   refunds <$> readWith poller `shouldReturn` 0
@@ -1353,20 +1356,22 @@ testCancelAnswers = withOrders $ \ctx -> do
 testCancelAlertsFunded :: IO ()
 testCancelAlertsFunded = withOrdersCancelling (SigFunded paid PaidInPart) $ \ctx -> do
   (invId, _) <- placed ctx aliceOrder
+  NameRegistration {nrId = RegistrationId rid} <- invoiceRegistration ctx invId
+  let alert = "the invoice of registration " <> rid <> " received money after"
   logs <- capturingStderr $ do
     (status, v) <- post ctx ("/api/invoice/" <> T.unpack (invoiceText invId) <> "/cancel") ""
     (status, field "status" =<< v, field "cryptoAmountPaid" =<< v) `shouldBe` (200, Just "expired", Just "0.00078")
-  length (T.breakOnAll (alertOf invId) logs) `shouldBe` 1
-  capturingStderr (settleNow ctx invId (SigClosed paid PaidInPart) `shouldReturn` Right ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf (alertOf invId))
+  length (T.breakOnAll alert logs) `shouldBe` 1
+  capturingStderr (settleNow ctx invId (SigClosed paid PaidInPart) `shouldReturn` Right ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf alert)
   (nrPhase &&& nrLive) <$> invoiceRegistration ctx invId `shouldReturn` (PUnpaid, False)
   where
     paid = rcv 5000 (Just "0.00078")
     invoiceText (InvoiceId t) = t
-    alertOf invId = "invoice " <> invoiceText invId <> " received money after"
 
 testNamesOff :: IO ()
 testNamesOff = withOrders $ \ctx -> do
   (invId@(InvoiceId t), _) <- placed ctx aliceOrder
+  NameRegistration {nrId = RegistrationId rid} <- invoiceRegistration ctx invId
   mgr <- newManager defaultManagerSettings
   Warp.testWithApplication (pure $ webApp (cWeb ctx) {weOrders = Nothing}) $ \port -> do
     let off = ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
@@ -1374,7 +1379,8 @@ testNamesOff = withOrders $ \ctx -> do
       r <- webGet (cClient off) ("/api/invoice/" <> T.unpack t)
       (statusOf r, J.decode (responseBody r)) `shouldBe` refusedWith 503 "provider_unavailable"
       post off ("/api/invoice/" <> T.unpack t <> "/cancel") "" `shouldReturn` refusedWith 503 "provider_unavailable"
-    logs `shouldSatisfy` T.isInfixOf ("invoice " <> t <> " is a name's, and this service sells no names")
+    logs `shouldSatisfy` T.isInfixOf ("the invoice of registration " <> rid <> " is a name's, and this service sells no names")
+    logs `shouldNotSatisfy` T.isInfixOf t
   calls <- stubCalls (cStub ctx)
   [c | c@StubCancel {} <- calls] `shouldBe` []
   (irStatus <$>) <$> getInvoice (cStore ctx) invId `shouldReturn` Just ISOpen
@@ -1439,8 +1445,10 @@ testSweepSkipsBadRow = withOrders $ \ctx@Ctx {cStore = st} -> do
   NameRegistration {nrId = RegistrationId badId} <- invoiceRegistration ctx bad
   withConnection st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET phase = 'lost' WHERE registration_id = ? AND phase = ?" (badId, "unpaid" :: Text)
   let later = addUTCTime 3600 orderTime
-  logs <- capturingStderr $ expireOverdue st (weWaiters $ cWeb ctx) (Just $ oePhases $ cOrders ctx) later later [bad, good] `shouldReturn` [good]
-  logs `shouldSatisfy` T.isInfixOf ("invoice " <> invoiceText bad)
+  overdue@[OverdueInvoice {oiProviderRef = badRef}, _] <- mapM (overdueOf st) [bad, good]
+  logs <- capturingStderr $ expireOverdue st (weWaiters $ cWeb ctx) (Just $ oePhases $ cOrders ctx) later later overdue `shouldReturn` [good]
+  logs `shouldSatisfy` T.isInfixOf ("invoice " <> badRef)
+  logs `shouldNotSatisfy` T.isInfixOf (invoiceText bad)
   (irStatus <$>) <$> getInvoice st bad `shouldReturn` Just ISOpen
   r <- invoiceRegistration ctx good
   (nrLive r, nrVersion r) `shouldBe` (False, 2)
@@ -1492,7 +1500,7 @@ testCleanupIn ctx@Ctx {cStore = st} = do
   isNothing <$> getInvoice st (InvoiceId "inv-gone") `shouldReturn` True
   Just InvoiceRow {irPayment = latePayment} <- getInvoice st (InvoiceId "inv-late")
   (ipCryptoPaid <$> latePayment) `shouldBe` Just (Just "0.00078")
-  logs `shouldSatisfy` T.isInfixOf "registration late is kept with its balance, because invoice inv-late received a payment"
+  logs `shouldSatisfy` T.isInfixOf "registration late is kept with its balance, because its invoice received a payment"
   logs `shouldSatisfy` T.isInfixOf "registration unread is kept until the next run"
   reads' <- stubReads
   sort reads' `shouldBe` [ref "gone", ref "late"]

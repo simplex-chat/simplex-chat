@@ -145,7 +145,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http cfg providers wai
           logError (what <> " failed: provider refused to create an invoice: " <> e)
           pure $ answerNow providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
-          rid <- newRegistrationId
+          rid@(RegistrationId ridText) <- newRegistrationId
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
               registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig}
               paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId, poProviderRef = piProviderRef}
@@ -160,7 +160,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http cfg providers wai
               registration_ <- withTransaction oeStore (`getRegistration` rid)
               response <- case (row_, registration_) of
                 (Just row, Just r) -> invoiceViewResponse env cfg r row
-                _ -> internalError <$ logError (what <> ": order " <> invText invId <> " is not readable after its commit")
+                _ -> internalError <$ logError (what <> ": order " <> ridText <> " is not readable after its commit")
               pure Answer {aResponse = response, aAfter = announceClosed env providers waiters closed}
   where
     -- An invoice created at the provider for an order that was not written would stay payable with nothing watching it.
@@ -326,9 +326,6 @@ cancelAtProvider Provider {pCancelInvoice} ref =
   pCancelInvoice ref >>= \case
     Left (ProviderError e) -> logWarn ("names: cancelling invoice " <> ref <> " at the provider failed: " <> e)
     Right () -> pure ()
-
-invText :: InvoiceId -> Text
-invText (InvoiceId t) = t
 
 firstRefusal :: [IO (Either OrderRefusal ())] -> IO (Maybe OrderRefusal)
 firstRefusal = \case

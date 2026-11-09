@@ -21,7 +21,7 @@ import StoreService.Catalog (PricedOffer (..), priceOffer)
 import StoreService.Config (ListenerConfig (..), NamesConfig (..), ServiceConfig (..), StripeConfig (..), isLoopbackHost)
 import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), ordersEnv)
-import StoreService.Names.Phases (RegistrationId, awaitChange)
+import StoreService.Names.Phases (RegistrationId (..), awaitChange)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, textMethod)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
@@ -338,17 +338,17 @@ refusalLogLimit = Limit {lmName = "webhook refusal logs", lmPerMinute = 10}
 
 -- | A badge's view, or a name's with its registration.
 invoiceViewOf :: WebEnv -> InvoiceRow -> IO (Either Response J.Value)
-invoiceViewOf env@WebEnv {weConfig} row@InvoiceRow {irInvoiceId = InvoiceId invId, irProduct} = case irProduct of
+invoiceViewOf env@WebEnv {weConfig} row@InvoiceRow {irProduct} = case irProduct of
   IPBadge badgeType months -> pure $ Right $ badgeInvoiceView (confirmationsFor weConfig) badgeType months row
   IPName rid -> case weOrders env of
-    Nothing -> Left providerUnavailable <$ namesOff invId
+    Nothing -> Left providerUnavailable <$ namesOff rid
     Just orders ->
       readName orders row rid >>= \case
         Nothing -> pure $ Left notFound
         Just (_, row', r) -> Right <$> nameInvoiceView orders (confirmationsFor weConfig) row' r
 
-namesOff :: Text -> IO ()
-namesOff invId = logError ("invoice " <> invId <> " is a name's, and this service sells no names")
+namesOff :: RegistrationId -> IO ()
+namesOff (RegistrationId rid) = logError ("the invoice of registration " <> rid <> " is a name's, and this service sells no names")
 
 -- | Monero reports a payment as confirming while its figures are zero, so the verdict counts as much as the figure.
 paymentMark :: InvoiceRow -> (Text, Bool)
@@ -357,13 +357,13 @@ paymentMark InvoiceRow {irPayment} =
 
 -- | The provider is cancelled first, because cancelling our record first would leave an address the buyer can still pay into with nothing watching it.
 cancelInvoiceHandler :: WebEnv -> InvoiceId -> Respond -> IO ResponseReceived
-cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId@(InvoiceId invText) respond =
+cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId respond =
   getInvoice weStore invId >>= \case
     Nothing -> respond notFound
     Just InvoiceRow {irStatus} | irStatus /= ISOpen -> respond (jsonError status409 "not_open")
     Just row | funded row -> respond (jsonError status409 "funded")
     -- refused before the provider's cancel, since the answer could not show the order
-    Just InvoiceRow {irProduct = IPName _} | Nothing <- weOrders env -> namesOff invText >> respond providerUnavailable
+    Just InvoiceRow {irProduct = IPName rid} | Nothing <- weOrders env -> namesOff rid >> respond providerUnavailable
     Just InvoiceRow {irProvider, irProviderRef} -> case providerNamed weProviders irProvider of
       Nothing -> respond providerUnavailable
       Just Provider {pCancelInvoice} ->

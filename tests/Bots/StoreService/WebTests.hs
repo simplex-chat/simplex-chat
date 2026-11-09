@@ -14,6 +14,7 @@ module Bots.StoreService.WebTests
     runMigrations,
     digestFixture,
     capturingStderr,
+    overdueOf,
     StubState (..),
     StubCall (..),
     newStubState,
@@ -644,7 +645,13 @@ expireAllOverdue :: DBStore -> UTCTime -> IO [InvoiceId]
 expireAllOverdue st now = overdueInvoices st now >>= expireNamed st now . map oiInvoiceId
 
 expireNamed :: DBStore -> UTCTime -> [InvoiceId] -> IO [InvoiceId]
-expireNamed st now invIds = newWaiters >>= \waiters -> expireOverdue st waiters Nothing now now invIds
+expireNamed st now invIds = newWaiters >>= \waiters -> mapM (overdueOf st) invIds >>= expireOverdue st waiters Nothing now now
+
+overdueOf :: DBStore -> InvoiceId -> IO OverdueInvoice
+overdueOf st invId =
+  getInvoice st invId >>= \case
+    Just InvoiceRow {irInvoiceId, irProvider, irProviderRef, irCreatedAt} -> pure OverdueInvoice {oiInvoiceId = irInvoiceId, oiProvider = irProvider, oiProviderRef = irProviderRef, oiCreatedAt = irCreatedAt}
+    Nothing -> fail $ "no invoice " <> show invId
 
 testRevokeAndRedeemExcludeEachOther :: IO ()
 testRevokeAndRedeemExcludeEachOther = withServiceStore $ \st -> do
@@ -3361,7 +3368,7 @@ testSweepSkipsAnUnknownProvider = bounded "sweep around an unknown provider" $ w
   logged <- capturingStderr (runOnePass poller)
   invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
   independentStatus (weStore env) unknown `shouldReturn` Just "open"
-  logged `shouldSatisfy` loggedError ("store: overdue invoice " <> unknownId <> " names provider nonsense")
+  logged `shouldSatisfy` loggedError "store: overdue invoice p-unknown names provider nonsense"
 
 testSweepKeepsFailuresBeyondTheCap :: IO ()
 testSweepKeepsFailuresBeyondTheCap = bounded "sweep keeps failures past the cap" $ withPayableStubPoller raceHold $ \ref poller env _ -> do

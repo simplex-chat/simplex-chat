@@ -208,12 +208,12 @@ money goes to support for good.
 
 **Overpayment.** Crypto above what an invoice asks is credited to the order's balance in the same
 way, once confirmed, also on an invoice paid in time: the extra's share of the price, at the lower
-rate. The service logs it at note as `names: invoice <id> was overpaid; credited <cents> cents of the
-extra to the balance of registration <id>`, and an extra it cannot credit is alerted as late money is.
+rate. The service logs it at note as `names: the invoice of registration <id> was overpaid; credited
+<cents> cents of the extra to its balance`, and an extra it cannot credit is alerted as late money is.
 An extra still unconfirmed when BTCPay settles the invoice is never credited, as its transaction can
 still be replaced: it is alerted, and support refunds it by hand once it confirms.
 Crypto sent to a name invoice after the service recorded it paid is not credited either: the poller
-logs an error naming the invoice, at most once an hour while it still lists it, and support refunds it
+logs an error naming the order, at most once an hour while it still lists it, and support refunds it
 once its transaction is confirmed on chain.
 
 BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
@@ -313,7 +313,7 @@ it travels in the path, and anything that logs request paths logs it. It is also
 is shown as their reference and asked to quote, so support sees it: losing it lets someone cancel
 an invoice, which is why the code, which lets them take the badge, is never printed until the
 service says the invoice is paid. The service keeps it out of its own logs, which name the
-provider's reference instead.
+provider's reference, or a name order's registration id, instead.
 
 | Route | Answers |
 |---|---|

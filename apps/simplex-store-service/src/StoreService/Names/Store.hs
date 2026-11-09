@@ -1199,14 +1199,14 @@ lateWait db (InvoiceId invId) =
 
 -- | Closed orders' invoices with confirmed money not all credited, then overpaid invoices with confirmed extra not all credited, for the
 -- poller's credit pass; none a rate below the floor sent to support.
-uncreditedLateInvoices :: DB.Connection -> IO [InvoiceId]
+uncreditedLateInvoices :: DB.Connection -> IO [(InvoiceId, RegistrationId)]
 uncreditedLateInvoices db = (<>) <$> uncredited closedUnpaid uncreditedMoney <*> uncredited overpaidOrder uncreditedExtra
   where
     uncredited order money =
-      map (InvoiceId . fromOnly)
+      map (\(invId, rid) -> (InvoiceId invId, RegistrationId rid))
         <$> DB.query
           db
-          ("SELECT ni.invoice_id" <> lateFrom <> " WHERE" <> order <> " AND" <> money <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
+          ("SELECT ni.invoice_id, ni.registration_id" <> lateFrom <> " WHERE" <> order <> " AND" <> money <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
           (PUnpaid, LSRateFloor)
 
 -- | Pending money of closed orders, then of overpaid invoices, whose payment row was created before the cutoff, never alerted, or alerted

@@ -10,7 +10,7 @@ module Bots.StoreService.NamesBalancesTests (namesBalancesTests, cardPaid, cover
 import Bots.StoreService.FakeEthNode (plainTerms)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders)
 import Bots.StoreService.NamesStoreTests (at, btc, invoiceStatus, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
-import Bots.StoreService.WebTests (capturingStderr, rcv, withServiceStore, withServiceStores)
+import Bots.StoreService.WebTests (capturingStderr, overdueOf, rcv, withServiceStore, withServiceStores)
 import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
@@ -489,7 +489,8 @@ testClosesRelease = withServiceStore $ \st -> do
     source st ("s-" <> c) 10000
     holder st ("h-" <> c) ("s-" <> c) 10000 (at 60) `shouldReturn` Right ()
   cancelOpenInvoice st waiters Nothing (InvoiceId "inv-h-cancel") (at 2) `shouldReturn` True
-  expireOverdue st waiters Nothing (at 61) (at 61) [InvoiceId "inv-h-sweep"] `shouldReturn` [InvoiceId "inv-h-sweep"]
+  swept <- overdueOf st (InvoiceId "inv-h-sweep")
+  expireOverdue st waiters Nothing (at 61) (at 61) [swept] `shouldReturn` [InvoiceId "inv-h-sweep"]
   settleOrder st waiters Nothing (InvoiceId "inv-h-settled") (SigClosed (rcv 0 Nothing) PaidInPart) (at 2) `shouldReturn` Right ISExpired
   next <- reg st "h-next"
   withTransaction st (\db -> closeOverdue db next (at 61)) `shouldReturn` Just (nrVersion next + 1)
@@ -637,7 +638,7 @@ testLateScans = withServiceStore $ \st -> do
       pendingOf r = withTransaction st $ \db -> (r,) <$> latePending db (InvoiceId $ "inv-" <> r)
   forM_ cases $ \(r, _, _, expected) -> pendingOf r `shouldReturn` (r, expected)
   pendingOf "live" `shouldReturn` ("live", Nothing)
-  withTransaction st uncreditedLateInvoices `shouldReturn` map (InvoiceId . ("inv-" <>)) ["uncredited", "card", "settledlate", "beforecents"]
+  withTransaction st uncreditedLateInvoices `shouldReturn` map (\r -> (InvoiceId $ "inv-" <> r, RegistrationId r)) ["uncredited", "card", "settledlate", "beforecents"]
   withTransaction st (\db -> lateCreditState db (InvoiceId "inv-part"))
     `shouldReturn` Just
       LateCreditState

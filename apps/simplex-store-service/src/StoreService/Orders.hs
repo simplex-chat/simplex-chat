@@ -20,7 +20,7 @@ import qualified StoreService.Names.Phases as Phases
 import StoreService.Names.Store (LateSupport (..), NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
 import StoreService.Providers (Confirmed (..), Funded (..), PaymentSignal (..), Received (..), Uncreditable (..))
 import StoreService.Safely (safelyWith)
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Exception (Exception)
@@ -116,9 +116,9 @@ settleOrder st waiters phases invId signal now' = do
           NOWritten rid v -> publishRegistration phases (rid, v)
           _ -> pure ()
       forM_ name $ \case
-        NOLate rid -> latePayment invId rid
-        NOHoldNotSpent holder source -> holdNotSpent invId holder source
-        NOLiveOrderExists rid -> liveOrderExists invId rid
+        NOLate rid -> latePayment rid
+        NOHoldNotSpent holder source -> holdNotSpent holder source
+        NOLiveOrderExists rid -> liveOrderExists rid
         NOWritten {} -> pure ()
       pure (Right status)
   where
@@ -225,20 +225,20 @@ lateSupportOf = \case
   UCUncounted -> LSUnits
   UCNoConfirmationShown -> LSNoConfirmation
 
-latePayment :: InvoiceId -> RegistrationId -> IO ()
-latePayment (InvoiceId invText) (RegistrationId rid) =
-  logNote ("names: invoice " <> invText <> " received money after registration " <> rid <> " closed; it stays unpaid, and its money is credited to its balance once confirmed, else alerted")
+latePayment :: RegistrationId -> IO ()
+latePayment (RegistrationId rid) =
+  logNote ("names: the invoice of registration " <> rid <> " received money after the registration closed; it stays unpaid, and its money is credited to its balance once confirmed, else alerted")
 
-holdNotSpent :: InvoiceId -> RegistrationId -> RegistrationId -> IO ()
-holdNotSpent (InvoiceId invText) (RegistrationId holder) (RegistrationId source) =
+holdNotSpent :: RegistrationId -> RegistrationId -> IO ()
+holdNotSpent (RegistrationId holder) (RegistrationId source) =
   logError $
-    "names: invoice " <> invText <> " queued registration " <> holder <> " as paid, but the balance of registration " <> source
+    "names: the invoice of registration " <> holder <> " queued it as paid, but the balance of registration " <> source
       <> " it held could not be spent; check that balance and release or spend its hold by hand"
 
-liveOrderExists :: InvoiceId -> RegistrationId -> IO ()
-liveOrderExists (InvoiceId invText) (RegistrationId rid) =
+liveOrderExists :: RegistrationId -> IO ()
+liveOrderExists (RegistrationId rid) =
   logError $
-    "names: invoice " <> invText <> " was paid while another live order held the commitment, or the owner and name, of registration " <> rid
+    "names: the invoice of registration " <> rid <> " was paid while another live order held its commitment, or its owner and name"
       <> "; it was closed and its money is credited to its balance; the unique live indexes should have prevented this"
 
 -- | False when the invoice was no longer open. Throws RegistrationChanged, changing nothing, when its order changed meanwhile.
@@ -255,7 +255,7 @@ cancelOpenInvoice st waiters phases invId now = do
       _ -> pure Nothing
   forM_ closed $ \(order, late) -> do
     atomically $ publish waiters invId ISExpired >> mapM_ (publishRegistration phases) order
-    mapM_ (latePayment invId) late
+    mapM_ latePayment late
   pure (isJust closed)
   where
     lateOf InvoiceRow {irProduct, irPayment} = case irProduct of
@@ -264,10 +264,10 @@ cancelOpenInvoice st waiters phases invId now = do
 
 -- | Of the given invoices, expires those still open, with no money received, and past the cutoff, closing their orders.
 -- Each in its own transaction, so an invoice that fails is logged and skipped, and the others still expire.
-expireOverdue :: DBStore -> Waiters -> Maybe Phases -> UTCTime -> UTCTime -> [InvoiceId] -> IO [InvoiceId]
+expireOverdue :: DBStore -> Waiters -> Maybe Phases -> UTCTime -> UTCTime -> [OverdueInvoice] -> IO [InvoiceId]
 expireOverdue st waiters phases now cutoff = fmap catMaybes . mapM expire
   where
-    expire invId@(InvoiceId invText) = safelyWith ("expiring invoice " <> invText) Nothing $ do
+    expire OverdueInvoice {oiInvoiceId = invId, oiProviderRef} = safelyWith ("expiring invoice " <> oiProviderRef) Nothing $ do
       expired <- withTransaction st $ \db -> do
         moved <- expireOverdueInvoice db cutoff invId
         if moved then Just <$> closeInvoiceOrder db invId now else pure Nothing

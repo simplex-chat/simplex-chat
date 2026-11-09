@@ -233,12 +233,12 @@ listPass env now p =
 
 -- | Money a paid name invoice receives later is written nowhere, so only this alert tells support to refund it.
 moneyAfterPaid :: PollerEnv -> UTCTime -> InvoiceRow -> PaymentSignal -> IO ()
-moneyAfterPaid env now InvoiceRow {irInvoiceId = InvoiceId invId, irProduct, irPayment} signal
-  | IPName _ <- irProduct,
+moneyAfterPaid env now InvoiceRow {irProduct, irPayment} signal
+  | IPName (RegistrationId rid) <- irProduct,
     Just stored <- ipUnits =<< irPayment,
     Received {rcvUnits = Just units, rcvCrypto} <- signalReceived signal,
     units > stored = do
-      let alert = "names: invoice " <> invId <> " was paid, and its provider now reads " <> fromMaybe "" rcvCrypto <> " received, more than recorded; the extra is credited nowhere; refund by hand only a transaction confirmed on chain"
+      let alert = "names: the invoice of registration " <> rid <> " was paid, and its provider now reads " <> fromMaybe "" rcvCrypto <> " received, more than recorded; the extra is credited nowhere; refund by hand only a transaction confirmed on chain"
       due <- dueToWarn env now alert
       when due $ logError alert
   | otherwise = pure ()
@@ -256,9 +256,9 @@ settleMoved env@PollerEnv {peStore, peWaiters, pePhases, peProviders} provider n
           Right status -> do
             reportSettled irProduct irStatus status
             case (irProduct, find ((== provider) . pProvider) peProviders) of
-              (IPName _, Just p) ->
-                creditLate env p now irInvoiceId >>= \case
-                  CONothingDue -> pendingLate env irInvoiceId
+              (IPName rid, Just p) ->
+                creditLate env p now irInvoiceId rid >>= \case
+                  CONothingDue -> pendingLate env irInvoiceId rid
                   _ -> pure ()
               _ -> pure ()
     _ -> pure ()
@@ -299,7 +299,7 @@ sweepExpired env@PollerEnv {peStore, peWaiters, pePhases, peCancelFailed} now mi
   atomically $ modifyTVar' peCancelFailed (`M.restrictKeys` S.fromList (map oiProviderRef payable))
   -- Cancel only a few orders per pass, so a long list does not block other work.
   cancelled <- filterM (closedAtProvider env now) (take readsPerPass payable)
-  expired <- expireOverdue peStore peWaiters pePhases now cutoff (map oiInvoiceId (selfExpiring <> cancelled))
+  expired <- expireOverdue peStore peWaiters pePhases now cutoff (selfExpiring <> cancelled)
   unless (null expired) $ logNote ("badge poller: expired " <> tshow (length expired) <> " invoice(s) past their window")
 
 sweepRead :: PollerEnv -> UTCTime -> IO ()
@@ -327,19 +327,19 @@ cleanupUnpaid env@PollerEnv {peStore, peCleanedAt, peCleanupLeft} now = do
   deleted <- filterM (\c@(RegistrationId rid, _) -> safelyWith ("names cleanup: registration " <> rid) False (cleanOne c)) candidates
   unless (null deleted) $ logNote ("names cleanup: deleted " <> tshow (length deleted) <> " unpaid order(s)")
   where
-    cleanOne (rid@(RegistrationId ridText), invId@(InvoiceId invText)) =
+    cleanOne (rid@(RegistrationId ridText), invId) =
       getInvoice peStore invId >>= \case
         Nothing -> pure False
         Just InvoiceRow {irProvider, irProviderRef} -> case find ((== irProvider) . pProvider) (peProviders env) of
-          Nothing -> keep ("no " <> tshow irProvider <> " provider is configured to read invoice " <> invText)
+          Nothing -> keep ("no " <> tshow irProvider <> " provider is configured to read its invoice")
           Just p ->
             pReadInvoice p irProviderRef >>= \case
-              Left (ProviderError e) -> keep ("reading invoice " <> invText <> " failed: " <> e)
+              Left (ProviderError e) -> keep ("reading its invoice failed: " <> e)
               Right signal_ -> do
                 mapM_ (\signal -> settleMoved env irProvider now (irProviderRef, signal)) signal_
                 withTransaction peStore (`deleteUnpaidRegistration` rid) >>= \case
                   Right () -> pure True
-                  Left CKPaid -> False <$ logNote ("names cleanup: unpaid registration " <> ridText <> " is kept with its balance, because invoice " <> invText <> " received a payment")
+                  Left CKPaid -> False <$ logNote ("names cleanup: unpaid registration " <> ridText <> " is kept with its balance, because its invoice received a payment")
                   Left (CKHolder (RegistrationId source)) -> False <$ logError ("names cleanup: unpaid registration " <> ridText <> " is kept because it still holds the balance of registration " <> source)
       where
         keep why = False <$ logWarn ("names cleanup: unpaid registration " <> ridText <> " is kept until the next run, " <> why)
@@ -358,13 +358,13 @@ creditPass env@PollerEnv {peStore, peProviders} now = do
   due <- creditDue env now
   when due $ do
     invoices <- withTransaction peStore uncreditedLateInvoices
-    forM_ invoices $ \invId@(InvoiceId invText) ->
-      safely ("names: crediting invoice " <> invText) $
+    forM_ invoices $ \(invId@(InvoiceId invText), rid@(RegistrationId ridText)) ->
+      safely ("names: crediting the invoice of registration " <> ridText) $
         getInvoice peStore invId >>= \case
-          Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> void $ creditLate env p now invId
+          Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> void $ creditLate env p now invId rid
           _ -> do
             due' <- dueToWarn env now ("no rate provider: " <> invText)
-            when due' $ logWarn ("names: invoice " <> invText <> " has late money to credit, but no provider is configured to read its rate")
+            when due' $ logWarn ("names: the invoice of registration " <> ridText <> " has late money to credit, but no provider is configured to read its rate")
 
 -- | The pass's rate of a coin at a provider, read at most once.
 cachedRate :: PollerEnv -> Provider -> CryptoCurrency -> IO (Either ProviderError Rate)
@@ -381,25 +381,25 @@ cachedRate PollerEnv {peRates} Provider {pProvider, pCurrentRate} coin =
 forgetRates :: PollerEnv -> IO ()
 forgetRates PollerEnv {peRates} = atomically $ writeTVar peRates M.empty
 
-creditLate :: PollerEnv -> Provider -> UTCTime -> InvoiceId -> IO CreditOutcome
-creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) = do
+creditLate :: PollerEnv -> Provider -> UTCTime -> InvoiceId -> RegistrationId -> IO CreditOutcome
+creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) (RegistrationId rid) = do
   outcome <- creditLateInvoice peStore (cachedRate env p) invId now
   case outcome of
     CONothingDue -> pure ()
-    COCredited money LateCredit {lcRegistration = RegistrationId rid, lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents} ->
+    COCredited money LateCredit {lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents} ->
       logNote $
-        "names: invoice " <> invText <> credited money <> tshow lcCents <> " cents" <> extra money <> " to the balance of registration " <> rid
+        "names: the invoice of registration " <> rid <> credited money <> tshow lcCents <> " cents" <> extra money <> " to its balance"
           <> maybe "" (\units -> " for " <> tshow units <> " units at " <> fromMaybe "?" lcRateUsed <> " (invoice " <> fromMaybe "?" lcInvoiceRate <> ", current " <> fromMaybe "?" lcCurrentRate <> ")") lcUnits
     CONoInvoiceFigures -> do
       due <- dueToWarn env now ("no invoice figures: " <> invText)
-      when due $ logError ("names: invoice " <> invText <> " has confirmed late money, but no invoice rate or invoiced units were recorded to credit it at; check it at the provider")
+      when due $ logError ("names: the invoice of registration " <> rid <> " has confirmed late money, but no invoice rate or invoiced units were recorded to credit it at; check it at the provider")
     CORateFailed (ProviderError e) -> do
       due <- dueToWarn env now ("rate read failed: " <> tshow (pProvider p))
       when due $ logWarn ("names: late credits wait, as the current rate cannot be read; each pass tries again: " <> e)
     CORateFloor invoiceRate Rate {rateText} -> do
       due <- dueToWarn env now ("rate floor: " <> invText)
-      when due $ logError ("names: invoice " <> invText <> " is not credited: the current rate " <> rateText <> " is below half its rate " <> invoiceRate <> "; it is never credited by itself, and support refunds it by hand")
-    CORefused -> logError ("names: the credit of invoice " <> invText <> " was refused, its credit number taken meanwhile; the next pass tries again")
+      when due $ logError ("names: the invoice of registration " <> rid <> " is not credited: the current rate " <> rateText <> " is below half its rate " <> invoiceRate <> "; it is never credited by itself, and support refunds it by hand")
+    CORefused -> logError ("names: the credit of the invoice of registration " <> rid <> " was refused, its credit number taken meanwhile; the next pass tries again")
   pure outcome
   where
     credited = \case
@@ -410,10 +410,10 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) = do
       LMOverpaid -> " of the extra"
 
 -- | Money not yet confirmed waits for the settlement that confirms it.
-pendingLate :: PollerEnv -> InvoiceId -> IO ()
-pendingLate PollerEnv {peStore} invId@(InvoiceId invText) =
+pendingLate :: PollerEnv -> InvoiceId -> RegistrationId -> IO ()
+pendingLate PollerEnv {peStore} invId (RegistrationId rid) =
   withTransaction peStore (`latePending` invId) >>= \case
-    Just pending | pending `elem` [LPConfirming, LPUnconfirmed] -> logNote ("names: invoice " <> invText <> " holds money of its closed order not yet confirmed; it is credited once confirmed")
+    Just pending | pending `elem` [LPConfirming, LPUnconfirmed] -> logNote ("names: the invoice of registration " <> rid <> " holds money of its closed order not yet confirmed; it is credited once confirmed")
     _ -> pure ()
 
 -- | Late money still not all credited when its payment row is older than the read window, once per invoice and again when more arrives;
@@ -421,8 +421,8 @@ pendingLate PollerEnv {peStore} invId@(InvoiceId invText) =
 alertLatePayments :: PollerEnv -> UTCTime -> IO ()
 alertLatePayments env@PollerEnv {peStore} now = do
   due <- withTransaction peStore (`lateAlertDue` addUTCTime (negate settleWindow) now)
-  forM_ due $ \alert@LateAlert {laState = LateCreditState {lsInvoice = InvoiceId invText}} ->
-    safely ("names: the alert on invoice " <> invText) $ do
+  forM_ due $ \alert@LateAlert {laState = LateCreditState {lsRegistration = RegistrationId rid}} ->
+    safely ("names: the alert on the invoice of registration " <> rid) $ do
       (reason, support) <- lateReason env alert
       claimed <- withTransaction peStore $ \db -> claimLateAlert db alert support now
       when claimed $ logError (lateAlertText alert reason)
@@ -452,8 +452,8 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
     uncounted = "an amount BTCPay reported with more decimals than its unit; check it at the provider"
 
 lateAlertText :: LateAlert -> Text -> Text
-lateAlertText LateAlert {laState = s@LateCreditState {lsInvoice = InvoiceId invText, lsRegistration = RegistrationId rid, lsCoin, lsReceivedCents, lsConfirmedCents, lsCreditedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoicedUnits, lsCreditedUnits}} reason =
-  "names: invoice " <> invText <> " of order " <> rid <> overpaid <> ": " <> figures <> "; " <> reason
+lateAlertText LateAlert {laState = s@LateCreditState {lsRegistration = RegistrationId rid, lsCoin, lsReceivedCents, lsConfirmedCents, lsCreditedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoicedUnits, lsCreditedUnits}} reason =
+  "names: the invoice of order " <> rid <> overpaid <> ": " <> figures <> "; " <> reason
   where
     (overpaid, invoiced) = case (lateMoneyOf s, lsCoin, lsInvoicedUnits) of
       (LMOverpaid, Just coin, Just units) -> (", overpaid", tshow units <> " " <> unitName coin <> " invoiced, ")
