@@ -85,7 +85,7 @@ data Contracts = Contracts
     ctTermsLinks :: IORef (Maybe (Word64, (Text, Text))),
     ctFetchAfter :: IORef UTCTime,
     ctFetching :: MVar (),
-    -- | microseconds for all the reads of one name status or of one name's records
+    -- | microseconds for all the reads of one name status, of one name's records, or of one registration view
     ctDeadline :: Int,
     ctTermsBackoff :: Int,
     ctViewSlots :: TVar Int
