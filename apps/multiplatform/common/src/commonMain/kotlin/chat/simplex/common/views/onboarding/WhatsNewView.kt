@@ -50,6 +50,7 @@ import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ServerOperator.Companion.dummyOperatorInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -70,6 +71,17 @@ import kotlin.math.absoluteValue
 fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Boolean = false, close: () -> Unit) {
   val currentVersion = remember { mutableStateOf(versionDescriptions.lastIndex) }
   val rhId = chatModel.remoteHostId()
+
+  if (updatedConditions && chatModel.conditions.value.conditionsAction?.shouldShowNotice == true) {
+    LaunchedEffect(Unit) {
+      val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
+      try {
+        setConditionsNotified(rh = rhId, conditionsId = conditionsId)
+      } catch (e: Exception) {
+        Log.d(TAG, "WhatsNewView setConditionsNotified error: ${e.message}")
+      }
+    }
+  }
 
   @Composable
   fun featureDescription(icon: ImageResource?, titleId: StringResource, descrId: StringResource?, link: String?, learnMoreLink: String?, subfeatures: List<Pair<ImageResource, StringResource>>) {
