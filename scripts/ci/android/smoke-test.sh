@@ -265,8 +265,12 @@ add_profile() {
   "$ui" type "$1"
   "$ui" shot new-profile
   "$ui" click-text "Create profile" 10
-  "$ui" click-text "Don't show again" 5 || true
-  back_to "Talk to someone" || fail "$1 is not the active profile"
+  for _ in $(seq 30); do
+    "$ui" find "Enter your name" > /dev/null 2>&1 || break
+    sleep 1
+  done
+  "$ui" relaunch
+  "$ui" wait "Talk to someone" 30 || fail "$1 is not the active profile"
   "$ui" shot profile-added
 }
 
@@ -287,6 +291,7 @@ check_profile_switch_clears_search() {
   check "switching to citester clears the search field" "$ui" find "$search_field"
   check "switching to citester lists \"$local_chat\"" "$ui" find "$local_chat"
   "$ui" relaunch
+  "$ui" wait "$search_field" 30
 }
 
 # The search field and "Add list" next to it: at the bottom of the chat list, "Add list" above the field; at the top, below it.
