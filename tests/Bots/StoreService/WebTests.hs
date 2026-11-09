@@ -312,7 +312,9 @@ badgeWebTests = do
     it "hands every signal the pass returned to settleOrder, unless the row answers it" testEverySignalSettles
     it "passes over a listed invoice this service does not hold" testForeignRefIsPassedOver
     it "changes nothing when the provider fails, and settles on the next pass" testProviderFailureLosesNothing
-    it "asks a stalled BTCPay once in a pass, settling a card invoice listed after its invoices" testStalledBTCPayHoldsNoCardSettlement
+    it "asks a stalled BTCPay once in a pass and again in the next, settling a card invoice listed after its invoices" testStalledBTCPayHoldsNoCardSettlement
+    it "reads the overdue invoices on their own after a list that timed out" testListTimeoutKeepsTheReads
+    it "reads every invoice of a provider whose reads fail without a timeout" testFailedReadKeepsTheOtherReads
     it "reads the cadence fresh from the waiters each pass" testCadenceFollowsTheWaiters
     it "cuts an idle sleep short when a browser arrives during it" testWaiterCutsTheIdleSleepShort
     it "serves a hint batch without postponing a pass that falls due" testHintsDoNotPostponeThePass
@@ -3142,9 +3144,31 @@ testStalledBTCPayHoldsNoCardSettlement = bounded "stalled btcpay" $ withFakePoll
   setSignals ref [("p-stripe", settledSignal)]
   answerStalled fake True
   asked <- length <$> fakeRequests fake
-  runOnePass poller {peProviders = [stalled, (stubProvider ref) {pProvider = PPStripe}]}
+  let pass = runOnePass poller {peProviders = [stalled, (stubProvider ref) {pProvider = PPStripe}]}
+  pass
   subtract asked . length <$> fakeRequests fake `shouldReturn` 1
   mapM (invoiceStatus (weStore env)) (btcpayRows <> [cardRow]) `shouldReturn` replicate 5 ISOpen <> [ISPaid]
+  pass
+  subtract asked . length <$> fakeRequests fake `shouldReturn` 2
+
+testListTimeoutKeepsTheReads :: IO ()
+testListTimeoutKeepsTheReads = bounded "list timeout" $ withStubPoller raceHold $ \ref poller env _ -> do
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  overdue <- seedOpenRef (weStore env) 1 "p-overdue" (addUTCTime (-3600) now)
+  mapM_ (\i -> seedOpenRef (weStore env) i ("p-bulk-" <> tshow i) someExpiry) [2 .. readsPerPass + 2]
+  failList ref (Just (timeoutError "list invoices"))
+  runOnePass poller
+  stubCalls ref `shouldReturn` [StubListOpen, StubRead "p-overdue"]
+  invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
+
+testFailedReadKeepsTheOtherReads :: IO ()
+testFailedReadKeepsTheOtherReads = bounded "failed read" $ withStubPoller raceHold $ \ref poller env _ -> do
+  seedBadgePrice (weStore env) "price1"
+  mapM_ (\i -> seedOpenRef (weStore env) i ("p-" <> tshow i) someExpiry) [1 .. 3]
+  failRead ref (Just (ProviderError "connection refused"))
+  runOnePass poller
+  stubCalls ref `shouldReturn` [StubRead "p-1", StubRead "p-2", StubRead "p-3", StubListOpen]
 
 testCadenceFollowsTheWaiters :: IO ()
 testCadenceFollowsTheWaiters = bounded "cadence" $ withStubPoller raceHold $ \_ poller env client -> do

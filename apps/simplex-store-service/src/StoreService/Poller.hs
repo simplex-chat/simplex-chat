@@ -175,14 +175,16 @@ runPass env@PollerEnv {peStore, peProviders} = do
 passProvider :: Provider -> IO Provider
 passProvider p@Provider {pProvider, pReadInvoice, pCancelInvoice, pListOpen, pCurrentRate} = do
   timedOut <- newTVarIO False
-  let skipping :: IO (Either ProviderError a) -> IO (Either ProviderError a)
-      skipping call =
+  let unlessTimedOut :: IO (Either ProviderError a) -> IO (Either ProviderError a)
+      unlessTimedOut call =
         readTVarIO timedOut >>= \case
           True -> pure $ Left $ ProviderError $ tshow pProvider <> " is not asked again in this pass, as a call to it timed out"
-          False -> do
-            r <- call
-            r <$ when (either isTimeout (const False) r) (atomically $ writeTVar timedOut True)
-  pure p {pReadInvoice = skipping . pReadInvoice, pCancelInvoice = skipping . pCancelInvoice, pListOpen = skipping pListOpen, pCurrentRate = (skipping .) <$> pCurrentRate}
+          False -> call
+      skipping :: IO (Either ProviderError a) -> IO (Either ProviderError a)
+      skipping call = unlessTimedOut $ do
+        r <- call
+        r <$ when (either isTimeout (const False) r) (atomically $ writeTVar timedOut True)
+  pure p {pReadInvoice = skipping . pReadInvoice, pCancelInvoice = skipping . pCancelInvoice, pListOpen = unlessTimedOut pListOpen, pCurrentRate = (skipping .) <$> pCurrentRate}
 
 -- | The cases the stray list catches are rare and not urgent, so minutes, not the pass cadence.
 strayListInterval :: NominalDiffTime
