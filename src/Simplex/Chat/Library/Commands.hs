@@ -278,7 +278,7 @@ startChatController mainApp enableSndFiles serviceRequests = do
           startXFTP xftpStartWorkers
           void $ forkIO $ startFilesToReceive users
           startDeliveryWorkers
-          startRelayRequestWorker_
+          when (any (\User {userChatRelay} -> isTrue userChatRelay) users) startRelayRequestWorker_
           startCleanupManager
           mapM_ startBadgeWork users
           startStoreReceiptWorkers users

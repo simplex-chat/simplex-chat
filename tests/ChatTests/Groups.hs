@@ -343,7 +343,6 @@ chatGroupTests = do
       it "should ignore relay invitation sent to non-relay user" testChannelRelayInvNonRelayUser
       it "should not process relay requests of non-relay user on start" testChannelRelayRequestNonRelayUser
       it "should process relay requests of relay user on start" testChannelRelayRequestRelayUser
-      it "should not process relay requests of non-relay user on relay" testChannelRelayRequestOtherUser
       it "should remove relay from channel" testChannelRemoveRelay
       it "should remove left relay from channel" testChannelRemoveLeftRelay
       describe "relay rejection" $ do
@@ -12230,20 +12229,6 @@ testChannelRelayRequestRelayUser ps = do
       <### [ "subscribed 1 connections on server localhost",
              "internal error: SEInternalError {message = \"missing relay request data\"}"
            ]
-
-testChannelRelayRequestOtherUser :: HasCallStack => TestParams -> IO ()
-testChannelRelayRequestOtherUser ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
-      bob ##> "/create user robert"
-      showActiveUser bob "robert"
-      bob ##> "/g team"
-      bob <## "group #team is created"
-      bob <## "to add members use /a team <name> or /create link #team"
-      withCCTransaction bob $ \db -> DB.execute_ db "UPDATE groups SET relay_own_status = 'invited'"
-      bob ##> "/user bob"
-      showActiveUser bob "bob (Bob)"
-      void $ prepareChannel1Relay "news" alice bob
 
 testChannelAddRelayWithRoster :: HasCallStack => TestParams -> IO ()
 testChannelAddRelayWithRoster ps =

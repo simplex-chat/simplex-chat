@@ -43,11 +43,9 @@ hasPendingRelayRequests db =
         SELECT EXISTS (
           SELECT 1
           FROM groups
-          JOIN users USING (user_id)
           WHERE relay_own_status = ?
             AND relay_request_failed = 0
             AND relay_request_err_reason IS NULL
-            AND is_user_chat_relay = 1
           LIMIT 1
         )
       |]
@@ -65,11 +63,9 @@ getNextPendingRelayRequest db =
           [sql|
             SELECT group_id
             FROM groups
-            JOIN users USING (user_id)
             WHERE relay_own_status = ?
               AND relay_request_failed = 0
               AND relay_request_err_reason IS NULL
-              AND is_user_chat_relay = 1
             ORDER BY relay_request_execute_at ASC
             LIMIT 1
           |]
