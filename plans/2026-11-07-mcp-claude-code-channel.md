@@ -177,6 +177,9 @@ Recommended on the UX page (https://claude.ai/artifact/YCN4kj2ZRujUnUhNSxwMea), 
 104. Rule 3 in texts outside the group. The option `approve` reads `requests: you approve connections and messages in the SimpleX app. host: Claude Code asks you instead, after an admin or owner approves this in the session's group.` `connect` to a chat of another session returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` The plugin's limit of pending actions returns `20 actions are pending; wait for the approvers' decisions.`, a text of the hub; `serve` keeps `20 actions are pending; wait for the owner's decisions.`
 105. U2 a: the replies of decision 84 to the `//`, `/!` and approvals of moderators, members and authors are removed. Both role checks stay: in a session group, a request of another role that reaches `Control`, or a `//` or `/!` of another role that reaches the prompt, gets no reply, and nothing is performed or delivered. Decision 91's reply answers these texts first.
 
+Decided on 2026-11-09, review round 8:
+106. The expiry timer of an action waits at most 60 s and is set again until the expiry time, so an action whose expiry time passes while the computer sleeps expires within 60 s after it wakes, in `serve` as in 0.2.
+
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
 
