@@ -1706,7 +1706,7 @@ profileMemberAdmission cc gid =
 groupInfoOf :: HasCallStack => ChatController -> Int64 -> IO GroupInfo
 groupInfoOf cc gid =
   sendChatCmd cc (APIGroupInfo gid) >>= \case
-    Right CRGroupInfo {groupInfo} -> pure groupInfo
+    Right (CRGroupInfo _ g) -> pure g
     r -> error $ "group info failed: " <> show r
 
 reviewAll :: GroupMemberAdmission
