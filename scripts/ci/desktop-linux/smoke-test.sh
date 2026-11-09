@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
-# chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, then
-# tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
+# chat list, a local group, a second profile with a group of its own and text in its search field, which must be gone
+# after a switch back to the first profile, then the chat list with the toolbar at the bottom (the default) and at the
+# top, then tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;

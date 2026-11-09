@@ -1,8 +1,10 @@
 #!/bin/bash
 
 # Installs the APK in the booted emulator (emulator.sh) and runs the scripted UI cases with the ui helper: onboarding to
-# the chat list, a local group, then the chat list with the reachable toolbar (the default) and with the top bar, then
-# tests/fixtures/test.jpg and logo-large-rgba.png picked in the system's image picker and sent in the group.
+# the chat list, a local group, a second profile with a group of its own and text in its search field, which must be
+# gone after a switch back to the first profile, then the chat list with the reachable toolbar (the default) and with
+# the top bar, then tests/fixtures/test.jpg and logo-large-rgba.png picked in the system's image picker and sent in the
+# group.
 # Usage: scripts/ci/android/smoke-test.sh <apk> <output dir> [start|onboarding|layouts|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list. "backend"
 # also adds the test SMP server (NAMES_SERVER, from backend.sh, reached through emulator.sh reverse) under Your servers
