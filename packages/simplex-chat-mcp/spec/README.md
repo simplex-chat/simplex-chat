@@ -202,11 +202,11 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Server start | [`src/serve.ts`](../src/serve.ts#L64) | `startServer` | [64](../src/serve.ts#L64) |
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L87) | `startAgent` | [87](../src/serve.ts#L87) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L499) | `registerTools` | [499](../src/tools.ts#L499) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L588) | `AgentTools.downloadFile` | [588](../src/tools.ts#L588) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L498) | `registerTools` | [498](../src/tools.ts#L498) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L587) | `AgentTools.downloadFile` | [587](../src/tools.ts#L587) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L147) | `Actions` | [147](../src/actions.ts#L147) |
-| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L92) | `Control` | [92](../src/control.ts#L92) |
-| Card text | [`src/control.ts`](../src/control.ts#L660) | `cardText` | [660](../src/control.ts#L660) |
+| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L93) | `Control` | [93](../src/control.ts#L93) |
+| Card text | [`src/control.ts`](../src/control.ts#L679) | `cardText` | [679](../src/control.ts#L679) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L97) | `createDataFolder`, `acquireLock` | [97](../src/files.ts#L97), [102](../src/files.ts#L102) |
@@ -215,7 +215,7 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L35) | `DaemonClient.ensureDaemon` | [35](../src/client.ts#L35) |
 | Daemon process | [`src/daemon.ts`](../src/daemon.ts#L430) | `runDaemon` | [430](../src/daemon.ts#L430) |
 | Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L137) | `Daemon.routes` | [137](../src/daemon.ts#L137) |
-| Hub | [`src/hub.ts`](../src/hub.ts#L357) | `Hub.open` | [357](../src/hub.ts#L357) |
+| Hub | [`src/hub.ts`](../src/hub.ts#L363) | `Hub.open` | [363](../src/hub.ts#L363) |
 | Session and its group | [`src/hub.ts`](../src/hub.ts#L44) | `Session` | [44](../src/hub.ts#L44) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L27) | `MainGroup` | [27](../src/main-group.ts#L27) |
 | Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |

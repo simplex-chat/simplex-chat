@@ -172,7 +172,6 @@ const ownerKey = "simplexMcpOwner"
 const deletedItem = "The message or its chat was deleted."
 const deletedFiles = "Your owner deleted the files of this chat."
 const unapprovedServers = "The file is on unknown servers that were not approved."
-export const filesOff = "Files and media are off in the group of this session; its owners can turn them on in the group's preferences."
 const notFoundErrors: T.StoreError["type"][] = ["chatItemNotFound", "contactNotFound", "groupNotFound"]
 const stalledDownload = `The download made no progress for ${downloadStall / 60_000} minutes and was cancelled.`
 
@@ -718,7 +717,8 @@ export class AgentTools {
     const file = await this.attachment(input.file, undefined, chatInfo, chat)
     if (!fitsMessage(sentContent(file, input.text ?? ""), file.name, undefined)) throw new ToolError(tooLongText(file))
     const item = await this.sendFile(chat, file, input.text).catch(error => {
-      throw isFilesOff(error) ? new ToolError(filesOff) : error
+      const feature = refusedFeature(error)
+      throw feature === undefined ? error : new ToolError(featureOff(feature))
     })
     return {item}
   }
@@ -1604,9 +1604,13 @@ function isNotFound(error: unknown): boolean {
   return chatError?.type === "errorStore" && notFoundErrors.includes(chatError.storeError.type)
 }
 
-export function isFilesOff(error: unknown): boolean {
+export function refusedFeature(error: unknown): string | undefined {
   const chatError = chatErrorOf(error)
-  return chatError?.type === "error" && chatError.errorType.type === "commandError" && chatError.errorType.message === "feature not allowed Files and media"
+  return chatError?.type === "error" && chatError.errorType.type === "commandError" ? /^feature not allowed (.+)$/.exec(chatError.errorType.message)?.[1] : undefined
+}
+
+export function featureOff(feature: string): string {
+  return `${feature} are off in the group of this session; its owners can turn them on in the group's preferences.`
 }
 
 async function realFile(file: string): Promise<{path: string; size: number; inode: number; changedAt: number}> {

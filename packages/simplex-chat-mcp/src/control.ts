@@ -6,7 +6,7 @@ import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "
 import {linkCommand} from "./owner"
 import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, customDataOf, filesOff, fitsMessage, isActive, isConnected, isFilesOff, memberCurrent, memberCurrentOrPending, refusedFileReason, setChatData} from "./tools"
+import {AgentTools, chatSubject, customDataOf, featureOff, fitsMessage, isActive, isConnected, memberCurrent, memberCurrentOrPending, refusedFeature, refusedFileReason, setChatData} from "./tools"
 
 export {qrCodeText}
 
@@ -18,6 +18,7 @@ export const controlCommands: T.ChatBotCommand[] = [
 
 const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
 const unknownCommand = "Unknown command. To send a command to Claude, start it with //."
+const filesAndMedia = "Files and media"
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
   connect: "message: too long for its approval card; shorten it.",
@@ -190,7 +191,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (!hasOutcomeCard(action)) return
     const content = await this.cardContent(action)
     if (action.card === undefined) await this.postCardContent(action, content)
-    else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, content, false)
+    else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, content, false).catch(error => this.postRefusal(error, `Action ${action.n}`))
     const filesNote = action.tool === "leave" && action.state === "done" ? this.leftChatFilesNote(action.chat, action.subject) : undefined
     if (filesNote !== undefined) await this.post(filesNote)
   }
@@ -325,7 +326,10 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
             throw error
           }),
       )
-      .catch(error => this.post(this.options.session !== undefined && isFilesOff(error) ? `Action ${action.n}: ${filesOff}` : `Action ${action.n}: the file was not received: ${codeSpan(oneLine(errorText(error)))}.`))
+      .catch(error => {
+        const feature = this.sessionRefusal(error)
+        return this.post(feature === undefined ? `Action ${action.n}: the file was not received: ${codeSpan(oneLine(errorText(error)))}.` : `Action ${action.n}: ${featureOff(feature)}`)
+      })
       .catch(error => logError(`action ${action.n} file`, error))
   }
 
@@ -518,10 +522,25 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     try {
       return await this.postMessage({msgContent, mentions: {}})
     } catch (error) {
-      if (msgContent.type === "text" || this.options.session === undefined || !isFilesOff(error)) throw error
-      action.cardImage = ""
-      return this.postMessage({msgContent: {type: "text", text: msgContent.text}, mentions: {}})
+      const feature = this.sessionRefusal(error)
+      if (feature === undefined) throw error
+      if (feature === filesAndMedia && msgContent.type !== "text") {
+        action.cardImage = ""
+        return this.postCardContent(action, {type: "text", text: msgContent.text})
+      }
+      await this.post(`Action ${action.n}: ${featureOff(feature)}`)
+      throw new ToolError(featureOff(feature))
     }
+  }
+
+  private sessionRefusal(error: unknown): string | undefined {
+    return this.options.session === undefined ? undefined : refusedFeature(error)
+  }
+
+  private async postRefusal(error: unknown, subject: string): Promise<void> {
+    const feature = this.sessionRefusal(error)
+    if (feature === undefined) throw error
+    await this.post(`${subject}: ${featureOff(feature)}`)
   }
 
   private async cardContent(action: Action): Promise<T.MsgContent> {

@@ -8,6 +8,7 @@ import {controlCommands} from "../../src/control"
 import {SessionFile, createDataFolder, readSessionFile, sessionFolder, writeSessionFile} from "../../src/files"
 import {Hub, Session} from "../../src/hub"
 import {createMainGroup} from "../../src/main-group"
+import {Collected} from "../../src/messages"
 import {AttachLine} from "../../src/protocol"
 import * as tools from "../../src/tools"
 import {User} from "../../src/user"
@@ -1020,7 +1021,7 @@ describe("session channel", () => {
     expect(textOf(await session.call("reply", {file: join(root, "token")}, signal().call))).toMatch(/ is refused: private keys and the server's own files are not sent\.$/)
   })
 
-  it("answers that files and media are off when the core refuses a file of reply under the group's preference, and returns the core's other refusals", async () => {
+  it("answers with the group preference that refuses a file of reply or its caption, and returns the core's other errors", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const received = join(sessionFolder(root, id1), "files", "group", "8.txt")
@@ -1034,8 +1035,10 @@ describe("session channel", () => {
     expect(result!.isError).toBe(true)
     expect(textOf(result)).toBe("Files and media are off in the group of this session; its owners can turn them on in the group's preferences.")
     expect(session.actions.all()).toEqual([])
-    chat.apiSendMessages = refusal("feature not allowed Voice messages")
-    expect(textOf(await session.call("reply", {file: received}, signal().call))).toMatch(/feature not allowed Voice messages/)
+    chat.apiSendMessages = refusal("feature not allowed SimpleX links")
+    expect(textOf(await session.call("reply", {file: received, text: "https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2Fx"}, signal().call))).toBe("SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences.")
+    chat.apiSendMessages = refusal("not a member")
+    expect(textOf(await session.call("reply", {file: received}, signal().call))).toMatch(/not a member/)
   })
 
   it("sends an image by reply at once with its caption and preview, as send does", async () => {
@@ -1149,6 +1152,74 @@ describe("session channel", () => {
       expect(groupPosts(chat)[1]).toEqual({type: "text", text: "Action 1: Files and media are off in the group of this session; its owners can turn them on in the group's preferences."})
       expect(existsSync(copy)).toBe(false)
       expect(action.state).toBe("pending")
+    })
+  })
+
+  describe("while a preference of the session group refuses a post", () => {
+    const groupPosts = (chat: FakeChat) => chat.sent.filter(({chat: [kind, id]}) => kind === T.ChatType.Group && id === 20).map(({messages: [{msgContent}], messages}) => ({text: messages.map(({msgContent: {text}}) => text).join("\n"), type: msgContent.type}))
+    const link = "https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2Fx"
+    const refusal = (feature: string) => new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "commandError", message: `feature not allowed ${feature}`}} as unknown as T.ChatError)
+    const off = (feature: string) => `${feature} are off in the group of this session; its owners can turn them on in the group's preferences.`
+
+    function refuseInGroup(chat: FakeChat): void {
+      const send = chat.apiSendMessages.bind(chat)
+      chat.apiSendMessages = async (target, messages) => {
+        if (target[0] === T.ChatType.Group && target[1] === 20 && messages.some(({msgContent}) => msgContent.text.includes(link))) throw refusal("SimpleX links")
+        if (target[0] === T.ChatType.Group && target[1] === 20 && messages.some(({msgContent}) => msgContent.type === "voice")) throw refusal("Voice messages")
+        return send(target, messages)
+      }
+    }
+
+    it("posts that Claude's answer was not posted, naming the preference, and the turn ends", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      refuseInGroup(chat)
+      await session.turn({id: id1, answer: `The bot's address is ${link}`})
+      expect(groupPosts(chat)).toEqual([{type: "text", text: `Claude's answer was not posted: ${off("SimpleX links")}`}])
+    })
+
+    it("posts that User's prompt was not posted, naming the preference, and posts the answer", async () => {
+      const chat = new FakeChat()
+      const {hub, session} = await channel(chat)
+      hub.user = {post: async () => Promise.reject(refusal("SimpleX links"))} as unknown as User
+      await session.turn({id: id1, prompt: `Open ${link}`, answer: "Opened."})
+      expect(groupPosts(chat)).toEqual([{type: "text", text: `User's prompt was not posted: ${off("SimpleX links")}`}, {type: "text", text: "Opened."}])
+    })
+
+    it("posts that a card was not posted, naming the preference, and fails its action with that text", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      refuseInGroup(chat)
+      const action = session.actions.create("s", {tool: "send", input: {chat: "@4", text: `Join ${link}`}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4", mentions: [], responses: new Collected()}, undefined, 1, "requests")
+      await until(() => action.state === "failed")
+      expect(action.error).toBe(off("SimpleX links"))
+      expect(groupPosts(chat)).toEqual([{type: "text", text: `Action 1: ${off("SimpleX links")}`}])
+    })
+
+    it("posts that a card's edit was refused, naming the preference", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      const action = session.actions.create("s", {tool: "send", input: {chat: "@4", text: "hi"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4", mentions: [], responses: new Collected()}, undefined, 1, "requests")
+      await until(() => action.card !== undefined)
+      chat.apiUpdateChatItem = async () => Promise.reject(refusal("SimpleX links"))
+      session.actions.reject(action, "Alice")
+      await until(() => groupPosts(chat).length === 2)
+      expect(groupPosts(chat)[1]).toEqual({type: "text", text: `Action 1: ${off("SimpleX links")}`})
+    })
+
+    it("answers a /forward of a voice message whose post the core refuses with the preference, not that the file was not received", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      refuseInGroup(chat)
+      const action = session.actions.create("d", {tool: "download", input: {chat: "@4", item: 30}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4", item: 30, from: "SimpleX Directory", file: {fileId: 7, name: "memo.m4a", size: 2400, type: "voice", duration: 5}}, undefined, 1, "requests")
+      await until(() => action.card !== undefined)
+      const copy = join(sessionFolder(root, id1), "files", "sent", "voice", "memo.m4a")
+      mkdirSync(join(sessionFolder(root, id1), "files", "sent", "voice"), {recursive: true})
+      writeFileSync(copy, "voice")
+      session.tools.forwardFile = async () => copy
+      expect(await session.control.ownerCommand(invitedAlice, {keyword: "forward", params: "@4 1"})).toBeUndefined()
+      await until(() => groupPosts(chat).length === 2)
+      expect(groupPosts(chat)[1]).toEqual({type: "text", text: `Action 1: ${off("Voice messages")}`})
     })
   })
 })

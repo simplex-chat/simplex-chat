@@ -220,6 +220,39 @@ test("while files and media are off in a session's group, the card of a send of 
   expect((await edited).chatItem.content).toMatchObject({type: "rcvMsgContent", msgContent: {type: "text", text: expect.stringMatching(/\nApproved by Alice\.$/)}})
 }, 600_000)
 
+test("while SimpleX links are off in a session's group, a send card with a SimpleX link is posted, and Claude posts that a terminal prompt and an answer with a SimpleX link were not posted, naming the preference", async () => {
+  const root = join(dir, "links", "root")
+  await prepareRoot(smpServer.address, root, xftpServer.address)
+  const alice = await personIn("links", "Alice")
+  const directory = await botIn("links", "Directory")
+  const daemon = await startDaemon(root)
+  const client = DaemonClient.forRoot(root)
+  await openSession(client, one, "one")
+  const owner = await client.request<OwnerState>("GET", "/link")
+  const invitations = joinSessionGroups(alice, ["1 · one"])
+  await joinByLink(alice, owner.link!)
+  const groupOne = (await invitations).get("1 · one")!
+  const ownerSends = (text: string) => alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], text)
+  const connectCard = received(alice.chat, inGroup(groupOne, textStarts("I want to connect to bot Directory, as myself.")))
+  const connecting = callTool(client, one, "connect", {target: directory.link, idle: 2})
+  await ownerSends(`/approve ${cardNumber(await connectCard)}`)
+  const directoryChat = (await connecting).result.chat as string
+  const hub = daemon["hub"] as unknown as Hub
+  const claudeGroup = hub["sessions"].get(1)!.control.groupId
+  const groupOneInfo = (await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === groupOne)!
+  await alice.chat.apiUpdateGroupProfile(groupOne, {...groupOneInfo.groupProfile, groupPreferences: {...groupOneInfo.groupProfile.groupPreferences, simplexLinks: {enable: T.GroupFeatureEnabled.Off}}})
+  await until(async () => (await hub.chat.apiListGroups(hub.profile.userId)).find(({groupId}) => groupId === claudeGroup)?.groupProfile.groupPreferences?.simplexLinks?.enable === T.GroupFeatureEnabled.Off)
+
+  const sendCard = received(alice.chat, inGroup(groupOne, textStarts("I want to send a message to bot Directory:")))
+  const sending = callTool(client, one, "send", {chat: directoryChat, text: `Our group: ${directory.link}`, idle: 2})
+  await ownerSends(`/reject ${directoryChat} ${cardNumber(await sendCard)}`)
+  expect((await sending).result).toMatchObject({status: "rejected"})
+
+  const notices = ["User's prompt was not posted: ", "Claude's answer was not posted: "].map(subject => received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText === `${subject}SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences.`)))
+  await client.request("POST", "/turn", {id: one, prompt: `Open ${directory.link}`, answer: `The bot's address is ${directory.link}`})
+  await Promise.all(notices)
+}, 600_000)
+
 test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)

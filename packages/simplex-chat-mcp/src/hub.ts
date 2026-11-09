@@ -12,7 +12,7 @@ import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-g
 import {Changes, ChatItemsWatch, ToolCall, getChat, nextChange, storedName, validName} from "./messages"
 import {AttachLine, OwnerState, PermissionRequest, ResetReply, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
-import {AgentTools, ToolName, fitsMessage, maxMessageLength, ownerOf} from "./tools"
+import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
 import {User, userContact} from "./user"
 
 const profileName = "Claude"
@@ -190,7 +190,7 @@ export class Session {
       this.store(this.description)
     }
     try {
-      if (prompt !== undefined && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt))
+      if (prompt !== undefined && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted"))
       if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
     } finally {
       const {model: shown, effort: level} = this.description
@@ -273,7 +273,13 @@ export class Session {
   private async answer(text: string, quoted: T.ChatItem | undefined): Promise<void> {
     const quote = quoted?.content.type === "rcvMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
     const quotes = quote !== undefined && fitsMessage({type: "text", text: [...text].slice(0, 1).join("")}, undefined, quote)
-    await this.post(textParts(text, quotes ? quote : undefined), quotes ? quoted?.meta.itemId : undefined)
+    await this.post(textParts(text, quotes ? quote : undefined), quotes ? quoted?.meta.itemId : undefined).catch(error => this.postRefusal(error, "Claude's answer was not posted", quoted?.meta.itemId))
+  }
+
+  private async postRefusal(error: unknown, subject: string, quotedItemId?: number): Promise<void> {
+    const feature = refusedFeature(error)
+    if (feature === undefined) throw error
+    await this.post([`${subject}: ${featureOff(feature)}`], quotedItemId)
   }
 
   private async post(parts: string[], quotedItemId?: number): Promise<void> {
