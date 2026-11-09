@@ -1780,6 +1780,14 @@ object ChatController {
         )
       }
       r is API.Error && r.err is ChatError.ChatErrorAgent
+          && r.err.agentError is AgentErrorType.CONN
+          && r.err.agentError.connErr is ConnectionErrorType.DUPLICATE -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.connection_error_duplicate),
+          generalGetString(MR.strings.connection_error_duplicate_desc).format("CONN DUPLICATE")
+        )
+      }
+      r is API.Error && r.err is ChatError.ChatErrorAgent
           && r.err.agentError is AgentErrorType.SMP
           && r.err.agentError.smpErr is SMPErrorType.BLOCKED -> {
         showContentBlockedAlert(
@@ -3786,7 +3794,7 @@ object ChatController {
             generalGetString(MR.strings.marked_deleted_description)
           )
         }
-        val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
+        val deleted = if (r.member_ != null && (cItem.chatDir as? CIDirection.GroupRcv)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
           CIDeleted.Moderated(Clock.System.now(), r.member_)
         } else {
           CIDeleted.Deleted(Clock.System.now())
@@ -3803,12 +3811,12 @@ object ChatController {
             // Stop voice playback only inside a chat, allow to play in a chat list
             AudioPlayer.stop(cItem)
           }
-          val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
+          val deleted = if (r.member_ != null && (cItem.chatDir as? CIDirection.GroupRcv)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
             CIDeleted.Moderated(Clock.System.now(), r.member_)
           } else {
             CIDeleted.Deleted(Clock.System.now())
           }
-          chatsCtx.upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+          chatsCtx.upsertChatItem(rhId, cInfo.copy(groupChatScope = chatsCtx.groupScopeInfo), cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
         }
       }
     }

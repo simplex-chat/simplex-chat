@@ -307,7 +307,9 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @EnvironmentObject var theme: AppTheme
+    @ObservedObject private var badgeModel = BadgeModel.shared
     @State private var showProgress: Bool = false
+    var versionText: String? = appVersion
 
     var body: some View {
         ZStack {
@@ -364,6 +366,7 @@ struct SettingsView: View {
                 }
             }
 
+            let badgeRow = badgeRowTexts()
             Section {
                 NavigationLink {
                     BadgesView()
@@ -375,9 +378,12 @@ struct SettingsView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 24, height: 24)
-                        Text("Supporter perks").padding(.leading, indent)
+                        Text(badgeRow.label).padding(.leading, indent)
                     }
                 }
+            } footer: {
+                Text(badgeRow.benefits)
+                    .foregroundColor(theme.colors.secondary)
             }
 
             Section(header: Text("Advanced settings").foregroundColor(theme.colors.secondary)) {
@@ -414,12 +420,12 @@ struct SettingsView: View {
                         .navigationBarTitle("App version")
                         .modifier(ThemedBackground(grouped: true))
                 } label: {
-                    Text(verbatim: "v\(appVersion ?? "?")")
+                    Text(verbatim: "v\(versionText ?? "?")")
                 }
             }
 
             if isInUS {
-                Section(header: Text("You can now invest in SimpleX Chat").foregroundColor(theme.colors.secondary)) {
+                Section(header: Text("Own a part of SimpleX Chat").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
                         GetStakeView(fromSettings: true, showFirstImage: true)
                             .navigationBarTitle("", displayMode: .inline)
@@ -434,6 +440,14 @@ struct SettingsView: View {
         .onDisappear {
             chatModel.showingTerminal = false
             chatModel.terminalItems = []
+        }
+    }
+
+    private func badgeRowTexts() -> (label: LocalizedStringKey, benefits: LocalizedStringKey) {
+        switch currentShownBadge()?.badgeType {
+        case nil: return ("Support SimpleX", "Larger files available for longer.")
+        case .legend?: return ("Your legend badge", "Files up to 5 GB, stored for 21 days.")
+        default: return ("Your badge", "Files up to 2 GB, stored for 7 days.")
         }
     }
 
@@ -624,7 +638,7 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.currentUser = User.sampleData
-        return SettingsView()
+        return SettingsView(versionText: "7.1")
             .environmentObject(chatModel)
     }
 }

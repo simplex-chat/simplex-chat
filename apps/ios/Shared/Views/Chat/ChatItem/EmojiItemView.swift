@@ -32,7 +32,7 @@ struct EmojiItemView: View {
             } else {
                 emojiText(chatItem.content.text)
                     .modifier(MessageLastLine())
-                    .padding(EdgeInsets(top: terminalEmojiTopGap, leading: chatItemTextPadding, bottom: terminalEmojiBottomGap, trailing: chatItemTextPadding))
+                    .padding(EdgeInsets(top: 0, leading: chatItemTextPadding, bottom: terminalCardBottomGap(chatItem), trailing: chatItemTextPadding))
             }
         }
     }
