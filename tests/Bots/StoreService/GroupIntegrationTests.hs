@@ -10,13 +10,14 @@
 -- Members' messages reach a console over separate connections in no fixed order, so gating is asserted from the bot's store.
 module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests, namesRefundChatTests, namesWorkerBootTests) where
 
-import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..), ServiceConfig (devAcceptUnverifiedStoreReceipts), readServiceConfig)
+import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cController, cServiceKey), GroupConfig (..), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, names), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
 import StoreService.Group.Command (CmdAction (..), groupCmdAction, maxUses)
 import StoreService.Names.Abi (selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode, spendLandedPrepaidCode)
+import StoreService.Names.Chain (SignedTx (..), TxRequest (..), newChainClient, signTransaction)
+import StoreService.Names.Store (NewTransaction (..), PrepaidCode (..), TxFor (..), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice)
@@ -30,7 +31,7 @@ import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (
 import Bots.StoreService.WebTests (capturingStderr, digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
-import Bots.StoreService.NamesStoreTests (order, ownerA, placeCode, placePaid, t0)
+import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, placePaid, t0, usable)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -41,6 +42,7 @@ import Control.Concurrent.STM (TQueue, atomically, newTQueueIO, orElse, readTMVa
 import Control.Exception (IOException, bracket, catch, finally, throwIO, try)
 import Control.Monad (forM_, guard, mfilter, replicateM_, unless, void, when)
 import qualified Data.Aeson as J
+import qualified Data.ByteArray as BA
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Either (isLeft, isRight)
@@ -77,6 +79,7 @@ import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), ConnShortLink (..)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Util (tshow)
@@ -153,6 +156,7 @@ namesBootTests = do
   it "masks the database password in the start line, in a URI or as a keyword" testRedactPassword
   it "refuses unverified store receipts with an issuer key clients trust, and takes them with a dev key" testUnverifiedReceiptsKey
   it "refuses a second instance on the same Postgres database until the first ends, exits when the lock's connection fails, and takes no lock on SQLite" testInstanceLock
+  it "exits before the chat core starts while a pending transaction was signed by another key" testOtherKeyPendingStops
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
   it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
 
@@ -181,6 +185,26 @@ testInstanceLock ps = do
   locked (locked (pure ()))
 #endif
   locked (pure True) `shouldReturn` True
+
+testOtherKeyPendingStops :: HasCallStack => TestParams -> IO ()
+testOtherKeyPendingStops ps = do
+  svc <- (\s -> s {gsIniSections = "" : namesSection <> chainSection}) <$> prepareGroupService ps
+  (opts, serviceCfg, _) <- groupServiceOpts svc Nothing
+  Just NamesConfig {nChain} <- pure $ names serviceCfg
+  g <- C.newRandom
+  otherKey <- newChainClient g nChain {cServiceKey = either error id $ mkPrivateKey $ BA.replicate 32 0x47}
+  Right SignedTx {stRaw, stHash} <-
+    signTransaction g otherKey TxRequest {trTo = cController nChain, trData = "", trNonce = 0, trGasLimit = 100000, trMaxFeePerGas = 1, trMaxPriorityFeePerGas = 1}
+  (t, cc, _, _) <- startGroupService svc Nothing
+  flip finally (stopGroupService t cc) $ do
+    code <- issue (chatStore cc) 1 usable
+    placeCode (chatStore cc) "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
+    withTransaction (chatStore cc) $ \db -> void $ insertTransaction db (TxCommit $ RegistrationId "r1") NewTransaction {ntxRaw = stRaw, ntxHash = stHash, ntxNonce = 0} t0
+  env <- newServiceState
+  ended <- timeout waitLimit (try $ storeService opts (Just serviceCfg) (gsCfg svc) env)
+  started <- atomically (tryReadTMVar (serviceCC env))
+  mapM_ stopChat started
+  (isNothing started, ended) `shouldBe` (True, Just (Left (ExitFailure 1)))
 
 #if defined(dbPostgres)
 terminateInstanceLockSession :: IO ()
