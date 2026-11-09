@@ -33,6 +33,15 @@ Real-session checks run in an interactive Claude Code session started with `--da
 
 ## Decisions
 
+Premises, from which the decisions follow:
+1. Rights follow the visible role.
+2. Everything in a session group is addressed to Claude; commands steer it and are for admins and owners.
+3. Owners own the group's settings; Claude changes only what it wrote.
+4. `serve` stays as published in 0.2.
+5. #7810's features stay unless they conflict.
+
+On 2026-11-09 every decision below that was proposed, recommended or open is decided by our judgement, as implemented; the user gives feedback once using the plugin. One question stays open for the user: UX-I1 (decision 113).
+
 Agreed on 2026-11-06:
 1. `serve`, `register` and HTTP stay.
 2. #7810's code is adopted with `serve` kept; shum reviews the result.
@@ -108,7 +117,7 @@ Decided on 2026-11-08, review round 4:
 58. A Stop request updates the short description also when its posts fail.
 59. A title's rename writes `session.json` as read after the group's rename.
 
-Proposed on 2026-11-08, each in its own commit, until the user decides:
+Proposed on 2026-11-08, each in its own commit; decided by judgement on 2026-11-09:
 60. A run whose `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli` (`claude -p`), `sdk-ts` or `sdk-py` (the Agent SDK), or whose `CLAUDE_CODE_SESSION_ATTENDED` is `0`, gets no session and no group; kept by the user's answer R1 B. Amended on 2026-11-08: the SessionStart hook of a run with `CLAUDE_CODE_SESSION_ATTENDED` `0` and another entrypoint marks its Claude Code process with `/title` `unattended`; the daemon refuses `/session` from that process with 403 within 10 s of the mark; the refused session server answers every call with the text of a run that is not interactive. Removed by the user's rule on reviews: the deletion of the group of a session closed for 7 days.
 61. The approved mode is kept in the session group's custom data, not in `session.json`. `GET /status` returns the owners without the Main group link; `GET /link` returns the link. These protections hold against Claude's tools, not against a shell running as the same user.
 62. Removed by the user's rule on reviews; rule 4 of the [trust model](#trust-model) holds. It was: leaving, removal or demotion in the Main group is applied to every session group.
@@ -120,7 +129,7 @@ Decided on 2026-11-08, review round 5:
 66. Claude Code sets `CLAUDE_CODE_SESSION_ATTENDED` for the hooks of a run; its MCP servers get only the value of the session whose command started the run. `0` makes a run non-interactive; otherwise the entrypoint decides. A real-session check in TESTING records the values.
 67. `serve` lists its tools with the metadata of 0.2.
 
-Proposed on 2026-11-08 with the round 5 fixes, until the user decides:
+Proposed on 2026-11-08 with the round 5 fixes; decided by judgement on 2026-11-09, kept:
 68. `list` returns the session's actions without its tool-use and mode cards.
 
 Decided on 2026-11-08, after round 5:
@@ -144,20 +153,20 @@ Decided by the user on 2026-11-08, by rule 4 of the [trust model](#trust-model):
 Decided by the user on 2026-11-08, the corrected [trust model](#trust-model):
 79. Replaced on 2026-11-08 by decision 84. It was: every member of a session group but `User` prompts and approves. Kept: the hub reads its contact of `User` at its start.
 80. Replaced on 2026-11-08 by decision 86. It was: the join post `NAME can send prompts to Claude and approve tool use. ...` for every role.
-81. `/observer #G ID` sets that member's role to observer; Claude accepts it from a member whose role lets them change that member's role in SimpleX: admin or owner, and not below the member's role. Its replies are proposals; the reply of an accepted one is the observer's rights post of decision 86.
+81. `/observer #G ID` sets that member's role to observer; Claude accepts it from a member whose role lets them change that member's role in SimpleX: admin or owner, and not below the member's role. Its replies, proposed, are decided by judgement on 2026-11-09; the reply of an accepted one is the observer's rights post of decision 86.
 82. Replaced on 2026-11-08 by decision 87. It was: files of `reply` wait for an owner of the Main group to approve their card while the option `approve_files` is on.
-83. The start notice of a session group and the group's description wait for the user's decision on their place and text.
+83. A session group has no start notice; its description is that of decision 98 (decided by judgement on 2026-11-09; it was: the start notice and the description wait for the user's decision on their place and text).
 
 Decided by the user on 2026-11-08, the role model of the [trust model](#trust-model):
 84. Rights in a session group follow the member's role there, whatever way they joined. Admins and owners send prompts, approve actions and tool calls, and send `//` and `/!`, which reach Claude without their first `/`. Moderators, members and authors send prompts; their `//` and `/!` get `Only admins and owners of this group can send // and /! commands to Claude.`, and their approvals `Only admins and owners of this group approve actions here.` Observers cannot send. `!` gets `Messages starting with ! reach Claude only from admins and owners, as /!command.`
-85. `/join N` invites a member of the Main group as admin. Owners of the Main group stay invited as owners: at the session start, at their join, and by `/join N` (open question U1). Members invited inside the group get the role the inviter sets.
+85. `/join N` invites a member of the Main group as admin. Owners of the Main group stay invited as owners: at the session start, at their join, and by `/join N` (U1 a, decision 110). Members invited inside the group get the role the inviter sets.
 86. Claude posts the member's rights at each join and at each role change in the session group, `User` excepted: `NAME is a ROLE and RIGHTS.`, and for a role that sends ` You can change role to observer to stop it: /'observer #G ID'`. A role change by Claude raises no `memberRole` event; the reply to `/observer` is the observer's post.
 87. Claude's files of `reply` reach the session group at once, without a card, in both modes. The group's preference "Files and media", which owners change, is the control; the core enforces it, and the call returns the core's refusal. The option `approve_files`, the cards of `reply`, `/approve N all` and the bare `/revoke` are removed.
 88. Session groups keep no record of their invited members.
-89. All texts of decisions 84, 86 and 91 are placeholders for the UX page; the user approves them there.
+89. The texts of decisions 84, 86 and 91, as decisions 97 and 105 changed them, are decided by judgement on 2026-11-09; they were placeholders for the UX page.
 92. Everything sent in a session group is a prompt to the agent: every message of a member whose role sends is a prompt, except the one-line `/` commands of the group, `//` and `/!`.
 
-Proposed on 2026-11-08 with the role model, until the user decides:
+Proposed on 2026-11-08 with the role model; decided by judgement on 2026-11-09, 90 as C1 a and 91 as U2 a:
 90. Claude's profile updates of the Main group and of session groups read the group's current profile from the chat database and change only Claude's own fields: the name, the short description, the Main group's description and the commands. The preferences owners set, "Files and media" included, stay (C1 on the UX page).
 91. The group's `/` commands come from admins and owners only, like approvals. A one-line `/` text, a `//` text or a `/!` text from a moderator, member or author gets one reply, `Only admins and owners of this group can send / commands.`, and reaches neither the commands nor Claude. One check, `Session.refusesCommand`, holds it; without it, the replies of decisions 71 and 84 apply.
 
@@ -167,7 +176,7 @@ Decided on 2026-11-08, review round 7:
 95. Claude's profile updates of a session group run one at a time, so a rename and a change of the model or effort that overlap both stay.
 96. The code has no comments.
 
-Recommended on the UX page (https://claude.ai/artifact/UDxBJx55Y9ti1U3TjUaxpC), implemented until the user answers, one commit each:
+Recommended on the UX page (https://claude.ai/artifact/UDxBJx55Y9ti1U3TjUaxpC), one commit each; decided by judgement on 2026-11-09, as implemented:
 97. K10, K11: the rights texts name `/` commands in place of `//` and `/!`; the post for an owner has no `/observer` command.
 98. A session group's description, set at its creation: `The Claude Code session N. Members send it prompts; admins and owners also send / commands and approve tool use.`
 100. T3: the Main group's short description is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.`
@@ -179,9 +188,17 @@ Recommended on the UX page (https://claude.ai/artifact/UDxBJx55Y9ti1U3TjUaxpC), 
 
 Decided on 2026-11-09, review round 8:
 106. The expiry timer of an action waits at most 60 s and is set again until the expiry time, so an action whose expiry time passes while the computer sleeps expires within 60 s after it wakes, in `serve` as in 0.2.
-107. Question 2 (a) of review round 8, recommended until the user decides on the UX page: in a session group, a card the core refuses with `feature not allowed Files and media` is posted again as text, without the preview, and its later edits are text; sends and downloads of images and videos to other chats go on. `serve` keeps 0.2's behaviour: the action fails with the core's error.
+107. F2-card a, question 2 (a) of review round 8, decided by judgement: in a session group, a card the core refuses with `feature not allowed Files and media` is posted again as text, without the preview, and its later edits are text; sends and downloads of images and videos to other chats go on. `serve` keeps 0.2's behaviour: the action fails with the core's error.
 108. Question 3 (a) of review round 8: in a session group, `/forward` whose post the core refuses with `feature not allowed Files and media` gets `Action N: ` + FILES OFF; `serve` keeps ``Action N: the file was not received: `ERROR`.``
-109. Question 1 (b) of review round 8, recommended until the user decides: the unit and end-to-end tests of 0.2 (be668564d) pass unchanged on this source. `qrCodeText` is exported from `control.ts` again; `serve` updates its control chat from the profile read at the start, the plugin's groups from the current profile in the chat database (decision 90); a pending action of `serve` that expires is kept until its next check, 60 s later, while the plugin's is removed at once when no call is open. An action without a session is an action of `serve`.
+109. S1 b, question 1 (b) of review round 8, decided by judgement: the unit and end-to-end tests of 0.2 (be668564d) pass unchanged on this source. `qrCodeText` is exported from `control.ts` again; `serve` updates its control chat from the profile read at the start, the plugin's groups from the current profile in the chat database (decision 90); a pending action of `serve` that expires is kept until its next check, 60 s later, while the plugin's is removed at once when no call is open. An action without a session is an action of `serve`.
+
+Decided by judgement on 2026-11-09, as implemented:
+110. U1 a: owners of the Main group are owners in the session groups (decision 85).
+111. K1 a: a message starting with `!` from any role is refused with `Messages starting with ! reach Claude only from admins and owners, as /!command.` and does not reach Claude; admins and owners send it as `/!` (decisions 84, 92).
+112. The notes of the UX page stay as they are: UX-I2, the command `link` and the skill `/simplex:link`; UX-I3, the plugin's tools without Claude Code's permission prompt; UX-I4, the options Approval and Expiry in hours; UX-I5, the idle close of a session and the idle stop of the daemon; UX-I6, a newer plugin stops an older daemon; UX-I8, session numbers.
+
+Open for the user:
+113. UX-I1, the replacement of the Main group and its owners. Recommended, as now: while owners exist, an owner approves each reset in the Main group; without owners it runs from a terminal (decision 20).
 
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
@@ -360,7 +377,7 @@ Rules:
 3. Admins and owners send prompts, approve tool calls, and send `//` and `/!` commands.
 4. Members and moderators send prompts; their `//` and `/!` commands are refused.
 5. Observers cannot send (SimpleX rule).
-6. Members of the Main group who join by `/join N` become admins. Owners of the Main group are invited to each session group as owners (open question U1).
+6. Members of the Main group who join by `/join N` become admins. Owners of the Main group are invited to each session group as owners (decision 110).
 7. Members invited inside a session group get the role the inviter sets (SimpleX rule: admin or owner invites).
 8. Claude's files reach the session group without approval. The group preference "Files and media", which owners change, is the control; the core enforces it.
 9. Claude posts the member's rights at each join and at each role change.
@@ -452,13 +469,13 @@ Set by the user on 2026-11-08:
 unknown "/" command        Unknown command. To send a command to Claude, start it with //.   (decision 71)
 ```
 
-Placeholders for the UX page, where the user approves them (decision 89):
+Texts of the session groups, decided by judgement (decision 89):
 ```
 /, // or /! from another   Only admins and owners of this group can send / commands.   (decision 91)
 role
 // or /! from another role  no reply, nothing delivered, past the reply above only   (decision 105)
 approval from another role  no reply, nothing performed, past the reply above only   (decision 105)
-"!"                         Messages starting with ! reach Claude only from admins and owners, as /!command.
+"!"                         Messages starting with ! reach Claude only from admins and owners, as /!command.   (decision 111)
 no approver                 The group of this session has no admin or owner to approve actions. Members of the Main group join it
                             by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.
 rights of owner            NAME is an owner and can send prompts and / commands to Claude, and approve tool use.   (decision 97)
@@ -469,11 +486,11 @@ member, author              You can change role to observer to stop it: /'observ
 rights of observer          NAME is an observer and can't send messages.   (also the reply to an accepted /observer)
 ```
 
-Pending the user's decision, implemented as proposals:
+Decided by judgement on 2026-11-09, as implemented:
 ```
-start notice               not implemented; its place and text wait (decision 83)
+start notice               none (decision 83)
 /observer replies          #G is not this group. / No member ID in this group. / NAME's role can't be changed. /
-                           Your role does not let you change the role of NAME.
+                           Your role does not let you change the role of NAME.   (decision 81)
 ```
 
 ## Groups
