@@ -1139,10 +1139,10 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   with `InsufficientAllowance`. The order keeps its phase and its register is tried again every 15
   seconds, so a top-up before its commitment lapses registers it with no restart. The line is
   logged once per order, and registration is paused, see
-  [Registration paused](#registration-paused). This holds when the register's dry run is refused. A
-  register that passes its dry run and reverts once mined, as two registers sent while the allowance
-  covers one can, fails its order with no such line; the next order's dry run logs it, and the buyer
-  can Try again.
+  [Registration paused](#registration-paused). A register that passes its dry run and reverts once
+  mined, as two registers sent while the allowance covers one can, returns its order to `committed`
+  and pauses registration when the allowance cannot cover the registers in flight; otherwise it
+  fails its order, and the buyer can Try again.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
   the transaction waits` when fees are above the cap. Nothing is signed until they fall.
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
@@ -1161,33 +1161,46 @@ owner who got the name another way counts as served, and a code order spends its
 
 #### Registration paused
 
-The first register refused with `InsufficientAllowance` pauses registration, with that order as the
-probe. At start, registration is paused when the allowance cannot cover the register of the oldest
-order in `queued` to `registering`, or cannot be read. While it is paused:
+A queued order, paid or by code, is committed only while the registrar's allowance on the sponsor
+covers the registers of every order in `committing` to `registering` and of the queued orders up
+to it, oldest first by creation; a register's price is the price list's price per year for the
+label's length over the order's duration. An order it does not cover stays queued and pauses
+registration, as does a register refused with `InsufficientAllowance`. At start, registration is
+paused when the allowance cannot cover every order in `queued` to `registering`, or cannot be read.
+While it is paused:
 
 - `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
-  `503 {"error": "registration_paused"}` before any chain read, so no order takes money;
+  `503 {"error": "registration_paused"}` before any chain read. An invoice made before the pause
+  stays payable, as does an exact resend of its order, which answers that invoice; its order waits
+  in the queue;
 - code orders, Try again and another name are taken and queued;
-- queued orders are not committed. A committed order whose commitment lapses after its reveal goes
-  back to `queued`, its reveal cleared, and the buyer signs again once it is committed again;
-- a queued order's view has `queue: {"position": n, "of": m, "paused": true}`, oldest first by
-  creation, as it has with `"paused": false` while registration runs.
+- every registration view has `"paused": true`, and a queued order's view has
+  `queue: {"position": n, "of": m}`, oldest first, as it has while registration runs.
 
-Every 15 seconds the service reads `registrarAllowance` and the probe order's register price
-(`rentPriceUSD` for its length and duration). Registration resumes once the allowance covers it, and
-the queued orders are committed. A top-up by the guardian needs no restart.
+A revealed order whose commitment lapses before its register goes back to `queued`, its reveal
+cleared, paused or not, and the buyer signs again once it is committed again; its commits count
+toward the 5 an order may send.
+
+Every 15 seconds the service reads the allowance and the prices again. Registration resumes once the
+allowance covers every order in `queued` to `registering`. A top-up by the guardian needs no
+restart.
 
 The service logs a report at start, hourly and at each pause and resume:
 
 ```
-names: 3 queued, the oldest from 2026-11-09 10:00 UTC, 2 committing to registering; registration paused since 2026-11-09 09:41 UTC, probe order <id>; registrar 0x…, 1.250000 ETH, allowance $40.00; alert: registration paused
+names: 3 queued, the oldest from 2026-11-09 10:00 UTC, 2 committing to registering; registration paused since 2026-11-09 09:41 UTC; registrar 0x…, 1.250000 ETH, allowance $40.00; alert: registration paused; paused by the order with commitment 0x…
 ```
 
-It is an error, with `alert:` and its reasons, while registration is paused, above
-`[names] queue_alert` (default 20) queued orders, below 5 × `gas_limit_cap` × `max_fee_per_gas`
-of ETH (4 ETH with the defaults), or below the price of one order of a 6-letter name for
-`[names] years`. With `[group]`, an alert and each pause and resume are also sent to the group. An
-unread figure shows as `unread` and raises no alert.
+The commitment names the order without granting access to it, as its registration id would. The
+report is an error, with `alert:` and its reasons, while registration is paused, above
+`[names] queue_alert` (default 20) queued orders, paid or by code, below 5 × `gas_limit_cap` ×
+`max_fee_per_gas` of ETH (4 ETH with the defaults), or below the price of one order of a 6-letter
+name for `[names] years` and the days until `term_start`. With `[group]`, an alert and each pause
+and resume are also sent to the group, without the commitment. An unread figure shows as `unread`
+and raises no alert.
+
+An order that fails because its buyer did not sign it in time is logged as
+`[ERROR …] names worker: the order with commitment 0x… failed: its buyer did not sign it in time`.
 
 #### Rotate the key
 

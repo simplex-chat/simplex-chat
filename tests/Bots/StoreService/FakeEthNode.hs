@@ -57,6 +57,8 @@ module Bots.StoreService.FakeEthNode
     fakeBaseRegistrar,
     fakeResolver,
     fakeRegistrarKey,
+    fakeAllowanceCents,
+    fakeCentsPerYear,
     fakeGas,
     fakeTip,
     fakeBaseFee,
@@ -98,6 +100,7 @@ import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, hex, selector, uint256)
 import StoreService.Names.Chain (ChainClient (..), TxRequest (..), decodeSignedTx, newChainClient)
+import StoreService.Names.Contracts (attoUsdPerCent, secondsPerYear)
 import System.Timeout (timeout)
 
 data FakeEthNode = FakeEthNode
@@ -239,7 +242,14 @@ defaultCall (to, calldata)
   | to == unAddress fakeNamePolicy && calldata == selector "communityTermsLink()" = Just $ Returns $ linkAnswer $ fakeTermsLink fakeCommunityTermsText
   | to == unAddress fakeNamePolicy && selector "acceptedTerms(bytes32,address)" `B.isPrefixOf` calldata = Just $ Returns $ B.replicate 32 0
   | to == unAddress fakeNamePolicy && selector "nonces(address)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
+  | selector "registrarAllowance(address)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 $ fakeAllowanceCents * attoUsdPerCent
+  | selector "rentPriceUSD(string,uint256)" `B.isPrefixOf` calldata && B.take 32 (B.drop 36 calldata) == uint256 secondsPerYear =
+      Just $ Returns $ uint256 (fakeCentsPerYear * attoUsdPerCent) <> uint256 (0 :: Int)
   | otherwise = Nothing
+
+fakeAllowanceCents, fakeCentsPerYear :: Integer
+fakeAllowanceCents = 1000000000
+fakeCentsPerYear = 5000
 
 fakeRegistrarKey :: S.Secp256k1PrivateKey
 fakeRegistrarKey = either error id $ S.mkPrivateKey $ BA.replicate 32 0x46

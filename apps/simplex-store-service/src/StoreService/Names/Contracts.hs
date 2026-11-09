@@ -190,10 +190,8 @@ chainPriceCents ct len years = call ct (controller ct) ("rentPriceUSD(string,uin
   where
     args = abiTuple [Dynamic $ abiBytes $ B.replicate len 'a', Static $ uint256 $ toInteger years * secondsPerYear]
 
-registerCost :: Contracts -> Int -> Word64 -> IO (Either ChainError Integer)
-registerCost ct len duration = call ct (controller ct) ("rentPriceUSD(string,uint256)", args) decodeUint256
-  where
-    args = abiTuple [Dynamic $ abiBytes $ B.replicate len 'a', Static $ uint256 duration]
+registerCost :: Int -> Word64 -> Integer
+registerCost centsPerYear duration = toInteger centsPerYear * attoUsdPerCent * toInteger duration `div` secondsPerYear
 
 registrarAllowance :: Contracts -> IO (Either ChainError Integer)
 registrarAllowance ct@Contracts {ctChain = ChainClient {ccRegistrar}} = call ct (cSponsor $ chainConfig ct) ("registrarAllowance(address)", addressWord ccRegistrar) decodeUint256

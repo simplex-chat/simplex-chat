@@ -338,9 +338,9 @@ firstRefusal = \case
   check : rest -> check >>= either (pure . Just) (const $ firstRefusal rest)
 
 nameInvoiceView :: OrdersEnv -> Maybe Int -> InvoiceRow -> NameRegistration -> IO J.Value
-nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts, oePause, oeNow} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId} r = do
+nameInvoiceView env@OrdersEnv {oeNow} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId} r = do
   now <- oeNow
-  view <- registrationView oeStore oeConfig oeContracts oePause now r
+  view <- registrationView env now r
   pure $ J.object $ ["invoiceId" .= invId, "kind" .= ("name" :: Text), "registration" .= view] <> invoicePairs confirmations row
 
 orderRefusalResponse :: OrderRefusal -> Response

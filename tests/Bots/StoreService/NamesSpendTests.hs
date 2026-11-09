@@ -45,7 +45,8 @@ import StoreService.Config (BTCPayConfig (..), ServiceConfig (..))
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Balances (RefundRefusal (..), recordRefund)
 import StoreService.Names.Orders (OrdersEnv (..))
-import StoreService.Names.Phases (Pause (..), RegistrationId (..), phasesWaiting)
+import StoreService.Names.Env (Pause (..))
+import StoreService.Names.Phases (RegistrationId (..), phasesWaiting)
 import StoreService.Names.Signatures (OrderFields (..), personalDigest, spendMessage)
 import StoreService.Names.Store
 import StoreService.Names.View (balanceJSON)
@@ -119,7 +120,7 @@ testSpendCodesOnly = withSpend $ \open -> do
 testSpendPaused :: IO ()
 testSpendPaused = withSpend $ \ctx@Ctx {cOrders} -> do
   source <- sourceOf ctx "s" 10000
-  atomically $ writeTVar (oePause cOrders) $ Just Pause {paSince = orderTime, paProbe = RegistrationId "probe"}
+  atomically $ writeTVar (oePause cOrders) $ Just Pause {paSince = orderTime, paCommitment = "probe"}
   spend ctx source (covered 10000) `shouldReturn` refusedWith 503 "registration_paused"
   spend ctx source (dynamis 10000 $ Just "btc") `shouldReturn` refusedWith 503 "registration_paused"
   amountOf ctx source `shouldReturn` Just 10000

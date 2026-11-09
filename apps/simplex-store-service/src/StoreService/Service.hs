@@ -14,6 +14,8 @@ module StoreService.Service
     redactPassword,
     checkUnverifiedReceipts,
     logNamePolicy,
+    runNamesReport,
+    namesReport,
     reportAlerts,
     requireDevKeys,
     checkIssuerKey,
@@ -54,13 +56,13 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (ChainClient (..), ethBalance, newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Contracts (Contracts, Terms (..), attoUsdPerCent, communityName, namePolicy, registerCost, registrarAllowance, secondsPerYear, termsLinkAllowed, termsLinks, termsOf)
-import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
-import StoreService.Names.Orders (ordersEnv)
-import StoreService.Names.Phases (Pause (..), RegistrationId (..))
+import StoreService.Names.Contracts (Contracts, Terms (..), attoUsdPerCent, chainPriceCents, communityName, namePolicy, registerCost, registrarAllowance, secondsPerYear, termsLinkAllowed, termsLinks, termsOf)
+import StoreService.Names.Env (NamesEnv (..), Pause (..), newNamesEnv)
+import StoreService.Names.Orders (OrdersEnv (..), ordersEnv, unixSeconds)
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (runSender)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText, queueCounts)
+import StoreService.Names.Store (ActiveOrder (..), Balance (..), BalanceHold (..), BalanceLink (..), LateCredit (..), NamePhase (..), RegistrationPayment (..), activeOrders, balanceByReference, balanceChain, methodText)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (newWorker, pauseUncovered, runCodeSweep, runProbe, runWorkers)
@@ -98,7 +100,7 @@ import Data.Functor (($>), (<&>))
 import Data.Int (Int64)
 import Data.List (findIndex, isPrefixOf, tails)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust, isNothing, maybeToList)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, maybeToList)
 import Data.Ratio ((%))
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
@@ -373,35 +375,36 @@ namesLanes :: Maybe (TQueue GroupEvent) -> NamesEnv -> IO [IO ()]
 namesLanes groupQ_ ne@NamesEnv {neChain, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neChain neSender
   pauseUncovered worker
-  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runProbe worker, runNamesReport groupQ_ ne]
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runProbe worker, runNamesReport groupQ_ (ordersEnv ne) neChain]
 
-runNamesReport :: Maybe (TQueue GroupEvent) -> NamesEnv -> IO ()
-runNamesReport groupQ_ ne@NamesEnv {nePause} = readTVarIO nePause >>= report False
+runNamesReport :: Maybe (TQueue GroupEvent) -> OrdersEnv -> ChainClient -> IO ()
+runNamesReport groupQ_ oe@OrdersEnv {oePause} chain = readTVarIO oePause >>= report False
   where
     report changed pause = do
-      void $ safely "names report" $ namesReport groupQ_ ne changed pause
+      void $ safely "names report" $ namesReport groupQ_ oe chain changed pause
       hour <- registerDelay namesReportInterval
-      next <- atomically $ (readTVar nePause >>= \p -> if p /= pause then pure (Just p) else retry) `orElse` (Nothing <$ (readTVar hour >>= check))
+      next <- atomically $ (readTVar oePause >>= \p -> if p /= pause then pure (Just p) else retry) `orElse` (Nothing <$ (readTVar hour >>= check))
       maybe (report False pause) (report True) next
 
-namesReport :: Maybe (TQueue GroupEvent) -> NamesEnv -> Bool -> Maybe Pause -> IO ()
-namesReport groupQ_ NamesEnv {neConfig = cfg@NamesConfig {nYears}, neStore, neChain = chain@ChainClient {ccRegistrar}, neContracts} changed pause = do
-  (queued, oldest, inFlight) <- withTransaction neStore queueCounts
-  (wei, allowance, floorCost) <-
+namesReport :: Maybe (TQueue GroupEvent) -> OrdersEnv -> ChainClient -> Bool -> Maybe Pause -> IO ()
+namesReport groupQ_ OrdersEnv {oeStore, oeConfig = cfg@NamesConfig {nYears, nTermStart}, oeContracts, oeNow} chain@ChainClient {ccRegistrar} changed pause = do
+  orders <- withTransaction oeStore activeOrders
+  now <- oeNow
+  (wei, allowance, floorCents) <-
     runConcurrently $
       (,,)
         <$> Concurrently (ethBalance chain ccRegistrar)
-        <*> Concurrently (registrarAllowance neContracts)
-        <*> Concurrently (registerCost neContracts minNameLength $ fromInteger $ toInteger nYears * secondsPerYear)
-  let alerts = reportAlerts cfg pause queued (eitherToMaybe wei) (eitherToMaybe $ (,) <$> allowance <*> floorCost)
-      line = T.intercalate "; " $ [queueText queued oldest inFlight, pauseText, registrarText wei allowance] <> ["alert: " <> T.intercalate ", " alerts | not (null alerts)]
-  (if null alerts then logNote else logError) line
-  when (changed || not (null alerts)) $ forM_ groupQ_ $ \q -> atomically $ writeTQueue q $ GENotice line
+        <*> Concurrently (registrarAllowance oeContracts)
+        <*> Concurrently (chainPriceCents oeContracts minNameLength 1)
+  let queued = filter ((== PQueued) . aoPhase) orders
+      floorCost cents = registerCost cents $ fromInteger $ toInteger nYears * secondsPerYear + max 0 (unixSeconds nTermStart - unixSeconds now)
+      alerts = reportAlerts cfg pause (length queued) (eitherToMaybe wei) (eitherToMaybe $ (,) <$> allowance <*> (floorCost <$> floorCents))
+      shown = T.intercalate "; " $ [queueText queued (length orders - length queued), pauseText, registrarText wei allowance] <> ["alert: " <> T.intercalate ", " alerts | not (null alerts)]
+  (if null alerts then logNote else logError) $ shown <> maybe "" (\Pause {paCommitment} -> "; paused by the order with commitment " <> hex paCommitment) pause
+  when (changed || not (null alerts)) $ forM_ groupQ_ $ \q -> atomically $ writeTQueue q $ GENotice shown
   where
-    queueText queued oldest inFlight = "names: " <> tshow queued <> " queued" <> maybe "" ((", the oldest from " <>) . fmtTime) oldest <> ", " <> tshow inFlight <> " committing to registering"
-    pauseText = case pause of
-      Nothing -> "registration running"
-      Just Pause {paSince, paProbe = RegistrationId probe} -> "registration paused since " <> fmtTime paSince <> ", probe order " <> probe
+    queueText queued inFlight = "names: " <> tshow (length queued) <> " queued" <> maybe "" ((", the oldest from " <>) . fmtTime . aoCreatedAt) (listToMaybe queued) <> ", " <> tshow inFlight <> " committing to registering"
+    pauseText = maybe "registration running" (\Pause {paSince} -> "registration paused since " <> fmtTime paSince) pause
     registrarText wei allowance =
       "registrar " <> addressText ccRegistrar <> ", " <> either (const "ETH unread") ethText wei
         <> ", allowance " <> either (const "unread") (dollars . fromInteger . (`div` attoUsdPerCent)) allowance

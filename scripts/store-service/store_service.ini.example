@@ -103,7 +103,7 @@ private_key = replace-me
 ; the owner's link edits relayed for one name in any 365 days, each a transaction whose gas the
 ; service pays; 1 to 100. A request refused, never sent or reverted on chain does not count
 ;record_edits_per_year = 3
-; the hourly names report is an error, sent to [group] too, above this many paid orders in the queue
+; the hourly names report is an error, sent to [group] too, above this many orders in the queue, paid or by code
 ;queue_alert = 20
 ;
 ; what each community name is for, with [names] only (the name policy on chain lists the names):
