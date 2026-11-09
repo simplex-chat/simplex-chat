@@ -22,6 +22,7 @@ import StoreService.Providers
     ProviderInvoice (..),
     Received (..),
     settleWindow,
+    timeoutError,
     WebhookError (..),
   )
 import Control.Exception (try)
@@ -402,7 +403,7 @@ stripeSend StripeEnv {seCfg, seManager} what verb segments query headers form = 
       taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
       pure (lookup "Idempotent-Replayed" (responseHeaders resp) == Just "true", statusCode (responseStatus resp), taken)
   pure $ case r of
-    Nothing -> (False, Left (ProviderError (what <> " failed: timed out")))
+    Nothing -> (False, Left (timeoutError what))
     -- http-client hides the Authorization header when showing a Request
     Just (Left (e :: HttpException)) -> (False, Left (ProviderError (what <> " failed: " <> tshow e)))
     Just (Right (replayed, code, taken)) -> (replayed, answer code taken)

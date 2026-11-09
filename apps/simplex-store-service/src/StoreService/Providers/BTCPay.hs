@@ -31,6 +31,7 @@ import StoreService.Providers
     Received (..),
     Uncreditable (..),
     settleWindow,
+    timeoutError,
     unitDecimals,
     WebhookError (..),
   )
@@ -597,7 +598,7 @@ greenfield BTCPayEnv {beCfg, beManager} what verb segments query body = do
       taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
       pure (statusCode (responseStatus resp), taken)
   pure $ case r of
-    Nothing -> Left (ProviderError (what <> " failed: timed out"))
+    Nothing -> Left (timeoutError what)
     -- http-client hides the Authorization header when showing a Request
     Just (Left (e :: HttpException)) -> Left (ProviderError (what <> " failed: " <> tshow e))
     Just (Right (code, taken))

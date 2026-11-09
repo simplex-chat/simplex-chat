@@ -308,7 +308,7 @@ badgeWebTests = do
     it "hands every signal the pass returned to settleOrder, unless the row answers it" testEverySignalSettles
     it "passes over a listed invoice this service does not hold" testForeignRefIsPassedOver
     it "changes nothing when the provider fails, and settles on the next pass" testProviderFailureLosesNothing
-    it "settles a card invoice in the pass where a stalled BTCPay answer times out" testStalledBTCPayHoldsNoCardSettlement
+    it "asks a stalled BTCPay once in a pass, settling a card invoice listed after its invoices" testStalledBTCPayHoldsNoCardSettlement
     it "reads the cadence fresh from the waiters each pass" testCadenceFollowsTheWaiters
     it "cuts an idle sleep short when a browser arrives during it" testWaiterCutsTheIdleSleepShort
     it "serves a hint batch without postponing a pass that falls due" testHintsDoNotPostponeThePass
@@ -3102,12 +3102,14 @@ testStalledBTCPayHoldsNoCardSettlement = bounded "stalled btcpay" $ withFakePoll
   stalled <- btcpayProvider (fbConfig fake) {bTimeoutMicros = 300000}
   ref <- newIORef (newStubState (Right sampleProviderInvoice))
   seedBadgePrice (weStore env) "price1"
-  btcpayRow <- seedOpenRef (weStore env) 1 "p-btcpay" someExpiry
-  cardRow <- seedOpenRefOf PPStripe (weStore env) 2 "p-stripe" someExpiry
+  btcpayRows <- mapM (\i -> seedOpenRef (weStore env) i ("p-btcpay-" <> tshow i) someExpiry) [1 .. 5]
+  cardRow <- seedOpenRefOf PPStripe (weStore env) 9 "p-stripe" someExpiry
   setSignals ref [("p-stripe", settledSignal)]
   answerStalled fake True
+  asked <- length <$> fakeRequests fake
   runOnePass poller {peProviders = [stalled, (stubProvider ref) {pProvider = PPStripe}]}
-  mapM (invoiceStatus (weStore env)) [btcpayRow, cardRow] `shouldReturn` [ISOpen, ISPaid]
+  subtract asked . length <$> fakeRequests fake `shouldReturn` 1
+  mapM (invoiceStatus (weStore env)) (btcpayRows <> [cardRow]) `shouldReturn` replicate 5 ISOpen <> [ISPaid]
 
 testCadenceFollowsTheWaiters :: IO ()
 testCadenceFollowsTheWaiters = bounded "cadence" $ withStubPoller raceHold $ \_ poller env client -> do
