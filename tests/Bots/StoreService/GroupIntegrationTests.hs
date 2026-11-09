@@ -25,7 +25,7 @@ import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
-import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr)
+import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, plainTerms, setFault, setGeneralTerms, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture)
@@ -323,15 +323,14 @@ testNamesBootCodesOnly ps = do
 testNamesBootPriceFloor :: HasCallStack => TestParams -> IO ()
 testNamesBootPriceFloor ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   svc <- prepareGroupService ps
-  let onFakeNode line = if "rpc_url" `T.isPrefixOf` line then "rpc_url = " <> T.pack fnUrl else line
-      controller = address $ encodeUtf8 controllerAddr
+  let controller = address $ encodeUtf8 controllerAddr
       registrar = address $ encodeUtf8 registrarAddr
   forM_ [selector "ens()", selector "GRACE_PERIOD()", nameExpiresCall] $ \call -> answerCall node registrar call $ Returns $ uint256 (0 :: Int)
   answerCall node controller (selector "namePolicy()") $ Returns $ addressWord fakeNamePolicy
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
   setGeneralTerms node ""
   answerCall node controller (rentPriceCall 11) $ Returns $ rentPriceAnswer 15000
-  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> ["min_price_cents_per_year = 7500"] <> map onFakeNode chainSection} Nothing
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> ["min_price_cents_per_year = 7500"] <> withRpcUrl (T.pack fnUrl)} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     mgr <- newManager defaultManagerSettings
