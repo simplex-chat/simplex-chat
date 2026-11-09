@@ -133,7 +133,7 @@ badgeGroupIntegrationTests = do
   it "publishes nothing when a code whose tracker was deleted is used up" testDeletedTrackerUsedUp
   it "revokes a code whose tracker an owner deleted for everyone without reposting it" testModeratedTrackerNotRepostedOnRevoke
   it "revokes a code on /revoke, answers a repeat as already revoked and an unknown code as no such code" testGroupRevoke
-  it "refuses /issue name and /bulk name while names are off, still revoking name codes" testGroupNameCodesNamesOff
+  it "refuses /issue name while names are off, still revoking name codes" testGroupNameCodesNamesOff
   it "retires the tracker message when a multi-use code is revoked" testRevokeRetiresTracker
   it "retires the tracker message when the service command revokes the code" testServiceRevokeRetiresTracker
   it "retires a tracker left behind when the code is revoked again" testGroupRevokeRepairsTracker
@@ -345,8 +345,8 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
 
 namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
-  it "issues prepaid codes on /issue name and /bulk name, answering the usage to years below 2" testGroupNameCodes
-  it "issues at most 100 name codes a day in the group" testGroupNameCodesPerDay
+  it "issues a 2-year prepaid code on /issue name, answering the usage to /bulk name and to other years" testGroupNameCodes
+  it "issues at most 10 name codes a day in the group" testGroupNameCodesPerDay
   it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
   it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
 
@@ -354,24 +354,21 @@ testGroupNameCodes :: HasCallStack => TestParams -> IO ()
 testGroupNameCodes ps = do
   svc <- prepareGroupService ps
   runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
-    one <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8 years 5"
+    one <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8"
     namePrepaidCodeLength one `shouldBe` 8
-    prepaidTerms cc one `shouldReturn` Just (8, 5, CPSFree)
-    bulk <- mapM (prepaidIn . Just) . T.lines =<< replyTo cc alice "/bulk name 6 count 3"
-    length bulk `shouldBe` 3
-    forM_ bulk $ \code -> (namePrepaidCodeLength code,) <$> prepaidTerms cc code `shouldReturn` (6, Just (6, 2, CPSFree))
+    prepaidTerms cc one `shouldReturn` Just (8, 2, CPSFree)
+    replyTo cc alice "/bulk name 6 count 3" `shouldReturn` bulkUsage
     replyTo cc alice "/issue name 8 years 1" `shouldReturn` issueUsage
-    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 4
+    replyTo cc alice "/issue name 8 years 3" `shouldReturn` issueUsage
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 1
 
 testGroupNameCodesPerDay :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesPerDay ps = do
   svc <- prepareGroupService ps
   runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
-    length . T.lines <$> replyTo cc alice "/bulk name 6 count 99" `shouldReturn` 99
-    replyTo cc alice "/bulk name 6 count 2" `shouldReturn` "At most 100 name codes are issued in a day, 99 so far. Issue more with //issue name in --run-cli."
-    T.isPrefixOf "Code: " <$> replyTo cc alice "/issue name 6" `shouldReturn` True
-    replyTo cc alice "/issue name 6" `shouldReturn` "At most 100 name codes are issued in a day, 100 so far. Issue more with //issue name in --run-cli."
-    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 100
+    replicateM_ 10 $ T.isPrefixOf "Code: " <$> replyTo cc alice "/issue name 6" `shouldReturn` True
+    replyTo cc alice "/issue name 6" `shouldReturn` "At most 10 name codes are issued in a day, 10 so far. Issue more with //issue name in --run-cli."
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 10
 
 testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
 testOperatorNameCodes ps = do
@@ -1282,7 +1279,6 @@ testGroupNameCodesNamesOff :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesNamesOff ps =
   withGroupOwner ps $ \_ cc _ alice -> do
     replyTo cc alice "/issue name 8" `shouldReturn` namesOffReply
-    replyTo cc alice "/bulk name 6 count 2" `shouldReturn` namesOffReply
     countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 0
     unissued <- formatNameCode . NCPrepaid <$> randomNamePrepaidCode (random cc) 8
     revokeInGroup cc alice unissued "No such code."
@@ -1579,13 +1575,16 @@ singleRow sql = \case
   _ -> error $ "more than one row from: " <> sql
 
 issueUsage :: Text
-issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–2\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 · /issue supporter months 12"
+
+bulkUsage :: Text
+bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk legend months 3 count 10"
 
 -- The list is spelled out rather than taken from the service, so a change there fails here.
 expectedCommands :: [ChatBotCommand]
 expectedCommands =
   [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>] [uses <N>]"),
-    CBCCommand "bulk" "Generate many codes" (Just "<name <length>|supporter|legend|investor> [years|months <N>] count <N>"),
+    CBCCommand "bulk" "Generate many codes" (Just "<supporter|legend|investor> [months <N>] count <N>"),
     CBCCommand "revoke" "Revoke a code" (Just "<code>")
   ]
 

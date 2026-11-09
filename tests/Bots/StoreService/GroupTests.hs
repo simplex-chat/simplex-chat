@@ -22,8 +22,8 @@ import Test.Hspec
 badgeGroupTests :: Spec
 badgeGroupTests = describe "badge group" $ do
   let p = groupCmdAction GROwner
-      issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
-      bulkUsage = ReplyText "Usage: /bulk <kind> [<length>] [years <Y> | months <M>] count <N>\nname <length>: length 6–63, years 2–10, count 1–100\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk name 6 count 100 · /bulk legend months 3 count 10"
+      issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–2\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 · /issue supporter months 12"
+      bulkUsage = ReplyText "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk legend months 3 count 10"
       revokeUsage = ReplyText "Usage: /revoke <code>"
   it "issue defaults" $ p "/issue supporter" `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
   it "issue with months and uses" $ p "/issue legend months 6 uses 50" `shouldBe` RunCmd (GCIssue BTLegend 6 50)
@@ -116,8 +116,6 @@ badgeGroupTests = describe "badge group" $ do
     it "runs a name code command only for an admin or owner, refusing a moderator" $ do
       map (`groupCmdAction` "/issue name 6") [GRMember, GRModerator, GRAdmin, GROwner]
         `shouldBe` [IgnoreMsg, ReplyText "Only admins can issue name codes.", RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2)]
-      map (`groupCmdAction` "/bulk name 6 count 2") [GRModerator, GRAdmin]
-        `shouldBe` [ReplyText "Only admins can issue name codes.", RunCmd (GCBulkName 6 2 2)]
     it "accepts a command padded with whitespace" $ do
       p " /issue supporter " `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
       p "\t/bulk supporter count 1" `shouldBe` RunCmd (GCBulk BTSupporter 1 1)

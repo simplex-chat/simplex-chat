@@ -1287,23 +1287,23 @@ console, is in [Refunding a name balance](#refunding-a-name-balance).
 With `[group]` in `store_service.ini`, the service manages one group and serves three commands in
 it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners. Name codes
 need an admin or owner too, as each one registers at the sponsor allowance's and the gas key's cost,
-and the group issues at most 100 of them in 24 hours (`//issue name` in `--run-cli` has no limit). Both
-code commands take every kind of code in one form:
+and the group issues at most 10 of them in 24 hours (`//issue name` in `--run-cli` has no limit). The
+code commands take these forms:
 
 ```
 /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]
-/bulk <kind> [<length>] [years <Y> | months <M>] count <N>
+/bulk <kind> [months <M>] count <N>
 ```
 
-`/issue` makes one code and `/bulk` makes `<N>` single-use codes of the kind. `<kind>` is `name`
-with a length, or a badge type: `supporter`, `legend` or `investor`. A name takes `years`, with the
-bounds of `//issue name` (length 6 to 63, years 2 to 10, 2 by default); a name code issued in the
-group is single-use and `free`. A badge takes `months`, 1 to 255 and 1 by default, and in `/issue`
-also `uses`, 1 to 1000. `count` is 1 to 100. A value outside these bounds, a length for a badge, or
-the other kind's unit gets the usage reply, which lists the form, each kind's bounds and an example
-of each. The group's command menu shows every kind in each command's hint and fills the hint into
-the message box. Without `[names]`, `/issue name` and `/bulk name` get a reply that names are not
-enabled, and issue nothing. `/revoke` takes badge and name codes, so a name code issued before names
+`/issue` makes one code and `/bulk` makes `<N>` single-use badge codes. `<kind>` is `name` with a
+length, in `/issue` only, or a badge type: `supporter`, `legend` or `investor`. A name takes a length
+of 6 to 63 and `years` of 2 only, so a name code for more years is issued with `//issue name`; a name
+code issued in the group is single-use and `free`. A badge takes `months`, 1 to 255 and 1 by default,
+and in `/issue` also `uses`, 1 to 1000. `count` is 1 to 100. A value outside these bounds, a length
+for a badge, the other kind's unit, or `name` in `/bulk` gets the usage reply, which lists the form,
+each kind's bounds and an example of each. The group's command menu shows the kinds of each command
+in its hint and fills the hint into the message box. Without `[names]`, `/issue name` gets a reply
+that names are not enabled, and issues nothing. `/revoke` takes badge and name codes, so a name code issued before names
 were turned off can still be withdrawn. The group has no `/refund`. A member's role
 is checked as the service last saw it, so a command sent by a moderator just demoted or removed can still run if it
 reaches the service first; revoke any code the service posts for them after the change. `uses`

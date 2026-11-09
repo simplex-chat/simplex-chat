@@ -35,17 +35,17 @@ import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (minNameYears)
 
-maxBulk, maxUses, maxMonths, maxNameYears :: Int
+maxBulk, maxUses, maxMonths, maxNameYears, maxGroupNameYears :: Int
 maxBulk = 100
 maxUses = 1000
 maxMonths = 255
 maxNameYears = 10
+maxGroupNameYears = 2
 
 data GroupCmd
   = GCIssue BadgeType Int Int
   | GCBulk BadgeType Int Int
   | GCIssueName Int Int
-  | GCBulkName Int Int Int
   | GCRevoke BadgeCode
   | GCRevokeName NamePrepaidCode
   deriving (Eq, Show)
@@ -69,7 +69,6 @@ groupCmdAction role t = case A.parseOnly cmdActionP (encodeUtf8 (T.strip t)) of
       | otherwise = RunCmd cmd
     nameCode = \case
       GCIssueName {} -> True
-      GCBulkName {} -> True
       _ -> False
 
 -- | Left is the usage reply for an advertised command whose arguments do not parse.
@@ -83,8 +82,8 @@ cmdActionP = A.choice (map cmdP [minBound .. maxBound])
 
 cmdArgsP :: CmdTag -> A.Parser GroupCmd
 cmdArgsP = \case
-  CTIssue -> uncurry GCIssueName <$> nameCodeP <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> optP usesOpt
-  CTBulk -> uncurry GCBulkName <$> nameCodeP <*> countP <|> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
+  CTIssue -> uncurry GCIssueName <$> nameCodeP maxGroupNameYears <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> optP usesOpt
+  CTBulk -> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
   CTRevoke -> GCRevoke <$> codeP <|> GCRevokeName <$> prepaidCodeP
   where
     countP = A.space *> optValueP countOpt
@@ -92,12 +91,15 @@ cmdArgsP = \case
 -- | An option's keyword, its placeholder in the usage reply and its bounds; an omitted option takes the lowest value.
 data CmdOpt = CmdOpt {optKey :: Text, optVar :: Text, optMin :: Int, optMax :: Int}
 
-lengthOpt, yearsOpt, monthsOpt, usesOpt, countOpt :: CmdOpt
+lengthOpt, groupYearsOpt, monthsOpt, usesOpt, countOpt :: CmdOpt
 lengthOpt = CmdOpt "length" "<length>" minNameLength maxNameLength
-yearsOpt = CmdOpt "years" "<Y>" minNameYears maxNameYears
+groupYearsOpt = yearsOpt maxGroupNameYears
 monthsOpt = CmdOpt "months" "<M>" 1 maxMonths
 usesOpt = CmdOpt "uses" "<N>" 1 maxUses
 countOpt = CmdOpt "count" "<N>" 1 maxBulk
+
+yearsOpt :: Int -> CmdOpt
+yearsOpt = CmdOpt "years" "<Y>" minNameYears
 
 optP :: CmdOpt -> A.Parser Int
 optP opt = fromMaybe (optMin opt) <$> optional (A.space *> optValueP opt)
@@ -106,8 +108,8 @@ optValueP :: CmdOpt -> A.Parser Int
 optValueP opt = A.string (encodeUtf8 (optKey opt)) *> A.space *> boundedInt opt
 
 -- | "name <length> [years <Y>]", the length and years of a prepaid name code.
-nameCodeP :: A.Parser (Int, Int)
-nameCodeP = A.string (encodeUtf8 nameKind) *> A.char ' ' *> ((,) <$> nameLengthP <*> optP yearsOpt)
+nameCodeP :: Int -> A.Parser (Int, Int)
+nameCodeP maxYears = A.string (encodeUtf8 nameKind) *> A.char ' ' *> ((,) <$> nameLengthP <*> optP (yearsOpt maxYears))
 
 -- | A code's text carries the length as typed, so a leading zero is refused.
 nameLengthP :: A.Parser Int
@@ -175,28 +177,31 @@ cmdLabel = \case
 -- The menu hints and the usage replies are built from the same kinds, options and bounds, so they cannot drift apart.
 cmdParams :: CmdTag -> Text
 cmdParams = \case
-  CTIssue -> kindParams <> " [" <> optArg usesOpt <> "]"
-  CTBulk -> kindParams <> " " <> optArg countOpt
+  CTIssue -> kindParams (nameArg : badgeKinds) [groupYearsOpt, monthsOpt] <> " [" <> optArg usesOpt <> "]"
+  CTBulk -> kindParams badgeKinds [monthsOpt] <> " " <> optArg countOpt
   CTRevoke -> "<code>"
   where
-    kindParams = "<" <> T.intercalate "|" (nameArg : badgeKinds) <> "> [" <> optKey yearsOpt <> "|" <> optKey monthsOpt <> " <N>]"
+    kindParams kinds units = "<" <> T.intercalate "|" kinds <> "> [" <> T.intercalate "|" (map optKey units) <> " <N>]"
 
 cmdUsage :: CmdTag -> Text
 cmdUsage = \case
-  CTIssue -> kindUsage CTIssue ("[" <> optArg usesOpt <> "]") [] [usesOpt] ["name 6 years 5", "supporter months 12"]
-  CTBulk -> kindUsage CTBulk (optArg countOpt) [countOpt] [countOpt] ["name 6 count 100", "legend months 3 count 10"]
+  CTIssue ->
+    kindUsage
+      CTIssue
+      ("[" <> optVar lengthOpt <> "] [" <> optArg groupYearsOpt <> " | " <> optArg monthsOpt <> "] [" <> optArg usesOpt <> "]")
+      [(nameArg, [lengthOpt, groupYearsOpt]), (badgeKindsText, [monthsOpt, usesOpt])]
+      ["name 6", "supporter months 12"]
+  CTBulk -> kindUsage CTBulk ("[" <> optArg monthsOpt <> "] " <> optArg countOpt) [(badgeKindsText, [monthsOpt, countOpt])] ["legend months 3 count 10"]
   CTRevoke -> "Usage: " <> cmdText CTRevoke (cmdParams CTRevoke)
+  where
+    badgeKindsText = T.intercalate ", " badgeKinds
 
--- | nameOpts and badgeOpts are the command's own options that apply to each kind.
-kindUsage :: CmdTag -> Text -> [CmdOpt] -> [CmdOpt] -> [Text] -> Text
-kindUsage tag cmdOptArg nameOpts badgeOpts examples =
-  T.intercalate
-    "\n"
-    [ "Usage: " <> cmdText tag ("<kind> [" <> optVar lengthOpt <> "] [" <> optArg yearsOpt <> " | " <> optArg monthsOpt <> "] " <> cmdOptArg),
-      nameArg <> ": " <> bounds (lengthOpt : yearsOpt : nameOpts),
-      T.intercalate ", " badgeKinds <> ": " <> bounds (monthsOpt : badgeOpts),
-      "e.g. " <> T.intercalate " · " (map (cmdText tag) examples)
-    ]
+kindUsage :: CmdTag -> Text -> [(Text, [CmdOpt])] -> [Text] -> Text
+kindUsage tag kindArgs kinds examples =
+  T.intercalate "\n" $
+    ["Usage: " <> cmdText tag ("<kind> " <> kindArgs)]
+      <> map (\(kind, opts) -> kind <> ": " <> bounds opts) kinds
+      <> ["e.g. " <> T.intercalate " · " (map (cmdText tag) examples)]
   where
     bounds = T.intercalate ", " . map optBounds
     optBounds CmdOpt {optKey, optMin, optMax} = optKey <> " " <> tshow optMin <> "–" <> tshow optMax
