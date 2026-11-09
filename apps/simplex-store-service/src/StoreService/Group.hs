@@ -146,6 +146,18 @@ advertiseCommands cc groupId groupProfile =
     prefs = fromMaybe emptyGroupPrefs (groupPreferences groupProfile)
     p' = groupProfile {groupPreferences = Just (prefs {commands = Just groupCommands} :: GroupPreferences)}
 
+reviewRequired :: GroupProfile -> Bool
+reviewRequired GroupProfile {memberAdmission} = (memberAdmission >>= review) == Just MCAll
+
+requireReview :: ChatController -> GroupId -> GroupProfile -> IO ()
+requireReview cc groupId groupProfile@GroupProfile {memberAdmission} =
+  sendChatCmd cc (APIUpdateGroupProfile groupId p') >>= \case
+    Right CRGroupUpdated {} -> logNote "badge group member review required"
+    r -> logError ("badge group profile update failed: " <> tshow r)
+  where
+    admission = fromMaybe emptyGroupMemberAdmission memberAdmission
+    p' = groupProfile {memberAdmission = Just admission {review = Just MCAll}}
+
 -- Config is applied only at creation, since a group rename is broadcast to every member.
 inertGroupConfig :: GroupConfig -> GroupProfile -> Maybe Text
 inertGroupConfig GroupConfig {gDisplayName, gDescription} GroupProfile {displayName, description}
@@ -214,13 +226,15 @@ handleGroupEvent cc turns namesOn groupId ev = logUncaught (handle ev)
       GETracker badgeCodeId code -> updateTracker cc groupId badgeCodeId code
 
 promoteFirstOwner :: ChatController -> GroupInfo -> GroupMember -> IO ()
-promoteFirstOwner cc g@GroupInfo {groupId} member =
+promoteFirstOwner cc g@GroupInfo {groupId, groupProfile} member =
   -- The flag is set before promoting, so a retry cannot promote a second owner.
   withDB' "markOwnerBootstrapped" cc (`markOwnerBootstrapped` groupId) >>= \case
     Right True ->
       sendChatCmd cc (APIMembersRole groupId (groupMemberId' member :| []) GROwner) >>= \case
         -- The core returns no members when every store update failed.
-        Right CRMembersRoleUser {members = _ : _} -> logNote $ "badge group owner promoted: member " <> tshow (groupMemberId' member)
+        Right CRMembersRoleUser {members = _ : _} -> do
+          logNote $ "badge group owner promoted: member " <> tshow (groupMemberId' member)
+          unless (reviewRequired groupProfile) $ requireReview cc groupId groupProfile
         r -> logError $ "badge group owner promotion failed: " <> tshow r <> " - " <> noOwnerHint (groupName' g)
     _ -> pure ()
 
@@ -243,10 +257,11 @@ promoteOwner cc groupId =
   withDB' "getManagedGroup" cc getManagedGroup >>= \case
     Right (Just ManagedGroup {mgOwnerBootstrapped}) ->
       sendChatCmd cc (APIListMembers groupId) >>= \case
-        Right CRGroupMembers {group = Group {groupInfo, members}}
+        Right CRGroupMembers {group = Group {groupInfo = groupInfo@GroupInfo {groupProfile}, members}}
           -- An owner made by hand only needs the flag set, or promoting would add a second owner.
-          | any (\m -> memberRole' m == GROwner && memberCurrent m) members ->
+          | any (\m -> memberRole' m == GROwner && memberCurrent m) members -> do
               unless mgOwnerBootstrapped $ void $ withDB' "markOwnerBootstrapped" cc (`markOwnerBootstrapped` groupId)
+              unless (reviewRequired groupProfile) $ requireReview cc groupId groupProfile
           -- A crash between setting the flag and promoting leaves no owner, and only the operator may retry.
           | mgOwnerBootstrapped -> logError $ noOwnerHint (groupName' groupInfo)
           | otherwise -> mapM_ (promoteFirstOwner cc groupInfo) $ listToMaybe $ sortOn groupMemberId' $ filter joined members

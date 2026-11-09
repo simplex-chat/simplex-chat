@@ -69,7 +69,7 @@ import Simplex.Chat.Core (sendChatCmd, sendChatCmdStr)
 import Simplex.Chat.Messages (ChatRef (ChatRef), ChatType (CTGroup))
 import Simplex.Chat.Messages.CIContent (CIDeleteMode (CIDMInternal))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..))
-import Simplex.Chat.Types (AgentInvId (..))
+import Simplex.Chat.Types (AgentInvId (..), GroupMemberAdmission (..), MemberCriteria (..))
 import Simplex.Chat.Types.Preferences (ChatBotCommand (..), FullDeleteGroupPreference (..), GroupFeatureEnabled (..), GroupFeatureI (..), GroupPreferences (..), HistoryGroupPreference (..), SGroupFeature (..), commands_, emptyGroupPrefs, getGroupPreference)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent (disposeAgentClient)
@@ -96,6 +96,8 @@ badgeGroupIntegrationTests = do
   it "creates the group and a join link on first start; on restart reuses it, re-advertises commands and keeps other preferences" testGroupCreateReuse
   it "keeps the group's name and description when the configured ones change" testConfigNotApplied
   it "promotes the first joiner to owner and leaves a later joiner a member" testFirstJoinerPromoted
+  it "requires member review once the group has an owner, again on start after it was cleared" testMemberReviewRequired
+  it "holds a removed member who rejoins through the link for review" testRejoinerReviewed
   it "promotes nobody after the first promotion failed" testFailedPromotionNotRetried
   it "promotes the earliest member on start when their join was never handled" testMissedOwnerPromotedOnStart
   it "promotes the earliest member, not a later joiner, when no owner was set up" testEarliestPromotedOnLaterJoin
@@ -672,7 +674,7 @@ withOwnerJoined ps cc env gid action =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     joinGroup cc alice
     waitMemberRole cc gid "alice" "owner"
-    drainUntil alice ["#" <> groupName <> ": " <> botName <> " changed your role from member to owner"]
+    drainUntil alice ["#" <> groupName <> ": " <> botName <> " changed your role from member to owner", "changed member admission rules"]
     joined <- lastMessageId cc
     r <- action alice
     settleServingLane cc env gid
@@ -681,11 +683,12 @@ withOwnerJoined ps cc env gid action =
     pure r
 
 -- Bob joins after the first member and is connected to her.
-withMemberJoined :: HasCallStack => TestParams -> ChatController -> ServiceState -> Int64 -> TestCC -> (TestCC -> IO a) -> IO a
-withMemberJoined ps cc env gid alice action =
+withMemberJoined :: HasCallStack => TestParams -> ChatController -> ServiceState -> Int64 -> TestCC -> IO () -> (TestCC -> IO a) -> IO a
+withMemberJoined ps cc env gid alice admit action =
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     joinGroup cc bob
     drainUntil alice ["#" <> groupName <> ": new member bob is connected"]
+    admit
     joined <- lastMessageId cc
     r <- action bob
     settleServingLane cc env gid
@@ -695,6 +698,13 @@ withMemberJoined ps cc env gid alice action =
 
 joinGroup :: HasCallStack => ChatController -> TestCC -> IO ()
 joinGroup cc member = groupLink cc >>= send member . ("/c " <>)
+
+admitMember :: HasCallStack => ChatController -> Int64 -> TestCC -> Text -> IO ()
+admitMember cc gid moderator name = do
+  memberStatus cc gid name `shouldReturn` Just "pending_review"
+  send moderator ("/accept member #" <> groupName <> " " <> T.unpack name)
+  drainUntil moderator ["#" <> groupName <> ": " <> T.unpack name <> " accepted"]
+  pollUntilTrue $ (`elem` [Just "connected", Just "complete"]) <$> memberStatus cc gid name
 
 sendGroupCmd :: TestCC -> String -> IO ()
 sendGroupCmd member cmd = send member ("#" <> groupName <> " " <> cmd)
@@ -728,8 +738,10 @@ testGroupCreateReuse ps = do
     profileFullNameShortDescr cc gid `shouldReturn` ("", Nothing)
     groupFeaturePreference cc gid SGFFullDelete `shouldReturn` FullDeleteGroupPreference {enable = FEOn, role = Nothing}
     profileUpdatedAt cc gid
-  -- The lane drains only after the group is resolved, so the promotion proves the start-up sync has run.
-  runWithOwner svc $ \cc _ gid _ -> profileUpdatedAt cc gid `shouldReturn` advertisedAt
+  -- The lane drains only after the group is resolved, so a handled command proves the start-up sync has run.
+  runGroupService svc $ \cc env gid -> do
+    awaitLane cc env
+    profileUpdatedAt cc gid `shouldReturn` advertisedAt
 
 testConfigNotApplied :: HasCallStack => TestParams -> IO ()
 testConfigNotApplied ps = do
@@ -759,10 +771,12 @@ testEarliestPromotedOnLaterJoin ps = do
   runWithOwner svc $ \cc env gid alice -> do
     setMemberRole cc gid "alice" "member"
     executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 0"
-    withMemberJoined ps cc env gid alice $ \bob -> do
+    clearMemberAdmission cc gid
+    withMemberJoined ps cc env gid alice (pure ()) $ \bob -> do
       waitMemberRole cc gid "alice" "owner"
       awaitLaneOnConsoles cc env [alice, bob]
       memberRoles cc gid `shouldReturn` [("alice", "owner"), ("bob", "member")]
+      profileMemberAdmission cc gid `shouldReturn` Just reviewAll
 
 testJoiningMemberSkippedOnStart :: HasCallStack => TestParams -> IO ()
 testJoiningMemberSkippedOnStart ps = do
@@ -874,7 +888,7 @@ memberStatus cc gid name =
 withTwoMembersOwnerUnset :: HasCallStack => GroupSvc -> (ChatController -> Int64 -> TestCC -> TestCC -> IO ()) -> IO ()
 withTwoMembersOwnerUnset svc@GroupSvc {gsPs = ps} action =
   runWithOwner svc $ \cc env gid alice ->
-    withMemberJoined ps cc env gid alice $ \bob -> do
+    withMemberJoined ps cc env gid alice (admitMember cc gid alice "bob") $ \bob -> do
       -- The lane must handle bob's join before the flag is cleared, or it would act on the cleared flag in this run.
       awaitLaneOnConsoles cc env [alice, bob]
       action cc gid alice bob
@@ -884,7 +898,7 @@ testFirstJoinerPromoted :: HasCallStack => TestParams -> IO ()
 testFirstJoinerPromoted ps = do
   svc <- prepareGroupService ps
   runWithOwner svc $ \cc env gid alice ->
-    withMemberJoined ps cc env gid alice $ \bob -> do
+    withMemberJoined ps cc env gid alice (admitMember cc gid alice "bob") $ \bob -> do
       waitMemberRole cc gid "bob" "member"
       -- The bot queues bob's join before it introduces him, so alice's code proves the join was handled.
       sendGroupCmd alice "/issue supporter"
@@ -893,6 +907,30 @@ testFirstJoinerPromoted ps = do
       let codeReply = "#" <> groupName <> " " <> botName <> "> Code: SB-"
       drainUntil alice [codeReply]
       drainUntil bob [codeReply, "#" <> groupName <> ": member alice"]
+
+testMemberReviewRequired :: HasCallStack => TestParams -> IO ()
+testMemberReviewRequired ps = do
+  svc <- prepareGroupService ps
+  runGroupService svc $ \cc env gid -> do
+    awaitLane cc env
+    profileMemberAdmission cc gid `shouldReturn` Nothing
+  runWithOwner svc $ \cc _ gid _ -> do
+    profileMemberAdmission cc gid `shouldReturn` Just reviewAll
+    clearMemberAdmission cc gid
+  runGroupService svc $ \cc _ gid -> pollUntilTrue $ (== Just reviewAll) <$> profileMemberAdmission cc gid
+
+testRejoinerReviewed :: HasCallStack => TestParams -> IO ()
+testRejoinerReviewed ps = do
+  svc <- prepareGroupService ps
+  runWithOwner svc $ \cc env gid alice ->
+    withMemberJoined ps cc env gid alice (admitMember cc gid alice "bob") $ \bob -> do
+      send alice ("/rm #" <> groupName <> " bob")
+      drainUntil bob ["#" <> groupName <> ": alice removed you from the group"]
+      pollUntilTrue $ (== Just "removed") <$> memberStatus cc gid "bob"
+      joinGroup cc bob
+      drainUntil bob ["connecting to group moderators for admission to group", "(Alice) is connected"]
+      drainUntil alice ["is connected and pending review"]
+      memberStatus cc gid "bob_1" `shouldReturn` Just "pending_review"
 
 testFailedPromotionNotRetried :: HasCallStack => TestParams -> IO ()
 testFailedPromotionNotRetried ps = do
@@ -905,7 +943,7 @@ testFailedPromotionNotRetried ps = do
       pollUntilTrue $ mgOwnerBootstrapped <$> storedGroup cc
       awaitLaneOnConsoles cc env [alice]
       setBotRole cc "owner"
-      withMemberJoined ps cc env gid alice $ \bob -> awaitLaneOnConsoles cc env [alice, bob]
+      withMemberJoined ps cc env gid alice (pure ()) $ \bob -> awaitLaneOnConsoles cc env [alice, bob]
       memberRoles cc gid `shouldReturn` [("alice", "member"), ("bob", "member")]
       drainConsole alice
 
@@ -915,16 +953,15 @@ testRoleGatedIssue ps = do
   runWithOwner svc $ \cc _ gid alice ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
-        let announced name = "#" <> groupName <> ": " <> botName <> " added " <> name
-            preMember name = "#" <> groupName <> ": member " <> name
+        let preMember name = "#" <> groupName <> ": member " <> name
             newMember name = "#" <> groupName <> ": new member " <> name <> " is connected"
             usageReply = "#" <> groupName <> " " <> botName <> "> Usage:"
         joinGroup cc bob
-        waitMemberRole cc gid "bob" "member"
-        -- cath joins only after alice sees bob announced, or cath's console shows a different line.
-        drainUntil alice [announced "bob"]
+        drainUntil alice [newMember "bob"]
+        admitMember cc gid alice "bob"
         joinGroup cc cath
-        waitMemberRole cc gid "cath" "member"
+        drainUntil alice [newMember "cath"]
+        admitMember cc gid alice "cath"
         drainUntil cath [preMember "alice", preMember "bob"]
         drainConsole cath
         sendGroupCmd alice "/issue supporter"
@@ -941,7 +978,7 @@ testRoleGatedIssue ps = do
         sendGroupCmd alice "/issue supporter uses 0"
         waitStoredItem cc issueUsage
         codeCount cc `shouldReturn` 2
-        drainUntil alice [usageReply, newMember "bob", newMember "cath"]
+        drainUntil alice [usageReply]
         drainUntil bob [usageReply, preMember "alice", newMember "cath"]
         drainUntil cath [usageReply]
         drainConsole bob
@@ -951,7 +988,7 @@ testBlockedMemberCommandIgnored :: HasCallStack => TestParams -> IO ()
 testBlockedMemberCommandIgnored ps = do
   svc <- prepareGroupService ps
   runWithOwner svc $ \cc env gid alice ->
-    withMemberJoined ps cc env gid alice $ \bob -> do
+    withMemberJoined ps cc env gid alice (admitMember cc gid alice "bob") $ \bob -> do
       waitMemberRole cc gid "bob" "member"
       -- bob is made moderator so that only the block can refuse his command.
       send alice ("/mr #" <> groupName <> " bob moderator")
@@ -1611,6 +1648,18 @@ profileDescription cc gid = queryOne cc "no group profile to read a description 
 profileUpdatedAt :: HasCallStack => ChatController -> Int64 -> IO UTCTime
 profileUpdatedAt cc gid =
   queryOne cc "no group profile to read an update time from" (groupProfileSql "p.updated_at" gid)
+
+profileMemberAdmission :: HasCallStack => ChatController -> Int64 -> IO (Maybe GroupMemberAdmission)
+profileMemberAdmission cc gid =
+  queryOne cc "no group profile to read member admission from" (groupProfileSql "p.member_admission" gid)
+
+reviewAll :: GroupMemberAdmission
+reviewAll = GroupMemberAdmission {review = Just MCAll}
+
+clearMemberAdmission :: ChatController -> Int64 -> IO ()
+clearMemberAdmission cc gid =
+  withTransaction (chatStore cc) $ \db ->
+    DB.execute db "UPDATE group_profiles SET member_admission = NULL WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE group_id = ?)" (Only gid)
 
 groupFeaturePreference :: HasCallStack => ChatController -> Int64 -> SGroupFeature f -> IO (GroupFeaturePreference f)
 groupFeaturePreference cc gid feature =

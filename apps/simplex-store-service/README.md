@@ -1330,11 +1330,11 @@ group command the service received but had not run when it stopped, or received 
 `--run-cli` mode, is dropped with no reply, so resend it, or use `//revoke`.
 
 The first member to join through the link is promoted to owner, so the operator joins before sharing
-it. Keep the service an owner too: below owner it cannot update the group's command menu, and below
-author it cannot post codes or replies. A failed promotion is logged at once, and an owner who left
-is logged at the next start or join. Then make the member you choose owner with the `/mr` command
-that the log line names, in `--run-cli` mode; the service never promotes anyone once the first
-promotion was attempted.
+it. Keep the service an owner too: below owner it cannot update the group's command menu or require
+member review, and below author it cannot post codes or replies. A failed promotion is logged at
+once, and an owner who left is logged at the next start or join. Then make the member you choose
+owner with the `/mr` command that the log line names, in `--run-cli` mode; the service never promotes
+anyone once the first promotion was attempted.
 
 The join link is never logged, as anyone who has it can join. The service stores it in the
 `group_link` column of `sx_badge_service_group`, and the operator reads it there to join, in the chat
@@ -1344,9 +1344,12 @@ schema (`simplex_v1_chat_schema` by default):
 psql "$BADGE_DB_CONN" -Atc 'SELECT group_link FROM simplex_v1_chat_schema.sx_badge_service_group'
 ```
 
-The link stays valid: anyone who has it can join later, as a member, and read every code posted or
-edited from then on. That includes a removed member, who can rejoin through it, so removing a member
-does not stop them seeing new codes. A database copy holds it, as it holds the codes.
+The link stays valid, but once the group has an owner the service requires member review: anyone who
+joins through the link, a removed member who rejoins included, waits until a moderator, admin or
+owner accepts them, and receives no group messages until then. The first member is not reviewed, as
+only the service could accept them; review is turned on when they are promoted, and a group that
+already has an owner gets it at the next start or join. The service turns review on again at the next
+start or join if an owner turns it off. A database copy holds the link, as it holds the codes.
 
 If an owner deletes the group, or removes the service from it, the service logs an error on start
 and stops serving the group. To create a new group, stop the service, delete the row, and start it
