@@ -478,7 +478,7 @@ parseConfig ini = do
   forM_ str $ \StripeConfig {sSecretKey, sPublishableKey} -> do
     when (testSecretKey sSecretKey /= testPublishableKey sPublishableKey) $
       Left "stripe.secret_key and stripe.publishable_key must be both live keys or both test keys"
-    when (testSecretKey sSecretKey && any (not . onTestChain) nms) $
+    when (testSecretKey sSecretKey && maybe False (not . onTestChain) nms) $
       Left ("Stripe test keys are accepted with [names] only on a test chain, [chain] chain_id = " <> show localChainId <> " or " <> show sepoliaChainId)
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
@@ -713,7 +713,7 @@ parseConfig ini = do
       cGasLimitCap <- positiveWord "gas_limit_cap" (Just 8000000)
       cMaxFeePerGas <- positiveWord "max_fee_per_gas" (Just defaultMaxFeePerGas)
       when (toInteger cGasLimitCap * toInteger cMaxFeePerGas > nodeTxFeeCapWei) $
-        Left "chain.gas_limit_cap times chain.max_fee_per_gas must be at most 1 ETH, 10^18 wei, the fee cap of a node's transactions"
+        Left "chain.gas_limit_cap times chain.max_fee_per_gas must be at most 1 ETH, 10^18 wei, as nodes refuse a transaction whose fee can be higher"
       pure ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas}
     -- http only to a node on the same machine, as the URL can carry a provider's API key
     rpcUrl = do

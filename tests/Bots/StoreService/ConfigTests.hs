@@ -806,7 +806,7 @@ testNamesWrittenOut = do
 
 testNamesFeeCap :: IO ()
 testNamesFeeCap = do
-  let refused = "chain.gas_limit_cap times chain.max_fee_per_gas must be at most 1 ETH, 10^18 wei, the fee cap of a node's transactions"
+  let refused = "chain.gas_limit_cap times chain.max_fee_per_gas must be at most 1 ETH, 10^18 wei, as nodes refuse a transaction whose fee can be higher"
   forM_ [["max_fee_per_gas = 125000000000"], ["gas_limit_cap = 10000000", "max_fee_per_gas = 100000000000"]] $ \caps -> do
     NamesConfig {nChain = ChainConfig {cGasLimitCap, cMaxFeePerGas}} <- parsedNames namesSection (chainSection <> caps)
     (caps, toInteger cGasLimitCap * toInteger cMaxFeePerGas) `shouldBe` (caps, 1000000000000000000)
