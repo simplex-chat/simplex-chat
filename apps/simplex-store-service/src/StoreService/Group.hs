@@ -169,8 +169,9 @@ joinerAcceptance startedCC GroupInfo {groupId} GroupLinkInfo {memberRole} _ = do
   withDB' "getManagedGroup" cc getManagedGroup <&> \managed -> Right (acceptance managed, memberRole)
   where
     acceptance = \case
-      Right (Just ManagedGroup {mgGroupId, mgOwnerBootstrapped}) | mgGroupId == groupId && not mgOwnerBootstrapped -> GAAccepted
-      _ -> GAPendingReview
+      Right (Just ManagedGroup {mgGroupId, mgOwnerBootstrapped}) | mgGroupId == groupId && mgOwnerBootstrapped -> GAPendingReview
+      Right _ -> GAAccepted
+      Left _ -> GAPendingReview
 
 -- Config is applied only at creation, since a group rename is broadcast to every member.
 inertGroupConfig :: GroupConfig -> GroupProfile -> Maybe Text

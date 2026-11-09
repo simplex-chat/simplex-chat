@@ -64,7 +64,7 @@ import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Code (NameCode (..), NamePrepaidCode, formatBadgeCode, formatNameCode, namePrepaidCodeHash, namePrepaidCodeLength, parseBadgeCode, parseNameCode, randomBadgeCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.StoreService
-import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem, APIGroupInfo), ChatConfig (..), ChatController (..), ChatResponse (CRChatItemsDeleted, CRCustomChatResponse, CRGroupInfo))
+import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem, APIGroupInfo), ChatConfig (..), ChatController (..), ChatResponse (CRChatItemsDeleted, CRCustomChatResponse, CRGroupCreated, CRGroupInfo))
 import Simplex.Chat.Core (sendChatCmd, sendChatCmdStr)
 import Simplex.Chat.Messages (ChatRef (ChatRef), ChatType (CTGroup))
 import Simplex.Chat.Messages.CIContent (CIDeleteMode (CIDMInternal))
@@ -99,7 +99,7 @@ badgeGroupIntegrationTests = do
   it "promotes the first joiner to owner and leaves a later joiner a member" testFirstJoinerPromoted
   it "requires member review once the group has an owner, again on start after it was cleared" testMemberReviewRequired
   it "holds a removed member who rejoins through the link for review" testRejoinerReviewed
-  it "holds a joiner for review once the owner was set up, whatever the group profile says" testJoinerAcceptance
+  it "holds a joiner of the managed group for review once the owner was set up, whatever its profile says, and on a lookup failure, not one of another group" testJoinerAcceptance
   it "requires member review again when an owner turns it off" testReviewRestored
   it "keeps a code from a member pending review, who a moderator accepts" testModeratorAdmitsPendingMember
   it "promotes nobody after the first promotion failed, holding a later joiner for review" testFailedPromotionNotRetried
@@ -940,12 +940,20 @@ testJoinerAcceptance ps = do
   svc <- prepareGroupService ps
   runGroupService svc $ \cc _ gid -> do
     startedCC <- newTMVarIO cc
-    g <- groupInfoOf cc gid
-    let acceptance = joinerAcceptance startedCC g GroupLinkInfo {groupId = gid, memberRole = GRMember} bobProfile
-    acceptance `shouldReturn` Right (GAAccepted, GRMember)
+    managed <- groupInfoOf cc gid
+    other <-
+      sendChatCmdStr cc "/g othergroup" >>= \case
+        Right (CRGroupCreated _ g) -> pure g
+        r -> error $ "group not created: " <> show r
+    let acceptance g = joinerAcceptance startedCC g GroupLinkInfo {groupId = gid, memberRole = GRMember} bobProfile
+        accepted = Right (GAAccepted, GRMember)
+        pending = Right (GAPendingReview, GRMember)
+    mapM acceptance [managed, other] `shouldReturn` [accepted, accepted]
     executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 1"
     profileMemberAdmission cc gid `shouldReturn` Nothing
-    acceptance `shouldReturn` Right (GAPendingReview, GRMember)
+    mapM acceptance [managed, other] `shouldReturn` [pending, accepted]
+    executeSql cc "ALTER TABLE sx_badge_service_group RENAME TO sx_badge_service_group_hidden"
+    (acceptance other `shouldReturn` pending) `finally` executeSql cc "ALTER TABLE sx_badge_service_group_hidden RENAME TO sx_badge_service_group"
 
 testReviewRestored :: HasCallStack => TestParams -> IO ()
 testReviewRestored ps = do
