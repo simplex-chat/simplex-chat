@@ -117,6 +117,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "reads paymentMethodPaid over the wire, never totalPaid" testFakePaymentMethodPaid
     it "makes a 500 at checkout a ProviderError" testFakeCreate500
     it "cancels an invoice it created but could not learn the address of, naming it" testFakeCreatePostFailure
+    it "names an invoice it created, could not learn the address of and could not cancel" testFakeCreatePostFailureUncancelled
     it "names the payment method a created invoice does not offer" testFakeCreateWrongMethod
     it "names a payment method with no destination, and writes nothing" testFakeCreateNoDestination
     it "names a payment method with no amount, and writes nothing" testFakeCreateNoAmount
@@ -822,6 +823,14 @@ testFakeCreatePostFailure = withProvider $ \fake p -> do
   [created] <- fakeInvoiceIds fake
   r `shouldSatisfy` namesInError ("; invoice " <> created <> " is cancelled")
   map frBody <$> apiRequests fake "POST" ["invoices", created, "status"] `shouldReturn` [J.encode (J.object ["status" .= ("Invalid" :: Text)])]
+
+testFakeCreatePostFailureUncancelled :: IO ()
+testFakeCreatePostFailureUncancelled = withProvider $ \fake p -> do
+  failAfterCalls 1 fake 2 500
+  r <- pCreateInvoice p (SPMCrypto CCBtc) fiftyFourDollars
+  [created] <- fakeInvoiceIds fake
+  r `shouldSatisfy` namesInError ("; invoice " <> created <> " is left open, as its cancel failed: cancel invoice failed: HTTP 500")
+  length <$> apiRequests fake "POST" ["invoices", created, "status"] `shouldReturn` 1
 
 testFakeCreateWrongMethod :: IO ()
 testFakeCreateWrongMethod = withProvider $ \fake p -> do
