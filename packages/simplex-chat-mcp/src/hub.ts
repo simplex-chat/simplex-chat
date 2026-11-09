@@ -190,7 +190,7 @@ export class Session {
       this.store(this.description)
     }
     try {
-      if (prompt !== undefined && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted"))
+      if (prompt !== undefined && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser))
       if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
     } finally {
       const {model: shown, effort: level} = this.description
@@ -273,13 +273,13 @@ export class Session {
   private async answer(text: string, quoted: T.ChatItem | undefined): Promise<void> {
     const quote = quoted?.content.type === "rcvMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
     const quotes = quote !== undefined && fitsMessage({type: "text", text: [...text].slice(0, 1).join("")}, undefined, quote)
-    await this.post(textParts(text, quotes ? quote : undefined), quotes ? quoted?.meta.itemId : undefined).catch(error => this.postRefusal(error, "Claude's answer was not posted", quoted?.meta.itemId))
+    await this.post(textParts(text, quotes ? quote : undefined), quotes ? quoted?.meta.itemId : undefined).catch(error => this.postRefusal(error, "Claude's answer was not posted", featureOff, quoted?.meta.itemId))
   }
 
-  private async postRefusal(error: unknown, subject: string, quotedItemId?: number): Promise<void> {
+  private async postRefusal(error: unknown, subject: string, refusal: (feature: string) => string, quotedItemId?: number): Promise<void> {
     const feature = refusedFeature(error)
     if (feature === undefined) throw error
-    await this.post([`${subject}: ${featureOff(feature)}`], quotedItemId)
+    await this.post([`${subject}: ${refusal(feature)}`], quotedItemId)
   }
 
   private async post(parts: string[], quotedItemId?: number): Promise<void> {
@@ -516,6 +516,10 @@ export class Hub implements SessionGroups {
       this.controlEvents = this.controlEvents.then(() => session.control.onEvent(event)).then(() => session.announceRights(event)).then(() => session.askMode()).catch(error => logError(`${event.type} in the group of session ${session.number}`, error))
     }
   }
+}
+
+function notAllowedForUser(feature: string): string {
+  return `${feature} are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`
 }
 
 function groupName(number: number, name: string): string {

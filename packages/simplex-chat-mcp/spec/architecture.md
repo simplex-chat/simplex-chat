@@ -160,7 +160,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | `giveChat`, `owns`, `claim` | [568-586](../src/tools.ts#L568-L586) | the plugin's chat owners: a chat is the session's when no session ID is set or the chat's owner is that ID; `claim` sets the owner of a chat without one, at a connection, at a `connect` to a known chat ([`ownChat`](../src/tools.ts#L750-L755)) and for a pending connection from the hub |
 | `onEvent` | [665](../src/tools.ts#L665) | events to the file handlers, connect completions and the item watch; shared by `serve` and the plugin's sessions |
 | `reply`, `sendFile` | [713-730](../src/tools.ts#L713-L730) | a file to the group of the plugin's session, under the file rules of `send`, its message with the caption and the preview checked by `fitsMessage`, sent at once without an action; the core's refusal `feature not allowed NAME` answered with the text that names the preference; the post of the file |
-| `refusedFeature`, `featureOff` | [1607-1614](../src/tools.ts#L1607-L1614) | the preference NAME of a command error `feature not allowed NAME`; `NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, for `reply`, the cards, `/forward`, answers and terminal prompts of a session group |
+| `refusedFeature`, `featureOff` | [1607-1614](../src/tools.ts#L1607-L1614) | the preference NAME of a command error `feature not allowed NAME`; `NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, for `reply`, the cards, `/forward` and answers of a session group |
 | `downloadFile`, `forwardFile`, `downloadTo` | [587-614](../src/tools.ts#L587-L614) | one download per file ID, shared by `download` and `/forward`; a forwarded file moved to the download path for `download` |
 | file events | [616-653](../src/tools.ts#L616-L653) | `onNewItems`, `onFile`, `onFileComplete`, `onFileError`, `onFileCancelled`, `onFileDescription` |
 | `onContactConnected`, `onUserJoinedGroup` | [655-663](../src/tools.ts#L655-L663) | completion of connect actions by events |
@@ -859,7 +859,7 @@ Data flow of a prompt from the session group:
 | `Session.endPermissions`, `fileDone` | [201-212](../src/hub.ts#L201-L212) | the end of pending permissions created before a time; the end of a prompt's file |
 | `Session.invite`, `announceRights` | [214-225](../src/hub.ts#L214-L225) | invitation through the Main group; at a member's join or role change other than `User`'s, the post of the rights of the member's role, with the `/observer` command for a role that sends |
 | `Session.prompt` | [227-234](../src/hub.ts#L227-L234) | a message of `User` dropped, and `//` and `/!` from a member who is not an admin or owner of the group, which `refusesCommand` answers first; the reply to `!`; the rest delivered, `//` and `/!` without their first `/` |
-| `Session.deliver`, `receive`, `turnQuote`, `answer`, `postRefusal`, `post`, `pushedIn` | [236-297](../src/hub.ts#L236-L297) | after the held prompts' wait, the file received while attached; then the prompt line with the file's path, or without it and a reply after a failure, or `Session N is not running.` without an attachment; the file received into the session's folder within 10 minutes; the newest turn record before an answer, else the oldest pushed prompt not quoted, marked quoted; the answer in parts, with its quote when the quote fits with the answer's first character; a post to the group, sent again without its quote when the core refuses it; the pushed prompts a turn's prompt contains |
+| `Session.deliver`, `receive`, `turnQuote`, `answer`, `postRefusal`, `post`, `pushedIn` | [236-297](../src/hub.ts#L236-L297) | after the held prompts' wait, the file received while attached; then the prompt line with the file's path, or without it and a reply after a failure, or `Session N is not running.` without an attachment; the file received into the session's folder within 10 minutes; the newest turn record before an answer, else the oldest pushed prompt not quoted, marked quoted; the answer in parts, with its quote when the quote fits with the answer's first character; in place of a post the core refuses with `feature not allowed NAME`, the subject and the text that names the preference, by `featureOff` for an answer and by `notAllowedForUser` for a prompt of `User`; a post to the group, sent again without its quote when the core refuses it; the pushed prompts a turn's prompt contains |
 | `Session.queue`, `refusesCommand` | [299-305](../src/hub.ts#L299-L305) | the `delivery` chain; a one-line `/` text, a `//` or a `/!` text of a member other than `User` who is not an approver |
 | `Session.approves`, `isUser`, `setMode`, `declineHost`, `store`, `savePending` | [307-335](../src/hub.ts#L307-L335) | approver check: not `User`, the role `admin` or `owner` in the session group; the member of the contact `Hub.userContactId`; the mode and its record in the group's custom data; `hostDeclined` and its record; fields written into `session.json`; a pending connection recorded, those older than a day dropped |
 | `Hub.userContactId` | [346](../src/hub.ts#L346) | the hub's contact marked `simplexMcpUser`, read at the start |
@@ -870,8 +870,9 @@ Data flow of a prompt from the session group:
 | `Hub.stop` | [456](../src/hub.ts#L456) | actions stopped, events awaited, cancelled cards awaited up to 10 s, cores closed |
 | `storedGroup`, `createSessionGroup` | [468-487](../src/hub.ts#L468-L487) | the group of `session.json` with a matching session number; a new group with `User` added |
 | `Hub.onEvent` | [489](../src/hub.ts#L489) | event dispatch; pending connections claimed at `contactConnected` and `userJoinedGroup`; a session group's membership events to its `Control`, `announceRights` and `askMode`, one at a time |
-| `textParts` | [525](../src/hub.ts#L525) | the longest runs of whole characters that each fit one message by `fitsMessage`, the first with the given quote; a binary search per part among the next `maxMessageLength` characters |
-| `isRefusedQuote` | [544](../src/hub.ts#L544) | `errorStore` `invalidQuote`, `chatItemNotFound` or `largeMsg` |
+| `notAllowedForUser` | [521](../src/hub.ts#L521) | `NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`, for a prompt of `User` that a group preference refuses, also one on only for roles above that of `User` |
+| `textParts` | [529](../src/hub.ts#L529) | the longest runs of whole characters that each fit one message by `fitsMessage`, the first with the given quote; a binary search per part among the next `maxMessageLength` characters |
+| `isRefusedQuote` | [548](../src/hub.ts#L548) | `errorStore` `invalidQuote`, `chatItemNotFound` or `largeMsg` |
 
 #### [`main-group.ts`](../src/main-group.ts)
 
@@ -1149,7 +1150,7 @@ sequenceDiagram
   Note over D: a later answer with at 4 quotes prompt N+1
 ```
 
-Sources: [hub.ts:153-205](../src/hub.ts#L153-L205), [:227-297](../src/hub.ts#L227-L297), [:525-542](../src/hub.ts#L525-L542).
+Sources: [hub.ts:153-205](../src/hub.ts#L153-L205), [:227-297](../src/hub.ts#L227-L297), [:529-546](../src/hub.ts#L529-L546).
 
 ### 8.7 Security boundaries
 
@@ -1182,7 +1183,7 @@ Sources: [hub.ts:153-205](../src/hub.ts#L153-L205), [:227-297](../src/hub.ts#L22
 | wait of a session server for the title of its process; a detached session server's process kept; the mark of an unattended run's process, removed at a later mark | 10 s | [daemon.ts:19](../src/daemon.ts#L19), [:237-243](../src/daemon.ts#L237-L243) |
 | attempts of a turn the daemon refuses with status 409 | 15, 1 s apart | [hook.ts:12-14](../src/hook.ts#L12-L14) |
 | attachment retries of a session server | 1 s, doubled up to 30 s | [session.ts:19-20](../src/session.ts#L19-L20) |
-| part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [hub.ts:525-542](../src/hub.ts#L525-L542), [tools.ts:163-164](../src/tools.ts#L163-L164), [:1575-1578](../src/tools.ts#L1575-L1578) |
+| part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [hub.ts:529-546](../src/hub.ts#L529-L546), [tools.ts:163-164](../src/tools.ts#L163-L164), [:1575-1578](../src/tools.ts#L1575-L1578) |
 | cancelled cards wait at stop | 10 s | [hub.ts:21](../src/hub.ts#L21) |
 | `daemon.log` | emptied over 10 MB, at a spawn and every hour | [files.ts:9](../src/files.ts#L9), [:85-88](../src/files.ts#L85-L88), [daemon.ts:20](../src/daemon.ts#L20) |
 | socket path | 103 bytes: `sun_path` of `sockaddr_un` holds 104 bytes on macOS and 108 on Linux, with the terminating NUL | [files.ts:8](../src/files.ts#L8) |

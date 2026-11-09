@@ -1183,7 +1183,7 @@ describe("session channel", () => {
       const {hub, session} = await channel(chat)
       hub.user = {post: async () => Promise.reject(refusal("SimpleX links"))} as unknown as User
       await session.turn({id: id1, prompt: `Open ${link}`, answer: "Opened."})
-      expect(groupPosts(chat)).toEqual([{type: "text", text: `User's prompt was not posted: ${off("SimpleX links")}`}, {type: "text", text: "Opened."}])
+      expect(groupPosts(chat)).toEqual([{type: "text", text: "User's prompt was not posted: SimpleX links are not allowed for User in the group of this session; its owners can allow them in the group's preferences."}, {type: "text", text: "Opened."}])
     })
 
     it("posts that a card was not posted, naming the preference, and fails its action with that text", async () => {

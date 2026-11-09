@@ -92,6 +92,7 @@ async function joinSessionGroups(owner: Person, names: string[]): Promise<Map<st
 }
 
 const linksOff = "SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences."
+const linksNotForUser = "SimpleX links are not allowed for User in the group of this session; its owners can allow them in the group's preferences."
 const presetLink = "https://smp4.simplex.im/g#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
 
 interface LinkSession {
@@ -291,7 +292,7 @@ test("while SimpleX links are off in a session's group, a send card with a Simpl
   await ownerSends(`/reject ${directoryChat} ${cardNumber(await sendCard)}`)
   expect((await sending).result).toMatchObject({status: "rejected"})
 
-  const notices = ["User's prompt was not posted: ", "Claude's answer was not posted: "].map(subject => received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText === `${subject}SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences.`)))
+  const notices = [`User's prompt was not posted: ${linksNotForUser}`, `Claude's answer was not posted: ${linksOff}`].map(text => received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText === text)))
   await client.request("POST", "/turn", {id: one, prompt: `Open ${directory.link}`, answer: `The bot's address is ${directory.link}`})
   await Promise.all(notices)
 }, 600_000)
@@ -311,6 +312,20 @@ test("while SimpleX links are off in a session's group, a send with a preset ser
   expect(sent.result).toMatchObject({action: 2, status: "done", chat: plainChat})
   await notice
   await delivered
+}, 600_000)
+
+test("while SimpleX links are on for admins only in a session's group, Claude's answer with a SimpleX link is posted, and for the terminal prompt with it Claude posts that SimpleX links are not allowed for User", async () => {
+  const session = await linkSession("admins")
+  const {alice, client, groupOne} = session
+  const camp = await alice.chat.apiNewGroup(alice.user.userId, {displayName: "Camp", fullName: ""})
+  const link = await alice.chat.apiCreateGroupLink(camp.groupId, T.GroupMemberRole.Member)
+  await setLinks(session, {enable: T.GroupFeatureEnabled.On, role: T.GroupMemberRole.Admin})
+  const fromClaude = (check: (text: string) => boolean): Promise<T.AChatItem> => received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === "Claude" && check(chatItem.meta.itemText)))
+  const answer = fromClaude(text => text === `The group's address is ${link}`)
+  const notice = fromClaude(text => text.startsWith("User's prompt was not posted: "))
+  await client.request("POST", "/turn", {id: one, prompt: `Open ${link}`, answer: `The group's address is ${link}`})
+  await answer
+  expect((await notice).chatItem.meta.itemText).toBe(`User's prompt was not posted: ${linksNotForUser}`)
 }, 600_000)
 
 test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
