@@ -53,7 +53,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, termsLinkAllowed, termsLinks, termsOf)
+import StoreService.Names.Contracts (Contracts, Terms (..), communityName, fetchCurrentTerms, namePolicy, termsLinkAllowed, termsLinks, termsOf)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -79,6 +79,7 @@ import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Bucket, takeFrom)
 import StoreService.Web.Server (checkSiteDirs, exportWebapp, newWebEnv, runWebListeners)
 import Control.Applicative (optional)
+import Control.Concurrent (forkIO)
 import Control.Concurrent.STM
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad
@@ -335,6 +336,7 @@ startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig 
       logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> codesOnlyNote
       ne@NamesEnv {neContracts} <- newNamesEnv cc userId nc chatStore turns waiters providers
       logNamePolicy nc neContracts
+      void $ forkIO $ fetchCurrentTerms neContracts
       pure ne
   where
     codesOnlyNote = if nCodesOnly then ", codes only: registration needs a prepaid code" else ""

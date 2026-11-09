@@ -590,8 +590,9 @@ from `scripts/store-service/`. The database `badge_service`,
 
 A badge-service database upgrades in place: the store's own migrations run after every badge
 migration, `20261012_badge_subscriptions` included. A database that ran the names migrations of
-an earlier draft (`20261010_names`, or the steps dated after `20261013_names`) does not start, as
-the service refuses to roll back migrations it does not list. Recreate such a database.
+an earlier draft (`20261010_names`, or the steps dated between `20261013_names` and
+`20261109_name_terms`) does not start, as the service refuses to roll back migrations it does not
+list. Recreate such a database.
 
 ### Two sites
 
@@ -835,8 +836,10 @@ lower-case hex>`, as the dev scripts set.
 
 The service reads both links at one block for each request that needs them, so a change on chain
 applies at once. It fetches each text once, without the link's fragment, following no redirect, within
-10 seconds: a `200` answer of at most 256 KB, valid UTF-8, whose sha256 is the link's. It keeps each text by its hash, and
-fetches one at a time. After a failed fetch it fetches no text for 30 seconds, or for longer, up to an
+10 seconds: a `200` answer of at most 256 KB, valid UTF-8, whose sha256 is the link's. It keeps each text by its hash,
+in memory and in the table `sx_badge_service_name_terms`, and fetches one at a time. A stored text
+is read before any fetch and used only when its sha256 is the link's, so a restart while
+git.simplex.chat is down keeps the texts fetched before it. After a failed fetch it fetches no text for 30 seconds, or for longer, up to an
 hour, when the answer's `Retry-After` asks, and logs why. `GET /api/terms/<hash>` answers
 `{"link", "text"}` for the hash of either current link, `404` for any other hash or a link the service
 does not take, and meanwhile `503 terms_unavailable` with `Retry-After` for a text not fetched yet.
@@ -846,7 +849,7 @@ takes, or has a text the service cannot fetch now. An available name's search an
 `"terms": null`, and an order, a code order, a move or a spend of such a name answers
 `503 terms_unavailable` before any payment, with `Retry-After` while the fetch waits. The service
 logs both links and their hashes at startup, and warns for each that is not set or not a link it
-takes; it fetches the texts on first use. A search reads the links only for an available name, and
+takes; it then reads or fetches both texts in the background. A search reads the links only for an available name, and
 waits for its text within the search's deadline. To change the terms,
 the contracts' owner calls `setGeneralTerms(link)` or `setCommunityTerms(link)`; an order signed
 under the old terms is asked to agree again before its reveal.

@@ -26,6 +26,7 @@ module StoreService.Names.Contracts
     termsOf,
     termsLinkAllowed,
     termsText,
+    fetchCurrentTerms,
     policyNonce,
     acceptedTerms,
     confirmedTag,
@@ -55,26 +56,29 @@ import Data.Functor.Compose (Compose (..))
 import Data.IORef (IORef, atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey, labelNode, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
+import StoreService.Names.Store (getTermsText, setTermsText)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
 data Contracts = Contracts
   { ctChain :: ChainClient,
+    ctStore :: DBStore,
     ctTLD :: SimplexTLD,
     ctRegistrar :: IORef (Maybe RegistrarConstants),
     ctCommitmentAges :: IORef (Maybe CommitmentAges),
@@ -135,8 +139,8 @@ maxTermsBytes :: Int
 maxTermsBytes = 256 * 1024
 
 -- | Reads nothing: the registrar's constants, the commitment ages and the name policy are read on first use and kept once read.
-newContracts :: SimplexTLD -> ChainClient -> IO Contracts
-newContracts ctTLD ctChain = do
+newContracts :: DBStore -> SimplexTLD -> ChainClient -> IO Contracts
+newContracts ctStore ctTLD ctChain = do
   ctRegistrar <- newIORef Nothing
   ctCommitmentAges <- newIORef Nothing
   ctNamePolicy <- newIORef Nothing
@@ -144,7 +148,7 @@ newContracts ctTLD ctChain = do
   ctTermsLinks <- newIORef Nothing
   ctFetchAfter <- newIORef =<< getCurrentTime
   ctFetching <- newMVar ()
-  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds}
+  pure Contracts {ctChain, ctStore, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds}
 
 -- | Registered while @nameExpires + GRACE_PERIOD@ is not before the latest block's time.
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)
@@ -234,25 +238,34 @@ termsText ct@Contracts {ctTermsTexts, ctFetching} t@Terms {tmHash} =
   where
     kept = M.lookup tmHash <$> readIORef ctTermsTexts
 
+fetchCurrentTerms :: Contracts -> IO ()
+fetchCurrentTerms ct =
+  termsLinks ct >>= mapM_ (\(generalLink, communityLink) -> mapM_ (termsText ct) $ mapMaybe termsOf [generalLink, communityLink])
+
 fetchTerms :: Contracts -> Terms -> IO (Either TermsRefusal Text)
-fetchTerms Contracts {ctChain, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash} =
+fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash} =
   allowedLink ctChain tmLink >>= \case
     Nothing -> pure $ Left TRLink
-    Just (url, digest) -> do
-      after <- readIORef ctFetchAfter
-      now <- getCurrentTime
-      if now < after
-        then pure $ Left $ TRWait $ ceiling $ diffUTCTime after now
-        else
-          (>>= checked digest) <$> fetchText ctChain maxTermsBytes url >>= \case
-            Right text -> Right text <$ modifyIORef' ctTermsTexts (M.insert tmHash text)
-            Left (reason, retryAfter) -> do
-              let wait = min maxTermsBackoffSeconds $ max ctTermsBackoff $ fromMaybe 0 retryAfter
-              failedAt <- getCurrentTime
-              writeIORef ctFetchAfter $ addUTCTime (fromIntegral wait) failedAt
-              logWarn $ "names: the terms text of " <> tmLink <> " could not be fetched, " <> reason <> "; none is fetched for " <> tshow wait <> " seconds"
-              pure $ Left $ TRWait wait
+    Just (url, digest) ->
+      (>>= eitherToMaybe . checked digest) <$> withTransaction ctStore (`getTermsText` tmHash) >>= \case
+        Just text -> keep text
+        Nothing -> do
+          after <- readIORef ctFetchAfter
+          now <- getCurrentTime
+          if now < after
+            then pure $ Left $ TRWait $ ceiling $ diffUTCTime after now
+            else
+              (>>= checked digest) <$> fetchText ctChain maxTermsBytes url >>= \case
+                Right text -> withTransaction ctStore (\db -> setTermsText db tmHash $ encodeUtf8 text) >> keep text
+                Left (reason, retryAfter) -> do
+                  let wait = min maxTermsBackoffSeconds $ max ctTermsBackoff $ fromMaybe 0 retryAfter
+                  failedAt <- getCurrentTime
+                  writeIORef ctFetchAfter $ addUTCTime (fromIntegral wait) failedAt
+                  logWarn $ "names: the terms text of " <> tmLink <> " could not be fetched, " <> reason <> "; none is fetched for " <> tshow wait <> " seconds"
+                  pure $ Left $ TRWait wait
   where
+    keep text = Right text <$ modifyIORef' ctTermsTexts (M.insert tmHash text)
+    checked :: ByteString -> ByteString -> Either (Text, Maybe Int) Text
     checked digest body
       | sha256Hash body /= digest = Left ("its SHA-256 is not the link's", Nothing)
       | otherwise = first (const ("not UTF-8", Nothing)) $ decodeUtf8' body

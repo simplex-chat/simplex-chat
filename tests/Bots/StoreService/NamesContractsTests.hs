@@ -31,6 +31,7 @@ module Bots.StoreService.NamesContractsTests
 where
 
 import Bots.StoreService.FakeEthNode
+import Bots.StoreService.WebTests (withServiceStore, withServiceStores)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM (TVar)
 import Control.Monad (forM_)
@@ -46,6 +47,7 @@ import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import Network.HTTP.Types (hContentType, hLocation, status200, status302, status404, status429, status503)
+import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
@@ -56,6 +58,7 @@ import StoreService.Names.Chain
 import StoreService.Names.Contracts
 import StoreService.Names.Registration (labelNode, namehash, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
+import StoreService.Names.Store (setTermsText)
 import Test.Hspec
 
 namesContractsTests :: Spec
@@ -85,6 +88,8 @@ namesContractsTests = describe "StoreService names: contracts" $ do
   describe "terms" $ do
     it "reads both terms links at one block, once per block, \"\" for one not set, and hashes a set link with keccak256 as viem does" $ testTermsLinks g
     it "fetches a terms text once, keeping it by its link's hash" $ testTermsTextKept g
+    it "answers a stored terms text after a restart while its host answers 404, fetching again one stored with another SHA-256" $ testTermsTextStored g
+    it "fetches both current terms texts, storing them" $ testCurrentTermsFetched g
     it "takes only a git.simplex.chat link of one .md file at one commit with the file's SHA-256, or a loopback link on the local chain, fetching nothing else" $ testTermsLinkForms g
     it "refuses an answer other than a 200 UTF-8 text of at most 256 KB with the link's SHA-256, following no redirect" $ testTermsTextRefused g
     it "fetches no terms text for 30 seconds after a failed fetch, or as long as its Retry-After asks, up to an hour" $ testTermsBackoff g
@@ -161,11 +166,45 @@ testTermsTextKept g = withContracts g $ \node ct -> do
   termsText ct (termsAt fakeGeneralTermsText) `shouldReturn` Right "SimpleX general terms v1"
   fetchedTexts node `shouldReturn` [fakeTermsPath fakeGeneralTermsText]
 
+testTermsTextStored :: TVar ChaChaDRG -> IO ()
+testTermsTextStored g = withServiceStores $ \open -> withFakeEthNode $ \node -> do
+  let restarted = open >>= \st -> (\x -> x {ctTermsBackoff = 0}) <$> (newContracts st TLDSimplex =<< fakeChainClient g node)
+      general = termsAt fakeGeneralTermsText
+      generalPath = fakeTermsPath fakeGeneralTermsText
+      hostDown = answerText node generalPath $ TextAnswer status404 [] ""
+  ct <- restarted
+  termsText ct general `shouldReturn` Right "SimpleX general terms v1"
+  hostDown
+  afterRestart <- restarted
+  termsText afterRestart general `shouldReturn` Right "SimpleX general terms v1"
+  st <- open
+  withTransaction st $ \db -> setTermsText db (tmHash general) fakeNewGeneralTermsText
+  tampered <- restarted
+  termsText tampered general `shouldReturn` Left (TRWait 0)
+  answerText node generalPath $ servedText fakeGeneralTermsText
+  termsText tampered general `shouldReturn` Right "SimpleX general terms v1"
+  hostDown
+  replaced <- restarted
+  termsText replaced general `shouldReturn` Right "SimpleX general terms v1"
+  fetchedTexts node `shouldReturn` [generalPath, generalPath, generalPath]
+
+testCurrentTermsFetched :: TVar ChaChaDRG -> IO ()
+testCurrentTermsFetched g = withServiceStores $ \open -> withFakeEthNode $ \node -> do
+  let restarted = open >>= \st -> newContracts st TLDSimplex =<< fakeChainClient g node
+      paths = map fakeTermsPath [fakeCommunityTermsText, fakeGeneralTermsText]
+  restarted >>= fetchCurrentTerms
+  fetchedTexts node `shouldReturn` paths
+  forM_ paths $ \path -> answerText node path $ TextAnswer status404 [] ""
+  ct <- restarted
+  fetchCurrentTerms ct
+  mapM (termsText ct . termsAt) [fakeGeneralTermsText, fakeCommunityTermsText] `shouldReturn` [Right "SimpleX general terms v1", Right "SimpleX community terms v1"]
+  fetchedTexts node `shouldReturn` paths
+
 testTermsLinkForms :: TVar ChaChaDRG -> IO ()
-testTermsLinkForms g = withFakeEthNode $ \node -> do
+testTermsLinkForms g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   c <- fakeChainClient g node
-  ct <- (\x -> x {ctTermsBackoff = 0}) <$> newContracts TLDSimplex c
-  otherChain <- newContracts TLDSimplex c {ccConfig = (ccConfig c) {cChainId = 1}}
+  ct <- (\x -> x {ctTermsBackoff = 0}) <$> newContracts st TLDSimplex c
+  otherChain <- newContracts st TLDSimplex c {ccConfig = (ccConfig c) {cChainId = 1}}
   let digest = T.drop 2 $ hex $ C.sha256Hash fakeGeneralTermsText
       commit = T.replicate 40 "a"
       commitPath path = "/simplex-chat/simplex-chat/raw/commit/" <> commit <> path
@@ -216,7 +255,7 @@ testTermsTextRefused g = withContracts g $ \node ct0 -> do
   elem "/elsewhere.md" <$> fetchedTexts node `shouldReturn` False
 
 testTermsBackoff :: TVar ChaChaDRG -> IO ()
-testTermsBackoff g = withContracts g $ \node ct -> do
+testTermsBackoff g = withContracts g $ \node ct -> withServiceStore $ \shortStore -> withServiceStore $ \cappedStore -> do
   let generalPath = fakeTermsPath fakeGeneralTermsText
       waitsUpTo seconds = \case
         Left (TRWait n) -> n >= 1 && n <= seconds
@@ -226,7 +265,7 @@ testTermsBackoff g = withContracts g $ \node ct -> do
   termsText ct (termsAt fakeGeneralTermsText) >>= (`shouldSatisfy` waitsUpTo 30)
   termsText ct (termsAt fakeCommunityTermsText) >>= (`shouldSatisfy` waitsUpTo 30)
   fetchedTexts node `shouldReturn` [generalPath]
-  short <- (\x -> x {ctTermsBackoff = 1}) <$> (newContracts TLDSimplex =<< fakeChainClient g node)
+  short <- (\x -> x {ctTermsBackoff = 1}) <$> (newContracts shortStore TLDSimplex =<< fakeChainClient g node)
   answerText node generalPath $ TextAnswer status503 [] ""
   termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 1)
   termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 1)
@@ -239,14 +278,14 @@ testTermsBackoff g = withContracts g $ \node ct -> do
   threadDelay 1000000
   termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Right "SimpleX general terms v1"
   length <$> fetchedTexts node `shouldReturn` 4
-  capped <- newContracts TLDSimplex =<< fakeChainClient g node
+  capped <- newContracts cappedStore TLDSimplex =<< fakeChainClient g node
   answerText node generalPath $ TextAnswer status429 [("Retry-After", "999999999")] ""
   termsText capped (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 3600)
 
 testTermsTimeout :: TVar ChaChaDRG -> IO ()
-testTermsTimeout g = withFakeEthNode $ \node -> do
+testTermsTimeout g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   c <- fakeChainClient g node
-  ct <- newContracts TLDSimplex c {ccTimeout = testDeadline}
+  ct <- newContracts st TLDSimplex c {ccTimeout = testDeadline}
   setFault node "GET" $ Slow 2000000
   elapsed <- timed $ termsText ct (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 30)
   elapsed `shouldSatisfy` (< 1)
@@ -433,8 +472,8 @@ timed action = do
   (`diffUTCTime` start) <$> getCurrentTime
 
 withContracts :: TVar ChaChaDRG -> (FakeEthNode -> Contracts -> IO a) -> IO a
-withContracts g action = withFakeEthNode $ \node -> do
-  ct <- newContracts TLDSimplex =<< fakeChainClient g node
+withContracts g action = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  ct <- newContracts st TLDSimplex =<< fakeChainClient g node
   action node ct
 
 answerRegistrar :: FakeEthNode -> IO ()
