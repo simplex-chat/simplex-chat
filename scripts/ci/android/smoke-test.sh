@@ -319,8 +319,20 @@ send_images() {
   send_image simplex-logo png
 }
 
-not_found() {
-  ! "$ui" find "$1" > /dev/null 2>&1
+normalise() {
+  tr -cd '[:alnum:]' <<< "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+screen_text() {
+  local line
+  "$ui" text | while IFS= read -r line; do
+    normalise "${line#* }"
+    echo
+  done
+}
+
+not_in() {
+  ! grep -qF "$(normalise "$2")" <<< "$1"
 }
 
 picker_or_connect_card_shown() {
@@ -346,9 +358,10 @@ cards_with_empty_search() {
 }
 
 cards_hidden() {
-  local what=$1 card
+  local what=$1 screen card
+  screen=$(screen_text)
   for card in "${shown_cards[@]}"; do
-    check "$what: \"$card\" hidden" not_found "$card"
+    check "$what: \"$card\" hidden" not_in "$screen" "$card"
   done
 }
 
