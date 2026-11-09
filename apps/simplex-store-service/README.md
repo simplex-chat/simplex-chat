@@ -195,6 +195,11 @@ rates for late crypto credits, and
 `canmodifyinvoices` so `POST /api/invoice/:id/cancel` can invalidate an invoice at BTCPay
 rather than only in this store.
 
+**Keep the right to modify the store's invoices to the store's owners and this API key.** BTCPay lets whoever has it
+mark an invoice settled by hand, and the service takes a `Settled` invoice as paid, so they get the
+badge code or the name without paying. The service logs `btcpay: invoice <ref> additionalStatus
+Marked` at note only when it reads that invoice on its own, not from BTCPay's list.
+
 **`speed_policy = HighSpeed` is refused beside `[names]`**: under it BTCPay marks a payment `Settled`
 with no confirmation, which a double spend would turn into a free name, and crypto reaching a name
 invoice after it closed could never be credited. The service judges each invoice by the policy it was
@@ -216,7 +221,9 @@ An extra still unconfirmed when BTCPay settles the invoice is never credited, as
 still be replaced: it is alerted, and support refunds it by hand once it confirms.
 Crypto sent to a name invoice after the service recorded it paid is not credited either: the poller
 logs an error naming the order, at most once an hour while it still lists it, and support refunds it
-once its transaction is confirmed on chain.
+once its transaction is confirmed on chain. The poller lists the invoices created in the last 72
+hours and the invoice expiry minutes, and a webhook can name an older one; past that nothing reports
+such crypto. Crypto sent to a badge invoice after it was paid is reported by nothing.
 
 BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
 The invoice view reports `paidInFull` on such an invoice only once BTCPay reads it `PaidLate` or
@@ -551,6 +558,28 @@ On PostgreSQL the service holds an advisory lock on its database for as long as 
 process on the same database, `--run-cli` included, stops at start with `another store service holds
 this database`: two would send with the gas key's nonces and run the chat agent's queues together. Stop
 the service before the console.
+
+### Restoring the database
+
+A database restored from a copy loses every row written after the copy, and the service re-derives
+none of them. Before the service starts on it:
+
+1. Wait until the gas key has nothing in the node's pool: `cast nonce $REGISTRAR --block latest`
+   equals `cast nonce $REGISTRAR --block pending` (see
+   [Check the balance and transactions in flight](#check-the-balance-and-transactions-in-flight)). The
+   service numbers a new transaction after the key's mined transactions and the ones the copy saved,
+   so a transaction in the pool that the copy does not hold can have the same nonce.
+2. Record again, with `//refund` in `--run-cli`, each refund recorded after the copy: the copy holds
+   those balances unrefunded, so their buyers could spend them.
+3. Revoke with `//revoke` each code spent or revoked after the copy, which the copy holds unspent, and
+   issue again each code issued after it, which the copy does not hold, so it answers `code_invalid`.
+4. List the BTCPay invoices and Stripe payments created after the copy. The service holds no row for
+   them, so it reads none of them and records no payment to them: support settles each paid one by
+   hand.
+
+The orders the copy holds resume from the chain: the worker reads each commitment before it commits,
+and judges a register that does not go through with `confirmLanded` (see
+[When funds or the allowance run out](#when-funds-or-the-allowance-run-out)).
 
 ### Upgrading from the badge service
 
@@ -1150,7 +1179,10 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
   the transaction waits` when fees are above the cap. Nothing is signed until they fall.
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
-  <cap>` when a transaction stuck in the pool cannot be bumped within the cap.
+  <cap>` when a transaction stuck in the pool cannot be bumped within the cap. A register waiting
+  there shows its name to anyone who reads the pool, who can register the name first with a commitment
+  of their own once it is old enough. The order then ends `taken`: a paid order keeps its price as a
+  balance, and a code order keeps its code.
 
 An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the
