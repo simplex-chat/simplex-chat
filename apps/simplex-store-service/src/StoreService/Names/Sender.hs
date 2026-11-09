@@ -156,14 +156,13 @@ checkPendingSigners g ChainConfig {cChainId, cServiceKey} st = do
   saved <- withTransaction st pendingTransactions
   runExceptT $ forM_ saved $ \NameTransaction {ntNonce, ntRaw} -> do
     (chainId, signer) <- withExceptT ("name_transactions.raw: " <>) $ ExceptT $ transactionSigner ntRaw
-    let refused signedFor configured =
-          throwError $
-            "a pending transaction of nonce " <> show ntNonce <> " was signed " <> signedFor <> ", not " <> configured
-              <> "; start with the key and chain that signed it until no transaction is pending"
-    when (chainId /= cChainId) $ refused ("for chain " <> show chainId) ("for chain.chain_id " <> show cChainId)
-    when (signer /= registrar) $ refused ("by " <> shownAddress signer) ("by " <> shownAddress registrar <> " of chain.service_key")
+    when (chainId /= cChainId) $ throwError $ refusal ntNonce ("for chain " <> show chainId) ("for chain.chain_id " <> show cChainId)
+    when (signer /= registrar) $ throwError $ refusal ntNonce ("by " <> shownAddress signer) ("by " <> shownAddress registrar <> " of chain.service_key")
   where
     shownAddress = T.unpack . addressText
+    refusal nonce signedFor configured =
+      "a pending transaction of nonce " <> show nonce <> " was signed " <> signedFor <> ", not " <> configured
+        <> "; start with the key and chain that signed it until no transaction is pending"
 
 -- | Dry run, the next nonce, the market's fees, the signature, saved, then sent. A failed send is retried by 'followTransactions'.
 submitTransaction :: Sender -> TxFor -> Address -> ByteString -> IO (Either SendError PendingTx)
