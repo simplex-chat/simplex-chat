@@ -1461,12 +1461,14 @@ orders at the provider by hand, so look for a refund of that payment after the f
 pay the amount back by those methods only if none is found. The service logs each closed order at
 note with its registration id and the cents.
 
-Before the first version with `//close` is deployed, list the failed paid orders and find each one
-already refunded by hand. After the deploy, close those with `//close` and pay nothing, so that their
-records match the money:
+Before the first version with `//close` is deployed, list the failed paid orders, with the committed
+ones past their signing deadline, which read failed and can be closed too, and find at the provider,
+by the provider reference listed, each one already refunded by hand. An order paid from a balance
+also lists the order whose balance paid it, and one paid wholly from it lists no invoice. After the deploy, close
+the orders refunded by hand with `//close` and pay nothing, so that their records match the money:
 
 ```
-psql "$BADGE_DB_CONN" -Atc "SELECT registration_id, failed_at FROM simplex_v1_chat_schema.sx_badge_service_name_registrations WHERE phase = 'failed' AND name_prepaid_code_id IS NULL ORDER BY failed_at"
+psql "$BADGE_DB_CONN" -Atc "SELECT r.registration_id, r.phase, r.failed_at, r.reveal_before, ni.invoice_id, ni.provider_ref, r.balance_source FROM simplex_v1_chat_schema.sx_badge_service_name_registrations r LEFT JOIN simplex_v1_chat_schema.sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id WHERE r.name_prepaid_code_id IS NULL AND (r.phase = 'failed' OR (r.phase = 'committed' AND r.label IS NULL AND r.reveal_before < EXTRACT(EPOCH FROM now()))) ORDER BY r.created_at"
 ```
 
 A closed order reads `taken` in Your names, with its refund. Try again and a move answer

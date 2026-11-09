@@ -541,8 +541,8 @@ sequenceDiagram
   end
 ```
 
-- Only a failed order paid by invoice or balance is closed, and a lapsed committed order reads failed. A balance an order holds refuses the close and writes nothing ([`Names/Worker.hs:515-564`](../src/StoreService/Names/Worker.hs#L515-L564), [`Names/Worker.hs:376-380`](../src/StoreService/Names/Worker.hs#L376-L380), [`Names/Orders.hs:366-373`](../src/StoreService/Names/Orders.hs#L366-L373)).
-- The answer names the failure time, as failed orders were refunded at the provider by hand before `//close` existed ([`Service.hs:501-528`](../src/StoreService/Service.hs#L501-L528), [`README.md:1436-1479`](../README.md#L1436-L1479)).
+- Only a failed order paid by invoice or balance is closed, and a lapsed committed order reads failed. A balance an order holds refuses the close and writes nothing ([`Names/Worker.hs:515-564`](../src/StoreService/Names/Worker.hs#L515-L564), [`Names/Worker.hs:376-380`](../src/StoreService/Names/Worker.hs#L376-L380), [`Names/Orders.hs:366-412`](../src/StoreService/Names/Orders.hs#L366-L412)).
+- The answer names the failure time, as failed orders were refunded at the provider by hand before `//close` existed ([`Service.hs:501-528`](../src/StoreService/Service.hs#L501-L528), [`README.md:1436-1481`](../README.md#L1436-L1481)).
 
 ---
 
