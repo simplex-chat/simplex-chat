@@ -31,7 +31,7 @@ module Bots.StoreService.NamesOwnerTests
 where
 
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rentPriceCall, unhex)
+import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rentPriceCall, threeYearsOf11, unhex)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, order, ownerA, paidOrder, t0)
 import Bots.StoreService.NamesPhasesTests (registrationPath)
@@ -510,9 +510,6 @@ testMoveCommunityPaidYears = withOwnerAs (threeYears . listName "alicebakers") $
   void $ moved ctx keyA r to
   (nrYears &&& nrPrice) <$> stored ctx r `shouldReturn` (3, 10000)
   balanceOf ctx r `shouldReturn` Just (5000, 5000)
-  where
-    -- viem: rentPriceUSD of 11 letters for 3 years
-    threeYearsOf11 = unhex "9ff7ec0900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000005a39a80000000000000000000000000000000000000000000000000000000000000000b6161616161616161616161000000000000000000000000000000000000000000"
 
 testMoveTermsCheckOrder :: IO ()
 testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do

@@ -13,7 +13,7 @@ module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, name
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..), ServiceConfig (devAcceptUnverifiedStoreReceipts), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
 import StoreService.Group.Command (CmdAction (..), groupCmdAction, maxUses)
-import StoreService.Names.Abi (selector, uint256)
+import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode, spendLandedPrepaidCode)
@@ -25,8 +25,9 @@ import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
-import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), answerCall, awaitSent, plainTerms, setFault, withFakeEthNode)
+import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, plainTerms, setFault, setGeneralTerms, withFakeEthNode)
+import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
@@ -154,6 +155,7 @@ namesBootTests = do
   it "refuses a second instance on the same Postgres database until the first ends, and takes no lock on SQLite" testInstanceLock
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
   it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
+  it "searches with the configured price floor, answering a price at it and 503 to one cent under it" testNamesBootPriceFloor
 
 testDevKeysWarned :: HasCallStack => TestParams -> IO ()
 testDevKeysWarned _ = do
@@ -316,6 +318,29 @@ testNamesBootCodesOnly ps = do
     posted "/api/code/check" "{}" `shouldReturn` answered "bad_request" 400
     badgesShell <- parseRequest ("http://127.0.0.1:" <> show port <> "/") >>= (`httpLbs` mgr)
     (statusCode $ responseStatus badgesShell, responseBody badgesShell) `shouldBe` (200, LB.fromStrict shell)
+    poll t >>= (`shouldSatisfy` isNothing)
+
+testNamesBootPriceFloor :: HasCallStack => TestParams -> IO ()
+testNamesBootPriceFloor ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
+  svc <- prepareGroupService ps
+  let onFakeNode line = if "rpc_url" `T.isPrefixOf` line then "rpc_url = " <> T.pack fnUrl else line
+      controller = address $ encodeUtf8 controllerAddr
+      registrar = address $ encodeUtf8 registrarAddr
+  forM_ [selector "ens()", selector "GRACE_PERIOD()", nameExpiresCall] $ \call -> answerCall node registrar call $ Returns $ uint256 (0 :: Int)
+  answerCall node controller (selector "namePolicy()") $ Returns $ addressWord fakeNamePolicy
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  setGeneralTerms node ""
+  answerCall node controller (rentPriceCall 11) $ Returns $ rentPriceAnswer 15000
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> ["min_price_cents_per_year = 7500"] <> map onFakeNode chainSection} Nothing
+  flip finally (stopGroupService t cc) $ do
+    pollUntilTrue (listening port)
+    mgr <- newManager defaultManagerSettings
+    let searched = do
+          req <- parseRequest $ "http://127.0.0.1:" <> show port <> "/api/name/" <> T.unpack aliceHex <> "?length=11"
+          statusCode . responseStatus <$> httpLbs req mgr
+    searched `shouldReturn` 200
+    answerCall node controller (rentPriceCall 11) $ Returns $ rentPriceAnswer 14999
+    searched `shouldReturn` 503
     poll t >>= (`shouldSatisfy` isNothing)
 
 -- | [names] with codes_only on, as an investors' launch runs.

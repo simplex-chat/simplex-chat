@@ -56,7 +56,7 @@ where
 
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, testMinPriceCentsPerYear, unhex)
+import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, minPriceCentsPerYear, unhex)
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, reveal, t0)
 import Bots.StoreService.WebTests
 import Control.Concurrent (threadDelay)
@@ -333,7 +333,7 @@ testNamesConfig node =
       nMaxOrderMoves = 3,
       nCodesOnly = False,
       nRecordEditsPerYear = 3,
-      nMinPriceCentsPerYear = testMinPriceCentsPerYear,
+      nMinPriceCentsPerYear = minPriceCentsPerYear,
       nCommunity = M.empty,
       nChain = fakeChainConfig node
     }
@@ -360,7 +360,7 @@ withOrdersVia via action = withServiceStores $ \open -> withOrdersOn open via ac
 withOrdersOn :: IO DBStore -> (Provider -> Provider) -> (Ctx -> IO a) -> IO a
 withOrdersOn cOpenStore via action = cOpenStore >>= \cStore -> withFakeEthNode $ \cNode -> do
   cRandom <- C.newRandom
-  ct <- newContracts TLDSimplex testMinPriceCentsPerYear =<< fakeChainClient cRandom cNode
+  ct <- newContracts TLDSimplex minPriceCentsPerYear =<< fakeChainClient cRandom cNode
   turns <- newTurns
   phases <- newPhases
   cClock <- newIORef orderTime
@@ -1632,7 +1632,7 @@ testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 testViewReads :: IO ()
 testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   g <- C.newRandom
-  ct <- newContracts TLDSimplex testMinPriceCentsPerYear =<< fakeChainClient g node
+  ct <- newContracts TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
   answerCall node fakeSponsor noncesCall $ Returns $ uint256 (4 :: Int)
   Right () <- placePaid st "paid" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   let inPhase phase = do
@@ -1661,7 +1661,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 testViewBalance :: IO ()
 testViewBalance = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   g <- C.newRandom
-  ct <- newContracts TLDSimplex testMinPriceCentsPerYear =<< fakeChainClient g node
+  ct <- newContracts TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
   let holderExpiry = addUTCTime 3600 t0
       viewOf :: Text -> UTCTime -> IO J.Object
       viewOf rid now = do

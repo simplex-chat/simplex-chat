@@ -6,12 +6,13 @@
 module Bots.StoreService.NamesContractsTests
   ( namesContractsTests,
     withContracts,
-    testMinPriceCentsPerYear,
+    minPriceCentsPerYear,
     answerRegistrar,
     answerRegistered,
     registrarOf,
     resolverOf,
     rentPriceCall,
+    threeYearsOf11,
     rentPriceAnswer,
     now,
     year,
@@ -73,7 +74,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads the default resolver's records and the owner's nonce" $ testRecords g
     it "reads no records from another resolver" $ testOtherResolver g
   describe "prices" $ do
-    it "quotes 6, 7 and 12 letters at the launch list for 2 years, and refuses a price under the floor for the years" $ testLaunchPrices g
+    it "quotes 6, 7 and 12 letters at the launch list for 2 years, and refuses a price under the floor times the years, for 2 and 3 years" $ testLaunchPrices g
   describe "other reads" $ do
     it "reads the sponsor's and the resolver's nonces from their own contracts" $ testNonces g
     it "reads ownerOf's revert without data as nobody" $ testOwnerOfNobody g
@@ -165,8 +166,8 @@ testTermsTextKept g = withContracts g $ \node ct -> do
 testTermsLinkForms :: TVar ChaChaDRG -> IO ()
 testTermsLinkForms g = withFakeEthNode $ \node -> do
   c <- fakeChainClient g node
-  ct <- (\x -> x {ctTermsBackoff = 0}) <$> newContracts TLDSimplex testMinPriceCentsPerYear c
-  otherChain <- newContracts TLDSimplex testMinPriceCentsPerYear c {ccConfig = (ccConfig c) {cChainId = 1}}
+  ct <- (\x -> x {ctTermsBackoff = 0}) <$> newContracts TLDSimplex minPriceCentsPerYear c
+  otherChain <- newContracts TLDSimplex minPriceCentsPerYear c {ccConfig = (ccConfig c) {cChainId = 1}}
   let digest = T.drop 2 $ hex $ C.sha256Hash fakeGeneralTermsText
       commit = T.replicate 40 "a"
       commitPath path = "/simplex-chat/simplex-chat/raw/commit/" <> commit <> path
@@ -227,7 +228,7 @@ testTermsBackoff g = withContracts g $ \node ct -> do
   termsText ct (termsAt fakeGeneralTermsText) >>= (`shouldSatisfy` waitsUpTo 30)
   termsText ct (termsAt fakeCommunityTermsText) >>= (`shouldSatisfy` waitsUpTo 30)
   fetchedTexts node `shouldReturn` [generalPath]
-  short <- (\x -> x {ctTermsBackoff = 1}) <$> (newContracts TLDSimplex testMinPriceCentsPerYear =<< fakeChainClient g node)
+  short <- (\x -> x {ctTermsBackoff = 1}) <$> (newContracts TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node)
   answerText node generalPath $ TextAnswer status503 [] ""
   termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 1)
   termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 1)
@@ -240,14 +241,14 @@ testTermsBackoff g = withContracts g $ \node ct -> do
   threadDelay 1000000
   termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Right "SimpleX general terms v1"
   length <$> fetchedTexts node `shouldReturn` 4
-  capped <- newContracts TLDSimplex testMinPriceCentsPerYear =<< fakeChainClient g node
+  capped <- newContracts TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
   answerText node generalPath $ TextAnswer status429 [("Retry-After", "999999999")] ""
   termsText capped (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 3600)
 
 testTermsTimeout :: TVar ChaChaDRG -> IO ()
 testTermsTimeout g = withFakeEthNode $ \node -> do
   c <- fakeChainClient g node
-  ct <- newContracts TLDSimplex testMinPriceCentsPerYear c {ccTimeout = testDeadline}
+  ct <- newContracts TLDSimplex minPriceCentsPerYear c {ccTimeout = testDeadline}
   setFault node "GET" $ Slow 2000000
   elapsed <- timed $ termsText ct (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 30)
   elapsed `shouldSatisfy` (< 1)
@@ -305,6 +306,10 @@ testLaunchPrices g = withContracts g $ \node ct -> do
   chainPriceCents ct 12 2 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 9999 cents for 2 years, under names.min_price_cents_per_year")
   answerCall node fakeController (rentPriceCall 11) $ Returns $ rentPriceAnswer 0
   chainPriceCents ct 11 2 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 0 cents for 2 years, under names.min_price_cents_per_year")
+  answerCall node fakeController threeYearsOf11 $ Returns $ rentPriceAnswer 15000
+  chainPriceCents ct 11 3 `shouldReturn` Right 15000
+  answerCall node fakeController threeYearsOf11 $ Returns $ rentPriceAnswer 14999
+  chainPriceCents ct 11 3 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 14999 cents for 3 years, under names.min_price_cents_per_year")
 
 testNonces :: TVar ChaChaDRG -> IO ()
 testNonces g = withContracts g $ \node ct -> do
@@ -429,8 +434,8 @@ concurrentDeadline = 1500000
 testDeadline :: Int
 testDeadline = 300000
 
-testMinPriceCentsPerYear :: Int
-testMinPriceCentsPerYear = 5000
+minPriceCentsPerYear :: Int
+minPriceCentsPerYear = 5000
 
 timed :: IO () -> IO NominalDiffTime
 timed action = do
@@ -440,7 +445,7 @@ timed action = do
 
 withContracts :: TVar ChaChaDRG -> (FakeEthNode -> Contracts -> IO a) -> IO a
 withContracts g action = withFakeEthNode $ \node -> do
-  ct <- newContracts TLDSimplex testMinPriceCentsPerYear =<< fakeChainClient g node
+  ct <- newContracts TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
   action node ct
 
 answerRegistrar :: FakeEthNode -> IO ()
@@ -515,6 +520,10 @@ rentPriceCall = \case
   11 -> unhex "9ff7ec0900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000003c26700000000000000000000000000000000000000000000000000000000000000000b6161616161616161616161000000000000000000000000000000000000000000"
   12 -> unhex "9ff7ec0900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000003c26700000000000000000000000000000000000000000000000000000000000000000c6161616161616161616161610000000000000000000000000000000000000000"
   len -> error $ "no viem vector for length " <> show len
+
+-- | viem: rentPriceUSD of 11 letters for 3 years
+threeYearsOf11 :: ByteString
+threeYearsOf11 = unhex "9ff7ec0900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000005a39a80000000000000000000000000000000000000000000000000000000000000000b6161616161616161616161000000000000000000000000000000000000000000"
 
 commitmentsCall, availableCall, minCommitmentAgeCall, maxCommitmentAgeCall :: ByteString
 commitmentsCall = unhex "839df945f8096c3f3cfbadc9f3a108d2c586ccc816c0510711c8d6228aa4fa507324d30c"
