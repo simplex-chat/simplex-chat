@@ -167,7 +167,7 @@ Decided on 2026-11-08, review round 7:
 95. Claude's profile updates of a session group run one at a time, so a rename and a change of the model or effort that overlap both stay.
 96. The code has no comments.
 
-Recommended on the UX page (https://claude.ai/artifact/YCN4kj2ZRujUnUhNSxwMea), implemented until the user answers, one commit each:
+Recommended on the UX page (https://claude.ai/artifact/UDxBJx55Y9ti1U3TjUaxpC), implemented until the user answers, one commit each:
 97. K10, K11: the rights texts name `/` commands in place of `//` and `/!`; the post for an owner has no `/observer` command.
 98. A session group's description, set at its creation: `The Claude Code session N. Members send it prompts; admins and owners also send / commands and approve tool use.`
 100. T3: the Main group's short description is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.`
