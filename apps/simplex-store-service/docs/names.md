@@ -569,9 +569,9 @@ sequenceDiagram
   participant V as BTCPay
   O->>U: docker compose up -d --build
   U->>U: store_service.ini parsed in full
-  U->>D: pg_try_advisory_lock, held for the run
+  U->>D: pg_try_advisory_lock, held for the run, its connection checked every 30 s
   U->>E: eth_chainId equal to [chain] chain_id
-  U->>C: start: chat migrations, store migrations in preStartHook
+  U->>C: start: chat migrations, store migrations and pending transactions' signers in preStartHook
   C->>C: postStartHook: service requests on, bot address shown or created
   C->>U: callback with the controller
   U->>D: badge catalog seeded
@@ -585,7 +585,7 @@ sequenceDiagram
 Notes:
 
 - The container runs `simplex-store-service -d BADGE_DB_CONN --create-schema --yes-migrate --service-config /etc/simplex-store-service/store_service.ini` ([`compose.yml:14-20`](../../../scripts/store-service/compose.yml#L14-L20)).
-- The process exits on a config error, a held lock, a chain id mismatch, an issuer key mismatch, a failed migration or a missing site build; compose restarts it on failure up to 5 times ([`Main.hs:22-28`](../Main.hs#L22-L28), [`Service.hs:280-285`](../src/StoreService/Service.hs#L280-L285), [`compose.yml:10`](../../../scripts/store-service/compose.yml#L10)). A node that does not answer `eth_chainId` is only warned of, unless `dev_keys` are set ([`Service.hs:169-181`](../src/StoreService/Service.hs#L169-L181)).
+- The process exits on a config error (Stripe keys of two modes, Stripe test keys with `[names]` off chains 31337 and 11155111, or `gas_limit_cap` × `max_fee_per_gas` above 1 ETH among them), a held lock, a chain id mismatch, an issuer key mismatch, a failed migration, a pending transaction signed by another key or for another chain, or a missing site build; while it runs, it exits when the lock's connection fails. Compose restarts it after every exit until it is stopped ([`Main.hs:22-28`](../Main.hs#L22-L28), [`Config.hs:478-482`](../src/StoreService/Config.hs#L478-L482), [`Config.hs:715-716`](../src/StoreService/Config.hs#L715-L716), [`Service.hs:280-285`](../src/StoreService/Service.hs#L280-L285), [`Service.hs:632-635`](../src/StoreService/Service.hs#L632-L635), [`Store/Migrate.hs:53-64`](../src/StoreService/Store/Migrate.hs#L53-L64), [`compose.yml:10`](../../../scripts/store-service/compose.yml#L10)). A node that does not answer `eth_chainId` is only warned of, unless `dev_keys` are set ([`Service.hs:169-181`](../src/StoreService/Service.hs#L169-L181)).
 - The lanes are started in the chat core's callback, after `postStartHook`, so after the bot address exists, unless `--no-address` is passed ([`Chat/Core.hs:97-106`](../../../src/Simplex/Chat/Core.hs#L97-L106), [`Service.hs:301-313`](../src/StoreService/Service.hs#L301-L313), [`Service.hs:636-645`](../src/StoreService/Service.hs#L636-L645)).
 - The names lanes are the sender, the record edits lane, the names worker and the code sweep; all lanes are started together with `raceAny_` from simplexmq ([`Service.hs:366-370`](../src/StoreService/Service.hs#L366-L370)).
 - Under `--run-cli` the binary runs the terminal chat and the badge request lanes only ([`Service.hs:381-404`](../src/StoreService/Service.hs#L381-L404)).

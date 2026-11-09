@@ -1112,6 +1112,8 @@ reads, clears and logs its acceptance, as a community name's did:
 - `gas_limit_cap` × `max_fee_per_gas` must be at most 1 ETH (0.8 ETH with the defaults), or the
   service refuses to start: reth and geth refuse a transaction whose gas limit × max fee is above
   `--rpc.txfeecap`, 1 ETH by default, and every later transaction of the key would wait behind it.
+  With `gas_limit_cap` at its lowest working value, 6,791,417, `max_fee_per_gas` can be at most
+  147,244,676,626 wei (about 147 gwei); with the default 8,000,000, at most 125 gwei.
 
 #### Check the balance and transactions in flight
 
@@ -1176,10 +1178,11 @@ owner who got the name another way counts as served, and a code order spends its
 The service resumes its saved transactions at start and gives new ones nonces after theirs. Those
 are signed by the key that sent them, so started on another key it would give that key's
 transactions nonces it has not reached, and they would never be mined. So the service refuses to start
-while a `pending` row is signed by another key than `service_key`, and logs both addresses:
+while a `pending` row is signed by another key than `service_key`, or for another chain than
+`chain_id`, and names both:
 
 ```
-[ERROR …] names sender: a pending transaction of nonce <n> was signed by <old address>, not by <new address> of chain.service_key; start with the key that signed it until no transaction is pending
+Error: a pending transaction of nonce <n> was signed by <old address>, not by <new address> of chain.service_key; start with the key and chain that signed it until no transaction is pending
 ```
 
 Rotate only with no `pending` row, at a quiet time: every stop takes the store offline, and each order
@@ -1229,8 +1232,10 @@ sends its register about a minute after its commit.
    ```
 
    It prints `$NEW`. After the next order's commit, `cast nonce $NEW --block pending` is above 0,
-   and `cast nonce $OLD --block pending` stays where it was. If the service stops with the error
-   above, a row is still pending: put `prev/store_service.ini` back in `config/` and repeat step 2.
+   and `cast nonce $OLD --block pending` stays where it was. If `docker compose logs store-service`
+   shows the error above, a row is still pending and compose keeps restarting the service: stop it
+   with `docker compose stop store-service`, put `prev/store_service.ini` back in `config/` and
+   repeat step 2.
 4. The guardian zeroes the old key's allowance, sending this calldata as in
    [Grant the allowance](#grant-the-allowance), then anyone checks it reads 0:
 
@@ -1255,6 +1260,20 @@ sends its register about a minute after its commit.
 
    The last balance prints `0`. A negative value, from fees above about 150 gwei, makes cast refuse
    the sweep; run it again when they fall.
+
+When the old key can no longer be started, as when its ini is lost, its `pending` rows keep every
+other key from starting. Stop the service and mark them dropped:
+
+```
+docker compose stop store-service
+psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "UPDATE simplex_v1_chat_schema.sx_badge_service_name_transactions SET status = 'dropped' WHERE status = 'pending'"
+```
+
+The sender no longer follows them, and at the next start each order is judged from the chain, as
+after a nonce taken by another transaction: a commit or terms acceptance not on chain is sent again
+from the new key, an order whose register did not land fails as after a reverted register and its
+buyer can Try again, and a link edit not applied is sent again before its deadline. The marked transactions stay
+signed and valid, so one can still be mined while the old address holds enough ETH.
 
 ## Issuing codes
 
