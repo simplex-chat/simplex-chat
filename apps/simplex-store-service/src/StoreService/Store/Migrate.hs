@@ -24,6 +24,7 @@ import System.Exit (exitFailure)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race)
 import Control.Exception (bracket)
+import Control.Monad (void)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Database.PostgreSQL.Simple (Only (..))
@@ -54,13 +55,13 @@ withInstanceLock :: Int -> StoreServiceOpts -> IO a -> IO a
 withInstanceLock checkInterval StoreServiceOpts {coreOptions = CoreChatOpts {dbOptions = ChatDbOpts {dbConnstr}}} action =
   bracket (PSQL.connectPostgreSQL $ B.pack dbConnstr) PSQL.close $ \db ->
     PSQL.query db "SELECT pg_try_advisory_lock(?)" (Only instanceLockKey) >>= \case
-      [Only True] -> race (lockLost db) action >>= either (exit . ("the instance lock's database connection failed: " <>)) pure
+      [Only True] -> either id id <$> race (watchLock db) action
       _ -> exit "another store service holds this database; stop it before starting this one, --run-cli included"
   where
-    lockLost db = do
+    watchLock db = do
       threadDelay checkInterval
-      checked <- (Right <$> (PSQL.query_ db "SELECT 1" :: IO [Only Int])) `catchOwn'` (pure . Left)
-      either (pure . show) (const $ lockLost db) checked
+      void (PSQL.query_ db "SELECT 1" :: IO [Only Int]) `catchOwn'` (exit . ("the instance lock's database connection failed: " <>) . show)
+      watchLock db
 
 -- | "SXSTORE" in ASCII, the lock's key in the database's advisory lock space.
 instanceLockKey :: Int64
