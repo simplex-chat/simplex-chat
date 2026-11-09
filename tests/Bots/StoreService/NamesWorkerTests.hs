@@ -1031,15 +1031,13 @@ testNamesReport = withWorker $ \W {wCtx = ctx@Ctx {cNode, cOrders}, wChain} -> d
   setFault cNode "eth_getBalance" $ Answers "0x3782dace9d900000"
   let report changed pause = capturingStderr $ namesReport (Just q) cOrders wChain changed pause
       paused = Just Pause {paSince = orderTime, paCommitment = nrCommitment r}
-      errorLines = filter ("[ERROR " `T.isInfixOf`) . T.lines
+      reportLines = map (\l -> ("[ERROR " `T.isInfixOf` l, "names: 1 queued" `T.isInfixOf` l, hex (nrCommitment r) `T.isInfixOf` l, "alert: registration paused" `T.isInfixOf` l)) . filter ("4.000000 ETH" `T.isInfixOf`) . T.lines
       notices = atomically $ flushTQueue q
-  quiet <- report False Nothing
-  (errorLines quiet, any ("names: 1 queued" `T.isInfixOf`) (T.lines quiet)) `shouldBe` ([], True)
+  reportLines <$> report False Nothing `shouldReturn` [(False, True, False, False)]
   notices `shouldReturn` []
   void $ report True Nothing
   map (\case GENotice t -> "4.000000 ETH" `T.isInfixOf` t; _ -> False) <$> notices `shouldReturn` [True]
-  alerted <- report False paused
-  map (\l -> (hex (nrCommitment r) `T.isInfixOf` l, "alert: registration paused" `T.isInfixOf` l)) (errorLines alerted) `shouldBe` [(True, True)]
+  reportLines <$> report False paused `shouldReturn` [(True, True, True, True)]
   notices >>= \case
     [GENotice t] -> (hex (nrCommitment r) `T.isInfixOf` t, "registration paused since" `T.isInfixOf` t) `shouldBe` (False, True)
     other -> expectationFailure $ "notices: " <> show other
