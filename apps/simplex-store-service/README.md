@@ -1105,6 +1105,9 @@ reads, clears and logs its acceptance, as a community name's did:
   transactions with links of 4096 bytes, and 28,082 less with short links.
 - `gas_limit_cap` (default 8,000,000) must stay above 6,791,417: a transaction whose estimate is
   above it is not sent.
+- `gas_limit_cap` × `max_fee_per_gas` must be at most 1 ETH (0.8 ETH with the defaults), or the
+  service refuses to start: reth and geth refuse a transaction whose gas limit × max fee is above
+  `--rpc.txfeecap`, 1 ETH by default, and every later transaction of the key would wait behind it.
 
 #### Check the balance and transactions in flight
 

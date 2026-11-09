@@ -309,6 +309,9 @@ sepoliaChainId = 11155111
 defaultMaxFeePerGas :: Word64
 defaultMaxFeePerGas = 100000000000
 
+nodeTxFeeCapWei :: Integer
+nodeTxFeeCapWei = 1000000000000000000
+
 defaultTermStart :: String
 defaultTermStart = "2027-01-01T00:00:00Z"
 
@@ -709,6 +712,8 @@ parseConfig ini = do
       cConfirmations <- atLeast 1 "chain" "confirmations" 3
       cGasLimitCap <- positiveWord "gas_limit_cap" (Just 8000000)
       cMaxFeePerGas <- positiveWord "max_fee_per_gas" (Just defaultMaxFeePerGas)
+      when (toInteger cGasLimitCap * toInteger cMaxFeePerGas > nodeTxFeeCapWei) $
+        Left "chain.gas_limit_cap times chain.max_fee_per_gas must be at most 1 ETH, 10^18 wei, the fee cap of a node's transactions"
       pure ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas}
     -- http only to a node on the same machine, as the URL can carry a provider's API key
     rpcUrl = do
