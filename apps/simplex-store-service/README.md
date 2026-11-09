@@ -1333,8 +1333,9 @@ The first member to join through the link is promoted to owner, so the operator 
 it. Keep the service an owner too: below owner it cannot update the group's command menu or require
 member review, and below author it cannot post codes or replies. A failed promotion is logged at
 once, and an owner who left is logged at the next start or join. Then make the member you choose
-owner with the `/mr` command that the log line names, in `--run-cli` mode; the service never promotes
-anyone once the first promotion was attempted.
+owner with the `/mr` command that the log line names, in `--run-cli` mode; a member pending review
+is accepted as owner with the log line's `/accept member #<group> @<member> owner` instead, as `/mr`
+refuses a pending member. The service never promotes anyone once the first promotion was attempted.
 
 The join link is never logged, as anyone who has it can join. The service stores it in the
 `group_link` column of `sx_badge_service_group`, and the operator reads it there to join, in the chat

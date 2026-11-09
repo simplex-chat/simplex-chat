@@ -290,7 +290,9 @@ promoteOwner cc groupId =
 
 -- The live local name, quoted as --run-cli parses it, can differ from the configured one after a name clash or a rename.
 noOwnerHint :: GroupName -> Text
-noOwnerHint gName = "the badge group has no member owner, make one with /mr #" <> viewName gName <> " <member> owner in --run-cli mode"
+noOwnerHint gName =
+  "the badge group has no member owner, make one with /mr #" <> viewName gName <> " <member> owner in --run-cli mode"
+    <> ", or a member pending review with /accept member #" <> viewName gName <> " @<member> owner in --run-cli mode"
 
 runGroupCmd :: ChatController -> Turns -> Bool -> GroupId -> GroupCmd -> IO ()
 runGroupCmd cc turns namesOn groupId = \case

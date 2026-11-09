@@ -11,7 +11,7 @@ import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), addUTCTime)
 import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, randomBadgeCode)
-import Simplex.Chat.Controller (ChatCommand (DeleteGroup, MemberRole))
+import Simplex.Chat.Controller (ChatCommand (AcceptMember, DeleteGroup, MemberRole))
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import Simplex.Chat.Types (GroupProfile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -83,16 +83,16 @@ badgeGroupTests = describe "badge group" $ do
                    (GROwner, (True, True, True))
                  ]
   describe "log hints give commands --run-cli parses for a group name with a space" $ do
-    let hintCommand = fst . T.breakOn " in --run-cli" . snd . T.breakOnEnd " with "
-        parsedHint hint = let cmd = hintCommand hint in (cmd, parseChatCommand (encodeUtf8 cmd))
+    let hintCommands = map (fst . T.breakOn " in --run-cli") . drop 1 . T.splitOn " with "
+        parsedHint hint = map (\cmd -> (cmd, parseChatCommand (encodeUtf8 cmd))) (hintCommands hint)
     it "owner" $
       case parsedHint (T.replace "<member>" "alice" $ noOwnerHint "SimpleX Badges_1") of
-        (_, Right (MemberRole g m GROwner)) -> (g, m) `shouldBe` ("SimpleX Badges_1", "alice")
-        (cmd, r) -> expectationFailure $ "owner command " <> show cmd <> " parsed as " <> show r
+        [(_, Right (MemberRole g m GROwner)), (_, Right (AcceptMember g' m' GROwner))] -> [(g, m), (g', m')] `shouldBe` replicate 2 ("SimpleX Badges_1", "alice")
+        cmds -> expectationFailure $ "owner commands parsed as " <> show cmds
     it "orphan group" $
       case parsedHint (orphanHint "SimpleX Badges_1") of
-        (_, Right (DeleteGroup g)) -> g `shouldBe` "SimpleX Badges_1"
-        (cmd, r) -> expectationFailure $ "delete command " <> show cmd <> " parsed as " <> show r
+        [(_, Right (DeleteGroup g))] -> g `shouldBe` "SimpleX Badges_1"
+        cmds -> expectationFailure $ "delete command parsed as " <> show cmds
   describe "classifying a group message" $ do
     it "answers an advertised command that does not parse" $ do
       map p
