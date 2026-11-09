@@ -5,7 +5,7 @@ import {api} from "simplex-chat"
 import {fileError} from "./log"
 
 const progressInterval = 60_000
-export const maxTimer = 2_147_483_647
+const maxTimer = 2_147_483_647
 const pageSize = 100
 const maxCollected = 100
 const prohibitedNameChars = ".,;/\\#@'\"`~"
