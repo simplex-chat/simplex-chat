@@ -36,7 +36,7 @@ where
 import Control.Concurrent (forkIOWithUnmask)
 import Control.Concurrent.STM
 import Control.Exception (SomeException, bracket, mask_, try)
-import Control.Monad (join, when)
+import Control.Monad (join, unless)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
@@ -49,7 +49,7 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (mapMaybe)
+import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Word (Word32, Word64, Word8)
@@ -111,7 +111,8 @@ data Profiles = Profiles
     lookupSlots :: TVar Int,
     previewLookups :: TVar Int,
     cache :: TVar (Map Text (Word64, LinkProfile)),
-    hostChecks :: TVar (Map HostName (Word64, HostCheck))
+    refusedHosts :: TVar (Map HostName (Word64, ())),
+    runningLookups :: TVar (Map HostName (TMVar Bool))
   }
 
 newProfiles :: ProfileLimits -> IO Word64 -> ProfileFetcher -> HostResolver -> IO Profiles
@@ -121,8 +122,9 @@ newProfiles limits@ProfileLimits {searchFetchSlots, previewFetchSlots, hostLooku
   lookupSlots <- newTVarIO hostLookupSlots
   previewLookups <- newTVarIO previewLookupSlots
   cache <- newTVarIO Map.empty
-  hostChecks <- newTVarIO Map.empty
-  pure Profiles {limits, clock, fetchLink, resolveHost, searchSlots, previewSlots, lookupSlots, previewLookups, cache, hostChecks}
+  refusedHosts <- newTVarIO Map.empty
+  runningLookups <- newTVarIO Map.empty
+  pure Profiles {limits, clock, fetchLink, resolveHost, searchSlots, previewSlots, lookupSlots, previewLookups, cache, refusedHosts, runningLookups}
 
 monotonicSeconds :: IO Word64
 monotonicSeconds = (`div` 1000000000) <$> getMonotonicTimeNSec
@@ -350,29 +352,31 @@ checkHostsIn ps pools deadline = checkAll . L.toList
 -- | getAddrInfo is a foreign call that a timeout cannot interrupt, so each lookup runs in its own thread,
 -- which holds its lookup slot until the resolver answers, also after the caller has given up.
 lookupHost :: Profiles -> [TVar Int] -> Deadline -> HostName -> IO HostCheck
-lookupHost Profiles {limits = ProfileLimits {refusedHostSeconds, maxRefusedHosts}, clock, resolveHost, lookupSlots, hostChecks} pools deadline name = do
+lookupHost Profiles {limits = ProfileLimits {refusedHostSeconds, maxRefusedHosts}, clock, resolveHost, lookupSlots, refusedHosts, runningLookups} pools deadline name = do
   now <- clock
-  freshEntry now name <$> readTVarIO hostChecks >>= \case
-    Just cached -> pure cached
-    Nothing -> do
+  cachedRefusal <- isJust . freshEntry now name <$> readTVarIO refusedHosts
+  if cachedRefusal
+    then pure HostRefused
+    else do
       answer <- newEmptyTMVarIO
-      started <- mask_ $ waitUntil deadline (mapM_ takeSlot slots) >>= mapM (\() -> forkIOWithUnmask $ \unmask -> try (unmask $ resolveHost name) >>= finish answer)
-      case started of
+      running <- mask_ $ waitUntil deadline (runningOrStarted answer) >>= mapM (started answer)
+      case running of
         Nothing -> pure HostRefused
-        Just _ -> waitUntil deadline (readTMVar answer) >>= maybe (unanswered answer) (pure . bool HostRefused HostPublic)
+        Just lookup' -> maybe HostUnanswered (bool HostRefused HostPublic) <$> waitUntil deadline (readTMVar lookup')
   where
+    runningOrStarted answer =
+      Map.lookup name <$> readTVar runningLookups >>= \case
+        Just lookup' -> pure $ Just lookup'
+        Nothing -> Nothing <$ (mapM_ takeSlot slots >> modifyTVar' runningLookups (Map.insert name answer))
+    started answer = maybe (answer <$ forkIOWithUnmask (\unmask -> try (unmask $ resolveHost name) >>= finish answer)) pure
     finish answer resolved = do
       let public = either (\(_ :: SomeException) -> True) (all publicAddress) resolved
       now <- clock
       atomically $ do
-        modifyTVar' hostChecks $ if public then Map.delete name else remember now HostRefused
+        unless public $ modifyTVar' refusedHosts $ insertBounded maxRefusedHosts now name (now + refusedHostSeconds, ())
+        modifyTVar' runningLookups $ Map.delete name
         putTMVar answer public
         mapM_ releaseSlot slots
-    unanswered answer = do
-      now <- clock
-      atomically $ isEmptyTMVar answer >>= (`when` modifyTVar' hostChecks (remember now HostUnanswered))
-      pure HostUnanswered
-    remember now result = insertBounded maxRefusedHosts now name (now + refusedHostSeconds, result)
     slots = lookupSlots : pools
 
 publicAddress :: TransportHost -> Bool
