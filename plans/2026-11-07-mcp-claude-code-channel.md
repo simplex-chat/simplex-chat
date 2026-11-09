@@ -144,7 +144,7 @@ Decided by the user on 2026-11-08:
 Decided on 2026-11-08, review round 6:
 74. The control of a session group drops the commands of `User`, in the order of the other commands.
 75. Each part of a post is searched among the next 15602 characters, the most one message holds.
-76. `reply` refuses a caption too long for a message with the file's preview, as `send` does, before its post and its card: `text: too long for a message with this TYPE; shorten it.`
+76. `reply` refuses a caption too long for a message with the file's preview, as `send` does, before its post: `text: too long for a message with this TYPE; shorten it.` (Amended on 2026-11-09: `reply` has no card since decision 87.)
 77. Each new unattended mark removes the marks of 10 s ago and older.
 
 Decided by the user on 2026-11-08, by rule 4 of the [trust model](#trust-model):
