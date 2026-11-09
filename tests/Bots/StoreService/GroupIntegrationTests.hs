@@ -86,6 +86,7 @@ import System.FilePath ((</>))
 import System.Timeout (timeout)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (FromRow, Only (..))
+import qualified Database.PostgreSQL.Simple as PSQL
 #else
 import Database.SQLite.Simple (FromRow, Only (..))
 #endif
@@ -151,7 +152,7 @@ namesBootTests = do
   it "refuses a node serving another chain than chain_id, and dev_keys unless the node answers, only warning without them" testNodeChain
   it "masks the database password in the start line, in a URI or as a keyword" testRedactPassword
   it "refuses unverified store receipts with an issuer key clients trust, and takes them with a dev key" testUnverifiedReceiptsKey
-  it "refuses a second instance on the same Postgres database until the first ends, and takes no lock on SQLite" testInstanceLock
+  it "refuses a second instance on the same Postgres database until the first ends, exits when the lock's connection fails, and takes no lock on SQLite" testInstanceLock
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
   it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
 
@@ -170,13 +171,27 @@ testDevKeysWarned _ = do
 testInstanceLock :: HasCallStack => TestParams -> IO ()
 testInstanceLock ps = do
   Right (_, sk) <- bbsKeyGen
-  let opts = mkStoreServiceOpts ps sk
+  let locked :: IO a -> IO a
+      locked = withInstanceLock 100000 (mkStoreServiceOpts ps sk)
 #if defined(dbPostgres)
-  withInstanceLock opts (withInstanceLock opts (pure ()) `shouldThrow` (== ExitFailure 1))
+  locked (locked (pure ()) `shouldThrow` (== ExitFailure 1))
+  locked (threadDelay 500000 >> pure True) `shouldReturn` True
+  locked (terminateInstanceLockSession >> threadDelay 5000000) `shouldThrow` (== ExitFailure 1)
 #else
-  withInstanceLock opts (withInstanceLock opts (pure ()))
+  locked (locked (pure ()))
 #endif
-  withInstanceLock opts (pure True) `shouldReturn` True
+  locked (pure True) `shouldReturn` True
+
+#if defined(dbPostgres)
+terminateInstanceLockSession :: IO ()
+terminateInstanceLockSession =
+  bracket (PSQL.connect testDBConnectInfo) PSQL.close $ \db ->
+    PSQL.query
+      db
+      "SELECT pg_terminate_backend(pid) FROM pg_locks WHERE locktype = 'advisory' AND granted AND database = (SELECT oid FROM pg_database WHERE datname = current_database()) AND ((classid::bigint << 32) | objid::bigint) = ?"
+      (Only (0x535853544f5245 :: Int64))
+      `shouldReturn` [Only True]
+#endif
 
 testUnverifiedReceiptsKey :: HasCallStack => TestParams -> IO ()
 testUnverifiedReceiptsKey _ = do

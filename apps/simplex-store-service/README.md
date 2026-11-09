@@ -551,7 +551,11 @@ service account key when `[apple]` and `[google]` are configured. The folder mus
 On PostgreSQL the service holds an advisory lock on its database for as long as it runs, so a second
 process on the same database, `--run-cli` included, stops at start with `another store service holds
 this database`: two would send with the gas key's nonces and run the chat agent's queues together. Stop
-the service before the console.
+the service before the console. The lock is held by a database connection of its own, and PostgreSQL
+releases it when that connection ends, as on a PostgreSQL restart. The service checks the connection
+every 30 seconds and exits when it fails, with `Error: the instance lock's database connection
+failed: …`. Compose's `restart: unless-stopped` then starts it again, and each start takes the lock
+or exits while another process holds it.
 
 ### Upgrading from the badge service
 
