@@ -1344,12 +1344,14 @@ schema (`simplex_v1_chat_schema` by default):
 psql "$BADGE_DB_CONN" -Atc 'SELECT group_link FROM simplex_v1_chat_schema.sx_badge_service_group'
 ```
 
-The link stays valid, but once the group has an owner the service requires member review: anyone who
-joins through the link, a removed member who rejoins included, waits until a moderator, admin or
-owner accepts them, and receives no group messages until then. The first member is not reviewed, as
-only the service could accept them; review is turned on when they are promoted, and a group that
-already has an owner gets it at the next start or join. The service turns review on again at the next
-start or join if an owner turns it off. A database copy holds the link, as it holds the codes.
+The link stays valid, but once the first promotion was attempted the service holds every joiner for
+review, a removed member who rejoins included, in `--run-cli` mode too: the joiner waits until a
+moderator, admin or owner accepts them, and receives no group messages until then. The service decides
+this from its own record when the join request arrives, so a request handled at start, before the group
+lane runs, and one that arrives while an owner has turned review off are held too. The first member is
+not reviewed, as only the service could accept them. The group's member review setting is turned on
+with that promotion, or at the next start for a group promoted before, and again whenever an owner
+turns it off. A database copy holds the link, as it holds the codes.
 
 If an owner deletes the group, or removes the service from it, the service logs an error on start
 and stops serving the group. To create a new group, stop the service, delete the row, and start it

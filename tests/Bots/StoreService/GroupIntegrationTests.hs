@@ -11,7 +11,7 @@
 module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests, namesRefundChatTests, namesWorkerBootTests) where
 
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..), ServiceConfig (devAcceptUnverifiedStoreReceipts), readServiceConfig)
-import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
+import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, joinerAcceptance)
 import StoreService.Group.Command (CmdAction (..), groupCmdAction, maxUses)
 import StoreService.Names.Abi (selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
@@ -37,7 +37,7 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.Async (Async, async, cancel, poll, wait, waitCatchSTM)
-import Control.Concurrent.STM (TQueue, atomically, newTQueueIO, orElse, readTMVar, readTQueue, readTVarIO, tryReadTMVar, writeTQueue)
+import Control.Concurrent.STM (TQueue, atomically, newTMVarIO, newTQueueIO, orElse, readTMVar, readTQueue, readTVarIO, tryReadTMVar, writeTQueue)
 import Control.Exception (IOException, bracket, catch, finally, throwIO, try)
 import Control.Monad (forM_, guard, mfilter, replicateM_, unless, void, when)
 import qualified Data.Aeson as J
@@ -64,14 +64,15 @@ import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Code (NameCode (..), NamePrepaidCode, formatBadgeCode, formatNameCode, namePrepaidCodeHash, namePrepaidCodeLength, parseBadgeCode, parseNameCode, randomBadgeCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.StoreService
-import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem), ChatConfig (..), ChatController (..), ChatResponse (CRChatItemsDeleted, CRCustomChatResponse))
+import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem, APIGroupInfo), ChatConfig (..), ChatController (..), ChatResponse (CRChatItemsDeleted, CRCustomChatResponse, CRGroupInfo))
 import Simplex.Chat.Core (sendChatCmd, sendChatCmdStr)
 import Simplex.Chat.Messages (ChatRef (ChatRef), ChatType (CTGroup))
 import Simplex.Chat.Messages.CIContent (CIDeleteMode (CIDMInternal))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..))
-import Simplex.Chat.Types (AgentInvId (..), GroupMemberAdmission (..), MemberCriteria (..))
+import Simplex.Chat.Store.Profiles (GroupLinkInfo (..))
+import Simplex.Chat.Types (AgentInvId (..), GroupInfo, GroupMemberAdmission (..), MemberCriteria (..))
 import Simplex.Chat.Types.Preferences (ChatBotCommand (..), FullDeleteGroupPreference (..), GroupFeatureEnabled (..), GroupFeatureI (..), GroupPreferences (..), HistoryGroupPreference (..), SGroupFeature (..), commands_, emptyGroupPrefs, getGroupPreference)
-import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Chat.Types.Shared (GroupAcceptance (..), GroupMemberRole (..))
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), ConnShortLink (..), ContactConnType (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -98,7 +99,10 @@ badgeGroupIntegrationTests = do
   it "promotes the first joiner to owner and leaves a later joiner a member" testFirstJoinerPromoted
   it "requires member review once the group has an owner, again on start after it was cleared" testMemberReviewRequired
   it "holds a removed member who rejoins through the link for review" testRejoinerReviewed
-  it "promotes nobody after the first promotion failed" testFailedPromotionNotRetried
+  it "holds a joiner for review once the owner was set up, whatever the group profile says" testJoinerAcceptance
+  it "requires member review again when an owner turns it off" testReviewRestored
+  it "keeps a code from a member pending review, who a moderator accepts" testModeratorAdmitsPendingMember
+  it "promotes nobody after the first promotion failed, holding a later joiner for review" testFailedPromotionNotRetried
   it "promotes the earliest member on start when their join was never handled" testMissedOwnerPromotedOnStart
   it "promotes the earliest member, not a later joiner, when no owner was set up" testEarliestPromotedOnLaterJoin
   it "skips a member still joining when promoting on start" testJoiningMemberSkippedOnStart
@@ -931,6 +935,47 @@ testRejoinerReviewed ps = do
       drainUntil alice ["is connected and pending review"]
       memberStatus cc gid "bob_1" `shouldReturn` Just "pending_review"
 
+testJoinerAcceptance :: HasCallStack => TestParams -> IO ()
+testJoinerAcceptance ps = do
+  svc <- prepareGroupService ps
+  runGroupService svc $ \cc _ gid -> do
+    startedCC <- newTMVarIO cc
+    g <- groupInfoOf cc gid
+    let acceptance = joinerAcceptance startedCC g GroupLinkInfo {groupId = gid, memberRole = GRMember} bobProfile
+    acceptance `shouldReturn` Right (GAAccepted, GRMember)
+    executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 1"
+    profileMemberAdmission cc gid `shouldReturn` Nothing
+    acceptance `shouldReturn` Right (GAPendingReview, GRMember)
+
+testReviewRestored :: HasCallStack => TestParams -> IO ()
+testReviewRestored ps = do
+  svc <- prepareGroupService ps
+  runWithOwner svc $ \cc _ gid alice -> do
+    send alice ("/set admission review #" <> groupName <> " off")
+    drainUntil alice [botName <> " updated group #" <> groupName]
+    profileMemberAdmission cc gid `shouldReturn` Just reviewAll
+
+testModeratorAdmitsPendingMember :: HasCallStack => TestParams -> IO ()
+testModeratorAdmitsPendingMember ps = do
+  svc <- prepareGroupService ps
+  runWithOwner svc $ \cc env gid alice ->
+    withMemberJoined ps cc env gid alice (admitMember cc gid alice "bob") $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        send alice ("/mr #" <> groupName <> " bob moderator")
+        waitMemberRole cc gid "bob" "moderator"
+        drainUntil bob ["#" <> groupName <> ": alice changed your role from member to moderator"]
+        joinGroup cc cath
+        drainUntil bob ["#" <> groupName <> ": new member cath is connected and pending review"]
+        code <- extractCode <$> replyTo cc alice "/issue supporter"
+        awaitOnConsole bob ("Code: " <> code)
+        receivedItemsWithCode cath code `shouldReturn` 0
+        admitMember cc gid bob "cath"
+        pollUntilTrue $ (`elem` [Just "connected", Just ("complete" :: Text)]) <$> queryFirst (chatController cath) "SELECT member_status FROM group_members WHERE member_category = 'user'"
+        receivedItemsWithCode cath code `shouldReturn` 0
+        drainConsole cath
+  where
+    receivedItemsWithCode member code = countRows (chatController member) ("chat_items WHERE item_sent = 0 AND item_text LIKE '%" <> T.unpack code <> "%'")
+
 testFailedPromotionNotRetried :: HasCallStack => TestParams -> IO ()
 testFailedPromotionNotRetried ps = do
   svc <- prepareGroupService ps
@@ -942,7 +987,13 @@ testFailedPromotionNotRetried ps = do
       pollUntilTrue $ mgOwnerBootstrapped <$> storedGroup cc
       awaitLaneOnConsoles cc env [alice]
       setBotRole cc "owner"
-      withMemberJoined ps cc env gid alice (pure ()) $ \bob -> awaitLaneOnConsoles cc env [alice, bob]
+      withNewTestChat ps "bob" bobProfile $ \bob -> do
+        joinGroup cc bob
+        drainUntil bob ["connecting to group moderators for admission to group"]
+        pollUntilTrue $ (== Just (1 :: Int)) <$> queryFirst cc ("SELECT members_require_attention FROM groups WHERE group_id = " <> show gid)
+        memberStatus cc gid "bob" `shouldReturn` Just "pending_review"
+        awaitLaneOnConsoles cc env [alice]
+        drainConsole bob
       memberRoles cc gid `shouldReturn` [("alice", "member"), ("bob", "member")]
       drainConsole alice
 
@@ -1651,6 +1702,12 @@ profileUpdatedAt cc gid =
 profileMemberAdmission :: HasCallStack => ChatController -> Int64 -> IO (Maybe GroupMemberAdmission)
 profileMemberAdmission cc gid =
   queryOne cc "no group profile to read member admission from" (groupProfileSql "p.member_admission" gid)
+
+groupInfoOf :: HasCallStack => ChatController -> Int64 -> IO GroupInfo
+groupInfoOf cc gid =
+  sendChatCmd cc (APIGroupInfo gid) >>= \case
+    Right CRGroupInfo {groupInfo} -> pure groupInfo
+    r -> error $ "group info failed: " <> show r
 
 reviewAll :: GroupMemberAdmission
 reviewAll = GroupMemberAdmission {review = Just MCAll}

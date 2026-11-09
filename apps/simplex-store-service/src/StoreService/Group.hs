@@ -7,6 +7,7 @@
 
 module StoreService.Group
   ( ensureManagedGroup,
+    joinerAcceptance,
     runGroupLane,
     inertGroupConfig,
     GroupEvent (..),
@@ -33,7 +34,7 @@ import StoreService.Names.Store (CodeIssuer (..), groupNameCodesIssuedSince)
 import StoreService.Names.Turns (Turns)
 import StoreService.Store (CodeTracker (..), ManagedGroup (..), RevokeResult (..), clearCodeGroupItems, getCodeTracker, getEditableTrackers, getManagedGroup, insertManagedGroup, markOwnerBootstrapped, setCodeGroupItem)
 import StoreService.Store.Invoices (truncateToSecond)
-import Control.Concurrent.STM (TQueue, atomically, flushTQueue, readTQueue, readTVarIO, writeTQueue)
+import Control.Concurrent.STM (TMVar, TQueue, atomically, flushTQueue, readTMVar, readTQueue, readTVarIO, writeTQueue)
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM_, forever, mfilter, replicateM, unless, void)
 import Control.Monad.Except (runExceptT)
@@ -60,10 +61,11 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent (..), ciContentToText)
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store.Messages (getGroupChatItem)
+import Simplex.Chat.Store.Profiles (GroupLinkInfo (..))
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Types
-import Simplex.Chat.Types.Preferences (GroupPreferences (..), commands_, emptyGroupPrefs)
-import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Chat.Types.Preferences (GroupPreferences (..), emptyGroupPrefs)
+import Simplex.Chat.Types.Shared (GroupAcceptance (..), GroupMemberRole (..))
 import Simplex.Chat.View (simplexChatContact)
 import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), UserId)
 import Simplex.Messaging.Encoding.String (StrEncoding, strEncode)
@@ -91,12 +93,12 @@ ensureManagedGroup cc gc =
     -- The service stops instead, so a restart retries rather than leaving the group unserved.
     Left _ -> logError "badge group lookup failed, stopping" >> exitFailure
     -- The join link is a bearer secret, so it is never logged.
-    Right (Just ManagedGroup {mgGroupId}) ->
+    Right (Just ManagedGroup {mgGroupId, mgOwnerBootstrapped}) ->
       sendChatCmd cc (APIGroupInfo mgGroupId) >>= \case
         Right CRGroupInfo {groupInfo = GroupInfo {membership, groupProfile = p}}
           | memberCurrent membership -> do
               forM_ (inertGroupConfig gc p) logWarn
-              unless (commandsCurrent p) $ advertiseCommands cc mgGroupId p
+              syncServiceProfile cc mgGroupId mgOwnerBootstrapped p
               logNote "badge group ready"
               pure (Just mgGroupId)
           | otherwise -> groupGone
@@ -134,29 +136,41 @@ orphanHint :: GroupName -> Text
 orphanHint gName = "delete this orphan group with /d #" <> viewName gName <> " in --run-cli mode"
 
 -- An existing group gets the current commands, so an upgrade that changes them reaches its members.
-commandsCurrent :: GroupProfile -> Bool
-commandsCurrent groupProfile = (groupPreferences groupProfile >>= commands_) == Just groupCommands
-
-advertiseCommands :: ChatController -> GroupId -> GroupProfile -> IO ()
-advertiseCommands cc groupId groupProfile =
-  sendChatCmd cc (APIUpdateGroupProfile groupId p') >>= \case
-    Right CRGroupUpdated {} -> logNote "badge group commands advertised"
-    r -> logError ("badge group profile update failed: " <> tshow r)
+syncServiceProfile :: ChatController -> GroupId -> Bool -> GroupProfile -> IO ()
+syncServiceProfile cc groupId ownerSetUp groupProfile =
+  unless (p' == groupProfile) $
+    sendChatCmd cc (APIUpdateGroupProfile groupId p') >>= \case
+      Right CRGroupUpdated {} -> logNote "badge group profile updated"
+      r -> logError ("badge group profile update failed: " <> tshow r)
   where
-    prefs = fromMaybe emptyGroupPrefs (groupPreferences groupProfile)
-    p' = groupProfile {groupPreferences = Just (prefs {commands = Just groupCommands} :: GroupPreferences)}
+    p' = serviceProfile ownerSetUp groupProfile
 
-reviewRequired :: GroupProfile -> Bool
-reviewRequired GroupProfile {memberAdmission} = (memberAdmission >>= review) == Just MCAll
+restoreServiceProfile :: ChatController -> GroupId -> IO ()
+restoreServiceProfile cc groupId =
+  withDB' "getManagedGroup" cc getManagedGroup >>= \case
+    Right (Just ManagedGroup {mgOwnerBootstrapped}) ->
+      sendChatCmd cc (APIGroupInfo groupId) >>= \case
+        Right CRGroupInfo {groupInfo = GroupInfo {groupProfile}} -> syncServiceProfile cc groupId mgOwnerBootstrapped groupProfile
+        r -> logError ("badge group info failed: " <> tshow r)
+    _ -> pure ()
 
-requireReview :: ChatController -> GroupId -> GroupProfile -> IO ()
-requireReview cc groupId groupProfile@GroupProfile {memberAdmission} =
-  sendChatCmd cc (APIUpdateGroupProfile groupId p') >>= \case
-    Right CRGroupUpdated {} -> logNote "badge group member review required"
-    r -> logError ("badge group profile update failed: " <> tshow r)
+serviceProfile :: Bool -> GroupProfile -> GroupProfile
+serviceProfile ownerSetUp p@GroupProfile {groupPreferences, memberAdmission} =
+  p {groupPreferences = Just (prefs {commands = Just groupCommands} :: GroupPreferences), memberAdmission = admission}
   where
-    admission = fromMaybe emptyGroupMemberAdmission memberAdmission
-    p' = groupProfile {memberAdmission = Just admission {review = Just MCAll}}
+    prefs = fromMaybe emptyGroupPrefs groupPreferences
+    admission
+      | ownerSetUp = Just (fromMaybe emptyGroupMemberAdmission memberAdmission) {review = Just MCAll}
+      | otherwise = memberAdmission
+
+joinerAcceptance :: TMVar ChatController -> GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
+joinerAcceptance startedCC GroupInfo {groupId} GroupLinkInfo {memberRole} _ = do
+  cc <- atomically $ readTMVar startedCC
+  withDB' "getManagedGroup" cc getManagedGroup <&> \managed -> Right (acceptance managed, memberRole)
+  where
+    acceptance = \case
+      Right (Just ManagedGroup {mgGroupId, mgOwnerBootstrapped}) | mgGroupId == groupId && not mgOwnerBootstrapped -> GAAccepted
+      _ -> GAPendingReview
 
 -- Config is applied only at creation, since a group rename is broadcast to every member.
 inertGroupConfig :: GroupConfig -> GroupProfile -> Maybe Text
@@ -186,6 +200,7 @@ data GroupEvent
 
 data GroupAction
   = GAJoined
+  | GAProfileUpdated
   | GACommand GroupMemberRole Text
   deriving (Eq, Show)
 
@@ -194,6 +209,7 @@ data GroupAction
 groupEvent :: ChatEvent -> Maybe GroupEvent
 groupEvent = \case
   CEvtJoinedGroupMember {groupInfo = GroupInfo {groupId}} -> Just $ GEInGroup groupId GAJoined
+  CEvtGroupUpdated {toGroup = GroupInfo {groupId}} -> Just $ GEInGroup groupId GAProfileUpdated
   CEvtNewChatItems {chatItems = AChatItem _ _ (GroupChat GroupInfo {groupId} scope) ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent (MCText t), meta = CIMeta {itemDeleted, itemLive}} : _}
     | isNothing scope && isNothing itemDeleted && itemLive /= Just True -> Just $ GEInGroup groupId (GACommand (memberRole' m) t)
   _ -> Nothing
@@ -219,6 +235,7 @@ handleGroupEvent cc turns namesOn groupId ev = logUncaught (handle ev)
         | gid /= groupId -> pure ()
         | otherwise -> case action of
             GAJoined -> promoteOwner cc groupId
+            GAProfileUpdated -> restoreServiceProfile cc groupId
             GACommand role t -> case groupCmdAction role t of
               RunCmd cmd -> runGroupCmd cc turns namesOn groupId cmd
               ReplyText txt -> void $ sendGroupText cc groupId "command reply" txt
@@ -229,13 +246,12 @@ promoteFirstOwner :: ChatController -> GroupInfo -> GroupMember -> IO ()
 promoteFirstOwner cc g@GroupInfo {groupId, groupProfile} member =
   -- The flag is set before promoting, so a retry cannot promote a second owner.
   withDB' "markOwnerBootstrapped" cc (`markOwnerBootstrapped` groupId) >>= \case
-    Right True ->
+    Right True -> do
       sendChatCmd cc (APIMembersRole groupId (groupMemberId' member :| []) GROwner) >>= \case
         -- The core returns no members when every store update failed.
-        Right CRMembersRoleUser {members = _ : _} -> do
-          logNote $ "badge group owner promoted: member " <> tshow (groupMemberId' member)
-          unless (reviewRequired groupProfile) $ requireReview cc groupId groupProfile
+        Right CRMembersRoleUser {members = _ : _} -> logNote $ "badge group owner promoted: member " <> tshow (groupMemberId' member)
         r -> logError $ "badge group owner promotion failed: " <> tshow r <> " - " <> noOwnerHint (groupName' g)
+      syncServiceProfile cc groupId True groupProfile
     _ -> pure ()
 
 -- Nothing is a group that is not served, so its events are drained.
@@ -259,9 +275,10 @@ promoteOwner cc groupId =
       sendChatCmd cc (APIListMembers groupId) >>= \case
         Right CRGroupMembers {group = Group {groupInfo = groupInfo@GroupInfo {groupProfile}, members}}
           -- An owner made by hand only needs the flag set, or promoting would add a second owner.
-          | any (\m -> memberRole' m == GROwner && memberCurrent m) members -> do
-              unless mgOwnerBootstrapped $ void $ withDB' "markOwnerBootstrapped" cc (`markOwnerBootstrapped` groupId)
-              unless (reviewRequired groupProfile) $ requireReview cc groupId groupProfile
+          | any (\m -> memberRole' m == GROwner && memberCurrent m) members ->
+              unless mgOwnerBootstrapped $ do
+                void $ withDB' "markOwnerBootstrapped" cc (`markOwnerBootstrapped` groupId)
+                syncServiceProfile cc groupId True groupProfile
           -- A crash between setting the flag and promoting leaves no owner, and only the operator may retry.
           | mgOwnerBootstrapped -> logError $ noOwnerHint (groupName' groupInfo)
           | otherwise -> mapM_ (promoteFirstOwner cc groupInfo) $ listToMaybe $ sortOn groupMemberId' $ filter joined members
