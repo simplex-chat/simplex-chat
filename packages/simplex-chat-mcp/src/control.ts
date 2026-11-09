@@ -1,6 +1,6 @@
 import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
-import {Action, ActionHooks, Actions, DownloadAction, Standing, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
+import {Action, ActionHooks, Actions, DownloadAction, Standing, State, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
 import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import {linkCommand} from "./owner"
@@ -191,7 +191,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (!hasOutcomeCard(action)) return
     const content = await this.cardContent(action)
     if (action.card === undefined) await this.postCardContent(action, content)
-    else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, content, false).catch(error => this.postRefusal(error, `Action ${action.n}`))
+    else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, content, false).catch(error => this.postRefusal(error, refusedCardSubject(action, "updated")))
     const filesNote = action.tool === "leave" && action.state === "done" ? this.leftChatFilesNote(action.chat, action.subject) : undefined
     if (filesNote !== undefined) await this.post(filesNote)
   }
@@ -528,7 +528,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         action.cardImage = ""
         return this.postCardContent(action, {type: "text", text: msgContent.text})
       }
-      await this.post(`Action ${action.n}${action.state === "done" ? " was performed; its card was not posted" : ""}: ${featureOff(feature)}`)
+      await this.post(`${refusedCardSubject(action, "posted")}: ${featureOff(feature)}`)
       throw new ToolError(featureOff(feature))
     }
   }
@@ -751,6 +751,12 @@ function commandsLine(action: Action): string {
 
 function pendingLine(action: Action): string {
   return `${action.n}  ${summary(action, safeName).what}  expires ${utcMinutes(action.expires)}`
+}
+
+function refusedCardSubject({n, state, ended}: Action, card: "posted" | "updated"): string {
+  const outcomes: {[decided in State]?: string} = {done: "was performed", failed: "failed", rejected: "was rejected", expired: "expired"}
+  const outcome = ended ? "ended" : outcomes[state]
+  return outcome === undefined ? `Action ${n}` : `Action ${n} ${outcome}; its card was not ${card}`
 }
 
 function largestCard(action: Action, mode: Actions["mode"], approver: string): number {

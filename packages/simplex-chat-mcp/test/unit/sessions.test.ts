@@ -4,6 +4,7 @@ import {join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
+import {Action} from "../../src/actions"
 import {controlCommands} from "../../src/control"
 import {SessionFile, createDataFolder, readSessionFile, sessionFolder, writeSessionFile} from "../../src/files"
 import {Hub, Session} from "../../src/hub"
@@ -1170,6 +1171,14 @@ describe("session channel", () => {
       }
     }
 
+    function failDirectSends(chat: FakeChat): void {
+      const send = chat.apiSendMessages.bind(chat)
+      chat.apiSendMessages = async (target, messages) => {
+        if (target[0] === T.ChatType.Direct) throw new Error("contact not ready")
+        return send(target, messages)
+      }
+    }
+
     it("posts that Claude's answer was not posted, naming the preference, and the turn ends", async () => {
       const chat = new FakeChat()
       const {session} = await channel(chat)
@@ -1208,15 +1217,38 @@ describe("session channel", () => {
       expect(result).toMatchObject({status: "done", chat: "@4"})
     })
 
-    it("posts that a card's edit was refused, naming the preference", async () => {
+    it("posts that an action performed in mode host failed and its card was not posted, naming the preference, and the action stays failed", async () => {
       const chat = new FakeChat()
       const {session} = await channel(chat)
+      chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1), items: []})
+      refuseInGroup(chat)
+      failDirectSends(chat)
+      session.actions.mode = "host"
+      const result = (await session.call("send", {chat: "@4", text: `Join ${link}`, wait: 0}, signal().call))!.structuredContent
+      await until(() => groupPosts(chat).length === 1)
+      expect(groupPosts(chat)).toEqual([{type: "text", text: `Action 1 failed; its card was not posted: ${off("SimpleX links")}`}])
+      expect(result).toMatchObject({status: "failed", error: "contact not ready"})
+    })
+
+    const approve = (session: Session, action: Action): void => session.actions.approve(action, "Alice")
+    const reject = (session: Session, action: Action): void => session.actions.reject(action, "Alice")
+    const end = (session: Session, action: Action): void => session.actions.end(action)
+
+    it.each([
+      ["was performed", approve, false],
+      ["failed", approve, true],
+      ["was rejected", reject, false],
+      ["ended", end, false],
+    ] as const)("posts that an action %s and its card was not updated, naming the preference", async (outcome, decide, sendFails) => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      if (sendFails) failDirectSends(chat)
       const action = session.actions.create("s", {tool: "send", input: {chat: "@4", text: "hi"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4", mentions: [], responses: new Collected()}, undefined, 1, "requests")
       await until(() => action.card !== undefined)
       chat.apiUpdateChatItem = async () => Promise.reject(refusal("SimpleX links"))
-      session.actions.reject(action, "Alice")
+      decide(session, action)
       await until(() => groupPosts(chat).length === 2)
-      expect(groupPosts(chat)[1]).toEqual({type: "text", text: `Action 1: ${off("SimpleX links")}`})
+      expect(groupPosts(chat)[1]).toEqual({type: "text", text: `Action 1 ${outcome}; its card was not updated: ${off("SimpleX links")}`})
     })
 
     it("answers a /forward of a voice message whose post the core refuses with the preference, not that the file was not received", async () => {

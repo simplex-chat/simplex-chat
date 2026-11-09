@@ -567,11 +567,11 @@ sequenceDiagram
 Notes:
 
 - Until the restart with a list, new actions are refused: `The agent has no approving owner. ...` ([control.ts:158-160](../src/control.ts#L158-L160)).
-- An entry must match a human by member ID and display name, folded to one line as the restart line prints it, or the server exits with code 2 ([control.ts:434-438](../src/control.ts#L434-L438), [:887-889](../src/control.ts#L887-L889)).
+- An entry must match a human by member ID and display name, folded to one line as the restart line prints it, or the server exits with code 2 ([control.ts:434-438](../src/control.ts#L434-L438), [:893-895](../src/control.ts#L893-L895)).
 - With `--reset-owners`, the server deletes the control chat for all members and creates a new one with the same counter; the CLI refuses the option with an `--owners` list ([control.ts:642-654](../src/control.ts#L642-L654), [serve.ts:181](../src/serve.ts#L181), [cli.ts:124-126](../src/cli.ts#L124-L126)).
 - When a listed owner leaves and none remains: `... is no longer an owner. No owners remain: restart the server with --reset-owners --owners` ([control.ts:473-478](../src/control.ts#L473-L478)).
 
-Source: [control.ts:427-449](../src/control.ts#L427-L449), [:460-479](../src/control.ts#L460-L479), [:486-496](../src/control.ts#L486-L496), [:887-913](../src/control.ts#L887-L913).
+Source: [control.ts:427-449](../src/control.ts#L427-L449), [:460-479](../src/control.ts#L460-L479), [:486-496](../src/control.ts#L486-L496), [:893-919](../src/control.ts#L893-L919).
 
 ---
 
@@ -617,8 +617,8 @@ Notes:
 - A check every 60 s reads the item: a deleted message or chat fails the download; 30 minutes without a rise of `rcvProgress` fail and cancel it ([tools.ts:1158-1185](../src/tools.ts#L1158-L1185)).
 - A download still running `wait` seconds after the perform starts returns `status: performing`; the same call again attaches to the action ([tools.ts:1131-1134](../src/tools.ts#L1131-L1134)).
 - `/approve #15 N` on a download card gets the reply `Action N is a download: ...` with the card's command line ([control.ts:284](../src/control.ts#L284)).
-- A file on unknown servers gets a card that names their hosts and leaves out `/'receive CHAT N all'` ([control.ts:726-731](../src/control.ts#L726-L731), [:745-748](../src/control.ts#L745-L748), [:798-802](../src/control.ts#L798-L802)). Only such a card approves the relays; the core checks the complete description of every other download, which fails at the acceptance, or at the next check when the description completes later ([tools.ts:610](../src/tools.ts#L610), [:1166](../src/tools.ts#L1166)).
-- The card of an image or video shows the sender's preview ([control.ts:546-566](../src/control.ts#L546-L566)); in a plugin session group whose preference does not allow files and media, the core refuses it, and the card is posted as text and edited as text; a card that another preference refuses is replaced by `Action N: ` and the text that names the preference, and an action that waits for approval then fails; the refused outcome card of an action performed in mode `host` or under a standing approval is replaced by `Action N was performed; its card was not posted: ` and that text when the action is done, and the action stays as it was ([:521-544](../src/control.ts#L521-L544), [actions.ts:338-349](../src/actions.ts#L338-L349)).
+- A file on unknown servers gets a card that names their hosts and leaves out `/'receive CHAT N all'` ([control.ts:726-731](../src/control.ts#L726-L731), [:745-748](../src/control.ts#L745-L748), [:804-808](../src/control.ts#L804-L808)). Only such a card approves the relays; the core checks the complete description of every other download, which fails at the acceptance, or at the next check when the description completes later ([tools.ts:610](../src/tools.ts#L610), [:1166](../src/tools.ts#L1166)).
+- The card of an image or video shows the sender's preview ([control.ts:546-566](../src/control.ts#L546-L566)); in a plugin session group whose preference does not allow files and media, the core refuses it, and the card is posted as text and edited as text; a card that another preference refuses before the decision is replaced by `Action N: ` and the text that names the preference, and the action then fails; after the decision, the refused outcome card of an action performed in mode `host` or under a standing approval is replaced by `Action N was performed; its card was not posted: ` or `Action N failed; its card was not posted: ` and that text, a refused edit by `Action N OUTCOME; its card was not updated: ` and that text, OUTCOME being `was performed`, `failed`, `was rejected`, `expired` or `ended`, and the action stays as it was ([:521-544](../src/control.ts#L521-L544), [:756-760](../src/control.ts#L756-L760), [actions.ts:338-349](../src/actions.ts#L338-L349)).
 - A file the core receives without a request, a short voice message, also in a member chat of a group, is moved into the chat's folder at `rcvFileComplete`; one whose transfer started before a restart, only when it has its full size. Its message then shows it as `offered`, and `download` returns its path after the approval ([tools.ts:616-636](../src/tools.ts#L616-L636), [:1205-1214](../src/tools.ts#L1205-L1214), [messages.ts:194-208](../src/messages.ts#L194-L208)).
 
 Source: [tools.ts:1084-1226](../src/tools.ts#L1084-L1226), [control.ts:700-750](../src/control.ts#L700-L750), [tools.ts:665-692](../src/tools.ts#L665-L692).
@@ -1029,7 +1029,7 @@ Notes:
 
 - `/reject N` pushes `deny`; the card ends with `Rejected by NAME.` ([hub.ts:172-173](../src/hub.ts#L172-L173)).
 - The first answer applies, in the terminal or in the group. A card still pending at a prompt or an answer whose hook started after the card, or when the last attachment ends, ends with `Ended.` ([hub.ts:181](../src/hub.ts#L181), [:201-205](../src/hub.ts#L201-L205), [daemon.ts:321](../src/daemon.ts#L321), [control.ts:695-696](../src/control.ts#L695-L696)).
-- The input preview is cut to fit the card ([control.ts:154](../src/control.ts#L154), [:778-792](../src/control.ts#L778-L792)).
+- The input preview is cut to fit the card ([control.ts:154](../src/control.ts#L154), [:784-798](../src/control.ts#L784-L798)).
 - The card is posted in mode `requests` also for a session in mode `host` ([hub.ts:170](../src/hub.ts#L170)).
 
 Source: [session.ts:58-62](../src/session.ts#L58-L62), [:114-118](../src/session.ts#L114-L118), [daemon.ts:143-147](../src/daemon.ts#L143-L147), [hub.ts:169-177](../src/hub.ts#L169-L177), [control.ts:703-706](../src/control.ts#L703-L706).
@@ -1264,7 +1264,7 @@ Notes:
 
 - Rights follow the member's role in the session group, whatever way they joined and whatever their role in the Main group: admins and owners approve and send `//` and `/!`; changes in the Main group leave the session groups as they are ([hub.ts:214-216](../src/hub.ts#L214-L216), [:307-309](../src/hub.ts#L307-L309), [main-group.ts:143-158](../src/main-group.ts#L143-L158)).
 - `/join N` invites a member of the Main group as an admin, an owner of the Main group as an owner ([hub.ts:437](../src/hub.ts#L437)).
-- A role change by a member of the group raises `memberRole`, and Claude posts the new rights; a role change by Claude, as by `/observer`, raises no event, and the reply to `/observer` states the observer's rights ([hub.ts:218-225](../src/hub.ts#L218-L225), [control.ts:384-386](../src/control.ts#L384-L386), [:882-885](../src/control.ts#L882-L885)).
+- A role change by a member of the group raises `memberRole`, and Claude posts the new rights; a role change by Claude, as by `/observer`, raises no event, and the reply to `/observer` states the observer's rights ([hub.ts:218-225](../src/hub.ts#L218-L225), [control.ts:384-386](../src/control.ts#L384-L386), [:888-891](../src/control.ts#L888-L891)).
 - `/observer #G ID` is accepted from a member whose role is admin or owner and not below the member's role, as SimpleX requires for a role change, for a member who is current or pending; a member invited and not joined yet gets `No member ID in this group.` After the role change, the members are read again, so the standing approvals of the new observer count no more while that member is not an admin or owner; they stay in the chat's custom data and count again when the member becomes one again ([control.ts:375-387](../src/control.ts#L375-L387), [:167-170](../src/control.ts#L167-L170)).
 - The Main group's post names a human joiner found among the refreshed members, as `connectedToGroupMember` carries the member's status before the connection ([main-group.ts:153-154](../src/main-group.ts#L153-L154)).
 - `User` joining a session group, or a change of its role, gets no post ([hub.ts:221](../src/hub.ts#L221), [:311-313](../src/hub.ts#L311-L313)).
@@ -1273,7 +1273,7 @@ Notes:
 - A `/join N` of a member of that group already gets `You are a member of "N · NAME".` ([hub.ts:436-441](../src/hub.ts#L436-L441)).
 - A reset of the owners leaves the session groups and their members as they are ([flow 25](#25-reset-owners)).
 
-Source: [main-group.ts:124-129](../src/main-group.ts#L124-L129), [:143-158](../src/main-group.ts#L143-L158), [hub.ts:214-225](../src/hub.ts#L214-L225), [:433-444](../src/hub.ts#L433-L444), [:516](../src/hub.ts#L516), [control.ts:375-387](../src/control.ts#L375-L387), [:878-885](../src/control.ts#L878-L885).
+Source: [main-group.ts:124-129](../src/main-group.ts#L124-L129), [:143-158](../src/main-group.ts#L143-L158), [hub.ts:214-225](../src/hub.ts#L214-L225), [:433-444](../src/hub.ts#L433-L444), [:516](../src/hub.ts#L516), [control.ts:375-387](../src/control.ts#L375-L387), [:884-891](../src/control.ts#L884-L891).
 
 ---
 
