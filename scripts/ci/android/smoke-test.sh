@@ -256,6 +256,23 @@ open_user_picker_in_reachable_layout() {
   "$ui" click "$x" "$y"
 }
 
+tap_inactive_profile_in_picker() {
+  local row line x y found_x="" found_y=""
+  row=$(y_of "$other_profile") || return 1
+  while IFS= read -r line; do
+    [ "${line#* }" = "profile image placeholder" ] || continue
+    x=${line%%,*}
+    y=${line#*,}
+    y=${y%% *}
+    if [ $((y - row)) -lt 40 ] && [ $((row - y)) -lt 40 ] && [ "$x" -gt "${found_x:-0}" ]; then
+      found_x=$x
+      found_y=$y
+    fi
+  done < <("$ui" text)
+  [ -n "$found_x" ] || return 1
+  "$ui" click "$found_x" "$found_y"
+}
+
 add_profile() {
   local x y
   open_user_picker_in_reachable_layout || fail "no profile image in the toolbar"
@@ -287,7 +304,8 @@ check_profile_switch_clears_search() {
     fail "the search field is empty after typing \"$other_chat_search\""
   fi
   open_user_picker_in_reachable_layout || fail "no profile image in the toolbar"
-  "$ui" click-text citester 10
+  "$ui" wait "$other_profile" 10
+  tap_inactive_profile_in_picker || fail "no other profile in the profile picker"
   "$ui" wait "$local_chat" 10 || true
   "$ui" shot profile-switched
   check "switching to citester clears the search field" "$ui" find "$search_field"
