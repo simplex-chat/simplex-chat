@@ -184,7 +184,10 @@ fakeCommunityTerms = fakeTermsHash fakeCommunityTermsText
 fakeNewCommunityTerms = fakeTermsHash fakeNewCommunityTermsText
 
 fakeTermsLink :: ByteString -> Text
-fakeTermsLink text = "https://git.simplex.chat" <> fakeTermsPath text <> "#sha256=" <> T.drop 2 (hex $ sha256Hash text)
+fakeTermsLink = fakeTermsLinkAt "https://git.simplex.chat"
+
+fakeTermsLinkAt :: Text -> ByteString -> Text
+fakeTermsLinkAt host text = host <> fakeTermsPath text <> "#sha256=" <> T.drop 2 (hex $ sha256Hash text)
 
 fakeTermsPath :: ByteString -> Text
 fakeTermsPath text = "/simplex-chat/simplex-chat/raw/commit/" <> T.take 40 (T.drop 2 $ hex $ keccak256 text) <> "/docs/terms.md"
@@ -216,11 +219,10 @@ setTerms node getter text = do
   nextBlock node
 
 linkTermsOnNode :: FakeEthNode -> IO ()
-linkTermsOnNode node@FakeEthNode {fnPort} = mapM_ linkOnNode [("generalTermsLink()", fakeGeneralTermsText), ("communityTermsLink()", fakeCommunityTermsText)]
+linkTermsOnNode node@FakeEthNode {fnUrl} = mapM_ linkOnNode [("generalTermsLink()", fakeGeneralTermsText), ("communityTermsLink()", fakeCommunityTermsText)]
   where
     linkOnNode (getter, text) =
-      answerCall node fakeNamePolicy (selector getter) $ Returns $ linkAnswer $
-        "http://127.0.0.1:" <> T.pack (show fnPort) <> fakeTermsPath text <> "#sha256=" <> T.drop 2 (hex $ sha256Hash text)
+      answerCall node fakeNamePolicy (selector getter) $ Returns $ linkAnswer $ fakeTermsLinkAt (T.pack fnUrl) text
 
 -- | The next block, at the same time.
 nextBlock :: FakeEthNode -> IO ()

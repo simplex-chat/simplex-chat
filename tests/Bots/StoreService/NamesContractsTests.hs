@@ -48,6 +48,7 @@ import Data.Time.Clock (NominalDiffTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import Network.HTTP.Types (hContentType, hLocation, status200, status302, status404, status429, status503)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
@@ -58,7 +59,7 @@ import StoreService.Names.Chain
 import StoreService.Names.Contracts
 import StoreService.Names.Registration (labelNode, namehash, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
-import StoreService.Names.Store (setTermsText)
+import StoreService.Names.Store (getTermsText, setTermsText)
 import Test.Hspec
 
 namesContractsTests :: Spec
@@ -89,7 +90,8 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads both terms links at one block, once per block, \"\" for one not set, and hashes a set link with keccak256 as viem does" $ testTermsLinks g
     it "fetches a terms text once, keeping it by its link's hash" $ testTermsTextKept g
     it "answers a stored terms text after a restart while its host answers 404 and while fetches wait, fetching again one stored with another SHA-256 and logging it" $ testTermsTextStored g
-    it "fetches both current terms texts, storing them" $ testCurrentTermsFetched g
+    it "fetches both current terms texts, storing them, and logs links it cannot read" $ testCurrentTermsFetched g
+    it "answers a fetched terms text from memory when it cannot be stored, logging the failure" $ testTermsTextNotStored g
     it "takes only a git.simplex.chat link of one .md file at one commit with the file's SHA-256, or a loopback link on the local chain, fetching nothing else" $ testTermsLinkForms g
     it "refuses an answer other than a 200 UTF-8 text of at most 256 KB with the link's SHA-256, following no redirect" $ testTermsTextRefused g
     it "fetches no terms text for 30 seconds after a failed fetch, or as long as its Retry-After asks, up to an hour" $ testTermsBackoff g
@@ -205,7 +207,23 @@ testCurrentTermsFetched g = withServiceStores $ \open -> withFakeEthNode $ \node
   ct <- restarted
   fetchCurrentTerms ct
   mapM (termsText ct . termsAt) [fakeGeneralTermsText, fakeCommunityTermsText] `shouldReturn` [Right "SimpleX general terms v1", Right "SimpleX community terms v1"]
+  answerCall node fakeController (selector "namePolicy()") $ Reverts ""
+  unread <- restarted
+  capturingStderr (fetchCurrentTerms unread) >>= (`shouldSatisfy` T.isInfixOf "names: the terms links could not be read to fetch their texts")
   fetchedTexts node `shouldReturn` paths
+
+testTermsTextNotStored :: TVar ChaChaDRG -> IO ()
+testTermsTextNotStored g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  let general = termsAt fakeGeneralTermsText
+      generalPath = fakeTermsPath fakeGeneralTermsText
+  withTransaction st $ \db -> DB.execute_ db "ALTER TABLE sx_badge_service_name_terms ADD COLUMN refused INTEGER CHECK (refused IS NOT NULL)"
+  ct <- newContracts st TLDSimplex =<< fakeChainClient g node
+  logged <- capturingStderr $ termsText ct general `shouldReturn` Right "SimpleX general terms v1"
+  logged `shouldSatisfy` T.isInfixOf ("names: the terms text of " <> tmLink general <> " could not be stored")
+  answerText node generalPath $ TextAnswer status404 [] ""
+  termsText ct general `shouldReturn` Right "SimpleX general terms v1"
+  withTransaction st (`getTermsText` tmHash general) `shouldReturn` Nothing
+  fetchedTexts node `shouldReturn` [generalPath]
 
 testTermsLinkForms :: TVar ChaChaDRG -> IO ()
 testTermsLinkForms g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
