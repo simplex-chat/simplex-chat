@@ -925,7 +925,9 @@ fails the price read, and the service logs a warning with the price:
 - a move answers `503 name_check_unavailable` and credits nothing.
 
 Code orders and their moves read no price, so the floor does not apply to them. The default is the
-launch price of a name of 8 letters or more, $100 for 2 years. To lower prices on chain below the
+launch price of a name of 8 letters or more, $100 for 2 years. One floor bounds every length, so a
+node answering the floor price for a 6- or 7-letter name passes the check even when those names cost
+more on chain. To lower prices on chain below the
 floor, lower the setting and restart first.
 
 ### Link edits
