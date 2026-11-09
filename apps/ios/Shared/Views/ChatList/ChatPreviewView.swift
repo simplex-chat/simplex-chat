@@ -575,6 +575,11 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
+                chatItems: [],
+                chatStats: ChatStats(unreadChat: true)
+            ), progressByTimeout: Binding.constant(false))
+            ChatPreviewView(chat: Chat(
+                chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete))]
             ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
