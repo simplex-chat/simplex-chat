@@ -72,7 +72,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
   val currentVersion = remember { mutableStateOf(versionDescriptions.lastIndex) }
   val rhId = chatModel.remoteHostId()
 
-  if (updatedConditions && chatModel.conditions.value.conditionsAction?.shouldShowNotice == true) {
+  if (updatedConditions) {
     LaunchedEffect(Unit) {
       val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
       try {

@@ -297,7 +297,7 @@ struct ContentView: View {
                     WhatsNewView(updatedConditions: updatedConditions)
                         .modifier(ThemedBackground())
                         .if(updatedConditions) { v in
-                            v.task { if chatModel.conditions.conditionsAction?.showNotice ?? false { await setConditionsNotified_() } }
+                            v.task { await setConditionsNotified_() }
                         }
                 case .updatedConditions:
                     UsageConditionsView(currUserServers: Binding.constant([]), userServers: Binding.constant([]))
