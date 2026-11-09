@@ -380,7 +380,22 @@ describe("actions in mode requests", () => {
     expect(actions.all()).toEqual([])
   })
 
-  it("forgets decided actions without an open call once they expire", async () => {
+  it("keeps an expired action of serve without an open call until the next check, 60 s later, as 0.2", async () => {
+    jest.useFakeTimers()
+    const actions = actionsWith("requests", fakeHooks(), 1, 1)
+    const expiring = actions.create("d", sendFields())
+    await settled()
+    jest.advanceTimersByTime(3_600_000)
+    expect(expiring.state).toBe("expired")
+    expect(actions.find("d")).toBe(expiring)
+    jest.advanceTimersByTime(60_000 - 1)
+    expect(actions.all()).toEqual([expiring])
+    jest.advanceTimersByTime(1)
+    expect(actions.all()).toEqual([])
+    expect(jest.getTimerCount()).toBe(0)
+  })
+
+  it("forgets decided actions of a session without an open call once they expire", async () => {
     jest.useFakeTimers()
     const fake = fakeHooks()
     const actions = actionsWith("requests", fake, 1, 1)

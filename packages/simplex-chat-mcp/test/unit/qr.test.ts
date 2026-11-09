@@ -1,4 +1,5 @@
 import * as qrcode from "qrcode"
+import * as control from "../../src/control"
 import {qrCodeText} from "../../src/qr"
 
 describe("QR codes", () => {
@@ -49,5 +50,9 @@ describe("QR codes", () => {
       return top && bottom ? "█" : top ? "▀" : bottom ? "▄" : " "
     })
     expect([...lines[1]]).toEqual(expected)
+  })
+
+  it("is exported by the control module too, where 0.2 had it", () => {
+    expect((control as {qrCodeText?: unknown}).qrCodeText).toBe(qrCodeText)
   })
 })

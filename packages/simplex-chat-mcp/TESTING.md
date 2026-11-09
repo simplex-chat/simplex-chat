@@ -25,6 +25,20 @@ SMP_SERVER=/code/steward/node_modules/.cache/smp-server/smp-server-v7.1.0-beta.3
 
 Until the package is published, the printed hint `npx -y @simplex-chat/mcp register my-agent` stands for `node dist/cli.js register my-agent`.
 
+### The tests of 0.2
+
+`serve` keeps the behaviour of 0.2: the 274 unit tests of 0.2 and its 13 end-to-end tests in `scenarios` and `mcp`, from commit be668564d, pass unchanged on this source. Run them in a copy of the package whose `test` folder is that of 0.2, from the repository's root, with `SMP_SERVER` and `XFTP_SERVER` as above:
+
+```
+mkdir -p /tmp/v02
+git archive HEAD packages/simplex-chat-mcp | tar -x -C /tmp/v02
+rm -rf /tmp/v02/packages/simplex-chat-mcp/test
+git archive be668564d packages/simplex-chat-mcp/test | tar -x -C /tmp/v02
+ln -s "$PWD/packages/simplex-chat-mcp/node_modules" /tmp/v02/packages/simplex-chat-mcp/node_modules
+cd /tmp/v02/packages/simplex-chat-mcp
+node node_modules/jest/bin/jest.js test/unit test/e2e/scenarios.test.ts test/e2e/mcp.test.ts
+```
+
 ## Start, join, register
 
 1. `node dist/cli.js serve my-agent --display-name "My Agent"`. NAME, here `my-agent`, names the data folder and the Claude Code entry; `--display-name` is the name people see in SimpleX. It prints the data folder (`~/.simplex-mcp/my-agent`), creates the agent control chat "My Agent", and prints a QR code and a link that works once. For a short link the QR code has 33 modules and takes 37 columns × 19 lines; `--qr-code large` prints it at 74 × 37. Keep it running; Ctrl-C stops it. `node dist/cli.js --help` lists the options.

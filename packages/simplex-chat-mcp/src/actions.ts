@@ -294,8 +294,8 @@ export class Actions {
     return stopped
   }
 
-  private scheduleExpiry(action: Action): void {
-    const timer = setTimeout(() => this.expire(action), Math.min(action.expires - Date.now(), expiryCheck))
+  private scheduleExpiry(action: Action, delay = action.expires - Date.now()): void {
+    const timer = setTimeout(() => this.expire(action), Math.min(delay, expiryCheck))
     this.expiries.set(action.n, timer.unref())
   }
 
@@ -304,7 +304,9 @@ export class Actions {
     this.expiries.delete(action.n)
     if (action.expires > Date.now()) return this.scheduleExpiry(action)
     if (action.state !== "pending") return this.forgetExpired(action)
-    this.decide(action, "expired")
+    const kept = action.session === undefined
+    if (kept) this.scheduleExpiry(action, expiryCheck)
+    this.decide(action, "expired", !kept)
     log(`Action ${action.n} expired.`)
     this.updateCard(action)
   }
@@ -346,10 +348,10 @@ export class Actions {
     if (!this.lost) await this.postOutcome(action)
   }
 
-  private decide(action: Action, state: State): void {
+  private decide(action: Action, state: State, forget = true): void {
     action.state = state
     action.changes.notify()
-    this.forgetExpired(action)
+    if (forget) this.forgetExpired(action)
   }
 
   private updateCard(action: Action): void {
