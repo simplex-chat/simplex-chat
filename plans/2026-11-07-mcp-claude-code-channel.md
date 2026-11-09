@@ -79,7 +79,7 @@ Decided on 2026-11-08:
 28. A tool-use card is an action of tool `permission`; allowed is `performing` then `done`, denied is `rejected`, ended is `expired` with the last line `Ended.`.
 29. Open tool-use cards of a session end at each prompt and each answer whose hook started after their creation, and when the session detaches.
 30. A decided tool-use action leaves the session's actions at once.
-31. The effort level is read from the Stop hook only.
+31. The effort level is read from every turn hook whose input has `effort.level`: UserPromptSubmit, Stop and PostModelSwitch each run `hook turn`, which sends it with `POST /turn`, and a changed value updates the group's short description (ep/mcp-plugin at ed2f7a716: hooks/hooks.json:5-7, src/hook.ts:29, :78, src/hub.ts:187-191, :196-197). Corrected on 2026-11-09 to the code; it read: from the Stop hook only.
 32. The three mirroring hooks run with `"async": true`.
 33. Answers and terminal prompts are posted in parts that each fit one message, measured as the core measures it: `fitsMessage` on the encoded message, with the quote. An answer quotes the prompt only when the quote fits with the answer's first character (rewritten on 2026-11-08).
 34. A prompt in the group of a session without an attached Claude Code gets the reply `Session N is not running.`
@@ -292,13 +292,13 @@ Sources (https://code.claude.com/docs/en/hooks, https://code.claude.com/docs/en/
 ```
 value    read from                          updated on
 model    SessionStart model (optional)      PostModelSwitch to_model
-effort   Stop effort.level                  the next Stop; no event for an effort change
+effort   effort.level of a turn hook        the next turn hook; no event for an effort change
 ```
 
 ```
 on SessionStart(m):       model = m
 on PostModelSwitch(t):    model = t
-on Stop(e):               effort = e.effort.level, when given
+on a turn hook(e):        effort = e.effort.level, when given; turn hooks: UserPromptSubmit, Stop, PostModelSwitch (decision 31)
 on a change of either:    group short description = "MODEL · effort LEVEL"
 ```
 
@@ -306,7 +306,7 @@ on a change of either:    group short description = "MODEL · effort LEVEL"
 flowchart LR
   SS[SessionStart: model] --> T[POST /title]
   PM[PostModelSwitch: to_model] --> R[POST /turn]
-  ST[Stop: effort.level] --> R
+  ST[UserPromptSubmit, Stop, PostModelSwitch: effort.level] --> R
   T --> D[session group short description]
   R --> D
 ```
@@ -785,10 +785,10 @@ stateDiagram-v2
 Hooks of the plugin (https://code.claude.com/docs/en/hooks), all with `"async": true`:
 ```
 hook               input used                        route
-UserPromptSubmit   prompt                            POST /turn {id, pid, at, prompt}
-Stop               last_assistant_message            POST /turn {id, pid, at, answer, effort}
+UserPromptSubmit   prompt, effort.level              POST /turn {id, pid, at, prompt, effort}
+Stop               last_assistant_message,           POST /turn {id, pid, at, answer, effort}
                    effort.level
-PostModelSwitch    to_model                          POST /turn {id, pid, at, model}
+PostModelSwitch    to_model, effort.level            POST /turn {id, pid, at, model, effort}
 ```
 
 `pid` is `CLAUDE_PID`; `at` is `performance.timeOrigin`, the start time of the hook process. The hook cuts a prompt or an answer over 250,000 characters there, ending with `…` (decision 51), starts the daemon when none runs, and repeats a turn refused with 409 up to 15 times, 1 s apart (decision 36).
