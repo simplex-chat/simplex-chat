@@ -51,6 +51,15 @@ def record(repository, job, log=None, run=MASTER):
     return ci_failures.job_record(repository, run, job, read_log)[0]
 
 
+def attempt_timeout_record(*texts):
+    stamp = "2026-10-19T23:41:55.8774458Z "
+    log = fixture("hspec-2.11-timeout.log").replace(
+        stamp + "##[error]The action 'Run tests' has timed out after 120 minutes.",
+        "\n".join(stamp + text for text in texts),
+    )
+    return ci_failures.job_record(CHAT, MASTER, job(LINUX, "failure", "failure"), lambda: log)[0]
+
+
 class OutcomeTest(unittest.TestCase):
     def test_failed_tests_of_both_hspec_versions(self):
         failed = record(CHAT, job(LINUX, "failure", "failure"), "hspec-2.11-failures.log")
@@ -64,6 +73,37 @@ class OutcomeTest(unittest.TestCase):
             timeout = record(CHAT, job(LINUX, "failure", "failure"), log)
             self.assertEqual(timeout["outcome"], "timeout")
             self.assertEqual(timeout["hang"]["description"], "verify .lint fkey-indexes")
+
+    def test_attempt_timeout(self):
+        timeout = attempt_timeout_record(
+            "Attempt 1 timed out.", "Attempt 1 failed.", "##[error]Process completed with exit code 1."
+        )
+        self.assertEqual(timeout["outcome"], "timeout")
+        self.assertEqual(timeout["hang"]["description"], "verify .lint fkey-indexes")
+
+    def test_attempt_timeout_before_a_completed_attempt(self):
+        failed = attempt_timeout_record(
+            "Attempt 1 timed out.",
+            "Attempt 1 failed, retrying...",
+            "Schema dump",
+            "  verify and overwrite schema dump [✘]",
+            "1 example, 1 failure",
+            "Attempt 2 failed.",
+            "##[error]Process completed with exit code 1.",
+        )
+        self.assertEqual((failed["outcome"], failed["hang"]), ("failed", None))
+
+    def test_timeout_of_a_later_attempt(self):
+        timeout = attempt_timeout_record(
+            "Attempt 1 failed, retrying...",
+            "Schema dump",
+            "  verify and overwrite schema dump [✔]",
+            "Attempt 2 timed out.",
+            "Attempt 2 failed.",
+            "##[error]Process completed with exit code 1.",
+        )
+        self.assertEqual(timeout["outcome"], "timeout")
+        self.assertEqual(timeout["hang"]["item"], "/Schema dump/verify and overwrite schema dump/")
 
     def test_build_failures(self):
         expected = {

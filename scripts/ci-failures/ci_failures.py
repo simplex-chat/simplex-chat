@@ -61,6 +61,8 @@ LOCATION = re.compile(r"^  (\S+:\d+:\d+): $")
 NUMBERED = re.compile(r"^  \d+\) ")
 RERUN = re.compile(r'^  To rerun use: --match (".*")(?: --seed -?\d+)?$')
 SUMMARY = re.compile(r"^\d+ examples?, (\d+) failures?(?:, \d+ pending)?$")
+ATTEMPT_TIMEOUT = re.compile(r"^Attempt \d+ timed out\.$")
+ATTEMPT_RETRY = re.compile(r"^Attempt \d+ failed, retrying\.\.\.$")
 GHC_ERROR = re.compile(r"^\S+:\d+:\d+: error:")
 RETRY = re.compile(r'^Test (?:exception|failed): (?:("(?:[^"\\]|\\.)*"), )?(.*)$')
 SRC_LOC = re.compile(r'\(?Just \(SrcLoc \{[^}]*srcLocFile = "([^"]*)"[^}]*\}\)\)?')
@@ -223,6 +225,17 @@ def step_timeout(lines: list[Line], step: str) -> int | None:
     return next((i for i, line in enumerate(lines) if line.text.startswith(marker)), None)
 
 
+def attempt_timeout(lines: list[Line]) -> int | None:
+    end = next((i for i in range(len(lines) - 1, -1, -1) if ATTEMPT_TIMEOUT.match(lines[i].text)), None)
+    if end is None or any(SUMMARY.match(line.text) for line in lines[end + 1 :]):
+        return None
+    return end
+
+
+def attempt_start(lines: list[Line], end: int) -> int:
+    return max((i + 1 for i in range(end) if ATTEMPT_RETRY.match(lines[i].text)), default=0)
+
+
 def iso(time: datetime.datetime) -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -381,6 +394,10 @@ def job_record(
         if timeout is not None:
             record["outcome"] = "timeout"
             record["hang"] = hang(lines, timeout)
+        elif (attempt := attempt_timeout(lines)) is not None:
+            start = attempt_start(lines, attempt)
+            record["outcome"] = "timeout"
+            record["hang"] = hang(lines[start:], attempt - start)
         elif not any(output.summaries):
             record["outcome"] = "crashed"
             record["build"] = build_failure(lines, name)

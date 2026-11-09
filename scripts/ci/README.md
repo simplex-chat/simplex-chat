@@ -211,7 +211,7 @@ python3 scripts/ci-failures/ci_failures.py test https://github.com/simplex-chat/
 The cache keeps the jobs of completed runs, a record per job and the test order of each job and branch, in a subdirectory named by a digest of ci_failures.py, so records written by another version of ci_failures.py are not read; logs are discarded after parsing. A first query of a repository downloads the logs of the failed jobs in the window, and in simplexmq also of the passed test jobs: with `CI=true`, its tests/Util.hs runs a failed test once more, and `branch` counts these retries by the `it` description in the retry line, or by message in lines without a description. The logs of passed test jobs are also read in pull request and manual runs, and in push runs on stable and v* tags, where the tests are run up to 3 times in the test step.
 
 Outcome of a test job:
-- passed, failed, timeout (the test step timed out), crashed (the test step failed without a timeout or failed tests);
+- passed, failed, timeout (the test step timed out, or its last attempt printed "Attempt <n> timed out."), crashed (the test step failed without a timeout or failed tests);
 - build failed, runner lost, cancelled, log missing, not tested (the test step was skipped, or printed "No tests selected"), in progress (a job of an unfinished run, in `pr` and `run`).
 
 Labels of a failure:
