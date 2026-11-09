@@ -1,18 +1,25 @@
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync} from "fs"
+import {tmpdir} from "os"
+import {basename, dirname, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {ChatEvent, T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
-import {Actions, Mode, NewAction, ToolError} from "../../src/actions"
+import {Action, Actions, Mode, NewAction, ToolError} from "../../src/actions"
 import {Control, cardText, parseCommand} from "../../src/control"
 import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
-import {OwnerEntry, deliveries} from "../../src/serve"
+import {OwnerEntry, waitForCancelledCards} from "../../src/serve"
 import {AgentTools} from "../../src/tools"
-import {FakeChat, actionsWith, contact, direct, event, fakeHooks, group, groupChat, item, member, settled, signal, user} from "./fixtures"
+import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
 beforeEach(() => {
   jest.spyOn(process.stdout, "write").mockImplementation(() => true)
 })
 
 afterEach(() => jest.restoreAllMocks())
+
+afterAll(() => rmSync(data, {recursive: true, force: true}))
+
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
 
 const alice = member(3, "Alice", T.GroupMemberRole.Owner)
 const bob = member(7, "Bob", T.GroupMemberRole.Member)
@@ -39,7 +46,7 @@ function agentChats(): FakeChat {
 }
 
 async function controlWith(chat: FakeChat, actions: Actions, owners?: OwnerEntry[], mode: Mode = "requests"): Promise<{control: Control; tools: AgentTools}> {
-  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: chatInfo => control.standingApprover(chatInfo)}, mode)
+  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data}, mode)
   const control: Control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint", qrCode: "small"}, actions, tools)
   await control.load()
   return {control, tools}
@@ -160,19 +167,20 @@ describe("owner commands", () => {
   it("refuses chat references longer than 15 digits, such as an alias of the agent control chat", async () => {
     const {control, chat} = await setup()
     const alias = `#${(1n << 64n) + 10n}`
-    for (const params of [`${alias} all`, "@1234567890123456 all"]) {
-      expect(await control.ownerCommand(alice, {keyword: "approve", params})).toBe("Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands.")
+    for (const params of [`${alias} all`, "@1234567890123456 all", `${alias} files`]) {
+      expect(await control.ownerCommand(alice, {keyword: "approve", params})).toBe(commandsReply)
     }
-    expect(await control.ownerCommand(alice, {keyword: "revoke", params: alias})).toBe("Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands.")
+    expect(await control.ownerCommand(alice, {keyword: "revoke", params: alias})).toBe(commandsReply)
+    expect(await control.ownerCommand(alice, {keyword: "leave", params: alias})).toBe(commandsReply)
     expect(await control.ownerCommand(alice, {keyword: "approve", params: "@123456789012345 all"})).toBe("No chat @123456789012345. /list shows the agent's chats.")
     expect(chat.customData).toEqual([])
   })
 
   it("answers other commands with the list", async () => {
     const {control} = await setup()
-    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "revoke", "revoke 2", "revoke #2 all", "pending 5", "list all"]
+    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "receive #2 all", "receive 5 all", "receive #2 5 files", "receive off", "forward", "forward #2 all", "forward #2 5 all", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all"]
     for (const text of others) {
-      expect(await control.ownerCommand(bob, parseCommand(`/${text}`)!)).toBe("Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands.")
+      expect(await control.ownerCommand(bob, parseCommand(`/${text}`)!)).toBe(commandsReply)
     }
   })
 
@@ -224,8 +232,8 @@ describe("approval of all messages to a chat", () => {
     expect(await control.ownerCommand(alice, {keyword: "approve", params: "@4 all"})).toBe("Approved for bot SimpleX Directory (@4) by Alice. /'revoke @4'")
     expect(customDataOf(chat, "@4")).toEqual({other: 1, simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: expect.stringMatching(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/)}})
     expect([action, second, other, leave].map(({state, decidedBy}) => [state, decidedBy])).toEqual([["performing", "Alice"], ["performing", "Alice"], ["pending", undefined], ["pending", undefined]])
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBe("Alice")
-    expect(control.standingApprover(chatInfoOf(chat, "#2"))).toBeUndefined()
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "messages")).toBe("Alice")
+    expect(control.standingApprover(chatInfoOf(chat, "#2"), "messages")).toBeUndefined()
   })
 
   it("approves a group chat and refuses the agent control chat and unknown chats", async () => {
@@ -244,7 +252,7 @@ describe("approval of all messages to a chat", () => {
     await control.ownerCommand(alice, {keyword: "approve", params: "@4 all"})
     expect(await control.ownerCommand(alice, {keyword: "revoke", params: "@4"})).toBe("Messages to bot SimpleX Directory (@4) need approval again.")
     expect(customDataOf(chat, "@4")).toEqual({other: 1})
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBeUndefined()
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "messages")).toBeUndefined()
     expect(await control.ownerCommand(alice, {keyword: "revoke", params: "@4"})).toBe("Messages to @4 have no standing approval.")
     expect(await control.ownerCommand(alice, {keyword: "revoke", params: "#10"})).toBe("Messages to #10 have no standing approval.")
     expect(await control.ownerCommand(alice, {keyword: "revoke", params: "#99"})).toBe("Messages to #99 have no standing approval.")
@@ -257,16 +265,427 @@ describe("approval of all messages to a chat", () => {
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     directory.customData = {simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: "2026-10-18T10:00:00.000Z"}}
     const {control} = await controlWith(chat, actions)
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBe("Alice")
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "messages")).toBe("Alice")
     chat.members.set(10, [self, {...alice, memberRole: T.GroupMemberRole.Admin}, bob])
     await control.load()
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBeUndefined()
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "messages")).toBeUndefined()
     chat.members.set(10, [self, bob])
     await control.load()
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBeUndefined()
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "messages")).toBeUndefined()
     chat.members.set(10, [self, alice, {...bob, memberRole: T.GroupMemberRole.Owner}])
-    expect((await controlWith(chat, actions, [{memberId: 3, name: "Alice"}])).control.standingApprover(chatInfoOf(chat, "@4"))).toBe("Alice")
-    expect((await controlWith(chat, actions, [{memberId: 7, name: "Bob"}])).control.standingApprover(chatInfoOf(chat, "@4"))).toBeUndefined()
+    expect((await controlWith(chat, actions, [{memberId: 3, name: "Alice"}])).control.standingApprover(chatInfoOf(chat, "@4"), "messages")).toBe("Alice")
+    expect((await controlWith(chat, actions, [{memberId: 7, name: "Bob"}])).control.standingApprover(chatInfoOf(chat, "@4"), "messages")).toBeUndefined()
+  })
+})
+
+function downloadFields(chat = "#2", file: object = {}): NewAction {
+  return {
+    tool: "download",
+    input: {chat, item: 30},
+    subject: {kind: "business", name: "ep", incognito: false},
+    chat,
+    item: 30,
+    from: "Bob",
+    file: {fileId: 7, name: "report.pdf", size: 2400000, type: "file", ...file},
+  }
+}
+
+describe("receiving all files of a chat", () => {
+  it("receives a download and the later ones of its chat, apart from its messages and other pending downloads, until /receive CHAT off", async () => {
+    const {control, actions, chat} = await setup()
+    const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
+    directory.customData = {other: 1}
+    const download = actions.create("d1", downloadFields("@4"))
+    const second = actions.create("d2", {...downloadFields("@4", {fileId: 8}), item: 31} as NewAction)
+    await settled()
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${download.n} all`})).toBe("Files approved for bot SimpleX Directory (@4) by Alice. /'receive @4 off'")
+    expect([download, second].map(({state, decidedBy}) => [state, decidedBy])).toEqual([["performing", "Alice"], ["pending", undefined]])
+    expect(actions.get(5)).toMatchObject({state: "pending"})
+    expect(customDataOf(chat, "@4")).toEqual({other: 1, simplexMcpFiles: {approvedBy: "Alice", approvedById: 3, approvedAt: expect.any(String)}})
+    expect([control.standingApprover(chatInfoOf(chat, "@4"), "files"), control.standingApprover(chatInfoOf(chat, "@4"), "messages")]).toEqual(["Alice", undefined])
+    await control.ownerCommand(alice, {keyword: "approve", params: "@4 all"})
+    expect((await control.ownerCommand(alice, {keyword: "list", params: ""}))!.split("\n")[0]).toBe("@4  bot SimpleX Directory, approved for this chat by Alice, files approved by Alice")
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: "@4 off"})).toBe("Files from bot SimpleX Directory (@4) need approval again.")
+    expect(customDataOf(chat, "@4")).toEqual({other: 1, simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: expect.any(String)}})
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: "@4 off"})).toBe("Files from @4 have no standing approval.")
+    expect(await control.ownerCommand(alice, {keyword: "revoke", params: "@4"})).toBe("Messages to bot SimpleX Directory (@4) need approval again.")
+    expect(customDataOf(chat, "@4")).toEqual({other: 1})
+  })
+
+  it("receives the named download also from unknown servers, and each named download only", async () => {
+    const {control, actions} = await setup()
+    const known = actions.create("d1", downloadFields("@4"))
+    const unknown = actions.create("d2", {...downloadFields("@4", {fileId: 8}), item: 31, unknownServers: ["xftp://hash2@xftp.example.com"]} as NewAction)
+    await settled()
+    const reply = "Files approved for bot SimpleX Directory (@4) by Alice. /'receive @4 off'"
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${known.n} all`})).toBe(reply)
+    expect([known.state, unknown.state]).toEqual(["performing", "pending"])
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${unknown.n} all`})).toBe(reply)
+    expect(unknown).toMatchObject({state: "performing", decidedBy: "Alice"})
+  })
+
+  it("leaves a download that stops being pending while the approval is stored", async () => {
+    const {control, actions, chat} = await setup()
+    const download = actions.create("d1", downloadFields("@4"))
+    await settled()
+    const store = chat.apiSetContactCustomData.bind(chat)
+    chat.apiSetContactCustomData = async (contactId, customData) => {
+      actions.reject(download, "Bob")
+      return store(contactId, customData)
+    }
+    await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${download.n} all`})
+    expect(download).toMatchObject({state: "rejected", decidedBy: "Bob"})
+  })
+
+  it("takes /receive and /forward for downloads only, and /approve for the other actions only", async () => {
+    const {control, actions, action, chat} = await setup()
+    const download = actions.create("d1", downloadFields("@4"))
+    await settled()
+    expect(await control.ownerCommand(alice, {keyword: "approve", params: `@4 ${download.n}`})).toBe(`Action ${download.n} is a download: /'receive @4 ${download.n}', /'receive @4 ${download.n} all', /'forward @4 ${download.n}' or /'reject @4 ${download.n}'.`)
+    for (const params of [`${action.n}`, `@4 ${action.n}`]) {
+      expect(await control.ownerCommand(alice, {keyword: "receive", params})).toBe(`Action ${action.n} is not a download.`)
+      expect(await control.ownerCommand(alice, {keyword: "forward", params})).toBe(`Action ${action.n} is not a download.`)
+    }
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${action.n} all`})).toBe(`Action ${action.n} is not a download.`)
+    expect([action.state, download.state]).toEqual(["pending", "pending"])
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${download.n}`})).toBeUndefined()
+    expect(download).toMatchObject({state: "performing", decidedBy: "Alice"})
+    expect(chat.customData).toEqual([])
+  })
+
+  it("answers /approve CHAT files and /revoke CHAT files with the command list", async () => {
+    const {control, chat} = await setup()
+    expect(await control.ownerCommand(alice, {keyword: "approve", params: "@4 files"})).toBe(commandsReply)
+    expect(await control.ownerCommand(alice, {keyword: "revoke", params: "@4 files"})).toBe(commandsReply)
+    expect(chat.customData).toEqual([])
+  })
+})
+
+describe("downloads in the agent control chat", () => {
+  const preview = `data:image/jpg;base64,${"A".repeat(14000)}`
+  const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
+
+  afterEach(() => {
+    rmSync(join(data, "forwarded"), {recursive: true, force: true})
+    rmSync(join(data, "files", "group-2"), {recursive: true, force: true})
+  })
+
+  async function downloadSetup(file: object = {}) {
+    const fake = fakeHooks()
+    const actions: Actions = new Actions("requests", 23, 1, {...fake.hooks, refusal: action => control.refusal(action), postCard: action => control.postCard(action), outcome: action => control.outcome(action)})
+    const chat = agentChats()
+    const {control, tools} = await controlWith(chat, actions)
+    const action = actions.create("d", downloadFields("#2", file))
+    await flushed()
+    const cards = chat.sent.filter(({chat: [, id]}) => id === 10).map(({messages: [message]}) => message)
+    return {fake, actions, chat, control, tools, action, cards}
+  }
+
+  it("posts a file card with the sender, the name and the size, and edits it at the outcome", async () => {
+    const {actions, chat, action, cards} = await downloadSetup()
+    expect(cards.map(({msgContent}) => msgContent)).toEqual([
+      {
+        type: "text",
+        text: "I want to download a file from Bob in business ep (#2):\n`report.pdf`, 2.4 MB\n/'receive #2 1', /'receive #2 1 all', /'forward #2 1' or /'reject #2 1'",
+      },
+    ])
+    actions.reject(action, "Alice")
+    await flushed()
+    expect(chat.updates.at(-1)).toEqual({chatId: 10, itemId: action.card, text: "I want to download a file from Bob in business ep (#2):\n`report.pdf`, 2.4 MB\nRejected by Alice."})
+  })
+
+  it("shows the sender's preview on an image card, resized to fit the card, or a text card when it can't be resized", async () => {
+    const small = "data:image/jpg;base64,/9j/small"
+    const fits = await downloadSetup({type: "image", preview: small})
+    expect(fits.cards[0].msgContent).toMatchObject({type: "image", image: small, text: expect.stringMatching(/^I want to download a file from Bob/)})
+    const resize = jest.spyOn(core, "chatResizeImageUri").mockResolvedValue(small)
+    const resized = await downloadSetup({type: "video", preview, duration: 42})
+    expect(resized.cards[0].msgContent).toMatchObject({type: "video", image: small, duration: 42})
+    const [[bytes, budget]] = resize.mock.calls
+    expect(Buffer.from(bytes as Uint8Array).toString("base64")).toBe("A".repeat(14000))
+    expect(budget).toBeLessThan(14000)
+    resize.mockRejectedValue(new Error("image cannot be decoded or does not fit maxSize"))
+    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+    const text = await downloadSetup({type: "image", preview})
+    expect(text.cards[0].msgContent.type).toBe("text")
+    expect(errors).toHaveBeenCalledWith("action 1 card image: image cannot be decoded or does not fit maxSize\n")
+  })
+
+  it("posts no card for a download in mode host or under the files approval", async () => {
+    for (const mode of ["requests", "host"] as const) {
+      const chat = agentChats()
+      const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
+      directory.customData = {simplexMcpFiles: {approvedBy: "Alice", approvedById: 3, approvedAt: "2026-10-30T10:00:00.000Z"}}
+      const fake = fakeHooks()
+      const actions: Actions = new Actions(mode, 23, 1, {...fake.hooks, refusal: action => control.refusal(action), postCard: action => control.postCard(action), outcome: action => control.outcome(action)})
+      const {control} = await controlWith(chat, actions, undefined, mode)
+      const action = actions.create("d", downloadFields("@4"), control.standingApprover(chatInfoOf(chat, "@4"), "files"))
+      await flushed()
+      fake.performs[0].resolve()
+      await flushed()
+      expect(action).toMatchObject({state: "done", standing: mode === "requests"})
+      expect(chat.sent).toEqual([])
+    }
+  })
+
+  it("forwards the file into the agent control chat as a reply to its card, which stays pending, and keeps it outside the chat's folder", async () => {
+    const {chat, tools, action, cards, control} = await downloadSetup()
+    const forwarded = join(data, "forwarded", "group-2", "7.pdf")
+    const offered = fileItem(30, {type: "file", text: "report"}, {type: "rcvInvitation"}, {chatDir: {type: "groupRcv", groupMember: bob}})
+    chat.chats.get("#2")!.items.push(offered)
+    chat.responses.set(`/freceive 7 ${forwarded}`, {type: "rcvFileAccepted", user, chatItem: event(chatInfoOf(chat, "#2"), offered)})
+    expect(await control.ownerCommand(alice, {keyword: "forward", params: `#2 ${action.n}`})).toBeUndefined()
+    await flushed()
+    writeFileSync(forwarded, "report")
+    tools.onFile(event(chatInfoOf(chat, "#2"), fileItem(30, {type: "file", text: "report"}, {type: "rcvComplete"}, {fileSource: {filePath: forwarded}})))
+    while (chat.sent.length < 2) await flushed()
+    const copy = chat.sent[1].messages[0].fileSource!.filePath
+    expect(chat.sent[1]).toEqual({chat: [T.ChatType.Group, 10], messages: [{fileSource: {filePath: copy}, msgContent: {type: "file", text: ""}, quotedItemId: action.card, mentions: {}}]})
+    expect([dirname(dirname(copy)), basename(copy), readFileSync(copy, "utf8")]).toEqual([join(data, "files", "sent"), "report.pdf", "report"])
+    expect([existsSync(forwarded), existsSync(join(data, "files", "group-2", "7.pdf"))]).toEqual([true, false])
+    expect(action.state).toBe("pending")
+    expect(cards).toHaveLength(1)
+  })
+
+  it("forwards an image with the sender's preview, as a reply to its card only when the message fits", async () => {
+    jest.spyOn(core, "chatResizeImageUri").mockResolvedValue("data:image/jpg;base64,/9j/small")
+    for (const [length, quoted] of [[14000, true], [14800, false]] as const) {
+      const image = `data:image/jpg;base64,${"A".repeat(length)}`
+      const {chat, action, control} = await downloadSetup({type: "image", preview: image})
+      const path = join(data, "files", "group-2", "7.pdf")
+      mkdirSync(dirname(path), {recursive: true})
+      writeFileSync(path, "image")
+      chat.chats.get("#2")!.items.push(fileItem(30, {type: "image", text: "", image}, {type: "rcvComplete"}, {chatDir: {type: "groupRcv", groupMember: bob}, fileSource: {filePath: path}}))
+      await control.ownerCommand(alice, {keyword: "forward", params: `${action.n}`})
+      while (chat.sent.length < 2) await flushed()
+      expect(chat.sent[1].messages[0]).toEqual({fileSource: {filePath: expect.any(String)}, msgContent: {type: "image", text: "", image}, quotedItemId: quoted ? action.card : undefined, mentions: {}})
+    }
+  })
+
+  it("replies when the file is not forwarded", async () => {
+    const {chat, tools, action, control} = await downloadSetup()
+    chat.chats.get("#2")!.items.push(fileItem(30, {type: "file", text: "report"}, {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2}, {chatDir: {type: "groupRcv", groupMember: bob}}))
+    await control.ownerCommand(alice, {keyword: "forward", params: `${action.n}`})
+    await flushed()
+    tools.onFile(event(chatInfoOf(chat, "#2"), fileItem(30, {type: "file", text: "report"}, {type: "rcvError", rcvFileError: {type: "auth"}})))
+    await flushed()
+    expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe("Action 1: the file was not received: `Wrong key or unknown file chunk address - most likely file is deleted.`.")
+  })
+
+  it("replies when the forwarded file can't be posted, and deletes its copy", async () => {
+    const {chat, action, control} = await downloadSetup()
+    const path = join(data, "files", "group-2", "7.pdf")
+    mkdirSync(dirname(path), {recursive: true})
+    writeFileSync(path, "report")
+    rmSync(join(data, "files", "sent"), {recursive: true, force: true})
+    chat.chats.get("#2")!.items.push(fileItem(30, {type: "file", text: "report"}, {type: "rcvComplete"}, {chatDir: {type: "groupRcv", groupMember: bob}, fileSource: {filePath: path}}))
+    const send = chat.apiSendMessages.bind(chat)
+    chat.apiSendMessages = async (target, messages) => {
+      if (messages[0].fileSource !== undefined) throw new Error("file too large")
+      return send(target, messages)
+    }
+    await control.ownerCommand(alice, {keyword: "forward", params: `${action.n}`})
+    while (chat.sent.length < 2) await flushed()
+    expect(chat.sent[1].messages[0].msgContent.text).toBe("Action 1: the file was not received: `file too large`.")
+    expect(readdirSync(join(data, "files", "sent"))).toEqual([])
+  })
+
+  it("fails and cancels the running downloads of a chat when /delete CHAT files deletes its files, forwarded ones included", async () => {
+    const {chat, action, control} = await downloadSetup()
+    const folder = join(data, "files", "group-2")
+    const forwarded = join(data, "forwarded", "group-2")
+    const offered = fileItem(30, {type: "file", text: "report"}, {type: "rcvInvitation"}, {chatDir: {type: "groupRcv", groupMember: bob}})
+    chat.chats.get("#2")!.items.push(offered)
+    chat.responses.set(`/freceive 7 ${join(forwarded, "7.pdf")}`, {type: "rcvFileAccepted", user, chatItem: event(chatInfoOf(chat, "#2"), offered)})
+    chat.responses.set("/fcancel 7", {type: "rcvFileCancelled", user, rcvFileTransfer: {fileId: 7}})
+    await control.ownerCommand(alice, {keyword: "forward", params: `${action.n}`})
+    await flushed()
+    mkdirSync(folder, {recursive: true})
+    writeFileSync(join(folder, "3.pdf"), "x".repeat(120))
+    writeFileSync(join(forwarded, "4.pdf"), "x".repeat(80))
+    expect(await control.ownerCommand(alice, {keyword: "delete", params: "#2 files"})).toBe("Deleted 2 files from #2, 200 bytes.")
+    await flushed()
+    expect(chat.commands).toContain("/fcancel 7")
+    expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe("Action 1: the file was not received: `Your owner deleted the files of this chat.`.")
+    expect([existsSync(folder), existsSync(forwarded)]).toEqual([false, false])
+  })
+
+  it("cancels the downloads of a chat that the core continues after a restart when /delete CHAT files deletes its files", async () => {
+    const {chat, control} = await downloadSetup()
+    const items = chat.chats.get("#2")!.items
+    items.push(fileItem(30, {type: "file", text: ""}, {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2}, {fileId: 8}))
+    items.push(...Array.from({length: 120}, (_, i) => item(40 + i, "hi")))
+    items.push(fileItem(200, {type: "voice", text: "", duration: 3}, {type: "rcvAccepted"}, {fileId: 9}))
+    items.push(fileItem(201, {type: "file", text: ""}, {type: "rcvComplete"}, {fileId: 10}))
+    for (const fileId of [8, 9]) chat.responses.set(`/fcancel ${fileId}`, {type: "rcvFileCancelled", user, rcvFileTransfer: {fileId}})
+    expect(await control.ownerCommand(alice, {keyword: "delete", params: "#2 files"})).toBe("No files from #2.")
+    expect(chat.commands.filter(cmd => cmd.startsWith("/fcancel"))).toEqual(["/fcancel 9", "/fcancel 8"])
+  })
+})
+
+describe("files sent by the agent in the agent control chat", () => {
+  const refusal = "private keys and the server's own files are not sent."
+  const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
+  let files: string
+
+  beforeEach(() => {
+    files = realpathSync(mkdtempSync(join(tmpdir(), "simplex-mcp-files-")))
+  })
+
+  afterEach(() => rmSync(files, {recursive: true, force: true}))
+
+  it("posts the refusal of a private key with the path as code, and logs it on one line", async () => {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const chat = agentChats()
+    const {tools} = await controlWith(chat, actionsWith("requests", fakeHooks()))
+    const key = join(files, "id_rsa")
+    writeFileSync(key, "key")
+    const result = await tools.call("send", {chat: "@4", file: key}, signal().call)
+    expect((result!.content[0] as {text: string}).text).toBe(`file: ${key} is refused: ${refusal}`)
+    await flushed()
+    expect(lines.at(-1)).toBe(`Refused to send ${key} to bot SimpleX Directory (@4): ${refusal}`)
+    expect(chat.sent.map(({chat: [, id], messages: [{msgContent}]}) => [id, msgContent.text])).toEqual([[10, `Refused to send \`${key}\` to bot SimpleX Directory (@4): ${refusal}`]])
+  })
+
+  it("posts and logs the failed upload of a sent file", async () => {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const chat = agentChats()
+    const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()))
+    const sentFile = fileItem(40, {type: "file", text: ""}, {type: "sndError", sndFileError: {type: "auth"}}, {chatDir: {type: "directSnd"}})
+    control.fileNotSent({type: "sndFileError", user, chatItem_: event(chatInfoOf(chat, "@4"), sentFile), fileTransferMeta: {fileId: 7}, errorMessage: "XFTP AUTH"} as unknown as Parameters<Control["fileNotSent"]>[0])
+    await flushed()
+    const reason = "Wrong key or unknown file chunk address - most likely file is deleted."
+    expect(lines.at(-1)).toBe(`The file report.pdf was not sent to bot SimpleX Directory (@4): ${reason}.`)
+    expect(chat.sent.map(({chat: [, id], messages: [{msgContent}]}) => [id, msgContent.text])).toEqual([[10, `The file \`report.pdf\` was not sent to bot SimpleX Directory (@4): \`${reason}\`.`]])
+  })
+
+  it("shows the image's preview on the send card", async () => {
+    const preview = "data:image/jpg;base64,/9j/preview"
+    jest.spyOn(core, "resizeImage").mockResolvedValue(preview)
+    const fake = fakeHooks()
+    const actions: Actions = new Actions("requests", 23, 1, {...fake.hooks, refusal: action => control.refusal(action), postCard: action => control.postCard(action), outcome: action => control.outcome(action)})
+    const chat = agentChats()
+    const {control, tools} = await controlWith(chat, actions)
+    const photo = join(files, "trail.jpg")
+    writeFileSync(photo, "x".repeat(3_100_000))
+    const {controller, call} = signal()
+    const sending = tools.call("send", {chat: "@4", text: "trail map", file: photo}, call)
+    while (chat.sent.length === 0) await flushed()
+    expect(chat.sent[0]).toEqual({
+      chat: [T.ChatType.Group, 10],
+      messages: [
+        {
+          msgContent: {type: "image", text: `I want to send a message to bot SimpleX Directory:\n\`trail map\`\nattaching image \`${photo}\`, 3.1 MB\n/'approve @4 1', /'approve @4 all' or /'reject @4 1'`, image: preview},
+          mentions: {},
+        },
+      ],
+    })
+    controller.abort()
+    expect(await sending).toBeUndefined()
+  })
+})
+
+describe("leaving a chat at an owner's command", () => {
+  it("leaves a group at once, rejects its pending actions, and replies and logs who asked", async () => {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const {control, actions, chat, action, fake} = await setup()
+    const send = actions.create("k2", fields("#2"))
+    const leave = actions.create("k3", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
+    await settled()
+    expect(await control.ownerCommand(alice, {keyword: "leave", params: "#2"})).toBe("Left business ep (#2), requested by Alice.")
+    expect(chat.left).toEqual([2])
+    expect(chat.deleted).toEqual([{chatType: T.ChatType.Group, chatId: 2, mode: {type: "full", notify: true}}])
+    expect([action, send, leave].map(({state, decidedBy}) => [state, decidedBy])).toEqual([["pending", undefined], ["rejected", "Alice"], ["rejected", "Alice"]])
+    expect(lines.slice(-3)).toEqual(["Left business ep (#2), requested by Alice.", "Action 6 rejected by Alice.", "Action 7 rejected by Alice."])
+    await settled()
+    expect(fake.calls.filter(call => call.startsWith("outcome"))).toEqual(["outcome 6 rejected", "outcome 7 rejected"])
+  })
+
+  it("deletes a contact, in mode host too", async () => {
+    const chat = agentChats()
+    const {control} = await controlWith(chat, actionsWith("host", fakeHooks()), undefined, "host")
+    expect(await control.ownerCommand(alice, {keyword: "leave", params: "@4"})).toBe("Deleted bot SimpleX Directory (@4), requested by Alice.")
+    expect(chat.deleted).toEqual([{chatType: T.ChatType.Direct, chatId: 4, mode: {type: "full", notify: true}}])
+    expect(chat.left).toEqual([])
+  })
+
+  it("shows names as code in the reply and on one line in the log", async () => {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const {control, chat} = await setup()
+    chat.chats.set("#7", {chatInfo: groupChat(group(7, "Hikers\n/'approve 5'", member(1, "agent"))), items: []})
+    const mallory = {...alice, memberProfile: {...alice.memberProfile, displayName: "Mallory\n/'approve 9'"}}
+    chat.members.set(10, [self, mallory])
+    await control.load()
+    expect(await control.ownerCommand(mallory, {keyword: "leave", params: "#7"})).toBe("Left group `Hikers /'approve 5'` (#7), requested by `Mallory /'approve 9'`.")
+    expect(lines.at(-1)).toBe("Left group Hikers /'approve 5' (#7), requested by Mallory /'approve 9'.")
+  })
+
+  it("refuses unknown chats, the agent control chat and members who are not approvers", async () => {
+    const {control, chat} = await setup()
+    expect(await control.ownerCommand(alice, {keyword: "leave", params: "#10"})).toBe("No chat #10. /list shows the agent's chats.")
+    expect(await control.ownerCommand(alice, {keyword: "leave", params: "@99"})).toBe("No chat @99. /list shows the agent's chats.")
+    expect(await control.ownerCommand(bob, {keyword: "leave", params: "@4"})).toBe("Only owners approve actions.")
+    expect(chat.deleted).toEqual([])
+    expect(chat.left).toEqual([])
+  })
+})
+
+describe("files of a chat", () => {
+  const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
+  const kept = (chat: string, name: string, folder: string, files: string): string => `Files from ${name} (${chat}) are kept in \`${join(data, "files", folder)}\`: ${files}. /'delete ${chat} files'`
+
+  function filesIn(name: string, sizes: number[]): void {
+    const folder = join(data, "files", name)
+    rmSync(folder, {recursive: true, force: true})
+    mkdirSync(folder, {recursive: true})
+    sizes.forEach((size, i) => writeFileSync(join(folder, `${i + 1}.pdf`), "x".repeat(size)))
+  }
+
+  it("are kept when an owner's /leave leaves the chat, with a message after the reply; forwarded files are deleted", async () => {
+    const {control, chat} = await setup()
+    filesIn("group-2", [1500, 600])
+    const forwarded = join(data, "forwarded", "group-2")
+    mkdirSync(forwarded, {recursive: true})
+    writeFileSync(join(forwarded, "3.pdf"), "x")
+    expect(await control.ownerCommand(alice, {keyword: "leave", params: "#2"})).toBe("Left business ep (#2), requested by Alice.")
+    await flushed()
+    expect(chat.sent.at(-1)!.messages[0].msgContent.text).toBe(kept("#2", "business ep", "group-2", "2 files, 2.1 KB"))
+    expect(existsSync(forwarded)).toBe(false)
+    filesIn("contact-4", [])
+    const before = chat.sent.length
+    await control.ownerCommand(alice, {keyword: "leave", params: "@4"})
+    await flushed()
+    expect(chat.sent).toHaveLength(before)
+  })
+
+  it("are kept when an approved leave leaves the chat, with a message after its card", async () => {
+    const fake = fakeHooks()
+    const actions: Actions = new Actions("requests", 23, 1, {...fake.hooks, refusal: action => control.refusal(action), postCard: action => control.postCard(action), outcome: action => control.outcome(action), perform: (action, signal) => tools.perform(action, signal)})
+    const chat = agentChats()
+    const {control, tools} = await controlWith(chat, actions)
+    filesIn("group-2", [120])
+    const leave = actions.create("l", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
+    await flushed()
+    actions.approve(leave, "Alice")
+    while (chat.sent.length < 2) await flushed()
+    expect(chat.updates.at(-1)!.text).toBe("I left business ep (#2).\nApproved by Alice.")
+    expect(chat.sent[1].messages[0].msgContent.text).toBe(kept("#2", "business ep", "group-2", "1 file, 120 bytes"))
+  })
+
+  it("are deleted by /delete CHAT files, for a current or a left chat", async () => {
+    const {control} = await setup()
+    filesIn("group-9", [])
+    expect(await control.ownerCommand(alice, {keyword: "delete", params: "#9 files"})).toBe("No files from #9.")
+    filesIn("group-9", [1500, 600])
+    expect(await control.ownerCommand(alice, {keyword: "delete", params: "#9 files"})).toBe("Deleted 2 files from #9, 2.1 KB.")
+    expect(existsSync(join(data, "files", "group-9"))).toBe(false)
+    filesIn("contact-4", [120])
+    expect(await control.ownerCommand(alice, {keyword: "delete", params: "@4 files"})).toBe("Deleted 1 file from @4, 120 bytes.")
+    expect(await control.ownerCommand(bob, {keyword: "delete", params: "@4 files"})).toBe("Only owners approve actions.")
   })
 })
 
@@ -325,18 +744,25 @@ describe("command menu", () => {
   const menu = [
     {type: "command", keyword: "pending", label: "Pending actions"},
     {type: "command", keyword: "list", label: "Chats and approvals"},
+    {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
   ]
 
   it("is updated at load when it differs", async () => {
     const chat = agentChats()
     const actions = actionsWith("requests", fakeHooks())
     const old = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: [{type: "command", keyword: "approve", label: "Approve", params: "N"}]}}})
-    const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined}, "requests")
+    const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined, refusedFile: () => undefined, data}, "requests")
     await new Control(chat.api(), old, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools).load()
     expect(chat.profiles).toEqual([{groupId: 10, groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}}])
     const current = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}})
     await new Control(chat.api(), current, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools).load()
     expect(chat.profiles).toHaveLength(1)
+  })
+
+  it("answers the /leave template sent unedited with the list of commands", async () => {
+    const {control, chat} = await setup()
+    expect(await control.ownerCommand(alice, parseCommand("/leave <chat ID>")!)).toBe(commandsReply)
+    expect(chat.deleted).toEqual([])
   })
 })
 
@@ -393,7 +819,7 @@ describe("sends to a chat approved for all messages", () => {
 
   it("applies in no chat in mode host", async () => {
     const {chat, control, tools} = await standing([alice], "host")
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBeUndefined()
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "messages")).toBeUndefined()
     const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: {chat: string}[]}
     expect(chats.find(({chat: ref}) => ref === "@4")).not.toHaveProperty("approved")
     expect((await control.ownerCommand(alice, {keyword: "list", params: ""}))!.split("\n")[0]).toBe("@4  bot SimpleX Directory")
@@ -510,15 +936,49 @@ describe("approval card size", () => {
   })
 })
 
-describe("delivery wait at the stop", () => {
-  it("logs an error of the SQL query and ends", async () => {
-    const errors: string[] = []
-    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text).trimEnd()), true))
-    const chat = new FakeChat()
-    chat.sendChatCmd = async () => {
-      throw new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "dBException", message: "no such table: connections"}} as unknown as T.ChatError)
-    }
-    await deliveries(chat.api(), 10)
-    expect(errors).toEqual(['delivery wait: SimpleX error: errorStore: dBException: {"message":"no such table: connections"}'])
+describe("wait at the stop", () => {
+  const send = {tool: "send", card: 1001} as Action
+  const connect = {tool: "connect"} as Action
+  const download = {tool: "download"} as Action
+
+  afterEach(() => jest.useRealTimers())
+
+  function logged(): string[] {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    return lines
+  }
+
+  it("waits the stop wait when cards were cancelled, and stops at once without them", async () => {
+    jest.useFakeTimers()
+    const lines = logged()
+    let ended = false
+    const waiting = waitForCancelledCards([send, connect, download], 10, new AbortController().signal).then(() => (ended = true))
+    expect(lines).toEqual(["Stopping: sending 2 cancelled cards, up to 10 s. Ctrl-C to stop now."])
+    await jest.advanceTimersByTimeAsync(9_999)
+    expect(ended).toBe(false)
+    await jest.advanceTimersByTimeAsync(1)
+    await waiting
+    await waitForCancelledCards([download], 10, new AbortController().signal)
+    await waitForCancelledCards([send], 0, new AbortController().signal)
+    await waitForCancelledCards([], 10, new AbortController().signal)
+    expect(lines).toHaveLength(1)
+    expect(jest.getTimerCount()).toBe(0)
+  })
+
+  it("ends the wait at a second Ctrl-C", async () => {
+    jest.useFakeTimers()
+    const lines = logged()
+    const endWait = new AbortController()
+    let ended = false
+    const waiting = waitForCancelledCards([send], 10, endWait.signal).then(() => (ended = true))
+    expect(lines).toEqual(["Stopping: sending 1 cancelled card, up to 10 s. Ctrl-C to stop now."])
+    await jest.advanceTimersByTimeAsync(1_000)
+    expect(ended).toBe(false)
+    endWait.abort()
+    await waiting
+    expect(jest.getTimerCount()).toBe(0)
+    await waitForCancelledCards([send], 10, endWait.signal)
+    expect(jest.getTimerCount()).toBe(0)
   })
 })
