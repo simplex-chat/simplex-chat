@@ -1818,7 +1818,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       where
         eventInfo = do
           v <- asks eventSeq
-          eId <- atomically $ stateTVar v $ \i -> (i + 1, i + 1)
+          eId <- atomically $ stateTVar' v $ \i -> (i + 1, i + 1)
           pure $ "conn_id=" <> tshow cId <> " event_id=" <> tshow eId
         withLog eInfo' ack = do
           ts <- showTags

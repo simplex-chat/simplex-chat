@@ -386,7 +386,7 @@ restoreCalls = do
 stopChatController :: ChatController -> IO ()
 stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession, cleanupManagerAsync, relayGroupLinkChecksAsync, webPreviewState, expireCIThreads, timedItemThreads, deliveryTaskWorkers, deliveryJobWorkers, relayRequestWorkers, badgeWorkers, storeReceiptWorkers} = do
   readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
-  atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
+  atomically (stateTVar' remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
   readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
   cancelAsync cleanupManagerAsync
@@ -5761,7 +5761,7 @@ runStoreReceiptWorker a userId Worker {doWork} = do
     -- getNextHeldStoreReceipt reads held rows only, so this says its query and its result type disagree
     notHeld receiptId = eToView $ ChatError $ CEInternalError $ "store receipt " <> show receiptId <> " is not held"
     scheduleReceipt scheduled receiptId delay = do
-      new <- atomically $ stateTVar scheduled $ \ids -> (S.notMember receiptId ids, S.insert receiptId ids)
+      new <- atomically $ stateTVar' scheduled $ \ids -> (S.notMember receiptId ids, S.insert receiptId ids)
       when new . void . liftIO . forkIO $ do
         threadDelay' $ diffToMicroseconds delay
         atomically $ modifyTVar' scheduled $ S.delete receiptId
@@ -6045,7 +6045,7 @@ emitBadgeAlert :: User -> TVar (Maybe BadgeOccurrence) -> UserBadgePurchase -> M
 emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} shownCred now balance =
   forM_ (unansweredBadgeAlert now p shownCred balance) $ \alert@BadgeAlert {kind, episode} -> do
     let occurrence = Just (kind, episode, alertSnoozeUntil)
-    raised <- atomically $ stateTVar emitted (,occurrence)
+    raised <- atomically $ stateTVar' emitted (,occurrence)
     when (raised /= occurrence) $ toView $ CEvtBadgeAlert user alert
 
 -- | Scoped to one profile, so another profile's store purchase, which may be hidden, never shows under it.
