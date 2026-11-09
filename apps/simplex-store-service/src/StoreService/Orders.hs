@@ -239,7 +239,7 @@ liveOrderExists :: Text -> IO ()
 liveOrderExists ref =
   logError $
     "names: invoice " <> ref <> " was paid while another live order held its order's commitment, or its owner and name"
-      <> "; it was closed and its money is credited to its balance; the unique live indexes should have prevented this"
+      <> "; the order was closed and its money is credited to its balance; the unique live indexes should have prevented this"
 
 -- | False when the invoice was no longer open. Throws RegistrationChanged, changing nothing, when its order changed meanwhile.
 -- The provider has taken the cancel, so a name invoice a payment landed on meanwhile expires too, and its payment is late.
