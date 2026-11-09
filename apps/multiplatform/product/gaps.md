@@ -16,7 +16,7 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
 9. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-09-desktop-emoji-picker-without-skin-tones-and-localized-search)
 10. [Badges: Limits on Moving a Badge to a New Device or Profile](#gap-10-badges-limits-on-moving-a-badge-to-a-new-device-or-profile)
-11. [UI: Chat List Filter Counts Don't Follow a Chat Changing in Place](#gap-11-ui-chat-list-filter-counts-dont-follow-a-chat-changing-in-place)
+11. [UI: Chat List Filter Counts Aren't Updated for a Chat Changed in Place](#gap-11-ui-chat-list-filter-counts-arent-updated-for-a-chat-changed-in-place)
 
 ---
 
@@ -381,7 +381,7 @@ A subscriber who moves the badge again before the previous key's credential expi
 
 ---
 
-## GAP-11: UI: Chat List Filter Counts Don't Follow a Chat Changing in Place
+## GAP-11: UI: Chat List Filter Counts Aren't Updated for a Chat Changed in Place
 
 **Severity:** Low
 **Category:** UI
@@ -389,7 +389,7 @@ A subscriber who moves the badge again before the previous key's credential expi
 
 ### Description
 
-A chat's preset filters are counted when it is added and when it is removed. A chat that changes in place keeps its old count until the next full load: a conversation deleted while the contact stays, a deleted conversation that returns with a new message, or a contact card that starts connecting.
+A chat's preset filters are counted when the chat is added and when it is removed, and recounted at each full load. When a chat is changed in place, it is counted as before the change until the next full load: a conversation deleted while the contact is kept, a deleted conversation shown again after a new message, or a contact card whose connection is started, such as the SimpleX team card of a new profile.
 
 ### Affected Locations
 
@@ -397,8 +397,8 @@ A chat's preset filters are counted when it is added and when it is removed. A c
 
 ### Impact
 
-The Contacts filter can stay with no contact to show, or stay missing with a contact in the list.
+The Contacts filter can be shown with no contact in the list, or be missing with one.
 
 ### Recommendation
 
-Update the counts where these chats change, or derive the counts from the chat list.
+Update the counts in `updateChatInfo` and `clearChat`, in the primary context, leaving out favorites, which `updateChatFavorite` counts before `updateChatInfo`; or derive the counts from the chat list.
