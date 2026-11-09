@@ -641,7 +641,7 @@ testLateScans = withServiceStore $ \st -> do
       pendingOf r = withTransaction st $ \db -> (r,) <$> latePending db (InvoiceId $ "inv-" <> r)
   forM_ cases $ \(r, _, _, expected) -> pendingOf r `shouldReturn` (r, expected)
   pendingOf "live" `shouldReturn` ("live", Nothing)
-  withTransaction st uncreditedLateInvoices `shouldReturn` map (\r -> (InvoiceId $ "inv-" <> r, RegistrationId r)) ["uncredited", "card", "settledlate", "beforecents"]
+  withTransaction st uncreditedLateInvoices `shouldReturn` map (\r -> (InvoiceId $ "inv-" <> r, "ref-inv-" <> r)) ["uncredited", "card", "settledlate", "beforecents"]
   withTransaction st (\db -> lateCreditState db (InvoiceId "inv-part"))
     `shouldReturn` Just
       LateCreditState

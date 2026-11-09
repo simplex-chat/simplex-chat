@@ -1284,27 +1284,24 @@ testLateBTCPayPayments = withFakeBTCPay $ \fake -> do
     let refOf inv = maybe (error "no invoice") irProviderRef <$> getInvoice st inv
         readAt ref = queueReadHint (weHints cWeb) ref >> drainHints poller
         paidLate ref fields = capturingStderr $ setInvoiceState fake ref fields >> readAt ref
-        alertOf inv = (\NameRegistration {nrId = RegistrationId rid} -> "the invoice of registration " <> rid <> " received money after the registration closed") <$> invoiceRegistration ctx inv
+        alerted ref = T.isInfixOf ("invoice " <> ref <> " received money after its order closed")
         later = addUTCTime 3600 orderTime
     (expired, _) <- placed ctx aliceOrder
     expiredRef <- refOf expired
-    expiredAlert <- alertOf expired
     setInvoiceState fake expiredRef ["status" .= ("Expired" :: Text)]
     readAt expiredRef
     (irStatus <$>) <$> getInvoice st expired `shouldReturn` Just ISExpired
-    paidLate expiredRef ["additionalStatus" .= ("PaidLate" :: Text), "paymentMethodPaid" .= ("0.00050000" :: Text)] >>= (`shouldSatisfy` T.isInfixOf expiredAlert)
-    capturingStderr (readAt expiredRef) >>= (`shouldNotSatisfy` T.isInfixOf expiredAlert)
+    paidLate expiredRef ["additionalStatus" .= ("PaidLate" :: Text), "paymentMethodPaid" .= ("0.00050000" :: Text)] >>= (`shouldSatisfy` alerted expiredRef)
+    capturingStderr (readAt expiredRef) >>= (`shouldNotSatisfy` alerted expiredRef)
     (cancelled, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
     cancelledRef <- refOf cancelled
-    cancelledAlert <- alertOf cancelled
     cancelOpenInvoice st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) cancelled later `shouldReturn` True
-    paidLate cancelledRef ["status" .= ("Invalid" :: Text), "paymentMethodPaid" .= ("0.00078000" :: Text)] >>= (`shouldSatisfy` T.isInfixOf cancelledAlert)
+    paidLate cancelledRef ["status" .= ("Invalid" :: Text), "paymentMethodPaid" .= ("0.00078000" :: Text)] >>= (`shouldSatisfy` alerted cancelledRef)
     (swept, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 3}
     sweptRef <- refOf swept
-    sweptAlert <- alertOf swept
     overdue <- overdueOf st swept
     expireOverdue st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) later later [overdue] `shouldReturn` [swept]
-    paidLate sweptRef ["paymentMethodPaid" .= ("0.00025000" :: Text)] >>= (`shouldSatisfy` T.isInfixOf sweptAlert)
+    paidLate sweptRef ["paymentMethodPaid" .= ("0.00025000" :: Text)] >>= (`shouldSatisfy` alerted sweptRef)
     forM_ [expired, cancelled, swept] $ \inv -> do
       r <- invoiceRegistration ctx inv
       (nrPhase r, nrLive r) `shouldBe` (PUnpaid, False)
@@ -1313,11 +1310,11 @@ testLateBTCPayPayments = withFakeBTCPay $ \fake -> do
 testOneLateAlert :: IO ()
 testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
   (inv, _) <- placed ctx aliceOrder
-  Just InvoiceRow {irProviderRef = ref, irProduct = IPName (RegistrationId rid)} <- getInvoice st inv
+  Just InvoiceRow {irProviderRef = ref} <- getInvoice st inv
   let paid = rcv 5000 (Just "0.00078")
       newPoller = newPollerEnv st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
       readWith poller = capturingStderr $ queueReadHint (weHints cWeb) ref >> drainHints poller
-      refunds = length . T.breakOnAll ("the invoice of registration " <> rid <> " received money after")
+      refunds = length . T.breakOnAll ("invoice " <> ref <> " received money after")
   poller <- newPoller
   setSignals (cStub ctx) [(ref, SigFunded paid PaidInPart)]
   refunds <$> readWith poller `shouldReturn` 0
@@ -1357,8 +1354,8 @@ testCancelAnswers = withOrders $ \ctx -> do
 testCancelAlertsFunded :: IO ()
 testCancelAlertsFunded = withOrdersCancelling (SigFunded paid PaidInPart) $ \ctx -> do
   (invId, _) <- placed ctx aliceOrder
-  NameRegistration {nrId = RegistrationId rid} <- invoiceRegistration ctx invId
-  let alert = "the invoice of registration " <> rid <> " received money after"
+  Just InvoiceRow {irProviderRef} <- getInvoice (cStore ctx) invId
+  let alert = "invoice " <> irProviderRef <> " received money after"
   logs <- capturingStderr $ do
     (status, v) <- post ctx ("/api/invoice/" <> T.unpack (invoiceText invId) <> "/cancel") ""
     (status, field "status" =<< v, field "cryptoAmountPaid" =<< v) `shouldBe` (200, Just "expired", Just "0.00078")
@@ -1372,7 +1369,7 @@ testCancelAlertsFunded = withOrdersCancelling (SigFunded paid PaidInPart) $ \ctx
 testNamesOff :: IO ()
 testNamesOff = withOrders $ \ctx -> do
   (invId@(InvoiceId t), _) <- placed ctx aliceOrder
-  NameRegistration {nrId = RegistrationId rid} <- invoiceRegistration ctx invId
+  Just InvoiceRow {irProviderRef} <- getInvoice (cStore ctx) invId
   mgr <- newManager defaultManagerSettings
   Warp.testWithApplication (pure $ webApp (cWeb ctx) {weOrders = Nothing}) $ \port -> do
     let off = ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
@@ -1380,7 +1377,7 @@ testNamesOff = withOrders $ \ctx -> do
       r <- webGet (cClient off) ("/api/invoice/" <> T.unpack t)
       (statusOf r, J.decode (responseBody r)) `shouldBe` refusedWith 503 "provider_unavailable"
       post off ("/api/invoice/" <> T.unpack t <> "/cancel") "" `shouldReturn` refusedWith 503 "provider_unavailable"
-    logs `shouldSatisfy` T.isInfixOf ("the invoice of registration " <> rid <> " is a name's, and this service sells no names")
+    logs `shouldSatisfy` T.isInfixOf ("invoice " <> irProviderRef <> " is a name's, and this service sells no names")
     logs `shouldNotSatisfy` T.isInfixOf t
   calls <- stubCalls (cStub ctx)
   [c | c@StubCancel {} <- calls] `shouldBe` []

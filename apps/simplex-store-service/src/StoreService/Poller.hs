@@ -235,12 +235,12 @@ listPass env now p =
 
 -- | Money a paid name invoice receives later is written nowhere, so only this alert tells support to refund it.
 moneyAfterPaid :: PollerEnv -> UTCTime -> InvoiceRow -> PaymentSignal -> IO ()
-moneyAfterPaid env now InvoiceRow {irProduct, irPayment} signal
-  | IPName (RegistrationId rid) <- irProduct,
+moneyAfterPaid env now InvoiceRow {irProviderRef, irProduct, irPayment} signal
+  | IPName _ <- irProduct,
     Just stored <- ipUnits =<< irPayment,
     Received {rcvUnits = Just units, rcvCrypto} <- signalReceived signal,
     units > stored = do
-      let alert = "names: the invoice of registration " <> rid <> " was paid, and its provider now reads " <> fromMaybe "" rcvCrypto <> " received, more than recorded; the extra is credited nowhere; refund by hand only a transaction confirmed on chain"
+      let alert = "names: invoice " <> irProviderRef <> " was paid, and its provider now reads " <> fromMaybe "" rcvCrypto <> " received, more than recorded; the extra is credited nowhere; refund by hand only a transaction confirmed on chain"
       due <- dueToWarn env now alert
       when due $ logError alert
   | otherwise = pure ()
@@ -258,9 +258,9 @@ settleMoved env@PollerEnv {peStore, peWaiters, pePhases, peProviders} provider n
           Right status -> do
             reportSettled irProduct irStatus status
             case (irProduct, find ((== provider) . pProvider) peProviders) of
-              (IPName rid, Just p) ->
-                creditLate env p now irInvoiceId rid >>= \case
-                  CONothingDue -> pendingLate env irInvoiceId rid
+              (IPName _, Just p) ->
+                creditLate env p now irInvoiceId ref >>= \case
+                  CONothingDue -> pendingLate env irInvoiceId ref
                   _ -> pure ()
               _ -> pure ()
     _ -> pure ()
@@ -364,13 +364,13 @@ creditPass env@PollerEnv {peStore, peProviders} now = do
   due <- creditDue env now
   when due $ do
     invoices <- withTransaction peStore uncreditedLateInvoices
-    forM_ invoices $ \(invId@(InvoiceId invText), rid@(RegistrationId ridText)) ->
-      safely ("names: crediting the invoice of registration " <> ridText) $
+    forM_ invoices $ \(invId@(InvoiceId invText), ref) ->
+      safely ("names: crediting invoice " <> ref) $
         getInvoice peStore invId >>= \case
-          Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> void $ creditLate env p now invId rid
+          Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> void $ creditLate env p now invId ref
           _ -> do
             due' <- dueToWarn env now ("no rate provider: " <> invText)
-            when due' $ logWarn ("names: the invoice of registration " <> ridText <> " has late money to credit, but no provider is configured to read its rate")
+            when due' $ logWarn ("names: invoice " <> ref <> " has late money to credit, but no provider is configured to read its rate")
 
 -- | The pass's rate of a coin at a provider, read at most once.
 cachedRate :: PollerEnv -> Provider -> CryptoCurrency -> IO (Either ProviderError Rate)
@@ -387,25 +387,25 @@ cachedRate PollerEnv {peRates} Provider {pProvider, pCurrentRate} coin =
 forgetRates :: PollerEnv -> IO ()
 forgetRates PollerEnv {peRates} = atomically $ writeTVar peRates M.empty
 
-creditLate :: PollerEnv -> Provider -> UTCTime -> InvoiceId -> RegistrationId -> IO CreditOutcome
-creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) (RegistrationId rid) = do
+creditLate :: PollerEnv -> Provider -> UTCTime -> InvoiceId -> Text -> IO CreditOutcome
+creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) ref = do
   outcome <- creditLateInvoice peStore (cachedRate env p) invId now
   case outcome of
     CONothingDue -> pure ()
     COCredited money LateCredit {lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents} ->
       logNote $
-        "names: the invoice of registration " <> rid <> credited money <> tshow lcCents <> " cents" <> extra money <> " to its balance"
+        "names: invoice " <> ref <> credited money <> tshow lcCents <> " cents" <> extra money <> " to its order's balance"
           <> maybe "" (\units -> " for " <> tshow units <> " units at " <> fromMaybe "?" lcRateUsed <> " (invoice " <> fromMaybe "?" lcInvoiceRate <> ", current " <> fromMaybe "?" lcCurrentRate <> ")") lcUnits
     CONoInvoiceFigures -> do
       due <- dueToWarn env now ("no invoice figures: " <> invText)
-      when due $ logError ("names: the invoice of registration " <> rid <> " has confirmed late money, but no invoice rate or invoiced units were recorded to credit it at; check it at the provider")
+      when due $ logError ("names: invoice " <> ref <> " has confirmed late money, but no invoice rate or invoiced units were recorded to credit it at; check it at the provider")
     CORateFailed (ProviderError e) -> do
       due <- dueToWarn env now ("rate read failed: " <> tshow (pProvider p))
       when due $ logWarn ("names: late credits wait, as the current rate cannot be read; each pass tries again: " <> e)
     CORateFloor invoiceRate Rate {rateText} -> do
       due <- dueToWarn env now ("rate floor: " <> invText)
-      when due $ logError ("names: the invoice of registration " <> rid <> " is not credited: the current rate " <> rateText <> " is below half its rate " <> invoiceRate <> "; it is never credited by itself, and support refunds it by hand")
-    CORefused -> logError ("names: the credit of the invoice of registration " <> rid <> " was refused, its credit number taken meanwhile; the next pass tries again")
+      when due $ logError ("names: invoice " <> ref <> " is not credited: the current rate " <> rateText <> " is below half its rate " <> invoiceRate <> "; it is never credited by itself, and support refunds it by hand")
+    CORefused -> logError ("names: the credit of invoice " <> ref <> " was refused, its credit number taken meanwhile; the next pass tries again")
   pure outcome
   where
     credited = \case
@@ -416,10 +416,10 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) (Registration
       LMOverpaid -> " of the extra"
 
 -- | Money not yet confirmed waits for the settlement that confirms it.
-pendingLate :: PollerEnv -> InvoiceId -> RegistrationId -> IO ()
-pendingLate PollerEnv {peStore} invId (RegistrationId rid) =
+pendingLate :: PollerEnv -> InvoiceId -> Text -> IO ()
+pendingLate PollerEnv {peStore} invId ref =
   withTransaction peStore (`latePending` invId) >>= \case
-    Just pending | pending `elem` [LPConfirming, LPUnconfirmed] -> logNote ("names: the invoice of registration " <> rid <> " holds money of its closed order not yet confirmed; it is credited once confirmed")
+    Just pending | pending `elem` [LPConfirming, LPUnconfirmed] -> logNote ("names: invoice " <> ref <> " holds money of its closed order not yet confirmed; it is credited once confirmed")
     _ -> pure ()
 
 -- | Late money still not all credited when its payment row is older than the read window, once per invoice and again when more arrives;
@@ -427,8 +427,8 @@ pendingLate PollerEnv {peStore} invId (RegistrationId rid) =
 alertLatePayments :: PollerEnv -> UTCTime -> IO ()
 alertLatePayments env@PollerEnv {peStore} now = do
   due <- withTransaction peStore (`lateAlertDue` addUTCTime (negate settleWindow) now)
-  forM_ due $ \alert@LateAlert {laState = LateCreditState {lsRegistration = RegistrationId rid}} ->
-    safely ("names: the alert on the invoice of registration " <> rid) $ do
+  forM_ due $ \alert@LateAlert {laProviderRef} ->
+    safely ("names: the alert on invoice " <> laProviderRef) $ do
       (reason, support) <- lateReason env alert
       claimed <- withTransaction peStore $ \db -> claimLateAlert db alert support now
       when claimed $ logError (lateAlertText alert reason)
@@ -458,8 +458,8 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
     uncounted = "an amount BTCPay reported with more decimals than its unit; check it at the provider"
 
 lateAlertText :: LateAlert -> Text -> Text
-lateAlertText LateAlert {laState = s@LateCreditState {lsRegistration = RegistrationId rid, lsCoin, lsReceivedCents, lsConfirmedCents, lsCreditedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoicedUnits, lsCreditedUnits}} reason =
-  "names: the invoice of order " <> rid <> overpaid <> ": " <> figures <> "; " <> reason
+lateAlertText LateAlert {laProviderRef, laState = s@LateCreditState {lsCoin, lsReceivedCents, lsConfirmedCents, lsCreditedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoicedUnits, lsCreditedUnits}} reason =
+  "names: invoice " <> laProviderRef <> overpaid <> ": " <> figures <> "; " <> reason
   where
     (overpaid, invoiced) = case (lateMoneyOf s, lsCoin, lsInvoicedUnits) of
       (LMOverpaid, Just coin, Just units) -> (", overpaid", tshow units <> " " <> unitName coin <> " invoiced, ")

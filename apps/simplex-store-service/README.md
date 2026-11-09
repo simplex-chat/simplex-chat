@@ -215,12 +215,13 @@ money goes to support for good.
 
 **Overpayment.** Crypto above what an invoice asks is credited to the order's balance in the same
 way, once confirmed, also on an invoice paid in time: the extra's share of the price, at the lower
-rate. The service logs it at note as `names: the invoice of registration <id> was overpaid; credited
-<cents> cents of the extra to its balance`, and an extra it cannot credit is alerted as late money is.
+rate. The service logs it at note as `names: invoice <provider reference> was overpaid; credited
+<cents> cents of the extra to its order's balance`, and an extra it cannot credit is alerted as late
+money is.
 An extra still unconfirmed when BTCPay settles the invoice is never credited, as its transaction can
 still be replaced: it is alerted, and support refunds it by hand once it confirms.
 Crypto sent to a name invoice after the service recorded it paid is not credited either: the poller
-logs an error naming the order, at most once an hour while it still lists it, and support refunds it
+logs an error naming the invoice, at most once an hour while it still lists it, and support refunds it
 once its transaction is confirmed on chain. The poller lists the invoices created in the last 72
 hours and the invoice expiry minutes, and a webhook can name an older one; past that nothing reports
 such crypto. Crypto sent to a badge invoice after it was paid is reported by nothing.
@@ -324,8 +325,11 @@ The invoice id is the only credential for reading or cancelling an order: it is 
 it travels in the path, and anything that logs request paths logs it. It is also what the buyer
 is shown as their reference and asked to quote, so support sees it: losing it lets someone cancel
 an invoice, which is why the code, which lets them take the badge, is never printed until the
-service says the invoice is paid. The service keeps it out of its own logs, which name the
-provider's reference, or a name order's registration id, instead.
+service says the invoice is paid. The service keeps it out of its own logs: a line about an invoice
+names the provider's reference (the BTCPay invoice id or the Stripe PaymentIntent id), which opens
+nothing in this service's API. A line about a name order without its invoice, from the worker, the
+cleanup or `//refund`, names the registration id, which reads the order and asks Try again, so keep
+the logs to the service's operators.
 
 | Route | Answers |
 |---|---|

@@ -370,6 +370,7 @@ instance ToField LateSupport where toField = toField . textEncode
 -- | A closed order's pending money to alert on, with the received figure the alert names and the one the last alert named.
 data LateAlert = LateAlert
   { laState :: LateCreditState,
+    laProviderRef :: Text,
     laPending :: LatePending,
     laReceived :: Maybe Int64,
     laAlertedAt :: Maybe UTCTime,
@@ -1205,14 +1206,14 @@ lateWait db (InvoiceId invId) =
 
 -- | Closed orders' invoices with confirmed money not all credited, then overpaid invoices with confirmed extra not all credited, for the
 -- poller's credit pass; none a rate below the floor sent to support.
-uncreditedLateInvoices :: DB.Connection -> IO [(InvoiceId, RegistrationId)]
+uncreditedLateInvoices :: DB.Connection -> IO [(InvoiceId, Text)]
 uncreditedLateInvoices db = (<>) <$> uncredited closedUnpaid uncreditedMoney <*> uncredited overpaidOrder uncreditedExtra
   where
     uncredited order money =
-      map (\(invId, rid) -> (InvoiceId invId, RegistrationId rid))
+      map (\(invId, ref) -> (InvoiceId invId, ref))
         <$> DB.query
           db
-          ("SELECT ni.invoice_id, ni.registration_id" <> lateFrom <> " WHERE" <> order <> " AND" <> money <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
+          ("SELECT ni.invoice_id, ni.provider_ref" <> lateFrom <> " WHERE" <> order <> " AND" <> money <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
           (PUnpaid, LSRateFloor)
 
 -- | Pending money of closed orders, then of overpaid invoices, whose payment row was created before the cutoff, never alerted, or alerted
@@ -1228,7 +1229,7 @@ lateAlertDue db cutoff = (<>) <$> alertsDue closedUnpaid pendingCase <*> alertsD
             <> pending
             <> ","
             <> receivedFigure
-            <> ", ni.late_alerted_at, ni.late_alerted_units"
+            <> ", ni.late_alerted_at, ni.late_alerted_units, ni.provider_ref"
             <> lateFrom
             <> " WHERE"
             <> order
@@ -1240,9 +1241,9 @@ lateAlertDue db cutoff = (<>) <$> alertsDue closedUnpaid pendingCase <*> alertsD
         )
         (PUnpaid, truncateToSecond cutoff)
         >>= decodeAll toAlert
-    toAlert :: LateRow :. (Maybe LatePending, Maybe Int64, Maybe UTCTime, Maybe Int64) -> Either Text LateAlert
-    toAlert (row :. (pending_, laReceived, laAlertedAt, laAlertedReceived)) = case pending_ of
-      Just laPending -> (\laState -> LateAlert {laState, laPending, laReceived, laAlertedAt, laAlertedReceived}) <$> toLateState row
+    toAlert :: LateRow :. (Maybe LatePending, Maybe Int64, Maybe UTCTime, Maybe Int64, Text) -> Either Text LateAlert
+    toAlert (row :. (pending_, laReceived, laAlertedAt, laAlertedReceived, laProviderRef)) = case pending_ of
+      Just laPending -> (\laState -> LateAlert {laState, laProviderRef, laPending, laReceived, laAlertedAt, laAlertedReceived}) <$> toLateState row
       Nothing -> Left "name invoice alert without pending money"
 
 -- | Marks the alert sent, with the support reason it gives unless one is set, unless another instance marked it since it was read;
