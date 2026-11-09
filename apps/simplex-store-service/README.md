@@ -186,7 +186,7 @@ all clients together.
 Searches read the chain at most 16 at a time and long polls hold at most 500 at a time, for all clients
 together; past that they answer `429 rate_limited` with a short `Retry-After` at once.
 Registration views of committed orders read the chain at most 16 at a time as well, each with its
-wait for a slot and all its reads within 10 seconds; past that it answers its chain fields as `unread`.
+wait for a slot and all its reads within 10 seconds; past that it names its chain fields in `unread`.
 
 The BTCPay API key needs four permissions, each scoped to the one store:
 `cancreateinvoice` and `canviewinvoices` for checkout and the poller,
@@ -195,10 +195,10 @@ rates for late crypto credits, and
 `canmodifyinvoices` so `POST /api/invoice/:id/cancel` can invalidate an invoice at BTCPay
 rather than only in this store.
 
-**Keep the right to modify the store's invoices to the store's owners and this API key.** BTCPay lets whoever has it
-mark an invoice settled by hand, and the service takes a `Settled` invoice as paid, so they get the
-badge code or the name without paying. The service logs `btcpay: invoice <ref> additionalStatus
-Marked` at note only when it reads that invoice on its own, not from BTCPay's list.
+**Keep the right to modify the store's invoices to the store's owners and this API key.** BTCPay
+lets whoever has it mark an invoice settled by hand, and the service takes a `Settled` invoice as
+paid, so they get the badge code or the name without paying. The service logs `btcpay: invoice <ref>
+additionalStatus Marked` at note only when it reads that invoice on its own, not from BTCPay's list.
 
 **`speed_policy = HighSpeed` is refused beside `[names]`**: under it BTCPay marks a payment `Settled`
 with no confirmation, which a double spend would turn into a free name, and crypto reaching a name
