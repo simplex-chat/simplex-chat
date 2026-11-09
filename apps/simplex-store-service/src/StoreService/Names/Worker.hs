@@ -257,13 +257,15 @@ committed w@Worker {wkOrders = OrdersEnv {oePause}, wkSender} now r@NameRegistra
       Nothing -> case lapseMoment r of
         Just lapse | now <= lapse -> pure $ waitUntil r $ addUTCTime chainSecond lapse
         _ -> save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notSignedInTime}
-      Just _ | paused && not unlapsed -> save w now (lapsedFields r) {nrPhase = PQueued}
-      Just rv@NameReveal {rvAcceptance, rvDeadline} ->
-        (pure (if unlapsed then rvAcceptance else Nothing) $>>= relayAcceptance w now r rvDeadline) >>= \case
-          Just next -> pure next
-          Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
-            Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
-            _ -> sendRegister w now r rv
+      Just rv@NameReveal {rvAcceptance, rvDeadline}
+        | unlapsed ->
+            (pure rvAcceptance $>>= relayAcceptance w now r rvDeadline) >>= \case
+              Just next -> pure next
+              Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
+                Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
+                _ -> sendRegister w now r rv
+        | paused -> save w now (lapsedFields r) {nrPhase = PQueued}
+        | otherwise -> sendRegister w now r rv
   where
     -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then
     -- fails the order as it does a plain name's

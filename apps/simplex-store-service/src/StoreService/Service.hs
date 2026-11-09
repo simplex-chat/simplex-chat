@@ -407,11 +407,11 @@ namesReport groupQ_ NamesEnv {neConfig = cfg@NamesConfig {nYears}, neStore, neCh
         <> ", allowance " <> either (const "unread") (dollars . fromInteger . (`div` attoUsdPerCent)) allowance
 
 reportAlerts :: NamesConfig -> Maybe Pause -> Int -> Maybe Integer -> Maybe (Integer, Integer) -> [T.Text]
-reportAlerts NamesConfig {nQueueAlert, nChain = ChainConfig {cGasLimitCap, cMaxFeePerGas}} pause queued wei allowance =
+reportAlerts NamesConfig {nQueueAlert, nChain = ChainConfig {cGasLimitCap, cMaxFeePerGas}} pause queued wei allowanceAndFloor =
   ["registration paused" | isJust pause]
     <> ["more than " <> tshow nQueueAlert <> " queued" | queued > nQueueAlert]
     <> ["ETH below " <> tshow ethAlertTransactions <> " transactions at gas_limit_cap and max_fee_per_gas" | any (< ethFloor) wei]
-    <> ["allowance below one order of the shortest name" | any (uncurry (<)) allowance]
+    <> ["allowance below one order of the shortest name" | any (uncurry (<)) allowanceAndFloor]
   where
     ethFloor = toInteger ethAlertTransactions * toInteger cGasLimitCap * toInteger cMaxFeePerGas
 

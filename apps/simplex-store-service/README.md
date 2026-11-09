@@ -1171,7 +1171,7 @@ order in `queued` to `registering`, or cannot be read. While it is paused:
 - queued orders are not committed. A committed order whose commitment lapses after its reveal goes
   back to `queued`, its reveal cleared, and the buyer signs again once it is committed again;
 - a queued order's view has `queue: {"position": n, "of": m, "paused": true}`, oldest first by
-  creation; `paused` is false, and the queue short, while registration runs.
+  creation, as it has with `"paused": false` while registration runs.
 
 Every 15 seconds the service reads `registrarAllowance` and the probe order's register price
 (`rentPriceUSD` for its length and duration). Registration resumes once the allowance covers it, and
