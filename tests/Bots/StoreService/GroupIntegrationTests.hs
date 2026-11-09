@@ -18,6 +18,7 @@ import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
+import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice)
 import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, redactPassword, requireDevKeys, storeService, trustDevKeys)
@@ -451,7 +452,7 @@ minuteText = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M UTC"
 testRefundRecorded :: HasCallStack => TestParams -> IO ()
 testRefundRecorded ps = withStoreService ps $ \_ _ cc -> do
   let st = chatStore cc
-      paidBy = "order s: $100.00 by btc on invoice inv-s"
+      paidBy = paidByBtc "s"
   Balances.source st "s" 10000
   refundRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //refund inv-s 10000")
   logs <- capturingStderr $ refundRaw cc "inv-s 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidBy <> ".")
@@ -485,12 +486,15 @@ heldSource cc src holder expiry = do
 
 heldRefusals :: HasCallStack => ChatController -> Text -> Text -> IO ()
 heldRefusals cc src held = do
-  refundRaw cc src `shouldReturn` Right ("Order " <> src <> ": balance $100.00 (credited $100.00, refunded $0.00). Paid by: order " <> src <> ": $100.00 by btc on invoice inv-" <> src <> ". It cannot be refunded now: " <> held <> ".")
+  refundRaw cc src `shouldReturn` Right ("Order " <> src <> ": balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidByBtc src <> ". It cannot be refunded now: " <> held <> ".")
   refundRaw cc ("inv-" <> src <> " 10000") `shouldReturn` Left ("Nothing recorded: " <> held <> ".")
   Balances.figures (chatStore cc) src t0 >>= (`shouldSatisfy` \case Just (10000, 10000, 0, Just _) -> True; _ -> False)
 
 recordedS :: Either Text Text
-recordedS = Right "Recorded a refund of $100.00 for order s. Refund it now, by: order s: $100.00 by btc on invoice inv-s."
+recordedS = Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidByBtc "s" <> ".")
+
+paidByBtc :: Text -> Text
+paidByBtc r = "order " <> r <> " of " <> addressText ownerA <> ": $100.00 by btc on invoice inv-" <> r <> " (provider reference ref-inv-" <> r <> ")"
 
 testRefundOpenHolder :: HasCallStack => TestParams -> IO ()
 testRefundOpenHolder ps = withStoreService ps $ \_ _ cc -> do
