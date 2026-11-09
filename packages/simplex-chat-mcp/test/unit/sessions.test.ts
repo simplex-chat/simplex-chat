@@ -1233,11 +1233,16 @@ describe("session channel", () => {
     const approve = (session: Session, action: Action): void => session.actions.approve(action, "Alice")
     const reject = (session: Session, action: Action): void => session.actions.reject(action, "Alice")
     const end = (session: Session, action: Action): void => session.actions.end(action)
+    const expire = (session: Session, action: Action): void => {
+      jest.spyOn(Date, "now").mockReturnValue(action.expires)
+      session.actions.expireDue()
+    }
 
     it.each([
       ["was performed", approve, false],
       ["failed", approve, true],
       ["was rejected", reject, false],
+      ["expired", expire, false],
       ["ended", end, false],
     ] as const)("posts that an action %s and its card was not updated, naming the preference", async (outcome, decide, sendFails) => {
       const chat = new FakeChat()
