@@ -19,6 +19,7 @@ import Simplex.Messaging.Agent.Store.Common
 import Simplex.Messaging.Agent.Store.Interface (migrateDBSchema)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import System.Exit (exitFailure)
+import System.IO (hFlush, stdout)
 
 #if defined(dbPostgres)
 import Control.Concurrent (threadDelay)
@@ -74,4 +75,4 @@ instanceLockCheckInterval :: Int
 instanceLockCheckInterval = 30000000
 
 exit :: String -> IO a
-exit err = putStrLn ("Error: " <> err) >> exitFailure
+exit err = putStrLn ("Error: " <> err) >> hFlush stdout >> exitFailure
