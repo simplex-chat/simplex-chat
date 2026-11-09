@@ -163,7 +163,9 @@ runOnePass env@PollerEnv {peStore, peProviders} = do
         pure (Just missed)
   pruneSkipLog env now
   -- the cleanup runs whatever the sweep met
-  unless (null peProviders) $ void $ safely "badge poller: the sweep" $ maybe (sweepRead env now) (sweepExpired env now) missed
+  unless (null peProviders) $ void $ safely "badge poller: the sweep" $ case missed of
+    Nothing -> sweepRead env now (const True) S.empty
+    Just m -> sweepRead env now (unreadPastWindow now m) m
   void $ safely "names: the late credit pass" (creditPass env now)
   cleanupUnpaid env now
 
@@ -302,11 +304,15 @@ sweepExpired env@PollerEnv {peStore, peWaiters, pePhases, peCancelFailed} now mi
   expired <- expireOverdue peStore peWaiters pePhases now cutoff (selfExpiring <> cancelled)
   unless (null expired) $ logNote ("badge poller: expired " <> tshow (length expired) <> " invoice(s) past their window")
 
-sweepRead :: PollerEnv -> UTCTime -> IO ()
-sweepRead env@PollerEnv {peStore} now = do
-  (reading, rest) <- splitAt readsPerPass <$> overdueInvoices peStore (addUTCTime (negate expiryGrace) now)
+sweepRead :: PollerEnv -> UTCTime -> (OverdueInvoice -> Bool) -> Set Text -> IO ()
+sweepRead env@PollerEnv {peStore} now unread missed = do
+  (reading, rest) <- splitAt readsPerPass . filter unread <$> overdueInvoices peStore (addUTCTime (negate expiryGrace) now)
   failed <- readRows env now [(textEncode oiProvider, oiProviderRef) | OverdueInvoice {oiProvider, oiProviderRef} <- reading]
-  sweepExpired env now $ failed <> S.fromList (map oiProviderRef rest)
+  sweepExpired env now $ S.unions [missed, failed, S.fromList (map oiProviderRef rest)]
+
+unreadPastWindow :: UTCTime -> Set Text -> OverdueInvoice -> Bool
+unreadPastWindow now missed OverdueInvoice {oiProvider, oiProviderRef, oiCreatedAt} =
+  expiresItself oiProvider && diffUTCTime now oiCreatedAt > settleWindow && S.notMember oiProviderRef missed
 
 cleanupDue :: PollerEnv -> UTCTime -> IO Bool
 cleanupDue PollerEnv {peCleanedAt} now = maybe True (\at -> diffUTCTime now at >= cleanupInterval) <$> readTVarIO peCleanedAt

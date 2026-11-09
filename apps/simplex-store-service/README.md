@@ -233,6 +233,9 @@ keeps the threshold it was made with, so raising it later credits nothing alread
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did
 not create and cannot read is reported in a warning once an hour until it falls out of that window.
+A BTCPay invoice older than that window, still open here past its expiry, as after an outage of BTCPay
+or of the service, is read once more before the service expires it, at most 25 in a pass, and stays
+open while that read fails.
 
 ### Card payments (Stripe)
 

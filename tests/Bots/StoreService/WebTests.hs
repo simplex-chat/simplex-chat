@@ -323,6 +323,7 @@ badgeWebTests = do
     it "expires an invoice past the settle window once its cancel has failed for an hour, and reports it" testSweepGivesUpPastTheWindow
     it "cancels overdue invoices oldest first, keeping the failures of those left for later" testSweepKeepsFailuresBeyondTheCap
     it "expires an old invoice whose provider is gone, without a call" testSweepExpiresWithoutItsProvider
+    it "reads a self-expiring invoice past the settle window before it expires it, keeping it open while the read fails" testSweepReadsPastTheWindow
     it "sweeps around an overdue invoice whose provider this build does not know, leaving it open" testSweepSkipsAnUnknownProvider
     it "warns once per order while a cancel keeps failing" testSweepWarnsOncePerOrder
     it "cancels at most a pass-sized batch, leaving the rest for the next pass" testSweepCapsCancelsPerPass
@@ -3356,6 +3357,21 @@ testSweepExpiresWithoutItsProvider = bounded "sweep without provider" $ withStub
   invoiceStatus (weStore env) iid `shouldReturn` ISExpired
   loggedError "no provider is configured for it" logged `shouldBe` True
   stubCalls ref `shouldReturn` []
+
+testSweepReadsPastTheWindow :: IO ()
+testSweepReadsPastTheWindow = bounded "sweep reads past the window" $ withStubPoller raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  paid <- seedPastWindow (weStore env) 1 "p-old-paid" PPCrypto
+  unpaid <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
+  setSignals ref [("p-old-paid", settledSignal)]
+  failRead ref (Just (ProviderError "read refused"))
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) [paid, unpaid] `shouldReturn` [ISOpen, ISOpen]
+  failRead ref Nothing
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) [paid, unpaid] `shouldReturn` [ISPaid, ISExpired]
+  stubCalls ref `shouldReturn` concat (replicate 2 [StubRead "p-old-paid", StubRead "p-old"])
 
 testSweepSkipsAnUnknownProvider :: IO ()
 testSweepSkipsAnUnknownProvider = bounded "sweep around an unknown provider" $ withStubPoller raceHold $ \_ poller env _ -> do
