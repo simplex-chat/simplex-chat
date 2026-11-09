@@ -42,6 +42,8 @@ on:
       - "website/test/**"
       - "website/package.json"
       - "packages/simplex-chat-mcp/**"
+      - "packages/simplex-chat-webrtc/**"
+      - "apps/multiplatform/common/src/commonMain/resources/assets/www/**"
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:

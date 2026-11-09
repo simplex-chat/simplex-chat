@@ -25,8 +25,15 @@ case "${1:-}" in
     npm test
     npm run test:e2e
     ;;
+  webrtc)
+    cd packages/simplex-chat-webrtc
+    npm install --no-audit --no-fund
+    npm run build
+    git diff --exit-code -- . ../../apps/multiplatform/common/src/commonMain/resources/assets/www
+    CHROME=${CHROME:-$(command -v google-chrome)} npm test
+    ;;
   *)
-    echo "usage: $0 badge-web | ci-scripts | website | mcp" >&2
+    echo "usage: $0 badge-web | ci-scripts | website | mcp | webrtc" >&2
     exit 1
     ;;
 esac
