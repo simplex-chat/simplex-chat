@@ -1,4 +1,5 @@
 .env
 config/
 data/
-web/
+badges/
+names/

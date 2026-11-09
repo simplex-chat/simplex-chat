@@ -12,7 +12,9 @@ where
 
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
-  ( ListPass (..),
+  ( Confirmed (..),
+    Funded (..),
+    ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
     Provider (..),
@@ -23,6 +25,7 @@ import StoreService.Providers
     WebhookError (..),
   )
 import Control.Exception (try)
+import Control.Logger.Simple (logWarn)
 import Control.Monad (unless)
 import Crypto.Hash (Digest, SHA256)
 import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)
@@ -121,6 +124,7 @@ stripeProvider cfg = do
         pReadInvoice = readInvoice env,
         pCancelInvoice = cancelInvoice env,
         pListOpen = listOpen env,
+        pCurrentRate = Nothing,
         pVerifyWebhook = verifyStripeSig (sWebhookSecret cfg)
       }
 
@@ -235,41 +239,94 @@ instance J.FromJSON CreatedIntent where
 
 createInvoice :: StripeEnv -> ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice)
 createInvoice _ (SPMCrypto _) _ = pure (Left (ProviderError "stripe offers no crypto payment method"))
-createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor, odCurrency} = do
-  let form =
-        [ ("amount", B8.pack (show minor)),
-          ("currency", TE.encodeUtf8 (T.toLower odCurrency)),
+createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor, odCurrency, odReference} = do
+  let amount = B8.pack (show minor)
+      currency = TE.encodeUtf8 (T.toLower odCurrency)
+      reference = TE.encodeUtf8 odReference
+      form =
+        [ ("amount", amount),
+          ("currency", currency),
           -- Only card is offered, because a redirect-based method would navigate the top window out of the embedded frame.
-          ("allowed_payment_method_types[]", "card")
+          ("allowed_payment_method_types[]", "card"),
+          ("metadata[order]", reference)
         ]
-  created <- stripeApi env what methodPost ["v1", "payment_intents"] [] (Just form)
+      create headers = stripeSend env what methodPost ["v1", "payment_intents"] [] headers (Just form)
+  -- a name order sent again after a lost answer gets the intent its first create made
+  (replayed, keyed) <- create [("Idempotency-Key", B8.intercalate ":" [reference, amount, currency])]
+  created <- if replayed then replayedIntent (snd <$> create []) keyed else pure keyed
   pure $ created >>= decodeStripe what <&> \CreatedIntent {ciId, ciClientSecret} ->
     ProviderInvoice {piProviderRef = ciId, piDestination = SPDCard CPStripe ciClientSecret}
   where
     what = "create intent"
+    -- Stripe replays a key's first answer for 24 hours, so an error or an intent cancelled since would fail every resend.
+    -- An intent that succeeded holds the order's payment, and one that cannot be read may, so neither is replaced.
+    replayedIntent fresh keyed = case keyed >>= decodeStripe what of
+      Left _ -> fresh
+      Right CreatedIntent {ciId} ->
+        readInvoice env ciId >>= \case
+          Right (Just SigClosed {}) -> fresh
+          Right _ -> pure keyed
+          Left e -> pure (Left e)
 
 cancelInvoice :: StripeEnv -> Text -> IO (Either ProviderError ())
 cancelInvoice env pid =
   fmap (fmap (const ())) $ stripeApi env "cancel intent" methodPost ["v1", "payment_intents", pid, "cancel"] [] (Just [])
 
+-- | Declined card payments one intent takes before it is cancelled, so stolen cards cannot be tried on it one after another.
+maxDeclines :: Int
+maxDeclines = 3
+
+-- | An intent waiting for a card after a charge is cancelled once its last maxDeclines charges all failed.
 readInvoice :: StripeEnv -> Text -> IO (Either ProviderError (Maybe PaymentSignal))
 readInvoice env pid = do
   now <- getCurrentTime
   got <- stripeApi env what methodGet ["v1", "payment_intents", pid] [("expand[]", Just "latest_charge")] Nothing
-  pure $ got >>= decodeStripe what >>= signalOf now
+  case got >>= decodeStripe what of
+    Right intent@IntentRead {irStatus = "requires_payment_method", irChargeCreated = Just _} ->
+      declines >>= \case
+        Right n | n >= maxDeclines -> do
+          logWarn $ "stripe: intent " <> pid <> " is cancelled after " <> tshow n <> " declined card payments in a row"
+          (>>= const (signalOf now intent {irStatus = "canceled"})) <$> cancelInvoice env pid
+        Right _ -> pure $ signalOf now intent
+        Left e -> pure $ Left e
+    intent -> pure $ intent >>= signalOf now
   where
     what = "read intent " <> pid
+    declines =
+      fmap (length . filter (== Just "failed") . map chargeStatus . clData) . (>>= decodeStripe "list charges")
+        <$> stripeApi env "list charges" methodGet ["v1", "charges"] [("payment_intent", Just $ TE.encodeUtf8 pid), ("limit", Just $ B8.pack $ show maxDeclines)] Nothing
+    chargeStatus = \case
+      J.Object c -> case KM.lookup "status" c of
+        Just (J.String s) -> Just s
+        _ -> Nothing
+      _ -> Nothing
+
+newtype ChargeList = ChargeList {clData :: [J.Value]}
+
+instance J.FromJSON ChargeList where
+  parseJSON = J.withObject "charge list" $ \o -> ChargeList <$> o J..: "data"
 
 signalOf :: UTCTime -> IntentRead -> Either ProviderError (Maybe PaymentSignal)
 signalOf now IntentRead {irStatus, irAmountReceived, irChargeCreated} =
   case irStatus of
-    "succeeded" -> Right (Just (SigSettled (received irAmountReceived) settledAt))
-    "canceled" -> Right (Just (SigClosed (received 0)))
+    "succeeded" -> Right (Just (SigSettled (received irAmountReceived irAmountReceived) settledAt))
+    "canceled" -> Right (Just (SigClosed (received 0 0) PaidInPart))
     s | s `elem` openStatuses -> Right Nothing
       | otherwise -> Left (ProviderError ("stripe payment_intent: unknown status " <> s))
   where
     openStatuses = ["requires_payment_method", "requires_confirmation", "requires_action", "processing", "requires_capture"]
-    received amt = Received {rcvAmount = amountFrom amt, rcvCrypto = Nothing, rcvDue = Nothing}
+    -- only a succeeded intent's money is confirmed
+    received amt confirmed =
+      Received
+        { rcvAmount = amountFrom amt,
+          rcvCrypto = Nothing,
+          rcvDue = Nothing,
+          rcvUnits = Nothing,
+          rcvInvoicedUnits = Nothing,
+          rcvRate = Nothing,
+          rcvConfirmed = Confirmed {cfCents = amountFrom confirmed, cfUnits = Nothing},
+          rcvUncreditable = Nothing
+        }
     settledAt = maybe now posixSecondsToUTCTime irChargeCreated
 
 -- Clamp stops a wildly wrong figure wrapping Word32 and coming out small.
@@ -313,7 +370,19 @@ stripeApi ::
   Query ->
   Maybe [(ByteString, ByteString)] ->
   IO (Either ProviderError LB.ByteString)
-stripeApi StripeEnv {seCfg, seManager} what verb segments query form = do
+stripeApi env what verb segments query form = snd <$> stripeSend env what verb segments query [] form
+
+-- | The answer, and whether Stripe replayed it as its saved answer to an Idempotency-Key it has seen.
+stripeSend ::
+  StripeEnv ->
+  Text ->
+  Method ->
+  [Text] ->
+  Query ->
+  [Header] ->
+  Maybe [(ByteString, ByteString)] ->
+  IO (Bool, Either ProviderError LB.ByteString)
+stripeSend StripeEnv {seCfg, seManager} what verb segments query headers form = do
   r <- try $ do
     req0 <- parseRequest (T.unpack url)
     -- applyBasicAuth must wrap the record update, because updating requestHeaders after it would drop the header it adds.
@@ -324,24 +393,26 @@ stripeApi StripeEnv {seCfg, seManager} what verb segments query form = do
                 requestHeaders =
                   ("Accept", "application/json")
                     : ("Stripe-Version", stripeApiVersion)
-                    : [("Content-Type", "application/x-www-form-urlencoded") | isJust form],
+                    : [("Content-Type", "application/x-www-form-urlencoded") | isJust form]
+                    <> headers,
                 requestBody = RequestBodyBS (maybe "" (renderSimpleQuery False) form)
               }
     withResponse req seManager $ \resp -> do
       taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
-      pure (statusCode (responseStatus resp), taken)
+      pure (lookup "Idempotent-Replayed" (responseHeaders resp) == Just "true", statusCode (responseStatus resp), taken)
   pure $ case r of
     -- http-client hides the Authorization header when showing a Request
-    Left (e :: HttpException) -> Left (ProviderError (what <> " failed: " <> tshow e))
-    Right (code, taken)
-      | LB.length taken > maxProviderBytes ->
+    Left (e :: HttpException) -> (False, Left (ProviderError (what <> " failed: " <> tshow e)))
+    Right (replayed, code, taken) -> (replayed, answer code taken)
+  where
+    answer code taken
+      | LB.length taken > maxProviderBytes =
           Left . ProviderError $
             what <> " failed: HTTP " <> tshow code <> ", and the answer is over " <> tshow maxProviderBytes <> " bytes"
-      | code >= 200 && code < 300 -> Right taken
-      | otherwise ->
+      | code >= 200 && code < 300 = Right taken
+      | otherwise =
           Left . ProviderError $
             what <> " failed: HTTP " <> tshow code <> " " <> snippet taken
-  where
     url =
       T.dropWhileEnd (== '/') (sHost seCfg)
         <> "/"

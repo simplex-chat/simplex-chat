@@ -6,7 +6,9 @@ module Bots.StoreService.StripeTests (badgeStripeTests) where
 
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
-  ( ListPass (..),
+  ( Confirmed (..),
+    Funded (..),
+    ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
     Provider (..),
@@ -23,8 +25,11 @@ import Data.Aeson ((.=))
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
 import Data.Either (isLeft)
+import Data.Maybe (isNothing)
+import Data.Word (Word32)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Network.HTTP.Types (hAuthorization, parseSimpleQuery)
@@ -44,17 +49,24 @@ badgeStripeTests = describe "badge stripe adapter" $ do
   describe "against the fake Stripe" $ do
     it "creates a PaymentIntent and reads back the client secret" testFakeCreatesCard
     it "sends the create form Stripe documents, over HTTP Basic" testFakeCreateBody
+    it "sends an Idempotency-Key of the order, so a create sent again gets the same intent" testFakeCreateIsIdempotent
+    it "creates again without the key when the key replays an error" testFakeReplayedErrorIsNotPassedOn
+    it "creates again without the key when the key replays an intent cancelled since" testFakeReplayedCancelIsNotPassedOn
+    it "keeps a replayed intent that succeeded since, creating no other" testFakeReplayedSuccessIsKept
+    it "answers an error, creating no other intent, when a replayed intent cannot be read" testFakeReplayedUnreadIsKept
     it "is refused when the secret key is wrong, rather than passing silently" testFakeWrongSecretKey
     it "walks requires_payment_method through processing to succeeded, then refuses a cancel" testFakeLifecycle
     it "cancels an open intent once, then refuses a second cancel" testFakeCancel
     it "refuses to cancel an intent while it is processing" testFakeCancelRefusedWhileProcessing
     it "reads the expand query on every read" testFakeReadExpands
     it "closes on a canceled intent" testFakeCanceled
+    it "cancels an intent waiting for a card after three declines in a row, and keeps one with fewer" testDeclinesCancel
     it "makes a 500 at checkout a ProviderError, creating nothing" testFakeCreate500
     it "makes a 500 on a read a ProviderError the next read recovers from" testFakeRead500
     it "refuses a crypto method, since Stripe offers none" testRefusesCrypto
     it "makes an unknown intent status a ProviderError, not a silent no-signal" testFakeReadUnknownStatus
     it "settles a succeeded intent with no charge at read time" testSettledNoChargeReadTime
+    it "confirms only a succeeded intent's amount, and reads no rate" testConfirmedOnlySucceeded
   describe "listing intents to settle" $ do
     it "lists by a created window, never status=open" testFakeListWindow
     it "moves the settled and canceled intents, at read time, leaving the open one" testFakeListsOpen
@@ -70,13 +82,30 @@ badgeStripeTests = describe "badge stripe adapter" $ do
     it "accepts a signature up to 15 minutes from now, either way, and refuses one further out" testWebhookTimestampWindow
 
 fiftyFourDollars :: OrderDraft
-fiftyFourDollars = OrderDraft {odAmount = CurrencyAmount 5400, odCurrency = "usd"}
+fiftyFourDollars = OrderDraft {odAmount = CurrencyAmount 5400, odCurrency = "usd", odReference = sampleReference}
+
+sampleReference :: Text
+sampleReference = "Xq3v9TzK2mB7wR4yLp8cNd"
 
 fiftyFourDollarsReceived :: Received
-fiftyFourDollarsReceived = Received {rcvAmount = CurrencyAmount 5400, rcvCrypto = Nothing, rcvDue = Nothing}
+fiftyFourDollarsReceived = cardReceived 5400 5400
 
 nothingReceived :: Received
-nothingReceived = Received {rcvAmount = CurrencyAmount 0, rcvCrypto = Nothing, rcvDue = Nothing}
+nothingReceived = cardReceived 0 0
+
+-- | Cents received and confirmed, with no units or rate.
+cardReceived :: Word32 -> Word32 -> Received
+cardReceived cents confirmed =
+  Received
+    { rcvAmount = CurrencyAmount cents,
+      rcvCrypto = Nothing,
+      rcvDue = Nothing,
+      rcvUnits = Nothing,
+      rcvInvoicedUnits = Nothing,
+      rcvRate = Nothing,
+      rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmed, cfUnits = Nothing},
+      rcvUncreditable = Nothing
+    }
 
 fixtureChargeAt :: UTCTime
 fixtureChargeAt = posixSecondsToUTCTime 1700000000
@@ -122,8 +151,61 @@ testFakeCreateBody = withProvider $ \fake p -> do
       lookup "currency" form `shouldBe` Just "usd"
       -- Card only keeps the client confirm from redirecting the top window out of the embedded frame.
       lookup "allowed_payment_method_types[]" form `shouldBe` Just "card"
+      lookup "metadata[order]" form `shouldBe` Just (TE.encodeUtf8 sampleReference)
+      lookup "Idempotency-Key" (frHeaders created) `shouldBe` Just (TE.encodeUtf8 sampleReference <> ":5400:usd")
       lookup hAuthorization (frHeaders created) `shouldSatisfy` maybe False ("Basic " `B8.isPrefixOf`)
     _ -> expectationFailure ("expected one create, got " <> show (length posts))
+
+nameOrder :: OrderDraft
+nameOrder = fiftyFourDollars {odReference = "name:0x" <> T.replicate 32 "ab"}
+
+nameOrderKey :: B8.ByteString
+nameOrderKey = TE.encodeUtf8 (odReference nameOrder) <> ":5400:usd"
+
+createdNameOrder :: HasCallStack => Provider -> IO Text
+createdNameOrder p =
+  pCreateInvoice p (SPMCard CPStripe) nameOrder >>= \case
+    Right ProviderInvoice {piProviderRef} -> pure piProviderRef
+    Left e -> failWith ("expected an invoice, got " <> show e)
+
+testFakeCreateIsIdempotent :: IO ()
+testFakeCreateIsIdempotent = withProvider $ \fake p -> do
+  first <- createdNameOrder p
+  createdNameOrder p `shouldReturn` first
+  ProviderInvoice {piProviderRef = badge} <- createdInvoice p (SPMCard CPStripe)
+  badge `shouldNotBe` first
+  length <$> fakeIntentIds fake `shouldReturn` 2
+
+testFakeReplayedErrorIsNotPassedOn :: IO ()
+testFakeReplayedErrorIsNotPassedOn = withProvider $ \fake p -> do
+  failNextCalls fake 1 500
+  pCreateInvoice p (SPMCard CPStripe) nameOrder >>= (`shouldSatisfy` namesInError "500")
+  pid <- createdNameOrder p
+  fakeIntentIds fake `shouldReturn` [pid]
+  map (lookup "Idempotency-Key" . frHeaders) <$> apiRequests fake "POST" [] `shouldReturn` [Just nameOrderKey, Just nameOrderKey, Nothing]
+
+testFakeReplayedCancelIsNotPassedOn :: IO ()
+testFakeReplayedCancelIsNotPassedOn = withProvider $ \fake p -> do
+  first <- createdNameOrder p
+  pCancelInvoice p first `shouldReturn` Right ()
+  again <- createdNameOrder p
+  again `shouldNotBe` first
+  fakeIntentStatus fake again `shouldReturn` Just "requires_payment_method"
+
+testFakeReplayedSuccessIsKept :: IO ()
+testFakeReplayedSuccessIsKept = withProvider $ \fake p -> do
+  first <- createdNameOrder p
+  setIntentState fake first ["status" .= ("succeeded" :: Text)]
+  createdNameOrder p `shouldReturn` first
+  fakeIntentIds fake `shouldReturn` [first]
+
+testFakeReplayedUnreadIsKept :: IO ()
+testFakeReplayedUnreadIsKept = withProvider $ \fake p -> do
+  first <- createdNameOrder p
+  failNextCalls fake 1 500
+  pCreateInvoice p (SPMCard CPStripe) nameOrder >>= (`shouldSatisfy` namesInError "500")
+  fakeIntentIds fake `shouldReturn` [first]
+  createdNameOrder p `shouldReturn` first
 
 testFakeWrongSecretKey :: IO ()
 testFakeWrongSecretKey = bounded $ withFakeStripe $ \fake -> do
@@ -154,12 +236,22 @@ testFakeCancelRefusedWhileProcessing = withProvider $ \fake p -> do
   pCancelInvoice p pid >>= (`shouldSatisfy` namesInError "payment_intent_unexpected_state")
   fakeIntentStatus fake pid `shouldReturn` Just "processing"
 
+testDeclinesCancel :: IO ()
+testDeclinesCancel = withProvider $ \fake p -> do
+  ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
+  setIntentState fake pid ["declines" .= (2 :: Int)]
+  pReadInvoice p pid `shouldReturn` Right Nothing
+  fakeIntentStatus fake pid `shouldReturn` Just "requires_payment_method"
+  setIntentState fake pid ["declines" .= (3 :: Int)]
+  pReadInvoice p pid >>= (`shouldSatisfy` \case Right (Just SigClosed {}) -> True; _ -> False)
+  fakeIntentStatus fake pid `shouldReturn` Just "canceled"
+
 testFakeCancel :: IO ()
 testFakeCancel = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
   pCancelInvoice p pid `shouldReturn` Right ()
   fakeIntentStatus fake pid `shouldReturn` Just "canceled"
-  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived))
+  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived PaidInPart))
   pCancelInvoice p pid >>= (`shouldSatisfy` namesInError "payment_intent_unexpected_state")
 
 testFakeReadExpands :: IO ()
@@ -176,7 +268,7 @@ testFakeCanceled = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
   setIntentState fake pid ["status" .= ("canceled" :: Text)]
   -- A nonzero received amount here would write a phantom payment for money the buyer never sent.
-  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived))
+  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived PaidInPart))
 
 testFakeCreate500 :: IO ()
 testFakeCreate500 = withProvider $ \fake p -> do
@@ -214,6 +306,14 @@ testSettledNoChargeReadTime = do
   let ir = IntentRead {irId = "pi_test_x", irStatus = "succeeded", irAmountReceived = 5400, irChargeCreated = Nothing}
   signalOf now ir `shouldBe` Right (Just (SigSettled fiftyFourDollarsReceived now))
 
+testConfirmedOnlySucceeded :: IO ()
+testConfirmedOnlySucceeded = do
+  now <- getCurrentTime
+  let read' status = signalOf now IntentRead {irId = "pi_test_x", irStatus = status, irAmountReceived = 5400, irChargeCreated = Nothing}
+  read' "succeeded" `shouldBe` Right (Just (SigSettled (cardReceived 5400 5400) now))
+  read' "canceled" `shouldBe` Right (Just (SigClosed (cardReceived 0 0) PaidInPart))
+  withProvider $ \_ p -> isNothing (pCurrentRate p) `shouldBe` True
+
 -- | A status=open query returns only open intents, which carry no signal, so the poll lists by
 -- creation time instead to catch a settlement the webhook missed. The window reaches back the
 -- settle window plus an intent's own lifetime.
@@ -249,7 +349,7 @@ testFakeListsOpen = withProvider $ \_ p -> do
           rcv `shouldBe` fiftyFourDollarsReceived
           settledAt `shouldSatisfy` \t -> t >= askedAt && t <= answeredAt
         other -> failWith ("pi_test_a should settle at read time, got " <> show other)
-      lookup "pi_test_b" lpMoved `shouldBe` Just (SigClosed nothingReceived)
+      lookup "pi_test_b" lpMoved `shouldBe` Just (SigClosed nothingReceived PaidInPart)
     Left e -> failWith ("expected a list pass, got " <> show e)
 
 testFakeListSkipsIdless :: IO ()

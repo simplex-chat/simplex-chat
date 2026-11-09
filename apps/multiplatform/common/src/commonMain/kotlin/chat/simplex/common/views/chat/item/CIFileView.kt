@@ -39,6 +39,7 @@ fun CIFileView(
   showTimestamp: Boolean,
   showMenu: MutableState<Boolean>,
   smallView: Boolean = false,
+  terminalTop: Dp = 0.dp,
   receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
@@ -211,7 +212,7 @@ fun CIFileView(
       .then(
         when {
           smallView -> Modifier
-          terminal -> Modifier.padding(top = TERMINAL_FILE_TOP_GAP.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())
+          terminal -> Modifier.padding(top = terminalTop, start = 6.sp.toDp(), end = 12.sp.toDp()).messageCard()
           else -> Modifier.padding(top = 4.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp()).paddingFromBaseline(bottom = BUBBLE_TEXT_INSET)
         }
       ),

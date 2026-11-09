@@ -41,6 +41,8 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word32)
+import Data.Hourglass (DateTime, Elapsed (..), Seconds (..), timeFromElapsed)
+import Data.Scientific (toBoundedInteger)
 import Data.X509
 import Data.X509.EC (unserializePoint)
 import Data.X509.Memory (readKeyFileFromMemory)
@@ -63,12 +65,15 @@ verifyAppleTransaction roots ourBundleId jws = do
 verifiedPayload :: NonEmpty SignedCertificate -> Text -> Either StoreRefusal J.Object
 verifiedPayload roots jws = case T.splitOn "." jws of
   [header, payload, signature] -> do
-    leaf <- signingChain roots =<< certificateChain header
+    (leaf, intermediate) <- signingChain roots =<< certificateChain header
     sig <- jwsSignature signature
     key <- leafKey leaf
     unless (ECDSA.verify SHA256 key sig (encodeUtf8 $ header <> "." <> payload)) $
       refused "the signature does not verify"
-    maybe (failed "the payload Apple signed is not JSON") Right $ jsonObject payload
+    o <- maybe (failed "the payload Apple signed is not JSON") Right $ jsonObject payload
+    signedAt <- maybe (failed "the payload Apple signed carries no signedDate") Right $ signedDateTime o
+    unless (all (validAt signedAt) [leaf, intermediate]) $ refused "a certificate of the chain was not valid at the payload's signedDate"
+    pure o
   _ -> refused "not three dot-separated parts"
 
 -- | A header or chain in a shape Apple may yet adopt proves no forgery, so it fails rather than refuses.
@@ -86,8 +91,17 @@ certificateChain header = do
       J.String c | Right bs <- B64.decode (encodeUtf8 c) -> Right bs
       _ -> refused "an x5c certificate is not base64"
 
--- | The root in the chain is ignored: trust comes from the configured ones alone.
-signingChain :: NonEmpty SignedCertificate -> [ByteString] -> Either StoreRefusal SignedCertificate
+-- | When Apple signed the payload, from its signedDate in milliseconds.
+signedDateTime :: J.Object -> Maybe DateTime
+signedDateTime o = case JM.lookup "signedDate" o of
+  Just (J.Number n) | Just ms <- toBoundedInteger n -> Just $ timeFromElapsed $ Elapsed $ Seconds $ ms `div` 1000
+  _ -> Nothing
+
+validAt :: DateTime -> SignedCertificate -> Bool
+validAt t cert = let (from, to) = certValidity (getCertificate cert) in from <= t && t <= to
+
+-- | The leaf and the intermediate; the root in the chain is ignored: trust comes from the configured ones alone.
+signingChain :: NonEmpty SignedCertificate -> [ByteString] -> Either StoreRefusal (SignedCertificate, SignedCertificate)
 signingChain roots = \case
   [leafDer, intermediateDer, _] -> do
     leaf <- certificate leafDer
@@ -101,7 +115,7 @@ signingChain roots = \case
     -- Apple issues other certificates under this root, developers' among them; only these two mark the receipt-signing chain
     unless (marked receiptSigningLeaf leaf && marked appleIntermediate intermediate) $
       failed "Apple issued this chain, but not to sign receipts"
-    pure leaf
+    pure (leaf, intermediate)
   _ -> failed "x5c is not leaf, intermediate and root"
   where
     certificate = either (const $ failed "an x5c certificate does not decode") Right . decodeSignedCertificate

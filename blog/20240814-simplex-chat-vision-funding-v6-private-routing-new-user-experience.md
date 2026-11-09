@@ -60,7 +60,7 @@ We are very happy to announce that we now have funds to move faster – we raise
 
 When Jack discovered SimpleX Chat last year, he [posted on Twitter](https://x.com/jack/status/1661681076983529479): 
 
-> Better than Signal? Looks promising.
+> Better than Signal? Looks promising.\
 > A few bugs and UX issues but great foundation. Love that it’s public domain.
 
 And [on Nostr](https://primal.net/e/note1txz9xmmc456kwcg7zrsrtqrhn7as29ptuz0qulu452k8n85hsshqq6uh6q): 

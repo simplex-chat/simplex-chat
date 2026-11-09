@@ -38,6 +38,16 @@
   </description>
 
   <releases>
+    <release version="7.1.0" date="2026-11-04">
+      <url type="details">https://simplex.chat/badges/</url>
+      <description>
+        <p>New in v7.1.</p>
+        <p>Supporter badges: larger files, available for longer.</p>
+        <p>SimpleX public names: sale starts on December 12.</p>
+        <p>Safer channels: add moderators and sign every message.</p>
+        <p>Flat layout and markdown: enable in Appearance settings.</p>
+      </description>
+    </release>
     <release version="7.0.4" date="2026-10-03">
       <url type="details">https://simplex.chat/blog/20260722-simplex-public-names.html</url>
       <description>
