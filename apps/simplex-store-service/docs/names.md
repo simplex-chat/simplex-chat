@@ -516,7 +516,7 @@ sequenceDiagram
 Notes:
 
 - The refund must equal the whole balance, and a held balance is refused, overdue or not. `//refund` closes no holder: its answer asks support to start the service, whose poller closes an overdue holder 10 minutes after its expiry, then to run `//refund` again ([`Names/Balances.hs:40-65`](../src/StoreService/Names/Balances.hs#L40-L65), [`Names/Store.hs:1055-1065`](../src/StoreService/Names/Store.hs#L1055-L1065), [`Service.hs:498-506`](../src/StoreService/Service.hs#L498-L506)).
-- The provider interface offers create, read, cancel, list, rate and webhook verification, so the money is paid back by hand ([`Providers.hs:120-130`](../src/StoreService/Providers.hs#L120-L130)). The buyer's email to chat@simplex.chat is described in the README; the page code is in the submodule ([`README.md:1379-1419`](../README.md#L1379-L1419)).
+- The provider interface offers create, read, cancel, list, rate and webhook verification, so the money is paid back by hand ([`Providers.hs:120-130`](../src/StoreService/Providers.hs#L120-L130)). The buyer's email to chat@simplex.chat is described in the README; the page code is in the submodule ([`README.md:1382-1422`](../README.md#L1382-L1422)).
 - The console starts only while the service is stopped, as the database lock is held by one process ([`Store/Migrate.hs:46-54`](../src/StoreService/Store/Migrate.hs#L46-L54)).
 
 ---
