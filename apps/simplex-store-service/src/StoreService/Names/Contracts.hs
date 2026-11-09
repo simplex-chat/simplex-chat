@@ -179,7 +179,7 @@ textRecord ct lh key = call ct (resolver ct) ("text(bytes32,string)", abiTuple [
 
 -- | Cents for a label of this length and these years. The oracle prices by length only,
 -- so a placeholder label of that length keeps the label from the RPC node. A price under the floor for these years is refused: a node
--- answering one would sell names for less than the sponsor allowance pays for their rent.
+-- answering one would sell names below it while the sponsor allowance pays their rent.
 chainPriceCents :: Contracts -> Int -> Int -> IO (Either ChainError Int)
 chainPriceCents ct@Contracts {ctMinPriceCentsPerYear} len years = fmap (>>= checkFloor) . call ct (controller ct) ("rentPriceUSD(string,uint256)", args) $ \ret -> do
   base <- decodeUint256 ret
