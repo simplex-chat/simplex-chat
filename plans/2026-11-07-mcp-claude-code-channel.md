@@ -197,6 +197,10 @@ Decided by judgement on 2026-11-09, as implemented:
 111. K1 a: a message starting with `!` from any role is refused with `Messages starting with ! reach Claude only from admins and owners, as /!command.` and does not reach Claude; admins and owners send it as `/!` (decisions 84, 92).
 112. The notes of the UX page stay as they are: UX-I2, the command `link` and the skill `/simplex:link`; UX-I3, the plugin's tools without Claude Code's permission prompt; UX-I4, the options Approval and Expiry in hours; UX-I5, the idle close of a session and the idle stop of the daemon; UX-I6, a newer plugin stops an older daemon; UX-I8, session numbers.
 
+Decided by judgement on 2026-11-09, review round 9:
+114. Under premise 3, a post of Claude or `User` in a session group that the core refuses with `feature not allowed NAME` is never dropped without a word: Claude posts in its place PREF OFF, `NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, with a subject: `Claude's answer was not posted: `, quoting the turn's prompt; `User's prompt was not posted: `; `Action N: ` for a card or an edit of a card, after which the action of a refused card fails with PREF OFF, and for `/forward`. `reply` returns PREF OFF. A media card refused by `Files and media` is first posted again as text (decision 107). One path replaces the code of decisions 102 and 108; their texts are PREF OFF for `Files and media`. `serve` keeps 0.2's errors.
+115. `serve` answers `/give CHAT N` from any member with the list of commands, as 0.2: `/give` is a request of session groups only.
+
 Open for the user:
 113. UX-I1, the replacement of the Main group and its owners. Recommended, as now: while owners exist, an owner approves each reset in the Main group; without owners it runs from a terminal (decision 20).
 
