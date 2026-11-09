@@ -105,6 +105,15 @@ class OutcomeTest(unittest.TestCase):
         self.assertEqual(timeout["outcome"], "timeout")
         self.assertEqual(timeout["hang"]["item"], "/Schema dump/verify and overwrite schema dump/")
 
+    def test_timeout_of_a_later_attempt_before_its_first_item(self):
+        timeout = attempt_timeout_record(
+            "Attempt 1 failed, retrying...",
+            "Attempt 2 timed out.",
+            "Attempt 2 failed.",
+            "##[error]Process completed with exit code 1.",
+        )
+        self.assertEqual((timeout["outcome"], timeout["hang"]["item"]), ("timeout", None))
+
     def test_build_failures(self):
         expected = {
             "build-ghc-error.log": (
