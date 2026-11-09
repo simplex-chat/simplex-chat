@@ -58,7 +58,7 @@ import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
-import StoreService.Names.Sender (checkPendingSigners, runSender)
+import StoreService.Names.Sender (checkPendingSignatures, runSender)
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
@@ -632,7 +632,7 @@ survive what action = action `catchOwn'` \_ -> logError $ "store service: " <> w
 badgePreStartHook :: StoreServiceOpts -> Maybe NamesConfig -> ChatController -> IO ()
 badgePreStartHook opts namesCfg_ ChatController {config, chatStore, random} = do
   runStoreServiceMigrations opts config chatStore
-  forM_ namesCfg_ $ \NamesConfig {nChain} -> checkPendingSigners random nChain chatStore >>= orExit
+  forM_ namesCfg_ $ \NamesConfig {nChain} -> checkPendingSignatures random nChain chatStore >>= orExit
 
 badgePostStartHook :: StoreServiceOpts -> ServiceState -> ChatController -> IO ()
 badgePostStartHook StoreServiceOpts {noAddress, testing} env cc = do

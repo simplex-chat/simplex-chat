@@ -226,7 +226,7 @@ testRotatedKeyStart g = withSetup g $ \s@Setup {node, store, chain = oldChain} -
   Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
   let oldConfig = ccConfig oldChain
       newConfig = oldConfig {cServiceKey = either error id $ mkPrivateKey $ BA.replicate 32 0x47}
-      startOn cfg = checkPendingSigners g cfg store
+      startOn cfg = checkPendingSignatures g cfg store
       refusal signedFor configured =
         Left $ "a pending transaction of nonce 0 was signed " <> signedFor <> ", not " <> configured <> "; start with the key and chain that signed it until no transaction is pending"
   newRegistrar <- ccRegistrar <$> newChainClient g newConfig

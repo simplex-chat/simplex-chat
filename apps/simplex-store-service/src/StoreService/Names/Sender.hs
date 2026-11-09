@@ -12,7 +12,7 @@ module StoreService.Names.Sender
     ptHash,
     ptNonce,
     newSender,
-    checkPendingSigners,
+    checkPendingSignatures,
     submitTransaction,
     inFlightTransaction,
     awaitOutcome,
@@ -150,8 +150,8 @@ newSender snRandom snChain snStore snNow = do
             }
         )
 
-checkPendingSigners :: TVar ChaChaDRG -> ChainConfig -> DBStore -> IO (Either String ())
-checkPendingSigners g ChainConfig {cChainId, cServiceKey} st = do
+checkPendingSignatures :: TVar ChaChaDRG -> ChainConfig -> DBStore -> IO (Either String ())
+checkPendingSignatures g ChainConfig {cChainId, cServiceKey} st = do
   registrar <- addressFromPrivateKey g cServiceKey
   saved <- withTransaction st pendingTransactions
   runExceptT $ forM_ saved $ \NameTransaction {ntNonce, ntRaw} -> do
