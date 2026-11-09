@@ -211,8 +211,12 @@ test("while files and media are off in a session's group, the card of a send of 
   const card = await sendCard
   expect(card.chatItem.content).toMatchObject({type: "rcvMsgContent", msgContent: {type: "text"}})
   const edited = updated(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemId === card.chatItem.meta.itemId))
+  const delivered = received(directory.chat, ({chatItem: {content}}) => content.type === "rcvMsgContent" && content.msgContent.text === "The trail map")
   await ownerSends(`/approve ${directoryChat} ${cardNumber(card)}`)
   expect((await sending).result).toMatchObject({status: "done", chat: directoryChat, responses: [expect.objectContaining({text: "result 1: The trail map"}), expect.objectContaining({text: "result 2: The trail map"})]})
+  const image = (await delivered).chatItem
+  expect(image.content).toMatchObject({type: "rcvMsgContent", msgContent: {type: "image", text: "The trail map"}})
+  expect(image.file).toMatchObject({fileName: "map.gif", fileSize: 6})
   expect((await edited).chatItem.content).toMatchObject({type: "rcvMsgContent", msgContent: {type: "text", text: expect.stringMatching(/\nApproved by Alice\.$/)}})
 }, 600_000)
 
