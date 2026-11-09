@@ -535,7 +535,7 @@ testSharedHostLookup = do
             atomically $ modifyTVar' asked (name :)
             ["1.1.1.1"] <$ uninterruptibleMask_ (atomically $ readTMVar gate)
         | otherwise = stubResolver asked name
-  fake <- newFake testLimits {hostLookupSlots = 2} answerAll resolver
+  fake <- newFake testLimits {hostLookupSlots = 1} answerAll resolver
   let lookups = length . filter (== "slow.test") <$> readTVarIO asked
       slow = addressLinkAt "slow.test"
   replicateConcurrently 4 (search fake (slow 1)) `shouldReturn` replicate 4 ProfileUnread
@@ -543,8 +543,9 @@ testSharedHostLookup = do
   search fake (slow 2) `shouldReturn` ProfileUnread
   (`diffUTCTime` joined) <$> getCurrentTime >>= (`shouldSatisfy` (< 0.2))
   lookups `shouldReturn` 1
-  search fake (addressLink 1) `shouldReturn` ProfileOk (profileFor (addressLink 1))
+  search fake (addressLink 1) `shouldReturn` ProfileUnavailable
   atomically $ putTMVar gate ()
+  search fake (addressLink 2) `shouldReturn` ProfileOk (profileFor (addressLink 2))
   search fake (slow 3) `shouldReturn` ProfileOk (profileFor (slow 3))
 
 -- Through the chat core
