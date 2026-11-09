@@ -839,7 +839,9 @@ applies at once. It fetches each text once, without the link's fragment, followi
 10 seconds: a `200` answer of at most 256 KB, valid UTF-8, whose sha256 is the link's. It keeps each text by its hash,
 in memory and in the table `sx_badge_service_name_terms`, and fetches one at a time. A stored text
 is read before any fetch and used only when its sha256 is the link's, so a restart while
-git.simplex.chat is down keeps the texts fetched before it. After a failed fetch it fetches no text for 30 seconds, or for longer, up to an
+git.simplex.chat is down keeps the texts fetched before it. The table is empty after the upgrade to
+this version, so its first start needs git.simplex.chat to fetch them; a stored text that fails the
+check is logged and fetched again. A text that cannot be stored is logged and kept in memory only. After a failed fetch it fetches no text for 30 seconds, or for longer, up to an
 hour, when the answer's `Retry-After` asks, and logs why. `GET /api/terms/<hash>` answers
 `{"link", "text"}` for the hash of either current link, `404` for any other hash or a link the service
 does not take, and meanwhile `503 terms_unavailable` with `Retry-After` for a text not fetched yet.
@@ -849,7 +851,7 @@ takes, or has a text the service cannot fetch now. An available name's search an
 `"terms": null`, and an order, a code order, a move or a spend of such a name answers
 `503 terms_unavailable` before any payment, with `Retry-After` while the fetch waits. The service
 logs both links and their hashes at startup, and warns for each that is not set or not a link it
-takes; it then reads or fetches both texts in the background. A search reads the links only for an available name, and
+takes. A names lane reads or fetches both texts at the start and then every hour. A search reads the links only for an available name, and
 waits for its text within the search's deadline. To change the terms,
 the contracts' owner calls `setGeneralTerms(link)` or `setCommunityTerms(link)`; an order signed
 under the old terms is asked to agree again before its reveal.

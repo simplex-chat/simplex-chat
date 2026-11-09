@@ -31,7 +31,7 @@ module Bots.StoreService.NamesContractsTests
 where
 
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.WebTests (withServiceStore, withServiceStores)
+import Bots.StoreService.WebTests (capturingStderr, withServiceStore, withServiceStores)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM (TVar)
 import Control.Monad (forM_)
@@ -88,7 +88,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
   describe "terms" $ do
     it "reads both terms links at one block, once per block, \"\" for one not set, and hashes a set link with keccak256 as viem does" $ testTermsLinks g
     it "fetches a terms text once, keeping it by its link's hash" $ testTermsTextKept g
-    it "answers a stored terms text after a restart while its host answers 404, fetching again one stored with another SHA-256" $ testTermsTextStored g
+    it "answers a stored terms text after a restart while its host answers 404 and while fetches wait, fetching again one stored with another SHA-256 and logging it" $ testTermsTextStored g
     it "fetches both current terms texts, storing them" $ testCurrentTermsFetched g
     it "takes only a git.simplex.chat link of one .md file at one commit with the file's SHA-256, or a loopback link on the local chain, fetching nothing else" $ testTermsLinkForms g
     it "refuses an answer other than a 200 UTF-8 text of at most 256 KB with the link's SHA-256, following no redirect" $ testTermsTextRefused g
@@ -168,25 +168,32 @@ testTermsTextKept g = withContracts g $ \node ct -> do
 
 testTermsTextStored :: TVar ChaChaDRG -> IO ()
 testTermsTextStored g = withServiceStores $ \open -> withFakeEthNode $ \node -> do
-  let restarted = open >>= \st -> (\x -> x {ctTermsBackoff = 0}) <$> (newContracts st TLDSimplex =<< fakeChainClient g node)
+  let contracts = open >>= \st -> newContracts st TLDSimplex =<< fakeChainClient g node
+      restarted = (\x -> x {ctTermsBackoff = 0}) <$> contracts
       general = termsAt fakeGeneralTermsText
       generalPath = fakeTermsPath fakeGeneralTermsText
-      hostDown = answerText node generalPath $ TextAnswer status404 [] ""
+      communityPath = fakeTermsPath fakeCommunityTermsText
+      hostDown path = answerText node path $ TextAnswer status404 [] ""
   ct <- restarted
   termsText ct general `shouldReturn` Right "SimpleX general terms v1"
-  hostDown
+  hostDown generalPath
   afterRestart <- restarted
   termsText afterRestart general `shouldReturn` Right "SimpleX general terms v1"
+  hostDown communityPath
+  waiting <- contracts
+  termsText waiting (termsAt fakeCommunityTermsText) `shouldReturn` Left (TRWait 30)
+  termsText waiting general `shouldReturn` Right "SimpleX general terms v1"
   st <- open
   withTransaction st $ \db -> setTermsText db (tmHash general) fakeNewGeneralTermsText
   tampered <- restarted
-  termsText tampered general `shouldReturn` Left (TRWait 0)
+  refused <- capturingStderr $ termsText tampered general `shouldReturn` Left (TRWait 0)
+  refused `shouldSatisfy` T.isInfixOf ("names: the stored terms text of " <> tmLink general <> " is refused, its SHA-256 is not the link's")
   answerText node generalPath $ servedText fakeGeneralTermsText
   termsText tampered general `shouldReturn` Right "SimpleX general terms v1"
-  hostDown
+  hostDown generalPath
   replaced <- restarted
   termsText replaced general `shouldReturn` Right "SimpleX general terms v1"
-  fetchedTexts node `shouldReturn` [generalPath, generalPath, generalPath]
+  fetchedTexts node `shouldReturn` [generalPath, generalPath, communityPath, generalPath]
 
 testCurrentTermsFetched :: TVar ChaChaDRG -> IO ()
 testCurrentTermsFetched g = withServiceStores $ \open -> withFakeEthNode $ \node -> do

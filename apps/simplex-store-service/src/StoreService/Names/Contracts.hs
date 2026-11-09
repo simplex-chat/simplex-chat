@@ -43,7 +43,7 @@ where
 import Control.Applicative ((<|>))
 import Control.Concurrent.Async (Concurrently (..))
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
-import Control.Logger.Simple (logWarn)
+import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (guard)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
@@ -66,7 +66,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
-import Simplex.Messaging.Util (eitherToMaybe, tshow)
+import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId)
@@ -240,31 +240,41 @@ termsText ct@Contracts {ctTermsTexts, ctFetching} t@Terms {tmHash} =
 
 fetchCurrentTerms :: Contracts -> IO ()
 fetchCurrentTerms ct =
-  termsLinks ct >>= mapM_ (\(generalLink, communityLink) -> mapM_ (termsText ct) $ mapMaybe termsOf [generalLink, communityLink])
+  termsLinks ct >>= \case
+    Right (generalLink, communityLink) -> mapM_ (termsText ct) $ mapMaybe termsOf [generalLink, communityLink]
+    Left e -> logWarn $ "names: the terms links could not be read to fetch their texts: " <> tshow e
 
 fetchTerms :: Contracts -> Terms -> IO (Either TermsRefusal Text)
 fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash} =
   allowedLink ctChain tmLink >>= \case
     Nothing -> pure $ Left TRLink
     Just (url, digest) ->
-      (>>= eitherToMaybe . checked digest) <$> withTransaction ctStore (`getTermsText` tmHash) >>= \case
-        Just text -> keep text
-        Nothing -> do
-          after <- readIORef ctFetchAfter
-          now <- getCurrentTime
-          if now < after
-            then pure $ Left $ TRWait $ ceiling $ diffUTCTime after now
-            else
-              (>>= checked digest) <$> fetchText ctChain maxTermsBytes url >>= \case
-                Right text -> withTransaction ctStore (\db -> setTermsText db tmHash $ encodeUtf8 text) >> keep text
-                Left (reason, retryAfter) -> do
-                  let wait = min maxTermsBackoffSeconds $ max ctTermsBackoff $ fromMaybe 0 retryAfter
-                  failedAt <- getCurrentTime
-                  writeIORef ctFetchAfter $ addUTCTime (fromIntegral wait) failedAt
-                  logWarn $ "names: the terms text of " <> tmLink <> " could not be fetched, " <> reason <> "; none is fetched for " <> tshow wait <> " seconds"
-                  pure $ Left $ TRWait wait
+      withTransaction ctStore (`getTermsText` tmHash) >>= \case
+        Just stored -> case checked digest stored of
+          Right text -> keep text
+          Left (reason, _) -> do
+            logWarn $ "names: the stored terms text of " <> tmLink <> " is refused, " <> reason <> "; it is fetched again"
+            fetchOrWait url digest
+        Nothing -> fetchOrWait url digest
   where
+    fetchOrWait url digest = do
+      after <- readIORef ctFetchAfter
+      now <- getCurrentTime
+      if now < after
+        then pure $ Left $ TRWait $ ceiling $ diffUTCTime after now
+        else
+          (>>= checked digest) <$> fetchText ctChain maxTermsBytes url >>= \case
+            Right text -> keep text <* store text
+            Left (reason, retryAfter) -> do
+              let wait = min maxTermsBackoffSeconds $ max ctTermsBackoff $ fromMaybe 0 retryAfter
+              failedAt <- getCurrentTime
+              writeIORef ctFetchAfter $ addUTCTime (fromIntegral wait) failedAt
+              logWarn $ "names: the terms text of " <> tmLink <> " could not be fetched, " <> reason <> "; none is fetched for " <> tshow wait <> " seconds"
+              pure $ Left $ TRWait wait
     keep text = Right text <$ modifyIORef' ctTermsTexts (M.insert tmHash text)
+    store text =
+      withTransaction ctStore (\db -> setTermsText db tmHash $ encodeUtf8 text)
+        `catchOwn'` \e -> logError ("names: the terms text of " <> tmLink <> " could not be stored: " <> tshow e)
     checked :: ByteString -> ByteString -> Either (Text, Maybe Int) Text
     checked digest body
       | sha256Hash body /= digest = Left ("its SHA-256 is not the link's", Nothing)

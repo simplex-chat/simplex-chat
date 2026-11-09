@@ -38,6 +38,7 @@ module Bots.StoreService.FakeEthNode
     answerListing,
     setGeneralTerms,
     setCommunityTerms,
+    linkTermsOnNode,
     answerText,
     servedText,
     fetchedTexts,
@@ -213,6 +214,13 @@ setTerms node getter text = do
   answerText node (fakeTermsPath text) (servedText text)
   answerCall node fakeNamePolicy (selector getter) $ Returns $ linkAnswer $ if B.null text then "" else fakeTermsLink text
   nextBlock node
+
+linkTermsOnNode :: FakeEthNode -> IO ()
+linkTermsOnNode node@FakeEthNode {fnPort} = mapM_ linkOnNode [("generalTermsLink()", fakeGeneralTermsText), ("communityTermsLink()", fakeCommunityTermsText)]
+  where
+    linkOnNode (getter, text) =
+      answerCall node fakeNamePolicy (selector getter) $ Returns $ linkAnswer $
+        "http://127.0.0.1:" <> T.pack (show fnPort) <> fakeTermsPath text <> "#sha256=" <> T.drop 2 (hex $ sha256Hash text)
 
 -- | The next block, at the same time.
 nextBlock :: FakeEthNode -> IO ()

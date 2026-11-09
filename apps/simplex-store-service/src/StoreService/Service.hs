@@ -68,6 +68,7 @@ import StoreService.Poller (expiryGrace, newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
+import StoreService.Safely (safely)
 import StoreService.Store
 import StoreService.Store.Invoices (seedCatalog, truncateToSecond)
 import StoreService.Store.Migrate (runStoreServiceMigrations)
@@ -79,7 +80,7 @@ import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Bucket, takeFrom)
 import StoreService.Web.Server (checkSiteDirs, exportWebapp, newWebEnv, runWebListeners)
 import Control.Applicative (optional)
-import Control.Concurrent (forkIO)
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad
@@ -336,7 +337,6 @@ startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig 
       logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> codesOnlyNote
       ne@NamesEnv {neContracts} <- newNamesEnv cc userId nc chatStore turns waiters providers
       logNamePolicy nc neContracts
-      void $ forkIO $ fetchCurrentTerms neContracts
       pure ne
   where
     codesOnlyNote = if nCodesOnly then ", codes only: registration needs a prepaid code" else ""
@@ -365,11 +365,18 @@ logNamePolicy NamesConfig {nCommunity} ct =
           True -> logNote $ "names: " <> what <> " " <> link <> ", hash " <> hex tmHash
           False -> logWarn $ "names: the name policy's " <> what <> " are not a link the service takes, so " <> sold <> " cannot be ordered: " <> link
 
--- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
+-- | The workers resume every registration in their phases, the code sweep runs at the start and then daily, and the
+-- terms fetch at the start and then hourly.
 namesLanes :: NamesEnv -> IO [IO ()]
-namesLanes ne@NamesEnv {neChain, neSender, neRecords} = do
+namesLanes ne@NamesEnv {neChain, neContracts, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neChain neSender
-  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker]
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runTermsFetch neContracts]
+
+runTermsFetch :: Contracts -> IO ()
+runTermsFetch ct = forever $ safely "names terms fetch" (fetchCurrentTerms ct) >> threadDelay termsFetchInterval
+
+termsFetchInterval :: Int
+termsFetchInterval = 3600 * 1000000
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do
