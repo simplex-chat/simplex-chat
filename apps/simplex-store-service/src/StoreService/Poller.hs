@@ -22,6 +22,7 @@ module StoreService.Poller
     expiryGrace,
     cancelGiveUpDelay,
     readGiveUpDelay,
+    ReadFailure (..),
     readsPerPass,
     skipWarnInterval,
     maxSkipReasons,
@@ -43,6 +44,7 @@ import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..),
 import StoreService.Safely (safely, safelyWith)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
+import Control.Applicative ((<|>))
 import Control.Concurrent.STM
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (filterM, foldM, forM_, forever, unless, void, when)
@@ -127,7 +129,7 @@ data PollerEnv = PollerEnv
     peStrayEvery :: NominalDiffTime,
     -- When the cancel first failed, for orders older than 72 hours.
     peCancelFailed :: TVar (Map Text UTCTime),
-    peReadFailed :: TVar (Map Text UTCTime),
+    peReadFailed :: TVar (Map Text ReadFailure),
     peCleanedAt :: TVar (Maybe UTCTime),
     -- | The orders of the day's cleanup not read yet.
     peCleanupLeft :: TVar [(RegistrationId, InvoiceId)],
@@ -319,20 +321,29 @@ sweepRead env@PollerEnv {peStore} now = do
 data ProviderReads = ProviderReads {prDown :: Set Text, prUp :: Set Text}
 
 readsBy :: [(Text, Text)] -> Set Text -> ProviderReads
-readsBy rows missed = ProviderReads {prDown = providers failed, prUp = providers read' S.\\ providers failed}
+readsBy rows missed = ProviderReads {prDown = providers failed S.\\ up, prUp = up}
   where
     (failed, read') = partition ((`S.member` missed) . snd) rows
+    up = providers read'
     providers = S.fromList . map fst
+
+data ReadFailure = ReadFailure
+  { rfLast :: UTCTime,
+    rfAnswered :: Maybe UTCTime
+  }
 
 sweepPastWindow :: PollerEnv -> UTCTime -> ProviderReads -> Set Text -> IO ()
 sweepPastWindow env@PollerEnv {peStore, peProviders, peReadFailed} now providerReads missed = do
-  firstFailed <- readTVarIO peReadFailed
+  readFailures <- readTVarIO peReadFailed
   pastWindow <- filter isPastWindow <$> overdueInvoices peStore (addUTCTime (negate expiryGrace) now)
-  let (reading, rest) = splitAt readsPerPass $ sortOn ((`M.lookup` firstFailed) . oiProviderRef) pastWindow
+  let (reading, rest) = splitAt readsPerPass $ sortOn (fmap rfLast . (`M.lookup` readFailures) . oiProviderRef) pastWindow
   (ProviderReads {prUp}, failed, skipped) <- foldM readPastWindow (providerReads, [], []) reading
-  let (givenUp, failing) = partition (gaveUp firstFailed prUp) failed
+  let (givenUp, failing) = partition (gaveUp readFailures prUp) failed
       kept = failing <> skipped <> rest
-  atomically $ modifyTVar' peReadFailed $ \m -> M.restrictKeys (M.union m $ M.fromList [(oiProviderRef oi, now) | oi <- failing]) (refs kept)
+      failure answered = ReadFailure {rfLast = now, rfAnswered = if answered then Just now else Nothing}
+      recordFailure new old = old {rfLast = rfLast new, rfAnswered = rfAnswered old <|> rfAnswered new}
+  atomically $ modifyTVar' peReadFailed $ \m ->
+    M.restrictKeys (M.unionWith recordFailure (M.fromList [(oiProviderRef oi, failure $ answeredBy prUp oi) | oi <- failing]) m) (refs kept)
   forM_ givenUp $ \OverdueInvoice {oiProvider, oiProviderRef} ->
     logError ("badge poller: overdue " <> tshow oiProvider <> " invoice " <> oiProviderRef <> " could not be read for " <> tshow readGiveUpHours <> " hours while its provider answered, so it was expired here only; check it in the provider's dashboard")
   sweepExpired env now $ missed <> refs kept
@@ -349,8 +360,9 @@ sweepPastWindow env@PollerEnv {peStore, peProviders, peReadFailed} now providerR
                 else (seen {prDown = if provider `S.member` prUp then prDown else S.insert provider prDown}, oi : failed, skipped)
       where
         provider = textEncode oiProvider
-    gaveUp firstFailed up OverdueInvoice {oiProvider, oiProviderRef} =
-      textEncode oiProvider `S.member` up && maybe False (\at -> diffUTCTime now at >= readGiveUpDelay) (M.lookup oiProviderRef firstFailed)
+    answeredBy up OverdueInvoice {oiProvider} = textEncode oiProvider `S.member` up
+    gaveUp readFailures up oi@OverdueInvoice {oiProviderRef} =
+      answeredBy up oi && maybe False (\at -> diffUTCTime now at >= readGiveUpDelay) (rfAnswered =<< M.lookup oiProviderRef readFailures)
     refs = S.fromList . map oiProviderRef
     readGiveUpHours = round (readGiveUpDelay / 3600) :: Int
 
