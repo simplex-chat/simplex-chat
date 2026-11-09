@@ -40,6 +40,7 @@ module StoreService.Names.Orders
     retargetOrder,
     versionWritten,
     confirmLanded,
+    checkLanded,
   )
 where
 
@@ -366,7 +367,10 @@ versionWritten = \case
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
 -- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
 confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
-confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment} = do
+confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeStore oeContracts oeTurns oeNow
+
+checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
+checkLanded oeStore oeContracts oeTurns oeNow r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment} = do
   txs <- withTransaction oeStore (`registrationTransactions` nrId)
   let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
   runExceptT (landed mined) >>= \case

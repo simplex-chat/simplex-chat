@@ -13,10 +13,10 @@ module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, name
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..), ServiceConfig (devAcceptUnverifiedStoreReceipts), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
 import StoreService.Group.Command (CmdAction (..), groupCmdAction, maxUses)
-import StoreService.Names.Abi (selector, uint256)
+import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (NamePhase (PFailed), NameRegistration (nrPhase), PrepaidCode (..), VersionWrite (Written), getPrepaidCode, spendLandedPrepaidCode)
+import StoreService.Names.Store (NamePhase (PFailed), NameRegistration (nrFailedAt, nrPhase), PrepaidCode (..), VersionWrite (Written), getPrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice)
@@ -464,14 +464,28 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     now <- getCurrentTime
     Balances.placeOrderRow st "f" False 10000 (addUTCTime 3600 now)
     unpaid <- reg st "f"
-    write st unpaid {nrPhase = PFailed} `shouldReturn` Written 2
+    write st unpaid {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
     answerCall node registrar (ownerOfSelector <> labelBytes "f") $ Reverts ""
     closeRaw cc "nothing" `shouldReturn` Left "Nothing recorded: no order has the reference nothing."
-    logs <- capturingStderr $ closeRaw cc "inv-f" `shouldReturn` Right ("Closed order f as taken and recorded a refund of $100.00. Refund it now, by: " <> paidBy <> ".")
+    logs <- capturingStderr $
+      closeRaw cc "inv-f"
+        `shouldReturn` Right
+          ( "Closed order f, failed at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: "
+              <> paidBy
+              <> "."
+          )
     logs `shouldSatisfy` T.isInfixOf "names: closed order f and recorded a refund of 10000 cents"
     closeRaw cc "f" `shouldReturn` Left "Nothing recorded: the order of f is not a failed order paid by invoice or balance."
     Balances.figures st "f" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
     refundRaw cc "f" `shouldReturn` Right ("Order f: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
+    Balances.placeOrderRow st "g" False 10000 (addUTCTime 3600 now)
+    unpaidG <- reg st "g"
+    write st unpaidG {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
+    answerCall node registrar (ownerOfSelector <> labelBytes "g") $ Returns $ addressWord ownerA
+    answerCall node registrar (selector "nameExpires(uint256)" <> labelBytes "g") $ Returns $ uint256 (2000000000 :: Int)
+    registeredLogs <- capturingStderr $ closeRaw cc "inv-g" `shouldReturn` Left "Nothing refunded: the register of order g went through, so the order is registered now."
+    registeredLogs `shouldSatisfy` T.isInfixOf "names: order g set registered by //close, as its register went through"
+    Balances.figures st "g" t0 `shouldReturn` Nothing
 
 testCloseNamesOff :: HasCallStack => TestParams -> IO ()
 testCloseNamesOff ps = withStoreService ps $ \_ _ cc -> do

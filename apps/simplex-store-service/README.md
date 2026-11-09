@@ -1374,7 +1374,8 @@ them later is logged as not applied and changes nothing.
 ## Refunding a name balance
 
 A paid name order keeps its money as a balance when it ends `taken` (another buyer registered the
-name first), when it moves to a cheaper name (the difference), when a payment reaches its invoice
+name first, or support closed the failed order with `//close`, which also records the refund; see
+[Closing a failed order](#closing-a-failed-order)), when it moves to a cheaper name (the difference), when a payment reaches its invoice
 after the invoice closed, and when its invoice was paid more crypto than it asked (the extra). The
 buyer spends a balance on another name from Your names, or asks for it back: the page tells them to
 write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
@@ -1446,24 +1447,35 @@ The reference is the order's invoice id, or its registration id. The command rea
 needs `[names]` and `[chain]` in `store_service.ini`; without `[names]` it answers that names are not
 enabled. It:
 
-1. checks the chain first, as Try again does: when the order's register mined, or its owner holds the
-   name at the confirmation depth, the order is set `registered` and nothing is refunded;
+1. checks the chain first, as Try again does: when a register of the order mined, or its owner holds
+   the name at the confirmation depth, the order is set `registered`, nothing is refunded, and the
+   change is logged at note with its registration id;
 2. otherwise, in one transaction, sets the order `taken`, credits its price to its balance, which may
    already hold a move's difference or an overpayment, and records all of that balance as refunded,
    as `//refund` does.
 
-The answer, `Closed order <id> as taken and recorded a refund of $100.00. Refund it now, by: …`,
-lists what paid for the order, as the answer of `//refund` does. Pay the amount back now by those
-methods. The service logs each closed order at note with its registration id and the cents. An order
-refunded at the provider by hand before `//close` existed is closed the same way, and not paid again.
+The answer, `Closed order <id>, failed at <time>, as taken and recorded a refund of $100.00. Check at
+the provider that it was not refunded by hand before; if not, refund it now, by: …`, lists what paid
+for the order, as the answer of `//refund` does. Before this command existed, support refunded failed
+orders at the provider by hand, so look for a refund of that payment after the failure time first, and
+pay the amount back by those methods only if none is found. The service logs each closed order at
+note with its registration id and the cents.
+
+Before the first version with `//close` is deployed, list the failed paid orders and find each one
+already refunded by hand. After the deploy, close those with `//close` and pay nothing, so that their
+records match the money:
+
+```
+psql "$BADGE_DB_CONN" -Atc "SELECT registration_id, failed_at FROM simplex_v1_chat_schema.sx_badge_service_name_registrations WHERE phase = 'failed' AND name_prepaid_code_id IS NULL ORDER BY failed_at"
+```
 
 A closed order reads `taken` in Your names, with its refund. Try again and a move answer
 `400 bad_request`, `//refund` finds nothing to refund, and the wallet can order the name again.
 
 The command records nothing for an order that is not failed or was paid with a prepaid code, whose
-code is released 30 days after the order failed; for a failed chain read; for a balance an open
-order holds, worded as for `//refund`; and for an order that changed meanwhile. Run the command
-again after the last three.
+code is released 30 days after the order failed; for a failed chain read; for a balance an order
+holds, worded as for `//refund`; and for an order or a balance that changed meanwhile. Run the
+command again after the last three.
 
 ## Running the webapp's cases against the service
 

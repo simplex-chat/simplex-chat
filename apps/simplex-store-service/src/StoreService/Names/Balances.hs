@@ -5,7 +5,6 @@ module StoreService.Names.Balances
   ( RefundRefusal (..),
     RefundRecord (..),
     recordRefund,
-    refundAllAfter,
     Spend (..),
     spendTerms,
     checkSpendBalance,
@@ -14,8 +13,6 @@ module StoreService.Names.Balances
   )
 where
 
-import qualified Control.Exception as E
-import Control.Monad (forM_)
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
@@ -50,7 +47,7 @@ recordRefund turns st ref cents now =
     refund retry db =
       balanceByReference db ref now >>= \case
         Nothing -> pure $ Left RefundNoOrder
-        Just (rid, balance) -> case refundRefusal cents balance of
+        Just (rid, balance) -> case refusal balance of
           Just r -> pure $ Left r
           Nothing ->
             refundBalance db rid cents now >>= \case
@@ -59,31 +56,13 @@ recordRefund turns st ref cents now =
               False
                 | retry -> refund False db
                 | otherwise -> pure $ Left $ RefundAmount $ maybe 0 blAmount balance
-
-refundRefusal :: Int -> Maybe Balance -> Maybe RefundRefusal
-refundRefusal cents = \case
-  Nothing -> Just RefundNoBalance
-  Just Balance {blHold = Just hold} -> Just $ RefundHeld hold
-  Just Balance {blAmount}
-    | blAmount /= cents || blAmount <= 0 -> Just $ RefundAmount blAmount
-    | otherwise -> Nothing
-
-newtype RefundRefused = RefundRefused RefundRefusal
-  deriving (Show)
-
-instance E.Exception RefundRefused
-
-refundAllAfter :: Turns -> DBStore -> RegistrationId -> UTCTime -> (DB.Connection -> IO (Either e a)) -> IO (Either RefundRefusal (Either e RefundRecord))
-refundAllAfter turns st rid now write =
-  withBalanceTurn turns rid $ either (\(RefundRefused refusal) -> Left refusal) Right <$> E.try (withTransaction st $ \db -> write db >>= traverse (const $ refundAll db))
-  where
-    refundAll db = do
-      balance <- getBalance db rid now
-      let cents = maybe 0 blAmount balance
-      forM_ (refundRefusal cents balance) $ E.throwIO . RefundRefused
-      refundBalance db rid cents now >>= \case
-        True -> RefundRecord rid cents <$> balanceChain db rid
-        False -> E.throwIO $ RefundRefused $ RefundAmount cents
+    refusal :: Maybe Balance -> Maybe RefundRefusal
+    refusal = \case
+      Nothing -> Just RefundNoBalance
+      Just Balance {blHold = Just hold} -> Just $ RefundHeld hold
+      Just Balance {blAmount}
+        | blAmount /= cents || blAmount <= 0 -> Just $ RefundAmount blAmount
+        | otherwise -> Nothing
 
 -- | A new order paid from a balance. Its hash covers the paying order, the price, the balance the page read,
 -- and the method, present exactly when the price is more than that balance.
