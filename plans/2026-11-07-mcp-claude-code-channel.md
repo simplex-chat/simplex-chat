@@ -162,7 +162,7 @@ Proposed on 2026-11-08 with the role model, until the user decides:
 91. The group's `/` commands come from admins and owners only, like approvals. A one-line `/` text, a `//` text or a `/!` text from a moderator, member or author gets one reply, `Only admins and owners of this group can send / commands.`, and reaches neither the commands nor Claude. One check, `Session.refusesCommand`, holds it; without it, the replies of decisions 71 and 84 apply.
 
 Decided on 2026-11-08, review round 7:
-93. `/observer` reads the group's members again after the role change, so the standing approvals the new observer gave end at once, as after a role change in the app.
+93. `/observer` reads the group's members again after the role change, so the standing approvals the new observer gave count no more while that member is not an admin or owner, as after a role change in the app; they stay in the chat's custom data and count again when the member becomes one again (question 4 (a) of review round 8).
 94. `/observer` of a member invited who has not joined yet answers `No member ID in this group.` and changes nothing; the member joins with the role of the invitation (the user: "you can't /observer member who is not in the group yet").
 95. Claude's profile updates of a session group run one at a time, so a rename and a change of the model or effort that overlap both stay.
 96. The code has no comments.
