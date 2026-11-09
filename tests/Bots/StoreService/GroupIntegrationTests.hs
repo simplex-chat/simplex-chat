@@ -948,13 +948,13 @@ testJoinerAcceptance ps = do
         r -> error $ "group not created: " <> show r
     let acceptance g = joinerAcceptance startedCC g GroupLinkInfo {groupId = gid, memberRole = GRMember} bobProfile
         accepted = Right (GAAccepted, GRMember)
-        pending = Right (GAPendingReview, GRMember)
+        held = Right (GAPendingReview, GRMember)
     mapM acceptance [managed, other] `shouldReturn` [accepted, accepted]
     executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 1"
     profileMemberAdmission cc gid `shouldReturn` Nothing
-    mapM acceptance [managed, other] `shouldReturn` [pending, accepted]
+    mapM acceptance [managed, other] `shouldReturn` [held, accepted]
     executeSql cc "ALTER TABLE sx_badge_service_group RENAME TO sx_badge_service_group_hidden"
-    (acceptance other `shouldReturn` pending) `finally` executeSql cc "ALTER TABLE sx_badge_service_group_hidden RENAME TO sx_badge_service_group"
+    (acceptance other `shouldReturn` held) `finally` executeSql cc "ALTER TABLE sx_badge_service_group_hidden RENAME TO sx_badge_service_group"
 
 testReviewRestored :: HasCallStack => TestParams -> IO ()
 testReviewRestored ps = do
