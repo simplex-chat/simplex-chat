@@ -313,6 +313,7 @@ struct SettingsView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var badgeModel = BadgeModel.shared
     @State private var showProgress: Bool = false
+    var versionText: String? = appVersion
 
     var body: some View {
         ZStack {
@@ -423,7 +424,7 @@ struct SettingsView: View {
                         .navigationBarTitle("App version")
                         .modifier(ThemedBackground(grouped: true))
                 } label: {
-                    Text(verbatim: "v\(appVersion ?? "?")")
+                    Text(verbatim: "v\(versionText ?? "?")")
                 }
             }
 
@@ -641,7 +642,7 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.currentUser = User.sampleData
-        return SettingsView()
+        return SettingsView(versionText: "7.1")
             .environmentObject(chatModel)
     }
 }
