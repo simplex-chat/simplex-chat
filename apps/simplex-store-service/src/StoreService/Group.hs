@@ -276,10 +276,9 @@ promoteOwner cc groupId =
       sendChatCmd cc (APIListMembers groupId) >>= \case
         Right CRGroupMembers {group = Group {groupInfo = groupInfo@GroupInfo {groupProfile}, members}}
           -- An owner made by hand only needs the flag set, or promoting would add a second owner.
-          | any (\m -> memberRole' m == GROwner && memberCurrent m) members ->
-              unless mgOwnerBootstrapped $ do
-                void $ withDB' "markOwnerBootstrapped" cc (`markOwnerBootstrapped` groupId)
-                syncServiceProfile cc groupId True groupProfile
+          | any (\m -> memberRole' m == GROwner && memberCurrent m) members -> do
+              unless mgOwnerBootstrapped $ void $ withDB' "markOwnerBootstrapped" cc (`markOwnerBootstrapped` groupId)
+              syncServiceProfile cc groupId True groupProfile
           -- A crash between setting the flag and promoting leaves no owner, and only the operator may retry.
           | mgOwnerBootstrapped -> logError $ noOwnerHint (groupName' groupInfo)
           | otherwise -> mapM_ (promoteFirstOwner cc groupInfo) $ listToMaybe $ sortOn groupMemberId' $ filter joined members

@@ -101,6 +101,7 @@ badgeGroupIntegrationTests = do
   it "holds a removed member who rejoins through the link for review" testRejoinerReviewed
   it "holds a joiner of the managed group for review once the owner was set up, whatever its profile says, and on a lookup failure, not one of another group" testJoinerAcceptance
   it "requires member review again when an owner turns it off" testReviewRestored
+  it "requires member review again at the next join when the profile lost it" testReviewRepairedOnJoin
   it "keeps a code from a member pending review, who a moderator accepts" testModeratorAdmitsPendingMember
   it "promotes nobody after the first promotion failed, holding a later joiner for review" testFailedPromotionNotRetried
   it "promotes the earliest member on start when their join was never handled" testMissedOwnerPromotedOnStart
@@ -962,6 +963,14 @@ testReviewRestored ps = do
     send alice ("/set admission review #" <> groupName <> " off")
     drainUntil alice [botName <> " updated group #" <> groupName]
     profileMemberAdmission cc gid `shouldReturn` Just reviewAll
+
+testReviewRepairedOnJoin :: HasCallStack => TestParams -> IO ()
+testReviewRepairedOnJoin ps = do
+  svc <- prepareGroupService ps
+  runWithOwner svc $ \cc env gid alice -> do
+    clearMemberAdmission cc gid
+    withMemberJoined ps cc env gid alice (admitMember cc gid alice "bob") $ \_ ->
+      pollUntilTrue $ (== Just reviewAll) <$> profileMemberAdmission cc gid
 
 testModeratorAdmitsPendingMember :: HasCallStack => TestParams -> IO ()
 testModeratorAdmitsPendingMember ps = do
