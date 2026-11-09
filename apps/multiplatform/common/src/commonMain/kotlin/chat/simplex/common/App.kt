@@ -102,6 +102,7 @@ fun MainScreen() {
       && chatModel.activeCallInvitation.value == null
       && chatModel.appOpenUrl.value == null
       && !AlertManager.shared.hasAlertsShown()
+      && !AlertManager.privacySensitive.hasAlertsShown()
     ) {
       AppLock.showLANotice(ChatModel.controller.appPrefs.laNoticeShown) }
   }
