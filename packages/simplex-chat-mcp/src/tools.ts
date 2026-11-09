@@ -750,7 +750,7 @@ export class AgentTools {
   private async ownChat(chatInfo: T.ChatInfo, target: string): Promise<T.ChatInfo> {
     const chat = chatRef(chatInfo)
     if (ownerOf(chatInfo) === undefined && chat !== undefined) await this.claim(chat)
-    else if (!this.owns(chatInfo)) throw new ToolError(`The chat of ${target} belongs to another session; an owner can give it to this session with /give.`)
+    else if (!this.owns(chatInfo)) throw new ToolError(`The chat of ${target} belongs to another session; an admin or owner of that session's group can give it to this session with /give.`)
     return chatInfo
   }
 

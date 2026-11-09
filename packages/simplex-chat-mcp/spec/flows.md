@@ -215,9 +215,9 @@ Notes:
 - In the perform step the server waits for the other side until `startedAt + wait`, at most until `created + 23 h 50 min`, and then reports `connected: false` ([tools.ts:153](../src/tools.ts#L153), [:814](../src/tools.ts#L814), [:840-843](../src/tools.ts#L840-L843)).
 - Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([tools.ts:897](../src/tools.ts#L897), [messages.ts:327-335](../src/messages.ts#L327-L335)).
 - For a target the agent is connected to, the result is `status: known` with its chat fields, and no action is created; in the plugin, the chat becomes the session's when it has no owner ([tools.ts:737](../src/tools.ts#L737), [:750-755](../src/tools.ts#L750-L755)).
-- Exact progress texts: `Action N waits for an approver until TIME.`, then `Action N waits for the connection until TIME.`, then `K messages in CHAT; waiting until TIME.` ([actions.ts:410-421](../src/actions.ts#L410-L421), [tools.ts:783](../src/tools.ts#L783)).
+- Exact progress texts: `Action N waits for an approver until TIME.`, then `Action N waits for the connection until TIME.`, then `K messages in CHAT; waiting until TIME.` ([actions.ts:411-422](../src/actions.ts#L411-L422), [tools.ts:783](../src/tools.ts#L783)).
 
-Source: [tools.ts:732-797](../src/tools.ts#L732-L797), [:811-900](../src/tools.ts#L811-L900), [actions.ts:178-213](../src/actions.ts#L178-L213), [:247-265](../src/actions.ts#L247-L265), [control.ts:184-195](../src/control.ts#L184-L195).
+Source: [tools.ts:732-797](../src/tools.ts#L732-L797), [:811-900](../src/tools.ts#L811-L900), [actions.ts:179-214](../src/actions.ts#L179-L214), [:248-266](../src/actions.ts#L248-L266), [control.ts:184-195](../src/control.ts#L184-L195).
 
 ---
 
@@ -341,7 +341,7 @@ Notes:
 - `connect` and `leave` actions are created without the standing approver, so they stay pending ([tools.ts:743](../src/tools.ts#L743), [:1067](../src/tools.ts#L1067)).
 - `/receive CHAT N all` and `/receive CHAT off` work the same way for downloads, with the key `simplexMcpFiles`, except that download N alone is performed, and the other pending downloads of the chat stay pending ([control.ts:24-27](../src/control.ts#L24-L27), [:299-301](../src/control.ts#L299-L301), [tools.ts:1099](../src/tools.ts#L1099)).
 
-Source: [control.ts:291-311](../src/control.ts#L291-L311), [:413-415](../src/control.ts#L413-L415), [tools.ts:922-924](../src/tools.ts#L922-L924), [actions.ts:178-213](../src/actions.ts#L178-L213), [:327-345](../src/actions.ts#L327-L345).
+Source: [control.ts:291-311](../src/control.ts#L291-L311), [:413-415](../src/control.ts#L413-L415), [tools.ts:922-924](../src/tools.ts#L922-L924), [actions.ts:179-214](../src/actions.ts#L179-L214), [:328-346](../src/actions.ts#L328-L346).
 
 ---
 
@@ -415,7 +415,7 @@ Notes:
 - A download in mode `host` is received without the approval of unknown servers, and it gets no card and no outcome post ([tools.ts:611](../src/tools.ts#L611), [:1153](../src/tools.ts#L1153), [control.ts:572-574](../src/control.ts#L572-L574)).
 - The kept-files message also follows a done `leave` in mode `host` ([control.ts:193-194](../src/control.ts#L193-L194)).
 
-Source: [tools.ts:541-543](../src/tools.ts#L541-L543), [actions.ts:191](../src/actions.ts#L191), [:343](../src/actions.ts#L343), [control.ts:188-195](../src/control.ts#L188-L195), [:649](../src/control.ts#L649).
+Source: [tools.ts:541-543](../src/tools.ts#L541-L543), [actions.ts:192](../src/actions.ts#L192), [:344](../src/actions.ts#L344), [control.ts:188-195](../src/control.ts#L188-L195), [:649](../src/control.ts#L649).
 
 ---
 
@@ -442,12 +442,12 @@ sequenceDiagram
 
 Notes:
 
-- A decided action with an open count of 0 is removed once its expiry time has passed: at its timer, at a later decision or at the close of its last call ([actions.ts:310-312](../src/actions.ts#L310-L312)).
-- A timer that fires before the expiry time, on the monotonic clock, is set again ([actions.ts:303](../src/actions.ts#L303)).
+- A decided action with an open count of 0 is removed once its expiry time has passed: at its timer, at a later decision or at the close of its last call ([actions.ts:311-313](../src/actions.ts#L311-L313)).
+- A timer that fires before the expiry time, on the monotonic clock, is set again ([actions.ts:304](../src/actions.ts#L304)).
 - Expiry times are listed in the `/pending` reply ([control.ts:720-722](../src/control.ts#L720-L722)).
 - The server ends the connect wait at `created + 23 h 50 min`, within the 24 hours in which a message can be edited ([tools.ts:153](../src/tools.ts#L153), [:814](../src/tools.ts#L814)).
 
-Source: [actions.ts:188](../src/actions.ts#L188), [:241-245](../src/actions.ts#L241-L245), [:295-312](../src/actions.ts#L295-L312), [control.ts:245](../src/control.ts#L245), [:275](../src/control.ts#L275).
+Source: [actions.ts:189](../src/actions.ts#L189), [:242-246](../src/actions.ts#L242-L246), [:296-313](../src/actions.ts#L296-L313), [control.ts:245](../src/control.ts#L245), [:275](../src/control.ts#L275).
 
 ---
 
@@ -485,7 +485,7 @@ Notes:
 - For a call aborted before `create`, the server returns before it creates an action ([tools.ts:742](../src/tools.ts#L742), [:923](../src/tools.ts#L923), [:1066](../src/tools.ts#L1066), [:1100](../src/tools.ts#L1100)).
 - Abort path in the SDK: on `res` close the web request is aborted ([node index.cjs:299-303](../node_modules/@modelcontextprotocol/node/dist/index.cjs#L299-L303)); the per-request transport is closed ([server index.cjs:86-90](../node_modules/@modelcontextprotocol/server/dist/index.cjs#L86-L90)); the handler signal is aborted ([src-BhnGYybN.cjs:6425](../node_modules/@modelcontextprotocol/server/dist/src-BhnGYybN.cjs#L6425)).
 
-Source: [tools.ts:761-773](../src/tools.ts#L761-L773), [:927-945](../src/tools.ts#L927-L945), [:1280](../src/tools.ts#L1280), [actions.ts:247-259](../src/actions.ts#L247-L259), [messages.ts:311-325](../src/messages.ts#L311-L325).
+Source: [tools.ts:761-773](../src/tools.ts#L761-L773), [:927-945](../src/tools.ts#L927-L945), [:1280](../src/tools.ts#L1280), [actions.ts:248-260](../src/actions.ts#L248-L260), [messages.ts:311-325](../src/messages.ts#L311-L325).
 
 ---
 
@@ -524,12 +524,12 @@ sequenceDiagram
 Notes:
 
 - The interrupted card line is `DECIDER; interrupted: the server stopped.` ([control.ts:656](../src/control.ts#L656)).
-- An action of mode `host` or of a standing approval whose counter is being written at the stop is set to `pending` and cancelled without a perform ([actions.ts:327-332](../src/actions.ts#L327-L332)).
+- An action of mode `host` or of a standing approval whose counter is being written at the stop is set to `pending` and cancelled without a perform ([actions.ts:328-333](../src/actions.ts#L328-L333)).
 - After a crash, the cards of that run are left with their commands; `/approve` of their numbers gets the reply `Action N is not pending.` ([control.ts:275](../src/control.ts#L275)).
-- The stop signal of the performs is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([actions.ts:288-289](../src/actions.ts#L288-L289), [:342](../src/actions.ts#L342), [tools.ts:840-841](../src/tools.ts#L840-L841)).
+- The stop signal of the performs is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([actions.ts:289-290](../src/actions.ts#L289-L290), [:343](../src/actions.ts#L343), [tools.ts:840-841](../src/tools.ts#L840-L841)).
 - The wait applies only when cards were edited or posted at the stop, a `download` without a card excluded, and `--stop-wait` is above 0 ([serve.ts:149](../src/serve.ts#L149), [:161-175](../src/serve.ts#L161-L175)).
 
-Source: [serve.ts:46-62](../src/serve.ts#L46-L62), [:143-153](../src/serve.ts#L143-L153), [:161-175](../src/serve.ts#L161-L175), [actions.ts:282-312](../src/actions.ts#L282-L312), [http.ts:48-52](../src/http.ts#L48-L52), [control.ts:647-666](../src/control.ts#L647-L666).
+Source: [serve.ts:46-62](../src/serve.ts#L46-L62), [:143-153](../src/serve.ts#L143-L153), [:161-175](../src/serve.ts#L161-L175), [actions.ts:283-313](../src/actions.ts#L283-L313), [http.ts:48-52](../src/http.ts#L48-L52), [control.ts:647-666](../src/control.ts#L647-L666).
 
 ---
 

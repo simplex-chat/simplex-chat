@@ -6,7 +6,7 @@ export type Mode = "requests" | "host"
 export type State = "pending" | "performing" | "done" | "failed" | "rejected" | "expired"
 export type Standing = "messages" | "files"
 
-const maxPending = 20
+export const maxPending = 20
 const maxPerforming = 20
 
 export const lostMessage = "The agent lost its control chat. The person who runs it has to restart it with --reset-owners."
@@ -19,6 +19,7 @@ export class ToolError extends Error {}
 export interface HostTexts {
   lost: string
   stopping: string
+  pending: string
 }
 
 export interface Subject {
@@ -156,7 +157,7 @@ export class Actions {
     public expireHours: number,
     public next: number,
     private readonly hooks: ActionHooks,
-    private readonly texts: HostTexts = {lost: lostMessage, stopping: stoppingMessage},
+    private readonly texts: HostTexts = {lost: lostMessage, stopping: stoppingMessage, pending: pendingMessage},
   ) {}
 
   get(n: number): Action | undefined {
@@ -197,7 +198,7 @@ export class Actions {
     const ofSession = this.ofSession(session)
     const refusal = this.stopping ? this.texts.stopping
       : this.lost ? this.texts.lost
-      : ofSession.filter(({state}) => state === "pending").length >= maxPending ? pendingMessage
+      : ofSession.filter(({state}) => state === "pending").length >= maxPending ? this.texts.pending
       : ofSession.filter(({state}) => state === "performing").length >= maxPerforming ? performingMessage
       : this.hooks.refusal(action)
     if (refusal !== undefined) throw new ToolError(refusal)

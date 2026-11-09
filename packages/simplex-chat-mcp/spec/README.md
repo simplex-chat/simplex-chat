@@ -204,7 +204,7 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
 | Tool registration | [`src/tools.ts`](../src/tools.ts#L499) | `registerTools` | [499](../src/tools.ts#L499) |
 | Downloads | [`src/tools.ts`](../src/tools.ts#L588) | `AgentTools.downloadFile` | [588](../src/tools.ts#L588) |
-| Action store | [`src/actions.ts`](../src/actions.ts#L145) | `Actions` | [145](../src/actions.ts#L145) |
+| Action store | [`src/actions.ts`](../src/actions.ts#L146) | `Actions` | [146](../src/actions.ts#L146) |
 | Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L91) | `Control` | [91](../src/control.ts#L91) |
 | Card text | [`src/control.ts`](../src/control.ts#L647) | `cardText` | [647](../src/control.ts#L647) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |

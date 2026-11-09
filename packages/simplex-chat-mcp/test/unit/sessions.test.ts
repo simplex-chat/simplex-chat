@@ -379,7 +379,7 @@ describe("session groups", () => {
     expect(restarted.profiles.filter(({groupId}) => groupId === reopened.control.groupId).map(({groupProfile}) => groupProfile.shortDescr)).toEqual(["claude-opus-5 · effort low"])
   })
 
-  it("claim a chat connected after its connect call returned, and a known chat without owner at a connect", async () => {
+  it("claim a chat connected after its connect call returned, and a known chat without owner at a connect, and refuse a known chat of another session", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "auth"))
@@ -403,6 +403,8 @@ describe("session groups", () => {
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "known", contact: contact(13, "Trailhead")}}))
     expect((await session.call("connect", {target: link}, signal().call))!.structuredContent).toMatchObject({status: "known", chat: "@13"})
     expect((await listed(session)).sort()).toEqual(["@12", "@13"])
+    chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "known", contact: (ownedContact(14, "Summit", id2) as T.ChatInfo.Direct).contact}}))
+    expect(textOf(await session.call("connect", {target: link}, signal().call))).toBe(`The chat of ${link} belongs to another session; an admin or owner of that session's group can give it to this session with /give.`)
   })
 
   it("claim a group joined after its connect call returned, and no chat of a connection pending for over a day", async () => {

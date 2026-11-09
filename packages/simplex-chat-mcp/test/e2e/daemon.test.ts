@@ -125,7 +125,7 @@ test("an owner joins the Main group and each session's group, and approves its c
   const connected = await approved(groupOne, "I want to connect to bot Directory, as myself.", () => callTool(client, one, "connect", {target: directory.link, idle: 2}))
   expect(connected.result).toMatchObject({action: 1, status: "done", connected: true, type: "contact", name: "Directory"})
   const directoryChat = connected.result.chat as string
-  expect(await callTool(client, two, "connect", {target: directory.link})).toMatchObject({isError: true, text: `The chat of ${directory.link} belongs to another session; an owner can give it to this session with /give.`})
+  expect(await callTool(client, two, "connect", {target: directory.link})).toMatchObject({isError: true, text: `The chat of ${directory.link} belongs to another session; an admin or owner of that session's group can give it to this session with /give.`})
   const shopped = await approved(groupTwo, "I want to connect to bot Shop, as myself.", () => callTool(client, two, "connect", {target: shop.link, idle: 2}))
   expect(shopped.result).toMatchObject({action: 1, status: "done", connected: true, name: "Shop"})
   const shopChat = shopped.result.chat as string

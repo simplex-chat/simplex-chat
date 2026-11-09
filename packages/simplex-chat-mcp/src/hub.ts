@@ -2,7 +2,7 @@ import {mkdirSync, rmSync} from "fs"
 import {dirname, join} from "path"
 import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
-import {Action, Actions, HostTexts, Mode, isDecided} from "./actions"
+import {Action, Actions, HostTexts, Mode, isDecided, maxPending} from "./actions"
 import {Config} from "./config"
 import {Control, canSend, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, parseCommand, rightsText, safeName, sessionApproverRoles} from "./control"
 import {openCore} from "./core"
@@ -29,7 +29,7 @@ const bangText = "Messages starting with ! reach Claude only from admins and own
 const commandsAdminsOnly = "Only admins and owners of this group can send // and /! commands to Claude."
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
 
-export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX daemon is stopping."}
+export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX daemon is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
 
 export interface StoredSession {
   id: string

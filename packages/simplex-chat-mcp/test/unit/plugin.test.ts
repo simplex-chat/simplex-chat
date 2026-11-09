@@ -15,6 +15,7 @@ describe("plugin", () => {
     expect(plugin.version).toBe(packageJson.version)
     expect(plugin.userConfig.main_group.default).toBe(defaultConfig.mainGroup)
     expect(plugin.userConfig.approve.default).toBe(defaultConfig.approve)
+    expect(plugin.userConfig.approve.description).toBe("requests: you approve connections and messages in the SimpleX app. host: Claude Code asks you instead, after an admin or owner approves this in the session's group.")
     expect(plugin.userConfig.expire_hours.default).toBe(defaultConfig.expireHours)
     expect(Object.keys(plugin.userConfig)).toEqual(["main_group", "approve", "expire_hours"])
   })
