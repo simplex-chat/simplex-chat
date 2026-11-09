@@ -1171,9 +1171,15 @@ owner who got the name another way counts as served, and a code order spends its
 
 The service resumes its saved transactions at start and gives new ones nonces after theirs. Those
 are signed by the key that sent them, so started on another key it would give that key's
-transactions nonces it has not reached, and they would never be mined. Rotate only with no `pending`
-row, at a quiet time: every stop takes the store offline, and each order sends its register about a
-minute after its commit.
+transactions nonces it has not reached, and they would never be mined. So the service refuses to start
+while a `pending` row is signed by another key than `service_key`, and logs both addresses:
+
+```
+[ERROR …] names sender: a pending transaction of nonce <n> was signed by <old address>, not by <new address> of chain.service_key; start with the key that signed it until no transaction is pending
+```
+
+Rotate only with no `pending` row, at a quiet time: every stop takes the store offline, and each order
+sends its register about a minute after its commit.
 
 1. Keep a copy of the old ini, create the new key in another, fund it, and have the guardian grant
    it an allowance, as above for `$NEW`:
@@ -1219,7 +1225,8 @@ minute after its commit.
    ```
 
    It prints `$NEW`. After the next order's commit, `cast nonce $NEW --block pending` is above 0,
-   and `cast nonce $OLD --block pending` stays where it was.
+   and `cast nonce $OLD --block pending` stays where it was. If the service stops with the error
+   above, a row is still pending: put `prev/store_service.ini` back in `config/` and repeat step 2.
 4. The guardian zeroes the old key's allowance, sending this calldata as in
    [Grant the allowance](#grant-the-allowance), then anyone checks it reads 0:
 

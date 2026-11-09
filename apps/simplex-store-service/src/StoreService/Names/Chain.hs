@@ -26,6 +26,7 @@ module StoreService.Names.Chain
     maxPriorityFee,
     signTransaction,
     decodeSignedTx,
+    transactionSigner,
     sendRawTransaction,
     fetchText,
     httpFailureDetail,
@@ -60,8 +61,9 @@ import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (hContentType, methodPost, statusCode, statusIsSuccessful)
 import Numeric (readHex, showHex)
 import Simplex.Messaging.Crypto (keccak256)
-import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
-import Simplex.Messaging.Eth.RLP (RLPItem (..))
+import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
+import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress)
+import Simplex.Messaging.Eth.RLP (RLPItem (..), rlpEncode)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
@@ -216,20 +218,41 @@ signTransaction g ChainClient {ccConfig = ChainConfig {cChainId, cServiceKey}} T
 eip1559TxType :: Word8
 eip1559TxType = 2
 
+signatureScalarBytes :: Int
+signatureScalarBytes = 32
+
 -- | The request a raw transaction from 'signTransaction' was signed from.
 decodeSignedTx :: ByteString -> Either String TxRequest
-decodeSignedTx raw = case B.uncons raw of
-  Just (txType, encoded) | txType == eip1559TxType -> case rlpItem encoded of
-    Right (RLPList [_chainId, nonce, tip, maxFee, gas, RLPBytes to, _value, RLPBytes trData, _accessList, _yParity, _r, _s], "") -> do
+decodeSignedTx raw =
+  signedTxItems raw >>= \case
+    ([_chainId, nonce, tip, maxFee, gas, RLPBytes to, _value, RLPBytes trData, _accessList], _) -> do
       trTo <- maybe (Left "transaction: not an address") Right $ addressFromBytes to
       TxRequest trTo trData <$> scalar nonce <*> scalar gas <*> scalar maxFee <*> scalar tip
-    Right _ -> Left "transaction: not a signed EIP-1559 transaction"
-    Left e -> Left e
-  _ -> Left "transaction: not an EIP-1559 transaction"
+    _ -> Left "transaction: not a signed EIP-1559 transaction"
   where
     scalar = \case
       RLPBytes b | B.length b <= 8 -> Right $ fromInteger $ os2ip b
       _ -> Left "transaction: not a 64-bit scalar"
+
+transactionSigner :: ByteString -> IO (Either String Address)
+transactionSigner raw = case signedTxItems raw of
+  Right (fields, (RLPBytes yParity, RLPBytes r, RLPBytes s))
+    | B.length yParity <= 1 ->
+        recoverAddress RecoverableSignature {rsR = scalarBytes r, rsS = scalarBytes s, rsRecId = fromInteger $ os2ip yParity} $
+          keccak256 $ B.cons eip1559TxType $ rlpEncode $ RLPList fields
+  Right _ -> pure $ Left "transaction: not a signature"
+  Left e -> pure $ Left e
+  where
+    scalarBytes b = B.replicate (signatureScalarBytes - B.length b) 0 <> b
+
+signedTxItems :: ByteString -> Either String ([RLPItem], (RLPItem, RLPItem, RLPItem))
+signedTxItems raw = case B.uncons raw of
+  Just (txType, encoded) | txType == eip1559TxType -> case rlpItem encoded of
+    Right (RLPList [chainId, nonce, tip, maxFee, gas, to, value, txData, accessList, yParity, r, s], "") ->
+      Right ([chainId, nonce, tip, maxFee, gas, to, value, txData, accessList], (yParity, r, s))
+    Right _ -> Left "transaction: not a signed EIP-1559 transaction"
+    Left e -> Left e
+  _ -> Left "transaction: not an EIP-1559 transaction"
 
 rlpItem :: ByteString -> Either String (RLPItem, ByteString)
 rlpItem s = case B.uncons s of

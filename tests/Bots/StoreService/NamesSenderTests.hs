@@ -11,6 +11,7 @@ import Control.Concurrent.Async (concurrently)
 import Control.Concurrent.STM
 import Control.Monad (forM_, replicateM_)
 import Crypto.Random (ChaChaDRG)
+import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -22,6 +23,7 @@ import Data.Word (Word64, Word8)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Phases (RegistrationId (..))
@@ -29,6 +31,8 @@ import StoreService.Names.Registration (commitCalldata)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender
 import StoreService.Names.Store (NameTransaction (..), TxFor (..), TxStatus (..), pendingTransactions, registrationTransactions)
+import StoreService.Names.View (addressText)
+import System.Exit (ExitCode (..))
 import System.Timeout (timeout)
 import Test.Hspec
 
@@ -43,6 +47,7 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "keeps a transaction whose send failed, and sends it in the next round" $ testFailedSend g
   it "replaces a stuck transaction once the market's fees pass its own, and settles it under the new hash" $ testFeeBump g
   it "rebroadcasts a saved raw transaction after a restart while the node does not know it" $ testRestartRebroadcast g
+  it "refuses to start on another key while a transaction is pending, naming both addresses, and starts on it once none is" $ testRotatedKeyStart g
   it "hands a dropped transaction whose nonce was used, or a mined one whose receipt was pruned, to its owner, who may send again at the next nonce" $ testDroppedNonceUsed g
   it "logs a round that fails on the store, and settles the transaction in the next round" $ testFailedRound g
   it "logs a send the node keeps refusing once per error, an underfunded key as an error, in anvil's capitalized form too" $ testRefusedSendLogged g
@@ -85,6 +90,10 @@ testDecodeSignedTx g = withFakeEthNode $ \node -> do
   decodeSignedTx stRaw `shouldBe` Right request
   decodeSignedTx (B.cons 0x01 $ B.drop 1 stRaw) `shouldBe` Left "transaction: not an EIP-1559 transaction"
   decodeSignedTx (B.take 100 stRaw) `shouldBe` Left "RLP: truncated"
+  transactionSigner (B.take 100 stRaw) `shouldReturn` Left "RLP: truncated"
+  forM_ [0 .. 15] $ \nonce -> do
+    Right SignedTx {stRaw = raw} <- signTransaction g c request {trNonce = nonce}
+    (\signer -> (nonce, signer)) <$> transactionSigner raw `shouldReturn` (nonce, Right (ccRegistrar c))
 
 testConcurrentNonces :: TVar ChaChaDRG -> IO ()
 testConcurrentNonces g = withSetup g $ \s@Setup {node, store} -> do
@@ -209,6 +218,24 @@ testRestartRebroadcast g = withSetup g $ \s@Setup {node, store} -> do
   followTransactions restarted
   outcomeOf resumed >>= (`shouldSatisfy` confirmedAs (ptHash p))
   map (\(_, status, _) -> status) <$> statuses store r1 `shouldReturn` [TSMined]
+
+testRotatedKeyStart :: TVar ChaChaDRG -> IO ()
+testRotatedKeyStart g = withSetup g $ \s@Setup {node, chain = oldChain} -> do
+  sender <- start s
+  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  newChain <- newChainClient g (ccConfig oldChain) {cServiceKey = either error id $ mkPrivateKey $ BA.replicate 32 0x47}
+  let rotated = s {chain = newChain}
+  logged <- capturingStderr $ start rotated `shouldThrow` (== ExitFailure 1)
+  let refusal =
+        "names sender: a pending transaction of nonce 0 was signed by " <> addressText (ccRegistrar oldChain) <> ", not by "
+          <> addressText (ccRegistrar newChain) <> " of chain.service_key"
+  filter ("[ERROR" `T.isPrefixOf`) (T.lines logged) `shouldSatisfy` any (refusal `T.isInfixOf`)
+  mineHash node (ptHash p)
+  _ <- mine node []
+  followTransactions sender
+  outcomeOf p >>= (`shouldSatisfy` confirmedAs (ptHash p))
+  restarted <- start rotated
+  (fmap ptHash <$> inFlightTransaction restarted (TxCommit r1)) `shouldReturn` Nothing
 
 testDroppedNonceUsed :: TVar ChaChaDRG -> IO ()
 testDroppedNonceUsed g =

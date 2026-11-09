@@ -48,8 +48,10 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Store (NameTransaction (..), NewTransaction (..), TxFor, TxStatus (..), insertTransaction, pendingTransactions, recordTransactionOutcome)
+import StoreService.Names.View (addressText)
 import StoreService.Safely (safely)
 import StoreService.Store.Invoices (StoreDecodeError (..))
+import System.Exit (exitFailure)
 
 data Sender = Sender
   { snChain :: ChainClient,
@@ -122,14 +124,25 @@ bumped fee = fee + fee `div` 8 + 1
 
 -- | Resumes every saved transaction without a receipt. Owners resuming after a restart find theirs with 'inFlightTransaction'.
 newSender :: TVar ChaChaDRG -> ChainClient -> DBStore -> IO UTCTime -> IO Sender
-newSender snRandom snChain snStore snNow = do
+newSender snRandom snChain@ChainClient {ccRegistrar} snStore snNow = do
   saved <- withTransaction snStore pendingTransactions
+  mapM_ checkSigner saved
   inFlight <- M.fromList <$> mapM resumed (L.groupWith ntNonce saved)
   snQueue <- newMVar ()
   snNextNonce <- newTVarIO $ maybe 0 ((+ 1) . fst) $ M.lookupMax inFlight
   snInFlight <- newTVarIO inFlight
   pure Sender {snChain, snRandom, snStore, snNow, snQueue, snNextNonce, snInFlight}
   where
+    checkSigner NameTransaction {ntNonce, ntRaw} =
+      transactionSigner ntRaw >>= \case
+        Right signer
+          | signer == ccRegistrar -> pure ()
+          | otherwise -> do
+              logError $
+                "names sender: a pending transaction of nonce " <> tshow ntNonce <> " was signed by " <> addressText signer <> ", not by "
+                  <> addressText ccRegistrar <> " of chain.service_key; start with the key that signed it until no transaction is pending"
+              exitFailure
+        Left e -> throwIO $ StoreDecodeError $ "name_transactions.raw: " <> T.pack e
     resumed txs = do
       let NameTransaction {ntFor, ntNonce, ntRaw, ntSentAt} = L.last txs
       request <- either (throwIO . StoreDecodeError . ("name_transactions.raw: " <>) . T.pack) pure $ decodeSignedTx ntRaw
