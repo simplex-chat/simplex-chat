@@ -1,11 +1,16 @@
+import * as childProcess from "child_process"
+import * as fs from "fs"
+import {chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync} from "fs"
+import * as os from "os"
+import {basename, dirname, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
-import {CR, T} from "@simplex-chat/types"
+import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
-import {Actions} from "../../src/actions"
+import {Action, Actions, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
 import {ChatItemsWatch, Collected, awaitResponses, toMessage} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
-import {FakeChat, actionsWith, contact, direct, event, fakeHooks, group, groupChat, item, member, settled, signal, user} from "./fixtures"
+import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
 beforeEach(() => {
   jest.spyOn(process.stdout, "write").mockImplementation(() => true)
@@ -16,14 +21,17 @@ afterEach(() => {
   jest.useRealTimers()
 })
 
+afterAll(() => rmSync(data, {recursive: true, force: true}))
+
 describe("message fields", () => {
   const self = {name: "agent", type: "agent"}
+  const noRejections = new Set<number>()
 
   it("describes a group message", () => {
     const switchback = member(44, "Switchback")
     switchback.memberProfile.peerType = T.ChatPeerType.Bot
     const chatInfo = groupChat(group(15, "Trail"))
-    expect(toMessage(chatInfo, item(31, "Ridgecrest, $142", {type: "groupRcv", groupMember: switchback}, {quoted: 30, mention: true, ts: "2026-10-17T11:00:00Z"}), self)).toEqual({
+    expect(toMessage(chatInfo, item(31, "Ridgecrest, $142", {type: "groupRcv", groupMember: switchback}, {quoted: 30, mention: true, ts: "2026-10-17T11:00:00Z"}), self, noRejections, data)).toEqual({
       chat: "#15",
       item: 31,
       from: "Switchback",
@@ -39,8 +47,8 @@ describe("message fields", () => {
 
   it("describes direct, channel and sent messages", () => {
     const directory = direct(contact(4, "SimpleX Directory", {peerType: "bot"}))
-    expect(toMessage(directory, item(21, "found 3", {type: "directRcv"}, {status: "rcvRead"}), self)).toMatchObject({chat: "@4", from: "SimpleX Directory", from_type: "bot", new: false})
-    expect(toMessage(directory, item(20, "shoes", {type: "directSnd"}), self)).toEqual({
+    expect(toMessage(directory, item(21, "found 3", {type: "directRcv"}, {status: "rcvRead"}), self, noRejections, data)).toMatchObject({chat: "@4", from: "SimpleX Directory", from_type: "bot", new: false})
+    expect(toMessage(directory, item(20, "shoes", {type: "directSnd"}), self, noRejections, data)).toEqual({
       chat: "@4",
       item: 20,
       from: "agent",
@@ -50,9 +58,42 @@ describe("message fields", () => {
       new: false,
       mentions_me: false,
     })
-    const channel = toMessage(groupChat(group(12, "Ridgeline News")), item(40, "post", {type: "channelRcv"}), self)
+    const channel = toMessage(groupChat(group(12, "Ridgeline News")), item(40, "post", {type: "channelRcv"}), self, noRejections, data)
     expect(channel).toMatchObject({chat: "#12", from: "Ridgeline News"})
     expect(channel).not.toHaveProperty("from_member")
+  })
+
+  it("describes the file of a received message by its status", () => {
+    const chatInfo = direct(contact(4, "Ridgeline"))
+    const downloaded = join(data, "files", "contact-4", "7.pdf")
+    const fileOf = (msgType: string, fileStatus: object, fileSource?: object, rejected: Set<number> = noRejections) =>
+      toMessage(chatInfo, fileItem(30, {type: msgType, text: "report"}, fileStatus, {fileSource}), self, rejected, data).file
+    expect(fileOf("file", {type: "rcvInvitation"})).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "offered"})
+    expect(fileOf("file", {type: "rcvComplete"}, {filePath: downloaded}, new Set([7]))).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "rejected"})
+    expect(fileOf("image", {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2})).toEqual({name: "report.pdf", size: 2400000, type: "image", status: "offered"})
+    expect(fileOf("video", {type: "rcvComplete"}, {filePath: downloaded})).toEqual({name: "report.pdf", size: 2400000, type: "video", status: "failed", error: "The received file is not in the agent's files folder."})
+    mkdirSync(dirname(downloaded), {recursive: true})
+    writeFileSync(downloaded, "report")
+    expect(fileOf("video", {type: "rcvComplete"}, {filePath: downloaded})).toEqual({name: "report.pdf", size: 2400000, type: "video", status: "received", path: downloaded})
+    expect(fileOf("voice", {type: "rcvComplete"}, {filePath: join(data, "report.pdf")})).toEqual({name: "report.pdf", size: 2400000, type: "voice", status: "offered"})
+    const forwarded = join(data, "forwarded", "contact-4", "7.pdf")
+    expect(fileOf("file", {type: "rcvComplete"}, {filePath: forwarded})).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "received", path: downloaded})
+    rmSync(downloaded)
+    mkdirSync(dirname(forwarded), {recursive: true})
+    writeFileSync(forwarded, "report")
+    expect(fileOf("file", {type: "rcvComplete"}, {filePath: forwarded})).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "offered"})
+    rmSync(forwarded)
+    expect(fileOf("voice", {type: "rcvCancelled"})).toMatchObject({type: "voice", status: "failed", error: "The file was cancelled."})
+    expect(fileOf("text", {type: "rcvAborted"})).toMatchObject({type: "file", status: "failed", error: "The download was aborted."})
+    expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "blocked", server: "xftp://k@xftp.example.com", blockInfo: {reason: "spam"}}})!.error).toBe("File is blocked by server operator: Spam.")
+    expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "relay", srvError: {type: "host"}}})!.error).toBe("File server error: Server address is incompatible with network settings.")
+    expect(fileOf("file", {type: "rcvError", rcvFileError: {type: "other", fileError: "file digest"}})!.error).toBe("Error: file digest")
+    expect(fileOf("file", {type: "invalid", text: "bad\nstatus"})!.error).toBe("Invalid file: bad status")
+    const large = fileItem(33, {type: "file", text: "report"}, {type: "rcvInvitation"})
+    const prohibited = {...large, file: {...large.file!, fileProhibited: {maxSize: 1048576, badgeStatus: T.BadgeStatus.Expired}}}
+    expect(toMessage(chatInfo, prohibited, self, noRejections, data).file).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "failed", error: "Large file! The file is above the limit of 1048576 bytes for its sender. Sender's badge expired."})
+    expect(toMessage(chatInfo, fileItem(31, {type: "file", text: "report"}, {type: "sndComplete"}, {chatDir: {type: "directSnd"}, fileSource: {filePath: "/home/alice/report.pdf"}}), self, noRejections, data)).not.toHaveProperty("file")
+    expect(toMessage(chatInfo, item(32, "no file"), self, noRejections, data)).not.toHaveProperty("file")
   })
 })
 
@@ -144,9 +185,9 @@ function textOf(result: CallToolResult | undefined): string {
   return (result!.content[0] as {text: string}).text
 }
 
-function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
+function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover}, "requests"), watch}
+  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, actions.mode), watch}
 }
 
 describe("receive", () => {
@@ -289,6 +330,8 @@ describe("receive", () => {
 })
 
 describe("send", () => {
+  const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
+
   it("returns the responses received after the sent item", async () => {
     jest.useFakeTimers()
     const chat = new FakeChat()
@@ -473,7 +516,7 @@ describe("send", () => {
     const {tools} = agentTools(chat, actions)
     fake.hooks.perform = (action, signal) => tools.perform(action, signal)
     const sending = tools.call("send", {chat: "#15", text: "hello", wait: 0}, signal().call)
-    await settled()
+    await flushed()
     const action = actions.get(1)!
     actions.approve(action, "Alice")
     const error = 'SimpleX error: error: groupUserRole: {"requiredRole":"author"}'
@@ -490,10 +533,234 @@ describe("send", () => {
     const {tools} = agentTools(chat, actions)
     fake.hooks.perform = (action, signal) => tools.perform(action, signal)
     const sending = tools.call("send", {chat: "#15", text: "hi @Switchback, any news?", mention: [44, 45], wait: 0}, signal().call)
-    await settled()
+    await flushed()
     actions.approve(actions.get(1)!, "Alice")
     expect((await sending)!.structuredContent).toMatchObject({status: "done", responses: [], more: 0})
     expect(chat.sent[0].messages[0]).toEqual({msgContent: {type: "text", text: "@'Ana Lu' hi @Switchback, any news?"}, mentions: {Switchback: 44, "Ana Lu": 45}, quotedItemId: undefined})
+  })
+})
+
+describe("send with a file", () => {
+  const fixedPreview = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAAAAAAeQfPuAAAAD0lEQVR42mNoQAMMg0QAAIXUSAG1CN3UAAAAAElFTkSuQmCC"
+  const preview = "data:image/jpg;base64,/9j/preview"
+  const resized = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from("resized")])
+  let files: string
+
+  beforeEach(() => {
+    files = realpathSync(mkdtempSync(join(os.tmpdir(), "simplex-mcp-files-")))
+  })
+
+  afterEach(() => rmSync(files, {recursive: true, force: true}))
+
+  function commandOutputs(output: (command: string) => Buffer | Error): jest.SpyInstance {
+    const run = (command: string, _args: string[], _options: object, callback: (error: Error | null, stdout: Buffer) => void): void => {
+      const result = output(command)
+      if (result instanceof Error) callback(result, Buffer.alloc(0))
+      else callback(null, result)
+    }
+    return jest.spyOn(childProcess, "execFile").mockImplementation(run as unknown as typeof childProcess.execFile)
+  }
+
+  function fileIn(name: string, content = "content"): string {
+    const path = join(files, name)
+    writeFileSync(path, content)
+    return path
+  }
+
+  function sendTools(): {chat: FakeChat; tools: AgentTools; actions: Actions} {
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory", {peerType: "bot"})), items: []})
+    const fake = fakeHooks()
+    const actions = actionsWith("requests", fake)
+    const {tools} = agentTools(chat, actions)
+    fake.hooks.perform = (action, signal) => tools.perform(action, signal)
+    return {chat, tools, actions}
+  }
+
+  async function created(actions: Actions): Promise<Action> {
+    while (actions.get(1) === undefined) await new Promise(resolve => setImmediate(resolve))
+    return actions.get(1)!
+  }
+
+  async function sent(args: object): Promise<{chat: FakeChat; tools: AgentTools; action: SendAction; result: object}> {
+    const {chat, tools, actions} = sendTools()
+    const sending = tools.call("send", {chat: "@4", wait: 0, ...args}, signal().call)
+    const action = (await created(actions)) as SendAction
+    actions.approve(action, "Alice")
+    return {chat, tools, action, result: (await sending)!.structuredContent!}
+  }
+
+  const resizeCalls = (resize: jest.SpyInstance): unknown[][] => resize.mock.calls.map(([image, size]) => [Buffer.from(image).toString(), size])
+
+  it("sends a JPEG or PNG to a contact as an image with the core's preview and a resized copy, deleted when its upload completes", async () => {
+    const resize = jest.spyOn(core, "resizeImage").mockImplementation(async (_image, size) => (size === core.ImageSize.MessagePreview ? preview : resized))
+    const photo = fileIn("Trail.PNG", "photo")
+    const {chat, tools, action, result} = await sent({text: "trail map", file: photo})
+    expect(result).toMatchObject({status: "done"})
+    expect(action.file).toEqual({path: photo, name: "Trail.PNG", size: 5, inode: expect.any(Number), changedAt: expect.any(Number), type: "image", resize: true, preview})
+    const [message] = chat.sent[0].messages
+    const copy = message.fileSource!.filePath
+    expect(dirname(dirname(copy))).toBe(join(data, "files", "sent"))
+    expect(basename(copy)).toBe("Trail.png")
+    expect(readFileSync(copy)).toEqual(resized)
+    expect(message).toEqual({fileSource: {filePath: copy}, msgContent: {type: "image", text: "trail map", image: preview}, mentions: {}, quotedItemId: undefined})
+    expect(resizeCalls(resize)).toEqual([
+      ["photo", "messagePreview"],
+      ["photo", "image"],
+    ])
+    tools.onSentFile({filePath: copy} as T.FileTransferMeta)
+    expect(existsSync(dirname(copy))).toBe(false)
+  })
+
+  it("sends a GIF or WebP with the fixed preview, a video without ffmpeg with the fixed preview and duration 0, and other files unchanged", async () => {
+    const resize = jest.spyOn(core, "resizeImage")
+    const commands = commandOutputs(command => new Error(`spawn ${command} ENOENT`))
+    const cases: [object, object][] = [
+      [{file: fileIn("wave.gif")}, {type: "image", text: "", image: fixedPreview}],
+      [{text: "pass", file: fileIn("pass.WEBP")}, {type: "image", text: "pass", image: fixedPreview}],
+      [{text: "ride", file: fileIn("ride.mp4")}, {type: "video", text: "ride", image: fixedPreview, duration: 0}],
+      [{text: "report", file: fileIn("report.pdf")}, {type: "file", text: "report"}],
+      [{text: "original", file: fileIn("photo.jpg"), as: "file"}, {type: "file", text: "original"}],
+    ]
+    for (const [args, msgContent] of cases) {
+      const {chat} = await sent(args)
+      expect(chat.sent[0].messages[0]).toEqual({fileSource: {filePath: (args as {file: string}).file}, msgContent, mentions: {}, quotedItemId: undefined})
+    }
+    expect(resize).not.toHaveBeenCalled()
+    expect(commands.mock.calls.map(([command]) => command)).toEqual(["ffmpeg", "ffprobe"])
+  })
+
+  it("sends an image unchanged with the fixed preview when the core can't resize it, and logs the errors", async () => {
+    jest.spyOn(core, "resizeImage").mockRejectedValue(new Error("image cannot be decoded or does not fit maxSize"))
+    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+    const photo = fileIn("photo.jpeg")
+    const {chat} = await sent({text: "trail", file: photo})
+    expect(chat.sent[0].messages[0]).toMatchObject({fileSource: {filePath: photo}, msgContent: {type: "image", text: "trail", image: fixedPreview}})
+    expect(errors.mock.calls.map(([line]) => line)).toEqual([
+      "preview: image cannot be decoded or does not fit maxSize\n",
+      `resizing ${photo}: image cannot be decoded or does not fit maxSize\n`,
+    ])
+  })
+
+  it("takes a video's preview from the first frame of ffmpeg and its duration from ffprobe", async () => {
+    const commands = commandOutputs(command => Buffer.from(command === "ffmpeg" ? "frame" : "12.6\n"))
+    const resize = jest.spyOn(core, "resizeImage").mockResolvedValue(preview)
+    const video = fileIn("ride.MOV")
+    const {chat} = await sent({text: "ride", file: video})
+    expect(chat.sent[0].messages[0].msgContent).toEqual({type: "video", text: "ride", image: preview, duration: 13})
+    expect(resizeCalls(resize)).toEqual([["frame", "messagePreview"]])
+    expect(commands.mock.calls.map(([command, args, options]) => [command, args, options])).toEqual([
+      ["ffmpeg", ["-nostdin", "-v", "error", "-protocol_whitelist", "file", "-f", "mov", "-i", video, "-frames:v", "1", "-f", "image2pipe", "-vcodec", "mjpeg", "-"], {encoding: "buffer", timeout: 30_000, maxBuffer: 64 * 1024 * 1024}],
+      ["ffprobe", ["-v", "error", "-protocol_whitelist", "file", "-f", "mov", "-show_entries", "format=duration", "-of", "csv=p=0", video], {encoding: "buffer", timeout: 30_000, maxBuffer: 64 * 1024 * 1024}],
+    ])
+  })
+
+  it("refuses paths that are not absolute readable files, private keys and the server's own files, after resolving symbolic links", async () => {
+    const home = join(files, "home")
+    mkdirSync(join(home, ".ssh"), {recursive: true})
+    jest.spyOn(os, "homedir").mockReturnValue(home)
+    mkdirSync(join(data, "files", "contact-4"), {recursive: true})
+    const token = join(realpathSync(data), "token")
+    writeFileSync(token, "secret")
+    const received = join(realpathSync(data), "files", "contact-4", "report.pdf")
+    writeFileSync(received, "report")
+    const config = join(home, ".ssh", "config")
+    writeFileSync(config, "")
+    const link = join(files, "notes.txt")
+    symlinkSync(token, link)
+    const locked = fileIn("locked.txt")
+    chmodSync(locked, 0)
+    const {tools, actions} = sendTools()
+    const text = async (args: object): Promise<string> => textOf(await tools.call("send", {chat: "@4", ...args}, signal().call))
+    const refused = (path: string): string => `file: ${path} is refused: private keys and the server's own files are not sent.`
+    expect(await text({text: "x", file: "notes.txt"})).toBe("file: an absolute path is expected.")
+    expect(await text({file: join(files, "missing.txt")})).toBe(`file: no file at ${join(files, "missing.txt")}.`)
+    expect(await text({file: files})).toBe(`file: ${files} is not a file.`)
+    expect(await text({file: locked})).toBe(`file: ${locked} can't be read.`)
+    expect(await text({file: link})).toBe(refused(token))
+    expect(await text({file: config})).toBe(refused(config))
+    for (const name of ["id_ed25519", "server.PEM", "tls.key", "cert.p12", "cert.pfx"]) expect(await text({file: fileIn(name)})).toBe(refused(join(files, name)))
+    expect(await text({})).toBe("text: required without file.")
+    expect(actions.all()).toEqual([])
+    const {controller, call} = signal()
+    const sending = tools.call("send", {chat: "@4", file: received}, call)
+    expect(((await created(actions)) as SendAction).file).toMatchObject({path: received, type: "file"})
+    controller.abort()
+    expect(await sending).toBeUndefined()
+  })
+
+  it("refuses an empty file, as without file, and a text too long for a message with the file's preview", async () => {
+    jest.spyOn(core, "resizeImage").mockResolvedValue(`data:image/jpg;base64,${"A".repeat(13_978)}`)
+    const {tools, actions} = sendTools()
+    const text = async (args: object): Promise<string> => textOf(await tools.call("send", {chat: "@4", ...args}, signal().call))
+    expect(await text({file: fileIn("empty.txt", "")})).toBe(`file: ${join(files, "empty.txt")} is empty.`)
+    expect(await text({text: "x", as: "file"})).toBe("as: applies only with file.")
+    expect(await text({text: "x".repeat(1100), file: fileIn("photo.jpg")})).toBe("text: too long for a message with this image; shorten it.")
+    expect(actions.all()).toEqual([])
+  })
+
+  it("counts the quoted message as the core sends it: an image's preview, unless an image replies to it", async () => {
+    jest.spyOn(core, "resizeImage").mockResolvedValue(`data:image/jpg;base64,${"A".repeat(13_978)}`)
+    const {chat, tools, actions} = sendTools()
+    chat.chats.get("@4")!.items.push(fileItem(20, {type: "image", text: "", image: `data:image/jpg;base64,${"B".repeat(13_978)}`}, {type: "rcvComplete"}))
+    const text = async (args: object): Promise<string> => textOf(await tools.call("send", {chat: "@4", reply_to: 20, ...args}, signal().call))
+    expect(await text({text: "x".repeat(1100), file: fileIn("notes.txt")})).toBe("text: too long for a message with this file; shorten it.")
+    expect(await text({text: "x".repeat(1700)})).toBe("text: too long for the message with its quote; shorten it.")
+    expect(actions.all()).toEqual([])
+    const {controller, call} = signal()
+    const sending = tools.call("send", {chat: "@4", reply_to: 20, text: "x".repeat(800), file: fileIn("photo.jpg")}, call)
+    expect(await created(actions)).toMatchObject({tool: "send", state: "pending"})
+    controller.abort()
+    expect(await sending).toBeUndefined()
+  })
+
+  it("refuses files in a key folder reached through a symbolic link, and in other agents' data folders", async () => {
+    const home = join(files, "home")
+    const keys = join(files, "keys")
+    mkdirSync(keys, {recursive: true})
+    mkdirSync(join(home, ".simplex-mcp", "other"), {recursive: true})
+    symlinkSync(keys, join(home, ".ssh"))
+    jest.spyOn(os, "homedir").mockReturnValue(home)
+    const config = join(keys, "config")
+    writeFileSync(config, "Host *")
+    const token = join(home, ".simplex-mcp", "other", "token")
+    writeFileSync(token, "secret")
+    const {tools, actions} = sendTools()
+    const text = async (file: string): Promise<string> => textOf(await tools.call("send", {chat: "@4", file}, signal().call))
+    const refused = (path: string): string => `file: ${path} is refused: private keys and the server's own files are not sent.`
+    expect(await text(join(home, ".ssh", "config"))).toBe(refused(config))
+    expect(await text(token)).toBe(refused(token))
+    expect(actions.all()).toEqual([])
+  })
+
+  it("fails when the file changed after the request, also at the same size", async () => {
+    const notes = fileIn("notes.txt", "first")
+    const {tools, actions} = sendTools()
+    const sending = tools.call("send", {chat: "@4", file: notes, wait: 0}, signal().call)
+    const action = await created(actions)
+    await new Promise(resolve => setTimeout(resolve, 50))
+    writeFileSync(notes, "other")
+    actions.approve(action, "Alice")
+    expect((await sending)!.structuredContent).toEqual({action: 1, status: "failed", error: `file: ${notes} changed after the request.`})
+  })
+
+  it("fails when the file changed after the request, and deletes the copy when the send fails", async () => {
+    jest.spyOn(core, "resizeImage").mockImplementation(async (_image, size) => (size === core.ImageSize.MessagePreview ? preview : resized))
+    const photo = fileIn("photo.png")
+    const {tools, actions} = sendTools()
+    const sending = tools.call("send", {chat: "@4", file: photo, wait: 0}, signal().call)
+    const action = await created(actions)
+    writeFileSync(photo, "a longer photo")
+    actions.approve(action, "Alice")
+    expect((await sending)!.structuredContent).toEqual({action: 1, status: "failed", error: `file: ${photo} changed after the request.`})
+    const failing = sendTools()
+    failing.chat.apiSendMessages = async () => {
+      throw new Error("send failed")
+    }
+    const failed = failing.tools.call("send", {chat: "@4", file: photo, wait: 0}, signal().call)
+    failing.actions.approve(await created(failing.actions), "Alice")
+    expect((await failed)!.structuredContent).toEqual({action: 1, status: "failed", error: "send failed"})
+    expect(readdirSync(join(data, "files", "sent"))).toEqual([])
   })
 })
 
@@ -515,7 +782,7 @@ describe("connect", () => {
   it("joins a known prepared contact whose connection is unset or prepared", () => {
     const known = (activeConn: object | undefined): object => {
       const prepared = {...contact(7, "Ridgeline"), activeConn, preparedContact: {}}
-      return classifyPlan(plan({type: "contactAddress", contactAddressPlan: {type: "known", contact: prepared}}) as CR.ConnectionPlan, {target: link})
+      return classifyPlan([{type: "contactAddress", contactAddressPlan: {type: "known", contact: prepared}} as T.ConnectionPlan, {connFullLink: link}], {target: link})
     }
     expect(known(undefined)).toMatchObject({join: {takesMessage: true}, method: {type: "prepared", conn: {contact: 7}}})
     expect(known({connId: 207, connStatus: {type: "prepared"}})).toMatchObject({join: {takesMessage: true}, method: {type: "prepared", conn: {contact: 7}}})
@@ -545,7 +812,7 @@ describe("connect", () => {
     await settled()
     actions.approve(actions.get(1)!, "Alice")
     expect((await connecting)!.structuredContent).toEqual({action: 1, status: "failed", error: "SimpleX error: unexpected response cmdOk"})
-    expect(chat.commands).toContain(`/_connect contact @7 incognito=off json {"type":"text","text":"trail shoes?"}`)
+    expect(chat.commands).toContain(`/_connect contact @7 json {"type":"text","text":"trail shoes?"}`)
     expect(chat.deleted).toEqual([{chatType: T.ChatType.Direct, chatId: 7, mode: {type: "full", notify: false}}])
   })
 
@@ -559,7 +826,7 @@ describe("connect", () => {
     chat.chats.set("@12", {chatInfo: direct(connected), items: [item(40, "Welcome!")]})
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok", contactSLinkData_: linkData}}))
     chat.responses.set(`/_prepare contact 1 ${link} ${JSON.stringify(linkData)}`, {type: "newPreparedChat", chat: {chatInfo: direct(started), chatItems: []}})
-    chat.responses.set(`/_connect contact @8 incognito=off json {"type":"text","text":"hello"}`, {type: "startedConnectionToContact", contact: started})
+    chat.responses.set(`/_connect contact @8 json {"type":"text","text":"hello"}`, {type: "startedConnectionToContact", contact: started})
     const {tools, actions, watch} = connectTools(chat)
     const connecting = tools.call("connect", {target: link, message: "hello", wait: 120, idle: 10}, signal().call)
     let finished = false
@@ -590,7 +857,7 @@ describe("connect", () => {
     jest.useFakeTimers()
     const chat = new FakeChat()
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok"}}))
-    chat.responses.set(`/_connect 1 incognito=off ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
+    chat.responses.set(`/_connect 1 ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
     const {tools, actions} = connectTools(chat)
     const connecting = tools.call("connect", {target: link, wait: 86400}, signal().call)
     await jest.advanceTimersByTimeAsync(0)
@@ -611,7 +878,7 @@ describe("connect", () => {
     jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
     const chat = new FakeChat()
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok"}}))
-    chat.responses.set(`/_connect 1 incognito=off ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
+    chat.responses.set(`/_connect 1 ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
     const {tools, actions} = connectTools(chat)
     const {controller, call} = signal()
     const connecting = tools.call("connect", {target: link, wait: 3600}, call)
@@ -635,7 +902,7 @@ describe("connect", () => {
     const connected = {...contact(12, "Ridgeline"), activeConn: {connId: 300, connStatus: {type: "ready"}}} as unknown as T.Contact
     chat.chats.set("@12", {chatInfo: direct(connected), items: []})
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok"}}))
-    chat.responses.set(`/_connect 1 incognito=off ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
+    chat.responses.set(`/_connect 1 ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
     const {tools, actions} = connectTools(chat)
     const first = signal()
     const connecting = tools.call("connect", {target: link}, first.call)
@@ -660,7 +927,7 @@ describe("connect", () => {
     chat.chats.set("@8", {chatInfo: direct(started), items: []})
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok", contactSLinkData_: linkData}}))
     chat.responses.set(`/_prepare contact 1 ${link} ${JSON.stringify(linkData)}`, {type: "newPreparedChat", chat: {chatInfo: direct(started), chatItems: []}})
-    chat.responses.set(`/_connect contact @8 incognito=off json {"type":"text","text":"hello"}`, {type: "startedConnectionToContact", contact: started})
+    chat.responses.set(`/_connect contact @8 json {"type":"text","text":"hello"}`, {type: "startedConnectionToContact", contact: started})
     const {tools, actions} = connectTools(chat)
     const connecting = tools.call("connect", {target: link, message: "hello"}, signal().call)
     let finished = false
@@ -715,7 +982,7 @@ describe("connect", () => {
     const connected = {...contact(12, "Ridgeline"), activeConn: {connId: 300, connStatus: {type: "ready"}}} as unknown as T.Contact
     chat.chats.set("@12", {chatInfo: direct(connected), items: [item(40, "Welc", {type: "directRcv"}, {live: true}), item(41, "Find groups.")]})
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok"}}))
-    chat.responses.set(`/_connect 1 incognito=off ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
+    chat.responses.set(`/_connect 1 ${link}`, {type: "sentInvitation", connection: {pccConnId: 300}})
     const {tools, actions} = connectTools(chat)
     const connecting = tools.call("connect", {target: link}, signal().call)
     await jest.advanceTimersByTimeAsync(0)
@@ -738,7 +1005,7 @@ describe("connect", () => {
     chat.chats.set("@9", {chatInfo: direct(joining), items: []})
     chat.responses.set("/_connect plan 1 @directory.simplex", {...plan({type: "contactAddress", contactAddressPlan: {type: "ok", contactSLinkData_: linkData}}), planSimplexName: name})
     chat.responses.set(prepare, {type: "newPreparedChat", chat: {chatInfo: direct(joining), chatItems: []}})
-    chat.responses.set("/_connect contact @9 incognito=off", {type: "startedConnectionToContact", contact: joining})
+    chat.responses.set("/_connect contact @9", {type: "startedConnectionToContact", contact: joining})
     const {tools, actions} = connectTools(chat)
     const connecting = tools.call("connect", {target: "@directory.simplex"}, signal().call)
     await jest.advanceTimersByTimeAsync(0)
@@ -746,13 +1013,614 @@ describe("connect", () => {
     expect(action.subject).toEqual({kind: "bot", name: "SimpleX Directory", simplexName: "@directory.simplex", incognito: false})
     actions.approve(action, "Alice")
     await jest.advanceTimersByTimeAsync(0)
-    expect(chat.commands.filter(cmd => /^\/_(prepare|connect contact)/.test(cmd))).toEqual([prepare, "/_connect contact @9 incognito=off"])
+    expect(chat.commands.filter(cmd => /^\/_(prepare|connect contact)/.test(cmd))).toEqual([prepare, "/_connect contact @9"])
     chat.chats.set("@9", {chatInfo: direct(ready), items: []})
     tools.onContactConnected({type: "contactConnected", user, contact: ready})
     await jest.advanceTimersByTimeAsync(30_000)
     const result = (await connecting)!.structuredContent
     expect(result).toMatchObject({status: "done", chat: "@9", type: "contact", name: "SimpleX Directory", connected: true})
     expect(result).not.toHaveProperty("simplex_name")
+  })
+})
+
+describe("download", () => {
+  const preview = "data:image/jpg;base64,/9j/4AAQ"
+  const image = {type: "image", text: "trail map", image: preview}
+  const switchback = member(44, "Switchback")
+  const trail = groupChat(group(15, "Trail", member(1, "agent")))
+  const folder = join(data, "files", "group-15")
+  const downloaded = join(folder, "7.pdf")
+  const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
+
+  function downloadTools(chat: FakeChat, standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined, mode: Mode = "requests"): {tools: AgentTools; actions: Actions} {
+    const fake = fakeHooks()
+    const actions = actionsWith(mode, fake)
+    const {tools} = agentTools(chat, actions, standingApprover)
+    fake.hooks.perform = (action, signal) => tools.perform(action, signal)
+    return {tools, actions}
+  }
+
+  const knownServer = "xftp://hash1@xftp1.simplex.im"
+
+  function offeredIn(chat: FakeChat, fileStatus: object = {type: "rcvInvitation"}, fileSource?: object): T.ChatItem {
+    const offered = fileItem(30, image, fileStatus, {chatDir: {type: "groupRcv", groupMember: switchback}, fileSource})
+    chat.chats.set("#15", {chatInfo: trail, items: [offered]})
+    chat.responses.set(`/freceive 7 ${downloaded}`, {type: "rcvFileAccepted", user, chatItem: event(trail, offered)})
+    fileServersIn(chat, [knownServer])
+    chat.responses.set("/_servers 1", {
+      type: "userServers",
+      user,
+      userServers: [
+        {smpServers: [], xftpServers: [userServer("xftp://hash1:secret@xftp1.simplex.im")], chatRelays: []},
+        {operator: {operatorId: 2, enabled: false}, smpServers: [], xftpServers: [userServer("xftp://hash3@disabled.example.com")], chatRelays: []},
+      ],
+    })
+    return offered
+  }
+
+  function fileServersIn(chat: FakeChat, fileXftpServers: string[]): void {
+    chat.responses.set("/_get item info #15 30", {type: "chatItemInfo", user, chatItem: event(trail, chat.chats.get("#15")!.items[0]), chatItemInfo: {itemVersions: [], fileXftpServers}})
+  }
+
+  function userServer(server: string): object {
+    return {serverId: 1, server, preset: false, enabled: true, roles: {}, deleted: false}
+  }
+
+  afterEach(() => {
+    rmSync(folder, {recursive: true, force: true})
+    rmSync(join(data, "forwarded"), {recursive: true, force: true})
+  })
+
+  function completed(path: string): T.AChatItem {
+    mkdirSync(dirname(path), {recursive: true})
+    writeFileSync(path, "report")
+    return event(trail, fileItem(30, image, {type: "rcvComplete"}, {fileSource: {filePath: path}}))
+  }
+
+  it("downloads an offered file after the approval and returns its path", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    const action = actions.get(1)!
+    expect(action).toMatchObject({tool: "download", state: "pending", chat: "#15", item: 30, from: "Switchback", file: {fileId: 7, name: "report.pdf", size: 2400000, type: "image", preview}})
+    actions.approve(action, "Alice")
+    await flushed()
+    expect(existsSync(folder)).toBe(true)
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 ${downloaded}`])
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path: downloaded})
+  })
+
+  it("keeps a forwarded file outside the chat's folder and offered, and moves it there when the download is approved", async () => {
+    const chat = new FakeChat()
+    const offered = offeredIn(chat)
+    offered.file!.fileSize = 6
+    const forwarded = join(data, "forwarded", "group-15", "7.pdf")
+    chat.responses.set(`/freceive 7 ${forwarded}`, {type: "rcvFileAccepted", user, chatItem: event(trail, offered)})
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    const action = actions.get(1) as DownloadAction
+    const forwarding = tools.forwardFile(action)
+    await flushed()
+    writeFileSync(forwarded, "report")
+    Object.assign(offered.file!, {fileStatus: {type: "rcvComplete"}, fileSource: {filePath: forwarded}})
+    tools.onFile(event(trail, offered))
+    expect(readFileSync(await forwarding, "utf8")).toBe("report")
+    expect(existsSync(downloaded)).toBe(false)
+    const {messages} = (await tools.call("receive", {chat: "#15"}, signal().call))!.structuredContent as {messages: {file: object}[]}
+    expect(messages[0].file).toEqual({name: "report.pdf", size: 6, type: "image", status: "offered"})
+    actions.approve(action, "Alice")
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+    expect([existsSync(forwarded), readFileSync(downloaded, "utf8")]).toEqual([false, "report"])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 ${forwarded}`])
+  })
+
+  it("returns performing when the download outlasts wait, and the path to the call that attaches again", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30, wait: 5}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(4_999)
+    let finished = false
+    downloading.then(() => (finished = true))
+    await jest.advanceTimersByTimeAsync(0)
+    expect(finished).toBe(false)
+    await jest.advanceTimersByTimeAsync(1)
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "performing"})
+    expect(actions.get(1)).toMatchObject({state: "performing", open: 0})
+    const attaching = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    tools.onFile(completed(downloaded))
+    expect((await attaching)!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path: downloaded})
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toHaveLength(1)
+  })
+
+  it("returns the path of a file already downloaded, without downloading it again", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat, {type: "rcvComplete"}, {filePath: downloaded})
+    mkdirSync(folder, {recursive: true})
+    writeFileSync(downloaded, "report")
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    actions.approve(actions.get(1)!, "Alice")
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([])
+  })
+
+  it("fails when the file fails, the sender cancels it, its item is gone, or the received file is not in its folder", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const download = async (settle: () => void): Promise<object> => {
+      const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+      await flushed()
+      actions.approve(actions.pending()[0], "Alice")
+      await flushed()
+      settle()
+      return (await downloading)!.structuredContent!
+    }
+    expect(await download(() => tools.onFile(event(trail, fileItem(30, image, {type: "rcvError", rcvFileError: {type: "noFile"}}))))).toMatchObject({status: "failed", error: "File not found - most likely file was deleted or cancelled."})
+    expect(await download(() => tools.onFile(event(trail, fileItem(30, image, {type: "rcvCancelled"}))))).toMatchObject({status: "failed", error: "The file was cancelled."})
+    const cancelled = {type: "rcvFileSndCancelled", user, chatItem: event(trail, fileItem(30, image, {type: "rcvTransfer", rcvProgress: 1, rcvTotal: 2})), rcvFileTransfer: {fileId: 7}} as unknown as Parameters<AgentTools["onFileCancelled"]>[0]
+    expect(await download(() => tools.onFileCancelled(cancelled))).toMatchObject({status: "failed", error: "The sender cancelled the file."})
+    const gone = {type: "rcvFileError", user, agentError: {type: "FILE", fileErr: {type: "NO_FILE"}}, rcvFileTransfer: {fileId: 7}} as unknown as Parameters<AgentTools["onFileError"]>[0]
+    expect(await download(() => tools.onFileError(gone))).toMatchObject({status: "failed", error: "SimpleX error: errorAgent: FILE: NO_FILE"})
+    expect(await download(() => tools.onFile(event(trail, fileItem(30, image, {type: "rcvComplete"}))))).toMatchObject({status: "failed", error: "The received file is not in the agent's files folder."})
+  })
+
+  it("fails when no part of the file arrives for 30 minutes, and cancels the file", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    const offered = offeredIn(chat)
+    chat.responses.set("/fcancel 7", {type: "rcvFileCancelled", user, rcvFileTransfer: {fileId: 7}})
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30, wait: 3600}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(0)
+    offered.file!.fileStatus = {type: "rcvTransfer", rcvProgress: 1000, rcvTotal: 4000}
+    await jest.advanceTimersByTimeAsync(30 * 60_000)
+    expect(actions.get(1)!.state).toBe("performing")
+    expect(chat.commands).not.toContain("/fcancel 7")
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "failed", error: "The download made no progress for 30 minutes and was cancelled."})
+    expect(chat.commands).toContain("/fcancel 7")
+  })
+
+  it("fails when its message or chat is deleted", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30, wait: 3600}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(0)
+    chat.chats.delete("#15")
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "failed", error: "The message or its chat was deleted."})
+  })
+
+  it("keeps the download running when a check can't read its message", async () => {
+    jest.useFakeTimers()
+    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30, wait: 3600}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(0)
+    const getChat = chat.apiGetChat
+    chat.apiGetChat = async () => {
+      throw new Error("database busy")
+    }
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect(actions.get(1)!.state).toBe("performing")
+    expect(errors).toHaveBeenCalledWith("download of file 7: database busy\n")
+    chat.apiGetChat = getChat
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+  })
+
+  describe("a file received without a download", () => {
+    let elsewhere: string
+
+    beforeEach(() => {
+      elsewhere = realpathSync(mkdtempSync(join(os.tmpdir(), "simplex-mcp-received-")))
+    })
+
+    afterEach(() => rmSync(elsewhere, {recursive: true, force: true}))
+
+    function receivedIn(chat: FakeChat, content: string): {source: string; received: T.ChatItem} {
+      const source = join(elsewhere, "report.pdf")
+      writeFileSync(source, content)
+      const received = offeredIn(chat, {type: "rcvComplete"}, {filePath: source})
+      received.file!.fileSize = content.length
+      return {source, received}
+    }
+
+    it("is moved into the chat's folder when it is received, and a download returns it there", async () => {
+      const chat = new FakeChat()
+      const {source, received} = receivedIn(chat, "voice")
+      const {tools, actions} = downloadTools(chat)
+      tools.onFileComplete(event(trail, received))
+      expect([existsSync(source), readFileSync(downloaded, "utf8")]).toEqual([false, "voice"])
+      const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+      await flushed()
+      actions.approve(actions.get(1)!, "Alice")
+      expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+    })
+
+    it("is copied and then deleted when the rename crosses file systems", () => {
+      const chat = new FakeChat()
+      const {source, received} = receivedIn(chat, "voice")
+      const {tools} = downloadTools(chat)
+      const rename = jest.spyOn(fs, "renameSync").mockImplementationOnce(() => {
+        throw Object.assign(new Error("EXDEV: cross-device link not permitted"), {code: "EXDEV"})
+      })
+      tools.onFileComplete(event(trail, received))
+      expect([existsSync(source), readFileSync(downloaded, "utf8"), existsSync(`${downloaded}.part`)]).toEqual([false, "voice", false])
+      expect(rename).toHaveBeenCalledTimes(2)
+    })
+
+    it("is moved into the group's folder also from a member chat of the group", () => {
+      const chat = new FakeChat()
+      const {source, received} = receivedIn(chat, "voice")
+      const {tools} = downloadTools(chat)
+      tools.onFileComplete(event({...trail, groupChatScope: {type: "memberSupport"}} as T.ChatInfo, received))
+      expect([existsSync(source), readFileSync(downloaded, "utf8")]).toEqual([false, "voice"])
+    })
+
+    it("is moved into the chat's folder at the completion of a transfer that started in this run, whatever its size", async () => {
+      const chat = new FakeChat()
+      const {tools} = downloadTools(chat)
+      const source = join(elsewhere, "report.pdf")
+      writeFileSync(source, "vo")
+      const incoming = offeredIn(chat, {type: "rcvAccepted"}, {filePath: source})
+      tools.onNewItems([event(trail, incoming)])
+      await flushed()
+      writeFileSync(source, "voice")
+      Object.assign(incoming.file!, {fileStatus: {type: "rcvComplete"}, fileSize: 6})
+      tools.onFileComplete(event(trail, incoming))
+      expect([existsSync(source), readFileSync(downloaded, "utf8")]).toEqual([false, "voice"])
+    })
+
+    it("is not moved when its size differs from the size in its message", () => {
+      const chat = new FakeChat()
+      const {source, received} = receivedIn(chat, "voice")
+      received.file!.fileSize = 4
+      const {tools} = downloadTools(chat)
+      tools.onFileComplete(event(trail, received))
+      expect([readFileSync(source, "utf8"), existsSync(downloaded)]).toEqual(["voice", false])
+    })
+
+    it("keeps its file when an update shows the file failed or cancelled", () => {
+      const chat = new FakeChat()
+      const {source} = receivedIn(chat, "voice")
+      const {tools} = downloadTools(chat)
+      for (const fileStatus of [{type: "rcvCancelled"}, {type: "rcvError", rcvFileError: {type: "noFile"}}]) {
+        tools.onFile(event(trail, fileItem(30, image, fileStatus, {fileSource: {filePath: source}})))
+      }
+      expect(readFileSync(source, "utf8")).toBe("voice")
+    })
+
+    it("is followed also in a member chat of the group: moved whatever its size, and its partial file deleted at a failure, at a check and by /delete", async () => {
+      jest.useFakeTimers()
+      jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+      const memberChat = {...trail, groupChatScope: {type: "memberSupport"}} as T.ChatInfo
+      const chat = new FakeChat()
+      chat.responses.set("/fcancel 7", {type: "rcvFileCancelled", user, rcvFileTransfer: {fileId: 7}})
+      const {tools} = downloadTools(chat)
+      const source = join(elsewhere, "report.pdf")
+      const track = async (): Promise<T.ChatItem> => {
+        writeFileSync(source, "vo")
+        const incoming = offeredIn(chat, {type: "rcvAccepted"}, {filePath: source})
+        tools.onNewItems([event(memberChat, incoming)])
+        await jest.advanceTimersByTimeAsync(0)
+        return incoming
+      }
+      const received = await track()
+      writeFileSync(source, "voice")
+      Object.assign(received.file!, {fileStatus: {type: "rcvComplete"}, fileSize: 6})
+      tools.onFileComplete(event(memberChat, received))
+      expect([existsSync(source), readFileSync(downloaded, "utf8")]).toEqual([false, "voice"])
+      rmSync(downloaded)
+      const failed = await track()
+      await jest.advanceTimersByTimeAsync(60_000)
+      expect(existsSync(source)).toBe(true)
+      failed.file!.fileStatus = {type: "rcvError", rcvFileError: {type: "noFile"}}
+      await jest.advanceTimersByTimeAsync(60_000)
+      expect(existsSync(source)).toBe(false)
+      await track()
+      chat.chats.delete("#15")
+      await jest.advanceTimersByTimeAsync(60_000)
+      expect(existsSync(source)).toBe(false)
+      await track()
+      await tools.deleteChatFiles("#15")
+      expect(chat.commands).toContain("/fcancel 7")
+      expect(existsSync(source)).toBe(false)
+    })
+
+    it("leaves no partial file when the sender cancels it or its message is deleted", async () => {
+      jest.useFakeTimers()
+      jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+      const chat = new FakeChat()
+      const {tools} = downloadTools(chat)
+      const partial = join(elsewhere, "report.pdf")
+      const track = async (): Promise<T.ChatItem> => {
+        writeFileSync(partial, "part")
+        const incoming = offeredIn(chat, {type: "rcvAccepted"}, {filePath: partial})
+        tools.onNewItems([event(trail, incoming)])
+        await jest.advanceTimersByTimeAsync(0)
+        return incoming
+      }
+      const cancelled = await track()
+      tools.onFileCancelled({chatItem: event(trail, cancelled), rcvFileTransfer: {fileId: 7}} as unknown as Parameters<AgentTools["onFileCancelled"]>[0])
+      expect(existsSync(partial)).toBe(false)
+      await track()
+      chat.chats.delete("#15")
+      await jest.advanceTimersByTimeAsync(60_000)
+      expect(existsSync(partial)).toBe(false)
+    })
+  })
+
+  it("shows a rejected file in the messages that follow", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    actions.reject(actions.get(1)!, "Alice")
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "rejected"})
+    const {messages} = (await tools.call("receive", {chat: "#15"}, signal().call))!.structuredContent as {messages: {file: object}[]}
+    expect(messages[0].file).toEqual({name: "report.pdf", size: 2400000, type: "image", status: "rejected"})
+  })
+
+  it("performs at once under the files approval of the chat", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat, (_, standing) => (standing === "files" ? "Alice" : undefined))
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    expect(actions.get(1)).toMatchObject({state: "performing", standing: true, decidedBy: "Alice"})
+    expect(actions.get(1)!.card).toBeUndefined()
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+  })
+
+  it("asks the owner again for a rejected file under the files approval of the chat", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    let approved = false
+    const {tools, actions} = downloadTools(chat, (_, standing) => (approved && standing === "files" ? "Alice" : undefined))
+    const rejecting = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    actions.reject(actions.get(1)!, "Alice")
+    expect((await rejecting)!.structuredContent).toEqual({action: 1, status: "rejected"})
+    approved = true
+    const {controller, call} = signal()
+    const asking = tools.call("download", {chat: "#15", item: 30}, call)
+    await flushed()
+    expect(actions.get(2)).toMatchObject({state: "pending", standing: false})
+    controller.abort()
+    expect(await asking).toBeUndefined()
+  })
+
+  it("asks the owner for a file on unknown servers under the files approval of the chat", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    fileServersIn(chat, ["xftp://hash2@xftp.example.com"])
+    const {tools, actions} = downloadTools(chat, (_, standing) => (standing === "files" ? "Alice" : undefined))
+    const {controller, call} = signal()
+    const downloading = tools.call("download", {chat: "#15", item: 30}, call)
+    await flushed()
+    expect(actions.get(1)).toMatchObject({state: "pending", standing: false, unknownServers: ["xftp://hash2@xftp.example.com"]})
+    controller.abort()
+    expect(await downloading).toBeUndefined()
+  })
+
+  it("reads the files approval of the chat just before it creates the action", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    chat.chats.get("#15")!.chatInfo = structuredClone(trail)
+    fileServersIn(chat, [])
+    const approved = (chatInfo: T.ChatInfo): boolean => (chatInfo as T.ChatInfo.Group).groupInfo.customData !== undefined
+    const {tools, actions} = downloadTools(chat, (chatInfo, standing) => (standing === "files" && approved(chatInfo) ? "Alice" : undefined))
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    expect(actions.all()).toEqual([])
+    ;(chat.chats.get("#15")!.chatInfo as T.ChatInfo.Group).groupInfo.customData = {simplexMcpFiles: {}}
+    fileServersIn(chat, [knownServer])
+    tools.onFileDescription()
+    await flushed()
+    expect(actions.get(1)).toMatchObject({state: "performing", standing: true, decidedBy: "Alice"})
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done"})
+  })
+
+  it("downloads without approving unknown servers in mode host", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    fileServersIn(chat, ["xftp://hash2@xftp.example.com"])
+    const {tools} = downloadTools(chat, () => undefined, "host")
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    await flushed()
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 ${downloaded}`])
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+  })
+
+  it("approves the servers of a file only after a card that names them as unknown", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    fileServersIn(chat, ["xftp://hash2@xftp.example.com"])
+    chat.responses.set(`/freceive 7 approved_relays=on ${downloaded}`, {type: "rcvFileAccepted", user, chatItem: event(trail, chat.chats.get("#15")!.items[0])})
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    actions.approve(actions.get(1)!, "Alice")
+    await flushed()
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 approved_relays=on ${downloaded}`])
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+  })
+
+  it("leaves the servers of a file to the core's check under the files approval", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat, (_, standing) => (standing === "files" ? "Alice" : undefined))
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    expect(actions.get(1)).toMatchObject({state: "performing", standing: true})
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 ${downloaded}`])
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done"})
+  })
+
+  it("creates no card or action for an offered file without a file description, whatever its protocol", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    const offered = offeredIn(chat)
+    fileServersIn(chat, [])
+    const {tools, actions} = downloadTools(chat, (_, standing) => (standing === "files" ? "Alice" : undefined))
+    for (const fileProtocol of [T.FileProtocol.SMP, T.FileProtocol.XFTP]) {
+      offered.file!.fileProtocol = fileProtocol
+      const waiting = tools.call("download", {chat: "#15", item: 30, wait: 5}, signal().call)
+      await jest.advanceTimersByTimeAsync(5_000)
+      expect(textOf(await waiting)).toBe("item: the sender has not uploaded the file of item 30 in #15 yet; call download again later.")
+      expect(actions.all()).toEqual([])
+    }
+  })
+
+  it("asks for a file the core already received without reading its servers", async () => {
+    const chat = new FakeChat()
+    const received = offeredIn(chat, {type: "rcvComplete"}, {filePath: downloaded})
+    received.file!.fileProtocol = T.FileProtocol.SMP
+    mkdirSync(folder, {recursive: true})
+    writeFileSync(downloaded, "report")
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    expect(chat.commands.filter(cmd => cmd.startsWith("/_get item info"))).toEqual([])
+    actions.approve(actions.get(1)!, "Alice")
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+  })
+
+  it("fails with the core's words when the core refuses the servers of the file at the download", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const receive = chat.sendChatCmd.bind(chat)
+    chat.sendChatCmd = async cmd => {
+      if (cmd.startsWith("/freceive")) throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "fileNotApproved", fileId: 7, unknownServers: ["xftp://hash2@xftp.example.com"]}})
+      return receive(cmd)
+    }
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await flushed()
+    actions.approve(actions.get(1)!, "Alice")
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "failed", error: "Unknown servers! Without Tor or VPN, your IP address will be visible to these XFTP relays: xftp.example.com."})
+  })
+
+  it("fails at the next check when the core returns an accepted file to the offer because its servers are not approved", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const downloading = tools.call("download", {chat: "#15", item: 30, wait: 3600}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "failed", error: "The file is on unknown servers that were not approved."})
+  })
+
+  it("keeps a download whose acceptance has not returned when a check reads the file as offered", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const receive = chat.sendChatCmd.bind(chat)
+    let accept = (): void => undefined
+    chat.sendChatCmd = async cmd => {
+      if (cmd.startsWith("/freceive")) await new Promise<void>(resolve => (accept = resolve))
+      return receive(cmd)
+    }
+    const downloading = tools.call("download", {chat: "#15", item: 30, wait: 3600}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect(actions.get(1)!.state).toBe("performing")
+    accept()
+    await jest.advanceTimersByTimeAsync(0)
+    tools.onFile(completed(downloaded))
+    expect((await downloading)!.structuredContent).toMatchObject({status: "done", path: downloaded})
+  })
+
+  it("waits for the file description before it asks, and names the unknown servers on the card", async () => {
+    const chat = new FakeChat()
+    offeredIn(chat)
+    fileServersIn(chat, [])
+    const {tools, actions} = downloadTools(chat)
+    const {call, progress, controller} = signal()
+    const downloading = tools.call("download", {chat: "#15", item: 30}, call)
+    await flushed()
+    expect(actions.all()).toEqual([])
+    expect(progress).toEqual([expect.stringMatching(/^The sender is uploading the file of item 30 in #15; waiting until \d{4}-\d\d-\d\d \d\d:\d\d UTC\.$/)])
+    const unknown = ["xftp://hash2@xftp.example.com", "xftp://hash3@disabled.example.com"]
+    fileServersIn(chat, [knownServer, ...unknown])
+    tools.onFileDescription()
+    await flushed()
+    const action = actions.get(1) as DownloadAction
+    expect(action.unknownServers).toEqual(unknown)
+    expect(cardText(action, "requests").split("\n")[2]).toBe("Servers: `xftp.example.com`, `disabled.example.com`, unknown: downloading shows them this computer's IP address.")
+    controller.abort()
+    expect(await downloading).toBeUndefined()
+  })
+
+  it("asks at once when the servers are known, and returns a tool error when the sender's upload outlasts wait", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    offeredIn(chat)
+    const {tools, actions} = downloadTools(chat)
+    const {call, controller} = signal()
+    const asking = tools.call("download", {chat: "#15", item: 30}, call)
+    await jest.advanceTimersByTimeAsync(0)
+    expect(cardText(actions.get(1)!, "requests").split("\n")[2]).toBe("Servers: known.")
+    controller.abort()
+    expect(await asking).toBeUndefined()
+    actions.reject(actions.get(1)!, "Alice")
+    expect((await tools.call("download", {chat: "#15", item: 30}, signal().call))!.structuredContent).toEqual({action: 1, status: "rejected"})
+
+    fileServersIn(chat, [])
+    const waiting = tools.call("download", {chat: "#15", item: 30, wait: 5}, signal().call)
+    await jest.advanceTimersByTimeAsync(4_999)
+    expect(actions.all()).toEqual([])
+    await jest.advanceTimersByTimeAsync(1)
+    expect(textOf(await waiting)).toBe("item: the sender has not uploaded the file of item 30 in #15 yet; call download again later.")
+    expect(actions.all()).toEqual([])
+  })
+
+  it("refuses an unknown item, an item without a received file, and a failed file", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("#15", {
+      chatInfo: trail,
+      items: [item(20, "hello", {type: "groupRcv", groupMember: switchback}), fileItem(30, image, {type: "rcvError", rcvFileError: {type: "auth"}}, {chatDir: {type: "groupRcv", groupMember: switchback}})],
+    })
+    const {tools, actions} = downloadTools(chat)
+    const text = async (args: object): Promise<string> => textOf(await tools.call("download", args, signal().call))
+    expect(await text({chat: "#15", item: 99})).toBe("item: #15 has no item 99.")
+    expect(await text({chat: "#15", item: 20})).toBe("item: item 20 in #15 has no received file.")
+    expect(await text({chat: "#15", item: 30})).toBe("item: the file of item 30 in #15 failed: Wrong key or unknown file chunk address - most likely file is deleted.")
+    expect(await text({chat: "#10", item: 1})).toBe("No chat #10. list shows the agent's chats.")
+    expect(actions.all()).toEqual([])
   })
 })
 
@@ -863,6 +1731,6 @@ describe("list", () => {
     const {tools} = agentTools(chat)
     const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: {chat: string}[]}
     expect(chats.map(({chat: ref}) => ref)).toEqual(Array.from({length: 150}, (_, i) => `@${100 + i}`))
-    expect(chat.commands.filter(cmd => cmd.startsWith("/_get chats "))).toEqual(["/_get chats 1 pcc=off count=1000000"])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/_get chats "))).toEqual(['/_get chats 1 count=1000000 {"type":"filters","favorite":false,"unread":false}'])
   })
 })
