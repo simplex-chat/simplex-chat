@@ -1053,6 +1053,69 @@ describe("session channel", () => {
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "revoke", params: ""})).toBe(unknownCommand)
     expect(session.actions.get(1)?.state).toBe("pending")
   })
+
+  describe("while files and media are off in the session group", () => {
+    const groupPosts = (chat: FakeChat) => chat.sent.filter(({chat: [kind, id]}) => kind === T.ChatType.Group && id === 20).map(({messages: [{msgContent}]}) => msgContent)
+    const peerPosts = (chat: FakeChat) => chat.sent.filter(({chat: [kind, id]}) => kind === T.ChatType.Direct && id === 4).map(({messages: [{msgContent}]}) => msgContent.type)
+
+    function filesOff(chat: FakeChat): T.MsgContent[] {
+      const send = chat.apiSendMessages.bind(chat)
+      chat.apiSendMessages = async (target, messages) => {
+        const media = messages.some(({fileSource, msgContent}) => fileSource !== undefined || ["image", "video", "file"].includes(msgContent.type))
+        if (target[0] === T.ChatType.Group && target[1] === 20 && media) throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "commandError", message: "feature not allowed Files and media"}} as unknown as T.ChatError)
+        return send(target, messages)
+      }
+      const edits: T.MsgContent[] = []
+      const update = chat.apiUpdateChatItem.bind(chat)
+      chat.apiUpdateChatItem = async (type, chatId, itemId, msgContent) => (edits.push(msgContent), update(type, chatId, itemId, msgContent))
+      return edits
+    }
+
+    async function sendSetup(name: string): Promise<{chat: FakeChat; session: Session; edits: T.MsgContent[]; file: string}> {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1), items: []})
+      const edits = filesOff(chat)
+      mkdirSync(join(sessionFolder(root, id1), "files", "group"), {recursive: true})
+      const file = join(sessionFolder(root, id1), "files", "group", name)
+      writeFileSync(file, "GIF89a")
+      return {chat, session, edits, file}
+    }
+
+    it.each([["map.gif", "image"], ["trail.mp4", "video"]])("posts the card of a send of %s as text, sends the file after the approval, and edits the card as text", async (name, type) => {
+      const {chat, session, edits, file} = await sendSetup(name)
+      const sending = session.call("send", {chat: "@4", text: "The trail map", file, wait: 0}, signal().call)
+      await until(() => session.actions.get(1)?.card !== undefined)
+      expect(groupPosts(chat)).toEqual([{type: "text", text: expect.stringMatching(/^I want to send a message to bot SimpleX Directory:\n/)}])
+      expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "@4 1"})).toBeUndefined()
+      expect((await sending)!.structuredContent).toMatchObject({status: "done", chat: "@4"})
+      expect(peerPosts(chat)).toEqual([type])
+      await until(() => edits.length === 1)
+      expect(edits).toEqual([{type: "text", text: expect.stringMatching(/\nApproved by Alice\.$/)}])
+    })
+
+    it.each([["map.gif", "image"], ["trail.mp4", "video"]])("posts the outcome card of a send of %s in mode host as text", async (name, type) => {
+      const {chat, session, file} = await sendSetup(name)
+      session.actions.mode = "host"
+      expect((await session.call("send", {chat: "@4", text: "The trail map", file, wait: 0}, signal().call))!.structuredContent).toMatchObject({status: "done", chat: "@4"})
+      expect(peerPosts(chat)).toEqual([type])
+      await until(() => groupPosts(chat).length === 1)
+      expect(groupPosts(chat)).toEqual([{type: "text", text: expect.stringMatching(/^I sent a message to bot SimpleX Directory:\n/)}])
+    })
+
+    it.each([["map.jpg", "image"], ["trail.mp4", "video"]] as const)("posts the card of a download of %s as text and edits it as text", async (name, type) => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      const edits = filesOff(chat)
+      const file = {fileId: 7, name, size: 2400, type, preview: "data:image/jpg;base64,/9j/small"}
+      const action = session.actions.create("d", {tool: "download", input: {chat: "@4", item: 30}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4", item: 30, from: "SimpleX Directory", file}, undefined, 1, "requests")
+      await until(() => action.card !== undefined)
+      expect(groupPosts(chat)).toEqual([{type: "text", text: expect.stringMatching(/^I want to download a file /)}])
+      session.actions.reject(action, "Alice")
+      await until(() => edits.length === 1)
+      expect(edits).toEqual([{type: "text", text: expect.stringMatching(/\nRejected by Alice\.$/)}])
+    })
+  })
 })
 
 describe("Main group", () => {

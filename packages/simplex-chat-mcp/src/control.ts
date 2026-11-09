@@ -6,7 +6,7 @@ import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "
 import {linkCommand} from "./owner"
 import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, memberCurrent, memberCurrentOrPending, refusedFileReason, setChatData} from "./tools"
+import {AgentTools, chatSubject, customDataOf, fitsMessage, isActive, isConnected, isFilesOff, memberCurrent, memberCurrentOrPending, refusedFileReason, setChatData} from "./tools"
 
 export const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
@@ -181,13 +181,13 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   async postCard(action: Action): Promise<number> {
-    return this.postMessage({msgContent: await this.cardContent(action), mentions: {}})
+    return this.postCardContent(action, await this.cardContent(action))
   }
 
   async outcome(action: Action): Promise<void> {
     if (!hasOutcomeCard(action)) return
     const content = await this.cardContent(action)
-    if (action.card === undefined) await this.postMessage({msgContent: content, mentions: {}})
+    if (action.card === undefined) await this.postCardContent(action, content)
     else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, content, false)
     const filesNote = action.tool === "leave" && action.state === "done" ? this.leftChatFilesNote(action.chat, action.subject) : undefined
     if (filesNote !== undefined) await this.post(filesNote)
@@ -511,6 +511,16 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   private async postMessage(message: T.ComposedMessage): Promise<number> {
     const [item] = await this.chat.apiSendMessages([T.ChatType.Group, this.groupId], [message])
     return item.chatItem.meta.itemId
+  }
+
+  private async postCardContent(action: Action, msgContent: T.MsgContent): Promise<number> {
+    try {
+      return await this.postMessage({msgContent, mentions: {}})
+    } catch (error) {
+      if (msgContent.type === "text" || this.options.session === undefined || !isFilesOff(error)) throw error
+      action.cardImage = ""
+      return this.postMessage({msgContent: {type: "text", text: msgContent.text}, mentions: {}})
+    }
   }
 
   private async cardContent(action: Action): Promise<T.MsgContent> {

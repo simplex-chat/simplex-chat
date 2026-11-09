@@ -1604,7 +1604,7 @@ function isNotFound(error: unknown): boolean {
   return chatError?.type === "errorStore" && notFoundErrors.includes(chatError.storeError.type)
 }
 
-function isFilesOff(error: unknown): boolean {
+export function isFilesOff(error: unknown): boolean {
   const chatError = chatErrorOf(error)
   return chatError?.type === "error" && chatError.errorType.type === "commandError" && chatError.errorType.message === "feature not allowed Files and media"
 }

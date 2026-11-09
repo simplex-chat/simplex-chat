@@ -411,6 +411,19 @@ describe("downloads in the agent control chat", () => {
     expect(errors).toHaveBeenCalledWith("action 1 card image: image cannot be decoded or does not fit maxSize\n")
   })
 
+  it("fails a download whose image card the core refuses under the control chat's preference for files and media, with the core's text", async () => {
+    const fake = fakeHooks()
+    const actions: Actions = new Actions("requests", 23, 1, {...fake.hooks, refusal: action => control.refusal(action), postCard: action => control.postCard(action), outcome: action => control.outcome(action)})
+    const chat = agentChats()
+    const {control} = await controlWith(chat, actions)
+    chat.apiSendMessages = async () => {
+      throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "commandError", message: "feature not allowed Files and media"}} as unknown as T.ChatError)
+    }
+    const action = actions.create("d", downloadFields("#2", {type: "image", preview: "data:image/jpg;base64,/9j/small"}))
+    await flushed()
+    expect(action).toMatchObject({state: "failed", error: 'SimpleX error: error: commandError: {"message":"feature not allowed Files and media"}'})
+  })
+
   it("posts no card for a download in mode host or under the files approval", async () => {
     for (const mode of ["requests", "host"] as const) {
       const chat = agentChats()

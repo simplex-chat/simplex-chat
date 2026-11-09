@@ -182,6 +182,40 @@ test("an owner joins the Main group and each session's group, and approves its c
   expect(await mainProfile()).toMatchObject(edited)
 }, 600_000)
 
+test("while files and media are off in a session's group, the card of a send of an image is posted as text, the image is sent after the approval, and the card is edited as text", async () => {
+  const root = join(dir, "media", "root")
+  await prepareRoot(smpServer.address, root, xftpServer.address)
+  const alice = await personIn("media", "Alice")
+  const directory = await botIn("media", "Directory")
+  const daemon = await startDaemon(root)
+  const client = DaemonClient.forRoot(root)
+  await openSession(client, one, "one")
+  const owner = await client.request<OwnerState>("GET", "/link")
+  const invitations = joinSessionGroups(alice, ["1 · one"])
+  await joinByLink(alice, owner.link!)
+  const groupOne = (await invitations).get("1 · one")!
+  const ownerSends = (text: string) => alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], text)
+  const connectCard = received(alice.chat, inGroup(groupOne, textStarts("I want to connect to bot Directory, as myself.")))
+  const connecting = callTool(client, one, "connect", {target: directory.link, idle: 2})
+  await ownerSends(`/approve ${cardNumber(await connectCard)}`)
+  const directoryChat = (await connecting).result.chat as string
+  const hub = daemon["hub"] as unknown as Hub
+  const claudeGroup = hub["sessions"].get(1)!.control.groupId
+  const groupOneInfo = (await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === groupOne)!
+  await alice.chat.apiUpdateGroupProfile(groupOne, {...groupOneInfo.groupProfile, groupPreferences: {...groupOneInfo.groupProfile.groupPreferences, files: {enable: T.GroupFeatureEnabled.Off}}})
+  await until(async () => (await hub.chat.apiListGroups(hub.profile.userId)).find(({groupId}) => groupId === claudeGroup)?.groupProfile.groupPreferences?.files?.enable === T.GroupFeatureEnabled.Off)
+  const map = join(dir, "media", "map.gif")
+  writeFileSync(map, "GIF89a")
+  const sendCard = received(alice.chat, inGroup(groupOne, textStarts("I want to send a message to bot Directory:")))
+  const sending = callTool(client, one, "send", {chat: directoryChat, text: "The trail map", file: map, idle: 2})
+  const card = await sendCard
+  expect(card.chatItem.content).toMatchObject({type: "rcvMsgContent", msgContent: {type: "text"}})
+  const edited = updated(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemId === card.chatItem.meta.itemId))
+  await ownerSends(`/approve ${directoryChat} ${cardNumber(card)}`)
+  expect((await sending).result).toMatchObject({status: "done", chat: directoryChat, responses: [expect.objectContaining({text: "result 1: The trail map"}), expect.objectContaining({text: "result 2: The trail map"})]})
+  expect((await edited).chatItem.content).toMatchObject({type: "rcvMsgContent", msgContent: {type: "text", text: expect.stringMatching(/\nApproved by Alice\.$/)}})
+}, 600_000)
+
 test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
