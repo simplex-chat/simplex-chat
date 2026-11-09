@@ -243,7 +243,10 @@ on. The poller lists every invoice and payment intent of the last three days or 
 not create and cannot read is reported in a warning once an hour until it falls out of that window.
 A BTCPay invoice older than that window, still open here past its expiry, as after an outage of BTCPay
 or of the service, is read once more before the service expires it, at most 25 in a pass, and stays
-open while that read fails.
+open while that read fails. Those never refused before are read first. A pass reads none of them
+from a provider that refused a read in it before any read succeeded, as while BTCPay is down. One
+refused for 24 hours while other reads of its provider succeed is expired here, with an error naming
+it.
 
 ### Card payments (Stripe)
 

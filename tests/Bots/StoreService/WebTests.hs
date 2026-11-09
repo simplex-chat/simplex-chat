@@ -324,6 +324,8 @@ badgeWebTests = do
     it "cancels overdue invoices oldest first, keeping the failures of those left for later" testSweepKeepsFailuresBeyondTheCap
     it "expires an old invoice whose provider is gone, without a call" testSweepExpiresWithoutItsProvider
     it "reads a self-expiring invoice past the settle window before it expires it, keeping it open while the read fails" testSweepReadsPastTheWindow
+    it "reads no invoice past the settle window of a provider whose read failed in the pass" testSweepSkipsPastTheWindowWhileReadsFail
+    it "reads the invoices past the settle window that never failed first, and expires one unreadable for a day while its provider answers" testSweepGivesUpAnUnreadableInvoice
     it "sweeps around an overdue invoice whose provider this build does not know, leaving it open" testSweepSkipsAnUnknownProvider
     it "warns once per order while a cancel keeps failing" testSweepWarnsOncePerOrder
     it "cancels at most a pass-sized batch, leaving the rest for the next pass" testSweepCapsCancelsPerPass
@@ -3371,7 +3373,39 @@ testSweepReadsPastTheWindow = bounded "sweep reads past the window" $ withStubPo
   failRead ref Nothing
   runOnePass poller
   mapM (invoiceStatus (weStore env)) [paid, unpaid] `shouldReturn` [ISPaid, ISExpired]
-  stubCalls ref `shouldReturn` concat (replicate 2 [StubRead "p-old-paid", StubRead "p-old"])
+  stubCalls ref `shouldReturn` [StubRead "p-old-paid", StubRead "p-old", StubRead "p-old-paid"]
+
+testSweepSkipsPastTheWindowWhileReadsFail :: IO ()
+testSweepSkipsPastTheWindowWhileReadsFail = bounded "sweep skips past the window" $ withStubPoller raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  _ <- seedOpenRef (weStore env) 1 "p-now" (addUTCTime 3600 now)
+  old <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
+  failRead ref (Just (ProviderError "read refused"))
+  runOnePass poller
+  invoiceStatus (weStore env) old `shouldReturn` ISOpen
+  stubCalls ref `shouldReturn` [StubRead "p-now"]
+
+testSweepGivesUpAnUnreadableInvoice :: IO ()
+testSweepGivesUpAnUnreadableInvoice = bounded "sweep gives up an unreadable invoice" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  bad <- seedPastWindow (weStore env) 1 "p-bad" PPCrypto
+  old <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) [bad, old] `shouldReturn` [ISOpen, ISOpen]
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) [bad, old] `shouldReturn` [ISOpen, ISExpired]
+  newer <- seedPastWindow (weStore env) 3 "p-new" PPCrypto
+  now <- getCurrentTime
+  atomically $ modifyTVar' (peReadFailed poller) (Map.insert "p-bad" (addUTCTime (negate readGiveUpDelay) now))
+  logged <- capturingStderr (runOnePass poller)
+  mapM (invoiceStatus (weStore env)) [bad, newer] `shouldReturn` [ISExpired, ISExpired]
+  loggedError "invoice p-bad could not be read for 24 hours while its provider answered" logged `shouldBe` True
+  Map.member "p-bad" <$> readTVarIO (peReadFailed poller) `shouldReturn` False
+  where
+    unreadableBad ref = let p = stubProvider ref in p {pReadInvoice = \r -> if r == "p-bad" then pure (Left (ProviderError "gone")) else pReadInvoice p r}
 
 testSweepSkipsAnUnknownProvider :: IO ()
 testSweepSkipsAnUnknownProvider = bounded "sweep around an unknown provider" $ withStubPoller raceHold $ \_ poller env _ -> do
