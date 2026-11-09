@@ -1,6 +1,7 @@
 package chat.simplex.app
 
 import chat.simplex.common.model.*
+import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -12,8 +13,14 @@ class ServerTestErrorTextTest {
   @Test
   fun serverTestFailureShowsTheError() {
     val failure = ProtocolTestFailure(ProtocolTestStep.Connect, AgentErrorType.BROKER(server, BrokerErrorType.NETWORK(NetworkError.ConnectError(refused))))
-    val text = failure.localizedDescription
-    assertTrue(text.endsWith(" BROKER NETWORK connectError $refused"), text)
+    val locale = Locale.getDefault()
+    Locale.setDefault(Locale.US)
+    try {
+      val text = failure.localizedDescription
+      assertTrue(text.endsWith(" BROKER NETWORK connectError $refused"), text)
+    } finally {
+      Locale.setDefault(locale)
+    }
   }
 
   @Test
@@ -27,7 +34,7 @@ class ServerTestErrorTextTest {
   }
 
   @Test
-  fun proxyErrorShowsTheRelayError() {
+  fun proxyErrorShowsTheNestedError() {
     val proxy = "smp://BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=@proxy.example"
     val relay = "smp://CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC=@relay.example"
     assertEquals(
