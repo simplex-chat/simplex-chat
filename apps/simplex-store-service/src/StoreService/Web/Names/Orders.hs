@@ -142,7 +142,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http client cfg provid
       let amount = CurrencyAmount ivAmount
       pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> hex ivOrderHash} >>= \case
         Left (ProviderError e) -> do
-          logError (what <> " failed: the provider did not create an invoice: " <> e)
+          logError (what <> " failed at the provider: " <> e)
           pure $ answerNow providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           rid <- newRegistrationId
