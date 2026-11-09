@@ -84,9 +84,9 @@ For some complex features we create feature branches that will be merged once re
 
 1. Open a pull request to `master` as a draft. On a draft, CI runs the reduced build: one Linux job that builds and tests the changed scopes, and one macOS job only when iOS code changed (CI guide: scripts/ci/README.md).
 2. Select the core tests in a `ci-tests` block in the description, one hspec match pattern per line. `/` runs all tests; without a block, the reduced build runs no core tests.
-3. Push the changes for review comments to the same branch; each push runs the reduced build.
-4. Reviewers approve the draft. A draft cannot be merged.
-5. After the approval, mark the pull request ready for review. CI then runs the full matrix, and the pull request is merged by squash once it passes.
+3. Push further changes to the same branch; on a draft, each push runs the reduced build.
+4. Mark the pull request ready for review once it is ready. CI then runs the full matrix on each push, and the code owners are requested for review.
+5. Mark it as a draft again when more work is needed. After the approval, the pull request is merged by squash once CI passes.
 6. A change to a scope without CI tests adds its build and tests to CI in the same pull request.
 
 ## Differences between GHC 8.10.7 and GHC 9.6.3

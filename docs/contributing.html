@@ -1133,9 +1133,9 @@ window.addEventListener('click',(e)=>{
 <ol>
 <li>Open a pull request to <code>master</code> as a draft. On a draft, CI runs the reduced build: one Linux job that builds and tests the changed scopes, and one macOS job only when iOS code changed (CI guide: scripts/ci/README.md).</li>
 <li>Select the core tests in a <code>ci-tests</code> block in the description, one hspec match pattern per line. <code>/</code> runs all tests; without a block, the reduced build runs no core tests.</li>
-<li>Push the changes for review comments to the same branch; each push runs the reduced build.</li>
-<li>Reviewers approve the draft. A draft cannot be merged.</li>
-<li>After the approval, mark the pull request ready for review. CI then runs the full matrix, and the pull request is merged by squash once it passes.</li>
+<li>Push further changes to the same branch; on a draft, each push runs the reduced build.</li>
+<li>Mark the pull request ready for review once it is ready. CI then runs the full matrix on each push, and the code owners are requested for review.</li>
+<li>Mark it as a draft again when more work is needed. After the approval, the pull request is merged by squash once CI passes.</li>
 <li>A change to a scope without CI tests adds its build and tests to CI in the same pull request.</li>
 </ol>
 <h2 id="differences-between-ghc-8107-and-ghc-963" tabindex="-1">Differences between GHC 8.10.7 and GHC 9.6.3</h2>
