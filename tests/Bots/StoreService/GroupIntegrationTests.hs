@@ -190,11 +190,11 @@ testOtherKeyPendingStops :: HasCallStack => TestParams -> IO ()
 testOtherKeyPendingStops ps = do
   svc <- (\s -> s {gsIniSections = "" : namesSection <> chainSection}) <$> prepareGroupService ps
   (opts, serviceCfg, _) <- groupServiceOpts svc Nothing
-  Just NamesConfig {nChain} <- pure $ names serviceCfg
+  Just chainCfg <- pure $ nChain <$> names serviceCfg
   g <- C.newRandom
-  otherKey <- newChainClient g nChain {cServiceKey = either error id $ mkPrivateKey $ BA.replicate 32 0x47}
+  otherKey <- newChainClient g chainCfg {cServiceKey = either error id $ mkPrivateKey $ BA.replicate 32 0x47}
   Right SignedTx {stRaw, stHash} <-
-    signTransaction g otherKey TxRequest {trTo = cController nChain, trData = "", trNonce = 0, trGasLimit = 100000, trMaxFeePerGas = 1, trMaxPriorityFeePerGas = 1}
+    signTransaction g otherKey TxRequest {trTo = cController chainCfg, trData = "", trNonce = 0, trGasLimit = 100000, trMaxFeePerGas = 1, trMaxPriorityFeePerGas = 1}
   (t, cc, _, _) <- startGroupService svc Nothing
   flip finally (stopGroupService t cc) $ do
     code <- issue (chatStore cc) 1 usable
