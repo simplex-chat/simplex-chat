@@ -243,10 +243,10 @@ on. The poller lists every invoice and payment intent of the last three days or 
 not create and cannot read is reported in a warning once an hour until it falls out of that window.
 A BTCPay invoice older than that window, still open here past its expiry, as after an outage of BTCPay
 or of the service, is read once more before the service expires it, at most 25 in a pass, and stays
-open while that read fails. Those never refused before are read first. A pass reads none of them
-from a provider that refused a read in it before any read succeeded, as while BTCPay is down. One
-refused for 24 hours while other reads of its provider succeed is expired here, with an error naming
-it.
+open while that read fails. Those whose read never failed are read first. A pass reads none of them
+when a read of a recent invoice failed in it, and no more of them once one fails before any
+succeeds, as while BTCPay is down. One whose read fails for 24 hours while other reads succeed is
+expired here, with an error naming it.
 
 ### Card payments (Stripe)
 
@@ -569,7 +569,9 @@ the service before the console.
 ### Restoring the database
 
 A database restored from a copy loses every row written after the copy, and the service re-derives
-none of them. Before the service starts on it:
+none of them. The service's tables are in the chat's schema, so the chat agent's state goes back to
+the copy too, and SimpleX warns that an older copy of a chat database may stop receiving messages
+from some contacts. Before the service starts on it:
 
 1. Wait until the gas key has nothing in the node's pool: `cast nonce $REGISTRAR --block latest`
    equals `cast nonce $REGISTRAR --block pending` (see
@@ -577,15 +579,20 @@ none of them. Before the service starts on it:
    service numbers a new transaction after the key's mined transactions and the ones the copy saved,
    so a transaction in the pool that the copy does not hold can have the same nonce.
 2. Record again, with `//refund` in `--run-cli`, each refund recorded after the copy: the copy holds
-   those balances unrefunded, so their buyers could spend them.
+   those balances unrefunded, so their buyers could spend them. The service logged each as
+   `names: recorded a refund of <cents> cents for order <registration id>`.
 3. Revoke with `//revoke` each code spent or revoked after the copy, which the copy holds unspent, and
    issue again each code issued after it, which the copy does not hold, so it answers `code_invalid`.
-4. List the BTCPay invoices and Stripe payments created after the copy. The service holds no row for
-   them, so it reads none of them and records no payment to them: support settles each paid one by
-   hand.
+   The service logs no code: a code issued in the group is in the group's history on the members'
+   devices, and one issued with `//issue` only where it was copied when printed.
+4. List at BTCPay and in the Stripe Dashboard the invoices and payments created after the copy's
+   time. The service holds no row for them, so its poller and the webhooks still name them but it
+   records nothing for them: support settles each paid one by hand.
 
-The orders the copy holds resume from the chain: the worker reads each commitment before it commits,
-and judges a register that does not go through with `confirmLanded` (see
+After the start, a contact or a group member whose messages no longer arrive is resynchronised in
+`--run-cli` with `/sync @<contact>` or `/sync #<group> @<member>`. The orders the copy holds resume
+from the chain: the worker reads each commitment before it commits, and judges a register that does
+not go through with `confirmLanded` (see
 [When funds or the allowance run out](#when-funds-or-the-allowance-run-out)).
 
 ### Upgrading from the badge service
@@ -1424,8 +1431,9 @@ write to chat@simplex.chat with the order's reference, which is its invoice id, 
 id for an order without an invoice. Nothing is refunded automatically, and the service never learns
 where to send money. A reference is not proof of who paid: a registration id is in the service's
 logs, and anyone holding a reference reads the balance and the order's name from `/api/invoice/:id`,
-or from `/api/registration/:id` for a registration id. Neither provider holds a reference: a Stripe
-payment carries `name:0x<order hash>`, and a BTCPay invoice nothing of the order. Only a card refund
+or from `/api/registration/:id` for a registration id. Neither provider holds a name order's
+reference: its Stripe payment carries `name:0x<order hash>`, and its BTCPay invoice nothing of the
+order, while a badge order's Stripe payment carries its invoice id. Only a card refund
 is safe on the reference alone, as Stripe returns it to
 the card that paid; a crypto refund goes to an address the buyer gives, which nothing here ties to
 the order. Support records each refund in `--run-cli` mode with the service stopped, like the other
