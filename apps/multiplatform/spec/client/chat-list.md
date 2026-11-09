@@ -83,7 +83,7 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 
 | State | Type | Purpose |
 |---|---|---|
-| `searchText` | `MutableState<TextFieldValue>` | Search query (saved across recomposition) |
+| `searchText` | `MutableState<TextFieldValue>` | Search query (saved across recomposition, cleared when the current user changes) |
 | `listState` | `LazyListState` | Scroll position (persisted in `lazyListState` var) |
 | `oneHandUI` | `State<Boolean>` | One-hand UI mode toggle |
 
@@ -152,7 +152,6 @@ The `filteredChats` function (line ~1474) applies filters in this order:
 - Text input with search icon.
 - SimpleX link detection: When a pasted string contains a single SimpleX link, it triggers `planAndConnect` for connection, suppressing normal search.
 - Unread filter toggle button (right side, when search is empty).
-- Switching profile clears the search text.
 
 ---
 
