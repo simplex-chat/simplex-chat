@@ -175,6 +175,7 @@ Recommended on the UX page (https://claude.ai/artifact/YCN4kj2ZRujUnUhNSxwMea), 
 102. `reply` answers the core's refusal `feature not allowed Files and media` of decision 87 with FILES OFF: `Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` Other refusals of the core are returned as the core's text.
 103. UX-F3 a: the Main group's short description and welcome message are set when the group is created, a reset of the owners included; Claude's later profile updates of the Main group change only its name and commands, so an owner's edits of both stay. Of decision 90, the Main group's short description and description leave Claude's fields.
 104. Rule 3 in texts outside the group. The option `approve` reads `requests: you approve connections and messages in the SimpleX app. host: Claude Code asks you instead, after an admin or owner approves this in the session's group.` `connect` to a chat of another session returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` The plugin's limit of pending actions returns `20 actions are pending; wait for the approvers' decisions.`, a text of the hub; `serve` keeps `20 actions are pending; wait for the owner's decisions.`
+105. U2 a: the replies of decision 84 to the `//`, `/!` and approvals of moderators, members and authors are removed. Both role checks stay: in a session group, a request of another role that reaches `Control`, or a `//` or `/!` of another role that reaches the prompt, gets no reply, and nothing is performed or delivered. Decision 91's reply answers these texts first.
 
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
@@ -447,10 +448,10 @@ unknown "/" command        Unknown command. To send a command to Claude, start i
 
 Placeholders for the UX page, where the user approves them (decision 89):
 ```
-/, // or /! from another   Only admins and owners of this group can send / commands.   (decision 91; while it holds, the next two
-role                        are reached only by requests that reach the commands directly)
-// or /! from another role  Only admins and owners of this group can send // and /! commands to Claude.
-approval from another role  Only admins and owners of this group approve actions here.
+/, // or /! from another   Only admins and owners of this group can send / commands.   (decision 91)
+role
+// or /! from another role  no reply, nothing delivered, past the reply above only   (decision 105)
+approval from another role  no reply, nothing performed, past the reply above only   (decision 105)
 "!"                         Messages starting with ! reach Claude only from admins and owners, as /!command.
 no approver                 The group of this session has no admin or owner to approve actions. Members of the Main group join it
                             by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.
