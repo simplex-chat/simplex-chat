@@ -8,6 +8,7 @@
 | Node.js add-on | simplex-chat-libs release `nodejs-addon-<7 characters of the commit>` | | push to master or stable with unreleased add-on sources |
 | `@simplex-chat/types` | npm | `version` of `packages/simplex-chat-client/types/typescript/package.json` | library release with an unpublished types version |
 | `simplex-chat` | npm | `version` of `packages/simplex-chat-nodejs/package.json` | push to master or stable with an unpublished version |
+| `@simplex-chat/mcp` | npm | `version` of `packages/simplex-chat-mcp/package.json` | push to master or stable with an unpublished version, when the versions it pins for `simplex-chat` and `@simplex-chat/types` are on npm |
 | `simplex-chat` | PyPI | `__version__` of `packages/simplex-chat-python/src/simplex_chat/_version.py` | push to master or stable with an unpublished version |
 
 Add-on sources:
@@ -111,6 +112,24 @@ Incomplete draft: completed by a re-run or by the next push with the same add-on
 
 Versions unpublished after a failure: published by the next push to the branch.
 
+## MCP server release
+
+1. On master or stable, in `packages/simplex-chat-mcp`: `version` in `package.json` set, the pins of `simplex-chat` and `@simplex-chat/types` updated when needed, then:
+
+   ```
+   npm install --package-lock-only
+   ```
+
+2. Commit, push to the same branch.
+
+3. Run of `build.yml`:
+   - `publish`, with the pinned versions on npm: package installed by `npm ci` from the published packages, type-checked and unit tested, then published with trusted publishing
+   - `record`: published version recorded
+
+The package tests of 5 platforms are not required.
+
+A version pinned in the same commit that bumps `simplex-chat` or `@simplex-chat/types` is on npm after that run: the MCP version is published by a later push to the branch, and the run shows a notice that names the pinned version.
+
 ## Local publication
 
 1. Step 1 of the package release.
@@ -142,7 +161,7 @@ Versions unpublished after a failure: published by the next push to the branch.
 - simplex-chat-libs: release immutability enabled
 - secret `NODEJS_REPO_TOKEN`: contents of simplex-chat-libs, read and write
 - secrets `APPLE_SIMPLEX_SIGNING_KEYCHAIN`, `APPLE_SIMPLEX_NOTARIZATION_APPLE_ID` and `APPLE_SIMPLEX_NOTARIZATION_PASSWORD`: signing and notarization of the macOS libraries, shared with the desktop app build
-- trusted publisher of `simplex-chat` and `@simplex-chat/types` on npm and of `simplex-chat` on PyPI: workflow `build.yml`
+- trusted publisher of `simplex-chat`, `@simplex-chat/types` and `@simplex-chat/mcp` on npm and of `simplex-chat` on PyPI: workflow `build.yml`
 - secrets `NPM_TOKEN` and `PYPI_API_TOKEN`: used instead of trusted publishing when set
 - variables `NPM_SCOPE`, `PYPI_PROJECT`, `PYPI_URL` and `PYPI_UPLOAD_URL`: publication under other names, for test repositories
 
