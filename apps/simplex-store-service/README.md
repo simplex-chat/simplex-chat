@@ -185,6 +185,8 @@ difference to pay, each a provider invoice or card PaymentIntent) are also cappe
 all clients together.
 Searches read the chain at most 16 at a time and long polls hold at most 500 at a time, for all clients
 together; past that they answer `429 rate_limited` with a short `Retry-After` at once.
+Registration views of committed orders read the chain at most 16 at a time as well, each with its
+wait for a slot and all its reads within 10 seconds; past that it answers its chain fields as `unread`.
 
 The BTCPay API key needs four permissions, each scoped to the one store:
 `cancreateinvoice` and `canviewinvoices` for checkout and the poller,

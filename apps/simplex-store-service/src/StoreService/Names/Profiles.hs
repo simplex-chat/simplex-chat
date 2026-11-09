@@ -23,6 +23,7 @@ module StoreService.Names.Profiles
     newProfiles,
     monotonicSeconds,
     deadlineIn,
+    withSlot,
     chatProfile,
     systemResolver,
     planProfile,

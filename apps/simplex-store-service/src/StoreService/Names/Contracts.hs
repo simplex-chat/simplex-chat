@@ -4,7 +4,7 @@
 {-# LANGUAGE TupleSections #-}
 
 module StoreService.Names.Contracts
-  ( Contracts (ctDeadline, ctTermsBackoff),
+  ( Contracts (ctDeadline, ctTermsBackoff, ctViewSlots),
     NameStatus (..),
     RegisteredName (..),
     NameRecords (..),
@@ -42,6 +42,7 @@ where
 import Control.Applicative ((<|>))
 import Control.Concurrent.Async (Concurrently (..))
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
+import Control.Concurrent.STM (TVar, newTVarIO)
 import Control.Logger.Simple (logWarn)
 import Control.Monad (guard)
 import Control.Monad.Except (ExceptT (..), runExceptT)
@@ -86,7 +87,8 @@ data Contracts = Contracts
     ctFetching :: MVar (),
     -- | microseconds for all the reads of one name status or of one name's records
     ctDeadline :: Int,
-    ctTermsBackoff :: Int
+    ctTermsBackoff :: Int,
+    ctViewSlots :: TVar Int
   }
 
 data RegistrarConstants = RegistrarConstants {rcRegistry :: Address, rcGracePeriod :: Integer}
@@ -125,6 +127,9 @@ attoUsdPerCent = 10 ^ (16 :: Int)
 nameReadsDeadline :: Int
 nameReadsDeadline = 10000000
 
+viewReadSlots :: Int
+viewReadSlots = 16
+
 termsBackoffSeconds :: Int
 termsBackoffSeconds = 30
 
@@ -144,7 +149,8 @@ newContracts ctTLD ctChain = do
   ctTermsLinks <- newIORef Nothing
   ctFetchAfter <- newIORef =<< getCurrentTime
   ctFetching <- newMVar ()
-  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds}
+  ctViewSlots <- newTVarIO viewReadSlots
+  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds, ctViewSlots}
 
 -- | Registered while @nameExpires + GRACE_PERIOD@ is not before the latest block's time.
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)

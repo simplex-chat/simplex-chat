@@ -62,7 +62,7 @@ import Bots.StoreService.WebTests
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVarIO, readTVar)
+import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, writeTVar)
 import qualified Control.Exception as E
 import Control.Arrow ((&&&))
 import Control.Monad (forM_, replicateM_, void)
@@ -81,7 +81,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (defaultManagerSettings, newManager, responseBody, responseHeaders)
@@ -102,7 +102,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, hex, selector, uint256)
-import StoreService.Names.Contracts (newContracts)
+import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), newContracts)
 import StoreService.Names.Codes (CodeRefusal (..))
 import StoreService.Names.Community (AcceptanceAsked (..))
 import StoreService.Names.Orders (OrdersEnv (..))
@@ -204,6 +204,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "has the contract's fields" testViewFields
     it "has the terms the order signed, null for an order stored before orders signed them" testViewTerms
     it "reads the intent nonce in committed, the acceptance of the terms of the name's kind before its reveal, and nothing in taken, leaving a failed read null and named in unread" testViewReads
+    it "reads the chain only in a free view slot and within one deadline, else answers every chain field unread" testViewReadsBounded
     it "reads the order's balance, held until its holder's invoice expires and free past it, and the cents its order took from another's" testViewBalance
 
 -- fixtures
@@ -1661,6 +1662,31 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   readViewChain ct taken `shouldReturn` ViewReads Nothing [] Nothing
   let v = objectOf $ viewJSON (testNamesConfig node) committed Nothing Nothing (ViewReads Nothing ["intentNonce", "acceptance"] Nothing)
   (field "intentNonce" v, field "acceptance" v, field "unread" v) `shouldBe` (Just J.Null, Just J.Null, Just (J.toJSON ["intentNonce", "acceptance" :: Text]))
+
+testViewReadsBounded :: IO ()
+testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  g <- C.newRandom
+  ct <- (\c -> c {ctDeadline = viewDeadline}) <$> (newContracts TLDSimplex =<< fakeChainClient g node)
+  answerCall node fakeSponsor noncesCall $ Returns $ uint256 (4 :: Int)
+  answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
+  Right () <- placePaid st "paid" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
+  paid <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
+  Written _ <- withTransaction st $ \db -> updateRegistration db paid {nrPhase = PCommitted} t0
+  committed <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
+  let unread = ViewReads Nothing ["intentNonce", "acceptance"] Nothing
+  atomically $ writeTVar (ctViewSlots ct) 0
+  readViewChain ct committed `shouldReturn` unread
+  readViewChain ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads Nothing ["intentNonce"] Nothing
+  atomically $ writeTVar (ctViewSlots ct) 1
+  vrIntentNonce <$> readViewChain ct committed `shouldReturn` Just 4
+  setFault node "eth_call" Hang
+  started <- getCurrentTime
+  readViewChain ct committed `shouldReturn` unread
+  elapsed <- (`diffUTCTime` started) <$> getCurrentTime
+  elapsed `shouldSatisfy` (< 2)
+  readTVarIO (ctViewSlots ct) `shouldReturn` 1
+  where
+    viewDeadline = 300000
 
 testViewBalance :: IO ()
 testViewBalance = withServiceStore $ \st -> withFakeEthNode $ \node -> do
