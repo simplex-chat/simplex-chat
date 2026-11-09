@@ -28,14 +28,14 @@ esac
 # backend.sh registered seeded.testing for ci_contact
 name_label=seeded
 local_chat="seeded notes"
-other_profile=ciother
-other_chat="ci beta"
-other_chat_search=beta
 ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
 # switches are at the right of the left pane, where Settings open
 switch_x=335
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
+other_profile=ciother
+other_chat="ci beta"
+other_chat_search=beta
 state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
 compose_y=730
 paperclip_x=415
@@ -175,13 +175,9 @@ on_chat_list() {
   not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network" && not_on_screen "New chat" && on_screen "Search or paste SimpleX link"
 }
 
-open_user_menu() {
-  "$ui" click 27 730
-}
-
 # Opens Settings from the user menu, behind the profile picture at the left of the bottom toolbar.
 open_settings() {
-  open_user_menu
+  "$ui" click 27 730
   "$ui" click-text "Settings" 10
 }
 
@@ -252,7 +248,7 @@ click_last() {
 
 add_profile() {
   local x y
-  open_user_menu
+  "$ui" click 27 730
   "$ui" click-text "Your chat profiles" 10
   "$ui" click-text "Add profile" 10
   "$ui" wait "Enter your name" 10
@@ -278,7 +274,7 @@ check_profile_switch_clears_search() {
   if on_screen "Search or paste SimpleX link"; then
     fail "the search field is empty after typing \"$other_chat_search\""
   fi
-  open_user_menu
+  "$ui" click 27 730
   "$ui" click-text citester 10
   "$ui" wait "$local_chat" 10 || true
   "$ui" shot profile-switched
