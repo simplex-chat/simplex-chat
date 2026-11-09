@@ -363,15 +363,15 @@ versionWritten = \case
   LiveOrderExists -> Left $ WRRefused OROrderExists
   NotLive -> Left $ WRRefused ORBadRequest
 
--- | /retry's first check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
--- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
--- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
 confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
 confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeStore oeContracts oeTurns oeNow
 
+-- | /retry's first check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
+-- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
+-- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
 checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
-checkLanded oeStore oeContracts oeTurns oeNow r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment} = do
-  txs <- withTransaction oeStore (`registrationTransactions` nrId)
+checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment} = do
+  txs <- withTransaction st (`registrationTransactions` nrId)
   let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
   runExceptT (landed mined) >>= \case
     Left e -> LUnread <$ logWarn ("names: a register check's chain read failed: " <> tshow e)
@@ -379,13 +379,13 @@ checkLanded oeStore oeContracts oeTurns oeNow r@NameRegistration {nrId, nrOwner,
     Right (Just (tx, expiry)) -> either (const LChanged) LRegistered <$> markRegistered tx expiry
   where
     landed mined = do
-      confirmed <- ExceptT $ confirmedTag oeContracts
+      confirmed <- ExceptT $ confirmedTag ct
       registerTx <- case mined of
         tx : _ -> pure $ Just $ Just tx
-        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> ExceptT (ownerOfToken oeContracts confirmed nrLabelHash)
-      forM registerTx $ \tx -> (tx,) <$> ExceptT (nameExpires oeContracts confirmed nrLabelHash)
+        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> ExceptT (ownerOfToken ct confirmed nrLabelHash)
+      forM registerTx $ \tx -> (tx,) <$> ExceptT (nameExpires ct confirmed nrLabelHash)
     markRegistered tx expiry = do
-      now <- oeNow
+      now <- clock
       let registered =
             r
               { nrPhase = PRegistered,
@@ -399,12 +399,12 @@ checkLanded oeStore oeContracts oeTurns oeNow r@NameRegistration {nrId, nrOwner,
               }
           write db = versionWritten <$> updateRegistration db registered now
       case nrPayment of
-        RPInvoice {} -> withTransaction oeStore write
-        RPBalance -> withTransaction oeStore write
-        RPCode codeId -> spendLandedCode oeTurns oeStore now codeId nrId write >>= traverse (paidWith codeId)
+        RPInvoice {} -> withTransaction st write
+        RPBalance -> withTransaction st write
+        RPCode codeId -> spendLandedCode turns st now codeId nrId write >>= traverse (paidWith codeId)
     paidWith codeId (v, spent) = do
       unless spent $ do
-        code <- withTransaction oeStore (`getPrepaidCodeById` codeId)
+        code <- withTransaction st (`getPrepaidCodeById` codeId)
         logError $
           "names: registration " <> ridText nrId <> " turned out registered with prepaid code " <> maybe (tshow codeId) (hex . pcCodeHash) code
             <> ", which was released and then spent, revoked or expired: the name was paid with it"
