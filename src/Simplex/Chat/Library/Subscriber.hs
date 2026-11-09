@@ -2608,8 +2608,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       receiveInlineChunk ft chunk meta
 
     -- A group BFileChunk is a normal inline file chunk or a roster blob chunk, both located by
-    -- (group_id, shared_msg_id). A chunk matching no in-flight transfer (an orphaned re-served roster
-    -- chunk, or a missing normal file) is ignored; the outer withAckMessage acks it.
+    -- (group_id, shared_msg_id, sending member). A chunk matching no in-flight transfer (an orphaned re-served
+    -- roster chunk, or a missing or another member's normal file) is ignored; the outer withAckMessage acks it.
     bFileChunkGroup :: GroupInfoKeys -> GroupMember -> SharedMsgId -> FileChunk -> MsgMeta -> CM ()
     bFileChunkGroup gInfo@(GIK GroupInfo {groupId} _) fromMember sharedMsgId chunk meta = do
       fileId_ <- withStore' $ \db -> getGroupRcvFileId db userId groupId (groupMemberId' fromMember) sharedMsgId
