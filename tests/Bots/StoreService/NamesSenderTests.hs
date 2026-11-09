@@ -32,7 +32,6 @@ import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender
 import StoreService.Names.Store (NameTransaction (..), TxFor (..), TxStatus (..), pendingTransactions, registrationTransactions)
 import StoreService.Names.View (addressText)
-import System.Exit (ExitCode (..))
 import System.Timeout (timeout)
 import Test.Hspec
 
@@ -47,7 +46,7 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "keeps a transaction whose send failed, and sends it in the next round" $ testFailedSend g
   it "replaces a stuck transaction once the market's fees pass its own, and settles it under the new hash" $ testFeeBump g
   it "rebroadcasts a saved raw transaction after a restart while the node does not know it" $ testRestartRebroadcast g
-  it "refuses to start on another key while a transaction is pending, naming both addresses, and starts on it once none is" $ testRotatedKeyStart g
+  it "refuses a start on another key or chain while a transaction is pending, naming both, and accepts the new key once none is" $ testRotatedKeyStart g
   it "hands a dropped transaction whose nonce was used, or a mined one whose receipt was pruned, to its owner, who may send again at the next nonce" $ testDroppedNonceUsed g
   it "logs a round that fails on the store, and settles the transaction in the next round" $ testFailedRound g
   it "logs a send the node keeps refusing once per error, an underfunded key as an error, in anvil's capitalized form too" $ testRefusedSendLogged g
@@ -93,7 +92,9 @@ testDecodeSignedTx g = withFakeEthNode $ \node -> do
   transactionSigner (B.take 100 stRaw) `shouldReturn` Left "RLP: truncated"
   forM_ [0 .. 15] $ \nonce -> do
     Right SignedTx {stRaw = raw} <- signTransaction g c request {trNonce = nonce}
-    (\signer -> (nonce, signer)) <$> transactionSigner raw `shouldReturn` (nonce, Right (ccRegistrar c))
+    (\signer -> (nonce, signer)) <$> transactionSigner raw `shouldReturn` (nonce, Right (fakeChainId, ccRegistrar c))
+  ccRegistrar c `shouldBe` address "0x9d8A62f656a8d1615C1294fd71e9CFb3E4855A4F"
+  transactionSigner viemTxYParity1ShortS `shouldReturn` Right (fakeChainId, ccRegistrar c)
 
 testConcurrentNonces :: TVar ChaChaDRG -> IO ()
 testConcurrentNonces g = withSetup g $ \s@Setup {node, store} -> do
@@ -220,22 +221,25 @@ testRestartRebroadcast g = withSetup g $ \s@Setup {node, store} -> do
   map (\(_, status, _) -> status) <$> statuses store r1 `shouldReturn` [TSMined]
 
 testRotatedKeyStart :: TVar ChaChaDRG -> IO ()
-testRotatedKeyStart g = withSetup g $ \s@Setup {node, chain = oldChain} -> do
+testRotatedKeyStart g = withSetup g $ \s@Setup {node, store, chain = oldChain} -> do
   sender <- start s
   Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
-  newChain <- newChainClient g (ccConfig oldChain) {cServiceKey = either error id $ mkPrivateKey $ BA.replicate 32 0x47}
-  let rotated = s {chain = newChain}
-  logged <- capturingStderr $ start rotated `shouldThrow` (== ExitFailure 1)
-  let refusal =
-        "names sender: a pending transaction of nonce 0 was signed by " <> addressText (ccRegistrar oldChain) <> ", not by "
-          <> addressText (ccRegistrar newChain) <> " of chain.service_key"
-  filter ("[ERROR" `T.isPrefixOf`) (T.lines logged) `shouldSatisfy` any (refusal `T.isInfixOf`)
+  let oldConfig = ccConfig oldChain
+      newConfig = oldConfig {cServiceKey = either error id $ mkPrivateKey $ BA.replicate 32 0x47}
+      startOn cfg = checkPendingSigners g cfg store
+      refusal signedFor configured =
+        Left $ "a pending transaction of nonce 0 was signed " <> signedFor <> ", not " <> configured <> "; start with the key and chain that signed it until no transaction is pending"
+  newRegistrar <- ccRegistrar <$> newChainClient g newConfig
+  startOn oldConfig `shouldReturn` Right ()
+  startOn newConfig `shouldReturn` refusal ("by " <> shown (ccRegistrar oldChain)) ("by " <> shown newRegistrar <> " of chain.service_key")
+  startOn oldConfig {cChainId = 1} `shouldReturn` refusal ("for chain " <> show fakeChainId) "for chain.chain_id 1"
   mineHash node (ptHash p)
   _ <- mine node []
   followTransactions sender
   outcomeOf p >>= (`shouldSatisfy` confirmedAs (ptHash p))
-  restarted <- start rotated
-  (fmap ptHash <$> inFlightTransaction restarted (TxCommit r1)) `shouldReturn` Nothing
+  startOn newConfig `shouldReturn` Right ()
+  where
+    shown = T.unpack . addressText
 
 testDroppedNonceUsed :: TVar ChaChaDRG -> IO ()
 testDroppedNonceUsed g =
@@ -384,3 +388,6 @@ refusedWith submit expected =
 
 unhex :: ByteString -> ByteString
 unhex = either error id . convertFromBase Base16
+
+viemTxYParity1ShortS :: ByteString
+viemTxYParity1ShortS = unhex "02f86f827a693b843b9aca00850737be76008306ddd0945fbdb2315678afecb367f032d93f642f64180aa38082abcdc001a03e704053d6725b7b06476fca04827611f81b637f38b5ab351d62c236252ac06e9f9738e8cce6189740f438c699b4b77b8f9c4a15376ed3b3ef48fea57c459ed8"

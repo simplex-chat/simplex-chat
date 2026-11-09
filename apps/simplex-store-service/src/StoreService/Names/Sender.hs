@@ -12,6 +12,7 @@ module StoreService.Names.Sender
     ptHash,
     ptNonce,
     newSender,
+    checkPendingSigners,
     submitTransaction,
     inFlightTransaction,
     awaitOutcome,
@@ -43,7 +44,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
-import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
@@ -51,7 +52,6 @@ import StoreService.Names.Store (NameTransaction (..), NewTransaction (..), TxFo
 import StoreService.Names.View (addressText)
 import StoreService.Safely (safely)
 import StoreService.Store.Invoices (StoreDecodeError (..))
-import System.Exit (exitFailure)
 
 data Sender = Sender
   { snChain :: ChainClient,
@@ -124,25 +124,14 @@ bumped fee = fee + fee `div` 8 + 1
 
 -- | Resumes every saved transaction without a receipt. Owners resuming after a restart find theirs with 'inFlightTransaction'.
 newSender :: TVar ChaChaDRG -> ChainClient -> DBStore -> IO UTCTime -> IO Sender
-newSender snRandom snChain@ChainClient {ccRegistrar} snStore snNow = do
+newSender snRandom snChain snStore snNow = do
   saved <- withTransaction snStore pendingTransactions
-  mapM_ checkSigner saved
   inFlight <- M.fromList <$> mapM resumed (L.groupWith ntNonce saved)
   snQueue <- newMVar ()
   snNextNonce <- newTVarIO $ maybe 0 ((+ 1) . fst) $ M.lookupMax inFlight
   snInFlight <- newTVarIO inFlight
   pure Sender {snChain, snRandom, snStore, snNow, snQueue, snNextNonce, snInFlight}
   where
-    checkSigner NameTransaction {ntNonce, ntRaw} =
-      transactionSigner ntRaw >>= \case
-        Right signer
-          | signer == ccRegistrar -> pure ()
-          | otherwise -> do
-              logError $
-                "names sender: a pending transaction of nonce " <> tshow ntNonce <> " was signed by " <> addressText signer <> ", not by "
-                  <> addressText ccRegistrar <> " of chain.service_key; start with the key that signed it until no transaction is pending"
-              exitFailure
-        Left e -> throwIO $ StoreDecodeError $ "name_transactions.raw: " <> T.pack e
     resumed txs = do
       let NameTransaction {ntFor, ntNonce, ntRaw, ntSentAt} = L.last txs
       request <- either (throwIO . StoreDecodeError . ("name_transactions.raw: " <>) . T.pack) pure $ decodeSignedTx ntRaw
@@ -160,6 +149,21 @@ newSender snRandom snChain@ChainClient {ccRegistrar} snStore snNow = do
               ifOutcome = outcome
             }
         )
+
+checkPendingSigners :: TVar ChaChaDRG -> ChainConfig -> DBStore -> IO (Either String ())
+checkPendingSigners g ChainConfig {cChainId, cServiceKey} st = do
+  registrar <- addressFromPrivateKey g cServiceKey
+  saved <- withTransaction st pendingTransactions
+  runExceptT $ forM_ saved $ \NameTransaction {ntNonce, ntRaw} -> do
+    (chainId, signer) <- withExceptT ("name_transactions.raw: " <>) $ ExceptT $ transactionSigner ntRaw
+    let refused signedFor configured =
+          throwError $
+            "a pending transaction of nonce " <> show ntNonce <> " was signed " <> signedFor <> ", not " <> configured
+              <> "; start with the key and chain that signed it until no transaction is pending"
+    when (chainId /= cChainId) $ refused ("for chain " <> show chainId) ("for chain.chain_id " <> show cChainId)
+    when (signer /= registrar) $ refused ("by " <> shownAddress signer) ("by " <> shownAddress registrar <> " of chain.service_key")
+  where
+    shownAddress = T.unpack . addressText
 
 -- | Dry run, the next nonce, the market's fees, the signature, saved, then sent. A failed send is retried by 'followTransactions'.
 submitTransaction :: Sender -> TxFor -> Address -> ByteString -> IO (Either SendError PendingTx)

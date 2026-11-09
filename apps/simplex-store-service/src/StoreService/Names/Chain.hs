@@ -229,18 +229,19 @@ decodeSignedTx raw =
       trTo <- maybe (Left "transaction: not an address") Right $ addressFromBytes to
       TxRequest trTo trData <$> scalar nonce <*> scalar gas <*> scalar maxFee <*> scalar tip
     _ -> Left "transaction: not a signed EIP-1559 transaction"
-  where
-    scalar = \case
-      RLPBytes b | B.length b <= 8 -> Right $ fromInteger $ os2ip b
-      _ -> Left "transaction: not a 64-bit scalar"
 
-transactionSigner :: ByteString -> IO (Either String Address)
+scalar :: RLPItem -> Either String Word64
+scalar = \case
+  RLPBytes b | B.length b <= 8 -> Right $ fromInteger $ os2ip b
+  _ -> Left "transaction: not a 64-bit scalar"
+
+transactionSigner :: ByteString -> IO (Either String (Word64, Address))
 transactionSigner raw = case signedTxItems raw of
-  Right (fields, (RLPBytes yParity, RLPBytes r, RLPBytes s))
-    | B.length yParity <= 1 ->
-        recoverAddress RecoverableSignature {rsR = scalarBytes r, rsS = scalarBytes s, rsRecId = fromInteger $ os2ip yParity} $
-          keccak256 $ B.cons eip1559TxType $ rlpEncode $ RLPList fields
-  Right _ -> pure $ Left "transaction: not a signature"
+  Right (fields@(chainIdItem : _), (RLPBytes yParity, RLPBytes r, RLPBytes s))
+    | B.length yParity <= 1,
+      Right chainId <- scalar chainIdItem ->
+        fmap (chainId,) <$> recoverAddress RecoverableSignature {rsR = scalarBytes r, rsS = scalarBytes s, rsRecId = fromInteger $ os2ip yParity} (keccak256 $ B.cons eip1559TxType $ rlpEncode $ RLPList fields)
+  Right _ -> pure $ Left "transaction: not a chain id and signature"
   Left e -> pure $ Left e
   where
     scalarBytes b = B.replicate (signatureScalarBytes - B.length b) 0 <> b
