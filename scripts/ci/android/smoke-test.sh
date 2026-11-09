@@ -2,8 +2,8 @@
 
 # Installs the APK in the booted emulator (emulator.sh) and runs the scripted UI cases with the ui helper: onboarding to
 # the chat list, a local group, then the chat list with the reachable toolbar (the default) and with the top bar, where
-# text typed in the search field hides the cards and the banner until the field is cleared, then tests/fixtures/test.jpg
-# and logo-large-rgba.png picked in the system's image picker and sent in the group.
+# the cards and the banner are hidden while the search field has text and shown again once it is cleared, then
+# tests/fixtures/test.jpg and logo-large-rgba.png picked in the system's image picker and sent in the group.
 # Usage: scripts/ci/android/smoke-test.sh <apk> <output dir> [start|onboarding|layouts|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list. "backend"
 # also adds the test SMP server (NAMES_SERVER, from backend.sh, reached through emulator.sh reverse) under Your servers
@@ -28,12 +28,10 @@ esac
 package=chat.simplex.app
 local_chat="seeded notes"
 search_field="Search or paste SimpleX link"
-# matches "$local_chat", and is too short for a SimpleX name, which would add a row to connect to it
 filter_text=seed
 ui=$(dirname "$0")/ui
 fixtures=$(dirname "$0")/../../../tests/fixtures
 checks=$UI_OUT/checks.txt
-# the Wefunder banner, the reachable toolbars card and the connect cards, which the chat list hides while the search field has text
 cards=("Invest in SimpleX Chat" "Top bar" "New 1-time link")
 mkdir -p "$UI_OUT"
 : > "$checks"
@@ -325,7 +323,6 @@ not_found() {
   ! "$ui" find "$1" > /dev/null 2>&1
 }
 
-# the reachable toolbars card or the connect cards, which a new profile's chat list shows until they are closed
 picker_or_connect_card_shown() {
   local card
   for card in "${shown_cards[@]}"; do
@@ -336,7 +333,6 @@ picker_or_connect_card_shown() {
   return 1
 }
 
-# Records which of the cards the chat list shows with the search field empty, in shown_cards.
 cards_with_empty_search() {
   local layout=$1 card
   shown_cards=()
@@ -356,8 +352,6 @@ cards_hidden() {
   done
 }
 
-# Taps the search field's clear button, a "Close button" in the row of the field that shows the text: the cards have
-# close buttons of their own.
 clear_search() {
   local top bottom line x y
   read -r _ _ _ top _ bottom < <("$ui" find "$1") || return 1
@@ -373,7 +367,6 @@ clear_search() {
   return 1
 }
 
-# The clear button also closes the keyboard, so the whole list shows again.
 clear_search_and_check_cards() {
   local what=$1 card
   check "$what: the search field's clear button tapped" clear_search "$filter_text"
@@ -384,7 +377,6 @@ clear_search_and_check_cards() {
   done
 }
 
-# Text typed in the search field that still matches the local chat hides the cards that showed before it.
 check_cards_while_searching() {
   local layout=$1
   cards_with_empty_search "$layout"

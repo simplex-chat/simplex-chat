@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
-# chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, where text
-# typed in the search field hides the cards and the banner until the field is cleared, then tests/fixtures/test.jpg and
-# logo-large-rgba.png picked in the file dialog and sent in the group.
+# chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, where the
+# cards and the banner are hidden while the search field has text and shown again once it is cleared, then
+# tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
@@ -29,11 +29,9 @@ esac
 # backend.sh registered seeded.testing for ci_contact
 name_label=seeded
 local_chat="seeded notes"
-# matches "$local_chat", and is too short for a SimpleX name, which would add a row to connect to it
 filter_text=seed
 ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
-# the Wefunder banner, the reachable toolbars card and the connect cards, which the chat list hides while the search field has text
 cards=("Invest in SimpleX Chat" "Top bar" "New 1-time link")
 # switches are at the right of the left pane, where Settings open
 switch_x=335
@@ -163,7 +161,6 @@ scroll_to() {
   return 1
 }
 
-# the phrases in the chat list pane, left of x 390, one per line, normalised; the right pane can show a banner too
 left_pane_text() {
   local line
   "$ui" text | while IFS= read -r line; do
@@ -182,7 +179,6 @@ is_in() {
   grep -qF "$(normalise "$2")" <<< "$1"
 }
 
-# the reachable toolbars card or the connect cards, which a new profile's chat list shows until they are closed
 picker_or_connect_card_shown() {
   local card
   for card in "${shown_cards[@]}"; do
@@ -193,7 +189,6 @@ picker_or_connect_card_shown() {
   return 1
 }
 
-# Records which of the cards the chat list shows with the search field empty, in shown_cards.
 cards_with_empty_search() {
   local layout=$1 screen card
   screen=$(left_pane_text)
@@ -215,7 +210,6 @@ cards_hidden() {
   done
 }
 
-# Escape clears the search field
 clear_search_and_check_cards() {
   local what=$1 screen card
   "$ui" key Escape
@@ -227,7 +221,6 @@ clear_search_and_check_cards() {
   done
 }
 
-# Text typed in the search field that still matches the local chat hides the cards that showed before it.
 check_cards_while_searching() {
   local layout=$1
   cards_with_empty_search "$layout"
