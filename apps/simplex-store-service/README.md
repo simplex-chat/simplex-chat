@@ -251,6 +251,12 @@ absent `[btcpay]` does for Bitcoin and Monero. Its keys:
   it expired and logs an error. Check such orders in the Stripe Dashboard. After a restart, the
   hour starts again.
 
+The service refuses to start when `secret_key` and `publishable_key` are not both live keys or both
+test keys (`sk_test_` or `rk_test_`, and `pk_test_`). With `[names]`, it also refuses test keys
+unless `[chain] chain_id` is 31337, anvil's local chain, or 11155111, Sepolia, so no name on another
+chain is registered for a test payment. Without `[names]`, test keys are accepted, as a staging
+deployment of badges needs.
+
 The service creates each payment intent with `metadata[order]`, the order's reference. A badge
 order's is its id, which the page shows the buyer as "Reference" (`invoice_id` in
 `sx_badge_service_invoices`); a name order's is `name:0x<order hash>` (`order_hash` in
