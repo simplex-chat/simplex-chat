@@ -588,8 +588,9 @@ from some contacts. Before the service starts on it:
    The service logs no code: a code issued in the group is in the group's history on the members'
    devices, and one issued with `//issue` only where it was copied when printed.
 4. List at BTCPay and in the Stripe Dashboard the invoices and payments created after the copy's
-   time. The service holds no row for them, so its poller and the webhooks still name them but it
-   records nothing for them: support settles each paid one by hand.
+   time. The service holds no row for them, so it records no payment to them: its poller's list
+   skips them without a line, and a webhook naming one is logged at note with
+   `no invoice holds provider_ref <ref>`. Support settles each paid one by hand.
 
 After the start, a contact or a group member whose messages no longer arrive is resynchronised in
 `--run-cli` with `/sync @<contact>` or `/sync #<group> @<member>`. The orders the copy holds resume
