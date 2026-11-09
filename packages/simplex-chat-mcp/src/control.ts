@@ -356,10 +356,9 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   private async give(sender: T.GroupMember, chat: string, session: number): Promise<string> {
-    if (this.options.session === undefined) return commandsReply
     const chatInfo = await this.agentChat(chat)
     if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
-    const owner = this.options.session.ownerOf(session)
+    const owner = this.options.session?.ownerOf(session)
     if (owner === undefined) return `No session ${session}. /sessions in the Main group lists the sessions.`
     await this.tools.giveChat(chat, owner)
     const approver = safeName(sender.memberProfile.displayName)
@@ -830,7 +829,7 @@ function ownerRequest({keyword, params}: Command, session: boolean): OwnerReques
   if (keyword === "revoke" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value, standing: "messages"}
   if (keyword === "leave" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value}
   if (keyword === "delete" && chat !== undefined && value === "files") return {type: "deleteFiles", chat}
-  if (keyword === "give" && chat !== undefined && value !== undefined && /^\d+$/.test(value)) return {type: keyword, chat, session: Number(value)}
+  if (session && keyword === "give" && chat !== undefined && value !== undefined && /^\d+$/.test(value)) return {type: keyword, chat, session: Number(value)}
   if (session && keyword === "observer" && chat?.startsWith("#") && value !== undefined && /^\d+$/.test(value)) return {type: "observer", group: chat, member: Number(value)}
   if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
   return undefined

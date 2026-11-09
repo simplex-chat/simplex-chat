@@ -377,9 +377,9 @@ Refusals of a new `connect`, `send`, `download` or `leave` action of `serve`, fi
 | `The agent has no owner. The person who runs it has to join its control chat with the link the server printed.` | no approver, `--owners` absent |
 | `The agent has no approving owner. The person who runs it has to restart it with the --owners options it printed.` | no approver, `--owners` given |
 
-Largest card form ([control.ts:738-746](../src/control.ts#L738-L746)): the maximum of the creation form, the `done` form and a `failed` form with an error of 600 × `€`, with the action's own decider or the longest current approver name; each form is measured as JSON-escaped UTF-8: `"`, `\`, `\n`, `\r`, `\t` 2 bytes, other characters below U+0020 6 bytes.
+Largest card form ([control.ts:737-745](../src/control.ts#L737-L745)): the maximum of the creation form, the `done` form and a `failed` form with an error of 600 × `€`, with the action's own decider or the longest current approver name; each form is measured as JSON-escaped UTF-8: `"`, `\`, `\n`, `\r`, `\t` 2 bytes, other characters below U+0020 6 bytes.
 
-Link texts of a `connect` card, and the input preview of a tool-use card in the plugin ([control.ts:152-153](../src/control.ts#L152-L153), [:760-774](../src/control.ts#L760-L774)): the description and welcome lines, or the preview lines, take the bytes that the largest form leaves without them. Lines are kept while they fit; the next line is cut to the bytes left and ends in `…`; later lines are left out. The tool result keeps both texts whole.
+Link texts of a `connect` card, and the input preview of a tool-use card in the plugin ([control.ts:152-153](../src/control.ts#L152-L153), [:759-773](../src/control.ts#L759-L773)): the description and welcome lines, or the preview lines, take the bytes that the largest form leaves without them. Lines are kept while they fit; the next line is cut to the bytes left and ends in `…`; later lines are left out. The tool result keeps both texts whole.
 
 ---
 
@@ -387,7 +387,7 @@ Link texts of a `connect` card, and the input preview of a tool-use card in the 
 
 ### 2.1 Commands and replies
 
-Accepted text ([`parseCommand`](../src/control.ts#L654-L659), [`ownerRequest`](../src/control.ts#L822-L837)):
+Accepted text ([`parseCommand`](../src/control.ts#L653-L658), [`ownerRequest`](../src/control.ts#L821-L836)):
 
 ```
 message   one line, an optional trailing newline
@@ -440,17 +440,17 @@ The server reads commands from members' messages in the main conversation of the
 | `leave CHAT` | accepted, at once in both modes; the pending actions of CHAT with a card are rejected by the sender | `Left KIND NAME (CHAT), requested by NAME.`, or `Deleted ...` for a contact; logged too | [control.ts:332-346](../src/control.ts#L332-L346) |
 | `delete CHAT files` | the chat's downloads in memory fail and are cancelled; its other files in status `rcvAccepted`, `rcvTransfer` or `rcvWarning`, such as downloads the core continues after a restart, are cancelled; the folder of CHAT and its forwarded folder are deleted, for a current or a left chat | `Deleted K files from CHAT, SIZE.` (`1 file`), or `No files from CHAT.` | [control.ts:353-356](../src/control.ts#L353-L356), [tools.ts:1034-1052](../src/tools.ts#L1034-L1052), [messages.ts:275-283](../src/messages.ts#L275-L283) |
 | `pending` | no pending action with a card | `No pending actions.` | [control.ts:253](../src/control.ts#L253) |
-| `pending` | otherwise | one line per action: `N  WHAT  expires YYYY-MM-DD HH:MM UTC` | [control.ts:252](../src/control.ts#L252), [:734-736](../src/control.ts#L734-L736) |
-| `list` | no chats | `No chats.` | [control.ts:402](../src/control.ts#L402) |
-| `list` | otherwise | one line per chat of the 100 most recent: `CHAT  KIND NAME`, then `, approved for this chat by APPROVER`, `, files approved by APPROVER` and `, not connected` when applicable, cut to 100 bytes with `…`; then `K older chats are not shown.` (`1 older chat is not shown.`) | [control.ts:390-403](../src/control.ts#L390-L403) |
+| `pending` | otherwise | one line per action: `N  WHAT  expires YYYY-MM-DD HH:MM UTC` | [control.ts:252](../src/control.ts#L252), [:733-735](../src/control.ts#L733-L735) |
+| `list` | no chats | `No chats.` | [control.ts:401](../src/control.ts#L401) |
+| `list` | otherwise | one line per chat of the 100 most recent: `CHAT  KIND NAME`, then `, approved for this chat by APPROVER`, `, files approved by APPROVER` and `, not connected` when applicable, cut to 100 bytes with `…`; then `K older chats are not shown.` (`1 older chat is not shown.`) | [control.ts:389-402](../src/control.ts#L389-L402) |
 
-KIND is `contact`, `bot`, `agent`, `business`, `group` or `channel` ([tools.ts:1499-1506](../src/tools.ts#L1499-L1506)). WHAT is `connect to SUBJECT`, `send to SUBJECT`, `download NAME from SUBJECT`, `delete SUBJECT` or `leave SUBJECT` ([actions.ts:382-396](../src/actions.ts#L382-L396)). SIZE is in bytes, KB, MB or GB, by 1000, with one decimal ([control.ts:786-789](../src/control.ts#L786-L789)). Names are shown by `safeName` ([control.ts:803-806](../src/control.ts#L803-L806)).
+KIND is `contact`, `bot`, `agent`, `business`, `group` or `channel` ([tools.ts:1499-1506](../src/tools.ts#L1499-L1506)). WHAT is `connect to SUBJECT`, `send to SUBJECT`, `download NAME from SUBJECT`, `delete SUBJECT` or `leave SUBJECT` ([actions.ts:382-396](../src/actions.ts#L382-L396)). SIZE is in bytes, KB, MB or GB, by 1000, with one decimal ([control.ts:785-788](../src/control.ts#L785-L788)). Names are shown by `safeName` ([control.ts:802-805](../src/control.ts#L802-L805)).
 
 A standing approval is stored in the chat's custom data, `simplexMcp` for messages and `simplexMcpFiles` for files, as `{approvedBy, approvedById, approvedAt}`; it applies in mode `requests` while member `approvedById` is an approver ([control.ts:26-29](../src/control.ts#L26-L29), [:166-169](../src/control.ts#L166-L169)).
 
 ### 2.2 Cards
 
-Card text: request lines, then one last line ([`cardText`](../src/control.ts#L661-L680), [`requestLines`](../src/control.ts#L682-L715)).
+Card text: request lines, then one last line ([`cardText`](../src/control.ts#L660-L679), [`requestLines`](../src/control.ts#L681-L714)).
 
 Request lines:
 
@@ -463,7 +463,7 @@ Request lines:
 
 SUBJECT is `KIND NAME`, or `an unnamed KIND`, followed by ` (SIMPLEX_NAME)` when known ([actions.ts:377-380](../src/actions.ts#L377-L380)). For `connect`, SIMPLEX_NAME is the target when it is a name; for `send`, the chat's verified SimpleX name.
 
-A card of a `send` with an image or video file, or of a `download` of an image or video, is an image or video message with the file's preview and the card text as its caption; the preview is resized to fit the card, and the card is text when it can't be resized ([control.ts:528-548](../src/control.ts#L528-L548)). In a plugin session group, a card that the core refuses with `feature not allowed Files and media`, as when the group's preference does not allow files and media, is posted as text, and its later edits are text; in `serve` the action fails with the core's error ([control.ts:518-526](../src/control.ts#L518-L526)).
+A card of a `send` with an image or video file, or of a `download` of an image or video, is an image or video message with the file's preview and the card text as its caption; the preview is resized to fit the card, and the card is text when it can't be resized ([control.ts:527-547](../src/control.ts#L527-L547)). In a plugin session group, a card that the core refuses with `feature not allowed Files and media`, as when the group's preference does not allow files and media, is posted as text, and its later edits are text; in `serve` the action fails with the core's error ([control.ts:517-525](../src/control.ts#L517-L525)).
 
 Last line:
 
@@ -479,9 +479,9 @@ Last line:
 | `expired` | | `Expired.` |
 | `expired` | ended in the plugin, see [4.3](#43-session-groups) | `Ended.` |
 
-DECIDER is `Performed without approval (mode host)` in mode `host`, `Approved for this chat by NAME` for a standing action, and `Approved by NAME` otherwise ([control.ts:663](../src/control.ts#L663)).
+DECIDER is `Performed without approval (mode host)` in mode `host`, `Approved for this chat by NAME` for a standing action, and `Approved by NAME` otherwise ([control.ts:662](../src/control.ts#L662)).
 
-Command lines ([`commandsLine`](../src/control.ts#L717-L732)):
+Command lines ([`commandsLine`](../src/control.ts#L716-L731)):
 
 | Tool | Command line |
 |---|---|
@@ -492,7 +492,7 @@ Command lines ([`commandsLine`](../src/control.ts#L717-L732)):
 
 The app shows `/'approve N'` as the tappable command `/approve N` ([PLAN, What the owner sees](../PLAN.md#what-the-owner-sees-the-agent-control-chat)).
 
-An action performed without a card, in mode `host` or under a standing approval, gets its outcome as a new message; a `download` without a card gets none ([control.ts:189-196](../src/control.ts#L189-L196), [:583-585](../src/control.ts#L583-L585)).
+An action performed without a card, in mode `host` or under a standing approval, gets its outcome as a new message; a `download` without a card gets none ([control.ts:189-196](../src/control.ts#L189-L196), [:582-584](../src/control.ts#L582-L584)).
 
 ### 2.3 Other posts
 
@@ -506,26 +506,26 @@ An action performed without a card, in mode `host` or under a standing approval,
 
 ### 2.4 Membership messages
 
-Posted in the chat and logged; in the chat, names are shown by `safeName` and the `--owners ...` part is a code span; in the log, names are folded to one line ([control.ts:504-507](../src/control.ts#L504-L507), [:89-90](../src/control.ts#L89-L90)).
+Posted in the chat and logged; in the chat, names are shown by `safeName` and the `--owners ...` part is a code span; in the log, names are folded to one line ([control.ts:503-506](../src/control.ts#L503-L506), [:89-90](../src/control.ts#L89-L90)).
 
 | Situation | Text | Code |
 |---|---|---|
-| owner joined, `--owners` absent | `I'm your agent. I ask here before I connect, send, download a file or leave a chat.` (chat only) | [control.ts:35](../src/control.ts#L35), [:452](../src/control.ts#L452) |
-| member joined, `--owners` without a list | `NAME joined (member ID). Restart the server with --owners ENTRIES` | [control.ts:457-460](../src/control.ts#L457-L460) |
-| start with `--owners` without a list and humans present | `A joined (member ID). B joined (member ID). Restart the server with --owners ENTRIES` | [control.ts:424-427](../src/control.ts#L424-L427) |
-| a human became owner outside the list | `NAME (member ID) is now an owner and can't approve actions yet. Restart the server with --owners ENTRIES` | [control.ts:465-469](../src/control.ts#L465-L469) |
-| a listed owner stopped being a human owner | `NAME (member ID) is no longer an owner. Restart the server with --owners ENTRIES`<br>none remains: `NAME (member ID) is no longer an owner. No owners remain: restart the server with --reset-owners --owners` | [control.ts:470-475](../src/control.ts#L470-L475) |
+| owner joined, `--owners` absent | `I'm your agent. I ask here before I connect, send, download a file or leave a chat.` (chat only) | [control.ts:35](../src/control.ts#L35), [:451](../src/control.ts#L451) |
+| member joined, `--owners` without a list | `NAME joined (member ID). Restart the server with --owners ENTRIES` | [control.ts:456-459](../src/control.ts#L456-L459) |
+| start with `--owners` without a list and humans present | `A joined (member ID). B joined (member ID). Restart the server with --owners ENTRIES` | [control.ts:423-426](../src/control.ts#L423-L426) |
+| a human became owner outside the list | `NAME (member ID) is now an owner and can't approve actions yet. Restart the server with --owners ENTRIES` | [control.ts:464-468](../src/control.ts#L464-L468) |
+| a listed owner stopped being a human owner | `NAME (member ID) is no longer an owner. Restart the server with --owners ENTRIES`<br>none remains: `NAME (member ID) is no longer an owner. No owners remain: restart the server with --reset-owners --owners` | [control.ts:469-474](../src/control.ts#L469-L474) |
 
-ENTRIES: `ID:NAME` of each human, or of each human owner, joined by commas; an entry with characters other than letters, digits, `_` and `-` is quoted for the shell ([control.ts:885-895](../src/control.ts#L885-L895)).
+ENTRIES: `ID:NAME` of each human, or of each human owner, joined by commas; an entry with characters other than letters, digits, `_` and `-` is quoted for the shell ([control.ts:884-894](../src/control.ts#L884-L894)).
 
 ### 2.5 Group profile
 
 | Field | Value | Code |
 |---|---|---|
-| display name | the agent's display name, updated at start when it differs in the group's profile read at the start, the other fields of that profile kept, as in 0.2 | [control.ts:116-120](../src/control.ts#L116-L120), [:132-139](../src/control.ts#L132-L139), [:619-622](../src/control.ts#L619-L622) |
-| full name | empty | [control.ts:600](../src/control.ts#L600) |
-| description | `Supervise your AI agent here: approve or reject its connections and messages with one tap.` | [control.ts:601](../src/control.ts#L601) |
-| history | on | [control.ts:602](../src/control.ts#L602) |
+| display name | the agent's display name, updated at start when it differs in the group's profile read at the start, the other fields of that profile kept, as in 0.2 | [control.ts:116-120](../src/control.ts#L116-L120), [:132-139](../src/control.ts#L132-L139), [:618-621](../src/control.ts#L618-L621) |
+| full name | empty | [control.ts:599](../src/control.ts#L599) |
+| description | `Supervise your AI agent here: approve or reject its connections and messages with one tap.` | [control.ts:600](../src/control.ts#L600) |
+| history | on | [control.ts:601](../src/control.ts#L601) |
 | command menu | `/pending` "Pending actions"<br>`/list` "Chats and approvals"<br>`/leave` "Leave a chat", params `<chat ID>`<br>updated at start when it differs | [control.ts:13-17](../src/control.ts#L13-L17), [:116-120](../src/control.ts#L116-L120) |
 
 ---
@@ -595,7 +595,7 @@ Server name: `simplex-NAME` ([register.ts:36](../src/register.ts#L36)).
 | 2 | `--stop-wait: seconds from 0 to 60 expected, got VALUE` | [cli.ts:106](../src/cli.ts#L106), [:202](../src/cli.ts#L202) |
 | 2 | `--port: a port from 1 to 65535 expected, got VALUE` | [cli.ts:115](../src/cli.ts#L115), [:202](../src/cli.ts#L202) |
 | 2 | `--reset-owners takes --owners without a list: member IDs change in a new agent control chat.` | [cli.ts:125](../src/cli.ts#L125) |
-| 2 | `--owners: member ENTRY is not in the agent control chat. Start with --reset-owners --owners, or use the IDs of current members.` | [control.ts:433](../src/control.ts#L433) |
+| 2 | `--owners: member ENTRY is not in the agent control chat. Start with --reset-owners --owners, or use the IDs of current members.` | [control.ts:432](../src/control.ts#L432) |
 | 1 | `Another server uses DATA (PID N). If no server runs, remove DATA/lock.` | [files.ts:106-107](../src/files.ts#L106-L107), [:172-174](../src/files.ts#L172-L174) |
 | 1 | `Port PORT is in use. Start with --port N.` | [serve.ts:188](../src/serve.ts#L188) |
 | 1 | `Agent "NAME" was never started. Start it with: npx -y @simplex-chat/mcp serve NAME` | [register.ts:35](../src/register.ts#L35) |
@@ -612,14 +612,14 @@ stdout ([log.ts:37-39](../src/log.ts#L37-L39)):
 | Moment | Line | Code |
 |---|---|---|
 | start | `SimpleX MCP server VERSION, agent "NAME"`<br>`Data folder: DATA`<br>`Approval mode: MODE` | [serve.ts:72-74](../src/serve.ts#L72-L74) |
-| control chat created | `Agent control chat "DISPLAY" created.` | [control.ts:604](../src/control.ts#L604) |
-| link opened | `Join the agent control chat in the SimpleX app. The link works once:`<br>QR code<br>link<br>small QR code: `If the QR code does not scan, restart with --qr-code large, or paste the link into the app.`<br>role line | [control.ts:483-493](../src/control.ts#L483-L493) |
+| control chat created | `Agent control chat "DISPLAY" created.` | [control.ts:603](../src/control.ts#L603) |
+| link opened | `Join the agent control chat in the SimpleX app. The link works once:`<br>QR code<br>link<br>small QR code: `If the QR code does not scan, restart with --qr-code large, or paste the link into the app.`<br>role line | [control.ts:482-492](../src/control.ts#L482-L492) |
 | listening | `Listening on http://127.0.0.1:PORT/mcp` | [serve.ts:122](../src/serve.ts#L122) |
 | owner setup done | `Add the agent to Claude Code:`<br>`  npx -y @simplex-chat/mcp register NAME [--data DATA]` | [serve.ts:157-159](../src/serve.ts#L157-L159) |
-| owner joined | `NAME joined (member ID) and is now an owner. The link is deleted.` | [control.ts:453](../src/control.ts#L453) |
-| listed owners set | `Owners: ENTRIES.` | [control.ts:444](../src/control.ts#L444) |
-| approvers gone, `--owners` absent | `No owners in the agent control chat.` | [control.ts:36](../src/control.ts#L36), [:239](../src/control.ts#L239), [:420](../src/control.ts#L420) |
-| control chat lost | `The agent lost its control chat. Restart the server with --reset-owners.` | [control.ts:480](../src/control.ts#L480) |
+| owner joined | `NAME joined (member ID) and is now an owner. The link is deleted.` | [control.ts:452](../src/control.ts#L452) |
+| listed owners set | `Owners: ENTRIES.` | [control.ts:443](../src/control.ts#L443) |
+| approvers gone, `--owners` absent | `No owners in the agent control chat.` | [control.ts:36](../src/control.ts#L36), [:239](../src/control.ts#L239), [:419](../src/control.ts#L419) |
+| control chat lost | `The agent lost its control chat. Restart the server with --reset-owners.` | [control.ts:479](../src/control.ts#L479) |
 | action created | `Action N: WHAT` with `, as itself` or `, incognito` for `connect` and ` (CHAT)` for the other tools | [actions.ts:209-210](../src/actions.ts#L209-L210), [:382-396](../src/actions.ts#L382-L396) |
 | counter write or card post failed | `Action N: failed: ERROR.` | [actions.ts:326](../src/actions.ts#L326) |
 | perform ended, not interrupted by the stop, mode `requests` | `Action N approved by NAME: RESULT` with RESULT `sent.`, `downloaded.`, `deleted.`, `left.`, `connected.`, `connection requested.` or `failed: ERROR.` | [actions.ts:347](../src/actions.ts#L347), [:402-412](../src/actions.ts#L402-L412) |
@@ -672,7 +672,7 @@ on reply {file, text?}:
     tool error, the core's text
 ```
 
-Sources: [tools.ts:714-730](../src/tools.ts#L714-L730), [:175](../src/tools.ts#L175), [:1607-1610](../src/tools.ts#L1607-L1610), [:550](../src/tools.ts#L550), [hub.ts:93](../src/hub.ts#L93). The core checks the preference at the send, and only owners change it. Claude's profile updates of a group read its current profile from the chat database and change only Claude's own fields, so they keep the owners' preferences ([control.ts:114-139](../src/control.ts#L114-L139), [:614-622](../src/control.ts#L614-L622), [main-group.ts:63-72](../src/main-group.ts#L63-L72)).
+Sources: [tools.ts:714-730](../src/tools.ts#L714-L730), [:175](../src/tools.ts#L175), [:1607-1610](../src/tools.ts#L1607-L1610), [:550](../src/tools.ts#L550), [hub.ts:93](../src/hub.ts#L93). The core checks the preference at the send, and only owners change it. Claude's profile updates of a group read its current profile from the chat database and change only Claude's own fields, so they keep the owners' preferences ([control.ts:114-139](../src/control.ts#L114-L139), [:613-621](../src/control.ts#L613-L621), [main-group.ts:63-72](../src/main-group.ts#L63-L72)).
 
 ### 4.2 Main group
 
@@ -712,7 +712,7 @@ Group profile ([`createMainGroup`](../src/main-group.ts#L222-L232), [`load`](../
 | command menu | `/sessions` "Claude Code sessions"<br>`/join` "Join the group of a session", params `<session number>` |
 | custom data | `{simplexMcpMain: true}` |
 
-Each update starts from the group's current profile in the chat database and changes only the display name and the command menu, so the short description, the description and the preferences owners set stay ([main-group.ts:63-72](../src/main-group.ts#L63-L72), [control.ts:614-622](../src/control.ts#L614-L622)).
+Each update starts from the group's current profile in the chat database and changes only the display name and the command menu, so the short description, the description and the preferences owners set stay ([main-group.ts:63-72](../src/main-group.ts#L63-L72), [control.ts:613-621](../src/control.ts#L613-L621)).
 
 The hub's profile `Claude` posts in the group, with peer type `agent` ([hub.ts:18](../src/hub.ts#L18), [core.ts:24](../src/core.ts#L24)).
 
@@ -723,22 +723,22 @@ Commands and replies are those of [2.1](#21-commands-and-replies), from approver
 | Request | Condition | Reply | Code |
 |---|---|---|---|
 | any request | the sender is not an approver: a moderator, member, author or observer, or `User` | none, and nothing is performed | [control.ts:249](../src/control.ts#L249) |
-| `/give CHAT N` | CHAT is not a chat of this session | `No chat CHAT. /list shows the agent's chats.` | [control.ts:361](../src/control.ts#L361) |
-| `/give CHAT N` | no session N | `No session N. /sessions in the Main group lists the sessions.` | [control.ts:363](../src/control.ts#L363) |
-| `/give CHAT N` | accepted: CHAT's owner set to session N; the pending actions of CHAT with a card are rejected by the sender | `Gave KIND NAME (CHAT) to session N.` | [control.ts:364-369](../src/control.ts#L364-L369) |
+| `/give CHAT N` | CHAT is not a chat of this session | `No chat CHAT. /list shows the agent's chats.` | [control.ts:360](../src/control.ts#L360) |
+| `/give CHAT N` | no session N | `No session N. /sessions in the Main group lists the sessions.` | [control.ts:362](../src/control.ts#L362) |
+| `/give CHAT N` | accepted: CHAT's owner set to session N; the pending actions of CHAT with a card are rejected by the sender | `Gave KIND NAME (CHAT) to session N.` | [control.ts:363-368](../src/control.ts#L363-L368) |
 | `/list`, `/revoke CHAT`, `/leave CHAT` | | the chats of this session, also while it is closed | [tools.ts:1284-1303](../src/tools.ts#L1284-L1303) |
-| `/give CHAT N` in the control chat of `serve` | | the help reply | [control.ts:359](../src/control.ts#L359) |
-| `/observer #G ID` | #G is not this group | `#G is not this group.` | [control.ts:373](../src/control.ts#L373) |
-| `/observer #G ID` | no member ID that is current or pending: absent, gone, or invited and not joined yet | `No member ID in this group.` | [control.ts:374-376](../src/control.ts#L374-L376), [tools.ts:1536-1551](../src/tools.ts#L1536-L1551) |
-| `/observer #G ID` | ID is Claude, the sender, a relay or a member pending approval | `NAME's role can't be changed.` | [control.ts:377-379](../src/control.ts#L377-L379) |
-| `/observer #G ID` | the sender's role is below admin or below the member's role, as SimpleX requires for a role change | `Your role does not let you change the role of NAME.` | [control.ts:380](../src/control.ts#L380), [:856-858](../src/control.ts#L856-L858) |
-| `/observer #G ID` | accepted: the member's role set to `observer`, and the members read again, so the standing approvals the new observer gave count no more while that member is not an admin or owner; they stay in the chat's custom data and count again when the member becomes one again | `NAME is an observer and can't send messages.` | [control.ts:381-383](../src/control.ts#L381-L383), [:864-867](../src/control.ts#L864-L867), [:166-169](../src/control.ts#L166-L169) |
+| `/give CHAT N` in the control chat of `serve` | any sender: `/give` is a request of plugin session groups only | the help reply, as in 0.2 | [control.ts:248](../src/control.ts#L248), [:832](../src/control.ts#L832) |
+| `/observer #G ID` | #G is not this group | `#G is not this group.` | [control.ts:372](../src/control.ts#L372) |
+| `/observer #G ID` | no member ID that is current or pending: absent, gone, or invited and not joined yet | `No member ID in this group.` | [control.ts:373-375](../src/control.ts#L373-L375), [tools.ts:1536-1551](../src/tools.ts#L1536-L1551) |
+| `/observer #G ID` | ID is Claude, the sender, a relay or a member pending approval | `NAME's role can't be changed.` | [control.ts:376-378](../src/control.ts#L376-L378) |
+| `/observer #G ID` | the sender's role is below admin or below the member's role, as SimpleX requires for a role change | `Your role does not let you change the role of NAME.` | [control.ts:379](../src/control.ts#L379), [:855-857](../src/control.ts#L855-L857) |
+| `/observer #G ID` | accepted: the member's role set to `observer`, and the members read again, so the standing approvals the new observer gave count no more while that member is not an admin or owner; they stay in the chat's custom data and count again when the member becomes one again | `NAME is an observer and can't send messages.` | [control.ts:380-382](../src/control.ts#L380-L382), [:863-866](../src/control.ts#L863-L866), [:166-169](../src/control.ts#L166-L169) |
 | one-line `/` text outside the requests | an admin or owner | `Unknown command. To send a command to Claude, start it with //.` | [control.ts:20](../src/control.ts#L20), [:248](../src/control.ts#L248) |
 | any one-line `/` text, and any `//` or `/!` text | a moderator, member or author: the session answers before `Control`, and the text reaches neither `Control` nor Claude | `Only admins and owners of this group can send / commands.`, quoting the message | [hub.ts:29](../src/hub.ts#L29), [:157](../src/hub.ts#L157), [:297-299](../src/hub.ts#L297-L299) |
 
 A request of a member who is not an approver that reaches `Control` directly gets no reply and changes nothing; in a session group, the session's check above answers first.
 
-The requests of [2.1](#21-commands-and-replies) gain `observer #G ID`, in a plugin session group only ([control.ts:834](../src/control.ts#L834)). Approvers are the active members other than Claude and `User` with the role `admin` or `owner` in the session group, whatever way they joined; an observer can't send, as the core refuses an observer's message ([hub.ts:301-307](../src/hub.ts#L301-L307), [control.ts:42](../src/control.ts#L42), [:562-564](../src/control.ts#L562-L564), [:571-580](../src/control.ts#L571-L580)).
+The requests of [2.1](#21-commands-and-replies) gain `observer #G ID`, in a plugin session group only ([control.ts:833](../src/control.ts#L833)). Approvers are the active members other than Claude and `User` with the role `admin` or `owner` in the session group, whatever way they joined; an observer can't send, as the core refuses an observer's message ([hub.ts:301-307](../src/hub.ts#L301-L307), [control.ts:42](../src/control.ts#L42), [:561-563](../src/control.ts#L561-L563), [:570-579](../src/control.ts#L570-L579)).
 
 Other messages follow these rules, in arrival order, one at a time ([hub.ts:153-160](../src/hub.ts#L153-L160), [:227-234](../src/hub.ts#L227-L234), [:293-303](../src/hub.ts#L293-L303), [control.ts:218-220](../src/control.ts#L218-L220)):
 
@@ -765,7 +765,7 @@ Cards of [2.2](#22-cards), and two more:
 | `mode` | `I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.`<br>done: `I run in mode host: ...` | `/'approve N' or /'reject N'` |
 | `permission` | ``I want to use `TOOL`: `DESCRIPTION` ``, then the input preview, one code span per line, cut to fit the card ([1.9](#19-action-refusals)) | `/'approve N' or /'reject N'` |
 
-`mode` and `permission` are exempt from the card size check ([control.ts:154](../src/control.ts#L154), [:682-688](../src/control.ts#L682-L688), [:717-722](../src/control.ts#L717-L722)). In `/pending` their WHAT is `run in mode MODE` and `use TOOL` ([actions.ts:383-384](../src/actions.ts#L383-L384)). A card of `mode` or `permission` that a turn, a detach or the option `requests` ends has the last line `Ended.`; an expired card has `Expired.` ([actions.ts:237-241](../src/actions.ts#L237-L241), [control.ts:677-678](../src/control.ts#L677-L678)).
+`mode` and `permission` are exempt from the card size check ([control.ts:154](../src/control.ts#L154), [:681-687](../src/control.ts#L681-L687), [:716-721](../src/control.ts#L716-L721)). In `/pending` their WHAT is `run in mode MODE` and `use TOOL` ([actions.ts:383-384](../src/actions.ts#L383-L384)). A card of `mode` or `permission` that a turn, a detach or the option `requests` ends has the last line `Ended.`; an expired card has `Expired.` ([actions.ts:237-241](../src/actions.ts#L237-L241), [control.ts:676-677](../src/control.ts#L676-L677)).
 
 Posts:
 
@@ -777,7 +777,7 @@ Posts:
 | Claude | the replies to `!` texts and to the `/`, `//` and `/!` texts of the prompt rules above, quoting the message | [hub.ts:28-29](../src/hub.ts#L28-L29), [:157](../src/hub.ts#L157), [:232](../src/hub.ts#L232) |
 | `User` | each prompt typed in the terminal, in parts, except blank prompts, prompts made only of this server's channel tags, the prompts pushed from the group and one-line `/` commands; in the group marked with the session's number | [hub.ts:184-193](../src/hub.ts#L184-L193), [user.ts:29-32](../src/user.ts#L29-L32) |
 | Claude | files sent by `reply`, at once | [tools.ts:714-730](../src/tools.ts#L714-L730), [hub.ts:93](../src/hub.ts#L93) |
-| Claude | at each `joinedGroupMember`, `connectedToGroupMember` or `memberRole` of a member other than `User`, one post for each join and each role change: the rights of the member's role, below | [hub.ts:218-225](../src/hub.ts#L218-L225), [:510](../src/hub.ts#L510), [control.ts:39-42](../src/control.ts#L39-L42), [:860-867](../src/control.ts#L860-L867) |
+| Claude | at each `joinedGroupMember`, `connectedToGroupMember` or `memberRole` of a member other than `User`, one post for each join and each role change: the rights of the member's role, below | [hub.ts:218-225](../src/hub.ts#L218-L225), [:510](../src/hub.ts#L510), [control.ts:39-42](../src/control.ts#L39-L42), [:859-866](../src/control.ts#L859-L866) |
 
 Rights posts, by the member's role in the session group:
 
@@ -828,7 +828,7 @@ Refusals of a new action, first match, in place of those of [1.9](#19-action-ref
 | Text | Condition | Code |
 |---|---|---|
 | `The SimpleX daemon is stopping.` | the daemon stops | [hub.ts:31](../src/hub.ts#L31) |
-| `The group of this session is lost. Start a new Claude Code session.` | the session group was deleted, Claude was removed from it or lost its owner role | [hub.ts:31](../src/hub.ts#L31), [control.ts:839-854](../src/control.ts#L839-L854) |
+| `The group of this session is lost. Start a new Claude Code session.` | the session group was deleted, Claude was removed from it or lost its owner role | [hub.ts:31](../src/hub.ts#L31), [control.ts:838-853](../src/control.ts#L838-L853) |
 | `20 actions are pending; wait for the approvers' decisions.` | 20 actions of the session in state `pending` | [hub.ts:31](../src/hub.ts#L31), [actions.ts:199-204](../src/actions.ts#L199-L204) |
 | the limit of 20 performed actions and the card size texts of [1.9](#19-action-refusals) | per session | [actions.ts:199-204](../src/actions.ts#L199-L204) |
 | `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.`, VERSION the plugin's version | the session group has no approver | [control.ts:38](../src/control.ts#L38), [:156](../src/control.ts#L156), [owner.ts:7](../src/owner.ts#L7) |
@@ -956,7 +956,7 @@ Environment: `SIMPLEX_MCP_HOME`, ROOT; `CLAUDE_CODE_SESSION_ID` and `CLAUDE_PROJ
 | Main group lost | `The Main group is lost. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` | [main-group.ts:170](../src/main-group.ts#L170) |
 | reset card, decision | `The reset of the owners waits for an owner's approval in the Main group.`, `Reset of the owners: Approved by NAME.` | [main-group.ts:108](../src/main-group.ts#L108), [:138](../src/main-group.ts#L138) |
 | session group created | `Group "N · NAME" of session N created.` | [hub.ts:479](../src/hub.ts#L479) |
-| session group lost | `The group "N · NAME" is lost.` | [control.ts:480](../src/control.ts#L480) |
+| session group lost | `The group "N · NAME" is lost.` | [control.ts:479](../src/control.ts#L479) |
 | actions | as in [3.4](#34-terminal-lines), with ` of session N` after `Action N`; `allowed.` for a tool use | [actions.ts:210](../src/actions.ts#L210), [:410](../src/actions.ts#L410) |
 | stop | `Cancelled K action(s).`, `Stopping: sending K cancelled card(s), up to 10 s. Ctrl-C to stop now.`, `Stopped.` | [daemon.ts:189](../src/daemon.ts#L189), [serve.ts:164](../src/serve.ts#L164), [daemon.ts:192](../src/daemon.ts#L192) |
 

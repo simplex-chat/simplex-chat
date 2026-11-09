@@ -206,7 +206,7 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Downloads | [`src/tools.ts`](../src/tools.ts#L588) | `AgentTools.downloadFile` | [588](../src/tools.ts#L588) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L147) | `Actions` | [147](../src/actions.ts#L147) |
 | Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L92) | `Control` | [92](../src/control.ts#L92) |
-| Card text | [`src/control.ts`](../src/control.ts#L661) | `cardText` | [661](../src/control.ts#L661) |
+| Card text | [`src/control.ts`](../src/control.ts#L660) | `cardText` | [660](../src/control.ts#L660) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L97) | `createDataFolder`, `acquireLock` | [97](../src/files.ts#L97), [102](../src/files.ts#L102) |

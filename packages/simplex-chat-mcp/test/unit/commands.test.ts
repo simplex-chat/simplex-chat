@@ -111,6 +111,13 @@ describe("owner commands", () => {
     expect(connect.state).toBe("performing")
   })
 
+  it("answers /give CHAT N with the list of commands, from an owner, an unlisted owner and a member, as 0.2", async () => {
+    for (const owners of [undefined, [{memberId: 3, name: "Alice"}]]) {
+      const {control} = await setup(owners)
+      for (const sender of [alice, member(8, "Carol", T.GroupMemberRole.Owner), bob]) expect(await control.ownerCommand(sender, {keyword: "give", params: "@4 2"})).toBe(commandsReply)
+    }
+  })
+
   it("expires due actions before a command", async () => {
     const {control, action} = await setup()
     jest.spyOn(Date, "now").mockReturnValue(action.expires)
