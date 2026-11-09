@@ -264,7 +264,7 @@ test("while files and media are off in a session's group, the card of a send of 
   expect((await edited).chatItem.content).toMatchObject({type: "rcvMsgContent", msgContent: {type: "text", text: expect.stringMatching(/\nApproved by Alice\.$/)}})
 }, 600_000)
 
-test("while SimpleX links are off in a session's group, a send card with a SimpleX link is posted, and Claude posts that a terminal prompt and an answer with a SimpleX link were not posted, naming the preference", async () => {
+test("while SimpleX links are off in a session's group, a send card with the local server's SimpleX link, which has a query, at the end of its code span is posted, and Claude posts that a terminal prompt and an answer with a SimpleX link were not posted, naming the preference", async () => {
   const root = join(dir, "links", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("links", "Alice")
@@ -326,6 +326,23 @@ test("while SimpleX links are on for admins only in a session's group, Claude's 
   await client.request("POST", "/turn", {id: one, prompt: `Open ${link}`, answer: `The group's address is ${link}`})
   await answer
   expect((await notice).chatItem.meta.itemText).toBe(`User's prompt was not posted: ${linksNotForUser}`)
+}, 600_000)
+
+test("while SimpleX links are off in a session's group, the connect card of a bot whose welcome has a preset server's SimpleX link and a send card with such a link are not posted: Claude posts Action N: and the preference, and both actions fail with it", async () => {
+  const session = await linkSession("preset")
+  const {alice, client, groupOne} = session
+  const guide = await startBot(smpServer.address, join(dir, "preset", "Guide"), "Guide", {welcomeMessage: `Join ${presetLink} today`})
+  closing.push(() => guide.chat.close())
+  const plainChat = await connectBot(session, await botIn("preset", "Plain"))
+  await setLinks(session, {enable: T.GroupFeatureEnabled.Off})
+  const notice = (n: number): Promise<T.AChatItem> => received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText === `Action ${n}: ${linksOff}`))
+
+  const connectNotice = notice(2)
+  expect((await callTool(client, one, "connect", {target: guide.link, idle: 2})).result).toMatchObject({action: 2, status: "failed", error: linksOff})
+  await connectNotice
+  const sendNotice = notice(3)
+  expect((await callTool(client, one, "send", {chat: plainChat, text: `Our group: ${presetLink}`, idle: 2})).result).toMatchObject({action: 3, status: "failed", error: linksOff})
+  await sendNotice
 }, 600_000)
 
 test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
