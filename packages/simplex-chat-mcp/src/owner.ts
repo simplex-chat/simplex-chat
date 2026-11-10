@@ -8,7 +8,7 @@ export const linkCommand = `npx -y @simplex-chat/mcp@${version} link`
 export const resetCommand = `npx -y @simplex-chat/mcp@${version} reset-owners`
 
 export function linkText({mainGroup, owner}: {mainGroup: string; owner: OwnerState}, tty: boolean): string {
-  if (owner.owners.length > 0) return `Owners of "${mainGroup}": ${owner.owners.join(", ")}. To replace them, run /simplex:reset-owners.`
+  if (owner.owners.length > 0) return `Owners of "${mainGroup}": ${owner.owners.join(", ")}. To replace them, run ${resetCommand} in a terminal.`
   if (owner.link === undefined) return `The Main group has no link. Run ${resetCommand} in a terminal.`
   if (!tty) return `Run ${linkCommand} in a terminal to see the link to "${mainGroup}".`
   return [`Join "${mainGroup}" in the SimpleX app. The link works once:`, qrCodeText(owner.link, "small"), owner.link].join("\n")

@@ -642,7 +642,7 @@ describe("session channel", () => {
     await session.turn({id: id1, answer: "Tests pass."})
     await session.turn({id: id1, prompt: tag(41, "Fix the build")})
     await session.turn({id: id1, prompt: '<channel source="plugin:other:other" from="Alice" item="42">\nFix the build\n</channel>'})
-    await session.turn({id: id1, prompt: "/simplex:link"})
+    await session.turn({id: id1, prompt: "/compact"})
     await session.turn({id: id1, prompt: "Run the tests"})
     await session.turn({id: id1, answer: `${"é".repeat(7481)}ok`})
     expect(posts.map(([, text]) => text)).toEqual(['<channel source="plugin:other:other" from="Alice" item="42">\nFix the build\n</channel>', "Run the tests"])

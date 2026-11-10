@@ -181,12 +181,12 @@ describe("owner commands", () => {
     spy.mockReturnValue(client([]) as unknown as ServiceClient)
     expect(await showLink({SIMPLEX_MCP_HOME: "/r"}, true)).toBe(linkText({...status, owner: {owners: [], link}}, true))
     spy.mockReturnValue(client(["Alice"]) as unknown as ServiceClient)
-    expect(await showLink({SIMPLEX_MCP_HOME: "/r"}, true)).toBe('Owners of "SimpleX MCP": Alice. To replace them, run /simplex:reset-owners.')
+    expect(await showLink({SIMPLEX_MCP_HOME: "/r"}, true)).toBe(`Owners of "SimpleX MCP": Alice. To replace them, run npx -y @simplex-chat/mcp@${version} reset-owners in a terminal.`)
     expect(routes).toEqual(["GET /link"])
   })
 
   it("show the owners, or the link with a QR code in a terminal only", () => {
-    expect(linkText({...status, owner: {owners: ["Alice", "Bob"]}}, false)).toBe('Owners of "SimpleX MCP": Alice, Bob. To replace them, run /simplex:reset-owners.')
+    expect(linkText({...status, owner: {owners: ["Alice", "Bob"]}}, false)).toBe(`Owners of "SimpleX MCP": Alice, Bob. To replace them, run npx -y @simplex-chat/mcp@${version} reset-owners in a terminal.`)
     expect(linkText({...status, owner: {owners: [], link}}, false)).toBe(`Run npx -y @simplex-chat/mcp@${version} link in a terminal to see the link to "SimpleX MCP".`)
     expect(linkText({...status, owner: {owners: [], link}}, true)).toBe(`Join "SimpleX MCP" in the SimpleX app. The link works once:\n${qrCodeText(link, "small")}\n${link}`)
     expect(linkText({...status, owner: {owners: []}}, false)).toBe(`The Main group has no link. Run npx -y @simplex-chat/mcp@${version} reset-owners in a terminal.`)

@@ -123,7 +123,7 @@ Stop and restart:
 
 ### Install the plugin before it is published
 
-The plugin's server, hooks and commands run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, with the modules that Claude Code installs into the plugin's folder from `npm-shrinkwrap.json`. Step 1 lays out a packed build the same way; `test/e2e/launch.test.ts` checks that layout.
+The plugin's server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, with the modules that Claude Code installs into the plugin's folder from `npm-shrinkwrap.json`. Step 1 lays out a packed build the same way; `test/e2e/launch.test.ts` checks that layout.
 
 1. In `packages/simplex-chat-mcp`, pack the build, unpack it into a new folder, and install its modules from the shrinkwrap with the command of Claude Code 2.1.319, which stops it after 60 seconds:
 

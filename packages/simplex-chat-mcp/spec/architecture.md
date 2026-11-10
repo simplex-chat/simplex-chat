@@ -715,7 +715,6 @@ flowchart LR
   subgraph cc["Claude Code"]
     ses["session 1, session 2"]
     hk["SessionStart, PreToolUse,<br/>UserPromptSubmit, Stop,<br/>PostModelSwitch hooks"]
-    sk["/simplex:link<br/>/simplex:reset-owners"]
   end
   subgraph ps["simplex-mcp session, one per Claude Code session"]
     mcp["McpServer, stdio<br/>tools and channel"]
@@ -732,7 +731,7 @@ flowchart LR
   end
   ses -->|stdio| mcp
   hk -->|"node dist/cli.js hook ..."| link
-  sk -->|"node dist/cli.js link, reset-owners"| link
+  term["terminal"] -->|"npx ... link, reset-owners"| link
   mcp --> link
   link -->|"HTTP over ROOT/service.sock<br/>Authorization: Bearer"| sock
   link -.->|"spawn when not running"| pd
@@ -939,7 +938,6 @@ Data flow of a prompt from the session group:
 | [`hooks/hooks.json`](../hooks/hooks.json) | SessionStart: `dist/cli.js hook session-start`; PreToolUse: `allow.js`; UserPromptSubmit, Stop, PostModelSwitch: `dist/cli.js hook turn`, in the background |
 | [`npm-shrinkwrap.json`](../npm-shrinkwrap.json) | the dependency tree that Claude Code installs into the plugin's folder; packed with the production dependencies only, by [`scripts/strip-dev.js`](../scripts/strip-dev.js) in `prepack` and `postpack` |
 | [`plugin/allow.js`](../plugin/allow.js) | PreToolUse allow decision |
-| [`skills/link/SKILL.md`](../skills/link/SKILL.md), [`skills/reset-owners/SKILL.md`](../skills/reset-owners/SKILL.md) | `/simplex:link`, `/simplex:reset-owners` |
 | [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json) | marketplace `simplex-chat`, plugin source npm `@simplex-chat/mcp` |
 
 ### 8.3 State
@@ -1074,7 +1072,7 @@ On `SIGINT`, `SIGTERM`, `POST /stop` or the stop timer ([service.ts:177-199](../
 | A file of `reply` is sent at once, in both modes; the group's preference for files and media, which owners set and the core enforces, can refuse it; a post of Claude or `User` in a session group that a group preference refuses is replaced by Claude's post that names the preference, never dropped without one ([tools.ts:1607-1614](../src/tools.ts#L1607-L1614)); Claude's profile updates of a group start from its current profile in the chat database and change only Claude's own fields, so they keep the owners' preferences | [tools.ts:713-730](../src/tools.ts#L713-L730), [hub.ts:92](../src/hub.ts#L92), [control.ts:115-140](../src/control.ts#L115-L140), [:632-640](../src/control.ts#L632-L640), [main-group.ts:57-66](../src/main-group.ts#L57-L66) |
 | The first human who joins the Main group while it has no owner becomes an owner, and the link is deleted | [main-group.ts:122](../src/main-group.ts#L122), [:134-140](../src/main-group.ts#L134-L140) |
 | A session's mode `host` takes effect after an approver approves its `mode` card, posted once the group has an approver; after a rejection, the card is posted again only after `requests`; `requests` at once, ending a pending `mode` card; the mode is kept in the session group's custom data | [hub.ts:131-150](../src/hub.ts#L131-L150), [:315-318](../src/hub.ts#L315-L318), [:509](../src/hub.ts#L509), [tools.ts:563-564](../src/tools.ts#L563-L564) |
-| A reset of the owners from the computer that runs Claude Code replaces the Main group at once, also while owners exist: `reset-owners`, `/simplex:reset-owners` and `POST /reset-owners` need no owner's approval | [hub.ts:393-395](../src/hub.ts#L393-L395), [owner.ts:28-33](../src/owner.ts#L28-L33), [main-group.ts:99-109](../src/main-group.ts#L99-L109) |
+| A reset of the owners from the computer that runs Claude Code replaces the Main group at once, also while owners exist: `reset-owners` and `POST /reset-owners` need no owner's approval | [hub.ts:393-395](../src/hub.ts#L393-L395), [owner.ts:28-33](../src/owner.ts#L28-L33), [main-group.ts:99-109](../src/main-group.ts#L99-L109) |
 | A chat without an owner gets the session that connects it: at the perform, at the connection event of its action, at the connection of a pending connection the session recorded, or at a `connect` to it as a known chat; tools of other sessions don't show it; `/give CHAT N` moves it | [tools.ts:577-585](../src/tools.ts#L577-L585), [:750-755](../src/tools.ts#L750-L755), [:826](../src/tools.ts#L826), [:835](../src/tools.ts#L835), [:893](../src/tools.ts#L893), [hub.ts:161-166](../src/hub.ts#L161-L166), [:495-496](../src/hub.ts#L495-L496), [control.ts:362-373](../src/control.ts#L362-L373) |
 
 Tool-use state machine, one action of tool `permission` per request:

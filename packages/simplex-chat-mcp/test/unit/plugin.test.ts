@@ -48,19 +48,7 @@ describe("plugin", () => {
   })
 
   it("ships the build, the dependency lock and the plugin files in the package", () => {
-    expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "npm-shrinkwrap.json", ".claude-plugin", ".mcp.json", "hooks", "plugin", "skills"]))
-  })
-
-  it.each(["link", "reset-owners"])("offers the %s skill to the user only, and pre-approves its command", command => {
-    const skill = readFileSync(join(__dirname, "../../skills", command, "SKILL.md"), "utf8")
-    const [, frontmatter] = /^---\n([\s\S]*?)\n---\n/.exec(skill)!
-    expect(frontmatter.split("\n")).toEqual([
-      `name: ${command}`,
-      expect.stringMatching(/^description: \S/),
-      "disable-model-invocation: true",
-      `allowed-tools: Bash(${cli(command)})`,
-    ])
-    expect(skill).toContain(`!\`${cli(command)}\``)
+    expect(packageJson.files).toEqual(["dist", "npm-shrinkwrap.json", "README.md", ".claude-plugin", ".mcp.json", "hooks", "plugin"])
   })
 
   it("packs production dependencies only, restores the files after the pack, and heals a pack that failed after the strip", () => {

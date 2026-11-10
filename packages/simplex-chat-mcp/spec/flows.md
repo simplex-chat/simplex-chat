@@ -986,7 +986,7 @@ Notes:
 - A prompt from the group is not posted again: the pushed prompts in `<channel source="plugin:simplex:simplex" ... item="I" ...>` tags of the prompt with their item, or equal to the raw prompt and pushed in the last 60 s, leave the pushed prompts, and the oldest of them is the item of the turn record. Without a turn record before the answer, the answer quotes the oldest pushed prompt not quoted yet and marks it; it stays pushed, so that a prompt request handled after the Stop request still matches it and `User` does not post it ([hub.ts:23-27](../src/hub.ts#L23-L27), [:183-185](../src/hub.ts#L183-L185), [:259-263](../src/hub.ts#L259-L263), [:288-292](../src/hub.ts#L288-L292)).
 - An empty answer takes its turn record too, without a post ([hub.ts:181](../src/hub.ts#L181), [:193](../src/hub.ts#L193)).
 - A prompt request whose hook started before an answer already handled records no turn, so that a later answer does not quote its prompt ([hub.ts:182](../src/hub.ts#L182), [:184](../src/hub.ts#L184)).
-- A blank prompt, as Claude Code sends for a prompt with images only, a prompt made only of this plugin's channel tags, as after a service restart lost the pushed prompts, and a prompt that is a one-line `/` command, such as `/simplex:link`, are not posted ([hub.ts:192](../src/hub.ts#L192)).
+- A blank prompt, as Claude Code sends for a prompt with images only, a prompt made only of this plugin's channel tags, as after a service restart lost the pushed prompts, and a prompt that is a one-line `/` command, such as `/compact`, are not posted ([hub.ts:192](../src/hub.ts#L192)).
 - An answer and a terminal prompt are posted in parts: the longest runs of whole characters that each fit one message as `send` measures it, the first part of an answer with its quote; each part is searched among the next 15602 characters. A part that `User` posts and that starts with `/` gets no command reply ([hub.ts:192](../src/hub.ts#L192), [:268-278](../src/hub.ts#L268-L278), [:522-539](../src/hub.ts#L522-L539), [tools.ts:1575-1578](../src/tools.ts#L1575-L1578), [control.ts:223](../src/control.ts#L223)).
 - An answer whose quote the core refuses with `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or which the core refuses with the quote as too large, `largeMsg`, is posted without the quote; so are the replies `Session N is not running.`, `The file of this message was not received: ERROR` and the reply to a one-line `/` text of a moderator, member or author ([hub.ts:280-286](../src/hub.ts#L280-L286), [:541-544](../src/hub.ts#L541-L544)).
 - An answer or a terminal prompt that the core refuses with `feature not allowed NAME`, as `SimpleX links` for a SimpleX link while that preference is off, or, for a prompt of `User`, on only for roles above that of `User`, is replaced by Claude's post `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would, or `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`; the turn goes on ([hub.ts:192](../src/hub.ts#L192), [:268-278](../src/hub.ts#L268-L278), [:514-516](../src/hub.ts#L514-L516)).
@@ -1098,7 +1098,7 @@ sequenceDiagram
   participant M as MainGroup
   participant N as Sessions
   participant O as Owner
-  P->>R: /simplex:reset-owners in Claude Code, or npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal
+  P->>R: npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal
   R->>D: POST /reset-owners
   D->>M: replace, also while owners exist
   M->>O: the Main group deleted for all its members
@@ -1107,7 +1107,7 @@ sequenceDiagram
   D-->>R: {link}
   alt on a terminal
     R-->>P: "SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:, QR code, link
-  else in Claude Code
+  else without a terminal, as by Claude's tools
     R-->>P: "SimpleX MCP" was replaced. Run npx -y @simplex-chat/mcp@VERSION link in a terminal to see the link to the new one.
   end
 ```
@@ -1115,7 +1115,7 @@ sequenceDiagram
 Notes:
 
 - VERSION is the plugin's version, so that the command runs the service's version ([owner.ts:7-8](../src/owner.ts#L7-L8)).
-- `reset-owners` replaces the group at once, also while owners exist, without their approval; on a terminal it prints the new link with a QR code, and in Claude Code it names the `link` command instead, so the link never reaches Claude's context ([owner.ts:17-20](../src/owner.ts#L17-L20), [:28-33](../src/owner.ts#L28-L33), [hub.ts:393-395](../src/hub.ts#L393-L395)).
+- `reset-owners` replaces the group at once, also while owners exist, without their approval; on a terminal it prints the new link with a QR code, and without a terminal it names the `link` command instead, so the link never reaches Claude's context ([owner.ts:17-20](../src/owner.ts#L17-L20), [:28-33](../src/owner.ts#L28-L33), [hub.ts:393-395](../src/hub.ts#L393-L395)).
 - The members who joined the session groups from the old Main group stay there with their roles and the rights of those roles ([hub.ts:302-304](../src/hub.ts#L302-L304)).
 
 Source: [main-group.ts:99-109](../src/main-group.ts#L99-L109).

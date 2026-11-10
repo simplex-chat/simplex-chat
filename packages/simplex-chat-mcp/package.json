@@ -12,8 +12,7 @@
     ".claude-plugin",
     ".mcp.json",
     "hooks",
-    "plugin",
-    "skills"
+    "plugin"
   ],
   "engines": {
     "node": ">=22"
