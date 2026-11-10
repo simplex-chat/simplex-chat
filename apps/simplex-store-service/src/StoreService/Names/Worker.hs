@@ -266,25 +266,23 @@ commitSent w now r@NameRegistration {nrPhase, nrCommitTx} p
 
 -- | Waits for the page's reveal until the lapse, has its acceptance held by the name policy, waits for revealAfter, then registers.
 committed :: Worker -> UTCTime -> NameRegistration -> IO Next
-committed w@Worker {wkSender} now r@NameRegistration {nrId, nrCommitment, nrReveal, nrRevealAfter, nrRevealBefore} =
+committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAfter, nrRevealBefore} =
   inFlightTransaction wkSender (TxRegister nrId) >>= \case
     Just p -> registerSent w now r p
     Nothing -> case nrReveal of
       Nothing -> case lapseMoment r of
         Just lapse | now <= lapse -> pure $ waitUntil r $ addUTCTime chainSecond lapse
-        _ -> do
-          logError $ "names worker: the order with commitment " <> hex nrCommitment <> " failed: its buyer did not sign it in time"
-          save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notSignedInTime}
+        _ -> inTurn w r $ failed w now r notSignedInTime "its buyer did not sign it in time"
+      -- past the lapse nothing is sent: the policy would commit again, and the sponsor checks its allowance before the commitment
+      Just _ | lapsed -> judge w now r Nothing
       Just rv@NameReveal {rvAcceptance, rvDeadline} ->
-        (pure (if unlapsed then rvAcceptance else Nothing) $>>= relayAcceptance w now r rvDeadline) >>= \case
+        (pure rvAcceptance $>>= relayAcceptance w now r rvDeadline) >>= \case
           Just next -> pure next
           Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
             Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
             _ -> sendRegister w now r rv
   where
-    -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then
-    -- fails the order as it does a plain name's
-    unlapsed = all ((now <=) . secondsTime . toInteger) nrRevealBefore
+    lapsed = any ((now >) . secondsTime . toInteger) nrRevealBefore
 
 -- | The relay of the reveal's acceptance to the name policy, sent without waiting for revealAfter; Nothing once the policy
 -- stores that acceptance. One signed for another policy, before a setNamePolicy, or for the other kind of terms, clears the
@@ -381,9 +379,10 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
               Right (True, _)
                 | reason `elem` map Just [RNNameNotAvailable, RNNameReserved] -> pure (Nothing, Retry (nrVersion r) "the dry run reverted the name as gone, but it reads available")
                 | isNothing reason && nrPhase == PRegistering -> store w now r {nrPhase = PCommitted, nrRegisterTx = Nothing, nrRegisterBlock = Nothing}
-                | otherwise -> failed w now r
-          Nothing -> failed w now r
+                | otherwise -> registerFailed
+          Nothing -> registerFailed
   where
+    registerFailed = failed w now r notRegistered "its register did not go through"
     -- at the latest block, and at the confirmation depth while the latest reads it taken
     availability label = runExceptT $ do
       latest <- ExceptT $ controllerAvailable oeContracts Latest label
@@ -401,10 +400,11 @@ taken Worker {wkOrders = OrdersEnv {oeStore, oeTurns}} now r@NameRegistration {n
     credited = written r <$> withBalanceTurn oeTurns nrId (withTransaction oeStore $ \db -> write db >>= traverse (\v -> v <$ creditBalance db nrId nrPrice now))
 
 -- | A code order keeps its code for Try again.
-failed :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
-failed w now r@NameRegistration {nrCommitment} = do
-  logError $ "names worker: the order with commitment " <> hex nrCommitment <> " failed: its register did not go through"
-  store w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notRegistered}
+failed :: Worker -> UTCTime -> NameRegistration -> Text -> Text -> IO (Maybe Int64, Next)
+failed w now r@NameRegistration {nrCommitment} shown cause = do
+  result@(v, _) <- store w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just shown}
+  when (isJust v) $ logError $ "names worker: the order with commitment " <> hex nrCommitment <> " failed: " <> cause
+  pure result
 
 -- | A compare-and-set on the version read, in the caller's turn of the name.
 store :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
@@ -467,13 +467,11 @@ maxSendsPerKind = 5
 
 -- | The send while the order has sent fewer than maxSendsPerKind transactions of its kind, else the order fails.
 withinSends :: Worker -> UTCTime -> NameRegistration -> (TxFor -> Bool) -> IO Next -> IO Next
-withinSends w@Worker {wkOrders} now r@NameRegistration {nrId = RegistrationId rid} ofKind send = do
+withinSends w@Worker {wkOrders} now r ofKind send = do
   sent <- sendsOf wkOrders r ofKind
   if sent < maxSendsPerKind
     then send
-    else do
-      logWarn $ "names worker: registration " <> rid <> " failed: it sent " <> tshow sent <> " transactions of one kind, the most an order may"
-      save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notRegistered}
+    else inTurn w r $ failed w now r notRegistered $ "it sent " <> tshow sent <> " transactions of one kind, the most an order may"
 
 sendsUsedUp :: OrdersEnv -> NameRegistration -> IO Bool
 sendsUsedUp oe r = any (>= maxSendsPerKind) <$> mapM (sendsOf oe r) [isCommit, isAccept, isRegister]

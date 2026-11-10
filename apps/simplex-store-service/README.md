@@ -1156,7 +1156,7 @@ An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the
 service's gas. Past that the order fails, Try again and a move answer `400 bad_request`, and support refunds it
 at the provider: `//refund` records nothing for such an order, which has no balance.
-The log line is `[WARN …] names worker: registration <id> failed: it sent <n> transactions of one kind`.
+The log line is `[ERROR …] names worker: the order with commitment 0x… failed: it sent <n> transactions of one kind`.
 
 Try again or a move of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
@@ -1211,10 +1211,11 @@ name for `[names] years` and the days until `term_start`. With `[group]`, an ale
 and resume are also sent to the group, without the commitment. An unread figure shows as `unread`
 and raises no alert.
 
-An order that fails because its buyer did not sign it in time is logged as
-`[ERROR …] names worker: the order with commitment 0x… failed: its buyer did not sign it in time`,
-and one whose register did not go through, its commitment lapsed included, as
-`[ERROR …] names worker: the order with commitment 0x… failed: its register did not go through`.
+Each failed order is logged once its failure is stored, as
+`[ERROR …] names worker: the order with commitment 0x… failed: <cause>`, where the cause is `its
+buyer did not sign it in time`, `it sent <n> transactions of one kind`, or `its register did not
+go through` for any other terms acceptance or register that did not go through, its commitment
+lapsed included.
 
 #### Rotate the key
 
