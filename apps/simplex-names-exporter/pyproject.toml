@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "simplex-names-exporter"
+version = "0.1.0"
+description = "Prometheus exporter of the SimpleX names registered on chain"
+readme = "README.md"
+license = "AGPL-3.0-only"
+requires-python = ">=3.11"
+dependencies = ["eth-abi>=5", "prometheus-client>=0.20", "pycryptodome>=3.20"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+simplex-names-exporter = "simplex_names_exporter.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/simplex_names_exporter"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
