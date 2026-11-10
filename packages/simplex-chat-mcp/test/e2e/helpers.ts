@@ -1,7 +1,7 @@
 import {join} from "path"
 import {T} from "@simplex-chat/types"
 import {api, bot} from "simplex-chat"
-import {DaemonClient} from "../../src/client"
+import {ServiceClient} from "../../src/client"
 import {createDataFolder, hubFolder} from "../../src/files"
 import {CallLine} from "../../src/protocol"
 import {ServeOptions} from "../../src/serve"
@@ -34,7 +34,7 @@ export async function prepareRoot(smpAddress: string, root: string, xftpAddress?
   }
 }
 
-export async function callTool(client: DaemonClient, id: string, tool: string, input: object): Promise<{isError?: boolean; text: string; result: any}> {
+export async function callTool(client: ServiceClient, id: string, tool: string, input: object): Promise<{isError?: boolean; text: string; result: any}> {
   let result: any
   await client.stream("/call", {id, tool, input}, line => {
     const parsed = line as CallLine

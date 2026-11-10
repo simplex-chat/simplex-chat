@@ -3,26 +3,26 @@ import {tmpdir} from "os"
 import {dirname, join} from "path"
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
-import {DaemonClient} from "../../src/client"
+import {ServiceClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
-import {Daemon, productionDeps} from "../../src/daemon"
 import {hubFolder, readSessionFile, sessionFolder} from "../../src/files"
 import {Hub} from "../../src/hub"
 import {sessionStart, turn} from "../../src/hook"
 import {resetOwners} from "../../src/owner"
 import {AttachLine, OwnerState, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
 import {qrCodeText} from "../../src/qr"
+import {Service, productionDeps} from "../../src/service"
 import {version} from "../../src/version"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
 import {SmpServer, startSmpServer, startXftpServer} from "./smpServer"
-import {daemonPid, killDaemon, spawnSession} from "./stdio"
+import {killService, servicePid, spawnSession} from "./stdio"
 
 const one = "11111111-1111-4111-8111-111111111111"
 const two = "22222222-2222-4222-8222-222222222222"
 const three = "33333333-3333-4333-8333-333333333333"
 const four = "44444444-4444-4444-8444-444444444444"
 const five = "55555555-5555-4555-8555-555555555555"
-const daemonStopped = "The SimpleX daemon stopped; repeat the call."
+const serviceStopped = "The SimpleX service stopped; repeat the call."
 
 let smpServer: SmpServer
 let xftpServer: SmpServer
@@ -32,7 +32,7 @@ let closing: (() => Promise<void>)[]
 beforeAll(async () => {
   smpServer = await startSmpServer()
   xftpServer = await startXftpServer()
-  dir = mkdtempSync(join(tmpdir(), "simplex-mcp-daemon-"))
+  dir = mkdtempSync(join(tmpdir(), "simplex-mcp-service-"))
   captureLog()
 }, 120_000)
 
@@ -65,13 +65,13 @@ async function botIn(scenario: string, name: string): Promise<Bot> {
   return b
 }
 
-async function startDaemon(root: string): Promise<Daemon> {
-  const daemon = await Daemon.start({...productionDeps(root), onStopped: () => undefined}, () => defaultConfig)
-  closing.push(() => daemon.stop())
-  return daemon
+async function startService(root: string): Promise<Service> {
+  const service = await Service.start({...productionDeps(root), onStopped: () => undefined}, () => defaultConfig)
+  closing.push(() => service.stop())
+  return service
 }
 
-async function openSession(client: DaemonClient, id: string, name: string): Promise<SessionReply> {
+async function openSession(client: ServiceClient, id: string, name: string): Promise<SessionReply> {
   await client.request<TitleReply>("POST", "/title", {id, name, config: defaultConfig})
   return client.request<SessionReply>("POST", "/session", {id, project: "/p", config: defaultConfig})
 }
@@ -100,7 +100,7 @@ const presetLink = "https://smp4.simplex.im/g#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGp
 
 interface LinkSession {
   alice: Person
-  client: DaemonClient
+  client: ServiceClient
   hub: Hub
   groupOne: number
   claudeGroup: number
@@ -110,15 +110,15 @@ async function linkSession(scenario: string): Promise<LinkSession> {
   const root = join(dir, scenario, "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn(scenario, "Alice")
-  const daemon = await startDaemon(root)
-  const client = DaemonClient.forRoot(root)
+  const service = await startService(root)
+  const client = ServiceClient.forRoot(root)
   await openSession(client, one, "one")
   const owner = await client.request<OwnerState>("GET", "/link")
   const invitations = joinSessionGroups(alice, ["1 · one"])
   await joinByLink(alice, owner.link!)
   const groupOne = (await invitations).get("1 · one")!
   await until(async () => (await alice.chat.apiListMembers(groupOne)).some(member => member.memberProfile.displayName === "User" && isActive(member)))
-  const hub = daemon["hub"] as unknown as Hub
+  const hub = service["hub"] as unknown as Hub
   return {alice, client, hub, groupOne, claudeGroup: hub["sessions"].get(1)!.control.groupId}
 }
 
@@ -138,14 +138,14 @@ async function setLinks({alice, hub, groupOne, claudeGroup}: LinkSession, prefer
   })
 }
 
-test("an owner joins the Main group and each session's group, and approves its connect, send, download and leave there; chats belong to their sessions; the owner's short description and welcome message of the Main group stay after a daemon restart", async () => {
+test("an owner joins the Main group and each session's group, and approves its connect, send, download and leave there; chats belong to their sessions; the owner's short description and welcome message of the Main group stay after a service restart", async () => {
   const root = join(dir, "sessions", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("sessions", "Alice")
   const directory = await botIn("sessions", "Directory")
   const shop = await botIn("sessions", "Shop")
-  let daemon = await startDaemon(root)
-  const client = DaemonClient.forRoot(root)
+  let service = await startService(root)
+  const client = ServiceClient.forRoot(root)
 
   expect(await openSession(client, one, "one")).toMatchObject({number: 1, displayName: "1 · one", owner: {owners: []}})
   expect(await openSession(client, two, "two")).toMatchObject({number: 2, displayName: "2 · two"})
@@ -216,8 +216,8 @@ test("an owner joins the Main group and each session's group, and approves its c
   const sessionsListed = received(alice.chat, inGroup(mainGroupId, textStarts("1 · one")))
   await ownerSends(mainGroupId, "/sessions")
   await sessionsListed
-  await daemon.stop()
-  daemon = await startDaemon(root)
+  await service.stop()
+  service = await startService(root)
   const listedOne = received(alice.chat, inGroup(groupOne, textStarts("No chats.")))
   await ownerSends(groupOne, "/list")
   await listedOne
@@ -234,8 +234,8 @@ test("while files and media are off in a session's group, the card of a send of 
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("media", "Alice")
   const directory = await botIn("media", "Directory")
-  const daemon = await startDaemon(root)
-  const client = DaemonClient.forRoot(root)
+  const service = await startService(root)
+  const client = ServiceClient.forRoot(root)
   await openSession(client, one, "one")
   const owner = await client.request<OwnerState>("GET", "/link")
   const invitations = joinSessionGroups(alice, ["1 · one"])
@@ -246,7 +246,7 @@ test("while files and media are off in a session's group, the card of a send of 
   const connecting = callTool(client, one, "connect", {target: directory.link, idle: 2})
   await ownerSends(`/approve ${cardNumber(await connectCard)}`)
   const directoryChat = (await connecting).result.chat as string
-  const hub = daemon["hub"] as unknown as Hub
+  const hub = service["hub"] as unknown as Hub
   const claudeGroup = hub["sessions"].get(1)!.control.groupId
   const groupOneInfo = (await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === groupOne)!
   await alice.chat.apiUpdateGroupProfile(groupOne, {...groupOneInfo.groupProfile, groupPreferences: {...groupOneInfo.groupProfile.groupPreferences, files: {enable: T.GroupFeatureEnabled.Off}}})
@@ -272,8 +272,8 @@ test("while SimpleX links are off in a session's group, a send card with the loc
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("links", "Alice")
   const directory = await botIn("links", "Directory")
-  const daemon = await startDaemon(root)
-  const client = DaemonClient.forRoot(root)
+  const service = await startService(root)
+  const client = ServiceClient.forRoot(root)
   await openSession(client, one, "one")
   const owner = await client.request<OwnerState>("GET", "/link")
   const invitations = joinSessionGroups(alice, ["1 · one"])
@@ -284,7 +284,7 @@ test("while SimpleX links are off in a session's group, a send card with the loc
   const connecting = callTool(client, one, "connect", {target: directory.link, idle: 2})
   await ownerSends(`/approve ${cardNumber(await connectCard)}`)
   const directoryChat = (await connecting).result.chat as string
-  const hub = daemon["hub"] as unknown as Hub
+  const hub = service["hub"] as unknown as Hub
   const claudeGroup = hub["sessions"].get(1)!.control.groupId
   const groupOneInfo = (await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === groupOne)!
   await alice.chat.apiUpdateGroupProfile(groupOne, {...groupOneInfo.groupProfile, groupPreferences: {...groupOneInfo.groupProfile.groupPreferences, simplexLinks: {enable: T.GroupFeatureEnabled.Off}}})
@@ -352,8 +352,8 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
-  await startDaemon(root)
-  const client = DaemonClient.forRoot(root)
+  await startService(root)
+  const client = ServiceClient.forRoot(root)
   await openSession(client, five, "five")
   const owner = await client.request<OwnerState>("GET", "/link")
   const invitations = joinSessionGroups(alice, ["1 · five"])
@@ -405,13 +405,13 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   expect(fromUser.map(({meta}) => meta.itemText)).toEqual(["Fix the build"])
 }, 600_000)
 
-test("a session keeps its group for hooks with a new ID from its process, relays tool use to its owners, owns a contact and a group that accept after connect returned, asks for mode host, and gets a prompt sent before it attached again after a daemon start", async () => {
+test("a session keeps its group for hooks with a new ID from its process, relays tool use to its owners, owns a contact and a group that accept after connect returned, asks for mode host, and gets a prompt sent before it attached again after a service start", async () => {
   const root = join(dir, "channel", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("channel", "Alice")
   const bob = await personIn("channel", "Bob")
-  const daemon = await startDaemon(root)
-  const client = DaemonClient.forRoot(root)
+  const service = await startService(root)
+  const client = ServiceClient.forRoot(root)
   const pid = 4242
   const env = {CLAUDE_PID: String(pid), SIMPLEX_MCP_HOME: root}
   await client.request<TitleReply>("POST", "/title", {id: one, pid, name: "one", config: defaultConfig})
@@ -464,8 +464,8 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   expect(readSessionFile(sessionFolder(root, one))).not.toHaveProperty("mode")
 
   controller.abort()
-  await daemon.stop()
-  await startDaemon(root)
+  await service.stop()
+  await startService(root)
   await ownerSends("Still there?")
   await new Promise(resolve => setTimeout(resolve, 5_000))
   const reattached: AttachLine[] = []
@@ -483,8 +483,8 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   const alice = await personIn("trust", "Alice")
   const bob = await personIn("trust", "Bob")
   const carol = await personIn("trust", "Carol")
-  await startDaemon(root)
-  const client = DaemonClient.forRoot(root)
+  await startService(root)
+  const client = ServiceClient.forRoot(root)
   await openSession(client, one, "one")
   const attached: AttachLine[] = []
   const controller = new AbortController()
@@ -602,8 +602,8 @@ test("/observer ends the standing approvals of the member it makes an observer, 
   const bob = await personIn("observer", "Bob")
   const dave = await personIn("observer", "Dave")
   const directory = await botIn("observer", "Directory")
-  const daemon = await startDaemon(root)
-  const client = DaemonClient.forRoot(root)
+  const service = await startService(root)
+  const client = ServiceClient.forRoot(root)
   await openSession(client, one, "one")
   const owner = await client.request<OwnerState>("GET", "/link")
   const aliceInvited = joinSessionGroups(alice, ["1 · one"])
@@ -648,7 +648,7 @@ test("/observer ends the standing approvals of the member it makes an observer, 
   await dave.chat.apiSendTextMessage([T.ChatType.Group, daveMain], "/join 1")
   const daveGroupOne = (await daveInvited)!.groupInfo.groupId
   const claudeGroup = Number(/^observer #(\d+) /.exec(makeBobObserver)![1])
-  const hub = daemon["hub"] as unknown as Hub
+  const hub = service["hub"] as unknown as Hub
   const daveInClaude = (await hub.chat.apiListMembers(claudeGroup)).find(({memberProfile}) => memberProfile.displayName === "Dave")!
   expect(daveInClaude.memberStatus).toBe(T.GroupMemberStatus.Invited)
   const notMember = aliceSees(`No member ${daveInClaude.groupMemberId} in this group.`)
@@ -664,15 +664,15 @@ test("/observer ends the standing approvals of the member it makes an observer, 
 test("a new session has no chats", async () => {
   const root = join(dir, "fresh", "root")
   await prepareRoot(smpServer.address, root)
-  await startDaemon(root)
-  const client = DaemonClient.forRoot(root)
+  await startService(root)
+  const client = ServiceClient.forRoot(root)
 
   expect(await openSession(client, four, "four")).toMatchObject({number: 1, displayName: "1 · four"})
   const listed = await callTool(client, four, "list", {})
   expect(listed.result.chats).toEqual([])
 }, 600_000)
 
-test("stdio session spawns the daemon and recovers after the daemon is killed", async () => {
+test("stdio session spawns the service and recovers after the service is killed", async () => {
   const root = join(dir, "stdio", "root")
   await prepareRoot(smpServer.address, root)
   const directory = await botIn("stdio", "Directory")
@@ -685,7 +685,7 @@ test("stdio session spawns the daemon and recovers after the daemon is killed", 
   const {contact} = (await contactConnected)!
   await hub.apiSetContactCustomData(contact.contactId, {simplexMcpOwner: {session: three}})
   await hub.close()
-  closing.push(() => killDaemon(root))
+  closing.push(() => killService(root))
   const session = spawnSession({...process.env, CLAUDE_CODE_SESSION_ID: three, SIMPLEX_MCP_HOME: root, CLAUDE_PROJECT_DIR: "/p/three"})
   closing.push(() => session.stop())
 
@@ -695,25 +695,25 @@ test("stdio session spawns the daemon and recovers after the daemon is killed", 
   const listed = await session.call("list", {})
   expect(listed.isError).toBeUndefined()
   expect(listed.structuredContent.actions).toEqual([])
-  const status = await DaemonClient.forRoot(root).request<StatusReply>("GET", "/status")
+  const status = await ServiceClient.forRoot(root).request<StatusReply>("GET", "/status")
   expect(status.sessions).toEqual([{number: 1, name: "1 · three", attached: 1}])
   expect(listed.structuredContent.chats).toEqual([expect.objectContaining({chat: `@${contact.contactId}`, name: "Directory"})])
 
   await session.call("receive", {chat: `@${contact.contactId}`})
-  const firstDaemon = daemonPid(root)
+  const firstService = servicePid(root)
   const progressToken = "receive"
   const receiving = session.call("receive", {chat: `@${contact.contactId}`, wait: 60}, {progressToken})
   await until(() => session.client.notifications.some(({method, params}) => method === "notifications/progress" && params.progressToken === progressToken))
-  await killDaemon(root)
-  expect(await receiving).toMatchObject({isError: true, content: [{type: "text", text: daemonStopped}]})
+  await killService(root)
+  expect(await receiving).toMatchObject({isError: true, content: [{type: "text", text: serviceStopped}]})
 
   const relisted = await session.call("list", {})
   expect(relisted.isError).toBeUndefined()
   expect(relisted.structuredContent.chats).toEqual(listed.structuredContent.chats.map((chat: object) => ({...chat, unread: 0})))
-  const secondDaemon = daemonPid(root)
-  expect(secondDaemon).not.toBe(firstDaemon)
+  const secondService = servicePid(root)
+  expect(secondService).not.toBe(firstService)
 
-  await killDaemon(root)
-  await until(async () => (await DaemonClient.forRoot(root).request<StatusReply>("GET", "/status").catch(() => undefined))?.sessions[0]?.attached === 1)
-  expect(daemonPid(root)).not.toBe(secondDaemon)
+  await killService(root)
+  await until(async () => (await ServiceClient.forRoot(root).request<StatusReply>("GET", "/status").catch(() => undefined))?.sessions[0]?.attached === 1)
+  expect(servicePid(root)).not.toBe(secondService)
 }, 600_000)

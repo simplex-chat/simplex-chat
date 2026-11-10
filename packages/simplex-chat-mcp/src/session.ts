@@ -1,7 +1,7 @@
 import {Readable, Writable} from "stream"
 import {CallToolResult, JsonSchemaType, McpServer, fromJsonSchema} from "@modelcontextprotocol/server"
 import {StdioServerTransport} from "@modelcontextprotocol/server/stdio"
-import {DaemonClient, ProtocolError, SpawnDaemon, spawnDaemon} from "./client"
+import {ServiceClient, ProtocolError, SpawnService, spawnService} from "./client"
 import {Config, ConfigError, defaultConfig, interactive, readConfig} from "./config"
 import {dataRoot, isSessionId} from "./files"
 import {ExitError, errorText, logError} from "./log"
@@ -11,7 +11,7 @@ import {SocketError, isNotRunning} from "./socket"
 import {ToolName, instructions, registerTools, replyTool} from "./tools"
 import {version} from "./version"
 
-const daemonStopped = "The SimpleX daemon stopped; repeat the call."
+const serviceStopped = "The SimpleX service stopped; repeat the call."
 const unattendedRun = "This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions."
 const unknownSessionStatus = 409
 const stoppingStatus = 503
@@ -22,20 +22,20 @@ const channelInstructions = "Messages in the simplex channel are prompts of the 
 const permissionFields = ["request_id", "tool_name", "description", "input_preview"] as const
 const permissionRequest = fromJsonSchema({type: "object", properties: Object.fromEntries(permissionFields.map(field => [field, {type: "string"}])), required: [...permissionFields]} as JsonSchemaType)
 
-class DaemonStoppedError extends Error {
+class ServiceStoppedError extends Error {
   constructor() {
-    super(daemonStopped)
+    super(serviceStopped)
   }
 }
 
 export interface SessionIo {
   stdin: Readable
   stdout: Writable
-  spawnDaemon: SpawnDaemon
+  spawnService: SpawnService
   version: string
 }
 
-const defaultIo: SessionIo = {stdin: process.stdin, stdout: process.stdout, spawnDaemon: root => spawnDaemon(root), version}
+const defaultIo: SessionIo = {stdin: process.stdin, stdout: process.stdout, spawnService: root => spawnService(root), version}
 
 export async function startSession(env: NodeJS.ProcessEnv = process.env, io: SessionIo = defaultIo): Promise<void> {
   const id = env.CLAUDE_CODE_SESSION_ID
@@ -49,8 +49,8 @@ export async function startSession(env: NodeJS.ProcessEnv = process.env, io: Ses
     if (!(error instanceof ConfigError)) throw error
     configError ??= error.message
   }
-  const server = new McpServer({name: "simplex-mcp", version: io.version}, {instructions: `${instructions("Claude", "SimpleX daemon")}\n${channelInstructions}`, capabilities: {experimental: {"claude/channel": {}, "claude/channel/permission": {}}}})
-  const link = new DaemonLink(DaemonClient.forRoot(dataRoot(env)), {id, pid: process.ppid, project: env.CLAUDE_PROJECT_DIR || process.cwd(), config}, io, line => {
+  const server = new McpServer({name: "simplex-mcp", version: io.version}, {instructions: `${instructions("Claude", "SimpleX service")}\n${channelInstructions}`, capabilities: {experimental: {"claude/channel": {}, "claude/channel/permission": {}}}})
+  const link = new ServiceLink(ServiceClient.forRoot(dataRoot(env)), {id, pid: process.ppid, project: env.CLAUDE_PROJECT_DIR || process.cwd(), config}, io, line => {
     const notification = channelNotification(line as AttachLine)
     if (notification !== undefined) server.server.notification(notification).catch(error => logError("SimpleX channel", error))
   })
@@ -66,7 +66,7 @@ export async function startSession(env: NodeJS.ProcessEnv = process.env, io: Ses
   if (configError === undefined) link.start()
 }
 
-class DaemonLink {
+class ServiceLink {
   private connecting?: Promise<void>
   private attach?: AbortController
   private closed = false
@@ -74,7 +74,7 @@ class DaemonLink {
   private retry = firstRetry
   private retryTimer?: NodeJS.Timeout
 
-  constructor(private readonly client: DaemonClient, private readonly request: SessionRequest, private readonly io: SessionIo, private readonly onLine: (line: unknown) => void) {}
+  constructor(private readonly client: ServiceClient, private readonly request: SessionRequest, private readonly io: SessionIo, private readonly onLine: (line: unknown) => void) {}
 
   connect(): Promise<void> {
     if (this.refused) return Promise.reject(new Error(unattendedRun))
@@ -90,7 +90,7 @@ class DaemonLink {
       () => (this.retry = firstRetry),
       error => {
         if (this.closed || this.refused) return
-        logError("SimpleX daemon", error)
+        logError("SimpleX service", error)
         if (!(error instanceof ProtocolError)) this.reconnect()
       },
     )
@@ -141,11 +141,11 @@ class DaemonLink {
       }, call.signal)
     } catch (error) {
       if (!call.signal.aborted) this.disconnect(connection)
-      throw error instanceof SocketError ? error : new DaemonStoppedError()
+      throw error instanceof SocketError ? error : new ServiceStoppedError()
     }
     if (result === undefined) {
       this.disconnect(connection)
-      throw new DaemonStoppedError()
+      throw new ServiceStoppedError()
     }
     return result ?? undefined
   }
@@ -158,7 +158,7 @@ class DaemonLink {
   }
 
   private async open(): Promise<void> {
-    await this.client.ensureDaemon(this.io.version, this.io.spawnDaemon)
+    await this.client.ensureService(this.io.version, this.io.spawnService)
     await this.client.request("POST", "/session", this.request).catch(error => {
       if (error instanceof SocketError && error.status === unattendedStatus) this.refused = true
       throw error
@@ -173,7 +173,7 @@ class DaemonLink {
           resolve()
           this.onLine(line)
         }, controller.signal)
-        .then(() => reject(new DaemonStoppedError()), reject)
+        .then(() => reject(new ServiceStoppedError()), reject)
         .finally(() => {
           if (this.attach === controller) {
             this.attach = undefined
@@ -186,7 +186,7 @@ class DaemonLink {
 }
 
 function failureText(error: unknown): string {
-  if (isNotRunning(error) || (error instanceof SocketError && error.status === stoppingStatus)) return daemonStopped
+  if (isNotRunning(error) || (error instanceof SocketError && error.status === stoppingStatus)) return serviceStopped
   return errorText(error)
 }
 

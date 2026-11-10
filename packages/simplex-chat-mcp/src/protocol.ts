@@ -5,7 +5,7 @@ import {ToolName} from "./tools"
 export const protocolVersion = 1
 export const unattendedStatus = 403
 
-export interface DaemonInfo {
+export interface ServiceInfo {
   version: string
   protocol: number
 }
@@ -59,12 +59,12 @@ export interface AttachLine {
   permission?: {requestId: string; behavior: "allow" | "deny"}
 }
 
-export interface TitleReply extends DaemonInfo {
+export interface TitleReply extends ServiceInfo {
   mainGroup: string
   owner: OwnerState
 }
 
-export interface SessionReply extends DaemonInfo {
+export interface SessionReply extends ServiceInfo {
   number: number
   displayName: string
   owner: Owners
@@ -82,7 +82,7 @@ export interface CallRequest {
 
 export type CallLine = {progress: string} | {result: CallToolResult | null}
 
-export interface StatusReply extends DaemonInfo {
+export interface StatusReply extends ServiceInfo {
   mainGroup: string
   owner: Owners
   sessions: {number: number; name: string; attached: number}[]

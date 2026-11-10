@@ -118,7 +118,7 @@ describe("session groups", () => {
     expect(await hub.session(id1, {...stored(1, "auth"), group: 20})).toBe(session)
   })
 
-  it("keep the fields the daemon wrote in the session file while the group was created", async () => {
+  it("keep the fields the service wrote in the session file while the group was created", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const folder = sessionFolder(root, id1)
@@ -764,7 +764,7 @@ describe("session channel", () => {
     expect(posts).toEqual(["Rename it"])
   })
 
-  it("posts no prompt made only of this channel's tags as User, as after a daemon restart lost the pushed prompt, and posts one with other text", async () => {
+  it("posts no prompt made only of this channel's tags as User, as after a service restart lost the pushed prompt, and posts one with other text", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)
     const posts: string[] = []
@@ -930,7 +930,7 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([[{text: "The file of this message was not received: not received in 10 minutes", quotedItemId: 43}]])
   })
 
-  it("holds an owner's prompt after the daemon start until the session attaches, and replies that it is not running after 30 s without an attachment", async () => {
+  it("holds an owner's prompt after the service start until the session attaches, and replies that it is not running after 30 s without an attachment", async () => {
     jest.useFakeTimers({doNotFake: ["nextTick", "setImmediate", "queueMicrotask"]})
     const chat = new FakeChat()
     const {hub, session, lines} = await channel(chat)
@@ -1404,7 +1404,7 @@ describe("Main group", () => {
     for (const sender of [invitedAlice, invitedBob]) expect(await session.control.ownerCommand(sender, {keyword: "pending", params: ""})).toBe("No pending actions.")
   })
 
-  it("leaves the groups of the sessions unchanged when a member leaves it, is removed from it or gets a lower role in it, also at the daemon's start", async () => {
+  it("leaves the groups of the sessions unchanged when a member leaves it, is removed from it or gets a lower role in it, also at the service's start", async () => {
     const chat = new FakeChat()
     const carol = member(5, "Carol", T.GroupMemberRole.Owner)
     const hub = await hubWith(chat, [self, alice, bob, carol])

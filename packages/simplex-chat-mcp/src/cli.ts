@@ -2,20 +2,20 @@
 import {homedir} from "os"
 import {join, resolve} from "path"
 import {Mode} from "./actions"
-import {runDaemon} from "./daemon"
 import {sessionStart, turn} from "./hook"
 import {ExitError, log, logError} from "./log"
 import {validName} from "./messages"
 import {resetOwners, showLink} from "./owner"
 import {RegisterOptions, Scope, register} from "./register"
 import {OwnerEntry, QrCodeSize, ServeOptions, serve} from "./serve"
+import {runService} from "./service"
 import {startSession} from "./session"
 
 export const helpText = `Usage:
   simplex-mcp serve NAME [options]     run agent NAME
   simplex-mcp register NAME [options]  add agent NAME to Claude Code
   simplex-mcp session                  MCP server of one Claude Code session (run by the plugin)
-  simplex-mcp daemon                   the shared SimpleX daemon of the plugin (started on demand)
+  simplex-mcp service                  the shared SimpleX service of the plugin (started on demand)
   simplex-mcp hook session-start       Claude Code SessionStart hook (run by the plugin)
   simplex-mcp hook turn                Claude Code hooks of prompts, answers and model changes (run by the plugin)
   simplex-mcp link                     show the Main group link, or its owners
@@ -52,7 +52,7 @@ register options:
 --reset-owners takes --owners without a list.
 `
 
-const pluginCommands = ["session", "daemon", "hook session-start", "hook turn", "link", "reset-owners"] as const
+const pluginCommands = ["session", "service", "hook session-start", "hook turn", "link", "reset-owners"] as const
 
 export type Command =
   | {command: "help"}
@@ -227,8 +227,8 @@ async function main(args: string[]): Promise<void> {
       return log(register(command.options))
     case "session":
       return startSession()
-    case "daemon":
-      return runDaemon()
+    case "service":
+      return runService()
     case "hook session-start":
       process.stdout.write(`${JSON.stringify(await sessionStart(await readStdin()))}\n`)
       return

@@ -1,4 +1,4 @@
-import {DaemonClient} from "./client"
+import {ServiceClient} from "./client"
 import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError} from "./log"
@@ -8,7 +8,7 @@ import {SocketError, isNotRunning} from "./socket"
 import {version} from "./version"
 
 const minNodeMajor = 22
-const daemonStopped = "The SimpleX daemon stopped; it starts again with the next tool call."
+const serviceStopped = "The SimpleX service stopped; it starts again with the next tool call."
 const unknownSession = 409
 const turnAttempts = 15
 const turnRetryMs = 1_000
@@ -34,7 +34,7 @@ export interface HookOutput {
 }
 
 export interface HookDeps {
-  client: Pick<DaemonClient, "ensureDaemon" | "request">
+  client: Pick<ServiceClient, "ensureService" | "request">
   nodeVersion: string
 }
 
@@ -48,35 +48,35 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
   try {
     const input = JSON.parse(stdin) as SessionStartInput
     const config = readConfig(env)
-    const client = deps?.client ?? DaemonClient.forRoot(dataRoot(env))
-    await client.ensureDaemon(version)
+    const client = deps?.client ?? ServiceClient.forRoot(dataRoot(env))
+    await client.ensureService(version)
     const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), name: input.session_title, project: input.cwd, model: input.model, config})
     const {link, owners} = owner
     if (owners.length > 0 || link === undefined) return {}
     return {systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "${mainGroup}":\n${qrCodeText(link, "plain")}\n${link}`}
   } catch (error) {
-    return {systemMessage: `SimpleX MCP: ${isNotRunning(error) ? daemonStopped : errorText(error)}`}
+    return {systemMessage: `SimpleX MCP: ${isNotRunning(error) ? serviceStopped : errorText(error)}`}
   }
 }
 
-async function markUnattended(stdin: string, env: NodeJS.ProcessEnv, client: HookDeps["client"] = DaemonClient.forRoot(dataRoot(env))): Promise<void> {
+async function markUnattended(stdin: string, env: NodeJS.ProcessEnv, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env))): Promise<void> {
   const pid = claudePid(env)
   if (pid === undefined) return
   try {
     const input = JSON.parse(stdin) as SessionStartInput
-    await client.ensureDaemon(version)
+    await client.ensureService(version)
     await client.request("POST", "/title", {id: input.session_id, pid, project: input.cwd, config: readConfig(env), unattended: true})
   } catch (error) {
     logError("SimpleX MCP session start", error)
   }
 }
 
-export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = DaemonClient.forRoot(dataRoot(env)), retryMs = turnRetryMs, at = performance.timeOrigin): Promise<HookOutput> {
+export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env)), retryMs = turnRetryMs, at = performance.timeOrigin): Promise<HookOutput> {
   if (!interactive(env)) return {}
   try {
     const input = JSON.parse(stdin) as TurnInput
     const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: cut(input.last_assistant_message), model: input.to_model, effort: input.effort?.level}
-    await client.ensureDaemon(version)
+    await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
         await client.request("POST", "/turn", request)

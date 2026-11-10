@@ -4,7 +4,7 @@ import {ExitError} from "../../src/log"
 describe("plugin commands", () => {
   it("parses each command", () => {
     expect(parseCommand(["session"])).toEqual({command: "session"})
-    expect(parseCommand(["daemon"])).toEqual({command: "daemon"})
+    expect(parseCommand(["service"])).toEqual({command: "service"})
     expect(parseCommand(["hook", "session-start"])).toEqual({command: "hook session-start"})
     expect(parseCommand(["link"])).toEqual({command: "link"})
     expect(parseCommand(["reset-owners"])).toEqual({command: "reset-owners"})
@@ -17,7 +17,7 @@ describe("plugin commands", () => {
   })
 
   it("documents the commands, the install and the data folder", () => {
-    for (const text of ["simplex-mcp session", "simplex-mcp daemon", "simplex-mcp hook session-start", "simplex-mcp link", "simplex-mcp reset-owners", "/plugin install simplex@simplex-chat", "SIMPLEX_MCP_HOME"]) {
+    for (const text of ["simplex-mcp session", "simplex-mcp service", "simplex-mcp hook session-start", "simplex-mcp link", "simplex-mcp reset-owners", "/plugin install simplex@simplex-chat", "SIMPLEX_MCP_HOME"]) {
       expect(helpText).toContain(text)
     }
   })

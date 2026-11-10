@@ -46,9 +46,9 @@ describe("lock", () => {
     const runningPid = process.ppid
     writeFileSync(join(dir, "lock"), `${runningPid}\n`)
     expect(() => acquireLock(dir)).toThrow(new ExitError(`Another server uses ${dir} (PID ${runningPid}). If no server runs, remove ${join(dir, "lock")}.`, 1))
-    const locked = new LockedError(`Another daemon uses ${dir} (PID ${runningPid}). If no daemon runs, remove ${join(dir, "lock")}.`, 1)
-    expect(() => acquireLock(dir, "daemon")).toThrow(locked)
-    expect(() => acquireLock(dir, "daemon")).toThrow(LockedError)
+    const locked = new LockedError(`Another service uses ${dir} (PID ${runningPid}). If no service runs, remove ${join(dir, "lock")}.`, 1)
+    expect(() => acquireLock(dir, "service")).toThrow(locked)
+    expect(() => acquireLock(dir, "service")).toThrow(LockedError)
     expect(locked).toBeInstanceOf(ExitError)
   })
 
@@ -70,7 +70,7 @@ describe("lock", () => {
     const secondStart = (): void => {
       racing = true
       try {
-        acquireLock(dir, "daemon")
+        acquireLock(dir, "service")
         second = "acquired"
       } catch (error) {
         second = error
@@ -90,7 +90,7 @@ describe("lock", () => {
       secondStart()
     })
     try {
-      acquireLock(dir, "daemon")
+      acquireLock(dir, "service")
     } finally {
       write.mockRestore()
       link.mockRestore()
@@ -272,7 +272,7 @@ describe("session files", () => {
 
 describe("socket path", () => {
   it("is in the root, in tmpdir when too long, and a named pipe on Windows", () => {
-    expect(socketPath("/home/u/.simplex-mcp", "linux")).toBe("/home/u/.simplex-mcp/daemon.sock")
+    expect(socketPath("/home/u/.simplex-mcp", "linux")).toBe("/home/u/.simplex-mcp/service.sock")
     const long = `/home/${"u".repeat(120)}/.simplex-mcp`
     expect(socketPath(long, "darwin")).toMatch(new RegExp(`^${tmpdir().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/simplex-mcp-[0-9a-f]{16}\\.sock$`))
     expect(socketPath("C:\\Users\\u\\.simplex-mcp", "win32")).toMatch(/^\\\\\.\\pipe\\simplex-mcp-[0-9a-f]{16}$/)
@@ -335,7 +335,7 @@ describe("token creation", () => {
   })
 })
 
-describe("daemon log", () => {
+describe("service log", () => {
   it("is opened for append and truncated when over 10 MB", () => {
     const root = tempRoot("simplex-mcp-log-")
     writeFileSync(logFile(root), "x".repeat(10 * 1_048_576 + 1))

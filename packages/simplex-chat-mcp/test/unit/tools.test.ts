@@ -5,7 +5,7 @@ import {ToolCall} from "../../src/messages"
 import {ToolName, instructions, registerTools} from "../../src/tools"
 import {LineClient} from "./fixtures"
 
-const pluginInstructions = instructions("Claude", "SimpleX daemon")
+const pluginInstructions = instructions("Claude", "SimpleX service")
 
 async function connectedServer(mode: "requests" | "host", handler: (name: ToolName, input: unknown, call: ToolCall) => Promise<any>): Promise<LineClient> {
   const input = new PassThrough()
@@ -50,7 +50,7 @@ describe("tool registration", () => {
 
   it("names the profile and the process whose restart cancels actions", () => {
     expect(pluginInstructions).toContain("You act in SimpleX chats through these tools, as the agent Claude.")
-    expect(pluginInstructions).toContain("A SimpleX daemon restart cancels actions; a repeated call after it creates a new one.")
+    expect(pluginInstructions).toContain("A SimpleX service restart cancels actions; a repeated call after it creates a new one.")
     expect(instructions("Scout")).toContain("A server restart cancels actions; a repeated call after it creates a new one.")
   })
 })

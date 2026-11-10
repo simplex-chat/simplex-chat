@@ -13,7 +13,7 @@ const token = "t0ken"
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "simplex-mcp-socket-"))
-  path = join(dir, "daemon.sock")
+  path = join(dir, "service.sock")
 })
 
 afterEach(async () => {
@@ -108,7 +108,7 @@ describe("socket", () => {
     await closedEarly
   })
 
-  it("reports a daemon that is not running by the error code", async () => {
+  it("reports a service that is not running by the error code", async () => {
     const error = await requestJson(path, token, "GET", "/status").catch(e => e)
     expect(isNotRunning(error)).toBe(true)
     expect(isNotRunning(new SocketError("x", 500))).toBe(false)

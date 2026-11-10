@@ -5,7 +5,7 @@ import {basename, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {Action, Mode} from "./actions"
 import {Config, readConfig} from "./config"
-import {LockedError, SessionFile, acquireLock, createDataFolder, daemonLock, daemonToken, dataRoot, logFile, readSessionFile, releaseLock, saveHeldTitles, sessionFolder, socketPath, storedSessions, takeHeldTitles, trimLog, writeSessionFile} from "./files"
+import {LockedError, SessionFile, acquireLock, createDataFolder, dataRoot, logFile, readSessionFile, releaseLock, saveHeldTitles, serviceLock, serviceToken, sessionFolder, socketPath, storedSessions, takeHeldTitles, trimLog, writeSessionFile} from "./files"
 import {Hub, StoredSession, hubTexts} from "./hub"
 import {ExitError, errorText, log, logError} from "./log"
 import {ToolCall, validName} from "./messages"
@@ -47,7 +47,7 @@ export interface SessionLike {
   endPermissions(): void
 }
 
-export interface DaemonDeps {
+export interface ServiceDeps {
   root: string
   token: string
   version: string
@@ -66,7 +66,7 @@ interface Entry {
   seen?: number
 }
 
-export class Daemon {
+export class Service {
   private readonly entries = new Map<string, Entry>()
   private readonly streams = new Set<ServerResponse>()
   private readonly stored: StoredSession[]
@@ -84,36 +84,36 @@ export class Daemon {
   private hubReady!: Promise<HubLike>
   private server!: Server
 
-  private constructor(private readonly deps: DaemonDeps) {
+  private constructor(private readonly deps: ServiceDeps) {
     this.stored = storedSessions(deps.root)
     this.nextNumber = Math.max(0, ...this.stored.map(({session}) => session.number)) + 1
     for (const {id, session} of this.stored) for (const alias of session.aliases ?? []) this.aliases.set(alias, id)
   }
 
-  static async start(deps: DaemonDeps, config: () => Config): Promise<Daemon> {
-    acquireLock(deps.root, "daemon", daemonLock)
+  static async start(deps: ServiceDeps, config: () => Config): Promise<Service> {
+    acquireLock(deps.root, "service", serviceLock)
     try {
-      const daemon = new Daemon(deps)
-      daemon.server = await listen(socketPath(deps.root), deps.token, daemon.routes())
-      daemon.hubReady = daemon.openHub(config)
+      const service = new Service(deps)
+      service.server = await listen(socketPath(deps.root), deps.token, service.routes())
+      service.hubReady = service.openHub(config)
       try {
-        await daemon.hubReady
+        await service.hubReady
       } catch (error) {
-        await daemon.closeListener()
+        await service.closeListener()
         throw error
       }
-      daemon.scheduleStop()
-      for (const request of takeHeldTitles(deps.root)) daemon.onTitle(request as TitleRequest).catch(error => logError("title", error))
-      daemon.logTimer = setInterval(() => {
+      service.scheduleStop()
+      for (const request of takeHeldTitles(deps.root)) service.onTitle(request as TitleRequest).catch(error => logError("title", error))
+      service.logTimer = setInterval(() => {
         try {
           trimLog(deps.root)
         } catch (error) {
           logError(logFile(deps.root), error)
         }
       }, logCheck).unref()
-      return daemon
+      return service
     } catch (error) {
-      releaseLock(deps.root, daemonLock)
+      releaseLock(deps.root, serviceLock)
       throw error
     }
   }
@@ -188,7 +188,7 @@ export class Daemon {
     })
     if (cancelled > 0) log(`Cancelled ${cancelled} action${cancelled === 1 ? "" : "s"}.`)
     this.entries.clear()
-    releaseLock(this.deps.root, daemonLock)
+    releaseLock(this.deps.root, serviceLock)
     log("Stopped.")
     const stopped = (): void => {
       this.server.closeAllConnections()
@@ -427,24 +427,24 @@ export class Daemon {
   }
 }
 
-export async function runDaemon(env: NodeJS.ProcessEnv = process.env, checks = lockChecks): Promise<void> {
+export async function runService(env: NodeJS.ProcessEnv = process.env, checks = lockChecks): Promise<void> {
   const ready = readyChannel(env)
   const root = dataRoot(env)
-  let daemon: Daemon
+  let service: Service
   try {
     createDataFolder(root)
-    daemon = await Daemon.start(productionDeps(root), () => readConfig(env))
+    service = await Service.start(productionDeps(root), () => readConfig(env))
   } catch (error) {
     const holder = error instanceof LockedError ? await lockHolder(root, checks) : undefined
-    if (holder === "released") return runDaemon(env, checks)
+    if (holder === "released") return runService(env, checks)
     if (holder === "answers") return ready("running")
     ready(`error: ${errorText(error)}`)
     process.exit(1)
   }
-  log(`SimpleX MCP daemon ${version}, data folder ${root}`)
+  log(`SimpleX MCP service ${version}, data folder ${root}`)
   ready("ready")
   const stop = (): void => {
-    daemon.stop().catch(error => {
+    service.stop().catch(error => {
       logError("stop", error)
       process.exit(1)
     })
@@ -453,10 +453,10 @@ export async function runDaemon(env: NodeJS.ProcessEnv = process.env, checks = l
   process.on("SIGTERM", stop)
 }
 
-export function productionDeps(root: string): DaemonDeps {
+export function productionDeps(root: string): ServiceDeps {
   return {
     root,
-    token: daemonToken(root),
+    token: serviceToken(root),
     version,
     openHub: (config, stored) => Hub.open(root, config, stored),
     onStopped: code => process.exit(code),
@@ -477,8 +477,8 @@ function processEvent(events: EventEmitter, pid: number): Promise<void> {
 
 async function lockHolder(root: string, checks: number): Promise<"answers" | "released" | undefined> {
   for (let check = 0; check < checks; check++) {
-    if (!existsSync(join(root, daemonLock))) return "released"
-    if (await requestJson(socketPath(root), daemonToken(root), "GET", "/").then(() => true, error => !isNotRunning(error))) return "answers"
+    if (!existsSync(join(root, serviceLock))) return "released"
+    if (await requestJson(socketPath(root), serviceToken(root), "GET", "/").then(() => true, error => !isNotRunning(error))) return "answers"
     await new Promise(resolve => setTimeout(resolve, lockCheckWait))
   }
   return undefined

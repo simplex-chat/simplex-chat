@@ -5,11 +5,11 @@ import {Socket} from "net"
 import {tmpdir} from "os"
 import {join} from "path"
 import {Mode} from "../../src/actions"
-import {DaemonClient} from "../../src/client"
+import {ServiceClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
-import {Daemon, DaemonDeps, HubLike, SessionLike, productionDeps, runDaemon} from "../../src/daemon"
-import {LockedError, createDataFolder, daemonToken, readSessionFile, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
+import {LockedError, createDataFolder, readSessionFile, serviceToken, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
 import {protocolVersion} from "../../src/protocol"
+import {HubLike, Service, ServiceDeps, SessionLike, productionDeps, runService} from "../../src/service"
 import * as socket from "../../src/socket"
 import {requestJson, streamLines} from "../../src/socket"
 import {closeServer, recordedRun, until} from "./fixtures"
@@ -104,7 +104,7 @@ function deps(root: string) {
       return []
     },
   }
-  const d: DaemonDeps = {
+  const d: ServiceDeps = {
     root,
     token,
     version: "0.2.0",
@@ -123,11 +123,11 @@ function deps(root: string) {
 }
 
 let root: string
-let daemon: Daemon | undefined
+let service: Service | undefined
 let listened: Promise<Server>
 
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), "simplex-mcp-daemon-"))
+  root = mkdtempSync(join(tmpdir(), "simplex-mcp-service-"))
   jest.spyOn(process.stdout, "write").mockImplementation(() => true)
   const listen = socket.listen
   listened = new Promise(resolve => jest.spyOn(socket, "listen").mockImplementation(async (...args) => {
@@ -138,8 +138,8 @@ beforeEach(() => {
 })
 
 afterEach(async () => {
-  await daemon?.stop()
-  daemon = undefined
+  await service?.stop()
+  service = undefined
   jest.useRealTimers()
   jest.restoreAllMocks()
   rmSync(root, {recursive: true, force: true})
@@ -150,7 +150,7 @@ const register = (id: string) => post("/session", {id, project: "/p/app", config
 const title = (id: string, name?: string, config = defaultConfig, model?: string) => post("/title", {id, name, project: "/p/app", model, config})
 const titleReply = {mainGroup: "SimpleX MCP", owner: {owners: [], link: "https://simplex.chat/g#link"}, version: "0.2.0", protocol: protocolVersion}
 const sessionsFolder = () => join(root, "_sessions")
-const lockFile = () => join(root, "daemon.lock")
+const lockFile = () => join(root, "service.lock")
 
 function attach(id: string, signal: AbortSignal) {
   const first = deferred()
@@ -159,8 +159,8 @@ function attach(id: string, signal: AbortSignal) {
   return {attached, firstLine: first.promise, lines}
 }
 
-function serverConnection(daemon: Daemon): Promise<Socket> {
-  return once(daemon["server"], "connection").then(([socket]) => socket as Socket)
+function serverConnection(service: Service): Promise<Socket> {
+  return once(service["server"], "connection").then(([socket]) => socket as Socket)
 }
 
 function serverRequests(server: Server, count: number): Promise<void> {
@@ -186,10 +186,10 @@ function storeSession(id: string, number: number, name: string) {
   writeSessionFile(folder, {number, name, project: "/p/app", created: "2026-10-24T00:00:00.000Z"})
 }
 
-describe("daemon", () => {
+describe("service", () => {
   it("registers sessions with stable numbers and stored names", async () => {
     const {d, agents, configs} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     const first = await register(id1)
     expect(first).toEqual({number: 1, displayName: "1 · app", version: "0.2.0", protocol: protocolVersion, owner: {owners: []}})
     await title(id2, "docs")
@@ -203,7 +203,7 @@ describe("daemon", () => {
   it("passes the stored sessions to the hub, and the approval mode of each registration to its session", async () => {
     storeSession(id1, 1, "app")
     const {d, agents, stored} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     expect(stored).toEqual([{id: id1, session: {number: 1, name: "app", project: "/p/app", created: "2026-10-24T00:00:00.000Z"}}])
     const host = {...defaultConfig, approve: "host" as const}
     await streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
@@ -217,7 +217,7 @@ describe("daemon", () => {
 
   it("expires due actions at each request that touches sessions", async () => {
     const {d, expiryChecks} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await register(id1)
     expect(expiryChecks()).toBe(1)
     await title(id1)
@@ -238,18 +238,18 @@ describe("daemon", () => {
 
   it("opens one agent for concurrent registrations", async () => {
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await Promise.all([1, 2, 3].map(() => register(id1)))
     expect(agents).toHaveLength(1)
   })
 
-  it("holds the lock while running and refuses a second daemon in the same folder", async () => {
+  it("holds the lock while running and refuses a second service in the same folder", async () => {
     const {d} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     expect(readFileSync(lockFile(), "utf8")).toBe(`${process.pid}\n`)
     writeFileSync(lockFile(), `${process.ppid}\n`)
     const openHub = jest.fn(d.openHub)
-    await expect(Daemon.start({...d, openHub}, readDefaultConfig)).rejects.toThrow(LockedError)
+    await expect(Service.start({...d, openHub}, readDefaultConfig)).rejects.toThrow(LockedError)
     expect(openHub).not.toHaveBeenCalled()
     writeFileSync(lockFile(), `${process.pid}\n`)
   })
@@ -260,8 +260,8 @@ describe("daemon", () => {
       createDataFolder(join(root, name))
       writeFileSync(join(root, name, "simplex_v1_chat.db"), name)
     }
-    const client = DaemonClient.forRoot(root)
-    daemon = await Daemon.start({...deps(root).d, token: productionDeps(root).token}, readDefaultConfig)
+    const client = ServiceClient.forRoot(root)
+    service = await Service.start({...deps(root).d, token: productionDeps(root).token}, readDefaultConfig)
     expect(await client.request("GET", "/status")).toMatchObject({mainGroup: "SimpleX MCP"})
     for (const name of folders) {
       expect(statSync(join(root, name)).mode & 0o777).toBe(0o700)
@@ -274,7 +274,7 @@ describe("daemon", () => {
     const {d} = deps(root)
     const openHub = jest.fn(d.openHub)
     mkdirSync(socketPath(root))
-    await expect(Daemon.start({...d, openHub}, readDefaultConfig)).rejects.toThrow()
+    await expect(Service.start({...d, openHub}, readDefaultConfig)).rejects.toThrow()
     expect(openHub).not.toHaveBeenCalled()
     expect(existsSync(lockFile())).toBe(false)
   })
@@ -284,20 +284,20 @@ describe("daemon", () => {
     const hubOpening = deferred()
     const openHubGate = deferred()
     const events: string[] = []
-    const openHub: DaemonDeps["openHub"] = async (...args) => {
+    const openHub: ServiceDeps["openHub"] = async (...args) => {
       hubOpening.resolve()
       await openHubGate.promise
       events.push("hub open")
       return d.openHub(...args)
     }
-    const starting = Daemon.start({...d, openHub}, readDefaultConfig)
+    const starting = Service.start({...d, openHub}, readDefaultConfig)
     await hubOpening.promise
     const received = serverRequests(await listened, 2)
     const status = requestJson(socketPath(root), token, "GET", "/status").then(reply => (events.push("status"), reply))
     const registered = register(id1).then(reply => (events.push("session"), reply))
     await received
     openHubGate.resolve()
-    daemon = await starting
+    service = await starting
     expect(await status).toMatchObject({version: "0.2.0", mainGroup: "SimpleX MCP", sessions: []})
     expect(await registered).toMatchObject({number: 1})
     expect(events[0]).toBe("hub open")
@@ -310,12 +310,12 @@ describe("daemon", () => {
     jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
     const hubOpening = deferred()
     const openHubGate = deferred()
-    const openHub: DaemonDeps["openHub"] = async () => {
+    const openHub: ServiceDeps["openHub"] = async () => {
       hubOpening.resolve()
       await openHubGate.promise
       throw new Error("no network")
     }
-    const starting = Daemon.start({...d, openHub}, readDefaultConfig)
+    const starting = Service.start({...d, openHub}, readDefaultConfig)
     starting.catch(() => undefined)
     await hubOpening.promise
     const server = await listened
@@ -337,7 +337,7 @@ describe("daemon", () => {
 
   it("streams progress and the result, and cancels the call when the client closes", async () => {
     const {d, agents, aborted} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await register(id1)
     const lines: unknown[] = []
     await streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, line => lines.push(line))
@@ -351,7 +351,7 @@ describe("daemon", () => {
 
   it("refuses a call or an attachment of an unknown session", async () => {
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     const unknown = "Unknown session; restart the Claude Code session."
     await expect(streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)).rejects.toThrow(unknown)
     await expect(streamLines(socketPath(root), token, "/attach", {id: id1}, () => undefined)).rejects.toMatchObject({message: unknown, status: 409})
@@ -360,7 +360,7 @@ describe("daemon", () => {
 
   it("writes the versions first on attach and counts attachments", async () => {
     const {d} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await register(id1)
     const controller = new AbortController()
     const {attached, firstLine, lines} = attach(id1, controller.signal)
@@ -374,7 +374,7 @@ describe("daemon", () => {
   it("closes an idle session without actions, and then stops", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents, busy, onStopped, stoppedCode} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await register(id1)
     const controller = new AbortController()
     const {attached, firstLine} = attach(id1, controller.signal)
@@ -393,13 +393,13 @@ describe("daemon", () => {
     await jest.advanceTimersByTimeAsync(10 * minutes)
     expect(await stoppedCode).toBe(0)
     expect(existsSync(lockFile())).toBe(false)
-    daemon = undefined
+    service = undefined
   })
 
   it("closes a registered session that never attaches", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await register(id1)
     await jest.advanceTimersByTimeAsync(10 * minutes - 1)
     expect(agents[0].open).toBe(true)
@@ -410,16 +410,16 @@ describe("daemon", () => {
   it("stops 10 minutes after start when no session registers", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, stoppedCode} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await jest.advanceTimersByTimeAsync(10 * minutes)
     expect(await stoppedCode).toBe(0)
-    daemon = undefined
+    service = undefined
   })
 
   it("keeps running when a session registers during the idle stop wait", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents, onStopped} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await jest.advanceTimersByTimeAsync(5 * minutes)
     await register(id1)
     await jest.advanceTimersByTimeAsync(9 * minutes)
@@ -430,18 +430,18 @@ describe("daemon", () => {
   it("keeps running after a refused call of an unknown session, and stops when idle", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, stoppedCode} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await expect(streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)).rejects.toThrow()
     await jest.advanceTimersByTimeAsync(10 * minutes)
     expect(await stoppedCode).toBe(0)
-    daemon = undefined
+    service = undefined
   })
 
   it("opens a stored session on a call, numbers new sessions after it, and closes it when idle", async () => {
     storeSession(id1, 1, "app")
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
     expect(agents).toMatchObject([{number: 1, displayName: "1 · app", calls: ["list"]}])
     expect(await register(id2)).toMatchObject({number: 2})
@@ -449,14 +449,14 @@ describe("daemon", () => {
     expect(agents.map(({open}) => open)).toEqual([false, false])
   })
 
-  it("refuses an attachment that opens while the daemon stops", async () => {
+  it("refuses an attachment that opens while the service stops", async () => {
     storeSession(id1, 1, "app")
     const {d, opening, hubStopping, gate, stoppedCode} = deps(root)
     const finishOpen = gate("open")
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     const attached = streamLines(socketPath(root), token, "/attach", {id: id1}, () => undefined)
     await opening
-    const stopping = daemon.stop()
+    const stopping = service.stop()
     await hubStopping
     finishOpen()
     await expect(attached).rejects.toThrow()
@@ -469,8 +469,8 @@ describe("daemon", () => {
     storeSession(id1, 1, "app")
     const {d, agents, opening, gate} = deps(root)
     const finishOpen = gate("open")
-    daemon = await Daemon.start(d, readDefaultConfig)
-    const connection = serverConnection(daemon)
+    service = await Service.start(d, readDefaultConfig)
+    const connection = serverConnection(service)
     const controller = new AbortController()
     const attached = streamLines(socketPath(root), token, "/attach", {id: id1}, () => undefined, controller.signal).catch(() => undefined)
     await opening
@@ -487,8 +487,8 @@ describe("daemon", () => {
     storeSession(id1, 1, "app")
     const {d, agents, opening, gate, stoppedCode} = deps(root)
     const finishOpen = gate("open")
-    daemon = await Daemon.start(d, readDefaultConfig)
-    const connection = serverConnection(daemon)
+    service = await Service.start(d, readDefaultConfig)
+    const connection = serverConnection(service)
     const controller = new AbortController()
     const called = streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined, controller.signal).catch(() => undefined)
     await opening
@@ -496,7 +496,7 @@ describe("daemon", () => {
     await once(await connection, "close")
     finishOpen()
     await called
-    await daemon.stop()
+    await service.stop()
     expect(agents[0].calls).toEqual([])
     expect(await stoppedCode).toBe(0)
   })
@@ -504,7 +504,7 @@ describe("daemon", () => {
   it("keeps an unattached session open during a call and closes it 10 minutes after", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents, calling, gate} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await register(id1)
     const finishCall = gate("call")
     const called = streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
@@ -520,11 +520,11 @@ describe("daemon", () => {
     expect(agents[0].open).toBe(false)
   })
 
-  it.each(["/session", "/title"])("refuses %s when it arrives while the daemon stops", async route => {
+  it.each(["/session", "/title"])("refuses %s when it arrives while the service stops", async route => {
     const {d, agents, gate, hubStopping, stoppedCode} = deps(root)
     const finishHubStop = gate("hubStop")
-    daemon = await Daemon.start(d, readDefaultConfig)
-    const requested = once(daemon["server"], "request")
+    service = await Service.start(d, readDefaultConfig)
+    const requested = once(service["server"], "request")
     const req = request({socketPath: socketPath(root), method: "POST", path: route, headers: {authorization: `Bearer ${token}`}})
     const response = new Promise<{status: number | undefined; text: string}>((resolve, reject) => {
       req.on("response", res => {
@@ -537,10 +537,10 @@ describe("daemon", () => {
     })
     req.flushHeaders()
     await requested
-    const stopping = daemon.stop()
+    const stopping = service.stop()
     await hubStopping
     req.end(JSON.stringify({id: id1, project: "/p/app", config: defaultConfig}))
-    expect(await response).toEqual({status: 503, text: JSON.stringify({error: "The SimpleX daemon is stopping."})})
+    expect(await response).toEqual({status: 503, text: JSON.stringify({error: "The SimpleX service is stopping."})})
     finishHubStop()
     await stopping
     expect(agents).toHaveLength(0)
@@ -550,7 +550,7 @@ describe("daemon", () => {
 
   it("renames an open session on a new title and stores the name", async () => {
     const {d, agents, configs} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await register(id1)
     expect(await title(id1, " auth ", {...defaultConfig, mainGroup: "Agents"})).toEqual(titleReply)
     expect(configs.at(-1)).toEqual({...defaultConfig, mainGroup: "Agents"})
@@ -565,7 +565,7 @@ describe("daemon", () => {
     storeSession(id1, 1, "app")
     const {d, agents, opening, gate} = deps(root)
     const finishOpen = gate("open")
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     const called = streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
     await opening
     const titled = title(id1, "auth")
@@ -579,7 +579,7 @@ describe("daemon", () => {
   it("opens a stored session on its title, renames it and passes the model", async () => {
     storeSession(id1, 1, "app")
     const {d, agents, configs} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     expect(await title(id1, "auth", {...defaultConfig, approve: "host"}, "claude-opus-5")).toEqual(titleReply)
     expect(configs.at(-1)).toEqual({...defaultConfig, approve: "host"})
     expect(agents).toMatchObject([{number: 1, displayName: "1 · auth", modes: [], turns: [{id: id1, model: "claude-opus-5"}]}])
@@ -589,7 +589,7 @@ describe("daemon", () => {
 
   it("creates an unknown session at its title, named by the title", async () => {
     const {d} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     expect(await title(id1, "auth")).toEqual(titleReply)
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, name: "auth", project: "/p/app"})
     expect(await register(id2)).toMatchObject({number: 2, displayName: "2 · app"})
@@ -598,7 +598,7 @@ describe("daemon", () => {
 
   it("passes permission requests and turns to the session, and its lines to the attachments while they exist", async () => {
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await register(id1)
     const permission = {id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"}
     expect(await post("/permission", permission)).toEqual({})
@@ -621,7 +621,7 @@ describe("daemon", () => {
   it("does not delay the idle close of an open session with a title", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await register(id1)
     await jest.advanceTimersByTimeAsync(9 * minutes)
     await title(id1, "auth")
@@ -633,19 +633,19 @@ describe("daemon", () => {
   it("stops 10 minutes after a titled session closes", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, onStopped, stoppedCode} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await jest.advanceTimersByTimeAsync(5 * minutes)
     await title(id1, "auth")
     await jest.advanceTimersByTimeAsync(19 * minutes)
     expect(onStopped).not.toHaveBeenCalled()
     await jest.advanceTimersByTimeAsync(1 * minutes)
     expect(await stoppedCode).toBe(0)
-    daemon = undefined
+    service = undefined
   })
 
   it.each(["/session", "/title"])("answers 400 to %s with an ID that is not a session ID", async route => {
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await expect(post(route, {id: "../x", project: "/p/app", config: defaultConfig})).rejects.toMatchObject({message: "Not a Claude Code session ID: ../x", status: 400})
     expect(agents).toHaveLength(0)
     expect(existsSync(sessionsFolder())).toBe(false)
@@ -654,8 +654,8 @@ describe("daemon", () => {
   it("stops when the /stop client leaves before the reply", async () => {
     const {d, hubStopping, gate, stoppedCode} = deps(root)
     const finishHubStop = gate("hubStop")
-    daemon = await Daemon.start(d, readDefaultConfig)
-    const connection = serverConnection(daemon)
+    service = await Service.start(d, readDefaultConfig)
+    const connection = serverConnection(service)
     const controller = new AbortController()
     const stopRequest = streamLines(socketPath(root), token, "/stop", undefined, () => undefined, controller.signal).catch(() => undefined)
     await hubStopping
@@ -664,21 +664,21 @@ describe("daemon", () => {
     finishHubStop()
     await stopRequest
     expect(await stoppedCode).toBe(0)
-    daemon = undefined
+    service = undefined
   })
 
   it("stops when its lock file is already gone", async () => {
     const {d, stoppedCode} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     rmSync(lockFile())
-    await daemon.stop()
+    await service.stop()
     expect(await stoppedCode).toBe(0)
-    daemon = undefined
+    service = undefined
   })
 
   it("keeps one session for a Claude Code process whose hooks change the session ID, as after /clear, and after a restart", async () => {
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await post("/title", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})
     await post("/session", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})
     const controller = new AbortController()
@@ -691,16 +691,16 @@ describe("daemon", () => {
     expect(existsSync(sessionFolder(root, id2))).toBe(false)
     controller.abort()
     await attached
-    await daemon.stop()
+    await service.stop()
     const restarted = deps(root)
-    daemon = await Daemon.start(restarted.d, readDefaultConfig)
+    service = await Service.start(restarted.d, readDefaultConfig)
     await post("/turn", {id: id2, answer: "Fixed."})
     expect(restarted.agents).toMatchObject([{number: 1, turns: [{id: id2, answer: "Fixed."}]}])
   })
 
   it("joins the startup ID of a session server to the session of the title from its process, as with --continue", async () => {
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     const registered = post("/session", {id: id2, pid: 200, project: "/p/app", config: defaultConfig})
     await new Promise(resolve => setTimeout(resolve, 50))
     expect(await post("/title", {id: id1, pid: 200, name: "auth", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
@@ -714,7 +714,7 @@ describe("daemon", () => {
   it("passes the hooks of a stored session ID to the session attached from their process without joining the IDs, as after an in-session /resume", async () => {
     storeSession(id2, 7, "older")
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await post("/title", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})
     await post("/session", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})
     const controller = new AbortController()
@@ -726,15 +726,15 @@ describe("daemon", () => {
     expect(readSessionFile(sessionFolder(root, id1))!.aliases).toBeUndefined()
     controller.abort()
     await attached
-    await daemon.stop()
-    daemon = await Daemon.start(deps(root).d, readDefaultConfig)
+    await service.stop()
+    service = await Service.start(deps(root).d, readDefaultConfig)
     expect(await post("/session", {id: id2, pid: 200, project: "/p/app", config: defaultConfig})).toMatchObject({number: 7})
   })
 
   it("joins a new session ID whose title came before its process registered to the stored session of that process, as after /clear during a re-attach", async () => {
     storeSession(id1, 1, "auth")
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     expect(await post("/title", {id: id2, pid: 100, name: "cleared", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
     expect(await post("/session", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
     await turnsUntil(() => readSessionFile(sessionFolder(root, id1))!.aliases !== undefined)
@@ -747,8 +747,8 @@ describe("daemon", () => {
     expect(agents).toMatchObject([{number: 1, turns: [{id: id2, pid: 100, prompt: "Fix the build"}]}])
     controller.abort()
     await attached
-    await daemon.stop()
-    daemon = await Daemon.start(deps(root).d, readDefaultConfig)
+    await service.stop()
+    service = await Service.start(deps(root).d, readDefaultConfig)
     expect(await post("/session", {id: id2, pid: 200, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
   })
 
@@ -757,7 +757,7 @@ describe("daemon", () => {
     storeSession(id1, 1, "auth")
     storeSession(id3, 2, "docs")
     const {d} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     expect(await post("/session", {id: id1, pid: 100, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
     await post("/title", {id: id2, pid: 100, project: "/p/app", config: defaultConfig})
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({aliases: [id2]})
@@ -767,9 +767,9 @@ describe("daemon", () => {
     await turnsUntil(() => readSessionFile(sessionFolder(root, id3))!.aliases !== undefined)
     expect(readSessionFile(sessionFolder(root, id3))).toMatchObject({aliases: [id4]})
     expect(existsSync(sessionFolder(root, id4))).toBe(false)
-    await daemon.stop()
+    await service.stop()
     const restarted = deps(root)
-    daemon = await Daemon.start(restarted.d, readDefaultConfig)
+    service = await Service.start(restarted.d, readDefaultConfig)
     await post("/turn", {id: id4, pid: 200, at: 1, prompt: "Fix the build"})
     expect(restarted.agents).toMatchObject([{number: 2, turns: [{id: id4, pid: 200, at: 1, prompt: "Fix the build"}]}])
   })
@@ -777,7 +777,7 @@ describe("daemon", () => {
   it("holds a second title of a process while the first waits, and joins both new IDs to the session its server registers, as after two /clear during a re-attach", async () => {
     storeSession(id1, 1, "auth")
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await post("/title", {id: id2, pid: 100, name: "first", project: "/p/app", config: defaultConfig})
     await post("/title", {id: id3, pid: 100, name: "second", project: "/p/app", config: defaultConfig})
     expect([sessionFolder(root, id2), sessionFolder(root, id3)].map(existsSync)).toEqual([false, false])
@@ -788,12 +788,12 @@ describe("daemon", () => {
     expect(agents).toHaveLength(1)
   })
 
-  it("keeps a title that waits for its session server across a daemon stop", async () => {
-    daemon = await Daemon.start(deps(root).d, readDefaultConfig)
+  it("keeps a title that waits for its session server across a service stop", async () => {
+    service = await Service.start(deps(root).d, readDefaultConfig)
     expect(await post("/title", {id: id1, pid: 300, name: "docs", model: "claude-opus-5", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
-    await daemon.stop()
+    await service.stop()
     const restarted = deps(root)
-    daemon = await Daemon.start(restarted.d, readDefaultConfig)
+    service = await Service.start(restarted.d, readDefaultConfig)
     expect(existsSync(join(root, "titles.json"))).toBe(false)
     expect(await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1, displayName: "1 · docs"})
     await turnsUntil(() => restarted.agents[0].turns.length === 1)
@@ -802,7 +802,7 @@ describe("daemon", () => {
 
   it("keeps the fields written to session.json while a title renames the session", async () => {
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await register(id1)
     const renaming = deferred()
     const rename = jest.fn(() => renaming.promise)
@@ -819,10 +819,10 @@ describe("daemon", () => {
   it("starts its own session for a server whose process sends no title in 10 seconds, and 10 seconds after a title from a process whose session left over 10 seconds ago", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     let registered: unknown
     post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig}).then(reply => (registered = reply))
-    await turnsUntil(() => daemon!["titled"].listenerCount("300") === 1)
+    await turnsUntil(() => service!["titled"].listenerCount("300") === 1)
     await jest.advanceTimersByTimeAsync(9_999)
     expect(registered).toBeUndefined()
     await jest.advanceTimersByTimeAsync(1)
@@ -849,14 +849,14 @@ describe("daemon", () => {
     const pid = Number(recordedRun("claude-vscode", "SessionStart").env.CLAUDE_PID)
     expect(pid).toBe(ppid)
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     const unattended = {id: id1, pid, project: "/p/app", config: defaultConfig, unattended: true}
     expect(await post("/title", unattended)).toEqual(titleReply)
     const started = Date.now()
     await expect(post("/session", {id: id2, pid, project: "/p/app", config: defaultConfig})).rejects.toMatchObject({status: 403})
     expect(Date.now() - started).toBeLessThan(5_000)
     const early = post("/session", {id: id3, pid: pid + 1, project: "/p/app", config: defaultConfig}).catch(error => error)
-    await turnsUntil(() => daemon!["titled"].listenerCount(String(pid + 1)) === 1)
+    await turnsUntil(() => service!["titled"].listenerCount(String(pid + 1)) === 1)
     await post("/title", {...unattended, pid: pid + 1})
     expect(await early).toMatchObject({status: 403})
     expect(agents).toHaveLength(0)
@@ -866,17 +866,17 @@ describe("daemon", () => {
   it("forgets the marks of unattended runs once they are 10 seconds old", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     const mark = (pid: number) => post("/title", {id: id1, pid, project: "/p/app", config: defaultConfig, unattended: true})
     await mark(400)
     await jest.advanceTimersByTimeAsync(10_001)
     await mark(401)
-    expect([...daemon!["unattended"].keys()]).toEqual([401])
+    expect([...service!["unattended"].keys()]).toEqual([401])
   })
 
   it.each(["/session", "/title"])("answers 400 to %s with an invalid config", async route => {
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     for (const config of [undefined, {...defaultConfig, mainGroup: undefined}, {...defaultConfig, approve: "always"}, {...defaultConfig, expireHours: "23"}, {...defaultConfig, expireHours: 24}]) {
       await expect(post(route, {id: id1, project: "/p/app", config})).rejects.toMatchObject({message: "Invalid config.", status: 400})
     }
@@ -886,17 +886,17 @@ describe("daemon", () => {
   it("trims its log every hour while it runs", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, busy} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await register(id1)
     busy.add(1)
-    writeFileSync(join(root, "daemon.log"), "x".repeat(10 * 1_048_576 + 1))
+    writeFileSync(join(root, "service.log"), "x".repeat(10 * 1_048_576 + 1))
     await jest.advanceTimersByTimeAsync(60 * minutes)
-    expect(readFileSync(join(root, "daemon.log"), "utf8")).toBe("")
+    expect(readFileSync(join(root, "service.log"), "utf8")).toBe("")
   })
 
   it("reports status without the Main group link, the link on its own route, resets owners and stops on request", async () => {
     const {d, hubStops, stoppedCode} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
+    service = await Service.start(d, readDefaultConfig)
     await register(id1)
     expect(await requestJson(socketPath(root), token, "GET", "/status")).toEqual({
       version: "0.2.0",
@@ -911,14 +911,14 @@ describe("daemon", () => {
     expect(hubStops).toEqual([1])
     expect(existsSync(lockFile())).toBe(false)
     expect(await stoppedCode).toBe(0)
-    daemon = undefined
+    service = undefined
   })
 })
 
-describe("runDaemon", () => {
+describe("runService", () => {
   let other: Server | undefined
   const answering = async (): Promise<void> => {
-    other = await socket.listen(socketPath(root), daemonToken(root), {})
+    other = await socket.listen(socketPath(root), serviceToken(root), {})
   }
 
   afterEach(async () => {
@@ -926,11 +926,11 @@ describe("runDaemon", () => {
     other = undefined
   })
 
-  it("reports running when another daemon holds the lock", async () => {
+  it("reports running when another service holds the lock", async () => {
     await answering()
     writeFileSync(lockFile(), `${process.ppid}\n`)
     const write = jest.spyOn(process.stdout, "write").mockImplementation(() => true)
-    await runDaemon({SIMPLEX_MCP_HOME: root})
+    await runService({SIMPLEX_MCP_HOME: root})
     expect(write.mock.calls).toEqual([["running\n"]])
     expect(readFileSync(lockFile(), "utf8")).toBe(`${process.ppid}\n`)
   })
@@ -942,16 +942,16 @@ describe("runDaemon", () => {
     const exit = jest.spyOn(process, "exit").mockImplementation(() => {
       throw exited
     })
-    await expect(runDaemon({SIMPLEX_MCP_HOME: root}, 10)).rejects.toBe(exited)
+    await expect(runService({SIMPLEX_MCP_HOME: root}, 10)).rejects.toBe(exited)
     expect(exit).toHaveBeenCalledWith(1)
-    expect(write.mock.calls).toEqual([[`error: Another daemon uses ${root} (PID ${process.ppid}). If no daemon runs, remove ${lockFile()}.\n`]])
+    expect(write.mock.calls).toEqual([[`error: Another service uses ${root} (PID ${process.ppid}). If no service runs, remove ${lockFile()}.\n`]])
     expect(readFileSync(lockFile(), "utf8")).toBe(`${process.ppid}\n`)
   })
 
-  it("waits for a daemon that is stopping to release the lock, and starts then", async () => {
+  it("waits for a service that is stopping to release the lock, and starts then", async () => {
     const {d, gate, hubStopping} = deps(root)
     const releaseStop = gate("hubStop")
-    const stopping = await Daemon.start(d, readDefaultConfig)
+    const stopping = await Service.start(d, readDefaultConfig)
     writeFileSync(lockFile(), `${process.ppid}\n`)
     const stopped = stopping.stop()
     await hubStopping
@@ -960,10 +960,10 @@ describe("runDaemon", () => {
     jest.spyOn(process, "exit").mockImplementation(() => {
       throw exited
     })
-    const run = runDaemon({SIMPLEX_MCP_HOME: root}).catch(error => error)
+    const run = runService({SIMPLEX_MCP_HOME: root}).catch(error => error)
     await new Promise(resolve => setTimeout(resolve, 2_000))
     expect(write).not.toHaveBeenCalled()
-    jest.spyOn(Daemon, "start").mockRejectedValue(new Error("started again"))
+    jest.spyOn(Service, "start").mockRejectedValue(new Error("started again"))
     releaseStop()
     await stopped
     expect(await run).toBe(exited)
@@ -974,7 +974,7 @@ describe("runDaemon", () => {
     await answering()
     writeFileSync(lockFile(), `${process.ppid}\n`)
     const write = jest.spyOn(process.stdout, "write").mockImplementation(() => true)
-    await runDaemon({SIMPLEX_MCP_HOME: root, CLAUDE_PLUGIN_OPTION_APPROVE: "always"})
+    await runService({SIMPLEX_MCP_HOME: root, CLAUDE_PLUGIN_OPTION_APPROVE: "always"})
     expect(write.mock.calls).toEqual([["running\n"]])
   })
 
@@ -985,7 +985,7 @@ describe("runDaemon", () => {
     const fd = openSync(readyFile, "w")
     const write = jest.spyOn(process.stdout, "write").mockImplementation(() => true)
     try {
-      await runDaemon({SIMPLEX_MCP_HOME: root, SIMPLEX_MCP_READY_FD: String(fd)})
+      await runService({SIMPLEX_MCP_HOME: root, SIMPLEX_MCP_READY_FD: String(fd)})
     } finally {
       closeSync(fd)
     }
@@ -999,7 +999,7 @@ describe("runDaemon", () => {
     const exit = jest.spyOn(process, "exit").mockImplementation(() => {
       throw exited
     })
-    await expect(runDaemon({SIMPLEX_MCP_HOME: root, CLAUDE_PLUGIN_OPTION_APPROVE: "always"})).rejects.toBe(exited)
+    await expect(runService({SIMPLEX_MCP_HOME: root, CLAUDE_PLUGIN_OPTION_APPROVE: "always"})).rejects.toBe(exited)
     expect(exit).toHaveBeenCalledWith(1)
     expect(write.mock.calls).toEqual([["error: Plugin option approve: requests or host expected, got always. Change it in /plugin > Installed > simplex > Configure options.\n"]])
     expect(existsSync(lockFile())).toBe(false)

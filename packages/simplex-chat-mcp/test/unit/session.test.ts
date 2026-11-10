@@ -4,8 +4,8 @@ import {Server, ServerResponse} from "http"
 import {tmpdir} from "os"
 import {join} from "path"
 import {PassThrough} from "stream"
-import {DaemonClient, SpawnDaemon} from "../../src/client"
-import {daemonToken, socketPath} from "../../src/files"
+import {ServiceClient, SpawnService} from "../../src/client"
+import {serviceToken, socketPath} from "../../src/files"
 import {ExitError} from "../../src/log"
 import {protocolVersion} from "../../src/protocol"
 import {startSession} from "../../src/session"
@@ -14,20 +14,20 @@ import {LineClient, closeServer, recordedRun, until} from "./fixtures"
 
 const id = "11111111-1111-4111-8111-111111111111"
 const unknownSession = "Unknown session; restart the Claude Code session."
-const stoppedResult = {content: [{type: "text", text: "The SimpleX daemon stopped; repeat the call."}], isError: true}
+const stoppedResult = {content: [{type: "text", text: "The SimpleX service stopped; repeat the call."}], isError: true}
 let root: string
 let server: Server | undefined
 const seen: string[] = []
 let statuses = 0
-const daemon = new EventEmitter()
+const service = new EventEmitter()
 
 type OnCall = (res: ServerResponse, n: number) => Promise<void>
 
 const attachLine = (res: ServerResponse): void => startLines(res)({version: "0.2.0", protocol: protocolVersion})
 
-async function fakeDaemon(onCall: OnCall, onAttach: (res: ServerResponse) => void = attachLine, protocol = protocolVersion, sessionRefusal?: SocketError): Promise<void> {
+async function fakeService(onCall: OnCall, onAttach: (res: ServerResponse) => void = attachLine, protocol = protocolVersion, sessionRefusal?: SocketError): Promise<void> {
   let calls = 0
-  server = await listen(socketPath(root), daemonToken(root), {
+  server = await listen(socketPath(root), serviceToken(root), {
     "GET /status": async (_b, res) => {
       statuses++
       sendJson(res, 200, {version: "0.2.0", protocol, mainGroup: "SimpleX MCP", owner: {owners: ["Alice"]}, sessions: []})
@@ -40,11 +40,11 @@ async function fakeDaemon(onCall: OnCall, onAttach: (res: ServerResponse) => voi
     "POST /attach": async (_b, res) => {
       seen.push("attach")
       onAttach(res)
-      daemon.emit("attach", res)
+      service.emit("attach", res)
     },
     "POST /call": async (body, res) => {
       seen.push(`call ${(body as {tool: string}).tool}`)
-      daemon.emit("call", res)
+      service.emit("call", res)
       await onCall(res, ++calls)
     },
     "POST /permission": async (body, res) => {
@@ -64,10 +64,10 @@ function next(event: "attach" | "call", count = 1): Promise<ServerResponse[]> {
     const onEvent = (res: ServerResponse): void => {
       received.push(res)
       if (received.length < count) return
-      daemon.off(event, onEvent)
+      service.off(event, onEvent)
       resolve(received)
     }
-    daemon.on(event, onEvent)
+    service.on(event, onEvent)
   })
 }
 
@@ -77,13 +77,13 @@ function captureStderr(): string[] {
   return errors
 }
 
-const noSpawn: SpawnDaemon = async () => undefined
+const noSpawn: SpawnService = async () => undefined
 
-async function session(env: NodeJS.ProcessEnv = {}, spawnDaemon: SpawnDaemon = noSpawn): Promise<{client: LineClient; stdin: PassThrough}> {
+async function session(env: NodeJS.ProcessEnv = {}, spawnService: SpawnService = noSpawn): Promise<{client: LineClient; stdin: PassThrough}> {
   const stdin = new PassThrough()
   const stdout = new PassThrough()
   stdins.push(stdin)
-  await startSession({CLAUDE_CODE_SESSION_ID: id, CLAUDE_PROJECT_DIR: "/p/app", SIMPLEX_MCP_HOME: root, ...env}, {stdin, stdout, spawnDaemon, version: "0.2.0"})
+  await startSession({CLAUDE_CODE_SESSION_ID: id, CLAUDE_PROJECT_DIR: "/p/app", SIMPLEX_MCP_HOME: root, ...env}, {stdin, stdout, spawnService, version: "0.2.0"})
   const client = new LineClient(stdin, stdout)
   await client.initialize()
   return {client, stdin}
@@ -102,7 +102,7 @@ beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), "simplex-mcp-session-"))
   seen.length = 0
   statuses = 0
-  DaemonClient.forRoot(root)
+  ServiceClient.forRoot(root)
 })
 
 afterEach(async () => {
@@ -110,20 +110,20 @@ afterEach(async () => {
   await new Promise(resolve => setImmediate(resolve))
   if (server) await closeServer(server)
   server = undefined
-  daemon.removeAllListeners()
+  service.removeAllListeners()
   jest.restoreAllMocks()
   rmSync(root, {recursive: true, force: true})
 })
 
 describe("session server", () => {
   it("refuses to run outside the plugin", async () => {
-    const io = {stdin: new PassThrough(), stdout: new PassThrough(), spawnDaemon: noSpawn, version: "0.2.0"}
+    const io = {stdin: new PassThrough(), stdout: new PassThrough(), spawnService: noSpawn, version: "0.2.0"}
     await expect(startSession({SIMPLEX_MCP_HOME: root}, io)).rejects.toEqual(new ExitError("simplex-mcp session runs from the Claude Code plugin.", 2))
     await expect(startSession({SIMPLEX_MCP_HOME: root, CLAUDE_CODE_SESSION_ID: "x"}, io)).rejects.toEqual(new ExitError("Not a Claude Code session ID: x", 2))
   })
 
-  it("answers every call with an invalid plugin option, without the daemon", async () => {
-    await fakeDaemon(async res => endWithResult(res, listResult))
+  it("answers every call with an invalid plugin option, without the service", async () => {
+    await fakeService(async res => endWithResult(res, listResult))
     const {client} = await session({CLAUDE_PLUGIN_OPTION_APPROVE: "x"})
     const error = {content: [{type: "text", text: "Plugin option approve: requests or host expected, got x. Change it in /plugin > Installed > simplex > Configure options."}], isError: true}
     expect((await listCall(client)).result).toEqual(error)
@@ -131,8 +131,8 @@ describe("session server", () => {
     expect(seen).toEqual([])
   })
 
-  it("answers every call of a non-interactive run, as with claude -p, without the daemon", async () => {
-    await fakeDaemon(async res => endWithResult(res, listResult))
+  it("answers every call of a non-interactive run, as with claude -p, without the service", async () => {
+    await fakeService(async res => endWithResult(res, listResult))
     const spawn = jest.fn(noSpawn)
     const {client} = await session({CLAUDE_CODE_ENTRYPOINT: "sdk-cli"}, spawn)
     const refused = {content: [{type: "text", text: "This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions."}], isError: true}
@@ -143,8 +143,8 @@ describe("session server", () => {
     expect(spawn).not.toHaveBeenCalled()
   })
 
-  it("relays no permission request without the daemon in a non-interactive run or with an invalid plugin option", async () => {
-    await fakeDaemon(async res => endWithResult(res, listResult))
+  it("relays no permission request without the service in a non-interactive run or with an invalid plugin option", async () => {
+    await fakeService(async res => endWithResult(res, listResult))
     const spawn = jest.fn(noSpawn)
     for (const env of [{CLAUDE_CODE_ENTRYPOINT: "sdk-cli"}, {CLAUDE_PLUGIN_OPTION_APPROVE: "x"}]) {
       const {client} = await session(env, spawn)
@@ -157,8 +157,8 @@ describe("session server", () => {
     expect(spawn).not.toHaveBeenCalled()
   })
 
-  it("answers every call without the daemon in a run whose environment marks it unattended, and in claude -p under the mark of the attended session that started it", async () => {
-    await fakeDaemon(async res => endWithResult(res, listResult))
+  it("answers every call without the service in a run whose environment marks it unattended, and in claude -p under the mark of the attended session that started it", async () => {
+    await fakeService(async res => endWithResult(res, listResult))
     const spawn = jest.fn(noSpawn)
     const refused = {content: [{type: "text", text: "This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions."}], isError: true}
     for (const env of [{CLAUDE_CODE_ENTRYPOINT: "claude-vscode", CLAUDE_CODE_SESSION_ATTENDED: "0"}, {CLAUDE_CODE_ENTRYPOINT: "sdk-cli", CLAUDE_CODE_SESSION_ATTENDED: "1"}]) {
@@ -170,8 +170,8 @@ describe("session server", () => {
     expect(spawn).not.toHaveBeenCalled()
   })
 
-  it("answers every call with the text of a run that is not interactive, and registers no more, after the daemon refuses its process as marked unattended, as the server of a claude -p run started by a command of a VS Code session, with the session's environment", async () => {
-    await fakeDaemon(async res => endWithResult(res, listResult), attachLine, protocolVersion, new SocketError("marked unattended", 403))
+  it("answers every call with the text of a run that is not interactive, and registers no more, after the service refuses its process as marked unattended, as the server of a claude -p run started by a command of a VS Code session, with the session's environment", async () => {
+    await fakeService(async res => endWithResult(res, listResult), attachLine, protocolVersion, new SocketError("marked unattended", 403))
     const errors = captureStderr()
     const {env} = recordedRun("claude-vscode", "mcp")
     const {client} = await session(env)
@@ -186,11 +186,11 @@ describe("session server", () => {
   })
 
   it("answers server/discover with Method not found and negotiates the revision 2025-11-25, as Claude Code 2.1.319 registers a channel only outside the modern MCP era", async () => {
-    await fakeDaemon(async res => endWithResult(res, listResult))
+    await fakeService(async res => endWithResult(res, listResult))
     const stdin = new PassThrough()
     const stdout = new PassThrough()
     stdins.push(stdin)
-    await startSession({CLAUDE_CODE_SESSION_ID: id, CLAUDE_PROJECT_DIR: "/p/app", SIMPLEX_MCP_HOME: root}, {stdin, stdout, spawnDaemon: noSpawn, version: "0.2.0"})
+    await startSession({CLAUDE_CODE_SESSION_ID: id, CLAUDE_PROJECT_DIR: "/p/app", SIMPLEX_MCP_HOME: root}, {stdin, stdout, spawnService: noSpawn, version: "0.2.0"})
     const client = new LineClient(stdin, stdout)
     const clientInfo = {name: "claude-code", title: "Claude Code", version: "2.1.319"}
     const discovered = await client.request("server/discover", {_meta: {"io.modelcontextprotocol/protocolVersion": "2026-07-28", "io.modelcontextprotocol/clientInfo": clientInfo, "io.modelcontextprotocol/clientCapabilities": {roots: {listChanged: true}, elicitation: {form: {}, url: {}}, extensions: {"io.modelcontextprotocol/tasks": {}}}}})
@@ -199,7 +199,7 @@ describe("session server", () => {
     expect(initialized.result).toMatchObject({protocolVersion: "2025-11-25", capabilities: {experimental: {"claude/channel": {}, "claude/channel/permission": {}}}})
   })
 
-  it("lists tools while the daemon is still starting", async () => {
+  it("lists tools while the service is still starting", async () => {
     let spawned!: () => void
     const spawning = new Promise<void>(resolve => (spawned = resolve))
     const pending = new Promise<void>(() => undefined)
@@ -209,16 +209,16 @@ describe("session server", () => {
     expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave", "reply"])
   })
 
-  it("is a channel: it passes prompts and verdicts of the daemon to Claude Code, and permission requests to the daemon", async () => {
+  it("is a channel: it passes prompts and verdicts of the service to Claude Code, and permission requests to the service", async () => {
     const attached = next("attach")
-    await fakeDaemon(async res => endWithResult(res, listResult), res => {
+    await fakeService(async res => endWithResult(res, listResult), res => {
       attachLine(res)
       res.write(`${JSON.stringify({prompt: {text: "Fix the build", from: "Alice", item: 41, file: "/r/files/group/7_log.txt"}})}\n`)
     })
     const stdin = new PassThrough()
     const stdout = new PassThrough()
     stdins.push(stdin)
-    await startSession({CLAUDE_CODE_SESSION_ID: id, CLAUDE_PROJECT_DIR: "/p/app", SIMPLEX_MCP_HOME: root}, {stdin, stdout, spawnDaemon: noSpawn, version: "0.2.0"})
+    await startSession({CLAUDE_CODE_SESSION_ID: id, CLAUDE_PROJECT_DIR: "/p/app", SIMPLEX_MCP_HOME: root}, {stdin, stdout, spawnService: noSpawn, version: "0.2.0"})
     const client = new LineClient(stdin, stdout)
     const initialized = await client.initialize()
     expect(initialized.capabilities.experimental).toEqual({"claude/channel": {}, "claude/channel/permission": {}})
@@ -238,7 +238,7 @@ describe("session server", () => {
   })
 
   it("registers, attaches and forwards a call with progress", async () => {
-    await fakeDaemon(async res => {
+    await fakeService(async res => {
       startLines(res)({progress: "Action 1 waits for an approver until 10:00 UTC."})
       endWithResult(res, listResult)
     })
@@ -252,20 +252,20 @@ describe("session server", () => {
   })
 
   it("uses the working folder as the project without CLAUDE_PROJECT_DIR", async () => {
-    await fakeDaemon(async res => endWithResult(res, listResult))
+    await fakeService(async res => endWithResult(res, listResult))
     const {client} = await session({CLAUDE_PROJECT_DIR: ""})
     await listCall(client)
     expect(JSON.parse(seen[0].slice("session ".length)).project).toBe(process.cwd())
   })
 
-  it("returns the cancelled result when the daemon reports a cancelled call", async () => {
-    await fakeDaemon(async res => endWithResult(res, null))
+  it("returns the cancelled result when the service reports a cancelled call", async () => {
+    await fakeService(async res => endWithResult(res, null))
     const {client} = await session()
     expect((await listCall(client)).result).toEqual({content: [{type: "text", text: "Cancelled."}], isError: true})
   })
 
-  it("reports a daemon that stopped during a call, and reconnects for the next one", async () => {
-    await fakeDaemon(async (res, n) => {
+  it("reports a service that stopped during a call, and reconnects for the next one", async () => {
+    await fakeService(async (res, n) => {
       if (n === 1) res.destroy()
       else endWithResult(res, listResult)
     })
@@ -275,8 +275,8 @@ describe("session server", () => {
     expect(seen).toEqual([registered, "attach", "call list", registered, "attach", "call list"])
   })
 
-  it("reports a call stream that ends without a result as a stopped daemon", async () => {
-    await fakeDaemon(async res => {
+  it("reports a call stream that ends without a result as a stopped service", async () => {
+    await fakeService(async res => {
       startLines(res)({progress: "waiting"})
       res.end()
     })
@@ -284,8 +284,8 @@ describe("session server", () => {
     expect((await listCall(client)).result).toEqual(stoppedResult)
   })
 
-  it("registers again and repeats a call the daemon refused for an unknown session", async () => {
-    await fakeDaemon(async (res, n) => {
+  it("registers again and repeats a call the service refused for an unknown session", async () => {
+    await fakeService(async (res, n) => {
       if (n === 1) throw new SocketError(unknownSession, 409)
       endWithResult(res, listResult)
     })
@@ -295,7 +295,7 @@ describe("session server", () => {
   })
 
   it("returns the unknown session error when the repeated call is refused too", async () => {
-    await fakeDaemon(async () => {
+    await fakeService(async () => {
       throw new SocketError(unknownSession, 409)
     })
     const {client} = await session()
@@ -303,9 +303,9 @@ describe("session server", () => {
     expect(seen).toEqual([registered, "attach", "call list", registered, "attach", "call list"])
   })
 
-  it("reports a stopping daemon as stopped, and reconnects for the next call", async () => {
-    await fakeDaemon(async (res, n) => {
-      if (n === 1) throw new SocketError("The SimpleX daemon is stopping.", 503)
+  it("reports a stopping service as stopped, and reconnects for the next call", async () => {
+    await fakeService(async (res, n) => {
+      if (n === 1) throw new SocketError("The SimpleX service is stopping.", 503)
       endWithResult(res, listResult)
     })
     const {client} = await session()
@@ -314,8 +314,8 @@ describe("session server", () => {
     expect(seen).toEqual([registered, "attach", "call list", registered, "attach", "call list"])
   })
 
-  it("returns any other daemon error as the tool error", async () => {
-    await fakeDaemon(async () => {
+  it("returns any other service error as the tool error", async () => {
+    await fakeService(async () => {
       throw new SocketError("Session 1 is closed.", 500)
     })
     const {client} = await session()
@@ -323,7 +323,7 @@ describe("session server", () => {
   })
 
   it("reconnects after /attach ends with no call in flight", async () => {
-    await fakeDaemon(async res => endWithResult(res, listResult))
+    await fakeService(async res => endWithResult(res, listResult))
     const attached = next("attach")
     const {client} = await session()
     const [res] = await attached
@@ -331,13 +331,13 @@ describe("session server", () => {
     const closed = once(res, "close")
     res.destroy()
     await closed
-    await DaemonClient.forRoot(root).request("GET", "/status")
+    await ServiceClient.forRoot(root).request("GET", "/status")
     expect((await listCall(client)).result).toEqual(listResult)
     expect(seen).toEqual([registered, "attach", "call list", registered, "attach", "call list"])
   })
 
   it("attaches again after /attach ends, without a call", async () => {
-    await fakeDaemon(async res => endWithResult(res, listResult), res => {
+    await fakeService(async res => endWithResult(res, listResult), res => {
       attachLine(res)
       res.write(`${JSON.stringify({prompt: {text: "Fix the build", from: "Alice", item: 41}})}\n`)
     })
@@ -351,52 +351,52 @@ describe("session server", () => {
     expect(seen).toEqual([registered, "attach", registered, "attach"])
   })
 
-  it("attaches once the daemon is back after a failed start, without a call", async () => {
+  it("attaches once the service is back after a failed start, without a call", async () => {
     const errors = captureStderr()
     await session()
     await until(() => errors.length === 1)
     const attached = next("attach")
-    await fakeDaemon(async res => endWithResult(res, listResult))
+    await fakeService(async res => endWithResult(res, listResult))
     await attached
     expect(seen).toEqual([registered, "attach"])
   })
 
-  it("attaches once the daemon answers after a start that reported a failure, without a call", async () => {
+  it("attaches once the service answers after a start that reported a failure, without a call", async () => {
     const errors = captureStderr()
     await session({}, async () => {
-      throw new ExitError("The SimpleX daemon did not start in 5 minutes.", 1)
+      throw new ExitError("The SimpleX service did not start in 5 minutes.", 1)
     })
     await until(() => errors.length === 1)
     const attached = next("attach")
-    await fakeDaemon(async res => endWithResult(res, listResult))
+    await fakeService(async res => endWithResult(res, listResult))
     await attached
     expect(seen).toEqual([registered, "attach"])
   })
 
   it("waits twice as long before each new attempt when /attach fails before its first line", async () => {
     captureStderr()
-    await fakeDaemon(async res => endWithResult(res, listResult), res => res.destroy())
+    await fakeService(async res => endWithResult(res, listResult), res => res.destroy())
     await session()
     await new Promise(resolve => setTimeout(resolve, 3_600))
     expect(seen).toEqual([registered, "attach", registered, "attach", registered, "attach"])
   })
 
-  it("stops attaching when the daemon speaks another protocol", async () => {
+  it("stops attaching when the service speaks another protocol", async () => {
     const errors = captureStderr()
-    await fakeDaemon(async res => endWithResult(res, listResult), attachLine, protocolVersion + 1)
+    await fakeService(async res => endWithResult(res, listResult), attachLine, protocolVersion + 1)
     await session()
     await until(() => errors.length === 1)
     await new Promise(resolve => setTimeout(resolve, 1_500))
     expect(statuses).toBe(1)
-    expect(errors).toEqual(["SimpleX daemon: Restart Claude Code to update the SimpleX plugin."])
+    expect(errors).toEqual(["SimpleX service: Restart Claude Code to update the SimpleX plugin."])
   })
 
   it("keeps a newer connection when an older call fails after it", async () => {
-    await fakeDaemon(async (res, n) => {
+    await fakeService(async (res, n) => {
       if (n > 2) endWithResult(res, listResult)
     })
     const attaches: ServerResponse[] = []
-    daemon.on("attach", res => attaches.push(res))
+    service.on("attach", res => attaches.push(res))
     const {client} = await session()
     const held = next("call", 2)
     const first = listCall(client)
@@ -415,21 +415,21 @@ describe("session server", () => {
   it("logs a failed background start and returns the error to the next call", async () => {
     const errors = captureStderr()
     const {client} = await session({}, async () => {
-      throw new ExitError("The SimpleX daemon did not start in 5 minutes.", 1)
+      throw new ExitError("The SimpleX service did not start in 5 minutes.", 1)
     })
-    expect((await listCall(client)).result).toEqual({content: [{type: "text", text: "The SimpleX daemon did not start in 5 minutes."}], isError: true})
-    expect(errors).toEqual(["SimpleX daemon: The SimpleX daemon did not start in 5 minutes."])
+    expect((await listCall(client)).result).toEqual({content: [{type: "text", text: "The SimpleX service did not start in 5 minutes."}], isError: true})
+    expect(errors).toEqual(["SimpleX service: The SimpleX service did not start in 5 minutes."])
   })
 
-  it("reports a daemon that is gone after the start as stopped", async () => {
+  it("reports a service that is gone after the start as stopped", async () => {
     const errors = captureStderr()
     const {client} = await session()
     expect((await listCall(client)).result).toEqual(stoppedResult)
-    expect(errors).toEqual([expect.stringMatching(/^SimpleX daemon: .*connect ENOENT /)])
+    expect(errors).toEqual([expect.stringMatching(/^SimpleX service: .*connect ENOENT /)])
   })
 
   it("aborts the forwarded call when the client cancels", async () => {
-    await fakeDaemon(async res => {
+    await fakeService(async res => {
       startLines(res)({progress: "waiting"})
     })
     const {client} = await session()
@@ -442,7 +442,7 @@ describe("session server", () => {
   })
 
   it("releases /attach when stdin closes", async () => {
-    await fakeDaemon(async res => endWithResult(res, listResult))
+    await fakeService(async res => endWithResult(res, listResult))
     const attached = next("attach")
     const {client, stdin} = await session()
     const [res] = await attached
@@ -454,7 +454,7 @@ describe("session server", () => {
 
   it("logs nothing when stdin closes while /attach is opening", async () => {
     const errors = captureStderr()
-    await fakeDaemon(async res => endWithResult(res, listResult), () => undefined)
+    await fakeService(async res => endWithResult(res, listResult), () => undefined)
     const attached = next("attach")
     const {stdin} = await session()
     const [res] = await attached

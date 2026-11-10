@@ -25,7 +25,7 @@ A tool call is held open by the server until the owner decides and, for `connect
 
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
-The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server, which forwards tool calls over a local socket to one daemon per data root, `simplex-mcp daemon`. The socket carries HTTP/1.1 with a bearer token. The daemon runs two cores: `Claude`, the profile peers see, which holds the Main group, one group per session and the chats with peers; and `User`, a member of every session group, which posts the prompts typed in the terminal.
+The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server, which forwards tool calls over a local socket to one service per data root, `simplex-mcp service`. The socket carries HTTP/1.1 with a bearer token. The service runs two cores: `Claude`, the profile peers see, which holds the Main group, one group per session and the chats with peers; and `User`, a member of every session group, which posts the prompts typed in the terminal.
 
 Each session has the six tools and `reply`, its own `Actions` and `Control` in its group, and its own chats: a chat belongs to the session that connected it, and owners move it with `/give`. Every member of the Main group is trusted with all sessions: owners are invited to each session group through the Main group as owners, and every member joins one through it by `/join N` as an admin. Rights in a session group follow the member's role there, whatever way they joined: admins and owners prompt, approve and send the group's `/` commands and `//` and `/!` commands; moderators, members and authors prompt, and each of their `/` commands gets one refusal; Claude posts the member's rights at each join and role change, and members with the role admin or owner make others observers by `/observer #G ID`. Claude's files of `reply` reach a session group at once, under the group's preference for files and media, which the core enforces. The session server is also a Claude Code channel: a message of a member other than `User` in the session group reaches the running session as a prompt, `//` and `/!` of admins and owners sending `/` and `!` commands, and Claude Code's permission prompts are posted there as cards. The plugin's hooks post the terminal prompts and the final answer of each turn in the group, and keep the model and effort level in its short description.
 
@@ -40,7 +40,7 @@ graph TD
   cli["cli.ts"] --> serve["serve.ts"]
   cli --> register["register.ts"]
   cli --> session["session.ts"]
-  cli --> daemon["daemon.ts"]
+  cli --> service["service.ts"]
   cli --> hook["hook.ts"]
   cli --> owner["owner.ts"]
   cli --> messages["messages.ts"]
@@ -64,16 +64,16 @@ graph TD
   session --> version
   session -.-> protocol["protocol.ts"]
   session -.-> messages
-  daemon --> hub["hub.ts"]
-  daemon --> config
-  daemon --> socket
-  daemon --> files
-  daemon --> protocol
-  daemon --> log
-  daemon --> version
-  daemon -.-> actions
-  daemon -.-> tools
-  daemon -.-> messages
+  service --> hub["hub.ts"]
+  service --> config
+  service --> socket
+  service --> files
+  service --> protocol
+  service --> log
+  service --> version
+  service -.-> actions
+  service -.-> tools
+  service -.-> messages
   hub --> mainGroup["main-group.ts"]
   hub --> user["user.ts"]
   hub --> control
@@ -163,15 +163,15 @@ graph TD
 | [`control.ts`](../src/control.ts) | agent control chat and session groups: link, owners, owner commands, cards, counter |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
 | [`core.ts`](../src/core.ts) | one SimpleX core: init, user, network config, temp folder, event buffer, profile update |
-| [`files.ts`](../src/files.ts) | data folders, lock, token, `headers.json`, `server.json`, session folders, socket path, daemon log |
+| [`files.ts`](../src/files.ts) | data folders, lock, token, `headers.json`, `server.json`, session folders, socket path, service log |
 | [`log.ts`](../src/log.ts) | log lines, error texts, shell quoting |
 | [`qr.ts`](../src/qr.ts) | QR code text: `small` and `large` for terminals, `plain` for the hook message |
 | [`version.ts`](../src/version.ts) | package version from `package.json` |
-| [`session.ts`](../src/session.ts) | plugin: stdio MCP server of one Claude Code session, its channel, the forward of calls to the daemon |
-| [`client.ts`](../src/client.ts) | plugin: daemon client, version check, spawn |
+| [`session.ts`](../src/session.ts) | plugin: stdio MCP server of one Claude Code session, its channel, the forward of calls to the service |
+| [`client.ts`](../src/client.ts) | plugin: service client, version check, spawn |
 | [`socket.ts`](../src/socket.ts) | plugin: HTTP over the local socket, token check, JSON and NDJSON |
 | [`protocol.ts`](../src/protocol.ts) | plugin: request and reply types of the socket routes, protocol version |
-| [`daemon.ts`](../src/daemon.ts) | plugin: routes, session registry, session IDs of one Claude Code process, attachments, idle close and stop, ready line |
+| [`service.ts`](../src/service.ts) | plugin: routes, session registry, session IDs of one Claude Code process, attachments, idle close and stop, ready line |
 | [`hub.ts`](../src/hub.ts) | plugin: the profile `Claude`, the sessions, their groups, prompts, answers and tool-use cards |
 | [`main-group.ts`](../src/main-group.ts) | plugin: the Main group, its owners, `/sessions`, `/join`, owner reset |
 | [`user.ts`](../src/user.ts) | plugin: the profile `User` |
@@ -211,10 +211,10 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L103) | `createDataFolder`, `acquireLock` | [103](../src/files.ts#L103), [108](../src/files.ts#L108) |
 | Session server | [`src/session.ts`](../src/session.ts#L40) | `startSession` | [40](../src/session.ts#L40) |
-| Session to daemon link | [`src/session.ts`](../src/session.ts#L69) | `DaemonLink` | [69](../src/session.ts#L69) |
-| Daemon start by a client | [`src/client.ts`](../src/client.ts#L35) | `DaemonClient.ensureDaemon` | [35](../src/client.ts#L35) |
-| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L430) | `runDaemon` | [430](../src/daemon.ts#L430) |
-| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L137) | `Daemon.routes` | [137](../src/daemon.ts#L137) |
+| Session to service link | [`src/session.ts`](../src/session.ts#L69) | `ServiceLink` | [69](../src/session.ts#L69) |
+| Service start by a client | [`src/client.ts`](../src/client.ts#L35) | `ServiceClient.ensureService` | [35](../src/client.ts#L35) |
+| Service process | [`src/service.ts`](../src/service.ts#L430) | `runService` | [430](../src/service.ts#L430) |
+| Service routes | [`src/service.ts`](../src/service.ts#L137) | `Service.routes` | [137](../src/service.ts#L137) |
 | Hub | [`src/hub.ts`](../src/hub.ts#L363) | `Hub.open` | [363](../src/hub.ts#L363) |
 | Session and its group | [`src/hub.ts`](../src/hub.ts#L44) | `Session` | [44](../src/hub.ts#L44) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L26) | `MainGroup` | [26](../src/main-group.ts#L26) |

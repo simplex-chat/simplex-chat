@@ -28,7 +28,7 @@ const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+
 const bangText = "Messages starting with ! reach Claude only from admins and owners, as /!command."
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
 
-export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX daemon is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
+export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
 
 export interface StoredSession {
   id: string

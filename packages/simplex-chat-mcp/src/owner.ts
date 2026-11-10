@@ -1,4 +1,4 @@
-import {DaemonClient} from "./client"
+import {ServiceClient} from "./client"
 import {dataRoot} from "./files"
 import {OwnerState, ResetReply} from "./protocol"
 import {qrCodeText} from "./qr"
@@ -20,14 +20,14 @@ export function resetOwnersText(link: string, mainGroup: string, tty: boolean): 
 }
 
 export async function showLink(env: NodeJS.ProcessEnv = process.env, tty = process.stdout.isTTY === true): Promise<string> {
-  const client = DaemonClient.forRoot(dataRoot(env))
-  const {mainGroup, owner} = await client.ensureDaemon(version)
+  const client = ServiceClient.forRoot(dataRoot(env))
+  const {mainGroup, owner} = await client.ensureService(version)
   return linkText({mainGroup, owner: owner.owners.length > 0 ? owner : await client.request<OwnerState>("GET", "/link")}, tty)
 }
 
 export async function resetOwners(env: NodeJS.ProcessEnv = process.env, tty = process.stdout.isTTY === true): Promise<string> {
-  const client = DaemonClient.forRoot(dataRoot(env))
-  const {mainGroup} = await client.ensureDaemon(version)
+  const client = ServiceClient.forRoot(dataRoot(env))
+  const {mainGroup} = await client.ensureService(version)
   const {link} = await client.request<ResetReply>("POST", "/reset-owners")
   return resetOwnersText(link, mainGroup, tty)
 }

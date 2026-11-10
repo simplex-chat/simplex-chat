@@ -695,7 +695,7 @@ describe("actions of several sessions", () => {
     expect(() => createIn(lost, 1, "requests", "k", sendFields())).toThrow(new ToolError("The group of this session is lost. Start a new Claude Code session."))
     const stopped = new Actions("requests", 23, 1, fakeHooks().hooks, hubTexts)
     await stopped.stop()
-    expect(() => createIn(stopped, 1, "requests", "k", sendFields())).toThrow(new ToolError("The SimpleX daemon is stopping."))
+    expect(() => createIn(stopped, 1, "requests", "k", sendFields())).toThrow(new ToolError("The SimpleX service is stopping."))
     const full = new Actions("requests", 23, 1, fakeHooks().hooks, hubTexts)
     for (let i = 0; i < 20; i++) createIn(full, 1, "requests", `k${i}`, sendFields())
     expect(() => createIn(full, 1, "requests", "k20", sendFields())).toThrow(new ToolError("20 actions are pending; wait for the approvers' decisions."))

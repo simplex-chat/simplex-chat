@@ -74,18 +74,18 @@ export function storedSessions(root: string): {id: string; session: SessionFile}
 export function socketPath(root: string, platform: NodeJS.Platform = process.platform): string {
   const hash = createHash("sha256").update(root).digest("hex").slice(0, 16)
   if (platform === "win32") return `\\\\.\\pipe\\simplex-mcp-${hash}`
-  const path = join(root, "daemon.sock")
+  const path = join(root, "service.sock")
   return Buffer.byteLength(path) <= maxSocketPath ? path : join(tmpdir(), `simplex-mcp-${hash}.sock`)
 }
 
 export function logFile(root: string): string {
-  return join(root, "daemon.log")
+  return join(root, "service.log")
 }
 
-export const daemonLock = "daemon.lock"
+export const serviceLock = "service.lock"
 
-export function daemonToken(root: string): string {
-  return serverToken(root, false, "daemon.token")
+export function serviceToken(root: string): string {
+  return serverToken(root, false, "service.token")
 }
 
 export function trimLog(root: string): void {
