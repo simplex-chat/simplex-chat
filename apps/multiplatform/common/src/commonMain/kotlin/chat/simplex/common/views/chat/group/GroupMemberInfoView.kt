@@ -1078,11 +1078,15 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
 
 class BanDialogAction(val title: String, val action: (BanDuration) -> Unit)
 
-fun showBanDialog(title: String, actions: List<BanDialogAction>, initialDuration: BanDuration = BanDuration.Day, text: (BanDuration) -> String) {
+fun showBanDialog(title: String, actions: List<BanDialogAction>, initialDuration: BanDuration = BanDuration.Day, warning: String? = null, text: (BanDuration) -> String) {
   AlertManager.shared.showAlertDialogButtonsColumn(title) {
     val duration = remember { mutableStateOf(initialDuration) }
     Column(Modifier.verticalScroll(rememberScrollState())) {
       BanDialogText(text(duration.value))
+      if (warning != null) {
+        PreviousVersionWarning(warning, Modifier.padding(horizontal = DEFAULT_PADDING))
+        Spacer(Modifier.height(DEFAULT_PADDING))
+      }
       ExposedDropDownSettingRow(
         generalGetString(MR.strings.ban_for),
         BanDuration.entries.map { it to it.text },
@@ -1111,6 +1115,22 @@ private fun BanDialogText(text: String) {
   Text(text, Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), fontSize = 16.sp, textAlign = TextAlign.Center, color = MaterialTheme.colors.secondary)
   Spacer(Modifier.height(DEFAULT_PADDING))
 }
+
+@Composable
+fun PreviousVersionWarning(text: String, modifier: Modifier = Modifier) {
+  Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+    Icon(painterResource(MR.images.ic_warning), null, Modifier.size(18.dp), tint = WarningOrange)
+    Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
+    Text(text, fontSize = 16.sp, color = MaterialTheme.colors.secondary)
+  }
+}
+
+fun previousVersionWarningText(members: List<GroupMember>, one: StringResource, many: StringResource): String? =
+  when (val count = members.count { !it.supportsLinkNotice }) {
+    0 -> null
+    1 -> generalGetString(one)
+    else -> String.format(generalGetString(many), count)
+  }
 
 fun banMemberDialog(rhId: Long?, gInfo: GroupInfo, mem: GroupMember, close: (() -> Unit)? = null, initialDuration: BanDuration = BanDuration.Day) {
   val canRemove = mem.canBanAndRemove(gInfo)
@@ -1166,7 +1186,8 @@ fun banMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, 
     listOf(ban)
   }
   val title = generalGetString(if (gInfo.useRelays) MR.strings.block_subscribers_for_all_question else MR.strings.block_members_for_all_question)
-  showBanDialog(title, actions) { duration ->
+  val warning = previousVersionWarningText(members, MR.strings.member_previous_version_ban_only, MR.strings.members_previous_version_ban_only)
+  showBanDialog(title, actions, warning = warning) { duration ->
     val forever = duration == BanDuration.Forever
     val lines = if (canRemove) {
       if (gInfo.useRelays) {
@@ -1386,6 +1407,14 @@ fun PreviewBanMemberDialogModerator() {
 fun PreviewBanMembersDialog() {
   SimpleXTheme {
     AlertPreview { banMembersDialog(null, previewOwnerGroupInfo, listOf(previewBanMember, previewBanMember.copy(groupMemberId = 3))) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewBanMembersDialogPreviousVersion() {
+  SimpleXTheme {
+    AlertPreview { banMembersDialog(null, previewOwnerGroupInfo, listOf(previewBanMember) + previewPreviousVersionMembers) }
   }
 }
 

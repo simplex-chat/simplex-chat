@@ -459,9 +459,16 @@ private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, members: List<
     MR.strings.members_will_be_removed_from_group_cannot_be_undone
   else
     MR.strings.members_will_be_removed_from_chat_cannot_be_undone
+  val warning = if (members.any { it.blockedByAdmin }) previousVersionWarningText(members, MR.strings.member_previous_version_cannot_ban, MR.strings.members_previous_version_cannot_ban) else null
   AlertManager.shared.showAlertDialogButtonsColumn(
     generalGetString(MR.strings.button_remove_members_question),
     generalGetString(messageId),
+    belowTextContent = {
+      if (warning != null) {
+        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+        PreviousVersionWarning(warning)
+      }
+    },
     buttons = {
       Column {
         SectionItemView({
@@ -1624,6 +1631,8 @@ val previewChannelInfo = previewOwnerGroupInfo.copy(
 
 val previewBanMember = GroupMember.sampleData.copy(groupMemberId = 2, activeConn = Connection.sampleData.copy(peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
 
+val previewPreviousVersionMembers = listOf(4L, 5L).map { previewBanMember.copy(groupMemberId = it, activeConn = Connection.sampleData.copy(peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION - 1))) }
+
 private fun previewGroupChat(groupInfo: GroupInfo) = Chat(remoteHostId = null, chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null), chatItems = listOf())
 
 @Preview
@@ -1688,6 +1697,14 @@ fun PreviewDeleteAndBanCustomerDialog() {
 fun PreviewCantBanCustomerAlert() {
   SimpleXTheme {
     AlertPreview { showCantBanCustomerAlert(previewBusinessChatInfo) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewRemoveMembersPreviousVersion() {
+  SimpleXTheme {
+    AlertPreview { removeMembersAlert(null, previewOwnerGroupInfo, (listOf(previewBanMember) + previewPreviousVersionMembers).map { it.copy(blockedByAdmin = true) }) }
   }
 }
 

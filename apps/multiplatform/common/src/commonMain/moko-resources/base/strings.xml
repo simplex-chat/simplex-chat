@@ -2112,6 +2112,10 @@
   <string name="ban_members_forever_desc_ban">Ban: their messages will be hidden for all members until the ban is lifted.</string>
   <string name="ban_members_desc_ban_and_remove">Ban and remove: they are also removed and can\'t rejoin via the group link until the ban ends.</string>
   <string name="ban_members_forever_desc_ban_and_remove">Ban and remove: they are also removed and can\'t rejoin via the group link.</string>
+  <string name="member_previous_version_ban_only">1 member with previous version: ban only</string>
+  <string name="members_previous_version_ban_only">%d members with previous version: ban only</string>
+  <string name="member_previous_version_cannot_ban">1 member with previous version: cannot ban</string>
+  <string name="members_previous_version_cannot_ban">%d members with previous version: cannot ban</string>
   <string name="ban_subscribers_desc">Their messages will be hidden for all subscribers until the ban ends.</string>
   <string name="ban_subscribers_forever_desc">Their messages will be hidden for all subscribers until the ban is lifted.</string>
   <string name="ban_subscribers_desc_ban">Ban: their messages will be hidden for all subscribers until the ban ends.</string>
