@@ -1307,8 +1307,8 @@ enum DeleteAndBanTarget {
 
     var foreverText: String {
         let format = switch self {
-        case .contact: NSLocalizedString("%1$@ won't be notified and won't be able to connect to you via your address from this app, with no end time. You can't lift this block.\nThe block is stored only in %1$@'s app: %1$@ can still connect from another device, or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "delete and ban forever dialog")
-        case .customer: NSLocalizedString("%1$@ won't be notified and won't be able to connect to you via your business address from this app, with no end time. You can't lift this block.\nThe block is stored only in %1$@'s app: %1$@ can still connect from another device, or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "delete and ban forever dialog")
+        case .contact: NSLocalizedString("%1$@ can't connect via your address again, except from another device or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "delete and ban forever dialog")
+        case .customer: NSLocalizedString("%1$@ can't connect via your business address again, except from another device or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "delete and ban forever dialog")
         }
         return String.localizedStringWithFormat(format, name, foreverConfirmationWord)
     }

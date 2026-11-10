@@ -1059,8 +1059,8 @@ func removeBannedMember(_ gInfo: GroupInfo, _ mem: GroupMember, _ duration: BanD
 func removeForeverAlert(_ gInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, dismiss: DismissAction?) -> UIAlertController {
     let name = mem.chatViewName
     let format = gInfo.useRelays
-        ? NSLocalizedString("%1$@ will be removed without notification and won't be able to rejoin via the channel link from this app, with no end time. You can't lift this block.\nThe block is stored only in %1$@'s app: %1$@ can still join from another device, or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "remove forever alert")
-        : NSLocalizedString("%1$@ will be removed without notification and won't be able to rejoin via the group link from this app, with no end time. You can't lift this block.\nThe block is stored only in %1$@'s app: %1$@ can still join from another device, or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "remove forever alert")
+        ? NSLocalizedString("%1$@ can't rejoin via the channel link again, except from another device or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "remove forever alert")
+        : NSLocalizedString("%1$@ can't rejoin via the group link again, except from another device or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "remove forever alert")
     return typedConfirmationAlert(
         NSLocalizedString("Remove forever?", comment: "alert title"),
         message: String.localizedStringWithFormat(format, name, foreverConfirmationWord),

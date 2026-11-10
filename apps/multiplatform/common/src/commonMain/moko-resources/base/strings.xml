@@ -755,8 +755,8 @@
   <string name="delete_and_ban_contact_desc">%s won\'t be notified and won\'t be able to connect to you while banned.</string>
   <string name="contact_cant_connect_for_duration">%1$s won\'t be able to connect to you for %2$s.</string>
   <string name="delete_and_ban_forever_question">Delete and ban forever?</string>
-  <string name="delete_and_ban_contact_forever_desc">%1$s won\'t be notified and won\'t be able to connect to you via your address from this app, with no end time. You can\'t lift this block.\nThe block is stored only in %1$s\'s app: %1$s can still connect from another device, or after reinstalling the app.</string>
-  <string name="delete_and_ban_customer_forever_desc">%1$s won\'t be notified and won\'t be able to connect to you via your business address from this app, with no end time. You can\'t lift this block.\nThe block is stored only in %1$s\'s app: %1$s can still connect from another device, or after reinstalling the app.</string>
+  <string name="delete_and_ban_contact_forever_desc">%s can\'t connect via your address again, except from another device or after reinstalling the app.</string>
+  <string name="delete_and_ban_customer_forever_desc">%s can\'t connect via your business address again, except from another device or after reinstalling the app.</string>
   <string name="cant_ban">Can\'t ban</string>
   <string name="cant_ban_customer_desc">%s left this chat or uses an older app version.</string>
   <string name="contact_deleted">Contact deleted!</string>
@@ -2131,10 +2131,10 @@
   <string name="remove_banned_subscribers_desc">These subscribers will be removed without notification and won\'t be able to rejoin via the channel link until the ban ends.</string>
   <string name="remove_banned_subscribers_forever_desc">These subscribers will be removed without notification and won\'t be able to rejoin via the channel link.</string>
   <string name="remove_forever_question">Remove forever?</string>
-  <string name="remove_forever_desc">%1$s will be removed without notification and won\'t be able to rejoin via the group link from this app, with no end time. You can\'t lift this block.\nThe block is stored only in %1$s\'s app: %1$s can still join from another device, or after reinstalling the app.</string>
-  <string name="remove_forever_subscriber_desc">%1$s will be removed without notification and won\'t be able to rejoin via the channel link from this app, with no end time. You can\'t lift this block.\nThe block is stored only in %1$s\'s app: %1$s can still join from another device, or after reinstalling the app.</string>
-  <string name="remove_forever_members_desc">These members will be removed without notification and won\'t be able to rejoin via the group link from this app, with no end time. You can\'t lift this block.\nThe block is stored only in their apps: they can still join from another device, or after reinstalling the app.</string>
-  <string name="remove_forever_subscribers_desc">These subscribers will be removed without notification and won\'t be able to rejoin via the channel link from this app, with no end time. You can\'t lift this block.\nThe block is stored only in their apps: they can still join from another device, or after reinstalling the app.</string>
+  <string name="remove_forever_desc">%s can\'t rejoin via the group link again, except from another device or after reinstalling the app.</string>
+  <string name="remove_forever_subscriber_desc">%s can\'t rejoin via the channel link again, except from another device or after reinstalling the app.</string>
+  <string name="remove_forever_members_desc">They can\'t rejoin via the group link again, except from another device or after reinstalling the app.</string>
+  <string name="remove_forever_subscribers_desc">They can\'t rejoin via the channel link again, except from another device or after reinstalling the app.</string>
   <string name="type_to_confirm">Type %s to confirm.</string>
   <string name="lift_ban_desc">Messages from %s will be shown for all members.</string>
   <string name="lift_ban_subscriber_desc">Messages from %s will be shown for all subscribers.</string>
