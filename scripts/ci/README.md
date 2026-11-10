@@ -115,6 +115,17 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - CI, in build-linux: `scope-tests.sh ci-scripts` (step "Test changed scopes").
 - Local: `python3 scripts/ci/test_packages_release.py`; Python 3.11 or newer is required for tomllib (packages_release.py).
 
+#### names-exporter
+
+- Globs: apps/simplex-names-exporter/**
+- CI, in build-linux: `scope-tests.sh names-exporter` (step "Test changed scopes").
+- Local:
+  ```sh
+  cd apps/simplex-names-exporter
+  python3 -m pip install -e '.[dev]'
+  python3 -m pytest -q
+  ```
+
 #### store service on Postgres
 
 - Job: test-store-postgres (ubuntu-22.04 x86_64), on a pull request that changes the store service, its tests, `tests/Test.hs`, `src/Simplex/Chat/PaymentService`, `src/Simplex/Chat/Badges`, `cabal.project`, `simplex-chat.cabal` or build.yml, and on every dispatch. Production runs the store service on Postgres only, and the SQLite jobs do not cover it.
