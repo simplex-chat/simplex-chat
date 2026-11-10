@@ -18,7 +18,7 @@ You need Node.js 22 or later, Claude Code and the [SimpleX Chat app](https://sim
 1. Install the plugin in Claude Code:
 
    ```
-   /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/.claude-plugin/marketplace.json
+   /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/.claude-plugin/marketplace.json
    /plugin install simplex@simplex-chat
    ```
 

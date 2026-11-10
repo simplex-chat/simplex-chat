@@ -372,7 +372,7 @@ Usage:
   simplex-mcp reset-owners             replace the Main group and its owners
 
 Claude Code plugin:
-  /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/.claude-plugin/marketplace.json
+  /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/.claude-plugin/marketplace.json
   /plugin install simplex@simplex-chat
   SIMPLEX_MCP_HOME       the plugin's data folder (default: ~/.simplex-mcp)
 
@@ -452,7 +452,7 @@ The plugin gives every Claude Code session its own SimpleX group. There you send
 The plugin needs Claude Code 2.1.214 or later and Node.js 22 or later. In Claude Code:
 
 ```
-/plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/.claude-plugin/marketplace.json
+/plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/.claude-plugin/marketplace.json
 /plugin install simplex@simplex-chat
 ```
 

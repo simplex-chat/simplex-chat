@@ -22,7 +22,7 @@ export const helpText = `Usage:
   simplex-mcp reset-owners             replace the Main group and its owners
 
 Claude Code plugin:
-  /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/.claude-plugin/marketplace.json
+  /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/.claude-plugin/marketplace.json
   /plugin install simplex@simplex-chat
   SIMPLEX_MCP_HOME       the plugin's data folder (default: ~/.simplex-mcp)
 
