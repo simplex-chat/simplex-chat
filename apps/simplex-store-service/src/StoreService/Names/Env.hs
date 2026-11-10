@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module StoreService.Names.Env (NamesEnv (..), Pause (..), newNamesEnv) where
+module StoreService.Names.Env (NamesEnv (..), Pause (..), PauseReason (..), newNamesEnv) where
 
 import Control.Concurrent.STM (TVar, newTVarIO)
 import Data.ByteString (ByteString)
@@ -36,7 +36,10 @@ data NamesEnv = NamesEnv
     neProviders :: [Provider]
   }
 
-data Pause = Pause {paSince :: UTCTime, paCommitment :: ByteString}
+data Pause = Pause {paSince :: UTCTime, paReason :: PauseReason, paCommitment :: Maybe ByteString}
+  deriving (Eq, Show)
+
+data PauseReason = PRAllowance | PRFeeCap | PRUnfunded
   deriving (Eq, Show)
 
 newNamesEnv :: ChatController -> UserId -> NamesConfig -> DBStore -> Turns -> Waiters -> [Provider] -> IO NamesEnv

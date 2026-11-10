@@ -1134,6 +1134,7 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
 - `[ERROR …] names sender: nonce <n>: not sent: …`, with the node's `insufficient funds` message,
   when the key cannot pay. The transaction is saved and sent again every few seconds, so funding the
   key is enough and needs no restart. The line is logged again only when the node's message changes.
+  Registration is paused until the transaction goes out, see [Registration paused](#registration-paused).
 - `[ERROR …] names worker: registration <id> waits: the registrar's allowance on the sponsor is
   used up; the guardian raises it with setRegistrarAllowance` when the sponsor refuses a register
   with `InsufficientAllowance`. The order keeps its phase and its register is tried again every 15
@@ -1144,7 +1145,8 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   mined, as two registers sent while the allowance covers one can, returns its order to `committed`
   while the name is available, and the next register's dry run finds the cause.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
-  the transaction waits` when fees are above the cap. Nothing is signed until they fall.
+  the transaction waits` when fees are above the cap. Nothing is signed until they fall. A commit,
+  terms acceptance or register refused so pauses registration until they fall.
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
   <cap>` when a transaction stuck in the pool cannot be bumped within the cap.
 
@@ -1167,7 +1169,9 @@ to it, oldest first by creation; a register's price is the price list's price pe
 label's length over the order's duration. An order it does not cover stays queued and pauses
 registration, as does a register refused with `InsufficientAllowance`. At start, registration is
 paused when the allowance cannot cover every order in `queued` to `registering`, or cannot be read.
-While it is paused:
+Registration also pauses when a commit, terms acceptance or register is refused because the latest
+block needs more than `max_fee_per_gas`, and when the node refuses a saved transaction with
+`insufficient funds`. While it is paused:
 
 - `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
   `503 {"error": "registration_paused"}` before any chain read. An invoice made before the pause
@@ -1180,14 +1184,15 @@ While it is paused:
 A committed order whose commitment lapses before its register fails, paused or not, and the buyer
 uses Try again once registration resumes.
 
-Every 15 seconds the service reads the allowance and the prices again. Registration resumes once the
-allowance covers every order in `queued` to `registering`. A top-up by the guardian needs no
-restart.
+Every 15 seconds the service checks again what paused registration, and resumes it: for the
+allowance, once it covers every order in `queued` to `registering`; for fees, once the latest block
+needs no more than `max_fee_per_gas`; for ETH, once no saved transaction is refused for
+`insufficient funds`. A top-up by the guardian or a transfer to the key needs no restart.
 
 The service logs a report at start, hourly and at each pause and resume:
 
 ```
-names: 3 queued, the oldest from 2026-11-09 10:00 UTC, 2 committing to registering; registration paused since 2026-11-09 09:41 UTC; registrar 0x…, 1.250000 ETH, allowance $40.00; alert: registration paused; paused by the order with commitment 0x…
+names: 3 queued, the oldest from 2026-11-09 10:00 UTC, 2 committing to registering; registration paused since 2026-11-09 09:41 UTC: the registrar's allowance on the sponsor is short; registrar 0x…, 1.250000 ETH, allowance $40.00; alert: registration paused; paused by the order with commitment 0x…
 ```
 
 The commitment names the order without granting access to it, as its registration id would. The

@@ -14,6 +14,8 @@ module StoreService.Names.Sender
     newSender,
     submitTransaction,
     inFlightTransaction,
+    feesWithinCap,
+    keyUnderfunded,
     awaitOutcome,
     followTransactions,
     runSender,
@@ -157,8 +159,8 @@ submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snS
     gas <- chain $ estimateGas c to calldata
     used <- chain $ transactionCount c ccRegistrar Latest
     nonce <- max used <$> liftIO (readTVarIO snNextNonce)
-    market@(tip, baseFee) <- chain $ marketFees c
-    let needed = baseFee + tip
+    market@(tip, _) <- chain $ marketFees c
+    let needed = neededFee market
         cap = feeCap c
     when (needed > cap) $ do
       logWarn $ "names sender: the latest block needs " <> tshow needed <> " wei per gas, above max_fee_per_gas " <> tshow cap <> "; the transaction waits"
@@ -292,6 +294,18 @@ marketFees c = runExceptT $ do
   Block {blockBaseFee} <- ExceptT $ latestBlock c
   pure (toInteger tip, toInteger blockBaseFee)
 
+neededFee :: (Integer, Integer) -> Integer
+neededFee (tip, baseFee) = baseFee + tip
+
+feesWithinCap :: ChainClient -> IO (Either ChainError Bool)
+feesWithinCap c = fmap ((<= feeCap c) . neededFee) <$> marketFees c
+
+keyUnderfunded :: Sender -> STM Bool
+keyUnderfunded Sender {snInFlight} = any (maybe False underfundedWarning . ifLastWarning) <$> readTVar snInFlight
+
+underfundedWarning :: Text -> Bool
+underfundedWarning = (underfundedMessage `T.isInfixOf`) . T.toLower
+
 headroomFee :: (Integer, Integer) -> Integer
 headroomFee (tip, baseFee) = baseFeeHeadroom * baseFee + tip
 
@@ -323,7 +337,7 @@ warnNonce Sender {snInFlight} nonce warning = do
         | ifLastWarning == Just warning -> pure False
         | otherwise -> True <$ writeTVar snInFlight (M.insert nonce tx {ifLastWarning = Just warning} inFlight)
       Nothing -> pure True
-  when changed $ (if underfundedMessage `T.isInfixOf` T.toLower warning then logError else logWarn) message
+  when changed $ (if underfundedWarning warning then logError else logWarn) message
   where
     message = "names sender: nonce " <> tshow nonce <> ": " <> warning
 

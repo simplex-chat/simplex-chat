@@ -57,7 +57,7 @@ import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recor
 import StoreService.Names.Chain (ChainClient (..), ethBalance, newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Contracts (Contracts, Terms (..), attoUsdPerCent, chainPriceCents, communityName, namePolicy, registerCost, registrarAllowance, secondsPerYear, termsLinkAllowed, termsLinks, termsOf)
-import StoreService.Names.Env (NamesEnv (..), Pause (..), newNamesEnv)
+import StoreService.Names.Env (NamesEnv (..), Pause (..), PauseReason (..), newNamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), ordersEnv, unixSeconds)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
@@ -400,11 +400,15 @@ namesReport groupQ_ OrdersEnv {oeStore, oeConfig = cfg@NamesConfig {nYears, nTer
       floorCost cents = registerCost cents $ fromInteger $ toInteger nYears * secondsPerYear + max 0 (unixSeconds nTermStart - unixSeconds now)
       alerts = reportAlerts cfg pause (length queued) (eitherToMaybe wei) (eitherToMaybe $ (,) <$> allowance <*> (floorCost <$> floorCents))
       shown = T.intercalate "; " $ [queueText queued (length orders - length queued), pauseText, registrarText wei allowance] <> ["alert: " <> T.intercalate ", " alerts | not (null alerts)]
-  (if null alerts then logNote else logError) $ shown <> maybe "" (\Pause {paCommitment} -> "; paused by the order with commitment " <> hex paCommitment) pause
+  (if null alerts then logNote else logError) $ shown <> maybe "" (("; paused by the order with commitment " <>) . hex) (paCommitment =<< pause)
   when (changed || not (null alerts)) $ forM_ groupQ_ $ \q -> atomically $ writeTQueue q $ GENotice shown
   where
     queueText queued inFlight = "names: " <> tshow (length queued) <> " queued" <> maybe "" ((", the oldest from " <>) . fmtTime . aoCreatedAt) (listToMaybe queued) <> ", " <> tshow inFlight <> " committing to registering"
-    pauseText = maybe "registration running" (\Pause {paSince} -> "registration paused since " <> fmtTime paSince) pause
+    pauseText = maybe "registration running" (\Pause {paSince, paReason} -> "registration paused since " <> fmtTime paSince <> ": " <> pauseReasonText paReason) pause
+    pauseReasonText = \case
+      PRAllowance -> "the registrar's allowance on the sponsor is short"
+      PRFeeCap -> "the network's fees are above max_fee_per_gas"
+      PRUnfunded -> "the registrar key lacks the ETH for a transaction"
     registrarText wei allowance =
       "registrar " <> addressText ccRegistrar <> ", " <> either (const "ETH unread") ethText wei
         <> ", allowance " <> either (const "unread") (dollars . fromInteger . (`div` attoUsdPerCent)) allowance

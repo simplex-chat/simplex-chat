@@ -107,7 +107,7 @@ import StoreService.Names.Codes (CodeRefusal (..))
 import StoreService.Names.Community (AcceptanceAsked (..))
 import StoreService.Names.Orders (OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
-import StoreService.Names.Env (Pause (..))
+import StoreService.Names.Env (Pause (..), PauseReason (..))
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, newPhases)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, personalDigest)
 import StoreService.Names.Store
@@ -1406,7 +1406,7 @@ testBadgeCodesOnly = withOrders $ \open -> withSettings codesOnly open $ \ctx@Ct
 
 testInvoicePaused :: IO ()
 testInvoicePaused = withOrders $ \ctx@Ctx {cOrders} -> do
-  atomically $ writeTVar (oePause cOrders) $ Just Pause {paSince = orderTime, paCommitment = "probe"}
+  atomically $ writeTVar (oePause cOrders) $ Just Pause {paSince = orderTime, paReason = PRAllowance, paCommitment = Nothing}
   placeOrder ctx aliceOrder `shouldReturn` refusedWith 503 "registration_paused"
   stubCalls (cStub ctx) `shouldReturn` []
   registrationsOf ctx ownerA `shouldReturn` []
@@ -1418,7 +1418,7 @@ testResendWhilePaused :: IO ()
 testResendWhilePaused = withOrders $ \ctx@Ctx {cOrders} -> do
   (status, opened) <- placeOrder ctx aliceOrder
   status `shouldBe` 200
-  atomically $ writeTVar (oePause cOrders) $ Just Pause {paSince = orderTime, paCommitment = "probe"}
+  atomically $ writeTVar (oePause cOrders) $ Just Pause {paSince = orderTime, paReason = PRAllowance, paCommitment = Nothing}
   (status', resent) <- placeOrder ctx aliceOrder
   let pausedIn v =
         v >>= field "registration" >>= \case
@@ -1736,7 +1736,7 @@ testViewQueue = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   placedAt t0 PCommitted ("c1", "dianabakery", 4)
   map aoId <$> withTransaction st activeOrders `shouldReturn` map RegistrationId ["c1", "q1", "q2", "q3"]
   mapM queueOf ["q1", "q2", "q3", "c1"] `shouldReturn` [place 1 3 False, place 2 3 False, place 3 3 False, (Just J.Null, Just $ J.Bool False)]
-  atomically $ writeTVar (oePause env) $ Just Pause {paSince = t0, paCommitment = "c1"}
+  atomically $ writeTVar (oePause env) $ Just Pause {paSince = t0, paReason = PRAllowance, paCommitment = Nothing}
   mapM queueOf ["q3", "c1"] `shouldReturn` [place 3 3 True, (Just J.Null, Just $ J.Bool True)]
 
 viewEnv :: DBStore -> FakeEthNode -> IO OrdersEnv
