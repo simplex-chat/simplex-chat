@@ -497,7 +497,7 @@ The link reaches only you: Claude's context and tool results never contain it. S
 - Owners of the Main group get an invitation to the group of each session, in the Main group, for them only, as owners.
 - `/sessions` lists the sessions, with `, closed` after the closed ones. `/join N` sends you an invitation to the group of session N, as an admin, or as an owner when you are an owner of the Main group.
 - A member who leaves the Main group, is removed from it or gets another role there stays in the sessions' groups they joined, with the same role.
-- Claude changes only the name, the short description, the welcome message and the commands of the group's profile, starting from the profile as it stands in the chat database, so the preferences the owners set stay.
+- Claude sets the short description and the welcome message when it creates the Main group; later it changes only the name and the commands of the group's profile, starting from the profile as it stands in the chat database, so the texts and preferences the owners set stay.
 - When no owner remains, the daemon creates a new link. `npx -y @simplex-chat/mcp@VERSION link` in a terminal prints it with a QR code; `/simplex:link` in Claude Code shows the owners, or asks you to run that command.
 
 To replace the owners, run `/simplex:reset-owners` in Claude Code, or `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal. Either replaces the Main group at once, also while owners exist, without their approval:
