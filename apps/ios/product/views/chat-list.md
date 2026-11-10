@@ -92,16 +92,16 @@ Contacts and groups the user is a member of; contact requests, contact cards, in
 
   | Chat | Actions |
   |---|---|
-  | Contact | Delete, Ban, More (Clear, Archive) |
-  | Business chat, owner on the business side | Delete, Ban, More (Clear, Leave, Archive reports) |
+  | Contact | Delete, Block, More (Clear, Archive) |
+  | Business chat, owner on the business side | Delete, Block, More (Clear, Leave, Archive reports) |
   | Group, channel, other business chats | Delete, Leave, More (Clear, Archive reports) |
 
 - "More" is shown when it holds two actions; a single action is shown in its place, and "More" is an action sheet without a title
 - Delete: for contacts, and for groups the user can delete; Leave: while the membership is current or pending, except for channel owners; Clear: when the chat has messages; Archive reports: for moderators and above when the group has reports
-- Ban (orange): opens "Delete and ban?" for a contact connected via the user's address whose app supports bans; for the owner of a business chat the customer is checked on tap, and "Can't ban" is shown when the customer left, uses an older app version or has the moderator role or above
+- Block (orange): opens "Delete and block?" for a contact connected via the user's address whose app supports blocks; for the owner of a business chat the customer is checked on tap, and "Can't block" is shown when the customer left, uses an older app version or has the moderator role or above
 - Archive: moves the contact to Archived contacts with the conversation and shows "Contact archived!"
 - List sheet: a Favorites row with a star, filled for a favorite, at the top; tapping it changes the favorite and closes the sheet. The sheet opens also when no lists exist.
-- Archived contacts: Delete, and Ban under the same conditions as in the chat list
+- Archived contacts: Delete, and Block under the same conditions as in the chat list
 
 ### Floating Elements
 

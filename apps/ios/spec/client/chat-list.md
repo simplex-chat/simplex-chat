@@ -250,23 +250,23 @@ Search is available via pull-down gesture or search button in the navigation bar
 [`ChatListActions`](../../Shared/Views/ChatList/ChatListNavLink.swift#L608-L639) holds the actions of a row: `shown`, in code order, and `more`. Its `init` moves a single "More" action to the end of `shown`. [`trailingActions()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L313-L330) renders `shown`, the first action at the screen edge, so a full swipe performs it, then "More" when `more` is not empty. "More" sets `moreActions`, which [`ChatListMoreDialog`](../../Shared/Views/ChatList/ChatListNavLink.swift#L641-L658) shows as a confirmation dialog without a title. [`perform()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L332-L351) runs a [`ChatListAction`](../../Shared/Views/ChatList/ChatListNavLink.swift#L586-L606); its `label` gives the title, the icon, the tint and the destructive role in "More".
 
 ```
-contact                       ChatListActions.contact   Delete, Ban, More (Clear, Archive)
-business chat, owner          ChatListActions.group     Delete, Ban, More (Clear, Leave, Archive reports)
+contact                       ChatListActions.contact   Delete, Block, More (Clear, Archive)
+business chat, owner          ChatListActions.group     Delete, Block, More (Clear, Leave, Archive reports)
 group, channel, other         ChatListActions.group     Delete, Leave, More (Clear, Archive reports)
 ```
 
 | Action | Condition | Runs | Tint |
 |--------|-----------|------|------|
 | Delete | contacts; groups with `canDelete` | `deleteContactDialog`, `deleteGroupAlert` | red |
-| Ban | `Contact.canDeleteAndBan`; `GroupInfo.isCustomerChatOwner` | `deleteAndBanContactDialog`; [`deleteAndBanCustomerIfAvailable()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L353-L364) | orange |
+| Block | `Contact.canDeleteAndBan`; `GroupInfo.isCustomerChatOwner` | `deleteAndBanContactDialog`; [`deleteAndBanCustomerIfAvailable()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L353-L364) | orange |
 | Leave | `memberCurrentOrPending`, not a channel owner | `leaveGroupAlert` | yellow |
 | Clear | the chat has items | `clearChatAlert` | orange |
 | Archive | contacts | `archiveContact` | none |
 | Archive reports | `reportsCount > 0`, role moderator or above | `archiveAllReportsAlert` | none |
 
-`deleteAndBanCustomerIfAvailable()` loads the members with `apiListMembers`; it opens `deleteAndBanCustomerDialog` when `GroupInfo.canDeleteAndBanCustomer` holds (the customer passes `GroupMember.canBanAndRemove`: current or pending, role below moderator, `LINK_NOTICE_VERSION` supported), otherwise the "Can't ban" alert, also for a customer with the moderator role or above ([`deleteAndBanUnavailableAlert()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L660-L665)).
+`deleteAndBanCustomerIfAvailable()` loads the members with `apiListMembers`; it opens `deleteAndBanCustomerDialog` when `GroupInfo.canDeleteAndBanCustomer` holds (the customer passes `GroupMember.canBanAndRemove`: current or pending, role below moderator, `LINK_NOTICE_VERSION` supported), otherwise the "Can't block" alert, also for a customer with the moderator role or above ([`deleteAndBanUnavailableAlert()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L660-L665)).
 
-Archived contacts (`ContactListNavLink.deletedChatNavLink`): Delete, and Ban when `Contact.canDeleteAndBan`.
+Archived contacts (`ContactListNavLink.deletedChatNavLink`): Delete, and Block when `Contact.canDeleteAndBan`.
 
 ---
 

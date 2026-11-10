@@ -42,8 +42,8 @@
 | PC30 | Member Support Chat |
 | PC31 | Channels (Relays) |
 | PC32 | Terminal Chat Layout |
-| PC33 | Bans and Link Notices |
-| PC34 | Chat Deletion, Archive and Delete and Ban |
+| PC33 | Blocks and Link Notices |
+| PC34 | Chat Deletion, Archive and Delete and Block |
 | PC35 | Chat List Actions |
 
 ---
@@ -58,13 +58,13 @@
 | Shared/Views/ChatList/ChatListView.swift | PC1, PC28 | High | Main screen rendering and filtering |
 | Shared/Views/ChatList/ChatListNavLink.swift | PC1, PC28, PC34, PC35 | High | Chat list rows: navigation, swipe actions, "More" |
 | Shared/Views/ChatList/TagListView.swift | PC28, PC35 | Low | List sheet with the Favorites row |
-| Shared/Views/Contacts/ContactListNavLink.swift | PC34, PC35 | Medium | Contact list rows; "Delete" and, in Archived contacts, "Ban" |
+| Shared/Views/Contacts/ContactListNavLink.swift | PC34, PC35 | Medium | Contact list rows; "Delete" and, in Archived contacts, "Block" |
 | Shared/Views/ChatList/GetStakeBanner.swift | PC1 | Low | Crowdfunding banner and shared banner card chrome |
 | Shared/Views/Chat/ChatView.swift | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11, PC31 | High | Core conversation UI — most messaging features, channel message rendering |
 | Shared/Views/Chat/ComposeMessage/ComposeView.swift | PC4, PC6, PC9, PC11, PC31 | High | Message composition — send path for all messages, channel sendAsGroup |
 | Shared/Views/Chat/ChatItem/ | PC2, PC3, PC5, PC7, PC8, PC9, PC10, PC11 | Medium | Individual message rendering components |
-| Shared/Views/Chat/ChatInfoView.swift | PC2, PC13, PC20, PC34 | Medium | Contact details and verification; contact deletion, archive and Delete and ban dialogs |
-| Shared/Views/Chat/Group/GroupChatInfoView.swift | PC3, PC14, PC15, PC16, PC30, PC31, PC34 | High | Group management hub, channel info adaptations; group deletion with "Keep conversation", business chat Delete and ban |
+| Shared/Views/Chat/ChatInfoView.swift | PC2, PC13, PC20, PC34 | Medium | Contact details and verification; contact deletion, archive and Delete and block dialogs |
+| Shared/Views/Chat/Group/GroupChatInfoView.swift | PC3, PC14, PC15, PC16, PC30, PC31, PC34 | High | Group management hub, channel info adaptations; group deletion with "Keep conversation", business chat Delete and block |
 | Shared/Views/Chat/Group/ChannelMembersView.swift | PC31 | Medium | Channel owners/subscribers list |
 | Shared/Views/Chat/Group/ChannelRelaysView.swift | PC31 | Medium | Channel relay status list |
 | Shared/Views/Chat/Group/AddGroupMembersView.swift | PC14, PC16 | Medium | Member invitation flow |

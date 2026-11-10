@@ -112,19 +112,19 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 3. `withMessages: true` also deletes all messages from that member.
 4. Core returns `ChatResponse2.userDeletedMembers(user, updatedGroupInfo, members, withMessages)`.
 5. Without `notice`, the removed member receives a notification and loses access.
-6. With `notice` (a banned member, or "Ban and remove"), the removal is silent: members on version 23 or later see no event, apps on earlier versions show the removal, the removed member is not told unless it is an admin, and the removed member's app does not rejoin via the group link for the chosen duration (`BanDuration`: 1 day, 1 week, Forever). Forever asks to type "yes" in "Remove forever?" (`removeBannedMember`).
+6. With `notice` (a blocked member, or "Block and remove"), the removal is silent: members on version 23 or later see no event, apps on earlier versions show the removal, the removed member is not told unless it is an admin, and the removed member's app does not rejoin via the group link for the chosen duration (`BanDuration`: 1 day, 1 week, Forever). Forever asks to type "yes" in "Remove forever?" (`removeBannedMember`).
 7. A notice is offered only when the member supports `LINK_NOTICE_VERSION`.
 
-### 7. Ban Member
+### 7. Block Member for All
 
-1. Moderator, admin or owner taps "Ban member" in member info or in the member swipe actions.
-2. "Ban member?" (`showBanMemberSheet`) offers "Ban for" 1 day (default), 1 week or Forever; admins and owners also get "Ban and remove" and "Ban, remove and delete messages".
+1. Moderator, admin or owner taps "Block for all" in member info or in the member swipe actions.
+2. "Block member for all?" (`showBanMemberSheet`) offers "Block for" 1 day (default), 1 week or Forever; admins and owners also get "Block and remove" and "Block, remove and delete messages".
 3. Calls `apiBlockMembersForAll(groupId:memberIds:blocked:ttl:)`; `ttl` is absent for Forever:
    ```swift
    func apiBlockMembersForAll(_ groupId: Int64, _ memberIds: [Int64], _ blocked: Bool, ttl: Int64? = nil) async throws -> [GroupMember]
    ```
 4. Core returns `ChatResponse2.membersBlockedForAllUser(user, _, members, _)`; `GroupMember.blockedUntil` is the end time.
-5. Banned members' messages are hidden for all members; only moderators and above see placeholders.
+5. Blocked members' messages are hidden for all members; only moderators and above see placeholders.
 
 ### 8. Leave Group
 
@@ -148,7 +148,7 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
    ```
 4. Core notifies all members. With `.full` the chat is removed from `ChatModel.shared.chats`; with `.entity` core returns the group with membership status `memGroupDeleted`, and `ChatModel.updateGroup` keeps the chat in the list.
 5. Business chat of the owner: the alert adds "<customer> will be notified."; the sheet says "<customer> can connect to you again via your business address." when the user's address is a business address (`userAddress.addressSettings.businessAddress`).
-6. "Delete and ban" for the owner of a business chat (`deleteAndBanCustomerDialog`): the dialogs of [connection flow 8](connection.md#8-delete-archive-or-ban-a-contact) with the customer's name; `apiDeleteChat` with a `LinkNotice`, so the core removes the customer silently with the notice and then deletes the chat.
+6. "Delete and block" for the owner of a business chat (`deleteAndBanCustomerDialog`): the dialogs of [connection flow 8](connection.md#8-delete-archive-or-block-a-contact) with the customer's name; `apiDeleteChat` with a `LinkNotice`, so the core removes the customer silently with the notice and then deletes the chat.
 
 ### 10. Group Link Management
 

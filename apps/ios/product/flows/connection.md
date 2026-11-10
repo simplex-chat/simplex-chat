@@ -108,15 +108,15 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 3. In `NewChatView.planAndConnect()`: `.simplexLink(_, .relay, _, _)` pattern triggers the same alert.
 4. The link is NOT processed further. No connection is attempted.
 
-### 7a2. Banned Link (Link Notice)
+### 7a2. Blocked Link (Link Notice)
 
-1. The core stores a notice for the link the user joined or connected through when a group admin removes the user with a ban, or a contact or business deletes the user with a ban.
+1. The core stores a notice for the link the user joined or connected through when a group admin removes the user with a block, or a contact or business deletes the user with a block.
 2. The plan returns `.contactAddress(.linkNotice(expiresAt, contactSLinkData_))` or `.groupLink(.linkNotice(expiresAt))`; a connect call (`apiConnect`, `apiConnectPreparedContact`, `apiConnectPreparedGroup`, `apiConnectContactViaAddress`) returns `ChatErrorType.linkNotice(expiresAt)`.
 3. `showLinkNoticeAlert(_:expiresAt:cleanup:)` in `NewChatView.swift` shows "Not allowed":
-   - line 1 by target (`LinkNoticeTarget`): group "Banned by the admins of this group.", channel "Banned by the owners of this channel.", contact "Banned by this contact.", business "Banned by this business."
+   - line 1 by target (`LinkNoticeTarget`): group "Blocked by the admins of this group.", channel "Blocked by the owners of this channel.", contact "Blocked by this contact.", business "Blocked by this business."
    - line 2: "No IDs shared, see How it works."
    - with an end time: "You can join again after <time>." (group, channel) or "You can connect again after <time>." (contact, business)
-   - buttons: OK; How it works opens the user guide section on bans (`bansGuideLink`)
+   - buttons: OK; How it works opens the user guide section "Blocking members" (`bansGuideLink`)
 4. Target: plan `.linkNotice` from the link type, a SimpleX channel name gives channel, and business when the address link data has `business`; `apiConnect` from the link type of the connection link; `apiConnectPreparedGroup` from the group (business chat, channel, group); `apiConnectPreparedContact` and `apiConnectContactViaAddress`: contact.
 5. No connection is attempted.
 
@@ -139,9 +139,9 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 5. Incognito status is shown with a mask icon in the chat.
 6. Can also be toggled for pending connections via `apiSetConnectionIncognito(connId:incognito:)`.
 
-### 8. Delete, Archive or Ban a Contact
+### 8. Delete, Archive or Block a Contact
 
-Entry points: "Delete contact" and "Delete and ban" in contact info; the chat list swipe "Delete", "Ban" and "Archive"; the swipe "Delete" in contact lists and "Ban" in Archived contacts. The functions are in `ChatInfoView.swift`.
+Entry points: "Delete contact" and "Delete and block" in contact info; the chat list swipe "Delete", "Block" and "Archive"; the swipe "Delete" in contact lists and "Block" in Archived contacts. The functions are in `ChatInfoView.swift`.
 
 ```mermaid
 flowchart TD
@@ -152,9 +152,9 @@ flowchart TD
     S -->|Ask| AS["action sheet: Delete and notify, Delete silently"]
     A --> K["sheet: Keep conversation, Delete"]
     AS --> K
-    B[Delete and ban] --> BD["sheet: Ban for, Delete and ban"]
-    BD -->|1 day, 1 week| BK["sheet: Keep conversation, Delete and ban"]
-    BD -->|Forever| BF["sheet: Keep conversation, typed yes, Delete and ban"]
+    B[Delete and block] --> BD["sheet: Block for, Delete and block"]
+    BD -->|1 day, 1 week| BK["sheet: Keep conversation, Delete and block"]
+    BD -->|Forever| BF["sheet: Keep conversation, typed yes, Delete and block"]
 ```
 
 Delete (`deleteContactDialog`):
@@ -169,10 +169,10 @@ Archive (`archiveContact`):
 1. `apiDeleteChat` with `.archive`: the contact moves to Archived contacts and keeps the conversation.
 2. "Contact archived!" with "Don't show again" (`showDeleteConversationNoticeDefault`): "You can send messages to <name> from Archived contacts." or, for a deleted contact, "You can view the conversation with <name> in Archived contacts."
 
-Delete and ban (`deleteAndBanContactDialog`), when `Contact.canDeleteAndBan`: the contact is ready and active, connected via the user's address (`Connection.viaUserContactLink`), and supports `LINK_NOTICE_VERSION`:
-1. "Delete and ban?": "Ban for" 1 day (default), 1 week or Forever; "Delete and ban"; Cancel.
-2. 1 day or 1 week: "Delete and ban?" with "Keep conversation" and the duration in the footer.
-3. Forever: "Delete and ban forever?" with "Keep conversation" and a field; "Delete and ban" is enabled when the field is "yes".
+Delete and block (`deleteAndBanContactDialog`), when `Contact.canDeleteAndBan`: the contact is ready and active, connected via the user's address (`Connection.viaUserContactLink`), and supports `LINK_NOTICE_VERSION`:
+1. "Delete and block?": "Block for" 1 day (default), 1 week or Forever; "Delete and block"; Cancel.
+2. 1 day or 1 week: "Delete and block?" with "Keep conversation" and the duration in the footer.
+3. Forever: "Delete and block forever?" with "Keep conversation" and a field; "Delete and block" is enabled when the field is "yes".
 4. `apiDeleteChat` with `notify=off` and a `LinkNotice`: the contact is not notified, whatever the setting, and the contact's app does not connect via the user's address for the duration; one-time links are not affected.
 
 ## Data Structures

@@ -108,7 +108,7 @@ Metadata for a group conversation. Fields: `groupId`, `localDisplayName`, `group
 *See:* `ChatModel.kt:2004` -- `data class GroupInfo`
 
 ### GroupMember
-A member of a group. Fields: `groupMemberId`, `groupId`, `memberId`, `memberRole` (GroupMemberRole), `memberCategory` (GroupMemberCategory), `memberStatus` (GroupMemberStatus), `memberSettings` (GroupMemberSettings), `blockedByAdmin`, `blockedUntil` (Instant? -- end time of a timed ban), `invitedBy`, `localDisplayName`, `memberProfile`, `memberContactId`, `memberContactProfileId`, `activeConn` (Connection?), `supportChat` (GroupSupportChat?).
+A member of a group. Fields: `groupMemberId`, `groupId`, `memberId`, `memberRole` (GroupMemberRole), `memberCategory` (GroupMemberCategory), `memberStatus` (GroupMemberStatus), `memberSettings` (GroupMemberSettings), `blockedByAdmin`, `blockedUntil` (Instant? -- end time of a timed block), `invitedBy`, `localDisplayName`, `memberProfile`, `memberContactId`, `memberContactProfileId`, `activeConn` (Connection?), `supportChat` (GroupSupportChat?).
 
 *See:* `ChatModel.kt:2177` -- `data class GroupMember`
 

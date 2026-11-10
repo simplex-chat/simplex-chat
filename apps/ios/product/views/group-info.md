@@ -83,9 +83,9 @@ Header shows total member count (e.g., "25 members").
 |---|---|
 | Invite members button | Shown if `canAddMembers`; disabled with tap alert if incognito |
 | Search field | Filter members by name (`searchText`) |
-| Member rows | Each shows: avatar, display name, online status indicator, connection status, and one label: "banned" (banned by admin), "hidden" (messages hidden by the user), or the role badge (owner/admin/moderator/observer) |
+| Member rows | Each shows: avatar, display name, online status indicator, connection status, and one label: "blocked" (blocked by admin), "hidden" (messages hidden by the user), or the role badge (owner/admin/moderator/observer) |
 | Member tap | Navigates to `GroupMemberInfoView` |
-| Member swipe actions | Hide/show messages (below moderator), ban member/lift ban (moderators), remove member (admins) |
+| Member swipe actions | Hide/show messages (below moderator), block for all/unblock for all (moderators), remove member (admins) |
 
 Member list is sorted by role (owners first) and filtered to exclude `memLeft` and `memRemoved` statuses.
 
@@ -96,7 +96,7 @@ Member list is sorted by role (owners first) and filtered to exclude `memLeft` a
 | Clear chat | Deletes all messages locally (with confirmation alert) |
 | Leave group | Leave the group (with confirmation alert) |
 | Delete group | Delete entire group -- only for owners (with confirmation alert); for an active owner of a group or channel, and for the active owner of a business chat with a customer, a sheet with "Keep conversation" follows ([group lifecycle 9](../flows/group-lifecycle.md#9-delete-group)) |
-| Delete and ban | Active owner of a business chat with a customer, when the customer passes `GroupMember.canBanAndRemove`, as a current or pending member with a role below moderator that supports bans (`GroupInfo.canDeleteAndBanCustomer`): the Delete and ban dialogs of contacts with the customer's name and "your business address" |
+| Delete and block | Active owner of a business chat with a customer, when the customer passes `GroupMember.canBanAndRemove`, as a current or pending member with a role below moderator that supports blocks (`GroupInfo.canDeleteAndBanCustomer`): the Delete and block dialogs of contacts with the customer's name and "your business address" |
 
 ### Developer Section
 
@@ -123,16 +123,16 @@ Shown when `developerTools` is enabled:
 |---|---|
 | `deleteGroupAlert` | Tap delete group; also shown by the chat list swipe "Delete" |
 | `KeepConversationDialog` | After `deleteGroupAlert`, for owners: "Keep conversation", Delete, Cancel |
-| `deleteAndBanCustomerDialog` | Tap "Delete and ban" |
+| `deleteAndBanCustomerDialog` | Tap "Delete and block" |
 | `clearChatAlert` | Tap clear chat |
 | `leaveGroupAlert` | Tap leave group |
 | `cantInviteIncognitoAlert` | Tap invite members while incognito |
 | `largeGroupReceiptsDisabled` | Tap receipts info on large group |
 | `blockMemberAlert` / `unblockMemberAlert` | "Hide messages?" / "Show messages?": hides a member's messages for the user only |
-| `showBanMemberSheet` | "Ban member?" sheet: "Ban for" 1 day (default), 1 week or Forever; "Ban"; for admins and owners, when the member supports `LINK_NOTICE_VERSION`, also "Ban and remove" and "Ban, remove and delete messages" |
-| `unblockForAllAlert` | "Lift ban?" |
-| `showRemoveBannedMemberSheet` | "Remove member?" for a banned member that supports `LINK_NOTICE_VERSION`: "Ban for", removal without notification |
-| `removeBannedMember` | removal with a ban; with Forever, "Remove forever?" asks to type "yes" |
+| `showBanMemberSheet` | "Block member for all?" sheet: "Block for" 1 day (default), 1 week or Forever; "Block"; for admins and owners, when the member supports `LINK_NOTICE_VERSION`, also "Block and remove" and "Block, remove and delete messages" |
+| `unblockForAllAlert` | "Unblock member for all?" |
+| `showRemoveBannedMemberSheet` | "Remove member?" for a blocked member that supports `LINK_NOTICE_VERSION`: "Block for", removal without notification |
+| `removeBannedMember` | removal with a block; with Forever, "Remove forever?" asks to type "yes" |
 
 ## Channel Adaptations
 
@@ -224,8 +224,8 @@ Owner sees relay status from `apiGetGroupRelays`; non-owner sees connection stat
 | Block section | Hidden for non-moderator users |
 | Remove button | Hidden for relay members |
 | "Remove member" label | "Remove subscriber" |
-| "Ban member?" sheet | "Ban subscriber?", "subscribers" and "channel link" in the texts |
-| "Lift ban?" alert | "Messages from <name> will be shown for all subscribers." |
+| "Block member for all?" sheet | "Block subscriber for all?", "subscribers" and "channel link" in the texts |
+| "Unblock member for all?" alert | "Unblock subscriber for all?", "Messages from <name> will be shown for all subscribers." |
 | Relay link info row | Shown when `member.relayLink` exists, displays `hostFromRelayLink(link)` |
 | Relay address info row | Shown when `groupRelay?.userChatRelay.address` exists, with "Share relay address" button |
 | Status row (rejected) | Shown when `groupRelay?.relayStatus == .rsRejected`: "Status: rejected by relay operator". The relay rejected the invitation to rejoin this channel after a prior `/leave`; the owner-side `GroupMember.memberStatus` is also set to `.memLeft` so the relay renders identically to one that explicitly left. Clearable only by the relay operator running `/group allow #<channel>`. |

@@ -136,7 +136,7 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | `apiListMembers` | `groupId` | List group members | [L83](../Shared/Model/AppAPITypes.swift#L83) |
 | `apiUpdateGroupProfile` | `groupId, groupProfile` | Update group name/image/description | [L84](../Shared/Model/AppAPITypes.swift#L84) |
 | `apiMembersRole` | `groupId, memberIds, memberRole` | Change member roles | [L79](../Shared/Model/AppAPITypes.swift#L79) |
-| `apiBlockMembersForAll` | `groupId, memberIds, blocked, ttl` | Ban members (block for all), for `ttl` seconds or forever | [L84](../Shared/Model/AppAPITypes.swift#L84) |
+| `apiBlockMembersForAll` | `groupId, memberIds, blocked, ttl` | Block members for all, for `ttl` seconds or forever | [L84](../Shared/Model/AppAPITypes.swift#L84) |
 | `apiCreateGroupLink` | `groupId, memberRole` | Create shareable group link | [L85](../Shared/Model/AppAPITypes.swift#L85) |
 | `apiGroupLinkMemberRole` | `groupId, memberRole` | Change group link default role | [L86](../Shared/Model/AppAPITypes.swift#L86) |
 | `apiDeleteGroupLink` | `groupId` | Delete group link | [L87](../Shared/Model/AppAPITypes.swift#L87) |
