@@ -175,6 +175,9 @@ send_image() {
 check_cards_while_searching() {
   local card tree
   "$ui" relaunch
+  if "$ui" wait "SimpleX Lock" 10 > /dev/null; then
+    "$ui" tap Cancel
+  fi
   "$ui" shot search-empty
   for card in "${search_cards[@]}"; do
     expect_in_tree -F "\"$card\""
@@ -183,6 +186,7 @@ check_cards_while_searching() {
   "$ui" type imag
   sleep 2
   "$ui" shot search-typed
+  expect_in_tree -F 'value="imag"'
   expect_in_tree -iF '"image notes"'
   tree=$("$ui" tree)
   for card in "${search_cards[@]}"; do
