@@ -44,7 +44,7 @@ fun ItemTextCard(ci: ChatItem, firstLineFontSize: TextUnit, inlineMeta: (@Compos
       }
     }
   } else {
-    Surface(modifier, shape = RoundedCornerShape(18.dp), color = color, contentColor = LocalContentColor.current) {
+    Surface(modifier.messageCard(), shape = RoundedCornerShape(18.dp), color = color, contentColor = LocalContentColor.current) {
       Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
         text()
       }

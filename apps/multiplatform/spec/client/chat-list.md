@@ -330,7 +330,7 @@ Uses `AnimatedViewState` (`GONE`, `VISIBLE`, `HIDING`) with a `MutableStateFlow`
 fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Unit)
 ```
 
-Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfundingAvailable()` — always outside Play Store builds, and in Play builds only while the store country is the US or not yet known — and only while `getStakeBannerDismissed` is false.
+Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfundingAvailable()` — always outside Play Store builds, and in Play builds only once the store country is known and is the US (or empty) — and only while `getStakeBannerDismissed` is false.
 
 ### Placement
 
@@ -356,7 +356,7 @@ The badge alert banner always offers the X; only the pitch waits to be tapped on
 
 Both are in `AppPreferences.hintPreferences`, so "Reset all hints" restores the banner. The X is never offered below the onboarding cards, so the banner cannot be dismissed before the user has a chat.
 
-Tapping the card runs `openGetStake()`, which opens `GetStakeView` as a card modal.
+Tapping the card runs `openGetStake()`, which opens `GetStakeView(showFirstImage = true)` as a card modal — `showFirstImage` decides whether the page repeats the first slide's image, which only What's New shows above its own link.
 
 ### Shared card chrome
 

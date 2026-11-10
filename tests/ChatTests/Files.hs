@@ -22,14 +22,16 @@ import qualified Data.Text as T
 import Network.HTTP.Types.URI (urlEncode)
 import Data.Time.Clock (addUTCTime, getCurrentTime, nominalDay)
 import Simplex.Chat.Badges (BadgeProof, BadgeStatus (..), BadgeType (..), FileSizeLimits (..), ProofPresHeader (..), badgeProof, defaultFileSizeLimits)
-import Simplex.Chat.Controller (ChatCommand (APIGetChat), ChatConfig (..), ChatPagination (CPLast), ChatResponse (CRApiChat))
+import Simplex.Chat.Controller (ChatCommand (APIGetChat), ChatConfig (..), ChatPagination (CPLast), ChatResponse (CRApiChat, CRNewChatItems))
+import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Commands (execChatCommand')
 import Simplex.Chat.Library.Internal (badgeProofStatus, roundedFDCount)
-import Simplex.Chat.Messages (AChat (..), CChatItem (..), Chat (..), ChatItem (..), ChatRef (..), ChatType (..))
+import Simplex.Chat.Markdown (parseMaybeMarkdownList)
+import Simplex.Chat.Messages (AChat (..), AChatItem (..), CChatItem (..), CIQuote (CIQuote, content, formattedText), Chat (..), ChatItem (..), ChatRef (..), ChatType (..))
 import Simplex.Chat.Messages.CIContent (ciMsgContent)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Protocol (MsgContent (MCImage))
+import Simplex.Chat.Protocol (MsgContent (MCImage, MCText))
 import Simplex.Chat.Types (ImageData (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..))
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, bbsKeyGen)
@@ -50,6 +52,7 @@ chatFileTests = do
     it "files folder: sender deleted file" testFilesFoldersImageSndDelete -- TODO add test deleting during upload
     it "files folder: recipient deleted file" testFilesFoldersImageRcvDelete -- TODO add test deleting during download
     it "send and receive image with text and quote" testSendImageWithTextAndQuote
+    it "image reply to voice message has quote parsed from its full text" testImageReplyToVoiceMessage
     it "send and receive image to group" testGroupSendImage
     it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
   describe "batch send messages with files" $ do
@@ -181,12 +184,12 @@ testSendImagePreview =
   testChat2 aliceProfile bobProfile $
     \alice bob -> withXFTPServer alice $ do
       connectUsers alice bob
-      alice ##> "/img @bob ./tests/fixtures/test.jpg"
-      alice <# "/f @bob ./tests/fixtures/test.jpg"
+      alice ##> "/img @bob ./tests/fixtures/logo.jpg"
+      alice <# "/f @bob ./tests/fixtures/logo.jpg"
       alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <# "alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      alice <## "completed uploading file 1 (test.jpg) for bob"
+      alice <## "completed uploading file 1 (logo.jpg) for bob"
       preview <- lastImagePreview bob 2
       T.length preview `shouldSatisfy` (<= 14000)
       preview `shouldSatisfy` ("data:image/jpg;base64," `T.isPrefixOf`)
@@ -392,6 +395,34 @@ testSendImageWithTextAndQuote =
       bob <## "completed receiving file 3 (test.jpg) from alice"
 
       B.readFile (tmpFile bob "test_1.jpg") `shouldReturn` src
+
+testImageReplyToVoiceMessage :: HasCallStack => TestParams -> IO ()
+testImageReplyToVoiceMessage =
+  testChat2 aliceProfile bobProfile $
+    \alice@TestCC {chatController = cc} bob -> do
+      createGroup2 "team" alice bob
+      bob ##> ("/_send @2 json " <> voice)
+      bob <# "@alice voice message (00:10); hi"
+      alice <# "bob> voice message (00:10); hi"
+      replyWithImage cc "@2" =<< lastItemId alice
+      bob <# "alice> > voice message (00:10); hi"
+      bob <## "      reply"
+      bob ##> ("/_send #1 json " <> voice)
+      bob <# "#team voice message (00:10); hi"
+      alice <# "#team bob> voice message (00:10); hi"
+      replyWithImage cc "#1" =<< lastItemId alice
+      bob <# "#team alice!> > bob voice message (00:10); hi"
+      bob <## "      reply"
+  where
+    voice = "[{\"msgContent\": {\"text\":\"*hi*\",\"type\":\"voice\",\"duration\":10}}]"
+    quotedText = "voice message (00:10); *hi*"
+    replyWithImage cc chatRef quotedId = do
+      r <- sendChatCmdStr cc ("/_send " <> chatRef <> " json [{\"quotedItemId\": " <> quotedId <> ", \"msgContent\": {\"text\":\"reply\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]")
+      case r of
+        Right (CRNewChatItems _ [AChatItem _ _ _ ChatItem {quotedItem = Just CIQuote {content = qmc, formattedText = ft}}]) -> do
+          qmc `shouldBe` MCText quotedText
+          ft `shouldBe` parseMaybeMarkdownList quotedText
+        _ -> fail $ "no quote: " <> show r
 
 testGroupSendImage :: HasCallStack => TestParams -> IO ()
 testGroupSendImage =

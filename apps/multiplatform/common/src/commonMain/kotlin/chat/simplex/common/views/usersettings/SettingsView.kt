@@ -91,6 +91,7 @@ fun SettingsLayout(
   showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
+  versionInfo: Pair<String, Int?> = appVersionInfo,
 ) {
   val view = LocalMultiplatformView()
   LaunchedEffect(Unit) {
@@ -134,7 +135,7 @@ fun SettingsLayout(
       }
       SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
       AppShutdownItem()
-      AppVersionItem(showVersion)
+      AppVersionItem(showVersion, versionInfo)
     }
 
     if (crowdfundingAvailable()) {
@@ -143,7 +144,7 @@ fun SettingsLayout(
         SettingsActionItem(
           painterResource(MR.images.ic_redeem),
           stringResource(MR.strings.v7_0_crowdfunding),
-          { ModalManager.start.showModal(cardScreen = true) { GetStakeView() } }
+          { ModalManager.start.showModalCloseable(cardScreen = true) { close -> GetStakeView(showFirstImage = true, close = close) } }
         )
       }
     }
@@ -355,12 +356,12 @@ private fun resetHintPreferences() {
 fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { it.isUnchanged() }
 
 @Composable
-fun AppVersionItem(showVersion: () -> Unit) {
-  SectionItemView(showVersion) { AppVersionText() }
+fun AppVersionItem(showVersion: () -> Unit, versionInfo: Pair<String, Int?> = appVersionInfo) {
+  SectionItemView(showVersion) { AppVersionText(versionInfo) }
 }
 
-@Composable fun AppVersionText() {
-  Text(appVersionInfo.first + (if (appVersionInfo.second != null) " (" + appVersionInfo.second + ")" else ""))
+@Composable fun AppVersionText(versionInfo: Pair<String, Int?> = appVersionInfo) {
+  Text(versionInfo.first + (if (versionInfo.second != null) " (" + versionInfo.second + ")" else ""))
 }
 
 @Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, textColor: Color = MaterialTheme.colors.onBackground, stopped: Boolean = false, badge: LocalBadge? = null) {
@@ -546,6 +547,7 @@ fun PreviewSettingsLayout() {
       showCustomModal = { {} },
       showVersion = {},
       withAuth = { _, _, _ -> },
+      versionInfo = "7.1" to 172,
     )
   }
 }

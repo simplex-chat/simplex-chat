@@ -16,6 +16,7 @@ struct BadgesSupportSimplexView: View {
     // set true when presented as a sheet root (from the chat-list banner) — that path doesn't
     // reserve nav-bar space like a NavigationLink push does, so the title lands too close to the top
     var showsAsSheet: Bool = false
+    var servedByAppStore: Bool? = nil
     @State private var whyBuiltActive = false
     @State private var howItWorksActive = false
     @State private var chooseLevelActive = false
@@ -45,37 +46,35 @@ struct BadgesSupportSimplexView: View {
 
                 Spacer(minLength: 0)
 
-                // Store purchases are not released on iOS: TestFlight buys in the sandbox, which the
-                // service refuses for good. The badge is chosen on the site, and the code redeemed here.
-                // Revert this commit to restore the block below.
-                // VStack(spacing: 10) {
-                //     chooseLevelButton()
-                //         .padding(.vertical, 10)
-                //     Group {
-                //         if badgeBrowserAllowed {
-                //             buyInBrowserButton()
-                //         } else {
-                //             RedeemCodeButton()
-                //         }
-                //     }
-                //     .frame(height: 22)
-                //     RestorePurchasesButton()
-                //         .frame(height: 22)
-                //         .padding(.top, 10)
-                //     Text("If you were charged but have no badge, this adds it. A subscription bought with this App Store account moves to this profile, and the device or profile that had it loses its badge at its next renewal.")
-                //         .font(.footnote)
-                //         .foregroundColor(theme.colors.secondary)
-                //         .multilineTextAlignment(.center)
-                //         .fixedSize(horizontal: false, vertical: true)
-                // }
                 VStack(spacing: 10) {
-                    chooseBadgeOnSiteButton()
-                        .padding(.vertical, 10)
-                    Group {
-                        RedeemCodeButton()
+                    if servedByAppStore ?? store.servedByAppStore {
+                        chooseLevelButton()
+                            .padding(.vertical, 10)
+                        Group {
+                            if badgeBrowserAllowed {
+                                buyInBrowserButton()
+                            } else {
+                                RedeemCodeButton()
+                            }
+                        }
+                        .frame(height: 22)
+                        RestorePurchasesButton()
+                            .frame(height: 22)
+                            .padding(.top, 10)
+                        Text("If you were charged but have no badge, this adds it. A subscription bought with this App Store account moves to this profile, and the device or profile that had it loses its badge at its next renewal.")
+                            .font(.footnote)
+                            .foregroundColor(theme.colors.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        chooseBadgeOnSiteButton()
+                            .padding(.vertical, 10)
+                        Group {
+                            RedeemCodeButton()
+                        }
+                        .frame(height: 22)
+                        BadgeInvestorOffer(level: .supporter).hidden()
                     }
-                    .frame(height: 22)
-                    BadgeInvestorOffer(level: .supporter).hidden()
                 }
                 .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
             }
@@ -88,6 +87,7 @@ struct BadgesSupportSimplexView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
+        .task { await store.readEnvironment() }
     }
 
     private func chooseLevelButton() -> some View {
@@ -151,7 +151,6 @@ struct BadgesSupportSimplexView: View {
         }
     }
 
-    // delete with the commented block above to restore store purchases
     private func chooseBadgeOnSiteButton() -> some View {
         Button {
             UIApplication.shared.open(URL(string: badgePageUrl)!)
@@ -233,7 +232,7 @@ struct PhoneSupporterHero: View {
 struct BadgesSupportSimplexView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesSupportSimplexView()
+            BadgesSupportSimplexView(servedByAppStore: true)
         }
     }
 }

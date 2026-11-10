@@ -309,6 +309,7 @@ struct SettingsView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var badgeModel = BadgeModel.shared
     @State private var showProgress: Bool = false
+    var versionText: String? = appVersion
 
     var body: some View {
         ZStack {
@@ -419,14 +420,14 @@ struct SettingsView: View {
                         .navigationBarTitle("App version")
                         .modifier(ThemedBackground(grouped: true))
                 } label: {
-                    Text(verbatim: "v\(appVersion ?? "?")")
+                    Text(verbatim: "v\(versionText ?? "?")")
                 }
             }
 
             if isInUS {
                 Section(header: Text("Own a part of SimpleX Chat").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
-                        GetStakeView(fromSettings: true)
+                        GetStakeView(fromSettings: true, showFirstImage: true)
                             .navigationBarTitle("", displayMode: .inline)
                     } label: {
                         settingsRow("dollarsign.circle", color: theme.colors.secondary) { Text("Crowdfunding on Wefunder") }
@@ -637,7 +638,7 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.currentUser = User.sampleData
-        return SettingsView()
+        return SettingsView(versionText: "7.1")
             .environmentObject(chatModel)
     }
 }
