@@ -92,7 +92,8 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "answers a stored terms text after a restart while its host answers 404 and while fetches wait, fetching again one stored with another SHA-256 and logging it" $ testTermsTextStored g
     it "fetches both current terms texts, storing them, and logs links it cannot read" $ testCurrentTermsFetched g
     it "answers a fetched terms text from memory when it cannot be stored, logging the failure" $ testTermsTextNotStored g
-    it "takes only a git.simplex.chat link of one .md file at one commit with the file's SHA-256, or a loopback link on the local chain, fetching nothing else" $ testTermsLinkForms g
+    it "takes only a git.simplex.chat or raw.githubusercontent.com link of one .md file at one commit, with or without the file's SHA-256, or a loopback link with it on the local chain, fetching nothing else" $ testTermsLinkForms g
+    it "takes the mainnet policy's links, and answers a text its link pins only by commit from the database after a restart while its host answers 404" $ testTermsTextByCommit g
     it "refuses an answer other than a 200 UTF-8 text of at most 256 KB with the link's SHA-256, following no redirect" $ testTermsTextRefused g
     it "fetches no terms text for 30 seconds after a failed fetch, or as long as its Retry-After asks, up to an hour" $ testTermsBackoff g
     it "gives up a terms fetch past the call timeout" $ testTermsTimeout g
@@ -225,6 +226,22 @@ testTermsTextNotStored g = withServiceStore $ \st -> withFakeEthNode $ \node -> 
   withTransaction st (`getTermsText` tmHash general) `shouldReturn` Nothing
   fetchedTexts node `shouldReturn` [generalPath]
 
+testTermsTextByCommit :: TVar ChaChaDRG -> IO ()
+testTermsTextByCommit g = withServiceStores $ \open -> withFakeEthNode $ \node -> do
+  let contracts = open >>= \st -> newContracts st TLDSimplex =<< fakeChainClient g node
+      mainnetPath file = "/simplex-chat/simplex-chat/72fcd35893ec8ea20531757a455699f41fbaf84e/docs/" <> file
+      mainnetTerms file = fromJust $ termsOf $ "https://raw.githubusercontent.com" <> mainnetPath file
+      generalPath = mainnetPath "NAMES-TERMS-GENERAL.md"
+      general = mainnetTerms "NAMES-TERMS-GENERAL.md"
+  ct <- contracts
+  mapM (termsLinkAllowed ct . mainnetTerms) ["NAMES-TERMS-GENERAL.md", "NAMES-TERMS-COMMUNITY.md"] `shouldReturn` [True, True]
+  answerText node generalPath $ servedText fakeGeneralTermsText
+  termsText ct general `shouldReturn` Right "SimpleX general terms v1"
+  answerText node generalPath $ TextAnswer status404 [] ""
+  restarted <- contracts
+  termsText restarted general `shouldReturn` Right "SimpleX general terms v1"
+  fetchedTexts node `shouldReturn` [generalPath]
+
 testTermsLinkForms :: TVar ChaChaDRG -> IO ()
 testTermsLinkForms g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   c <- fakeChainClient g node
@@ -233,12 +250,23 @@ testTermsLinkForms g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   let digest = T.drop 2 $ hex $ C.sha256Hash fakeGeneralTermsText
       commit = T.replicate 40 "a"
       commitPath path = "/simplex-chat/simplex-chat/raw/commit/" <> commit <> path
-      taken = ["https://git.simplex.chat" <> commitPath "/docs/terms.md", "https://git.simplex.chat" <> commitPath "/a/b_c-d.e/terms.v1.md", "http://127.0.0.1:8098/terms/terms.md"]
-  forM_ [commitPath "/docs/terms.md", commitPath "/a/b_c-d.e/terms.v1.md", "/terms/terms.md"] $ \path -> answerText node path $ servedText fakeGeneralTermsText
+      githubPath path = "/simplex-chat/simplex-chat/" <> commit <> path
+      pinnedByCommit = ["https://git.simplex.chat" <> commitPath "/docs/terms.md", "https://raw.githubusercontent.com" <> githubPath "/docs/NAMES-TERMS-GENERAL.md"]
+      taken = pinnedByCommit <> ["https://git.simplex.chat" <> commitPath "/a/b_c-d.e/terms.v1.md", "http://127.0.0.1:8098/terms/terms.md"]
+  forM_ [commitPath "/docs/terms.md", commitPath "/a/b_c-d.e/terms.v1.md", githubPath "/docs/NAMES-TERMS-GENERAL.md", "/terms/terms.md"] $ \path -> answerText node path $ servedText fakeGeneralTermsText
   forM_ taken $ \url -> termsText ct (fromJust $ termsOf $ url <> "#sha256=" <> digest) `shouldReturn` Right "SimpleX general terms v1"
+  forM_ pinnedByCommit $ \url -> termsText ct (fromJust $ termsOf url) `shouldReturn` Right "SimpleX general terms v1"
   let refused link = (link,) <$> termsText ct (fromJust $ termsOf link) `shouldReturn` (link, Left TRLink)
   forM_
     [ "http://git.simplex.chat" <> commitPath "/docs/terms.md#sha256=" <> digest,
+      "http://raw.githubusercontent.com" <> githubPath "/docs/terms.md",
+      "https://raw.githubusercontent.com/simplex-chat/simplexmq/" <> commit <> "/docs/terms.md",
+      "https://raw.githubusercontent.com/simplex-chat/simplex-chat/" <> T.replicate 39 "a" <> "/docs/terms.md",
+      "https://raw.githubusercontent.com/simplex-chat/simplex-chat/" <> T.replicate 40 "A" <> "/docs/terms.md",
+      "https://raw.githubusercontent.com" <> githubPath "/docs/terms.txt",
+      "https://raw.githubusercontent.com" <> githubPath "/docs/../terms.md",
+      "https://raw.githubusercontent.com/simplex-chat/simplex-chat/raw/commit/" <> commit <> "/docs/terms.md",
+      "https://git.simplex.chat" <> commitPath "/docs/terms.md#",
       "https://git.simplex.chat/simplex-chat/simplexmq/raw/commit/" <> commit <> "/docs/terms.md#sha256=" <> digest,
       "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/" <> T.replicate 39 "a" <> "/docs/terms.md#sha256=" <> digest,
       "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/" <> T.replicate 40 "A" <> "/docs/terms.md#sha256=" <> digest,
@@ -248,10 +276,10 @@ testTermsLinkForms g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       "https://git.simplex.chat" <> commitPath "/docs//terms.md#sha256=" <> digest,
       "https://git.simplex.chat" <> commitPath "/docs/terms%2E.md#sha256=" <> digest,
       "https://git.simplex.chat" <> commitPath "/docs/terms.md?raw=1#sha256=" <> digest,
-      "https://git.simplex.chat" <> commitPath "/docs/terms.md",
       "https://git.simplex.chat" <> commitPath "/docs/terms.md#sha256=" <> T.toUpper digest,
       "https://git.simplex.chat" <> commitPath "/docs/terms.md#sha256=" <> T.drop 1 digest,
       "https://git.simplex.chat" <> commitPath "/docs/terms.md#sha1=" <> digest,
+      "http://127.0.0.1:8098/terms/terms.md",
       "http://localhost:8098/terms/terms.md#sha256=" <> digest,
       "http://127.0.0.1:08098/terms/terms.md#sha256=" <> digest,
       "http://127.0.0.1:65536/terms/terms.md#sha256=" <> digest
@@ -260,7 +288,7 @@ testTermsLinkForms g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   termsText otherChain (fromJust $ termsOf $ "http://127.0.0.1:8098/terms/terms.md#sha256=" <> digest) `shouldReturn` Left TRLink
   setFault node "eth_chainId" (Answers (J.String "0x1"))
   termsText ct (fromJust $ termsOf $ "http://127.0.0.1:8099/terms/terms.md#sha256=" <> digest) `shouldReturn` Left TRLink
-  length <$> fetchedTexts node `shouldReturn` 3
+  length <$> fetchedTexts node `shouldReturn` 6
 
 testTermsTextRefused :: TVar ChaChaDRG -> IO ()
 testTermsTextRefused g = withContracts g $ \node ct0 -> do

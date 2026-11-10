@@ -284,12 +284,12 @@ fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBacko
     store text =
       withTransaction ctStore (\db -> setTermsText db tmHash $ encodeUtf8 text)
         `catchOwn'` \e -> logError ("names: the terms text of " <> tmLink <> " could not be stored: " <> tshow e)
-    checked :: ByteString -> ByteString -> Either (Text, Maybe Int) Text
+    checked :: Maybe ByteString -> ByteString -> Either (Text, Maybe Int) Text
     checked digest body
-      | sha256Hash body /= digest = Left ("its SHA-256 is not the link's", Nothing)
+      | any (sha256Hash body /=) digest = Left ("its SHA-256 is not the link's", Nothing)
       | otherwise = first (const ("not UTF-8", Nothing)) $ decodeUtf8' body
 
-allowedLink :: ChainClient -> Text -> IO (Maybe (String, ByteString))
+allowedLink :: ChainClient -> Text -> IO (Maybe (String, Maybe ByteString))
 allowedLink c@ChainClient {ccConfig = ChainConfig {cChainId}} link = case termsLinkParts link of
   Just (False, parts) -> pure $ Just parts
   Just (True, parts)
@@ -299,16 +299,18 @@ allowedLink c@ChainClient {ccConfig = ChainConfig {cChainId}} link = case termsL
           _ -> Nothing
   _ -> pure Nothing
 
-termsLinkParts :: Text -> Maybe (Bool, (String, ByteString))
+termsLinkParts :: Text -> Maybe (Bool, (String, Maybe ByteString))
 termsLinkParts link = do
-  digest <- bytes32FromHex . ("0x" <>) =<< T.stripPrefix "#sha256=" fragment
-  (loopback, path) <- (False,) <$> forgejoPath <|> (True,) <$> loopbackPath
-  guard $ maybe False (not . T.null) (T.stripSuffix ".md" path) && all segment (T.splitOn "/" path)
+  digest <- if T.null fragment then pure Nothing else Just <$> (bytes32FromHex . ("0x" <>) =<< T.stripPrefix "#sha256=" fragment)
+  (loopback, path) <- (False,) <$> (commitPath forgejoPrefix <|> commitPath githubPrefix) <|> (True,) <$> loopbackPath
+  guard $ (isJust digest || not loopback) && maybe False (not . T.null) (T.stripSuffix ".md" path) && all segment (T.splitOn "/" path)
   pure (loopback, (T.unpack url, digest))
   where
     (url, fragment) = T.breakOn "#" link
-    forgejoPath = do
-      (commit, path) <- T.splitAt commitChars <$> T.stripPrefix "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/" url
+    forgejoPrefix = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/"
+    githubPrefix = "https://raw.githubusercontent.com/simplex-chat/simplex-chat/"
+    commitPath prefix = do
+      (commit, path) <- T.splitAt commitChars <$> T.stripPrefix prefix url
       guard $ T.length commit == commitChars && T.all lowerHex commit
       T.stripPrefix "/" path
     loopbackPath = do

@@ -821,27 +821,29 @@ A community name is registered for 2 paid years, plus the free days before `[nam
 whatever years `[names] years` or its prepaid code gives, since the controller registers a community
 name for at most 1095 days.
 
-Each link names one file at one commit of simplex-chat/simplex-chat on git.simplex.chat, with the
-sha256 of the file's bytes:
+Each link names one file at one commit of simplex-chat/simplex-chat, on git.simplex.chat or GitHub,
+optionally with the sha256 of the file's bytes:
 
 ```
-https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/<40 lower-case hex>/<path>#sha256=<64 lower-case hex>
+https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/<40 lower-case hex>/<path>[#sha256=<64 lower-case hex>]
+https://raw.githubusercontent.com/simplex-chat/simplex-chat/<40 lower-case hex>/<path>[#sha256=<64 lower-case hex>]
 ```
 
 The path is one or more segments of letters, digits, `_`, `-` and `.`, separated by `/`, with no empty,
-`.` or `..` segment, and ends in `.md`. The terms' hash, which orders sign and the policy records with
-each acceptance, is the keccak256 of the link. With `[chain] chain_id = 31337` and a node of that chain
-id, the service also takes a link of a file on this machine, `http://127.0.0.1:<port>/<path>#sha256=<64
-lower-case hex>`, as the dev scripts set.
+`.` or `..` segment, and ends in `.md`. Without the fragment, the commit alone pins the file. The terms'
+hash, which orders sign and the policy records with each acceptance, is the keccak256 of the link. With
+`[chain] chain_id = 31337` and a node of that chain id, the service also takes a link of a file on this
+machine, `http://127.0.0.1:<port>/<path>#sha256=<64 lower-case hex>`, always with the sha256, as the dev
+scripts set.
 
 The service reads both links at one block for each request that needs them, so a change on chain
 applies at once. It fetches each text once, without the link's fragment, following no redirect, within
-10 seconds: a `200` answer of at most 256 KB, valid UTF-8, whose sha256 is the link's. It keeps each text by its hash,
-in memory and in the table `sx_badge_service_name_terms`, and fetches one at a time. A stored text
-is read before any fetch and used only when its sha256 is the link's, so a restart while
-git.simplex.chat is down keeps the texts fetched before it. The table is empty after the upgrade to
-this version, so its first start needs git.simplex.chat to fetch them; a stored text that fails the
-check is logged and fetched again. A text that cannot be stored is logged and kept in memory only. After a failed fetch it fetches no text for 30 seconds, or for longer, up to an
+10 seconds: a `200` answer of at most 256 KB, valid UTF-8, with the link's sha256 when the link has
+one. It keeps each text by its hash, in memory and in the table `sx_badge_service_name_terms`, and
+fetches one at a time. A stored text is read before any fetch and used only when it is valid UTF-8
+with the link's sha256, if any, so a restart while the links' host is down keeps the texts fetched
+before it. The table is empty after the upgrade to this version, so its first start needs that host
+to fetch them; a stored text that fails the check is logged and fetched again. A text that cannot be stored is logged and kept in memory only. After a failed fetch it fetches no text for 30 seconds, or for longer, up to an
 hour, when the answer's `Retry-After` asks, and logs why. `GET /api/terms/<hash>` answers
 `{"link", "text"}` for the hash of either current link, `404` for any other hash or a link the service
 does not take, and meanwhile `503 terms_unavailable` with `Retry-After` for a text not fetched yet.

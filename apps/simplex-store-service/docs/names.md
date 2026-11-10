@@ -47,7 +47,7 @@ flowchart LR
   db[("PostgreSQL<br/>chat schema and service tables")]
   eth["Ethereum node<br/>names contracts"]
   smp["SMP servers<br/>through an SMP proxy"]
-  git["git.simplex.chat<br/>terms texts"]
+  git["git.simplex.chat or GitHub<br/>terms texts"]
 
   page -->|"/api calls"| web
   page -.->|"card or crypto payment"| pay
@@ -113,7 +113,7 @@ How a request flows:
 | Stripe | Card PaymentIntents: create with an `Idempotency-Key`, read, list, cancel, also after 3 declined charges; webhooks signed with `Stripe-Signature`, within 15 minutes. | [`Providers/Stripe.hs:101-302`](../src/StoreService/Providers/Stripe.hs#L101-L302) |
 | Ethereum node and names contracts | `[chain] rpc_url`: https, or http to a node on loopback. Controller, sponsor, base registrar and resolver are set in `[chain]`; the registry is read from `ens()`, the name policy from `namePolicy()`. The registrar key's USD allowance on the sponsor is raised outside the service with `setRegistrarAllowance`; on an `InsufficientAllowance` revert the order waits and an error is logged. | [`Config.hs:186-198`](../src/StoreService/Config.hs#L186-L198), [`Config.hs:698-703`](../src/StoreService/Config.hs#L698-L703), [`Names/Contracts.hs:150-220`](../src/StoreService/Names/Contracts.hs#L150-L220), [`Names/Worker.hs:341`](../src/StoreService/Names/Worker.hs#L341) |
 | SMP servers and proxy | Hold the bot address, the group's queues and the data of buyers' short links. Private routing for unknown servers, with a protected fallback, is preset by `terminalChatConfig`. | [`Chat/Terminal.hs:41-63`](../../../src/Simplex/Chat/Terminal.hs#L41-L63), [`Chat/Library/Internal.hs:1723-1726`](../../../src/Simplex/Chat/Library/Internal.hs#L1723-L1726) |
-| git.simplex.chat | Hosts the terms files the name policy links to, at a fixed commit, with the sha256 in the link. A loopback link is taken only on chain 31337. | [`Names/Contracts.hs:229-290`](../src/StoreService/Names/Contracts.hs#L229-L290) |
+| git.simplex.chat or raw.githubusercontent.com | Hosts the terms files the name policy links to, at a fixed commit, optionally with the sha256 in the link. A loopback link, always with the sha256, is taken only on chain 31337. | [`Names/Contracts.hs:292-324`](../src/StoreService/Names/Contracts.hs#L292-L324) |
 
 Deployment, the gas key and Caddy are described in the [README](../README.md#deployment) and in [`scripts/store-service`](../../../scripts/store-service/README.md).
 
@@ -136,7 +136,7 @@ Participants:
 | R | the record edits lane |
 | C | the chat core, or the console under `--run-cli` |
 | M | SMP servers, reached through an SMP proxy |
-| G | git.simplex.chat |
+| G | git.simplex.chat or GitHub |
 | O | an operator: support or a group admin |
 | B | the buyer |
 | U | the startup code: `Main.hs` and `storeService` |
@@ -186,7 +186,7 @@ sequenceDiagram
 Notes:
 
 - The checks are run in the contract's order: timestamp within 600 s, duration (paid years plus the free days until `term_start`), current terms, a name available on chain and not in `registering` here, then the chain price equal to the order's ([`Web/Names/Orders.hs:104-118`](../src/StoreService/Web/Names/Orders.hs#L104-L118), [`Names/Orders.hs:266-310`](../src/StoreService/Names/Orders.hs#L266-L310)). Refusals are listed in [`Web/Names/Orders.hs:344-357`](../src/StoreService/Web/Names/Orders.hs#L344-L357).
-- The terms text is read from the database, or fetched from git.simplex.chat on the first use of its hash and stored; either is checked against the sha256 in its link. While it cannot be read, the order is answered `503 terms_unavailable` ([`Names/Orders.hs:284-291`](../src/StoreService/Names/Orders.hs#L284-L291), [`Names/Contracts.hs:239-290`](../src/StoreService/Names/Contracts.hs#L239-L290), [`Web/Names/Orders.hs:356`](../src/StoreService/Web/Names/Orders.hs#L356)).
+- The terms text is read from the database, or fetched from git.simplex.chat or GitHub on the first use of its hash and stored; either is checked against the sha256 in its link when the link has one. While it cannot be read, the order is answered `503 terms_unavailable` ([`Names/Orders.hs:284-291`](../src/StoreService/Names/Orders.hs#L284-L291), [`Names/Contracts.hs:239-290`](../src/StoreService/Names/Contracts.hs#L239-L290), [`Web/Names/Orders.hs:356`](../src/StoreService/Web/Names/Orders.hs#L356)).
 - The name lock is held across the provider call, and the answer is sent after it. Overdue unpaid orders of the same wallet and name are closed in the order's transaction ([`Web/Names/Orders.hs:76-100`](../src/StoreService/Web/Names/Orders.hs#L76-L100), [`Names/Orders.hs:207-243`](../src/StoreService/Names/Orders.hs#L207-L243)).
 - When the order is not written, its provider invoice is cancelled. Provider checkouts are capped at 30 a minute for all clients together ([`Web/Names/Orders.hs:139-173`](../src/StoreService/Web/Names/Orders.hs#L139-L173), [`Web/Http.hs:151-154`](../src/StoreService/Web/Http.hs#L151-L154)).
 - Stripe is sent `metadata[order]` = `name:0x<order hash>` and an `Idempotency-Key`; BTCPay is sent the amount, the currency and the checkout settings ([`Providers/Stripe.hs:240-269`](../src/StoreService/Providers/Stripe.hs#L240-L269), [`Providers/BTCPay.hs:303-339`](../src/StoreService/Providers/BTCPay.hs#L303-L339)).
@@ -296,7 +296,7 @@ sequenceDiagram
   participant W as Web API
   participant D as PostgreSQL
   participant E as Ethereum node
-  participant G as git.simplex.chat
+  participant G as git.simplex.chat or GitHub
   participant C as Chat core
   participant M as SMP servers
   P->>W: GET /api/name/LABELHASH?length=N
@@ -304,8 +304,8 @@ sequenceDiagram
   W->>E: within 10 s: nameExpires, communityNames, then owner or reservedNames
   alt available
     W->>E: rentPriceUSD, generalTermsLink, communityTermsLink
-    W->>D: terms text stored for the hash, sha256 checked
-    W->>G: terms text when none is stored, once per hash, sha256 checked, then stored
+    W->>D: terms text stored for the hash, sha256 checked when the link has one
+    W->>G: terms text when none is stored, once per hash, sha256 checked when the link has one, then stored
     W-->>P: available: price, years, termStart, terms, community
   else registered
     W->>E: records simplex.contact and simplex.channel, resolver nonce
