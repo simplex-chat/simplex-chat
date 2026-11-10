@@ -974,6 +974,8 @@ describe("session channel", () => {
     session.onMessage(event(sessionGroup, item(50, "/tmp/build.log fails\nfix it", from(mia))))
     session.onMessage(event(sessionGroup, item(51, "!git status", from(mia))))
     session.onMessage(event(sessionGroup, item(52, "//compact\nthen go on", from(mia))))
+    session.onMessage(event(sessionGroup, item(53, "//compact\nthen go on", from(dan))))
+    session.onMessage(event(sessionGroup, item(54, "/!ls\nthen go on", from(dan))))
     await session["delivery"]
     await session.control["ownerCommands"]
     expect(lines).toEqual([
@@ -981,6 +983,8 @@ describe("session channel", () => {
       {prompt: {text: "/tmp/build.log fails\nfix it", from: "Mia", item: 50}},
       {prompt: {text: "!git status", from: "Mia", item: 51}},
       {prompt: {text: "//compact\nthen go on", from: "Mia", item: 52}},
+      {prompt: {text: "//compact\nthen go on", from: "Dan", item: 53}},
+      {prompt: {text: "/!ls\nthen go on", from: "Dan", item: 54}},
     ])
     expect(chat.replies).toEqual([unknownCommand, unknownCommand, unknownCommand, unknownCommand])
     expect(answers(chat)).toEqual([43, 44, 47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]))
