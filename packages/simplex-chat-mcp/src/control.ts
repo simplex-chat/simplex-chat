@@ -17,7 +17,7 @@ export const controlCommands: T.ChatBotCommand[] = [
 ]
 
 const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
-const unknownCommand = "Unknown command. To send a command to Claude, start it with //."
+const unknownCommand = "Unknown command."
 const filesAndMedia = "Files and media"
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
@@ -37,8 +37,8 @@ const greeting = "I'm your agent. I ask here before I connect, send, download a 
 const noOwners = "No owners in the agent control chat."
 const qrCodeHint = "If the QR code does not scan, restart with --qr-code large, or paste the link into the app."
 const noSessionApprover = `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run ${linkCommand} in a terminal.`
-const approverRights = "can send prompts and / commands to Claude, and approve tool use"
-const senderRights = "can send prompts to Claude; / commands and approvals need the role admin or owner"
+const approverRights = "can send prompts to Claude and the group's commands, and approve tool use"
+const senderRights = "can send prompts to Claude; the group's commands and approvals need the role admin or owner"
 const observerRights = "can't send messages"
 export const sessionApproverRoles: T.GroupMemberRole[] = [T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 const roleOrder: T.GroupMemberRole[] = [T.GroupMemberRole.Relay, T.GroupMemberRole.Observer, T.GroupMemberRole.Author, T.GroupMemberRole.Member, T.GroupMemberRole.Moderator, T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]

@@ -16,7 +16,7 @@ import {User} from "../../src/user"
 import {version} from "../../src/version"
 import {FakeChat, contact, direct, event, fileItem, group, groupChat, item, member, signal, until, user} from "./fixtures"
 
-const unknownCommand = "Unknown command. To send a command to Claude, start it with //."
+const unknownCommand = "Unknown command."
 
 const id1 = "11111111-1111-4111-8111-111111111111"
 const id2 = "22222222-2222-4222-8222-222222222222"
@@ -26,10 +26,9 @@ const bob = member(7, "Bob", T.GroupMemberRole.Member)
 const invitedAlice = member(1003, "Alice", T.GroupMemberRole.Owner)
 const noApprover = `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@${version} link in a terminal.`
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
-const bangText = "Messages starting with ! reach Claude only from admins and owners, as /!command."
 const modeCard = "I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here."
-const approverRights = "can send prompts and / commands to Claude, and approve tool use."
-const senderRights = "can send prompts to Claude; / commands and approvals need the role admin or owner."
+const approverRights = "can send prompts to Claude and the group's commands, and approve tool use."
+const senderRights = "can send prompts to Claude; the group's commands and approvals need the role admin or owner."
 const aliceJoined = `Alice is an owner and ${approverRights}`
 const joinRights = "They can join the group of any Claude Code session here, prompt Claude and approve its actions."
 
@@ -107,7 +106,7 @@ describe("session groups", () => {
         groupProfile: {
           displayName: "1 · auth",
           fullName: "",
-          description: "The Claude Code session 1. Members send it prompts; admins and owners also send / commands and approve tool use.",
+          description: "The Claude Code session 1. Members send it prompts; admins and owners also send the group's commands and approve tool use.",
           groupPreferences: {history: {enable: "on"}, directMessages: {enable: "off"}, commands: controlCommands},
         },
       },
@@ -831,9 +830,9 @@ describe("session channel", () => {
     }
     session.onLine = undefined
     session.onMessage(event(sessionGroup, item(43, "a".repeat(15_400), from(invitedAlice))))
-    session.onMessage(event(sessionGroup, item(44, "!ls", from(invitedAlice))))
+    session.onMessage(event(sessionGroup, item(44, "/pending", from(member(13, "Mia", T.GroupMemberRole.Member)))))
     await until(() => answers(chat).length === 2)
-    expect(answers(chat)).toEqual([[{text: "Session 1 is not running.", quotedItemId: undefined}], [{text: bangText, quotedItemId: undefined}]])
+    expect(answers(chat)).toEqual([[{text: "Session 1 is not running.", quotedItemId: undefined}], [{text: commandsApproversOnly, quotedItemId: undefined}]])
   })
 
   it("posts an answer with a new effort level before the prompt of the next turn, and then the description", async () => {
@@ -954,7 +953,7 @@ describe("session channel", () => {
     expect(lines).toHaveLength(1)
   })
 
-  it("answers the one-line / messages of admins and owners as commands of the group, passes their // and /! to the session without the first /, refuses every / command of members and moderators with one reply, passes their other messages as prompts, and refuses ! messages", async () => {
+  it("answers every one-line / message of admins and owners as a command of the group, //help and /!ls included, refuses every / command of members and moderators with one reply, and passes all other messages as prompts, ! messages and multi-line messages included", async () => {
     const chat = new FakeChat()
     const {session, lines} = await channel(chat)
     const dan = member(12, "Dan", T.GroupMemberRole.Admin)
@@ -963,8 +962,8 @@ describe("session channel", () => {
     chat.members.set(20, [self, invitedAlice, dan, mia, max])
     await session.control.load()
     session.onMessage(event(sessionGroup, item(40, "/model sonnet", from(invitedAlice))))
-    session.onMessage(event(sessionGroup, item(41, "//model sonnet", from(invitedAlice))))
-    session.onMessage(event(sessionGroup, item(42, "/!git status", from(dan))))
+    session.onMessage(event(sessionGroup, item(41, "//help", from(dan))))
+    session.onMessage(event(sessionGroup, item(42, "/!ls", from(dan))))
     session.onMessage(event(sessionGroup, item(43, "/!git status", from(mia))))
     session.onMessage(event(sessionGroup, item(44, "//compact", from(max))))
     session.onMessage(event(sessionGroup, item(45, "!git status", from(invitedAlice))))
@@ -973,15 +972,23 @@ describe("session channel", () => {
     session.onMessage(event(sessionGroup, item(48, "/approve 1", from(max))))
     session.onMessage(event(sessionGroup, item(49, "/model sonnet", from(mia))))
     session.onMessage(event(sessionGroup, item(50, "/tmp/build.log fails\nfix it", from(mia))))
-    await until(() => lines.length === 3 && chat.replies.length === 2 && answers(chat).length === 6)
-    expect(lines).toEqual([{prompt: {text: "/model sonnet", from: "Alice", item: 41}}, {prompt: {text: "!git status", from: "Dan", item: 42}}, {prompt: {text: "/tmp/build.log fails\nfix it", from: "Mia", item: 50}}])
-    expect(chat.replies).toEqual([unknownCommand, unknownCommand])
-    expect(answers(chat)).toEqual([43, 44].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]).concat([[{text: bangText, quotedItemId: 45}]], [47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}])))
+    session.onMessage(event(sessionGroup, item(51, "!git status", from(mia))))
+    session.onMessage(event(sessionGroup, item(52, "//compact\nthen go on", from(mia))))
+    await session["delivery"]
+    await session.control["ownerCommands"]
+    expect(lines).toEqual([
+      {prompt: {text: "!git status", from: "Alice", item: 45}},
+      {prompt: {text: "/tmp/build.log fails\nfix it", from: "Mia", item: 50}},
+      {prompt: {text: "!git status", from: "Mia", item: 51}},
+      {prompt: {text: "//compact\nthen go on", from: "Mia", item: 52}},
+    ])
+    expect(chat.replies).toEqual([unknownCommand, unknownCommand, unknownCommand, unknownCommand])
+    expect(answers(chat)).toEqual([43, 44, 47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]))
   })
 
-  it("answers nothing and performs nothing for a / command, // or /! of a member that reaches the commands or the prompt past the one refusal", async () => {
+  it("answers nothing and performs nothing for a / command of a member that reaches the commands past the one refusal", async () => {
     const chat = new FakeChat()
-    const {session, lines} = await channel(chat)
+    const {session} = await channel(chat)
     const mia = member(13, "Mia", T.GroupMemberRole.Member)
     chat.members.set(20, [self, invitedAlice, mia])
     await session.control.load()
@@ -989,11 +996,6 @@ describe("session channel", () => {
     await until(() => session.actions.get(1)?.card !== undefined)
     expect(await session.control.ownerCommand(mia, {keyword: "approve", params: "1"})).toBeUndefined()
     expect(session.actions.get(1)?.state).toBe("pending")
-    const posted = chat.sent.length
-    await session["prompt"](event(sessionGroup, item(43, "//compact", from(mia))), "//compact", mia)
-    await session["prompt"](event(sessionGroup, item(44, "/!ls", from(mia))), "/!ls", mia)
-    expect(chat.sent).toHaveLength(posted)
-    expect(lines).toEqual([])
   })
 
   it("answers nothing to a part of a terminal prompt that User posts as one line starting with /, and answers the next command", async () => {

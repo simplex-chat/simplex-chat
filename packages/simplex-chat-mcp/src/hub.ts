@@ -25,7 +25,6 @@ const fileWait = 10 * 60_000
 const pendingDays = 1
 const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
-const bangText = "Messages starting with ! reach Claude only from admins and owners, as /!command."
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
@@ -155,7 +154,7 @@ export class Session {
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
     const {text} = content.msgContent
     if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([commandsApproversOnly], ci.chatItem.meta.itemId))
-    if (!text.startsWith("//") && !text.startsWith("/!") && parseCommand(text) !== undefined) return this.control.onMessage(ci)
+    if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
     this.queue(() => this.prompt(ci, text, chatDir.groupMember))
   }
 
@@ -226,11 +225,7 @@ export class Session {
 
   private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
     if (this.isUser(member)) return
-    const item = ci.chatItem.meta.itemId
-    const command = text.startsWith("//") || text.startsWith("/!")
-    if (command && !this.approves(member)) return
-    if (text.startsWith("!")) return this.post([bangText], item)
-    await this.deliver(ci, command ? text.slice(1) : text, member)
+    await this.deliver(ci, text, member)
   }
 
   private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
@@ -301,7 +296,7 @@ export class Session {
   }
 
   private refusesCommand(text: string, member: T.GroupMember): boolean {
-    return (text.startsWith("//") || text.startsWith("/!") || parseCommand(text) !== undefined) && !this.approves(member) && !this.isUser(member)
+    return parseCommand(text) !== undefined && !this.approves(member) && !this.isUser(member)
   }
 
   private approves(member: T.GroupMember): boolean {
@@ -475,7 +470,7 @@ export class Hub implements SessionGroups {
     const group = await createGroup(this.chat, this.profile.userId, {
       displayName,
       fullName: "",
-      description: `The Claude Code session ${number}. Members send it prompts; admins and owners also send / commands and approve tool use.`,
+      description: `The Claude Code session ${number}. Members send it prompts; admins and owners also send the group's commands and approve tool use.`,
       groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, directMessages: {enable: T.GroupFeatureEnabled.Off}, commands: controlCommands},
     }, {[sessionKey]: {session: number}})
     const user = await userContact(this.chat, this.profile.userId)
