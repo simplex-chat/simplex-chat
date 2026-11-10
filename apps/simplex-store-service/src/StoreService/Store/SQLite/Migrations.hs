@@ -22,8 +22,7 @@ schemaMigrations =
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
     ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
-    ("20261013_names", m20261013_names, Just down_m20261013_names),
-    ("20261109_name_terms", m20261109_name_terms, Just down_m20261109_name_terms)
+    ("20261013_names", m20261013_names, Just down_m20261013_names)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -472,6 +471,11 @@ CREATE INDEX @idx_name_transactions_registration ON @name_transactions(registrat
 CREATE INDEX @idx_name_transactions_edit ON @name_transactions(name_record_edit_id);
 
 CREATE INDEX @idx_name_transactions_status ON @name_transactions(status, registrar_nonce);
+
+CREATE TABLE @name_terms(
+  terms_hash BLOB NOT NULL PRIMARY KEY,
+  terms_text BLOB NOT NULL
+) STRICT;
 |]
 
 -- SQLite refuses to drop a column in a foreign key, and dropping a table deletes its rows first,
@@ -482,6 +486,8 @@ down_m20261013_names =
   withPrefix
     servicePrefix
     [sql|
+DROP TABLE @name_terms;
+
 DROP INDEX @idx_name_transactions_status;
 DROP INDEX @idx_name_transactions_edit;
 DROP INDEX @idx_name_transactions_registration;
@@ -528,25 +534,6 @@ UPDATE @name_prepaid_codes SET reserved_by = NULL;
 DROP TABLE @name_registrations;
 
 DROP TABLE @name_prepaid_codes;
-|]
-
-m20261109_name_terms :: Query
-m20261109_name_terms =
-  withPrefix
-    servicePrefix
-    [sql|
-CREATE TABLE @name_terms(
-  terms_hash BLOB NOT NULL PRIMARY KEY,
-  terms_text BLOB NOT NULL
-) STRICT;
-|]
-
-down_m20261109_name_terms :: Query
-down_m20261109_name_terms =
-  withPrefix
-    servicePrefix
-    [sql|
-DROP TABLE @name_terms;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

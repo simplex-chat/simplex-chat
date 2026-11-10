@@ -590,9 +590,10 @@ from `scripts/store-service/`. The database `badge_service`,
 
 A badge-service database upgrades in place: the store's own migrations run after every badge
 migration, `20261012_badge_subscriptions` included. A database that ran the names migrations of
-an earlier draft (`20261010_names`, or the steps dated between `20261013_names` and
-`20261109_name_terms`) does not start, as the service refuses to roll back migrations it does not
-list. Recreate such a database.
+an earlier draft (`20261010_names`, or the steps dated after `20261013_names`) does not start, as
+the service refuses to roll back migrations it does not list. A database that ran `20261013_names`
+before it created `sx_badge_service_name_terms` starts without that table, and every terms read
+fails. Recreate such a database.
 
 ### Two sites
 
