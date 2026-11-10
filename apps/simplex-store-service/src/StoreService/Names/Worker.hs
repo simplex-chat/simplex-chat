@@ -274,15 +274,15 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrCommitment, nrReve
         _ -> do
           logError $ "names worker: the order with commitment " <> hex nrCommitment <> " failed: its buyer did not sign it in time"
           save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notSignedInTime}
-      Just rv@NameReveal {rvAcceptance, rvDeadline}
-        | unlapsed ->
-            (pure rvAcceptance $>>= relayAcceptance w now r rvDeadline) >>= \case
-              Just next -> pure next
-              Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
-                Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
-                _ -> sendRegister w now r rv
-        | otherwise -> save w now (lapsedFields r) {nrPhase = PQueued}
+      Just rv@NameReveal {rvAcceptance, rvDeadline} ->
+        (pure (if unlapsed then rvAcceptance else Nothing) $>>= relayAcceptance w now r rvDeadline) >>= \case
+          Just next -> pure next
+          Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
+            Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
+            _ -> sendRegister w now r rv
   where
+    -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then
+    -- fails the order as it does a plain name's
     unlapsed = all ((now <=) . secondsTime . toInteger) nrRevealBefore
 
 -- | The relay of the reveal's acceptance to the name policy, sent without waiting for revealAfter; Nothing once the policy
@@ -396,7 +396,9 @@ taken Worker {wkOrders = OrdersEnv {oeStore, oeTurns}} now r@NameRegistration {n
 
 -- | A code order keeps its code for Try again.
 failed :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
-failed w now r = store w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notRegistered}
+failed w now r@NameRegistration {nrCommitment} = do
+  logError $ "names worker: the order with commitment " <> hex nrCommitment <> " failed: its register did not go through"
+  store w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notRegistered}
 
 -- | A compare-and-set on the version read, in the caller's turn of the name.
 store :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)

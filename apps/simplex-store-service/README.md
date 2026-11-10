@@ -1139,7 +1139,8 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   with `InsufficientAllowance`. The order keeps its phase and its register is tried again every 15
   seconds, so a top-up before its commitment lapses registers it with no restart. The line is
   logged once per order, and registration is paused, see
-  [Registration paused](#registration-paused). A register that passes its dry run and reverts once
+  [Registration paused](#registration-paused). An order whose commitment lapses first fails, and the
+  buyer can Try again. A register that passes its dry run and reverts once
   mined, as two registers sent while the allowance covers one can, returns its order to `committed`
   while the name is available, and the next register's dry run finds the cause.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
@@ -1176,9 +1177,8 @@ While it is paused:
 - every registration view has `"paused": true`, and a queued order's view has
   `queue: {"position": n, "of": m}`, oldest first, as it has while registration runs.
 
-A revealed order whose commitment lapses before its register goes back to `queued`, its reveal
-cleared, paused or not, and the buyer signs again once it is committed again; its commits count
-toward the 5 an order may send.
+A committed order whose commitment lapses before its register fails, paused or not, and the buyer
+uses Try again once registration resumes.
 
 Every 15 seconds the service reads the allowance and the prices again. Registration resumes once the
 allowance covers every order in `queued` to `registering`. A top-up by the guardian needs no
@@ -1199,7 +1199,9 @@ and resume are also sent to the group, without the commitment. An unread figure 
 and raises no alert.
 
 An order that fails because its buyer did not sign it in time is logged as
-`[ERROR …] names worker: the order with commitment 0x… failed: its buyer did not sign it in time`.
+`[ERROR …] names worker: the order with commitment 0x… failed: its buyer did not sign it in time`,
+and one whose register did not go through, its commitment lapsed included, as
+`[ERROR …] names worker: the order with commitment 0x… failed: its register did not go through`.
 
 #### Rotate the key
 

@@ -96,7 +96,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "keeps an order committed while the sponsor allowance is used up, pausing registration with it as the probe, and registers it after a top-up" testAllowanceUsedUp
     it "fails an order that sent the most registers an order may, sending nothing, refuses its Try again and a move, and registers it on a move once its owner holds the name" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
-    it "returns a revealed order whose commitment lapsed to the queue, its reveal and commit cleared, and commits it again" testExpiredIntent
+    it "relays no intent past its deadline, ending failed, paused or not, and logs the failure by the order's commitment" testExpiredIntent
     it "returns an order whose register reverted once mined to committed while the name is available, its register cleared, pausing nothing" testMinedRevertCommitted
     it "ends failed on a dry run reverting with an error the service does not know, and on a stored intent it refuses, while the name is available" testDryRunFailed
     it "keeps the phase when a read of the final check fails" testCheckUnread
@@ -890,17 +890,17 @@ testMinedRevertTaken = withWorker $ \w@W {wCtx = ctx} -> do
   pcReservedBy <$> codeOf ctx code `shouldReturn` Nothing
 
 testExpiredIntent :: IO ()
-testExpiredIntent = withWorker $ \w@W {wCtx = ctx, wWorker} -> do
+testExpiredIntent = forM_ [False, True] $ \paused -> withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealBefore = Just (rvDeadline reveal)}) >>= revealed ctx keyA "alicebakery"
   answerAvailable w True
+  when paused $ pauseFor ctx r
   advance ctx $ fromIntegral (rvDeadline reveal - orderSeconds) + 1
-  published w r (stepRegistration wWorker $ nrId r) >>= againNext
-  x <- stored ctx r
-  (nrPhase x, nrReveal x, nrCommitTx x, nrRevealAfter x, nrRevealBefore x, nrFailedAt x) `shouldBe` (PQueued, Nothing, Nothing, Nothing, Nothing, Nothing)
+  logs <- capturingStderr $ steps w r >>= done
+  let RegistrationId rid = nrId r
+      failedLine = "names worker: the order with commitment " <> hex (nrCommitment r) <> " failed: its register did not go through"
+  (paused, T.isInfixOf ("registration " <> rid <> ": its stored intent is refused, intent expired") logs, any (\l -> "[ERROR " `T.isInfixOf` l && failedLine `T.isInfixOf` l) (T.lines logs)) `shouldBe` (paused, True, True)
+  (,) paused . nrPhase <$> stored ctx r `shouldReturn` (paused, PFailed)
   sent w `shouldReturn` []
-  answerCommitment w r 0
-  void $ steps w r >>= awaiting
-  nrPhase <$> stored ctx r `shouldReturn` PCommitting
 
 testMinedRevertCommitted :: IO ()
 testMinedRevertCommitted = withWorker $ \w@W {wCtx = ctx, wWorker} -> do
