@@ -41,6 +41,7 @@ namesChainTests = describe "StoreService names: chain" $ do
   describe "reads" $ do
     it "reads a block by its number, and one the node does not have as a failed read" $ testBlockAt g
     it "follows a transaction from sent to mined with its receipt and the nonces" $ testFollowTransaction g
+    it "reads an ETH balance in wei, above 64 bits too" $ testEthBalance g
   describe "transactions" $ do
     it "signs a transaction whose hash is the node's keccak256 of the raw bytes" $ testSignedHash g
     it "refuses a gas estimate above the cap" $ testGasCap g
@@ -185,6 +186,13 @@ testBlockAt g = withChain g $ \node c -> do
   blockAt c 100 `shouldReturn` Right Block {blockNumber = 100, blockTimestamp = 1798761600, blockBaseFee = fakeBaseFee}
   blockAt c mined `shouldReturn` Right Block {blockNumber = 101, blockTimestamp = 1798761612, blockBaseFee = fakeBaseFee}
   blockAt c 102 >>= (`shouldSatisfy` \case Left (ChainUnavailable _) -> True; _ -> False)
+
+testEthBalance :: TVar ChaChaDRG -> IO ()
+testEthBalance g = withChain g $ \node c@ChainClient {ccRegistrar} -> do
+  setFault node "eth_getBalance" $ Answers "0xde0b6b3a7640000"
+  ethBalance c ccRegistrar `shouldReturn` Right (10 ^ (18 :: Int))
+  setFault node "eth_getBalance" $ Answers "0x21e19e0c9bab2400000"
+  ethBalance c ccRegistrar `shouldReturn` Right (10 ^ (22 :: Int))
 
 testFollowTransaction :: TVar ChaChaDRG -> IO ()
 testFollowTransaction g = withChain g $ \node c@ChainClient {ccRegistrar} -> do

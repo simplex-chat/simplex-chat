@@ -1001,8 +1001,8 @@ REGISTRAR=$(cast wallet address "$(ini service_key)")
 ```
 
 cast reads the node from `ETH_RPC_URL`, so no command below names it. The address check reads the
-ini on disk, not the running service, which logs no address. To confirm the service runs with the
-key, check that `cast nonce $REGISTRAR --block pending` rises after its next transaction.
+ini on disk. The running service logs its key's address in its hourly report, see
+[Registration paused](#registration-paused).
 
 #### Grant the allowance
 
@@ -1138,10 +1138,11 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   used up; the guardian raises it with setRegistrarAllowance` when the sponsor refuses a register
   with `InsufficientAllowance`. The order keeps its phase and its register is tried again every 15
   seconds, so a top-up before its commitment lapses registers it with no restart. The line is
-  logged once per order. An order whose commitment lapses first fails, and the buyer can Try again.
-  This holds when the register's dry run is refused. A register that passes its dry run and reverts
-  once mined, as two registers sent while the allowance covers one can, fails its order with no
-  such line; the next order's dry run logs it, and the buyer can Try again.
+  logged once per order, and registration is paused, see
+  [Registration paused](#registration-paused). An order whose commitment lapses first fails, and the
+  buyer can Try again. A register that passes its dry run and reverts once
+  mined, as two registers sent while the allowance covers one can, returns its order to `committed`
+  while the name is available, and the next register's dry run finds the cause.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
   the transaction waits` when fees are above the cap. Nothing is signed until they fall.
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
@@ -1151,12 +1152,57 @@ An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the
 service's gas. Past that the order fails, Try again and a move answer `400 bad_request`, and support refunds it
 at the provider: `//refund` records nothing for such an order, which has no balance.
-The log line is `[WARN …] names worker: registration <id> failed: it sent <n> transactions of one kind`.
+The log line is `[ERROR …] names worker: the order with commitment 0x… failed: it sent <n> transactions of one kind`.
 
 Try again or a move of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
 depth shows the order's owner holding the name, even if this order's register never landed: an
 owner who got the name another way counts as served, and a code order spends its code.
+
+#### Registration paused
+
+A queued order, paid or by code, is committed only while the registrar's allowance on the sponsor,
+read at the confirmation depth, covers the registers of every order in `committing` to `registering` and of the queued orders up
+to it, oldest first by creation; a register's price is the price list's price per year for the
+label's length over the order's duration. An order it does not cover stays queued and pauses
+registration, as does a register refused with `InsufficientAllowance`. At start, registration is
+paused when the allowance cannot cover every order in `queued` to `registering`, or cannot be read.
+While it is paused:
+
+- `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
+  `503 {"error": "registration_paused"}` before any chain read. An invoice made before the pause
+  stays payable, as does an exact resend of its order, which answers that invoice; its order waits
+  in the queue;
+- code orders, Try again and another name are taken and queued;
+- every registration view has `"paused": true`, and a queued order's view has
+  `queue: {"position": n, "of": m}`, oldest first, as it has while registration runs.
+
+A committed order whose commitment lapses before its register fails, paused or not, and the buyer
+uses Try again once registration resumes.
+
+Every 15 seconds the service reads the allowance and the prices again. Registration resumes once the
+allowance covers every order in `queued` to `registering`. A top-up by the guardian needs no
+restart.
+
+The service logs a report at start, hourly and at each pause and resume:
+
+```
+names: 3 queued, the oldest from 2026-11-09 10:00 UTC, 2 committing to registering; registration paused since 2026-11-09 09:41 UTC; registrar 0x…, 1.250000 ETH, allowance $40.00; alert: registration paused; paused by the order with commitment 0x…
+```
+
+The commitment names the order without granting access to it, as its registration id would. The
+report is an error, with `alert:` and its reasons, while registration is paused, above
+`[names] queue_alert` (default 20) queued orders, paid or by code, below 5 × `gas_limit_cap` ×
+`max_fee_per_gas` of ETH (4 ETH with the defaults), or below the price of one order of a 6-letter
+name for `[names] years` and the days until `term_start`. With `[group]`, an alert and each pause
+and resume are also sent to the group, without the commitment. An unread figure shows as `unread`
+and raises no alert.
+
+Each failed order is logged once its failure is stored, as
+`[ERROR …] names worker: the order with commitment 0x… failed: <cause>`, where the cause is `its
+buyer did not sign it in time`, `it sent <n> transactions of one kind`, or `its register did not
+go through` for any other terms acceptance or register that did not go through, its commitment
+lapsed included.
 
 #### Rotate the key
 

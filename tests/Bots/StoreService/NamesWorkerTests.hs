@@ -19,13 +19,13 @@ import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.Async (wait, withAsync)
 import qualified Control.Exception as E
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM (atomically, check)
+import Control.Concurrent.STM (atomically, check, flushTQueue, newTQueueIO, readTQueue, readTVar, readTVarIO, writeTVar)
 import Control.Monad (forM_, replicateM_, void, when)
 import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.IORef (readIORef)
-import Data.Maybe (fromJust, fromMaybe, isJust)
+import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
@@ -42,8 +42,10 @@ import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig)
 import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), hex, selector, uint256)
-import StoreService.Names.Chain (Block (..), ChainClient, TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
+import StoreService.Names.Chain (Block (..), ChainClient (..), TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
+import StoreService.Group (GroupEvent (..))
 import StoreService.Names.Contracts (namePolicy)
+import StoreService.Names.Env (Pause (..))
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange)
 import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind)
@@ -53,6 +55,7 @@ import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
 import StoreService.Names.Worker
+import StoreService.Service (namesReport, reportAlerts, runNamesReport)
 import StoreService.Web.Http (createLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Owner (retargetHandler)
@@ -84,20 +87,23 @@ workerTests = describe "StoreService names: worker" $ do
   describe "writes" $ do
     it "writes nothing when the registration changed since it was read" testLostRace
     it "writes in the name's turn" testInNameTurn
+    it "logs no failure when the failed write finds the registration changed" testFailureLostRace
   describe "register" $ do
     it "ends the later of two wallets' paid orders for one name taken, not live, with a balance of its price" testTwoWallets
     it "ends taken on any revert while the name is not available, releasing a code and keeping no balance" testRevertTaken
     it "waits while the name reads taken only above the confirmation depth, and ends taken once it reads so at the depth" testTakenAtDepth
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "ends failed on a revert while the name is available, keeping a code" testRevertFailed
-    it "keeps an order committed while the sponsor allowance is used up, and registers it after a top-up" testAllowanceUsedUp
+    it "keeps an order committed while the sponsor allowance is used up, pausing registration with it as the probe, and registers it after a top-up" testAllowanceUsedUp
     it "fails an order that sent the most registers an order may, sending nothing, refuses its Try again and a move, and registers it on a move once its owner holds the name" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
-    it "relays no intent past its deadline, ending failed" testExpiredIntent
+    it "sends nothing past the commitment's lapse, ending failed, paused or not, with an intent signed past it and the allowance short, and logs the failure by the order's commitment" testLapsedCommitment
+    it "returns an order whose register reverted once mined to committed while the name is available, its register cleared, pausing nothing" testMinedRevertCommitted
+    it "ends failed on a dry run reverting with an error the service does not know, and on a stored intent it refuses, while the name is available" testDryRunFailed
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
-    it "writes failed only once no register can still be mined, and registered when the owner holds the name" testFailedOnlySettled
+    it "judges a register only once none can still be mined: committed again after a mined revert, and registered when the owner holds the name" testFailedOnlySettled
   describe "terms acceptance" $ do
     it "relays the reveal's acceptance of the terms of the name's kind to the name policy as soon as it is stored, and registers once the policy holds it" testAcceptanceRelayed
     it "relays the acceptance before the wait for revealAfter, then waits for it" testAcceptanceBeforeWait
@@ -109,7 +115,14 @@ workerTests = describe "StoreService names: worker" $ do
     it "judges a relay past the acceptance's deadline as a register past it, failing the order" testAcceptanceExpired
     it "relays no acceptance once the commitment lapsed, so the policy commits nothing again" testAcceptanceLapsed
   describe "lapse" $ do
-    it "ends a committed order not revealed by revealBefore failed, keeping its code" testLapseFailed
+    it "ends a committed order not revealed by revealBefore failed, keeping its code, and logs it by its commitment" testLapseFailed
+  describe "pause" $ do
+    it "commits a queued order only while the allowance covers the registers in flight and the queue up to it, pausing registration for the rest, and commits them once it covers the queue" testPausedQueue
+    it "pauses at start while the allowance cannot cover every active order's register, or cannot be read" testPauseAtStart
+    it "keeps registration paused while the allowance falls short or cannot be read, and resumes it once the allowance covers the queue" testProbe
+    it "logs the report as an error only with an alert, naming the pausing order's commitment, and sends the group alerts and changes without it" testNamesReport
+    it "reports each change of the pause" testRunNamesReport
+    it "alerts on a pause, a queue above queue_alert, and the registrar's ETH or allowance below its floor, never on an unread figure" testReportAlerts
   describe "restart" $ do
     it "resumes every phase after a restart, a commit saved but not recorded included" testRestart
     it "waits for a register saved but not recorded before a restart, sending no other" testRestartRegisterSaved
@@ -222,6 +235,7 @@ shape = \case
   Retry v reason -> "Retry " <> show v <> " " <> T.unpack reason
   Stalled v reason -> "Stalled " <> show v <> " " <> T.unpack reason
   Await p -> "Await " <> show (ptHash p)
+  Paused -> "Paused"
 
 awaiting :: Next -> IO PendingTx
 awaiting = \case
@@ -247,6 +261,36 @@ done :: Next -> IO ()
 done = \case
   Done -> pure ()
   next -> fail $ "not done: " <> shape next
+
+pausedNext :: Next -> IO ()
+pausedNext = \case
+  Paused -> pure ()
+  next -> fail $ "not paused: " <> shape next
+
+againNext :: Next -> IO ()
+againNext = \case
+  Again -> pure ()
+  next -> fail $ "not stepping again: " <> shape next
+
+pauseFor :: Ctx -> NameRegistration -> IO ()
+pauseFor Ctx {cOrders} NameRegistration {nrCommitment} = atomically $ writeTVar (oePause cOrders) $ Just Pause {paSince = orderTime, paCommitment = nrCommitment}
+
+failureLogged :: NameRegistration -> Text -> Text -> Bool
+failureLogged NameRegistration {nrCommitment} cause = any (\l -> "[ERROR " `T.isInfixOf` l && line `T.isInfixOf` l) . T.lines
+  where
+    line = "names worker: the order with commitment " <> hex nrCommitment <> " failed: " <> cause
+
+pauseOf :: Ctx -> IO (Maybe Pause)
+pauseOf Ctx {cOrders} = readTVarIO $ oePause cOrders
+
+allowanceCall :: W -> ByteString
+allowanceCall W {wChain = ChainClient {ccRegistrar}} = unhex "ee4042fa" <> addressWord ccRegistrar
+
+answerAllowance :: W -> Integer -> IO ()
+answerAllowance w@W {wCtx = Ctx {cNode}} cents = answerCall cNode fakeSponsor (allowanceCall w) $ Returns $ uint256 $ cents * 10 ^ (16 :: Int)
+
+twoYears :: NameRegistration -> NameRegistration
+twoYears r = r {nrDuration = 2 * 31536000}
 
 -- | The raw transactions the node received, in the order they were sent.
 sent :: W -> IO [ByteString]
@@ -663,6 +707,10 @@ testAllowanceUsedUp = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   x <- stored ctx r
   (nrPhase x, nrError x, nrVersion x) `shouldBe` (PCommitted, Nothing, nrVersion r)
   sent w `shouldReturn` []
+  pauseOf ctx `shouldReturn` Just Pause {paSince = orderTime, paCommitment = nrCommitment r}
+  advance ctx 60
+  void $ steps w r >>= stalled
+  pauseOf ctx `shouldReturn` Just Pause {paSince = orderTime, paCommitment = nrCommitment r}
   dryRunsPass w
   void $ steps w r >>= awaiting
   length <$> sent w `shouldReturn` 1
@@ -673,7 +721,8 @@ testSendsCapped = withWorker $ \w@W {wCtx = ctx} -> do
   answerAvailable w True
   answerUnowned ctx "alicebakery"
   mapM_ (\n -> sentRegister ctx r n TSReverted) [1 .. fromIntegral maxSendsPerKind]
-  steps w r >>= done
+  logs <- capturingStderr $ steps w r >>= done
+  failureLogged r "it sent 5 transactions of one kind, the most an order may" logs `shouldBe` True
   x <- stored ctx r
   (nrPhase x, nrError x) `shouldBe` (PFailed, Just "The name could not be registered")
   sent w `shouldReturn` []
@@ -847,19 +896,63 @@ testMinedRevertTaken = withWorker $ \w@W {wCtx = ctx} -> do
   (nrPhase x, nrLive x) `shouldBe` (PTaken, False)
   pcReservedBy <$> codeOf ctx code `shouldReturn` Nothing
 
-testExpiredIntent :: IO ()
-testExpiredIntent = withWorker $ \w@W {wCtx = ctx} -> do
-  r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealBefore = Just (rvDeadline reveal)}) >>= revealed ctx keyA "alicebakery"
+testLapsedCommitment :: IO ()
+testLapsedCommitment = forM_ [False, True] $ \paused -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealBefore = Just lapse}) >>= revealed ctx keyA "alicebakery"
   answerAvailable w True
-  advance ctx $ fromIntegral (rvDeadline reveal - orderSeconds) + 1
+  setFault cNode "eth_estimateGas" $ revertFault $ unhex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
+  when paused $ pauseFor ctx r
+  advance ctx $ fromIntegral (lapse - orderSeconds) + 1
   logs <- capturingStderr $ steps w r >>= done
-  let RegistrationId rid = nrId r
-  logs `shouldSatisfy` T.isInfixOf ("registration " <> rid <> ": its stored intent is refused, intent expired")
-  nrPhase <$> stored ctx r `shouldReturn` PFailed
+  (paused, failureLogged r "its register did not go through" logs) `shouldBe` (paused, True)
+  (,) paused . nrPhase <$> stored ctx r `shouldReturn` (paused, PFailed)
   sent w `shouldReturn` []
+  where
+    lapse = rvDeadline reveal - 60
+
+testFailureLostRace :: IO ()
+testFailureLostRace = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
+  r <- paidIn ctx aliceOrder {oCommitment = commitmentOf 70} openPhase >>= revealed ctx keyA "alicebakery"
+  answerAvailable w True
+  dryRunsRevert w "SignatureExpired()" ""
+  (stepping, gate) <- pausedAt cNode "eth_call" $ stepRegistration wWorker (nrId r)
+  changed <- rewrite ctx r $ \o -> o {nrRevealAfter = (+ 1) <$> nrRevealAfter o}
+  logs <- capturingStderr $ do
+    releaseGate gate
+    timeout prompt (wait stepping) >>= maybe (fail "the step did not finish") (pure . shape) >>= (`shouldBe` "Again")
+  stored ctx r `shouldReturn` changed
+  failureLogged r "its register did not go through" logs `shouldBe` False
+
+testMinedRevertCommitted :: IO ()
+testMinedRevertCommitted = withWorker $ \w@W {wCtx = ctx, wWorker} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  answerAvailable w True
+  void $ steps w r >>= awaiting
+  void $ mineNewest w False
+  published w r (stepRegistration wWorker $ nrId r) >>= againNext
+  x <- stored ctx r
+  (nrPhase x, nrRegisterTx x, nrRegisterBlock x, isJust (nrReveal x), nrFailedAt x) `shouldBe` (PCommitted, Nothing, Nothing, True, Nothing)
+  pauseOf ctx `shouldReturn` Nothing
+
+testDryRunFailed :: IO ()
+testDryRunFailed = do
+  withWorker $ \w@W {wCtx = ctx} -> do
+    r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+    answerAvailable w True
+    dryRunsRevert w "NotAContractError()" ""
+    steps w r >>= done
+    (nrPhase &&& nrError) <$> stored ctx r `shouldReturn` (PFailed, Just "The name could not be registered")
+    sent w `shouldReturn` []
+  withWorker $ \w@W {wCtx = ctx} -> do
+    r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyB "alicebakery"
+    answerAvailable w True
+    logs <- capturingStderr $ steps w r >>= done
+    logs `shouldSatisfy` T.isInfixOf "its stored intent is refused"
+    (nrPhase &&& nrError) <$> stored ctx r `shouldReturn` (PFailed, Just "The name could not be registered")
+    sent w `shouldReturn` []
 
 testFailedOnlySettled :: IO ()
-testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> do
+testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender, wWorker} -> do
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
   r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} (\o -> (openPhase o) {nrRevealBefore = Just (orderSeconds + 3 * 86400)}) >>= revealed ctx keyB "alicebakery"
   answerAvailable w True
@@ -869,8 +962,8 @@ testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> d
   steps w r >>= awaiting >>= (`shouldBe` ptHash p) . ptHash
   nrPhase <$> stored ctx r `shouldReturn` PRegistering
   void $ mineNewest w False
-  steps w r >>= done
-  nrPhase <$> stored ctx r `shouldReturn` PFailed
+  stepRegistration wWorker (nrId r) >>= againNext
+  nrPhase <$> stored ctx r `shouldReturn` PCommitted
   -- a register whose nonce another transaction took, while the owner holds the name: it went through
   p2 <- steps w r2 >>= awaiting
   useNextNonce cNode
@@ -890,11 +983,115 @@ testLapseFailed = withWorker $ \w@W {wCtx = ctx} -> do
   (r, code) <- codeIn ctx 8 aliceOrder committedPhase
   steps w r >>= waitingUntil >>= (`shouldBe` at (orderSeconds + maxAge + 1))
   advance ctx $ day + 1
-  published w r (steps w r) >>= done
+  logs <- capturingStderr $ published w r (steps w r) >>= done
+  filter ("[ERROR " `T.isInfixOf`) (T.lines logs) `shouldSatisfy` any (T.isInfixOf $ "names worker: the order with commitment " <> hex (nrCommitment r) <> " failed: its buyer did not sign it in time")
   now <- nowOf ctx
   x <- stored ctx r
   (nrPhase x, nrFailedAt x, nrError x, nrLive x) `shouldBe` (PFailed, Just now, Just "The name was not signed in time", True)
   pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
+
+testPausedQueue :: IO ()
+testPausedQueue = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
+  older <- paidIn ctx aliceOrder twoYears
+  advance ctx 60
+  newer <- paidIn ctx dynamisOrder twoYears
+  now <- nowOf ctx
+  mapM_ (\r -> answerCommitment w r 0) [older, newer]
+  answerAllowance w 15000
+  steps w newer >>= pausedNext
+  stored ctx newer `shouldReturn` newer
+  pauseOf ctx `shouldReturn` Just Pause {paSince = now, paCommitment = nrCommitment newer}
+  void $ steps w older >>= awaiting
+  withAsync (runWorkers wWorker) $ \_ -> do
+    timeout 1000000 (awaitSent cNode 2) `shouldReturn` Nothing
+    answerAllowance w 20000
+    withAsync (runProbe wWorker) $ \_ ->
+      timeout prompt (awaitSent cNode 2) >>= maybe (fail "no commit was sent once the allowance covered the queue") (const $ pure ())
+  pauseOf ctx `shouldReturn` Nothing
+
+testPauseAtStart :: IO ()
+testPauseAtStart = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wWorker} -> do
+  let restart = atomically (writeTVar (oePause cOrders) Nothing) >> pauseUncovered wWorker
+  restart
+  pauseOf ctx `shouldReturn` Nothing
+  void $ paidIn ctx aliceOrder twoYears
+  advance ctx 60
+  newest <- paidIn ctx dynamisOrder twoYears
+  now <- nowOf ctx
+  answerAllowance w 19999
+  restart
+  pauseOf ctx `shouldReturn` Just Pause {paSince = now, paCommitment = nrCommitment newest}
+  answerAllowance w 20000
+  restart
+  pauseOf ctx `shouldReturn` Nothing
+  answerCall cNode fakeSponsor (allowanceCall w) $ Reverts ""
+  restart
+  pauseOf ctx `shouldReturn` Just Pause {paSince = now, paCommitment = nrCommitment newest}
+
+testProbe :: IO ()
+testProbe = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wWorker} -> do
+  r <- paidIn ctx aliceOrder twoYears
+  pauseFor ctx r
+  let resumed = atomically $ readTVar (oePause cOrders) >>= check . isNothing
+      probedOnce = do
+        (probe, gate) <- pausedAt cNode "eth_call" (runProbe wWorker)
+        releaseGate gate
+        timeout 1000000 resumed `shouldReturn` Nothing
+        Async.cancel probe
+  answerAllowance w 9999
+  probedOnce
+  answerCall cNode fakeSponsor (allowanceCall w) $ Reverts ""
+  probedOnce
+  answerAllowance w 10000
+  withAsync (runProbe wWorker) $ \_ -> timeout prompt resumed `shouldReturn` Just ()
+
+testNamesReport :: IO ()
+testNamesReport = withWorker $ \W {wCtx = ctx@Ctx {cNode, cOrders}, wChain} -> do
+  r <- paidIn ctx aliceOrder id
+  q <- newTQueueIO
+  setFault cNode "eth_getBalance" $ Answers "0x3782dace9d900000"
+  let report changed pause = capturingStderr $ namesReport (Just q) cOrders wChain changed pause
+      paused = Just Pause {paSince = orderTime, paCommitment = nrCommitment r}
+      reportLines = map (\l -> ("[ERROR " `T.isInfixOf` l, "names: 1 queued" `T.isInfixOf` l, hex (nrCommitment r) `T.isInfixOf` l, "alert: registration paused" `T.isInfixOf` l)) . filter ("4.000000 ETH" `T.isInfixOf`) . T.lines
+      notices = atomically $ flushTQueue q
+  reportLines <$> report False Nothing `shouldReturn` [(False, True, False, False)]
+  notices `shouldReturn` []
+  void $ report True Nothing
+  map (\case GENotice t -> "4.000000 ETH" `T.isInfixOf` t; _ -> False) <$> notices `shouldReturn` [True]
+  reportLines <$> report False paused `shouldReturn` [(True, True, True, True)]
+  notices >>= \case
+    [GENotice t] -> (hex (nrCommitment r) `T.isInfixOf` t, "registration paused since" `T.isInfixOf` t) `shouldBe` (False, True)
+    other -> expectationFailure $ "notices: " <> show other
+
+testRunNamesReport :: IO ()
+testRunNamesReport = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wChain} -> do
+  r <- paidIn ctx aliceOrder id
+  q <- newTQueueIO
+  withAsync (runNamesReport (Just q) cOrders wChain) $ \_ -> do
+    pauseFor ctx r
+    timeout prompt (atomically $ readTQueue q) >>= \case
+      Just (GENotice t) -> t `shouldSatisfy` T.isInfixOf "registration paused since"
+      other -> expectationFailure $ "no notice of the pause: " <> show other
+
+testReportAlerts :: IO ()
+testReportAlerts = withFakeEthNode $ \node -> do
+  let alerts = reportAlerts $ testNamesConfig node
+      paused = Just Pause {paSince = orderTime, paCommitment = "probe"}
+      ethFloor = 5 * 8000000 * fakeMaxFeePerGas
+  [ alerts Nothing 20 (Just ethFloor) (Just (100, 100)),
+    alerts paused 0 (Just ethFloor) (Just (100, 100)),
+    alerts Nothing 21 (Just ethFloor) (Just (100, 100)),
+    alerts Nothing 0 (Just $ ethFloor - 1) (Just (100, 100)),
+    alerts Nothing 0 (Just ethFloor) (Just (99, 100)),
+    alerts paused 21 Nothing Nothing
+    ]
+    `shouldBe` [ [],
+                 ["registration paused"],
+                 ["more than 20 queued"],
+                 ["ETH below 5 transactions at gas_limit_cap and max_fee_per_gas"],
+                 ["allowance below one order of the shortest name"],
+                 ["registration paused", "more than 20 queued"]
+               ]
 
 testRestart :: IO ()
 testRestart = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}, wSender} -> do

@@ -108,6 +108,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} http cfg providers wa
           checks =
             [ pure $ checkTimestamp now orTimestamp,
               pure $ checkDuration (oeConfig env) now years ofDuration,
+              checkNotPaused (oePause env),
               checkTerms (oeConfig env) (oeContracts env) fields,
               checkNameFree (oeContracts env) oeStore ofLabelHash,
               checkPrice (oeContracts env) ofLength years price
@@ -236,7 +237,7 @@ parseCodeOrder o = do
 -- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
 -- under the new name's turn and then the balance's.
 spendHandler :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> Text -> Request -> Respond -> IO ResponseReceived
-spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} http cfg providers waiters ridText req respond
+spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePause, oeNow} http cfg providers waiters ridText req respond
   | nCodesOnly oeConfig = sendAnswer respond =<< refuse ORCodesOnly
   | otherwise = readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
@@ -265,6 +266,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} http
       let years = orderYears fields $ nYears oeConfig
       liftEither $ checkTimestamp now orTimestamp
       liftEither $ checkDuration oeConfig now years ofDuration
+      ExceptT $ checkNotPaused oePause
       ExceptT $ checkTerms oeConfig oeContracts fields
       holder <- ExceptT $ checkSpendBalance oeStore spend now
       ExceptT $ checkNameFree oeContracts oeStore ofLabelHash
@@ -336,9 +338,9 @@ firstRefusal = \case
   check : rest -> check >>= either (pure . Just) (const $ firstRefusal rest)
 
 nameInvoiceView :: OrdersEnv -> Maybe Int -> InvoiceRow -> NameRegistration -> IO J.Value
-nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId} r = do
+nameInvoiceView env@OrdersEnv {oeNow} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId} r = do
   now <- oeNow
-  view <- registrationView oeStore oeConfig oeContracts now r
+  view <- registrationView env now r
   pure $ J.object $ ["invoiceId" .= invId, "kind" .= ("name" :: Text), "registration" .= view] <> invoicePairs confirmations row
 
 orderRefusalResponse :: OrderRefusal -> Response
@@ -355,3 +357,4 @@ orderRefusalResponse = \case
   ORTermsChanged terms community -> jsonResponse status409 $ J.object ["error" .= ("terms_changed" :: Text), "terms" .= terms, "community" .= community]
   ORTermsUnavailable wait -> maybe (jsonError status503 "terms_unavailable") termsUnavailable wait
   ORCodesOnly -> jsonError status403 "codes_only"
+  ORRegistrationPaused -> jsonError status503 "registration_paused"

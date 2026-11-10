@@ -22,6 +22,7 @@ module StoreService.Names.Chain
     transactionReceipt,
     transactionKnown,
     transactionCount,
+    ethBalance,
     estimateGas,
     maxPriorityFee,
     signTransaction,
@@ -177,6 +178,9 @@ transactionKnown c (TxHash h) =
 
 transactionCount :: ChainClient -> Address -> BlockTag -> IO (Either ChainError Word64)
 transactionCount c a tag = rpc c "eth_getTransactionCount" [J.toJSON a, blockTagParam tag] quantity
+
+ethBalance :: ChainClient -> Address -> IO (Either ChainError Integer)
+ethBalance c a = rpc c "eth_getBalance" [J.toJSON a, blockTagParam Latest] wideQuantity
 
 blockTagParam :: BlockTag -> J.Value
 blockTagParam = \case
@@ -351,8 +355,11 @@ nullable p = \case
   v -> Just <$> p v
 
 quantity :: forall a. (Integral a, Bounded a) => J.Value -> JT.Parser a
-quantity = J.withText "quantity" $ \t -> case T.stripPrefix "0x" t of
-  Just h | T.length h <= maxQuantityDigits, [(n, "")] <- readHex (T.unpack h), n <= toInteger (maxBound :: a) -> pure $ fromInteger n
+quantity = wideQuantity >=> \n -> if n <= toInteger (maxBound :: a) then pure $ fromInteger n else fail "not a quantity"
+
+wideQuantity :: J.Value -> JT.Parser Integer
+wideQuantity = J.withText "quantity" $ \t -> case T.stripPrefix "0x" t of
+  Just h | T.length h <= maxQuantityDigits, [(n, "")] <- readHex (T.unpack h) -> pure n
   _ -> fail "not a quantity"
 
 bytes :: J.Value -> JT.Parser ByteString

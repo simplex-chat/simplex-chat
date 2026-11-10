@@ -237,7 +237,8 @@ Notes:
 - A reveal whose link is not a short link of its record's kind is answered `400 invalid_link`, and the order is marked `linksRefused`. The links are part of the commitment, so only a move (3.6) continues the order ([`Web/Names/Registration.hs:95-109`](../src/StoreService/Web/Names/Registration.hs#L95-L109), [`Names/Orders.hs:315-320`](../src/StoreService/Names/Orders.hs#L315-L320)).
 - The acceptance relay is `commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`. It is sent as soon as the reveal is stored, without waiting for `revealAfter`, while `revealBefore` has not passed, unless the policy already holds that acceptance. The register is sent after the relay settles and `revealAfter` has passed ([`Names/Worker.hs:254-272`](../src/StoreService/Names/Worker.hs#L254-L272)).
 - The links are set by `setText` calls for `simplex.contact` and `simplex.channel` in the register's data ([`Names/Registration.hs:212-235`](../src/StoreService/Names/Registration.hs#L212-L235)).
-- Without a reveal by `revealBefore` the order is set `failed` with "The name was not signed in time" ([`Names/Worker.hs:251-253`](../src/StoreService/Names/Worker.hs#L251-L253), [`Names/View.hs:145-152`](../src/StoreService/Names/View.hs#L145-L152)).
+- A queued order is committed only while the registrar's allowance on the sponsor covers the registers of the orders in `committing` to `registering` and of the queued orders up to it, oldest first; otherwise it stays queued and registration is paused, and paid orders and spends are answered `503 registration_paused` until the allowance covers every such order ([`Names/Worker.hs:178-183`](../src/StoreService/Names/Worker.hs#L178-L183), [`Names/Worker.hs:555-590`](../src/StoreService/Names/Worker.hs#L555-L590), [`Web/Names/Orders.hs:111`](../src/StoreService/Web/Names/Orders.hs#L111), [`Web/Names/Orders.hs:269`](../src/StoreService/Web/Names/Orders.hs#L269)).
+- Without a reveal by `revealBefore` the order is set `failed` with "The name was not signed in time", and an error is logged ([`Names/Worker.hs:270-276`](../src/StoreService/Names/Worker.hs#L270-L276), [`Names/View.hs:145-152`](../src/StoreService/Names/View.hs#L145-L152)).
 - After a restart every phase is resumed from the stored order and the sender's saved transactions ([`Names/Sender.hs:123-131`](../src/StoreService/Names/Sender.hs#L123-L131), [`Names/Worker.hs:6-8`](../src/StoreService/Names/Worker.hs#L6-L8)).
 
 ---
@@ -346,18 +347,20 @@ sequenceDiagram
   alt InvalidNonce, TermsNotAccepted or TermsMismatch from the dry run
     K->>D: reveal cleared, phase stays committed, the page signs again
   else InsufficientAllowance
-    K->>K: error logged, retried every 15 s
+    K->>K: error logged, registration paused, retried every 15 s
   else name taken at the latest block and at the confirmation depth
     K->>D: phase taken, a paid order's price kept as its balance
-  else name available
-    K->>D: phase failed, error "The name could not be registered"
+  else mined with status 0, name available
+    K->>D: phase committed, register cleared, the next dry run finds the cause
+  else dry run reverted, intent refused, or the commitment lapsed with nothing sent, name available
+    K->>D: phase failed, error "The name could not be registered", error logged
   end
 ```
 
 Notes:
 
 - Whether the name was registered after all is checked first: on a register mined with status 1, or with the name held by the owner at the confirmation depth, the order is set `registered` ([`Names/Orders.hs:365-400`](../src/StoreService/Names/Orders.hs#L365-L400), [`Names/Worker.hs:329-336`](../src/StoreService/Names/Worker.hs#L329-L336)).
-- An `InsufficientAllowance` revert waits for the registrar key's allowance on the sponsor to be raised outside the service ([`Names/Worker.hs:341`](../src/StoreService/Names/Worker.hs#L341)).
+- An `InsufficientAllowance` revert pauses registration and waits for the registrar key's allowance on the sponsor to be raised outside the service. A register mined with status 0 while the name is available returns its order to `committed`, for the next register's dry run to find the cause ([`Names/Worker.hs:365-377`](../src/StoreService/Names/Worker.hs#L365-L377)).
 - On `CommitmentTooNew` the register is retried 1 s later. While the name is taken only above the confirmation depth, or is reported gone by the dry run while `available(label)` is true, the order is retried every 15 s ([`Names/Worker.hs:340-352`](../src/StoreService/Names/Worker.hs#L340-L352)).
 - A code order set `taken` has its code released instead of a balance credited ([`Names/Worker.hs:361-368`](../src/StoreService/Names/Worker.hs#L361-L368)).
 

@@ -17,10 +17,12 @@ module StoreService.Names.View
   )
 where
 
+import Control.Concurrent.STM (readTVarIO)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import Data.Functor ((<&>))
 import Data.Int (Int64)
+import Data.List (findIndex)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -37,8 +39,9 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Community (AcceptanceAsked (..), agreedTermsHash, communityJSON, currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
+import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), getBalance, getRegistration, heldBy, lateWait)
+import StoreService.Names.Store (ActiveOrder (..), Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), activeOrders, getBalance, getRegistration, heldBy, lateWait, queuedOrders)
 
 -- | The view's chain reads; a field whose read failed is null and named in vrUnread.
 data ViewReads = ViewReads
@@ -49,15 +52,22 @@ data ViewReads = ViewReads
   deriving (Eq, Show)
 
 -- | The balance as it reads at the given time, when a hold may have become overdue, and what a closed order's late money waits on.
-registrationView :: DBStore -> NamesConfig -> Contracts -> UTCTime -> NameRegistration -> IO J.Value
-registrationView st cfg ct now r = do
-  (balance, late) <- withTransaction st $ \db -> do
+registrationView :: OrdersEnv -> UTCTime -> NameRegistration -> IO J.Value
+registrationView OrdersEnv {oeStore, oeConfig, oeContracts, oePause} now r = do
+  (balance, late, place) <- withTransaction oeStore $ \db -> do
     balance <- getBalance db (nrId r) now
     late <- case nrPayment r of
       RPInvoice _ invId -> lateWait db invId
       _ -> pure Nothing
-    pure (balance, late)
-  viewJSON cfg r balance late <$> readViewChain ct r
+    place <- if nrPhase r == PQueued then queuePlace (nrId r) <$> activeOrders db else pure Nothing
+    pure (balance, late, place)
+  paused <- isJust <$> readTVarIO oePause
+  viewJSON oeConfig r balance late place paused <$> readViewChain oeContracts r
+
+queuePlace :: RegistrationId -> [ActiveOrder] -> Maybe (Int, Int)
+queuePlace rid orders = (\i -> (i + 1, length queued)) <$> findIndex ((== rid) . aoId) queued
+  where
+    queued = queuedOrders orders
 
 -- | The intent nonce only in committed; the acceptance too, until a reveal is stored.
 readViewChain :: Contracts -> NameRegistration -> IO ViewReads
@@ -75,14 +85,16 @@ readViewChain ct NameRegistration {nrPhase, nrOwner, nrLabelHash, nrReveal} = ca
   where
     none = ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
 
-viewJSON :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> ViewReads -> J.Value
-viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrUnread, vrAcceptance} =
+viewJSON :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> Maybe (Int, Int) -> Bool -> ViewReads -> J.Value
+viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late place paused ViewReads {vrIntentNonce, vrUnread, vrAcceptance} =
   J.object
     [ "id" .= rid,
       "version" .= nrVersion,
       "moves" .= nrMoves,
       "linksRefused" .= isJust nrLinksRefusedAt,
       "phase" .= (textEncode nrPhase :: Text),
+      "queue" .= ((\(position, total) -> J.object ["position" .= position, "of" .= total]) <$> place),
+      "paused" .= paused,
       "labelHash" .= hex lh,
       "label" .= (rvLabel <$> nrReveal),
       "owner" .= addressText nrOwner,

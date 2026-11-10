@@ -44,7 +44,7 @@ import Text.Read (readMaybe)
 
 -- | GET /api/registration/:id, held while its version is seenVersion.
 registrationHandler :: OrdersEnv -> HttpEnv -> Int -> Text -> Request -> Respond -> IO ResponseReceived
-registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} http hold ridText req respond =
+registrationHandler env@OrdersEnv {oeStore, oePhases, oeNow} http hold ridText req respond =
   readNow >>= \case
     Nothing -> respond notFound
     Just (now, r@NameRegistration {nrVersion})
@@ -55,7 +55,7 @@ registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} 
   where
     rid = RegistrationId ridText
     readNow = oeNow >>= \now -> fmap (now,) <$> withTransaction oeStore (`getRegistration` rid)
-    answer (now, r) = respond . jsonResponse status200 =<< registrationView oeStore oeConfig oeContracts now (registrationAt now r)
+    answer (now, r) = respond . jsonResponse status200 =<< registrationView env now (registrationAt now r)
 
 -- | What a reveal decided in the name's turn, with the version it wrote; the publish and the answer come after the turn.
 data RevealDecision
@@ -151,8 +151,8 @@ registrationRefusalResponse env tag rid = maybe notFound refusal <$> currentView
 
 -- | The registration's view as it reads now.
 currentView :: OrdersEnv -> RegistrationId -> IO (Maybe J.Value)
-currentView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} rid =
-  withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> oeNow >>= \now -> registrationView oeStore oeConfig oeContracts now (registrationAt now r))
+currentView env@OrdersEnv {oeStore, oeNow} rid =
+  withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> oeNow >>= \now -> registrationView env now (registrationAt now r))
 
 -- | The hold, cut to end just past the next moment at which the answer changes with time alone.
 heldFor :: Int -> UTCTime -> [UTCTime] -> Int

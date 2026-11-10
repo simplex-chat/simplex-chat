@@ -704,6 +704,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "refuses a [names] or [chain] setting nothing reads, terms_version among them, naming each" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
   it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
+  it "reads queue_alert as a known setting, 20 when absent, and refuses a value below 1" testNamesQueueAlert
   it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
   it "refuses a malformed dev_keys entry or an index named twice, quoting no secret" testDevKeysMalformed
   it "accepts [issuer] dev_keys beside Stripe test keys and a BTCPay on loopback" testDevKeysTestPayments
@@ -945,6 +946,18 @@ testNamesRecordEdits = do
   forM_ ["0", "101", "-3"] $ \v ->
     namesRefusal (namesSection <> ["record_edits_per_year = " <> v]) chainSection `shouldReturn` "names.record_edits_per_year must be between 1 and 100"
   namesRefusal (namesSection <> ["record_edits_per_year = three"]) chainSection `shouldReturn` "record_edits_per_year must be a whole number"
+
+testNamesQueueAlert :: IO ()
+testNamesQueueAlert = do
+  NamesConfig {nQueueAlert = absent} <- parsedNames namesSection chainSection
+  absent `shouldBe` 20
+  let ns = namesSection <> ["queue_alert = 1"]
+  withIni (namesIni ns chainSection) $ \p -> do
+    Right ini <- readIniFile p
+    unknownKeys ini `shouldBe` []
+  NamesConfig {nQueueAlert} <- parsedNames ns chainSection
+  nQueueAlert `shouldBe` 1
+  namesRefusal (namesSection <> ["queue_alert = 0"]) chainSection `shouldReturn` "names.queue_alert must be at least 1"
 
 -- | Names on the local chain with no payment provider, as a run with dev keys has.
 localNamesIni :: [T.Text] -> T.Text

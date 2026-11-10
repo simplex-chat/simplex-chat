@@ -13,10 +13,13 @@ module StoreService.Names.Contracts
     TermsRefusal (..),
     newContracts,
     secondsPerYear,
+    attoUsdPerCent,
     nameStatus,
     nameRecords,
     textRecord,
     chainPriceCents,
+    registerCost,
+    registrarAllowance,
     sponsorNonce,
     resolverNonce,
     namePolicy,
@@ -186,6 +189,14 @@ chainPriceCents ct len years = call ct (controller ct) ("rentPriceUSD(string,uin
   if cents >= 1 && cents <= toInteger (maxBound :: Int) then Right (fromInteger cents) else Left AERange
   where
     args = abiTuple [Dynamic $ abiBytes $ B.replicate len 'a', Static $ uint256 $ toInteger years * secondsPerYear]
+
+registerCost :: Int -> Word64 -> Integer
+registerCost centsPerYear duration = toInteger centsPerYear * attoUsdPerCent * toInteger duration `div` secondsPerYear
+
+registrarAllowance :: Contracts -> IO (Either ChainError Integer)
+registrarAllowance ct@Contracts {ctChain = ChainClient {ccRegistrar}} = runExceptT $ do
+  tag <- ExceptT $ confirmedTag ct
+  ExceptT $ callAt ct tag (cSponsor $ chainConfig ct) ("registrarAllowance(address)", addressWord ccRegistrar) decodeUint256
 
 sponsorNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", addressWord owner) decodeWord64
