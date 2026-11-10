@@ -24,6 +24,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
+import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Phases (RegistrationId (..))
@@ -362,7 +363,8 @@ testTxFeeBound g = withCapSetup 10000000000000 g $ \s@Setup {node} -> do
   (trGasLimit first, trMaxFeePerGas first) `shouldBe` (gasLimit, 2 * 1000000000000 + fakeTip)
   setFees node fakeTip 3000000000000
   passTime s replaceAfter
-  followTransactions sender
+  logged <- capturingStderr $ followTransactions sender
+  logged `shouldSatisfy` T.isInfixOf ("names sender: replacing nonce 0 at max fee " <> tshow bound <> ", capped so that its gas limit " <> tshow gasLimit <> " costs at most 1 ETH")
   [_, bumpedRaw] <- sentTransactions node
   decodeSignedTx bumpedRaw `shouldBe` Right first {trMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, trMaxFeePerGas = bound}
   passTime s replaceAfter

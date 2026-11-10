@@ -1104,7 +1104,8 @@ reads, clears and logs its acceptance, as a community name's did:
   none. The expected orders × 0.6946 ETH, plus 0.6054 ETH per expected Save of both links (0.3026 ETH
   for one), pays for all of them even at the cap. A name's link edits are at most
   `record_edits_per_year` (3) a year, see [Link edits](#link-edits). The figures scale with
-  `max_fee_per_gas`.
+  `max_fee_per_gas` until a transaction's gas limit × `max_fee_per_gas` passes 1 ETH; above that its
+  max fee stays capped, as the last point says.
 - A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
   transactions with links of 4096 bytes, and 28,082 less with short links.
 - `gas_limit_cap` (default 8,000,000) must be at least 6,791,417: a transaction whose estimate is
@@ -1112,9 +1113,9 @@ reads, clears and logs its acceptance, as a community name's did:
 - Each transaction's max fee is also at most 1 ETH divided by its gas limit, since reth and geth
   refuse a transaction whose gas limit × max fee is above `--rpc.txfeecap`, 1 ETH by default, and
   every later transaction of the key would wait behind it. The defaults stay under the bound, at
-  0.8 ETH for 8,000,000 gas; a transaction it caps logs
-  `[NOTE …] names sender: nonce <n> capped at <wei> wei per gas, so that its gas limit <gas> costs
-  at most 1 ETH`.
+  0.8 ETH for 8,000,000 gas. A transaction it caps logs `[NOTE …] names sender: nonce <n> at max
+  fee <wei>, capped so that its gas limit <gas> costs at most 1 ETH`, and a replacement it caps logs
+  `[NOTE …] names sender: replacing nonce <n> at max fee <wei>, capped so that …`.
 
 #### Check the balance and transactions in flight
 

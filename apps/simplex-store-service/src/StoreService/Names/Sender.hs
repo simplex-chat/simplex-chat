@@ -166,7 +166,7 @@ checkPendingSignatures g ChainConfig {cChainId, cServiceKey} st = do
 
 -- | Dry run, the next nonce, the market's fees, the signature, saved, then sent. A failed send is retried by 'followTransactions'.
 submitTransaction :: Sender -> TxFor -> Address -> ByteString -> IO (Either SendError PendingTx)
-submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar, ccConfig = ChainConfig {cMaxFeePerGas}}, snRandom, snStore, snNow, snQueue, snNextNonce, snInFlight} for to calldata =
+submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snStore, snNow, snQueue, snNextNonce, snInFlight} for to calldata =
   withMVar snQueue $ \_ -> runExceptT $ do
     busy <- any ((== for) . ifFor) <$> liftIO (readTVarIO snInFlight)
     when busy $ throwError SEInFlight
@@ -176,12 +176,12 @@ submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar, ccConfig = Cha
     market@(tip, baseFee) <- chain $ marketFees c
     let needed = baseFee + tip
         gasLimit = gasWithHeadroom c gas
-        cap = feeCap c gasLimit
+        (cap, bounded) = feeCap c gasLimit
     when (needed > cap) $ do
       logWarn $ "names sender: the latest block needs " <> tshow needed <> " wei per gas, above the fee cap " <> tshow cap <> "; the transaction waits"
       throwError $ SEFeeAboveCap needed
-    when (cap < toInteger cMaxFeePerGas && headroomFee market > cap) $
-      logNote $ "names sender: nonce " <> tshow nonce <> " capped at " <> tshow cap <> " wei per gas, so that its gas limit " <> tshow gasLimit <> " costs at most 1 ETH"
+    when (bounded && headroomFee market > cap) $
+      logNote $ "names sender: nonce " <> tshow nonce <> " at max fee " <> tshow cap <> ", capped so that its gas limit " <> tshow gasLimit <> " costs at most 1 ETH"
     -- both fit Word64: the tip is at most the needed fee, and the max fee at most the cap
     let request = TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gasLimit, trMaxFeePerGas = fromInteger $ min cap $ headroomFee market, trMaxPriorityFeePerGas = fromInteger tip}
     SignedTx {stRaw, stHash} <- withExceptT SESigning $ ExceptT $ signTransaction snRandom c request
@@ -268,7 +268,8 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
           False <$ warnNonce s nonce ("not replaced: a replacement would pay over the fee cap " <> tshow cap)
       | otherwise -> do
           -- the bumped fees are at most the cap, so the replacement still outbids the old signature
-          let maxFee' = min cap $ max (headroomFee market) (bumped oldMax)
+          let wanted = max (headroomFee market) (bumped oldMax)
+              maxFee' = min cap wanted
               tip' = min maxFee' $ max tip (bumped oldTip)
               request = old {trMaxPriorityFeePerGas = fromInteger tip', trMaxFeePerGas = fromInteger maxFee'}
           signTransaction snRandom c request >>= \case
@@ -276,13 +277,15 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
             Right SignedTx {stRaw, stHash} -> do
               saveTransaction snStore ifFor stRaw stHash nonce now
               update s nonce $ \t -> t {ifRequest = request, ifRaw = stRaw, ifHashes = stHash <| ifHashes t, ifReplaceAt = later}
-              logNote $ "names sender: replacing nonce " <> tshow nonce <> " at max fee " <> tshow maxFee'
+              logNote $
+                "names sender: replacing nonce " <> tshow nonce <> " at max fee " <> tshow maxFee'
+                  <> (if bounded && wanted > cap then ", capped so that its gas limit " <> tshow trGasLimit <> " costs at most 1 ETH" else "")
               True <$ broadcast s nonce stRaw
   where
     later = addUTCTime replaceAfter now
     oldTip = toInteger trMaxPriorityFeePerGas
     oldMax = toInteger trMaxFeePerGas
-    cap = feeCap c trGasLimit
+    (cap, bounded) = feeCap c trGasLimit
 
 -- | The confirmed hash gets its receipt's status; every other hash of the nonce can no longer be mined.
 settle :: Sender -> Word64 -> InFlight -> TxOutcome -> IO ()
@@ -319,8 +322,11 @@ headroomFee (tip, baseFee) = baseFeeHeadroom * baseFee + tip
 gasWithHeadroom :: ChainClient -> Word64 -> Word64
 gasWithHeadroom ChainClient {ccConfig = ChainConfig {cGasLimitCap}} gas = min cGasLimitCap (gas + gas `div` 5)
 
-feeCap :: ChainClient -> Word64 -> Integer
-feeCap ChainClient {ccConfig = ChainConfig {cMaxFeePerGas}} gasLimit = min (toInteger cMaxFeePerGas) (nodeTxFeeCapWei `div` toInteger (max 1 gasLimit))
+feeCap :: ChainClient -> Word64 -> (Integer, Bool)
+feeCap ChainClient {ccConfig = ChainConfig {cMaxFeePerGas}} gasLimit = (min configured bound, bound < configured)
+  where
+    configured = toInteger cMaxFeePerGas
+    bound = nodeTxFeeCapWei `div` toInteger (max 1 gasLimit)
 
 nodeTxFeeCapWei :: Integer
 nodeTxFeeCapWei = 1000000000000000000
