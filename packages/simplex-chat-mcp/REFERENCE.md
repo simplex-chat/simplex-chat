@@ -475,7 +475,7 @@ The plugin adds:
 | PreToolUse hook | Allows the plugin's tool calls without a Claude Code prompt: you approve in the SimpleX app. |
 | UserPromptSubmit, Stop and PostModelSwitch hooks | Post your terminal prompts and Claude's answers in the session's group, and keep the model and the effort level in its description. They run in the background. |
 
-The plugin's server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. Claude Code installs the plugin's modules into the plugin's folder from its `npm-shrinkwrap.json`, which lists the production dependencies only, and Node.js loads them from there, so the `node_modules` of a project can't replace the plugin. The first session start downloads the SimpleX core library; Claude Code waits at most 600 seconds for the SessionStart hook.
+The plugin's server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, except the PreToolUse hook, which runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js`. Claude Code installs the plugin's modules into the plugin's folder from its `npm-shrinkwrap.json`, which lists the production dependencies only, and Node.js loads them from there, so the `node_modules` of a project can't replace the plugin. The first session start downloads the SimpleX core library; Claude Code waits at most 600 seconds for the SessionStart hook.
 
 ### The Main group
 
