@@ -194,20 +194,19 @@ describe("owner commands", () => {
     expect(resetOwnersText(link, "SimpleX MCP", true)).toBe(`"SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:\n${qrCodeText(link, "small")}\n${link}`)
   })
 
-  it("reset the owners from a terminal only without owners, and otherwise ask an owner in the Main group", async () => {
+  it("reset the owners at once, with or without owners, and show the new link in a terminal only", async () => {
     const requests: string[] = []
-    const client = (owners: string[], reply: object) => ({
+    const client = (owners: string[]) => ({
       ensureDaemon: async () => ({...status, owner: {owners}}),
-      request: async (_method: string, route: string) => (requests.push(route), reply),
+      request: async (_method: string, route: string) => (requests.push(route), {link}),
     })
     const spy = jest.spyOn(DaemonClient, "forRoot")
-    spy.mockReturnValue(client([], {link}) as unknown as DaemonClient)
-    expect(await resetOwners({SIMPLEX_MCP_HOME: "/r"}, false)).toBe(`Run npx -y @simplex-chat/mcp@${version} reset-owners in a terminal.`)
-    expect(requests).toEqual([])
-    expect(await resetOwners({SIMPLEX_MCP_HOME: "/r"}, true)).toBe(resetOwnersText(link, "SimpleX MCP", true))
-    spy.mockReturnValue(client(["Alice"], {}) as unknown as DaemonClient)
-    expect(await resetOwners({SIMPLEX_MCP_HOME: "/r"}, false)).toBe(`An owner approves the reset in "SimpleX MCP". Then run npx -y @simplex-chat/mcp@${version} link in a terminal to see the link to the new group.`)
-    expect(requests).toEqual(["/reset-owners", "/reset-owners"])
+    for (const owners of [[], ["Alice"]]) {
+      spy.mockReturnValue(client(owners) as unknown as DaemonClient)
+      expect(await resetOwners({SIMPLEX_MCP_HOME: "/r"}, false)).toBe(`"SimpleX MCP" was replaced. Run npx -y @simplex-chat/mcp@${version} link in a terminal to see the link to the new one.`)
+      expect(await resetOwners({SIMPLEX_MCP_HOME: "/r"}, true)).toBe(`"SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:\n${qrCodeText(link, "small")}\n${link}`)
+    }
+    expect(requests).toEqual(["/reset-owners", "/reset-owners", "/reset-owners", "/reset-owners"])
     spy.mockRestore()
   })
 })

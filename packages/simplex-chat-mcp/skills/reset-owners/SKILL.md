@@ -1,6 +1,6 @@
 ---
 name: reset-owners
-description: Replace the SimpleX Main group and its owners, and show the link to join the new one.
+description: Replace the SimpleX Main group and its owners at once, and show where to see the link to the new one.
 disable-model-invocation: true
 allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/dist/cli.js" reset-owners)
 ---

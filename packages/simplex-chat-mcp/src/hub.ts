@@ -396,9 +396,7 @@ export class Hub implements SessionGroups {
   }
 
   async resetOwners(): Promise<ResetReply> {
-    if (this.main.owners().length === 0) return {link: await this.main.replace()}
-    await this.main.askReset()
-    return {}
+    return {link: await this.main.replace()}
   }
 
   async session(id: string, stored: SessionFile): Promise<Session> {

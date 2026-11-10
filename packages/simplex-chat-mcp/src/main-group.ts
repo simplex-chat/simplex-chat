@@ -12,7 +12,6 @@ const mainCommands: T.ChatBotCommand[] = [
 const mainKey = "simplexMcpMain"
 const greeting = "I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N."
 const unknownCommand = "Unknown command."
-const resetRequest = "A terminal asks to replace the owners: this group is deleted, and a new Main group with a new link replaces it."
 const noOwners = "No owners in the Main group."
 const welcome = "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."
 const joinRights = "They can join the group of any Claude Code session here, prompt Claude and approve its actions."
@@ -30,7 +29,6 @@ export class MainGroup {
   private events: Promise<unknown> = Promise.resolve()
   private commands: Promise<unknown> = Promise.resolve()
   private linkText?: string
-  private resetCard?: number
 
   constructor(
     private readonly chat: api.ChatApi,
@@ -54,10 +52,6 @@ export class MainGroup {
 
   owners(): T.GroupMember[] {
     return this.lost ? [] : this.humans().filter(({memberRole}) => memberRole === T.GroupMemberRole.Owner)
-  }
-
-  isOwner(groupMemberId: number): boolean {
-    return this.owners().some(member => member.groupMemberId === groupMemberId)
   }
 
   async load(): Promise<void> {
@@ -94,7 +88,7 @@ export class MainGroup {
     const sender = chatItem.chatDir.groupMember
     this.commands = this.commands
       .then(() => this.command(sender, command))
-      .then(reply => (reply === undefined ? undefined : this.chat.apiSendTextReply(ci, reply)))
+      .then(reply => this.chat.apiSendTextReply(ci, reply))
       .catch(error => logError("Main group command", error))
   }
 
@@ -102,15 +96,8 @@ export class MainGroup {
     return this.serialize(() => this.handleEvent(event))
   }
 
-  async askReset(): Promise<void> {
-    if (this.resetCard !== undefined) return
-    this.resetCard = await this.post(`${resetRequest}\n/'approve reset' or /'reject reset'`)
-    log("The reset of the owners waits for an owner's approval in the Main group.")
-  }
-
   replace(): Promise<string> {
     return this.serialize(async () => {
-      this.resetCard = undefined
       this.lost = true
       await deleteGroup(this.chat, this.group)
       this.group = await createMainGroup(this.chat, this.userId, this.name)
@@ -121,23 +108,10 @@ export class MainGroup {
     })
   }
 
-  private async command(sender: T.GroupMember, {keyword, params}: Command): Promise<string | undefined> {
+  private async command(sender: T.GroupMember, {keyword, params}: Command): Promise<string> {
     if (keyword === "sessions" && params === "") return this.sessions.sessionsText()
     if (keyword === "join" && /^\d+$/.test(params)) return this.sessions.join(sender, Number(params))
-    if ((keyword === "approve" || keyword === "reject") && params === "reset") return this.decideReset(sender, keyword === "approve")
     return unknownCommand
-  }
-
-  private async decideReset(sender: T.GroupMember, approved: boolean): Promise<string | undefined> {
-    if (!this.isOwner(sender.groupMemberId)) return "Only owners decide a reset of the owners."
-    const card = this.resetCard
-    if (card === undefined) return "No reset of the owners is requested."
-    this.resetCard = undefined
-    const decision = `${approved ? "Approved" : "Rejected"} by ${safeName(sender.memberProfile.displayName)}.`
-    await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, card, {type: "text", text: `${resetRequest}\n${decision}`}, false)
-    log(`Reset of the owners: ${decision}`)
-    if (approved) await this.replace()
-    return undefined
   }
 
   private async handleEvent(event: ChatEvent): Promise<void> {
@@ -185,9 +159,8 @@ export class MainGroup {
     }
   }
 
-  private async post(text: string): Promise<number> {
-    const [item] = await this.chat.apiSendMessages([T.ChatType.Group, this.groupId], [{msgContent: {type: "text", text}, mentions: {}}])
-    return item.chatItem.meta.itemId
+  private async post(text: string): Promise<void> {
+    await this.chat.apiSendMessages([T.ChatType.Group, this.groupId], [{msgContent: {type: "text", text}, mentions: {}}])
   }
 
   private serialize<R>(work: () => Promise<R>): Promise<R> {

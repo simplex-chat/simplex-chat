@@ -475,7 +475,7 @@ The plugin adds:
 | PreToolUse hook | Allows the plugin's tool calls without a Claude Code prompt: you approve in the SimpleX app. |
 | UserPromptSubmit, Stop and PostModelSwitch hooks | Post your terminal prompts and Claude's answers in the session's group, and keep the model and the effort level in its description. They run in the background. |
 | `/simplex:link` | Shows the Main group's owners, or where to see its link. |
-| `/simplex:reset-owners` | Replaces the Main group and its owners. |
+| `/simplex:reset-owners` | Replaces the Main group and its owners at once, and shows where to see the new link. |
 
 The plugin's server, hooks and commands run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. Claude Code installs the plugin's modules into the plugin's folder from its `npm-shrinkwrap.json`, which lists the production dependencies only, and Node.js loads them from there, so the `node_modules` of a project can't replace the plugin. The first session start downloads the SimpleX core library; Claude Code waits at most 600 seconds for the SessionStart hook.
 
@@ -500,10 +500,10 @@ The link reaches only you: Claude's context and tool results never contain it. S
 - Claude changes only the name, the short description, the welcome message and the commands of the group's profile, starting from the profile as it stands in the chat database, so the preferences the owners set stay.
 - When no owner remains, the daemon creates a new link. `npx -y @simplex-chat/mcp@VERSION link` in a terminal prints it with a QR code; `/simplex:link` in Claude Code shows the owners, or asks you to run that command.
 
-To replace the owners, run `/simplex:reset-owners` in Claude Code, or `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal:
+To replace the owners, run `/simplex:reset-owners` in Claude Code, or `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal. Either replaces the Main group at once, also while owners exist, without their approval:
 
-- While owners exist, Claude posts in the Main group `A terminal asks to replace the owners: this group is deleted, and a new Main group with a new link replaces it.`, with `/approve reset or /reject reset`. After an owner approves it, the Main group is deleted for all its members, and a new one replaces it. The sessions' groups stay as they are: the members who joined them from the old Main group keep their roles there, and the rights of those roles. `npx -y @simplex-chat/mcp@VERSION link` in a terminal then prints the new link.
-- Without owners, the command in a terminal replaces the Main group at once and prints the new link; in Claude Code it asks you to run it in a terminal.
+- The Main group is deleted for all its members, and a new one replaces it. The sessions' groups stay as they are: the members who joined them from the old Main group keep their roles there, and the rights of those roles.
+- The command in a terminal prints the new link with a QR code. `/simplex:reset-owners` shows no link, as Claude's context never contains it: it asks you to run `npx -y @simplex-chat/mcp@VERSION link` in a terminal, which prints the link.
 
 VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`; the plugin's messages print these commands with it. A newer version from npm would replace the plugin's daemon.
 
@@ -618,7 +618,7 @@ The folders are readable only by the user, and so are the files the daemon write
 - The Main group link reaches only you: the session start shows it, and `link` prints it in a terminal.
 - A session runs in mode `host` only after an admin or owner approves it in the session's group.
 - Claude's files of `reply` reach the group while its preference "Files and media" allows them; owners set it, and the core enforces it. A post that a preference of the group refuses is replaced by Claude's text that names the preference.
-- While owners exist, the owners are replaced only after an owner approves it in the Main group.
+- Any program running as you on this computer can replace the Main group and its owners at once, without their approval, by `reset-owners` or a request to the daemon.
 - The plugin refuses to send private keys and the files of its data folder, except the files under `files/` of the session's own folder.
 - Peers of a chat see the profile `Claude`, or a random profile in a chat connected incognito.
 - These protections hold against Claude's tools, but not against a shell running as the same user: such a shell can read the data folder, with the token and the chat databases, and send requests to the daemon.

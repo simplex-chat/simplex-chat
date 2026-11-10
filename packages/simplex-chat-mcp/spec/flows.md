@@ -211,7 +211,7 @@ Notes:
 | other links | `apiConnectPreparedLink(USER, incognito, LINK)` |
 
 - After a failed prepared connect, the server deletes the prepared chat without notifying ([tools.ts:876-883](../src/tools.ts#L876-L883)).
-- The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([tools.ts:655-663](../src/tools.ts#L655-L663), [:885-890](../src/tools.ts#L885-L890)). In the plugin, a pending connection is also recorded in the session group's data, and its chat becomes the session's when it connects after the call returned, within a day of the record ([tools.ts:826](../src/tools.ts#L826), [hub.ts:162-167](../src/hub.ts#L162-L167), [:502-503](../src/hub.ts#L502-L503)).
+- The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([tools.ts:655-663](../src/tools.ts#L655-L663), [:885-890](../src/tools.ts#L885-L890)). In the plugin, a pending connection is also recorded in the session group's data, and its chat becomes the session's when it connects after the call returned, within a day of the record ([tools.ts:826](../src/tools.ts#L826), [hub.ts:162-167](../src/hub.ts#L162-L167), [:500-501](../src/hub.ts#L500-L501)).
 - In the perform step the server waits for the other side until `startedAt + wait`, at most until `created + 23 h 50 min`, and then reports `connected: false` ([tools.ts:153](../src/tools.ts#L153), [:814](../src/tools.ts#L814), [:840-843](../src/tools.ts#L840-L843)).
 - Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([tools.ts:897](../src/tools.ts#L897), [messages.ts:327-335](../src/messages.ts#L327-L335)).
 - For a target the agent is connected to, the result is `status: known` with its chat fields, and no action is created; in the plugin, the chat becomes the session's when it has no owner ([tools.ts:737](../src/tools.ts#L737), [:750-755](../src/tools.ts#L750-L755)).
@@ -808,13 +808,13 @@ Notes:
 - The link reaches the person only: the hook's `systemMessage` carries it, and no hook context or tool result does ([hook.ts:54-56](../src/hook.ts#L54-L56)).
 - The core deletes the preset contact of a new profile, both in `_hub` and in `_user` ([core.ts:28](../src/core.ts#L28), [:44-52](../src/core.ts#L44-L52)).
 - `User` connects at the first start only: later starts find the hub's contact marked `simplexMcpUser`. The contact is the one whose connection is that of the invitation the hub created; when `User` does not connect in 60 s, the daemon runs without it, and terminal prompts are not posted ([user.ts:21](../src/user.ts#L21), [:38-48](../src/user.ts#L38-L48), [:60-62](../src/user.ts#L60-L62), [hub.ts:371](../src/hub.ts#L371)).
-- A later daemon start without owners keeps the Main group's link ([main-group.ts:74-82](../src/main-group.ts#L74-L82)).
-- Owners are invited to the groups of open sessions when they join; the groups of closed sessions are joined by `/join N` ([hub.ts:446-450](../src/hub.ts#L446-L450), [:433-444](../src/hub.ts#L433-L444)).
-- The Main group states its trust in its short description and welcome message, set when the group is created, and in a post at each human's `joinedGroupMember` or `connectedToGroupMember`, the second with the member's status before the connection, so the joiner is looked up among the refreshed members ([main-group.ts:17-19](../src/main-group.ts#L17-L19), [:222-232](../src/main-group.ts#L222-L232), [:153-154](../src/main-group.ts#L153-L154)). Each profile update, of the name and the menu, starts from the group's current profile, so the short description, the welcome message and the preferences owners set stay ([main-group.ts:63-72](../src/main-group.ts#L63-L72), [control.ts:632-640](../src/control.ts#L632-L640)).
-- A session group states at each join other than `User`'s the rights of the joiner's role, with the command that makes them an observer for a role that sends ([hub.ts:218-225](../src/hub.ts#L218-L225), [:516](../src/hub.ts#L516)).
+- A later daemon start without owners keeps the Main group's link ([main-group.ts:68-76](../src/main-group.ts#L68-L76)).
+- Owners are invited to the groups of open sessions when they join; the groups of closed sessions are joined by `/join N` ([hub.ts:444-448](../src/hub.ts#L444-L448), [:431-442](../src/hub.ts#L431-L442)).
+- The Main group states its trust in its short description and welcome message, set when the group is created, and in a post at each human's `joinedGroupMember` or `connectedToGroupMember`, the second with the member's status before the connection, so the joiner is looked up among the refreshed members ([main-group.ts:16-18](../src/main-group.ts#L16-L18), [:195-205](../src/main-group.ts#L195-L205), [:127-128](../src/main-group.ts#L127-L128)). Each profile update, of the name and the menu, starts from the group's current profile, so the short description, the welcome message and the preferences owners set stay ([main-group.ts:57-66](../src/main-group.ts#L57-L66), [control.ts:632-640](../src/control.ts#L632-L640)).
+- A session group states at each join other than `User`'s the rights of the joiner's role, with the command that makes them an observer for a role that sends ([hub.ts:218-225](../src/hub.ts#L218-L225), [:514](../src/hub.ts#L514)).
 - The daemon reads the hub's contact of `User` after `User` opens, so that the sessions tell `User`'s messages ([hub.ts:372](../src/hub.ts#L372)).
 
-Source: [hook.ts:41-60](../src/hook.ts#L41-L60), [client.ts:35-92](../src/client.ts#L35-L92), [daemon.ts:93-119](../src/daemon.ts#L93-L119), [:218-262](../src/daemon.ts#L218-L262), [hub.ts:363-381](../src/hub.ts#L363-L381), [:404-422](../src/hub.ts#L404-L422), [:475-487](../src/hub.ts#L475-L487), [main-group.ts:143-166](../src/main-group.ts#L143-L166), [user.ts:16-57](../src/user.ts#L16-L57).
+Source: [hook.ts:41-60](../src/hook.ts#L41-L60), [client.ts:35-92](../src/client.ts#L35-L92), [daemon.ts:93-119](../src/daemon.ts#L93-L119), [:218-262](../src/daemon.ts#L218-L262), [hub.ts:363-381](../src/hub.ts#L363-L381), [:402-420](../src/hub.ts#L402-L420), [:473-485](../src/hub.ts#L473-L485), [main-group.ts:117-140](../src/main-group.ts#L117-L140), [user.ts:16-57](../src/user.ts#L16-L57).
 
 ---
 
@@ -989,16 +989,16 @@ Notes:
 - An empty answer takes its turn record too, without a post ([hub.ts:182](../src/hub.ts#L182), [:194](../src/hub.ts#L194)).
 - A prompt request whose hook started before an answer already handled records no turn, so that a later answer does not quote its prompt ([hub.ts:183](../src/hub.ts#L183), [:185](../src/hub.ts#L185)).
 - A blank prompt, as Claude Code sends for a prompt with images only, a prompt made only of this plugin's channel tags, as after a daemon restart lost the pushed prompts, and a prompt that is a one-line `/` command, such as `/simplex:link`, are not posted ([hub.ts:193](../src/hub.ts#L193)).
-- An answer and a terminal prompt are posted in parts: the longest runs of whole characters that each fit one message as `send` measures it, the first part of an answer with its quote; each part is searched among the next 15602 characters. A part that `User` posts and that starts with `/` gets no command reply ([hub.ts:193](../src/hub.ts#L193), [:273-283](../src/hub.ts#L273-L283), [:529-546](../src/hub.ts#L529-L546), [tools.ts:1575-1578](../src/tools.ts#L1575-L1578), [control.ts:223](../src/control.ts#L223)).
-- An answer whose quote the core refuses with `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or which the core refuses with the quote as too large, `largeMsg`, is posted without the quote; so are the replies `Session N is not running.`, `The file of this message was not received: ERROR` and those to `!` and `/!` ([hub.ts:285-291](../src/hub.ts#L285-L291), [:548-551](../src/hub.ts#L548-L551)).
-- An answer or a terminal prompt that the core refuses with `feature not allowed NAME`, as `SimpleX links` for a SimpleX link while that preference is off, or, for a prompt of `User`, on only for roles above that of `User`, is replaced by Claude's post `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would, or `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`; the turn goes on ([hub.ts:193](../src/hub.ts#L193), [:273-283](../src/hub.ts#L273-L283), [:521-523](../src/hub.ts#L521-L523)).
+- An answer and a terminal prompt are posted in parts: the longest runs of whole characters that each fit one message as `send` measures it, the first part of an answer with its quote; each part is searched among the next 15602 characters. A part that `User` posts and that starts with `/` gets no command reply ([hub.ts:193](../src/hub.ts#L193), [:273-283](../src/hub.ts#L273-L283), [:527-544](../src/hub.ts#L527-L544), [tools.ts:1575-1578](../src/tools.ts#L1575-L1578), [control.ts:223](../src/control.ts#L223)).
+- An answer whose quote the core refuses with `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or which the core refuses with the quote as too large, `largeMsg`, is posted without the quote; so are the replies `Session N is not running.`, `The file of this message was not received: ERROR` and those to `!` and `/!` ([hub.ts:285-291](../src/hub.ts#L285-L291), [:546-549](../src/hub.ts#L546-L549)).
+- An answer or a terminal prompt that the core refuses with `feature not allowed NAME`, as `SimpleX links` for a SimpleX link while that preference is off, or, for a prompt of `User`, on only for roles above that of `User`, is replaced by Claude's post `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would, or `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`; the turn goes on ([hub.ts:193](../src/hub.ts#L193), [:273-283](../src/hub.ts#L273-L283), [:519-521](../src/hub.ts#L519-L521)).
 - The hook cuts a prompt or an answer over 250,000 characters there, ending with `…`, so that the request fits the socket's 1 MiB ([hook.ts:15](../src/hook.ts#L15), [:95-97](../src/hook.ts#L95-L97)).
 - A card of a tool use that started after the hook is kept: the hook's start time `at` is earlier than its creation ([hook.ts:74](../src/hook.ts#L74), [hub.ts:201-205](../src/hub.ts#L201-L205)).
 - PostModelSwitch sends `{id, model}`; only the short description changes ([hook.ts:78](../src/hook.ts#L78), [hub.ts:187-198](../src/hub.ts#L187-L198)).
 - A Stop request with a changed effort posts the answer before it updates the short description, so that a prompt request handled meanwhile posts after the answer; the description is updated also when a post fails ([hub.ts:192-198](../src/hub.ts#L192-L198)).
 - A turn hook starts the daemon when none runs, repeats a turn refused with 409 up to 15 times 1 s apart, past the 10 s a held title waits, prints `{}`, and logs errors on its stderr ([hook.ts:74-93](../src/hook.ts#L74-L93)).
 
-Source: [hooks.json:5-7](../hooks/hooks.json#L5-L7), [hub.ts:180-199](../src/hub.ts#L180-L199), [:262-291](../src/hub.ts#L262-L291), [:529-546](../src/hub.ts#L529-L546), [user.ts:29-32](../src/user.ts#L29-L32).
+Source: [hooks.json:5-7](../hooks/hooks.json#L5-L7), [hub.ts:180-199](../src/hub.ts#L180-L199), [:262-291](../src/hub.ts#L262-L291), [:527-544](../src/hub.ts#L527-L544), [user.ts:29-32](../src/user.ts#L29-L32).
 
 ---
 
@@ -1065,7 +1065,7 @@ Notes:
 - A pending `mode` card does not keep the session open ([hub.ts:119-121](../src/hub.ts#L119-L121)).
 - The session process marks the action tools for Claude Code's confirmation from the option at its own start, before the owner decides ([session.ts:57](../src/session.ts#L57)).
 
-Source: [hub.ts:132-151](../src/hub.ts#L132-L151), [:315-329](../src/hub.ts#L315-L329), [:516](../src/hub.ts#L516), [tools.ts:563-564](../src/tools.ts#L563-L564).
+Source: [hub.ts:132-151](../src/hub.ts#L132-L151), [:315-329](../src/hub.ts#L315-L329), [:514](../src/hub.ts#L514), [tools.ts:563-564](../src/tools.ts#L563-L564).
 
 ---
 
@@ -1086,7 +1086,7 @@ sequenceDiagram
   K->>O: Gave bot X (@4) to session 2.
 ```
 
-Source: [control.ts:362-373](../src/control.ts#L362-L373), [tools.ts:568-571](../src/tools.ts#L568-L571), [hub.ts:424-426](../src/hub.ts#L424-L426).
+Source: [control.ts:362-373](../src/control.ts#L362-L373), [tools.ts:568-571](../src/tools.ts#L568-L571), [hub.ts:422-424](../src/hub.ts#L422-L424).
 
 ---
 
@@ -1095,37 +1095,32 @@ Source: [control.ts:362-373](../src/control.ts#L362-L373), [tools.ts:568-571](..
 ```mermaid
 sequenceDiagram
   participant P as Person
-  participant CC as Claude Code
+  participant R as reset-owners
   participant D as Daemon
   participant M as MainGroup
   participant N as Sessions
   participant O as Owner
-  P->>CC: /simplex:reset-owners
-  CC->>D: node dist/cli.js reset-owners: POST /reset-owners
-  alt owners exist
-    D->>M: askReset
-    M->>O: A terminal asks to replace the owners ... /'approve reset' or /'reject reset'
-    D-->>CC: An owner approves the reset in "SimpleX MCP". Then run npx -y @simplex-chat/mcp@VERSION link ...
-    O->>M: /approve reset
-    M->>O: card edited: ... Approved by Alice.
-    M->>M: the group deleted for all members, a new Main group with a link
-    Note over M,N: the session groups and the roles of their members stay as they are
-    P->>D: npx -y @simplex-chat/mcp@VERSION link in a terminal
-    D-->>P: Join "SimpleX MCP" in the SimpleX app. The link works once:, QR code, link
-  else no owners, from Claude Code
-    CC-->>P: Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.
+  P->>R: /simplex:reset-owners in Claude Code, or npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal
+  R->>D: POST /reset-owners
+  D->>M: replace, also while owners exist
+  M->>O: the Main group deleted for all its members
+  M->>M: a new Main group with a link
+  Note over M,N: the session groups and the roles of their members stay as they are
+  D-->>R: {link}
+  alt on a terminal
+    R-->>P: "SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:, QR code, link
+  else in Claude Code
+    R-->>P: "SimpleX MCP" was replaced. Run npx -y @simplex-chat/mcp@VERSION link in a terminal to see the link to the new one.
   end
 ```
 
 Notes:
 
 - VERSION is the plugin's version, so that the command runs the daemon's version ([owner.ts:7-8](../src/owner.ts#L7-L8)).
-
-- Without owners, `reset-owners` in a terminal replaces the group at once and prints the new link with a QR code ([owner.ts:28-35](../src/owner.ts#L28-L35), [hub.ts:398-402](../src/hub.ts#L398-L402)).
-- One reset card is pending at a time; `/reject reset` leaves the group ([main-group.ts:105-109](../src/main-group.ts#L105-L109), [:131-141](../src/main-group.ts#L131-L141)).
+- `reset-owners` replaces the group at once, also while owners exist, without their approval; on a terminal it prints the new link with a QR code, and in Claude Code it names the `link` command instead, so the link never reaches Claude's context ([owner.ts:17-20](../src/owner.ts#L17-L20), [:28-33](../src/owner.ts#L28-L33), [hub.ts:398-400](../src/hub.ts#L398-L400)).
 - The members who joined the session groups from the old Main group stay there with their roles and the rights of those roles ([hub.ts:307-309](../src/hub.ts#L307-L309)).
 
-Source: [main-group.ts:111-122](../src/main-group.ts#L111-L122).
+Source: [main-group.ts:99-109](../src/main-group.ts#L99-L109).
 
 ---
 
@@ -1153,7 +1148,7 @@ Notes:
 - A call or an attachment cancels the stop timer by creating an entry ([daemon.ts:357-367](../src/daemon.ts#L357-L367)).
 - A daemon of a higher version is kept; another protocol version makes clients fail with `Restart Claude Code to update the SimpleX plugin.` ([client.ts:35-47](../src/client.ts#L35-L47)).
 
-Source: [daemon.ts:177-199](../src/daemon.ts#L177-L199), [:315-323](../src/daemon.ts#L315-L323), [:404-422](../src/daemon.ts#L404-L422), [hub.ts:456-466](../src/hub.ts#L456-L466).
+Source: [daemon.ts:177-199](../src/daemon.ts#L177-L199), [:315-323](../src/daemon.ts#L315-L323), [:404-422](../src/daemon.ts#L404-L422), [hub.ts:454-464](../src/hub.ts#L454-L464).
 
 ---
 
@@ -1262,18 +1257,18 @@ sequenceDiagram
 
 Notes:
 
-- Rights follow the member's role in the session group, whatever way they joined and whatever their role in the Main group: admins and owners approve and send `//` and `/!`; changes in the Main group leave the session groups as they are ([hub.ts:214-216](../src/hub.ts#L214-L216), [:307-309](../src/hub.ts#L307-L309), [main-group.ts:143-158](../src/main-group.ts#L143-L158)).
-- `/join N` invites a member of the Main group as an admin, an owner of the Main group as an owner ([hub.ts:437](../src/hub.ts#L437)).
+- Rights follow the member's role in the session group, whatever way they joined and whatever their role in the Main group: admins and owners approve and send `//` and `/!`; changes in the Main group leave the session groups as they are ([hub.ts:214-216](../src/hub.ts#L214-L216), [:307-309](../src/hub.ts#L307-L309), [main-group.ts:117-132](../src/main-group.ts#L117-L132)).
+- `/join N` invites a member of the Main group as an admin, an owner of the Main group as an owner ([hub.ts:435](../src/hub.ts#L435)).
 - A role change by a member of the group raises `memberRole`, and Claude posts the new rights; a role change by Claude, as by `/observer`, raises no event, and the reply to `/observer` states the observer's rights ([hub.ts:218-225](../src/hub.ts#L218-L225), [control.ts:384-386](../src/control.ts#L384-L386), [:888-891](../src/control.ts#L888-L891)).
 - `/observer #G ID` is accepted from a member whose role is admin or owner and not below the member's role, as SimpleX requires for a role change, for a member who is current or pending; a member invited and not joined yet gets `No member ID in this group.` After the role change, the members are read again, so the standing approvals of the new observer count no more while that member is not an admin or owner; they stay in the chat's custom data and count again when the member becomes one again ([control.ts:375-387](../src/control.ts#L375-L387), [:167-170](../src/control.ts#L167-L170)).
-- The Main group's post names a human joiner found among the refreshed members, as `connectedToGroupMember` carries the member's status before the connection ([main-group.ts:153-154](../src/main-group.ts#L153-L154)).
+- The Main group's post names a human joiner found among the refreshed members, as `connectedToGroupMember` carries the member's status before the connection ([main-group.ts:127-128](../src/main-group.ts#L127-L128)).
 - `User` joining a session group, or a change of its role, gets no post ([hub.ts:221](../src/hub.ts#L221), [:311-313](../src/hub.ts#L311-L313)).
 - Each join gets one post: the core raises `joinedGroupMember` for a member who joined through the hub, by its invitation or link, and `connectedToGroupMember` for a member another member added, one of the two for each connection; the end-to-end test counts one post for each join in both groups ([test/e2e/daemon.test.ts](../test/e2e/daemon.test.ts)).
 - A person added to the group directly has the rights of the role the adding member set, as a member from the Main group has those of its role ([hub.ts:227-234](../src/hub.ts#L227-L234), [:307-309](../src/hub.ts#L307-L309)).
-- A `/join N` of a member of that group already gets `You are a member of "N · NAME".` ([hub.ts:436-441](../src/hub.ts#L436-L441)).
+- A `/join N` of a member of that group already gets `You are a member of "N · NAME".` ([hub.ts:434-439](../src/hub.ts#L434-L439)).
 - A reset of the owners leaves the session groups and their members as they are ([flow 25](#25-reset-owners)).
 
-Source: [main-group.ts:124-129](../src/main-group.ts#L124-L129), [:143-158](../src/main-group.ts#L143-L158), [hub.ts:214-225](../src/hub.ts#L214-L225), [:433-444](../src/hub.ts#L433-L444), [:516](../src/hub.ts#L516), [control.ts:375-387](../src/control.ts#L375-L387), [:884-891](../src/control.ts#L884-L891).
+Source: [main-group.ts:111-115](../src/main-group.ts#L111-L115), [:117-132](../src/main-group.ts#L117-L132), [hub.ts:214-225](../src/hub.ts#L214-L225), [:431-442](../src/hub.ts#L431-L442), [:514](../src/hub.ts#L514), [control.ts:375-387](../src/control.ts#L375-L387), [:884-891](../src/control.ts#L884-L891).
 
 ---
 

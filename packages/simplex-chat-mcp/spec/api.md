@@ -674,35 +674,31 @@ on reply {file, text?}:
     tool error, the core's text
 ```
 
-Sources: [tools.ts:713-730](../src/tools.ts#L713-L730), [:1607-1614](../src/tools.ts#L1607-L1614), [:549](../src/tools.ts#L549), [hub.ts:93](../src/hub.ts#L93). The core checks the preference at the send, and only owners change it. Claude's profile updates of a group read its current profile from the chat database and change only Claude's own fields, so they keep the owners' preferences ([control.ts:115-140](../src/control.ts#L115-L140), [:632-640](../src/control.ts#L632-L640), [main-group.ts:63-72](../src/main-group.ts#L63-L72)).
+Sources: [tools.ts:713-730](../src/tools.ts#L713-L730), [:1607-1614](../src/tools.ts#L1607-L1614), [:549](../src/tools.ts#L549), [hub.ts:93](../src/hub.ts#L93). The core checks the preference at the send, and only owners change it. Claude's profile updates of a group read its current profile from the chat database and change only Claude's own fields, so they keep the owners' preferences ([control.ts:115-140](../src/control.ts#L115-L140), [:632-640](../src/control.ts#L632-L640), [main-group.ts:57-66](../src/main-group.ts#L57-L66)).
 
 ### 4.2 Main group
 
-Commands ([`MainGroup.command`](../src/main-group.ts#L124-L129)), one line `/KEYWORD PARAMS` as in [2.1](#21-commands-and-replies), from any member:
+Commands ([`MainGroup.command`](../src/main-group.ts#L111-L115)), one line `/KEYWORD PARAMS` as in [2.1](#21-commands-and-replies), from any member:
 
 | Request | Condition | Reply | Code |
 |---|---|---|---|
-| `/sessions` | no session | `No sessions.` | [hub.ts:428-431](../src/hub.ts#L428-L431) |
-| `/sessions` | otherwise | one line per session of the hub: `N · NAME`, with `, closed` when it has no entry | [hub.ts:428-431](../src/hub.ts#L428-L431) |
-| `/join N` | no session N | `No session N. /sessions lists the sessions.` | [hub.ts:435](../src/hub.ts#L435) |
-| `/join N` | the sender is a member of its group | `You are a member of "N · NAME".` | [hub.ts:436-441](../src/hub.ts#L436-L441) |
-| `/join N` | otherwise: an invitation through the Main group, with the role `owner` for an owner of the Main group, else `admin` | `Sent you an invitation to "N · NAME".` | [hub.ts:437](../src/hub.ts#L437), [:214-216](../src/hub.ts#L214-L216) |
-| `/approve reset`, `/reject reset` | sender not an owner | `Only owners decide a reset of the owners.` | [main-group.ts:132](../src/main-group.ts#L132) |
-| `/approve reset`, `/reject reset` | no reset card | `No reset of the owners is requested.` | [main-group.ts:134](../src/main-group.ts#L134) |
-| `/approve reset`, `/reject reset` | accepted | none; the card is edited to `Approved by NAME.` or `Rejected by NAME.`; after an approval the group is replaced | [main-group.ts:135-140](../src/main-group.ts#L135-L140) |
-| other one-line `/` text | | `Unknown command.` | [main-group.ts:14](../src/main-group.ts#L14), [:128](../src/main-group.ts#L128) |
+| `/sessions` | no session | `No sessions.` | [hub.ts:426-429](../src/hub.ts#L426-L429) |
+| `/sessions` | otherwise | one line per session of the hub: `N · NAME`, with `, closed` when it has no entry | [hub.ts:426-429](../src/hub.ts#L426-L429) |
+| `/join N` | no session N | `No session N. /sessions lists the sessions.` | [hub.ts:433](../src/hub.ts#L433) |
+| `/join N` | the sender is a member of its group | `You are a member of "N · NAME".` | [hub.ts:434-439](../src/hub.ts#L434-L439) |
+| `/join N` | otherwise: an invitation through the Main group, with the role `owner` for an owner of the Main group, else `admin` | `Sent you an invitation to "N · NAME".` | [hub.ts:435](../src/hub.ts#L435), [:214-216](../src/hub.ts#L214-L216) |
+| other one-line `/` text | | `Unknown command.` | [main-group.ts:14](../src/main-group.ts#L14), [:114](../src/main-group.ts#L114) |
 
 Posts:
 
 | Moment | Text | Code |
 |---|---|---|
-| the first owner joined | `I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.` | [main-group.ts:13](../src/main-group.ts#L13), [:164](../src/main-group.ts#L164) |
-| each human's `joinedGroupMember` or `connectedToGroupMember`, after the first owner's greeting; the joiner found among the members read again | `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.` | [main-group.ts:18](../src/main-group.ts#L18), [:153-154](../src/main-group.ts#L153-L154) |
-| `reset-owners` while owners exist | `A terminal asks to replace the owners: this group is deleted, and a new Main group with a new link replaces it.` and `/'approve reset' or /'reject reset'`; one card at a time | [main-group.ts:15](../src/main-group.ts#L15), [:105-109](../src/main-group.ts#L105-L109) |
+| the first owner joined | `I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.` | [main-group.ts:13](../src/main-group.ts#L13), [:138](../src/main-group.ts#L138) |
+| each human's `joinedGroupMember` or `connectedToGroupMember`, after the first owner's greeting; the joiner found among the members read again | `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.` | [main-group.ts:17](../src/main-group.ts#L17), [:127-128](../src/main-group.ts#L127-L128) |
 
-Changes of membership or role in the Main group, and its replacement by a reset of the owners, leave the session groups as they are; the members invited through the old Main group keep their roles there and the rights of those roles ([main-group.ts:143-158](../src/main-group.ts#L143-L158), [:111-122](../src/main-group.ts#L111-L122), [hub.ts:307-309](../src/hub.ts#L307-L309)).
+Changes of membership or role in the Main group, and its replacement by a reset of the owners, leave the session groups as they are; the members invited through the old Main group keep their roles there and the rights of those roles ([main-group.ts:117-132](../src/main-group.ts#L117-L132), [:99-109](../src/main-group.ts#L99-L109), [hub.ts:307-309](../src/hub.ts#L307-L309)).
 
-Group profile ([`createMainGroup`](../src/main-group.ts#L222-L232), [`load`](../src/main-group.ts#L63-L72)):
+Group profile ([`createMainGroup`](../src/main-group.ts#L195-L205), [`load`](../src/main-group.ts#L57-L66)):
 
 | Field | Value |
 |---|---|
@@ -714,7 +710,7 @@ Group profile ([`createMainGroup`](../src/main-group.ts#L222-L232), [`load`](../
 | command menu | `/sessions` "Claude Code sessions"<br>`/join` "Join the group of a session", params `<session number>` |
 | custom data | `{simplexMcpMain: true}` |
 
-Each update starts from the group's current profile in the chat database and changes only the display name and the command menu, so the short description, the description and the preferences owners set stay ([main-group.ts:63-72](../src/main-group.ts#L63-L72), [control.ts:632-640](../src/control.ts#L632-L640)).
+Each update starts from the group's current profile in the chat database and changes only the display name and the command menu, so the short description, the description and the preferences owners set stay ([main-group.ts:57-66](../src/main-group.ts#L57-L66), [control.ts:632-640](../src/control.ts#L632-L640)).
 
 The hub's profile `Claude` posts in the group, with peer type `agent` ([hub.ts:18](../src/hub.ts#L18), [core.ts:24](../src/core.ts#L24)).
 
@@ -778,9 +774,9 @@ Posts:
 | Claude | `The file of this message was not received: ERROR`, as a reply to a prompt whose file failed or did not arrive in 10 minutes; the prompt is pushed without the file | [hub.ts:236-260](../src/hub.ts#L236-L260) |
 | Claude | the replies to `!` texts and to the `/`, `//` and `/!` texts of the prompt rules above, quoting the message | [hub.ts:28-29](../src/hub.ts#L28-L29), [:157](../src/hub.ts#L157), [:232](../src/hub.ts#L232) |
 | `User` | each prompt typed in the terminal, in parts, except blank prompts, prompts made only of this server's channel tags, the prompts pushed from the group and one-line `/` commands; in the group marked with the session's number | [hub.ts:184-193](../src/hub.ts#L184-L193), [user.ts:29-32](../src/user.ts#L29-L32) |
-| Claude | in place of an answer or a terminal prompt that the core refuses with `feature not allowed NAME`, as `SimpleX links` for a SimpleX link: `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would, or `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`, also while NAME is on only for roles above that of `User`; Claude is an owner of the group, so its answers get only the first text; the turn goes on | [hub.ts:193](../src/hub.ts#L193), [:273-283](../src/hub.ts#L273-L283), [:521-523](../src/hub.ts#L521-L523), [tools.ts:1607-1614](../src/tools.ts#L1607-L1614) |
+| Claude | in place of an answer or a terminal prompt that the core refuses with `feature not allowed NAME`, as `SimpleX links` for a SimpleX link: `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would, or `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`, also while NAME is on only for roles above that of `User`; Claude is an owner of the group, so its answers get only the first text; the turn goes on | [hub.ts:193](../src/hub.ts#L193), [:273-283](../src/hub.ts#L273-L283), [:519-521](../src/hub.ts#L519-L521), [tools.ts:1607-1614](../src/tools.ts#L1607-L1614) |
 | Claude | files sent by `reply`, at once | [tools.ts:713-730](../src/tools.ts#L713-L730), [hub.ts:93](../src/hub.ts#L93) |
-| Claude | at each `joinedGroupMember`, `connectedToGroupMember` or `memberRole` of a member other than `User`, one post for each join and each role change: the rights of the member's role, below | [hub.ts:218-225](../src/hub.ts#L218-L225), [:516](../src/hub.ts#L516), [control.ts:40-43](../src/control.ts#L40-L43), [:884-891](../src/control.ts#L884-L891) |
+| Claude | at each `joinedGroupMember`, `connectedToGroupMember` or `memberRole` of a member other than `User`, one post for each join and each role change: the rights of the member's role, below | [hub.ts:218-225](../src/hub.ts#L218-L225), [:514](../src/hub.ts#L514), [control.ts:40-43](../src/control.ts#L40-L43), [:884-891](../src/control.ts#L884-L891) |
 
 Rights posts, by the member's role in the session group:
 
@@ -793,9 +789,9 @@ Rights posts, by the member's role in the session group:
 
 #G is the session group and ID the member. A role change made by Claude itself, by `/observer`, raises no `memberRole` event; its reply is the observer's post.
 
-Parts ([hub.ts:529-546](../src/hub.ts#L529-L546), [tools.ts:1575-1578](../src/tools.ts#L1575-L1578)): the text is cut into the longest runs of whole characters that each fit one message by `fitsMessage`, the measure of `send`: 600 bytes of envelope plus the UTF-8 length of the JSON of the content, the quote and the mentions, at most 15602 bytes; the first part is measured with its quote. A part without a quote holds 14962 bytes of text: 14962 Latin, 7481 Cyrillic or 4987 CJK characters, fewer for characters that JSON escapes.
+Parts ([hub.ts:527-544](../src/hub.ts#L527-L544), [tools.ts:1575-1578](../src/tools.ts#L1575-L1578)): the text is cut into the longest runs of whole characters that each fit one message by `fitsMessage`, the measure of `send`: 600 bytes of envelope plus the UTF-8 length of the JSON of the content, the quote and the mentions, at most 15602 bytes; the first part is measured with its quote. A part without a quote holds 14962 bytes of text: 14962 Latin, 7481 Cyrillic or 4987 CJK characters, fewer for characters that JSON escapes.
 
-Claude's posts with a quote, the answer and the replies, are sent again without the quote when the core refuses them with `errorStore` `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or `largeMsg`, as for a reply that quotes a message near the size limit ([hub.ts:285-291](../src/hub.ts#L285-L291), [:548-551](../src/hub.ts#L548-L551)).
+Claude's posts with a quote, the answer and the replies, are sent again without the quote when the core refuses them with `errorStore` `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or `largeMsg`, as for a reply that quotes a message near the size limit ([hub.ts:285-291](../src/hub.ts#L285-L291), [:546-549](../src/hub.ts#L546-L549)).
 
 Turn records, one per `/turn` with `prompt`, read before any await of the `/turn` ([hub.ts:54](../src/hub.ts#L54), [:180-186](../src/hub.ts#L180-L186), [:262-271](../src/hub.ts#L262-L271)):
 
@@ -812,7 +808,7 @@ on /turn {at, answer}, also an empty answer:
 at = performance.timeOrigin of the hook process; absent: Infinity for an answer's quote, now otherwise
 ```
 
-Group profile ([`createSessionGroup`](../src/hub.ts#L475-L487), [`Control.load`](../src/control.ts#L115-L122), [`describe`](../src/control.ts#L129-L131), [`updateProfile`](../src/control.ts#L133-L140)); the updates run one at a time, each starts from the group's current profile and changes only the display name, the short description or the command menu, so a rename and a model change that overlap both stay:
+Group profile ([`createSessionGroup`](../src/hub.ts#L473-L485), [`Control.load`](../src/control.ts#L115-L122), [`describe`](../src/control.ts#L129-L131), [`updateProfile`](../src/control.ts#L133-L140)); the updates run one at a time, each starts from the group's current profile and changes only the display name, the short description or the command menu, so a rename and a model change that overlap both stay:
 
 | Field | Value |
 |---|---|
@@ -880,7 +876,7 @@ HTTP/1.1 over `ROOT/daemon.sock`, the fallback path or the Windows pipe, protoco
 | `POST /turn` | `{id, pid?, at?, prompt?, answer?, model?, effort?}`, `at` the time the hook started | `{}` after the posts | [daemon.ts:148-152](../src/daemon.ts#L148-L152) |
 | `GET /status` | none | `{version, protocol, mainGroup, owner: {owners}, sessions: [{number, name, attached}]}`, the open sessions | [daemon.ts:424-427](../src/daemon.ts#L424-L427) |
 | `GET /link` | none | `{owners, link?}`, the link while the Main group has no owner | [daemon.ts:154](../src/daemon.ts#L154), [hub.ts:387-390](../src/hub.ts#L387-L390) |
-| `POST /reset-owners` | none | `{link}` after a reset without owners; `{}` after the card | [daemon.ts:155](../src/daemon.ts#L155), [hub.ts:398-402](../src/hub.ts#L398-L402) |
+| `POST /reset-owners` | none | `{link}`, the link of the new Main group, after the group is replaced at once, also while owners exist | [daemon.ts:155](../src/daemon.ts#L155), [hub.ts:398-400](../src/hub.ts#L398-L400) |
 | `POST /stop` | none | `{}` after the stop sequence; the process exits after the reply | [daemon.ts:156-159](../src/daemon.ts#L156-L159) |
 
 | Status | Error | Condition |
@@ -921,7 +917,7 @@ on a daemon stop:                                the held titles into ROOT/title
 on the next start:                               each one taken as a new /title
 ```
 
-`/session` and `/title` without `unattended` apply `config` to the hub: the expiry of all sessions, and a rename of the Main group when `mainGroup` differs ([hub.ts:392-396](../src/hub.ts#L392-L396), [daemon.ts:213](../src/daemon.ts#L213), [:221](../src/daemon.ts#L221), [:232](../src/daemon.ts#L232), [:259](../src/daemon.ts#L259)). `/session` also requests its session's mode: `requests` applies at once, ends a pending mode card and clears `hostDeclined`; `host` posts the mode card when the group has an approver and `hostDeclined` is unset, at once or after the next membership event of the group. A rejected mode card sets `hostDeclined` in session.json; the mode of an approved card, and `requests` after it, is kept as `mode` in the session group's custom data, which the session reads when it opens ([hub.ts:132-151](../src/hub.ts#L132-L151), [:315-318](../src/hub.ts#L315-L318), [:320-323](../src/hub.ts#L320-L323), [:75](../src/hub.ts#L75), [:516](../src/hub.ts#L516)). `/title` opens or creates the session, renames it for a non-blank name, and passes `model` to `turn`, at once or, for a held title, after the wait ([daemon.ts:218-262](../src/daemon.ts#L218-L262), [:466-476](../src/daemon.ts#L466-L476)).
+`/session` and `/title` without `unattended` apply `config` to the hub: the expiry of all sessions, and a rename of the Main group when `mainGroup` differs ([hub.ts:392-396](../src/hub.ts#L392-L396), [daemon.ts:213](../src/daemon.ts#L213), [:221](../src/daemon.ts#L221), [:232](../src/daemon.ts#L232), [:259](../src/daemon.ts#L259)). `/session` also requests its session's mode: `requests` applies at once, ends a pending mode card and clears `hostDeclined`; `host` posts the mode card when the group has an approver and `hostDeclined` is unset, at once or after the next membership event of the group. A rejected mode card sets `hostDeclined` in session.json; the mode of an approved card, and `requests` after it, is kept as `mode` in the session group's custom data, which the session reads when it opens ([hub.ts:132-151](../src/hub.ts#L132-L151), [:315-318](../src/hub.ts#L315-L318), [:320-323](../src/hub.ts#L320-L323), [:75](../src/hub.ts#L75), [:514](../src/hub.ts#L514)). `/title` opens or creates the session, renames it for a non-blank name, and passes `model` to `turn`, at once or, for a held title, after the wait ([daemon.ts:218-262](../src/daemon.ts#L218-L262), [:466-476](../src/daemon.ts#L466-L476)).
 
 ### 4.7 Plugin commands
 
@@ -932,7 +928,7 @@ on the next start:                               each one taken as a new /title
 | `simplex-mcp hook session-start` | SessionStart hook | one JSON line, see [4.8](#48-plugin-options-files-and-hook-output) |
 | `simplex-mcp hook turn` | UserPromptSubmit, Stop and PostModelSwitch hooks | `{}`; a prompt or an answer over 250,000 characters is cut there and ends with `…` ([hook.ts:15](../src/hook.ts#L15), [:95-97](../src/hook.ts#L95-L97)) |
 | `simplex-mcp link` | `/simplex:link`, people | `Owners of "MAIN": A, B. To replace them, run /simplex:reset-owners.`; without owners on a terminal `Join "MAIN" in the SimpleX app. The link works once:`, a QR code and the link, elsewhere `Run npx -y @simplex-chat/mcp@VERSION link in a terminal to see the link to "MAIN".`; without a link `The Main group has no link. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` |
-| `simplex-mcp reset-owners` | `/simplex:reset-owners`, people | while owners exist: `An owner approves the reset in "MAIN". Then run npx -y @simplex-chat/mcp@VERSION link in a terminal to see the link to the new group.`; without owners on a terminal: `"MAIN" was replaced. Join the new one in the SimpleX app. The link works once:`, a QR code and the link; elsewhere `Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` |
+| `simplex-mcp reset-owners` | `/simplex:reset-owners`, people | the Main group replaced at once, also while owners exist; on a terminal `"MAIN" was replaced. Join the new one in the SimpleX app. The link works once:`, a QR code and the link, elsewhere `"MAIN" was replaced. Run npx -y @simplex-chat/mcp@VERSION link in a terminal to see the link to the new one.` |
 
 VERSION is the version of the package that prints the text ([owner.ts:7-8](../src/owner.ts#L7-L8)).
 
@@ -952,13 +948,12 @@ Environment: `SIMPLEX_MCP_HOME`, ROOT; `CLAUDE_CODE_SESSION_ID` and `CLAUDE_PROJ
 | Moment | Line | Code |
 |---|---|---|
 | start | `SimpleX MCP daemon VERSION, data folder ROOT` | [daemon.ts:444](../src/daemon.ts#L444) |
-| Main group created | `Main group "NAME" created.` | [main-group.ts:230](../src/main-group.ts#L230) |
-| link opened | `Main group link created. Whoever joins by it first becomes an owner of "NAME".` | [main-group.ts:176](../src/main-group.ts#L176) |
-| no owners, members present | `No owners in the Main group.` | [main-group.ts:16](../src/main-group.ts#L16), [:76](../src/main-group.ts#L76), [:150](../src/main-group.ts#L150) |
-| owner joined | `NAME joined (member ID) and is now an owner. The link is deleted.` | [main-group.ts:165](../src/main-group.ts#L165) |
-| Main group lost | `The Main group is lost. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` | [main-group.ts:170](../src/main-group.ts#L170) |
-| reset card, decision | `The reset of the owners waits for an owner's approval in the Main group.`, `Reset of the owners: Approved by NAME.` | [main-group.ts:108](../src/main-group.ts#L108), [:138](../src/main-group.ts#L138) |
-| session group created | `Group "N · NAME" of session N created.` | [hub.ts:485](../src/hub.ts#L485) |
+| Main group created | `Main group "NAME" created.` | [main-group.ts:203](../src/main-group.ts#L203) |
+| link opened | `Main group link created. Whoever joins by it first becomes an owner of "NAME".` | [main-group.ts:150](../src/main-group.ts#L150) |
+| no owners, members present | `No owners in the Main group.` | [main-group.ts:15](../src/main-group.ts#L15), [:70](../src/main-group.ts#L70), [:124](../src/main-group.ts#L124) |
+| owner joined | `NAME joined (member ID) and is now an owner. The link is deleted.` | [main-group.ts:139](../src/main-group.ts#L139) |
+| Main group lost | `The Main group is lost. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` | [main-group.ts:144](../src/main-group.ts#L144) |
+| session group created | `Group "N · NAME" of session N created.` | [hub.ts:483](../src/hub.ts#L483) |
 | session group lost | `The group "N · NAME" is lost.` | [control.ts:483](../src/control.ts#L483) |
 | actions | as in [3.4](#34-terminal-lines), with ` of session N` after `Action N`; `allowed.` for a tool use | [actions.ts:210](../src/actions.ts#L210), [:410](../src/actions.ts#L410) |
 | stop | `Cancelled K action(s).`, `Stopping: sending K cancelled card(s), up to 10 s. Ctrl-C to stop now.`, `Stopped.` | [daemon.ts:189](../src/daemon.ts#L189), [serve.ts:164](../src/serve.ts#L164), [daemon.ts:192](../src/daemon.ts#L192) |

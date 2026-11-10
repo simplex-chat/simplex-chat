@@ -9,7 +9,10 @@ import {Daemon, productionDeps} from "../../src/daemon"
 import {hubFolder, readSessionFile, sessionFolder} from "../../src/files"
 import {Hub} from "../../src/hub"
 import {sessionStart, turn} from "../../src/hook"
+import {resetOwners} from "../../src/owner"
 import {AttachLine, OwnerState, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
+import {qrCodeText} from "../../src/qr"
+import {version} from "../../src/version"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
 import {SmpServer, startSmpServer, startXftpServer} from "./smpServer"
 import {daemonPid, killDaemon, spawnSession} from "./stdio"
@@ -474,7 +477,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
 }, 600_000)
 
-test("a member of the Main group joins a session's group by /join as admin, prompts, sends // commands and approves there, also after removal from the Main group; a member added to the group by link as member prompts, and the plugin refuses its / commands, /pending and /!ls, with one reply; Claude posts each member's rights at the join and at a role change, after which the member approves; files of reply reach the group at once, the group's preference for files makes the core refuse them, and a change of the model keeps that preference; after a reset of the owners the members still prompt and approve there", async () => {
+test("a member of the Main group joins a session's group by /join as admin, prompts, sends // commands and approves there, also after removal from the Main group; a member added to the group by link as member prompts, and the plugin refuses its / commands, /pending and /!ls, with one reply; Claude posts each member's rights at the join and at a role change, after which the member approves; files of reply reach the group at once, the group's preference for files makes the core refuse them, and a change of the model keeps that preference; a reset of the owners while Alice is an owner replaces the Main group at once and shows the new link only in a terminal, and both members keep their roles in the session's group, where they still prompt and approve", async () => {
   const root = join(dir, "trust", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("trust", "Alice")
@@ -571,11 +574,15 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   await turn(JSON.stringify({session_id: one, hook_event_name: "PostModelSwitch", to_model: "claude-opus-5"}), {}, client)
   expect((await described)?.toGroup.groupProfile.groupPreferences?.files?.enable).toBe(T.GroupFeatureEnabled.Off)
 
-  const resetCard = received(alice.chat, inGroup(mainGroupId, textStarts("A terminal asks to replace the owners")))
-  expect(await client.request("POST", "/reset-owners")).toEqual({})
-  await resetCard
-  await alice.chat.apiSendTextMessage([T.ChatType.Group, mainGroupId], "/approve reset")
-  await until(async () => (await client.request<OwnerState>("GET", "/link")).link !== undefined)
+  const mainDeleted = alice.chat.wait("groupDeleted", ({groupInfo}) => groupInfo.groupId === mainGroupId, 60_000)
+  expect(await resetOwners({SIMPLEX_MCP_HOME: root}, false)).toBe(`"SimpleX MCP" was replaced. Run npx -y @simplex-chat/mcp@${version} link in a terminal to see the link to the new one.`)
+  expect(await mainDeleted).toBeDefined()
+  const replaced = await client.request<OwnerState>("GET", "/link")
+  expect(replaced).toEqual({owners: [], link: expect.any(String)})
+  const inTerminal = await resetOwners({SIMPLEX_MCP_HOME: root}, true)
+  const {link} = await client.request<OwnerState>("GET", "/link")
+  expect(link).not.toBe(replaced.link)
+  expect(inTerminal).toBe(`"SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:\n${qrCodeText(link!, "small")}\n${link}`)
   await alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], "Deploy")
   await bobSends("Tag the release")
   await until(() => attached.some(({prompt}) => prompt?.text === "Deploy" && prompt.from === "Alice") && attached.some(({prompt}) => prompt?.text === "Tag the release" && prompt.from === "Bob"))
@@ -584,7 +591,8 @@ test("a member of the Main group joins a session's group by /join as admin, prom
     await p.chat.apiSendTextMessage([T.ChatType.Group, groupId], "/pending")
     await pending
   }
-  expect((await alice.chat.apiListMembers(groupOne)).filter(({memberProfile}) => memberProfile.displayName === "Bob").map(({memberStatus}) => memberStatus)).toEqual([expect.stringMatching(/^(connected|complete)$/)])
+  expect((await alice.chat.apiListMembers(groupOne)).filter(({memberProfile}) => memberProfile.displayName === "Bob").map(({memberStatus, memberRole}) => [memberStatus, memberRole])).toEqual([[expect.stringMatching(/^(connected|complete)$/), T.GroupMemberRole.Admin]])
+  expect((await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === groupOne)?.membership.memberRole).toBe(T.GroupMemberRole.Owner)
 }, 600_000)
 
 test("/observer ends the standing approvals of the member it makes an observer, and answers that a member who has not joined yet is no member", async () => {

@@ -27,9 +27,7 @@ export async function showLink(env: NodeJS.ProcessEnv = process.env, tty = proce
 
 export async function resetOwners(env: NodeJS.ProcessEnv = process.env, tty = process.stdout.isTTY === true): Promise<string> {
   const client = DaemonClient.forRoot(dataRoot(env))
-  const {mainGroup, owner} = await client.ensureDaemon(version)
-  if (owner.owners.length === 0 && !tty) return `Run ${resetCommand} in a terminal.`
+  const {mainGroup} = await client.ensureDaemon(version)
   const {link} = await client.request<ResetReply>("POST", "/reset-owners")
-  if (link === undefined) return `An owner approves the reset in "${mainGroup}". Then run ${linkCommand} in a terminal to see the link to the new group.`
   return resetOwnersText(link, mainGroup, tty)
 }
