@@ -163,6 +163,7 @@ serviceProfile ownerSetUp p@GroupProfile {groupPreferences, memberAdmission} =
       | ownerSetUp = Just (fromMaybe emptyGroupMemberAdmission memberAdmission) {review = Just MCAll}
       | otherwise = memberAdmission
 
+-- The first joiner is not held for review, as nobody could approve them before the group has an owner.
 joinerAcceptance :: TMVar ChatController -> GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
 joinerAcceptance startedCC GroupInfo {groupId} GroupLinkInfo {memberRole} _ = do
   cc <- atomically $ readTMVar startedCC
