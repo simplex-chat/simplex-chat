@@ -67,7 +67,7 @@ Design:
 18. The owner link reaches the person only: the `systemMessage` of the SessionStart hook and `simplex-mcp link` in a terminal; hook context and tool results never contain it.
 19. A session's approval mode changes to `host` only after an owner approves a card in the session's group.
 20. Replaced on 2026-11-10 by decision 113. It was: while owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
-21. The package ships `npm-shrinkwrap.json`; the plugin's server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, and Node resolves its modules from the plugin's folder (replaces npx in the plugin folder, 2026-11-08; amended on 2026-11-10 by decision 118).
+21. The package ships `npm-shrinkwrap.json`; the plugin's server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, except the PreToolUse hook, which runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js`, and Node resolves its modules from the plugin's folder (replaces npx in the plugin folder, 2026-11-08; amended on 2026-11-10 by decision 118).
 22. Refused paths cover the whole data root.
 23. Standing approvals of closed sessions are listed by `/list` and removed by `/revoke` in the session's group.
 24. The channel is part of the plugin's session server; the service pushes events on the session's `/attach` stream.
