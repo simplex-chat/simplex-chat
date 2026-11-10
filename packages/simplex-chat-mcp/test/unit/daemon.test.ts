@@ -1,13 +1,14 @@
 import {once} from "events"
-import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, writeFileSync} from "fs"
+import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
 import {Server, request} from "http"
 import {Socket} from "net"
 import {tmpdir} from "os"
 import {join} from "path"
 import {Mode} from "../../src/actions"
+import {DaemonClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
-import {Daemon, DaemonDeps, HubLike, SessionLike, runDaemon} from "../../src/daemon"
-import {LockedError, createDataFolder, readSessionFile, serverToken, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
+import {Daemon, DaemonDeps, HubLike, SessionLike, productionDeps, runDaemon} from "../../src/daemon"
+import {LockedError, createDataFolder, daemonToken, readSessionFile, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
 import {protocolVersion} from "../../src/protocol"
 import * as socket from "../../src/socket"
 import {requestJson, streamLines} from "../../src/socket"
@@ -149,7 +150,7 @@ const register = (id: string) => post("/session", {id, project: "/p/app", config
 const title = (id: string, name?: string, config = defaultConfig, model?: string) => post("/title", {id, name, project: "/p/app", model, config})
 const titleReply = {mainGroup: "SimpleX MCP", owner: {owners: [], link: "https://simplex.chat/g#link"}, version: "0.2.0", protocol: protocolVersion}
 const sessionsFolder = () => join(root, "_sessions")
-const lockFile = () => join(root, "lock")
+const lockFile = () => join(root, "daemon.lock")
 
 function attach(id: string, signal: AbortSignal) {
   const first = deferred()
@@ -251,6 +252,22 @@ describe("daemon", () => {
     await expect(Daemon.start({...d, openHub}, readDefaultConfig)).rejects.toThrow(LockedError)
     expect(openHub).not.toHaveBeenCalled()
     writeFileSync(lockFile(), `${process.pid}\n`)
+  })
+
+  it("starts its client and itself in a data root that holds folders of serve agents named token and lock, and leaves those folders as they are", async () => {
+    const folders = ["token", "lock"]
+    for (const name of folders) {
+      createDataFolder(join(root, name))
+      writeFileSync(join(root, name, "simplex_v1_chat.db"), name)
+    }
+    const client = DaemonClient.forRoot(root)
+    daemon = await Daemon.start({...deps(root).d, token: productionDeps(root).token}, readDefaultConfig)
+    expect(await client.request("GET", "/status")).toMatchObject({mainGroup: "SimpleX MCP"})
+    for (const name of folders) {
+      expect(statSync(join(root, name)).mode & 0o777).toBe(0o700)
+      expect(readdirSync(join(root, name))).toEqual(["simplex_v1_chat.db"])
+      expect(readFileSync(join(root, name, "simplex_v1_chat.db"), "utf8")).toBe(name)
+    }
   })
 
   it("releases the lock and opens no hub when it cannot listen", async () => {
@@ -901,7 +918,7 @@ describe("daemon", () => {
 describe("runDaemon", () => {
   let other: Server | undefined
   const answering = async (): Promise<void> => {
-    other = await socket.listen(socketPath(root), serverToken(root), {})
+    other = await socket.listen(socketPath(root), daemonToken(root), {})
   }
 
   afterEach(async () => {

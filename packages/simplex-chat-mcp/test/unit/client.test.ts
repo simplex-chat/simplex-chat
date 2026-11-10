@@ -2,7 +2,7 @@ import {mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
 import {DaemonClient, compareVersions, spawnDaemon} from "../../src/client"
-import {logFile, serverToken, socketPath} from "../../src/files"
+import {daemonToken, logFile, socketPath} from "../../src/files"
 import {ExitError} from "../../src/log"
 import {protocolVersion} from "../../src/protocol"
 import {listen, sendJson} from "../../src/socket"
@@ -65,7 +65,7 @@ describe("ensureDaemon", () => {
     const client = DaemonClient.forRoot(root)
     let server: Awaited<ReturnType<typeof listen>> | undefined
     const spawned = jest.fn(async () => {
-      server = await listen(socketPath(root), serverToken(root), {"GET /status": async (_b, res) => sendJson(res, 200, status("0.2.0"))})
+      server = await listen(socketPath(root), daemonToken(root), {"GET /status": async (_b, res) => sendJson(res, 200, status("0.2.0"))})
     })
     expect(await client.ensureDaemon("0.2.0", spawned)).toMatchObject({version: "0.2.0"})
     expect(spawned).toHaveBeenCalledTimes(1)
@@ -75,7 +75,7 @@ describe("ensureDaemon", () => {
   it("stops an older daemon and starts its own, uses a newer one, refuses another protocol", async () => {
     const client = DaemonClient.forRoot(root)
     const stops = jest.fn()
-    let server = await listen(socketPath(root), serverToken(root), {
+    let server = await listen(socketPath(root), daemonToken(root), {
       "GET /status": async (_b, res) => sendJson(res, 200, status("0.1.9")),
       "POST /stop": async (_b, res) => {
         stops()
@@ -84,27 +84,27 @@ describe("ensureDaemon", () => {
       },
     })
     const spawned = jest.fn(async () => {
-      server = await listen(socketPath(root), serverToken(root), {"GET /status": async (_b, res) => sendJson(res, 200, status("0.2.0"))})
+      server = await listen(socketPath(root), daemonToken(root), {"GET /status": async (_b, res) => sendJson(res, 200, status("0.2.0"))})
     })
     expect(await client.ensureDaemon("0.2.0", spawned)).toMatchObject({version: "0.2.0"})
     expect(stops).toHaveBeenCalledTimes(1)
     expect(await client.ensureDaemon("0.1.0", spawned)).toMatchObject({version: "0.2.0"})
     await closeServer(server)
-    server = await listen(socketPath(root), serverToken(root), {"GET /status": async (_b, res) => sendJson(res, 200, status("0.3.0", protocolVersion + 1))})
+    server = await listen(socketPath(root), daemonToken(root), {"GET /status": async (_b, res) => sendJson(res, 200, status("0.3.0", protocolVersion + 1))})
     await expect(client.ensureDaemon("0.2.0", spawned)).rejects.toEqual(new ExitError("Restart Claude Code to update the SimpleX plugin.", 1))
     await closeServer(server)
   })
 
   it("tolerates an older daemon that another client already stopped", async () => {
     const client = DaemonClient.forRoot(root)
-    let server = await listen(socketPath(root), serverToken(root), {
+    let server = await listen(socketPath(root), daemonToken(root), {
       "GET /status": async (_b, res) => {
         sendJson(res, 200, status("0.1.9"))
         setImmediate(() => closeServer(server))
       },
     })
     const spawned = jest.fn(async () => {
-      server = await listen(socketPath(root), serverToken(root), {"GET /status": async (_b, res) => sendJson(res, 200, status("0.2.0"))})
+      server = await listen(socketPath(root), daemonToken(root), {"GET /status": async (_b, res) => sendJson(res, 200, status("0.2.0"))})
     })
     expect(await client.ensureDaemon("0.2.0", spawned)).toMatchObject({version: "0.2.0"})
     expect(spawned).toHaveBeenCalledTimes(1)
@@ -121,7 +121,7 @@ describe("ensureDaemon", () => {
 describe("requests", () => {
   it("reach the daemon with the token", async () => {
     const client = DaemonClient.forRoot(root)
-    const server = await listen(socketPath(root), serverToken(root), {
+    const server = await listen(socketPath(root), daemonToken(root), {
       "GET /status": async (_b, res) => sendJson(res, 200, {ok: true}),
       "POST /call": async (body, res) => sendJson(res, 200, body),
     })

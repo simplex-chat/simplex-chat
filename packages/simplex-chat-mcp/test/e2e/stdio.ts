@@ -31,11 +31,11 @@ export function spawnSession(env: NodeJS.ProcessEnv): SessionProcess {
 }
 
 export function daemonPid(root: string): number {
-  return Number(readFileSync(join(root, "lock"), "utf8").trim())
+  return Number(readFileSync(join(root, "daemon.lock"), "utf8").trim())
 }
 
 export async function killDaemon(root: string): Promise<void> {
-  const lock = join(root, "lock")
+  const lock = join(root, "daemon.lock")
   if (!existsSync(lock)) return
   process.kill(daemonPid(root))
   await until(() => !existsSync(lock))

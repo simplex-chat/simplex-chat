@@ -143,7 +143,7 @@ The plugin's server, hooks and commands run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli
 
    `--plugin-dir` loads the plugin for that session only, as `simplex@inline`.
 
-3. After a change in `src/`, delete `/tmp/simplex-plugin`, repeat step 1, and stop the daemon, which a daemon of the same version doesn't replace: `kill $(cat /tmp/simplex-mcp-test/lock)`.
+3. After a change in `src/`, delete `/tmp/simplex-plugin`, repeat step 1, and stop the daemon, which a daemon of the same version doesn't replace: `kill $(cat /tmp/simplex-mcp-test/daemon.lock)`.
 
 ### Automated tests
 
@@ -176,7 +176,7 @@ In a session started as in step 2 above:
 7. Send `Run ls with Bash.` in the group. The terminal shows the permission dialog, and the group gets the card ``I want to use `Bash`: ...`` with `/approve N or /reject N`. Tap `/approve N`: `ls` runs. Ask again and tap `/reject N`: Claude reports the refusal. Answer a third request in the terminal: its card ends with `Ended.` when the turn ends.
 8. The short description of the group shows `MODEL · effort LEVEL` after the first answer. `/model` in the terminal changes it; a change of the effort level shows after the next answer.
 9. Run `/clear`, then send `Reply with the word cleared.` in the group: the answer comes in the same group, and no group "2 · <folder>" appears.
-10. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`. Without a tool call, send `Reply with the word back.` in the group after 30 seconds: the answer comes in the group.
+10. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/daemon.lock)`. Without a tool call, send `Reply with the word back.` in the group after 30 seconds: the answer comes in the group.
 11. Exit Claude Code, and send a message in the group within 10 minutes, while the daemon runs: Claude replies `Session 1 is not running.`
 12. Start Claude Code again as in step 2, with `--continue`: the session start opens no new group, and a prompt from "1 · <folder>" reaches the session.
 13. In a second terminal, start Claude Code as in step 2 in another folder, and exit it: the group "2 · <other folder>" appears. In the first session, `/resume` that session, and send `Reply with the word resumed.` in "1 · <folder>": the answer comes there. Exit, and start Claude Code with `--resume` of that session: a prompt from "2 · <other folder>" reaches it.
@@ -190,4 +190,4 @@ In a session started as in step 2 above:
 
     Run `claude -p "Reply with ok." --strict-mcp-config --mcp-config /tmp/env-mcp-config.json --settings /tmp/env-settings.json` once in a terminal, and once from the Bash tool of the session of step 2 with `CLAUDE_CODE_ENTRYPOINT=claude-vscode` before it. After each run, `grep -o '"CLAUDE_CODE_SESSION_ATTENDED":"[01]"' /tmp/env-hook.json /tmp/env-mcp.json` shows the values. With Claude Code 2.1.319, 2026-11-08: in a terminal, the hook got `0` and the MCP server none; from the Bash tool, the hook got `0` and the MCP server `1`, the value of the session whose Bash tool ran it, and the hook's `CLAUDE_PID` is the parent process of the MCP server. For the second run, the plugin's SessionStart hook marks that process in the daemon, and the daemon refuses its session server.
 16. From the Bash tool of the session of step 2, run `CLAUDE_CODE_ENTRYPOINT=claude-vscode SIMPLEX_MCP_HOME=/tmp/simplex-mcp-test claude -p "Call the list tool of the simplex server." --plugin-dir /tmp/simplex-plugin` in another folder: no new group appears, and the answer quotes `This Claude Code run is not interactive, so it has no SimpleX group`.
-17. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/lock)`.
+17. Stop the daemon: `kill $(cat /tmp/simplex-mcp-test/daemon.lock)`.

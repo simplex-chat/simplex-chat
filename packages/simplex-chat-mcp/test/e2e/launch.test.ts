@@ -61,7 +61,7 @@ test("the plugin, installed with the command of Claude Code within its 60 s limi
   expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave", "reply"])
   server.stdin.end()
   await new Promise(resolve => server.on("close", resolve))
-  expect(existsSync(join(dir, "home", "lock"))).toBe(false)
+  expect(existsSync(join(dir, "home", "daemon.lock"))).toBe(false)
 }, 300_000)
 
 test("the package with its shrinkwrap installs and runs as a dependency, as npx runs it", async () => {

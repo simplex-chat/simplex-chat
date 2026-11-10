@@ -2,7 +2,7 @@ import {ChildProcess, spawn} from "child_process"
 import {closeSync} from "fs"
 import {join} from "path"
 import {Readable} from "stream"
-import {createDataFolder, logFile, openLog, serverToken, socketPath} from "./files"
+import {createDataFolder, daemonToken, logFile, openLog, socketPath} from "./files"
 import {ExitError} from "./log"
 import {StatusReply, protocolVersion} from "./protocol"
 import {isNotRunning, requestJson, streamLines} from "./socket"
@@ -21,7 +21,7 @@ export class DaemonClient {
 
   static forRoot(root: string): DaemonClient {
     createDataFolder(root)
-    return new DaemonClient(root, serverToken(root), socketPath(root))
+    return new DaemonClient(root, daemonToken(root), socketPath(root))
   }
 
   request<T>(method: "GET" | "POST", route: string, body?: unknown): Promise<T> {

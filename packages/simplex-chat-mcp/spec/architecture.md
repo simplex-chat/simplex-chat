@@ -272,14 +272,14 @@ Hooks are bound in [`serve.ts:96-102`](../src/serve.ts#L96-L102): `refusal`, `sa
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `createDataFolder` | [97](../src/files.ts#L97) | `mkdir -p` mode 0700; `chmod 0700` except on Windows |
-| `acquireLock`, `releaseLock` | [102-116](../src/files.ts#L102-L116) | `DATA/lock` with the PID; `user`, `server` or `daemon`, names the holder in the error |
-| `serverToken` | [118](../src/files.ts#L118) | `DATA/token`: read, made private when the user owns it, or 32 random bytes in base64url, created as the lock is |
-| `saveHeldTitles`, `takeHeldTitles` | [147-161](../src/files.ts#L147-L161) | `ROOT/titles.json`, written at a daemon stop, read and removed at the next start; an unparsable file is skipped with a log line |
-| `createLock`, `createExclusive` | [176-198](../src/files.ts#L176-L198) | a private temporary file with the text, linked into place, so that the file appears complete and once; where the file system refuses the link, written exclusively |
-| `takeOver` | [200](../src/files.ts#L200) | the lock of a stopped process: claimed first by a link of the lock to `lock.PID.claim`, or where links fail by an exclusive write of `lock.PID.claim`, so that one starter claims it; when the lock still holds that PID, it is removed and created again; the claim removed |
-| `writeHeadersFile` | [134](../src/files.ts#L134) | `DATA/headers.json` |
-| `writeServerFile`, `readServerFile` | [138-145](../src/files.ts#L138-L145) | `DATA/server.json` |
+| `createDataFolder` | [103](../src/files.ts#L103) | `mkdir -p` mode 0700; `chmod 0700` except on Windows |
+| `acquireLock`, `releaseLock` | [108-122](../src/files.ts#L108-L122) | `DATA/lock`, or the file of the given name, with the PID; `user`, `server` or `daemon`, names the holder in the error |
+| `serverToken` | [124](../src/files.ts#L124) | `DATA/token`, or the file of the given name: read, made private when the user owns it, or 32 random bytes in base64url, created as the lock is |
+| `saveHeldTitles`, `takeHeldTitles` | [153-167](../src/files.ts#L153-L167) | `ROOT/titles.json`, written at a daemon stop, read and removed at the next start; an unparsable file is skipped with a log line |
+| `createLock`, `createExclusive` | [182-204](../src/files.ts#L182-L204) | a private temporary file with the text, linked into place, so that the file appears complete and once; where the file system refuses the link, written exclusively |
+| `takeOver` | [206](../src/files.ts#L206) | the lock of a stopped process: claimed first by a link of the lock to `lock.PID.claim`, or where links fail by an exclusive write of `lock.PID.claim`, so that one starter claims it; when the lock still holds that PID, it is removed and created again; the claim removed |
+| `writeHeadersFile` | [140](../src/files.ts#L140) | `DATA/headers.json` |
+| `writeServerFile`, `readServerFile` | [144-151](../src/files.ts#L144-L151) | `DATA/server.json` |
 
 ### [2.9 `register.ts`](../src/register.ts)
 
@@ -340,11 +340,11 @@ The profile, chats, items, members and file transfers are stored by the core in 
 
 | Path | Contents | Mode | Written | Read |
 |---|---|---|---|---|
-| `DATA/` | data folder | 0700, set at every start except on Windows | [files.ts:97-100](../src/files.ts#L97-L100) | |
-| `DATA/token` | base64url of 32 random bytes | 0600, set again at every write except on Windows | first start, `--new-token` ([:118-128](../src/files.ts#L118-L128)) | every start |
-| `DATA/headers.json` | `{"Authorization":"Bearer <token>"}` | 0600, set again at every write except on Windows | every start ([:134-136](../src/files.ts#L134-L136)) | Claude Code `headersHelper` |
+| `DATA/` | data folder | 0700, set at every start except on Windows | [files.ts:103-106](../src/files.ts#L103-L106) | |
+| `DATA/token` | base64url of 32 random bytes | 0600, set again at every write except on Windows | first start, `--new-token` ([:124-134](../src/files.ts#L124-L134)) | every start |
+| `DATA/headers.json` | `{"Authorization":"Bearer <token>"}` | 0600, set again at every write except on Windows | every start ([:140-142](../src/files.ts#L140-L142)) | Claude Code `headersHelper` |
 | `DATA/server.json` | `{name, port, expireHours}` | 0600, set again at every write except on Windows | every start, after the HTTP listener is bound ([serve.ts:114](../src/serve.ts#L114)) | `register` |
-| `DATA/lock` | PID and a newline | 0600 | start ([files.ts:176-215](../src/files.ts#L176-L215)) | next start |
+| `DATA/lock` | PID and a newline | 0600 | start ([files.ts:182-221](../src/files.ts#L182-L221)) | next start |
 | `DATA/tmp/` | the core's temp folder: files in transfer | 0700, set at every start | [core.ts:40](../src/core.ts#L40), [:77-81](../src/core.ts#L77-L81) | the core |
 | `DATA/files/group-N/`, `DATA/files/contact-N/` | downloaded files and files received without a download, named by file ID and extension | folder 0700 | the core at the download path ([tools.ts:1152-1153](../src/tools.ts#L1152-L1153)); moves ([:1651-1661](../src/tools.ts#L1651-L1661)) | `download` results, `/forward`, `/leave`, `/delete CHAT files` |
 | `DATA/forwarded/group-N/`, `DATA/forwarded/contact-N/` | files `/forward` downloaded, named as above, until a download moves them to `DATA/files/` | folder 0700 | the core at the forwarded path ([tools.ts:597-604](../src/tools.ts#L597-L604), [:1152-1153](../src/tools.ts#L1152-L1153)) | `/forward`; moved by `download` ([:587-595](../src/tools.ts#L587-L595)); deleted by `leave`, `/leave` and `/delete CHAT files` ([:1034-1052](../src/tools.ts#L1034-L1052), [:1074-1082](../src/tools.ts#L1074-L1082)) |
@@ -428,7 +428,7 @@ acquireLock(DATA, USER = server):                    files.ts:90
 releaseLock(DATA): remove DATA/lock                  :99-105
 ```
 
-`isRunning`: `true` when `kill(pid, 0)` succeeds or fails with `EPERM` ([files.ts:222-229](../src/files.ts#L222-L229)).
+`isRunning`: `true` when `kill(pid, 0)` succeeds or fails with `EPERM` ([files.ts:228-235](../src/files.ts#L228-L235)).
 
 ---
 
@@ -604,10 +604,10 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 
 ### 6.2 Token and `headersHelper`
 
-- The token is created once and kept in `DATA/token`; `--new-token` replaces it ([files.ts:118-128](../src/files.ts#L118-L128)).
-- `DATA/headers.json` is rewritten at every start ([files.ts:134-136](../src/files.ts#L134-L136)).
+- The token is created once and kept in `DATA/token`; `--new-token` replaces it ([files.ts:124-134](../src/files.ts#L124-L134)).
+- `DATA/headers.json` is rewritten at every start ([files.ts:140-142](../src/files.ts#L140-L142)).
 - The Claude Code entry gets the command `cat <DATA>/headers.json`, or `type "<DATA>\headers.json"` on Windows, with the path quoted for the shell ([register.ts:50](../src/register.ts#L50), [log.ts:24-31](../src/log.ts#L24-L31)). Only this command is written to the entry and to the `claude mcp add-json` arguments ([register.test.ts:50-61](../test/unit/register.test.ts#L50-L61)).
-- `token`, `headers.json` and `server.json` are set to mode 0600 at every write, and the data folder to 0700 at every start, except on Windows ([files.ts:97-100](../src/files.ts#L97-L100), [:167-170](../src/files.ts#L167-L170)).
+- `token`, `headers.json` and `server.json` are set to mode 0600 at every write, and the data folder to 0700 at every start, except on Windows ([files.ts:103-106](../src/files.ts#L103-L106), [:173-176](../src/files.ts#L173-L176)).
 
 ### 6.3 Peer-written text
 
@@ -836,7 +836,7 @@ Data flow of a prompt from the session group:
 | `runDaemon` | [430](../src/daemon.ts#L430) | process entry: ROOT, start, ready line, signal handlers; for a held lock, a new start once it is released, `running` when its holder answers |
 | `productionDeps` | [456](../src/daemon.ts#L456) | token, `Hub.open` |
 | `processEvent` | [466](../src/daemon.ts#L466) | the next event of a PID on `titled` or `registered`, 10 s at most |
-| `lockHolder` | [478](../src/daemon.ts#L478) | up to 150 checks, 100 ms apart: `released` when ROOT/lock is gone, `answers` for any reply of the socket but ENOENT and ECONNREFUSED |
+| `lockHolder` | [478](../src/daemon.ts#L478) | up to 150 checks, 100 ms apart: `released` when ROOT/daemon.lock is gone, `answers` for any reply of the socket but ENOENT and ECONNREFUSED |
 | `sessionName` | [493](../src/daemon.ts#L493) | session title, else the project folder name, else `Claude Code` |
 | `validConfig` | [487](../src/daemon.ts#L487) | `config` of `/session` and `/title`: a valid Main group name, the mode, hours from 1 to 23; else status 400 |
 | `readyChannel` | [499](../src/daemon.ts#L499) | ready line to fd `SIMPLEX_MCP_READY_FD`, or stdout |
@@ -927,7 +927,8 @@ Data flow of a prompt from the session group:
 | `dataRoot`, `hubFolder`, `sessionFolder` | [files.ts:31-47](../src/files.ts#L31-L47) | ROOT, `ROOT/_hub`, `ROOT/_sessions/<lower-case ID>` |
 | `SessionFile`, `readSessionFile`, `writeSessionFile`, `storedSessions` | [files.ts:11-72](../src/files.ts#L11-L72) | `session.json`: number, name, project, creation time, group, aliases, model, effort, a rejected mode `host`; an unparsable file is skipped with a log line; a write goes to `session.json.tmp`, renamed into place |
 | `socketPath` | [files.ts:74](../src/files.ts#L74) | `ROOT/daemon.sock`; over 103 bytes `TMP/simplex-mcp-HASH.sock`; Windows `\\.\pipe\simplex-mcp-HASH` |
-| `logFile`, `trimLog`, `openLog` | [files.ts:81-95](../src/files.ts#L81-L95) | `ROOT/daemon.log`, emptied when over 10 MB, mode 0600 |
+| `logFile`, `trimLog`, `openLog` | [files.ts:81-101](../src/files.ts#L81-L101) | `ROOT/daemon.log`, emptied when over 10 MB, mode 0600 |
+| `daemonLock`, `daemonToken` | [files.ts:85-89](../src/files.ts#L85-L89) | `daemon.lock` and `ROOT/daemon.token`, the plugin's lock and token: names with a dot, which agent names of `serve` can't take, so that the folders of agents in `~/.simplex-mcp` are not touched |
 
 #### Plugin files
 
@@ -988,11 +989,11 @@ Files:
 | Path | Contents | Written | Read |
 |---|---|---|---|
 | `ROOT/` | data root, mode 0700 | every client and the daemon ([client.ts:23](../src/client.ts#L23), [daemon.ts:435](../src/daemon.ts#L435)) | |
-| `ROOT/token` | the bearer token, 0600 | the first client or daemon ([files.ts:118-128](../src/files.ts#L118-L128)) | every client, the daemon |
-| `ROOT/lock` | PID of the daemon, linked from `ROOT/lock.PID.HEX.tmp`; a stopped daemon's lock is claimed through `ROOT/lock.PID.claim`, removed after the takeover | `Daemon.start` ([daemon.ts:94](../src/daemon.ts#L94), [files.ts:176-215](../src/files.ts#L176-L215)) | the next daemon |
+| `ROOT/daemon.token` | the bearer token, 0600 | the first client or daemon ([files.ts:87-89](../src/files.ts#L87-L89), [:124-134](../src/files.ts#L124-L134)) | every client, the daemon |
+| `ROOT/daemon.lock` | PID of the daemon, linked from `ROOT/daemon.lock.PID.HEX.tmp`; a stopped daemon's lock is claimed through `ROOT/daemon.lock.PID.claim`, removed after the takeover | `Daemon.start` ([daemon.ts:94](../src/daemon.ts#L94), [files.ts:182-221](../src/files.ts#L182-L221)) | the next daemon |
 | `ROOT/titles.json` | the `/title` requests held at a stop, 0600 | `shutdown` ([daemon.ts:180](../src/daemon.ts#L180)) | the next `Daemon.start`, which removes it ([daemon.ts:106](../src/daemon.ts#L106)) |
 | `ROOT/daemon.sock` | the socket | `listen` ([socket.ts:40-43](../src/socket.ts#L40-L43)) | clients |
-| `ROOT/daemon.log` | the daemon's stdout and stderr, emptied over 10 MB at a spawn and every hour | `spawnDaemon` ([client.ts:71-79](../src/client.ts#L71-L79)), [`trimLog`](../src/files.ts#L85-L88) | people |
+| `ROOT/daemon.log` | the daemon's stdout and stderr, emptied over 10 MB at a spawn and every hour | `spawnDaemon` ([client.ts:71-79](../src/client.ts#L71-L79)), [`trimLog`](../src/files.ts#L91-L94) | people |
 | `ROOT/_hub/`, `ROOT/_user/` | databases and `tmp/` of the profiles `Claude` and `User` | [`openCore`](../src/core.ts#L19-L35) | the cores |
 | `ROOT/_sessions/ID/session.json` | `{number, name, project, created, group?, aliases?, model?, effort?, hostDeclined?}`, 0600, replaced whole through `session.json.tmp` | `openAgent`, `rename`, `alias`, `Hub.session`, `declineHost`, `store` ([daemon.ts:392-402](../src/daemon.ts#L392-L402), [:297-302](../src/daemon.ts#L297-L302), [:290-295](../src/daemon.ts#L290-L295), [hub.ts:412](../src/hub.ts#L412), [:320-329](../src/hub.ts#L320-L329)) | `Daemon` constructor, `resolve`, `Hub.session`, `alias`, `store` |
 | `ROOT/_sessions/ID/files/` | downloads of the session's chats as in [3.3](#33-files); `group/` with the files of the prompts from the group; `sent/`, deleted when the session opens | the core ([hub.ts:252-260](../src/hub.ts#L252-L260), [:409](../src/hub.ts#L409)) | tools, Claude |
@@ -1024,7 +1025,7 @@ ensureDaemon(VERSION):                               client.ts:32
 
 #### Daemon start
 
-1. `ROOT` is created, the options are read, and the lock is taken. A lock held by another live process is checked for up to 15 s: when it is released, the start runs again; when the socket answers, the ready line is `running`; otherwise `error: Another daemon uses ROOT (PID N). If no daemon runs, remove ROOT/lock.` and exit code 1 ([daemon.ts:430-442](../src/daemon.ts#L430-L442), [:478-485](../src/daemon.ts#L478-L485), [:93-96](../src/daemon.ts#L93-L96)).
+1. `ROOT` is created, the options are read, and the lock is taken. A lock held by another live process is checked for up to 15 s: when it is released, the start runs again; when the socket answers, the ready line is `running`; otherwise `error: Another daemon uses ROOT (PID N). If no daemon runs, remove ROOT/daemon.lock.` and exit code 1 ([daemon.ts:430-442](../src/daemon.ts#L430-L442), [:478-485](../src/daemon.ts#L478-L485), [:93-96](../src/daemon.ts#L93-L96)).
 2. The stored sessions are read, with their aliases, and the next number set ([daemon.ts:87-91](../src/daemon.ts#L87-L91)).
 3. The socket listens before the hub opens; requests wait for the hub ([daemon.ts:97-98](../src/daemon.ts#L97-L98), [:163-168](../src/daemon.ts#L163-L168)).
 4. `Hub.open`: core `_hub` with profile `Claude`; the Main group found by its marker or created; `MainGroup.load` and `start`, with a link while it has no owner; core `_user` and its connection to `Claude` at the first start; a `Session` for each stored session; prompts held for 30 s; events ([hub.ts:363-381](../src/hub.ts#L363-L381), [daemon.ts:126-129](../src/daemon.ts#L126-L129)).
@@ -1185,6 +1186,6 @@ Sources: [hub.ts:153-205](../src/hub.ts#L153-L205), [:227-297](../src/hub.ts#L22
 | attachment retries of a session server | 1 s, doubled up to 30 s | [session.ts:19-20](../src/session.ts#L19-L20) |
 | part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [hub.ts:527-544](../src/hub.ts#L527-L544), [tools.ts:163-164](../src/tools.ts#L163-L164), [:1575-1578](../src/tools.ts#L1575-L1578) |
 | cancelled cards wait at stop | 10 s | [hub.ts:21](../src/hub.ts#L21) |
-| `daemon.log` | emptied over 10 MB, at a spawn and every hour | [files.ts:9](../src/files.ts#L9), [:85-88](../src/files.ts#L85-L88), [daemon.ts:20](../src/daemon.ts#L20) |
+| `daemon.log` | emptied over 10 MB, at a spawn and every hour | [files.ts:9](../src/files.ts#L9), [:91-94](../src/files.ts#L91-L94), [daemon.ts:20](../src/daemon.ts#L20) |
 | socket path | 103 bytes: `sun_path` of `sockaddr_un` holds 104 bytes on macOS and 108 on Linux, with the terminating NUL | [files.ts:8](../src/files.ts#L8) |
 | actions per session | 20 pending, 20 performing | [actions.ts:9-10](../src/actions.ts#L9-L10), [:199-203](../src/actions.ts#L199-L203) |

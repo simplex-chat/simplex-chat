@@ -582,8 +582,8 @@ In mode `host`, a session posts in its group `I want to run in mode host: Claude
 
 | Path | Content |
 |---|---|
-| `token` | The access token of the daemon's socket, readable only by the user. |
-| `lock` | The PID of the running daemon. |
+| `daemon.token` | The access token of the daemon's socket, readable only by the user. |
+| `daemon.lock` | The PID of the running daemon. |
 | `daemon.sock` | The daemon's Unix socket. On Windows it is the named pipe `\\.\pipe\simplex-mcp-<hash>`; for a path over 103 bytes, `simplex-mcp-<hash>.sock` in the system temporary folder. |
 | `daemon.log` | The daemon's log, emptied when it is over 10 MB, at a daemon start and every hour. |
 | `titles.json` | The titles of new sessions whose session server had not registered when the daemon stopped; the next start reads and removes it. |
@@ -591,7 +591,7 @@ In mode `host`, a session posts in its group `I want to run in mode host: Claude
 | `_user/` | The databases of the profile `User`. |
 | `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, a rejected mode `host`, model, effort level and its other session IDs, and `files/` with the files of its chats and of its group. |
 
-The folders are readable only by the user, and so are the files the daemon writes, except on Windows. One daemon runs per data folder.
+The folders are readable only by the user, and so are the files the daemon writes, except on Windows. One daemon runs per data folder. The names of these files and folders have a dot or start with `_`, which agent names of `serve` can't, so the folders of agents in `~/.simplex-mcp` stay as they are.
 
 ### Plugin recovery
 
@@ -602,7 +602,7 @@ The folders are readable only by the user, and so are the files the daemon write
 | The daemon stopped during a call | The call returns `The SimpleX daemon stopped; repeat the call.`, and the next call starts the daemon again. The actions of the stopped daemon are lost; a repeated call creates a new action. |
 | The daemon stopped between calls, or its start failed | The session starts it again and attaches to it after 1 second, and while that fails, at intervals that double up to 30 seconds. |
 | A session starts while the daemon stops | The new daemon waits up to 15 seconds for the stopping one to release its lock, and then starts. |
-| The `lock` file of the data folder names a running process that is not the daemon | After 15 seconds, the session start shows `SimpleX MCP: Another daemon uses FOLDER (PID N). If no daemon runs, remove FOLDER/lock.` |
+| The `daemon.lock` file of the data folder names a running process that is not the daemon | After 15 seconds, the session start shows `SimpleX MCP: Another daemon uses FOLDER (PID N). If no daemon runs, remove FOLDER/daemon.lock.` |
 | A newer plugin version starts | It stops the older daemon and starts its own. When the two versions can't talk to each other, tool calls return `Restart Claude Code to update the SimpleX plugin.` |
 | A session's group has no admin or owner but Claude | Its actions are refused with `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.` |
 | A session's group was deleted, or Claude lost its owner role there | The session's actions fail with `The group of this session is lost. Start a new Claude Code session.` |

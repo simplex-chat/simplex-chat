@@ -5,7 +5,7 @@ import {tmpdir} from "os"
 import {join} from "path"
 import {PassThrough} from "stream"
 import {DaemonClient, SpawnDaemon} from "../../src/client"
-import {serverToken, socketPath} from "../../src/files"
+import {daemonToken, socketPath} from "../../src/files"
 import {ExitError} from "../../src/log"
 import {protocolVersion} from "../../src/protocol"
 import {startSession} from "../../src/session"
@@ -27,7 +27,7 @@ const attachLine = (res: ServerResponse): void => startLines(res)({version: "0.2
 
 async function fakeDaemon(onCall: OnCall, onAttach: (res: ServerResponse) => void = attachLine, protocol = protocolVersion, sessionRefusal?: SocketError): Promise<void> {
   let calls = 0
-  server = await listen(socketPath(root), serverToken(root), {
+  server = await listen(socketPath(root), daemonToken(root), {
     "GET /status": async (_b, res) => {
       statuses++
       sendJson(res, 200, {version: "0.2.0", protocol, mainGroup: "SimpleX MCP", owner: {owners: ["Alice"]}, sessions: []})

@@ -5,7 +5,7 @@ import {basename, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {Action, Mode} from "./actions"
 import {Config, readConfig} from "./config"
-import {LockedError, SessionFile, acquireLock, createDataFolder, dataRoot, logFile, readSessionFile, releaseLock, saveHeldTitles, serverToken, sessionFolder, socketPath, storedSessions, takeHeldTitles, trimLog, writeSessionFile} from "./files"
+import {LockedError, SessionFile, acquireLock, createDataFolder, daemonLock, daemonToken, dataRoot, logFile, readSessionFile, releaseLock, saveHeldTitles, sessionFolder, socketPath, storedSessions, takeHeldTitles, trimLog, writeSessionFile} from "./files"
 import {Hub, StoredSession, hubTexts} from "./hub"
 import {ExitError, errorText, log, logError} from "./log"
 import {ToolCall, validName} from "./messages"
@@ -91,7 +91,7 @@ export class Daemon {
   }
 
   static async start(deps: DaemonDeps, config: () => Config): Promise<Daemon> {
-    acquireLock(deps.root, "daemon")
+    acquireLock(deps.root, "daemon", daemonLock)
     try {
       const daemon = new Daemon(deps)
       daemon.server = await listen(socketPath(deps.root), deps.token, daemon.routes())
@@ -113,7 +113,7 @@ export class Daemon {
       }, logCheck).unref()
       return daemon
     } catch (error) {
-      releaseLock(deps.root)
+      releaseLock(deps.root, daemonLock)
       throw error
     }
   }
@@ -188,7 +188,7 @@ export class Daemon {
     })
     if (cancelled > 0) log(`Cancelled ${cancelled} action${cancelled === 1 ? "" : "s"}.`)
     this.entries.clear()
-    releaseLock(this.deps.root)
+    releaseLock(this.deps.root, daemonLock)
     log("Stopped.")
     const stopped = (): void => {
       this.server.closeAllConnections()
@@ -456,7 +456,7 @@ export async function runDaemon(env: NodeJS.ProcessEnv = process.env, checks = l
 export function productionDeps(root: string): DaemonDeps {
   return {
     root,
-    token: serverToken(root),
+    token: daemonToken(root),
     version,
     openHub: (config, stored) => Hub.open(root, config, stored),
     onStopped: code => process.exit(code),
@@ -477,8 +477,8 @@ function processEvent(events: EventEmitter, pid: number): Promise<void> {
 
 async function lockHolder(root: string, checks: number): Promise<"answers" | "released" | undefined> {
   for (let check = 0; check < checks; check++) {
-    if (!existsSync(join(root, "lock"))) return "released"
-    if (await requestJson(socketPath(root), serverToken(root), "GET", "/").then(() => true, error => !isNotRunning(error))) return "answers"
+    if (!existsSync(join(root, daemonLock))) return "released"
+    if (await requestJson(socketPath(root), daemonToken(root), "GET", "/").then(() => true, error => !isNotRunning(error))) return "answers"
     await new Promise(resolve => setTimeout(resolve, lockCheckWait))
   }
   return undefined

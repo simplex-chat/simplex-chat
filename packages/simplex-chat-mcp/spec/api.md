@@ -596,7 +596,7 @@ Server name: `simplex-NAME` ([register.ts:36](../src/register.ts#L36)).
 | 2 | `--port: a port from 1 to 65535 expected, got VALUE` | [cli.ts:115](../src/cli.ts#L115), [:202](../src/cli.ts#L202) |
 | 2 | `--reset-owners takes --owners without a list: member IDs change in a new agent control chat.` | [cli.ts:125](../src/cli.ts#L125) |
 | 2 | `--owners: member ENTRY is not in the agent control chat. Start with --reset-owners --owners, or use the IDs of current members.` | [control.ts:436](../src/control.ts#L436) |
-| 1 | `Another server uses DATA (PID N). If no server runs, remove DATA/lock.` | [files.ts:106-107](../src/files.ts#L106-L107), [:172-174](../src/files.ts#L172-L174) |
+| 1 | `Another server uses DATA (PID N). If no server runs, remove DATA/lock.` | [files.ts:112-113](../src/files.ts#L112-L113), [:178-180](../src/files.ts#L178-L180) |
 | 1 | `Port PORT is in use. Start with --port N.` | [serve.ts:188](../src/serve.ts#L188) |
 | 1 | `Agent "NAME" was never started. Start it with: npx -y @simplex-chat/mcp serve NAME` | [register.ts:35](../src/register.ts#L35) |
 | 1 | `Add this entry under LOCATION in ~/.claude.json: {"simplex-NAME": ENTRY}` | [register.ts:55-58](../src/register.ts#L55-L58) |
@@ -924,7 +924,7 @@ on the next start:                               each one taken as a new /title
 | Command | Run by | Output |
 |---|---|---|
 | `simplex-mcp session` | `.mcp.json` | MCP over stdio |
-| `simplex-mcp daemon` | `spawnDaemon` | ready line on fd `SIMPLEX_MCP_READY_FD`, stdout when unset: `ready`, `running` or `error: TEXT`; when another live process holds ROOT/lock, up to 150 checks 100 ms apart: a released lock starts the daemon again, a socket that answers gives `running`; the log on stdout and stderr |
+| `simplex-mcp daemon` | `spawnDaemon` | ready line on fd `SIMPLEX_MCP_READY_FD`, stdout when unset: `ready`, `running` or `error: TEXT`; when another live process holds ROOT/daemon.lock, up to 150 checks 100 ms apart: a released lock starts the daemon again, a socket that answers gives `running`; the log on stdout and stderr |
 | `simplex-mcp hook session-start` | SessionStart hook | one JSON line, see [4.8](#48-plugin-options-files-and-hook-output) |
 | `simplex-mcp hook turn` | UserPromptSubmit, Stop and PostModelSwitch hooks | `{}`; a prompt or an answer over 250,000 characters is cut there and ends with `…` ([hook.ts:15](../src/hook.ts#L15), [:95-97](../src/hook.ts#L95-L97)) |
 | `simplex-mcp link` | `/simplex:link`, people | `Owners of "MAIN": A, B. To replace them, run /simplex:reset-owners.`; without owners on a terminal `Join "MAIN" in the SimpleX app. The link works once:`, a QR code and the link, elsewhere `Run npx -y @simplex-chat/mcp@VERSION link in a terminal to see the link to "MAIN".`; without a link `The Main group has no link. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` |
@@ -940,10 +940,10 @@ Environment: `SIMPLEX_MCP_HOME`, ROOT; `CLAUDE_CODE_SESSION_ID` and `CLAUDE_PROJ
 | 2 | `simplex-mcp session runs from the Claude Code plugin.` | [session.ts:42](../src/session.ts#L42) |
 | 2 | `Not a Claude Code session ID: ID` | [session.ts:43](../src/session.ts#L43) |
 | 1 | `Restart Claude Code to update the SimpleX plugin.`, a spawn error (`link`, `reset-owners`) | [client.ts:45](../src/client.ts#L45), [:84](../src/client.ts#L84), [:111](../src/client.ts#L111) |
-| 1 | daemon start failed: ready line `error: TEXT`, also `error: Another daemon uses ROOT (PID N). If no daemon runs, remove ROOT/lock.` for a lock that its holder neither releases nor answers for in 150 checks | [daemon.ts:438-442](../src/daemon.ts#L438-L442), [:478-485](../src/daemon.ts#L478-L485), [files.ts:173](../src/files.ts#L173) |
+| 1 | daemon start failed: ready line `error: TEXT`, also `error: Another daemon uses ROOT (PID N). If no daemon runs, remove ROOT/daemon.lock.` for a lock that its holder neither releases nor answers for in 150 checks | [daemon.ts:438-442](../src/daemon.ts#L438-L442), [:478-485](../src/daemon.ts#L478-L485), [files.ts:179](../src/files.ts#L179) |
 | 1 | `stop: ERROR` for a failed stop after a signal | [daemon.ts:446-451](../src/daemon.ts#L446-L451) |
 
-`daemon.log` receives the daemon's stdout and stderr ([client.ts:77](../src/client.ts#L77)); it is emptied when over 10 MB, at each spawn and every hour while the daemon runs ([files.ts:85-94](../src/files.ts#L85-L94), [daemon.ts:107-113](../src/daemon.ts#L107-L113)). stdout lines:
+`daemon.log` receives the daemon's stdout and stderr ([client.ts:77](../src/client.ts#L77)); it is emptied when over 10 MB, at each spawn and every hour while the daemon runs ([files.ts:91-100](../src/files.ts#L91-L100), [daemon.ts:107-113](../src/daemon.ts#L107-L113)). stdout lines:
 
 | Moment | Line | Code |
 |---|---|---|

@@ -209,7 +209,7 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 | Card text | [`src/control.ts`](../src/control.ts#L679) | `cardText` | [679](../src/control.ts#L679) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
-| Data folder files | [`src/files.ts`](../src/files.ts#L97) | `createDataFolder`, `acquireLock` | [97](../src/files.ts#L97), [102](../src/files.ts#L102) |
+| Data folder files | [`src/files.ts`](../src/files.ts#L103) | `createDataFolder`, `acquireLock` | [103](../src/files.ts#L103), [108](../src/files.ts#L108) |
 | Session server | [`src/session.ts`](../src/session.ts#L40) | `startSession` | [40](../src/session.ts#L40) |
 | Session to daemon link | [`src/session.ts`](../src/session.ts#L69) | `DaemonLink` | [69](../src/session.ts#L69) |
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L35) | `DaemonClient.ensureDaemon` | [35](../src/client.ts#L35) |

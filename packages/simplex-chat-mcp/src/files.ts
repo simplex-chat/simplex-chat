@@ -82,6 +82,12 @@ export function logFile(root: string): string {
   return join(root, "daemon.log")
 }
 
+export const daemonLock = "daemon.lock"
+
+export function daemonToken(root: string): string {
+  return serverToken(root, false, "daemon.token")
+}
+
 export function trimLog(root: string): void {
   const file = logFile(root)
   if ((statSync(file, {throwIfNoEntry: false})?.size ?? 0) > maxLogBytes) truncateSync(file)
@@ -99,24 +105,24 @@ export function createDataFolder(dir: string): void {
   if (process.platform !== "win32") chmodSync(dir, 0o700)
 }
 
-export function acquireLock(dir: string, user = "server"): void {
-  const file = join(dir, "lock")
+export function acquireLock(dir: string, user = "server", name = "lock"): void {
+  const file = join(dir, name)
   if (createLock(file)) return
   const pid = lockPid(file)
   if (pid !== undefined && pid !== process.pid && isRunning(pid)) throw lockedError(dir, file, pid, user)
   if (!takeOver(file, pid)) throw lockedError(dir, file, pid, user)
 }
 
-export function releaseLock(dir: string): void {
+export function releaseLock(dir: string, name = "lock"): void {
   try {
-    unlinkSync(join(dir, "lock"))
+    unlinkSync(join(dir, name))
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error
   }
 }
 
-export function serverToken(dir: string, renew = false): string {
-  const file = join(dir, "token")
+export function serverToken(dir: string, renew = false, name = "token"): string {
+  const file = join(dir, name)
   const token = randomBytes(32).toString("base64url")
   if (renew) {
     writePrivateFile(file, `${token}\n`)
