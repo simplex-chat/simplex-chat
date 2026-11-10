@@ -10,7 +10,7 @@ import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCal
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
-import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, ownerA, paidOrder, reveal)
+import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, newEdit, ownerA, paidOrder, reveal, setChannel)
 import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, stubCalls, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
@@ -83,8 +83,11 @@ workerTests = describe "StoreService names: worker" $ do
     it "sends a commit mined out of gas again" testCommitOutOfGas
     it "waits a second at the lapse second, retries as usual when the dry run still reverts, then commits" testLapseSecond
     it "clears a requeued order's stale intent before committing again after a lapse, and a third party's commitment's" testStaleIntent
-    it "keeps the phase while the latest block needs more than the fee cap, pausing registration with the reason reported, then resumes and commits" testFeeAboveCap
-    it "pauses registration while a send is refused for want of ETH, refusing checkout, and resumes once the send goes out" testUnfundedPause
+    it "keeps the phase while the latest block needs more than the fee cap, pausing registration with the reason reported, holding it while a new transaction's max fee is above the cap or the fees cannot be read, then resumes and commits" testFeeAboveCap
+    it "pauses registration at the fee cap from a terms acceptance's relay and from a register, then registers once the fees fall" testFeeCapRelayRegister
+    it "pauses registration while a send is refused for want of ETH, refusing checkout, holding it while a later send fails otherwise, and resumes once the send goes out" testUnfundedPause
+    it "pauses registration while a link edit's send is refused for want of ETH" testUnfundedEditPause
+    it "pauses registration while a pending commit cannot be replaced within the fee cap, holding it after the market's fees fall, and resumes once the commit needs no replacement" testUnreplaceablePause
   describe "writes" $ do
     it "writes nothing when the registration changed since it was read" testLostRace
     it "writes in the name's turn" testInNameTurn
@@ -119,7 +122,7 @@ workerTests = describe "StoreService names: worker" $ do
   describe "pause" $ do
     it "commits a queued order only while the allowance covers the registers in flight and the queue up to it, pausing registration for the rest, and commits them once it covers the queue" testPausedQueue
     it "pauses at start while the allowance cannot cover every active order's register, or cannot be read" testPauseAtStart
-    it "keeps registration paused while the allowance falls short or cannot be read, and resumes it once the allowance covers the queue" testProbe
+    it "keeps registration paused while the allowance falls short or cannot be read, then while the fees are above the cap, naming that cause, and resumes it once no cause holds" testProbe
     it "logs the report as an error only with an alert, naming the pausing order's commitment, and sends the group alerts and changes without it" testNamesReport
     it "reports each change of the pause" testRunNamesReport
     it "alerts on a pause, a queue above queue_alert, and the registrar's ETH or allowance below its floor, never on an unread figure" testReportAlerts
@@ -277,6 +280,29 @@ pauseFor Ctx {cOrders} r = atomically $ writeTVar (oePause cOrders) $ allowanceP
 
 allowancePause :: UTCTime -> NameRegistration -> Maybe Pause
 allowancePause since NameRegistration {nrCommitment} = Just Pause {paSince = since, paReason = PRAllowance, paCommitment = Just nrCommitment}
+
+feeCapPause :: UTCTime -> Maybe Pause
+feeCapPause since = Just Pause {paSince = since, paReason = PRFeeCap, paCommitment = Nothing}
+
+unfundedPause :: Maybe Pause
+unfundedPause = Just Pause {paSince = orderTime, paReason = PRUnfunded, paCommitment = Nothing}
+
+underfunded :: Fault
+underfunded = RpcError (-32000) "insufficient funds for gas * price + value: balance 0, tx cost 4600000000000000, overshot 4600000000000000" Nothing
+
+pauseSet, pauseCleared :: Ctx -> IO ()
+pauseSet Ctx {cOrders} = atomically $ readTVar (oePause cOrders) >>= check . isJust
+pauseCleared Ctx {cOrders} = atomically $ readTVar (oePause cOrders) >>= check . isNothing
+
+probedUntil :: W -> (Ctx -> IO ()) -> Expectation
+probedUntil W {wCtx, wWorker} reached = withAsync (runProbe wWorker) $ \_ -> timeout prompt (reached wCtx) `shouldReturn` Just ()
+
+heldByProbe :: W -> IO ()
+heldByProbe W {wCtx = ctx@Ctx {cNode}, wWorker} = do
+  (probe, gate) <- pausedAt cNode "eth_call" (runProbe wWorker)
+  releaseGate gate
+  timeout 1000000 (pauseCleared ctx) `shouldReturn` Nothing
+  Async.cancel probe
 
 pauseOf :: Ctx -> IO (Maybe Pause)
 pauseOf Ctx {cOrders} = readTVarIO $ oePause cOrders
@@ -498,39 +524,86 @@ testStaleIntent = withWorker $ \w@W {wCtx = ctx} -> do
   length <$> sent w `shouldReturn` 1
 
 testFeeAboveCap :: IO ()
-testFeeAboveCap = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wChain, wWorker} -> do
+testFeeAboveCap = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wChain} -> do
   r <- paidIn ctx aliceOrder id
   answerCommitment w r 0
   setFees cNode fakeTip fakeMaxFeePerGas
   steps w r >>= retrying
   stored ctx r `shouldReturn` r
   sent w `shouldReturn` []
-  pauseOf ctx `shouldReturn` Just Pause {paSince = orderTime, paReason = PRFeeCap, paCommitment = Just $ nrCommitment r}
+  pauseOf ctx `shouldReturn` feeCapPause orderTime
   placeOrder ctx dynamisOrder `shouldReturn` refusedWith 503 "registration_paused"
   q <- newTQueueIO
   namesReport (Just q) cOrders wChain True =<< pauseOf ctx
   atomically (flushTQueue q) >>= \case
     [GENotice t] -> t `shouldSatisfy` T.isInfixOf "registration paused since 2026-10-21 09:15 UTC: the network's fees are above max_fee_per_gas"
     other -> expectationFailure $ "notices: " <> show other
+  heldByProbe w
+  setFees cNode fakeTip (fakeMaxFeePerGas `div` 2)
+  heldByProbe w
   setFees cNode fakeTip fakeBaseFee
-  withAsync (runProbe wWorker) $ \_ -> timeout prompt (atomically $ readTVar (oePause cOrders) >>= check . isNothing) `shouldReturn` Just ()
+  setFault cNode "eth_maxPriorityFeePerGas" HttpFailure
+  heldByProbe w
+  clearFault cNode "eth_maxPriorityFeePerGas"
+  probedUntil w pauseCleared
   void $ steps w r >>= awaiting
   nrPhase <$> stored ctx r `shouldReturn` PCommitting
 
+testFeeCapRelayRegister :: IO ()
+testFeeCapRelayRegister = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  setFees cNode fakeTip fakeMaxFeePerGas
+  steps w r >>= retrying
+  pauseOf ctx `shouldReturn` feeCapPause orderTime
+  atomically $ writeTVar (oePause cOrders) Nothing
+  answerAccepted w r $ Returns fakeGeneralTerms
+  steps w r >>= retrying
+  pauseOf ctx `shouldReturn` feeCapPause orderTime
+  setFees cNode fakeTip fakeBaseFee
+  void $ steps w r >>= awaiting
+  [registerRaw] <- sent w
+  (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
+
 testUnfundedPause :: IO ()
-testUnfundedPause = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wSender, wWorker} -> do
+testUnfundedPause = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> do
   r <- paidIn ctx aliceOrder id
   answerCommitment w r 0
-  setFault cNode "eth_sendRawTransaction" $ RpcError (-32000) "insufficient funds for gas * price + value: balance 0, tx cost 4600000000000000, overshot 4600000000000000" Nothing
+  setFault cNode "eth_sendRawTransaction" underfunded
   void $ steps w r >>= awaiting
-  let paused = atomically $ readTVar (oePause cOrders) >>= check . isJust
-      resumed = atomically $ readTVar (oePause cOrders) >>= check . isNothing
-  withAsync (runProbe wWorker) $ \_ -> timeout prompt paused `shouldReturn` Just ()
-  pauseOf ctx `shouldReturn` Just Pause {paSince = orderTime, paReason = PRUnfunded, paCommitment = Nothing}
+  probedUntil w pauseSet
+  pauseOf ctx `shouldReturn` unfundedPause
   placeOrder ctx dynamisOrder `shouldReturn` refusedWith 503 "registration_paused"
+  setFault cNode "eth_sendRawTransaction" HttpFailure
+  followTransactions wSender
+  heldByProbe w
   clearFault cNode "eth_sendRawTransaction"
   followTransactions wSender
-  withAsync (runProbe wWorker) $ \_ -> timeout prompt resumed `shouldReturn` Just ()
+  probedUntil w pauseCleared
+  length <$> sent w `shouldReturn` 1
+
+testUnfundedEditPause :: IO ()
+testUnfundedEditPause = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cStore}, wSender} -> do
+  Just editId <- withTransaction cStore $ \db -> insertRecordEdit db (newEdit ownerA 20 setChannel) orderTime
+  setFault cNode "eth_sendRawTransaction" underfunded
+  Right _ <- submitTransaction wSender (TxEdit editId) fakeResolver "edit"
+  probedUntil w pauseSet
+  pauseOf ctx `shouldReturn` unfundedPause
+
+testUnreplaceablePause :: IO ()
+testUnreplaceablePause = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> do
+  r <- paidIn ctx aliceOrder id
+  answerCommitment w r 0
+  setFees cNode fakeTip (fakeMaxFeePerGas `div` 2)
+  void $ steps w r >>= awaiting
+  advance ctx replaceAfter
+  followTransactions wSender
+  probedUntil w pauseSet
+  pauseOf ctx `shouldReturn` feeCapPause (addUTCTime replaceAfter orderTime)
+  setFees cNode fakeTip fakeBaseFee
+  heldByProbe w
+  advance ctx replaceAfter
+  followTransactions wSender
+  probedUntil w pauseCleared
   length <$> sent w `shouldReturn` 1
 
 testLostRace :: IO ()
@@ -1036,21 +1109,19 @@ testPauseAtStart = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wWorker} 
   pauseOf ctx `shouldReturn` allowancePause now newest
 
 testProbe :: IO ()
-testProbe = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wWorker} -> do
+testProbe = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   r <- paidIn ctx aliceOrder twoYears
   pauseFor ctx r
-  let resumed = atomically $ readTVar (oePause cOrders) >>= check . isNothing
-      probedOnce = do
-        (probe, gate) <- pausedAt cNode "eth_call" (runProbe wWorker)
-        releaseGate gate
-        timeout 1000000 resumed `shouldReturn` Nothing
-        Async.cancel probe
   answerAllowance w 9999
-  probedOnce
+  heldByProbe w
   answerCall cNode fakeSponsor (allowanceCall w) $ Reverts ""
-  probedOnce
+  heldByProbe w
   answerAllowance w 10000
-  withAsync (runProbe wWorker) $ \_ -> timeout prompt resumed `shouldReturn` Just ()
+  setFees cNode fakeTip fakeMaxFeePerGas
+  heldByProbe w
+  pauseOf ctx `shouldReturn` feeCapPause orderTime
+  setFees cNode fakeTip fakeBaseFee
+  probedUntil w pauseCleared
 
 testNamesReport :: IO ()
 testNamesReport = withWorker $ \W {wCtx = ctx@Ctx {cNode, cOrders}, wChain} -> do

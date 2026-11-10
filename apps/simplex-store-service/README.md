@@ -1146,9 +1146,11 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   while the name is available, and the next register's dry run finds the cause.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
   the transaction waits` when fees are above the cap. Nothing is signed until they fall. A commit,
-  terms acceptance or register refused so pauses registration until they fall.
+  terms acceptance or register refused so pauses registration, see
+  [Registration paused](#registration-paused).
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
-  <cap>` when a transaction stuck in the pool cannot be bumped within the cap.
+  <cap>` when a transaction stuck in the pool cannot be bumped within the cap. Registration is
+  paused until it is mined or the market's fees fall back to its own.
 
 An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the
@@ -1170,8 +1172,10 @@ label's length over the order's duration. An order it does not cover stays queue
 registration, as does a register refused with `InsufficientAllowance`. At start, registration is
 paused when the allowance cannot cover every order in `queued` to `registering`, or cannot be read.
 Registration also pauses when a commit, terms acceptance or register is refused because the latest
-block needs more than `max_fee_per_gas`, and when the node refuses a saved transaction with
-`insufficient funds`. While it is paused:
+block needs more than `max_fee_per_gas`, while a pending transaction cannot be replaced within
+`max_fee_per_gas`, and when the node refuses a saved transaction with `insufficient funds`. A link
+edit refused for `insufficient funds` pauses it too, as every later transaction waits behind its
+nonce, while one refused above `max_fee_per_gas` is not sent and pauses nothing. While it is paused:
 
 - `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
   `503 {"error": "registration_paused"}` before any chain read. An invoice made before the pause
@@ -1184,10 +1188,13 @@ block needs more than `max_fee_per_gas`, and when the node refuses a saved trans
 A committed order whose commitment lapses before its register fails, paused or not, and the buyer
 uses Try again once registration resumes.
 
-Every 15 seconds the service checks again what paused registration, and resumes it: for the
-allowance, once it covers every order in `queued` to `registering`; for fees, once the latest block
-needs no more than `max_fee_per_gas`; for ETH, once no saved transaction is refused for
-`insufficient funds`. A top-up by the guardian or a transfer to the key needs no restart.
+Every 15 seconds the service checks every cause again, and resumes registration once none holds:
+the allowance covers every order in `queued` to `registering`; the max fee a new transaction is
+signed with, twice the latest base fee plus the node's tip, is within `max_fee_per_gas`; no pending
+transaction needs a replacement above it; and each pending transaction refused for
+`insufficient funds` has gone out since. A failed read keeps registration paused. When the cause
+that paused it is gone while others hold, the report names the first of them in this order. A
+top-up by the guardian or a transfer to the key needs no restart.
 
 The service logs a report at start, hourly and at each pause and resume:
 
@@ -1195,7 +1202,8 @@ The service logs a report at start, hourly and at each pause and resume:
 names: 3 queued, the oldest from 2026-11-09 10:00 UTC, 2 committing to registering; registration paused since 2026-11-09 09:41 UTC: the registrar's allowance on the sponsor is short; registrar 0x…, 1.250000 ETH, allowance $40.00; alert: registration paused; paused by the order with commitment 0x…
 ```
 
-The commitment names the order without granting access to it, as its registration id would. The
+The commitment, shown when an order paused registration for the allowance, names the order without
+granting access to it, as its registration id would. The
 report is an error, with `alert:` and its reasons, while registration is paused, above
 `[names] queue_alert` (default 20) queued orders, paid or by code, below 5 × `gas_limit_cap` ×
 `max_fee_per_gas` of ETH (4 ETH with the defaults), or below the price of one order of a 6-letter
