@@ -186,7 +186,7 @@ check_cards_while_searching() {
   "$ui" type imag
   sleep 2
   "$ui" shot search-typed
-  expect_in_tree -F 'value="imag"'
+  expect_in_tree -iF 'value="imag"'
   expect_in_tree -iF '"image notes"'
   tree=$("$ui" tree)
   for card in "${search_cards[@]}"; do
