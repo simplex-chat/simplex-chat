@@ -2992,8 +2992,8 @@ func processReceivedMsg(_ res: ChatEvent) async {
     case let .callInvitation(invitation):
         await MainActor.run {
             m.callInvitations[invitation.contact.id] = invitation
+            activateCall(invitation)
         }
-        activateCall(invitation)
     case let .callOffer(_, contact, callType, offer, sharedKey, askConfirmation):
         await withCall(contact) { call in
             await MainActor.run {
