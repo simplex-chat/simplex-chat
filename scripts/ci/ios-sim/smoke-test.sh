@@ -173,7 +173,7 @@ send_image() {
 }
 
 check_cards_while_searching() {
-  local card
+  local card tree
   "$ui" relaunch
   "$ui" shot search-empty
   for card in "${search_cards[@]}"; do
@@ -184,8 +184,9 @@ check_cards_while_searching() {
   sleep 2
   "$ui" shot search-typed
   expect_in_tree -iF '"image notes"'
+  tree=$("$ui" tree)
   for card in "${search_cards[@]}"; do
-    if grep -qF "\"$card\"" <<< "$("$ui" tree)"; then
+    if grep -qF "\"$card\"" <<< "$tree"; then
       fail "\"$card\" is shown while the search field has text"
     fi
   done
