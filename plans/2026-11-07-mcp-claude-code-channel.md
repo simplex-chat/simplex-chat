@@ -40,7 +40,7 @@ Premises, from which the decisions follow:
 4. `serve` stays as published in 0.2.
 5. #7810's features stay unless they conflict.
 
-On 2026-11-09 every decision below that was proposed, recommended or open is decided by our judgement, as implemented; the user gives feedback once using the plugin. One question stays open for the user: UX-I1 (decision 113).
+On 2026-11-09 every decision below that was proposed, recommended or open is decided by our judgement, as implemented; the user gives feedback once using the plugin. The one question left open, UX-I1 (decision 113), was decided by the user on 2026-11-10.
 
 Agreed on 2026-11-06:
 1. `serve`, `register` and HTTP stay.
@@ -66,7 +66,7 @@ Design:
 17. Prompts count from every member of the session group but `User`; approvals, tool-use verdicts and `//` and `/!` count from its admins and owners, whatever way they joined (rewritten on 2026-11-08 by the [trust model](#trust-model) and decision 84).
 18. The owner link reaches the person only: the `systemMessage` of the SessionStart hook and `simplex-mcp link` in a terminal; hook context and tool results never contain it.
 19. A session's approval mode changes to `host` only after an owner approves a card in the session's group.
-20. While owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
+20. Replaced on 2026-11-10 by decision 113. It was: while owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
 21. The package ships `npm-shrinkwrap.json`; the plugin's server, hooks and skills run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, and Node resolves its modules from the plugin's folder (replaces npx in the plugin folder, 2026-11-08).
 22. Refused paths cover the whole data root.
 23. Standing approvals of closed sessions are listed by `/list` and removed by `/revoke` in the session's group.
@@ -180,7 +180,7 @@ Recommended on the UX page (https://claude.ai/artifact/UDxBJx55Y9ti1U3TjUaxpC), 
 97. K10, K11: the rights texts name `/` commands in place of `//` and `/!`; the post for an owner has no `/observer` command.
 98. A session group's description, set at its creation: `The Claude Code session N. Members send it prompts; admins and owners also send / commands and approve tool use.`
 100. T3: the Main group's short description is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.`
-101. G6: the Main group replies `Unknown command.` to a one-line `/` text other than `/sessions`, `/join N`, `/approve reset` and `/reject reset`.
+101. G6: the Main group replies `Unknown command.` to a one-line `/` text other than `/sessions` and `/join N`; `/approve reset` and `/reject reset` were removed by decision 113.
 102. `reply` answers the core's refusal `feature not allowed Files and media` of decision 87 with FILES OFF: `Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` Other refusals of the core are returned as the core's text.
 103. UX-F3 a: the Main group's short description and welcome message are set when the group is created, a reset of the owners included; Claude's later profile updates of the Main group change only its name and commands, so an owner's edits of both stay. Of decision 90, the Main group's short description and description leave Claude's fields.
 104. Rule 3 in texts outside the group. The option `approve` reads `requests: you approve connections and messages in the SimpleX app. host: Claude Code asks you instead, after an admin or owner approves this in the session's group.` `connect` to a chat of another session returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` The plugin's limit of pending actions returns `20 actions are pending; wait for the approvers' decisions.`, a text of the hub; `serve` keeps `20 actions are pending; wait for the owner's decisions.`
@@ -201,8 +201,8 @@ Decided by judgement on 2026-11-09, review round 9:
 114. Under premise 3, a post of Claude or `User` in a session group that the core refuses with `feature not allowed NAME` is never dropped without a word: Claude posts in its place PREF OFF, `NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, with a subject: `Claude's answer was not posted: `, quoting the turn's prompt; `Action N: ` for a card before the decision, whose action then fails with PREF OFF, for a card posted or edited at a stop, and for `/forward`. After the decision the subject names the outcome and the card, and the action stays as it was: `Action N OUTCOME; its card was not posted: ` for the outcome card of an action performed in mode `host` or under a standing approval, and `Action N OUTCOME; its card was not updated: ` for the edit of a card, OUTCOME being `was performed`, `failed`, `was rejected`, `expired` or `ended`. Claude is an owner of the group, so the core refuses its posts only while a preference is off. `User` joins as a member, and its posts are refused also while NAME is on only for roles above its own: its prompt gets `User's prompt was not posted: ` with USER NOT ALLOWED, `NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` `reply` returns PREF OFF. A media card refused by `Files and media` is first posted again as text (decision 107). One path replaces the code of decisions 102 and 108; their texts are PREF OFF for `Files and media`. The plugin's log line of a failed action ends with one period, also after an error that ends with one. `serve` keeps 0.2's errors and log lines, a period after every error included (premise 4).
 115. `serve` answers `/give CHAT N` from any member with the list of commands, as 0.2: `/give` is a request of session groups only.
 
-Open for the user:
-113. UX-I1, the replacement of the Main group and its owners. Recommended, as now: while owners exist, an owner approves each reset in the Main group; without owners it runs from a terminal (decision 20).
+Decided by the user on 2026-11-10:
+113. UX-I1 b, the replacement of the Main group and its owners. Asked whether anything on the computer that runs Claude Code can replace the Main group without an owner's approval, the user answered: "then obviously this should be possible to reset main group". The person at that computer is trusted with the trust root. `reset-owners`, `/simplex:reset-owners` and `POST /reset-owners` replace the Main group at once, also while owners exist; the reset card, `/approve reset` and `/reject reset` are removed. The new link is shown only on a terminal; elsewhere the command names `link`, which shows it on a terminal. The session groups stay as they are (decision 78). `serve` keeps its `--reset-owners` of 0.2.
 
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
@@ -368,6 +368,8 @@ The user's words:
 
 ```
 principal         who                                                  trusted with
+computer user     any program running as the user on the computer      the trust root: replaces the Main group and its owners at once (decision 113)
+                  that runs Claude Code
 hub member        every member of the Main group, any role             all sessions: joins each by /join N as admin
 session approver  an admin or owner of a session group, User excepted   that session: prompts, // and /!, approvals, tool use
 session sender    a moderator, member or author of a session group      that session: prompts
@@ -548,12 +550,12 @@ on connect to a known chat without an owner:     claim the chat
 Membership of the Main group in the session groups (rule 1 of the [trust model](#trust-model)):
 ```
 on a membership or role change in the Main group:   the session groups stay as they are
-on the replacement of the Main group (decision 20): the session groups and the roles of their members stay as they are (decision 78)
+on the replacement of the Main group (decision 113): the session groups and the roles of their members stay as they are (decision 78)
 ```
 
 ```mermaid
 flowchart LR
-  R[reset of the owners approved] --> M[old Main group deleted, new Main group and link]
+  R[reset-owners on the computer that runs Claude Code] --> M[old Main group deleted, new Main group and link]
   R --> K[session groups kept, with their members' roles]
   K --> P[members from the old Main group keep the rights of their roles]
 ```
