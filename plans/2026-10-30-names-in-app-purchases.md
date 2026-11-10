@@ -12,11 +12,11 @@ Builds on:
 
 Once built, a user of the mobile and desktop apps searches a name, pays for it in the app store, in the browser or with a code, owns it, points it at an address or a channel, backs up the key that owns it, and brings in a name bought on simplex.domains.
 
-| Stage | Holds |
-|---|---|
-| Stage 1, v1, the beta | Search over SMP; one store product, $100 for 2 years, for any name; prepaid codes; a site-bought name's code; builds that can't pay in the app pay in the browser; buying from the address and a channel's info; the recovery key, the first time |
-| Stage 2, v1.1, usable | "SimpleX names" under Advanced settings; restore from the 24 words; a moved-in or restored name attaches to the address or channel; changing what a name opens; giving a name to another profile |
-| Stage 3, later | Transfers to another person; renewal; reminders; all before the first names expire on 31 Dec 2028 |
+- Stage 1, v1, the beta: buying, codes and a site-bought name's move, from the address and a channel's info.
+- Stage 2, v1.1, usable: the names hub, restore, changing what a name opens.
+- Stage 3, later: transfers, renewal and reminders, before the first names expire on 31 Dec 2028.
+
+Each stage's items are in section 1.
 
 A name's life:
 
@@ -605,6 +605,17 @@ signed order     the exact signed order and request
 registration     the one it funds
 ```
 
+```mermaid
+stateDiagram-v2
+  [*] --> Kept: Keep the order, before the sheet: nonce, code, token
+  Kept --> Paid: the receipt handed over and recorded
+  Kept --> [*]: the sheet dismissed, nothing charged
+  Paid --> Used: its name registered; Play consumed, Apple finished
+  Paid --> Dropped: the store reports it refunded
+  Used --> [*]
+  Dropped --> [*]
+```
+
 - Signing is a library function (D10): EIP-191 for the order messages, 65 bytes with a low `s`; EIP-712 for the `RegisterName` intent, the terms acceptance under the `SimplexNamePolicy` domain (`acceptanceDigest`, `policyDomain`, `termsKind`), the record-edit intent and the transfer intents.
 - Each new wallet and name command is listed in `allowRemoteCommand` (`src/Simplex/Chat/Controller.hs:755-797`) as refused from a paired device, with a test.
 - The workers' progress events hold the order's id and phase only.
@@ -651,6 +662,22 @@ Android first; iOS gets the same code behind the build-time switch (6.9). Deskto
   - Play: its purchases query;
   - Apple: `Transaction.currentEntitlements`, whose latest transaction per product is open when it carries this wallet's token and no local record says it was used (only then does the app ask the service); `Transaction.unfinished` is read too, as a secondary list.
   - With the chosen name in the database, registration resumes; otherwise the app asks for a name.
+
+```mermaid
+flowchart TD
+  start["App start, foreground, profile switch, store update"] --> list["The store's list of open name purchases"]
+  list --> token{"Its token matches this wallet?"}
+  token -->|"no token"| restore["Presented only on Restore purchases, from stage 2"]
+  token -->|"another wallet's"| line["The store-account line, or Bought with another recovery key"]
+  token -->|yes| profile{"Recorded by the active profile?"}
+  profile -->|"another profile"| line
+  profile -->|"yes, or no record after a reinstall"| used{"A local record says used?"}
+  used -->|yes| skip["Skipped"]
+  used -->|no| present["Presented to the service"]
+  present --> name{"The chosen name in the database?"}
+  name -->|yes| resume["Registration resumes"]
+  name -->|no| ask["The app asks for a name"]
+```
 - **One open purchase per store account:** on both platforms the app offers the profile's held payment in place of a second purchase, and sells no second purchase while one is open.
 - A purchase the store reports refunded (on Play: unlisted after a refund with revocation) is dropped from the app's records.
 - **Store-account lines:** in a shown profile, whatever another profile on the device or another wallet holds gets one line, in the footer's place, Pay off, naming no profile:
