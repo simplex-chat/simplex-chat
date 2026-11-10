@@ -21,8 +21,7 @@ schemaMigrations =
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
     ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
-    ("20261013_names", m20261013_names, Just down_m20261013_names),
-    ("20261110_name_codes_in_group", m20261110_name_codes_in_group, Just down_m20261110_name_codes_in_group)
+    ("20261013_names", m20261013_names, Just down_m20261013_names)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -295,6 +294,7 @@ CREATE TABLE @name_prepaid_codes(
   revoked_at TIMESTAMPTZ,
   expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL,
+  issued_in_group SMALLINT NOT NULL DEFAULT 0,
   UNIQUE(code_hash)
 );
 
@@ -526,22 +526,6 @@ ALTER TABLE @name_prepaid_codes DROP COLUMN reserved_by;
 DROP TABLE @name_registrations;
 
 DROP TABLE @name_prepaid_codes;
-|]
-
-m20261110_name_codes_in_group :: Text
-m20261110_name_codes_in_group =
-  withPrefix
-    servicePrefix
-    [r|
-ALTER TABLE @name_prepaid_codes ADD COLUMN issued_in_group SMALLINT NOT NULL DEFAULT 0;
-|]
-
-down_m20261110_name_codes_in_group :: Text
-down_m20261110_name_codes_in_group =
-  withPrefix
-    servicePrefix
-    [r|
-ALTER TABLE @name_prepaid_codes DROP COLUMN issued_in_group;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.
