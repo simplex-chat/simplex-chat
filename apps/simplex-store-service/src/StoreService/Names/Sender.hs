@@ -14,6 +14,9 @@ module StoreService.Names.Sender
     newSender,
     submitTransaction,
     inFlightTransaction,
+    feesWithinCap,
+    keyUnderfunded,
+    replacementOverCap,
     awaitOutcome,
     followTransactions,
     runSender,
@@ -75,6 +78,8 @@ data InFlight = InFlight
     ifUsedSince :: Maybe Word64,
     -- | the last warning logged for this nonce, so a lasting failure is logged once
     ifLastWarning :: Maybe Text,
+    ifUnfunded :: Bool,
+    ifReplacementOverCap :: Bool,
     ifOutcome :: TMVar TxOutcome
   }
 
@@ -144,6 +149,8 @@ newSender snRandom snChain snStore snNow = do
               ifReplaceAt = addUTCTime replaceAfter ntSentAt,
               ifUsedSince = Nothing,
               ifLastWarning = Nothing,
+              ifUnfunded = False,
+              ifReplacementOverCap = False,
               ifOutcome = outcome
             }
         )
@@ -173,7 +180,7 @@ submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snS
       atomically $ do
         writeTVar snNextNonce $ nonce + 1
         modifyTVar' snInFlight $
-          M.insert nonce InFlight {ifFor = for, ifRequest = request, ifRaw = stRaw, ifHashes = stHash :| [], ifReplaceAt = addUTCTime replaceAfter now, ifUsedSince = Nothing, ifLastWarning = Nothing, ifOutcome = outcome}
+          M.insert nonce InFlight {ifFor = for, ifRequest = request, ifRaw = stRaw, ifHashes = stHash :| [], ifReplaceAt = addUTCTime replaceAfter now, ifUsedSince = Nothing, ifLastWarning = Nothing, ifUnfunded = False, ifReplacementOverCap = False, ifOutcome = outcome}
       broadcast s nonce stRaw
       pure PendingTx {ptHash = stHash, ptNonce = nonce, ptOutcome = outcome}
   where
@@ -243,9 +250,9 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
   marketFees c >>= \case
     Left e -> False <$ warnNonce s nonce (tshow e)
     Right market@(tip, _)
-      | tip <= oldTip && headroomFee market <= oldMax -> False <$ update s nonce (\t -> t {ifReplaceAt = later})
+      | tip <= oldTip && headroomFee market <= oldMax -> False <$ update s nonce (\t -> t {ifReplaceAt = later, ifReplacementOverCap = False})
       | bumped oldMax > cap -> do
-          update s nonce $ \t -> t {ifReplaceAt = later}
+          update s nonce $ \t -> t {ifReplaceAt = later, ifReplacementOverCap = True}
           False <$ warnNonce s nonce ("not replaced: a replacement would pay over max_fee_per_gas " <> tshow cap)
       | otherwise -> do
           -- the bumped fees are at most the cap, so the replacement still outbids the old signature
@@ -256,7 +263,7 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
             Left e -> False <$ logError ("names sender: replacement for nonce " <> tshow nonce <> " not signed: " <> T.pack e)
             Right SignedTx {stRaw, stHash} -> do
               saveTransaction snStore ifFor stRaw stHash nonce now
-              update s nonce $ \t -> t {ifRequest = request, ifRaw = stRaw, ifHashes = stHash <| ifHashes t, ifReplaceAt = later}
+              update s nonce $ \t -> t {ifRequest = request, ifRaw = stRaw, ifHashes = stHash <| ifHashes t, ifReplaceAt = later, ifReplacementOverCap = False}
               logNote $ "names sender: replacing nonce " <> tshow nonce <> " at max fee " <> tshow maxFee'
               True <$ broadcast s nonce stRaw
   where
@@ -292,6 +299,18 @@ marketFees c = runExceptT $ do
   Block {blockBaseFee} <- ExceptT $ latestBlock c
   pure (toInteger tip, toInteger blockBaseFee)
 
+feesWithinCap :: ChainClient -> IO (Either ChainError Bool)
+feesWithinCap c = fmap ((<= feeCap c) . headroomFee) <$> marketFees c
+
+keyUnderfunded :: Sender -> STM Bool
+keyUnderfunded Sender {snInFlight} = any ifUnfunded <$> readTVar snInFlight
+
+replacementOverCap :: Sender -> STM Bool
+replacementOverCap Sender {snInFlight} = any ifReplacementOverCap <$> readTVar snInFlight
+
+underfundedWarning :: Text -> Bool
+underfundedWarning = (underfundedMessage `T.isInfixOf`) . T.toLower
+
 headroomFee :: (Integer, Integer) -> Integer
 headroomFee (tip, baseFee) = baseFeeHeadroom * baseFee + tip
 
@@ -310,8 +329,11 @@ saveTransaction st for raw hash nonce now =
 broadcast :: Sender -> Word64 -> ByteString -> IO ()
 broadcast s@Sender {snChain} nonce raw =
   sendRawTransaction snChain raw >>= \case
-    Left e -> warnNonce s nonce $ "not sent: " <> tshow e
-    Right _ -> update s nonce $ \t -> t {ifLastWarning = Nothing}
+    Left e -> do
+      let warning = "not sent: " <> tshow e
+      when (underfundedWarning warning) $ update s nonce $ \t -> t {ifUnfunded = True}
+      warnNonce s nonce warning
+    Right _ -> update s nonce $ \t -> t {ifLastWarning = Nothing, ifUnfunded = False}
 
 -- | Logged when it differs from the nonce's last warning. An underfunded key is an error, since only the operator can fund it.
 warnNonce :: Sender -> Word64 -> Text -> IO ()
@@ -323,7 +345,7 @@ warnNonce Sender {snInFlight} nonce warning = do
         | ifLastWarning == Just warning -> pure False
         | otherwise -> True <$ writeTVar snInFlight (M.insert nonce tx {ifLastWarning = Just warning} inFlight)
       Nothing -> pure True
-  when changed $ (if underfundedMessage `T.isInfixOf` T.toLower warning then logError else logWarn) message
+  when changed $ (if underfundedWarning warning then logError else logWarn) message
   where
     message = "names sender: nonce " <> tshow nonce <> ": " <> warning
 

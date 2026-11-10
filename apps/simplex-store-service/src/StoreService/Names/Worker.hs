@@ -14,6 +14,8 @@ module StoreService.Names.Worker
     runWorkers,
     sweepFailedCodes,
     runCodeSweep,
+    pauseUncovered,
+    runProbe,
     Retried (..),
     RetryRefusal (..),
     retryRegistration,
@@ -29,11 +31,13 @@ import Control.Exception (finally, mask_)
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM, forM_, forever, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
+import Data.ByteString (ByteString)
 import Data.Containers.ListUtils (nubOrd)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
@@ -42,15 +46,17 @@ import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Util (tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
+import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient, ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
-import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy, sponsorNonce)
+import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, chainPriceCents, commitmentAges, commitmentTime, communityName, concurrent, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy, registerCost, registrarAllowance, sponsorNonce, together)
+import StoreService.Names.Env (Pause (..), PauseReason (..))
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, unixSeconds, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..))
-import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
+import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, feesWithinCap, inFlightTransaction, keyUnderfunded, ptHash, replacementOverCap, submitTransaction)
 import StoreService.Names.Store
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.View (lapseMoment, notSignedInTime, registrationAt, registrationVersion)
@@ -78,6 +84,7 @@ data Next
     Stalled Int64 Text
   | -- | a transaction of the registration is in flight
     Await PendingTx
+  | Paused
 
 -- | How often the stored registrations are scanned for one without a thread, such as an order just paid or requeued.
 scanInterval :: Int
@@ -85,6 +92,9 @@ scanInterval = 5000000
 
 retryInterval :: NominalDiffTime
 retryInterval = 15
+
+retryMicros :: Int
+retryMicros = ceiling $ retryInterval * 1000000
 
 -- | The registration is read again after this wait for its transaction's outcome.
 outcomeWait :: Int
@@ -130,7 +140,7 @@ work w rid@(RegistrationId ridText) = void $ safely ("names worker: registration
 
 -- | Steps until the registration leaves the worker's phases, logging a lasting failure once.
 follow :: Worker -> RegistrationId -> Maybe Text -> IO ()
-follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow}} rid@(RegistrationId ridText) lastFailure =
+follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oePause, oeNow}} rid@(RegistrationId ridText) lastFailure =
   stepRegistration w rid >>= \case
     Done -> pure ()
     Again -> follow w rid Nothing
@@ -138,6 +148,10 @@ follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow}} rid@(Registrat
     Retry v reason -> waitAgain logWarn v reason
     Stalled v reason -> waitAgain logError v reason
     Await p -> awaitOutcome outcomeWait p >> follow w rid Nothing
+    Paused -> do
+      retried <- registerDelay retryMicros
+      atomically $ (readTVar oePause >>= check . isNothing) `orElse` (readTVar retried >>= check)
+      follow w rid Nothing
   where
     waitAgain logAt v reason = do
       when (Just reason /= lastFailure) $ logAt $ "names worker: registration " <> ridText <> " waits: " <> reason
@@ -155,11 +169,18 @@ stepRegistration w@Worker {wkOrders = OrdersEnv {oeStore, oeNow}} rid = do
   withTransaction oeStore (`getRegistration` rid) >>= \case
     Nothing -> pure Done
     Just r -> case nrPhase r of
-      PQueued -> commit w now r
+      PQueued -> queued w now r
       PCommitting -> commit w now r
       PCommitted -> committed w now r
       PRegistering -> registering w now r
       _ -> pure Done
+
+queued :: Worker -> UTCTime -> NameRegistration -> IO Next
+queued w@Worker {wkOrders = OrdersEnv {oeStore}} now r@NameRegistration {nrId, nrCommitment} =
+  withTransaction oeStore activeOrders >>= covered w . throughOrder nrId >>= \case
+    Right True -> commit w now r
+    Right False -> Paused <$ pause w now PRAllowance (Just nrCommitment)
+    Left e -> pure $ failure r e
 
 -- | A commit of the registration in flight is waited for; otherwise commitments(commitment) decides.
 commit :: Worker -> UTCTime -> NameRegistration -> IO Next
@@ -233,6 +254,7 @@ sendCommit w@Worker {wkOrders = OrdersEnv {oeConfig}, wkSender} now r@NameRegist
   withinSends w now r isCommit $ submitTransaction wkSender (TxCommit nrId) (cController $ nChain oeConfig) (commitCalldata nrCommitment) >>= \case
     Right p -> commitSent w now r p
     Left SEInFlight -> pure Again
+    Left e@SEFeeAboveCap {} -> pauseAtFeeCap w now r e
     -- UnexpiredCommitmentExists among them: a commit mined since the read, or a latest block still at the lapse second
     Left e -> pure $ failure r e
 
@@ -250,17 +272,17 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
     Nothing -> case nrReveal of
       Nothing -> case lapseMoment r of
         Just lapse | now <= lapse -> pure $ waitUntil r $ addUTCTime chainSecond lapse
-        _ -> save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notSignedInTime}
+        _ -> inTurn w r $ failed w now r notSignedInTime "its buyer did not sign it in time"
+      -- past the lapse nothing is sent: the policy would commit again, and the sponsor checks its allowance before the commitment
+      Just _ | lapsed -> judge w now r Nothing
       Just rv@NameReveal {rvAcceptance, rvDeadline} ->
-        (pure (if unlapsed then rvAcceptance else Nothing) $>>= relayAcceptance w now r rvDeadline) >>= \case
+        (pure rvAcceptance $>>= relayAcceptance w now r rvDeadline) >>= \case
           Just next -> pure next
           Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
             Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
             _ -> sendRegister w now r rv
   where
-    -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then
-    -- fails the order as it does a plain name's
-    unlapsed = all ((now <=) . secondsTime . toInteger) nrRevealBefore
+    lapsed = any ((now >) . secondsTime . toInteger) nrRevealBefore
 
 -- | The relay of the reveal's acceptance to the name policy, sent without waiting for revealAfter; Nothing once the policy
 -- stores that acceptance. One signed for another policy, before a setNamePolicy, or for the other kind of terms, clears the
@@ -291,6 +313,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
               held >>= \case
                 Right accepted | accepted == taTermsHash -> pure Again
                 _ -> judge w now r reason
+            Left e@SEFeeAboveCap {} -> pauseAtFeeCap w now r e
             Left e -> pure $ failure r e
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
@@ -306,9 +329,13 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
         Right p -> registerSent w now r p
         Left SEInFlight -> pure Again
         Left (SEChain (ChainReverted reason)) -> judge w now r reason
+        Left e@SEFeeAboveCap {} -> pauseAtFeeCap w now r e
         Left e -> pure $ failure r e
   where
     intent = intentOf cfg r rv
+
+pauseAtFeeCap :: Worker -> UTCTime -> NameRegistration -> SendError -> IO Next
+pauseAtFeeCap w now r e = failure r e <$ pause w now PRFeeCap Nothing
 
 registerSent :: Worker -> UTCTime -> NameRegistration -> PendingTx -> IO Next
 registerSent w now r@NameRegistration {nrPhase, nrRegisterTx} p
@@ -324,10 +351,11 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} =
 
 -- | A register that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
 -- with status 1 or the owner holds the name; committed again on InvalidNonce or a refused terms acceptance, for the page to sign again, the name
--- policy read again on TermsNotAccepted; kept waiting while the sponsor allowance is used up; taken on any revert while the name is not
--- available at the confirmation depth; failed otherwise, unless the dry run named the name as gone.
+-- policy read again on TermsNotAccepted; kept waiting, registration paused, while the sponsor allowance is used up; taken on any revert while the name is not
+-- available at the confirmation depth; committed again after a register mined with status 0, for the next dry run to find the cause;
+-- failed otherwise, unless the dry run named the name as gone.
 judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO Next
-judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} reason =
+judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrPhase, nrCommitment, nrReveal} reason =
   inTurn w r $
     confirmLanded oe r >>= \case
       LRegistered v -> pure (Just v, Again)
@@ -338,7 +366,9 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
           when (e == RNTermsNotAccepted) $ forgetNamePolicy oeContracts
           store w now r {nrReveal = Nothing}
         Just RNCommitmentTooNew -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
-        Just RNInsufficientAllowance -> pure (Nothing, Stalled (nrVersion r) "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance")
+        Just RNInsufficientAllowance -> do
+          pause w now PRAllowance (Just nrCommitment)
+          pure (Nothing, Stalled (nrVersion r) "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance")
         _ -> case nrReveal of
           Just NameReveal {rvLabel} ->
             availability rvLabel >>= \case
@@ -348,9 +378,11 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
               -- the dry run runs on the pending block, where a competitor's register that may never mine can hold the name
               Right (True, _)
                 | reason `elem` map Just [RNNameNotAvailable, RNNameReserved] -> pure (Nothing, Retry (nrVersion r) "the dry run reverted the name as gone, but it reads available")
-                | otherwise -> failed w now r
-          Nothing -> failed w now r
+                | isNothing reason && nrPhase == PRegistering -> store w now r {nrPhase = PCommitted, nrRegisterTx = Nothing, nrRegisterBlock = Nothing}
+                | otherwise -> registerFailed
+          Nothing -> registerFailed
   where
+    registerFailed = failed w now r notRegistered "its register did not go through"
     -- at the latest block, and at the confirmation depth while the latest reads it taken
     availability label = runExceptT $ do
       latest <- ExceptT $ controllerAvailable oeContracts Latest label
@@ -368,8 +400,11 @@ taken Worker {wkOrders = OrdersEnv {oeStore, oeTurns}} now r@NameRegistration {n
     credited = written r <$> withBalanceTurn oeTurns nrId (withTransaction oeStore $ \db -> write db >>= traverse (\v -> v <$ creditBalance db nrId nrPrice now))
 
 -- | A code order keeps its code for Try again.
-failed :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
-failed w now r = store w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notRegistered}
+failed :: Worker -> UTCTime -> NameRegistration -> Text -> Text -> IO (Maybe Int64, Next)
+failed w now r@NameRegistration {nrCommitment} shown cause = do
+  result@(v, _) <- store w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just shown}
+  when (isJust v) $ logError $ "names worker: the order with commitment " <> hex nrCommitment <> " failed: " <> cause
+  pure result
 
 -- | A compare-and-set on the version read, in the caller's turn of the name.
 store :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
@@ -432,13 +467,11 @@ maxSendsPerKind = 5
 
 -- | The send while the order has sent fewer than maxSendsPerKind transactions of its kind, else the order fails.
 withinSends :: Worker -> UTCTime -> NameRegistration -> (TxFor -> Bool) -> IO Next -> IO Next
-withinSends w@Worker {wkOrders} now r@NameRegistration {nrId = RegistrationId rid} ofKind send = do
+withinSends w@Worker {wkOrders} now r ofKind send = do
   sent <- sendsOf wkOrders r ofKind
   if sent < maxSendsPerKind
     then send
-    else do
-      logWarn $ "names worker: registration " <> rid <> " failed: it sent " <> tshow sent <> " transactions of one kind, the most an order may"
-      save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notRegistered}
+    else inTurn w r $ failed w now r notRegistered $ "it sent " <> tshow sent <> " transactions of one kind, the most an order may"
 
 sendsUsedUp :: OrdersEnv -> NameRegistration -> IO Bool
 sendsUsedUp oe r = any (>= maxSendsPerKind) <$> mapM (sendsOf oe r) [isCommit, isAccept, isRegister]
@@ -520,3 +553,61 @@ sweepFailedCodes Worker {wkOrders = OrdersEnv {oeStore, oeTurns, oeNow}} = do
 
 runCodeSweep :: Worker -> IO ()
 runCodeSweep w = forever $ safely "names code sweep" (sweepFailedCodes w) >> threadDelay sweepInterval
+
+pauseUncovered :: Worker -> IO ()
+pauseUncovered w@Worker {wkOrders = OrdersEnv {oeStore, oeNow}} = do
+  orders <- withTransaction oeStore activeOrders
+  forM_ (lastMaybe orders) $ \ActiveOrder {aoCommitment} ->
+    covered w orders >>= \case
+      Right True -> pure ()
+      _ -> oeNow >>= \now -> pause w now PRAllowance (Just aoCommitment)
+  where
+    lastMaybe = listToMaybe . reverse
+
+runProbe :: Worker -> IO ()
+runProbe w@Worker {wkOrders = OrdersEnv {oePause, oeNow}, wkSender} = forever $ do
+  paused <- atomically $ readTVar oePause >>= maybe (Left <$> senderCause) (pure . Right)
+  case paused of
+    Left reason -> oeNow >>= \now -> pause w now reason Nothing
+    Right p@Pause {paReason} -> do
+      holding <- safelyWith "names worker: the probe" [paReason] $ pauseCauses w
+      case holding of
+        [] -> atomically $ writeTVar oePause Nothing
+        cause : _ -> do
+          when (paReason `notElem` holding) $ atomically $ writeTVar oePause $ Just p {paReason = cause, paCommitment = Nothing}
+          threadDelay retryMicros
+  where
+    senderCause = senderCauses wkSender >>= maybe retry pure . listToMaybe
+
+pauseCauses :: Worker -> IO [PauseReason]
+pauseCauses w@Worker {wkOrders = OrdersEnv {oeStore}, wkChain, wkSender} = do
+  allowance <- withTransaction oeStore activeOrders >>= covered w
+  fees <- feesWithinCap wkChain
+  stuck <- atomically $ senderCauses wkSender
+  pure $ [PRAllowance | allowance /= Right True] <> [PRFeeCap | fees /= Right True] <> stuck
+
+senderCauses :: Sender -> STM [PauseReason]
+senderCauses s = do
+  overCap <- replacementOverCap s
+  unfunded <- keyUnderfunded s
+  pure $ [PRFeeCap | overCap] <> [PRUnfunded | unfunded]
+
+pause :: Worker -> UTCTime -> PauseReason -> Maybe ByteString -> IO ()
+pause Worker {wkOrders = OrdersEnv {oePause}} now reason commitment =
+  atomically $ modifyTVar' oePause $ Just . fromMaybe Pause {paSince = now, paReason = reason, paCommitment = commitment}
+
+covered :: Worker -> [ActiveOrder] -> IO (Either ChainError Bool)
+covered Worker {wkOrders = OrdersEnv {oeContracts}} orders
+  | null orders = pure $ Right True
+  | otherwise = runExceptT $ do
+      allowance <- ExceptT $ registrarAllowance oeContracts
+      prices <- ExceptT $ together $ traverse (\len -> (len,) <$> concurrent (chainPriceCents oeContracts len 1)) $ nubOrd $ map aoLength orders
+      pure $ allowance >= sum [registerCost cents aoDuration | (len, cents) <- prices, ActiveOrder {aoLength, aoDuration} <- orders, aoLength == len]
+
+inFlight :: [ActiveOrder] -> [ActiveOrder]
+inFlight = filter ((/= PQueued) . aoPhase)
+
+throughOrder :: RegistrationId -> [ActiveOrder] -> [ActiveOrder]
+throughOrder rid orders = inFlight orders <> before <> take 1 rest
+  where
+    (before, rest) = break ((== rid) . aoId) $ queuedOrders orders

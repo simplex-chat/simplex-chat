@@ -56,6 +56,9 @@ module StoreService.Names.Store
     findRegistrations,
     isLabelRegistering,
     activeRegistrations,
+    ActiveOrder (..),
+    activeOrders,
+    queuedOrders,
     unpaidCleanupCandidates,
     deleteUnpaidRegistration,
     failedCodeOrdersBefore,
@@ -224,6 +227,16 @@ data NameRegistration = NameRegistration
     nrLinksRefusedAt :: Maybe UTCTime,
     nrCreatedAt :: UTCTime,
     nrUpdatedAt :: UTCTime
+  }
+  deriving (Eq, Show)
+
+data ActiveOrder = ActiveOrder
+  { aoId :: RegistrationId,
+    aoPhase :: NamePhase,
+    aoLength :: Int,
+    aoDuration :: Word64,
+    aoCommitment :: ByteString,
+    aoCreatedAt :: UTCTime
   }
   deriving (Eq, Show)
 
@@ -843,14 +856,23 @@ isLabelRegistering db (LabelHash lh) =
             IO [Only Int]
         )
 
--- | The registrations a worker moves on, oldest first, by id alone, so a row that does not decode stops only its own worker.
+-- | The registrations a worker moves on, oldest first.
 activeRegistrations :: DB.Connection -> IO [RegistrationId]
-activeRegistrations db =
-  map (RegistrationId . fromOnly)
+activeRegistrations db = map aoId <$> activeOrders db
+
+queuedOrders :: [ActiveOrder] -> [ActiveOrder]
+queuedOrders = filter ((== PQueued) . aoPhase)
+
+activeOrders :: DB.Connection -> IO [ActiveOrder]
+activeOrders db =
+  map toActiveOrder
     <$> DB.query
       db
-      "SELECT registration_id FROM sx_badge_service_name_registrations WHERE phase IN (?,?,?,?) ORDER BY created_at, registration_id"
+      "SELECT registration_id, phase, length, duration, commitment, created_at FROM sx_badge_service_name_registrations WHERE phase IN (?,?,?,?) ORDER BY created_at, registration_id"
       (PQueued, PCommitting, PCommitted, PRegistering)
+  where
+    toActiveOrder (rid, aoPhase, aoLength, duration, Binary aoCommitment, aoCreatedAt) =
+      ActiveOrder {aoId = RegistrationId rid, aoPhase, aoLength, aoDuration = word64 duration, aoCommitment, aoCreatedAt}
 
 -- | Unpaid orders whose invoice expired before the cutoff, without a recorded payment.
 unpaidCleanupCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, InvoiceId)]

@@ -17,7 +17,7 @@ import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..
 import ChatTests.DBUtils (TestParams)
 import Control.Concurrent.Async (Async, async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM (atomically, check)
+import Control.Concurrent.STM (atomically, check, writeTVar)
 import Control.Monad (forM_, join, void, when)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -45,6 +45,7 @@ import StoreService.Config (BTCPayConfig (..), ServiceConfig (..))
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Balances (RefundRefusal (..), recordRefund)
 import StoreService.Names.Orders (OrdersEnv (..))
+import StoreService.Names.Env (Pause (..), PauseReason (..))
 import StoreService.Names.Phases (RegistrationId (..), phasesWaiting)
 import StoreService.Names.Signatures (OrderFields (..), personalDigest, spendMessage)
 import StoreService.Names.Store
@@ -80,6 +81,7 @@ namesSpendTests = describe "StoreService names: spend" $ do
     it "refuses a card difference below the card minimum after the price check, accepting it by crypto and at the minimum" testCardMinimum
     it "refuses a malformed order and a body over 16384 bytes, accepting the longest" testSpendSizes
     it "answers 403 codes_only to a covered spend, a difference, a malformed body and an unknown order, spending nothing and reaching no provider" testSpendCodesOnly
+    it "answers 503 registration_paused to a covered spend and a difference, spending nothing and reaching no provider" testSpendPaused
   describe "terms" $ do
     it "answers terms_changed for other terms or the other kind, listed or not, and stores the community terms, covered and by difference" testSpendTermsChanged
     it "checks a spend for a community name for 2 years at their price, whatever years the configuration gives, storing those years" testSpendCommunityYears
@@ -114,6 +116,18 @@ testSpendCodesOnly = withSpend $ \open -> do
     stubCalls (cStub ctx) `shouldReturn` []
   -- nothing the refusals left meets the same spend with codes_only off
   fst <$> spend open source (covered 10000) `shouldReturn` 200
+
+testSpendPaused :: IO ()
+testSpendPaused = withSpend $ \ctx@Ctx {cOrders} -> do
+  source <- sourceOf ctx "s" 10000
+  atomically $ writeTVar (oePause cOrders) $ Just Pause {paSince = orderTime, paReason = PRAllowance, paCommitment = Nothing}
+  spend ctx source (covered 10000) `shouldReturn` refusedWith 503 "registration_paused"
+  spend ctx source (dynamis 10000 $ Just "btc") `shouldReturn` refusedWith 503 "registration_paused"
+  amountOf ctx source `shouldReturn` Just 10000
+  paidFrom ctx source `shouldReturn` []
+  stubCalls (cStub ctx) `shouldReturn` []
+  atomically $ writeTVar (oePause cOrders) Nothing
+  fst <$> spend ctx source (covered 10000) `shouldReturn` 200
 
 -- fixtures
 

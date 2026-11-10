@@ -170,6 +170,7 @@ strEncodeTxt = safeDecodeUtf8 . strEncode
 data GroupEvent
   = GEInGroup GroupId GroupAction
   | GETracker Int64 BadgeCode
+  | GENotice Text
   deriving (Eq, Show)
 
 data GroupAction
@@ -212,6 +213,7 @@ handleGroupEvent cc turns namesOn groupId ev = logUncaught (handle ev)
               ReplyText txt -> void $ sendGroupText cc groupId "command reply" txt
               IgnoreMsg -> pure ()
       GETracker badgeCodeId code -> updateTracker cc groupId badgeCodeId code
+      GENotice txt -> void $ sendGroupText cc groupId "names report" txt
 
 promoteFirstOwner :: ChatController -> GroupInfo -> GroupMember -> IO ()
 promoteFirstOwner cc g@GroupInfo {groupId} member =

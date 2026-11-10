@@ -1,8 +1,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module StoreService.Names.Env (NamesEnv (..), newNamesEnv) where
+module StoreService.Names.Env (NamesEnv (..), Pause (..), PauseReason (..), newNamesEnv) where
 
-import Data.Time.Clock (getCurrentTime)
+import Control.Concurrent.STM (TVar, newTVarIO)
+import Data.ByteString (ByteString)
+import Data.Time.Clock (UTCTime, getCurrentTime)
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
@@ -23,6 +25,7 @@ data NamesEnv = NamesEnv
     neConfig :: NamesConfig,
     neStore :: DBStore,
     nePhases :: Phases,
+    nePause :: TVar (Maybe Pause),
     neTurns :: Turns,
     neChain :: ChainClient,
     neContracts :: Contracts,
@@ -33,12 +36,19 @@ data NamesEnv = NamesEnv
     neProviders :: [Provider]
   }
 
+data Pause = Pause {paSince :: UTCTime, paReason :: PauseReason, paCommitment :: Maybe ByteString}
+  deriving (Eq, Show)
+
+data PauseReason = PRAllowance | PRFeeCap | PRUnfunded
+  deriving (Eq, Show)
+
 newNamesEnv :: ChatController -> UserId -> NamesConfig -> DBStore -> Turns -> Waiters -> [Provider] -> IO NamesEnv
 newNamesEnv neChat@ChatController {random} neUserId neConfig@NamesConfig {nTLD, nChain, nRecordEditsPerYear} neStore neTurns neWaiters neProviders = do
   nePhases <- newPhases
+  nePause <- newTVarIO Nothing
   neChain <- newChainClient random nChain
   neContracts <- newContracts nTLD neChain
   neProfiles <- newProfiles defaultProfileLimits monotonicSeconds (chatProfile neChat neUserId) systemResolver
   neSender <- newSender random neChain neStore getCurrentTime
   neRecords <- newRecords neStore neTurns neContracts neChain neSender nTLD nRecordEditsPerYear getCurrentTime
-  pure NamesEnv {neChat, neUserId, neConfig, neStore, nePhases, neTurns, neChain, neContracts, neProfiles, neSender, neRecords, neWaiters, neProviders}
+  pure NamesEnv {neChat, neUserId, neConfig, neStore, nePhases, nePause, neTurns, neChain, neContracts, neProfiles, neSender, neRecords, neWaiters, neProviders}
