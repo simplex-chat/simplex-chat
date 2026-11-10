@@ -154,7 +154,7 @@ struct ContactListNavLink: View {
                 Button {
                     deleteAndBanContactDialog(chat, contact, dismissToChatList: false, showAlert: { alert = $0 })
                 } label: {
-                    Label("Ban", systemImage: "hand.raised")
+                    Label("Block", systemImage: "hand.raised")
                 }
                 .tint(.orange)
             }

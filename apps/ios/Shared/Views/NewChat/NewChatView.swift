@@ -950,19 +950,19 @@ func showLinkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: 
 func linkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: (() -> Void)?) -> UIAlertController {
     let (banned, againAfter) = switch target {
     case .group: (
-        NSLocalizedString("Banned by the admins of this group.", comment: "alert message"),
+        NSLocalizedString("Blocked by the admins of this group.", comment: "alert message"),
         NSLocalizedString("You can join again after %@.", comment: "alert message")
     )
     case .channel: (
-        NSLocalizedString("Banned by the owners of this channel.", comment: "alert message"),
+        NSLocalizedString("Blocked by the owners of this channel.", comment: "alert message"),
         NSLocalizedString("You can join again after %@.", comment: "alert message")
     )
     case .contact: (
-        NSLocalizedString("Banned by this contact.", comment: "alert message"),
+        NSLocalizedString("Blocked by this contact.", comment: "alert message"),
         NSLocalizedString("You can connect again after %@.", comment: "alert message")
     )
     case .business: (
-        NSLocalizedString("Banned by this business.", comment: "alert message"),
+        NSLocalizedString("Blocked by this business.", comment: "alert message"),
         NSLocalizedString("You can connect again after %@.", comment: "alert message")
     )
     }

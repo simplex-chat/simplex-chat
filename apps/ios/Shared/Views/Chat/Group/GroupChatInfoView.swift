@@ -589,7 +589,7 @@ struct GroupChatInfoView: View {
 
         @ViewBuilder private func memberInfo(_ member: GroupMember) -> some View {
             if member.blockedByAdmin {
-                Text("banned")
+                Text("blocked")
                     .foregroundColor(theme.colors.secondary)
             } else if !member.memberSettings.showMessages {
                 Text("hidden")
@@ -627,13 +627,13 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .unblockForAllAlert(mem: member)
                     } label: {
-                        Label("Lift ban", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
+                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
                     }
                 } else {
                     Button {
                         showBanMemberSheet(groupInfo, member)
                     } label: {
-                        Label("Ban member", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
+                        Label("Block for all", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
                     }
                 }
             }
@@ -893,7 +893,7 @@ struct GroupChatInfoView: View {
                 chatModel.chatId = nil
             }
         } label: {
-            Label("Delete and ban", systemImage: "hand.raised")
+            Label("Delete and block", systemImage: "hand.raised")
                 .foregroundColor(Color.red)
         }
     }

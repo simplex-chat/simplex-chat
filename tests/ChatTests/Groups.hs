@@ -3313,7 +3313,7 @@ testPlanGroupLinkRemovedNoticeReplaced =
       bob <// 50000
       leaveDeleteTeam bob
       bob ##> ("/_connect plan 1 " <> gLink)
-      bob <## "group link: banned permanently"
+      bob <## "group link: blocked permanently"
       linkNoticesCount bob `shouldReturn` 1
 
 testPlanGroupLinkRemovedNoticeExpires :: HasCallStack => TestParams -> IO ()

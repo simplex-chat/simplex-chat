@@ -77,15 +77,15 @@ Open a group and tap on group's name to view members list, there you can tap on 
 Moderators, admins and owners can act only on members with the same or a lower
 role.
 
-## Bans
+## Blocking members
 
-Moderators, admins and owners can ban a member for a set time or forever. Other members do not see the messages of a banned member, and moderators, admins and owners see them hidden. The banned member is not told.
+Moderators, admins and owners can block a member for all, for a set time or forever. Other members do not see the messages of a blocked member, and moderators, admins and owners see them hidden. The blocked member is not told.
 
-Admins and owners can also ban and remove a member. The member's app does not show the removal, and it does not allow joining the group via the same link until the ban ends. Contacts and businesses can delete a contact or a chat with a ban, with the same effect for their address.
+Admins and owners can also block and remove a member. The member's app does not show the removal, and it does not allow joining the group via the same link until the block ends. Contacts and businesses can delete and block a contact or a customer, with the same effect for their address.
 
-When you try to join or connect via a link you are banned from, the app shows "Not allowed" with the time when the ban ends.
+When you try to join or connect via a link you are blocked from, the app shows "Not allowed" with the time when the block ends.
 
-No IDs are shared to apply a ban: it is sent only to the banned member's app, which stores it for the link this member used. You can still join the same group or connect to the same contact via another link or an invitation.
+No IDs are shared to apply a block: it is sent only to the blocked member's app, which stores it for the link this member used. You can still join the same group or connect to the same contact via another link or an invitation.
 
 ## Link to join group
 

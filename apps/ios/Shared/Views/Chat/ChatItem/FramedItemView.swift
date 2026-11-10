@@ -68,7 +68,7 @@ struct FramedItemView: View {
                         case .blocked:
                             framedItemHeader(icon: "hand.raised", caption: Text("hidden").italic())
                         case .blockedByAdmin:
-                            framedItemHeader(icon: "hand.raised", caption: Text("banned by admin").italic())
+                            framedItemHeader(icon: "hand.raised", caption: Text("blocked by admin").italic())
                         case .deleted:
                             framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
                         }

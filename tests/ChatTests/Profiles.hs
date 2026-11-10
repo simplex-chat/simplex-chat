@@ -2190,11 +2190,11 @@ testBusinessAddressNotice = testChat3 businessProfile bobProfile cathProfile $
     cath <## "use #biz <message> to send messages"
     leaveDeleteBiz cath
     cath ##> ("/_connect plan 1 " <> cLink)
-    cath <## "contact address: banned permanently"
+    cath <## "contact address: blocked permanently"
     cath ##> ("/c " <> cLink)
-    cath <## "contact address: banned permanently"
+    cath <## "contact address: blocked permanently"
     cath ##> ("/_connect 1 " <> cLink)
-    cath <## "connection link: banned permanently"
+    cath <## "connection link: blocked permanently"
   where
     leaveDeleteBiz cc = do
       cc ##> "/l #biz"

@@ -550,7 +550,7 @@ struct ChatInfoView: View {
         Button(role: .destructive) {
             deleteAndBanContactDialog(chat, contact, dismissToChatList: true, showAlert: { alert = .someAlert(alert: $0) })
         } label: {
-            Label("Delete and ban", systemImage: "hand.raised")
+            Label("Delete and block", systemImage: "hand.raised")
                 .foregroundColor(Color.red)
         }
     }
@@ -1327,10 +1327,10 @@ func showDeleteAndBanDialog(_ target: DeleteAndBanTarget, delete: @escaping (_ k
 }
 
 private func deleteAndBanDialog(_ target: DeleteAndBanTarget, close: @escaping CloseSheet, ban: @escaping (BanDuration) -> Void) -> BanDialog {
-    let notNotified = String.localizedStringWithFormat(NSLocalizedString("%@ won't be notified and won't be able to connect to you while banned.", comment: "delete and ban dialog"), target.name)
+    let notNotified = String.localizedStringWithFormat(NSLocalizedString("%@ won't be notified and won't be able to connect to you while blocked.", comment: "delete and ban dialog"), target.name)
     return BanDialog(
-        title: NSLocalizedString("Delete and ban?", comment: "delete and ban dialog title"),
-        actions: [BanDialogAction(title: NSLocalizedString("Delete and ban", comment: "delete and ban dialog action"), action: ban)],
+        title: NSLocalizedString("Delete and block?", comment: "delete and ban dialog title"),
+        actions: [BanDialogAction(title: NSLocalizedString("Delete and block", comment: "delete and ban dialog action"), action: ban)],
         footer: { _ in target.deletionText + "\n" + notNotified },
         close: close
     )
@@ -1338,12 +1338,12 @@ private func deleteAndBanDialog(_ target: DeleteAndBanTarget, close: @escaping C
 
 private func deleteAndBanKeepDialog(_ target: DeleteAndBanTarget, _ duration: BanDuration, close: @escaping CloseSheet, delete: @escaping (_ keepConversation: Bool) -> Void) -> KeepConversationDialog {
     let (title, footer, confirmWord): (String, String, String?) = switch duration {
-    case .day, .week: (NSLocalizedString("Delete and ban?", comment: "delete and ban dialog title"), target.timedBanText(duration), nil)
-    case .forever: (NSLocalizedString("Delete and ban forever?", comment: "delete and ban dialog title"), target.foreverText, foreverConfirmationWord)
+    case .day, .week: (NSLocalizedString("Delete and block?", comment: "delete and ban dialog title"), target.timedBanText(duration), nil)
+    case .forever: (NSLocalizedString("Delete and block forever?", comment: "delete and ban dialog title"), target.foreverText, foreverConfirmationWord)
     }
     return KeepConversationDialog(
         title: title,
-        actionTitle: NSLocalizedString("Delete and ban", comment: "delete and ban dialog action"),
+        actionTitle: NSLocalizedString("Delete and block", comment: "delete and ban dialog action"),
         footer: footer,
         confirmWord: confirmWord,
         close: close,

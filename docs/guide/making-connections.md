@@ -135,11 +135,11 @@ Swipe the contact left in the list of conversations (iOS), tap and hold it
 - "Delete" asks whether to keep the conversation. With [Contact
   deletion](./app-settings.md#contact-deletion) set to Ask, you also choose
   "Delete and notify" or "Delete silently".
-- "Delete and ban" ("Ban" in the iOS swipe) is shown for a contact who connected
-  via your SimpleX address, when the contact's app supports it. The contact is
-  not notified, and cannot connect to you via your address for the time you
-  choose in "Ban for": 1 day, 1 week or forever. See
-  [Bans](./secret-groups.md#bans).
+- "Delete and block" ("Block" in the iOS swipe) is shown for a contact who
+  connected via your SimpleX address, when the contact's app supports it. The
+  contact is not notified, and cannot connect to you via your address for the
+  time you choose in "Block for": 1 day, 1 week or forever. See
+  [Blocking members](./secret-groups.md#blocking-members).
 
-"Delete contact" and "Delete and ban" are also at the bottom of the contact
-page, and "Delete" and "Delete and ban" are offered in Archived contacts.
+"Delete contact" and "Delete and block" are also at the bottom of the contact
+page, and "Delete" and "Delete and block" are offered in Archived contacts.

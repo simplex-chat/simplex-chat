@@ -651,7 +651,7 @@ struct GroupMemberInfoView: View {
     private func nonAdminBlockSection(_ mem: GroupMember) -> some View {
         Section {
             if mem.blockedByAdmin {
-                Label("Banned", systemImage: "hand.raised")
+                Label("Blocked by admin", systemImage: "hand.raised")
                     .foregroundColor(theme.colors.secondary)
             } else if mem.memberSettings.showMessages {
                 blockMemberButton(mem)
@@ -663,9 +663,9 @@ struct GroupMemberInfoView: View {
 
     private func bannedText(_ mem: GroupMember) -> String {
         if let blockedUntil = mem.blockedUntil {
-            String.localizedStringWithFormat(NSLocalizedString("Banned until %@", comment: "member info"), blockedUntil.formatted(date: .abbreviated, time: .shortened))
+            String.localizedStringWithFormat(NSLocalizedString("Blocked until %@", comment: "member info"), blockedUntil.formatted(date: .abbreviated, time: .shortened))
         } else {
-            NSLocalizedString("Banned", comment: "member info")
+            NSLocalizedString("Blocked by admin", comment: "member info")
         }
     }
 
@@ -673,7 +673,7 @@ struct GroupMemberInfoView: View {
         Button(role: .destructive) {
             showBanMemberSheet(groupInfo, mem, dismiss: dismiss)
         } label: {
-            Label("Ban member", systemImage: "hand.raised")
+            Label("Block for all", systemImage: "hand.raised")
                 .foregroundColor(.red)
         }
     }
@@ -682,7 +682,7 @@ struct GroupMemberInfoView: View {
         Button {
             alert = .unblockForAllAlert(mem: mem)
         } label: {
-            Label("Lift ban", systemImage: "hand.raised.slash")
+            Label("Unblock for all", systemImage: "hand.raised.slash")
         }
     }
 
@@ -890,11 +890,11 @@ func updateMemberSettings(_ gInfo: GroupInfo, _ member: GroupMember, _ memberSet
 
 func unblockForAllAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
     Alert(
-        title: Text("Lift ban?"),
+        title: Text(gInfo.useRelays ? "Unblock subscriber for all?" : "Unblock member for all?"),
         message: gInfo.useRelays
             ? Text("Messages from \(mem.chatViewName) will be shown for all subscribers.")
             : Text("Messages from \(mem.chatViewName) will be shown for all members."),
-        primaryButton: .default(Text("Lift ban")) {
+        primaryButton: .default(Text("Unblock for all")) {
             blockMemberForAll(gInfo, mem, false)
         },
         secondaryButton: .cancel()
@@ -918,7 +918,7 @@ struct BanDialog: View {
         NavigationView {
             List {
                 Section {
-                    WrappedPicker("Ban for", selection: $duration) {
+                    WrappedPicker("Block for", selection: $duration) {
                         ForEach(BanDuration.allCases) { Text($0.text) }
                     }
                     ForEach(actions.indices, id: \.self) { i in
@@ -949,24 +949,24 @@ func showBanMemberSheet(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss: Dismiss
 private func banMemberDialog(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction?, duration: BanDuration = .day, close: @escaping CloseSheet) -> BanDialog {
     let canRemove = mem.canBanAndRemove(groupInfo: gInfo)
     var actions = [
-        BanDialogAction(title: NSLocalizedString("Ban", comment: "ban dialog action")) { duration in
+        BanDialogAction(title: NSLocalizedString("Block", comment: "ban dialog action")) { duration in
             blockMemberForAll(gInfo, mem, true, ttl: duration.ttl)
         }
     ]
     if canRemove {
         actions += [
-            BanDialogAction(title: NSLocalizedString("Ban and remove", comment: "ban dialog action")) { duration in
+            BanDialogAction(title: NSLocalizedString("Block and remove", comment: "ban dialog action")) { duration in
                 removeBannedMember(gInfo, mem, duration, withMessages: false, dismiss: dismiss)
             },
-            BanDialogAction(title: NSLocalizedString("Ban, remove and delete messages", comment: "ban dialog action")) { duration in
+            BanDialogAction(title: NSLocalizedString("Block, remove and delete messages", comment: "ban dialog action")) { duration in
                 removeBannedMember(gInfo, mem, duration, withMessages: true, dismiss: dismiss)
             }
         ]
     }
     return BanDialog(
         title: gInfo.useRelays
-            ? NSLocalizedString("Ban subscriber?", comment: "ban dialog title")
-            : NSLocalizedString("Ban member?", comment: "ban dialog title"),
+            ? NSLocalizedString("Block subscriber for all?", comment: "ban dialog title")
+            : NSLocalizedString("Block member for all?", comment: "ban dialog title"),
         actions: actions,
         footer: { duration in banMemberText(gInfo, mem, duration, canRemove: canRemove) },
         close: close,
@@ -984,28 +984,28 @@ private func banMemberText(_ gInfo: GroupInfo, _ mem: GroupMember, _ duration: B
             [
                 channel
                 ? (forever
-                   ? NSLocalizedString("Ban: messages from %@ will be hidden for all subscribers until the ban is lifted.", comment: "ban dialog")
-                   : NSLocalizedString("Ban: messages from %@ will be hidden for all subscribers until the ban ends.", comment: "ban dialog"))
+                   ? NSLocalizedString("Block: messages from %@ will be hidden for all subscribers until unblocked.", comment: "ban dialog")
+                   : NSLocalizedString("Block: messages from %@ will be hidden for all subscribers until the block ends.", comment: "ban dialog"))
                 : (forever
-                   ? NSLocalizedString("Ban: messages from %@ will be hidden for all members until the ban is lifted.", comment: "ban dialog")
-                   : NSLocalizedString("Ban: messages from %@ will be hidden for all members until the ban ends.", comment: "ban dialog")),
+                   ? NSLocalizedString("Block: messages from %@ will be hidden for all members until unblocked.", comment: "ban dialog")
+                   : NSLocalizedString("Block: messages from %@ will be hidden for all members until the block ends.", comment: "ban dialog")),
                 channel
                 ? (forever
-                   ? NSLocalizedString("Ban and remove: %@ is also removed and can't rejoin via the channel link.", comment: "ban dialog")
-                   : NSLocalizedString("Ban and remove: %@ is also removed and can't rejoin via the channel link until the ban ends.", comment: "ban dialog"))
+                   ? NSLocalizedString("Block and remove: %@ is also removed and can't rejoin via the channel link.", comment: "ban dialog")
+                   : NSLocalizedString("Block and remove: %@ is also removed and can't rejoin via the channel link until the block ends.", comment: "ban dialog"))
                 : (forever
-                   ? NSLocalizedString("Ban and remove: %@ is also removed and can't rejoin via the group link.", comment: "ban dialog")
-                   : NSLocalizedString("Ban and remove: %@ is also removed and can't rejoin via the group link until the ban ends.", comment: "ban dialog"))
+                   ? NSLocalizedString("Block and remove: %@ is also removed and can't rejoin via the group link.", comment: "ban dialog")
+                   : NSLocalizedString("Block and remove: %@ is also removed and can't rejoin via the group link until the block ends.", comment: "ban dialog"))
             ]
         } else {
             [
                 channel
                 ? (forever
-                   ? NSLocalizedString("Messages from %@ will be hidden for all subscribers until the ban is lifted.", comment: "ban dialog")
-                   : NSLocalizedString("Messages from %@ will be hidden for all subscribers until the ban ends.", comment: "ban dialog"))
+                   ? NSLocalizedString("Messages from %@ will be hidden for all subscribers until unblocked.", comment: "ban dialog")
+                   : NSLocalizedString("Messages from %@ will be hidden for all subscribers until the block ends.", comment: "ban dialog"))
                 : (forever
-                   ? NSLocalizedString("Messages from %@ will be hidden for all members until the ban is lifted.", comment: "ban dialog")
-                   : NSLocalizedString("Messages from %@ will be hidden for all members until the ban ends.", comment: "ban dialog"))
+                   ? NSLocalizedString("Messages from %@ will be hidden for all members until unblocked.", comment: "ban dialog")
+                   : NSLocalizedString("Messages from %@ will be hidden for all members until the block ends.", comment: "ban dialog"))
             ]
         }
     return ([notNotified] + lines.map { String.localizedStringWithFormat($0, name) }).joined(separator: "\n")
@@ -1035,10 +1035,10 @@ private func removeBannedMemberDialog(_ gInfo: GroupInfo, _ mem: GroupMember, di
                 gInfo.useRelays
                 ? (duration == .forever
                    ? NSLocalizedString("%@ will be removed without notification and won't be able to rejoin via the channel link.", comment: "remove dialog")
-                   : NSLocalizedString("%@ will be removed without notification and won't be able to rejoin via the channel link until the ban ends.", comment: "remove dialog"))
+                   : NSLocalizedString("%@ will be removed without notification and won't be able to rejoin via the channel link until the block ends.", comment: "remove dialog"))
                 : (duration == .forever
                    ? NSLocalizedString("%@ will be removed without notification and won't be able to rejoin via the group link.", comment: "remove dialog")
-                   : NSLocalizedString("%@ will be removed without notification and won't be able to rejoin via the group link until the ban ends.", comment: "remove dialog"))
+                   : NSLocalizedString("%@ will be removed without notification and won't be able to rejoin via the group link until the block ends.", comment: "remove dialog"))
             return String.localizedStringWithFormat(format, mem.chatViewName)
         },
         close: close,

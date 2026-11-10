@@ -596,7 +596,7 @@ enum ChatListAction: Hashable {
     var label: (title: String, systemImage: String, tint: Color?, destructive: Bool) {
         switch self {
         case .deleteContact, .deleteGroup: (NSLocalizedString("Delete", comment: "swipe action"), "trash.fill", .red, true)
-        case .banContact, .banCustomer: (NSLocalizedString("Ban", comment: "swipe action"), "hand.raised.fill", .orange, true)
+        case .banContact, .banCustomer: (NSLocalizedString("Block", comment: "swipe action"), "hand.raised.fill", .orange, true)
         case .leave: (NSLocalizedString("Leave", comment: "swipe action"), "rectangle.portrait.and.arrow.right.fill", .yellow, true)
         case .clear: (NSLocalizedString("Clear", comment: "swipe action"), "gobackward", .orange, false)
         case .archive: (NSLocalizedString("Archive", comment: "swipe action"), "archivebox", nil, false)
@@ -659,7 +659,7 @@ struct ChatListMoreDialog: ViewModifier {
 
 private func deleteAndBanUnavailableAlert(_ groupInfo: GroupInfo) -> Alert {
     Alert(
-        title: Text("Can't ban"),
+        title: Text("Can't block"),
         message: Text("\(groupInfo.displayName) left this chat or uses an older app version.")
     )
 }

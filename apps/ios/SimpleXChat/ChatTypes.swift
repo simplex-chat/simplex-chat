@@ -23,7 +23,7 @@ public let CALL_RECONNECT_VERSION = 22
 
 public let LINK_NOTICE_VERSION = 23
 
-public let bansGuideLink = URL(string: "https://simplex.chat/docs/guide/secret-groups.html#bans")!
+public let bansGuideLink = URL(string: "https://simplex.chat/docs/guide/secret-groups.html#blocking-members")!
 
 public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html#preventing-server-abuse-without-compromising-e2e-encryption")!
 
@@ -4973,7 +4973,7 @@ public enum CIContent: Decodable, ItemContent, Hashable {
         case let .rcvGroupFeatureRejected(groupFeature): return String.localizedStringWithFormat("%@: received, prohibited", groupFeature.text)
         case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
         case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
-        case .rcvBlocked: return NSLocalizedString("banned by admin", comment: "blocked chat item")
+        case .rcvBlocked: return NSLocalizedString("blocked by admin", comment: "blocked chat item")
         case let .sndDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
         case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
         case let .sndGroupE2EEInfo(e2eeInfo): return groupE2EEInfoStr(e2eeInfo)
@@ -6489,9 +6489,9 @@ public enum RcvGroupEvent: Decodable, Hashable {
             return  String.localizedStringWithFormat(NSLocalizedString("changed role of %@ to %@", comment: "rcv group event chat item"), profile.profileViewName, role.text(isChannel: isChannel))
         case let .memberBlocked(_, profile, blocked):
             if blocked {
-                return String.localizedStringWithFormat(NSLocalizedString("banned %@", comment: "rcv group event chat item"), profile.profileViewName)
+                return String.localizedStringWithFormat(NSLocalizedString("blocked %@", comment: "rcv group event chat item"), profile.profileViewName)
             } else {
-                return String.localizedStringWithFormat(NSLocalizedString("lifted ban for %@", comment: "rcv group event chat item"), profile.profileViewName)
+                return String.localizedStringWithFormat(NSLocalizedString("unblocked %@", comment: "rcv group event chat item"), profile.profileViewName)
             }
         case let .userRole(role):
             return String.localizedStringWithFormat(NSLocalizedString("changed your role to %@", comment: "rcv group event chat item"), role.text(isChannel: isChannel))
@@ -6546,9 +6546,9 @@ public enum SndGroupEvent: Decodable, Hashable {
             return String.localizedStringWithFormat(NSLocalizedString("you changed role for yourself to %@", comment: "snd group event chat item"), role.text(isChannel: isChannel))
         case let .memberBlocked(_, profile, blocked):
             if blocked {
-                return String.localizedStringWithFormat(NSLocalizedString("you banned %@", comment: "snd group event chat item"), profile.profileViewName)
+                return String.localizedStringWithFormat(NSLocalizedString("you blocked %@", comment: "snd group event chat item"), profile.profileViewName)
             } else {
-                return String.localizedStringWithFormat(NSLocalizedString("you lifted ban for %@", comment: "snd group event chat item"), profile.profileViewName)
+                return String.localizedStringWithFormat(NSLocalizedString("you unblocked %@", comment: "snd group event chat item"), profile.profileViewName)
             }
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.profileViewName)

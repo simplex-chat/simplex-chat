@@ -954,7 +954,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         GLPNoRelays _ -> sendMessage cc ct $ T.toTitle gt <> " has no active relays. Please try again later."
         GLPUpdateRequired _ -> sendMessage cc ct $ T.toTitle gt <> " requires a newer version."
         GLPOwnLink _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
-        GLPLinkNotice {} -> sendMessage cc ct $ "Directory is banned from joining this " <> gt <> "."
+        GLPLinkNotice {} -> sendMessage cc ct $ "Directory is blocked from joining this " <> gt <> "."
       _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
 
     joinAndRegisterPublicGroup :: Contact -> CreatedLinkContact -> MemberId -> Text -> GroupShortLinkData -> IO ()

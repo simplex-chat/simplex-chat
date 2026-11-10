@@ -705,9 +705,9 @@ permanentLinkNoticesCount cc =
 
 bannedLine :: HasCallStack => TestCC -> String -> Expectation
 bannedLine cc prefix = do
-  l <- getTermLine' (Just $ "banned: " <> prefix) cc
-  let banned = (prefix <> "banned until ") `isPrefixOf` l
-  unless banned $ print ("expected banned line: " <> prefix <> "..., got: " <> l)
+  l <- getTermLine' (Just $ "blocked: " <> prefix) cc
+  let banned = (prefix <> "blocked until ") `isPrefixOf` l
+  unless banned $ print ("expected blocked line: " <> prefix <> "..., got: " <> l)
   banned `shouldBe` True
 
 shouldEventuallyReturn :: (HasCallStack, Eq a, Show a) => IO a -> a -> Expectation

@@ -1897,7 +1897,7 @@ dayTime :: UTCTime -> Text
 dayTime = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
 
 viewLinkNotice :: Maybe UTCTime -> Text
-viewLinkNotice = maybe "banned permanently" (("banned until " <>) . dayTime)
+viewLinkNotice = maybe "blocked permanently" (("blocked until " <>) . dayTime)
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, chatLayout, customData} stats incognitoProfile =
