@@ -57,7 +57,7 @@ Decided on 2026-11-07:
 10. D5 (a): the user asks Anthropic to list the channel after 0.3.0 is published.
 11. D6 (a): the hub, the plugin's main profile, speaks for Claude: it posts the session's answers and cards in the session's group. Its profile name is `Claude`.
 12. D7 (a): prompts typed in the terminal are posted in the session's group by a local profile named `User`, one per data root, a member of every session group.
-13. D8 (a): one `Claude` profile, in the daemon's one process, serves all sessions of a data root: it hosts the Main group and the session groups and holds the chats with peers. A chat belongs to the session that connected it; tools of other sessions do not show it; owners hand it to another session with `/give CHAT N` in the session's group.
+13. D8 (a): one `Claude` profile, in the service's one process, serves all sessions of a data root: it hosts the Main group and the session groups and holds the chats with peers. A chat belongs to the session that connected it; tools of other sessions do not show it; owners hand it to another session with `/give CHAT N` in the session's group.
 14. D9 (a): the session group's description shows the model and the effort level and is updated when they change; they are changed in the terminal or from the Claude app by Remote Control.
 15. D10 (b): 0.3.0 ships with a group per session; the plugin moves each session group into a session of the Main group when the apps support group sessions. A UX proposal for group sessions is prepared separately, now.
 
@@ -70,12 +70,12 @@ Design:
 21. The package ships `npm-shrinkwrap.json`; the plugin's server, hooks and skills run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, and Node resolves its modules from the plugin's folder (replaces npx in the plugin folder, 2026-11-08).
 22. Refused paths cover the whole data root.
 23. Standing approvals of closed sessions are listed by `/list` and removed by `/revoke` in the session's group.
-24. The channel is part of the plugin's session server; the daemon pushes events on the session's `/attach` stream.
+24. The channel is part of the plugin's session server; the service pushes events on the session's `/attach` stream.
 25. The session and its group exist from the session's start.
 26. Claude's final answer of every turn is posted by `Claude` from the Stop hook's `last_assistant_message`; the `reply` tool sends files only.
 
 Decided on 2026-11-08:
-27. UserPromptSubmit, Stop and PostModelSwitch post to one daemon route, `POST /turn`.
+27. UserPromptSubmit, Stop and PostModelSwitch post to one service route, `POST /turn`.
 28. A tool-use card is an action of tool `permission`; allowed is `performing` then `done`, denied is `rejected`, ended is `expired` with the last line `Ended.`.
 29. Open tool-use cards of a session end at each prompt and each answer whose hook started after their creation, and when the session detaches.
 30. A decided tool-use action leaves the session's actions at once.
@@ -86,20 +86,20 @@ Decided on 2026-11-08:
 35. A UserPromptSubmit prompt is not posted by `User` when a channel tag of this server in it holds a pushed prompt with its item ID, when it equals a prompt pushed in the last 60 s, when it is made only of this server's channel tags, or when it is a one-line `/` command.
 
 Decided on 2026-11-08, review round 1:
-36. The hooks and the session server of one Claude Code process share one session: the hooks send `CLAUDE_PID`, the session server its parent PID. The daemon maps a session ID without `session.json` to the session of that process and records the alias in `session.json`. A hook of an ID with `session.json` goes to the session attached from its process, without an alias. A title of a new ID from a process without a known session, or with a held title, waits for the session server of that process to register, up to 10 s; the turn hooks repeat a refused turn up to 15 times, 1 s apart. A daemon stop keeps the held titles for the next start.
-37. When `/attach` ends or a start fails, the session server starts the daemon if needed and attaches again: after 1 s, twice as late after each failure, at most 30 s apart, until its stdin closes or the daemon speaks another protocol.
+36. The hooks and the session server of one Claude Code process share one session: the hooks send `CLAUDE_PID`, the session server its parent PID. The service maps a session ID without `session.json` to the session of that process and records the alias in `session.json`. A hook of an ID with `session.json` goes to the session attached from its process, without an alias. A title of a new ID from a process without a known session, or with a held title, waits for the session server of that process to register, up to 10 s; the turn hooks repeat a refused turn up to 15 times, 1 s apart. A service stop keeps the held titles for the next start.
+37. When `/attach` ends or a start fails, the session server starts the service if needed and attaches again: after 1 s, twice as late after each failure, at most 30 s apart, until its stdin closes or the service speaks another protocol.
 38. A pending connection of `connect` is recorded in the session group's data for one day; its chat becomes the session's when it connects within that day. A `connect` to a known chat without an owner gives it to the session.
 39. Owners' prompts are kept until a turn's prompt matches them, at most 20. Each prompt hook records its start time with the oldest prompt it matched, or none, unless it started before an answer already handled. An answer, also an empty one, quotes the newest record whose hook started before its own; without one, it quotes the oldest kept prompt not quoted yet, and that prompt stays kept for its prompt hook.
 40. A session in mode `host` posts its mode card when its group has an approver: at the session start or after a membership event. A rejected card is recorded in `session.json`; the card is posted again only after a session start with `requests`. A change to `requests` ends a pending mode card.
 41. Replaced on 2026-11-08 by decision 70. It was: an owner's one-line `/` message is a prompt when its keyword is not a command of the session group.
-42. The daemon is spawned with an allowlist of environment variables, `NODE_OPTIONS` among them.
-43. For 30 s after a daemon start, an owner's prompt to a session without an attachment waits for the session to attach; the reply `Session N is not running.` follows only when it does not.
+42. The service is spawned with an allowlist of environment variables, `NODE_OPTIONS` among them.
+43. For 30 s after a service start, an owner's prompt to a session without an attachment waits for the session to attach; the reply `Session N is not running.` follows only when it does not.
 44. The published `package.json` and `npm-shrinkwrap.json` hold the production dependencies only: 41 packages and 9 MB to download in place of 317 and 25 MB. The repository keeps the development dependencies; the pack strips them, restores the files after it, and heals a failed pack first; the launch test checks the packed files.
 
 Decided on 2026-11-08, review round 2:
 45. An owner's prompts reach the session in arrival order. A prompt waits for the file of an earlier one, and gets `Session N is not running.` when the session detached meanwhile.
 46. Texts that name an npx command name the plugin's version: `npx -y @simplex-chat/mcp@VERSION link`.
-47. A spawned daemon with a held lock checks it for up to 15 s: a released lock starts it; an answering socket reports `running`; otherwise it reports the lock's error and exits with 1.
+47. A spawned service with a held lock checks it for up to 15 s: a released lock starts it; an answering socket reports `running`; otherwise it reports the lock's error and exits with 1.
 48. A group profile update keeps the custom data of the group in memory.
 49. The launch test installs the packed plugin with the command of Claude Code 2.1.319, `npm ci --ignore-scripts --workspaces=false --no-audit --no-fund`, within 60 s.
 
@@ -118,7 +118,7 @@ Decided on 2026-11-08, review round 4:
 59. A title's rename writes `session.json` as read after the group's rename.
 
 Proposed on 2026-11-08, each in its own commit; decided by judgement on 2026-11-09:
-60. A run whose `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli` (`claude -p`), `sdk-ts` or `sdk-py` (the Agent SDK), or whose `CLAUDE_CODE_SESSION_ATTENDED` is `0`, gets no session and no group; kept by the user's answer R1 B. Amended on 2026-11-08: the SessionStart hook of a run with `CLAUDE_CODE_SESSION_ATTENDED` `0` and another entrypoint marks its Claude Code process with `/title` `unattended`; the daemon refuses `/session` from that process with 403 within 10 s of the mark; the refused session server answers every call with the text of a run that is not interactive. Removed by the user's rule on reviews: the deletion of the group of a session closed for 7 days.
+60. A run whose `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli` (`claude -p`), `sdk-ts` or `sdk-py` (the Agent SDK), or whose `CLAUDE_CODE_SESSION_ATTENDED` is `0`, gets no session and no group; kept by the user's answer R1 B. Amended on 2026-11-08: the SessionStart hook of a run with `CLAUDE_CODE_SESSION_ATTENDED` `0` and another entrypoint marks its Claude Code process with `/title` `unattended`; the service refuses `/session` from that process with 403 within 10 s of the mark; the refused session server answers every call with the text of a run that is not interactive. Removed by the user's rule on reviews: the deletion of the group of a session closed for 7 days.
 61. The approved mode is kept in the session group's custom data, not in `session.json`. `GET /status` returns the owners without the Main group link; `GET /link` returns the link. These protections hold against Claude's tools, not against a shell running as the same user.
 62. Removed by the user's rule on reviews; rule 4 of the [trust model](#trust-model) holds. It was: leaving, removal or demotion in the Main group is applied to every session group.
 63. Removed by the user's rule on reviews; rule 5 of the [trust model](#trust-model) holds. It was: `reply` posts a file without a card only while every member is Claude, `User`, gone or an owner; the card shows the file's name and size only.
@@ -195,7 +195,7 @@ Decided on 2026-11-09, review round 8:
 Decided by judgement on 2026-11-09, as implemented:
 110. U1 a: owners of the Main group are owners in the session groups (decision 85).
 111. K1 a: a message starting with `!` from any role is refused with `Messages starting with ! reach Claude only from admins and owners, as /!command.` and does not reach Claude; admins and owners send it as `/!` (decisions 84, 92).
-112. The notes of the UX page stay as they are: UX-I2, the command `link` and the skill `/simplex:link`; UX-I3, the plugin's tools without Claude Code's permission prompt; UX-I4, the options Approval and Expiry in hours; UX-I5, the idle close of a session and the idle stop of the daemon; UX-I6, a newer plugin stops an older daemon; UX-I8, session numbers.
+112. The notes of the UX page stay as they are: UX-I2, the command `link` and the skill `/simplex:link`; UX-I3, the plugin's tools without Claude Code's permission prompt; UX-I4, the options Approval and Expiry in hours; UX-I5, the idle close of a session and the idle stop of the service; UX-I6, a newer plugin stops an older service; UX-I8, session numbers.
 
 Decided by judgement on 2026-11-09, review round 9:
 114. Under premise 3, a post of Claude or `User` in a session group that the core refuses with `feature not allowed NAME` is never dropped without a word: Claude posts in its place PREF OFF, `NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, with a subject: `Claude's answer was not posted: `, quoting the turn's prompt; `Action N: ` for a card before the decision, whose action then fails with PREF OFF, for a card posted or edited at a stop, and for `/forward`. After the decision the subject names the outcome and the card, and the action stays as it was: `Action N OUTCOME; its card was not posted: ` for the outcome card of an action performed in mode `host` or under a standing approval, and `Action N OUTCOME; its card was not updated: ` for the edit of a card, OUTCOME being `was performed`, `failed`, `was rejected`, `expired` or `ended`. Claude is an owner of the group, so the core refuses its posts only while a preference is off. `User` joins as a member, and its posts are refused also while NAME is on only for roles above its own: its prompt gets `User's prompt was not posted: ` with USER NOT ALLOWED, `NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` `reply` returns PREF OFF. A media card refused by `Files and media` is first posted again as text (decision 107). One path replaces the code of decisions 102 and 108; their texts are PREF OFF for `Files and media`. The plugin's log line of a failed action ends with one period, also after an error that ends with one. `serve` keeps 0.2's errors and log lines, a period after every error included (premise 4).
@@ -203,6 +203,7 @@ Decided by judgement on 2026-11-09, review round 9:
 
 Decided by the user on 2026-11-10:
 113. UX-I1 b, the replacement of the Main group and its owners. Asked whether anything on the computer that runs Claude Code can replace the Main group without an owner's approval, the user answered: "then obviously this should be possible to reset main group". The person at that computer is trusted with the trust root. `reset-owners`, `/simplex:reset-owners` and `POST /reset-owners` replace the Main group at once, also while owners exist; the reset card, `/approve reset` and `/reject reset` are removed. The new link is shown only on a terminal; elsewhere the command names `link`, which shows it on a terminal. The session groups stay as they are (decision 78). `serve` keeps its `--reset-owners` of 0.2.
+116. The plugin's process that runs all sessions of a data root is the service; the user: "we should rename them to service. I don't like the word at all and never use it." The command is `simplex-mcp service`, and its files in ROOT are `service.sock`, `service.log`, `service.lock` and `service.token`. Every file of ROOT has a dot in its name, and every folder starts with `_`, which agent names of `serve` can't: `serve NAME` keeps its agent in `~/.simplex-mcp/NAME`, where `token` and `lock` are valid agent names. `serve` keeps its own `lock` and `token` in the agent's folder, as 0.2.
 
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
@@ -232,12 +233,12 @@ flowchart LR
   Q --> R
 ```
 
-Daemon start with a held lock (decision 47):
+Service start with a held lock (decision 47):
 ```
 lock of ROOT held by another live process: up to 150 checks, 100 ms apart
-  ROOT/lock gone:                                              start again
+  ROOT/service.lock gone:                                      start again
   GET / on the socket, any reply but ENOENT or ECONNREFUSED:   ready line "running"
-after the checks:   ready line "error: Another daemon uses ROOT (PID N). If no daemon runs, remove ROOT/lock."; exit 1
+after the checks:   ready line "error: Another service uses ROOT (PID N). If no service runs, remove ROOT/service.lock."; exit 1
 ```
 
 ```mermaid
@@ -335,7 +336,7 @@ flowchart LR
   end
   subgraph Host[computer]
     CC[Claude Code session N] -- stdio MCP --> S[simplex-mcp session]
-    S -- Unix socket --> D[daemon]
+    S -- Unix socket --> D[service]
     D --> H[Claude profile]
     D --> U[User profile]
     SV[simplex-mcp serve, HTTP] --> A0[agent profile]
@@ -350,9 +351,9 @@ flowchart LR
 ```
 process               runs                                   holds
 simplex-mcp session   one per Claude Code session, stdio     tools, channel capability
-daemon                one per data root, Unix socket          Claude and User profiles, actions
-Claude                inside the daemon                       Main group, session groups, owners, cards, chats with peers
-User                  inside the daemon                       membership in every session group
+service               one per data root, Unix socket          Claude and User profiles, actions
+Claude                inside the service                      Main group, session groups, owners, cards, chats with peers
+User                  inside the service                      membership in every session group
 simplex-mcp serve     one per agent, HTTP 127.0.0.1           agent profile, control chat
 ```
 
@@ -609,13 +610,13 @@ on /title or /turn (id, pid), /session (id, pid):
   target ?? id; target ≠ id: alias id → target, in aliases of the target's session.json
 on /title (id, pid), no alias, no session.json for id, no entry or title for pid, or a held title of pid:
                                              held; title of pid = id, now, its name; the waits of pid end; the reply at once;
-                                             the title resolves as above after a /session of pid, or after 10 s, while the daemon runs
-on a daemon stop:                            the held titles into ROOT/titles.json; the next start takes each as a new /title
+                                             the title resolves as above after a /session of pid, or after 10 s, while the service runs
+on a service stop:                           the held titles into ROOT/titles.json; the next start takes each as a new /title
 on /title (id, pid):                         after the entry exists: title of pid = id, now; the waits of pid end
 on /session (id, pid) that creates a session: the name of the held title of id
 on a new session.json:                       the aliases that already point to its ID
 on /attach, /call, /permission (id):        alias of id ?? id
-on the daemon's start:                       aliases read from every session.json
+on the service's start:                      aliases read from every session.json
 on POST /turn refused with 409:              the hook repeats it up to 15 times, 1 s apart, past the 10 s wait
 ```
 
@@ -623,7 +624,7 @@ on POST /turn refused with 409:              the hook repeats it up to 15 times,
 sequenceDiagram
   participant HK as hooks, CLAUDE_PID P
   participant S as session server, parent P
-  participant D as daemon
+  participant D as service
   Note over HK,D: /clear in session A
   HK->>D: POST /title {id: B, pid: P}
   D->>D: entry A has pid P and is attached: alias B → A
@@ -651,11 +652,11 @@ Decisions 60 and 66:
 ```
 on CLAUDE_CODE_ENTRYPOINT sdk-cli, sdk-ts or sdk-py, or CLAUDE_CODE_SESSION_ATTENDED 0:
   hooks:                          {}
-  session server:                 no daemon connection; every call: "This Claude Code run is not interactive,
+  session server:                 no service connection; every call: "This Claude Code run is not interactive,
                                   so it has no SimpleX group; the SimpleX tools work in interactive sessions."
 on SessionStart with CLAUDE_CODE_SESSION_ATTENDED 0, another entrypoint and CLAUDE_PID P:
-  hook:                           ensureDaemon; POST /title {id, pid: P, project, config, unattended: true}; {}
-  daemon:                         unattended -= marks of 10 s ago and older (decision 77); unattended[P] = now;
+  hook:                           ensureService; POST /title {id, pid: P, project, config, unattended: true}; {}
+  service:                        unattended -= marks of 10 s ago and older (decision 77); unattended[P] = now;
                                   a /session of P waiting for its title ends its wait
 on /session of P, before and after the wait for its title:
   unattended[P] in the last 10 s: 403
@@ -684,7 +685,7 @@ flowchart LR
 sequenceDiagram
   participant HK as SessionStart hook, ATTENDED 0
   participant S as session server, ATTENDED 1 of the parent session
-  participant D as daemon
+  participant D as service
   HK->>D: POST /title {pid: P, unattended: true}
   D->>D: the marks of 10 s ago and older removed#59; P marked
   S->>D: POST /session {pid: P}, before or after the mark
@@ -702,7 +703,7 @@ experimental.claude/channel/permission       {}
 tools                                       {}
 ```
 
-Daemon to session, lines on `/attach`:
+Service to session, lines on `/attach`:
 ```
 line                                         sent when
 {prompt: {text, from, item, file?}}          a member's prompt arrives in the session group
@@ -720,7 +721,7 @@ notifications/claude/channel/permission      request_id
                                              behavior: allow | deny
 ```
 
-Claude Code to session, then session to daemon:
+Claude Code to session, then session to service:
 ```
 notification                                       route
 notifications/claude/channel/permission_request    POST /permission {id, requestId, toolName, description, inputPreview}
@@ -797,7 +798,7 @@ Stop               last_assistant_message,           POST /turn {id, pid, at, an
 PostModelSwitch    to_model, effort.level            POST /turn {id, pid, at, model, effort}
 ```
 
-`pid` is `CLAUDE_PID`; `at` is `performance.timeOrigin`, the start time of the hook process. The hook cuts a prompt or an answer over 250,000 characters there, ending with `…` (decision 51), starts the daemon when none runs, and repeats a turn refused with 409 up to 15 times, 1 s apart (decision 36).
+`pid` is `CLAUDE_PID`; `at` is `performance.timeOrigin`, the start time of the hook process. The hook cuts a prompt or an answer over 250,000 characters there, ending with `…` (decision 51), starts the service when none runs, and repeats a turn refused with 409 up to 15 times, 1 s apart (decision 36).
 
 ```
 Turn record
@@ -819,7 +820,7 @@ prompt(m):                         from User: nothing (decision 79)
                                    "!": reply (decision 84)
                                    else: deliver(m), "//" and "/!" without their first "/" (decision 84)
 the role of m's member:            its role in group N, from the message's member
-deliver(m):                        N has no attachment: wait for one until 30 s after the daemon start (decision 43)
+deliver(m):                        N has no attachment: wait for one until 30 s after the service start (decision 43)
                                    attached: receive its file in 10 min, or reply that it was not received
                                    N has no attachment now: reply to m "Session N is not running."
                                    else: pushed += (m.text, m.item, now), at most 20; push {prompt}
@@ -861,7 +862,7 @@ Quotes by hook start time (decision 39):
 sequenceDiagram
   participant S as Stop hook of turn 1, at 2
   participant U as UserPromptSubmit hook of turn 2, at 3
-  participant D as daemon
+  participant D as service
   Note over D: turns: (1, prompt 1)
   U->>D: POST /turn {at: 3, prompt 2}: turns += (3, prompt 2)
   S->>D: POST /turn {at: 2, answer 1}: quotes prompt 1#59; turns: (3, prompt 2)
@@ -873,7 +874,7 @@ Stop request before the prompt request of its turn (decision 39):
 sequenceDiagram
   participant S as Stop hook, at 2
   participant U as UserPromptSubmit hook, at 1
-  participant D as daemon
+  participant D as service
   Note over D: pushed: prompt 42#59; turns: none
   S->>D: POST /turn {at: 2, answer}: quotes 42, marked quoted, kept in pushed
   U->>D: POST /turn {at: 1, prompt with the tag of 42}: matches 42#59; User posts nothing
@@ -900,7 +901,7 @@ Files: a member's file in a prompt is received by the hub without a card into `R
 sequenceDiagram
   participant O as member
   participant H as hub
-  participant D as daemon
+  participant D as service
   participant S as session N
   participant C as Claude Code
   O->>H: message in session N's group
@@ -915,7 +916,7 @@ sequenceDiagram
     else "!"
       H->>O: the reply of decision 84
     else a prompt, "//" and "/!" without their first "/"
-      opt no attachment, within 30 s of the daemon start
+      opt no attachment, within 30 s of the service start
         H->>H: wait for session N to attach
       end
       opt attached, a file in the message
@@ -945,7 +946,7 @@ sequenceDiagram
 sequenceDiagram
   participant C as Claude Code
   participant S as session N
-  participant D as daemon
+  participant D as service
   participant H as hub
   participant O as owner
   C->>S: permission_request (abcde, Bash, preview)
