@@ -352,7 +352,7 @@ sequenceDiagram
     K->>D: phase taken, a paid order's price kept as its balance
   else mined with status 0, name available
     K->>D: phase committed, register cleared, the next dry run finds the cause
-  else dry run reverted or intent refused past the lapse, name available
+  else dry run reverted, intent refused, or the commitment lapsed with nothing sent, name available
     K->>D: phase failed, error "The name could not be registered", error logged
   end
 ```
