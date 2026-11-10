@@ -52,6 +52,7 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "logs a send the node keeps refusing once per error, an underfunded key as an error, in anvil's capitalized form too" $ testRefusedSendLogged g
   it "refuses a transaction whose block needs more than the fee cap, saving nothing, and signs at most the cap" $ testFeeCapSubmit g
   it "clamps a replacement at the fee cap, and keeps rebroadcasting once a replacement would pass it" $ testFeeCapReplace g
+  it "caps the max fee of a transaction and of its replacement so that its gas limit costs at most 1 ETH" $ testTxFeeBound g
 
 data Setup = Setup
   { node :: FakeEthNode,
@@ -346,6 +347,31 @@ testFeeCapReplace g = withCapSetup cap g $ \s@Setup {node} -> do
   where
     -- above the first max fee and its bump, below the market's headroom fee and a second bump
     cap = 2 * fakeBaseFee + fakeTip + 1000000000
+
+testTxFeeBound :: TVar ChaChaDRG -> IO ()
+testTxFeeBound g = withCapSetup 10000000000000 g $ \s@Setup {node} -> do
+  let gasLimit = fakeGas + fakeGas `div` 5 :: Word64
+      bound = fromInteger $ 1000000000000000000 `div` toInteger gasLimit :: Word64
+  sender <- start s
+  setFees node fakeTip 5000000000000
+  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (5000000000000 + fakeTip)
+  setFees node fakeTip 1000000000000
+  Right _ <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  [firstRaw] <- sentTransactions node
+  Right first <- pure $ decodeSignedTx firstRaw
+  (trGasLimit first, trMaxFeePerGas first) `shouldBe` (gasLimit, 2 * 1000000000000 + fakeTip)
+  setFees node fakeTip 3000000000000
+  passTime s replaceAfter
+  followTransactions sender
+  [_, bumpedRaw] <- sentTransactions node
+  decodeSignedTx bumpedRaw `shouldBe` Right first {trMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, trMaxFeePerGas = bound}
+  passTime s replaceAfter
+  followTransactions sender
+  length <$> sentTransactions node `shouldReturn` 2
+  Right _ <- submitTransaction sender (TxCommit r2) fakeController (commit 2)
+  [_, _, cappedRaw] <- sentTransactions node
+  (\TxRequest {trGasLimit, trMaxFeePerGas} -> (trGasLimit, trMaxFeePerGas)) <$> decodeSignedTx cappedRaw `shouldBe` Right (gasLimit, bound)
+  toInteger gasLimit * toInteger bound `shouldSatisfy` (<= 1000000000000000000)
 
 -- fixtures
 

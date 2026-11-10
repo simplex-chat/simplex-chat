@@ -699,7 +699,6 @@ namesConfigTests :: Spec
 namesConfigTests = describe "StoreService names: config" $ do
   it "reads [names] and [chain], applying every documented default" testNamesDefaults
   it "reads every [names] and [chain] setting written out" testNamesWrittenOut
-  it "accepts gas_limit_cap times max_fee_per_gas up to 1 ETH and refuses it above" testNamesFeeCap
   it "reads the names keys of [listener], defaulting to the image's build and port 8081" testNamesListenerKeys
   it "refuses the names keys of [listener] without [names]" testNamesSiteOnlyWithNames
   it "refuses a names_port outside 1-65535, on the badges_port, or with serve_webapp off" testNamesPortRules
@@ -803,15 +802,6 @@ testNamesWrittenOut = do
   namesRefusal ns (chainSection <> ["max_fee_per_gas = 18446744073709551616"]) `shouldReturn` "chain.max_fee_per_gas must be a positive whole number"
   namesRefusal ns (filter (not . ("chain_id" `T.isPrefixOf`)) chainSection) `shouldReturn` "chain.chain_id is required"
   namesRefusal (namesSection <> ["max_order_moves = -1"]) chainSection `shouldReturn` "names.max_order_moves must be at least 0"
-
-testNamesFeeCap :: IO ()
-testNamesFeeCap = do
-  let refused = "chain.gas_limit_cap times chain.max_fee_per_gas must be at most 1 ETH, 10^18 wei, as nodes refuse a transaction whose fee can be higher"
-  forM_ [["max_fee_per_gas = 125000000000"], ["gas_limit_cap = 10000000", "max_fee_per_gas = 100000000000"]] $ \caps -> do
-    NamesConfig {nChain = ChainConfig {cGasLimitCap, cMaxFeePerGas}} <- parsedNames namesSection (chainSection <> caps)
-    (caps, toInteger cGasLimitCap * toInteger cMaxFeePerGas) `shouldBe` (caps, 1000000000000000000)
-  forM_ [["max_fee_per_gas = 125000000001"], ["gas_limit_cap = 10000001", "max_fee_per_gas = 100000000000"], ["gas_limit_cap = 18446744073709551615", "max_fee_per_gas = 18446744073709551615"]] $ \caps ->
-    (\e -> (caps, e)) <$> namesRefusal namesSection (chainSection <> caps) `shouldReturn` (caps, refused)
 
 testNamesListenerKeys :: IO ()
 testNamesListenerKeys = do

@@ -1109,11 +1109,12 @@ reads, clears and logs its acceptance, as a community name's did:
   transactions with links of 4096 bytes, and 28,082 less with short links.
 - `gas_limit_cap` (default 8,000,000) must be at least 6,791,417: a transaction whose estimate is
   above it is not sent.
-- `gas_limit_cap` × `max_fee_per_gas` must be at most 1 ETH (0.8 ETH with the defaults), or the
-  service refuses to start: reth and geth refuse a transaction whose gas limit × max fee is above
-  `--rpc.txfeecap`, 1 ETH by default, and every later transaction of the key would wait behind it.
-  With `gas_limit_cap` at its lowest working value, 6,791,417, `max_fee_per_gas` can be at most
-  147,244,676,626 wei (about 147 gwei); with the default 8,000,000, at most 125 gwei.
+- Each transaction's max fee is also at most 1 ETH divided by its gas limit, since reth and geth
+  refuse a transaction whose gas limit × max fee is above `--rpc.txfeecap`, 1 ETH by default, and
+  every later transaction of the key would wait behind it. The defaults stay under the bound, at
+  0.8 ETH for 8,000,000 gas; a transaction it caps logs
+  `[NOTE …] names sender: nonce <n> capped at <wei> wei per gas, so that its gas limit <gas> costs
+  at most 1 ETH`.
 
 #### Check the balance and transactions in flight
 
@@ -1157,10 +1158,11 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   This holds when the register's dry run is refused. A register that passes its dry run and reverts
   once mined, as two registers sent while the allowance covers one can, fails its order with no
   such line; the next order's dry run logs it, and the buyer can Try again.
-- `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
-  the transaction waits` when fees are above the cap. Nothing is signed until they fall.
-- `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
-  <cap>` when a transaction stuck in the pool cannot be bumped within the cap.
+- `[WARN …] names sender: the latest block needs <wei> wei per gas, above the fee cap <cap>;
+  the transaction waits` when fees are above the fee cap, `max_fee_per_gas` or 1 ETH over the gas
+  limit. Nothing is signed until they fall.
+- `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over the fee cap
+  <cap>` when a transaction stuck in the pool cannot be bumped within the fee cap.
 
 An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the

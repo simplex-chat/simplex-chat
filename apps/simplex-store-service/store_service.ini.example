@@ -143,8 +143,7 @@ idle_seconds = 60
 ;confirmations = 3
 ; the most gas any one transaction may use
 ;gas_limit_cap = 8000000
-; the most wei per gas any transaction may pay (100 gwei); a transaction that needs more waits;
-; times gas_limit_cap, at most 1 ETH
+; the most wei per gas any transaction may pay (100 gwei); a transaction that needs more waits
 ;max_fee_per_gas = 100000000000
 
 ; the lowest level of the lines printed: trace, debug, info, note, warn or error. The service's
