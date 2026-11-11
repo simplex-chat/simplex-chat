@@ -5,7 +5,7 @@ import tarfile
 import tempfile
 import unittest
 
-from .testing import build_script, patch_all
+from .testing import REPO_ROOT, build_script, patch_all
 
 
 class OpenSslTest(unittest.TestCase):
@@ -44,7 +44,14 @@ class OpenSslTest(unittest.TestCase):
         self.assertEqual(
             build[0],
             ("perl", "Configure", "darwin64-arm64-cc", "--prefix=/w/openssl", "--openssldir=/etc/ssl")
-            + ("--libdir=lib", "no-tests"),
+            + ("--libdir=lib", "no-docs", "no-tests"),
         )
         self.assertEqual(build[-1], ("make", "install_sw"))
         self.assertNotIn(("make", "install_sw"), build_script.openssl_build("mingw64", "/p", "/d", install=False))
+
+    def test_flake_pins_the_same_openssl(self):
+        flake = (REPO_ROOT / "flake.nix").read_text()
+        pin = flake[flake.index("let pinOpenssl") : flake.index("}); in", flake.index("let pinOpenssl"))]
+        self.assertIn(f'version = "{build_script.OPENSSL_VERSION}";', pin)
+        self.assertIn(f'url = "{build_script.OPENSSL_URL}";', pin)
+        self.assertIn(f'sha256 = "{build_script.OPENSSL_SHA256}";', pin)
