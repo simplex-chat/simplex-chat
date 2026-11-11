@@ -103,6 +103,10 @@ private_key = replace-me
 ; the owner's link edits relayed for one name in any 365 days, each a transaction whose gas the
 ; service pays; 1 to 100. A request refused, never sent or reverted on chain does not count
 ;record_edits_per_year = 3
+; the lowest price a name is sold at, in cents a year, at least 1. Prices come from the chain, and
+; this floor is the one exception: a chain price under it for a name's paid years answers 503 to the
+; search, order, spend or move. Lower it before lowering prices on chain below it
+;min_price_cents_per_year = 5000
 ;
 ; what each community name is for, with [names] only (the name policy on chain lists the names):
 ; one line per name, `<label> = <what it is for>`, the label in

@@ -56,7 +56,7 @@ where
 
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
+import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, reveal, t0)
 import Bots.StoreService.WebTests
 import Control.Concurrent (threadDelay)
@@ -146,7 +146,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers catalog_changed with the chain price" testCatalogChanged
     it "counts toward the checkouts of every client only an order that reaches the provider" testOrdersLimitForAll
     it "answers name_taken for a registered, reserved or being registered name" testNameTaken
-    it "answers name_check_unavailable when a status or price read fails" testNameCheckUnavailable
+    it "answers name_check_unavailable when a status or price read fails, or the price is under the floor, reaching no provider" testNameCheckUnavailable
     it "refuses a body over 16384 bytes, accepting the longest order" testSizes
     it "refuses a malformed owner, an unknown method, price or kind, and an order outside 6-63 letters" testFormats
     it "parses an order only with every field well formed, sealed of at most 11095 characters and terms of the agreed format" testOrderFormats
@@ -334,6 +334,7 @@ testNamesConfig node =
       nMaxOrderMoves = 3,
       nCodesOnly = False,
       nRecordEditsPerYear = 3,
+      nMinPriceCentsPerYear = minPriceCentsPerYear,
       nCommunity = M.empty,
       nChain = fakeChainConfig node
     }
@@ -360,7 +361,7 @@ withOrdersVia via action = withServiceStores $ \open -> withOrdersOn open via ac
 withOrdersOn :: IO DBStore -> (Provider -> Provider) -> (Ctx -> IO a) -> IO a
 withOrdersOn cOpenStore via action = cOpenStore >>= \cStore -> withFakeEthNode $ \cNode -> do
   cRandom <- C.newRandom
-  ct <- newContracts cStore TLDSimplex =<< fakeChainClient cRandom cNode
+  ct <- newContracts cStore TLDSimplex minPriceCentsPerYear =<< fakeChainClient cRandom cNode
   turns <- newTurns
   phases <- newPhases
   cClock <- newIORef orderTime
@@ -706,7 +707,10 @@ testNameCheckUnavailable = withOrders $ \ctx@Ctx {cNode = node} -> do
   clearFault node "eth_getBlockByNumber"
   answerCall node fakeController (rentPriceCall 11) $ Reverts ""
   placeOrder ctx aliceOrder `shouldReturn` refusedWith 503 "name_check_unavailable"
+  answerCall node fakeController (rentPriceCall 11) $ Returns $ rentPriceAnswer 9999
+  placeOrder ctx aliceOrder {oPrice = 9999} `shouldReturn` refusedWith 503 "name_check_unavailable"
   stubCalls (cStub ctx) `shouldReturn` []
+  registrationsOf ctx ownerA `shouldReturn` []
 
 testSizes :: IO ()
 testSizes = withOrders $ \ctx -> do
@@ -885,7 +889,7 @@ testTermsAfterRestart = withOrders $ \ctx@Ctx {cNode, cOpenStore, cOrders, cRand
   void $ placed ctx aliceOrder
   answerText cNode (fakeTermsPath fakeGeneralTermsText) $ TextAnswer status404 [] ""
   st <- cOpenStore
-  ct <- newContracts st TLDSimplex =<< fakeChainClient cRandom cNode
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient cRandom cNode
   withSettings id ctx {cOrders = cOrders {oeContracts = ct}} $ \restarted ->
     void $ placed restarted aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 3}
   fetchedTexts cNode `shouldReturn` [fakeTermsPath fakeGeneralTermsText]
@@ -1639,7 +1643,7 @@ testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 testViewReads :: IO ()
 testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   g <- C.newRandom
-  ct <- newContracts st TLDSimplex =<< fakeChainClient g node
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
   answerCall node fakeSponsor noncesCall $ Returns $ uint256 (4 :: Int)
   Right () <- placePaid st "paid" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   let inPhase phase = do
@@ -1668,7 +1672,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 testViewBalance :: IO ()
 testViewBalance = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   g <- C.newRandom
-  ct <- newContracts st TLDSimplex =<< fakeChainClient g node
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
   let holderExpiry = addUTCTime 3600 t0
       viewOf :: Text -> UTCTime -> IO J.Object
       viewOf rid now = do

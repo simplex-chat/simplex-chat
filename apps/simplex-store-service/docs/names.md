@@ -185,7 +185,7 @@ sequenceDiagram
 
 Notes:
 
-- The checks are run in the contract's order: timestamp within 600 s, duration (paid years plus the free days until `term_start`), current terms, a name available on chain and not in `registering` here, then the chain price equal to the order's ([`Web/Names/Orders.hs:104-118`](../src/StoreService/Web/Names/Orders.hs#L104-L118), [`Names/Orders.hs:266-310`](../src/StoreService/Names/Orders.hs#L266-L310)). Refusals are listed in [`Web/Names/Orders.hs:344-357`](../src/StoreService/Web/Names/Orders.hs#L344-L357).
+- The checks are run in the contract's order: timestamp within 600 s, duration (paid years plus the free days until `term_start`), current terms, a name available on chain and not in `registering` here, then the chain price, at least `min_price_cents_per_year` times the paid years and equal to the order's ([`Web/Names/Orders.hs:104-118`](../src/StoreService/Web/Names/Orders.hs#L104-L118), [`Names/Orders.hs:266-310`](../src/StoreService/Names/Orders.hs#L266-L310), [`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)). Refusals are listed in [`Web/Names/Orders.hs:344-357`](../src/StoreService/Web/Names/Orders.hs#L344-L357).
 - The terms text is read from the database, or fetched from git.simplex.chat or GitHub on the first use of its hash and stored; either is checked against the sha256 in its link when the link has one. While it cannot be read, the order is answered `503 terms_unavailable` ([`Names/Orders.hs:284-291`](../src/StoreService/Names/Orders.hs#L284-L291), [`Names/Contracts.hs:239-290`](../src/StoreService/Names/Contracts.hs#L239-L290), [`Web/Names/Orders.hs:356`](../src/StoreService/Web/Names/Orders.hs#L356)).
 - The name lock is held across the provider call, and the answer is sent after it. Overdue unpaid orders of the same wallet and name are closed in the order's transaction ([`Web/Names/Orders.hs:76-100`](../src/StoreService/Web/Names/Orders.hs#L76-L100), [`Names/Orders.hs:207-243`](../src/StoreService/Names/Orders.hs#L207-L243)).
 - When the order is not written, its provider invoice is cancelled. Provider checkouts are capped at 30 a minute for all clients together ([`Web/Names/Orders.hs:139-173`](../src/StoreService/Web/Names/Orders.hs#L139-L173), [`Web/Http.hs:151-154`](../src/StoreService/Web/Http.hs#L151-L154)).
@@ -323,6 +323,7 @@ Notes:
 
 - Only the label's hash and length are sent ([`Web/Names/Search.hs:53-57`](../src/StoreService/Web/Names/Search.hs#L53-L57)). 30 a minute per client are allowed for searches and terms reads together; chain reads are run for at most 16 searches at once, for all clients together, and a 17th is answered `429` ([`Web/Names.hs:34-36`](../src/StoreService/Web/Names.hs#L34-L36), [`Web/Http.hs:128-149`](../src/StoreService/Web/Http.hs#L128-L149)).
 - The owner and resolver are read from the registry for a name registered or in its grace period (`nameExpires` plus `GRACE_PERIOD` not before the latest block's time); for any other name `reservedNames` is read ([`Names/Contracts.hs:149-162`](../src/StoreService/Names/Contracts.hs#L149-L162)).
+- An available name's price is `rentPriceUSD` for its paid years; a price under `min_price_cents_per_year` times those years fails the search with `503 provider_unavailable` ([`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)).
 - A name shown available on chain while an order here is in `registering` is answered `registered` with no entities; a reserved name is answered `reserved` ([`Web/Names/Search.hs:66-72`](../src/StoreService/Web/Names/Search.hs#L66-L72), [`Web/Names/Search.hs:97-98`](../src/StoreService/Web/Names/Search.hs#L97-L98)).
 - Records, their nonce and the edits left are read only for a name on the default resolver, and at most 5 links of each record ([`Names/Contracts.hs:164-177`](../src/StoreService/Names/Contracts.hs#L164-L177), [`Web/Names/Search.hs:99-130`](../src/StoreService/Web/Names/Search.hs#L99-L130)).
 - A link whose host is, or resolves to, a non-public address is refused before it is read, and each DNS lookup is run in a thread of its own. Profiles are kept 600 s; 4 fetch slots are used by searches and 2 by previews ([`Names/Profiles.hs:83-95`](../src/StoreService/Names/Profiles.hs#L83-L95), [`Names/Profiles.hs:326-371`](../src/StoreService/Names/Profiles.hs#L326-L371)).
@@ -382,7 +383,7 @@ sequenceDiagram
   else another name
     P->>W: POST /api/registration/ID/name, signed new name
     W->>E: registered after all? refused after 5 sends of a kind
-    W->>E: terms, name available, a paid order's rentPriceUSD at most its price
+    W->>E: terms, name available, a paid order's rentPriceUSD at least the floor and at most its price
     W->>D: under both names' locks: new name queued, moves + 1
     W-->>P: 200 the order's view, or 409 registration_changed when registered after all
   end
@@ -394,6 +395,7 @@ Notes:
 - Try again is sent with the registration id alone. It is refused for an order whose links were refused, one with 5 sends of a kind, and a code order whose code no longer pays. The reveal is kept while the sponsor nonce is unchanged and the commitment has `reveal_margin_seconds` (default 900) left within the intent's deadline ([`Web/Names/Registration.hs:116-140`](../src/StoreService/Web/Names/Registration.hs#L116-L140), [`Names/Worker.hs:411-501`](../src/StoreService/Names/Worker.hs#L411-L501), [`Config.hs:654`](../src/StoreService/Config.hs#L654)). At the next scan a commitment with that margin left is reused; otherwise a new commit is sent, a second past the old commitment's lapse when one is on chain ([`Names/Worker.hs:175-206`](../src/StoreService/Names/Worker.hs#L175-L206)).
 - A move is accepted for a failed order, or for one whose links were refused, up to `max_order_moves` (default 3). For a failed order the service checks first whether its name was registered after all, then refuses a move after 5 sends of a kind ([`Web/Names/Owner.hs:113-126`](../src/StoreService/Web/Names/Owner.hs#L113-L126), [`Config.hs:655`](../src/StoreService/Config.hs#L655)).
 - Both names' locks are taken in hash order, and the first order's hash is kept. A paid order moved to a cheaper name is credited the difference; a code order is moved at price 0, its code reserved again ([`Names/Turns.hs:27-32`](../src/StoreService/Names/Turns.hs#L27-L32), [`Web/Names/Owner.hs:128-135`](../src/StoreService/Web/Names/Owner.hs#L128-L135), [`Names/Orders.hs:340-356`](../src/StoreService/Names/Orders.hs#L340-L356), [`Names/Store.hs:787-813`](../src/StoreService/Names/Store.hs#L787-L813)).
+- A paid order's move reads the new name's price as an order does: a price under `min_price_cents_per_year` times the paid years is answered `503 name_check_unavailable`, and nothing is credited ([`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)).
 
 ---
 
@@ -436,7 +438,7 @@ sequenceDiagram
   W->>W: its owner's signature checked, name and balance locks taken
   W->>E: terms of the name's kind
   W->>D: balance equal to the amount read and not held
-  W->>E: name status, rentPriceUSD equal to the price
+  W->>E: name status, rentPriceUSD at least the floor and equal to the price
   alt balance covers the price, no method sent
     W->>D: one transaction: registration queued, balance lowered by the price
     W-->>P: 200: registrationId
@@ -455,6 +457,7 @@ sequenceDiagram
 Notes:
 
 - `method` is present exactly when the price is above the balance, and a card difference under 50 cents is refused ([`Web/Names/Orders.hs:280-306`](../src/StoreService/Web/Names/Orders.hs#L280-L306)).
+- The chain price is checked as an order's: a price under `min_price_cents_per_year` times the paid years is answered `503 name_check_unavailable` before any payment ([`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)).
 - The spend is signed `simplex.domains spend SOURCE ...` by the source order's owner, who owns the new order ([`Web/Names/Orders.hs:249-257`](../src/StoreService/Web/Names/Orders.hs#L249-L257), [`Names/Signatures.hs:104-106`](../src/StoreService/Names/Signatures.hs#L104-L106)).
 - A balance amount other than the one read, or a hold, is answered `409 balance_changed`. A hold by an overdue order is treated as none, and that order is closed in the spend's transaction ([`Names/Balances.hs:79-87`](../src/StoreService/Names/Balances.hs#L79-L87), [`Names/Orders.hs:236-243`](../src/StoreService/Names/Orders.hs#L236-L243)).
 - The whole balance read is held by the difference order. At settlement the hold is spent; when it cannot be spent, the order is kept `queued` and an error is logged ([`Names/Store.hs:514-532`](../src/StoreService/Names/Store.hs#L514-L532), [`Orders.hs:200-204`](../src/StoreService/Orders.hs#L200-L204), [`Orders.hs:232-236`](../src/StoreService/Orders.hs#L232-L236)).
