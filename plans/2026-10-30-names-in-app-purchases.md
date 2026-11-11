@@ -427,7 +427,7 @@ The answer: `STPNamePurchase {payment, order}`. `payment`: the years and the cod
 **Daily cap:** at most a set number of store-paid registrations per UTC day, a setting starting at 50.
 
 - The bound on loss: the worker counts one when it sends the register, once per registration, in a row per UTC day, inside `submitTransaction`'s save, under `snQueue`, before the broadcast (`StoreService/Names/Sender.hs:151-178`), through a gate that function takes. A dry run that reverts, a fee over the cap or a failed read count nothing.
-- `sendRegister` (`Names/Worker.hs:297`) verifies the intent, reads the row without a chain call, and waits while it is full; then the gate decides. A reveal is always accepted and the buyer may close the app; waiting registers go out oldest first; an order whose commitment lapses meanwhile reads failed, its payment kept.
+- `sendRegister` (`Names/Worker.hs:297`) verifies the intent, reads the row without a chain call, and waits while it is full; then the gate decides. A reveal is always accepted and the buyer may close the app; waiting registers go out oldest first; a commitment that lapses meanwhile is committed again, as below.
 - The gate on new orders: the order, Try again and another name are refused `sale_closed` while registers sent today plus store-paid orders queued, committing or committed reach the cap.
 - The catalog answers "closed for the day" by the same sum, with a reopening time only where orders in flight hold no places past midnight; the service alerts the operator as it nears.
 - Refunds are watched by hand in the stores' reports at launch.
@@ -438,6 +438,15 @@ The answer: `STPNamePurchase {payment, order}`. `payment`: the years and the cod
 - A failed read, a fee over the cap and a Try again that reuses a live commitment count nothing.
 - The bound, `max_code_commits`, 7 commits across the code's orders, is enforced at the requests only; each order's own sends stay bounded at 5 a kind (3.3).
 - P27c and P65 share the commits column on prepaid codes; the first of them to land adds it.
+
+**A lapsed commitment** (decided on 11 Nov 2026): the service commits the same commitment again, with no new signature, and the order stays live; the buyer taps nothing.
+
+- The controller takes the same hash once the old commitment lapsed (`commit`, `SimplexController.sol:391-396`, ens-contracts 6ccb5c52).
+- Without a reveal: the worker commits again a second past the lapse, as `fromCommitment` does today only after Try again (`Names/Worker.hs:175-184`); the view gives the new `revealAfter` and `revealBefore`, and the app reveals in the new window.
+- With a reveal: the app signs the `RegisterName` intent, and the terms acceptance whose deadline is the reveal's, with a deadline that covers the order's 5 commits: `revealBefore` plus 4 times the commitments' maximum age. The worker keeps the reveal across a re-commit while its deadline covers the new window (`servingReveal`, `Names/Worker.hs:483-501`), where `lapsedFields` drops it today; the reveal check takes a deadline at or after `revealBefore` (`checkIntent`, `Names/Reveal.hs:119-122`).
+- Bound: the order's 5 commits (`maxSendsPerKind`) and the signed deadline (`verifyRegisterIntent`, `Names/Registration.hs:142-147`); past either, the order fails as today, and Try again orders again at no charge.
+- Each re-commit counts in the code's commits (below).
+- https://github.com/simplex-chat/simplex-chat/pull/8091 keeps "a lapsed commitment ends failed"; P24 replaces that rule.
 
 **Catalog:** the site's search answer without a name, from a cache a background thread fills every few seconds; the main lane answers from it without a chain read.
 
@@ -623,7 +632,7 @@ stateDiagram-v2
 - After the service refuses the signed registration three times, the app stops signing and the user decides.
 - "Create a new key" on 1·4 creates the wallet; app start, a search and the terms text create none.
 - A name's account is created when its order is kept or placed, or its move recorded.
-- The app sends each step: on iOS the core is suspended in the background (`apps/ios/Shared/SimpleXApp.swift:71-85`); background refresh is relied on for nothing. The worker resumes at start or on the return to the foreground, within `revealBefore`, 24 hours; past it the order reads failed, and Try again orders again at no charge.
+- The app sends each step: on iOS the core is suspended in the background (`apps/ios/Shared/SimpleXApp.swift:71-85`); background refresh is relied on for nothing. The worker resumes at start or on the return to the foreground; a commitment that lapsed meanwhile was committed again by the service (6.3), and the order reads failed only past its commits or its signed deadline.
 - After a reinstall without the database, stage 1: an open purchase with another wallet's token shows "Bought with another recovery key"; support refunds Play, Apple's sheet refunds iOS. From stage 2: the wallet restored from the 24 words recognises its open purchases by their tokens, recomputes each code and gets the same answers; `find` finds a registration under way.
 - The order record holds a code until it registers a name: a code released by a taken name shows on the name's row, "Your kept code · Find a name".
 
@@ -806,7 +815,7 @@ flowchart TD
   - The notice in turn: "Confirming your payment."; "Placing your order. The wait starts once it is in."; the countdown "0:42" with "Registering takes about a minute."; "Registering the name. It is yours in a moment."; "This is taking longer than usual. It continues by itself."; offline after paying, "No connection: your payment is safe and is confirmed when you are back online."
   - Until the reveal is sent, the notice ends in bold "Keep the app open until the name is yours."
   - A store promo purchase reads "purchase" and "What you bought" for "payment" and "What you paid", drops "Paid, " from titles, and its card's first row reads "Store promo code", "Free SimpleX name".
-  - The app closed after paying: the order goes on at the next start, 1·9's row "Registering"; on iOS leaving it in the background stops it too (6.4); past 24 hours the order reads Failed.
+  - The app closed after paying: the order goes on at the next start, 1·9's row "Registering"; on iOS leaving it in the background stops it too (6.4); the service commits a lapsed commitment again (6.3), so the order reads Failed only past its commits or its signed deadline. The lead reads "You can close this screen. If you leave the app, open it again to finish."
   - States:
 
 | State | Title and lead | Notice and rows | Main; secondary |
@@ -817,7 +826,7 @@ flowchart TD
 | Paid, terms unreadable | "Paid, waiting to order"; "Your payment is kept. Names can't be ordered right now; open the app later to order it." | No stage started | "Close" |
 | Terms changed while waiting | "Agree to the terms again"; "Your payment is kept." | "dynamism.simplex isn't held meanwhile."; the checkout's terms block in the name's kind, unticked, in place, asked once the order can be placed | The order goes in once ticked; "Contact SimpleX team", or "Choose another name" when the kind changed |
 | Terms changed at the reveal | Registering | "The registration is not signed yet."; the checkout's terms block, unticked, in place | Signed once ticked |
-| The register past the day's cap | Registering | ✓ "Ordered", "Waiting". "Registering waits for today's limit and goes on by itself when it can, within this order's 24 hours. dynamism.simplex isn't held meanwhile." | "Close" |
+| The register past the day's cap | Registering | ✓ "Ordered", "Waiting". "Registering waits for today's limit and goes on by itself when it can. dynamism.simplex isn't held meanwhile." | "Close" |
 | Signing refused three times | Registering | "The name could not be signed", "The service refused the signed registration." | "Try again", which reads the clock and signs again; "Close" |
 | Taken | "dynamism.simplex was taken"; "Someone registered it before your order could." (reserved: "dynamism.simplex is reserved"; before the order went in: no stage started, "dynamism.simplex became unavailable before your order went in.") | ✕ "Taken". "What you paid is kept for another name. For a refund, contact the SimpleX team with its reference." (iOS: "For a refund, ask Apple." with "Request a refund"). "Kept for", "One name, 2 years" | "Choose another name" → 1·10; "Close" |
 | Failed | "Paid, not registered"; "Your payment is kept. Trying again charges nothing." | ✕ on the failed stage. The service's reason, or "The name could not be registered yet. If Try again still fails, contact the SimpleX team with its reference."; "Charged again", "Never" | "Try again"; "Close", or "Choose another name" when the name went since |
@@ -853,8 +862,10 @@ stateDiagram-v2
   Revealed --> Registered: the register mined
   Committed --> KeptPayment: taken first
   Revealed --> KeptPayment: taken first
-  Ordered --> Failed: a refusal, or 24 hours without the app
-  Committed --> Failed: a refusal, or 24 hours without the app
+  Committed --> Committed: the commitment lapsed, committed again
+  Revealed --> Revealed: the commitment lapsed, committed again, the reveal kept
+  Ordered --> Failed: a refusal
+  Committed --> Failed: a refusal, or the commits or the signed deadline used up
   Failed --> Ordered: Try again, or another name
   Failed --> Stuck: sends_used_up or commit_limit
   Stuck --> Failed: support raises the bound
@@ -1215,7 +1226,7 @@ The stores and the service:
 
 The chain, the network and the browser:
 
-- An order waiting for the app holds no name: anyone registering it first takes it, the payment kept; on iOS for up to 24 hours while the buyer stays away.
+- An order waiting for the app holds no name: anyone registering it first takes it, the payment kept; on iOS while the buyer stays away, across the service's re-commits.
 - Chain observers see each name, its owner address, its records and their history, the terms acceptance, the registrar, and each move; consecutive registrations link by time; one account per name keeps one person's names on separate addresses.
 - Once registered, the name shows on the address or channel it opens, contacts receive the updated profile, and anyone can look up what the name opens.
 - A moved-in name keeps its previous owner's records and subnames; nothing is cleared on a move, and the owner changes them from stage 2 (6.10).
@@ -1263,7 +1274,7 @@ Payments:
 - A stolen code pays someone else's name before registration; the service sees it at the order.
 - A refund after registration costs SimpleX the chain price and the gas, and leaves the name registered for two years; the global daily cap bounds the loss per day.
 - Buying and refunding names can close the store sale for everyone each day, while the stores grant refunds (Q10).
-- An order placed and never revealed holds a cap place until it lapses; orders revealed late count on their send day, so one batch closes a second day, and Try again after each lapse up to about 7 days.
+- An order placed and never revealed holds a cap place across its re-commits, up to its 5 commitment windows; orders revealed late count on their send day, so one batch closes a second day.
 - The operator revokes abusers' codes; prepaid codes and the site stay open.
 - A flood over SMP denies its lane, buyers included, while it lasts, and loses no money; invented Play tokens spend only the names' Play bound.
 - Apple test purchases never register a `.simplex` name; the test deployment credits no badge (6.9).
@@ -1357,8 +1368,8 @@ Names over SMP, in the store service:
   - Tested: service tests: each rule of 6.3's lanes, bounds and sizes for its commands; terminal: a CLI client reads the catalog and checks a code.
 - P23 `store: names over SMP — the code order and the view` · medium · high · P22
   - Tested: service tests: 6.3's sizes for both; the SMP and web forms answer alike.
-- P24 `store: names over SMP — the reveal, Try again, find and another name`, with `sends_used_up` and the view reporting it · medium · high · P23
-  - Tested: service tests: 6.3's sends per order; the SMP and web forms answer alike.
+- P24 `store: names over SMP — the reveal, Try again, find and another name`, with `sends_used_up` and the view reporting it; the worker commits a lapsed commitment again (6.3) · medium · high · P23
+  - Tested: service tests: 6.3's sends per order; the SMP and web forms answer alike; on the fake chain node, a lapse committed again and the name then registered with no app action, with and without a stored reveal, and the order failed once its commits or its deadline run out.
 - P26 `store: names over SMP — the name code's approve and claim`: their yearly bound and chain reads; the receiving account's acceptance, in the claim's call or relayed before it, its typed-data form and place read from the contract · medium · high · P9, P23
   - Tested: service tests with the fake chain node: each owner-code relay rule of 6.3.
 
@@ -1369,7 +1380,7 @@ Ordering in the core, each tested in the terminal against the test servers, the 
 - P15 `names: order a name with a prepaid code`: the order record and its migration, the secret, the commitment, the signed order, `/_name order` · large · high · P5, P6, P8, P9, P13, P14, P22, P23
   - Tested: 6.3's `bad_request` rebuild places once; a late `code_reserved` or `code_used` finds the order; each order signed with its name's kind, general or community.
 - P16 `names: follow an order`: the worker in the main app, the poll, the reveal with the acceptance, kept and resent unchanged, progress events, recovery after a restart or a suspension · large · high · P11, P15, P23, P24
-  - Tested: the first end-to-end result; recovery from a restart and from a suspension in each phase; the 24-hour lapse; the reveal resent unchanged; progress events free of codes, secrets, `sealed` and receipts; terms or a community listing changed between the commit and the reveal sign nothing before the new tick; taken and a lost answer.
+  - Tested: the first end-to-end result; recovery from a restart and from a suspension in each phase; a lapse while the app is away, registered after its return with no Try again; the intent signed with the deadline 6.3 sets; the reveal resent unchanged; progress events free of codes, secrets, `sealed` and receipts; terms or a community listing changed between the commit and the reveal sign nothing before the new tick; taken and a lost answer.
 - P17 `names: Try again, another name, and the kept code` · medium · high · P16, P24
   - Tested: a timed-out Try again reads the view first; `commit_limit` reads Failed once the bound is raised; `sends_used_up` shows its state; taken, then another name; failed, then Try again.
 - P18 `names: claim a registered name`: the address and the channel claim it once registered · small · low · P16
@@ -1606,5 +1617,5 @@ The other questions:
 
 ## 12. Out of scope (noticed, not doing)
 
-- A reminder before an unfinished order's 24 hours end.
+- A reminder before an unfinished order's last commitment lapses.
 - "Add to calendar" on the name's success.
