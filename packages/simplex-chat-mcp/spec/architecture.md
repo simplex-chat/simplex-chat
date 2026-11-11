@@ -936,7 +936,7 @@ Data flow of a prompt from the session group:
 | [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json) | plugin `simplex`, version, description, `userConfig` |
 | [`.mcp.json`](../.mcp.json) | server `simplex`: `node dist/cli.js session` in the plugin's folder, tool call timeout, options as environment variables |
 | [`hooks/hooks.json`](../hooks/hooks.json) | SessionStart: `dist/cli.js hook session-start`; PreToolUse: `allow.js`; UserPromptSubmit, Stop, PostModelSwitch: `dist/cli.js hook turn`, in the background |
-| [`npm-shrinkwrap.json`](../npm-shrinkwrap.json) | the dependency tree that Claude Code installs into the plugin's folder; packed with the production dependencies only, by [`scripts/strip-dev.js`](../scripts/strip-dev.js) in `prepack` and `postpack` |
+| [`package.json`](../package.json) | `bundleDependencies: true`: the package contains its production packages in its `node_modules`, and no lockfile, so Claude Code installs nothing in the plugin's folder; [`package-lock.json`](../package-lock.json), not packed, is the tree of `npm ci` |
 | [`plugin/allow.js`](../plugin/allow.js) | PreToolUse allow decision |
 | [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json) | marketplace `simplex-chat`, plugin source npm `@simplex-chat/mcp` |
 
@@ -1155,7 +1155,7 @@ Sources: [hub.ts:152-204](../src/hub.ts#L152-L204), [:226-292](../src/hub.ts#L22
 | The socket is in ROOT, mode 0700, or a named pipe on Windows; every request needs the token, compared with `timingSafeEqual` | [socket.ts:19-25](../src/socket.ts#L19-L25), [files.ts:74-79](../src/files.ts#L74-L79) |
 | The Main group link is shown only in the hook's `systemMessage` and by `link` on a terminal; tool results, refusals and other output name the command instead; of the socket's routes, only `/title` and `/link` return it | [hook.ts:54-56](../src/hook.ts#L54-L56), [owner.ts:7-15](../src/owner.ts#L7-L15), [control.ts:39](../src/control.ts#L39), [service.ts:154](../src/service.ts#L154), [:215](../src/service.ts#L215), [:426](../src/service.ts#L426) |
 | `reset-owners` shows the new link only on a terminal | [owner.ts:17-20](../src/owner.ts#L17-L20), [:28-33](../src/owner.ts#L28-L33) |
-| The plugin runs its own `dist/cli.js`, and Node.js loads its modules from the plugin's folder, so the `node_modules` of a project can't replace them | [.mcp.json:5](../.mcp.json#L5), [hooks.json:3-7](../hooks/hooks.json#L3-L7) |
+| The plugin runs its own `dist/cli.js`, and Node.js loads its modules, bundled in the package, from the plugin's folder, so the `node_modules` of a project can't replace them | [.mcp.json:5](../.mcp.json#L5), [hooks.json:3-7](../hooks/hooks.json#L3-L7), [package.json:35](../package.json#L35) |
 | The service gets only the environment variables of `serviceVariables` | [client.ts:13](../src/client.ts#L13), [:78](../src/client.ts#L78) |
 | `send` and `reply` refuse the files of ROOT except `files/` of the session's own folder | [tools.ts:996-1001](../src/tools.ts#L996-L1001), [hub.ts:89-90](../src/hub.ts#L89-L90) |
 | `User`'s messages are neither prompts nor commands: `Session.prompt` and `Control.onMessage` drop the messages of the member of the hub's contact marked `simplexMcpUser`, read at the hub's start; `User` joins only groups its `Claude` contact invites it to | [hub.ts:227](../src/hub.ts#L227), [:306-308](../src/hub.ts#L306-L308), [:367](../src/hub.ts#L367), [control.ts:221](../src/control.ts#L221), [user.ts:50-57](../src/user.ts#L50-L57), [:60-62](../src/user.ts#L60-L62) |
