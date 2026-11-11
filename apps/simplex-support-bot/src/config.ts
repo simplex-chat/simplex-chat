@@ -1,5 +1,8 @@
+import {readFileSync} from "fs"
 import {Command, Option} from "commander"
+import {parse as parseToml} from "smol-toml"
 import {api} from "simplex-chat"
+import {Messages, defaultMessages} from "./messages.js"
 
 export interface IdName {
   id: number
@@ -19,6 +22,7 @@ export interface Config {
   dryRun: boolean
   allowMigrations: boolean
   grokApiKey: string | null
+  messages: Messages
 }
 
 export function parseIdName(s: string): IdName {
@@ -43,6 +47,7 @@ function buildCommand(): Command {
   return new Command()
     .name("simplex-chat-support-bot")
     .description("business-address triage bot")
+    .option("--config <path>", "TOML file with option values and message texts; command-line options take precedence")
     .requiredOption("--team-group <name>", "team group display name")
     .option("--state-file <path>", "state JSON path", "./data/state.json")
     .addOption(new Option("--db <backend>", "database backend").choices(["sqlite", "postgres"]).default("sqlite"))
@@ -77,10 +82,51 @@ interface RawOpts {
   allowMigrations?: boolean
 }
 
+interface ConfigFile {
+  args: string[]
+  messages: Messages
+}
+
+function configFilePath(args: string[]): string | undefined {
+  const i = args.indexOf("--config")
+  if (i >= 0) return args[i + 1]
+  return args.find(arg => arg.startsWith("--config="))?.slice("--config=".length)
+}
+
+function readConfigFile(path: string): ConfigFile {
+  const {messages = {}, ...options} = parseToml(readFileSync(path, "utf-8"))
+  return {
+    args: Object.entries(options).map(([key, value]) => configOptionArg(path, key, value)),
+    messages: configMessages(path, messages),
+  }
+}
+
+function configOptionArg(path: string, key: string, value: unknown): string {
+  if (key === "config") throw new Error(`${path}: config cannot be set in a config file`)
+  if (typeof value === "string" || typeof value === "number") return `--${key}=${value}`
+  if (Array.isArray(value) && value.every(v => typeof v === "string")) return `--${key}=${value.join(",")}`
+  throw new Error(`${path}: ${key} must be a string, a number or a list of strings`)
+}
+
+function configMessages(path: string, table: unknown): Messages {
+  if (typeof table !== "object" || table === null || Array.isArray(table)) {
+    throw new Error(`${path}: messages must be a table`)
+  }
+  for (const [key, value] of Object.entries(table)) {
+    if (!(key in defaultMessages)) {
+      throw new Error(`${path}: unknown message "${key}", known messages: ${Object.keys(defaultMessages).join(", ")}`)
+    }
+    if (typeof value !== "string") throw new Error(`${path}: message "${key}" must be a string`)
+  }
+  return {...defaultMessages, ...table}
+}
+
 export function parseConfig(args: string[]): Config {
   const cmd = buildCommand().exitOverride()
+  const configFile = configFilePath(args)
+  const file: ConfigFile = configFile ? readConfigFile(configFile) : {args: [], messages: defaultMessages}
   try {
-    cmd.parse(args, {from: "user"})
+    cmd.parse([...file.args, ...args], {from: "user"})
   } catch (err) {
     const code = (err as {code?: string}).code
     if (code === "commander.helpDisplayed" || code === "commander.version") process.exit(0)
@@ -138,5 +184,6 @@ export function parseConfig(args: string[]): Config {
     dryRun: opts.dryRun ?? false,
     allowMigrations: opts.allowMigrations ?? false,
     grokApiKey,
+    messages: file.messages,
   }
 }

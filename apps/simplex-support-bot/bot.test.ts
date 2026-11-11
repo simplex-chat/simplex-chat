@@ -9,7 +9,7 @@ import {parseConfig} from "./src/config.js"
 import {GrokApiClient} from "./src/grok.js"
 import {loadGrokContext} from "./src/context.js"
 import {dryRun} from "./src/dryRun.js"
-import {welcomeMessage, queueMessage, grokActivatedMessage, teamLockedMessage, teamAlreadyInvitedMessage} from "./src/messages.js"
+import {defaultMessages, queueMessage, teamAddedMessage, noTeamMembersMessage} from "./src/messages.js"
 
 // Silence console output during tests
 vi.spyOn(console, "log").mockImplementation(() => {})
@@ -273,6 +273,7 @@ function makeConfig(overrides: Partial<any> = {}) {
     cardFlushSeconds: 300,
     grokApiKey: "test-key",
     grokContactId: GROK_CONTACT_ID as number | null,
+    messages: defaultMessages,
     ...overrides,
   }
 }
@@ -670,7 +671,7 @@ describe("/grok Activation", () => {
     await joinPromise
     await bot.flush()
     expectMemberAdded(CUSTOMER_GROUP_ID, GROK_CONTACT_ID)
-    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.grokActivated)
   })
 
   test("/grok as first message → WELCOME→GROK directly, no queue message", async () => {
@@ -678,7 +679,7 @@ describe("/grok Activation", () => {
     await bot.onNewChatItems(customerMessage("/grok"))
     await joinPromise
     await bot.flush()
-    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.grokActivated)
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     expect(chat.sentTo(TEAM_GROUP_ID).length).toBeGreaterThan(0)
   })
@@ -686,7 +687,7 @@ describe("/grok Activation", () => {
   test("/grok in TEAM → rejected with teamLockedMessage", async () => {
     await reachTeam()
     await bot.onNewChatItems(customerMessage("/grok"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, teamLockedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.teamLocked)
   })
 
   test("/grok when grokContactId is null → grokUnavailableMessage", async () => {
@@ -964,7 +965,7 @@ describe("/team Activation", () => {
     addBotMessage("We will reply within 24 hours.")
     chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
     await bot.onNewChatItems(customerMessage("/team"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, teamAlreadyInvitedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.teamAlreadyInvited)
   })
 
   test("/team with no team members → noTeamMembersMessage", async () => {
@@ -998,7 +999,7 @@ describe("One-Way Gate", () => {
   test("/grok after gate → teamLockedMessage", async () => {
     await reachTeam()
     await bot.onNewChatItems(customerMessage("/grok"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, teamLockedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.teamLocked)
   })
 
   test("customer text in TEAM → card update scheduled, no bot reply", async () => {
@@ -1569,7 +1570,7 @@ describe("Error Handling", () => {
     // Only the "Inviting Grok" message is sent — no activated/unavailable result
     expect(chat.sent.length).toBe(sentBefore + 1)
     expectSentToGroup(CUSTOMER_GROUP_ID, "Inviting Grok")
-    expectNotSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
+    expectNotSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.grokActivated)
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "temporarily unavailable")
   })
 
@@ -1759,7 +1760,7 @@ describe("Grok Join Flow", () => {
     await bot.flush()
 
     expect(chat.joined).toContain(GROK_LOCAL_GROUP_ID)
-    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.grokActivated)
   })
 
   test("per-message responses suppressed during activateGrok initial response", async () => {
@@ -1907,7 +1908,7 @@ describe("End-to-End Flows", () => {
     await joinPromise
     await bot.flush()
 
-    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.grokActivated)
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     expect(chat.sentTo(TEAM_GROUP_ID).length).toBeGreaterThan(0)
   })
@@ -1939,21 +1940,38 @@ describe("End-to-End Flows", () => {
 
 describe("Message Templates", () => {
   test("welcomeMessage is a non-empty string", () => {
-    expect(typeof welcomeMessage).toBe("string")
-    expect(welcomeMessage.length).toBeGreaterThan(0)
+    expect(typeof defaultMessages.welcome).toBe("string")
+    expect(defaultMessages.welcome.length).toBeGreaterThan(0)
   })
 
   test("grokActivatedMessage mentions chatting with Grok", () => {
-    expect(grokActivatedMessage).toContain("chatting with Grok")
+    expect(defaultMessages.grokActivated).toContain("chatting with Grok")
   })
 
   test("teamLockedMessage tells customer the team will handle the conversation", () => {
-    expect(teamLockedMessage).toContain("team")
+    expect(defaultMessages.teamLocked).toContain("team")
   })
 
   test("queueMessage mentions hours", () => {
-    const msg = queueMessage("UTC", true)
+    const msg = queueMessage(defaultMessages, "UTC", true)
     expect(msg).toContain("hours")
+  })
+
+  test("queueMessage replaces every {hours} with 24 or 48 and appends the Grok part only with Grok", () => {
+    const messages = {...defaultMessages, queue: "Reply in {hours}h, not later than {hours}h.", queueGrok: "Try /grok."}
+    expect(queueMessage(messages, "UTC", false)).toMatch(/^Reply in (24|48)h, not later than (24|48)h\.$/)
+    expect(queueMessage(messages, "UTC", true)).toMatch(/^Reply in (24|48)h, not later than (24|48)h\.\n\nTry \/grok\.$/)
+  })
+
+  test("teamAddedMessage appends the Grok line on a new line only when Grok is present", () => {
+    const messages = {...defaultMessages, teamAdded: "Within {hours}h.", teamAddedGrok: "Grok helps."}
+    expect(teamAddedMessage(messages, "UTC", false)).toMatch(/^Within (24|48)h\.$/)
+    expect(teamAddedMessage(messages, "UTC", true)).toMatch(/^Within (24|48)h\.\nGrok helps\.$/)
+  })
+
+  test("noTeamMembersMessage selects the text by Grok availability", () => {
+    expect(noTeamMembersMessage(defaultMessages, true)).toBe(defaultMessages.noTeamMembersGrok)
+    expect(noTeamMembersMessage(defaultMessages, false)).toBe(defaultMessages.noTeamMembers)
   })
 })
 
@@ -2464,6 +2482,75 @@ describe("parseConfig Validation", () => {
   test("--allow-migrations without --dry-run → throws", () => {
     expect(() => parseConfig([...baseArgs, "--allow-migrations"]))
       .toThrow(/--allow-migrations requires --dry-run/)
+  })
+
+  describe("--config TOML file", () => {
+    const configFile = (toml: string): string => {
+      const path = join(mkdtempSync(join(tmpdir(), "support-bot-config-")), "bot.toml")
+      writeFileSync(path, toml)
+      return path
+    }
+
+    test("option values and messages are read; missing messages keep the defaults", () => {
+      const path = configFile([
+        `team-group = "SimpleX Support Team"`,
+        `auto-add-team-members = ["1:Alice", "2:Bob"]`,
+        `complete-hours = 0`,
+        `db = "postgres"`,
+        `pg-conn = "postgres://localhost/db"`,
+        `[messages]`,
+        `welcome = """`,
+        `Hello!`,
+        ``,
+        `Ask anything."""`,
+      ].join("\n"))
+      const cfg = parseConfig(["--config", path])
+      expect(cfg.teamGroup).toEqual({id: 0, name: "SimpleX Support Team"})
+      expect(cfg.teamMembers).toEqual([{id: 1, name: "Alice"}, {id: 2, name: "Bob"}])
+      expect(cfg.completeHours).toBe(0)
+      expect(cfg.db).toEqual({type: "postgres", connectionString: "postgres://localhost/db"})
+      expect(cfg.messages.welcome).toBe("Hello!\n\nAsk anything.")
+      expect(cfg.messages.queue).toBe(defaultMessages.queue)
+    })
+
+    test("command-line options take precedence over the file, given before or after --config", () => {
+      const path = configFile(`team-group = "From file"\ntimezone = "Europe/London"`)
+      expect(parseConfig(["--team-group", "From CLI", "--config", path]).teamGroup.name).toBe("From CLI")
+      expect(parseConfig([`--config=${path}`, "--team-group", "From CLI"]).timezone).toBe("Europe/London")
+    })
+
+    test("without --config → default messages", () => {
+      expect(parseConfig(baseArgs).messages).toEqual(defaultMessages)
+    })
+
+    test("values are validated as on the command line", () => {
+      expect(() => parseConfig(["--config", configFile(`team-group = "T"\ncomplete-hours = -1`)]))
+        .toThrow(/--complete-hours must be a non-negative integer, got "-1"/)
+      expect(() => parseConfig(["--config", configFile(`team-group = "T"\ndb = "mysql"`)]))
+        .toThrow(/Allowed choices are sqlite, postgres/)
+      expect(() => parseConfig(["--config", configFile(`team-group = "T"\nteam_group = "U"`)]))
+        .toThrow(/unknown option '--team_group=U'/)
+    })
+
+    test("flags, nested config and non-scalar values → throw", () => {
+      expect(() => parseConfig(["--config", configFile(`team-group = "T"\ndry-run = true`)]))
+        .toThrow(/dry-run must be a string, a number or a list of strings/)
+      expect(() => parseConfig(["--config", configFile(`team-group = "T"\nconfig = "other.toml"`)]))
+        .toThrow(/config cannot be set in a config file/)
+    })
+
+    test("unknown or non-string messages → throw", () => {
+      expect(() => parseConfig(["--config", configFile(`team-group = "T"\n[messages]\nwelcom = "Hi"`)]))
+        .toThrow(/unknown message "welcom", known messages: welcome, queue,/)
+      expect(() => parseConfig(["--config", configFile(`team-group = "T"\n[messages]\nwelcome = 1`)]))
+        .toThrow(/message "welcome" must be a string/)
+      expect(() => parseConfig(["--config", configFile(`team-group = "T"\nmessages = "Hi"`)]))
+        .toThrow(/messages must be a table/)
+    })
+
+    test("malformed TOML → throws", () => {
+      expect(() => parseConfig(["--config", configFile(`team-group = "unclosed`)])).toThrow()
+    })
   })
 
   test("unknown flag → parseArgs throws", () => {

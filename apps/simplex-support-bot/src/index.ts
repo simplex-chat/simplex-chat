@@ -6,7 +6,6 @@ import {SupportBot} from "./bot.js"
 import {dryRun} from "./dryRun.js"
 import {GrokApiClient, GrokMessage} from "./grok.js"
 import {loadGrokContext} from "./context.js"
-import {welcomeMessage} from "./messages.js"
 import {profileMutex, log, logError, getGroupInfo, getContact} from "./util.js"
 
 interface BotState {
@@ -101,7 +100,7 @@ async function main(): Promise<void> {
       addressSettings: {
         businessAddress: true,
         autoAccept: true,
-        welcomeMessage,
+        welcomeMessage: config.messages.welcome,
       },
       commands: desiredCommands,
       useBotProfile: true,

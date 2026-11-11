@@ -44,6 +44,7 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 
 | Flag | Backend | Required | Default | Description |
 |---|---|---|---|---|
+| `--config` | both | no | | TOML file with option values and message texts, see [Config file](#config-file) |
 | `--team-group` | both | yes | — | team group display name |
 | `--state-file` | both | no | `./data/state.json` | path to bot state JSON |
 | `--db` | both | no | `sqlite` | `sqlite` or `postgres` |
@@ -59,6 +60,44 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 | `--dry-run` | both | no | | check config, database and state, then exit |
 | `--allow-migrations` | both | no | | with `--dry-run`: apply pending migrations instead of reporting them |
 | `-h` / `--help` | both | no | | show usage and exit |
+
+## Config file
+
+`--config bot.toml` reads option values and message texts from a TOML file. Keys are the flag names without `--`; a list is joined with commas. An option given on the command line takes precedence over the file. `--dry-run` and `--allow-migrations` are command-line only.
+
+```toml
+team-group = "SimpleX Support Team"
+auto-add-team-members = ["142681:Alice"]
+context-file = "/etc/support-bot/grok-context.yaml"
+timezone = "UTC"
+
+[messages]
+welcome = """
+Hello! This is a *SimpleX team* support bot - not an AI.
+Discover public groups: [simplex.chat/directory](https://simplex.chat/directory)
+
+Please ask any questions about SimpleX Chat."""
+queue = "The team will reply to your message within {hours} hours."
+```
+
+A message left out keeps its built-in text. `{hours}` is replaced with 24 on weekdays and 48 at weekends in `--timezone`. The welcome message is updated in the bot address on the next start.
+
+| Message | Sent when |
+|---|---|
+| `welcome` | a customer connects to the business address |
+| `queue` | a customer's first message is queued for the team, and after `grokUnavailable` when `/grok` was the first message |
+| `queueGrok` | appended to `queue` after an empty line when Grok is enabled |
+| `grokActivated` | Grok joins after `/grok` |
+| `teamAdded` | team members are added after `/team` |
+| `teamAddedGrok` | appended to `teamAdded` on a new line when Grok is in the chat |
+| `teamAlreadyInvited` | `/team` is sent again while a team member is in the chat |
+| `teamLocked` | `/grok` is sent after a team member wrote in the chat |
+| `noTeamMembers` | `/team` is sent with no team members configured |
+| `noTeamMembersGrok` | the same, when Grok is enabled |
+| `grokInviting` | Grok is being invited |
+| `grokUnavailable` | Grok cannot be invited, does not join within 2 minutes, or its first answer fails |
+| `grokError` | Grok's answer to a later message fails |
+| `grokNoHistory` | Grok joined but could not read earlier messages |
 
 ## Environment variables
 
@@ -78,7 +117,7 @@ PG_CONN='postgres://simplex@127.0.0.1/simplex_support_bot' \
   docker compose -f scripts/support-bot/compose.yml up --build
 ```
 
-The Grok context file is read from `scripts/support-bot/config/grok-context.txt`, and `GROK_API_KEY` from the environment.
+The Grok context file is read from `scripts/support-bot/config/grok-context.txt`, and `GROK_API_KEY` from the environment. `scripts/support-bot/config` is mounted at `/etc/support-bot`, so a config file placed there is passed as `--config /etc/support-bot/bot.toml`.
 
 ## Dry run
 
