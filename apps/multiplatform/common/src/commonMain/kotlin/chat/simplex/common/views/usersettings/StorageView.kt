@@ -15,21 +15,23 @@ import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.io.IOException
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 
-private class EntryUsage(val name: String, val bytes: Long)
+private const val MAX_ENTRY_ROWS = 200
 
-private class RootUsage(val dir: File, val entries: List<EntryUsage>) {
+internal class EntryUsage(val name: String, val bytes: Long, val dir: Path?)
+
+internal class RootUsage(val dir: Path, val entries: List<EntryUsage>) {
   val bytes: Long = entries.sumOf { it.bytes }
 }
 
 @Composable
-fun StorageView() {
-  val usage by produceState<List<RootUsage>?>(initialValue = null) {
-    value = withContext(Dispatchers.IO) { storageRoots().map(::rootUsage) }
+fun ModalData.StorageView(dirs: List<Path> = storageRoots()) {
+  var usage by remember { stateGetOrPutNullable<List<RootUsage>>("usage") { null } }
+  LaunchedEffect(Unit) {
+    if (usage == null) usage = withContext(Dispatchers.IO) { dirs.map(::rootUsage) }
   }
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.storage))
@@ -39,9 +41,16 @@ fun StorageView() {
     } else {
       roots.forEachIndexed { i, root ->
         if (i > 0) SectionDividerSpaced()
-        SectionView(root.dir.path) {
+        SectionView(root.dir.toString()) {
           UsageRow(stringResource(MR.strings.storage_total), root.bytes)
-          root.entries.forEach { UsageRow(it.name, it.bytes) }
+          root.entries.take(MAX_ENTRY_ROWS).forEach { entry ->
+            val click = entry.dir?.let { dir -> { ModalManager.start.showModal(cardScreen = true) { StorageView(listOf(dir)) } } }
+            UsageRow(entry.name, entry.bytes, click)
+          }
+          val otherEntries = root.entries.drop(MAX_ENTRY_ROWS)
+          if (otherEntries.isNotEmpty()) {
+            UsageRow("… +${otherEntries.size}", otherEntries.sumOf { it.bytes })
+          }
         }
       }
     }
@@ -50,29 +59,32 @@ fun StorageView() {
 }
 
 @Composable
-private fun UsageRow(name: String, bytes: Long) {
-  SectionItemViewSpaceBetween {
+private fun UsageRow(name: String, bytes: Long, click: (() -> Unit)? = null) {
+  SectionItemViewSpaceBetween(click) {
     Text(name, Modifier.weight(1f))
     Text(formatBytes(bytes), Modifier.padding(start = DEFAULT_PADDING), color = MaterialTheme.colors.secondary)
   }
 }
 
-private fun storageRoots(): List<File> {
+private fun storageRoots(): List<Path> {
   val dirs = listOf(dataDir, preferencesDir, tmpDir).map { it.normalize() }.distinct()
-  return dirs.filter { dir -> dirs.none { it != dir && dir.startsWith(it) } }
+  return dirs.filter { dir -> dirs.none { it != dir && dir.startsWith(it) } }.map { it.toPath() }
 }
 
-private fun rootUsage(root: File): RootUsage =
+internal fun rootUsage(root: Path, closedDirs: List<Path> = listOf(appFilesDir, tmpDir, remoteHostsDir, databaseExportDir).map { it.toPath() }): RootUsage =
   RootUsage(
     root,
     rootEntries(root)
-      .map { EntryUsage(it.fileName.toString(), treeSize(it)) }
+      .map { path -> EntryUsage(path.fileName.toString(), treeSize(path), path.takeIf { opensAsFolder(path, closedDirs) }) }
       .sortedByDescending { it.bytes }
   )
 
-private fun rootEntries(root: File): List<Path> =
+private fun opensAsFolder(path: Path, closedDirs: List<Path>): Boolean =
+  Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && closedDirs.none { path.toAbsolutePath().normalize().startsWith(it.toAbsolutePath().normalize()) }
+
+private fun rootEntries(root: Path): List<Path> =
   try {
-    Files.newDirectoryStream(root.toPath()).use { it.toList() }
+    Files.newDirectoryStream(root).use { it.toList() }
   } catch (e: Exception) {
     Log.e(TAG, "StorageView rootEntries: ${e.javaClass.simpleName}")
     emptyList()
