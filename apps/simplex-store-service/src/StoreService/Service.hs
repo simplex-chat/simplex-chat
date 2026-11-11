@@ -58,7 +58,7 @@ import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
-import StoreService.Names.Sender (runSender)
+import StoreService.Names.Sender (checkPendingSignatures, runSender)
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
@@ -306,7 +306,7 @@ storeService opts serviceCfg baseCfg env = do
         raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
       chatHooks =
         defaultChatHooks
-          { preStartHook = Just $ badgePreStartHook opts,
+          { preStartHook = Just $ badgePreStartHook opts (serviceCfg >>= names),
             postStartHook = Just $ badgePostStartHook opts env,
             preCmdHook = Just $ badgeCmdHook turns consoleContracts
           }
@@ -395,7 +395,7 @@ storeServiceCLI opts serviceCfg = do
         ev -> pure ev
       chatHooks =
         defaultChatHooks
-          { preStartHook = Just $ badgePreStartHook opts,
+          { preStartHook = Just $ badgePreStartHook opts Nothing,
             postStartHook = Just $ badgePostStartHook opts env,
             preCmdHook = Just $ badgeCmdHook turns consoleContracts,
             eventHook = Just eventHook
@@ -661,9 +661,10 @@ routeLookahead = 60
 survive :: T.Text -> IO () -> IO ()
 survive what action = action `catchOwn'` \_ -> logError $ "store service: " <> what <> " failed; the next one will be handled"
 
-badgePreStartHook :: StoreServiceOpts -> ChatController -> IO ()
-badgePreStartHook opts ChatController {config, chatStore} =
+badgePreStartHook :: StoreServiceOpts -> Maybe NamesConfig -> ChatController -> IO ()
+badgePreStartHook opts namesCfg_ ChatController {config, chatStore, random} = do
   runStoreServiceMigrations opts config chatStore
+  forM_ namesCfg_ $ \NamesConfig {nChain} -> checkPendingSignatures random nChain chatStore >>= orExit
 
 badgePostStartHook :: StoreServiceOpts -> ServiceState -> ChatController -> IO ()
 badgePostStartHook StoreServiceOpts {noAddress, testing} env cc = do
