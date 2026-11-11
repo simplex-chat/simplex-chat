@@ -669,6 +669,7 @@ smpServerCfg p =
       pendingENDInterval = 500000,
       authErrorDelay = 10,
       ntfDeliveryInterval = 200000,
+      ntfDeliveryChunk = 1000,
       smpServerVRange = supportedServerSMPRelayVRange,
       transportConfig = mkTransportServerConfig True (Just alpnSupportedSMPHandshakes) True,
       smpHandshakeTimeout = 1000000,
