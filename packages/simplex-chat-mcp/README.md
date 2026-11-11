@@ -52,6 +52,14 @@ answer each one in that chat, and call receive again after every answer, until I
 
 Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
 
+To prompt it on a schedule, send in "My Agent", with your chat's ID from `/list` in place of `@5`:
+
+```
+/schedule @5 0 7 * * 1-5 Search the SimpleX Directory for new security groups.
+```
+
+`0 7 * * 1-5` is cron syntax for 07:00 on weekdays, server time. At that time the agent gets this prompt from its next `receive` in your chat, and answers you there. Send `/schedules` to list the schedules, and `/unschedule @5 1` to remove this one.
+
 ## Safety
 
 - The agent asks in "My Agent" before it connects, sends a message or a file, downloads a file or leaves; you approve or reject. On a download card, `/receive` gives the agent the file, and `/forward` sends it only to you.
@@ -65,7 +73,7 @@ The agent is tested with Claude Code. Tell us which other apps and models you wa
 
 ## Reference
 
-Approval modes, owners, several agents, other MCP hosts, recovery and all options: [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md).
+Approval modes, owners, scheduled prompts, several agents, other MCP hosts, recovery and all options: [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md).
 
 ## Own a part of SimpleX
 

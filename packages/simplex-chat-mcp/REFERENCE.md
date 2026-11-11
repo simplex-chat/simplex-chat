@@ -2,7 +2,7 @@
 
 [README](README.md) has the short version.
 
-`@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and files, and receives all the responses, with the files people send it. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends, downloads a file or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust, or all files from it. Six tools cover it: `connect`, `send`, `receive`, `download`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
+`@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and files, and receives all the responses, with the files people send it. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends, downloads a file or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust, or all files from it; you also schedule prompts for it there. Six tools cover it: `connect`, `send`, `receive`, `download`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
 
 What it isn't:
 - **Not a directory or a search service.** The agent reaches chats through links, SimpleX names and the directories it connects to.
@@ -256,10 +256,13 @@ Commands:
 | `/delete #9 files` | Cancels the running downloads from chat #9, which then fail, also those the core continues after a restart, and deletes the chat's files in the data folder, forwarded ones included, for a current or a left chat: `Deleted 3 files from #9, 2.1 MB.` or `No files from #9.` |
 | `/pending` | Lists pending actions. |
 | `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages or all files: `, approved for this chat by NAME` and `, files approved by NAME`; a last line counts the older chats. |
+| `/schedule #3 0 7 * * 1-5 TEXT` | Schedules the prompt TEXT for chat #3 at 07:00 on weekdays, server time: [Scheduled prompts](#scheduled-prompts). |
+| `/unschedule #3 1` | Removes schedule 1 of chat #3. |
+| `/schedules` | Lists the schedules of all chats. |
 
 After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``. The files forwarded from #9 are deleted when the agent leaves it.
 
-`/pending`, `/list` and `/leave` are in the chat's command menu, and the cards carry the others. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
+`/pending`, `/list`, `/schedules` and `/leave` are in the chat's command menu, and each pending card shows the commands of its action. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
 
 ### Approval of all messages to a chat
 
@@ -286,6 +289,56 @@ After `/receive #3 7 all`, the agent's later downloads from #3 are performed at 
 - It lasts as the approval of messages does, until `/receive #3 off`, and is kept next to it in the chat's custom data.
 - `/list` shows it as `, files approved by Alice`.
 
+### Scheduled prompts
+
+An owner schedules a prompt for a chat with `/schedule CHAT CRON PROMPT`. After `/schedule #3 0 7 * * 1-5 Post the trail report for today.`, the agent replies:
+
+```
+My Agent: Schedule 1 of group Builders (#3): 0 7 * * 1-5, server time UTC+01:00. /unschedule #3 1
+```
+
+- CHAT: a chat ID from `/list`.
+- CRON: the 5 words after CHAT; the fields are minute, hour, day of month, month and day of week, in server time. A field is `*`, `N`, `A-B`, `*/S` or `A-B/S`, or a comma list of these; names such as `MON` are refused. Ranges: minute 0-59, hour 0-23, day of month 1-31, month 1-12, day of week 0-7, with 0 and 7 for Sunday. When neither day field starts with `*`, a match of either one suffices, as in vixie cron.
+- PROMPT: the rest of the one-line message, at most 2000 characters; a sixth cron field is read as the first word of PROMPT.
+- Server time: the local time of the server, in the system's time zone, or in the one set by the `TZ` environment variable, such as `TZ=Europe/Berlin npx -y @simplex-chat/mcp serve my-agent`. Its current UTC offset is shown in the reply to `/schedule`. At a daylight saving change, a skipped local time is never matched, and a repeated one can be matched twice.
+
+At each minute matched by a schedule, its prompt becomes due:
+- `receive` of the chat returns it once, in `scheduled` ([What the agent sees](#what-the-agent-sees)), and a `receive` waiting in the chat ends at once. A session waiting in `receive` of the chat, as asked by the prompt in the [README](README.md), gets it at that minute.
+- Each schedule has at most one due prompt: until `receive` returns it, the later times of that schedule are skipped, and its `at` is the first due minute.
+- Due prompts are kept in memory and lost when the server stops; times while it is stopped are skipped.
+- Prompts become due only while the owner who added the schedule is an approver, and while the agent keeps its control chat.
+
+A chat has at most 10 schedules. They are kept across restarts in the agent's database, as custom data of the chat, and deleted with the chat when the agent leaves it. The commands are accepted in both approval modes.
+
+The reply to `/schedules` has one line per schedule: chat, number, cron and prompt. The chats are in the order of `/list`, and a long line is cut to at most 100 bytes, ending with `…`. The schedules after the first 100 are counted in a last line; without schedules, the reply is `No schedules.`
+
+```
+My Agent: #3  1  0 7 * * 1-5  Post the trail report for today.
+          #3  2  30 18 * * *  Summarize the day's messages.
+```
+
+The reply to `/unschedule #3 1` is `Schedule 1 of group Builders (#3) is removed.` The later schedules of #3 are renumbered, and the due prompt of the removed one is dropped.
+
+Refusals:
+
+```
+situation                                  reply
+CHAT unknown, or the agent control chat    No chat #3. /list shows the agent's chats.
+a word of CRON not of these forms          Schedule: 5 cron fields expected, such as 0 7 * * *.
+a field out of its range, A above B, S 0   Schedule: cron field 60 is out of range.
+PROMPT over 2000 characters                Schedule: the prompt is over 2000 characters.
+CHAT with 10 schedules                     Schedule: group Builders (#3) has 10 schedules; /unschedule #3 N removes one.
+/unschedule of a missing number            #3 has no schedule 3.
+```
+
+The server logs each change and each due prompt, with names on one line:
+
+```
+Schedule 1 of #3 added by Alice: 0 7 * * 1-5.
+Scheduled prompt 1 of #3 is due.
+Schedule 1 of #3 removed by Alice.
+```
+
 ## What the agent sees
 
 Six tools:
@@ -294,7 +347,7 @@ Six tools:
 |---|---|
 | `connect` | Joins a contact, bot, business, group or channel by a link or a SimpleX name, as the agent's profile or incognito. Returns the chat, its profile, welcome message, the commands a bot advertises, and the messages so far. |
 | `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
-| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. |
+| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked, and the chat's due scheduled prompts. |
 | `download` | Downloads the file of a received message to the data folder and returns its full path. |
 | `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
 | `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
@@ -304,6 +357,8 @@ A `send` to a chat that `list` shows with `connected: false` is refused before a
 A received message with a file has a `file` field: its name, size, type (image, video, voice or file) and status. Status `offered` means `download` can fetch it; `received` comes with the path of the file that `download` downloaded; a file `/forward` sent to you stays `offered`; `rejected` means you rejected its download, or it expired; `failed` comes with the error, also for a file above the size its sender may send, and for a received file that is not in the chat's folder, for example after `/delete #3 files`. A downloaded file is named by its file ID and the extension of its name, when the extension has only letters and digits: the name the sender gave stays in the `name` field. `download` first waits, up to `wait` seconds, for the sender to finish the upload; when it has not finished by then, the call returns an error that asks to call again later. A `download` that runs past its `wait` after the approval returns status `performing`, and the same call again picks it up. A download fails when the sender cancels the file, when the message or its chat is deleted, or when no part of the file arrives for 30 minutes; the server then cancels it.
 
 A short voice message can arrive with its file already received. The server moves such a file into the chat's folder under the same naming when it is received in full, and its message shows it as `offered`; `download` returns its path there after the approval. A partial file of a download, or of a short voice message that arrives while the server runs, is deleted when its transfer fails or is cancelled.
+
+`receive` returns the chat's due [scheduled prompts](#scheduled-prompts) in `scheduled`, a field present only when a prompt is due: `{"chat": "#3", "messages": [], "more": 0, "scheduled": [{"prompt": "Post the trail report for today.", "at": "2026-11-11 06:00 UTC"}]}`, where `at` is the minute the prompt became due. A `receive` with a due prompt returns at once; after a call that ends without a result, its prompts stay due. The agent is told, in the description of `receive`, to handle each one as a prompt from its owner and to answer in that chat.
 
 `send` with `file`, an absolute path, sends that file with `text` as its caption:
 - `.jpg`, `.jpeg` and `.png` as an image, resized by the SimpleX core to the size the apps send, with a preview the core makes;
@@ -410,7 +465,7 @@ register options:
 
 The folder is readable only by the user: every start sets its mode to 0700, except on Windows.
 
-The server keeps its action counter in the chat database, as custom data of the agent control chat, the approvals of all messages to a chat and of all files from it as custom data of that chat, and its actions in memory.
+The server keeps its action counter in the chat database, as custom data of the agent control chat; the approvals of all messages to a chat and of all files from it, and the chat's schedules, as custom data of that chat; and its actions and due scheduled prompts in memory.
 
 The server keeps no log file: it writes its log to the terminal where `serve` runs, events to stdout and errors to stderr.
 
@@ -424,6 +479,7 @@ One server runs per data folder: a second one exits, because two processes on on
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
 - After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
+- Only approvers schedule prompts, and a schedule's prompts become due only while the owner who added it is an approver. `receive` returns them in `scheduled`, apart from the chat's messages.
 - The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
 - After `/receive #N 7 all`, the agent's later downloads from that chat, of files on its XFTP servers, run without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; any other download of it fails, unless the IP address is protected.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.

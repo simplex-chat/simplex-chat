@@ -51,6 +51,13 @@ The directory by its address (`docs/DIRECTORY.md`):
 5. `List your chats and pending actions.` `list`.
 6. Reject one card with its `/reject @N A`: the call returns `status: rejected`; the card ends with `Rejected by Alice.` `/pending` lists the waiting cards.
 
+Scheduled prompts, in the directory's chat:
+
+1. In "My Agent", send `/schedule @N * * * * * Search the directory for hiking groups.` The reply is `Schedule 1 of bot SimpleX Directory (@N): * * * * *, server time UTC±HH:MM. /unschedule @N 1`, with this computer's offset from UTC; the terminal prints `Schedule 1 of @N added by Alice: * * * * *.`
+2. `Wait up to 5 minutes for new messages from the directory.` Within a minute of step 1, the terminal prints `Scheduled prompt 1 of @N is due.`, and `receive` returns the prompt in `scheduled`, with that minute in UTC. Claude takes it as your prompt and asks to send the search: reject the card.
+3. Wait three minutes: since the call of step 2 returned, the terminal has printed the line of step 2 once more. `Check for new messages from the directory.` `scheduled` has one prompt, due at the first minute after that call.
+4. Tap `/schedules` in the command menu: `@N  1  * * * * *  Search the directory for hiking groups.` Tap `/unschedule @N 1` in the reply of step 1: `Schedule 1 of bot SimpleX Directory (@N) is removed.`, and the terminal prints `Schedule 1 of @N removed by Alice.` The reply to `/schedules` is then `No schedules.`
+
 Approval of all messages to a chat, and leaving:
 
 1. `Search the directory for Monero groups.` On the card, tap `/approve @N all`. The reply is `Approved for bot SimpleX Directory (@N) by Alice. /revoke @N`, and the search is sent.
