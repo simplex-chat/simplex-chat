@@ -12,6 +12,7 @@ class StorageViewTest {
   @Test
   fun testFolderEntryOpensTheFolder() = withTempDir { root ->
     val tempFiles = Files.createDirectory(root.resolve("temp_files"))
+    val appFiles = Files.createDirectory(root.resolve("app_files"))
     Files.createFile(root.resolve("files_chat.db"))
     try {
       Files.createSymbolicLink(root.resolve("lib"), tempFiles)
@@ -20,8 +21,9 @@ class StorageViewTest {
       return@withTempDir
     }
 
-    val entries = rootUsage(root).entries.associateBy { it.name }
+    val entries = rootUsage(root, closedDir = appFiles).entries.associateBy { it.name }
     assertEquals(tempFiles, entries.getValue("temp_files").dir)
+    assertNull(entries.getValue("app_files").dir)
     assertNull(entries.getValue("files_chat.db").dir)
     assertNull(entries.getValue("lib").dir)
   }

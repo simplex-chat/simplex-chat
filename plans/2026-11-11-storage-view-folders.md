@@ -12,6 +12,7 @@ The Storage screen in Developer options shows the size of each top-level entry o
 
 - `StorageView` takes the directories to list, `storageRoots()` by default.
 - An entry that is a directory and not a symlink keeps its `Path` from `Files.newDirectoryStream`; its row opens `StorageView` for that directory.
+- The row of `appFilesDir` does not open.
 - Each screen keeps its listing in its `ModalData`, so Back shows the parent's listing without walking it again.
 - `rootUsage`, `RootUsage` and `EntryUsage` are `internal`, for `StorageViewTest`.
 

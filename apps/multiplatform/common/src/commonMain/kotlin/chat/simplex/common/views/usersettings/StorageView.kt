@@ -65,13 +65,16 @@ private fun storageRoots(): List<Path> {
   return dirs.filter { dir -> dirs.none { it != dir && dir.startsWith(it) } }.map { it.toPath() }
 }
 
-internal fun rootUsage(root: Path): RootUsage =
+internal fun rootUsage(root: Path, closedDir: Path = appFilesDir.toPath()): RootUsage =
   RootUsage(
     root,
     rootEntries(root)
-      .map { path -> EntryUsage(path.fileName.toString(), treeSize(path), path.takeIf { Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) }) }
+      .map { path -> EntryUsage(path.fileName.toString(), treeSize(path), path.takeIf { opensAsFolder(path, closedDir) }) }
       .sortedByDescending { it.bytes }
   )
+
+private fun opensAsFolder(path: Path, closedDir: Path): Boolean =
+  Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && path.toAbsolutePath().normalize() != closedDir.toAbsolutePath().normalize()
 
 private fun rootEntries(root: Path): List<Path> =
   try {
