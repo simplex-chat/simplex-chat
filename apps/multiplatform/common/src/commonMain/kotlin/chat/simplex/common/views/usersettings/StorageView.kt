@@ -19,9 +19,9 @@ import java.io.IOException
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 
-private class EntryUsage(val name: String, val bytes: Long, val dir: Path?)
+internal class EntryUsage(val name: String, val bytes: Long, val dir: Path?)
 
-private class RootUsage(val dir: Path, val entries: List<EntryUsage>) {
+internal class RootUsage(val dir: Path, val entries: List<EntryUsage>) {
   val bytes: Long = entries.sumOf { it.bytes }
 }
 
@@ -64,7 +64,7 @@ private fun storageRoots(): List<Path> {
   return dirs.filter { dir -> dirs.none { it != dir && dir.startsWith(it) } }.map { it.toPath() }
 }
 
-private fun rootUsage(root: Path): RootUsage =
+internal fun rootUsage(root: Path): RootUsage =
   RootUsage(
     root,
     rootEntries(root)
