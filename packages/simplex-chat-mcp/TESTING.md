@@ -1,4 +1,4 @@
-# Testing @simplex-chat/mcp v0.2
+# Testing @simplex-chat/mcp v0.3
 
 Node.js 22. Claude Code runs on the same computer as `serve`: the server listens on 127.0.0.1 only.
 
@@ -86,9 +86,26 @@ Incognito, as a second agent, because the first one already knows the directory:
 2. `Using simplex-scout, connect to the directory incognito: https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok` Card: `I want to connect to bot SimpleX Directory, incognito.` Approve it; Claude gets `known_as`, a random name.
 3. `Using simplex-scout, list your chats.` The directory has `incognito: true` and the same `known_as`. A send card for it says `where I am incognito`.
 
+Status messages, in your chat with the agent:
+
+1. `Connect to me as yourself at <your SimpleX address>.` Approve the card, and accept the request in the app. In "My Agent", send `/approve @N all`, with the chat's ID from `/list`: the reply is `Approved for contact <your name> (@N) by <your name>. /revoke @N`.
+2. `Take my prompts from that chat and answer there: wait for my messages with receive (wait 3600, typing true), answer each one in that chat with send (wait 0), and call receive again after every answer, until I say stop. Before each step that takes a while, send a short note with live: true.`
+3. Send a prompt from the app. A message with the header `LIVE` is shown: `◐ thinking · 0:00`, then `◓ thinking · 0:03`, with the next frame at each update. Each note is shown under the line, and the terminal prints `Note to contact <your name> (@N): <the note>`.
+4. The answer is received as a new message, and the status message is shown as `marked deleted`. Set "Delete for everyone" to "always" in the agent contact's preferences, and send another prompt: after the answer, the status message is removed.
+5. Send a prompt, and send `/revoke @N` in "My Agent" while the status message is shown: the status message is deleted within about 20 seconds, and a card is posted for the answer.
+6. With a group of yours and a second member in it: give Claude Code the group prompt of the README, approve its card, and send `/approve #N all` in "My Agent". After a message of either member, a status message is posted; both members see it and its notes, and the terminal prints `Note to group <name> (#N): <the note>`.
+
+Status messages with llama-swap:
+
+1. Start llama-swap on port 8080, and restart with `node dist/cli.js serve my-agent --inference http://127.0.0.1:8080`. The terminal prints `Inference endpoint: http://127.0.0.1:8080` after `Approval mode: requests`.
+2. Send a prompt from the app. Within 10 minutes, while the status message is shown, send llama-swap a request with a long prompt for a model not yet loaded, from another terminal. The label is `loading MODEL`, then `reading the prompt with MODEL, N tokens read` and `generating with MODEL, N tokens/s`, with MODEL as code; after the request, `working`.
+3. Stop llama-swap. The server writes `inference endpoint: GET http://127.0.0.1:8080/running: connect ECONNREFUSED 127.0.0.1:8080` to stderr once, and the label is `thinking` again.
+4. `node dist/cli.js serve my-agent --inference http://127.0.0.1:8080 --approve host` exits with `--inference: status messages are shown only in mode requests.` With `SIMPLEX_MCP_INFERENCE_KEY="a b"`, `serve` with `--inference` exits with `SIMPLEX_MCP_INFERENCE_KEY: visible ASCII characters expected.` Both exit with code 2.
+
 Stop and restart:
 
-- Stop the server while a card waits: the terminal prints `Stopping: sending 1 cancelled card, up to 10 s. Ctrl-C to stop now.`, and the card ends with `Cancelled: the server stopped.` A second Ctrl-C during the wait stops the server at once. With no card waiting, Ctrl-C stops it at once. After a restart, `/approve` of that number replies `Action N is not pending.`, and the next card has the next number.
+- Stop the server while a card waits: the terminal prints `Stopping: sending 1 cancelled card, up to 10 s. Ctrl-C to stop now.`, and the card ends with `Cancelled: the server stopped.` With a status message shown too, the line is `Stopping: sending 1 cancelled card and 1 status deletion, up to 10 s. Ctrl-C to stop now.`, and the status message is deleted. A second Ctrl-C during the wait stops the server at once. With no card waiting and no status message shown, Ctrl-C stops it at once. After a restart, `/approve` of that number replies `Action N is not pending.`, and the next card has the next number.
+- Stop the server with `kill -9` and the PID in `~/.simplex-mcp/my-agent/lock` while a status message is shown: at the next start, the server deletes the status message before it prints `Listening on http://127.0.0.1:5226/mcp`.
 - A second `serve my-agent` on the same data folder exits with `Another server uses ... (PID N). If no server runs, remove .../lock.` A port in use exits with `Port 5226 is in use. Start with --port N.`, before any link is printed.
 - Restart with `--new-token`, without `register`: after the reconnection, `list` returns the chats. Checked with `claude -p` and an `--mcp-config` entry with `headersHelper`, Claude Code 2.1.302, 2026-10-18.
 

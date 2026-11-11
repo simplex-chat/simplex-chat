@@ -1,6 +1,6 @@
-# SimpleX MCP server 0.2: plan
+# SimpleX MCP server 0.3: plan
 
-Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
+Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`), live status 2026-11-10 (`plans/2026-11-10-mcp-live-status.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); in the sections of the status message and the inference endpoint, master `f8776692df`; `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
 
 ## Scope
 
@@ -12,13 +12,14 @@ In:
 - six tools: `connect`, `send`, `receive`, `download`, `list`, `leave`;
 - files: the `file` field of received messages, `download` to save one in the data folder, `send` with `file` to send one;
 - connections to contact addresses, one-time links, groups, channels and SimpleX names, as the agent's profile or incognito;
-- bots as services: the commands a bot advertises are returned by `connect`.
+- bots as services: the commands a bot advertises are returned by `connect`;
+- a status message while the agent works, in a chat whose messages the owner approved with `/approve CHAT all`: the agent's state, its notes, and the state of a model behind llama-swap or llama-server.
 
 Out of scope:
 
 - an address of the agent: nobody can contact it first;
 - the owner's approval of messages to the agent;
-- reactions, edits, deletions, forwarding;
+- reactions, forwarding, and edits and deletions other than those of the status message;
 - one call over all chats: the agent receives from each chat; `list` gives unread counts;
 - running catalogues or vendor services: those are bots on the bot library;
 - Claude Code channels, OpenClaw hooks, registration in hosts other than Claude Code.
@@ -140,6 +141,8 @@ serve.ts      start sequence, events, shutdown
 control.ts    the agent control chat: link, owners, owner commands, cards, action counter
 actions.ts    actions: state machine, expiry, attach rule
 tools.ts      MCP tools, schemas, instructions
+status.ts     status messages: schedule, labels, notes, deletion
+inference.ts  polls of llama-swap or llama-server: model state, tokens read, tokens per second
 messages.ts   message items, waits, responses
 http.ts       listener, token, /mcp, the SDK handler with its Origin and Host checks
 files.ts      token, headers.json, server.json, lock
@@ -189,6 +192,7 @@ open calls    memory
 downloads     memory: one per file ID, until the file is received or fails
 forwarding    memory: the /forward of a file ID until its copy for posting is made
 rejected files memory: file IDs whose download call returned rejected or expired; a done download removes its ID
+statuses      memory: at most one status message per chat; leftovers of a crash are deleted at the next start, in chats that meet the conditions of status messages
 ```
 
 - Writes of the custom data run one at a time, through one queue in the server, in counter order: the library runs each command in a worker thread (`simplex-chat/cpp/simplex.cc:46-54`), and `APISetGroupCustomData` takes no lock (`Commands.hs:1668-1672`).
@@ -208,6 +212,7 @@ serve NAME:
 --new-token       flag                                 off
 --port            1 to 65535                           5226
 --qr-code         small | large                        small
+--inference       URL of llama-swap or llama-server    absent
 register NAME:
 --scope           user | local                         user
 --data            folder                               ~/.simplex-mcp/NAME
@@ -218,7 +223,8 @@ register NAME:
 - `--owners` with no value: the next argument is absent or starts with `--`; parsing is custom, because `util.parseArgs` takes an option either as a flag or with a value. Entries whose NAME has characters other than letters, digits, `_` and `-` are printed in single quotes, `'` escaped as `'\''` (double quotes on Windows): `--owners '3:Alice Smith'`. The register hint adds `--data <folder>`, quoted the same way, when serve was started with `--data`.
 - `--port` and `--expire` apply to one run; `server.json` records them at each start for `register`. An agent on another port takes the same `--port` at every start; after a change of `--port` or `--expire`, `register NAME` runs again.
 - `--expire` at most 23: a sent message is editable for 24 hours (`deletable'`, `Messages.hs:537-548`; refused edit, `Commands.hs:845-868`), so the outcome edit of a pending card falls within that window. Standing and host-mode outcomes are posted, not edited.
-- `--stop-wait`: at stop, after the cards of pending and performing actions are edited or posted, the server waits this many seconds before it closes the chat, so that the agent sends those messages; 0 does not wait (section Start and shutdown).
+- `--stop-wait`: at stop, after the cards of pending and performing actions are edited or posted and the status messages are deleted, the server waits this many seconds before it closes the chat, so that the agent sends those messages; 0 does not wait (section Start and shutdown).
+- `--inference`: an http or https URL, kept without trailing slashes, query and hash. The server polls it for the model state shown in status messages (section Inference endpoint). The API key is read from `SIMPLEX_MCP_INFERENCE_KEY` and sent to URL only.
 
 Rejected arguments, exit code 2:
 
@@ -228,7 +234,13 @@ argument                              message
 --owners entry not ID:NAME            --owners: ID:NAME expected, got <entry>
 NAME not ^[a-z0-9](-?[a-z0-9])*-?$,   NAME: 1 to 32 lowercase letters, digits and single hyphens, starting with a letter or digit.
   or longer than 32
+--inference value not an http or      --inference: an http or https URL without user name and password expected, got <value>
+  https URL, or with a user name
+  or password
+--inference with --approve host       --inference: status messages are shown only in mode requests.
 ```
+
+- With `--inference`, the server exits with code 2 before the data folder is created when `SIMPLEX_MCP_INFERENCE_KEY` is empty or has characters other than visible ASCII (0x21-0x7e): `SIMPLEX_MCP_INFERENCE_KEY: visible ASCII characters expected.`
 
 ## What the person sees: CLI
 
@@ -238,7 +250,7 @@ NAME not ^[a-z0-9](-?[a-z0-9])*-?$,   NAME: 1 to 32 lowercase letters, digits an
 $ npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
 Downloading libsimplex from https://github.com/simplex-chat/simplex-chat-libs/releases/download/core-7.1.0.20/simplex-chat-libs-linux-x86_64.zip ...
 Downloading the Node.js add-on from https://github.com/simplex-chat/simplex-chat-libs/releases/download/nodejs-addon-cce06d8/simplex-chat-nodejs-linux-x86_64.node ...
-SimpleX MCP server 0.2.0, agent "my-agent"
+SimpleX MCP server 0.3.0, agent "my-agent"
 Data folder: /home/alice/.simplex-mcp/my-agent
 Approval mode: requests
 Agent control chat "My Agent" created.
@@ -321,6 +333,10 @@ no approver, no --owners        No owners in the agent control chat. (followed b
 control chat lost               The agent lost its control chat. Restart the server with --reset-owners.
 shutdown                        Cancelled 2 actions. Stopped.   (the count only when actions were pending or performing; a perform interrupted by the stop logs no line)
 shutdown, cards edited or posted Stopping: sending 2 cancelled cards, up to 10 s. Ctrl-C to stop now.   (between the two lines above; "1 cancelled card")
+shutdown, statuses deleted      Stopping: sending 2 cancelled cards and 1 status deletion, up to 10 s. Ctrl-C to stop now.   (each part when above 0; "2 status deletions")
+--inference                     Inference endpoint: http://127.0.0.1:8080   (after "Approval mode: requests")
+note, send with live            Note to contact Alice (@4): Reading the file…   (names and text on one line)
+status error, stderr            status of @4: <error> | inference endpoint: <error> | status messages: <error>
 ```
 
 ## What the owner sees: the agent control chat
@@ -557,6 +573,117 @@ an owner in LIST loses the role or leaves,            Alice (member 3) is no lon
 
 - In the chat, the `--owners ...` part is a code span, for example ``Restart the server with `--owners 3:Alice` ``, so a name in it forms no tappable command; the terminal line is as shown.
 
+## What the owner sees: the status message
+
+When `receive` with `typing: true` returns messages of a chat approved with `/approve CHAT all`, the server posts a live message in that chat and edits it while the agent works: the status message. It is deleted for everyone after the agent's answer is sent. Every member of a group or business chat sees it.
+
+```
+chat                                                          status message
+direct chat with a contact whose peer type is neither bot     shown
+  nor agent
+group                                                         shown
+business chat                                                 shown
+channel                                                       refused
+direct chat with a bot or an agent                            refused
+```
+
+Conditions, read at each tick and at each note:
+
+```
+condition            value
+connection           connected, as in list()
+role                 groups: other than observer and relay
+approval             the standing approval of messages: approved: true in list
+mode                 requests
+control chat         not lost
+leave                the chat not being left by leave or /leave
+```
+
+Text:
+
+```
+part      value
+frame     ◐ ◓ ◑ ◒, in this order: render n has frame (n − 1) mod 4
+label     the first row of the labels below that applies
+elapsed   M:SS since the status message was created
+line      FRAME LABEL · ELAPSED, renders 1 to 49
+frozen    ◌ working since YYYY-MM-DD HH:MM UTC, from render 50
+text      LINE, or LINE + "\n" + NOTE after a send with live: true
+```
+
+Labels:
+
+```
+state                                                              label
+--inference: a model starting or answering 503, or one stopping    loading `MODEL`, or loading the model
+  while none is ready
+--inference: slots processing a prompt, none generating            reading the prompt[ with `MODEL`][, N tokens read]
+--inference: a slot generating                                     generating[ with `MODEL`][, N tokens/s]
+an action pending, with a call waiting on it                       waiting for approval
+a tool call of this server running, other than receive             using TOOL, of the latest such call
+--inference: slots read, none processing                           working
+otherwise                                                          thinking
+```
+
+- The first line is `◐ thinking · 0:00`. The label is read again for renders 2 to 49; a note is rendered with the last label.
+- `` with `MODEL` ``: all processing slots belong to one model of llama-swap. Model IDs outside `^[\w.:/+@-]{1,64}$` are dropped.
+- `, N tokens read` is shown when N is above 0. `, N tokens/s`, rounded, is shown when the same slot and task were read in the previous poll, processing with tokens already decoded, and more tokens were decoded since then.
+
+```
+time      the chat                                         notification
+12:00:00  Alice: summarize README.md
+12:00:01  agent [LIVE] ◐ thinking · 0:00                   a new item
+12:00:04               ◓ thinking · 0:03
+12:00:31               ◑ using download · 0:30
+12:01:00               ◑ thinking · 0:59                   (send with live: true)
+                       Reading the file…
+12:01:10  agent: The README describes …                    a new item; then the status message is deleted
+```
+
+With `--inference http://127.0.0.1:8080` (llama-swap), for example:
+
+```
+◓ loading `qwen3-coder-30b` · 0:03
+◒ reading the prompt with `qwen3-coder-30b`, 6144 tokens read · 0:09
+◓ generating with `qwen3-coder-30b`, 31 tokens/s · 0:15
+◐ working · 0:24
+```
+
+Schedule:
+
+```
+rule            value
+first render    at the start, after the first read of the conditions; with a note, at once
+gap             min(max(age / 10, 3 s), 20 s) while renders < 50: 3 s up to 30 s, 20 s from about 3 min 22 s
+frozen          render 50, at about 9 min 42 s, has the frozen line; then a tick every 5 min, without a render
+notes           rendered at once while renders < 59
+messages        at most 60 per status message: 59 renders and the deletion
+lifetime        23 h; at a note after it, the status message is deleted and a new one is started
+```
+
+The status message is deleted for everyone (`/_delete item CHAT ID broadcast`):
+- after the agent's answer, a send without `live`, is sent in its chat;
+- when a `receive` of its chat waits;
+- at a tick, when the chat no longer meets a condition above, or its read fails;
+- at a tick 23 h after its start;
+- at a tick in the frozen phase, 30 min after the last start or end of a call, while every running call is a `receive`;
+- when one of its commands fails;
+- before its chat is deleted by `leave` or `/leave`;
+- at stop.
+
+```
+event                     notification
+status message posted     a new item: notified
+status message updated    not pushed; the Android and desktop apps notify of each update in an inactive chat profile (SimpleXAPI.kt:3825-3844)
+status message deleted    not pushed
+the answer                a new item: notified
+```
+
+- The core sets the notification flag for `x.msg.new`, and leaves it unset for `x.msg.update` and `x.msg.del` (`Protocol.hs:1339-1348`).
+- In a direct chat, the deleted status message is marked deleted in the owner's app; it is removed when the owner sets "Delete for everyone" to "always" for the agent contact (`Types/Preferences.hs:1147-1153`; `Types.hs:721-728`; `Subscriber.hs:2122`).
+- In a group or business chat, it is removed for every member when full deletion is on in the group's preferences for the agent's role, and marked deleted otherwise (`Subscriber.hs:2493-2499`; `Types/Preferences.hs:273-276`).
+- A status message, with its notes, is posted only in its chat; each note is also printed in the terminal (section Other lines).
+
 ## What the agent sees: tools
 
 ### Server instructions
@@ -668,13 +795,14 @@ mention       number[]  optional; groups and channels only (assertNoMentions for
 wait          number    optional; seconds after sending; 0 to 86400; default 60
 idle          number    optional; seconds without a new response that end the wait once a response arrived; 1 to 300; default 30
 limit         number    optional; most responses returned; 1 to 100; default 50
+live          boolean   optional; default false; true: text is shown at once in the chat's status message (section What the owner sees: the status message), without an action; text only, at most 2000 characters; wait, idle and limit are ignored
 ```
 
 ```
 result field  type        present
-action        number      always
-status        string      done | failed | rejected | expired
-chat          string      done
+action        number      except live
+status        string      done | failed | rejected | expired | live
+chat          string      done, live
 item          number      done; the sent message
 responses     Message[]   done; messages received in chat after item, in arrival order, up to limit
 more          number      done; responses received but not returned
@@ -697,6 +825,8 @@ other              file      none                                               
 - `ffmpeg -nostdin -v error -protocol_whitelist file -f mov -i PATH -frames:v 1 -f image2pipe -vcodec mjpeg -` and `ffprobe -v error -protocol_whitelist file -f mov -show_entries format=duration -of csv=p=0 PATH`, 30 s each, at most 64 MB of output: both read PATH as an MP4 or QuickTime file, the format of both extensions, and only local files; ffmpeg takes no commands from standard input.
 - Responses are marked read; the ones over `limit` stay unread for `receive`.
 - Hosts with a fixed tool-call limit (60 s to 300 s) need `wait` below it.
+- With `live`, the call returns `{status: "live", chat}` at once; a live call never attaches to an action. In the output schema, only `status` is required.
+- When a send without `live` is performed, the chat's status message is deleted after the message is sent; after a failed, rejected or expired send, it stays.
 
 ### receive
 
@@ -705,6 +835,7 @@ input field   type     rule
 chat          string   required; a chat of the agent
 wait          number   optional; seconds to wait when no message is new; 0 to 86400; default 0
 limit         number   optional; 1 to 100; default 50
+typing        boolean  optional; default false; true: when messages are returned, the chat's status message is started (section What the owner sees: the status message)
 ```
 
 ```
@@ -715,6 +846,7 @@ more          number      always; new messages not returned
 ```
 
 - New: a received message that is unread when the call reads its page, or that arrives during the call. The returned ones are marked read; another call marking one read after this call collected it does not remove it.
+- When a call waits, with `wait` above 0 and nothing new, the chat's status message is deleted first, with or without `typing`.
 
 ### list
 
@@ -794,6 +926,16 @@ mention not a member               mention: #15 has no member 45. (in a contact 
 mention of equal names             mention: members 44 and 45 have the same name.
 no text and no file                text: required without file.
 as without file                    as: applies only with file.
+live with file, reply_to, mention  live: applies to text only; send file, reply_to and mention without live.
+text over 2000 with live           text: at most 2000 characters with live.
+live in a chat being left          No chat @4. list shows the agent's chats.
+live in a channel, or with a bot   live: #13 is a channel or a chat with a bot or an agent; status messages are shown in chats with people, groups and business chats.
+  or an agent
+live in mode host                  live: status messages are shown in mode requests only; this server runs in mode host.
+live, control chat lost            live: The agent lost its control chat. The person who runs it has to restart it with --reset-owners.
+live without the approval          live: your owner's approval of all messages to @5 is required; list shows approved: true for such chats.
+live while the server stops        The server is stopping.
+live at render 59                  live: the update limit of the status message of @4 is reached; send your answer without live.
 file not absolute                  file: an absolute path is expected.
 no file at the path                file: no file at /home/alice/trail.jpg.
 not a regular file                 file: /home/alice/trails is not a file.
@@ -853,6 +995,26 @@ errorStore groupNotFound                                 Group not found! This g
 
 - The no-approver, lost-group, pending and card errors are returned by `connect`, `send`, `download` and `leave` when a call creates a new action, after the input checks; a `known` target and a call that attaches to an action return without them.
 
+- With `live`, the checks run in this order:
+
+```
+no text and no file
+as without file
+live with file, reply_to, mention
+text over 2000 with live
+unknown chat
+chat not connected
+role below author
+live in a chat being left
+live in a channel, or with a bot or an agent
+live in mode host
+live, control chat lost
+live without the approval
+an aborted call: no result, and the note is not shown
+live while the server stops
+live at render 59
+```
+
 ## What peers see
 
 ```
@@ -863,6 +1025,9 @@ the agent connects to an address        a contact request, with the message
 the agent's message                     a message from that profile
 reply_to                                a quote of that item
 mention                                 @name in the text; a mention for that member
+receive with typing, send with live     the status message: a live message from that profile, edited in place, with the note under the line;
+                                          every member of a group or business chat sees it
+the agent's answer after it             a new message; then the status message is deleted for everyone
 ```
 
 - A service can tell agents from people by the peer type of the agent's profile, answer agents by bot and pass people to a person at once. An incognito agent shows the same peer type.
@@ -877,6 +1042,7 @@ Every command acts for the active user, the agent's profile, the only user of th
 ```
 serve(NAME, options):
   check options
+  --inference: SIMPLEX_MCP_INFERENCE_KEY empty, or with characters other than visible ASCII: exit 2 "SIMPLEX_MCP_INFERENCE_KEY: visible ASCII characters expected."
   create DIR, mode 0700 (set again when DIR exists, except on Windows); DIR/lock created exclusively, or exit 1 when its PID runs; token = DIR/token, created when missing or with --new-token; DIR/headers.json written with the token
   chat = ChatApi.init({type: "sqlite", filePrefix: DIR/simplex})
   profile = the user, or created: /_create user {profile: {displayName: <--display-name or NAME>, fullName: "", peerType: agent}, pastTimestamp: false}
@@ -892,6 +1058,7 @@ serve(NAME, options):
   group.membership not owner, or memberStatus not creator, connected or complete: lost = true; log "The agent lost its control chat. Restart the server with --reset-owners."
   lost unset, group.groupProfile.displayName differs from the profile's, or its commands from the menu of createControlChat: /_group_profile #group {the group profile with that displayName and menu}   # APIUpdateGroupProfile, parser Commands.hs:6534
   members = /_members #group, so approvers are known before the first call
+  each chat of list() that meets the conditions of status messages: deleteLeftovers(chat), awaited (section Status message); a failed chat list: logged "status messages: <error>"
   HTTP listen 127.0.0.1:PORT; port in use: chat.close(); remove DIR/lock; exit 1 "Port PORT is in use. Start with --port N."   # before any link or QR code is printed
     requests to /mcp with the token get 503 with Retry-After: 1 until ownerStart ends
   write DIR/server.json {name: NAME, port, expireHours}
@@ -910,8 +1077,9 @@ SIGINT, SIGTERM (process.on; a second signal ends the wait for the cards at once
   abort the stop signal of the performs: a connect's wait for the connection ends
   wait for the outcome edits of performs that ended before the stop
   K = pending and performing actions; log "Cancelled K actions." ("1 action." for one) when K > 0
+  M = the status messages with a render; each status message deleted (section Status message), the deletion commands awaited
   N = the cards edited or posted above (all K, except downloads without a card); none when the control chat is lost
-  N > 0 and --stop-wait S > 0: log "Stopping: sending N cancelled cards, up to S s. Ctrl-C to stop now."; wait S seconds, or until a second signal
+  N + M > 0 and --stop-wait S > 0: log "Stopping: sending N cancelled cards and M status deletions, up to S s. Ctrl-C to stop now.", each part when above 0; wait S seconds, or until a second signal
   chat.close(); remove DIR/lock; log "Stopped."; exit 0
 ```
 
@@ -1166,13 +1334,16 @@ newChatItems        wake the waiting send and receive calls of that chat
 
 ```
 send(input, ctx):
-  an action in memory with tool send and the same action fields: action(send, input, ctx); go to result
+  live unset, an action in memory with tool send and the same action fields: action(send, input, ctx); go to result
   no text and no file: tool error "no text and no file"
   as without file: tool error "as without file"
+  live with file, reply_to or mention: tool error "live with file, reply_to, mention"
+  live with text over 2000 characters (code points): tool error "text over 2000 with live"
   chat is the agent control chat: tool error "unknown chat"
   r = /_get chat <chat> count=0; a store error: tool error "unknown chat"
   r.chat.chatInfo not connected (as connected in list()): tool error "chat not connected"
-  group or channel, r.chat.chatInfo.groupInfo.membership role below author: tool error "role below author"
+  group or channel, r.chat.chatInfo.groupInfo.membership role below author: tool error "role below author"   # postingRefusal, also read for status messages
+  live: return showNote(chat, r.chat.chatInfo, text, ctx)   # section Status message
   reply_to i: /_get chat <chat> around=<i> count=0 fails or has no item i: tool error "reply_to not in chat"; item i not a message: tool error "reply_to not a message"
   mention, chat a contact chat: tool error "mention not a member"
   mention m: /_members <chat> has no member m: tool error "mention not a member"; two members with the same display name: tool error "mention of equal names"
@@ -1201,7 +1372,7 @@ perform send:
   action.responses = []; from now until the action is deleted, each newChatItems of chat adds its received message items (content.type rcvMsgContent) to action.responses
   /_send <chat> json [{fileSource: {filePath}, msgContent: {type: "text", text: text'} or the file's {type, text: text', image: preview, duration}, mentions: {name: m}, quotedItemId: reply_to}] -> S     # parser Commands.hs:6353
   an error of the send: the copy's folder deleted
-  action.chat = chat; action.item = S; drop from action.responses the items with itemId not above S
+  action.chat = chat; action.item = S; end(chat) of the status messages, not awaited; drop from action.responses the items with itemId not above S
 ```
 
 `responses(action, wait, idle, limit, ctx)`:
@@ -1254,6 +1425,8 @@ leave(input, ctx):
   result: {action, status: "done", chat}; the action is deleted from memory
 
 perform leave:
+  until the steps below end, the chat is marked as being left: a note in it is refused with "unknown chat", or in a group, once the membership is marked left in /_leave, with "chat not connected"; a status started in it is ended at its first read, before any post
+  end(chat) of the status messages, awaited
   @C: /_delete @C full notify=on
   #G: membership current or pending approval or review: /_leave #G; then /_delete #G full notify=on       # only an owner or a former member deletes a group, Commands.hs:1396-1398
 ```
@@ -1357,10 +1530,11 @@ receive(input, ctx):
     then /_get chat <chat> after=<the last item ID> count=100, repeated while the last after= page holds 100 and pages hold fewer than limit + 1 rcvNew message items that are not live
   unread = the rcvNew message items of pages; skipped = the rcvNew items of other content in pages (ciRequiresAttention, CIContent.hs:215-250)
   new = unread, then the items of arrived not in unread
-  none new and wait > 0: wait for newChatItems of chat until one is new | wait | signal
+  none new and wait > 0: end(chat) of the status messages, not awaited; wait for newChatItems of chat until one is new | wait | signal
     progress at once and every 60 s: "No new messages in <chat>; waiting until <time>."
   messages: new, up to limit; more = the rest + s.chatStats.unreadCount - the rcvNew items of pages (the unread items not read, at least 0)
   not aborted: /_read chat items <chat> <the IDs of messages and of skipped, joined by ",">, when that list is non-empty
+  not aborted, typing and messages not empty: start(chat) of the status messages (section Status message)
   result {chat, messages, more}
 
 list():
@@ -1379,6 +1553,165 @@ list():
 - Every unread item sorts at or after `minUnreadItemId` in the chat's order: `created_at` for contacts, `item_ts` for groups (`:1369-1381`, `:1722-1728`); `around=` and `after=` page in that order.
 - Events that arrive while the snapshot is read are in `arrived` and, when unread at the read, in `unread` too; each item is returned once.
 - Received items other than messages that the core creates unread (deletions, decryption errors, group invitations, role changes) are marked read with the returned messages, so `unread` in `list` reaches 0 after `receive`.
+
+### Status message
+
+```
+Statuses (status.ts), one per AgentTools
+statuses          Map<chat, Status>
+calls             running tool calls: one object {tool} per call, in start order
+lastCall          Date.now() at the last start or end of a call
+endings           deletions in progress
+inferenceFailed   the last poll failed
+stopping          set by stop()
+
+Status
+live              api.LiveMessage of the chat, interval 0, onError: failed   # api.ts:1134-1214
+started           Date.now() at creation
+renders           0 to 59
+label             label of the last render; "thinking" at creation
+note              text of the last send with live: true
+timer             the next tick, unref'd
+```
+
+```
+state     statuses.get(chat)   renders    endings
+none      undefined
+active    Status               0 to 49
+frozen    Status               50 to 59
+ending    undefined                       its live.end("")
+```
+
+```
+start(chat):
+  stopping, or a status of chat: return
+  tick(chat, created(chat)); errors logged as "status of CHAT"
+
+show(chat, note):
+  stopping: tool error "The server is stopping."
+  a status of chat 23 h old: end(chat)
+  a status of chat with renders ≥ 59: tool error "live at render 59"
+  status = that status, or created(chat); status.note = note; render(status)
+  created here: schedule(chat, status)
+
+created(chat):
+  status = {live: new LiveMessage(chat, interval 0, onError: error => failed(chat, status, error)), started: now, renders: 0, label: "thinking"}
+  statuses.set(chat, status)
+
+failed(chat, status, error):
+  log "status of CHAT: ERROR"; status current: end(chat)
+
+tick(chat, status):
+  shown = await allowed(chat); a read error: logged "status of CHAT" while status is current; shown = false
+  status not current: return
+  idle = renders ≥ 50, every running call is a receive, now − lastCall ≥ 30 min
+  not shown, now − started ≥ 23 h, or idle: end(chat); return
+  0 < renders < 49: label = await label(); status not current: return; status.label = label
+  renders < 50: render(status)
+  schedule(chat, status)
+
+render(status):
+  renders += 1
+  live.update(statusText(status))   # the first: /_send CHAT live=on json ...; later: /_update item CHAT ID live=on json ..., merged per macrotask, skipped when unchanged
+
+schedule(chat, status):
+  delay = renders < 50 ? min(max((now − started) / 10, 3 s), 20 s) : 5 min
+  timer = setTimeout(tick(chat, status), delay), unref'd; errors logged as "status of CHAT"
+
+label():
+  state = await inferred()
+  waiting = Actions.pending() holds an action with open > 0
+  tool = the tool of the last running call other than receive
+  return statusLabel(waiting, state, tool)   # the labels of section What the owner sees: the status message
+
+inferred():
+  --inference absent: return undefined
+  the poll succeeds: inferenceFailed = false; return its state
+  the poll fails: inferenceFailed false: log "inference endpoint: ERROR"; inferenceFailed = true; return undefined
+
+end(chat):
+  remove the status from statuses; clear its timer
+  ending = live.end("")   # after the queued commands: /_delete item CHAT ID broadcast when an item was posted
+  add ending to endings until it settles
+
+stop():
+  stopping = true
+  M = the statuses with renders > 0
+  end(chat) for each status; await endings
+  return M
+
+allowed(chat) = showsStatus(chat, knownChat(chat).chatInfo)
+showsStatus(chat, chatInfo) = postingRefusal(chat, chatInfo) undefined and statusRefusal(chat, chatInfo) undefined
+statusRefusal(chat, chatInfo):
+  the chat being left: "No chat CHAT. list shows the agent's chats."
+  a bot, an agent or a channel, by the kind of the send card: "live: CHAT is a channel or a chat with a bot or an agent; ..."
+  mode host: "live: status messages are shown in mode requests only; ..."
+  the control chat lost: "live: The agent lost its control chat. ..."
+  the standing approval of messages absent: "live: your owner's approval of all messages to CHAT is required; ..."
+
+showNote(chat, chatInfo, text, ctx):
+  statusRefusal defined: tool error
+  ctx aborted: return, without a result
+  show(chat, text)
+  log "Note to <type> <name> (CHAT): TEXT", names and text on one line
+  return {status: "live", chat}
+
+deleteLeftovers(chat):
+  /_get chat <chat> count=100, then before=<the first item ID> count=100 while a page holds 100 and its first item is younger than 30 h − 10 min
+  own live items (sndMsgContent, itemLive), not deleted, younger than 30 h − 10 min: /_delete item <chat> <IDs> broadcast
+  an error: logged "status of CHAT: <error>"
+```
+
+- A render follows the check that its status is current, with no await in between.
+- `end` removes the status from `statuses` before `live.end`, which clears the library's pending timer (`api.ts:1179`); the deletion is the last command of the item.
+- After a failed first post, a render queued before the failure settles is posted as a second live item, which is removed by the deletion queued in `failed`.
+- Ticks never overlap: the next tick is scheduled when the current one ends.
+- 30 h − 10 min is the core's window for a broadcast deletion (`Library/Commands.hs:947-956`) less 10 minutes.
+
+### Inference endpoint
+
+```
+poll():
+  a call within 3 s of the start of the last poll: that poll's promise
+  deadline: one AbortSignal.timeout(1 s) for all requests of the poll
+  GET URL/running, with the key
+    404: a plain llama-server: proxySlots(URL, the key)
+    entries of its running list: {model: its ID when it matches ^[\w.:/+@-]{1,64}$, state, proxy}
+    an entry in state starting: {loading, its model}
+    no entry in state ready: an entry in state stopping: {loading}; otherwise undefined
+    proxies: the distinct allowed origins of the entries in state ready, at most 4, each with the model of its first entry; none: undefined
+    proxySlots(proxy, without the key, model) for each, in parallel
+      all failed: the error of the first proxy
+      a loading result: the first one
+      otherwise: the slots of all proxies
+  slots: state = stateOf(slots, previous); previous = slots
+  loading or undefined: previous = []
+  a failed poll: previous unchanged
+
+proxySlots(url, key, model):
+  GET url/props: 503: {loading, model}; is_sleeping true: slots []
+  GET url/slots: 503: {loading, model}; otherwise its first 64 slots, all read at one time
+
+slot fields: id, id_task, is_processing true, next_token[0].n_decoded, n_prompt_tokens_processed; counts only as non-negative safe integers
+
+stateOf(slots, previous):
+  none processing: {idle}
+  model: the model of the processing slots when all have the same one
+  none of them with n_decoded > 0: {prompt, model, tokens: the sum of n_prompt_tokens_processed}
+  otherwise: {output, model, rate}
+  rate: for each generating slot, the slot of previous with the same proxy, id and id_task, processing, with 0 < n_decoded ≤ the current one, read earlier: Δn_decoded per second between the two reads; their sum, when above 0
+
+allowedProxy(URL, proxy): an http or https URL without user name and password whose hostname is URL's, or both hostnames among localhost, 127.0.0.1 and [::1]: its origin
+
+get(url, key, signal, handled):
+  GET, Authorization: Bearer KEY when key is given, redirect "error"
+  status handled (404 for /running, 503 for /props and /slots): returned without the body
+  other status outside 2xx: error "HTTP N"
+  body over 1 MiB by Content-Length or by the bytes read: error "body over 1 MiB"; not JSON: error "invalid JSON"
+  an error: "GET <url>: " + ("no answer within 1 s" after the deadline, otherwise the message of error.cause.errors[0], error.cause or error), on one line
+```
+
+- Requests: GET of `/running`, `/props` and `/slots` only.
 
 ## Sequence diagrams
 
@@ -1561,12 +1894,14 @@ Unit:
 
 ```
 test        covers
-options     defaults, ranges, --stop-wait from 0 to 60, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text
-commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /receive CHAT N all and /receive CHAT off beside the approval of messages; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
+options     defaults, ranges, --stop-wait from 0 to 60, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text; --inference without trailing slashes, query and hash, its usage errors, and refused with --approve host
+commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; the wait at stop for status deletions alone and with cancelled cards; SIMPLEX_MCP_INFERENCE_KEY with a line break, a space or a non-ASCII character refused with exit code 2 before the data folder exists; /receive CHAT N all and /receive CHAT off beside the approval of messages; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
 actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
 cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes and the servers line; the attaching line of sends
-messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected, a forwarded file offered and then received; download: attach, performing at wait, a received file, a forwarded file kept outside the chat's folder and moved there at the approval, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request
-http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors
+messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected, a forwarded file offered and then received; download: attach, performing at wait, a received file, a forwarded file kept outside the chat's folder and moved there at the approval, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request; receive with typing: a status in approved direct chats with people, groups and business chats, and none for an aborted call, without typing or messages, without the approval, with a bot or an agent, a disconnected contact, a channel, an observer role, a lost control chat or mode host; the status deleted when a receive of its chat waits, after the answer is sent, before leave, at the next tick after /revoke and after the control chat is lost, and kept when the answer fails; send with live: the note under the line and its log line, a pending send with the same text left unattached, an aborted call, the refusals; a call counted as running until it ends, also when it throws; leftovers read only in eligible chats
+status      the post after the first read of the conditions; gaps of 3 s, then a tenth of the age up to 20 s; frames and elapsed time; the frozen line at render 50, then checks every 5 min; label ranks; the model and the counts in labels; deletion when the conditions are unmet or their read fails, at 23 h, and 30 min after the last call in the frozen phase; a note under the line and under the frozen line, refused at render 59; a status 23 h old replaced at a note; no tick render after a label read during which notes reached render 50; one status per chat; nothing sent after a tick of an ended status; a failed command; stop; the logging of failed polls; leftovers page by page
+inference   loading from /running; /props, then /slots, at up to 4 distinct allowed proxies, without the key; tokens/s between two polls, summed; tokens read; idle; fractional and negative counts ignored; the first 64 slots; the model of one busy model; a sleeping server; 503 of /props and /slots; a plain llama-server with the key; proxies on URL's host or loopback only; one poll per 3 s; failures by HTTP status, invalid JSON, a body over 1 MiB, a redirect, a refused connection and the 1 s deadline, folded to one line; a failing proxy left out; the model ID pattern; GET of /running, /props and /slots only
+http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors; the typing and live schemas, status live and the required status of send's output; each description, and the instructions for a 15-character name, within 2048 characters
 register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors; on Windows, claude through cmd.exe after ENOENT, with cmd.exe quoting
 files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json; file modes set again on existing files
 log         every SimpleX error shape worded by the apps, in its JSON shape from @simplex-chat/types; the chain for other errors
@@ -1591,6 +1926,8 @@ port in use       serve on a bound port: exit before server.json is written and 
 leave command     /leave #N with a pending send for #N: the send rejected; the reply and the log line; the group's owner sees the agent leave
 files             an image from a group member: status offered; the download card with the preview and "Servers: known."; /forward: the file as a reply to the card, outside the chat's folder; /receive: the path, the same bytes; /reject: rejected; /receive #N A all: the reply, and a later download posts nothing
 send file         a 600 × 600 PNG of random pixels sent to a group: the card with the attaching line and the core's preview, not the fixed one; the member receives an image with the core's preview and a file smaller than the PNG, at most 261120 bytes; a private key refused, posted and logged
+typing            an approved direct chat: after receive with typing, the live item "◐ thinking · 0:00" and its update within 10 s; a note under the line, and its log line; the answer as a new item, then the status deleted, and one outcome post in the agent control chat; at stop "Stopping: sending 1 status deletion, ..." and the deletion; at the next start a leftover live item deleted
+typing in a group an approved group: the status, its note, and its deletion after the answer
 ```
 
 Claude Code checks, by hand (TESTING.md):
@@ -1634,3 +1971,11 @@ C6      Claude Code closes the request stream when a call times out or its task 
 ## Decisions of 2026-10-31
 
 - The wait at stop is fixed for now: `--stop-wait` seconds, 10 by default, when cards were edited or posted at the stop; a second signal ends it. It replaces the count of pending deliveries read with `/sql`. A later change can post a final message and wait for its "sent" status for each owner.
+
+## Decisions of 2026-11-11
+
+- Status message (`plans/2026-11-10-mcp-live-status.md`): after `receive` with `typing`, a live message is shown in the chat while the agent works; with `send` and `live`, a note is shown in it; the answer is a new message, and the status message is then deleted for everyone.
+- Status messages are shown in direct chats with people, groups and business chats, after `/approve CHAT all`, in mode requests. Channels and direct chats with bots and agents are excluded. The status is started whenever `receive` with `typing` returns messages, from any sender.
+- `--inference URL`: llama-swap or llama-server is polled for the model's state and speed; the key is read from `SIMPLEX_MCP_INFERENCE_KEY` and sent to URL only.
+- The owner ends status messages of a chat with `/revoke CHAT`; an owner command for status messages alone is a later change.
+- Version 0.3.0.

@@ -1,6 +1,6 @@
 # SimpleX MCP server: specification
 
-> Technical specification of `@simplex-chat/mcp` 0.2.0 in `packages/simplex-chat-mcp`. Statements are checked against the source at commit `937a975a6`, and each section links to the code.
+> Technical specification of `@simplex-chat/mcp` 0.3.0 in `packages/simplex-chat-mcp`. Statements are checked against the source of version 0.3.0, and each section links to the code.
 >
 > Related: [README](../README.md) (user manual) | [PLAN](../PLAN.md) (design record) | [TESTING](../TESTING.md) (local build and test)
 
@@ -22,6 +22,8 @@ The SimpleX core (libsimplex, release `core-7.1.0.20`) runs inside the same Node
 `connect`, `send`, `download` and `leave` are actions. In mode `requests` the server posts each action as a card in the agent control chat, a SimpleX group created and owned by the agent's profile. An owner approves or rejects the card with a command in that chat, and the server performs the action after the approval. An owner can also approve all messages to one chat, or all downloads of files on known servers from one chat, in advance. On a download card, the owner lets the agent receive the file, or has it forwarded only to the owner. In mode `host` the server performs actions at once and marks the four tools for the host's own confirmation.
 
 A tool call is held open by the server until the owner decides and, for `connect` and `send`, until the replies arrive, and for `download`, until the file is received or `wait` passes. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
+
+With `typing: true` on `receive`, the server starts a status message in the chat when the call returns messages: one live message, edited while the agent works and deleted after the agent's next message there is sent. Status messages are shown in chats with people, groups and business chats that have a standing approval of messages, in mode `requests`. With `live: true` on `send`, the text is shown at once under the status line, and the result is status `live`, without an action; each such note is printed in the terminal. With `--inference URL`, the server polls llama-swap or llama-server at URL, and the model loading, the prompt tokens read and the tokens per second are shown in the status line.
 
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
@@ -53,6 +55,15 @@ graph TD
   tools --> actions
   tools --> messages
   tools --> log
+  tools --> status["status.ts"]
+  tools -.-> inference["inference.ts"]
+  serve --> inference
+  status --> actions
+  status --> messages
+  status --> log
+  status -.-> tools
+  status -.-> inference
+  inference --> log
   actions --> messages
   actions --> log
   actions -.-> tools
@@ -64,11 +75,13 @@ graph TD
   serve --> sc["simplex-chat"]
   tools --> sc
   control --> sc
+  status --> sc
   messages -.-> sc
   log --> sc
   serve --> types["@simplex-chat/types"]
   tools --> types
   control --> types
+  status --> types
   messages --> types
   log --> types
   serve --> mcps["@modelcontextprotocol/server"]
@@ -83,7 +96,9 @@ graph TD
 | [`cli.ts`](../src/cli.ts) | `simplex-mcp` entry point: commands, options, exit codes |
 | [`serve.ts`](../src/serve.ts) | start sequence, event dispatch, stop sequence |
 | [`http.ts`](../src/http.ts) | HTTP listener, token check, `/mcp` route, SDK handler |
-| [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send |
+| [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send, status message refusals |
+| [`status.ts`](../src/status.ts) | status messages: start, ticks, labels, notes, deletion, leftovers, running calls |
+| [`inference.ts`](../src/inference.ts) | inference endpoint poller: model states, prompt tokens, tokens per second |
 | [`actions.ts`](../src/actions.ts) | action records, state machine, expiry, stop |
 | [`control.ts`](../src/control.ts) | agent control chat: link, owners, owner commands, cards, counter |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
@@ -99,7 +114,7 @@ graph TD
 |---|---|
 | [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits |
 | [Flows](flows.md) | sequence diagrams of the main flows with source locations |
-| [API](api.md) | the six tools, the control chat commands, replies and cards, the CLI |
+| [API](api.md) | the six tools, the status message, the control chat commands, replies and cards, the CLI |
 
 ---
 
@@ -107,13 +122,15 @@ graph TD
 
 | Component | File | Key symbol | Line |
 |---|---|---|---|
-| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L198) | `main` | [198](../src/cli.ts#L198) |
-| Argument parser | [`src/cli.ts`](../src/cli.ts#L45) | `parseCommand` | [45](../src/cli.ts#L45) |
-| Server start | [`src/serve.ts`](../src/serve.ts#L65) | `startServer` | [65](../src/serve.ts#L65) |
-| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L88) | `startAgent` | [88](../src/serve.ts#L88) |
+| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L214) | `main` | [214](../src/cli.ts#L214) |
+| Argument parser | [`src/cli.ts`](../src/cli.ts#L49) | `parseCommand` | [49](../src/cli.ts#L49) |
+| Server start | [`src/serve.ts`](../src/serve.ts#L67) | `startServer` | [67](../src/serve.ts#L67) |
+| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L92) | `startAgent` | [92](../src/serve.ts#L92) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L488) | `AgentTools.register` | [488](../src/tools.ts#L488) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L522) | `AgentTools.downloadFile` | [522](../src/tools.ts#L522) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L502) | `AgentTools.register` | [502](../src/tools.ts#L502) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L539) | `AgentTools.downloadFile` | [539](../src/tools.ts#L539) |
+| Status messages | [`src/status.ts`](../src/status.ts#L28) | `Statuses` | [28](../src/status.ts#L28) |
+| Inference endpoint | [`src/inference.ts`](../src/inference.ts#L31) | `inferencePoller` | [31](../src/inference.ts#L31) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L124) | `Actions` | [124](../src/actions.ts#L124) |
 | Agent control chat | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
 | Card text | [`src/control.ts`](../src/control.ts#L552) | `cardText` | [552](../src/control.ts#L552) |

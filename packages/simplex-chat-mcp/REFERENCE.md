@@ -9,13 +9,13 @@ What it isn't:
 - **Not a push channel into the agent.** An MCP server can't start a turn of the agent, so news reaches it only as results of calls it makes: waits inside `send` and `receive`, or polling.
 - **Not an always-on service.** The agent acts while its session runs; services that must always be up should be bots.
 - **Not hosted.** It runs on your machine, one process per agent.
-- **Not in v0.2:**
+- **Not in v0.3:**
   - an address for the agent: nobody can contact it first;
   - your approval of incoming messages;
   - a Claude Code plugin or channel;
   - registration in other hosts.
 
-Status: v0.2. [`TESTING.md`](TESTING.md) describes a local build and test. The design, the tools and the scenarios are in [`PLAN.md`](PLAN.md).
+Status: v0.3. [`TESTING.md`](TESTING.md) describes a local build and test. The design, the tools and the scenarios are in [`PLAN.md`](PLAN.md).
 
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
@@ -25,6 +25,7 @@ Status: v0.2. [`TESTING.md`](TESTING.md) describes a local build and test. The d
 - [Expiry](#expiry)
 - [What the owner sees](#what-the-owner-sees)
 - [What the agent sees](#what-the-agent-sees)
+- [Status while the agent works](#status-while-the-agent-works)
 - [Waiting for approval in Claude Code](#waiting-for-approval-in-claude-code)
 - [Several agents](#several-agents)
 - [Other MCP hosts](#other-mcp-hosts)
@@ -54,7 +55,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
    The first start prints, after two lines about downloading the SimpleX core library and the Node.js add-on:
 
    ```
-   SimpleX MCP server 0.2.0, agent "my-agent"
+   SimpleX MCP server 0.3.0, agent "my-agent"
    Data folder: /home/alice/.simplex-mcp/my-agent
    Approval mode: requests
    Agent control chat "My Agent" created.
@@ -197,11 +198,11 @@ A pending action expires after `--expire HOURS`, 23 by default and at most: Simp
 
 A result that no call has returned is dropped after the action's expiry time; a repeated call after that creates a new action. At most 20 actions are pending at once; a further `connect`, `send`, `download` or `leave` fails until the owner decides.
 
-Actions last only while the server runs. When the server stops, the last line of each pending card is edited to `Cancelled: the server stopped.`, and the server waits up to 10 seconds, `--stop-wait`, for these edits to be sent: it prints `Stopping: sending 2 cancelled cards, up to 10 s. Ctrl-C to stop now.`, and a second Ctrl-C ends the wait. After a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
+Actions last only while the server runs. When the server stops, the last line of each pending card is edited to `Cancelled: the server stopped.`, and each status message is deleted. The server waits up to 10 seconds, `--stop-wait`, for these edits and deletions to be sent: it prints `Stopping: sending 2 cancelled cards and 1 status deletion, up to 10 s. Ctrl-C to stop now.`, and a second Ctrl-C ends the wait. After a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
 
 ## What the owner sees
 
-All of it is in the agent control chat, posted by the agent's profile. The chat has the agent's display name; to see it under another name in your chat list, set an alias for the chat in the app. Names that are valid display names are shown plain. All other text written by the agent or by peers, other names included, is shown as code, line by line; names and errors take one line. Commands and SimpleX links inside it cannot be tapped: a valid display name cannot contain `/`, and the app parses each line of a message separately.
+All of it is in the agent control chat, posted by the agent's profile, except the status messages, which are in the chats where the agent takes prompts ([Status while the agent works](#status-while-the-agent-works)). The agent control chat has the agent's display name; to see it under another name in your chat list, set an alias for the chat in the app. Names that are valid display names are shown plain. All other text written by the agent or by peers, other names included, is shown as code, line by line; names and errors take one line. Commands and SimpleX links inside it cannot be tapped: a valid display name cannot contain `/`, and the app parses each line of a message separately.
 
 ```
 My Agent: I want to connect to bot SimpleX Directory (@directory.simplex), as myself.
@@ -271,7 +272,7 @@ My Agent: I sent a message to business Ridgeline, where I am incognito:
           Approved for this chat by Alice. /revoke #9
 ```
 
-- It covers messages only: connecting and leaving are approved one by one.
+- It covers messages, status messages and notes only: connecting and leaving are approved one by one.
 - It lasts until `/revoke`, until the chat is deleted, or until the approving owner is no longer an approver. It survives restarts: it is kept in the agent's database, as custom data of that chat.
 - With it, the agent can send anything it can read, without asking, to everyone in that chat.
 - It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals.
@@ -293,8 +294,8 @@ Six tools:
 | Tool | What it does |
 |---|---|
 | `connect` | Joins a contact, bot, business, group or channel by a link or a SimpleX name, as the agent's profile or incognito. Returns the chat, its profile, welcome message, the commands a bot advertises, and the messages so far. |
-| `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
-| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. |
+| `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. With `live: true`, it shows a note in the chat's status message at once, without an action. |
+| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. With `typing: true`, it starts the chat's status message when it returns messages. |
 | `download` | Downloads the file of a received message to the data folder and returns its full path. |
 | `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
 | `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
@@ -316,6 +317,68 @@ An empty file is refused, and so is `as` without `file`. A message holds at most
 The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh` and `~/.gnupg`, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files under its data folder and under `~/.simplex-mcp`, except those under `files/` of its own data folder; each folder is taken by its real path too. The card shows the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
+
+## Status while the agent works
+
+In mode `requests`, the server shows what the agent does in a live message, the status message, in a chat approved for all messages where the agent can post: a chat with a person, a group or a business chat. Channels and chats with bots and agents are excluded. In a group, every member sees the status message and its notes.
+
+- The server posts the status message when messages are returned by a `receive` with `typing: true`, unless the chat has one.
+- With `live: true`, the text of a `send`, a note, is shown under the status line at once, and a status message is posted when the chat has none. Such a call is not an action: `status: live` is returned at once. A note with `file`, `reply_to` or `mention`, a note above 2000 characters, and a note to another chat are refused.
+- The agent's next message to that chat without `live` is sent as a new message, and the status message is then deleted for everyone.
+
+```
+My Agent: ◑ using download · 0:30
+          Reading the file…
+```
+
+The apps show it under the header `LIVE`. The first line is the status line: a frame, turned at each update, a label, and the time since the start. From the 50th version, about 10 minutes after the start, the line is `◌ working since 2026-11-10 12:00 UTC`. A note is shown under the line until the next note.
+
+| Label, the first that applies | When |
+|---|---|
+| `loading MODEL` | `--inference`: a model starts, or none is ready while one stops |
+| `reading the prompt with MODEL, N tokens read` | `--inference`: a model reads the prompt |
+| `generating with MODEL, N tokens/s` | `--inference`: a model generates |
+| `waiting for approval` | the agent waits in a call for your decision on a card |
+| `using TOOL` | the agent runs `connect`, `send`, `download`, `list` or `leave`; TOOL is the latest of them |
+| `working` | `--inference`: the models are idle, for example while the agent runs a shell command |
+| `thinking` | otherwise, and in the first version |
+
+MODEL, shown as code, is the model that starts, or the one model of all busy slots of llama-swap. Otherwise, and for a plain llama-server, `with MODEL` is left out, and `loading MODEL` becomes `loading the model`. `, N tokens read` is left out while N is 0, and `, N tokens/s` until two polls during the generation of one task. `waiting for approval` and `using TOOL` are computed from the agent's calls in all its chats.
+
+The status line is updated 3 seconds apart at first, then at a tenth of its age, at most 20 seconds apart. From the 50th version, the server checks the chat every 5 minutes, without updates. Notes are shown at once up to the 59th version; a later note is refused. With its deletion, at most 60 messages per status message are sent to each recipient.
+
+The server deletes the status message for everyone:
+- after the agent's next message to that chat without `live` is sent;
+- when the agent starts to wait in a `receive` of that chat;
+- when the agent leaves the chat, and at `/leave`;
+- at the next update or check once the conditions above are no longer met in the chat, for example after `/revoke`, or after the agent loses its control chat;
+- 23 hours after the start, at the next check or note; a note at that age is shown in a new status message;
+- from the 50th version, 30 minutes after the last start or end of one of the agent's calls, at the next check, while the agent runs no call other than `receive`;
+- at an error of a command for the status message, with `status of CHAT: ERROR` logged;
+- when the server stops.
+
+At the start, before it accepts calls, the server deletes its own live messages younger than 29 hours 50 minutes in the chats where these conditions are met: the status messages left by a crash.
+
+A deleted status message is shown as marked deleted, with its last text, unless full deletion is allowed:
+- in a direct chat, set "Delete for everyone" to "always" in the agent contact's preferences; "yes" is not enough, because the agent's own preference is "no";
+- in a group or a business chat, turn "Delete for everyone" on in the chat's preferences; the status message is then removed for every member.
+
+Notifications, by each recipient's apps:
+- the status message is notified as a new message;
+- its updates are notified only in a chat profile other than the active one, by the Android and desktop apps, once per update;
+- the answer is notified as a new message, and the deletion after it is not notified;
+- at a deletion without an answer, while the status message is the chat's last message, the Android app replaces a shown notification of that chat with "deleted" or "marked deleted", in the active chat profile.
+
+### Inference endpoint
+
+`--inference URL` names llama-swap, or a llama-server with one model; the state of its models is then shown in the labels.
+
+- URL: http or https, without user name and password; trailing slashes, query and hash are dropped. Another URL, and `--inference` with `--approve host`, are usage errors, exit code 2.
+- `SIMPLEX_MCP_INFERENCE_KEY`, when set, is sent as `Authorization: Bearer KEY` to URL only. Only visible ASCII characters are accepted in it; with another key, the server exits with `SIMPLEX_MCP_INFERENCE_KEY: visible ASCII characters expected.`, exit code 2.
+- The line `Inference endpoint: URL` is printed at the start, after `Approval mode: requests`.
+- At each timed update of the status line other than the first and the frozen one, the server reads `URL/running` of llama-swap, then `/props` and `/slots` of up to 4 servers of its ready models, on URL's host, or on loopback when URL is loopback. When `/running` answers 404, it reads `URL/props` and `URL/slots` of llama-server.
+- The result of one poll is shared by all status messages for 3 seconds. A poll is cancelled after 1 second; an answer over 1 MiB and a redirect are refused.
+- A failed poll is logged once on stderr as `inference endpoint: ERROR`, until the next successful poll; the label is then `waiting for approval`, `using TOOL` or `thinking`.
 
 ## Waiting for approval in Claude Code
 
@@ -375,12 +438,16 @@ serve options:
                          Without --owners, whoever joins becomes an owner and
                          every owner approves.
   --expire HOURS         pending actions expire after HOURS, 1 to 23 (default: 23)
-  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,
-                         0 to 60 (default: 10)
+  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards and status
+                         deletions to be sent, 0 to 60 (default: 10)
   --reset-owners         replace the owners: a new agent control chat and link
   --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)
   --qr-code SIZE         QR code of the link: small (default) or large
+  --inference URL        poll llama-swap or llama-server at URL for the model
+                         state and tokens per second shown in status messages;
+                         the API key, if any, is read from
+                         SIMPLEX_MCP_INFERENCE_KEY; mode requests only
 
 register options:
   --scope SCOPE          user (default) or local
@@ -412,7 +479,7 @@ The folder is readable only by the user: every start sets its mode to 0700, exce
 
 The server keeps its action counter in the chat database, as custom data of the agent control chat, the approvals of all messages to a chat and of all files from it as custom data of that chat, and its actions in memory.
 
-The server keeps no log file: it writes its log to the terminal where `serve` runs, events to stdout and errors to stderr.
+The server keeps no log file: it writes its log to the terminal where `serve` runs, events to stdout and errors to stderr. Each note of a status message is written to stdout, for example `Note to contact Alice (@4): Reading the file…`.
 
 One server runs per data folder: a second one exits, because two processes on one database break each other's connections (a SimpleX server delivers a queue's messages only to the last process that subscribed to it).
 
@@ -424,8 +491,10 @@ One server runs per data folder: a second one exits, because two processes on on
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
 - After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
+- In such a chat, the status message and its notes are sent without asking and without a copy in the agent control chat; each note is written to the terminal. Everyone in the chat sees the names of the agent's running tools and of its model in the status line, also for its work in other chats.
 - The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
 - After `/receive #N 7 all`, the agent's later downloads from that chat, of files on its XFTP servers, run without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; any other download of it fails, unless the IP address is protected.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
 - The agent has no address, so nobody can contact it first.
 - The agent uses private message routing: the SMP server that holds a contact's queue does not see the agent's IP address.
+- `SIMPLEX_MCP_INFERENCE_KEY` is sent only to the `--inference` URL; set it only for a URL on 127.0.0.1 or with https. The server reads the servers of llama-swap's models only on the URL's host, or on loopback when the URL is loopback, and refuses redirects. It shows a model ID only when the ID consists of 1 to 64 ASCII letters, digits and characters of `_.:/+@-`, and then as code; it folds the endpoint's error texts to one line.
