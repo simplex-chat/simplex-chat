@@ -79,7 +79,7 @@ Decided on 2026-11-08:
 28. A tool-use card is an action of tool `permission`; allowed is `performing` then `done`, denied is `rejected`, ended is `expired` with the last line `Ended.`.
 29. Open tool-use cards of a session end at each prompt and each answer whose hook started after their creation, and when the session detaches.
 30. A decided tool-use action leaves the session's actions at once.
-31. The effort level is read from every turn hook whose input has `effort.level`: UserPromptSubmit, Stop and PostModelSwitch each run `hook turn`, which sends it with `POST /turn`, and a changed value updates the group's short description (ep/mcp-plugin at ed2f7a716: hooks/hooks.json:5-7, src/hook.ts:29, :78, src/hub.ts:187-191, :196-197). Corrected on 2026-11-09 to the code; it read: from the Stop hook only.
+31. The effort level is read from every turn hook whose input has `effort.level`: UserPromptSubmit, Stop and PostModelSwitch each run `hook turn`, which sends it with `POST /turn`, and a changed value updates the group's short description (ep/mcp-plugin at ed2f7a716: hooks/hooks.json:5-7, src/hook.ts:29, :78, src/hub.ts:187-191, :196-197). Corrected on 2026-11-09 to the code; it read: from the Stop hook only. Amended on 2026-11-11: the Stop hook also sends the model of its answer, the `message.model` of Claude's last entry in `transcript_path`, of type `assistant` without `isSidechain`, once that entry's text is the answer, read from the last 1 MiB and twice the answer's bytes up to 20 times 100 ms apart; `<synthetic>` sends none. The model is shown in the short description from the first answer, also when SessionStart has no `model`, as after `claude --resume`; SessionStart's `model` and PostModelSwitch's `to_model` stay.
 32. The three mirroring hooks run with `"async": true`.
 33. Answers and terminal prompts are posted in parts that each fit one message, measured as the core measures it: `fitsMessage` on the encoded message, with the quote. An answer quotes the prompt only when the quote fits with the answer's first character (rewritten on 2026-11-08).
 34. A prompt in the group of a session without an attached Claude Code gets the reply `Session N is not running.`
@@ -300,13 +300,15 @@ on resume of s:              its chats are shown again
 Sources (https://code.claude.com/docs/en/hooks, https://code.claude.com/docs/en/settings, https://code.claude.com/docs/en/remote-control):
 ```
 value    read from                          updated on
-model    SessionStart model (optional)      PostModelSwitch to_model
+model    SessionStart model (optional)      PostModelSwitch to_model; Stop: the model of its answer in the transcript
 effort   effort.level of a turn hook        the next turn hook; no event for an effort change
 ```
 
 ```
 on SessionStart(m):       model = m
 on PostModelSwitch(t):    model = t
+on Stop(answer):          model = message.model of Claude's last transcript entry, once its text is answer;
+                          up to 20 reads 100 ms apart of the last 1 MiB + 2 × bytes(answer); none for <synthetic> (decision 31)
 on a turn hook(e):        effort = e.effort.level, when given; turn hooks: UserPromptSubmit, Stop, PostModelSwitch (decision 31)
 on a change of either:    group short description = "MODEL · effort LEVEL"
 ```
@@ -315,6 +317,7 @@ on a change of either:    group short description = "MODEL · effort LEVEL"
 flowchart LR
   SS[SessionStart: model] --> T[POST /title]
   PM[PostModelSwitch: to_model] --> R[POST /turn]
+  SP[Stop: transcript_path] --> TR[transcript tail: model of the answer] --> R
   ST[UserPromptSubmit, Stop, PostModelSwitch: effort.level] --> R
   T --> D[session group short description]
   R --> D
@@ -797,8 +800,8 @@ Hooks of the plugin (https://code.claude.com/docs/en/hooks), all with `"async": 
 ```
 hook               input used                        route
 UserPromptSubmit   prompt, effort.level              POST /turn {id, pid, at, prompt, effort}
-Stop               last_assistant_message,           POST /turn {id, pid, at, answer, effort}
-                   effort.level
+Stop               last_assistant_message,           POST /turn {id, pid, at, answer, model, effort}
+                   transcript_path, effort.level     model: of the answer's transcript entry (decision 31)
 PostModelSwitch    to_model, effort.level            POST /turn {id, pid, at, model, effort}
 ```
 
