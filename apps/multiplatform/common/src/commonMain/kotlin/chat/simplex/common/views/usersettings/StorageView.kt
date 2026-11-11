@@ -5,11 +5,15 @@ import SectionDividerSpaced
 import SectionItemViewSpaceBetween
 import SectionView
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.ChatController
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
@@ -31,24 +35,31 @@ fun ModalData.StorageView(dirs: List<Path> = storageRoots()) {
   LaunchedEffect(Unit) {
     if (usage == null) usage = withContext(Dispatchers.IO) { dirs.map(::rootUsage) }
   }
-  ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.storage))
+  val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
+  LazyColumnWithScrollBar(
+    contentPadding = PaddingValues(
+      top = if (oneHandUI.value) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp else topPaddingToContent(false)
+    )
+  ) {
+    item { AppBarTitle(stringResource(MR.strings.storage)) }
     val roots = usage
     if (roots == null) {
-      DefaultProgressView(null)
+      item { DefaultProgressView(null) }
     } else {
       roots.forEachIndexed { i, root ->
-        if (i > 0) SectionDividerSpaced()
-        SectionView(root.dir.toString()) {
-          UsageRow(stringResource(MR.strings.storage_total), root.bytes)
-          root.entries.forEach { entry ->
-            val click = entry.dir?.let { dir -> { ModalManager.start.showModal(cardScreen = true) { StorageView(listOf(dir)) } } }
-            UsageRow(entry.name, entry.bytes, click)
+        item {
+          if (i > 0) SectionDividerSpaced()
+          SectionView(root.dir.toString()) {
+            UsageRow(stringResource(MR.strings.storage_total), root.bytes)
           }
+        }
+        items(root.entries) { entry ->
+          val click = entry.dir?.let { dir -> { ModalManager.start.showModal(cardScreen = true) { StorageView(listOf(dir)) } } }
+          UsageRow(entry.name, entry.bytes, click)
         }
       }
     }
-    SectionBottomSpacer()
+    item { SectionBottomSpacer() }
   }
 }
 
