@@ -15,8 +15,9 @@ set -euo pipefail
 app=$1
 export UI_OUT=$2
 cases=${3:-}
-bundle_id=chat.simplex.app
 ui=$(dirname "$0")/ui
+# shellcheck source=scripts/ci/ios-sim/sim-lib.sh
+. "$(dirname "$0")/sim-lib.sh"
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
 test_card_x=66
 logo_x=200
@@ -26,17 +27,12 @@ picker_done_y=144
 mkdir -p "$UI_OUT"
 
 axe --version
-runtime=com.apple.CoreSimulator.SimRuntime.iOS-$(xcrun --sdk iphonesimulator --show-sdk-version | tr . -)
-SIM_UDID=$(xcrun simctl create ci-iphone com.apple.CoreSimulator.SimDeviceType.iPhone-17 "$runtime")
+SIM_UDID=$(new_simulator ci-iphone)
 export SIM_UDID
-echo "simulator $SIM_UDID, runtime $runtime"
 if [ -n "${GITHUB_ENV:-}" ]; then
   echo "SIM_UDID=$SIM_UDID" >> "$GITHUB_ENV"
   echo "UI_OUT=$UI_OUT" >> "$GITHUB_ENV"
 fi
-xcrun simctl boot "$SIM_UDID"
-xcrun simctl bootstatus "$SIM_UDID" -b
-open -a Simulator --args -CurrentDeviceUDID "$SIM_UDID"
 
 xcrun simctl spawn "$SIM_UDID" log stream --level debug --style compact --predicate 'process == "SimpleX"' > "$UI_OUT/app.log" 2>&1 &
 log_pid=$!
@@ -60,33 +56,6 @@ finish() {
 }
 trap finish EXIT
 
-expect_in_tree() {
-  local tree
-  tree=$("$ui" tree)
-  if ! grep -q "$@" <<< "$tree"; then
-    echo "error: ${*: -1} is not in the accessibility tree"
-    exit 1
-  fi
-}
-
-# iOS asks once whether the app may send notifications. The tree sometimes shows the app under this alert rather than
-# the alert (run 38895987656), so its Allow button is also looked for at its place.
-allow_notifications() {
-  local deadline=$((SECONDS + 30)) element
-  while [ "$SECONDS" -lt "$deadline" ]; do
-    if "$ui" tap Allow 1; then
-      return
-    fi
-    element=$("$ui" point 275 518 || true)
-    if grep -qF '"Allow"' <<< "$element"; then
-      "$ui" tap-xy 275 518
-      return
-    fi
-    sleep 2
-  done
-  echo "no notifications alert to allow"
-}
-
 # a profile without conversations sees the onboarding pages in place of the list
 expect_chat_list() {
   expect_in_tree -F '"Talk to someone"'
@@ -105,7 +74,7 @@ tap_element() {
 }
 
 sent_files() {
-  find "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)" "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" data)" -name "IMG_*.$1" 2> /dev/null | wc -l
+  find "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" "$app_group")" "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" data)" -name "IMG_*.$1" 2> /dev/null | wc -l
 }
 
 sent_file() {
@@ -118,13 +87,13 @@ sent_file() {
 
 sent_size() {
   local file
-  file=$(find "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)" "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" data)" -name "IMG_*.$1" -exec ls -t {} + 2> /dev/null | sed -n 1p)
+  file=$(find "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" "$app_group")" "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" data)" -name "IMG_*.$1" -exec ls -t {} + 2> /dev/null | sed -n 1p)
   sips -g pixelWidth -g pixelHeight "$file" | awk '/pixelWidth/ {w = $2} /pixelHeight/ {h = $2} END {print w "x" h}'
 }
 
 disable_file_encryption() {
   xcrun simctl terminate "$SIM_UDID" "$bundle_id" 2> /dev/null || true
-  xcrun simctl spawn "$SIM_UDID" defaults write "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)/Library/Preferences/group.chat.simplex.app" privacyEncryptLocalFiles -bool false
+  xcrun simctl spawn "$SIM_UDID" defaults write "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" "$app_group")/Library/Preferences/$app_group" privacyEncryptLocalFiles -bool false
   "$ui" relaunch
 }
 
@@ -173,32 +142,7 @@ send_image() {
 xcrun simctl install "$SIM_UDID" "$app"
 xcrun simctl launch "$SIM_UDID" "$bundle_id"
 
-# onboarding to the chat list
-"$ui" wait "Get started" 180
-"$ui" shot first-screen
-"$ui" tap "Get started"
-
-"$ui" wait "Create profile" 30
-"$ui" tap-value "Enter profile name..."
-"$ui" type citester
-"$ui" shot profile-name
-"$ui" tap "Create profile"
-
-"$ui" wait "Continue" 60
-"$ui" shot your-network
-"$ui" tap "Continue"
-
-"$ui" wait "Accept" 30
-"$ui" shot network-commitments
-"$ui" tap "Accept"
-
-sleep 5
-"$ui" shot after-onboarding
-allow_notifications
-"$ui" shot notifications-allowed
-
-"$ui" wait "Talk to someone" 60
-"$ui" shot chat-list
+onboard citester
 expect_chat_list reachable
 
 # ui layout checks that the toolbar moved

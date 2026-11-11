@@ -189,10 +189,14 @@ Pushes start none of the app workflows: a run is started by hand, on any branch,
 
 | Input | iOS | Desktop | Android |
 |---|---|---|---|
-| no input | scripted test, the app uploaded | scripted test, the app uploaded | scripted test, the app uploaded |
+| no input | scripted test and a call between two call clients, the app uploaded | scripted test, the app uploaded | scripted test, the app uploaded |
 | `claude` | scripted test, then Claude | scripted test, then Claude | scripted test, then Claude |
 | `backend` | also the test backend | also the test backend | also the test backend |
 | `release` | — | also the latest release's onboarding, to tell a branch's failure from the runner's | also the latest release's onboarding, to tell a branch's failure from the runner's |
+| `calls` | also video calls between two simulators, this branch's app with itself and with `calls_with`'s ([iOS](ios-sim/README.md), "Call tests") | — | — |
+| `calls_with` | the git ref of the other app in `calls`, `master` by default | — | — |
+| `calls_android` | also video calls between this branch's iOS app and its Android app in an emulator on a Linux runner ([iOS](ios-sim/README.md), "Call tests") | — | — |
+| `apps_run` | only the call tests, with the apps an earlier run of ios-sim built (its id) | — | — |
 | `armv7a` | — | — | also the core library for 32-bit Arm (armeabi-v7a), built only |
 
 In the Actions tab: `ios-sim`, `desktop-linux` or `android-emu` → Run workflow, choose the branch and tick the inputs. With the GitHub CLI, each input is a field:
