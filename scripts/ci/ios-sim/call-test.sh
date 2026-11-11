@@ -62,7 +62,7 @@ video_call() {
   hang_up "$ender" "$receiver" "$call" "$background"
   on "$caller" shot "$call-ended"
   on "$callee" shot "$call-ended"
-  echo "$call: connected, e2e encrypted, audio and video both ways"
+  echo "$call: connected, e2e encrypted, audio both ways, ended"
 }
 
 link=$(create_link alice)
@@ -79,4 +79,4 @@ video_call alice bob bob background
 
 [ "$hang_up_failures" -eq 0 ] || fail "$hang_up_failures hang-up checks failed"
 
-echo "call test passed: alice ($app_alice) and bob ($app_bob) called each other, e2e encrypted, with audio and video both ways"
+echo "call test passed: alice ($app_alice) and bob ($app_bob) called each other, e2e encrypted, with audio both ways, and each hang-up ended the other call"
