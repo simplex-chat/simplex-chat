@@ -53,7 +53,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, termsLinkAllowed, termsLinks, termsOf)
+import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, runTermsFetch, termsLinkAllowed, termsLinks, termsOf)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -363,11 +363,12 @@ logNamePolicy NamesConfig {nCommunity} ct =
           True -> logNote $ "names: " <> what <> " " <> link <> ", hash " <> hex tmHash
           False -> logWarn $ "names: the name policy's " <> what <> " are not a link the service takes, so " <> sold <> " cannot be ordered: " <> link
 
--- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
+-- | The workers resume every registration in their phases, the code sweep runs at the start and then daily, and the
+-- terms fetch at the start and then hourly.
 namesLanes :: NamesEnv -> IO [IO ()]
-namesLanes ne@NamesEnv {neChain, neSender, neRecords} = do
+namesLanes ne@NamesEnv {neChain, neContracts, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neChain neSender
-  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker]
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runTermsFetch neContracts]
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do
