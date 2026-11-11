@@ -112,7 +112,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
                     if (indexOfCurrentChat >= 0) chats[indexOfCurrentChat] = chats[indexOfCurrentChat].copy(chatStats = oldStats)
                   }
                   chatModel.chatsContext.updateChats(chats)
-                  chatModel.updateChatTags(chatModel.remoteHostId())
                 }
               }.onFailure { Log.e(TAG, it.stackTraceToString()) }
             }

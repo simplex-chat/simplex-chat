@@ -219,10 +219,8 @@ private suspend fun planAndConnectTask(
           // A name-resolved contact is prepared in the store but not yet in the
           // chat list (link-prepared chats arrive via NewPreparedChat). Surface it
           // so it's visible and openable; no-op if already present.
-          withContext(Dispatchers.Main) {
-            if (chatModel.getContactChat(contact.contactId) == null) {
-              chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = emptyList()))
-            }
+          if (chatModel.getContactChat(contact.contactId) == null) {
+            chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = emptyList()))
           }
           if (filterKnownContact != null) {
             filterKnownContact(contact)
@@ -236,10 +234,8 @@ private suspend fun planAndConnectTask(
           val contact = connectionPlan.contactAddressPlan.contact
           // the contact is already prepared in the store, so open the existing chat instead of sending a new
           // connection request; surface it in the chat list first if it is not there yet (as for Known above)
-          withContext(Dispatchers.Main) {
-            if (chatModel.getContactChat(contact.contactId) == null) {
-              chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = emptyList()))
-            }
+          if (chatModel.getContactChat(contact.contactId) == null) {
+            chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = emptyList()))
           }
           if (filterKnownContact != null) {
             filterKnownContact(contact)
@@ -328,10 +324,8 @@ private suspend fun planAndConnectTask(
           val groupInfo = connectionPlan.groupLinkPlan.groupInfo
           // Same as ContactAddress.Known: surface a name-resolved (prepared)
           // group in the chat list so it's visible and openable.
-          withContext(Dispatchers.Main) {
-            if (chatModel.getGroupChat(groupInfo.groupId) == null) {
-              chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null), chatItems = emptyList()))
-            }
+          if (chatModel.getGroupChat(groupInfo.groupId) == null) {
+            chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null), chatItems = emptyList()))
           }
           if (filterKnownGroup != null) {
             filterKnownGroup(groupInfo)

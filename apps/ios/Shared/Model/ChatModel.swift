@@ -677,7 +677,7 @@ final class ChatModel: ObservableObject {
             chats[i] = chat
         } else {
             // invalid state, correcting
-            addChat(chat)
+            chats.insert(chat, at: 0)
         }
     }
 

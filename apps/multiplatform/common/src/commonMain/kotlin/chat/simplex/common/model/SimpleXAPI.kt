@@ -734,7 +734,6 @@ object ChatController {
         withContext(Dispatchers.Main) {
           val chats = apiGetChats(null)
           chatModel.chatsContext.updateChats(chats)
-          chatModel.updateChatTags(null)
         }
         Log.d(TAG, "startChat: running")
       }

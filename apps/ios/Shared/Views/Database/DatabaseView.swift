@@ -607,7 +607,6 @@ struct DatabaseView: View {
         do {
             let chats = try apiGetChats()
             m.updateChats(chats)
-            ChatTagsModel.shared.updateChatTags(m.chats)
         } catch let error {
             logger.error("apiGetChats: cannot update chats \(responseError(error))")
         }
