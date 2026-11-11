@@ -7,7 +7,7 @@ services:
       args:
         USER_UID: ${USER_UID:-1000}
         USER_GID: ${USER_GID:-1000}
-    restart: on-failure:5
+    restart: unless-stopped
     user: "${USER_UID:-1000}:${USER_GID:-1000}"
     tty: true
     network_mode: host

@@ -251,6 +251,12 @@ absent `[btcpay]` does for Bitcoin and Monero. Its keys:
   it expired and logs an error. Check such orders in the Stripe Dashboard. After a restart, the
   hour starts again.
 
+The service refuses to start when `secret_key` and `publishable_key` are not both live keys or both
+test keys (`sk_test_` or `rk_test_`, and `pk_test_`). With `[names]`, it also refuses test keys
+unless `[chain] chain_id` is 31337, anvil's local chain, or 11155111, Sepolia, so no name on another
+chain is registered for a test payment. Without `[names]`, test keys are accepted, as a staging
+deployment of badges needs.
+
 The service creates each payment intent with `metadata[order]`, the order's reference. A badge
 order's is its id, which the page shows the buyer as "Reference" (`invoice_id` in
 `sx_badge_service_invoices`); a name order's is `name:0x<order hash>` (`order_hash` in
@@ -545,7 +551,11 @@ service account key when `[apple]` and `[google]` are configured. The folder mus
 On PostgreSQL the service holds an advisory lock on its database for as long as it runs, so a second
 process on the same database, `--run-cli` included, stops at start with `another store service holds
 this database`: two would send with the gas key's nonces and run the chat agent's queues together. Stop
-the service before the console.
+the service before the console. The lock is held by a database connection of its own, and PostgreSQL
+releases it when that connection ends, as on a PostgreSQL restart. The service checks the connection
+every 30 seconds and exits when it fails, with `Error: the instance lock's database connection
+failed: …`. Compose's `restart: unless-stopped` then starts it again, and each start takes the lock
+or exits while another process holds it.
 
 ### Upgrading from the badge service
 
@@ -1094,11 +1104,18 @@ reads, clears and logs its acceptance, as a community name's did:
   none. The expected orders × 0.6946 ETH, plus 0.6054 ETH per expected Save of both links (0.3026 ETH
   for one), pays for all of them even at the cap. A name's link edits are at most
   `record_edits_per_year` (3) a year, see [Link edits](#link-edits). The figures scale with
-  `max_fee_per_gas`.
+  `max_fee_per_gas` until a transaction's gas limit × `max_fee_per_gas` passes 1 ETH; above that its
+  max fee stays capped, as the last point says.
 - A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
   transactions with links of 4096 bytes, and 28,082 less with short links.
-- `gas_limit_cap` (default 8,000,000) must stay above 6,791,417: a transaction whose estimate is
+- `gas_limit_cap` (default 8,000,000) must be at least 6,791,417: a transaction whose estimate is
   above it is not sent.
+- Each transaction's max fee is also at most 1 ETH divided by its gas limit, since reth and geth
+  refuse a transaction whose gas limit × max fee is above `--rpc.txfeecap`, 1 ETH by default, and
+  every later transaction of the key would wait behind it. The defaults stay under the bound, at
+  0.8 ETH for 8,000,000 gas. A transaction it caps logs `[NOTE …] names sender: nonce <n> at max
+  fee <wei>, capped so that its gas limit <gas> costs at most 1 ETH`, and a replacement it caps logs
+  `[NOTE …] names sender: replacing nonce <n> at max fee <wei>, capped so that …`.
 
 #### Check the balance and transactions in flight
 
@@ -1142,10 +1159,11 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   This holds when the register's dry run is refused. A register that passes its dry run and reverts
   once mined, as two registers sent while the allowance covers one can, fails its order with no
   such line; the next order's dry run logs it, and the buyer can Try again.
-- `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
-  the transaction waits` when fees are above the cap. Nothing is signed until they fall.
-- `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
-  <cap>` when a transaction stuck in the pool cannot be bumped within the cap.
+- `[WARN …] names sender: the latest block needs <wei> wei per gas, above the fee cap <cap>;
+  the transaction waits` when fees are above the fee cap, `max_fee_per_gas` or 1 ETH over the gas
+  limit. Nothing is signed until they fall.
+- `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over the fee cap
+  <cap>` when a transaction stuck in the pool cannot be bumped within the fee cap.
 
 An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the
@@ -1162,9 +1180,16 @@ owner who got the name another way counts as served, and a code order spends its
 
 The service resumes its saved transactions at start and gives new ones nonces after theirs. Those
 are signed by the key that sent them, so started on another key it would give that key's
-transactions nonces it has not reached, and they would never be mined. Rotate only with no `pending`
-row, at a quiet time: every stop takes the store offline, and each order sends its register about a
-minute after its commit.
+transactions nonces it has not reached, and they would never be mined. So the service refuses to start
+while a `pending` row is signed by another key than `service_key`, or for another chain than
+`chain_id`, and names both:
+
+```
+Error: a pending transaction of nonce <n> was signed by <old address>, not by <new address> of chain.service_key; start with the key and chain that signed it until no transaction is pending
+```
+
+Rotate only with no `pending` row, at a quiet time: every stop takes the store offline, and each order
+sends its register about a minute after its commit.
 
 1. Keep a copy of the old ini, create the new key in another, fund it, and have the guardian grant
    it an allowance, as above for `$NEW`:
@@ -1210,7 +1235,10 @@ minute after its commit.
    ```
 
    It prints `$NEW`. After the next order's commit, `cast nonce $NEW --block pending` is above 0,
-   and `cast nonce $OLD --block pending` stays where it was.
+   and `cast nonce $OLD --block pending` stays where it was. If `docker compose logs store-service`
+   shows the error above, a row is still pending and compose keeps restarting the service: stop it
+   with `docker compose stop store-service`, put `prev/store_service.ini` back in `config/` and
+   repeat step 2.
 4. The guardian zeroes the old key's allowance, sending this calldata as in
    [Grant the allowance](#grant-the-allowance), then anyone checks it reads 0:
 
@@ -1235,6 +1263,25 @@ minute after its commit.
 
    The last balance prints `0`. A negative value, from fees above about 150 gwei, makes cast refuse
    the sweep; run it again when they fall.
+
+The old key's `pending` rows keep every other key from starting until they settle. A key that
+starts but cannot pay for them, as its ETH is used up, settles them once funded, as in
+[Fund the key](#fund-the-key). When it is not to be funded, or cannot be started at all, as when its
+ini is lost, the guardian first zeroes its allowance, as in step 4, and anyone checks it reads 0, so
+that a register of the old key reverts wherever it lands. Then stop the service and mark the rows
+dropped:
+
+```
+docker compose stop store-service
+psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "UPDATE simplex_v1_chat_schema.sx_badge_service_name_transactions SET status = 'dropped' WHERE status = 'pending'"
+```
+
+The sender no longer follows them, and at the next start each order is judged from the chain, as
+after a nonce taken by another transaction: a commit or terms acceptance not on chain is sent again
+from the new key, an order whose register did not land fails as after a reverted register and its
+buyer can Try again, and a link edit not applied is sent again before its deadline. The marked
+transactions stay signed and valid: while the old address holds enough ETH, its commits, terms
+acceptances and link edits can still be mined, and its registers revert.
 
 ## Issuing codes
 

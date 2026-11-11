@@ -58,7 +58,7 @@ import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
-import StoreService.Names.Sender (runSender)
+import StoreService.Names.Sender (checkPendingSignatures, runSender)
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), CodeIssuer (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
@@ -306,7 +306,7 @@ storeService opts serviceCfg baseCfg env = do
         raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
       chatHooks =
         defaultChatHooks
-          { preStartHook = Just $ badgePreStartHook opts startedCC,
+          { preStartHook = Just $ badgePreStartHook opts (serviceCfg >>= names) startedCC,
             postStartHook = Just $ badgePostStartHook opts env,
             preCmdHook = Just $ badgeCmdHook turns,
             acceptMember = Just $ joinerAcceptance startedCC
@@ -396,7 +396,7 @@ storeServiceCLI opts serviceCfg = do
         ev -> pure ev
       chatHooks =
         defaultChatHooks
-          { preStartHook = Just $ badgePreStartHook opts startedCC,
+          { preStartHook = Just $ badgePreStartHook opts Nothing startedCC,
             postStartHook = Just $ badgePostStartHook opts env,
             preCmdHook = Just $ badgeCmdHook turns,
             eventHook = Just eventHook,
@@ -633,9 +633,10 @@ routeLookahead = 60
 survive :: T.Text -> IO () -> IO ()
 survive what action = action `catchOwn'` \_ -> logError $ "store service: " <> what <> " failed; the next one will be handled"
 
-badgePreStartHook :: StoreServiceOpts -> TMVar ChatController -> ChatController -> IO ()
-badgePreStartHook opts startedCC cc@ChatController {config, chatStore} = do
+badgePreStartHook :: StoreServiceOpts -> Maybe NamesConfig -> TMVar ChatController -> ChatController -> IO ()
+badgePreStartHook opts namesCfg_ startedCC cc@ChatController {config, chatStore, random} = do
   runStoreServiceMigrations opts config chatStore
+  forM_ namesCfg_ $ \NamesConfig {nChain} -> checkPendingSignatures random nChain chatStore >>= orExit
   void $ atomically $ tryPutTMVar startedCC cc
 
 badgePostStartHook :: StoreServiceOpts -> ServiceState -> ChatController -> IO ()
