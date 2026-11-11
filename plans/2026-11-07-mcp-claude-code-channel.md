@@ -209,6 +209,7 @@ Decided by the user on 2026-11-10:
 
 Decided by the user on 2026-11-11:
 119. The package bundles its production dependencies (`bundleDependencies: true`) and is published without a lockfile; the user: "yes, and test it. From what you are saying bundleDependencies is better as it loads one tarball instead of many". Claude Code 2.1.322 installs a plugin's dependencies only when its folder has `bun.lock`, `npm-shrinkwrap.json`, `package-lock.json` or `bun.lockb`, so it installs nothing, and the plugin loads its bundled modules. The tarball holds the production packages of `package-lock.json` and no development package. `npm-shrinkwrap.json` is `package-lock.json` again, for development and for `npm ci` in `build.yml`; `scripts/strip-dev.js` and `postpack` are removed, and `prepack` builds only. The launch test packs a copy installed by `npm ci`, as `build.yml` publishes it, and runs the unpacked plugin without an install. It replaces decisions 44 and 49 and amends decision 21.
+120. `README.md` has the plugin's installation and use, and one line that names `REFERENCE.md` for `serve` and `register` and for settings shared by several machines or containers; the user: "README should cover simple plugin installations, running as MCP without channel and running with shared settings can be moved to reference indeed, with a single line in readme." "Try it" merges into the quick start of `REFERENCE.md`, "Prompt your agent from the app" becomes its section "Prompt the agent from the app", and the safety lines of `serve` join its Security. Its section "Shared settings" loads the plugin as in [Launch](#launch), checked with `claude -p --settings` and Claude Code 2.1.322 (TESTING.md, check 17).
 
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
@@ -1068,6 +1069,29 @@ Team and Enterprise plans     an admin adds simplex@simplex-chat to allowedChann
 ```
 
 The development flag works in interactive sessions only. Without either flag the plugin works without prompts and tool-use relay.
+
+Shared settings (decision 120):
+```
+settings      user, --settings or managed:
+                extraKnownMarketplaces  simplex-local: source directory, PATH absolute
+                enabledPlugins          simplex@simplex-local: true
+PATH          .claude-plugin/marketplace.json: plugin simplex, source ./plugin
+              plugin/: the unpacked package, nothing installed
+each start    claude --dangerously-load-development-channels plugin:simplex@simplex-local
+              --channels: simplex@simplex-local in the organization's allowedChannelPlugins
+data folder   one per machine or container: ~/.simplex-mcp, or SIMPLEX_MCP_HOME of its environment;
+              sessions and the service lock are matched by process IDs of that machine or container
+```
+
+```mermaid
+flowchart LR
+  S[shared settings] --> K[marketplace simplex-local: PATH]
+  K --> P[PATH/plugin: the unpacked package]
+  F[channel flag at each start] --> C
+  P --> C[Claude Code session]
+  C --> D[data folder of this machine or container]
+  D --> M[its own service and Main group]
+```
 
 ## Pull request
 
