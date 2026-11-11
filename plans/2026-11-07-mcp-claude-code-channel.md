@@ -67,7 +67,7 @@ Design:
 18. The owner link reaches the person only: the `systemMessage` of the SessionStart hook and `simplex-mcp link` in a terminal; hook context and tool results never contain it.
 19. A session's approval mode changes to `host` only after an owner approves a card in the session's group.
 20. Replaced on 2026-11-10 by decision 113. It was: while owners exist, an owner reset runs only after an owner approves a card in the Main group; without owners it runs from a terminal.
-21. The package ships `npm-shrinkwrap.json`; the plugin's server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, except the PreToolUse hook, which runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js`, and Node resolves its modules from the plugin's folder (replaces npx in the plugin folder, 2026-11-08; amended on 2026-11-10 by decision 118).
+21. The package bundles its production dependencies (decision 119); the plugin's server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, except the PreToolUse hook, which runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js`, and Node resolves its modules from the plugin's folder (replaces npx in the plugin folder, 2026-11-08; amended on 2026-11-10 by decision 118 and on 2026-11-11 by decision 119).
 22. Refused paths cover the whole data root.
 23. Standing approvals of closed sessions are listed by `/list` and removed by `/revoke` in the session's group.
 24. The channel is part of the plugin's session server; the service pushes events on the session's `/attach` stream.
@@ -94,14 +94,14 @@ Decided on 2026-11-08, review round 1:
 41. Replaced on 2026-11-08 by decision 70. It was: an owner's one-line `/` message is a prompt when its keyword is not a command of the session group.
 42. The service is spawned with an allowlist of environment variables, `NODE_OPTIONS` among them.
 43. For 30 s after a service start, an owner's prompt to a session without an attachment waits for the session to attach; the reply `Session N is not running.` follows only when it does not.
-44. The published `package.json` and `npm-shrinkwrap.json` hold the production dependencies only: 41 packages and 9 MB to download in place of 317 and 25 MB. The repository keeps the development dependencies; the pack strips them, restores the files after it, and heals a failed pack first; the launch test checks the packed files.
+44. Replaced on 2026-11-11 by decision 119. It was: the published `package.json` and `npm-shrinkwrap.json` hold the production dependencies only: 41 packages and 9 MB to download in place of 317 and 25 MB. The repository keeps the development dependencies; the pack strips them, restores the files after it, and heals a failed pack first; the launch test checks the packed files.
 
 Decided on 2026-11-08, review round 2:
 45. An owner's prompts reach the session in arrival order. A prompt waits for the file of an earlier one, and gets `Session N is not running.` when the session detached meanwhile.
 46. Texts that name an npx command name the plugin's version: `npx -y @simplex-chat/mcp@VERSION link`.
 47. A spawned service with a held lock checks it for up to 15 s: a released lock starts it; an answering socket reports `running`; otherwise it reports the lock's error and exits with 1.
 48. A group profile update keeps the custom data of the group in memory.
-49. The launch test installs the packed plugin with the command of Claude Code 2.1.319, `npm ci --ignore-scripts --workspaces=false --no-audit --no-fund`, within 60 s.
+49. Replaced on 2026-11-11 by decision 119. It was: the launch test installs the packed plugin with the command of Claude Code 2.1.319, `npm ci --ignore-scripts --workspaces=false --no-audit --no-fund`, within 60 s.
 
 Decided on 2026-11-08, review round 3:
 50. Claude posts an answer or a reply without its quote when the core refuses the quote, as for a deleted prompt, or refuses the post with the quote as too large, `largeMsg` (amended on 2026-11-08, review round 6).
@@ -207,32 +207,33 @@ Decided by the user on 2026-11-10:
 117. `//`, `/!` and the refusal of `!` are removed. Claude Code passes a channel message to Claude as the text of a prompt and runs no command from it (TESTING.md, check 6), so `//` and `/!` ran nothing. The user: "I think both should be removed then, yes, as they make no sense if they are not supported and only add complexity." Under premise 2, every message of a member whose role sends is a prompt, also one that starts with `!`, except a one-line `/` text, which is a command of the group: from an admin or owner, one outside the group's requests gets `Unknown command.`; from a moderator, member or author, every one gets the reply of decision 91. A shell command is asked for in words and runs as Claude's tool use, under Claude Code's permissions. The rights posts and the group's description name the group's commands. It replaces decision 111 and the texts of decisions 71 and 97, and amends decisions 17, 84, 91, 92, 98 and 105.
 118. The plugin's skills `/simplex:link` and `/simplex:reset-owners` are removed. Asked whether they are worth keeping, the user: "what's the value having them as commands and not only as CLI options? isn't it just extra moving part that nobody really neads?" `npx -y @simplex-chat/mcp@VERSION link` and `reset-owners` in a terminal stay, with their outputs; the texts that named the skills name `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal. The package has no `skills` folder. It amends decisions 21, 112 and 113.
 
+Decided by the user on 2026-11-11:
+119. The package bundles its production dependencies (`bundleDependencies: true`) and is published without a lockfile; the user: "yes, and test it. From what you are saying bundleDependencies is better as it loads one tarball instead of many". Claude Code 2.1.322 installs a plugin's dependencies only when its folder has `bun.lock`, `npm-shrinkwrap.json`, `package-lock.json` or `bun.lockb`, so it installs nothing, and the plugin loads its bundled modules. The tarball holds the production packages of `package-lock.json` and no development package. `npm-shrinkwrap.json` is `package-lock.json` again, for development and for `npm ci` in `build.yml`; `scripts/strip-dev.js` and `postpack` are removed, and `prepack` builds only. The launch test packs a copy installed by `npm ci`, as `build.yml` publishes it, and runs the unpacked plugin without an install. It replaces decisions 44 and 49 and amends decision 21.
+
 Approved by the user on the PR page on 2026-11-08 (B1, B2):
 99. The Main group's welcome message is `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.`, and its post at each join `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
 
 The user's rule on reviews, 2026-11-08: "reviewers should have no discretion to drive product changes - the UX was approved, and it must not be changing simply because security reviewers said so."
 
-Pack of the package (decision 44):
+Pack of the package (decision 119):
 ```
-prepack:   build; strip-dev.js
-             .orig copies present: restore both files from them
-             save package.json and npm-shrinkwrap.json as .orig
-             package.json: delete devDependencies
-             npm-shrinkwrap.json: drop the entries marked dev and the root's devDependencies
-pack:      the tarball, from the stripped files
-postpack:  strip-dev.js --restore: both files from their .orig copies
-check:     launch test: the packed package.json has no devDependencies; the shrinkwrap has no dev entry,
-           its root lists the dependencies of package.json; the command of Claude Code (decision 49) installs
-           the tarball within 60 s; the checkout is restored
+install:   npm ci, from package-lock.json: the production and the development packages
+prepack:   dist deleted; tsc
+pack:      the tarball: dist, README.md, the plugin files, and node_modules with the production packages
+           (bundleDependencies); no lockfile
+Claude Code: npm pack of the registry tarball, unpacked into the plugin's folder; no lockfile there, so no install
+check:     launch test: a copy installed by npm ci and packed; no lockfile; exactly the production packages of
+           package-lock.json; unpacked, a hook and the session server run without an install; an offline install
+           of the tarball keeps the modules in the package's folder and runs simplex-mcp
 ```
 
 ```mermaid
 flowchart LR
-  R[repository files, with devDependencies] --> P[prepack: heal, save .orig, strip]
-  P --> T[tarball: production dependencies only]
-  T --> C[launch test: no dev entries, root agrees, npm ci]
-  P --> Q[postpack: restore from .orig]
-  Q --> R
+  L[package-lock.json] --> I[npm ci: production and development packages]
+  I --> P[prepack: dist rebuilt]
+  P --> T[tarball: production packages in node_modules, no lockfile]
+  T --> C[Claude Code: unpacks it, installs nothing]
+  T --> N[npx: installs the one tarball]
 ```
 
 Service start with a held lock (decision 47):
