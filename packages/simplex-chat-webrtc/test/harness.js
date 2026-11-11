@@ -204,7 +204,18 @@ class Peer {
     await this.page.evaluate((t) => {
       if (t.reconnectTimeout) reconnectTimeout = t.reconnectTimeout
       if (t.iceRestartInterval) iceRestartInterval = t.iceRestartInterval
+      if (t.peerCloseTimeout) peerCloseTimeout = t.peerCloseTimeout
     }, timeouts)
+  }
+
+  keepConnection() {
+    return this.page.evaluate(() => {
+      window.keptConnection = activeCall.connection
+    })
+  }
+
+  connectionClosed() {
+    return this.page.evaluate(() => window.keptConnection.signalingState === "closed")
   }
 
   async receivedBytes() {
