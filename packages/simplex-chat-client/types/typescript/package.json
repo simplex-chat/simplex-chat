@@ -37,7 +37,7 @@
     "url": "https://github.com/simplex-chat/simplex-chat/issues"
   },
   "homepage": "https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/types/typescript#readme",
-  "dependencies": {
+  "devDependencies": {
     "typescript": "^5.9.2"
   }
 }
