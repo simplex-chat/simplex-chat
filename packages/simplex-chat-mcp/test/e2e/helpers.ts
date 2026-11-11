@@ -97,6 +97,12 @@ export function updated(chat: api.ChatApi, check: ItemCheck): Promise<T.AChatIte
   })
 }
 
+export function deleted(chat: api.ChatApi, itemId: number): Promise<void> {
+  return chat.wait("chatItemsDeleted", ({chatItemDeletions}) => chatItemDeletions.some(({deletedChatItem}) => deletedChatItem.chatItem.meta.itemId === itemId), timeout).then(event => {
+    if (event === undefined) throw new Error("no matching deletion")
+  })
+}
+
 export const textStarts = (prefix: string): ItemCheck => ci => ci.chatItem.meta.itemText.startsWith(prefix)
 
 export function cardNumber(ci: T.AChatItem): number {

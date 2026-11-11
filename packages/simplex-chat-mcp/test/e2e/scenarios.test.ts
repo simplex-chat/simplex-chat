@@ -10,9 +10,11 @@ import {readServerFile} from "../../src/files"
 import {RunningServer, ServeOptions, startServer} from "../../src/serve"
 import {McpClient} from "./client"
 import {
+  ItemCheck,
   captureLog,
   cardNumber,
   controlGroupOf,
+  deleted,
   isActive,
   joinByLink,
   lastLink,
@@ -541,4 +543,66 @@ test("--display-name names the profile and the agent control chat", async () => 
   expect(agent.server.user.profile.displayName).toBe("Ridge Scout")
   expect((await controlGroupOf(agent.server.chat, agent.server.user.userId)).groupProfile.displayName).toBe("Ridge Scout")
   expect(await renamed).toBeDefined()
+}, 600_000)
+
+test("typing: a live status in an approved direct chat, its note, the answer that deletes it, the stop, and the startup deletion", async () => {
+  const alice = await personIn("typing", "Alice")
+  const agent = await agentIn("typing")
+  await agent.start()
+  const controlId = await joinAsOwner(alice)
+
+  const link = await alice.chat.apiCreateLink(alice.user.userId)
+  const agentConnected = alice.chat.wait("contactConnected", ({contact}) => contact.profile.displayName === "agent", timeout)
+  const connectCard = received(alice.chat, textStarts("I want to connect to "))
+  const connecting = agent.client.tool("connect", {target: link, idle: 2})
+  await approve(alice, controlId, connectCard)
+  const connected = await connecting
+  expect(connected.result).toMatchObject({status: "done", connected: true})
+  const chat = connected.result.chat as string
+  const agentContact = (await agentConnected)!.contact.contactId
+  const prompt = (text: string) => alice.chat.apiSendTextMessage([T.ChatType.Direct, agentContact], text)
+  const approval = received(alice.chat, textStarts("Approved for contact Alice"))
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, controlId], `/approve ${chat} all`)
+  await approval
+
+  const isStatus: ItemCheck = ci => ci.chatInfo.type === "direct" && ci.chatItem.meta.itemLive === true
+  const firstStatus = received(alice.chat, isStatus)
+  await prompt("what time is it?")
+  const prompted = await agent.client.tool("receive", {chat, wait: 30, typing: true})
+  expect(prompted.result.messages.map(({text}: {text: string}) => text)).toEqual(["what time is it?"])
+  const status = (await firstStatus).chatItem
+  expect(status.meta.itemText).toBe("◐ thinking · 0:00")
+  const ofStatus: ItemCheck = ci => ci.chatItem.meta.itemId === status.meta.itemId && ci.chatItem.meta.itemLive === true
+  expect(await alice.chat.wait("chatItemUpdated", ({chatItem}) => ofStatus(chatItem), 10_000)).toBeDefined()
+
+  const noted = updated(alice.chat, ci => ofStatus(ci) && ci.chatItem.meta.itemText.startsWith("checking the clock\n"))
+  expect((await agent.client.tool("send", {chat, text: "checking the clock", live: true})).result).toEqual({status: "live", chat})
+  await noted
+  expect(logLines).toContain(`Note to contact Alice (${chat}): checking the clock`)
+
+  const answer = received(alice.chat, ci => ci.chatItem.meta.itemText === "12:00")
+  const statusDeleted = deleted(alice.chat, status.meta.itemId)
+  const outcome = received(alice.chat, textStarts("I sent a message to contact Alice:"))
+  expect((await agent.client.tool("send", {chat, text: "12:00", wait: 0})).result).toMatchObject({status: "done", chat})
+  expect((await answer).chatItem.meta.itemLive).not.toBe(true)
+  await statusDeleted
+  await outcome
+  const posts = (await alice.chat.apiGetChat(T.ChatType.Group, controlId, 50)).chatItems.filter(({content}) => content.type === "rcvMsgContent").map(({meta}) => meta.itemText)
+  expect(posts.slice(posts.findIndex(text => text.startsWith("Approved for contact Alice")) + 1)).toEqual([`I sent a message to contact Alice:\n\`12:00\`\nApproved for this chat by Alice. /'revoke ${chat}'`])
+
+  const secondStatus = received(alice.chat, isStatus)
+  await prompt("and the date?")
+  await agent.client.tool("receive", {chat, wait: 30, typing: true})
+  const second = (await secondStatus).chatItem.meta.itemId
+  const leftover = received(alice.chat, isStatus)
+  await agent.server.chat.apiSendMessages([T.ChatType.Direct, Number(chat.slice(1))], [{msgContent: {type: "text", text: "◐ thinking · 0:00"}, mentions: {}}], true)
+  const third = (await leftover).chatItem.meta.itemId
+
+  const secondDeleted = deleted(alice.chat, second)
+  await agent.stop()
+  expect(logLines).toContain("Stopping: sending 1 status deletion, up to 10 s. Ctrl-C to stop now.")
+  await secondDeleted
+  const thirdDeleted = deleted(alice.chat, third)
+  await agent.start()
+  await thirdDeleted
 }, 600_000)

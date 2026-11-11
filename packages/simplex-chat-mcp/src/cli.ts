@@ -23,12 +23,16 @@ serve options:
                          Without --owners, whoever joins becomes an owner and
                          every owner approves.
   --expire HOURS         pending actions expire after HOURS, 1 to 23 (default: 23)
-  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,
-                         0 to 60 (default: 10)
+  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards and status
+                         deletions to be sent, 0 to 60 (default: 10)
   --reset-owners         replace the owners: a new agent control chat and link
   --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)
   --qr-code SIZE         QR code of the link: small (default) or large
+  --inference URL        poll llama-swap or llama-server at URL for the model
+                         state and tokens per second shown in status messages;
+                         the API key, if any, is read from
+                         SIMPLEX_MCP_INFERENCE_KEY; mode requests only
 
 register options:
   --scope SCOPE          user (default) or local
@@ -97,12 +101,18 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
       case "--qr-code":
         serve.qrCode = qrCodeSize(options.value(option))
         break
+      case "--inference":
+        serve.inference = inferenceUrl(options.value(option))
+        break
       default:
         throw unknownOption(option)
     }
   }
   if (serve.resetOwners && serve.owners !== undefined && serve.owners.length > 0) {
     throw usageError("--reset-owners takes --owners without a list: member IDs change in a new agent control chat.")
+  }
+  if (serve.inference !== undefined && serve.approve === "host") {
+    throw usageError("--inference: status messages are shown only in mode requests.")
   }
   return serve
 }
@@ -169,6 +179,12 @@ function qrCodeSize(value: string): QrCodeSize {
 function scope(value: string): Scope {
   if (value !== "user" && value !== "local") throw usageError(`--scope: user or local expected, got ${value}`)
   return value
+}
+
+function inferenceUrl(value: string): string {
+  const url = URL.canParse(value) ? new URL(value) : undefined
+  if (url === undefined || !["http:", "https:"].includes(url.protocol) || url.username !== "" || url.password !== "") throw usageError(`--inference: an http or https URL without user name and password expected, got ${value}`)
+  return `${url.origin}${url.pathname.replace(/\/+$/, "")}`
 }
 
 function ownerEntry(entry: string): OwnerEntry {

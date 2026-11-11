@@ -7,7 +7,7 @@ import {core} from "simplex-chat"
 import {Action, Actions, Mode, NewAction, ToolError} from "../../src/actions"
 import {Control, cardText, parseCommand} from "../../src/control"
 import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
-import {OwnerEntry, waitForCancelledCards} from "../../src/serve"
+import {OwnerEntry, waitForStopMessages} from "../../src/serve"
 import {AgentTools} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -953,15 +953,15 @@ describe("wait at the stop", () => {
     jest.useFakeTimers()
     const lines = logged()
     let ended = false
-    const waiting = waitForCancelledCards([send, connect, download], 10, new AbortController().signal).then(() => (ended = true))
+    const waiting = waitForStopMessages([send, connect, download], 10, new AbortController().signal).then(() => (ended = true))
     expect(lines).toEqual(["Stopping: sending 2 cancelled cards, up to 10 s. Ctrl-C to stop now."])
     await jest.advanceTimersByTimeAsync(9_999)
     expect(ended).toBe(false)
     await jest.advanceTimersByTimeAsync(1)
     await waiting
-    await waitForCancelledCards([download], 10, new AbortController().signal)
-    await waitForCancelledCards([send], 0, new AbortController().signal)
-    await waitForCancelledCards([], 10, new AbortController().signal)
+    await waitForStopMessages([download], 10, new AbortController().signal)
+    await waitForStopMessages([send], 0, new AbortController().signal)
+    await waitForStopMessages([], 10, new AbortController().signal)
     expect(lines).toHaveLength(1)
     expect(jest.getTimerCount()).toBe(0)
   })
@@ -971,14 +971,39 @@ describe("wait at the stop", () => {
     const lines = logged()
     const endWait = new AbortController()
     let ended = false
-    const waiting = waitForCancelledCards([send], 10, endWait.signal).then(() => (ended = true))
+    const waiting = waitForStopMessages([send], 10, endWait.signal).then(() => (ended = true))
     expect(lines).toEqual(["Stopping: sending 1 cancelled card, up to 10 s. Ctrl-C to stop now."])
     await jest.advanceTimersByTimeAsync(1_000)
     expect(ended).toBe(false)
     endWait.abort()
     await waiting
     expect(jest.getTimerCount()).toBe(0)
-    await waitForCancelledCards([send], 10, endWait.signal)
+    await waitForStopMessages([send], 10, endWait.signal)
+    expect(jest.getTimerCount()).toBe(0)
+  })
+
+  it("waits for status deletions alone and with cancelled cards, and names each part", async () => {
+    jest.useFakeTimers()
+    const lines = logged()
+    let ended = false
+    const waiting = waitForStopMessages([download], 10, new AbortController().signal, 1).then(() => (ended = true))
+    expect(lines).toEqual(["Stopping: sending 1 status deletion, up to 10 s. Ctrl-C to stop now."])
+    await jest.advanceTimersByTimeAsync(9_999)
+    expect(ended).toBe(false)
+    await jest.advanceTimersByTimeAsync(1)
+    await waiting
+    const both = waitForStopMessages([send, connect, download], 10, new AbortController().signal, 1)
+    await jest.advanceTimersByTimeAsync(10_000)
+    await both
+    const plural = waitForStopMessages([send], 10, new AbortController().signal, 2)
+    await jest.advanceTimersByTimeAsync(10_000)
+    await plural
+    await waitForStopMessages([], 0, new AbortController().signal, 2)
+    expect(lines).toEqual([
+      "Stopping: sending 1 status deletion, up to 10 s. Ctrl-C to stop now.",
+      "Stopping: sending 2 cancelled cards and 1 status deletion, up to 10 s. Ctrl-C to stop now.",
+      "Stopping: sending 1 cancelled card and 2 status deletions, up to 10 s. Ctrl-C to stop now.",
+    ])
     expect(jest.getTimerCount()).toBe(0)
   })
 })

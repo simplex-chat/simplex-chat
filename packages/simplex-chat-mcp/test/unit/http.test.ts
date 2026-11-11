@@ -4,7 +4,7 @@ import {McpServer} from "@modelcontextprotocol/server"
 import {Actions, Mode} from "../../src/actions"
 import {startHttp, stopHttp} from "../../src/http"
 import {ChatItemsWatch} from "../../src/messages"
-import {AgentTools} from "../../src/tools"
+import {AgentTools, instructions} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, fakeHooks, user} from "./fixtures"
 
 const token = "secret-token"
@@ -135,8 +135,19 @@ describe("MCP", () => {
     expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave"])
     const send = result.tools.find(({name}: {name: string}) => name === "send")
     expect(send.inputSchema.properties.idle).toEqual({type: "number", minimum: 1, maximum: 300, description: "Seconds without a new response that end the wait once a response arrived. Default 30."})
-    expect(send.outputSchema.required).toEqual(["action", "status"])
+    expect(send.inputSchema.properties.live).toEqual({type: "boolean", description: expect.stringMatching(/^true: text is shown at once above the line of the live status message in this chat/)})
+    expect(send.outputSchema.required).toEqual(["status"])
+    expect(send.outputSchema.properties.status.enum).toEqual(["done", "failed", "rejected", "expired", "live"])
     expect(send._meta).toBeUndefined()
+    const receive = result.tools.find(({name}: {name: string}) => name === "receive")
+    expect(receive.inputSchema.properties.typing).toEqual({type: "boolean", description: expect.stringMatching(/^true: when messages are returned, your user sees a live status message in this chat/)})
+  })
+
+  it("keeps each tool description, and the instructions for a 15-character name, within Claude Code's 2048 characters", async () => {
+    await start()
+    const {result} = await body(await post(modern("tools/list"), modernHeaders("tools/list")))
+    for (const {description} of result.tools) expect(description.length).toBeLessThanOrEqual(2048)
+    expect(instructions("Ridgeline Scout").length).toBeLessThanOrEqual(2048)
   })
 
   it("asks the host for each action in mode host", async () => {
@@ -163,6 +174,7 @@ describe("MCP", () => {
     expect(await text({chat: "@4", text: "😀".repeat(12001)})).toMatch(/data\/text must NOT have more than 12000 characters$/)
     expect(await text({chat: "@4", text: "x", mention: [44, 44]})).toMatch(/data\/mention must NOT have duplicate items/)
     expect(await text({chat: "@4", text: "x", wait: -1})).toMatch(/data\/wait must be >= 0$/)
+    expect(await text({chat: "@4", text: "x", live: "yes"})).toMatch(/data\/live must be boolean$/)
     expect(await text({chat: "@4", text: "x", colour: "red"})).toMatch(/data must NOT have additional properties$/)
     expect(await text({text: "x"})).toMatch(/data must have required property 'chat'$/)
     expect(actions.all()).toHaveLength(0)

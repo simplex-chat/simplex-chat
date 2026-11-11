@@ -64,6 +64,16 @@ describe("serve options", () => {
     expect(usage(["serve", "agent", "--qr-code"])).toBe("--qr-code: a value expected.")
   })
 
+  it("takes the inference URL without trailing slashes, query and hash, in mode requests only", () => {
+    expect(parseCommand(["serve", "agent", "--inference", "http://127.0.0.1:8080/"], home)).toMatchObject({options: {inference: "http://127.0.0.1:8080"}})
+    expect(parseCommand(["serve", "agent", "--inference", "https://gpu.example.com/llm//?key=1#models"], home)).toMatchObject({options: {inference: "https://gpu.example.com/llm"}})
+    for (const value of ["ftp://x", "http://u:p@h", "http://u@h", "localhost:8080", "127.0.0.1:8080"]) {
+      expect(usage(["serve", "agent", "--inference", value])).toBe(`--inference: an http or https URL without user name and password expected, got ${value}`)
+    }
+    expect(usage(["serve", "agent", "--inference"])).toBe("--inference: a value expected.")
+    expect(usage(["serve", "agent", "--approve", "host", "--inference", "http://127.0.0.1:8080"])).toBe("--inference: status messages are shown only in mode requests.")
+  })
+
   it("takes --owners with and without a list", () => {
     expect(parseCommand(["serve", "agent", "--owners", "--port", "5300"], home)).toMatchObject({options: {owners: [], port: 5300}})
     expect(parseCommand(["serve", "agent", "--owners", "3:Alice Smith,7:Bob"], home)).toMatchObject({
@@ -168,7 +178,8 @@ describe("help", () => {
   it("matches the manual", () => {
     expect(parseCommand(["--help"], home)).toEqual({command: "help"})
     expect(helpText).toContain("  --owners [ID:NAME,...] only these owners approve; without a list, the link\n")
-    expect(helpText).toContain("  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,\n                         0 to 60 (default: 10)\n")
+    expect(helpText).toContain("  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards and status\n                         deletions to be sent, 0 to 60 (default: 10)\n")
+    expect(helpText).toContain("  --inference URL        poll llama-swap or llama-server at URL for the model\n                         state and tokens per second shown in status messages;\n                         the API key, if any, is read from\n                         SIMPLEX_MCP_INFERENCE_KEY; mode requests only\n")
     expect(helpText.endsWith("--reset-owners takes --owners without a list.\n")).toBe(true)
   })
 })

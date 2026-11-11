@@ -137,10 +137,11 @@ export class FakeChat {
   apiGetChatItemInfo = library.apiGetChatItemInfo
   apiGetUserServers = library.apiGetUserServers
   commands: string[] = []
-  sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]}[] = []
-  updates: {chatId: number; itemId: number; text: string}[] = []
+  sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]; live?: boolean}[] = []
+  updates: {chatId: number; itemId: number; text: string; live?: boolean}[] = []
   replies: string[] = []
   deleted: {chatType: T.ChatType; chatId: number; mode?: T.ChatDeleteMode}[] = []
+  deletedItems: {chatType: T.ChatType; chatId: number; itemIds: number[]; mode: T.CIDeleteMode}[] = []
   left: number[] = []
   customData: {chat: string; customData?: object}[] = []
   profiles: {groupId: number; groupProfile: T.GroupProfile}[] = []
@@ -175,16 +176,21 @@ export class FakeChat {
     return {type: "cmdOk"}
   }
 
-  async apiSendMessages(chat: [T.ChatType, number], messages: T.ComposedMessage[]): Promise<T.AChatItem[]> {
-    this.sent.push({chat, messages})
+  async apiSendMessages(chat: [T.ChatType, number], messages: T.ComposedMessage[], liveMessage = false): Promise<T.AChatItem[]> {
+    this.sent.push({chat, messages, ...(liveMessage ? {live: true} : {})})
     const ref = `${chat[0] === T.ChatType.Direct ? "@" : "#"}${chat[1]}`
     const chatInfo = this.chats.get(ref)?.chatInfo ?? groupChat(group(chat[1], "control"))
-    return messages.map(({msgContent}) => event(chatInfo, item(this.nextItemId++, msgContent.text, chatInfo.type === "direct" ? {type: "directSnd"} : {type: "groupSnd"})))
+    return messages.map(({msgContent}) => event(chatInfo, item(this.nextItemId++, msgContent.text, chatInfo.type === "direct" ? {type: "directSnd"} : {type: "groupSnd"}, liveMessage ? {live: true} : {})))
   }
 
-  async apiUpdateChatItem(_type: T.ChatType, chatId: number, itemId: number, msgContent: T.MsgContent): Promise<T.ChatItem> {
-    this.updates.push({chatId, itemId, text: msgContent.text})
+  async apiUpdateChatItem(_type: T.ChatType, chatId: number, itemId: number, msgContent: T.MsgContent, liveMessage = false): Promise<T.ChatItem> {
+    this.updates.push({chatId, itemId, text: msgContent.text, ...(liveMessage ? {live: true} : {})})
     return item(itemId, msgContent.text, {type: "groupSnd"})
+  }
+
+  async apiDeleteChatItems(chatType: T.ChatType, chatId: number, itemIds: number[], mode: T.CIDeleteMode): Promise<T.ChatItemDeletion[]> {
+    this.deletedItems.push({chatType, chatId, itemIds, mode})
+    return []
   }
 
   async apiSendTextReply(_ci: T.AChatItem, text: string): Promise<T.AChatItem[]> {
