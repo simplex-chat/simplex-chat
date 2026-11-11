@@ -83,6 +83,7 @@ data Contracts = Contracts
   { ctChain :: ChainClient,
     ctStore :: DBStore,
     ctTLD :: SimplexTLD,
+    ctMinPriceCentsPerYear :: Int,
     ctRegistrar :: IORef (Maybe RegistrarConstants),
     ctCommitmentAges :: IORef (Maybe CommitmentAges),
     ctNamePolicy :: IORef (Maybe Address),
@@ -145,8 +146,8 @@ termsFetchInterval :: Int
 termsFetchInterval = 3600 * 1000000
 
 -- | Reads nothing: the registrar's constants, the commitment ages and the name policy are read on first use and kept once read.
-newContracts :: DBStore -> SimplexTLD -> ChainClient -> IO Contracts
-newContracts ctStore ctTLD ctChain = do
+newContracts :: DBStore -> SimplexTLD -> Int -> ChainClient -> IO Contracts
+newContracts ctStore ctTLD ctMinPriceCentsPerYear ctChain = do
   ctRegistrar <- newIORef Nothing
   ctCommitmentAges <- newIORef Nothing
   ctNamePolicy <- newIORef Nothing
@@ -154,7 +155,7 @@ newContracts ctStore ctTLD ctChain = do
   ctTermsLinks <- newIORef Nothing
   ctFetchAfter <- newIORef =<< getCurrentTime
   ctFetching <- newMVar ()
-  pure Contracts {ctChain, ctStore, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds}
+  pure Contracts {ctChain, ctStore, ctTLD, ctMinPriceCentsPerYear, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds}
 
 -- | Registered while @nameExpires + GRACE_PERIOD@ is not before the latest block's time.
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)
@@ -187,15 +188,18 @@ textRecord :: Contracts -> LabelHash -> ByteString -> IO (Either ChainError Text
 textRecord ct lh key = call ct (resolver ct) ("text(bytes32,string)", abiTuple [Static $ nodeArg ct lh, Dynamic $ abiBytes key]) decodeString
 
 -- | Cents for a label of this length and these years. The oracle prices by length only,
--- so a placeholder label of that length keeps the label from the RPC node. A price under a cent is refused: a node
--- answering one would sell names for nothing while the sponsor allowance pays their rent.
+-- so a placeholder label of that length keeps the label from the RPC node. A price under the floor for these years is refused: a node
+-- answering one would sell names below it while the sponsor allowance pays their rent.
 chainPriceCents :: Contracts -> Int -> Int -> IO (Either ChainError Int)
-chainPriceCents ct len years = call ct (controller ct) ("rentPriceUSD(string,uint256)", args) $ \ret -> do
+chainPriceCents ct@Contracts {ctMinPriceCentsPerYear} len years = fmap (>>= checkFloor) . call ct (controller ct) ("rentPriceUSD(string,uint256)", args) $ \ret -> do
   base <- decodeUint256 ret
   let cents = base `div` attoUsdPerCent
-  if cents >= 1 && cents <= toInteger (maxBound :: Int) then Right (fromInteger cents) else Left AERange
+  if cents <= toInteger (maxBound :: Int) then Right (fromInteger cents) else Left AERange
   where
     args = abiTuple [Dynamic $ abiBytes $ B.replicate len 'a', Static $ uint256 $ toInteger years * secondsPerYear]
+    checkFloor cents
+      | toInteger cents >= toInteger ctMinPriceCentsPerYear * toInteger years = Right cents
+      | otherwise = Left $ ChainUnavailable $ "rentPriceUSD answered " <> tshow cents <> " cents for " <> tshow years <> " years, under names.min_price_cents_per_year"
 
 sponsorNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", addressWord owner) decodeWord64

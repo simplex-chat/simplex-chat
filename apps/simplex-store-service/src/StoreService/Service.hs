@@ -329,11 +329,11 @@ storeService opts serviceCfg baseCfg env = do
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes
 
 startNames :: ChatController -> Turns -> Waiters -> [Provider] -> NamesConfig -> IO NamesEnv
-startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig {nTLD, nCodesOnly, nChain = ChainConfig {cChainId}} =
+startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig {nTLD, nCodesOnly, nMinPriceCentsPerYear, nChain = ChainConfig {cChainId}} =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just User {userId} -> do
-      logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> codesOnlyNote
+      logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> ", price floor " <> tshow nMinPriceCentsPerYear <> " cents a year" <> codesOnlyNote
       ne@NamesEnv {neContracts} <- newNamesEnv cc userId nc chatStore turns waiters providers
       logNamePolicy nc neContracts
       pure ne
@@ -412,12 +412,12 @@ shownServiceRequest reqData = case KM.lookup "request" reqData of
   Just (J.Object cmd) | Just t <- KM.lookup "type" cmd -> KM.singleton "request" $ J.object ["type" J..= t]
   _ -> KM.empty
 
-badgeCmdHook :: Turns -> Maybe (SimplexTLD, ChainClient) -> ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
+badgeCmdHook :: Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
 badgeCmdHook turns chain_ cc = \case
   CustomChatCommand cmd -> Left <$> runBadgeCmd turns chain_ cc cmd
   cmd -> pure $ Right cmd
 
-runBadgeCmd :: Turns -> Maybe (SimplexTLD, ChainClient) -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
+runBadgeCmd :: Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
 runBadgeCmd turns chain_ cc cmd
   | Right issueOpts <- A.parseOnly issueCmdP cmd =
       issuedReply formatBadgeCode <$> issueBadgeCode cc issueOpts
@@ -502,12 +502,14 @@ refundBalanceCmd turns ChatController {chatStore} ref cents = do
 closeCmdP :: A.Parser T.Text
 closeCmdP = "close " *> (safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace)) <* (A.skipSpace *> A.endOfInput)
 
-newConsoleChain :: NamesConfig -> IO (SimplexTLD, ChainClient)
-newConsoleChain NamesConfig {nTLD, nChain} = (nTLD,) <$> (C.newRandom >>= (`newChainClient` nChain))
+newConsoleChain :: NamesConfig -> IO (SimplexTLD, Int, ChainClient)
+newConsoleChain NamesConfig {nTLD, nMinPriceCentsPerYear, nChain} = do
+  chain <- C.newRandom >>= (`newChainClient` nChain)
+  pure (nTLD, nMinPriceCentsPerYear, chain)
 
-closeOrderCmd :: Turns -> (SimplexTLD, ChainClient) -> ChatController -> T.Text -> IO (Either T.Text T.Text)
-closeOrderCmd turns (tld, chain) ChatController {chatStore} ref = do
-  ct <- newContracts chatStore tld chain
+closeOrderCmd :: Turns -> (SimplexTLD, Int, ChainClient) -> ChatController -> T.Text -> IO (Either T.Text T.Text)
+closeOrderCmd turns (tld, minPriceCentsPerYear, chain) ChatController {chatStore} ref = do
+  ct <- newContracts chatStore tld minPriceCentsPerYear chain
   ((Right <$> closeRegistration chatStore ct turns getCurrentTime ref) `catchOwn` (pure . Left)) >>= \case
     Right (CLRefunded failedAt RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
       logNote $ "names: closed order " <> rid <> " and recorded a refund of " <> tshow rdCents <> " cents"

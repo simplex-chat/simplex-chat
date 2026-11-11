@@ -714,6 +714,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "refuses a [names] or [chain] setting nothing reads, terms_version among them, naming each" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
   it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
+  it "reads min_price_cents_per_year as a known setting, 5000 when absent, and refuses a value below 1" testNamesPriceFloor
   it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
   it "refuses a malformed dev_keys entry or an index named twice, quoting no secret" testDevKeysMalformed
   it "accepts [issuer] dev_keys beside Stripe test keys and a BTCPay on loopback" testDevKeysTestPayments
@@ -956,6 +957,21 @@ testNamesRecordEdits = do
   forM_ ["0", "101", "-3"] $ \v ->
     namesRefusal (namesSection <> ["record_edits_per_year = " <> v]) chainSection `shouldReturn` "names.record_edits_per_year must be between 1 and 100"
   namesRefusal (namesSection <> ["record_edits_per_year = three"]) chainSection `shouldReturn` "record_edits_per_year must be a whole number"
+
+testNamesPriceFloor :: IO ()
+testNamesPriceFloor = do
+  NamesConfig {nMinPriceCentsPerYear = absent} <- parsedNames namesSection chainSection
+  absent `shouldBe` 5000
+  forM_ [1, 7500] $ \n -> do
+    let ns = namesSection <> ["min_price_cents_per_year = " <> T.pack (show n)]
+    withIni (namesIni ns chainSection) $ \p -> do
+      Right ini <- readIniFile p
+      unknownKeys ini `shouldBe` []
+    NamesConfig {nMinPriceCentsPerYear} <- parsedNames ns chainSection
+    (n, nMinPriceCentsPerYear) `shouldBe` (n, n)
+  forM_ ["0", "-5000"] $ \v ->
+    namesRefusal (namesSection <> ["min_price_cents_per_year = " <> v]) chainSection `shouldReturn` "names.min_price_cents_per_year must be at least 1"
+  namesRefusal (namesSection <> ["min_price_cents_per_year = 50.00"]) chainSection `shouldReturn` "min_price_cents_per_year must be a whole number"
 
 -- | Names on the local chain with no payment provider, as a run with dev keys has.
 localNamesIni :: [T.Text] -> T.Text
