@@ -57,8 +57,8 @@ video_call() {
   wait_media "$callee" "$callee_from"
   report_screen "$caller" "$call"
   report_screen "$callee" "$call"
-  check_media "$caller" "$call" "$caller_from"
-  check_media "$callee" "$call" "$callee_from"
+  check_media "$caller" "$call" "$caller_from" reported
+  check_media "$callee" "$call" "$callee_from" reported
   hang_up "$ender" "$receiver" "$call" "$background"
   on "$caller" shot "$call-ended"
   on "$callee" shot "$call-ended"

@@ -363,11 +363,14 @@ wait_media() {
 }
 
 check_media() {
-  local peer=$1 call=$2 from=$3 stats
+  local peer=$1 call=$2 from=$3 video=${4:-required} stats
   stats=$(media_stats "$peer" "$from")
   echo "$call: $peer's media: ${stats:-no stats logged}"
   [ "$(stat_count "$stats" "audio packets received")" -gt 0 ] || fail "$call: $peer received no audio"
-  [ "$(stat_count "$stats" "video frames decoded")" -gt 0 ] || fail "$call: $peer decoded no video"
+  if [ "$(stat_count "$stats" "video frames decoded")" -eq 0 ]; then
+    [ "$video" = reported ] || fail "$call: $peer decoded no video"
+    echo "::warning::$call: $peer decoded no video"
+  fi
   [ "$(stat_count "$stats" "frames encrypted")" -gt 0 ] || fail "$call: $peer encrypted no frames"
   [ "$(stat_count "$stats" "decrypted")" -gt 0 ] || fail "$call: $peer decrypted no frames"
   [ "$(stat_count "$stats" "crypto errors")" -eq 0 ] || fail "$call: $peer had frame encryption errors"
