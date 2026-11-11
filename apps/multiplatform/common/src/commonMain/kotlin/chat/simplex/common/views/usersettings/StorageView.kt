@@ -26,9 +26,10 @@ internal class RootUsage(val dir: Path, val entries: List<EntryUsage>) {
 }
 
 @Composable
-fun StorageView(dirs: List<Path> = storageRoots()) {
-  val usage by produceState<List<RootUsage>?>(initialValue = null) {
-    value = withContext(Dispatchers.IO) { dirs.map(::rootUsage) }
+fun ModalData.StorageView(dirs: List<Path> = storageRoots()) {
+  var usage by remember { stateGetOrPutNullable<List<RootUsage>>("usage") { null } }
+  LaunchedEffect(Unit) {
+    if (usage == null) usage = withContext(Dispatchers.IO) { dirs.map(::rootUsage) }
   }
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.storage))
