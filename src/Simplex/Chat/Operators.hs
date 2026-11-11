@@ -62,7 +62,7 @@ import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8)
 -- Change the conditions only in a release whose What's new announces the change:
 -- the apps show changed conditions as a link in What's new, also in a release without other news.
 -- The notice is recorded when What's new is shown, and the conditions are accepted automatically
--- 31 days later, if the notice was shown within 14 days after the app added the conditions to the database.
+-- 31 days later.
 usageConditionsCommit :: Text
 usageConditionsCommit = "5cb85b913989aa4dc618a0a47ffb9a758e44f375"
 
@@ -128,9 +128,9 @@ usageConditionsAction operators UsageConditions {notifiedAt} now = do
          in Just $ UCAAccepted acceptedForOperators
     | otherwise ->
         let acceptForOperators = filter (not . conditionsAccepted) enabledOperators
-            deadline = conditionsDeadline (fromMaybe now notifiedAt)
+            deadline = Just $ conditionsDeadline (fromMaybe now notifiedAt)
             showNotice = isNothing notifiedAt
-         in Just $ UCAReview acceptForOperators (Just deadline) showNotice
+         in Just $ UCAReview acceptForOperators deadline showNotice
 
 conditionsDeadline :: UTCTime -> UTCTime
 conditionsDeadline = addUTCTime (31 * nominalDay)
