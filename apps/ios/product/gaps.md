@@ -26,16 +26,6 @@ When `ChatModel.chatInitialized` transitions to `true`, the chat list appears fu
 
 ---
 
-## UI: Chat List Filters
-
-### GAP: Filter counts aren't updated for a chat changed in place
-**Source:** [spec/client/chat-list.md](../spec/client/chat-list.md)
-A chat's preset filters are counted when the chat is added and when it is removed, and recounted at each full load. When a chat is changed in place, it is counted as before the change until the next full load: a deleted conversation shown again after a new message, or a contact card whose connection is started, such as the SimpleX team card of a new profile.
-
-**REC:** Update the counts in `updateChatInfo`, leaving out favorites, which `updateChatFavorite` counts before it; or derive the counts from the chat list.
-
----
-
 ## Flows: Group Lifecycle
 
 ### GAP: Bulk member role change — API supports batch but UI uses single-member calls

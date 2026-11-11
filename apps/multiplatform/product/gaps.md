@@ -16,7 +16,6 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
 9. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-09-desktop-emoji-picker-without-skin-tones-and-localized-search)
 10. [Badges: Limits on Moving a Badge to a New Device or Profile](#gap-10-badges-limits-on-moving-a-badge-to-a-new-device-or-profile)
-11. [UI: Chat List Filter Counts Aren't Updated for a Chat Changed in Place](#gap-11-ui-chat-list-filter-counts-arent-updated-for-a-chat-changed-in-place)
 
 ---
 
@@ -378,27 +377,3 @@ A subscriber who moves the badge again before the previous key's credential expi
 1. Restore by a receipt code for Stripe and crypto purchases, shared with iOS.
 2. Announce a limited move on the first Restore.
 3. Before a Play plan change becomes possible, credit its new token without waiting for Restore.
-
----
-
-## GAP-11: UI: Chat List Filter Counts Aren't Updated for a Chat Changed in Place
-
-**Severity:** Low
-**Category:** UI
-**Platforms:** Android, Desktop
-
-### Description
-
-A chat's preset filters are counted when the chat is added and when it is removed, and recounted at each full load. When a chat is changed in place, it is counted as before the change until the next full load: a conversation deleted while the contact is kept, a deleted conversation shown again after a new message, or a contact card whose connection is started, such as the SimpleX team card of a new profile.
-
-### Affected Locations
-
-- `common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt` -- `updateChatInfo`, `clearChat`
-
-### Impact
-
-The Contacts filter can be shown with no contact in the list, or be missing with one.
-
-### Recommendation
-
-Update the counts in `updateChatInfo` and `clearChat`, in the primary context, leaving out favorites, which `updateChatFavorite` counts before `updateChatInfo`; or derive the counts from the chat list.
