@@ -889,6 +889,25 @@ class CoreReleaseTest(GitRepoTest):
         self.assertIn("version:        7.1.0.12\n", self.read(CABAL_FILE))
         self.assertEqual((self.types()["version"], self.types()["simplexChatCore"]), ("0.12.1", "7.1.0.11"))
 
+    def test_changed_types_manifest_gets_a_new_version_for_the_core(self):
+        types = self.types()
+        self.write(f"{TYPES_DIR}/package.json", json.dumps({**types, "dependencies": {"typescript": "^5.9.2"}}, indent=2) + "\n")
+        self.commit("types with a runtime dependency")
+        self.releases = {"core": {"master": {"7.1.0.11": self.head()}}}
+        self.write(f"{TYPES_DIR}/package.json", json.dumps({**types, "devDependencies": {"typescript": "^5.9.2"}}, indent=2) + "\n")
+        self.commit("types dependency moved")
+        self.release("7.1.0.12")
+        self.assertEqual((self.types()["version"], self.types()["simplexChatCore"]), ("0.12.2", "7.1.0.12"))
+        self.assertIn("SimpleX Chat core: 7.1.0.12\n", self.read(TYPES_README))
+
+    def test_release_fields_and_layout_of_the_types_manifest_are_not_a_types_change(self):
+        reordered = {"simplexChatCore": "7.1.0.12", "version": "0.12.5", "name": "@simplex-chat/types"}
+        self.write(f"{TYPES_DIR}/package.json", json.dumps(reordered))
+        self.commit("release fields and layout")
+        self.release("7.1.0.12")
+        self.assertEqual(self.types(), reordered)
+        self.assertIn("SimpleX Chat core: 7.1.0.11\n", self.read(TYPES_README))
+
     def test_requested_types_version_wins(self):
         self.release("7.1.0.12", "7.1.0-beta.6.1")
         self.assertEqual((self.types()["version"], self.types()["simplexChatCore"]), ("7.1.0-beta.6.1", "7.1.0.12"))
