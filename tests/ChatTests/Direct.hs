@@ -618,7 +618,7 @@ testDeleteConversationKeepContact =
       alice ##> "/_delete @2 messages"
       alice <## "bob: contact is deleted"
 
-      alice @@@ [("@bob", "")]
+      alice @@@ [("@bob", "chat banner")] -- UI would filter
       bob @@@ [("@alice", "hey")]
       bob #> "@alice hi"
       alice <# "bob> hi"

@@ -357,8 +357,6 @@ struct ChatPreviewView: View {
         } else if let cItem = cItem {
             let (t, hasSecrets) = chatItemPreview(cItem)
             chatPreviewLayout(itemStatusMark(cItem) + t, hasFilePreview: hasFilePreview, hasSecrets: hasSecrets)
-        } else {
-            chatPreviewLayout(Text(""), hasSecrets: false)
         }
     }
 
@@ -572,11 +570,6 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: []
-            ), progressByTimeout: Binding.constant(false))
-            ChatPreviewView(chat: Chat(
-                chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [],
-                chatStats: ChatStats(unreadChat: true)
             ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
