@@ -1,5 +1,6 @@
 import {T} from "@simplex-chat/types"
 import {Actions, ToolError, stoppingMessage} from "../../src/actions"
+import {Activity} from "../../src/activity"
 import {InferenceState} from "../../src/inference"
 import {Statuses} from "../../src/status"
 import {FakeChat, broadcastDeletion, contact, direct, item, livePost, texts} from "./fixtures"
@@ -20,11 +21,11 @@ afterEach(async () => {
   jest.useRealTimers()
 })
 
-function statusesWith(agent: {allowed?: (chat: string) => Promise<boolean>; inference?: () => Promise<InferenceState | undefined>} = {}): {chat: FakeChat; statuses: Statuses; pending: {open: number}[]} {
+function statusesWith(agent: {allowed?: (chat: string) => Promise<boolean>; inference?: () => Promise<InferenceState | undefined>; activity?: Activity} = {}): {chat: FakeChat; statuses: Statuses; pending: {open: number}[]} {
   const chat = new FakeChat()
   const pending: {open: number}[] = []
   const actions = {pending: () => pending} as unknown as Actions
-  const statuses = new Statuses({chat: chat.api(), actions, inference: agent.inference}, agent.allowed ?? (async () => true))
+  const statuses = new Statuses({chat: chat.api(), actions, inference: agent.inference, activity: agent.activity}, agent.allowed ?? (async () => true))
   created.push(statuses)
   return {chat, statuses, pending}
 }
@@ -47,6 +48,22 @@ function logged(): string[] {
 
 function labelOf(text: string): string {
   return text.slice(2, text.lastIndexOf(" · "))
+}
+
+function claudeCodeSession(): {activity: Activity; hook: (name: string, fields?: object) => void} {
+  const activity = new Activity("agent")
+  const hook = (name: string, fields: object = {}): void => activity.record({session_id: "s1", hook_event_name: name, ...fields})
+  hook("PreToolUse", {tool_name: "mcp__simplex-agent__receive", tool_use_id: "t0"})
+  return {activity, hook}
+}
+
+async function activityLabel(name: string, fields: object): Promise<string> {
+  const {activity, hook} = claudeCodeSession()
+  hook(name, fields)
+  const {chat, statuses} = statusesWith({activity})
+  statuses.start("@4")
+  await jest.advanceTimersByTimeAsync(4_500)
+  return labelOf(chat.updates[0].text)
 }
 
 describe("status message", () => {
@@ -152,6 +169,74 @@ describe("status message", () => {
       "generating with `qwen3-coder-30b`, 31 tokens/s",
       "generating",
     ])
+  })
+
+  it("ranks labels with Claude Code's activity: inference states, waiting for approval, permission prompt, using TOOL, compaction, latest tool, subagent, working, thinking", async () => {
+    let state: InferenceState | undefined = {type: "output"}
+    const {activity, hook} = claudeCodeSession()
+    const {chat, statuses, pending} = statusesWith({inference: async () => state, activity})
+    hook("SubagentStart", {agent_id: "a1", agent_type: "Explore"})
+    hook("PreToolUse", {tool_name: "Read", tool_use_id: "t1", tool_input: {file_path: "/work/src/index.ts"}})
+    hook("PreToolUse", {tool_name: "Bash", tool_use_id: "t2", tool_input: {command: "rm -rf build"}})
+    hook("PreCompact", {trigger: "auto"})
+    hook("PermissionRequest", {tool_name: "Bash", tool_input: {command: "rm -rf build"}})
+    const endDownload = statuses.startCall("download")
+    pending.push({open: 1})
+    statuses.start("@4")
+    await jest.advanceTimersByTimeAsync(4_500)
+    state = {type: "idle"}
+    await jest.advanceTimersByTimeAsync(3_000)
+    pending[0].open = 0
+    await jest.advanceTimersByTimeAsync(3_000)
+    hook("PermissionDenied", {tool_name: "Bash", tool_use_id: "t2"})
+    await jest.advanceTimersByTimeAsync(3_000)
+    endDownload()
+    await jest.advanceTimersByTimeAsync(3_000)
+    hook("PostCompact", {trigger: "auto"})
+    await jest.advanceTimersByTimeAsync(3_000)
+    hook("PostToolUse", {tool_name: "Read", tool_use_id: "t1"})
+    await jest.advanceTimersByTimeAsync(3_000)
+    hook("SubagentStop", {agent_id: "a1", agent_type: "Explore"})
+    await jest.advanceTimersByTimeAsync(3_000)
+    state = undefined
+    await jest.advanceTimersByTimeAsync(3_000)
+    expect(chat.updates.map(({text}) => labelOf(text))).toEqual([
+      "generating",
+      "waiting for approval",
+      "waiting for permission in Claude Code",
+      "using download",
+      "compacting the conversation",
+      "reading `index.ts`",
+      "running subagent `Explore`",
+      "working",
+      "thinking",
+    ])
+  })
+
+  it("names a Claude Code tool by its kind, with the file base name or the tool name in a code span when it passes its filter", async () => {
+    const cases: [string, object, string][] = [
+      ["Bash", {command: "npm test"}, "running a command"],
+      ["PowerShell", {command: "Get-ChildItem"}, "running a command"],
+      ["Monitor", {command: "tail -f build.log"}, "running a command"],
+      ["Read", {file_path: "/work/src/index.ts"}, "reading `index.ts`"],
+      ["Read", {file_path: "/work/my notes.md"}, "reading a file"],
+      ["Edit", {file_path: "/work/src/status.ts"}, "editing `status.ts`"],
+      ["Write", {file_path: "/work/README.md"}, "editing `README.md`"],
+      ["MultiEdit", {}, "editing a file"],
+      ["NotebookEdit", {notebook_path: "/work/analysis.ipynb"}, "editing `analysis.ipynb`"],
+      ["Grep", {pattern: "TODO"}, "searching files"],
+      ["Glob", {pattern: "**/*.ts"}, "searching files"],
+      ["WebSearch", {query: "SimpleX"}, "searching the web"],
+      ["WebFetch", {url: "https://simplex.chat"}, "searching the web"],
+      ["mcp__github__search_repositories", {query: "simplex"}, "using `search_repositories`"],
+      ["mcp__files__Read", {file_path: "/work/README.md"}, "using `Read`"],
+      ["TodoWrite", {}, "using `TodoWrite`"],
+      ["Run `rm`", {}, "using a tool"],
+    ]
+    const labels: string[] = []
+    for (const [name, input] of cases) labels.push(await activityLabel("PreToolUse", {tool_name: name, tool_use_id: "t1", tool_input: input}))
+    expect(labels).toEqual(cases.map(([, , label]) => label))
+    expect(await activityLabel("SubagentStart", {agent_id: "a1", agent_type: "my-plugin:reviewer"})).toBe("running a subagent")
   })
 
   it("deletes the status when the chat is not eligible or its read fails, and sends nothing after it", async () => {

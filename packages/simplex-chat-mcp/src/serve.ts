@@ -5,6 +5,7 @@ import {McpServer, McpServerFactory} from "@modelcontextprotocol/server"
 import {ChatEvent, T} from "@simplex-chat/types"
 import {api, util} from "simplex-chat"
 import {Action, Actions, Mode} from "./actions"
+import {Activity} from "./activity"
 import {Control, controlDataOf, createControlChat, findControlGroup, hasOutcomeCard, isControlEvent, resetControlChat} from "./control"
 import {acquireLock, createDataFolder, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "./files"
 import {startHttp, stopHttp} from "./http"
@@ -109,7 +110,8 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     perform: (action, signal) => tools.perform(action, signal),
   })
   const watch = new ChatItemsWatch()
-  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data, inference}, approve)
+  const activity = new Activity(name)
+  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data, inference, activity}, approve)
   const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools)
   await control.load()
   await tools.deleteLeftoverStatuses().catch(error => logError("status messages", error))
@@ -119,7 +121,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     return mcp
   }
   let started = false
-  const server = await listen(port, token, factory, () => started)
+  const server = await listen(port, token, factory, () => started, event => activity.record(event))
   writeServerFile(data, {name, port, expireHours})
   try {
     await control.start()
@@ -236,9 +238,9 @@ async function controlGroup(chat: api.ChatApi, userId: number, displayName: stri
   return resetOwners ? resetControlChat(chat, userId, group, displayName, nextAction) : group
 }
 
-async function listen(port: number, token: string, factory: McpServerFactory, ready: () => boolean): Promise<Server> {
+async function listen(port: number, token: string, factory: McpServerFactory, ready: () => boolean, hook: (event: unknown) => void): Promise<Server> {
   try {
-    return await startHttp({port, token, factory, ready})
+    return await startHttp({port, token, factory, ready, hook})
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "EADDRINUSE") throw new ExitError(`Port ${port} is in use. Start with --port N.`, 1)
     throw error

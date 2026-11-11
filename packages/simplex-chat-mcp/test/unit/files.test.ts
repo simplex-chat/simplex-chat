@@ -50,12 +50,15 @@ describe("data folder", () => {
     expect(statSync(dir).mode & 0o777).toBe(0o700)
   })
 
-  it("writes the headers for the MCP host, readable only by the user, and rewrites them", () => {
+  it("writes the headers for the MCP host and for the status hooks, readable only by the user, and rewrites them", () => {
     writeHeadersFile(dir, "first")
     expect(readFileSync(join(dir, "headers.json"), "utf8")).toBe('{"Authorization":"Bearer first"}\n')
+    expect(readFileSync(join(dir, "hook-headers"), "utf8")).toBe("Authorization: Bearer first\n")
     expect(statSync(join(dir, "headers.json")).mode & 0o777).toBe(0o600)
+    expect(statSync(join(dir, "hook-headers")).mode & 0o777).toBe(0o600)
     writeHeadersFile(dir, "second")
     expect(JSON.parse(readFileSync(join(dir, "headers.json"), "utf8"))).toEqual({Authorization: "Bearer second"})
+    expect(readFileSync(join(dir, "hook-headers"), "utf8")).toBe("Authorization: Bearer second\n")
   })
 
   it("keeps the token until renewed", () => {
@@ -67,7 +70,7 @@ describe("data folder", () => {
   })
 
   it("makes the token, the headers and the server record private again when they exist", () => {
-    const files = ["token", "headers.json", "server.json"].map(name => join(dir, name))
+    const files = ["token", "headers.json", "hook-headers", "server.json"].map(name => join(dir, name))
     for (const file of files) {
       writeFileSync(file, "{}\n")
       chmodSync(file, 0o644)
@@ -75,7 +78,7 @@ describe("data folder", () => {
     serverToken(dir, true)
     writeHeadersFile(dir, "token")
     writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
-    expect(files.map(file => statSync(file).mode & 0o777)).toEqual([0o600, 0o600, 0o600])
+    expect(files.map(file => statSync(file).mode & 0o777)).toEqual([0o600, 0o600, 0o600, 0o600])
   })
 
   it("records the server", () => {

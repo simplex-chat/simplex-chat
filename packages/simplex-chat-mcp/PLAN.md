@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.3: plan
 
-Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`), live status 2026-11-10 (`plans/2026-11-10-mcp-live-status.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); in the sections of the status message and the inference endpoint, master `f8776692df`; `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
+Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`), live status 2026-11-10 (`plans/2026-11-10-mcp-live-status.md`), Claude Code activity 2026-11-11 (`plans/2026-11-11-mcp-live-activity.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); in the sections of the status message and the inference endpoint, master `f8776692df`; hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11; `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
 
 ## Scope
 
@@ -13,7 +13,7 @@ In:
 - files: the `file` field of received messages, `download` to save one in the data folder, `send` with `file` to send one;
 - connections to contact addresses, one-time links, groups, channels and SimpleX names, as the agent's profile or incognito;
 - bots as services: the commands a bot advertises are returned by `connect`;
-- a status message while the agent works, in a chat whose messages the owner approved with `/approve CHAT all`: the agent's state, its notes, and the state of a model behind llama-swap or llama-server.
+- a status message while the agent works, in a chat whose messages the owner approved with `/approve CHAT all`: the agent's state, its notes, the state of a model behind llama-swap or llama-server, and the permission prompts, compaction, running tools and subagents of the agent's Claude Code sessions, reported by status hooks.
 
 Out of scope:
 
@@ -80,6 +80,7 @@ tool call -> action      same tool and action fields, action in memory: the call
 send -> responses        every received message item (rcvMsgContent) of newChatItems in the chat with an ID above the sent item's, from the perform until a call returns the result
 connect -> chat          actions[N].conn, completed by the event of the connection
 agent -> follow-up       results carry chat, item, member and action IDs; inputs take chat, item and member IDs: send, receive, reply_to, mention; action IDs match the cards and list
+hook event -> session    session_id; an agent session from its first event whose tool_name has the prefix mcp__simplex-NAME__ (section Claude Code activity)
 ```
 
 Action fields: `target`, `incognito`, `message` for `connect`; `chat`, `text`, `file`, `as`, `reply_to`, `mention` for `send`; `chat`, `item` for `download`; `chat` for `leave`.
@@ -107,8 +108,8 @@ The MCP SDK serves the protocol: `createMcpHandler` of `@modelcontextprotocol/se
 layer                         who                                      what
 listener                      http.ts                                  127.0.0.1:PORT; Node limits lifted for hours-long calls: requestTimeout 0, timeout 0, headersTimeout 60 s, keepAliveTimeout 5 s
 bearer token                  http.ts, before the SDK                  Authorization: Bearer <DIR/token>, compared in constant time; otherwise 401
-path                          http.ts                                  /mcp only; otherwise 404, a request target that is not a URL included
-start                         http.ts                                  until the agent control chat is started: 503 with Retry-After: 1
+path                          http.ts                                  /mcp, and /hook for the status hooks (section Claude Code activity); otherwise 404, a request target that is not a URL included
+start                         http.ts                                  /mcp until the agent control chat is started: 503 with Retry-After: 1; /hook from the listen on
 Origin, Host                  SDK middleware                           localhostOriginValidation (no Origin, or a localhost origin on any port), localhostHostValidation; otherwise 403
 protocol                      SDK                                      both eras, header and version errors, 405, body limit, cache hints (ttlMs, cacheScope), JSON or SSE per call, SSE keep-alive
 cancellation                  SDK                                      the client closing the response stream aborts ctx.mcpReq.signal (toNodeHandler ties the Request signal to res "close")
@@ -143,10 +144,11 @@ actions.ts    actions: state machine, expiry, attach rule
 tools.ts      MCP tools, schemas, instructions
 status.ts     status messages: schedule, labels, notes, deletion
 inference.ts  polls of llama-swap or llama-server: model state, tokens read, tokens per second
+activity.ts   Claude Code hook events: agent sessions, running tools, subagents, permission prompts, compaction
 messages.ts   message items, waits, responses
-http.ts       listener, token, /mcp, the SDK handler with its Origin and Host checks
-files.ts      token, headers.json, server.json, lock
-register.ts   register command
+http.ts       listener, token, /mcp, /hook, the SDK handler with its Origin and Host checks
+files.ts      token, headers.json, hook-headers, server.json, lock
+register.ts   register command: the MCP entry and the status hooks
 log.ts        stdout log lines, stderr errors
 ```
 
@@ -159,6 +161,9 @@ DIR/simplex_*.db   SimpleX chat and agent databases             core default
 DIR/token          32 random bytes, base64url                   0600
 DIR/headers.json   {"Authorization": "Bearer <token>"}, written 0600
                    at every start
+DIR/hook-headers   Authorization: Bearer <token>, one line,     0600
+                   written at every start; read by curl in the
+                   status hooks
 DIR/server.json    {name, port, expireHours} of the server      0600
 DIR/lock           PID of the running server                    0600
 DIR/tmp/           the core's temp folder: files in transfer    0700, set before startChat
@@ -193,6 +198,7 @@ downloads     memory: one per file ID, until the file is received or fails
 forwarding    memory: the /forward of a file ID until its copy for posting is made
 rejected files memory: file IDs whose download call returned rejected or expired; a done download removes its ID
 statuses      memory: at most one status message per chat; leftovers of a crash are deleted at the next start, in chats that meet the conditions of status messages
+activity      memory: the Claude Code activity of at most 16 agent sessions, from the status hooks
 ```
 
 - Writes of the custom data run one at a time, through one queue in the server, in counter order: the library runs each command in a worker thread (`simplex-chat/cpp/simplex.cc:46-54`), and `APISetGroupCustomData` takes no lock (`Commands.hs:1668-1672`).
@@ -294,7 +300,7 @@ Add the agent to Claude Code:
 
 ```
 $ npx -y @simplex-chat/mcp register my-agent
-Added to Claude Code: scope user, server simplex-my-agent.
+Added to Claude Code: scope user, server simplex-my-agent, status hooks in /home/alice/.claude/settings.json.
 ```
 
 - `register` reads `DIR/server.json`, runs `claude mcp remove --scope SCOPE simplex-NAME` (a missing entry is ignored), then `claude mcp add-json --scope SCOPE simplex-NAME '<entry>'`.
@@ -302,6 +308,8 @@ Added to Claude Code: scope user, server simplex-my-agent.
 - Claude Code 2.1.302 runs `headersHelper` through a shell (`cmd.exe` on Windows) at every connection attempt and sends the headers it prints; for `project` and `local` scope only in a folder with persisted trust; for `user` scope and `--mcp-config` without that check. A token replaced with `--new-token` is therefore read at the next connection.
 - Tool names are `mcp__simplex-NAME__<tool>`; the allow rule of an agent is `mcp__simplex-NAME`, because allow rules take a literal server name (Claude Code permissions docs).
 - `--scope local`: the entry applies in the git repository that contains the folder where `register` runs (its main repository for a worktree), or in that folder outside a repository, as Claude Code keys local-scope servers.
+- After the entry is added, `register` writes the status hooks (section Claude Code activity) into the Claude Code settings file of the scope: `user`: `CONFIG/settings.json`, CONFIG being `CLAUDE_CONFIG_DIR`, or `~/.claude` when it is unset or empty; `local`: `.claude/settings.local.json` in the folder of the entry.
+- The settings file is read, `{}` when absent. In the groups of the 14 events, the handlers with `@DIR/hook-headers` in `args` are removed, and groups left without handlers are deleted; one group per event is appended. Other keys, events and groups are kept. The file is written with 2-space indentation and a final newline; a second `register` writes the same text.
 
 Errors, exit code 1:
 
@@ -310,7 +318,11 @@ situation                  message
 never started              Agent "my-agent" was never started. Start it with: npx -y @simplex-chat/mcp serve my-agent
 claude not on PATH, user   Add this entry under "mcpServers" in ~/.claude.json: {"simplex-my-agent": <entry>}
 claude not on PATH, local  Add this entry under "projects" > "<project folder>" > "mcpServers" in ~/.claude.json: {"simplex-my-agent": <entry>}
+invalid settings file      Added to Claude Code: scope user, server simplex-my-agent. /home/alice/.claude/settings.json is not a valid settings file; add these status hooks to it: {"hooks":{...}}
 ```
+
+- An invalid settings file: not a JSON object, `hooks` neither an object nor null, or the value of one of the 14 events not an array. The file is left unchanged, and the MCP entry is added.
+- Without claude on PATH, and after a failed `claude mcp add-json`, the settings file is left unchanged.
 
 ### Other lines
 
@@ -620,7 +632,17 @@ state                                                              label
 --inference: slots processing a prompt, none generating            reading the prompt[ with `MODEL`][, N tokens read]
 --inference: a slot generating                                     generating[ with `MODEL`][, N tokens/s]
 an action pending, with a call waiting on it                       waiting for approval
+a permission prompt of Claude Code                                 waiting for permission in Claude Code
 a tool call of this server running, other than receive             using TOOL, of the latest such call
+Claude Code compacting the conversation                            compacting the conversation
+the latest running Claude Code tool:
+  Bash, PowerShell, Monitor                                        running a command
+  Read                                                             reading `FILE`, or reading a file
+  Edit, Write, MultiEdit, NotebookEdit                             editing `FILE`, or editing a file
+  Grep, Glob                                                       searching files
+  WebSearch, WebFetch                                              searching the web
+  another tool                                                     using `TOOL`, or using a tool
+the latest running Claude Code subagent                            running subagent `TYPE`, or running a subagent
 --inference: slots read, none processing                           working
 otherwise                                                          thinking
 ```
@@ -628,6 +650,8 @@ otherwise                                                          thinking
 - The first line is `◐ thinking · 0:00`. The label is read again for renders 2 to 49; a note is rendered with the last label.
 - `` with `MODEL` ``: all processing slots belong to one model of llama-swap. Model IDs outside `^[\w.:/+@-]{1,64}$` are dropped.
 - `, N tokens read` is shown when N is above 0. `, N tokens/s`, rounded, is shown when the same slot and task were read in the previous poll, processing with tokens already decoded, and more tokens were decoded since then.
+- The Claude Code rows are read from the activity of the agent's sessions, reported by the status hooks (section Claude Code activity); the same rows are shown in every status message of the process.
+- FILE is the base name of the file, TOOL the tool name without the `mcp__SERVER__` prefix of an MCP tool, and TYPE the subagent type. Each is shown in a code span only when accepted by its pattern; otherwise the second form is shown.
 
 ```
 time      the chat                                         notification
@@ -647,6 +671,15 @@ With `--inference http://127.0.0.1:8080` (llama-swap), for example:
 ◒ reading the prompt with `qwen3-coder-30b`, 6144 tokens read · 0:09
 ◓ generating with `qwen3-coder-30b`, 31 tokens/s · 0:15
 ◐ working · 0:24
+```
+
+With the status hooks of Claude Code, for example:
+
+```
+◐ running a command · 0:12
+◒ reading `status.ts` · 0:21
+◐ waiting for permission in Claude Code · 0:36
+◑ running subagent `Explore` · 0:43
 ```
 
 Schedule:
@@ -847,6 +880,7 @@ more          number      always; new messages not returned
 
 - New: a received message that is unread when the call reads its page, or that arrives during the call. The returned ones are marked read; another call marking one read after this call collected it does not remove it.
 - When a call waits, with `wait` above 0 and nothing new, the chat's status message is deleted first, with or without `typing`.
+- In the description, the agent is asked to call `send` with `live: true` and a short note in the same response as the tool call of a step that takes minutes.
 
 ### list
 
@@ -1043,7 +1077,7 @@ Every command acts for the active user, the agent's profile, the only user of th
 serve(NAME, options):
   check options
   --inference: SIMPLEX_MCP_INFERENCE_KEY empty, or with characters other than visible ASCII: exit 2 "SIMPLEX_MCP_INFERENCE_KEY: visible ASCII characters expected."
-  create DIR, mode 0700 (set again when DIR exists, except on Windows); DIR/lock created exclusively, or exit 1 when its PID runs; token = DIR/token, created when missing or with --new-token; DIR/headers.json written with the token
+  create DIR, mode 0700 (set again when DIR exists, except on Windows); DIR/lock created exclusively, or exit 1 when its PID runs; token = DIR/token, created when missing or with --new-token; DIR/headers.json and DIR/hook-headers written with the token
   chat = ChatApi.init({type: "sqlite", filePrefix: DIR/simplex})
   profile = the user, or created: /_create user {profile: {displayName: <--display-name or NAME>, fullName: "", peerType: agent}, pastTimestamp: false}
   cfg = /network; /_network {cfg with smpProxyMode: always, smpProxyFallback: allowProtected}   # the apps' defaults, SimpleXAPI.kt:5427-5447
@@ -1061,6 +1095,7 @@ serve(NAME, options):
   each chat of list() that meets the conditions of status messages: deleteLeftovers(chat), awaited (section Status message); a failed chat list: logged "status messages: <error>"
   HTTP listen 127.0.0.1:PORT; port in use: chat.close(); remove DIR/lock; exit 1 "Port PORT is in use. Start with --port N."   # before any link or QR code is printed
     requests to /mcp with the token get 503 with Retry-After: 1 until ownerStart ends
+    POST /hook with the token: Activity.record of the event, from the listen on (section Claude Code activity)
   write DIR/server.json {name: NAME, port, expireHours}
   lost unset: ownerStart(group)
   log "Listening on http://127.0.0.1:PORT/mcp"
@@ -1622,7 +1657,8 @@ label():
   state = await inferred()
   waiting = Actions.pending() holds an action with open > 0
   tool = the tool of the last running call other than receive
-  return statusLabel(waiting, state, tool)   # the labels of section What the owner sees: the status message
+  activity = Activity.state()   # section Claude Code activity
+  return statusLabel(waiting, state, tool, activity)   # the labels of section What the owner sees: the status message
 
 inferred():
   --inference absent: return undefined
@@ -1713,6 +1749,68 @@ get(url, key, signal, handled):
 
 - Requests: GET of `/running`, `/props` and `/slots` only.
 
+### Claude Code activity
+
+Status hooks, written by `register` (section Register): one group per event of record() below, without a matcher, each with this handler:
+
+```json
+{"type": "command", "command": "curl", "args": ["-q", "--noproxy", "*", "-s", "-m", "2", "-o", "/dev/null", "-H", "@DIR/hook-headers", "-H", "Content-Type: application/json", "--data-binary", "@-", "http://127.0.0.1:PORT/hook"], "async": true}
+```
+
+- Claude Code spawns curl from PATH with `args`, without a shell; with `async`, it continues at once, and completion notices are hidden by default (Claude Code hooks reference, "Exec form and shell form", "Run hooks in the background").
+- curl reads no curlrc file (`-q` first), ignores the proxy variables (`--noproxy "*"`), posts the event JSON from stdin with the header line of `DIR/hook-headers`, and ends within 2 s. On Windows the output goes to `NUL`.
+
+```
+POST /hook (http.ts), after the Host, Origin and token checks of /mcp, before its ready check:
+  a method other than POST: 405, Allow: POST
+  Content-Length absent: 411; above 4 MiB: 413
+  the body parsed as JSON: invalid: 400; otherwise Activity.record(body); 204 without a body
+  an error: the connection destroyed
+```
+
+```
+Activity (activity.ts), one per process, created with NAME in startAgent
+sessions          agent sessions, in join order; at most 16
+tools             tool_use_id -> {session, agent, name, file}, in start order; at most 64
+subagents         agent_id -> {session, name}, in start order; at most 64
+ended             tool_use_ids of end events without an entry in tools; the last 256
+asking            sessions with a permission prompt
+compacting        sessions compacting
+```
+
+```
+record(event):
+  session = session_id; tool = tool_name matching ^[\w-]{1,64}$; id = tool_use_id; agent = agent_id; each only a string
+  own = tool starts with "mcp__simplex-NAME__"
+  session absent: return
+  own: join(session)
+  session not in sessions: return
+  PreToolUse:          agent absent: compacting.delete(session)
+                       id absent, own, tool Agent, or id in ended: return
+                       tools[id] = {session, agent, name: tool, file: fileName(tool_input)}
+  PostToolUse, PostToolUseFailure, PermissionDenied:
+                       asking.delete(session); id defined: delete tools[id], or ended.add(id) when tools has no entry for id
+  PostToolBatch:       asking.delete(session); delete the tools of this session and agent
+  PermissionRequest:   asking.add(session)
+  SubagentStart:       agent defined: subagents[agent] = {session, name: agent_type matching ^[\w-]{1,64}$}
+  SubagentStop:        delete subagents[agent]
+  PreCompact:          compacting.add(session)
+  PostCompact:         compacting.delete(session)
+  UserPromptSubmit, Stop, StopFailure, SessionEnd:
+                       clear(session)
+  tools, subagents or ended above its limit: its oldest entry deleted
+
+join(session): sessions.add(session); above 16: the oldest session deleted, then cleared
+clear(session): delete its tools and subagents; asking.delete(session); compacting.delete(session)
+fileName(input): basename of input.file_path, else of input.notebook_path, matching ^[\w.+@-]{1,64}$
+state(): {asking: asking not empty, compacting: compacting not empty, tool: the last of tools, subagent: the last of subagents}
+```
+
+- `agent_id` is absent in events of the main agent (Claude Code hooks reference, "Common input fields").
+- Events of a session are discarded until its first event with a tool of this server; Claude Code runs the hooks of the user scope in every session of the user.
+- The body is discarded after record(); /hook logs nothing.
+- The calls of this server's tools are tracked by `AgentTools.call`, and the subagents of `Agent` calls by SubagentStart.
+
 ## Sequence diagrams
 
 Participants: P person (CLI), O owner Alice (SimpleX app), S the agent's server, A the agent "My Agent", D the SimpleX Directory bot, V vendor Ridgeline's bot, R a channel #12, G a group #15 where the agent has role member, with member Switchback (member 44). Item IDs are rows of the agent's database.
@@ -1730,7 +1828,7 @@ sequenceDiagram
   S->>S: owner role for Alice; link deleted
   S->>O: My Agent: "I'm your agent. I ask here before I connect, send, download a file or leave a chat."
   S->>P: "Alice joined (member 3) and is now an owner." + register hint
-  P->>P: npx -y @simplex-chat/mcp register my-agent: claude mcp remove; claude mcp add-json --scope user simplex-my-agent {...}
+  P->>P: npx -y @simplex-chat/mcp register my-agent: claude mcp remove; claude mcp add-json --scope user simplex-my-agent {...}; status hooks in ~/.claude/settings.json
 ```
 
 ### Searching the directory
@@ -1899,11 +1997,12 @@ commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all
 actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
 cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes and the servers line; the attaching line of sends
 messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected, a forwarded file offered and then received; download: attach, performing at wait, a received file, a forwarded file kept outside the chat's folder and moved there at the approval, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request; receive with typing: a status in approved direct chats with people, groups and business chats, and none for an aborted call, without typing or messages, without the approval, with a bot or an agent, a disconnected contact, a channel, an observer role, a lost control chat or mode host; the status deleted when a receive of its chat waits, after the answer is sent, before leave, at the next tick after /revoke and after the control chat is lost, and kept when the answer fails; send with live: the note under the line and its log line, a pending send with the same text left unattached, an aborted call, the refusals; a call counted as running until it ends, also when it throws; leftovers read only in eligible chats
-status      the post after the first read of the conditions; gaps of 3 s, then a tenth of the age up to 20 s; frames and elapsed time; the frozen line at render 50, then checks every 5 min; label ranks; the model and the counts in labels; deletion when the conditions are unmet or their read fails, at 23 h, and 30 min after the last call in the frozen phase; a note under the line and under the frozen line, refused at render 59; a status 23 h old replaced at a note; no tick render after a label read during which notes reached render 50; one status per chat; nothing sent after a tick of an ended status; a failed command; stop; the logging of failed polls; leftovers page by page
+status      the post after the first read of the conditions; gaps of 3 s, then a tenth of the age up to 20 s; frames and elapsed time; the frozen line at render 50, then checks every 5 min; label ranks; the model and the counts in labels; deletion when the conditions are unmet or their read fails, at 23 h, and 30 min after the last call in the frozen phase; a note under the line and under the frozen line, refused at render 59; a status 23 h old replaced at a note; no tick render after a label read during which notes reached render 50; one status per chat; nothing sent after a tick of an ended status; a failed command; stop; the logging of failed polls; leftovers page by page; the Claude Code rows ranked among the labels; Claude Code tools by kind, with the file base name or the tool name in a code span, or the second form
 inference   loading from /running; /props, then /slots, at up to 4 distinct allowed proxies, without the key; tokens/s between two polls, summed; tokens read; idle; fractional and negative counts ignored; the first 64 slots; the model of one busy model; a sleeping server; 503 of /props and /slots; a plain llama-server with the key; proxies on URL's host or loopback only; one poll per 3 s; failures by HTTP status, invalid JSON, a body over 1 MiB, a redirect, a refused connection and the 1 s deadline, folded to one line; a failing proxy left out; the model ID pattern; GET of /running, /props and /slots only
-http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors; the typing and live schemas, status live and the required status of send's output; each description, and the instructions for a 15-character name, within 2048 characters
-register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors; on Windows, claude through cmd.exe after ENOENT, with cmd.exe quoting
-files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json; file modes set again on existing files
+activity    agent sessions from the first event with a tool of this server, other sessions and the servers of other agents ignored; the latest running tool, this server's tools and Agent left out; the tools of one session and agent dropped at its PostToolBatch; a PreToolUse after its end event ignored; the permission prompt until a tool of its session ends, fails or is denied, a batch ends or the turn stops; compaction until PostCompact or a PreToolUse of the main agent; the latest subagent until its SubagentStop; a session cleared at UserPromptSubmit, Stop, StopFailure and SessionEnd; 16 sessions; 64 tools, 64 subagents, 256 ended IDs; the patterns of file base names, tool names and agent types; bodies that are not objects, and fields of other types
+http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors; the typing and live schemas, status live and the required status of send's output; each description, and the instructions for a 15-character name, within 2048 characters; /hook: the parsed body passed on and 204 without a body, also before ready, a 4 MiB body, 413 above it, 411 without Content-Length, 401, 403, 405 with Allow, 400 for invalid JSON, the hook not called
+register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors; on Windows, claude through cmd.exe after ENOENT, with cmd.exe quoting; the status hooks of every event, with NUL on Windows; the user settings file from CLAUDE_CONFIG_DIR, or ~/.claude when it is unset or empty; the local settings file; this agent's handlers replaced, other settings, hooks and groups kept, the same text at a second register; invalid settings files reported after the entry is added, and left unchanged; no status hooks after a failed add
+files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json and hook-headers; file modes set again on existing files
 log         every SimpleX error shape worded by the apps, in its JSON shape from @simplex-chat/types; the chain for other errors
 ```
 
@@ -1979,3 +2078,5 @@ C6      Claude Code closes the request stream when a call times out or its task 
 - `--inference URL`: llama-swap or llama-server is polled for the model's state and speed; the key is read from `SIMPLEX_MCP_INFERENCE_KEY` and sent to URL only.
 - The owner ends status messages of a chat with `/revoke CHAT`; an owner command for status messages alone is a later change.
 - Version 0.3.0.
+- Claude Code activity (`plans/2026-11-11-mcp-live-activity.md`): `register` writes status hooks into the Claude Code settings file of its scope; Claude Code runs curl as an async command hook, and curl posts each hook event to `/hook` with the token. The permission prompts, compaction, running tools and subagents of the agent's Claude Code sessions are shown in the status message.
+- In the `receive` description, a note with `live: true` is requested in the same response as the tool call of a step that takes minutes.

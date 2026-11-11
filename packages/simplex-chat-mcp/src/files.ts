@@ -39,8 +39,13 @@ export function headersFile(dir: string): string {
   return join(dir, "headers.json")
 }
 
+export function hookHeadersFile(dir: string): string {
+  return join(dir, "hook-headers")
+}
+
 export function writeHeadersFile(dir: string, token: string): void {
   writePrivateFile(headersFile(dir), `${JSON.stringify({Authorization: `Bearer ${token}`})}\n`)
+  writePrivateFile(hookHeadersFile(dir), `Authorization: Bearer ${token}\n`)
 }
 
 export function writeServerFile(dir: string, server: ServerFile): void {

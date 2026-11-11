@@ -1,6 +1,7 @@
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {ToolError, stoppingMessage} from "./actions"
+import type {ActivityState} from "./activity"
 import type {InferenceState} from "./inference"
 import {logError} from "./log"
 import {chatNumber, chatType, getChat, isLive, pageSize, utcMinutes} from "./messages"
@@ -24,6 +25,8 @@ const checkGap = 300_000
 const idleEnd = 30 * 60_000
 const statusLifetime = 23 * 3_600_000
 const deleteWindow = 30 * 3_600_000 - 10 * 60_000
+const toolLabels = new Map<string | undefined, string>(Object.entries({Bash: "running a command", PowerShell: "running a command", Monitor: "running a command", Grep: "searching files", Glob: "searching files", WebSearch: "searching the web", WebFetch: "searching the web"}))
+const fileVerbs = new Map<string | undefined, string>(Object.entries({Read: "reading", Edit: "editing", Write: "editing", MultiEdit: "editing", NotebookEdit: "editing"}))
 
 export class Statuses {
   private readonly statuses = new Map<string, Status>()
@@ -33,7 +36,7 @@ export class Statuses {
   private inferenceFailed = false
   private stopping = false
 
-  constructor(private readonly agent: Pick<Agent, "chat" | "actions" | "inference">, private readonly allowed: (chat: string) => Promise<boolean>) {}
+  constructor(private readonly agent: Pick<Agent, "chat" | "actions" | "inference" | "activity">, private readonly allowed: (chat: string) => Promise<boolean>) {}
 
   startCall(tool: ToolName): () => void {
     const call = {tool}
@@ -145,7 +148,7 @@ export class Statuses {
     const state = await this.inferred()
     const waiting = this.agent.actions.pending().some(({open}) => open > 0)
     const tool = this.calls.filter(call => call.tool !== "receive").at(-1)?.tool
-    return statusLabel(waiting, state, tool)
+    return statusLabel(waiting, state, tool, this.agent.activity?.state())
   }
 
   private async inferred(): Promise<InferenceState | undefined> {
@@ -168,18 +171,18 @@ function statusText({started, renders, label, note}: Status, now: number): strin
   return note === undefined ? line : `${line}\n${note}`
 }
 
-function statusLabel(waiting: boolean, state: InferenceState | undefined, tool: ToolName | undefined): string {
+function statusLabel(waiting: boolean, state: InferenceState | undefined, tool: ToolName | undefined, activity: ActivityState | undefined): string {
   switch (state?.type) {
     case "loading":
-      return state.model === undefined ? "loading the model" : `loading \`${state.model}\``
+      return named("loading", state.model, "loading the model")
     case "prompt":
       return `reading the prompt${modelText(state.model)}${state.tokens > 0 ? `, ${state.tokens} tokens read` : ""}`
     case "output":
       return `generating${modelText(state.model)}${state.rate === undefined ? "" : `, ${Math.round(state.rate)} tokens/s`}`
     case "idle":
-      return otherLabel(waiting, tool, "working")
+      return otherLabel(waiting, tool, activity, "working")
     case undefined:
-      return otherLabel(waiting, tool, "thinking")
+      return otherLabel(waiting, tool, activity, "thinking")
   }
 }
 
@@ -187,6 +190,22 @@ function modelText(model: string | undefined): string {
   return model === undefined ? "" : ` with \`${model}\``
 }
 
-function otherLabel(waiting: boolean, tool: ToolName | undefined, rest: string): string {
-  return waiting ? "waiting for approval" : tool !== undefined ? `using ${tool}` : rest
+function otherLabel(waiting: boolean, tool: ToolName | undefined, activity: ActivityState | undefined, rest: string): string {
+  return waiting ? "waiting for approval"
+    : activity?.asking ? "waiting for permission in Claude Code"
+    : tool !== undefined ? `using ${tool}`
+    : activity?.compacting ? "compacting the conversation"
+    : activity?.tool !== undefined ? toolLabel(activity.tool)
+    : activity?.subagent !== undefined ? named("running subagent", activity.subagent.name, "running a subagent")
+    : rest
+}
+
+function toolLabel({name, file}: {name?: string; file?: string}): string {
+  const verb = fileVerbs.get(name)
+  if (verb !== undefined) return named(verb, file, `${verb} a file`)
+  return toolLabels.get(name) ?? named("using", name?.replace(/^mcp__.+?__(?=.)/, ""), "using a tool")
+}
+
+function named(text: string, name: string | undefined, fallback: string): string {
+  return name === undefined ? fallback : `${text} \`${name}\``
 }

@@ -52,7 +52,7 @@ async function sample(endpoint: Endpoint, signal: AbortSignal): Promise<Sample |
   const {url, key} = endpoint
   const running = await get(`${url}/running`, key, signal, 404)
   if (running.status === 404) return proxySlots(endpoint, signal)
-  const models = listOf(fieldOf(running.json, "running")).map(entry => ({model: modelName(fieldOf(entry, "model")), state: fieldOf(entry, "state"), proxy: fieldOf(entry, "proxy")}))
+  const models = listOf(fieldOf(running.json, "running")).map(entry => ({model: textOf(entry, "model", modelPattern), state: fieldOf(entry, "state"), proxy: fieldOf(entry, "proxy")}))
   const starting = models.find(({state}) => state === "starting")
   if (starting !== undefined) return {type: "loading", model: starting.model}
   const ready = models.filter(({state}) => state === "ready")
@@ -147,11 +147,12 @@ function allowedProxy(url: string, proxy: unknown): string | undefined {
   return target.hostname === hostname || (loopback.includes(target.hostname) && loopback.includes(hostname)) ? target.origin : undefined
 }
 
-function modelName(value: unknown): string | undefined {
-  return typeof value === "string" && modelPattern.test(value) ? value : undefined
+export function textOf(value: unknown, key: string, pattern?: RegExp): string | undefined {
+  const field = fieldOf(value, key)
+  return typeof field === "string" && (pattern === undefined || pattern.test(field)) ? field : undefined
 }
 
-function fieldOf(value: unknown, key: string): unknown {
+export function fieldOf(value: unknown, key: string): unknown {
   return typeof value === "object" && value !== null ? (value as {[key: string]: unknown})[key] : undefined
 }
 

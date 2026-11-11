@@ -13,9 +13,11 @@ let server: Server
 let url: string
 let actions: Actions
 let ready: boolean
+let hookEvents: unknown[]
 
 async function start(mode: Mode = "requests"): Promise<void> {
   ready = true
+  hookEvents = []
   const chat = new FakeChat()
   chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory")), items: []})
   actions = actionsWith(mode, fakeHooks())
@@ -25,7 +27,7 @@ async function start(mode: Mode = "requests"): Promise<void> {
     tools.register(mcp)
     return mcp
   }
-  server = await startHttp({port: 0, token, factory, ready: () => ready})
+  server = await startHttp({port: 0, token, factory, ready: () => ready, hook: event => hookEvents.push(event)})
   url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
 }
 
@@ -63,11 +65,11 @@ function statusWithHost(host: string): Promise<number> {
   })
 }
 
-function rawStatusLine(target: string): Promise<string> {
+function rawStatusLine(target: string, headers = "Content-Length: 0\r\n"): Promise<string> {
   return new Promise((resolve, reject) => {
     const {port} = server.address() as AddressInfo
     const socket = connect(port, "127.0.0.1", () => {
-      socket.write(`POST ${target} HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nAuthorization: Bearer ${token}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n`)
+      socket.write(`POST ${target} HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nAuthorization: Bearer ${token}\r\n${headers}Connection: close\r\n\r\n`)
     })
     let response = ""
     socket.on("data", chunk => (response += chunk))
@@ -121,6 +123,43 @@ describe("HTTP", () => {
   })
 })
 
+describe("status hook endpoint", () => {
+  const hookHeaders = {authorization: `Bearer ${token}`, "content-type": "application/json"}
+
+  function postHook(body: string, headers: {[name: string]: string} = hookHeaders): Promise<Response> {
+    return fetch(`${url}/hook`, {method: "POST", headers, body})
+  }
+
+  it("passes the parsed body to the hook and answers 204 without a body, also before the server is ready", async () => {
+    await start()
+    ready = false
+    const event = {session_id: "s1", hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: {command: "npm test"}, tool_use_id: "t1"}
+    const response = await postHook(JSON.stringify(event))
+    expect([response.status, await response.text()]).toEqual([204, ""])
+    expect(hookEvents).toEqual([event])
+    expect((await post(modern("tools/list"), modernHeaders("tools/list"))).status).toBe(503)
+  })
+
+  it("accepts a body of 4 MiB, and refuses a longer Content-Length and a request without it", async () => {
+    await start()
+    expect((await postHook(JSON.stringify({pad: "x".repeat(4 * 1_048_576 - 10)}))).status).toBe(204)
+    expect(await rawStatusLine("/hook", `Content-Length: ${4 * 1_048_576 + 1}\r\n`)).toMatch(/^HTTP\/1\.1 413 /)
+    expect(await rawStatusLine("/hook", "")).toBe("HTTP/1.1 411 Length Required")
+    expect(hookEvents).toHaveLength(1)
+  })
+
+  it("refuses requests without the token, from another Origin, with another method and with invalid JSON, without calling the hook", async () => {
+    await start()
+    expect((await postHook("{}", {...hookHeaders, authorization: "Bearer other"})).status).toBe(401)
+    expect((await postHook("{}", {...hookHeaders, origin: "https://example.com"})).status).toBe(403)
+    const get = await fetch(`${url}/hook`, {headers: hookHeaders})
+    expect([get.status, get.headers.get("allow")]).toEqual([405, "POST"])
+    expect((await postHook("{")).status).toBe(400)
+    expect((await postHook("")).status).toBe(400)
+    expect(hookEvents).toEqual([])
+  })
+})
+
 describe("MCP", () => {
   it("initializes a legacy client with the instructions", async () => {
     await start()
@@ -148,7 +187,7 @@ describe("MCP", () => {
       type: "boolean",
       description: "true: when messages are returned, a live status message is shown in this chat while you work: whether you think, use a tool or wait for approval. It is deleted at your next message there without live, or when a receive of this chat waits. Applies in chats with people, groups and business chats that have approved: true in list. Default false.",
     })
-    expect(receive.description.split("\n").at(-1)).toBe("With typing: true, in a chat with a person, a group or a business chat that has approved: true in list, a live status message is shown there while you work, from the returned messages until your next message there or a receive there that waits. Use it in the chat where you receive prompts: send each answer without live, and call receive again only after it. For steps that take minutes, send a short note with live: true; it is shown in the status message.")
+    expect(receive.description.split("\n").at(-1)).toBe("With typing: true, in a chat with a person, a group or a business chat that has approved: true in list, a live status message is shown there while you work, from the returned messages until your next message there or a receive there that waits. Use it in the chat where you receive prompts: send each answer without live, and call receive again only after it. For a step that takes minutes, call send with live: true and a short note in the same response as the step's tool call; the note is shown in the status message.")
   })
 
   it("keeps each tool description, and the instructions for a 15-character name, within Claude Code's 2048 characters", async () => {

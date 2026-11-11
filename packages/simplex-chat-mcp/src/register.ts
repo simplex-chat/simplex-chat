@@ -1,11 +1,13 @@
 import {spawnSync} from "child_process"
-import {existsSync, readFileSync} from "fs"
+import {existsSync, mkdirSync, readFileSync, writeFileSync} from "fs"
+import {homedir} from "os"
 import {basename, dirname, join, resolve} from "path"
-import {headersFile, readServerFile} from "./files"
+import {headersFile, hookHeadersFile, readServerFile} from "./files"
 import {ExitError, shellPath} from "./log"
 
 const cmdNotFound = 9009
 const cmdMetaChars = /([()\][%!^"`<>&|;, *?])/g
+const hookEvents = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PostToolBatch", "PermissionRequest", "PermissionDenied", "SubagentStart", "SubagentStop", "PreCompact", "PostCompact", "Stop", "StopFailure", "SessionEnd"]
 
 export type Scope = "user" | "local"
 
@@ -30,17 +32,23 @@ export interface Entry {
   timeout: number
 }
 
-export function register({name, data, scope}: RegisterOptions, run: Run = runCommand, projectFolder: () => string = projectRoot): string {
+export function register({name, data, scope}: RegisterOptions, run: Run = runCommand, projectFolder: () => string = projectRoot, configFolder: string = process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude")): string {
   const server = readServerFile(data)
   if (server === undefined) throw new ExitError(`Agent "${name}" was never started. Start it with: npx -y @simplex-chat/mcp serve ${name}`, 1)
   const serverName = `simplex-${name}`
   const entry = JSON.stringify(registryEntry(server.port, data, server.expireHours))
+  const {servers, settings: file} = scopeLocations(scope, projectFolder, configFolder)
   const removed = run("claude", ["mcp", "remove", "--scope", scope, serverName])
-  if (removed.missing) throw new ExitError(manualEntryText(scope, serverName, entry, projectFolder), 1)
+  if (removed.missing) throw new ExitError(manualEntryText(servers, serverName, entry), 1)
   const added = run("claude", ["mcp", "add-json", "--scope", scope, serverName, entry])
-  if (added.missing) throw new ExitError(manualEntryText(scope, serverName, entry, projectFolder), 1)
+  if (added.missing) throw new ExitError(manualEntryText(servers, serverName, entry), 1)
   if (added.status !== 0) throw new ExitError(`claude mcp add-json failed: ${added.stderr.trim()}`, 1)
-  return `Added to Claude Code: scope ${scope}, server ${serverName}.`
+  const hooks = statusHooks(server.port, data)
+  const settings = withStatusHooks(settingsOf(file), hooks, `@${hookHeadersFile(data)}`)
+  if (settings === undefined) throw new ExitError(`Added to Claude Code: scope ${scope}, server ${serverName}. ${file} is not a valid settings file; add these status hooks to it: ${JSON.stringify({hooks})}`, 1)
+  mkdirSync(dirname(file), {recursive: true})
+  writeFileSync(file, `${JSON.stringify(settings, null, 2)}\n`)
+  return `Added to Claude Code: scope ${scope}, server ${serverName}, status hooks in ${file}.`
 }
 
 export function registryEntry(port: number, data: string, expireHours: number): Entry {
@@ -52,9 +60,48 @@ export function registryEntry(port: number, data: string, expireHours: number): 
   }
 }
 
-function manualEntryText(scope: Scope, serverName: string, entry: string, projectFolder: () => string): string {
-  const location = scope === "user" ? `"mcpServers"` : `"projects" > "${projectFolder()}" > "mcpServers"`
+export function statusHooks(port: number, data: string): {[event: string]: object[]} {
+  const handler = {type: "command", command: "curl", args: ["-q", "--noproxy", "*", "-s", "-m", "2", "-o", process.platform === "win32" ? "NUL" : "/dev/null", "-H", `@${hookHeadersFile(data)}`, "-H", "Content-Type: application/json", "--data-binary", "@-", `http://127.0.0.1:${port}/hook`], async: true}
+  return Object.fromEntries(hookEvents.map(event => [event, [{hooks: [handler]}]]))
+}
+
+function scopeLocations(scope: Scope, projectFolder: () => string, configFolder: string): {servers: string; settings: string} {
+  if (scope === "user") return {servers: `"mcpServers"`, settings: join(configFolder, "settings.json")}
+  const project = projectFolder()
+  return {servers: `"projects" > "${project}" > "mcpServers"`, settings: join(project, ".claude", "settings.local.json")}
+}
+
+function manualEntryText(location: string, serverName: string, entry: string): string {
   return `Add this entry under ${location} in ~/.claude.json: {"${serverName}": ${entry}}`
+}
+
+function settingsOf(file: string): unknown {
+  const text = existsSync(file) ? readFileSync(file, "utf8") : "{}"
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
+}
+
+function withStatusHooks(settings: unknown, hooks: {[event: string]: object[]}, headers: string): {[key: string]: unknown} | undefined {
+  if (!isObject(settings)) return undefined
+  const existing = settings.hooks ?? {}
+  if (!isObject(existing) || Object.keys(hooks).some(event => existing[event] !== undefined && !Array.isArray(existing[event]))) return undefined
+  const merged = Object.fromEntries(Object.entries(hooks).map(([event, groups]) => [event, [...withoutHandlers(existing[event], headers), ...groups]]))
+  return {...settings, hooks: {...existing, ...merged}}
+}
+
+function withoutHandlers(groups: unknown, headers: string): unknown[] {
+  return (Array.isArray(groups) ? groups : []).flatMap(group => {
+    if (!isObject(group) || !Array.isArray(group.hooks)) return [group]
+    const handlers = group.hooks.filter(handler => !(isObject(handler) && Array.isArray(handler.args) && handler.args.includes(headers)))
+    return handlers.length > 0 ? [{...group, hooks: handlers}] : []
+  })
+}
+
+function isObject(value: unknown): value is {[key: string]: unknown} {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 export function projectRoot(folder: string = process.cwd()): string {

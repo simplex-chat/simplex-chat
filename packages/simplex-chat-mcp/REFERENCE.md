@@ -41,6 +41,7 @@ Status: v0.3. [`TESTING.md`](TESTING.md) describes a local build and test. The d
 - On Linux x86-64: glibc 2.34 or later, and the system libraries `libcrypto.so.3`, `libgmp.so.10` and `libz.so.1`.
 - The SimpleX Chat app on a phone or computer, for the owner.
 - Claude Code; other MCP hosts with Streamable HTTP and custom headers can be configured by hand.
+- curl 7.55.0 or later on the PATH of Claude Code, for the [status hooks](#status-hooks).
 
 At its first start the server downloads the SimpleX core library, 29 to 50 MB depending on the platform, into `~/.cache/simplex-chat` (macOS: `~/Library/Caches/simplex-chat`, Windows: `%LOCALAPPDATA%\simplex-chat`). Unpacked on Linux, it takes about 240 MB.
 
@@ -81,7 +82,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
 
    ```
    $ npx -y @simplex-chat/mcp register my-agent
-   Added to Claude Code: scope user, server simplex-my-agent.
+   Added to Claude Code: scope user, server simplex-my-agent, status hooks in /home/alice/.claude/settings.json.
    ```
 
 4. Add `"mcp__simplex-my-agent"` to `permissions.allow` in `~/.claude/settings.json`, so Claude Code does not prompt for each call; approval happens in the SimpleX app.
@@ -168,6 +169,21 @@ claude mcp add-json --scope user simplex-my-agent '{"type":"http","url":"http://
 - `timeout` is the expiry plus 24 hours and 10 minutes, in milliseconds: the longest wait for a decision plus the longest wait for responses. After a change of `--expire` or `--port`, register the agent again; an agent on another port needs the same `--port` at every start.
 - The server must be running when Claude Code starts a session. If a session started before the server, run `/mcp reconnect all` in it (Claude Code 2.1.284 or later; earlier, reconnect `simplex-my-agent` in `/mcp`).
 
+When `claude mcp add-json` succeeds, `register` adds the [status hooks](#status-hooks) to the settings file of the scope, and prints its path:
+- `user`: `settings.json` in `CLAUDE_CONFIG_DIR`, or in `~/.claude` when it is unset or empty;
+- `local`: `.claude/settings.local.json` in the project folder.
+
+The hooks are one group without a matcher for each of the events `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`, `PermissionRequest`, `PermissionDenied`, `SubagentStart`, `SubagentStop`, `PreCompact`, `PostCompact`, `Stop`, `StopFailure` and `SessionEnd`, with this handler:
+
+```
+{"type": "command", "command": "curl", "args": ["-q", "--noproxy", "*", "-s", "-m", "2", "-o", "/dev/null", "-H", "@/home/alice/.simplex-mcp/my-agent/hook-headers", "-H", "Content-Type: application/json", "--data-binary", "@-", "http://127.0.0.1:5226/hook"], "async": true}
+```
+
+- Claude Code starts curl without a shell, passes it each event on stdin and continues without waiting for it. curl posts the event to the agent's server, with a limit of 2 seconds, and writes the answer to `/dev/null`, or to `NUL` on Windows.
+- With `-q`, curl reads no `.curlrc` file, and with `--noproxy *` it ignores the proxy variables of the environment. curl reads the token from `hook-headers` in the data folder at each post; the settings file contains only the path of that file.
+- Before it adds the hooks, `register` removes every handler with this data folder's `hook-headers` from the groups of these events, and the groups left empty. Other settings and hooks, the hooks of other agents included, are kept. The file is written again with 2-space indentation.
+- In an interactive session, Claude Code runs these hooks only in a folder whose trust dialog was accepted.
+
 Errors:
 
 ```
@@ -175,9 +191,13 @@ situation                  message
 never started              Agent "my-agent" was never started. Start it with: npx -y @simplex-chat/mcp serve my-agent
 claude not on PATH         Add this entry under "mcpServers" in ~/.claude.json: {"simplex-my-agent": {...}}
                            (--scope local: under "projects" > "<project folder>" > "mcpServers")
+invalid settings file      Added to Claude Code: scope user, server simplex-my-agent. /home/alice/.claude/settings.json is not a
+                           valid settings file; add these status hooks to it: {"hooks":{...}}
 ```
 
-The token is created at the agent's first start and saved in its data folder; every start writes it to `headers.json`. `serve my-agent --new-token` replaces it, and Claude Code sends the new token from its next connection, without a new `register`.
+A settings file is invalid when it is not a JSON object, when its `hooks` is not an object, or when the value of one of the events in `hooks` is not an array; `register` then leaves it unchanged. At each of these errors `register` exits with code 1.
+
+The token is created at the agent's first start and saved in its data folder; every start writes it to `headers.json` and `hook-headers`. `serve my-agent --new-token` replaces it, and Claude Code sends the new token from its next connection, and curl from its next post, without a new `register`.
 
 ## Approval modes
 
@@ -323,7 +343,7 @@ Incognito: the core creates a random profile for that one chat, so peers of diff
 In mode `requests`, the server shows what the agent does in a live message, the status message, in a chat approved for all messages where the agent can post: a chat with a person, a group or a business chat. Channels and chats with bots and agents are excluded. In a group, every member sees the status message and its notes.
 
 - The server posts the status message when messages are returned by a `receive` with `typing: true`, unless the chat has one.
-- With `live: true`, the text of a `send`, a note, is shown under the status line at once, and a status message is posted when the chat has none. Such a call is not an action: `status: live` is returned at once. A note with `file`, `reply_to` or `mention`, a note above 2000 characters, and a note to another chat are refused.
+- With `live: true`, the text of a `send`, a note, is shown under the status line at once, and a status message is posted when the chat has none. Such a call is not an action: `status: live` is returned at once. A note with `file`, `reply_to` or `mention`, a note above 2000 characters, and a note to another chat are refused. In the description of `receive`, the agent is asked to call `send` with `live: true` and a short note in the same response as the tool call of a step that takes minutes.
 - The agent's next message to that chat without `live` is sent as a new message, and the status message is then deleted for everyone.
 
 ```
@@ -339,11 +359,26 @@ The apps show it under the header `LIVE`. The first line is the status line: a f
 | `reading the prompt with MODEL, N tokens read` | `--inference`: a model reads the prompt |
 | `generating with MODEL, N tokens/s` | `--inference`: a model generates |
 | `waiting for approval` | the agent waits in a call for your decision on a card |
+| `waiting for permission in Claude Code` | Claude Code asks for your permission to run a tool |
 | `using TOOL` | the agent runs `connect`, `send`, `download`, `list` or `leave`; TOOL is the latest of them |
-| `working` | `--inference`: the models are idle, for example while the agent runs a shell command |
+| `compacting the conversation` | Claude Code compacts the conversation |
+| `running a command`, `reading FILE`, `editing FILE`, `searching files`, `searching the web` or `using NAME` | Claude Code runs a tool; the latest running tool is named, as the next table shows |
+| `running subagent TYPE` | a subagent of Claude Code runs; TYPE is the latest one's type |
+| `working` | `--inference`: the models are idle |
 | `thinking` | otherwise, and in the first version |
 
 MODEL, shown as code, is the model that starts, or the one model of all busy slots of llama-swap. Otherwise, and for a plain llama-server, `with MODEL` is left out, and `loading MODEL` becomes `loading the model`. `, N tokens read` is left out while N is 0, and `, N tokens/s` until two polls during the generation of one task. `waiting for approval` and `using TOOL` are computed from the agent's calls in all its chats.
+
+| Claude Code tool | Label |
+|---|---|
+| `Bash`, `PowerShell`, `Monitor` | `running a command` |
+| `Read` | `reading FILE` |
+| `Edit`, `Write`, `MultiEdit`, `NotebookEdit` | `editing FILE` |
+| `Grep`, `Glob` | `searching files` |
+| `WebSearch`, `WebFetch` | `searching the web` |
+| another tool, except `Agent` and the agent's own tools | `using NAME` |
+
+The labels of Claude Code's work are computed from the events of the [status hooks](#status-hooks), in all sessions the server follows. FILE is the file's name without its folder; NAME is the tool's name, without `mcp__SERVER__` for a tool of another MCP server; TYPE is the subagent's type. Each is shown as code. When a name is filtered out, the label is `reading a file`, `editing a file`, `using a tool` or `running a subagent`.
 
 The status line is updated 3 seconds apart at first, then at a tenth of its age, at most 20 seconds apart. From the 50th version, the server checks the chat every 5 minutes, without updates. Notes are shown at once up to the 59th version; a later note is refused. With its deletion, at most 60 messages per status message are sent to each recipient.
 
@@ -378,7 +413,31 @@ Notifications, by each recipient's apps:
 - The line `Inference endpoint: URL` is printed at the start, after `Approval mode: requests`.
 - At each timed update of the status line other than the first and the frozen one, the server reads `URL/running` of llama-swap, then `/props` and `/slots` of up to 4 servers of its ready models, on URL's host, or on loopback when URL is loopback. When `/running` answers 404, it reads `URL/props` and `URL/slots` of llama-server.
 - The result of one poll is shared by all status messages for 3 seconds. A poll is cancelled after 1 second; an answer over 1 MiB and a redirect are refused.
-- A failed poll is logged once on stderr as `inference endpoint: ERROR`, until the next successful poll; the label is then `waiting for approval`, `using TOOL` or `thinking`.
+- A failed poll is logged once on stderr as `inference endpoint: ERROR`, until the next successful poll; the labels are then those without `--inference`.
+
+### Status hooks
+
+With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-agent-to-claude-code)), Claude Code passes its events to curl, which posts them to `http://127.0.0.1:PORT/hook` of the agent's server, with the token.
+
+- The server follows a session of Claude Code from its first event with a tool of this agent, such as `mcp__simplex-my-agent__receive`, and ignores the events of other sessions. It follows at most 16 sessions, and drops the oldest one with its state.
+- Of each event, the server uses only `hook_event_name`, `session_id`, `tool_name`, `tool_use_id`, `agent_id`, `agent_type`, and the base name of `tool_input.file_path` or `tool_input.notebook_path`. The rest of the event, prompts, commands, file contents and tool results included, is discarded after parsing; nothing of it is saved or logged.
+- A file's base name is kept only when it consists of 1 to 64 ASCII letters, digits and characters of `_.+@-`. Tool names and subagent types follow the same rule, with `_` and `-` as the only characters besides ASCII letters and digits.
+- At most 64 running tools and 64 running subagents are kept; the oldest is dropped.
+
+| Event of a followed session | State of the session after it |
+|---|---|
+| `PreToolUse` | its tool running, except `Agent` and the agent's own tools; without `agent_id`, compaction ended |
+| `PostToolUse`, `PostToolUseFailure`, `PermissionDenied` | its tool and the permission prompt ended |
+| `PostToolBatch` | the tools of its agent and the permission prompt ended |
+| `PermissionRequest` | a permission prompt open |
+| `SubagentStart` | its subagent running |
+| `SubagentStop` | its subagent ended |
+| `PreCompact` | compaction running |
+| `PostCompact` | compaction ended |
+| `UserPromptSubmit`, `Stop`, `StopFailure`, `SessionEnd` | all its tools, subagents, permission prompt and compaction ended |
+
+- Claude Code runs curl in the background and hides the outcome outside verbose mode (Ctrl+O), so no notice is shown for the posts that fail while the server is stopped.
+- The server checks the token, `Host` and `Origin` of a request to `/hook` as for `/mcp`. It answers a `POST` with 204, or with 411 without Content-Length, 413 for a body over 4 MiB and 400 for invalid JSON, and another method with 405.
 
 ## Waiting for approval in Claude Code
 
@@ -391,7 +450,7 @@ An MCP server cannot start a turn of the agent: what the agent reads from the se
 
 ## Several agents
 
-Each agent is its own process, with its own data folder, port, agent control chat and Claude Code server:
+Each agent is its own process, with its own data folder, port, agent control chat, Claude Code server and status hooks:
 
 ```
 npx -y @simplex-chat/mcp serve my-agent-2 --port 5227
@@ -464,6 +523,7 @@ register options:
   simplex_agent.db   SimpleX agent database: connections and keys
   token              access token, readable only by the user
   headers.json       the token as the Authorization header for Claude Code, readable only by the user
+  hook-headers       the token as the Authorization header line for curl in the status hooks, readable only by the user
   server.json        name, port and expiry of the server, read by register
   lock               PID of the running server
   tmp/               the SimpleX core's work folder for files in transfer
@@ -486,12 +546,13 @@ One server runs per data folder: a second one exits, because two processes on on
 ## Security
 
 - The server listens only on 127.0.0.1. Every request needs the token. Requests from web pages on other hosts, and requests with another `Host`, are refused (the SDK's localhost Origin and Host checks).
-- Any process with the token can act as the agent. The token is stored only in the data folder, in `token` and `headers.json`; Claude Code's config and the `claude mcp add-json` command line contain the command that prints `headers.json`, not the token.
+- Any process with the token can act as the agent. The token is stored only in the data folder, in `token`, `headers.json` and `hook-headers`; Claude Code's config and the `claude mcp add-json` command line contain the command that prints `headers.json`, and the status hooks the path of `hook-headers`, not the token.
 - Names written by peers are folded to one line, with control and format characters replaced by spaces, in the terminal and in the agent control chat; there, a name that is not a valid display name is shown as code.
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
 - After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
-- In such a chat, the status message and its notes are sent without asking and without a copy in the agent control chat; each note is written to the terminal. Everyone in the chat sees the names of the agent's running tools and of its model in the status line, also for its work in other chats.
+- In such a chat, the status message and its notes are sent without asking and without a copy in the agent control chat; each note is written to the terminal. Everyone in the chat sees in the status line the names of the agent's running tools and of its model, the names of the files Claude Code reads and edits, without their folders, and the names of its other tools and subagent types, also for its work in other chats.
+- With the status hooks in scope `user`, Claude Code passes the events of every session of the user to curl, which posts them to the agent's server, with prompts, commands, file contents and tool results. The server uses only the fields named in [Status hooks](#status-hooks), keeps state only for the sessions that used the agent's tools, and logs nothing. curl ignores `.curlrc` files and proxy variables, so the events and the token are sent only to 127.0.0.1.
 - The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
 - After `/receive #N 7 all`, the agent's later downloads from that chat, of files on its XFTP servers, run without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; any other download of it fails, unless the IP address is protected.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
