@@ -79,7 +79,7 @@ jobs:
       - name: Artifact names
         id: names
         run: |
-          echo "core=ios-sim-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "core=ios-sim-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/simplex-chat-build.py', 'scripts/simplex_build/**', '!scripts/simplex_build/test_*.py', '!scripts/simplex_build/testing.py') }}" >> "$GITHUB_OUTPUT"
           echo "backend=ios-sim-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
 
       - name: Find core library
@@ -95,9 +95,29 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: scripts/ci/ios-sim/earlier-run.sh "${{ steps.names.outputs.backend }}"
 
+  # the app must open this encrypted database, made by the previous release with its own OpenSSL
+  old-database:
+    name: previous release's database
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Make the database
+        run: python3 scripts/simplex-chat-build.py test old-database --out "$RUNNER_TEMP/old-database"
+
+      - name: Upload the database
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-sim-old-database
+          path: ${{ runner.temp }}/old-database
+          retention-days: 3
+          if-no-files-found: error
+
   app:
     name: app in the iOS simulator
-    needs: plan
+    needs: [plan, old-database]
     runs-on: macos-26
     timeout-minutes: 360
     env:
@@ -107,6 +127,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+
+      - name: Use the release Xcode
+        uses: ./.github/actions/xcode
 
       - name: Show runner
         run: |
@@ -130,11 +153,11 @@ jobs:
 
       - name: Install libraries
         if: env.BUILD_CORE == 'true'
-        run: brew install openssl@3 libffi gmp
+        run: brew install libffi gmp
 
       - name: Build core library
         if: env.BUILD_CORE == 'true'
-        run: scripts/ci/ios-sim/build-core.sh ~/Downloads/${{ env.CORE_PKG }}
+        run: scripts/simplex-chat-build.py build libs ios-sim --out ~/Downloads
 
       - name: Upload core library
         if: env.BUILD_CORE == 'true'
@@ -156,9 +179,7 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Prepare libraries
-        run: |
-          scripts/ci/ios-sim/prepare-libs.sh
-          scripts/ios/update-pbxproj.sh
+        run: scripts/simplex-chat-build.py install libs ios ~/Downloads/${{ env.CORE_PKG }}
 
       - name: Build backend
         if: env.BUILD_BACKEND == 'true'
@@ -224,6 +245,15 @@ jobs:
       - name: Run smoke test
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test" images
 
+      - name: Download the previous release's database
+        uses: actions/download-artifact@v8
+        with:
+          name: ios-sim-old-database
+          path: ${{ runner.temp }}/old-database
+
+      - name: Open the previous release's database
+        run: scripts/ci/ios-sim/old-database.sh "$RUNNER_TEMP/old-database"
+
       - name: Stop test backend
         if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
         run: scripts/ci/ios-sim/backend.sh stop "$RUNNER_TEMP/backend"
@@ -270,6 +300,9 @@ jobs:
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+
+      - name: Use the release Xcode
+        uses: ./.github/actions/xcode
 
       - name: Show runner
         run: |

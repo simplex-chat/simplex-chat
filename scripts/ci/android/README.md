@@ -6,25 +6,25 @@
 
 The workflow runs only when started by hand, on any branch: in the Actions tab, `android-emu` → Run workflow, or `gh workflow run android-emu.yml --ref <branch>` with `-f claude=true`, `-f backend=true`, `-f release=true` or `-f armv7a=true`. [CI on GitHub's runners](../README.md) lists the inputs. A newer run on the same branch cancels the older one.
 
-Every run builds the core library, and the backend when it's asked for, from the branch's own Haskell code. It reuses an earlier build only when the sources are unchanged, as an artifact of the same branch named after a hash of its sources (30 days): for the core `src/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md`, the Nix files (`flake.nix`, `flake.lock`, `scripts/nix/**`) and `build-core.sh`; the backend is desktop-linux's, under its name and hash, so a backend either workflow built is reused by both. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`.
+Every run builds the core library, and the backend when it's asked for, from the branch's own Haskell code. It reuses an earlier build only when the sources are unchanged, as an artifact of the same branch named after a hash of its sources (30 days): for the core `src/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md`, the Nix files (`flake.nix`, `flake.lock`, `scripts/nix/**`) and the build script with its package (`scripts/simplex-chat-build.py`, `scripts/simplex_build/**` without its tests); the backend is desktop-linux's, under its name and hash, so a backend either workflow built is reused by both. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`.
 
 ## Jobs
 
 | Job | Does | Time |
 |---|---|---|
 | `plan` | reads the inputs, finds earlier core and backend builds | 10 s |
-| `core` | `build-core.sh`: `lib:simplex-chat` and `lib:support` for aarch64-android with Nix, as `scripts/android/build-android.sh` builds them | skipped when reused, about 27 min not |
+| `core` | `scripts/simplex-chat-build.py build libs android`: `lib:simplex-chat` and `lib:support` for aarch64-android with Nix, as `scripts/android/build-android.sh` builds them; `install libs android` puts them in the app | skipped when reused, about 27 min not |
 | `app` | the debug APK (`:android:assembleFossDebug` for arm64-v8a only), the emulator, `smoke-test.sh` | about 13 min: APK 7–8, emulator 1.5, smoke test 3.5 (4 with the backend case, after 2.5 to start the backend) |
 | `claude` (opt-in) | after `app` passed: its APK in a new emulator at the first screen, then Claude Code drives it | about 5 min, Claude 2.5 |
 | `backend` (opt-in) | desktop-linux's `build-backend.sh` | about 30 min, skipped when reused |
 | `release` (opt-in) | the latest release's arm64 APK, its signer checked against SimpleX's key, onboarding only | about 4 min |
-| `core-armv7a` (opt-in) | `build-core.sh` with `armv7a`: `lib:simplex-chat` and `lib:support` for armv7a-android, with GHC 8.10.7; the app and the emulator use only arm64 | not measured yet |
+| `core-armv7a` (opt-in) | `build libs android --arch armv7a`: `lib:simplex-chat` and `lib:support` for armv7a-android, with GHC 8.10.7; the app and the emulator use only arm64 | not measured yet |
 
 Results are artifacts: `android-smoke-test` (numbered screenshots, the accessibility tree and the text of each, `steps.log`, `checks.txt`, logcat as `app.log`, `emulator.log`), `android-release-smoke-test`, `android-claude-test`, and the backend's logs; `android-app`, the APK for manual tests and the Claude job, is kept 14 days. The job summaries list the checks and the Claude usage.
 
 ## The emulator
 
-A Google APIs x86_64 system image of API 34 (revision 14) with KVM, on the x86_64 runner: the arm64 runner has no KVM, and Google publishes no Linux arm64 emulator. The image's ARM translation (`libndk_translation`) runs the app's arm64-v8a code, the only ABI besides armeabi-v7a the core is built for. `install-sdk.sh` installs the emulator, platform-tools and the image at pinned revisions from Google's repository, checking each archive's SHA-1 and SHA-256, and writes the AVD itself; `emulator.sh` boots it without a window. Screenshots come from the emulator console (`adb emu screenrecord screenshot`): without a window, the guest's `screencap` returns an empty or black image.
+A Google APIs x86_64 system image of API 34 (revision 14) with KVM, on the x86_64 runner: the arm64 runner has no KVM, and Google publishes no Linux arm64 emulator. The image's ARM translation (`libndk_translation`) runs the app's arm64-v8a code, the only ABI besides armeabi-v7a the core is built for. The armv7a APK of build-apps.yml runs on the API 30 image (revision 16), the last x86_64 image whose translation also runs 32-bit ARM code (`install-sdk.sh <sdk dir> 30`). `install-sdk.sh` installs the emulator, platform-tools and the image at pinned revisions from Google's repository, checking each archive's SHA-1 and SHA-256, and writes the AVD itself; `emulator.sh` boots it without a window. Screenshots come from the emulator console (`adb emu screenrecord screenshot`): without a window, the guest's `screencap` returns an empty or black image.
 
 ## Scripts
 

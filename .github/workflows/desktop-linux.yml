@@ -28,7 +28,7 @@ env:
   GHC_VER: 9.6.3
   CABAL_VER: 3.10.2.0
   JAVA_VER: 17
-  CORE_PKG: desktop-core-linux-x86_64.tar.gz
+  CORE_PKG: simplex-chat-libs-linux-x86_64.zip
   BACKEND_PKG: desktop-linux-backend.tar.gz
 
 jobs:
@@ -83,7 +83,7 @@ jobs:
       - name: Artifact names
         id: names
         run: |
-          echo "core=desktop-linux-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'scripts/desktop/build-lib-linux.sh', 'scripts/ci/desktop-linux/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "core=desktop-linux-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'scripts/simplex-chat-build.py', 'scripts/simplex_build/**', '!scripts/simplex_build/test_*.py', '!scripts/simplex_build/testing.py') }}" >> "$GITHUB_OUTPUT"
           echo "backend=desktop-linux-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/desktop-linux/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
 
       - name: Find core library
@@ -168,7 +168,7 @@ jobs:
           sudo apt-get install -y libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev patchelf
 
       - name: Build core library
-        run: scripts/ci/desktop-linux/build-core.sh ~/core/${{ env.CORE_PKG }}
+        run: scripts/simplex-chat-build.py build libs linux --host --out ~/core
 
       - name: Upload core library
         uses: actions/upload-artifact@v7
@@ -217,7 +217,7 @@ jobs:
 
       - name: Install core library
         id: core
-        run: scripts/ci/desktop-linux/install-core.sh ~/core/${{ env.CORE_PKG }}
+        run: scripts/simplex-chat-build.py install libs linux ~/core/${{ env.CORE_PKG }}
 
       - name: Download backend
         if: needs.plan.outputs.run-backend == 'true'

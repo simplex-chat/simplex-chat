@@ -32,7 +32,6 @@ env:
   GHC_VER: 9.6.3
   CABAL_VER: 3.10.2.0
   JAVA_VER: 17
-  CORE_PKG: android-core-arm64-v8a.tar.gz
   BACKEND_PKG: desktop-linux-backend.tar.gz
   APK: android-foss-arm64-v8a-debug.apk
 
@@ -92,7 +91,7 @@ jobs:
       - name: Artifact names
         id: names
         run: |
-          echo "core=android-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/ci/android/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "core=android-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/simplex-chat-build.py', 'scripts/simplex_build/**', '!scripts/simplex_build/test_*.py', '!scripts/simplex_build/testing.py') }}" >> "$GITHUB_OUTPUT"
           echo "backend=desktop-linux-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/desktop-linux/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
 
       - name: Find core library
@@ -168,14 +167,18 @@ jobs:
           free -h
           df -h /
 
+      # the Nix sandbox needs user namespaces, which Ubuntu 24.04 restricts
+      - name: Allow user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Build core library
-        run: scripts/ci/android/build-core.sh ~/core/${{ env.CORE_PKG }}
+        run: scripts/simplex-chat-build.py build libs android --install-nix --out ~/core
 
       - name: Upload core library
         uses: actions/upload-artifact@v7
         with:
           name: ${{ needs.plan.outputs.core }}
-          path: ~/core/${{ env.CORE_PKG }}
+          path: ~/core
           compression-level: 0
           retention-days: 30
           if-no-files-found: error
@@ -200,8 +203,11 @@ jobs:
           free -h
           df -h /
 
+      - name: Allow user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Build core library
-        run: scripts/ci/android/build-core.sh ~/core/android-core-armeabi-v7a.tar.gz armv7a
+        run: scripts/simplex-chat-build.py build libs android --arch armv7a --install-nix --out ~/core
 
   app:
     name: Android app in the emulator
@@ -242,7 +248,7 @@ jobs:
 
       - name: Install core library
         id: core
-        run: scripts/ci/android/install-core.sh ~/core/${{ env.CORE_PKG }}
+        run: scripts/simplex-chat-build.py install libs android ~/core
 
       - name: Download backend
         if: needs.plan.outputs.run-backend == 'true'

@@ -1,0 +1,45 @@
+name: Setup Corretto
+description: >-
+  The Amazon Corretto JDK that Dockerfile.build pins, from its archive checked against a pinned SHA-256: setup-java's
+  corretto distribution installs only the latest release of a major version, so the JDK, and with it the app's runtime,
+  launcher and dmg background, would change between builds of one commit.
+runs:
+  using: composite
+  steps:
+    - name: Download Corretto
+      id: download
+      shell: bash
+      env:
+        CORRETTO_VERSION: 17.0.21.0.10
+      run: |
+        case "$RUNNER_OS-$RUNNER_ARCH" in
+          macOS-ARM64)
+            file=amazon-corretto-$CORRETTO_VERSION-macosx-aarch64.tar.gz
+            digest=85667cd211b7cef065a35d1ffbe16a19059493ac0130be5f0f93465458525d77 ;;
+          macOS-X64)
+            file=amazon-corretto-$CORRETTO_VERSION-macosx-x64.tar.gz
+            digest=f13aa9654979894dddcd448f8b95b9b355c299c137cb47367cbb01b668b65f7b ;;
+          Windows-X64)
+            file=amazon-corretto-$CORRETTO_VERSION-windows-x64-jdk.zip
+            digest=8681393133cde8d2fd0d52ccae48e8096b6eed11fc119eaf9cf1c84721311322 ;;
+          *)
+            echo "::error::no pinned Corretto for $RUNNER_OS $RUNNER_ARCH"
+            exit 1 ;;
+        esac
+        archive="$RUNNER_TEMP/$file"
+        curl --proto '=https' --tlsv1.2 -fsSL -o "$archive" "https://corretto.aws/downloads/resources/$CORRETTO_VERSION/$file"
+        # from stdin, as sha256sum prefixes the digest of a path with backslashes with "\"
+        actual=$( { sha256sum 2>/dev/null || shasum -a 256; } < "$archive" | cut -d' ' -f1)
+        if [ "$actual" != "$digest" ]; then
+          echo "::error::$file has SHA-256 $actual, not the pinned $digest"
+          exit 1
+        fi
+        echo "archive=$archive" >> "$GITHUB_OUTPUT"
+        echo "version=${CORRETTO_VERSION%.*.*}" >> "$GITHUB_OUTPUT"
+
+    - name: Install Corretto
+      uses: actions/setup-java@v5
+      with:
+        distribution: jdkfile
+        jdkFile: ${{ steps.download.outputs.archive }}
+        java-version: ${{ steps.download.outputs.version }}
