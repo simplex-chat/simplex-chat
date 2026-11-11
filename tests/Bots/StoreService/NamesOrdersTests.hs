@@ -172,6 +172,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "takes orders of one kind of name under their terms after the other kind's terms changed" testOtherKindTerms
     it "answers terms_unavailable, before any payment, while the terms of the name's kind are not set, of a link the service does not take, or of a text not fetched now, with Retry-After, creating nothing" testTermsUnavailable
     it "answers an exact resend after the terms changed on chain, and takes the same fields under the new terms as another order" testResendAfterBump
+    it "takes an order after a restart while the terms host answers 404, with the text stored before it" testTermsAfterRestart
     it "checks the terms after the existing orders, the timestamp and the duration, with the listing's read, before the name check and the price" testTermsCheckOrder
     it "answers terms_changed for a code order under old terms, listed or not, leaving the code unreserved, and accepts the community terms" testCodeTermsChanged
     it "checks a code order's terms after the timestamp, with the listing's read, before the name check and the code's state" testCodeTermsCheckOrder
@@ -360,7 +361,7 @@ withOrdersVia via action = withServiceStores $ \open -> withOrdersOn open via ac
 withOrdersOn :: IO DBStore -> (Provider -> Provider) -> (Ctx -> IO a) -> IO a
 withOrdersOn cOpenStore via action = cOpenStore >>= \cStore -> withFakeEthNode $ \cNode -> do
   cRandom <- C.newRandom
-  ct <- newContracts TLDSimplex minPriceCentsPerYear =<< fakeChainClient cRandom cNode
+  ct <- newContracts cStore TLDSimplex minPriceCentsPerYear =<< fakeChainClient cRandom cNode
   turns <- newTurns
   phases <- newPhases
   cClock <- newIORef orderTime
@@ -882,6 +883,16 @@ testCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "alicebakery" 
   (status, v) <- postOrder ctx $ withSignature communitySignature (unsignedBody community)
   (status, field "terms" . registrationOf =<< v, field "community" . registrationOf =<< v)
     `shouldBe` (200, Just (J.String communityTerms), Just (communityEntry bakers))
+
+testTermsAfterRestart :: IO ()
+testTermsAfterRestart = withOrders $ \ctx@Ctx {cNode, cOpenStore, cOrders, cRandom} -> do
+  void $ placed ctx aliceOrder
+  answerText cNode (fakeTermsPath fakeGeneralTermsText) $ TextAnswer status404 [] ""
+  st <- cOpenStore
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient cRandom cNode
+  withSettings id ctx {cOrders = cOrders {oeContracts = ct}} $ \restarted ->
+    void $ placed restarted aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 3}
+  fetchedTexts cNode `shouldReturn` [fakeTermsPath fakeGeneralTermsText]
 
 testResendAfterBump :: IO ()
 testResendAfterBump = withOrders $ \ctx -> do
@@ -1632,7 +1643,7 @@ testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 testViewReads :: IO ()
 testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   g <- C.newRandom
-  ct <- newContracts TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
   answerCall node fakeSponsor noncesCall $ Returns $ uint256 (4 :: Int)
   Right () <- placePaid st "paid" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   let inPhase phase = do
@@ -1661,7 +1672,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 testViewBalance :: IO ()
 testViewBalance = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   g <- C.newRandom
-  ct <- newContracts TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
   let holderExpiry = addUTCTime 3600 t0
       viewOf :: Text -> UTCTime -> IO J.Object
       viewOf rid now = do

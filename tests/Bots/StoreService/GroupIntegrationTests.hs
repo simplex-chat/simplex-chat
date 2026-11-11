@@ -27,7 +27,7 @@ import StoreService.Store.Migrate (withInstanceLock)
 import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, plainTerms, setFault, setGeneralTerms, withFakeEthNode)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
@@ -367,7 +367,7 @@ testNamesBootPriceFloor ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   forM_ [selector "ens()", selector "GRACE_PERIOD()", nameExpiresCall] $ \call -> answerCall node registrar call $ Returns $ uint256 (0 :: Int)
   answerCall node controller (selector "namePolicy()") $ Returns $ addressWord fakeNamePolicy
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
-  setGeneralTerms node ""
+  linkTermsOnNode node
   answerCall node controller (rentPriceCall 11) $ Returns $ rentPriceAnswer 15000
   (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> ["min_price_cents_per_year = 7500"] <> withRpcUrl (T.pack fnUrl)} Nothing
   flip finally (stopGroupService t cc) $ do
@@ -386,7 +386,7 @@ codesOnlyNames :: [Text]
 codesOnlyNames = namesSection <> ["codes_only = on"]
 
 namesWorkerBootTests :: SpecWith TestParams
-namesWorkerBootTests = it "starts the workers with the service, sending the commit of an order queued after the start" testWorkerBoot
+namesWorkerBootTests = it "starts the workers and the terms fetch with the service, sending the commit of an order queued after the start and storing both terms texts" testWorkerBoot
 
 testWorkerBoot :: HasCallStack => TestParams -> IO ()
 testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
@@ -396,6 +396,8 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   -- the order's commitment, digestFixture 1, not yet committed
   forM_ [("minCommitmentAge()", "", 60 :: Int), ("maxCommitmentAge()", "", 86400), ("commitments(bytes32)", digestFixture 1, 0)] $ \(signature, args, value) ->
     answerCall node controller (selector signature <> args) $ Returns $ uint256 value
+  answerCall node controller (selector "namePolicy()") $ Returns $ addressWord fakeNamePolicy
+  linkTermsOnNode node
   (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> map onFakeNode chainSection} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
@@ -404,6 +406,7 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     row <- fromMaybe (error "no prepaid code row") <$> withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
     placeCode st "r1" ownerA (order "alicebakery" 1) row `shouldReturn` Right ()
     timeout waitLimit (awaitSent node 1) >>= (`shouldSatisfy` isJust)
+    pollUntilTrue $ (== 2) <$> countRows cc "sx_badge_service_name_terms"
     poll t >>= (`shouldSatisfy` isNothing)
 
 namesCodesChatTests :: SpecWith TestParams
