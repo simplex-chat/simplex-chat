@@ -340,7 +340,6 @@ class UpdateTest(RepositoryTestCase):
         output = io.StringIO()
         with contextlib.ExitStack() as stack:
             stack.enter_context(mock.patch.object(l10n, "require_update_environment"))
-            stack.enter_context(mock.patch.object(l10n, "update_pbxproj_libraries"))
             stack.enter_context(mock.patch.object(l10n, "xcodebuild", side_effect=self.fake_xcodebuild))
             stack.enter_context(mock.patch.object(l10n.shutil, "which", return_value=None))
             stack.enter_context(contextlib.redirect_stdout(output))
@@ -364,7 +363,7 @@ class UpdateTest(RepositoryTestCase):
             l10n.write_file(l10n.PBXPROJ, "// rewritten by Xcode\n")
             raise l10n.UpdateError("xcodebuild -importLocalizations failed")
 
-        with mock.patch.object(l10n, "require_update_environment"), mock.patch.object(l10n, "update_pbxproj_libraries"), mock.patch.object(
+        with mock.patch.object(l10n, "require_update_environment"), mock.patch.object(
             l10n, "xcodebuild", side_effect=failing_xcodebuild
         ), contextlib.redirect_stdout(io.StringIO()):
             with self.assertRaisesRegex(l10n.UpdateError, "git checkout -- apps/ios"):

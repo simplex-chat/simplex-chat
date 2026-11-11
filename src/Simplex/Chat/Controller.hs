@@ -49,7 +49,6 @@ import Data.Time (NominalDiffTime, UTCTime)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Data.Version (showVersion)
 import Data.Word (Word16)
-import Language.Haskell.TH (Exp, Q, runIO)
 import Network.Socket (HostName)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
@@ -120,26 +119,13 @@ versionString ver = "SimpleX Chat v" <> ver
 updateStr :: String
 updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
 
-simplexmqCommitQ :: Q Exp
-simplexmqCommitQ = do
-  s <- either (const "") B.unpack . A.parseOnly commitHashP <$> runIO (B.readFile "./cabal.project")
-  [|fromString s|]
-  where
-    commitHashP :: A.Parser ByteString
-    commitHashP =
-      A.manyTill' A.anyChar "location: https://github.com/simplex-chat/simplexmq.git"
-        *> A.takeWhile (== ' ')
-        *> A.endOfLine
-        *> A.takeWhile (== ' ')
-        *> "tag: "
-        *> A.takeWhile (A.notInClass " \r\n")
-
-coreVersionInfo :: String -> CoreVersionInfo
-coreVersionInfo simplexmqCommit =
+coreVersionInfo :: String -> String -> CoreVersionInfo
+coreVersionInfo simplexmqCommit simplexChatCommit =
   CoreVersionInfo
     { version = versionNumber,
       simplexmqVersion = simplexMQVersion,
-      simplexmqCommit
+      simplexmqCommit,
+      simplexChatCommit
     }
 
 data ChatConfig = ChatConfig
@@ -1477,7 +1463,8 @@ data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
 data CoreVersionInfo = CoreVersionInfo
   { version :: String,
     simplexmqVersion :: String,
-    simplexmqCommit :: String
+    simplexmqCommit :: String,
+    simplexChatCommit :: String
   }
   deriving (Show)
 

@@ -70,6 +70,14 @@
             packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
           })
 
+          # the core shows the commits it is built from; Simplex.Chat.BuildCommits reads these files, as the build has no .git
+          ({ lib, ... }: {
+            packages.simplex-chat.components.library.preBuild = ''
+              echo '${self.rev or (lib.removeSuffix "-dirty" (self.dirtyRev or ""))}' > simplex-chat-commit
+              awk '/location: https:\/\/github.com\/simplex-chat\/simplexmq.git/ { found = 1; next } found && $1 == "tag:" { print $2; exit }' ${./cabal.project} > simplexmq-commit
+            '';
+          })
+
           ({ lib, ... }: {
             packages.JuicyPixels-spng.package.license = lib.mkForce "BSD-3-Clause AND BSD-2-Clause AND MIT";
           })] ++ extra-modules;

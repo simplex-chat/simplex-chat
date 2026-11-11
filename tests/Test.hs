@@ -15,6 +15,7 @@ import Bots.BadgeService.WaitersTests
 import Bots.BadgeService.WebTests
 import Bots.BroadcastTests
 import Bots.DirectoryTests
+import BuildCommitsTests
 import ChatClient
 import ChatTests
 import ChatTests.DBUtils
@@ -96,6 +97,7 @@ main = do
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests
       describe "Image resize" imageTests
+      describe "Build commits" buildCommitsTests
 #if !defined(dbPostgres)
       around (tmpTestBracket chatQueryStats agentQueryStats portBases) $ describe "names tests" chatNamesTests
       around (tmpTestBracket chatQueryStats agentQueryStats portBases) $ describe "SimpleX Directory names" directoryNameTests

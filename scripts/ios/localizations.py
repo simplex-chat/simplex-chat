@@ -39,7 +39,6 @@ IOS_DIR = Path("apps/ios")
 PROJECT = IOS_DIR / "SimpleX.xcodeproj"
 PBXPROJ = PROJECT / "project.pbxproj"
 LOCALIZATIONS_DIR = IOS_DIR / "SimpleX Localizations"
-UPDATE_PBXPROJ = Path("scripts/ios/update-pbxproj.sh")
 SOURCE_LANGUAGE = "en"
 XLIFF_NS = "{urn:oasis:names:tc:xliff:document:1.2}"
 LOG_TAIL_LINES = 40
@@ -1166,16 +1165,11 @@ def xcodebuild(arguments: list[str], log: Path) -> None:
         raise UpdateError(f"xcodebuild {arguments[0]} failed, full log: {log}\n" + "\n".join(tail))
 
 
-def update_pbxproj_libraries() -> None:
-    subprocess.run(["sh", str(UPDATE_PBXPROJ)], check=True, stdout=subprocess.DEVNULL)
-
-
 @contextlib.contextmanager
-def local_core_libraries() -> Iterator[None]:
-    """Xcode links the app to extract strings, so the project temporarily references the local core libraries."""
+def restored_project() -> Iterator[None]:
+    """Xcode rewrites project.pbxproj while it imports and exports localizations, so it is restored afterwards."""
     pbxproj = PBXPROJ.read_bytes()
     try:
-        update_pbxproj_libraries()
         yield
     finally:
         PBXPROJ.write_bytes(pbxproj)
@@ -1227,7 +1221,7 @@ def update() -> int:
 
     log_dir = Path(tempfile.mkdtemp(prefix="ios-localizations-"))
     try:
-        with local_core_libraries():
+        with restored_project():
             with steps.step(f"Importing {len(languages)} languages with Xcode (logs: {log_dir})"):
                 import_languages(languages, log_dir)
             with steps.step(f"Exporting {len(languages)} languages with Xcode"):

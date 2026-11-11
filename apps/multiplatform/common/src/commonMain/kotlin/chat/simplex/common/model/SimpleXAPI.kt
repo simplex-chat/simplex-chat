@@ -7898,7 +7898,8 @@ data class GroupLink(
 data class CoreVersionInfo(
   val version: String,
   val simplexmqVersion: String,
-  val simplexmqCommit: String
+  val simplexmqCommit: String,
+  val simplexChatCommit: String = ""
 )
 
 data class SomeRemoteCtrl(
