@@ -16,6 +16,8 @@ export interface Config {
   completeHours: number
   cardFlushSeconds: number
   contextFile: string | null
+  dryRun: boolean
+  allowMigrations: boolean
   grokApiKey: string | null
 }
 
@@ -53,6 +55,8 @@ function buildCommand(): Command {
     .option("--complete-hours <n>", "auto-complete chats after N hours idle (0 disables)", parseNonNegativeInt("--complete-hours"), 3)
     .option("--card-flush-seconds <n>", "debounce card state writes", parseNonNegativeInt("--card-flush-seconds"), 300)
     .option("--context-file <path>", "text file with Grok system context (required if GROK_API_KEY set)")
+    .option("--dry-run", "check config, database and state, then exit without starting chat")
+    .option("--allow-migrations", "with --dry-run: apply pending migrations instead of reporting them")
     .addHelpText("after", "\nEnvironment:\n  GROK_API_KEY        xAI API key — enables Grok replies\n  SIMPLEX_LIBS_DIR    local libsimplex build for the --db backend\n  SIMPLEX_ADDON_PATH  locally built Node.js add-on\n")
 }
 
@@ -69,6 +73,8 @@ interface RawOpts {
   completeHours: number
   cardFlushSeconds: number
   contextFile?: string
+  dryRun?: boolean
+  allowMigrations?: boolean
 }
 
 export function parseConfig(args: string[]): Config {
@@ -99,6 +105,8 @@ export function parseConfig(args: string[]): Config {
       : {type: "postgres", connectionString: opts.pgConn}
   }
 
+  if (opts.allowMigrations && !opts.dryRun) throw new Error("--allow-migrations requires --dry-run")
+
   const teamGroup: IdName = {id: 0, name: opts.teamGroup}
 
   const teamMembersRaw = opts.autoAddTeamMembers ?? ""
@@ -127,6 +135,8 @@ export function parseConfig(args: string[]): Config {
     completeHours: opts.completeHours,
     cardFlushSeconds: opts.cardFlushSeconds,
     contextFile,
+    dryRun: opts.dryRun ?? false,
+    allowMigrations: opts.allowMigrations ?? false,
     grokApiKey,
   }
 }

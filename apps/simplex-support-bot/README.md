@@ -56,6 +56,8 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 | `--complete-hours` | both | no | `3` | auto-complete chats after N hours idle (`0` disables) |
 | `--card-flush-seconds` | both | no | `300` | debounce card state writes |
 | `--context-file` | both | required with `GROK_API_KEY` | | text file with Grok system context |
+| `--dry-run` | both | no | | check config, database and state, then exit |
+| `--allow-migrations` | both | no | | with `--dry-run`: apply pending migrations instead of reporting them |
 | `-h` / `--help` | both | no | | show usage and exit |
 
 ## Environment variables
@@ -65,6 +67,46 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 | `GROK_API_KEY` | xAI API key; enables Grok replies |
 | `SIMPLEX_LIBS_DIR` | directory with a local libsimplex build for the `--db` backend, instead of the downloaded one |
 | `SIMPLEX_ADDON_PATH` | locally built Node.js add-on (`simplex.node`), instead of the downloaded one |
+| `NODE_OPTIONS` | `--max-old-space-size=8192` on a bot with many chats: single API responses outgrow the default heap |
+
+## Docker
+
+`scripts/support-bot/Dockerfile` builds libsimplex (PostgreSQL backend), the Node.js library and the bot from this checkout. The first build compiles the core and takes hours on a cold cabal cache.
+
+```bash
+PG_CONN='postgres://simplex@127.0.0.1/simplex_support_bot' \
+  docker compose -f scripts/support-bot/compose.yml up --build
+```
+
+The Grok context file is read from `scripts/support-bot/config/grok-context.txt`, and `GROK_API_KEY` from the environment.
+
+## Dry run
+
+`--dry-run` opens the database, checks what the next start would do, and exits. It does not start chat, so nothing is sent to the network, and pending migrations are reported, not applied.
+
+```bash
+npm start -- --dry-run --team-group "Support Team" --db postgres --pg-conn "postgres://user:pass@host/db" \
+             -a 3:alice --context-file ./data/grok-context.yaml
+```
+
+```
+ok    database postgres opened, schema up to date
+ok    active user: 1:Ask SimpleX Team
+ok    team group 1: Support Team
+FAIL  team member 3:alice has display name "bob", the bot would exit
+```
+
+A pending migration stops the checks:
+
+```
+FAIL  database: 2 migration(s) pending, a real start would apply them: 20261019_chat_layout, 20261021_badge_subscriptions
+```
+
+With `--allow-migrations`, the migrations are applied first and the checks run after them. Run it against a restored copy of the database unless the migration is intended, and with the bot stopped.
+
+A line is `ok`, `FAIL` or `?`. `?` marks an id absent from the chat previews: with chat stopped, only chats that were used are listed, so the bot verifies such ids at startup.
+
+The exit code is 0 when no line is `FAIL`, 1 otherwise. The checks cover the database connection and migrations, the persisted team group, Grok user and Grok contact, the `--auto-add-team-members` ids and names, and the `--context-file`.
 
 ## Local development against unreleased lib changes
 
@@ -87,3 +129,4 @@ export SIMPLEX_ADDON_PATH=../../packages/simplex-chat-nodejs/build/Release/simpl
 - **`--pg-conn is required with --db postgres`** — pass a connection string, or use `--db sqlite`.
 - **`libpq5` errors at startup** — install `libpq5` on the host (`apt install libpq5` on Debian/Ubuntu).
 - **`ENOENT: no such file or directory, open './data/state.json'`** — the parent directory of `--state-file` must exist; `mkdir -p data` before starting.
+- **`JavaScript heap out of memory`** — a response outgrew the default heap; restart with `NODE_OPTIONS=--max-old-space-size=8192`.
