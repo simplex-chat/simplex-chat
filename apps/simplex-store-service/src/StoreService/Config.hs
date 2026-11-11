@@ -281,6 +281,12 @@ publishableKey k = case T.stripPrefix "pk_live_" k <|> T.stripPrefix "pk_test_" 
   Just rest -> not (T.null rest) && T.all (\c -> isAsciiUpper c || isAsciiLower c || isDigit c) rest
   Nothing -> False
 
+testSecretKey :: Text -> Bool
+testSecretKey k = any (`T.isPrefixOf` k) ["sk_test_", "rk_test_"]
+
+testPublishableKey :: Text -> Bool
+testPublishableKey = T.isPrefixOf "pk_test_"
+
 maxCommunityTextLength :: Int
 maxCommunityTextLength = 200
 
@@ -299,6 +305,9 @@ minNameYears = 2
 -- | anvil's chain id, the only chain [issuer] dev_keys are accepted on.
 localChainId :: Word64
 localChainId = 31337
+
+sepoliaChainId :: Word64
+sepoliaChainId = 11155111
 
 -- | 100 gwei.
 defaultMaxFeePerGas :: Word64
@@ -460,13 +469,18 @@ parseConfig ini = do
     Left ("issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = " <> show localChainId)
   unless (null devKeys) $ do
     forM_ str $ \StripeConfig {sSecretKey, sPublishableKey} -> do
-      unless (any (`T.isPrefixOf` sSecretKey) ["sk_test_", "rk_test_"]) $
+      unless (testSecretKey sSecretKey) $
         Left "issuer.dev_keys is refused with a live Stripe key: stripe.secret_key must be a test key, sk_test_ or rk_test_"
-      unless ("pk_test_" `T.isPrefixOf` sPublishableKey) $
+      unless (testPublishableKey sPublishableKey) $
         Left "issuer.dev_keys is refused with a live Stripe key: stripe.publishable_key must be a test key, pk_test_"
     forM_ btc $ \BTCPayConfig {bHost} ->
       unless (isLoopbackHost (urlHost bHost)) $
         Left "issuer.dev_keys is refused with a remote BTCPay: btcpay.host must be on loopback, 127.0.0.1, ::1 or localhost"
+  forM_ str $ \StripeConfig {sSecretKey, sPublishableKey} -> do
+    when (testSecretKey sSecretKey /= testPublishableKey sPublishableKey) $
+      Left "stripe.secret_key and stripe.publishable_key must be both live keys or both test keys"
+    when (testSecretKey sSecretKey && maybe False (not . onTestChain) nms) $
+      Left ("Stripe test keys are accepted with [names] only on a test chain, [chain] chain_id = " <> show localChainId <> " or " <> show sepoliaChainId)
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
   apple <- appleSection
@@ -558,6 +572,7 @@ parseConfig ini = do
         pure BadgeIssuerKey {keyIdx, secretKey}
       _ -> Left "issuer.dev_keys must be <index>:<secret> entries separated by commas"
     onLocalChain NamesConfig {nChain = ChainConfig {cChainId}} = cChainId == localChainId
+    onTestChain NamesConfig {nChain = ChainConfig {cChainId}} = cChainId `elem` [localChainId, sepoliaChainId]
     btcpaySection
       | not (hasSection "btcpay") = Right Nothing
       | otherwise = do
