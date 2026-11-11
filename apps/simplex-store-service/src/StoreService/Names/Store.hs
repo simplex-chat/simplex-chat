@@ -97,6 +97,8 @@ module StoreService.Names.Store
     pendingEditIds,
     deleteUnsentEdit,
     relayedEditTimes,
+    getTermsText,
+    setTermsText,
   )
 where
 
@@ -1543,6 +1545,21 @@ relayedEditTimes db (LabelHash lh) since =
       db
       "SELECT created_at FROM sx_badge_service_name_record_edits WHERE label_hash = ? AND created_at > ? ORDER BY created_at"
       (Binary lh, truncateToSecond since)
+
+getTermsText :: DB.Connection -> ByteString -> IO (Maybe ByteString)
+getTermsText db termsHash =
+  maybeFirstRow (\(Only (Binary text)) -> text) $
+    DB.query db "SELECT terms_text FROM sx_badge_service_name_terms WHERE terms_hash = ?" (Only $ Binary termsHash)
+
+setTermsText :: DB.Connection -> ByteString -> ByteString -> IO ()
+setTermsText db termsHash text =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO sx_badge_service_name_terms (terms_hash, terms_text) VALUES (?,?)
+      ON CONFLICT (terms_hash) DO UPDATE SET terms_text = excluded.terms_text
+    |]
+    (Binary termsHash, Binary text)
 
 int64 :: Word64 -> Int64
 int64 = fromIntegral
