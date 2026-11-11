@@ -47,6 +47,7 @@ library
       Simplex.Chat.Badges.StorePlan
       Simplex.Chat.Badges.Types
       Simplex.Chat.Names
+      Simplex.Chat.BuildCommits
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
@@ -714,6 +715,7 @@ test-suite simplex-chat-test
       BadgeTests
       Bots.BroadcastTests
       Bots.DirectoryTests
+      BuildCommitsTests
       ChatClient
       ChatTests
       ChatTests.ChatList

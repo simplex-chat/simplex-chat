@@ -12,6 +12,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -67,6 +68,7 @@ import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState (..), currentBadgeServiceVersion)
 import Simplex.Chat.Badges.StorePlan (storePlan)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
+import Simplex.Chat.BuildCommits (simplexChatCommitQ, simplexmqCommitQ)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -3747,8 +3749,7 @@ processChatCommand cxt nm = \case
     pure $ CRRcvStandaloneFileCreated user ft
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
-    -- simplexmqCommitQ makes iOS builds crash m(
-    let versionInfo = coreVersionInfo ""
+    let versionInfo = coreVersionInfo $(simplexmqCommitQ) $(simplexChatCommitQ)
     chatMigrations <- map upMigration <$> withFastStore' (getCurrentMigrations Nothing)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
