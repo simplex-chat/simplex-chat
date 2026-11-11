@@ -92,6 +92,7 @@ join_link() {
   local peer=$1 link=$2
   # copying to the clipboard timed out once in both call tests of a run (run 41299700451)
   SIM_UDID=$(get udid "$peer") UI_OUT=$out/$peer ui_retry clipboard "$link"
+  on "$peer" wait "Connect via link or QR code" 180
   on "$peer" tap "Connect via link or QR code" 30
   on "$peer" wait "Tap to paste link" 30
   on "$peer" shot connect-via-link
