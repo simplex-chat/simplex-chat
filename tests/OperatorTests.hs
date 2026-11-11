@@ -16,6 +16,8 @@ module OperatorTests (operatorTests) where
 
 import Data.Bifunctor (second)
 import qualified Data.List.NonEmpty as L
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (UTCTime (..), addUTCTime, nominalDay)
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
 import Simplex.Chat.Operators
@@ -34,6 +36,17 @@ operatorTests = describe "managing server operators" $ do
   validateServersTest
   updatedServersTest
   perServerRolesTest
+  conditionsDeadlineTest
+
+conditionsDeadlineTest :: Spec
+conditionsDeadlineTest = describe "usage conditions deadline" $
+  it "should accept conditions 31 days after the notice, also after a late notice" $ do
+    let created = UTCTime (fromGregorian 2026 11 1) 0
+        notified = addUTCTime (20 * nominalDay) created
+        conditions = UsageConditions {conditionsId = 2, conditionsCommit = usageConditionsCommit, notifiedAt = Just notified, createdAt = created}
+    case usageConditionsAction [operatorSimpleXChat {operatorId = DBEntityId 1}] conditions notified of
+      Just UCAReview {deadline} -> deadline `shouldBe` Just (addUTCTime (31 * nominalDay) notified)
+      action -> expectationFailure $ show action
 
 validateServersTest :: Spec
 validateServersTest = describe "validate user servers" $ do
