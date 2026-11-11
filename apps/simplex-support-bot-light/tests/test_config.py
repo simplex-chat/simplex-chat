@@ -1,8 +1,16 @@
+import argparse
 import base64
 
 import pytest
 
-from support_bot_light.config import Config, ConfigError, Health, load_config
+from support_bot_light.config import (
+    Config,
+    ConfigError,
+    Health,
+    IdName,
+    load_config,
+    parse_id_names,
+)
 
 VALID = """
 [bot]
@@ -272,32 +280,23 @@ def test_invalid_health_settings_are_rejected(tmp_path, section):
         load_config(write(tmp_path, VALID + "\n" + section))
 
 
-def test_feed_has_no_senders_without_configuration(tmp_path):
-    assert load_config(write(tmp_path, VALID)).feed_senders == ()
+def test_broadcasters_are_parsed_as_id_name_pairs():
+    assert parse_id_names("12:Alice,15:Bob") == (IdName(12, "Alice"), IdName(15, "Bob"))
 
 
-def test_feed_senders_can_be_set(tmp_path):
-    config = load_config(write(tmp_path, VALID + "\n[feed]\nsenders = [7, 12]\n"))
-    assert config.feed_senders == (7, 12)
+def test_a_broadcaster_name_may_contain_a_colon():
+    assert parse_id_names("12:a:b") == (IdName(12, "a:b"),)
 
 
-@pytest.mark.parametrize(
-    "section",
-    [
-        '[feed]\nsenders = "7"\n',
-        "[feed]\nsenders = [0]\n",
-        "[feed]\nsenders = [true]\n",
-        '[feed]\nsenders = ["7"]\n',
-    ],
-)
-def test_invalid_feed_senders_are_rejected(tmp_path, section):
-    with pytest.raises(ConfigError, match="feed.senders"):
-        load_config(write(tmp_path, VALID + "\n" + section))
+def test_broadcasters_parse_as_the_main_support_bot_parses_them():
+    assert parse_id_names("12:Alice, 15:Bob") == (IdName(12, "Alice"), IdName(15, "Bob"))
+    assert parse_id_names("") == ()
 
 
-def test_feed_must_be_a_section(tmp_path):
-    with pytest.raises(ConfigError, match=r"\[feed\]"):
-        load_config(write(tmp_path, "feed = 7\n" + VALID))
+@pytest.mark.parametrize("value", ["Alice", ":Alice", "x:Alice", "12", "12:Alice,"])
+def test_invalid_broadcasters_are_rejected(value):
+    with pytest.raises(argparse.ArgumentTypeError, match="ID:name"):
+        parse_id_names(value)
 
 
 def test_a_missing_config_points_at_the_template(tmp_path):

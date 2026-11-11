@@ -4,7 +4,7 @@ import pytest
 from simplex_chat import ChatCommandError
 
 from support_bot_light import handlers, messages, roster
-from support_bot_light.config import Config
+from support_bot_light.config import Config, IdName
 from support_bot_light.context import BotContext
 from tests.conftest import (
     ROSTER_GROUP_ID,
@@ -725,7 +725,7 @@ async def test_dm_on_an_already_active_member_announces_nothing(ctx, api):
 
 @pytest.fixture
 def feed_ctx(ctx, api):
-    ctx.config = dataclasses.replace(CONFIG, feed_senders=(7,))
+    ctx.config = dataclasses.replace(CONFIG, broadcasters=(IdName(7, "sh"),))
     api.contacts.append(make_contact(7, "sh", connected=True))
     return ctx
 
@@ -752,7 +752,7 @@ async def test_feed_without_a_direct_contact_is_refused(feed_ctx, api):
     assert api.replies == [messages.FEED_NO_CONTACT]
 
 
-async def test_feed_is_refused_to_everyone_without_senders(ctx, api):
+async def test_feed_is_refused_to_everyone_without_broadcasters(ctx, api):
     api.contacts.append(make_contact(7, "sh", connected=True))
     await handlers.feed(ctx, make_group_message(api, make_member(1, contact_id=7), "/feed hi"))
     assert api.commands == []

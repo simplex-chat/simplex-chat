@@ -1,3 +1,6 @@
+import dataclasses
+import sys
+
 import pytest
 from simplex_chat import Bot, BotProfile, SqliteDb
 from simplex_chat.core import ChatAPIError
@@ -9,17 +12,20 @@ from support_bot_light.__main__ import (
     _serve,
     bot_profile,
     build_bot,
+    main,
     startup_error,
 )
-from support_bot_light.config import Config, Health
+from support_bot_light.config import Config, ConfigError, Health, IdName
 from support_bot_light.context import BotContext
 from tests.conftest import (
     ROSTER_GROUP_ID,
     USER_ID,
+    make_contact,
     make_group,
     make_group_message,
     make_member,
 )
+from tests.test_config import VALID
 
 CONFIG = Config("Support", "./x", "hi", "Invite roster", "owner")
 OTHER_GROUP_ID = 99
@@ -296,6 +302,46 @@ async def test_the_profile_is_applied_after_start(api, monkeypatch):
     bot = FakeBot(serve_api(api))
     await _serve(CONFIG, bot)
     assert bot.syncs == 1
+
+
+BROADCASTING = dataclasses.replace(CONFIG, broadcasters=(IdName(7, "sh"),))
+
+
+async def test_serve_checks_the_broadcasters_and_serves(api):
+    api.contacts.append(make_contact(7, "sh", connected=True))
+    bot = FakeBot(serve_api(api))
+    await _serve(BROADCASTING, bot)
+    assert bot.served == 1
+
+
+async def test_serve_stops_on_a_broadcaster_who_is_not_a_contact(api):
+    bot = FakeBot(serve_api(api))
+    with pytest.raises(ConfigError, match="broadcaster not found: ID=7"):
+        await _serve(BROADCASTING, bot)
+    assert bot.served == 0
+
+
+async def test_serve_stops_on_a_broadcaster_with_another_name(api):
+    api.contacts.append(make_contact(7, "Alex", connected=True))
+    bot = FakeBot(serve_api(api))
+    with pytest.raises(ConfigError, match='expected "sh", got "Alex"'):
+        await _serve(BROADCASTING, bot)
+    assert bot.served == 0
+
+
+def test_broadcasters_are_read_from_the_command_line(tmp_path, monkeypatch):
+    (tmp_path / "config.toml").write_text(VALID, encoding="utf-8")
+    configs: list[Config] = []
+
+    async def run(config):
+        configs.append(config)
+
+    monkeypatch.setattr("support_bot_light.__main__._run", run)
+    monkeypatch.setattr("support_bot_light.__main__.os.umask", lambda _mask: 0)
+    argv = ["support-bot-light", "--config", str(tmp_path / "config.toml")]
+    monkeypatch.setattr(sys, "argv", [*argv, "--broadcasters", "7:sh,9:Alex"])
+    assert main() == 0
+    assert configs[0].broadcasters == (IdName(7, "sh"), IdName(9, "Alex"))
 
 
 async def test_run_installs_signal_handlers_before_starting(monkeypatch):

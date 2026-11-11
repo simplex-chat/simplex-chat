@@ -107,10 +107,34 @@ Available in the roster group.
 | `/list` | List active members, members who are no longer reachable, and those pending a contact request. |
 | `/leave` | Leave the roster. Chats already joined are unaffected. |
 | `/help` | Summarise the above. |
+| `/feed <text>` | Send a message to every chat. Only for `--broadcasters`. |
 
 Leaving the roster group, or being removed from it, also takes a member off the
 roster. The bot is the group's only owner, so removing another member requires a
 client signed in as the bot.
+
+## Feed
+
+A contact listed in `--broadcasters` sends `/feed <text>` in the roster group.
+The bot sends the text as a feed message to every business chat and every
+direct contact of the bot, replies that it is being sent, and posts again when
+it is sent to all chats or fails. The text may span several lines.
+
+Feeds are part of the core, so `/feed` needs a `libsimplex` built from this
+tree, as the Docker image builds it; no released version has them. A manual
+installation sets `SIMPLEX_LIBS_DIR` to the output of
+`scripts/desktop/build-lib-linux.sh`, in
+`apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-$(uname -m)`.
+
+`--broadcasters` takes comma-separated `ID:name` pairs, such as `12:Alice,15:Bob`.
+A broadcaster must be a contact of the bot; `/feed` from anyone else replies
+with their contact id, or asks them to run `/dm` when they have no contact. The
+bot exits at start if an id is not a contact or its display name differs. Under
+Docker, add the option in `docker-compose.yml`:
+
+```yaml
+    command: ["--broadcasters", "12:Alice"]
+```
 
 ## State
 

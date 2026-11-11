@@ -44,10 +44,10 @@ FEED_SENT = "Feed message {item_id} sent to all chats."
 FEED_FAILED = "Feed message {item_id} failed: {error}"
 FEED_EMPTY = "Add the message text after /feed."
 FEED_NOT_ALLOWED = (
-    "Only feed senders can use /feed. The operator adds your contact id {contact_id} "
-    "to feed.senders in the config."
+    "Only broadcasters can use /feed. Your contact id is {contact_id}: "
+    "the operator adds it to --broadcasters."
 )
-FEED_NO_CONTACT = "Only feed senders can use /feed, and they need a direct contact: run /dm first."
+FEED_NO_CONTACT = "Only broadcasters can use /feed, and they need a direct contact: run /dm first."
 
 HELP = (
     "I add roster members to chats started by anyone who connects to my address.\n\n"
@@ -55,7 +55,7 @@ HELP = (
     "you join the roster once you accept it.\n"
     "/list — roster members, and contact requests not yet accepted.\n"
     "/leave — leave the roster. Chats you have already joined are unchanged.\n"
-    "/feed <text> — send a message to every chat; only for the senders in the config."
+    "/feed <text> — send a message to every chat; only for broadcasters set by the operator."
 )
 
 

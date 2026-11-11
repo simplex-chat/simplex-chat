@@ -310,7 +310,7 @@ async def feed(ctx: BotContext, msg: Message) -> None:
     if contact is None:
         await msg.reply(messages.FEED_NO_CONTACT)
         return
-    if contact["contactId"] not in ctx.config.feed_senders:
+    if not any(b.id == contact["contactId"] for b in ctx.config.broadcasters):
         await msg.reply(messages.FEED_NOT_ALLOWED.format(contact_id=contact["contactId"]))
         return
     command = util.ci_bot_command(msg.chat_item["chatItem"])

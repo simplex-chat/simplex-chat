@@ -4,19 +4,21 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import dataclasses
 import logging
 import os
 import stat
 import sys
 from pathlib import Path
 
-from simplex_chat import Bot, BotProfile, ChatError, SqliteDb
+from simplex_chat import Bot, BotProfile, ChatApi, ChatError, SqliteDb
 from simplex_chat.core import ChatInitError
 from simplex_chat.types import CEvt
 
 from . import business, commands, handlers, health, setup
-from .config import Config, ConfigError, load_config
+from .config import Config, ConfigError, IdName, load_config, parse_id_names
 from .context import BotContext
+from .text import safe_name
 
 log = logging.getLogger("support_bot_light")
 
@@ -97,6 +99,23 @@ def startup_error(e: Exception) -> str:
     return f"{e} {chat_error}" if chat_error else str(e)
 
 
+async def check_broadcasters(api: ChatApi, user_id: int, broadcasters: tuple[IdName, ...]) -> None:
+    if not broadcasters:
+        return
+    contacts = {c["contactId"]: c for c in await api.api_list_contacts(user_id)}
+    for b in broadcasters:
+        contact = contacts.get(b.id)
+        if contact is None:
+            raise ConfigError(f"broadcaster not found: ID={b.id}")
+        name = contact["profile"]["displayName"]
+        if name != b.name:
+            raise ConfigError(
+                f'broadcaster name mismatch: expected "{b.name}", '
+                f'got "{safe_name(name)}" (ID={b.id})'
+            )
+        log.info("broadcaster validated: %d:%s", b.id, safe_name(b.name))
+
+
 def bot_profile(config: Config) -> BotProfile:
     return BotProfile(display_name=config.display_name, image=config.image)
 
@@ -154,6 +173,7 @@ async def _serve(config: Config, bot: Bot) -> None:
         if user is None:
             raise RuntimeError("no active user after start")
         user_id = user["userId"]
+        await check_broadcasters(bot.api, user_id, config.broadcasters)
         await _apply_profile(bot)
         roster_group_id = await setup.ensure_roster_group(bot.api, user_id, config)
         ctx = BotContext(
@@ -184,6 +204,12 @@ async def _serve(config: Config, bot: Bot) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(prog="support-bot-light")
     parser.add_argument("--config", type=Path, default=Path("config.toml"))
+    parser.add_argument(
+        "--broadcasters",
+        type=parse_id_names,
+        default=(),
+        help="comma-separated ID:name pairs of contacts allowed to use /feed in the roster group",
+    )
     args = parser.parse_args()
 
     if not logging.getLogger().handlers:
@@ -196,15 +222,16 @@ def main() -> int:
     os.umask(stat.S_IRWXG | stat.S_IRWXO)
 
     try:
-        config = load_config(args.config)
+        config = dataclasses.replace(load_config(args.config), broadcasters=args.broadcasters)
     except ConfigError as e:
         log.error("%s", e)
         return 2
     try:
         asyncio.run(_run(config))
     except ConfigError as e:
-        # Raised past load_config only by the health endpoint, which cannot know
-        # its port is taken until it binds.
+        # Raised past load_config by the health endpoint, which cannot know its
+        # port is taken until it binds, and by the broadcaster check, which needs
+        # the database.
         log.error("%s", e)
         return 2
     except STARTUP_ERRORS as e:
