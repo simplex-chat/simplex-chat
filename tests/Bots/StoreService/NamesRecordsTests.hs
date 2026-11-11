@@ -142,7 +142,7 @@ withSetup random action = withFakeEthNode $ \node -> withServiceStore $ \store -
 start :: DBStore -> TVar UTCTime -> ChainClient -> TVar ChaChaDRG -> IO (Sender, Records)
 start store clock chain random = do
   sender <- newSender random chain store (readTVarIO clock)
-  contracts <- newContracts TLDSimplex chain
+  contracts <- newContracts store TLDSimplex chain
   turns <- newTurns
   rs <- newRecords store turns contracts chain sender TLDSimplex editsPerYear (readTVarIO clock)
   pure (sender, rs {rsPendingAfter = longWait})

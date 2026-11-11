@@ -26,6 +26,8 @@ module StoreService.Names.Contracts
     termsOf,
     termsLinkAllowed,
     termsText,
+    fetchCurrentTerms,
+    runTermsFetch,
     policyNonce,
     acceptedTerms,
     confirmedTag,
@@ -40,11 +42,12 @@ module StoreService.Names.Contracts
 where
 
 import Control.Applicative ((<|>))
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Concurrently (..))
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Concurrent.STM (TVar, newTVarIO)
-import Control.Logger.Simple (logWarn)
-import Control.Monad (guard)
+import Control.Logger.Simple (logError, logWarn)
+import Control.Monad (forever, guard)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bifunctor (first)
@@ -56,26 +59,30 @@ import Data.Functor.Compose (Compose (..))
 import Data.IORef (IORef, atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey, labelNode, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
+import StoreService.Names.Store (getTermsText, setTermsText)
+import StoreService.Safely (safely)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
 data Contracts = Contracts
   { ctChain :: ChainClient,
+    ctStore :: DBStore,
     ctTLD :: SimplexTLD,
     ctRegistrar :: IORef (Maybe RegistrarConstants),
     ctCommitmentAges :: IORef (Maybe CommitmentAges),
@@ -139,9 +146,12 @@ maxTermsBackoffSeconds = 3600
 maxTermsBytes :: Int
 maxTermsBytes = 256 * 1024
 
+termsFetchInterval :: Int
+termsFetchInterval = 3600 * 1000000
+
 -- | Reads nothing: the registrar's constants, the commitment ages and the name policy are read on first use and kept once read.
-newContracts :: SimplexTLD -> ChainClient -> IO Contracts
-newContracts ctTLD ctChain = do
+newContracts :: DBStore -> SimplexTLD -> ChainClient -> IO Contracts
+newContracts ctStore ctTLD ctChain = do
   ctRegistrar <- newIORef Nothing
   ctCommitmentAges <- newIORef Nothing
   ctNamePolicy <- newIORef Nothing
@@ -150,7 +160,7 @@ newContracts ctTLD ctChain = do
   ctFetchAfter <- newIORef =<< getCurrentTime
   ctFetching <- newMVar ()
   ctViewSlots <- newTVarIO viewReadSlots
-  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds, ctViewSlots}
+  pure Contracts {ctChain, ctStore, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds, ctViewSlots}
 
 -- | Registered while @nameExpires + GRACE_PERIOD@ is not before the latest block's time.
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)
@@ -240,30 +250,52 @@ termsText ct@Contracts {ctTermsTexts, ctFetching} t@Terms {tmHash} =
   where
     kept = M.lookup tmHash <$> readIORef ctTermsTexts
 
+fetchCurrentTerms :: Contracts -> IO ()
+fetchCurrentTerms ct =
+  termsLinks ct >>= \case
+    Right (generalLink, communityLink) -> mapM_ (termsText ct) $ mapMaybe termsOf [generalLink, communityLink]
+    Left e -> logWarn $ "names: the terms links could not be read to fetch their texts: " <> tshow e
+
+runTermsFetch :: Contracts -> IO ()
+runTermsFetch ct = forever $ safely "names terms fetch" (fetchCurrentTerms ct) >> threadDelay termsFetchInterval
+
 fetchTerms :: Contracts -> Terms -> IO (Either TermsRefusal Text)
-fetchTerms Contracts {ctChain, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash} =
+fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash} =
   allowedLink ctChain tmLink >>= \case
     Nothing -> pure $ Left TRLink
-    Just (url, digest) -> do
+    Just (url, digest) ->
+      withTransaction ctStore (`getTermsText` tmHash) >>= \case
+        Just stored -> case checked digest stored of
+          Right text -> keep text
+          Left (reason, _) -> do
+            logWarn $ "names: the stored terms text of " <> tmLink <> " is refused, " <> reason <> "; it is fetched again"
+            fetchOrWait url digest
+        Nothing -> fetchOrWait url digest
+  where
+    fetchOrWait url digest = do
       after <- readIORef ctFetchAfter
       now <- getCurrentTime
       if now < after
         then pure $ Left $ TRWait $ ceiling $ diffUTCTime after now
         else
           (>>= checked digest) <$> fetchText ctChain maxTermsBytes url >>= \case
-            Right text -> Right text <$ modifyIORef' ctTermsTexts (M.insert tmHash text)
+            Right text -> keep text <* store text
             Left (reason, retryAfter) -> do
               let wait = min maxTermsBackoffSeconds $ max ctTermsBackoff $ fromMaybe 0 retryAfter
               failedAt <- getCurrentTime
               writeIORef ctFetchAfter $ addUTCTime (fromIntegral wait) failedAt
               logWarn $ "names: the terms text of " <> tmLink <> " could not be fetched, " <> reason <> "; none is fetched for " <> tshow wait <> " seconds"
               pure $ Left $ TRWait wait
-  where
+    keep text = Right text <$ modifyIORef' ctTermsTexts (M.insert tmHash text)
+    store text =
+      withTransaction ctStore (\db -> setTermsText db tmHash $ encodeUtf8 text)
+        `catchOwn'` \e -> logError ("names: the terms text of " <> tmLink <> " could not be stored: " <> tshow e)
+    checked :: Maybe ByteString -> ByteString -> Either (Text, Maybe Int) Text
     checked digest body
-      | sha256Hash body /= digest = Left ("its SHA-256 is not the link's", Nothing)
+      | any (sha256Hash body /=) digest = Left ("its SHA-256 is not the link's", Nothing)
       | otherwise = first (const ("not UTF-8", Nothing)) $ decodeUtf8' body
 
-allowedLink :: ChainClient -> Text -> IO (Maybe (String, ByteString))
+allowedLink :: ChainClient -> Text -> IO (Maybe (String, Maybe ByteString))
 allowedLink c@ChainClient {ccConfig = ChainConfig {cChainId}} link = case termsLinkParts link of
   Just (False, parts) -> pure $ Just parts
   Just (True, parts)
@@ -273,16 +305,18 @@ allowedLink c@ChainClient {ccConfig = ChainConfig {cChainId}} link = case termsL
           _ -> Nothing
   _ -> pure Nothing
 
-termsLinkParts :: Text -> Maybe (Bool, (String, ByteString))
+termsLinkParts :: Text -> Maybe (Bool, (String, Maybe ByteString))
 termsLinkParts link = do
-  digest <- bytes32FromHex . ("0x" <>) =<< T.stripPrefix "#sha256=" fragment
-  (loopback, path) <- (False,) <$> forgejoPath <|> (True,) <$> loopbackPath
-  guard $ maybe False (not . T.null) (T.stripSuffix ".md" path) && all segment (T.splitOn "/" path)
+  digest <- if T.null fragment then pure Nothing else Just <$> (bytes32FromHex . ("0x" <>) =<< T.stripPrefix "#sha256=" fragment)
+  (loopback, path) <- (False,) <$> (commitPath forgejoPrefix <|> commitPath githubPrefix) <|> (True,) <$> loopbackPath
+  guard $ (isJust digest || not loopback) && maybe False (not . T.null) (T.stripSuffix ".md" path) && all segment (T.splitOn "/" path)
   pure (loopback, (T.unpack url, digest))
   where
     (url, fragment) = T.breakOn "#" link
-    forgejoPath = do
-      (commit, path) <- T.splitAt commitChars <$> T.stripPrefix "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/" url
+    forgejoPrefix = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/"
+    githubPrefix = "https://raw.githubusercontent.com/simplex-chat/simplex-chat/"
+    commitPath prefix = do
+      (commit, path) <- T.splitAt commitChars <$> T.stripPrefix prefix url
       guard $ T.length commit == commitChars && T.all lowerHex commit
       T.stripPrefix "/" path
     loopbackPath = do

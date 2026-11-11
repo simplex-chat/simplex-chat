@@ -162,7 +162,7 @@ write :: DBStore -> NameRegistration -> IO VersionWrite
 write st r = withTransaction st $ \db -> updateRegistration db r (at 1)
 
 namesTables :: [Text]
-namesTables = map ("sx_badge_service_name_" <>) ["prepaid_codes", "registrations", "invoices", "record_edits", "record_changes", "transactions", "balances", "late_credits"]
+namesTables = map ("sx_badge_service_name_" <>) ["prepaid_codes", "registrations", "invoices", "record_edits", "record_changes", "transactions", "balances", "late_credits", "terms"]
 
 -- | Added to the badge tables' payments by the names migrations.
 balancePaymentColumns :: [Text]
@@ -182,6 +182,7 @@ testNamesDownUp = withServiceStore $ \st -> do
   placePaid st "r2" ownerB (order "bobsbakery" 2) (at 60) `shouldReturn` Right ()
   placePaid st "r3" ownerB (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
   withTransaction st $ \db -> insertPayment db "inv-r3"
+  withTransaction st $ \db -> setTermsText db (digestFixture 1) "terms"
   runMigrations st $ MTRDown (mapMaybe toDownMigration names)
   mapM (columnsOf st) namesTables `shouldReturn` map (const []) namesTables
   mapM (invoiceCount st) ["inv-r2", "inv-r3"] `shouldReturn` [0, 1]
