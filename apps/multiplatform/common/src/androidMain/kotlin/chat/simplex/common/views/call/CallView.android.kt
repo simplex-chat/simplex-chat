@@ -138,7 +138,7 @@ actual fun ActiveCallView() {
   }
   Box(Modifier.fillMaxSize()) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
-      Log.d(TAG, "received from WebRTCView: ${apiMsg.resp.javaClass.simpleName}")
+      Log.d(TAG, "received from WebRTCView: ${apiMsg.resp.javaClass.simpleName} ${(apiMsg.resp as? WCallResponse.Connection)?.state?.connectionState ?: ""}")
       val call = chatModel.activeCall.value
       if (call != null) {
         val callState = call.androidCallState as ActiveCallState
