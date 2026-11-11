@@ -15,7 +15,7 @@ Dependencies:
 4. `register` writes the hooks into the Claude Code settings file of its scope: `CONFIG/settings.json` for `user`, `PROJECT/.claude/settings.local.json` for `local`.
 5. Notes: in the `receive` description, a note is requested in the same response as the tool call of a step that takes minutes.
 6. Scope, decided by the user: notes (option 1) and Claude Code hooks (option 2) in one pull request, stacked on `ab/mcp-live-typing`.
-7. Source budget, decided by the user: about 150 changed lines in `src`, up to 20% above.
+7. Source budget, decided by the user: about 150 changed lines in `src`, up to 20% above; the user accepted the 267 changed lines after the review rounds.
 
 ## Transport
 
