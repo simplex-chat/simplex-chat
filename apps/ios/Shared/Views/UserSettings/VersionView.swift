@@ -37,8 +37,13 @@ struct VersionLayout: View {
                 Text("App build: \(appBuild ?? "?")")
                 if let info = versionInfo {
                     Text("Core version: v\(info.version)")
-                    if let v = try? AttributedString(markdown: "simplexmq: v\(info.simplexmqVersion) ([\(info.simplexmqCommit.prefix(7))](https://github.com/simplex-chat/simplexmq/commit/\(info.simplexmqCommit)))") {
-                        Text(v)
+                    if let commit = info.simplexChatCommit, !commit.isEmpty {
+                        markdownText("simplex-chat: \(commitLink("simplex-chat", commit))")
+                    }
+                    if info.simplexmqCommit.isEmpty {
+                        Text(verbatim: "simplexmq: v\(info.simplexmqVersion)")
+                    } else {
+                        markdownText("simplexmq: v\(info.simplexmqVersion) (\(commitLink("simplexmq", info.simplexmqCommit)))")
                     }
                 }
             }
@@ -55,10 +60,20 @@ struct VersionLayout: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
+
+    private func commitLink(_ repository: String, _ commit: String) -> String {
+        "[\(commit.prefix(7))](https://github.com/simplex-chat/\(repository)/commit/\(commit))"
+    }
+
+    @ViewBuilder private func markdownText(_ markdown: String) -> some View {
+        if let s = try? AttributedString(markdown: markdown) {
+            Text(s)
+        }
+    }
 }
 
 struct VersionView_Previews: PreviewProvider {
     static var previews: some View {
-        VersionLayout(appVersion: "7.1", appBuild: "363", versionInfo: CoreVersionInfo(version: "7.1.0.14", simplexmqVersion: "7.1.0.14", simplexmqCommit: "c0c416daf052eb0215ae432ae665522a7c96c0a6"))
+        VersionLayout(appVersion: "7.1", appBuild: "363", versionInfo: CoreVersionInfo(version: "7.1.0.14", simplexmqVersion: "7.1.0.14", simplexmqCommit: "c0c416daf052eb0215ae432ae665522a7c96c0a6", simplexChatCommit: "97e906c9ed0e2ceded12b018ef1cc999e61149b8"))
     }
 }

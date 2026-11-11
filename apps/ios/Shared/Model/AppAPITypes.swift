@@ -1757,6 +1757,7 @@ struct CoreVersionInfo: Decodable {
     var version: String
     var simplexmqVersion: String
     var simplexmqCommit: String
+    var simplexChatCommit: String?
 }
 
 struct ArchiveConfig: Encodable {

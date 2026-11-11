@@ -1153,6 +1153,7 @@
   <string name="app_version_code">App build: %s</string>
   <string name="core_version">Core version: v%s</string>
   <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
+  <string name="core_simplex_chat_commit">simplex-chat: %s</string>
   <string name="app_check_for_updates">Check for updates</string>
   <string name="app_check_for_updates_disabled">Disabled</string>
   <string name="app_check_for_updates_stable">Stable</string>
