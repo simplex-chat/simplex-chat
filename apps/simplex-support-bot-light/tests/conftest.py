@@ -41,6 +41,7 @@ class FakeChatApi:
         self._next_item_id = 1000
         self._member_contacts_created: set[tuple[int, int]] = set()
         self.accepted_member_contacts: list[int] = []
+        self.commands: list[str] = []
 
     def _check(self, name: str) -> None:
         if name in self.fail_on:
@@ -173,6 +174,12 @@ class FakeChatApi:
         except KeyError:
             raise ChatAPIError("no group link", {"type": "chatCmdError"}) from None
 
+    async def send_chat_cmd(self, cmd: str) -> dict:
+        self._check("send_chat_cmd")
+        self.commands.append(cmd)
+        self._next_item_id += 1
+        return {"type": "newChatItems", "chatItems": [make_feed_item(self._next_item_id)]}
+
 
 def make_contact(
     contact_id: int,
@@ -239,6 +246,13 @@ def make_group(
     if custom_data is not None:
         group["customData"] = custom_data
     return group
+
+
+def make_feed_item(item_id: int, status: dict | None = None) -> dict:
+    return {
+        "chatInfo": {"type": "feed", "feed": {"feedId": 1}},
+        "chatItem": {"meta": {"itemId": item_id, "itemStatus": status or {"type": "sndNew"}}},
+    }
 
 
 def join_roster_group(api: FakeChatApi) -> None:

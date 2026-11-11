@@ -1,3 +1,5 @@
+import dataclasses
+
 import pytest
 from simplex_chat import ChatCommandError
 
@@ -8,6 +10,7 @@ from tests.conftest import (
     ROSTER_GROUP_ID,
     USER_ID,
     make_contact,
+    make_feed_item,
     make_group,
     make_group_message,
     make_member,
@@ -718,3 +721,104 @@ async def test_dm_on_an_already_active_member_announces_nothing(ctx, api):
     msg = make_group_message(api, make_member(1, contact_id=7, name="sh"), "/dm")
     await handlers.dm(ctx, msg)
     assert api.sent == []
+
+
+@pytest.fixture
+def feed_ctx(ctx, api):
+    ctx.config = dataclasses.replace(CONFIG, feed_senders=(7,))
+    api.contacts.append(make_contact(7, "sh", connected=True))
+    return ctx
+
+
+async def test_feed_from_a_sender_is_sent_as_json(feed_ctx, api):
+    text = '/feed Привет\n"all"'
+    await handlers.feed(feed_ctx, make_group_message(api, make_member(1, contact_id=7), text))
+    assert api.commands == ['/feed "Привет\\n\\"all\\""']
+    assert feed_ctx.feed_items == {1001}
+    assert api.replies == [messages.FEED_QUEUED.format(item_id=1001)]
+
+
+async def test_feed_from_a_contact_not_in_the_config_is_refused(feed_ctx, api):
+    api.contacts.append(make_contact(8, "Alex", connected=True))
+    msg = make_group_message(api, make_member(2, contact_id=8), "/feed hi")
+    await handlers.feed(feed_ctx, msg)
+    assert api.commands == []
+    assert api.replies == [messages.FEED_NOT_ALLOWED.format(contact_id=8)]
+
+
+async def test_feed_without_a_direct_contact_is_refused(feed_ctx, api):
+    await handlers.feed(feed_ctx, make_group_message(api, make_member(2), "/feed hi"))
+    assert api.commands == []
+    assert api.replies == [messages.FEED_NO_CONTACT]
+
+
+async def test_feed_is_refused_to_everyone_without_senders(ctx, api):
+    api.contacts.append(make_contact(7, "sh", connected=True))
+    await handlers.feed(ctx, make_group_message(api, make_member(1, contact_id=7), "/feed hi"))
+    assert api.commands == []
+    assert api.replies == [messages.FEED_NOT_ALLOWED.format(contact_id=7)]
+
+
+@pytest.mark.parametrize("text", ["/feed", "/feed   \n "])
+async def test_feed_without_text_asks_for_it(feed_ctx, api, text):
+    await handlers.feed(feed_ctx, make_group_message(api, make_member(1, contact_id=7), text))
+    assert api.commands == []
+    assert api.replies == [messages.FEED_EMPTY]
+
+
+async def test_feed_replies_command_failed_when_the_core_refuses(feed_ctx, api):
+    api.fail_on.add("send_chat_cmd")
+    await handlers.feed(feed_ctx, make_group_message(api, make_member(1, contact_id=7), "/feed hi"))
+    assert feed_ctx.feed_items == set()
+    assert api.replies == [messages.COMMAND_FAILED]
+
+
+async def test_feed_with_an_unexpected_response_replies_command_failed(feed_ctx, api):
+    async def cmd_ok(cmd):
+        return {"type": "cmdOk"}
+
+    api.send_chat_cmd = cmd_ok
+    await handlers.feed(feed_ctx, make_group_message(api, make_member(1, contact_id=7), "/feed hi"))
+    assert feed_ctx.feed_items == set()
+    assert api.replies == [messages.COMMAND_FAILED]
+
+
+def statuses(*items):
+    return {
+        "type": "chatItemsStatusesUpdated",
+        "user": {"userId": USER_ID},
+        "chatItems": list(items),
+    }
+
+
+async def test_feed_status_reports_completion_once(ctx, api):
+    ctx.feed_items.add(5)
+    await handlers.feed_status(
+        ctx, statuses(make_feed_item(5, {"type": "sndSent", "sndProgress": "partial"}))
+    )
+    assert api.sent == []
+    complete = make_feed_item(5, {"type": "sndSent", "sndProgress": "complete"})
+    await handlers.feed_status(ctx, statuses(complete))
+    await handlers.feed_status(ctx, statuses(complete))
+    assert api.sent == [(["group", ROSTER_GROUP_ID], messages.FEED_SENT.format(item_id=5))]
+    assert ctx.feed_items == set()
+
+
+async def test_feed_status_reports_an_error(ctx, api):
+    ctx.feed_items.add(5)
+    error = {"type": "other", "sndError": "feed job 1 failed"}
+    await handlers.feed_status(
+        ctx, statuses(make_feed_item(5, {"type": "sndError", "agentError": error}))
+    )
+    assert api.sent == [(["group", ROSTER_GROUP_ID], messages.feed_failed(5, error))]
+    assert ctx.feed_items == set()
+
+
+async def test_feed_status_ignores_items_it_did_not_send(ctx, api):
+    ctx.feed_items.add(5)
+    complete = {"type": "sndSent", "sndProgress": "complete"}
+    other_chat = make_feed_item(5, complete)
+    other_chat["chatInfo"] = {"type": "group", "groupInfo": make_group(3, {"displayName": "c"})}
+    await handlers.feed_status(ctx, statuses(make_feed_item(6, complete), other_chat))
+    assert api.sent == []
+    assert ctx.feed_items == {5}

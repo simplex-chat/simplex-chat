@@ -146,6 +146,14 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   - before a publication: the package with its published dependencies, type-checked and unit tested in job `publish` of build.yml (docs/contributing/RELEASES.md, "MCP server release").
 - Local: `scripts/ci/scope-tests.sh mcp`.
 
+#### support-bot-light
+
+- Globs:
+  - apps/simplex-support-bot-light/**
+  - packages/simplex-chat-python/**
+- CI, in build-linux: `scope-tests.sh support-bot-light` (step "Test changed scopes"): the Python library of the branch and the bot installed in a virtual environment, then ruff, pyright and pytest. The tests use a fake API, without libsimplex.
+- Local: `scripts/ci/scope-tests.sh support-bot-light`.
+
 #### Scopes lacking CI tests
 
 | Scope | Paths | CI |
@@ -156,7 +164,6 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 | webrtc | packages/simplex-chat-webrtc/** | - |
 | calculator-bot | apps/simplex-calculator-bot/** | - |
 | support-bot | apps/simplex-support-bot/** | - |
-| support-bot-light | apps/simplex-support-bot-light/** | - |
 | prices | scripts/prices/** | - |
 | nft | eth/nft/** | - |
 

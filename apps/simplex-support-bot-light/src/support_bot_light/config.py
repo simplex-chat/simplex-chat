@@ -63,6 +63,7 @@ class Config:
     member_role: T.GroupMemberRole
     image: str | None = None
     health: Health | None = None
+    feed_senders: tuple[int, ...] = ()
 
 
 def load_config(path: Path) -> Config:
@@ -97,7 +98,20 @@ def load_config(path: Path) -> Config:
         member_role=role,
         image=_image(bot, path.parent),
         health=_health(raw),
+        feed_senders=_feed_senders(raw),
     )
+
+
+def _feed_senders(raw: dict[str, Any]) -> tuple[int, ...]:
+    feed = raw.get("feed", {})
+    if not isinstance(feed, dict):
+        raise ConfigError("[feed] must be a section")
+    senders = feed.get("senders", [])
+    if not isinstance(senders, list) or not all(
+        isinstance(s, int) and not isinstance(s, bool) and s > 0 for s in senders
+    ):
+        raise ConfigError(f"feed.senders must be a list of contact ids, got {senders!r}")
+    return tuple(senders)
 
 
 def _health(raw: dict[str, Any]) -> Health | None:

@@ -272,6 +272,34 @@ def test_invalid_health_settings_are_rejected(tmp_path, section):
         load_config(write(tmp_path, VALID + "\n" + section))
 
 
+def test_feed_has_no_senders_without_configuration(tmp_path):
+    assert load_config(write(tmp_path, VALID)).feed_senders == ()
+
+
+def test_feed_senders_can_be_set(tmp_path):
+    config = load_config(write(tmp_path, VALID + "\n[feed]\nsenders = [7, 12]\n"))
+    assert config.feed_senders == (7, 12)
+
+
+@pytest.mark.parametrize(
+    "section",
+    [
+        '[feed]\nsenders = "7"\n',
+        "[feed]\nsenders = [0]\n",
+        "[feed]\nsenders = [true]\n",
+        '[feed]\nsenders = ["7"]\n',
+    ],
+)
+def test_invalid_feed_senders_are_rejected(tmp_path, section):
+    with pytest.raises(ConfigError, match="feed.senders"):
+        load_config(write(tmp_path, VALID + "\n" + section))
+
+
+def test_feed_must_be_a_section(tmp_path):
+    with pytest.raises(ConfigError, match=r"\[feed\]"):
+        load_config(write(tmp_path, "feed = 7\n" + VALID))
+
+
 def test_a_missing_config_points_at_the_template(tmp_path):
     # Under Docker this is a restart loop until the operator acts, so the error
     # has to say what the action is.

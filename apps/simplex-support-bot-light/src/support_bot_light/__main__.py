@@ -49,6 +49,10 @@ def _register(bot: Bot, ctx: BotContext) -> None:
     async def _help(msg, _cmd):
         await handlers.help_cmd(ctx, msg)
 
+    @bot.on_command(commands.FEED, group_id=group_id)
+    async def _feed(msg, _cmd):
+        await handlers.feed(ctx, msg)
+
     @bot.on_event("acceptingBusinessRequest")
     async def _business(evt: CEvt.AcceptingBusinessRequest):
         await business.on_business_request(ctx, evt)
@@ -68,6 +72,10 @@ def _register(bot: Bot, ctx: BotContext) -> None:
     @bot.on_event("leftMember")
     async def _left_member(evt: CEvt.LeftMember):
         await handlers.member_gone(ctx, evt["groupInfo"]["groupId"], evt["member"])
+
+    @bot.on_event("chatItemsStatusesUpdated")
+    async def _statuses(evt: CEvt.ChatItemsStatusesUpdated):
+        await handlers.feed_status(ctx, evt)
 
 
 def startup_error(e: Exception) -> str:

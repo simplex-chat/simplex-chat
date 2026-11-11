@@ -23,3 +23,8 @@ member_role = "owner"
 # enabled = false
 host = "127.0.0.1"
 port = 8080
+
+# Contact ids allowed to send /feed <text> to every chat. A refused /feed
+# replies with the sender's contact id.
+[feed]
+senders = []

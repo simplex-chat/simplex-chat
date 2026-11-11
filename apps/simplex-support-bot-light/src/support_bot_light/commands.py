@@ -11,12 +11,14 @@ DM = "dm"
 LIST = "list"
 LEAVE = "leave"
 HELP = "help"
+FEED = "feed"
 
 COMMANDS: tuple[BotCommand, ...] = (
     BotCommand(keyword=DM, label="Add me to incoming chats"),
     BotCommand(keyword=LIST, label="Who gets invited"),
     BotCommand(keyword=LEAVE, label="Stop adding me"),
     BotCommand(keyword=HELP, label="How this works"),
+    BotCommand(keyword=FEED, label="Send to all chats", params="text"),
 )
 
 

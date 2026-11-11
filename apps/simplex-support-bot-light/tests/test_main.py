@@ -40,13 +40,13 @@ def registered(api) -> Bot:
     return bot
 
 
-def test_registers_all_four_commands(api):
+def test_registers_all_five_commands(api):
     bot = registered(api)
     keywords = [names for names, _predicate, _handler in bot._command_handlers]
-    assert keywords == [("dm",), ("list",), ("leave",), ("help",)]
+    assert keywords == [("dm",), ("list",), ("leave",), ("help",), ("feed",)]
 
 
-def test_registers_connection_and_business_events(api):
+def test_registers_connection_business_and_status_events(api):
     bot = registered(api)
     assert set(bot._event_handlers) == {
         "acceptingBusinessRequest",
@@ -54,6 +54,7 @@ def test_registers_connection_and_business_events(api):
         "contactSndReady",
         "deletedMember",
         "leftMember",
+        "chatItemsStatusesUpdated",
     }
 
 
@@ -84,7 +85,9 @@ def test_bot_profile_without_image():
     assert bot_profile(CONFIG).image is None
 
 
-@pytest.mark.parametrize("index,keyword", [(0, "dm"), (1, "list"), (2, "leave"), (3, "help")])
+@pytest.mark.parametrize(
+    "index,keyword", [(0, "dm"), (1, "list"), (2, "leave"), (3, "help"), (4, "feed")]
+)
 def test_every_command_is_scoped_to_the_roster_group(api, index, keyword):
     # A /list answered in a business chat would show the roster to a customer.
     bot = registered(api)
@@ -107,11 +110,11 @@ async def test_registered_handlers_call_the_matching_handler(api, monkeypatch):
 
         return handler
 
-    for name in ("dm", "list_roster", "leave", "help_cmd"):
+    for name in ("dm", "list_roster", "leave", "help_cmd", "feed"):
         monkeypatch.setattr(handlers, name, spy(name))
     for keywords, _predicate, handler in bot._command_handlers:
         await handler(make_group_message(api, make_member(1), f"/{keywords[0]}"), None)
-    assert called == ["dm", "list_roster", "leave", "help_cmd"]
+    assert called == ["dm", "list_roster", "leave", "help_cmd", "feed"]
 
 
 def test_a_taken_display_name_is_explained():
@@ -227,13 +230,14 @@ async def test_serve_wires_the_handlers_and_serves(api):
     bot = FakeBot(serve_api(api))
     await _serve(CONFIG, bot)
     assert bot.served == 1
-    assert len(bot._command_handlers) == 4  # nothing is delivered without these
+    assert len(bot._command_handlers) == 5  # nothing is delivered without these
     assert set(bot._event_handlers) == {
         "acceptingBusinessRequest",
         "contactConnected",
         "contactSndReady",
         "deletedMember",
         "leftMember",
+        "chatItemsStatusesUpdated",
     }
 
 
