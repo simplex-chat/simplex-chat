@@ -1,2 +1,4 @@
 data/
 .env
+config/*
+!config/config.toml.example

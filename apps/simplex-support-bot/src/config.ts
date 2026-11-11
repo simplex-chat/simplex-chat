@@ -102,23 +102,30 @@ function readConfigFile(path: string): ConfigFile {
 }
 
 function configOptionArg(path: string, key: string, value: unknown): string {
+  if (!/^[a-z][a-z_]*$/.test(key)) throw new Error(`${path}: key ${key} must be lowercase with underscores, as team_group`)
   if (key === "config") throw new Error(`${path}: config cannot be set in a config file`)
-  if (typeof value === "string" || typeof value === "number") return `--${key}=${value}`
-  if (Array.isArray(value) && value.every(v => typeof v === "string")) return `--${key}=${value.join(",")}`
+  const flag = `--${key.replaceAll("_", "-")}`
+  if (typeof value === "string" || typeof value === "number") return `${flag}=${value}`
+  if (Array.isArray(value) && value.every(v => typeof v === "string")) return `${flag}=${value.join(",")}`
   throw new Error(`${path}: ${key} must be a string, a number or a list of strings`)
 }
+
+const messageKeys = new Map(
+  (Object.keys(defaultMessages) as (keyof Messages)[]).map(field => [field.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`), field])
+)
 
 function configMessages(path: string, table: unknown): Messages {
   if (typeof table !== "object" || table === null || Array.isArray(table)) {
     throw new Error(`${path}: messages must be a table`)
   }
+  const messages = {...defaultMessages}
   for (const [key, value] of Object.entries(table)) {
-    if (!(key in defaultMessages)) {
-      throw new Error(`${path}: unknown message "${key}", known messages: ${Object.keys(defaultMessages).join(", ")}`)
-    }
-    if (typeof value !== "string") throw new Error(`${path}: message "${key}" must be a string`)
+    const field = messageKeys.get(key)
+    if (!field) throw new Error(`${path}: unknown message ${key}, known messages: ${[...messageKeys.keys()].join(", ")}`)
+    if (typeof value !== "string") throw new Error(`${path}: message ${key} must be a string`)
+    messages[field] = value
   }
-  return {...defaultMessages, ...table}
+  return messages
 }
 
 export function parseConfig(args: string[]): Config {

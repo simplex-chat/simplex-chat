@@ -1,0 +1,18 @@
+# Copy to config.toml. Keys are the command-line options in snake_case;
+# an option given on the command line takes precedence.
+team_group = "SimpleX Support Team"
+auto_add_team_members = ["1:Alice"]
+context_file = "/etc/support-bot/grok-context.yaml"
+state_file = "/data/state.json"
+db = "postgres"
+timezone = "UTC"
+
+# A message left out keeps its built-in text.
+# {hours} is 24 on weekdays and 48 at weekends in the timezone above.
+[messages]
+welcome = """
+Hello! This is a *SimpleX team* support bot - not an AI.
+Discover public groups: [simplex.chat/directory](https://simplex.chat/directory)
+
+Please ask any questions about SimpleX Chat."""
+queue = "The team will reply to your message within {hours} hours."

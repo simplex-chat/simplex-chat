@@ -2493,16 +2493,17 @@ describe("parseConfig Validation", () => {
 
     test("option values and messages are read; missing messages keep the defaults", () => {
       const path = configFile([
-        `team-group = "SimpleX Support Team"`,
-        `auto-add-team-members = ["1:Alice", "2:Bob"]`,
-        `complete-hours = 0`,
+        `team_group = "SimpleX Support Team"`,
+        `auto_add_team_members = ["1:Alice", "2:Bob"]`,
+        `complete_hours = 0`,
         `db = "postgres"`,
-        `pg-conn = "postgres://localhost/db"`,
+        `pg_conn = "postgres://localhost/db"`,
         `[messages]`,
         `welcome = """`,
         `Hello!`,
         ``,
         `Ask anything."""`,
+        `team_added_grok = "Grok helps."`,
       ].join("\n"))
       const cfg = parseConfig(["--config", path])
       expect(cfg.teamGroup).toEqual({id: 0, name: "SimpleX Support Team"})
@@ -2510,11 +2511,12 @@ describe("parseConfig Validation", () => {
       expect(cfg.completeHours).toBe(0)
       expect(cfg.db).toEqual({type: "postgres", connectionString: "postgres://localhost/db"})
       expect(cfg.messages.welcome).toBe("Hello!\n\nAsk anything.")
+      expect(cfg.messages.teamAddedGrok).toBe("Grok helps.")
       expect(cfg.messages.queue).toBe(defaultMessages.queue)
     })
 
     test("command-line options take precedence over the file, given before or after --config", () => {
-      const path = configFile(`team-group = "From file"\ntimezone = "Europe/London"`)
+      const path = configFile(`team_group = "From file"\ntimezone = "Europe/London"`)
       expect(parseConfig(["--team-group", "From CLI", "--config", path]).teamGroup.name).toBe("From CLI")
       expect(parseConfig([`--config=${path}`, "--team-group", "From CLI"]).timezone).toBe("Europe/London")
     })
@@ -2524,32 +2526,34 @@ describe("parseConfig Validation", () => {
     })
 
     test("values are validated as on the command line", () => {
-      expect(() => parseConfig(["--config", configFile(`team-group = "T"\ncomplete-hours = -1`)]))
+      expect(() => parseConfig(["--config", configFile(`team_group = "T"\ncomplete_hours = -1`)]))
         .toThrow(/--complete-hours must be a non-negative integer, got "-1"/)
-      expect(() => parseConfig(["--config", configFile(`team-group = "T"\ndb = "mysql"`)]))
+      expect(() => parseConfig(["--config", configFile(`team_group = "T"\ndb = "mysql"`)]))
         .toThrow(/Allowed choices are sqlite, postgres/)
-      expect(() => parseConfig(["--config", configFile(`team-group = "T"\nteam_group = "U"`)]))
-        .toThrow(/unknown option '--team_group=U'/)
+      expect(() => parseConfig(["--config", configFile(`team_group = "T"\nteam_grup = "U"`)]))
+        .toThrow(/unknown option '--team-grup=U'/)
     })
 
-    test("flags, nested config and non-scalar values → throw", () => {
-      expect(() => parseConfig(["--config", configFile(`team-group = "T"\ndry-run = true`)]))
-        .toThrow(/dry-run must be a string, a number or a list of strings/)
-      expect(() => parseConfig(["--config", configFile(`team-group = "T"\nconfig = "other.toml"`)]))
+    test("dashed keys, flags, nested config and non-scalar values → throw", () => {
+      expect(() => parseConfig(["--config", configFile(`team-group = "T"`)]))
+        .toThrow(/key team-group must be lowercase with underscores, as team_group/)
+      expect(() => parseConfig(["--config", configFile(`team_group = "T"\ndry_run = true`)]))
+        .toThrow(/dry_run must be a string, a number or a list of strings/)
+      expect(() => parseConfig(["--config", configFile(`team_group = "T"\nconfig = "other.toml"`)]))
         .toThrow(/config cannot be set in a config file/)
     })
 
     test("unknown or non-string messages → throw", () => {
-      expect(() => parseConfig(["--config", configFile(`team-group = "T"\n[messages]\nwelcom = "Hi"`)]))
-        .toThrow(/unknown message "welcom", known messages: welcome, queue,/)
-      expect(() => parseConfig(["--config", configFile(`team-group = "T"\n[messages]\nwelcome = 1`)]))
-        .toThrow(/message "welcome" must be a string/)
-      expect(() => parseConfig(["--config", configFile(`team-group = "T"\nmessages = "Hi"`)]))
+      expect(() => parseConfig(["--config", configFile(`team_group = "T"\n[messages]\nteamAdded = "Hi"`)]))
+        .toThrow(/unknown message teamAdded, known messages: welcome, queue, queue_grok, grok_activated, team_added,/)
+      expect(() => parseConfig(["--config", configFile(`team_group = "T"\n[messages]\nwelcome = 1`)]))
+        .toThrow(/message welcome must be a string/)
+      expect(() => parseConfig(["--config", configFile(`team_group = "T"\nmessages = "Hi"`)]))
         .toThrow(/messages must be a table/)
     })
 
     test("malformed TOML → throws", () => {
-      expect(() => parseConfig(["--config", configFile(`team-group = "unclosed`)])).toThrow()
+      expect(() => parseConfig(["--config", configFile(`team_group = "unclosed`)])).toThrow()
     })
   })
 
