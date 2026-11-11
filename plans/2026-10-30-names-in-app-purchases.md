@@ -21,10 +21,10 @@ Words:
 - The store service: SimpleX's service that sells badges and names, reached by the app over SMP and serving the site; it registers names on chain.
 - RSLV: SMP's name lookup; ROWN, from stage 2: its lookup of the names an address owns.
 - A prepaid code (`SN<length>-…`) pays for one name; a name code (`SN-…`) holds a name bought on the site.
-- Commit and reveal: a registration's transactions, the name's hash first and the name at least 60 s later, so that nobody watching the chain registers it first; the order carries the name sealed until the reveal.
+- Commit and reveal: a registration's transactions, the name's hash first and the name at least 60 s later; the order carries the name sealed until the reveal.
 - Codes-only: the service's state before the sale, when it registers names only for prepaid codes.
 - Row 1 to row 6 and N·M: the screens' journeys and screens (6.6).
-- AC: acceptance criteria (1); M: what is missing (4); D: decisions (5); P: pull requests (8), keeping earlier numbers, so P1, P31 and P40 are unused; Q: open questions (11).
+- AC: acceptance criteria (1); M: what is missing (4); D: decisions (5); P: pull requests (8), with the numbers of the plan's earlier versions; Q: open questions (11).
 
 A name's life:
 
@@ -63,7 +63,7 @@ The payments release:
 - "SimpleX names" under Advanced settings: the profile's names, Register a name, Import, Restore purchases, the recovery key.
 - Restore on a new phone from the 24 words: the app asks what each wallet account owns, until 20 unused accounts in a row.
 - A moved-in or restored name attaches to the profile's address or channel, by one link edit SimpleX pays for.
-- Changing what a name opens, to any contact or channel link, also one outside the app.
+- Changing what a name opens, to any contact or channel link, also one outside the app (Q27).
 - Giving a name to another profile.
 - Moving in a name that opens another profile's address.
 
@@ -79,7 +79,7 @@ The payments release:
 | AC1 | In the Play build, a user with no wallet finds a name, pays once with Play Billing, and the name registers for 2 years to a key of the device wallet, opening their address, shown as verified | End to end: the store service, the fake Play verifier, the fake chain node |
 | AC2 | A payment is credited once and never lost: the same request twice gives one code and one order; a request whose answer was lost, sent again, gets the same answers; a refused order keeps the payment; a name taken before the order or the registration keeps the payment for another name | Service and core tests, one per case |
 | AC3 | The one product pays for any name of 6 to 63 characters for 2 years; the service takes the years from the product, never from the client | Service test: a 6-character and a 63-character name |
-| AC4 | iOS with its payment hidden: the store purchase button is absent; the US storefront pays in the browser (row 4); every storefront takes a code; the purchase lane compiles and runs behind the switch | Previews of both storefronts; a sandbox run of the lane with the switch on |
+| AC4 | iOS with its payment hidden: the store purchase button is absent; the US storefront pays in the browser (row 4); every storefront takes a code; the purchase lane compiles and runs behind the switch | Previews of both storefronts; an iPhone in the US storefront, by hand; a sandbox run of the lane with the switch on |
 | AC5 | A site-bought name's owner code, pasted on the code sheet or arriving by link, never scanned, moves the name to the device wallet once the name opens this profile's address or channel; any other name is refused with its next step; a name left on the site shows on the profile as today | End to end: the owner code flow, the fake chain node |
 | AC6 | The app opens the store sheet only after its countdown to the sale ends and while the catalog reads open; a paid receipt is credited in every mode, its order waiting until the sale opens | Previews of the catalog's states; service test: a paid receipt credited under codes-only, its order answered `sale_closed` |
 | AC7 | A build that can't pay searches, creates the key the first time and reaches 4·2, priced from the catalog, where the user ticks the terms; "Pay in browser" opens an invoice the link names only by a prepaid code's hash; once paid, the app sees it through the code check, with or without the link back, and registers the name with that code; "Buy in browser" on 1·2 takes the same path where allowed; Google Play and iOS outside the US link nowhere to the site in the alerts, the name screen and the search | Service test: an invoice for a code's hash, found again by that hash, confirming, paid; end to end from the invoice to the registered name with no link back; previews per build and storefront, the alerts and What's New included |
@@ -107,7 +107,7 @@ The codes release meets AC5, AC8 (its store-sheet case with the payments release
 
 Read at: simplex-chat `names` ad75fe706; the store spec `sh/names-design` 158f22c7e; simplexmq d75f5686d, the pin in `cabal.project`; simplex.domains `sh/names-webapp` 5228f9d6f. `StoreService/` stands for `apps/simplex-store-service/src/StoreService/`; `webapp/` is in simplex.domains.
 
-The contract source, ens-contracts `simplex`, is outside the public repos: contract facts come from the service's code and the store spec, and 6.11's renewal rules from the names work's reading of `SimplexController.sol` and `SimplexSponsor.sol`.
+The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site's dev image pins (`webapp/dev/Dockerfile`), a submodule of `brenzi/simplex-namespace-contract`; both repos are public. Contract facts come from that source, the service's code and the store spec.
 
 ### 3.1 A name
 
@@ -199,9 +199,26 @@ The contract source, ens-contracts `simplex`, is outside the public repos: contr
 | https://github.com/simplex-chat/simplex-chat/pull/7693 registration primitives | Moved into the library (P5, P6) |
 | https://github.com/simplex-chat/simplex-chat/pull/7932 app test backend | Used by the app tests; P67 adds names to it |
 | https://github.com/simplex-chat/simplex-chat/pull/8038 scripted tests per feature, open into `names` | The app pull requests add their cases (9.1); P67 follows it |
-| https://github.com/simplex-chat/simplex-chat/pull/7561, https://github.com/simplex-chat/simplexmq/pull/1875 scan; https://github.com/simplex-chat/simplex-chat/pull/7566 wallet names model | Replaced by P3, P4, P12; by P11 |
-| To close: https://github.com/simplex-chat/simplex-chat/pull/8026 delivery plan; https://github.com/simplex-chat/simplex-chat/pull/7530 minimal registration API; https://github.com/simplex-chat/simplex-chat/pull/7390, https://github.com/simplex-chat/simplex-chat/pull/7425 CLI MVP; https://github.com/simplex-chat/simplex-chat/pull/7355, https://github.com/simplex-chat/simplex-chat/pull/7382 names v2; https://github.com/simplex-chat/simplex-chat/pull/7509 wallet for hidden profiles | Merged into this plan; its canvases are the sketches; their CLI shapes kept (D8); stealth derivation and gifts stay in the RFC; hidden profiles are refused |
-| Left out: https://github.com/simplex-chat/simplex-chat/pull/7428 blind-signed codes (section 7); outside this plan: https://github.com/simplex-chat/simplex-chat/pull/7519 stealth transfers, https://github.com/simplex-chat/simplexmq/pull/1942 names-web example | — |
+| https://github.com/simplex-chat/simplex-chat/pull/7561 scan for a wallet's names | Replaced by P12 |
+| https://github.com/simplex-chat/simplexmq/pull/1875 names an address owns | Replaced by P3, P4 |
+| https://github.com/simplex-chat/simplex-chat/pull/7566 wallet names model | Replaced by P11 |
+| https://github.com/simplex-chat/simplex-chat/pull/8091 pause name sales, with https://github.com/simplex-chat/simplex-chat/pull/8115 stacked on it, open into `names` | Once merged: P23's view and P59's invoice answer `registration_paused`, `paused` and the queue position; 1·7 reads a queued order as "This is taking longer than usual."; 4·2 reads `registration_paused` as "Names can't be ordered right now. Try again later."; P24 replaces its "a lapsed commitment ends failed" |
+| https://github.com/simplex-chat/simplex-chat/pull/8094 `//close` for a failed paid order, open into `names` | It refuses code orders, so a browser-paid code's refund stays P66's `//name-invoice`, written against it once it merges |
+| https://github.com/simplex-chat/simplex-chat/pull/8092 checkout limits, open into `names` | P59's invoices take its per-provider and per-network limits once merged |
+| https://github.com/simplex-chat/simplex-chat/pull/8100 bounded views, overdue invoices, open into `names` | P23's view names unread fields as the web's does; P59's sweep reads overdue invoices as it does |
+| https://github.com/simplex-chat/simplex-chat/pull/8097 the sites written by an export run, open into `names` | P69's and P70's site reaches a deployment through that run once merged |
+| https://github.com/simplex-chat/simplex-chat/pull/8098 group name codes, open into `names` | Group codes become 2-year codes, 10 a day; P67 issues its codes with the console's `//issue`, which it keeps |
+| https://github.com/simplex-chat/simplex-chat/pull/8026 delivery plan | To close: merged into this plan |
+| https://github.com/simplex-chat/simplex-chat/pull/7530 minimal registration API | To close: its canvases are the sketches |
+| https://github.com/simplex-chat/simplex-chat/pull/7390 CLI MVP | To close: its CLI shapes kept (D8) |
+| https://github.com/simplex-chat/simplex-chat/pull/7425 CLI MVP | To close: its CLI shapes kept (D8) |
+| https://github.com/simplex-chat/simplex-chat/pull/7355 names v2 | To close: stealth derivation and gifts stay in the RFC |
+| https://github.com/simplex-chat/simplex-chat/pull/7382 names v2 | To close: stealth derivation and gifts stay in the RFC |
+| https://github.com/simplex-chat/simplex-chat/pull/7509 wallet for hidden profiles | To close: hidden profiles are refused |
+| https://github.com/simplex-chat/simplex-chat/pull/7428 blind-signed codes | Left out (section 7) |
+| https://github.com/simplex-chat/simplex-chat/pull/7519 stealth transfers | Outside this plan |
+| https://github.com/simplex-chat/simplexmq/pull/1942 names-web example | Outside this plan |
+| https://github.com/simplex-chat/simplex-chat/pull/8114 names exporter, open into `names` | Outside this plan |
 
 ## 4. What is missing
 
@@ -444,6 +461,7 @@ The answer: `STPNamePurchase {payment, order}`. `payment`: the years and the cod
 - The controller takes the same hash once the old commitment lapsed (`commit`, `SimplexController.sol:391-396`, ens-contracts 6ccb5c52).
 - Without a reveal: the worker commits again a second past the lapse, as `fromCommitment` does today only after Try again (`Names/Worker.hs:175-184`); the view gives the new `revealAfter` and `revealBefore`, and the app reveals in the new window.
 - With a reveal: the app signs the `RegisterName` intent, and the terms acceptance whose deadline is the reveal's, with a deadline that covers the order's 5 commits: `revealBefore` plus 4 times the commitments' maximum age. The worker keeps the reveal across a re-commit while its deadline covers the new window (`servingReveal`, `Names/Worker.hs:483-501`), where `lapsedFields` drops it today; the reveal check takes a deadline at or after `revealBefore` (`checkIntent`, `Names/Reveal.hs:119-122`).
+- An acceptance the name policy no longer holds after a re-commit is relayed again, within its deadline and its 5 sends.
 - Bound: the order's 5 commits (`maxSendsPerKind`) and the signed deadline (`verifyRegisterIntent`, `Names/Registration.hs:142-147`); past either, the order fails as today, and Try again orders again at no charge.
 - Each re-commit counts in the code's commits (below).
 - https://github.com/simplex-chat/simplex-chat/pull/8091 keeps "a lapsed commitment ends failed"; P24 replaces that rule.
@@ -524,8 +542,8 @@ Otherwise the terms read as unavailable. Only test builds accept the site's loca
 - Each is checked as the site's record edits are: signer, nonce, deadline, the `from` address owning the token; for a claim, the taker being the name's offered address.
 - Moves are bounded per name per 365 days, 3 by default; a move counts once; a dry run that reverts counts nothing.
 - The commands also return the code wallet's nonce, the name's offer, the app account's nonce, and whether the name policy lists the name, with its community text.
-- The claim relay takes the app account's terms acceptance, signed with 3·1's tick: the contract makes the receiving account sign the terms on chain before ownership moves.
-- P26 reads from the contract the acceptance's typed-data form (the service has acceptance types for a registration's commitment only, `StoreService/Names/Registration.hs:104-110`) and its place: in the claim's call (two transactions a move), or relayed before it (three); row 3's diagram draws both.
+- The app account's terms acceptance, signed with 3·1's tick, is relayed between the approve and the claim: at ens-contracts 6ccb5c52 the name policy takes it in a call of its own (`acceptGeneralTermsForClaimWithSig`, `acceptCommunityTermsForClaimWithSig`, `SimplexNamePolicy.sol:325-392`) and the transfer consumes it (`consumeTransfer`, `:409-421`), so a move is three relayed transactions: approve, acceptance, claim.
+- P26 adds the claim's typed-data forms, `AcceptGeneralTermsForClaim` and `AcceptCommunityTermsForClaim` (`SimplexNamePolicy.sol:54-65`); the service has acceptance types for a registration's commitment only (`StoreService/Names/Registration.hs:104-110`).
 
 **Refunds** are made in the stores, by their rules; a registered name stays registered.
 
@@ -715,7 +733,7 @@ Rules for every screen:
 - The images show each lane's screens with their numbers and routes; where the words below differ from an image, the words below hold. A state not named here takes a listed state's words.
 - 1·4a's alternatives B and C, drawn in lane 1, are not planned. The checkout's alternative B, drawn in lane 1, is Q25.
 - Privacy disclosures stay off the checkouts: section 7 states each as a property, and P57a and P57b put them in `PRIVACY.md`. The names terms' text (https://github.com/simplex-chat/simplex-chat/pull/8002) is outside this plan.
-- The codes release: 1·1 opens 1·2 in every build, and 4·1's code-only form on iOS outside the US; 1·2 keeps the codes-only state's line and "Register with code" whatever the catalog says, and its "Buy in browser" opens the site's search for the name (`/#/?name=<label>`, 3.2), with no 1·4, where D18 allows and the catalog reads open. 1·5, 1·6, 1·10, 4·1's priced form and the rest of row 4 come with the payments release.
+- The codes release: 1·1 opens 1·2 in every build, and 4·1's code-only form on iOS outside the US; 1·2 keeps "Register with code" whatever the catalog says, with the codes-only state's line while the catalog reads codes-only and "This version registers names with a code." once it reads open; its "Buy in browser" opens the site's search for the name (`/#/?name=<label>`, 3.2), with no 1·4, where D18 allows and the catalog reads open (Q26). 1·5, 1·6, 1·10, 4·1's priced form and the rest of row 4 come with the payments release.
 
 #### Row 1, buy in the app (Google Play; iOS when its payment is on). Stage 1, except 1·4's "I already have a key"
 
@@ -754,7 +772,7 @@ Rules for every screen:
 | Hidden profile | "A hidden profile can't register a name. Unhide it, or switch to another profile." | In Register's place |
 | A desktop paired to a phone | "Use SimpleX names on the phone." | Today's Save stays |
 
-- **1·4** shows when the core reports no wallet, from 1·2's Register and "Buy in browser", 2·2's Register, 4·1's Register and 3·1's "Move into this app"; with a wallet these open the checkout (1·5, 2·3 with a code, 4·2 on row 4), or 3·2 for a move. Its text, a placeholder, is drawn; from stage 2 it reads "Your names are on a public blockchain, and this key on this device controls them. With it you get them back if you lose your phone, or move them to another device. SimpleX does not hold this key."
+- **1·4** shows when the core reports no wallet, from 1·2's Register and, from the payments release, "Buy in browser", 2·2's Register, 4·1's Register and 3·1's "Move into this app"; with a wallet these open the checkout (1·5, 2·3 with a code, 4·2 on row 4), or 3·2 for a move. Its text, a placeholder, is drawn; from stage 2 it reads "Your names are on a public blockchain, and this key on this device controls them. With it you get them back if you lose your phone, or move them to another device. SimpleX does not hold this key."
   - "Create a new key" creates the key and opens 1·4a on the same step; ‹ creates none.
   - From stage 2, "I already have a key" → 6·2, with "A phone holds one key: if you had names on another phone, enter its key first.", then the checkout once 6·3 is done.
 - **1·4a** a half-screen sheet over 1·4: iOS's sheet, full height on iOS 15; Android's modal, as for attachments.
@@ -778,7 +796,7 @@ Rules for every screen:
 
 ```mermaid
 flowchart TD
-  search["1·2, 2·2 or 4·1: Register, or Buy in browser"] -->|"a wallet exists"| next["The checkout with the terms tick (1·5, 2·3 with a code, 4·2 on row 4), or 3·2 Moving"]
+  search["1·2, 2·2 or 4·1: Register, or Buy in browser from the payments release"] -->|"a wallet exists"| next["The checkout with the terms tick (1·5, 2·3 with a code, 4·2 on row 4), or 3·2 Moving"]
   move["3·1 the tick, Move into this app"] -->|"a wallet exists"| next
   search -->|"first time: no wallet yet"| key["1·4 Create a new key"]
   move -->|"first time: no wallet yet"| key
@@ -874,7 +892,7 @@ stateDiagram-v2
   Registered --> [*]: the address or channel claims it, Play consumed, Apple finished
 ```
 
-- **1·8** as drawn; Close → the address, its name's row with the footer "Registered until 31 Dec 2028.", or the channel's info.
+- **1·8** as drawn, its card at 1·7's three-row height; Close → the address, its name's row with the footer "Registered until 31 Dec 2028.", or the channel's info.
 - **The reminder:** from the key's creation until Copy or Show on 1·4a, 1·8, 3·3 and 1·11 add "You can still save your recovery key." with "Save your key" → 1·4a, titled "Your recovery key", then back. On 1·8 it ends the notice and "Save your key" is the secondary under Close. A paired desktop shows none.
 - **1·9** the name's row under "Your SimpleX name"; alerts never appear over another screen:
 
@@ -958,8 +976,7 @@ stateDiagram-v2
   Recorded --> AgreeAgain: the terms changed
   AgreeAgain --> Recorded: ticked again
   Recorded --> Approved: approveWithSig relayed
-  Approved --> Accepted: the acceptance relayed, where the contract takes it apart (P26)
-  Approved --> Claimed: claimWithSig with the acceptance
+  Approved --> Accepted: the acceptance relayed
   Accepted --> Claimed: claimWithSig relayed
   Approved --> NotMoved: a relay failed
   Accepted --> NotMoved: a relay failed
@@ -1134,7 +1151,7 @@ stateDiagram-v2
 
 ### 6.9 iOS and Apple's test environment
 
-- The same code behind a build-time switch, as the badge buttons are at `names`: off in stage 1's release, on in the version submitted with the product.
+- The same code behind a build-time switch, as the badge buttons are at `names`: off in the payments release, on in the version submitted with the product.
 - While off, iOS is a build that can't pay (row 4): the US storefront pays in the browser; elsewhere the screen offers a code, without a search.
 - App Review's and TestFlight's purchases are test purchases, refused in production.
 - Switching on adds a second, small store-service deployment (P56), recommended in Q5:
@@ -1166,7 +1183,7 @@ stateDiagram-v2
 
 ### 6.11 Stage 3 mechanics
 
-- **Transfers to another person:** the move's relayed transactions (approve, claim, and the receiving account's acceptance where it is a transaction of its own), counted in the same allowance, 3 a year per name; the receiving account accepts the terms current for that name; refused during the grace period; sent after 1·4a's check.
+- **Transfers to another person:** the move's three relayed transactions (approve, the receiving account's acceptance, claim), counted in the same allowance, 3 a year per name; the receiving account accepts the terms current for that name; refused during the grace period; sent after 1·4a's check.
 - **Renewal:** "Add a year" one-time products, sold from the name's own screen and the expiry warning, to the owner during the term and the grace period; on desktop, F-Droid and the iOS US storefront, "Renew in browser" once the site sells it.
   - At least 365 days (`MIN_RENEWAL_DURATION`, `_renewCore`): whole years only.
   - The expiry stays at most one horizon ahead of the block: 1095 days for a paid renewal and a sponsored community name; 4015 days for another sponsored name (`_sponsoredHorizon`).
@@ -1337,9 +1354,15 @@ flowchart LR
 
 It starts now, its screens after the lead's feedback on the screens. If Q12 is answered yes, P15 also orders a name without links, and P18 skips its claim.
 
+Set up by the user first, as agents here can't:
+
+- a fork of simplex.domains for the agents' account, with their work extended to it (P47, P60, P69, P70);
+- `sx npm-ci` for simplex.domains' `webapp` (viem for the vectors, Playwright with Chromium for the site's cases) and for the namespace contract (`ENS_CONTRACTS_DIR`, which `contract-run.sh` reads);
+- `uv` in the container, for the resolver's tests (P2, P3).
+
 The dev setup, first (9.2):
 
-- P67 `ci: names on the app test backend`: a local chain with the names contracts, simplexmq's resolver on it behind a second SMP server, and the store service on that chain, on all three runners · medium · low · https://github.com/simplex-chat/simplex-chat/pull/8038
+- P67 `ci: names on the app test backend`: a local chain with the names contracts, simplexmq's resolver on it behind a second SMP server, and the store service on that chain, on all three runners; stacked on https://github.com/simplex-chat/simplex-chat/pull/8038's branch until it merges · medium · low · #8038
   - Tested: a run with `--backend` per platform: the second server resolves an available name and a seeded one from the chain; the service's code check answers an issued code unused.
 - P68 `names: point a test build at a dev store service`: `ChatConfig.storeServiceDev`, false in every shipped config, as `badgeDevRequests` (`src/Simplex/Chat.hs:78`); `/_store service <address>` sets the address for the running app, refused without it and from a paired device; the commit that sets it stays on the fork's `f/test-names-dev`, never merged · small · high
   - Tested: terminal: refused with the shipped config and from a paired device; set, a CLI client reaches a second test service at its address.
@@ -1370,7 +1393,7 @@ Names over SMP, in the store service:
   - Tested: service tests: 6.3's sizes for both; the SMP and web forms answer alike.
 - P24 `store: names over SMP — the reveal, Try again, find and another name`, with `sends_used_up` and the view reporting it; the worker commits a lapsed commitment again (6.3) · medium · high · P23
   - Tested: service tests: 6.3's sends per order; the SMP and web forms answer alike; on the fake chain node, a lapse committed again and the name then registered with no app action, with and without a stored reveal, and the order failed once its commits or its deadline run out.
-- P26 `store: names over SMP — the name code's approve and claim`: their yearly bound and chain reads; the receiving account's acceptance, in the claim's call or relayed before it, its typed-data form and place read from the contract · medium · high · P9, P23
+- P26 `store: names over SMP — the name code's approve and claim`: their yearly bound and chain reads; the receiving account's acceptance relayed between them, in the claim's typed-data forms (6.3) · medium · high · P9, P23
   - Tested: service tests with the fake chain node: each owner-code relay rule of 6.3.
 
 Ordering in the core, each tested in the terminal against the test servers, the service and the fake chain node:
@@ -1385,7 +1408,7 @@ Ordering in the core, each tested in the terminal against the test servers, the 
   - Tested: a timed-out Try again reads the view first; `commit_limit` reads Failed once the bound is raised; `sends_used_up` shows its state; taken, then another name; failed, then Try again.
 - P18 `names: claim a registered name`: the address and the channel claim it once registered · small · low · P16
   - Tested: an address and a channel each claim a registered name.
-- P20 `names: import a name code`: the code's wallet; its names read with `find` and the chain; the transfer by `approveWithSig` and `claimWithSig`, with the acceptance relayed before the claim where P26 finds it so; only a name that opens this profile's address or channel · large · high · P9, P16, P26
+- P20 `names: import a name code`: the code's wallet; its names read with `find` and the chain; the transfer by `approveWithSig`, the acceptance and `claimWithSig`; only a name that opens this profile's address or channel · large · high · P9, P16, P26
   - Tested: AC5 with a name code made as the site makes one; another address refused; changed terms before a resumed claim; recovery of a move from a restart and a suspension in each phase.
 
 The first end-to-end result follows P5, P6, P8, P9, P11, P13, P14, P15, P16, P18, P22, P23 and P24: a CLI user with a prepaid code registers a name, and the address claims it.
@@ -1394,23 +1417,25 @@ The resolver, the site and the docs:
 
 - P2 simplexmq `resolver: the terms of an available name`: the resolver reads the name policy's terms link and community list and fills `nameTerms`; name routers run a release with it; until they do, the app reads the catalog's community texts (6.3) · medium · low
   - Tested: the resolver's tests (`uv run pytest` in `scripts/resolver/service`).
-- P47 simplex.domains `webapp: Open in SimpleX on the is-yours page`: 3·0's card and button · small · low · P34
-  - Tested: the webapp's end-to-end cases for the "is yours" page.
+- P47 simplex.domains `webapp: Open in SimpleX on the is-yours page`: 3·0's card and button; the page's "tap Set SimpleX name" becomes "Get SimpleX name" · small · low · P34
+  - Tested: the webapp's end-to-end cases for the "is yours" page, in the container against the service, as `scripts/store-service/dev/contract-run.sh` runs them.
+- P69 `names: the site with Open in SimpleX`: `apps/simplex-domains` moved to P47's commit, which the service serves · small · low · P47
+  - Tested: the store service's tests in the fork's reduced build; `contract-run.sh` against the moved site, its list of cases gaining P47's.
 - P57a `docs: names through the store service`: the registrar in `docs/protocol/names-overview.md`, names data and retention in `PRIVACY.md`, the wallet RFC's hidden-profile line, as properties from section 7 · small · low · P23
   - Tested: read against section 7 in its review.
 
 The screens, after the lead's feedback on them, each tested on snapshots and the runners (9.1); each has a Swift copy, a pull request of its own after it (P39 and P41 to P45, one for each of P30 to P36a), tested on `ios-sim` the same way:
 
-- P30 `ui: search a name`: on today's name screen, the field, the checks while typing, the answer's states, the paired-desktop state, the three controls kept across states, "Register with code" and the codes release's "Buy in browser", every link of 3.4 replaced or gated by storefront; 2·2 with its uncovered-name state; 4·1 on iOS outside the US · medium · low · P11, P14, P15, P17, P68
+- P30 `ui: search a name`: on today's name screen, the field, the checks while typing, the answer's states, the paired-desktop state, the three controls kept across states, "Register with code" and the codes release's "Buy in browser", every link of 3.4 replaced or gated by storefront; 2·2 with its uncovered-name state; 4·1 on iOS outside the US; Kotlin's `SnapshotTest` extended to render these screens at the largest font scale and to assert equal frames · medium · low · P11, P14, P15, P17, P68
   - Tested: runners: an available, a taken and a reserved name from the local chain; equal frames of the three controls across the states.
 - P35a `ui: the recovery key`: 1·4; 1·4a with Copy, Show and their check; the clipboard marks per platform with the desktop's Win32 binding; 1·11 with its key row and the reminder · medium · high · P30
   - Tested: runners: "Create a new key" creates one key, ‹ creates none, Show and Copy right after creation ask nothing; snapshots of 1·4a's states.
 - P32 `ui: Check your order with the terms tick`: 1·5's card, Opens row, Until row, terms block with its community line and its sheet, and "Use a code"; 2·3; 1·5's Pay is wired to the store in P37 and P46 · medium · low · P30, P35a; follows Q25
   - Tested: runners: 2·3's button off until ticked, the order signed with the ticked kind; snapshots of a community name and of changed terms.
-- P33 `ui: registering, done, taken and failed`: 1·7 and its states for an order with a code, 2·4, 1·9's row, the reminder on 1·8 · large · low · P16, P17, P18, P32
+- P33 `ui: registering, done, taken and failed`: 1·7 and its states for an order with a code, 2·4, 1·9's row, the reminder on 1·8; P30's snapshot extension asserting 1·7's and 1·8's frames, 1·8's card at 1·7's three-row height · large · low · P16, P17, P18, P32
   - Tested: runners: AC13 from 1·2 to 1·8 with an issued code; a name a CLI peer registers first ends at 2·4; equal frames of 1·7 and 1·8 across their states.
-- P34 `ui: the code sheet, and Bring in a name`: 2·1, opened by P30's "I have a code" and "Register with code"; 3·1; the verified link back `/name/code`, with the website's association files and page, and the release check of the manifest's hosts; 3·2 and 3·3 with the reminder; every build · large · high · P20, P30, P32, P33, P35a
-  - Tested: runners: an issued code on 2·1; the backend's name-code name moved in from 3·1 to 3·3; the routers take the verified link before connection links; the page clears the code first.
+- P34 `ui: the code sheet, and Bring in a name`: 2·1, opened by P30's "I have a code" and "Register with code"; 3·1; the verified link back `/name/code`, with the website's association files and page, the website's scope added to CI as the CI guide's "Adding CI coverage" asks, with a check that the page clears the code before any script, and the release check of the manifest's hosts; 3·2 and 3·3 with the reminder; every build · large · high · P20, P30, P32, P33, P35a
+  - Tested: runners: an issued code on 2·1; the backend's name-code name, its link first set to the app's address (9.2), moved in from 3·1 to 3·3; the routers take the verified link before connection links; the reduced build's website check.
 - P36a `ui: the expiry date` as the footer under the name's row · small · low · P11, P30
   - Tested: runners: a registered name's footer reads its expiry.
 
@@ -1418,6 +1443,7 @@ By hand, at the codes release's end:
 
 - P35a: 1·4a's device check, its exception, capture protection and the clipboard marks on an iPhone, an Android phone, Android 8, Windows and macOS: with SimpleX Lock on and off, in both modes, after a new app passcode, without a device lock, from a channel's info.
 - P34, P47: the verified link from the site's "is yours" page into the app on a phone, once the website serves the association files.
+- Google's cryptocurrency policy: whether the app is a "software wallet" (section 10), settled with Google before the release.
 - The core's Postgres tests and the query plans, on the host.
 - Claude sessions on the runners, only on the user's word.
 
@@ -1426,7 +1452,7 @@ By hand, at the codes release's end:
 It starts once Q24 is answered for the browser path, and once the deferred questions are for the store path: receipt binding (Q9), the daily cap (Q10), the Apple product type (Q8), the release of iOS payment (Q5), the console and export check (Q14). Its runner tests also need three stand-ins, each built in the pull request whose code it stands in for: the mock verifier's name purchases (P27a), opened codes paid in dev mode (P59), and the store stubs of test builds (P37, P46).
 
 - P7 `names: prepaid codes from the wallet`: the code derived from a seed and a nonce or a store reference, under the store's info string, on the existing `NamePrepaidCode`; the token; the wallet RFC's section and the crypto registry's info string · small · high
-  - Tested: vectors against viem: a code from a nonce, a code from a reference, the token.
+  - Tested: vectors: a code from a nonce, a code from a reference, the token, with HKDF from node's `crypto.hkdfSync` and the hashes from viem.
 
 The browser path:
 
@@ -1439,7 +1465,9 @@ The browser path:
 - P66 `store: the operator command for a browser payment`: `//name-invoice` as in 6.3; the refund record and its migration on both backends · small · high · P59, P65
   - Tested: service tests: each branch of the refund diagram (6.3), one refund per part of a payment.
 - P60 simplex.domains `webapp: the invoice for a code, and Payment received`: 4·3 and 4·4 as in 6.6 and 6.8 · medium · high · P59
-  - Tested: the webapp's end-to-end cases for 4·3 and 4·4.
+  - Tested: the webapp's end-to-end cases for 4·3 and 4·4, in the container against the webapp's mock service.
+- P70 `names: the site with the invoice for a code`: `apps/simplex-domains` moved to P60's commit, which the service serves · small · low · P60, P69
+  - Tested: the store service's tests in the fork's reduced build; `contract-run.sh` against the moved site.
 - P62 `names: pay in the browser`: the browser code's info string and the reference, with vectors; `/_name browser` as in 6.8, its record and migration on both backends · medium · high · P7, P15, P16, P22, P58, P59
   - Tested: terminal with the fake chain node and the fake BTCPay: each rule of 6.8's "The code", "Close", "The app notices payment" and "ask until"; the code made on 4·2 with nothing recorded, the same code while the order waits, "Remove order" dropping it; the drafts holding the reference and the second hash, never the code; AC7 with no link back.
 - P61 `ui: pay in the browser, and a paid order's screens`: 1·2's priced states; 4·1 priced from the catalog; 4·2, its waiting state with "Remove order" and its three other states; 1·7's paid states that store payments share, and 1·10; 1·9's rows; 1·11's "Payment" row; the drafts with the reference and the second hash; the verified link back `/name/paid`, routed to the waiting order; its Swift copy P63 · large · low · P30, P32, P33, P34, P35a, P62
@@ -1458,9 +1486,9 @@ The store path:
 - P19 `names: pay with a store receipt, in one request`: the purchase record; the code and token before the sheet; the signed order kept and sent with the receipt; resends after a lost answer; the size check; the answers to a used or revoked receipt · large · high · P7, P16, P17, P27b
   - Tested: terminal with the fake verifiers: each rule of 6.3's repeats and sizes on the core's side; 6.5's open-purchase, token and hidden-profile rules; recovery of a purchase from a restart and a suspension in each phase; a credited "Not confirmed" purchase shown without a restart.
 - P37 `android: the Play purchase lane`: first the badge lane skips name products; then the product, 1·5's Pay and 1·6, pending purchases, the store-only states of 1·7, the store-account lines, acknowledge and consume; a test switch for products and purchases, false in every shipped build, as `useBadgeTestProducts` (`BadgeStore.kt:102`) · medium · high · P19, P35a, P61
-  - Tested: `android-emu` building the Google Play flavor on the test branch: AC1 with a stubbed purchase the mock verifier credits; each lane skips the other's products.
+  - Tested: `android-emu` building the Google Play flavor on the test branch: AC1 with a stubbed purchase the mock verifier credits; AC8's store sheet cancelled after 1·4a, the key kept and the next order skipping 1·4; each lane skips the other's products.
 - P46 `ios: the App Store purchase lane`: first the badge lane skips name products, in every build; then the lane behind the build-time switch; a test switch that makes a signed transaction the mock verifier reads, false in every shipped build · medium · high · P19, P35a, P61
-  - Tested: `ios-sim` with the build-time switch and the test switch on: a stubbed purchase from 1·5 to 1·8; each lane skips the other's products.
+  - Tested: `ios-sim` with the build-time switch and the test switch on: a stubbed purchase from 1·5 to 1·8; AC8's store sheet cancelled after 1·4a, as on Android; each lane skips the other's products.
 - P35c `ui: the chat console, a database export and migration ask with the lock off` (Q14); its Swift copy P64 · small · high · P35a
   - Tested: snapshots of the prompts; on devices by hand (below).
 - P57b `docs: payment linking`: the stores and payment linking in `PRIVACY.md` and `docs/protocol/names-overview.md`, as properties from section 7 · small · low · P27c
@@ -1471,6 +1499,7 @@ By hand, at the payments release's end:
 - P37: a Play test purchase by a licence tester, on a build from the internal track.
 - P46: an Apple sandbox run of 6.5's undocumented cases, the switch on, with 6.3's size of a real transaction and the longest short link the app makes.
 - P59, P60: a card payment in Stripe's test mode and a Bitcoin payment through BTCPay on a test network, through the page.
+- P63: row 4 on an iPhone in the US storefront with iOS payment hidden, on a test build: 1·2's "Buy in browser" and 4·1 reach 4·2 and open its invoice (AC4).
 - P35c: Q14's checks on devices, with the lock off and in passcode mode, desktop's floating console included.
 - P37, P46, by the operator: each store's product as 6.2 sets it.
 - The operator's chain operation M13 (`setPrices`, one base price), before the sale.
@@ -1478,7 +1507,7 @@ By hand, at the payments release's end:
 
 ### Stage 2
 
-P3, P4, P10 and P12 can start at any time.
+P3, P4 and P10 can start at any time; P12 once P19 is in, which its token case needs.
 
 - P3 simplexmq `resolver: the names an address owns`: `/v2/owned-by/<address>` · medium · low
   - Tested: the resolver's tests.
@@ -1486,14 +1515,14 @@ P3, P4, P10 and P12 can start at any time.
   - Tested: simplexmq's server, client and agent tests.
 - P10 `wallet: restore from the recovery phrase`: `/_wallet import`, refused where a wallet exists and from a paired device, the counter set past the accounts found, the shown-words record set · medium · high
   - Tested: terminal: each refusal; the counter past the accounts found.
-- P12 `wallet: find the names a phrase owns`: the scan over ROWN with a gap limit, a start index, progress events and a stop; an `ArchiveConfig` field set only by the database import screen, never by device migration, kept in preferences until the next start, so "Look for your names again" asks before registering · large · high · P4, P10
-  - Tested: terminal against the local simplexmq: 6.10's scan rules; a reinstall recovering an open purchase by its token without "Restore purchases"; AC10.
+- P12 `wallet: find the names a phrase owns`: the scan over ROWN with a gap limit, a start index, progress events and a stop; an `ArchiveConfig` field set only by the database import screen, never by device migration, kept in preferences until the next start, so "Look for your names again" asks before registering · large · high · P4, P10, P19
+  - Tested: terminal against the local simplexmq: 6.10's scan rules; a reinstall recovering an open purchase by its token without "Restore purchases".
 - P25 `store: names over SMP — the record edit` · small · high · P22
   - Tested: service tests: the SMP and web forms answer alike.
 - P21 `names: set what a name opens`: the relayed record edit, the edits left this year · medium · high · P9, P25
   - Tested: terminal: AC11's edit, to this profile's address and to a link outside the app, within the yearly allowance.
-- P48 `names: attach a name on move or restore`: one relayed edit to this profile's address or channel; moving in a name that opens something else · small · high · P20, P21
-  - Tested: terminal: a moved-in name that opens something else attaches with one edit.
+- P48 `names: attach a name on move or restore`: one relayed edit to this profile's address or channel; moving in a name that opens something else · small · high · P12, P20, P21
+  - Tested: terminal: a moved-in name that opens something else attaches with one edit; AC10, the names the 24 words find each attached with one edit.
 - P49 `names: give a name to another profile`: the account rebound, the record re-pointed · small · high · P21
   - Tested: terminal: the account rebound, the record re-pointed.
 - P29 `ui: the names hub`: the Advanced settings row; the empty and full hub; its paired-desktop state; a name's own screen; the key row; Restore purchases with the lanes' part; Import with "Bought on the web" · medium · high · P30, P35a, P36a, P37
@@ -1538,7 +1567,7 @@ By hand, at stage 3's end: a renewal bought in each store's test environment.
 - The core: its CLI form and a terminal test, in the container, against the test servers; a test that needs the store service starts it with names on the fake chain node, its client set to the service's address (P22's harness).
 - The store service: its tests with the fake Play and App Store verifiers, the fake BTCPay and Stripe and the fake chain node (`tests/Bots/StoreService/Fake*.hs`), on Postgres too in the fork's reduced build (`test-store-postgres`).
 - simplexmq and its resolver: their tests, in simplexmq's clone. A simplex-chat pull request that needs an unmerged simplexmq change is tested in the container against that clone (`use-local-simplexmq`), and on the runners once simplex-chat/simplexmq has the change.
-- The site: the webapp's end-to-end cases.
+- The site: the webapp's end-to-end cases, in the container once `sx npm-ci` has run for `webapp`: all of them against the webapp's mock service, and those that pay nothing against the store service with `contract-run.sh`.
 - The apps:
   - snapshot previews, references committed (iOS `previewScenes()` in `SimpleX Snapshots`; Kotlin `SnapshotTest.kt` up to the largest font scale), of every screen and state of 6.6, the store-account lines and the hub's rows: light and dark; shortest and longest names, 1·7 and 3·1 with 63 characters; smallest and largest widths; largest text size; storefronts in and outside the US; one list layout;
   - equal frames, asserted by the snapshot tests, of 1·2's three controls across its states, and of 1·7's main button, stages and card across its states and 1·8, with and without the reminder, at the default and largest text sizes;
@@ -1566,8 +1595,9 @@ flowchart LR
   - simplexmq's resolver (`scripts/resolver/service/snrc-resolve.py`, at the commit `cabal.project` pins) on that chain, behind a second SMP server whose names role asks it; the first names server and `names-resolver.py` stay for the cases that use them;
   - the store service on that chain, configured as `scripts/store-service/dev/contract-run.sh` configures it; codes issued with `//issue name` in `--run-cli` before it starts;
   - a name held by a name code, registered through the site's order API by a script that signs as the site does, with viem from the webapp's dependencies;
+  - a command of that script that the test runs before 3·1: with the name code's wallet it signs an edit of the name's link to the address the test passes, and relays it through `POST /api/name/records`;
   - the service's address, the second server's address and the codes, written to the work folder.
-- The test build: the commit on `f/test-names-dev` sets `storeServiceDev` (P68) and the local chain's id, addresses and namespace; the test's setup types `/_store service <address>` in the chat console. The payments release adds to that commit the store test switches (P37, P46), iOS's build-time switch, the Google Play flavor for `android-emu`, and the local service's names site as the browser path's site.
+- The test build: the commit on `f/test-names-dev` sets `storeServiceDev` (P68), the local chain's id, addresses and namespace, and `simplexNameSaleStart` in the past in both apps (`UserAddressView.swift:818`, `SetSimplexNameView.kt:33`), so the countdown has ended and the store sheet, "Buy in browser" and row 4 open before 12 Dec 2026; the test's setup types `/_store service <address>` in the chat console. The payments release adds to that commit the store test switches (P37, P46), iOS's build-time switch, the Google Play flavor for `android-emu`, and the local service's names site as the browser path's site.
 - The payments release adds to the backend's service `[dev] accept_unverified_store_receipts = on`, whose mock verifier credits the test builds' purchases (P27a), and `[dev] pay_opened_codes_after_seconds` (P59).
 
 ## 10. Risks
@@ -1576,7 +1606,7 @@ Besides those 6.5's sandbox run settles, section 7 states, and the questions lea
 
 - The wallet's known limit 5: a database restored from an older backup can reuse an account, so two names share an owner address and are linked publicly; stage 2's "Look for your names again" covers a database imported on the app's database screen, not a file restored outside the app.
 - One price on chain: until `setPrices` holds one, a short name costs the registration budget more than the store takes.
-- The contract source is private: a registration one day under the 730-day minimum, refused, joins the store's end-to-end tests; the renewal rules are rechecked when stage 3 is built.
+- The deployed contracts' commit is unconfirmed against 6ccb5c52, which this plan read: a registration one day under the 730-day minimum, refused, joins the store's end-to-end tests; P26's acceptance and 6.11's renewal rules are rechecked against the deployed commit.
 - Store policy: Apple allows in-app purchase "to sell and sell services related to non-fungible tokens (NFTs), such as minting, listing, and transferring", and viewing them "provided that NFT ownership does not unlock features or functionality within the app" (3.1.1); Google requires the Tokenized Digital Asset marking and declaration; whether a key-holding app is a "software wallet" under Google's cryptocurrency policy is for the names work to settle before the codes release, the first to hold the key ("my app is a non-custodial software wallet").
 - Refund abuse after registration: a day's loss is at most the daily cap, 50 store-paid registrations by default, each its chain price and gas; watched by hand in the stores' reports.
 
@@ -1584,8 +1614,9 @@ Besides those 6.5's sandbox run settles, section 7 states, and the questions lea
 
 Each line: the question, then the answer this plan builds on; approving the plan approves building on these answers, and a different answer changes the pull requests that follow it. Options and their costs are on the decision page.
 
-Answer first; the codes release starts without them, Q12's answer changes P15, P18 and the codes screens, and Q24's starts the browser path:
+Answer first; the codes release starts without them, Q12's answer changes P15, P18 and the codes screens, Q26's changes P30, and Q24's starts the browser path:
 
+- **Q26.** In the codes release, "Buy in browser" opens the site's search for the name, with no key step (1·4) or checkout in the app, against the agreed route "1·4 the first time, then 4·2"? → Yes: 4·2 needs the payments release's service and core, and without the site's search F-Droid, desktop and iOS in the US have no way to buy a name until then.
 - **Q24.** Pay in the browser as row 4 draws it? → Yes, as drawn (6.8): the site's ways to pay, a link with only the code's hash, the name straight into the app's wallet, support refunds per Q20 and Q21.
 - **Q12.** Register a name that opens nothing in v1? → The plan builds on no (D15); the recommendation is yes, with a stage-1 list of the profile's names (5·2 without Register, Import and Restore purchases).
 
@@ -1614,6 +1645,7 @@ The other questions:
 - **Q21.** Detail of Q24. A phone lost after paying in the browser? → A card payment refunded through `//name-invoice` after the 30-day conditions; crypto isn't. A different answer that changes the nonce is due before P62.
 - **Q22.** Deferred. Ask for the device's check on Copy and Show straight after the key is created? → The plan builds on no (1·4a's exception); the recommendation is yes.
 - **Q25.** The terms on the checkout: the obligations under the tick (A), or one tick line whose link opens a half-screen sheet with the obligations and Agree (B)? → A (6.6's terms block).
+- **Q27.** Stage 2's "Set what it opens" takes "any link": a contact or channel link, also one outside the app, or a web address too? → Contact and channel links: the service's record edit takes a name's contact and channel records only and refuses any other value (`recordKinds`, `EIInvalidLink`, `StoreService/Web/Names/Records.hs:58, 75-76`), so a web address is new work in the service.
 
 ## 12. Out of scope (noticed, not doing)
 
