@@ -11,10 +11,17 @@ The Storage screen in Developer options shows the size of each top-level entry o
 ## Fix
 
 - `StorageView` takes the directories to list, `storageRoots()` by default.
-- An entry that is a directory and not a symlink keeps its `Path` from `Files.newDirectoryStream`; its row opens `StorageView` for that directory.
-- The rows of `appFilesDir`, `tmpDir`, `remoteHostsDir` and `databaseExportDir` do not open; `rootUsage` takes this list as `closedDirs`.
-- Each screen keeps its listing in its `ModalData`; Back shows the parent's listing without walking it again.
+- For an entry that is a directory and not a symlink, `EntryUsage.dir` is set to its `Path` from `Files.newDirectoryStream`; a tap on its row opens `StorageView` for that directory.
+- The rows of `appFilesDir`, `tmpDir`, `remoteHostsDir` and `databaseExportDir` are not clickable; this list is the default of the `closedDirs` parameter of `rootUsage`.
+- The listing of each screen is stored in its `ModalData` under "usage"; after Back, the parent's listing is shown without a new walk.
 - `rootUsage`, `RootUsage` and `EntryUsage` are `internal`; `StorageViewTest` passes its own `closedDirs`.
+
+```mermaid
+flowchart LR
+  D["Developer tools: Storage"] -->|showModal| R["StorageView(storageRoots())"]
+  R -->|tap on a folder row| F["StorageView(listOf(dir))"]
+  F -->|tap on a folder row| F
+```
 
 ## Scope
 
