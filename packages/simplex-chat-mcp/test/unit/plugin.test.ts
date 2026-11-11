@@ -1,6 +1,5 @@
-import {execFileSync, spawn} from "child_process"
-import {mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync} from "fs"
-import {tmpdir} from "os"
+import {spawn} from "child_process"
+import {readFileSync} from "fs"
 import {join} from "path"
 import {configVariables, defaultConfig} from "../../src/config"
 
@@ -47,32 +46,9 @@ describe("plugin", () => {
     for (const event of ["UserPromptSubmit", "Stop", "PostModelSwitch"]) expect(hooks[event]).toEqual([{hooks: [{type: "command", command: cli("hook turn"), async: true}]}])
   })
 
-  it("ships the build, the dependency lock and the plugin files in the package", () => {
-    expect(packageJson.files).toEqual(["dist", "npm-shrinkwrap.json", "README.md", ".claude-plugin", ".mcp.json", "hooks", "plugin"])
-  })
-
-  it("packs production dependencies only, restores the files after the pack, and heals a pack that failed after the strip", () => {
-    expect(packageJson.scripts.prepack).toMatch(/ && node scripts\/strip-dev\.js$/)
-    expect(packageJson.scripts.postpack).toBe("node scripts/strip-dev.js --restore")
-    const dir = mkdtempSync(join(tmpdir(), "simplex-mcp-strip-"))
-    try {
-      const manifest = {name: "p", version: "1.0.0", dependencies: {a: "^1"}, devDependencies: {b: "^1"}}
-      const lock = {name: "p", lockfileVersion: 3, packages: {"": {name: "p", dependencies: {a: "^1"}, devDependencies: {b: "^1"}}, "node_modules/a": {version: "1.0.0"}, "node_modules/b": {version: "1.0.0", dev: true}}}
-      writeFileSync(join(dir, "package.json"), JSON.stringify(manifest))
-      writeFileSync(join(dir, "npm-shrinkwrap.json"), JSON.stringify(lock))
-      const strip = (...args: string[]) => execFileSync(process.execPath, [join(__dirname, "../../scripts/strip-dev.js"), ...args], {cwd: dir})
-      const files = () => ({manifest: JSON.parse(readFileSync(join(dir, "package.json"), "utf8")), lock: JSON.parse(readFileSync(join(dir, "npm-shrinkwrap.json"), "utf8"))})
-      const stripped = {manifest: {name: "p", version: "1.0.0", dependencies: {a: "^1"}}, lock: {name: "p", lockfileVersion: 3, packages: {"": {name: "p", dependencies: {a: "^1"}}, "node_modules/a": {version: "1.0.0"}}}}
-      strip()
-      expect(files()).toEqual(stripped)
-      strip()
-      expect(files()).toEqual(stripped)
-      strip("--restore")
-      expect(files()).toEqual({manifest, lock})
-      expect(readdirSync(dir).sort()).toEqual(["npm-shrinkwrap.json", "package.json"])
-    } finally {
-      rmSync(dir, {recursive: true, force: true})
-    }
+  it("ships the build, its bundled dependencies and the plugin files in the package, without a lockfile", () => {
+    expect(packageJson.files).toEqual(["dist", "README.md", ".claude-plugin", ".mcp.json", "hooks", "plugin"])
+    expect(packageJson.bundleDependencies).toBe(true)
   })
 
   it("allows a tool call", async () => {

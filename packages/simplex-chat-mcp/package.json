@@ -7,7 +7,6 @@
   },
   "files": [
     "dist",
-    "npm-shrinkwrap.json",
     "README.md",
     ".claude-plugin",
     ".mcp.json",
@@ -22,8 +21,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "prepack": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc && node scripts/strip-dev.js",
-    "postpack": "node scripts/strip-dev.js --restore",
+    "prepack": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
     "test": "jest test/unit",
     "test:e2e": "tsc && jest test/e2e"
   },
@@ -34,6 +32,7 @@
     "qrcode": "^1.5",
     "simplex-chat": "^7.1.0-beta.10.2"
   },
+  "bundleDependencies": true,
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^22.0.0",
