@@ -545,6 +545,8 @@ test("--display-name names the profile and the agent control chat", async () => 
   expect(await renamed).toBeDefined()
 }, 600_000)
 
+const clockNote = /^[◐◓◑◒] [a-z ]+ · \d+:\d\d\nchecking the clock$/
+
 test("typing: a live status in an approved direct chat, its note, the answer that deletes it, the stop, and the startup deletion", async () => {
   const alice = await personIn("typing", "Alice")
   const agent = await agentIn("typing")
@@ -575,7 +577,7 @@ test("typing: a live status in an approved direct chat, its note, the answer tha
   const ofStatus: ItemCheck = ci => ci.chatItem.meta.itemId === status.meta.itemId && ci.chatItem.meta.itemLive === true
   expect(await alice.chat.wait("chatItemUpdated", ({chatItem}) => ofStatus(chatItem), 10_000)).toBeDefined()
 
-  const noted = updated(alice.chat, ci => ofStatus(ci) && ci.chatItem.meta.itemText.startsWith("checking the clock\n"))
+  const noted = updated(alice.chat, ci => ofStatus(ci) && clockNote.test(ci.chatItem.meta.itemText))
   expect((await agent.client.tool("send", {chat, text: "checking the clock", live: true})).result).toEqual({status: "live", chat})
   await noted
   expect(logLines).toContain(`Note to contact Alice (${chat}): checking the clock`)
@@ -605,4 +607,40 @@ test("typing: a live status in an approved direct chat, its note, the answer tha
   const thirdDeleted = deleted(alice.chat, third)
   await agent.start()
   await thirdDeleted
+}, 600_000)
+
+test("typing in an approved group: a live status, its note, and its deletion after the answer", async () => {
+  const alice = await personIn("typing-group", "Alice")
+  const agent = await agentIn("typing-group")
+  await agent.start()
+  const controlId = await joinAsOwner(alice)
+
+  const trail = await alice.chat.apiNewGroup(alice.user.userId, {displayName: "Trail", fullName: ""})
+  const trailLink = await alice.chat.apiCreateGroupLink(trail.groupId, T.GroupMemberRole.Member)
+  const joinCard = received(alice.chat, textStarts("I want to connect to group Trail, as myself."))
+  const joining = agent.client.tool("connect", {target: trailLink, idle: 2})
+  await approve(alice, controlId, joinCard)
+  const group = (await joining).result.chat as string
+  const approval = received(alice.chat, textStarts("Approved for group Trail"))
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, controlId], `/approve ${group} all`)
+  expect((await approval).chatItem.meta.itemText).toBe(`Approved for group Trail (${group}) by Alice. /'revoke ${group}'`)
+
+  const inTrail: ItemCheck = ci => ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === trail.groupId
+  const firstStatus = received(alice.chat, ci => inTrail(ci) && ci.chatItem.meta.itemLive === true)
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, trail.groupId], "what time is it?")
+  const prompted = await agent.client.tool("receive", {chat: group, wait: 30, typing: true})
+  expect(prompted.result.messages.map(({text}: {text: string}) => text)).toEqual(["what time is it?"])
+  const status = (await firstStatus).chatItem
+  expect(status.meta.itemText).toBe("◐ thinking · 0:00")
+
+  const noted = updated(alice.chat, ci => ci.chatItem.meta.itemId === status.meta.itemId && ci.chatItem.meta.itemLive === true && clockNote.test(ci.chatItem.meta.itemText))
+  expect((await agent.client.tool("send", {chat: group, text: "checking the clock", live: true})).result).toEqual({status: "live", chat: group})
+  await noted
+  expect(logLines).toContain(`Note to group Trail (${group}): checking the clock`)
+
+  const answer = received(alice.chat, ci => inTrail(ci) && ci.chatItem.meta.itemText === "12:00")
+  const statusDeleted = deleted(alice.chat, status.meta.itemId)
+  expect((await agent.client.tool("send", {chat: group, text: "12:00", wait: 0})).result).toMatchObject({status: "done", chat: group})
+  expect((await answer).chatItem.meta.itemLive).not.toBe(true)
+  await statusDeleted
 }, 600_000)

@@ -492,6 +492,7 @@ export class AgentTools {
   private readonly rejectedFiles = new Set<number>()
   private readonly fileDescriptions = new Changes()
   private describedFiles = 0
+  private readonly leaving = new Set<string>()
   readonly statuses: Statuses
 
   constructor(private readonly agent: Agent, private readonly mode: Mode) {
@@ -825,7 +826,8 @@ export class AgentTools {
   }
 
   private statusRefusal(chat: string, chatInfo: T.ChatInfo): string | undefined {
-    return ["bot", "agent", "channel"].includes(chatSubject(chatInfo).kind) ? `live: ${chat} is a channel or a chat with a bot or an agent; status messages are shown in chats with people, groups and business chats.`
+    return this.leaving.has(chat) ? unknownChat(chat).message
+      : ["bot", "agent", "channel"].includes(chatSubject(chatInfo).kind) ? `live: ${chat} is a channel or a chat with a bot or an agent; status messages are shown in chats with people, groups and business chats.`
       : this.mode === "host" ? "live: status messages are shown in mode requests only; this server runs in mode host."
       : this.agent.actions.lost ? `live: ${lostMessage}`
       : this.agent.standingApprover(chatInfo, "messages") === undefined ? `live: your owner's approval of all messages to ${chat} is required; list shows approved: true for such chats.`
@@ -986,12 +988,17 @@ export class AgentTools {
   }
 
   async leaveChat(chat: string): Promise<void> {
-    await this.statuses.end(chat)
-    if (chat.startsWith("@")) await this.agent.chat.apiDeleteChat(T.ChatType.Direct, chatNumber(chat), {type: "full", notify: true})
-    else {
-      const {groupInfo} = (await getChat(this.agent.chat, chat, 0)).chatInfo as T.ChatInfo.Group
-      if (memberCurrentOrPending(groupInfo.membership)) await this.agent.chat.apiLeaveGroup(groupInfo.groupId)
-      await this.agent.chat.apiDeleteChat(T.ChatType.Group, groupInfo.groupId, {type: "full", notify: true})
+    this.leaving.add(chat)
+    try {
+      await this.statuses.end(chat)
+      if (chat.startsWith("@")) await this.agent.chat.apiDeleteChat(T.ChatType.Direct, chatNumber(chat), {type: "full", notify: true})
+      else {
+        const {groupInfo} = (await getChat(this.agent.chat, chat, 0)).chatInfo as T.ChatInfo.Group
+        if (memberCurrentOrPending(groupInfo.membership)) await this.agent.chat.apiLeaveGroup(groupInfo.groupId)
+        await this.agent.chat.apiDeleteChat(T.ChatType.Group, groupInfo.groupId, {type: "full", notify: true})
+      }
+    } finally {
+      this.leaving.delete(chat)
     }
     rmSync(chatFolder(this.agent.data, chat, "forwarded"), {recursive: true, force: true})
   }

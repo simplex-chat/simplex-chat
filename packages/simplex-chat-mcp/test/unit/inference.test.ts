@@ -67,6 +67,10 @@ function awake(slots: object[] = []): {[path: string]: Answer} {
   return {"/props": json(200, {is_sleeping: false}), "/slots": json(200, slots)}
 }
 
+function swapFor(proxy: Upstream): Promise<Upstream> {
+  return upstream({"/running": running({model: "qwen3-coder-30b", state: "ready", proxy: proxy.url})})
+}
+
 function slot(id: number, task: number, decoded: number, prompt = 0): object {
   return {id, id_task: task, is_processing: true, n_prompt_tokens_processed: prompt, next_token: [{n_decoded: decoded}]}
 }
@@ -107,7 +111,7 @@ describe("inference poller", () => {
 
   it("computes tokens/s between two polls for slots that keep their task, and sums them", async () => {
     const proxy = await upstream(awake([slot(0, 7, 10), slot(1, 8, 5)]))
-    const swap = await upstream({"/running": running({model: "qwen3-coder-30b", state: "ready", proxy: proxy.url})})
+    const swap = await swapFor(proxy)
     const poll = poller(swap.url)
     const now = jest.spyOn(Date, "now").mockReturnValue(10_000)
     expect(await poll()).toEqual({type: "output", model: "qwen3-coder-30b"})
@@ -124,11 +128,27 @@ describe("inference poller", () => {
   it("returns prompt with the tokens read, and idle when no slot processes", async () => {
     const idle = {id: 2, id_task: 3, is_processing: false, n_prompt_tokens_processed: 512, next_token: [{n_decoded: 40}]}
     const proxy = await upstream(awake([slot(0, 7, 0, 4096), slot(1, 8, 0, 2048), idle]))
-    const swap = await upstream({"/running": running({model: "qwen3-coder-30b", state: "ready", proxy: proxy.url})})
+    const swap = await swapFor(proxy)
     const poll = poller(swap.url)
     expect(await poll()).toEqual({type: "prompt", model: "qwen3-coder-30b", tokens: 6144})
     proxy.answers["/slots"] = json(200, [idle])
     expect(await poll()).toEqual({type: "idle"})
+  })
+
+  it("ignores fractional and negative counts", async () => {
+    const proxy = await upstream(awake([slot(0, 7, 0, 4096), slot(1, 8, 2.5, 512.5), slot(2, 9, -3, -1024)]))
+    const swap = await swapFor(proxy)
+    expect(await poller(swap.url)()).toEqual({type: "prompt", model: "qwen3-coder-30b", tokens: 4096})
+  })
+
+  it("reads the first 64 slots of a proxy", async () => {
+    const idle = (id: number): object => ({...slot(id, id, 0), is_processing: false})
+    const proxy = await upstream(awake([...Array.from({length: 64}, (_, id) => idle(id)), slot(64, 70, 12)]))
+    const swap = await swapFor(proxy)
+    const poll = poller(swap.url)
+    expect(await poll()).toEqual({type: "idle"})
+    proxy.answers["/slots"] = json(200, [...Array.from({length: 63}, (_, id) => idle(id)), slot(63, 70, 12)])
+    expect(await poll()).toEqual({type: "output", model: "qwen3-coder-30b"})
   })
 
   it("names the model when one model is busy, and omits it with two", async () => {
@@ -143,7 +163,7 @@ describe("inference poller", () => {
 
   it("skips /slots of a sleeping server, and returns loading for a 503 of /props or /slots", async () => {
     const proxy = await upstream({"/props": json(200, {is_sleeping: true}), "/slots": json(200, [slot(0, 7, 12)])})
-    const swap = await upstream({"/running": running({model: "qwen3-coder-30b", state: "ready", proxy: proxy.url})})
+    const swap = await swapFor(proxy)
     const poll = poller(swap.url)
     expect(await poll()).toEqual({type: "idle"})
     expect(requested(proxy)).toEqual(["GET /props"])
@@ -219,12 +239,17 @@ describe("inference poller", () => {
       response.writeHead(302, {location: "/elsewhere"})
       response.end()
     }
-    await expect(poll()).rejects.toThrow(`GET ${swap.url}/running: `)
+    await expect(poll()).rejects.toThrow(failure("unexpected redirect"))
     expect(requested(swap)).not.toContain("GET /elsewhere")
     const refused = await refusedUrl()
-    await expect(poller(refused)()).rejects.toThrow(`GET ${refused}/running: `)
+    await expect(poller(refused)()).rejects.toThrow(new Error(`GET ${refused}/running: connect ECONNREFUSED ${new URL(refused).host}`))
     swap.answers["/running"] = () => undefined
     await expect(poll()).rejects.toThrow(failure("no answer within 1 s"))
+  })
+
+  it("folds the control characters of a failure text into spaces", async () => {
+    jest.spyOn(globalThis, "fetch").mockRejectedValueOnce(new TypeError("fetch failed", {cause: new Error("bad\u001b]52;c;eA==\u0007header\r\nvalue")}))
+    await expect(poller("http://127.0.0.1:8080")()).rejects.toThrow(new Error("GET http://127.0.0.1:8080/running: bad ]52;c;eA== header value"))
   })
 
   it("gives all requests of a poll one deadline of 1 s", async () => {
@@ -262,7 +287,7 @@ describe("inference poller", () => {
 
   it("requests only GET /running, /props and /slots", async () => {
     const proxy = await upstream(awake([slot(0, 7, 12)]))
-    const swap = await upstream({"/running": running({model: "qwen3-coder-30b", state: "ready", proxy: proxy.url})})
+    const swap = await swapFor(proxy)
     await poller(swap.url, "secret")()
     expect([...requested(swap), ...requested(proxy)]).toEqual(["GET /running", "GET /props", "GET /slots"])
   })

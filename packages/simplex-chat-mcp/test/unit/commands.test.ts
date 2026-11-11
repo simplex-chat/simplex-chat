@@ -6,8 +6,9 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Action, Actions, Mode, NewAction, ToolError} from "../../src/actions"
 import {Control, cardText, parseCommand} from "../../src/control"
+import {ExitError} from "../../src/log"
 import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
-import {OwnerEntry, waitForStopMessages} from "../../src/serve"
+import {OwnerEntry, ServeOptions, startServer, waitForStopMessages} from "../../src/serve"
 import {AgentTools} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -1005,5 +1006,23 @@ describe("wait at the stop", () => {
       "Stopping: sending 1 cancelled card and 2 status deletions, up to 10 s. Ctrl-C to stop now.",
     ])
     expect(jest.getTimerCount()).toBe(0)
+  })
+})
+
+describe("inference key at the start", () => {
+  afterEach(() => {
+    delete process.env.SIMPLEX_MCP_INFERENCE_KEY
+  })
+
+  it("refuses a key with a line break, a space or a non-ASCII character with exit code 2, without the key in the text, before the data folder is created", async () => {
+    const folder = join(data, "inference-key")
+    const options: ServeOptions = {name: "agent", data: folder, dataGiven: true, approve: "requests", expireHours: 23, resetOwners: false, newToken: false, port: 5226, qrCode: "small", stopWait: 10, inference: "http://127.0.0.1:8080"}
+    for (const key of ["secret\nkey", "secret key", "sécret"]) {
+      process.env.SIMPLEX_MCP_INFERENCE_KEY = key
+      const error = await startServer(options).catch((reason: unknown) => reason)
+      expect(error).toBeInstanceOf(ExitError)
+      expect([(error as ExitError).message, (error as ExitError).code]).toEqual(["SIMPLEX_MCP_INFERENCE_KEY: visible ASCII characters expected.", 2])
+      expect(existsSync(folder)).toBe(false)
+    }
   })
 })

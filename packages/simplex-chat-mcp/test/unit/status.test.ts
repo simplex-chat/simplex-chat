@@ -109,7 +109,7 @@ describe("status message", () => {
     expect(chat.updates).toHaveLength(49)
   })
 
-  it("ranks labels: inference states, waiting for approval, using TOOL, working, thinking", async () => {
+  it("ranks labels: inference states, waiting for approval, using the latest running TOOL, working, thinking", async () => {
     let state: InferenceState | undefined = {type: "output", model: "qwen3-coder-30b", rate: 31}
     const {chat, statuses, pending} = statusesWith({inference: async () => state})
     const endDownload = statuses.startCall("download")
@@ -124,7 +124,15 @@ describe("status message", () => {
     endDownload()
     state = {type: "idle"}
     await jest.advanceTimersByTimeAsync(3_000)
-    expect(chat.updates.map(({text}) => labelOf(text))).toEqual(["generating with `qwen3-coder-30b`, 31 tokens/s", "waiting for approval", "using download", "working"])
+    const endFirst = statuses.startCall("download")
+    statuses.startCall("list")
+    const endLatest = statuses.startCall("download")
+    endLatest()
+    await jest.advanceTimersByTimeAsync(3_000)
+    statuses.startCall("download")
+    endFirst()
+    await jest.advanceTimersByTimeAsync(3_000)
+    expect(chat.updates.map(({text}) => labelOf(text))).toEqual(["generating with `qwen3-coder-30b`, 31 tokens/s", "waiting for approval", "using download", "working", "using list", "using download"])
     const unpolled = statusesWith()
     unpolled.statuses.startCall("receive")
     unpolled.statuses.start("@4")
@@ -207,22 +215,22 @@ describe("status message", () => {
     expect([chat.sent, chat.deletedItems]).toEqual([[], []])
   })
 
-  it("shows a note above the line at once, above the frozen line later, and refuses it at the 59th update", async () => {
+  it("shows a note under the line at once, under the frozen line later, and refuses it at the 59th update", async () => {
     const {chat, statuses} = statusesWith()
     statuses.start("@4")
     await jest.advanceTimersByTimeAsync(1_000)
     statuses.show("@4", "Reading the file…")
     await jest.advanceTimersByTimeAsync(0)
-    expect(texts(chat)).toEqual(["◐ thinking · 0:00", "Reading the file…\n◓ thinking · 0:01"])
+    expect(texts(chat)).toEqual(["◐ thinking · 0:00", "◓ thinking · 0:01\nReading the file…"])
     await jest.advanceTimersByTimeAsync(2_500)
-    expect(texts(chat).at(-1)).toBe("Reading the file…\n◑ thinking · 0:03")
+    expect(texts(chat).at(-1)).toBe("◑ thinking · 0:03\nReading the file…")
     await jest.advanceTimersByTimeAsync(600_000)
-    expect(texts(chat).at(-1)).toBe(`Reading the file…\n${frozen}`)
+    expect(texts(chat).at(-1)).toBe(`${frozen}\nReading the file…`)
     for (let n = 51; n <= 59; n++) {
       statuses.show("@4", `Step ${n}`)
       await jest.advanceTimersByTimeAsync(0)
     }
-    expect(texts(chat).at(-1)).toBe(`Step 59\n${frozen}`)
+    expect(texts(chat).at(-1)).toBe(`${frozen}\nStep 59`)
     expect(chat.updates).toHaveLength(58)
     expect(() => statuses.show("@4", "Step 60")).toThrow(new ToolError(updateLimit))
     await jest.advanceTimersByTimeAsync(300_000)
@@ -238,9 +246,9 @@ describe("status message", () => {
     statuses.show("@4", "Still reading…")
     await jest.advanceTimersByTimeAsync(0)
     expect(chat.deletedItems).toEqual([deletion(4, 500)])
-    expect(chat.sent.at(-1)).toEqual({chat: [T.ChatType.Direct, 4], messages: [{msgContent: {type: "text", text: "Still reading…\n◐ thinking · 0:00"}, mentions: {}}], live: true})
+    expect(chat.sent.at(-1)).toEqual({chat: [T.ChatType.Direct, 4], messages: [{msgContent: {type: "text", text: "◐ thinking · 0:00\nStill reading…"}, mentions: {}}], live: true})
     await jest.advanceTimersByTimeAsync(3_500)
-    expect(chat.updates.at(-1)).toEqual({chatId: 4, itemId: 501, text: "Still reading…\n◓ using download · 0:03", live: true})
+    expect(chat.updates.at(-1)).toEqual({chatId: 4, itemId: 501, text: "◓ using download · 0:03\nStill reading…", live: true})
   })
 
   it("renders nothing after a label read during which notes reached 50 updates", async () => {
@@ -259,7 +267,7 @@ describe("status message", () => {
     await jest.advanceTimersByTimeAsync(0)
     expect(chat.updates).toHaveLength(57)
     await note(59)
-    expect(texts(chat).at(-1)).toBe(`Step 59\n${frozen}`)
+    expect(texts(chat).at(-1)).toBe(`${frozen}\nStep 59`)
     expect(() => statuses.show("@4", "Step 60")).toThrow(new ToolError(updateLimit))
   })
 
@@ -290,7 +298,7 @@ describe("status message", () => {
     polling.resolve({type: "idle"})
     await jest.advanceTimersByTimeAsync(60_000)
     for (const {chat} of [duringRead, duringPoll]) {
-      expect(chat.updates).toEqual([])
+      expect(texts(chat)).toEqual(["◐ thinking · 0:00"])
       expect(chat.deletedItems).toEqual([deletion(4, 500)])
     }
   })
@@ -311,7 +319,7 @@ describe("status message", () => {
     expect([updating.chat.updates, posting.chat.updates]).toEqual([[], []])
     updating.statuses.show("@4", "Still reading…")
     await jest.advanceTimersByTimeAsync(0)
-    expect(texts(updating.chat)).toEqual(["◐ thinking · 0:00", "Still reading…\n◐ thinking · 0:00"])
+    expect(texts(updating.chat)).toEqual(["◐ thinking · 0:00", "◐ thinking · 0:00\nStill reading…"])
   })
 
   it("deletes every status at stop, returns the count of shown ones, and leaves no timer", async () => {

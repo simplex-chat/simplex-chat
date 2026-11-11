@@ -27,7 +27,7 @@ const deleteWindow = 30 * 3_600_000 - 10 * 60_000
 
 export class Statuses {
   private readonly statuses = new Map<string, Status>()
-  private readonly calls: ToolName[] = []
+  private readonly calls: {tool: ToolName}[] = []
   private lastCall = Date.now()
   private readonly endings = new Set<Promise<void>>()
   private inferenceFailed = false
@@ -36,10 +36,11 @@ export class Statuses {
   constructor(private readonly agent: Pick<Agent, "chat" | "actions" | "inference">, private readonly allowed: (chat: string) => Promise<boolean>) {}
 
   startCall(tool: ToolName): () => void {
-    this.calls.push(tool)
+    const call = {tool}
+    this.calls.push(call)
     this.lastCall = Date.now()
     return () => {
-      this.calls.splice(this.calls.indexOf(tool), 1)
+      this.calls.splice(this.calls.indexOf(call), 1)
       this.lastCall = Date.now()
     }
   }
@@ -86,7 +87,7 @@ export class Statuses {
     try {
       const ids: number[] = []
       for (let pagination: T.ChatPagination = {type: "last", count: pageSize}; ; ) {
-        const items = (await getChat(this.agent.chat, chat, pagination)).chatItems
+        const items: T.ChatItem[] = (await getChat(this.agent.chat, chat, pagination)).chatItems
         ids.push(...items.filter(item => item.content.type === "sndMsgContent" && isLive(item) && item.meta.itemDeleted === undefined && recent(item)).map(({meta}) => meta.itemId))
         if (items.length < pageSize || !recent(items[0])) break
         pagination = {type: "before", chatItemId: items[0].meta.itemId, count: pageSize}
@@ -118,7 +119,7 @@ export class Statuses {
       return false
     })
     if (!this.isCurrent(chat, status)) return
-    const idle = status.renders >= liveRenders && !this.calls.some(name => name !== "receive") && Date.now() - this.lastCall >= idleEnd
+    const idle = status.renders >= liveRenders && !this.calls.some(call => call.tool !== "receive") && Date.now() - this.lastCall >= idleEnd
     if (!shown || Date.now() - status.started >= statusLifetime || idle) return this.end(chat)
     if (status.renders > 0 && status.renders + 1 < liveRenders) {
       const label = await this.label()
@@ -143,7 +144,7 @@ export class Statuses {
   private async label(): Promise<string> {
     const state = await this.inferred()
     const waiting = this.agent.actions.pending().some(({open}) => open > 0)
-    const tool = this.calls.filter(name => name !== "receive").at(-1)
+    const tool = this.calls.filter(call => call.tool !== "receive").at(-1)?.tool
     return statusLabel(waiting, state, tool)
   }
 
