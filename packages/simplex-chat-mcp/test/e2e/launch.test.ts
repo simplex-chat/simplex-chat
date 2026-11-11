@@ -38,8 +38,10 @@ function command(template: string): string {
   return template.replaceAll("${CLAUDE_PLUGIN_ROOT}", root)
 }
 
-test("the packed package has no lockfile, so Claude Code installs nothing, and bundles exactly the production packages of package-lock.json, without development files", () => {
+test("the packed package has no lockfile, so Claude Code installs nothing, no link, which Claude Code refuses, and bundles exactly the production packages of package-lock.json, without development files", async () => {
   expect(packed.filter(path => lockfiles.includes(basename(path)))).toEqual([])
+  const {stdout: listing} = await run("tar", ["-tvzf", tarball], {maxBuffer: 16 * 1024 * 1024})
+  expect(listing.split("\n").filter(line => line !== "" && !["-", "d"].includes(line[0]))).toEqual([])
   expect([...new Set(packed.map(path => path.split("/")[0]))].sort()).toEqual([".claude-plugin", ".mcp.json", "LICENSE", "README.md", "dist", "hooks", "node_modules", "package.json", "plugin"])
   const lock = JSON.parse(readFileSync(join(packageDir, "package-lock.json"), "utf8"))
   const production = Object.keys(lock.packages).filter(path => path !== "" && !lock.packages[path].dev)
