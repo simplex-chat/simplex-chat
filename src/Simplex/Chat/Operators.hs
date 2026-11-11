@@ -115,7 +115,7 @@ data ServerOperatorConditions = ServerOperatorConditions
   deriving (Show)
 
 usageConditionsAction :: [ServerOperator] -> UsageConditions -> UTCTime -> Maybe UsageConditionsAction
-usageConditionsAction operators UsageConditions {createdAt, notifiedAt} now = do
+usageConditionsAction operators UsageConditions {notifiedAt} now = do
   let enabledOperators = filter (\ServerOperator {enabled} -> enabled) operators
   if
     | null enabledOperators -> Nothing
@@ -124,18 +124,12 @@ usageConditionsAction operators UsageConditions {createdAt, notifiedAt} now = do
          in Just $ UCAAccepted acceptedForOperators
     | otherwise ->
         let acceptForOperators = filter (not . conditionsAccepted) enabledOperators
-            deadline = conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
+            deadline = conditionsDeadline (fromMaybe now notifiedAt)
             showNotice = isNothing notifiedAt
-         in Just $ UCAReview acceptForOperators deadline showNotice
+         in Just $ UCAReview acceptForOperators (Just deadline) showNotice
 
-conditionsRequiredOrDeadline :: UTCTime -> UTCTime -> Maybe UTCTime
-conditionsRequiredOrDeadline createdAt notifiedAtOrNow =
-  if notifiedAtOrNow < addUTCTime (14 * nominalDay) createdAt
-    then Just $ conditionsDeadline notifiedAtOrNow
-    else Nothing -- required
-  where
-    conditionsDeadline :: UTCTime -> UTCTime
-    conditionsDeadline = addUTCTime (31 * nominalDay)
+conditionsDeadline :: UTCTime -> UTCTime
+conditionsDeadline = addUTCTime (31 * nominalDay)
 
 data ConditionsAcceptance
   = CAAccepted {acceptedAt :: Maybe UTCTime, autoAccepted :: Bool}
