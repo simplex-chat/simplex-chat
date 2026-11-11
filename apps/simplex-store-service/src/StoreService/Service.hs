@@ -51,9 +51,9 @@ import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, 
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, textTokenP)
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
-import StoreService.Names.Chain (newChainClient, nodeChainId)
+import StoreService.Names.Chain (ChainClient, newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, newContracts, termsLinkAllowed, termsLinks, termsOf)
+import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, newContracts, runTermsFetch, termsLinkAllowed, termsLinks, termsOf)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -120,7 +120,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.SimplexName (LabelHash (..))
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (catchOwn, catchOwn', raceAny_, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version (isCompatible)
 import System.Directory (getAppUserDataDirectory)
@@ -286,7 +286,7 @@ storeService opts serviceCfg baseCfg env = do
   waiters <- newWaiters
   -- The hooks' //revoke takes a prepaid code's turn, so the turns exist before the chat starts.
   turns <- newTurns
-  consoleContracts <- mapM newConsoleContracts (serviceCfg >>= names)
+  consoleChain <- mapM newConsoleChain (serviceCfg >>= names)
   requestEnv <- configureStoreVerifier serviceCfg env
   let groupCfg = serviceCfg >>= \ServiceConfig {group} -> group
       trackerQ_ = groupEventQ env <$ groupCfg
@@ -308,7 +308,7 @@ storeService opts serviceCfg baseCfg env = do
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts (serviceCfg >>= names),
             postStartHook = Just $ badgePostStartHook opts env,
-            preCmdHook = Just $ badgeCmdHook turns consoleContracts
+            preCmdHook = Just $ badgeCmdHook turns consoleChain
           }
   -- The reader runs from the start and must not block, since outputQ carries every chat event and a full queue stalls the core.
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> raceAny_ [readEvents cc, startLanes cc]
@@ -364,11 +364,12 @@ logNamePolicy NamesConfig {nCommunity} ct =
           True -> logNote $ "names: " <> what <> " " <> link <> ", hash " <> hex tmHash
           False -> logWarn $ "names: the name policy's " <> what <> " are not a link the service takes, so " <> sold <> " cannot be ordered: " <> link
 
--- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
+-- | The workers resume every registration in their phases, the code sweep runs at the start and then daily, and the
+-- terms fetch at the start and then hourly.
 namesLanes :: NamesEnv -> IO [IO ()]
-namesLanes ne@NamesEnv {neChain, neSender, neRecords} = do
+namesLanes ne@NamesEnv {neChain, neContracts, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neChain neSender
-  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker]
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runTermsFetch neContracts]
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do
@@ -387,7 +388,7 @@ storeServiceCLI opts serviceCfg = do
   env <- newServiceState >>= configureStoreVerifier serviceCfg
   -- This mode runs no names lanes, so only its own //revoke takes these turns.
   turns <- newTurns
-  consoleContracts <- mapM newConsoleContracts (serviceCfg >>= names)
+  consoleChain <- mapM newConsoleChain (serviceCfg >>= names)
   let eventHook _cc = \case
         Right (CEvtServiceRequest u reqId sigKey reqData) -> do
           atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
@@ -397,7 +398,7 @@ storeServiceCLI opts serviceCfg = do
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts Nothing,
             postStartHook = Just $ badgePostStartHook opts env,
-            preCmdHook = Just $ badgeCmdHook turns consoleContracts,
+            preCmdHook = Just $ badgeCmdHook turns consoleChain,
             eventHook = Just eventHook
           }
   raceAny_
@@ -411,13 +412,13 @@ shownServiceRequest reqData = case KM.lookup "request" reqData of
   Just (J.Object cmd) | Just t <- KM.lookup "type" cmd -> KM.singleton "request" $ J.object ["type" J..= t]
   _ -> KM.empty
 
-badgeCmdHook :: Turns -> Maybe Contracts -> ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
-badgeCmdHook turns contracts_ cc = \case
-  CustomChatCommand cmd -> Left <$> runBadgeCmd turns contracts_ cc cmd
+badgeCmdHook :: Turns -> Maybe (SimplexTLD, ChainClient) -> ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
+badgeCmdHook turns chain_ cc = \case
+  CustomChatCommand cmd -> Left <$> runBadgeCmd turns chain_ cc cmd
   cmd -> pure $ Right cmd
 
-runBadgeCmd :: Turns -> Maybe Contracts -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
-runBadgeCmd turns contracts_ cc cmd
+runBadgeCmd :: Turns -> Maybe (SimplexTLD, ChainClient) -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
+runBadgeCmd turns chain_ cc cmd
   | Right issueOpts <- A.parseOnly issueCmdP cmd =
       issuedReply formatBadgeCode <$> issueBadgeCode cc issueOpts
   | Right (len, years, paymentStatus) <- A.parseOnly issueNameCmdP cmd =
@@ -425,7 +426,7 @@ runBadgeCmd turns contracts_ cc cmd
   | Right code <- A.parseOnly revokeCmdP cmd = textReply <$> revokeWithTracker cc code
   | Right code <- A.parseOnly revokeNameCmdP cmd = textReply <$> revokeNameCode turns cc code
   | Right (ref, cents_) <- A.parseOnly refundCmdP cmd = textReply <$> maybe (showRefund cc ref) (refundBalanceCmd turns cc ref) cents_
-  | Right ref <- A.parseOnly closeCmdP cmd = textReply <$> maybe (pure $ Left "Names are not enabled on this service.") (\ct -> closeOrderCmd turns ct cc ref) contracts_
+  | Right ref <- A.parseOnly closeCmdP cmd = textReply <$> maybe (pure $ Left "Names are not enabled on this service.") (\chain -> closeOrderCmd turns chain cc ref) chain_
   | otherwise =
       pure $ chatCmdError $
         "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], //issue name <length "
@@ -501,11 +502,12 @@ refundBalanceCmd turns ChatController {chatStore} ref cents = do
 closeCmdP :: A.Parser T.Text
 closeCmdP = "close " *> (safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace)) <* (A.skipSpace *> A.endOfInput)
 
-newConsoleContracts :: NamesConfig -> IO Contracts
-newConsoleContracts NamesConfig {nTLD, nChain} = C.newRandom >>= (`newChainClient` nChain) >>= newContracts nTLD
+newConsoleChain :: NamesConfig -> IO (SimplexTLD, ChainClient)
+newConsoleChain NamesConfig {nTLD, nChain} = (nTLD,) <$> (C.newRandom >>= (`newChainClient` nChain))
 
-closeOrderCmd :: Turns -> Contracts -> ChatController -> T.Text -> IO (Either T.Text T.Text)
-closeOrderCmd turns ct ChatController {chatStore} ref =
+closeOrderCmd :: Turns -> (SimplexTLD, ChainClient) -> ChatController -> T.Text -> IO (Either T.Text T.Text)
+closeOrderCmd turns (tld, chain) ChatController {chatStore} ref = do
+  ct <- newContracts chatStore tld chain
   ((Right <$> closeRegistration chatStore ct turns getCurrentTime ref) `catchOwn` (pure . Left)) >>= \case
     Right (CLRefunded failedAt RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
       logNote $ "names: closed order " <> rid <> " and recorded a refund of " <> tshow rdCents <> " cents"
