@@ -10,7 +10,7 @@ import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
 import {Schedules} from "../../src/schedule"
 import {OwnerEntry, waitForCancelledCards} from "../../src/serve"
 import {AgentTools} from "../../src/tools"
-import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
+import {FakeChat, actionsWith, clockStart, contact, data, direct, dueAt, event, fakeHooks, fileItem, group, groupChat, item, member, scheduleEntry, settled, signal, user} from "./fixtures"
 
 beforeEach(() => {
   jest.spyOn(process.stdout, "write").mockImplementation(() => true)
@@ -773,7 +773,7 @@ describe("scheduled prompts", () => {
 
   it("lists the first 100 schedules and counts the others", async () => {
     const {chat, send} = await scheduling()
-    const entries = Array.from({length: 10}, (_, i) => ({cron: "0 7 * * *", prompt: `prompt ${i + 1}`, by: "Alice", byId: 3, at: "2026-11-10T08:00:00.000Z"}))
+    const entries = Array.from({length: 10}, (_, i) => scheduleEntry("0 7 * * *", `prompt ${i + 1}`))
     for (let i = 100; i < 111; i++) chat.chats.set(`@${i}`, {chatInfo: direct({...contact(i, `contact ${i}`), customData: {simplexMcpSchedules: entries}}), items: []})
     const lines = (await send(alice, "/schedules"))!.split("\n")
     expect(lines).toHaveLength(101)
@@ -797,7 +797,7 @@ describe("scheduled prompts", () => {
   })
 
   it("drops the pending prompt of a removed schedule, and makes due only the others", async () => {
-    jest.useFakeTimers({now: new Date(2026, 10, 11, 6, 59, 30)})
+    jest.useFakeTimers({now: clockStart})
     const {schedules, send} = await scheduling()
     for (const prompt of ["first", "second", "third"]) {
       await send(alice, `/schedule #2 * * * * * ${prompt}`)
@@ -848,29 +848,42 @@ describe("scheduled prompts", () => {
   })
 
   it("loads the valid schedules of the agent's chats at the start, and makes due only those of current approvers", async () => {
-    jest.useFakeTimers({now: new Date(2026, 10, 11, 6, 59, 30)})
+    jest.useFakeTimers({now: clockStart})
     const chat = agentChats()
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     directory.customData = {
       simplexMcpSchedules: [
         {cron: 7},
-        {cron: "* * * * *,", prompt: "Post the trail report.", by: "Alice", byId: 3, at: "2026-11-10T09:00:00.000Z"},
-        {cron: "* * * * *", prompt: "Search for trail shoes.", by: "Alice", byId: 3, at: "2026-11-10T08:00:00.000Z"},
+        scheduleEntry("* * * * *,", "Post the trail report.", "2026-11-10T09:00:00.000Z"),
+        scheduleEntry("* * * * *", "Search for trail shoes."),
       ],
     }
     const {groupInfo: ep} = chatInfoOf(chat, "#2") as T.ChatInfo.Group
-    ep.customData = {simplexMcpSchedules: [{cron: "* * * * *", prompt: "Read the news.", by: "Bob", byId: 7, at: "2026-11-10T09:00:00.000Z"}]}
+    ep.customData = {simplexMcpSchedules: [{...scheduleEntry("* * * * *", "Read the news.", "2026-11-10T09:00:00.000Z"), by: "Bob", byId: 7}]}
     const {control, schedules} = await controlWith(chat, actionsWith("requests", fakeHooks()))
     expect((await control.ownerCommand(alice, {keyword: "schedules", params: ""}))!.split("\n")).toEqual(["@4  1  * * * * *  Search for trail shoes.", "#2  1  * * * * *  Read the news."])
     schedules.start()
     jest.advanceTimersByTime(30_000)
     schedules.stop()
-    expect(schedules.take("@4")).toEqual([{prompt: "Search for trail shoes.", at: utcMinutes(new Date(2026, 10, 11, 7).getTime())}])
+    expect(schedules.take("@4")).toEqual([{prompt: "Search for trail shoes.", at: dueAt(7, 0)}])
+    expect(schedules.pending("#2")).toBe(0)
+  })
+
+  it("makes no prompt due after the agent loses its control chat", async () => {
+    jest.useFakeTimers({now: clockStart})
+    const {control, schedules, send} = await scheduling()
+    await send(alice, "/schedule #2 * * * * * Post the trail report.")
+    schedules.start()
+    jest.advanceTimersByTime(30_000)
+    expect(schedules.take("#2")).toEqual([{prompt: "Post the trail report.", at: dueAt(7, 0)}])
+    await control.onEvent({type: "deletedMemberUser", user, groupInfo: group(10, "agent"), member: alice, withMessages: false} as unknown as ChatEvent)
+    jest.advanceTimersByTime(60_000)
+    schedules.stop()
     expect(schedules.pending("#2")).toBe(0)
   })
 
   it("drops the schedules of a chat that an owner's /leave leaves", async () => {
-    jest.useFakeTimers({now: new Date(2026, 10, 11, 6, 59, 30)})
+    jest.useFakeTimers({now: clockStart})
     const {schedules, send} = await scheduling()
     await send(alice, "/schedule #2 * * * * * Post the trail report.")
     schedules.start()

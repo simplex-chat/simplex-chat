@@ -142,7 +142,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   hasApprover(memberId: number): boolean {
-    return this.approvers().some(({groupMemberId}) => groupMemberId === memberId)
+    return !this.actions.lost && this.approvers().some(({groupMemberId}) => groupMemberId === memberId)
   }
 
   saveCounter(nextAction: number): Promise<void> {

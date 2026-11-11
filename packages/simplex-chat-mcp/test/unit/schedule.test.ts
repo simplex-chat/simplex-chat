@@ -1,12 +1,12 @@
-import {utcMinutes} from "../../src/messages"
-import {ScheduleEntry, Schedules, cronError} from "../../src/schedule"
+import {Schedules, cronError} from "../../src/schedule"
+import {clockStart, dueAt, scheduleEntry} from "./fixtures"
 
 let logLines: string[]
 
 beforeEach(() => {
   logLines = []
   jest.spyOn(process.stdout, "write").mockImplementation(text => (logLines.push(String(text).trimEnd()), true))
-  jest.useFakeTimers({now: new Date(2026, 10, 11, 6, 59, 30)})
+  jest.useFakeTimers({now: clockStart})
 })
 
 afterEach(() => {
@@ -18,19 +18,11 @@ function local(day: number, hour: number, minute: number): Date {
   return new Date(2026, 10, day, hour, minute)
 }
 
-function dueAt(hour: number, minute: number): string {
-  return utcMinutes(local(11, hour, minute).getTime())
-}
-
-function entry(cron: string, prompt = "Check the trail report.", at = "2026-11-10T08:00:00.000Z"): ScheduleEntry {
-  return {cron, prompt, by: "Alice", byId: 3, at}
-}
-
 function mismatches(cases: [string, Date, boolean][]): [string, Date, boolean][] {
   return cases.filter(([cron, time, due]) => {
     jest.setSystemTime(time.getTime() - 1)
     const schedules = new Schedules(() => true)
-    schedules.set("#2", [entry(cron)])
+    schedules.set("#2", [scheduleEntry(cron)])
     schedules.start()
     jest.advanceTimersByTime(1)
     schedules.stop()
@@ -118,7 +110,7 @@ describe("scheduled prompts", () => {
   it("checks the entries at each minute boundary of local time, makes the matching ones due, and logs each", () => {
     jest.setSystemTime(new Date(2026, 10, 11, 6, 58, 30))
     const schedules = new Schedules(() => true)
-    schedules.set("#2", [entry("* * * * *", "Read the news."), entry("0 7 * * *", "Check the trail report.", "2026-11-10T09:00:00.000Z")])
+    schedules.set("#2", [scheduleEntry("* * * * *", "Read the news."), scheduleEntry("0 7 * * *", "Check the trail report.", "2026-11-10T09:00:00.000Z")])
     schedules.start()
     jest.advanceTimersByTime(29_999)
     expect(schedules.pending("#2")).toBe(0)
@@ -136,7 +128,7 @@ describe("scheduled prompts", () => {
 
   it("keeps one pending prompt per entry, with the minute it became due", () => {
     const schedules = new Schedules(() => true)
-    schedules.set("#2", [entry("* * * * *")])
+    schedules.set("#2", [scheduleEntry("* * * * *")])
     schedules.start()
     jest.advanceTimersByTime(150_000)
     expect(schedules.take("#2")).toEqual([{prompt: "Check the trail report.", at: dueAt(7, 0)}])
@@ -147,13 +139,13 @@ describe("scheduled prompts", () => {
   })
 
   it("keeps the pending prompts of the entries set again, and drops those of removed entries", () => {
-    const second = entry("* * * * *", "second", "2026-11-10T09:00:00.000Z")
+    const second = scheduleEntry("* * * * *", "second", "2026-11-10T09:00:00.000Z")
     const schedules = new Schedules(() => true)
-    schedules.set("#2", [entry("* * * * *", "first"), second])
-    schedules.set("#5", [entry("* * * * *", "other chat")])
+    schedules.set("#2", [scheduleEntry("* * * * *", "first"), second])
+    schedules.set("#5", [scheduleEntry("* * * * *", "other chat")])
     schedules.start()
     jest.advanceTimersByTime(30_000)
-    schedules.set("#2", [{...second}, entry("0 8 * * *", "third", "2026-11-10T10:00:00.000Z")])
+    schedules.set("#2", [{...second}, scheduleEntry("0 8 * * *", "third", "2026-11-10T10:00:00.000Z")])
     expect(schedules.take("#2")).toEqual([{prompt: "second", at: dueAt(7, 0)}])
     schedules.set("#5", [])
     expect(schedules.pending("#5")).toBe(0)
@@ -163,7 +155,7 @@ describe("scheduled prompts", () => {
   it("makes due only the entries whose author is an approver at the due minute", () => {
     const approvers = new Set([3])
     const schedules = new Schedules(memberId => approvers.has(memberId))
-    schedules.set("#2", [entry("* * * * *", "by Alice"), {...entry("* * * * *", "by Bob", "2026-11-10T09:00:00.000Z"), by: "Bob", byId: 7}])
+    schedules.set("#2", [scheduleEntry("* * * * *", "by Alice"), {...scheduleEntry("* * * * *", "by Bob", "2026-11-10T09:00:00.000Z"), by: "Bob", byId: 7}])
     schedules.start()
     jest.advanceTimersByTime(30_000)
     expect(schedules.take("#2")).toEqual([{prompt: "by Alice", at: dueAt(7, 0)}])
@@ -179,7 +171,7 @@ describe("scheduled prompts", () => {
     const woken: string[] = []
     const stopListening = schedules.listen("#2", () => woken.push("#2"))
     schedules.listen("#5", () => woken.push("#5"))
-    schedules.set("#2", [entry("* * * * *")])
+    schedules.set("#2", [scheduleEntry("* * * * *")])
     schedules.start()
     jest.advanceTimersByTime(30_000)
     expect(woken).toEqual(["#2"])
@@ -192,7 +184,7 @@ describe("scheduled prompts", () => {
 
   it("keeps one timer while it runs, and none after the stop", () => {
     const schedules = new Schedules(() => true)
-    schedules.set("#2", [entry("* * * * *")])
+    schedules.set("#2", [scheduleEntry("* * * * *")])
     schedules.start()
     expect(jest.getTimerCount()).toBe(1)
     jest.advanceTimersByTime(30_000)
@@ -206,7 +198,7 @@ describe("scheduled prompts", () => {
 
   it("checks each minute once when its timer fires early, and the minute the timer was set for when it fires late", () => {
     const schedules = new Schedules(() => true)
-    schedules.set("#2", [entry("* * * * *", "every minute"), entry("3 7 * * *", "at 07:03", "2026-11-10T09:00:00.000Z")])
+    schedules.set("#2", [scheduleEntry("* * * * *", "every minute"), scheduleEntry("3 7 * * *", "at 07:03", "2026-11-10T09:00:00.000Z")])
     schedules.start()
     jest.setSystemTime(Date.now() - 5)
     jest.advanceTimersByTime(30_000)

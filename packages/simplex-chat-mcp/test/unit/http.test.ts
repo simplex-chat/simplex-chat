@@ -6,7 +6,7 @@ import {startHttp, stopHttp} from "../../src/http"
 import {ChatItemsWatch, utcMinutes} from "../../src/messages"
 import {Schedules} from "../../src/schedule"
 import {AgentTools} from "../../src/tools"
-import {FakeChat, actionsWith, contact, data, direct, fakeHooks, user} from "./fixtures"
+import {FakeChat, actionsWith, contact, data, direct, fakeHooks, scheduleEntry, user} from "./fixtures"
 
 const token = "secret-token"
 
@@ -153,7 +153,7 @@ describe("MCP", () => {
       items: {type: "object", properties: {prompt: {type: "string", description: "The prompt, written by your owner."}, at: {type: "string", description: "The minute it became due, in UTC."}}, required: ["prompt", "at"]},
     })
     expect(receive.outputSchema.required).toEqual(["chat", "messages", "more"])
-    schedules.set("@4", [{cron: "* * * * *", prompt: "Check the trail report.", by: "Alice", byId: 3, at: "2026-11-10T08:00:00.000Z"}])
+    schedules.set("@4", [scheduleEntry("* * * * *")])
     const boundary = (Math.floor(Date.now() / 60_000) + 1) * 60_000
     const now = jest.spyOn(Date, "now").mockReturnValue(boundary - 1)
     schedules.start()

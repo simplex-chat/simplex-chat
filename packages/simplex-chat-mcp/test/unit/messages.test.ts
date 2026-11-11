@@ -8,10 +8,10 @@ import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Action, Actions, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
-import {ChatItemsWatch, Collected, awaitResponses, toMessage, utcMinutes} from "../../src/messages"
+import {ChatItemsWatch, Collected, awaitResponses, toMessage} from "../../src/messages"
 import {ScheduleEntry, Schedules} from "../../src/schedule"
 import {AgentTools, classifyPlan} from "../../src/tools"
-import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
+import {FakeChat, actionsWith, clockStart, contact, data, direct, dueAt, event, fakeHooks, fileItem, group, groupChat, item, member, scheduleEntry, settled, signal, user} from "./fixtures"
 
 beforeEach(() => {
   jest.spyOn(process.stdout, "write").mockImplementation(() => true)
@@ -331,12 +331,6 @@ describe("receive", () => {
 })
 
 describe("scheduled prompts in receive", () => {
-  const at = (minute: number): string => utcMinutes(new Date(2026, 10, 11, 7, minute).getTime())
-
-  function scheduled(cron: string, prompt: string, created = "2026-11-10T08:00:00.000Z"): ScheduleEntry {
-    return {cron, prompt, by: "Alice", byId: 3, at: created}
-  }
-
   function scheduledTools(chat: FakeChat, entries: {[chat: string]: ScheduleEntry[]}): {tools: AgentTools; schedules: Schedules} {
     const schedules = new Schedules(() => true)
     for (const [ref, chatEntries] of Object.entries(entries)) schedules.set(ref, chatEntries)
@@ -344,12 +338,12 @@ describe("scheduled prompts in receive", () => {
   }
 
   it("returns the due prompts of its chat in scheduled once, with wait 0 and at once with wait, and leaves those of other chats due", async () => {
-    jest.useFakeTimers({now: new Date(2026, 10, 11, 6, 59, 30)})
+    jest.useFakeTimers({now: clockStart})
     const chat = new FakeChat()
     chat.chats.set("@4", {chatInfo: direct(contact(4, "Switchback")), items: [item(21, "Trail closed at the pass.", {type: "directRcv"})]})
     const {tools, schedules} = scheduledTools(chat, {
-      "@4": [scheduled("0 7 * * *", "Check the trail report."), scheduled("0-1 7 * * *", "Post the report.", "2026-11-10T09:00:00.000Z")],
-      "#2": [scheduled("0 7 * * *", "Read the news.")],
+      "@4": [scheduleEntry("0 7 * * *", "Check the trail report."), scheduleEntry("0-1 7 * * *", "Post the report.", "2026-11-10T09:00:00.000Z")],
+      "#2": [scheduleEntry("0 7 * * *", "Read the news.")],
     })
     schedules.start()
     jest.advanceTimersByTime(30_000)
@@ -357,25 +351,26 @@ describe("scheduled prompts in receive", () => {
       messages: [{item: 21, text: "Trail closed at the pass."}],
       more: 0,
       scheduled: [
-        {prompt: "Check the trail report.", at: at(0)},
-        {prompt: "Post the report.", at: at(0)},
+        {prompt: "Check the trail report.", at: dueAt(7, 0)},
+        {prompt: "Post the report.", at: dueAt(7, 0)},
       ],
     })
     expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toEqual({chat: "@4", messages: [], more: 0})
     jest.advanceTimersByTime(60_000)
     const {call, progress} = signal()
-    expect((await tools.call("receive", {chat: "@4", wait: 3600}, call))!.structuredContent).toEqual({chat: "@4", messages: [], more: 0, scheduled: [{prompt: "Post the report.", at: at(1)}]})
+    expect((await tools.call("receive", {chat: "@4", wait: 3600}, call))!.structuredContent).toEqual({chat: "@4", messages: [], more: 0, scheduled: [{prompt: "Post the report.", at: dueAt(7, 1)}]})
     expect(progress).toEqual([])
-    expect(schedules.take("#2")).toEqual([{prompt: "Read the news.", at: at(0)}])
+    expect(schedules.take("#2")).toEqual([{prompt: "Read the news.", at: dueAt(7, 0)}])
     schedules.stop()
   })
 
-  it("ends a waiting call when a prompt of its chat becomes due, and not when one of another chat does", async () => {
-    jest.useFakeTimers({now: new Date(2026, 10, 11, 6, 59, 30)})
+  it("ends a waiting call when a prompt of its chat becomes due, and waits while a prompt of another chat is due", async () => {
+    jest.useFakeTimers({now: clockStart})
     const chat = new FakeChat()
     chat.chats.set("@4", {chatInfo: direct(contact(4, "Switchback")), items: []})
-    const {tools, schedules} = scheduledTools(chat, {"#2": [scheduled("0 7 * * *", "Read the news.")], "@4": [scheduled("1 7 * * *", "Check the trail report.")]})
+    const {tools, schedules} = scheduledTools(chat, {"#2": [scheduleEntry("0 7 * * *", "Read the news.")], "@4": [scheduleEntry("1 7 * * *", "Check the trail report.")]})
     schedules.start()
+    jest.advanceTimersByTime(30_000)
     const {call, progress} = signal()
     const receiving = tools.call("receive", {chat: "@4", wait: 3600}, call)
     let finished = false
@@ -384,15 +379,15 @@ describe("scheduled prompts in receive", () => {
     expect(progress[0]).toMatch(/^No new messages in @4; waiting until /)
     expect([finished, schedules.pending("#2")]).toEqual([false, 1])
     await jest.advanceTimersByTimeAsync(60_000)
-    expect((await receiving)!.structuredContent).toEqual({chat: "@4", messages: [], more: 0, scheduled: [{prompt: "Check the trail report.", at: at(1)}]})
+    expect((await receiving)!.structuredContent).toEqual({chat: "@4", messages: [], more: 0, scheduled: [{prompt: "Check the trail report.", at: dueAt(7, 1)}]})
     schedules.stop()
   })
 
   it("leaves the due prompts due when the call is aborted while it marks the messages read", async () => {
-    jest.useFakeTimers({now: new Date(2026, 10, 11, 6, 59, 30)})
+    jest.useFakeTimers({now: clockStart})
     const chat = new FakeChat()
     chat.chats.set("@4", {chatInfo: direct(contact(4, "Switchback")), items: [item(21, "Trail closed at the pass.", {type: "directRcv"})]})
-    const {tools, schedules} = scheduledTools(chat, {"@4": [scheduled("0 7 * * *", "Check the trail report.")]})
+    const {tools, schedules} = scheduledTools(chat, {"@4": [scheduleEntry("0 7 * * *", "Check the trail report.")]})
     schedules.start()
     jest.advanceTimersByTime(30_000)
     const {controller, call} = signal()
@@ -403,7 +398,7 @@ describe("scheduled prompts in receive", () => {
     }
     expect(await tools.call("receive", {chat: "@4"}, call)).toBeUndefined()
     expect(schedules.pending("@4")).toBe(1)
-    expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toEqual({chat: "@4", messages: [], more: 0, scheduled: [{prompt: "Check the trail report.", at: at(0)}]})
+    expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toEqual({chat: "@4", messages: [], more: 0, scheduled: [{prompt: "Check the trail report.", at: dueAt(7, 0)}]})
     schedules.stop()
   })
 })

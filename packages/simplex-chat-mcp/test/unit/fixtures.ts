@@ -3,7 +3,8 @@ import {join} from "path"
 import {ChatResponse, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
 import {Actions, ActionHooks} from "../../src/actions"
-import {ToolCall} from "../../src/messages"
+import {ToolCall, utcMinutes} from "../../src/messages"
+import {ScheduleEntry} from "../../src/schedule"
 
 export const user = {userId: 1, profile: {displayName: "agent", peerType: "agent", profileId: 1}} as unknown as T.User
 
@@ -73,6 +74,16 @@ export function signal(): {controller: AbortController; call: ToolCall; progress
   const controller = new AbortController()
   const progress: string[] = []
   return {controller, progress, call: {signal: controller.signal, progress: message => progress.push(message)}}
+}
+
+export const clockStart = new Date(2026, 10, 11, 6, 59, 30)
+
+export function dueAt(hour: number, minute: number): string {
+  return utcMinutes(new Date(2026, 10, 11, hour, minute).getTime())
+}
+
+export function scheduleEntry(cron: string, prompt = "Check the trail report.", at = "2026-11-10T08:00:00.000Z"): ScheduleEntry {
+  return {cron, prompt, by: "Alice", byId: 3, at}
 }
 
 export interface FakeHooks {
