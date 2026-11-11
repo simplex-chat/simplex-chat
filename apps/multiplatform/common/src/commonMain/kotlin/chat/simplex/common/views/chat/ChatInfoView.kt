@@ -40,10 +40,11 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.group.ChatTTLOption
+import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.common.views.newchat.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -72,7 +73,7 @@ fun ChatInfoView(
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && currentUser != null) {
     val chatRh = chat.remoteHostId
-    val sendReceipts = remember(contact.id) { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
+    val sendReceipts = remember(contact.id, contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts) { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     val chatItemTTL = remember(contact.id) { mutableStateOf(if (contact.chatItemTTL != null) ChatItemTTL.fromSeconds(contact.chatItemTTL) else null) }
     val deletingItems = rememberSaveable(contact.id) { mutableStateOf(false) } 
 
@@ -82,8 +83,9 @@ fun ChatInfoView(
       currentUser,
       sendReceipts = sendReceipts,
       setSendReceipts = { sendRcpts ->
-        val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
-        updateChatSettings(chat.remoteHostId, chat.chatInfo, chatSettings, chatModel)
+        val chatInfo = (chatModel.getChat(chat.id) ?: chat).chatInfo
+        val chatSettings = (chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
+        updateChatSettings(chat.remoteHostId, chatInfo, chatSettings, chatModel)
         sendReceipts.value = sendRcpts
       },
       chatItemTTL = chatItemTTL,
@@ -791,8 +793,9 @@ fun ProfileDescriptionText(shortDescr: String?, description: String?, style: Tex
   val linkMode = chatModel.simplexLinkMode.value
   if (descr == null) {
     if (short != null) {
+      val parsed = parseToMarkdownText(short)
       MarkdownText(
-        short, parseToMarkdown(short), toggleSecrets = true, style = style, maxLines = 4,
+        short, parsed?.formattedText, parsed?.markdownBlocks, toggleSecrets = true, style = style, maxLines = 4,
         overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
       )
     }
@@ -801,8 +804,9 @@ fun ProfileDescriptionText(shortDescr: String?, description: String?, style: Tex
     val truncated = firstLine.length > 100
     val multiline = descr.length > firstLine.length
     if (short == null && !truncated && !multiline) {
+      val parsed = parseToMarkdownText(descr)
       MarkdownText(
-        descr, parseToMarkdown(descr), toggleSecrets = true, style = style, maxLines = 4,
+        descr, parsed?.formattedText, parsed?.markdownBlocks, toggleSecrets = true, style = style, maxLines = 4,
         overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
       )
     } else {
@@ -906,8 +910,7 @@ fun MuteButton(
   chat: Chat,
   contact: Contact
 ) {
-  val enableNtfs = remember { mutableStateOf(contact.chatSettings.enableNtfs ) }
-  val nextNtfMode by remember { derivedStateOf { enableNtfs.value.nextMode(false) } }
+  val nextNtfMode = contact.chatSettings.enableNtfs.nextMode(false)
   val disabled = !contact.ready || !contact.active
 
   InfoViewActionButton(
@@ -917,7 +920,7 @@ fun MuteButton(
     disabled = disabled,
     disabledLook = disabled,
     onClick = {
-      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNtfMode, chatModel, enableNtfs)
+      toggleNotifications(chat.remoteHostId, (chatModel.getChat(chat.id) ?: chat).chatInfo, nextNtfMode, chatModel)
     }
   )
 }
@@ -1205,12 +1208,13 @@ fun SynchronizeConnectionButtonForce(syncConnectionForce: () -> Unit) {
 }
 
 @Composable
-fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
+fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit, disabled: Boolean = false) {
   SettingsActionItem(
     if (contactVerified) painterResource(MR.images.ic_verified_user) else painterResource(MR.images.ic_shield),
     stringResource(if (contactVerified) MR.strings.view_security_code else MR.strings.verify_security_code),
     click = onClick,
     iconColor = MaterialTheme.colors.secondary,
+    disabled = disabled,
   )
 }
 
@@ -1225,7 +1229,7 @@ private fun ContactPreferencesButton(onClick: () -> Unit) {
 
 @Composable
 private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, onSelected: (SendReceipts) -> Unit) {
-  val values = remember {
+  val values = remember(currentUser.sendRcptsContacts) {
     mutableListOf(SendReceipts.Yes, SendReceipts.No, SendReceipts.UserDefault(currentUser.sendRcptsContacts)).map { it to it.text }
   }
   ExposedDropDownSettingRow(
@@ -1293,13 +1297,40 @@ fun ModalData.ChatWallpaperEditorModal(chat: Chat) {
     globalThemeUsed.value = preferred == null
     preferred ?: ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
   }
-  ChatWallpaperEditor(
-    initialTheme,
-    applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
-    globalThemeUsed = globalThemeUsed,
-    save = { applyToMode, newTheme ->
-      save(applyToMode, newTheme, chatModel.getChat(chat.id) ?: chat)
-    })
+  CompositionLocalProvider(LocalTerminalLayout provides (chat.chatInfo.activeChatLayout(chatModel.currentUser.value) == ChatLayoutMode.Terminal)) {
+    ChatWallpaperEditor(
+      initialTheme,
+      applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
+      globalThemeUsed = globalThemeUsed,
+      layoutSection = { ChatLayoutSection(chat.remoteHostId, chat.chatInfo) },
+      save = { applyToMode, newTheme ->
+        save(applyToMode, newTheme, chatModel.getChat(chat.id) ?: chat)
+      })
+  }
+}
+
+@Composable
+private fun ChatLayoutSection(rhId: Long?, chatInfo: ChatInfo) {
+  val defaultChatLayout = chatInfo.defaultChatLayout(chatModel.currentUser.value)
+  val otherLayout = otherChatLayout(defaultChatLayout)
+  val defaultSuffix = generalGetString(if (chatInfo.chatLayout == defaultChatLayout) MR.strings.chat_layout_chat_suffix else MR.strings.chat_layout_default_suffix)
+  val values = listOf(
+    null to "${chatLayoutName(defaultChatLayout)} $defaultSuffix",
+    otherLayout to chatLayoutName(otherLayout)
+  )
+  val userChatLayout = chatInfo.uiThemes?.chatLayout
+  val selection = remember(userChatLayout, otherLayout) { mutableStateOf(if (userChatLayout == otherLayout) otherLayout else null) }
+  SectionView {
+    ExposedDropDownSettingRow(
+      generalGetString(MR.strings.chat_layout),
+      values,
+      selection,
+      onSelected = { layout ->
+        selection.value = layout
+        withBGApi { setChatLayout(rhId, chatInfo, layout) }
+      }
+    )
+  }
 }
 
 suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, chat: Chat) {
@@ -1332,7 +1363,7 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
     }
     changedThemes
   } else {
-    null
+    changedThemes?.layoutOnly()
   }
   val wallpaperFilesToDelete = wallpaperFiles - changedThemes?.light?.wallpaper?.imageFile - changedThemes?.dark?.wallpaper?.imageFile
   wallpaperFilesToDelete.forEach(::removeWallpaperFile)
@@ -1343,6 +1374,19 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
         chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
       } else if (chat.chatInfo is ChatInfo.Group) {
         chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
+      }
+    }
+  }
+}
+
+private suspend fun setChatLayout(rhId: Long?, chatInfo: ChatInfo, layout: ChatLayoutMode?) {
+  val themes = chatInfo.uiThemes.withChatLayout(layout)
+  if (controller.apiSetChatUIThemes(rhId, chatInfo.id, themes)) {
+    withContext(Dispatchers.Main) {
+      if (chatInfo is ChatInfo.Direct) {
+        chatModel.chatsContext.updateChatInfo(rhId, chatInfo.copy(contact = chatInfo.contact.copy(uiThemes = themes)))
+      } else if (chatInfo is ChatInfo.Group) {
+        chatModel.chatsContext.updateChatInfo(rhId, chatInfo.copy(groupInfo = chatInfo.groupInfo.copy(uiThemes = themes)))
       }
     }
   }

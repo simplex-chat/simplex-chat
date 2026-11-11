@@ -9,7 +9,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.rememberFileChooserLauncher
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import chat.simplex.common.views.newchat.ActionButton
 import java.net.URI
 

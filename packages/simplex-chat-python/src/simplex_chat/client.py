@@ -149,6 +149,7 @@ class Client:
         profile: Profile,
         db: Db,
         confirm_migrations: MigrationConfirmation = MigrationConfirmation.YES_UP,
+        queue_size: int | None = None,
         update_profile: bool = True,
         log_contacts: bool = False,
         log_network: bool = False,
@@ -156,6 +157,7 @@ class Client:
         self._profile = profile
         self._db = db
         self._confirm_migrations = confirm_migrations
+        self._queue_size = queue_size
         self._update_profile = update_profile
         self._log_contacts = log_contacts
         self._log_network = log_network
@@ -343,7 +345,7 @@ class Client:
         # do post-start setup (profile sync; Bot adds address sync).
         # `_stop_event` is never cleared: a stop requested during startup has
         # to survive into the receive loop. A stopped client is spent.
-        self._api = await ChatApi.init(self._db, self._confirm_migrations)
+        self._api = await ChatApi.init(self._db, self._confirm_migrations, self._queue_size)
         try:
             user = await self._ensure_active_user()
             await self._api.start_chat()
@@ -362,11 +364,6 @@ class Client:
         api = self._api
         if api is None:
             return
-        if api.started:
-            try:
-                await api.stop_chat()
-            except Exception:
-                log.exception("stop_chat failed during init rollback")
         try:
             await api.close()
         except Exception:
@@ -379,13 +376,16 @@ class Client:
         if api is None:
             return
         # Null out the reference up-front so the Client appears closed even
-        # if stop_chat / close raise — otherwise `client.api` would still
+        # if close raises — otherwise `client.api` would still
         # hand back a half-shutdown controller after `async with` exits.
         self._api = None
         try:
-            await api.stop_chat()
-        finally:
             await api.close()
+        except BaseException:
+            # A failed stop leaves the store open; keep it so the caller can retry.
+            if api.initialized:
+                self._api = api
+            raise
 
     async def _post_start(self, user: T.User) -> None:
         """Hook for subclasses to add work between `start_chat` and serving.
@@ -617,7 +617,7 @@ class Client:
             # message resolve a future no one is waiting on.
             if waiter in waiters:
                 waiters.remove(waiter)
-            if not waiters:
+            if not waiters and self._reply_waiters.get(contact_id) is waiters:
                 self._reply_waiters.pop(contact_id, None)
 
     async def _receive_loop(self) -> None:

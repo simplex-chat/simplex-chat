@@ -17,9 +17,6 @@
 "Comment" = "Yorum";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "Şu anki maksimum desteklenen dosya boyutu %@ kadardır.";
-
-/* No comment provided by engineer. */
 "Database downgrade required" = "Veritabanı sürüm düşürme gerekli";
 
 /* No comment provided by engineer. */

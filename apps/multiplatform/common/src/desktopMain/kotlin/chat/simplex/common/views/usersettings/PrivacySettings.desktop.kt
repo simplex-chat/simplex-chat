@@ -3,7 +3,7 @@ package chat.simplex.common.views.usersettings
 import SectionView
 import androidx.compose.runtime.Composable
 import chat.simplex.common.model.ChatModel
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable

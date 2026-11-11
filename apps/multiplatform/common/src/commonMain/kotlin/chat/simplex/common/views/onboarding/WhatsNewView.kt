@@ -54,12 +54,15 @@ import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ServerOperator.Companion.dummyOperatorInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.BadgesView
+import chat.simplex.common.views.badges.currentShownBadge
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.common.views.usersettings.showAddShortLinkAlert
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlin.math.absoluteValue
@@ -81,7 +84,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
   }
 
   @Composable
-  fun featureDescription(icon: ImageResource?, titleId: StringResource, descrId: StringResource?, link: String?, subfeatures: List<Pair<ImageResource, StringResource>>) {
+  fun featureDescription(icon: ImageResource?, titleId: StringResource, descrId: StringResource?, link: String?, learnMoreLink: String?, subfeatures: List<Pair<ImageResource, StringResource>>) {
     @Composable
     fun linkButton(link: String) {
       val uriHandler = LocalUriHandler.current
@@ -111,7 +114,23 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
           linkButton(link)
         }
       }
-      if (descrId != null) Text(generalGetString(descrId), fontSize = 15.sp)
+      if (descrId != null) {
+        val uriHandler = LocalUriHandler.current
+        Text(
+          buildAnnotatedString {
+            append(generalGetString(descrId))
+            if (learnMoreLink != null) {
+              append(" ")
+              withLink(LinkAnnotation.Url(learnMoreLink) { uriHandler.openExternalLink(learnMoreLink) }) {
+                withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
+                  append(generalGetString(MR.strings.whats_new_learn_more))
+                }
+              }
+            }
+          },
+          fontSize = 15.sp
+        )
+      }
       for ((si, sd) in subfeatures) {
         Row(
           verticalAlignment = Alignment.CenterVertically,
@@ -181,7 +200,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
         when (feature) {
           is VersionFeature.FeatureDescription -> {
             if (feature.show) {
-              featureDescription(feature.icon, feature.titleId, feature.descrId, feature.link, feature.subfeatures)
+              featureDescription(feature.icon, feature.titleId, feature.descrId, feature.link, feature.learnMoreLink, feature.subfeatures)
             }
           }
           is VersionFeature.FeatureView -> {
@@ -272,6 +291,7 @@ private sealed class VersionFeature {
     val descrId: StringResource?,
     var subfeatures: List<Pair<ImageResource, StringResource>> = listOf(),
     val link: String? = null,
+    val learnMoreLink: String? = null,
     val show: Boolean = true
   ): VersionFeature()
 
@@ -287,6 +307,8 @@ private data class VersionDescription(
   val features: List<VersionFeature>,
   val post: String? = null,
 )
+
+private val APP_UTM_SOURCE = if (appPlatform.isAndroid) "app_android" else "app_desktop"
 
 private val versionDescriptions: List<VersionDescription> = listOf(
   VersionDescription(
@@ -948,7 +970,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
-        titleId = MR.strings.v7_0_invest,
+        titleId = MR.strings.v7_1_invest,
         view = { modalManager -> InvestInSimpleXChatView(modalManager) }
       ),
       VersionFeature.FeatureDescription(
@@ -969,7 +991,81 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       ),
     )
   ),
+  VersionDescription(
+    version = "v7.1",
+    post = null,
+    features = listOf(
+      VersionFeature.FeatureView(
+        icon = null,
+        titleId = MR.strings.v7_1_invest,
+        view = { modalManager -> InvestInSimpleXChatView(modalManager) }
+      ),
+      VersionFeature.FeatureView(
+        icon = null,
+        titleId = MR.strings.v7_1_supporter_badge_title,
+        view = { modalManager -> SupporterBadgeWhatsNew(modalManager) }
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_alternate_email,
+        titleId = MR.strings.v7_1_simplex_names,
+        descrId = MR.strings.v7_1_simplex_names_descr,
+        learnMoreLink = "https://simplex.domains/?utm_source=$APP_UTM_SOURCE"
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_bigtop_updates,
+        titleId = MR.strings.v7_1_channels,
+        descrId = MR.strings.v7_1_channels_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_outline_terminal,
+        titleId = MR.strings.v7_1_flat_layout,
+        descrId = MR.strings.v7_1_flat_layout_descr
+      ),
+    )
+  ),
 )
+
+@Composable
+private fun SupporterBadgeWhatsNew(modalManager: ModalManager) {
+  Column(Modifier.padding(bottom = 12.dp)) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      modifier = Modifier.padding(bottom = 4.dp)
+    ) {
+      Image(painterResource(MR.images.badge_supporter), stringResource(MR.strings.v7_1_supporter_badge_title), Modifier.size(24.dp))
+      Text(
+        stringResource(MR.strings.v7_1_supporter_badge_title),
+        style = MaterialTheme.typography.h4,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(bottom = 6.dp)
+      )
+    }
+    Text(
+      stringResource(MR.strings.v7_1_supporter_badge_descr),
+      fontSize = 15.sp,
+      maxLines = 10
+    )
+    if (currentShownBadge() != null) {
+      Text(stringResource(MR.strings.v7_1_supporter_badge_have), Modifier.padding(top = 6.dp), fontSize = 15.sp)
+    } else if (noShownBadge()) {
+      Text(
+        stringResource(MR.strings.v7_1_supporter_badge_get),
+        color = MaterialTheme.colors.primary,
+        fontSize = 15.sp,
+        modifier = Modifier
+          .padding(top = 6.dp)
+          .pointerHoverIcon(PointerIcon.Hand)
+          .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null
+          ) {
+            modalManager.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(modalManager, close) }
+          }
+      )
+    }
+  }
+}
 
 private val lastVersion = versionDescriptions.last().version
 
@@ -985,7 +1081,7 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
   return v != lastVersion
 }
 
-private const val WEFUNDER_URL = "https://wefunder.com/simplex.chat"
+val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=$APP_UTM_SOURCE"
 
 private const val CROWDFUNDING_CONTACT_URI = "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im"
 
@@ -1029,7 +1125,7 @@ fun crowdfundingAvailable(): Boolean {
       if (androidPlayStoreCountry.value == null) platform.androidLoadPlayStoreCountry()
     }
   }
-  return isInUs()
+  return androidPlayStoreCountry.value != null && isInUs()
 }
 
 fun isInUs(): Boolean =
@@ -1040,14 +1136,32 @@ fun isInUs(): Boolean =
 @Composable
 private fun InvestInSimpleXChatView(modalManager: ModalManager) {
   if (!crowdfundingAvailable()) return
-  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(fromSettings = false, inCenterOfWindow = crowdfundingLayout.inCenterOfWindow(modalManager), close = close) } }
+  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(showFirstImage = false, inCenterOfWindow = crowdfundingLayout.inCenterOfWindow(modalManager), close = close) } }
   Column(modifier = Modifier.padding(bottom = 12.dp)) {
     Text(
-      generalGetString(MR.strings.v7_0_invest),
+      generalGetString(MR.strings.v7_1_invest),
       style = MaterialTheme.typography.h4,
       fontWeight = FontWeight.Medium,
       modifier = Modifier.padding(bottom = 6.dp)
     )
+    if (BuildConfigCommon.SIMPLEX_ASSETS) {
+      Image(
+        painterResource(MR.images.crowdfunding_1),
+        contentDescription = null,
+        contentScale = ContentScale.FillWidth,
+        modifier = Modifier
+          .padding(top = 2.dp, bottom = 12.dp)
+          .widthIn(max = MAX_CROWDFUNDING_IMAGE_WIDTH)
+          .fillMaxWidth()
+          .clip(crowdfundingLayout.imageShape)
+          .pointerHoverIcon(PointerIcon.Hand)
+          .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = showGetStake
+          )
+      )
+    }
     Text(
       buildAnnotatedString {
         append(generalGetString(MR.strings.v7_0_invest_descr))
@@ -1065,24 +1179,6 @@ private fun InvestInSimpleXChatView(modalManager: ModalManager) {
           onClick = showGetStake
         )
     )
-    if (BuildConfigCommon.SIMPLEX_ASSETS) {
-      Image(
-        painterResource(MR.images.crowdfunding_1),
-        contentDescription = null,
-        contentScale = ContentScale.FillWidth,
-        modifier = Modifier
-          .padding(top = 8.dp)
-          .widthIn(max = MAX_CROWDFUNDING_IMAGE_WIDTH)
-          .fillMaxWidth()
-          .clip(crowdfundingLayout.imageShape)
-          .pointerHoverIcon(PointerIcon.Hand)
-          .clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = showGetStake
-          )
-      )
-    }
   }
 }
 
@@ -1115,14 +1211,14 @@ private val getStakeSlides: List<CrowdfundingSlide> = listOf(
   ),
   CrowdfundingSlide(
     MR.images.crowdfunding_4,
-    "Revenue plan: free for users, channels & businesses pay",
+    "Revenue plan: businesses & big channels pay",
     "SimpleX Chat plans to earn from the infrastructure and services that creators, businesses and large communities need as they grow.",
     "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
   ),
 )
 
 @Composable
-fun GetStakeView(fromSettings: Boolean, inCenterOfWindow: Boolean = false, close: () -> Unit) {
+fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, close: () -> Unit) {
   val uriHandler = LocalUriHandler.current
   val stopped = chatModel.chatRunning.value == false
 
@@ -1149,10 +1245,9 @@ fun GetStakeView(fromSettings: Boolean, inCenterOfWindow: Boolean = false, close
 
   ColumnWithScrollBar(Modifier.pinchZoom().padding(horizontal = DEFAULT_PADDING)) {
     // in the center of the window the page is wide enough for the title to fit on one line
-    val title = "Get a stake in\nSimpleX Chat"
+    val title = "Invest in\nSimpleX Chat"
     AppBarTitle(if (inCenterOfWindow) title.replace("\n", " ") else title, withPadding = false)
-    // What's new already shows the image of the first slide, above the link that opens this page
-    if (fromSettings) {
+    if (showFirstImage) {
       slideImage(getStakeSlides[0])
     }
     Text(
@@ -1165,7 +1260,7 @@ fun GetStakeView(fromSettings: Boolean, inCenterOfWindow: Boolean = false, close
           }
         }
       },
-      Modifier.padding(top = if (fromSettings) 8.dp else 0.dp),
+      Modifier.padding(top = if (showFirstImage) 8.dp else 0.dp),
       lineHeight = 24.sp
     )
 

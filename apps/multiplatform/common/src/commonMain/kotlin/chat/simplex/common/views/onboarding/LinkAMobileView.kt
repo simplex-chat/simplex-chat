@@ -17,7 +17,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.remote.AddingMobileDevice
 import chat.simplex.common.views.remote.DeviceNameField
 import chat.simplex.common.views.usersettings.PreferenceToggle
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable

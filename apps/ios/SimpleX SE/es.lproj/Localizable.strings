@@ -17,9 +17,6 @@
 "Comment" = "Comentario";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "El tamaño máximo de archivo admitido es %@.";
-
-/* No comment provided by engineer. */
 "Database downgrade required" = "Se requiere volver a versión anterior de la base de datos";
 
 /* No comment provided by engineer. */

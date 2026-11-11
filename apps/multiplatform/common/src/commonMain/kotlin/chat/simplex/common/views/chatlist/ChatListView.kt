@@ -36,15 +36,17 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
+import SectionItemView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.badges.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
@@ -60,6 +62,63 @@ sealed class ActiveFilter {
   data class PresetTag(val tag: PresetTagKind) : ActiveFilter()
   data class UserTag(val tag: ChatTag) : ActiveFilter()
   data object Unread: ActiveFilter()
+}
+
+private fun renewalPrice(): String? {
+  val badgeState = BadgeModel.badgeState.value ?: return null
+  val subscription = badgeState.subscription ?: return null
+  return BadgeStore.subscriptionPrice(badgeState.badgeType, subscription.planMonths)
+}
+
+private fun renewalFailure(): String {
+  val issueError = BadgeModel.badgeState.value?.issueError ?: return generalGetString(MR.strings.badges_renewal_failed_unknown)
+  return issueError.reason.text
+}
+
+@Composable
+private fun BadgeAlertBanner(title: String, subtitle: String, warning: Boolean = false) {
+  SupportSimpleXBanner(
+    title = title,
+    subtitle = subtitle,
+    warning = warning,
+    onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
+    onDismiss = { showBadgeAlertDismissAlert(title) }
+  )
+}
+
+private fun showBadgeAlertDismissAlert(title: String) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = title,
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          withBGApi { chatModel.controller.ackBadgeAlert(snooze = true) }
+        }) {
+          Text(stringResource(MR.strings.badges_remind_me_later), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          withBGApi { chatModel.controller.ackBadgeAlert(snooze = false) }
+        }) {
+          Text(stringResource(MR.strings.badges_dismiss), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    }
+  )
+}
+
+private fun showSupportSimpleXDismissAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.badges_banner_title),
+    text = generalGetString(MR.strings.badges_banner_dismiss_message),
+    onConfirm = { appPrefs.supporterBannerShown.set(true) }
+  )
 }
 
 private fun showNewChatSheet(oneHandUI: State<Boolean>) {
@@ -180,12 +239,14 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   LaunchedEffect(Unit) {
+    if (noticesShown) return@LaunchedEffect
     val showWhatsNew = shouldShowWhatsNew(chatModel)
     val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
     if (showWhatsNew || showUpdatedConditions) {
       // Requested here, so that the country is known by the time the modal opens
       platform.androidLoadPlayStoreCountry()
       delay(1000L)
+      noticesShown = true
       ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
     }
   }
@@ -739,11 +800,40 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     chatModel.appOpenUrl.value = rhId to uri
+  } else if (isAppLink(uri)) {
+    // branched on the scheme before the connection dispatch, which an app link must never reach
+    // an app link must not tear down a redemption in flight
+    if (!isBadgeLinkIssuing()) openAppLink(rhId, uri)
   } else {
     withBGApi {
       chatModel.appOpenUrlConnecting.value = true
-      planAndConnect(rhId, uri, close = null, cleanup = { chatModel.appOpenUrlConnecting.value = false })
+      planAndConnect(rhId, uri, close = { ModalManager.closeAllModalsEverywhere() }, cleanup = { chatModel.appOpenUrlConnecting.value = false })
     }
+  }
+}
+
+// the app's own scheme, for every link that is not a connection link, which stays on simplex:
+internal const val appLinkScheme = "simplexchat"
+internal const val connectionLinkScheme = "simplex"
+private const val badgeLinkPath = "/badge/code/"
+
+// the prefix of the raw text, not a parsed URI: a link that does not parse is still an app link
+fun isAppLink(uri: String): Boolean =
+  uri.startsWith("$appLinkScheme:", ignoreCase = true)
+
+fun isConnectionLink(uri: String): Boolean =
+  uri.startsWith("$connectionLinkScheme:", ignoreCase = true)
+
+// a link type added in a later version reaches this build too, so an unknown path asks for an update
+private fun openAppLink(rhId: Long?, uri: String) {
+  // a link that does not parse is dropped, as iOS never receives one; one that parses without
+  // a path, such as simplexchat:badge/code/X, is an unknown link on both platforms
+  val parsed = uriCreateOrNull(uri) ?: return
+  val path = parsed.path ?: ""
+  if (path.startsWith(badgeLinkPath)) {
+    openBadgeLink(rhId, path.removePrefix(badgeLinkPath))
+  } else {
+    AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.app_link_not_supported))
   }
 }
 
@@ -808,10 +898,10 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
             } else {
               val candidate = nameSearchCandidate(it.trim())
               connectNameCandidate.value = candidate
-              // clear the previous match immediately so the list falls back to text search during the debounce,
-              // instead of showing a stale filtered chat while the new search runs
-              searchChatFilteredBySimplexLink.value = emptySet()
               if (candidate != null) {
+                // clear the previous match immediately so the list falls back to text search during the debounce,
+                // instead of showing a stale filtered chat while the new search runs
+                searchChatFilteredBySimplexLink.value = emptySet()
                 // resolve the name locally on each keystroke, debounced; collectLatest cancels the in-flight
                 // search when the next keystroke arrives. A bare name can be a contact or a channel, so search
                 // both and filter every known chat found; drop the row only when both types are already known.
@@ -868,6 +958,7 @@ private fun ErrorSettingsView() {
 }
 
 private var lazyListState = 0 to 0
+private var noticesShown = false
 
 enum class ScrollDirection {
   Up, Down, Idle
@@ -912,6 +1003,12 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+  val supporterBannerShown = remember { appPrefs.supporterBannerShown.state }
+  val supporterBannerTapped = remember { appPrefs.supporterBannerTapped.state }
+  val getStakeBannerTapped = remember { appPrefs.getStakeBannerTapped.state }
+  val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
+  // read here rather than in the LazyColumn: it launches an effect, so it needs a composable scope
+  val crowdfunding = crowdfundingAvailable()
   val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
@@ -998,6 +1095,61 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     if (!oneHandUICardShown.value) {
       item {
         ToggleChatListCard()
+      }
+    }
+    // one slot: an alert about a badge the user paid for outranks the pitch to get one
+    val alert = bannerBadgeAlert()
+    if (alert != null) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeAlert }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          when (alert.kind) {
+            is BadgeAlertKind.SupportEnded ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_support_ended), String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText))
+            is BadgeAlertKind.IssueFailed ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_renewal_failed), renewalFailure(), warning = true)
+            is BadgeAlertKind.SubscriptionEnded ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_subscription_ended_title), String.format(stringResource(MR.strings.badges_subscription_ended_on), alert.dateText))
+            is BadgeAlertKind.PaymentIssue ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_payment_problem_title), stringResource(MR.strings.badges_payment_problem_subtitle), warning = true)
+            is BadgeAlertKind.SubscriptionCancelled ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_subscription_cancelled_title), String.format(stringResource(MR.strings.badges_stays_until), alert.dateText))
+            is BadgeAlertKind.RenewalApproaching -> {
+              val price = renewalPrice()
+              if (price != null) {
+                BadgeAlertBanner(stringResource(MR.strings.badges_renews_soon), String.format(stringResource(MR.strings.badges_renews_on_for), alert.dateText, price))
+              } else {
+                BadgeAlertBanner(stringResource(MR.strings.badges_renews_soon), String.format(stringResource(MR.strings.badges_renews_on), alert.dateText))
+              }
+            }
+            is BadgeAlertKind.PrepaidEnding, is BadgeAlertKind.Unknown -> {}
+          }
+        }
+      }
+    } else if (chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgePitch }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          SupportSimpleXBanner(
+            showDismiss = supporterBannerTapped.value,
+            onTap = {
+              appPrefs.supporterBannerTapped.set(true)
+              ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) }
+            },
+            onDismiss = ::showSupportSimpleXDismissAlert
+          )
+        }
+      }
+    } else if (chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfunding && !getStakeBannerDismissed.value) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.GetStake }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          GetStakeBanner(
+            showDismiss = getStakeBannerTapped.value && chatModel.chats.value.isNotEmpty(),
+            onTap = { openGetStake(ModalManager.start) },
+            onDismiss = { appPrefs.getStakeBannerDismissed.set(true) }
+          )
+        }
       }
     }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->

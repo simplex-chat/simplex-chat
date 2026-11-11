@@ -1,10 +1,11 @@
 ---
 title: Download SimpleX apps
-permalink: /downloads/index.html
 revision: 09.09.2024
 ---
 
 # Download SimpleX apps
+
+Download the app for your platform: https://simplex.chat/downloads/
 
 You can get the latest beta releases from [GitHub](https://github.com/simplex-chat/simplex-chat/releases).
 

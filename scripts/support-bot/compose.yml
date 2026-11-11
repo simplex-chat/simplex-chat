@@ -10,8 +10,6 @@ services:
     build:
       context: ../..
       dockerfile: scripts/support-bot/Dockerfile
-      args:
-        SIMPLEX_BACKEND: ${SIMPLEX_BACKEND:-postgres}
     network_mode: host
     restart: on-failure:5
     environment:
@@ -24,6 +22,8 @@ services:
       - "Support Team"
       - "--state-file"
       - "/data/state.json"
+      - "--db"
+      - "postgres"
       - "--pg-conn"
       - "${PG_CONN:?set PG_CONN, e.g. postgres://simplex@127.0.0.1/simplex_support_bot}"
       - "--context-file"

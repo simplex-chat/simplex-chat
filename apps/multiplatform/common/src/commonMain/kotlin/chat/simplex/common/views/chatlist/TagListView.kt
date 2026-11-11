@@ -37,7 +37,7 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chat.item.ReactionIcon
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*

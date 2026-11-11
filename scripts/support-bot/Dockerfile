@@ -78,7 +78,6 @@ RUN --mount=type=cache,target=/root/.cabal \
 # --------------------------------------------------------------------------- #
 FROM node:${NODE}-bookworm-slim AS build
 
-ARG SIMPLEX_BACKEND
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -86,10 +85,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=libsimplex /libs /opt/simplex/libs
-# Needed by the bot's install too: npm re-runs the linked library's preinstall,
-# which downloads the released libs without it.
-ENV SIMPLEX_LIBS_DIR=/opt/simplex/libs
-ENV SIMPLEX_BACKEND=${SIMPLEX_BACKEND}
 
 WORKDIR /src
 COPY packages/simplex-chat-client/types/typescript packages/simplex-chat-client/types/typescript
@@ -101,6 +96,7 @@ COPY packages/simplex-chat-nodejs packages/simplex-chat-nodejs
 RUN cd packages/simplex-chat-nodejs && \
     npm install --no-audit --no-fund && \
     npm install --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript && \
+    npx node-gyp rebuild && \
     npx tsc && \
     cp src/simplex.* dist/
 
@@ -119,7 +115,6 @@ RUN npm run build && npm test
 # --------------------------------------------------------------------------- #
 FROM node:${NODE}-bookworm-slim AS runtime
 
-ARG SIMPLEX_BACKEND
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -130,14 +125,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # keeps the host directory's, which then has to be owned by uid 1000.
 RUN mkdir -p /data && chown node:node /data && chmod 0700 /data
 
+COPY --from=build /opt/simplex/libs /opt/simplex/libs
 COPY --from=build --chown=node:node /src /src
+ENV SIMPLEX_LIBS_DIR=/opt/simplex/libs \
+    SIMPLEX_ADDON_PATH=/src/packages/simplex-chat-nodejs/build/Release/simplex.node
 
 USER node
 WORKDIR /src/apps/simplex-support-bot
 
 ENV NODE_ENV=production
-# Read by detectBackend(); must match the libsimplex built above.
-ENV SIMPLEX_BACKEND=${SIMPLEX_BACKEND}
 # Raised: single API responses grow with the number of chats.
 ENV NODE_OPTIONS=--max-old-space-size=8192
 

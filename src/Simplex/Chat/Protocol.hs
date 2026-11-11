@@ -56,6 +56,7 @@ import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme (ChatLayout)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1, decompressedSize)
@@ -87,12 +88,14 @@ import Simplex.Messaging.Version hiding (version)
 -- 18 - relay web capabilities (2026-05-31)
 -- 19 - group roster (2026-06-18)
 -- 20 - p2p group member keys for signing (2026-07-26)
+-- 21 - command keywords with any characters (2026-09-27)
+-- 22 - owner-signed relay invitations, group invitations via member connections (2026-10-10)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 20
+currentChatVersion = VersionChat 22
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -139,6 +142,12 @@ groupRosterVersion = VersionChat 19
 -- members sign messages in p2p groups; member keys are distributed for verification
 groupMemberKeyVersion :: VersionChat
 groupMemberKeyVersion = VersionChat 20
+
+anyTextCommandsVersion :: VersionChat
+anyTextCommandsVersion = VersionChat 21
+
+groupInvVersion :: VersionChat
+groupInvVersion = VersionChat 22
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -465,7 +474,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XMember :: {profile :: Profile, newMemberId :: MemberId, newMemberKey :: MemberKey, viaRelay :: Maybe MemberId} -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
-  XGrpAcpt :: MemberId -> Maybe MemberKey -> ChatMsgEvent 'Json
+  XGrpAcpt :: MemberId -> Maybe MemberKey -> Maybe Profile -> ChatMsgEvent 'Json
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> Maybe MemberKey -> ChatMsgEvent 'Json
@@ -928,9 +937,17 @@ $(JQ.deriveJSON defaultJSON ''MsgContainer)
 maxEncodedMsgLength :: Int
 maxEncodedMsgLength = 15602
 
+maxForwardBatchLength :: Int
+maxForwardBatchLength = maxEncodedMsgLength + 161
+
+fwdMemberName :: ContactName -> ContactName
+fwdMemberName displayName
+  | T.length displayName <= 16 = displayName
+  | otherwise = T.take 16 displayName `T.snoc` '…'
+
 -- maxEncodedMsgLength - 2222, see e2eEncUserMsgLength in agent
-maxCompressedMsgLength :: Int
-maxCompressedMsgLength = 13380
+maxEncodedMsgLengthPQ :: Int
+maxEncodedMsgLengthPQ = 13380
 
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
@@ -938,6 +955,9 @@ maxDecompressedMsgLength = 65536
 -- Applies to all batch formats; 255 is the maximum for the 1-byte count in the binary batch format.
 maxBatchElementCount :: Int
 maxBatchElementCount = 255
+
+maxFwdDepth :: Int
+maxFwdDepth = 1
 
 -- Defensive entry-count bound for the roster blob parser (rosterBlobP) and the
 -- promotion cap over the promoted (member/moderator/admin) set.
@@ -966,8 +986,8 @@ rosterBlobP = do
 maxEncodedInfoLength :: Int
 maxEncodedInfoLength = 14694
 
-maxCompressedInfoLength :: Int
-maxCompressedInfoLength = 10968 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
+maxEncodedProfileMsgLength :: Int
+maxEncodedProfileMsgLength = 16384
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
@@ -1334,6 +1354,11 @@ hasNotification = \case
   XCallInv_ -> True
   _ -> False
 
+msgHasNotification :: VerifiedMsg e -> Bool
+msgHasNotification verifiedMsg = hasNotification $ toCMEventTag chatMsgEvent
+  where
+    ChatMessage {chatMsgEvent} = verifiedChatMsg verifiedMsg
+
 hasDeliveryReceipt :: CMEventTag e -> Bool
 hasDeliveryReceipt = \case
   XMsgNew_ -> True
@@ -1355,6 +1380,7 @@ requiresSignature = \case
   XGrpRoster_ -> True
   XInfo_ -> True
   XGrpLinkMem_ -> True
+  XGrpRelayInv_ -> True
   _ -> False
 
 -- | Content events a member may sign (XMsgNew opt-in; XMsgUpdate/XMsgDel when the target was signed).
@@ -1391,8 +1417,8 @@ appBinaryToCM AppMessageBinary {msgId, tag, body} = do
     msg = \case
       BFileChunk_ -> BFileChunk <$> (SharedMsgId <$> smpP) <*> (unIFC <$> smpP)
 
-appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
-appJsonToCM AppMessageJson {v, msgId, event, params} = do
+appJsonToCM :: Int -> AppMessageJson -> Either String (ChatMessage 'Json)
+appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
   eventTag <- strDecode $ encodeUtf8 event
   chatMsgEvent <- msg eventTag
   pure ChatMessage {chatVRange = maybe chatInitialVRange fromChatVRange v, msgId, chatMsgEvent}
@@ -1435,7 +1461,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XMember_ -> XMember <$> p "profile" <*> p "newMemberId" <*> p "newMemberKey" <*> opt "viaRelay"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
-      XGrpAcpt_ -> XGrpAcpt <$> p "memberId" <*> opt "memberKey"
+      XGrpAcpt_ -> XGrpAcpt <$> p "memberId" <*> opt "memberKey" <*> opt "profile"
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile" <*> opt "memberKey"
@@ -1468,11 +1494,12 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpRosterAck_ -> XGrpRosterAck <$> p "version" <*> opt "error"
       XGrpRosterRequest_ -> XGrpRosterRequest <$> opt "version"
       XGrpMsgForward_ -> do
+        when (fwdDepth >= maxFwdDepth) $ Left "forward depth exceeds limit"
         fwdSender <- opt "memberId" >>= \case
           Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
           Nothing -> pure FwdChannel
         fwdBrokerTs <- p "msgTs"
-        XGrpMsgForward (GrpMsgForward {fwdSender, fwdBrokerTs}) <$> p "msg"
+        XGrpMsgForward (GrpMsgForward {fwdSender, fwdBrokerTs}) <$> (appJsonToCM (fwdDepth + 1) =<< p "msg")
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -1511,7 +1538,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XMember {profile, newMemberId, newMemberKey, viaRelay} -> o $ ("viaRelay" .=? viaRelay) ["profile" .= profile, "newMemberId" .= newMemberId, "newMemberKey" .= newMemberKey]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
-      XGrpAcpt memId memberKey -> o $ ("memberKey" .=? memberKey) ["memberId" .= memId]
+      XGrpAcpt memId memberKey profile -> o $ ("profile" .=? profile) $ ("memberKey" .=? memberKey) ["memberId" .= memId]
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
       XGrpLinkMem profile memberKey -> o $ ("memberKey" .=? memberKey) ["profile" .= profile]
@@ -1585,7 +1612,7 @@ instance ToJSON (ChatMessage 'Json) where
   toJSON = (\(AMJson msg) -> toJSON msg) . chatToAppMessage
 
 instance FromJSON (ChatMessage 'Json) where
-  parseJSON v = appJsonToCM <$?> parseJSON v
+  parseJSON v = appJsonToCM 0 <$?> parseJSON v
 
 instance FromField (ChatMessage 'Json) where
   fromField = blobFieldDecoder J.eitherDecodeStrict'
@@ -1594,6 +1621,7 @@ data ContactShortLinkData = ContactShortLinkData
   { profile :: Profile,
     message :: Maybe MsgContent,
     business :: Bool,
+    chatLayout :: Maybe ChatLayout,
     -- set by the receiving client for the UI: the link profile's badge, verified and crypto-free.
     -- never part of the published link data (the link carries the proof inside profile).
     localBadge :: Maybe LocalBadge

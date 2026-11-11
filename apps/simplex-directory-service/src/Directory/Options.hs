@@ -41,6 +41,7 @@ data DirectoryOpts = DirectoryOpts
     linkCheckInterval :: Int,
     prohibitedToObserver :: Bool,
     alwaysCaptcha :: Bool,
+    alwaysObserver :: Bool,
     knocking :: Bool,
     testing :: Bool
   }
@@ -170,6 +171,11 @@ directoryOpts appDir defaultDbName = do
       ( long "always-captcha"
           <> help "Require a captcha from joining members in all groups, regardless of per-group filter settings"
       )
+  alwaysObserver <-
+    switch
+      ( long "always-observer"
+          <> help "Make joining members observers in all groups, regardless of per-group setting in directory"
+      )
   knocking <-
     switch
       ( long "knocking"
@@ -197,6 +203,7 @@ directoryOpts appDir defaultDbName = do
         linkCheckInterval,
         prohibitedToObserver,
         alwaysCaptcha,
+        alwaysObserver,
         knocking,
         testing = False
       }

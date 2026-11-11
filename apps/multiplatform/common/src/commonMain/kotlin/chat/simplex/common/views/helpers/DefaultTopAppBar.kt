@@ -17,7 +17,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CenteredRowLayout
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlin.math.absoluteValue
 
 @Composable

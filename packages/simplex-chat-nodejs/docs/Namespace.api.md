@@ -17,6 +17,7 @@ You need to use it in bot event handlers, and for any other use cases.
 
 - [ChatApi](api.Class.ChatApi.md)
 - [ChatCommandError](api.Class.ChatCommandError.md)
+- [LiveMessage](api.Class.LiveMessage.md)
 
 ## Interfaces
 

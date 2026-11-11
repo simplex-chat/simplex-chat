@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.buildAnnotatedString
@@ -25,7 +26,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.io.File
 import java.net.URI
 
@@ -38,11 +39,14 @@ fun CIFileView(
   showTimestamp: Boolean,
   showMenu: MutableState<Boolean>,
   smallView: Boolean = false,
+  terminalTop: Dp = 0.dp,
   receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
   val sizeMultiplier = 1f
+  val fileIconSize = 40.sp * sizeMultiplier
   val progressSizeMultiplier = if (smallView) 0.7f else 1f
+  val terminal = LocalTerminalLayout.current
   @Composable
   fun fileIcon(
     innerIcon: Painter? = null,
@@ -80,6 +84,7 @@ fun CIFileView(
           if (prohibited != null) {
             showProhibitedFileAlert(file, prohibited)
           } else {
+            chatModel.openWhenReceived(file, smallView)
             receiveFile(file.fileId)
           }
         }
@@ -105,6 +110,8 @@ fun CIFileView(
           showFileErrorAlert(file.fileStatus.sndFileError)
         file.fileStatus is CIFileStatus.SndWarning ->
           showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
+        isMarkdownFile(file) && file.loaded ->
+          showMarkdownFile(file)
         file.forwardingAllowed() -> {
           withLongRunningApi(slow = 600_000) {
             var filePath = getLoadedFilePath(file)
@@ -127,11 +134,11 @@ fun CIFileView(
   }
 
   @Composable
-  fun fileIndicator() {
+  fun fileIndicator(modifier: Modifier = Modifier) {
     Box(
-      Modifier
-        .padding(top = 2.sp.toDp())
-        .size(40.sp.toDp() * sizeMultiplier)
+      modifier
+        .padding(top = if (terminal) 0.dp else 2.sp.toDp())
+        .size(fileIconSize.toDp())
         .clip(RoundedCornerShape(4.sp.toDp() * sizeMultiplier)),
       contentAlignment = Alignment.Center
     ) {
@@ -183,28 +190,36 @@ fun CIFileView(
 
   val showOpenSaveMenu = rememberSaveable(file?.fileId) { mutableStateOf(false) }
   val ext = file?.fileSource?.filePath?.substringAfterLast(".")?.takeIf { it.isNotBlank() }
-  val loadedFilePath = if (appPlatform.isAndroid && file?.fileSource != null) getLoadedFilePath(file) else null
+  val loadedFilePath = if (appPlatform.isAndroid && file?.fileSource != null && !isMarkdownFile(file)) getLoadedFilePath(file) else null
   if (loadedFilePath != null && file?.fileSource != null) {
     val encrypted = file.fileSource.cryptoArgs != null
     SaveOrOpenFileMenu(showOpenSaveMenu, encrypted, ext, File(loadedFilePath).toURI(), file.fileSource, saveFile = { fileAction() })
   }
+  val onClick: () -> Unit = {
+    if (appPlatform.isAndroid && loadedFilePath != null) {
+      showOpenSaveMenu.value = true
+    } else {
+      fileAction()
+    }
+  }
+  if (file != null) OpenWhenReceivedEffect(file, smallView, onClick)
   Row(
     Modifier
       .combinedClickable(
-        onClick = {
-          if (appPlatform.isAndroid && loadedFilePath != null) {
-            showOpenSaveMenu.value = true
-          } else {
-            fileAction()
-          }
-        },
+        onClick = onClick,
         onLongClick = { showMenu.value = true }
       )
-      .padding(if (smallView) PaddingValues() else PaddingValues(top = 4.sp.toDp(), bottom = 6.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())),
+      .then(
+        when {
+          smallView -> Modifier
+          terminal -> Modifier.padding(top = terminalTop, start = 6.sp.toDp(), end = 12.sp.toDp()).messageCard()
+          else -> Modifier.padding(top = 4.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp()).paddingFromBaseline(bottom = BUBBLE_TEXT_INSET)
+        }
+      ),
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(2.sp.toDp())
   ) {
-    fileIndicator()
+    fileIndicator(if (!terminal && !smallView && file != null) fileIconOnBaseline(fileIconSize) else Modifier)
     if (!smallView) {
       val secondaryColor = MaterialTheme.colors.secondary
       val encrypted = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
@@ -214,7 +229,7 @@ fun CIFileView(
         }
       }
       if (file != null) {
-        Column {
+        Column(if (terminal) Modifier else Modifier.alignBy(LastBaseline)) {
           Text(
             file.fileName,
             maxLines = 1
@@ -226,7 +241,8 @@ fun CIFileView(
             },
             color = secondaryColor,
             fontSize = 14.sp,
-            maxLines = 1
+            maxLines = 1,
+            style = LocalTextStyle.current.merge(bubbleLineHeight(14.sp * INTER_LINE_HEIGHT))
           )
         }
       } else {
@@ -236,8 +252,23 @@ fun CIFileView(
   }
 }
 
+const val FILE_ICON_INK_INSET = 85f / 960f
+
+@Composable
+fun RowScope.fileIconOnBaseline(iconSize: TextUnit): Modifier {
+  val density = LocalDensity.current
+  return Modifier.alignBy { it.measuredHeight - with(density) { (iconSize * FILE_ICON_INK_INSET).toPx().toInt() } }
+}
+
 // the core decides whether a received file is above the size the sender's badge allows
 fun fileSizeValid(file: CIFile): Boolean = file.fileProhibited == null
+
+@Composable
+fun OpenWhenReceivedEffect(file: CIFile, inChatList: Boolean, open: () -> Unit) {
+  KeyChangeEffect(file.loaded) {
+    if (chatModel.receivedFileToOpen(file, inChatList)) open()
+  }
+}
 
 fun showProhibitedFileAlert(file: CIFile, prohibited: FileProhibited) {
   val badgeIssue = when (prohibited.badgeStatus) {

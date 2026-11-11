@@ -23,7 +23,7 @@ actual fun SimpleAndAnimatedImageView(
   // still image. A full screen modal is shown beside the chat rather than in place of it, so this item keeps
   // composing under one and would otherwise decode where nobody can see it.
   val frame = if (smallView) imageBitmap
-  else rememberAnimatedImage(data, imageBitmap) { blurred.value || ModalManager.fullscreen.hasModalsOpen() }
+  else rememberAnimatedImage(data, imageBitmap) { blurred.value || ModalManager.fullscreen.hasModalsOpen() || ModalManager.center.hasModalsOpen() }
   ImageView(BitmapPainter(frame)) {
     if (getLoadedFilePath(file) != null) {
       ModalManager.fullscreen.showCustomModal(animated = false) { close ->

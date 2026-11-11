@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import dev.icerock.moko.resources.ImageResource

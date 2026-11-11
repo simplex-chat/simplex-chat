@@ -22,9 +22,8 @@ import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.getLoadedFilePath
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
-import kotlinx.datetime.Clock
 
 @Composable
 fun ContextItemView(
@@ -57,7 +56,7 @@ fun ContextItemView(
       }
     } else null
     MarkdownText(
-      contextItem.text, contextItem.formattedText,
+      contextItem.text, contextItem.formattedText, contextItem.markdownBlocks,
       sender = null,
       toggleSecrets = false,
       maxLines = lines,
@@ -161,7 +160,7 @@ fun ContextItemView(
 fun PreviewContextItemView() {
   SimpleXTheme {
     ContextItemView(
-      contextItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), "hello")),
+      contextItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectRcv(), previewDate, "hello")),
       contextIcon = painterResource(MR.images.ic_edit_filled),
       chatInfo = Chat.sampleData.chatInfo
     ) {}

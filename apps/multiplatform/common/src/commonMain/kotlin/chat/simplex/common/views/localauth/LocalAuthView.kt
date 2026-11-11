@@ -11,7 +11,7 @@ import chat.simplex.common.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.database.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 
 @Composable

@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        7.1.0.4
+version:        7.1.2.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -18,6 +18,7 @@ extra-source-files:
     README.md
     PRIVACY.md
     cabal.project
+    src/Simplex/Chat/Image/DisplayP3-v4.icc
 
 flag swift
   description: Enable swift JSON format
@@ -40,11 +41,17 @@ library
       Simplex.Chat.AppSettings
       Simplex.Chat.Badges
       Simplex.Chat.Badges.CLI
+      Simplex.Chat.Badges.Code
+      Simplex.Chat.Badges.Ledger
+      Simplex.Chat.Badges.Service
+      Simplex.Chat.Badges.StorePlan
+      Simplex.Chat.Badges.Types
       Simplex.Chat.Names
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
       Simplex.Chat.Files
+      Simplex.Chat.Image
       Simplex.Chat.Library.Commands
       Simplex.Chat.Library.Internal
       Simplex.Chat.Library.Subscriber
@@ -63,6 +70,8 @@ library
       Simplex.Chat.Operators.Presets
       Simplex.Chat.Options
       Simplex.Chat.Options.DB
+      Simplex.Chat.PaymentService
+      Simplex.Chat.PaymentService.Types
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
       Simplex.Chat.Remote
@@ -75,6 +84,7 @@ library
       Simplex.Chat.Stats
       Simplex.Chat.Store
       Simplex.Chat.Store.AppSettings
+      Simplex.Chat.Store.Badges
       Simplex.Chat.Store.Connections
       Simplex.Chat.Store.ContactRequest
       Simplex.Chat.Store.Delivery
@@ -100,6 +110,7 @@ library
       exposed-modules:
           Simplex.Chat.Bot
           Simplex.Chat.Bot.KnownContacts
+          Simplex.Chat.Bot.Store
           Simplex.Chat.Core
           Simplex.Chat.Help
           Simplex.Chat.Terminal
@@ -158,7 +169,16 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260822_forward_link
           Simplex.Chat.Store.Postgres.Migrations.M20260828_file_expiry
           Simplex.Chat.Store.Postgres.Migrations.M20260904_file_badges
-          Simplex.Chat.Store.Postgres.Migrations.M20260905_feeds
+          Simplex.Chat.Store.Postgres.Migrations.M20260915_user_badges
+          Simplex.Chat.Store.Postgres.Migrations.M20260918_badge_issue_errors
+          Simplex.Chat.Store.Postgres.Migrations.M20260923_preferences_json
+          Simplex.Chat.Store.Postgres.Migrations.M20260925_badge_bindings
+          Simplex.Chat.Store.Postgres.Migrations.M20261010_invite_member_via_group
+          Simplex.Chat.Store.Postgres.Migrations.M20261012_delivery_job_notification
+          Simplex.Chat.Store.Postgres.Migrations.M20261016_badge_store_receipts
+          Simplex.Chat.Store.Postgres.Migrations.M20261019_chat_layout
+          Simplex.Chat.Store.Postgres.Migrations.M20261021_badge_subscriptions
+          Simplex.Chat.Store.Postgres.Migrations.M20261111_feeds
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -333,7 +353,17 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260822_forward_link
           Simplex.Chat.Store.SQLite.Migrations.M20260828_file_expiry
           Simplex.Chat.Store.SQLite.Migrations.M20260904_file_badges
-          Simplex.Chat.Store.SQLite.Migrations.M20260905_feeds
+          Simplex.Chat.Store.SQLite.Migrations.M20260915_user_badges
+          Simplex.Chat.Store.SQLite.Migrations.M20260918_badge_issue_errors
+          Simplex.Chat.Store.SQLite.Migrations.M20260923_preferences_json
+          Simplex.Chat.Store.SQLite.Migrations.M20260925_badge_bindings
+          Simplex.Chat.Store.SQLite.Migrations.M20261010_invite_member_via_group
+          Simplex.Chat.Store.SQLite.Migrations.M20261012_delivery_job_notification
+          Simplex.Chat.Store.SQLite.Migrations.M20261016_badge_store_receipts
+          Simplex.Chat.Store.SQLite.Migrations.M20261018_autoincrement_ids
+          Simplex.Chat.Store.SQLite.Migrations.M20261019_chat_layout
+          Simplex.Chat.Store.SQLite.Migrations.M20261021_badge_subscriptions
+          Simplex.Chat.Store.SQLite.Migrations.M20261111_feeds
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -361,6 +391,10 @@ library
     , filepath ==1.4.*
     , http-types ==0.12.*
     , http2 >=4.2.2 && <4.3
+    , JuicyPixels ==3.3.*
+    , JuicyPixels-jpeg-turbo ==0.1.*
+    , JuicyPixels-spng ==0.1.*
+    , JuicyPixels-stbir ==0.1.*
     , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , network >=3.1.2.7 && <3.2
@@ -379,11 +413,14 @@ library
     , unliftio-core ==0.2.*
     , uri-bytestring >=0.3.3.1 && <0.4
     , uuid ==1.3.*
+    , vector ==0.13.*
     , zip ==2.2.*
     , zstd ==0.1.3.*
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
+  if flag(swift) || os(android)
+    cpp-options: -DmobileBuild
   if flag(client_postgres)
     build-depends:
         postgresql-libpq >=0.10.0.0
@@ -405,6 +442,90 @@ library
         bytestring ==0.10.*
       , process >=1.6 && <1.6.18
       , template-haskell ==2.16.*
+      , text >=1.2.4.0 && <1.3
+
+executable simplex-badge-service
+  if flag(client_library)
+      buildable: False
+  main-is: Main.hs
+  hs-source-dirs:
+      apps/simplex-badge-service
+      apps/simplex-badge-service/src
+  default-extensions:
+      StrictData
+  other-modules:
+      BadgeService.Catalog
+      BadgeService.Codes
+      BadgeService.Config
+      BadgeService.Group
+      BadgeService.Group.Command
+      BadgeService.Log
+      BadgeService.Options
+      BadgeService.Orders
+      BadgeService.Poller
+      BadgeService.Providers
+      BadgeService.Providers.BTCPay
+      BadgeService.Providers.Stripe
+      BadgeService.Service
+      BadgeService.Store
+      BadgeService.Store.Invoices
+      BadgeService.Store.Migrate
+      BadgeService.StoreReceipts
+      BadgeService.StoreReceipts.Apple
+      BadgeService.StoreReceipts.Google
+      BadgeService.StoreReceipts.Mock
+      BadgeService.Waiters
+      BadgeService.Web.Server
+      Paths_simplex_chat
+  ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -Werror=name-shadowing -threaded -rtsopts
+  build-depends:
+      aeson ==2.2.*
+    , attoparsec ==0.14.*
+    , base >=4.7 && <5
+    , base64-bytestring >=1.0 && <1.3
+    , containers ==0.6.*
+    , crypton ==0.34.*
+    , crypton-x509 ==1.7.*
+    , crypton-x509-store ==1.6.*
+    , crypton-x509-validation ==1.6.*
+    , directory ==1.3.*
+    , filepath ==1.4.*
+    , http-client ==0.7.*
+    , http-client-tls ==0.3.*
+    , http-types ==0.12.*
+    , ini ==0.4.1
+    , memory ==0.18.*
+    , mtl >=2.3.1 && <3.0
+    , network ==3.1.*
+    , optparse-applicative >=0.15 && <0.17
+    , scientific ==0.3.*
+    , simple-logger ==0.1.*
+    , simplex-chat
+    , simplexmq >=6.3
+    , stm ==2.5.*
+    , time ==1.12.*
+    , wai ==3.2.*
+    , warp ==3.3.*
+  default-language: Haskell2010
+  if flag(client_postgres)
+    other-modules:
+        BadgeService.Store.Postgres.Migrations
+    build-depends:
+        postgresql-simple ==0.7.*
+        , raw-strings-qq ==1.1.*
+    cpp-options: -DdbPostgres
+  else
+    other-modules:
+        BadgeService.Store.SQLite.Migrations
+    build-depends:
+        sqlcipher-simple ==0.4.*
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        bytestring ==0.11.*
+      , text >=2.0.1 && <2.2
+  if impl(ghc < 9.6.2)
+    build-depends:
+        bytestring ==0.10.*
       , text >=1.2.4.0 && <1.3
 
 executable simplex-bot
@@ -538,7 +659,6 @@ executable simplex-directory-service
       Directory.Service
       Directory.Store
       Directory.Store.Migrate
-      Directory.Util
       Paths_simplex_chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -Werror=name-shadowing -threaded -rtsopts
   build-depends:
@@ -611,6 +731,7 @@ test-suite simplex-chat-test
       ChatTests.Names
       ChatTests.Profiles
       ChatTests.Utils
+      ImageTests
       JSONFixtures
       JSONTests
       MarkdownTests
@@ -633,6 +754,43 @@ test-suite simplex-chat-test
       API.Docs.Syntax.Types
       API.Docs.Types
       API.TypeInfo
+      BadgeService.Catalog
+      BadgeService.Codes
+      BadgeService.Config
+      BadgeService.Group
+      BadgeService.Group.Command
+      BadgeService.Log
+      BadgeService.Options
+      BadgeService.Orders
+      BadgeService.Poller
+      BadgeService.Providers
+      BadgeService.Providers.BTCPay
+      BadgeService.Providers.Stripe
+      BadgeService.Service
+      BadgeService.Store
+      BadgeService.Store.Invoices
+      BadgeService.Store.Migrate
+      BadgeService.StoreReceipts
+      BadgeService.StoreReceipts.Apple
+      BadgeService.StoreReceipts.Google
+      BadgeService.StoreReceipts.Mock
+      BadgeService.Waiters
+      BadgeService.Web.Server
+      Bots.BadgeService.BTCPayTests
+      Bots.BadgeService.BotTests
+      Bots.BadgeService.CatalogTests
+      Bots.BadgeService.ConfigTests
+      Bots.BadgeService.FakeAppStore
+      Bots.BadgeService.FakeBTCPay
+      Bots.BadgeService.FakePlay
+      Bots.BadgeService.FakeStore
+      Bots.BadgeService.FakeStripe
+      Bots.BadgeService.GroupIntegrationTests
+      Bots.BadgeService.GroupTests
+      Bots.BadgeService.StoreVerifierTests
+      Bots.BadgeService.StripeTests
+      Bots.BadgeService.WaitersTests
+      Bots.BadgeService.WebTests
       Broadcast.Bot
       Broadcast.Options
       Directory.BlockedWords
@@ -644,7 +802,6 @@ test-suite simplex-chat-test
       Directory.Service
       Directory.Store
       Directory.Store.Migrate
-      Directory.Util
       Paths_simplex_chat
   if flag(client_postgres)
       other-modules:
@@ -659,14 +816,17 @@ test-suite simplex-chat-test
   hs-source-dirs:
       bots/src
       tests
+      apps/simplex-badge-service/src
       apps/simplex-broadcast-bot/src
       apps/simplex-directory-service/src
   default-extensions:
       StrictData
   -- add -fhpc to ghc-options below to run tests with coverage
-  ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -Werror=name-shadowing -threaded
+  ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -Werror=name-shadowing -threaded -rtsopts "-with-rtsopts=-N"
   build-depends:
-      QuickCheck ==2.14.*
+      JuicyPixels ==3.3.*
+    , JuicyPixels-jpeg-turbo ==0.1.*
+    , QuickCheck ==2.14.*
     , aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
@@ -676,16 +836,24 @@ test-suite simplex-chat-test
     , composition ==1.0.*
     , containers ==0.6.*
     , crypton ==0.34.*
+    , crypton-x509 ==1.7.*
+    , crypton-x509-store ==1.6.*
+    , crypton-x509-validation ==1.6.*
     , deepseq ==1.4.*
     , directory ==1.3.*
     , filepath ==1.4.*
     , generic-random ==1.5.*
+    , hourglass ==0.2.*
+    , http-client ==0.7.*
+    , http-client-tls ==0.3.*
     , http-types ==0.12.*
+    , ini ==0.4.1
     , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17
     , random >=1.1 && <1.3
+    , scientific ==0.3.*
     , silently ==1.2.*
     , simple-logger ==0.1.*
     , simplex-chat
@@ -701,6 +869,7 @@ test-suite simplex-chat-test
   default-language: Haskell2010
   if flag(client_postgres)
     other-modules:
+        BadgeService.Store.Postgres.Migrations
         Directory.Store.Postgres.Migrations
     build-depends:
         postgresql-simple ==0.7.*
@@ -708,6 +877,7 @@ test-suite simplex-chat-test
     cpp-options: -DdbPostgres
   else
     other-modules:
+        BadgeService.Store.SQLite.Migrations
         Directory.Store.SQLite.Migrations
     build-depends:
         sqlcipher-simple ==0.4.*
@@ -721,5 +891,6 @@ test-suite simplex-chat-test
     build-depends:
         bytestring ==0.10.*
       , hspec ==2.7.*
+      , hspec-core ==2.7.*
       , process >=1.6 && <1.6.18
       , text >=1.2.4.0 && <1.3

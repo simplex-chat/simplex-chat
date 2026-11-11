@@ -14,10 +14,10 @@
 "Cannot forward message" = "Nem lehet továbbítani az üzenetet";
 
 /* No comment provided by engineer. */
-"Comment" = "Megjegyzés";
+"Cannot generate random database passphrase" = "Nem sikerült véletlenszerű adatbázis-jelmondatot előállítani";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "Jelenleg támogatott legnagyobb fájlméret: %@.";
+"Comment" = "Megjegyzés";
 
 /* No comment provided by engineer. */
 "Database downgrade required" = "Adatbázis visszafejlesztése szükséges";

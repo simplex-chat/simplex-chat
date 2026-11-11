@@ -14,7 +14,7 @@ import chat.simplex.common.model.Format
 import chat.simplex.common.model.FormatColor
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.SimpleXTheme
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun MarkdownHelpView() {
@@ -31,7 +31,7 @@ fun MarkdownHelpView() {
     val colored = stringResource(MR.strings.colored_text)
     val secret = stringResource(MR.strings.secret_text)
 
-    MdFormat("*$bold*", bold, Format.Bold())
+    MdFormat("**$bold**", bold, Format.Bold())
     MdFormat("_${italic}_", italic, Format.Italic())
     MdFormat("~$strikethrough~", strikethrough, Format.StrikeThrough())
     MdFormat("`$equation`", equation, Format.Snippet())

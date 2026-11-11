@@ -13,24 +13,25 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.isVisible
 import chat.simplex.common.platform.VideoPlayer
 import chat.simplex.common.platform.androidAppContext
-import chat.simplex.res.MR
+import chat.simplex.common.views.helpers.boundedImageSize
+import chat.simplex.res.*
 import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
-import coil.size.Size
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 actual fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap) {
+  val size = remember(data) { boundedImageSize(data) }
   // I'm using a new private instance of imageLoader here because if I use one instance in multiple places
   // after end of composition here a GIF from the first instance will be paused automatically which isn't what I want
   Image(
     rememberAsyncImagePainter(
-      ImageRequest.Builder(LocalContext.current).data(data = data).size(Size.ORIGINAL).build(),
+      ImageRequest.Builder(LocalContext.current).data(data = data).size(size).build(),
       placeholder = BitmapPainter(imageBitmap), // show original image while it's still loading by coil
       imageLoader = imageLoader
     ),

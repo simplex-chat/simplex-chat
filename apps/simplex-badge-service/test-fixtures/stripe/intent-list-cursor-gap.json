@@ -1,0 +1,12 @@
+{
+  "_fixture": "GET /v1/payment_intents?created[gte]=<unix>&limit=<n>, a page whose LAST row carries no id, from Stripe's documented API schema. NOT captured from a live instance. Served with a small page size so the id-less row ends a page while more remain, leaving no starting_after to continue from. pi_test_a settles, pi_test_c sits on the unreachable next page.",
+  "response": {
+    "object": "list",
+    "has_more": false,
+    "data": [
+      {"id": "pi_test_a", "object": "payment_intent", "status": "succeeded", "amount": 5400, "amount_received": 5400, "currency": "usd"},
+      {"object": "payment_intent", "status": "requires_payment_method", "amount": 5400, "amount_received": 0, "currency": "usd"},
+      {"id": "pi_test_c", "object": "payment_intent", "status": "canceled", "amount": 5400, "amount_received": 0, "currency": "usd"}
+    ]
+  }
+}

@@ -198,6 +198,9 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
   CEvtReceivedGroupInvitation u g ct _ _ ->
     when (contactNtf u ct False) $
       sendNtf ("#" <> viewGroupName g <> " " <> viewContactName ct <> "> ", "invited you to join the group")
+  CEvtReceivedGroupInvitationViaGroup u g viaG m _ _ ->
+    when (groupNtf u viaG False) $
+      sendNtf ("#" <> viewGroupName g <> " " <> viewMemberName m <> "> ", "invited you to join the group")
   CEvtUserJoinedGroup u g _ -> when (groupNtf u g False) $ do
     whenCurrUser cc u $ setActiveGroup t g
     sendNtf ("#" <> viewGroupName g, "you are connected to group")
@@ -385,8 +388,9 @@ printMessage ChatTerminal {termSize = Size {height, width}, nextMessageRow} msg 
 -- because of accounting for control sequences in length
 putStyled :: MonadTerminal m => StyledString -> m ()
 putStyled (s1 :<>: s2) = putStyled s1 >> putStyled s2
-putStyled (Styled [] s) = putString s
-putStyled (Styled sgr s) = setSGR sgr >> putString s >> resetAttributes
+-- putText, as putString sends a terminal command per character
+putStyled (Styled [] s) = putText (T.pack s)
+putStyled (Styled sgr s) = setSGR sgr >> putText (T.pack s) >> resetAttributes
 
 setSGR :: MonadTerminal m => [SGR] -> m ()
 setSGR = mapM_ $ \case

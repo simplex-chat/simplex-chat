@@ -102,9 +102,11 @@ func acceptMemberContactRequest(_ contact: Contact, inProgress: Binding<Bool>? =
     }
 }
 
-#Preview {
-    ContextMemberContactActionsView(
-        contact: Contact.sampleData,
-        groupDirectInv: GroupDirectInvitation.sampleData
-    )
+struct ContextMemberContactActionsView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContextMemberContactActionsView(
+            contact: Contact.sampleData,
+            groupDirectInv: GroupDirectInvitation.sampleData
+        )
+    }
 }

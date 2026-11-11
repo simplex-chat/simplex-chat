@@ -5,6 +5,7 @@ import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.*
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.draganddrop.*
 import androidx.compose.ui.draganddrop.DragData
 import androidx.compose.ui.input.pointer.*
@@ -85,3 +86,5 @@ actual fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier =
   this then Modifier
     .onPointerEvent(PointerEventType.Enter) { action(true) }
     .onPointerEvent(PointerEventType.Exit) { action(false) }
+
+actual fun newPasswordContentType(): ContentType = ContentType.NewPassword

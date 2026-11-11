@@ -1,5 +1,6 @@
 import org.gradle.internal.extensions.stdlib.toDefaultLowerCase
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 
 plugins {
   kotlin("multiplatform")
@@ -85,6 +86,18 @@ compose {
             extraKeysRawXml = """
               <key>NSMicrophoneUsageDescription</key>
               <string>SimpleX needs microphone access to record voice messages</string>
+              <key>CFBundleURLTypes</key>
+              <array>
+                <dict>
+                  <key>CFBundleURLName</key>
+                  <string>$bundleID</string>
+                  <key>CFBundleURLSchemes</key>
+                  <array>
+                    <string>simplexchat</string>
+                    <string>simplex</string>
+                  </array>
+                </dict>
+              </array>
             """
           }
           val identity = rootProject.extra["desktop.mac.signing.identity"] as String?
@@ -164,6 +177,19 @@ tasks.named("clean") {
 }
 tasks.named("compileKotlinJvm") {
   dependsOn("cmakeBuildAndCopy")
+}
+tasks.withType<AbstractJPackageTask>().configureEach {
+  if (targetFormat == TargetFormat.Msi) {
+    doLast {
+      exec {
+        commandLine(
+          "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
+          "-File", project.file("../../../scripts/desktop/disable-msi-install-dir-wipe-windows.ps1"),
+          destinationDir.asFileTree.matching { include("*.msi") }.singleFile
+        )
+      }
+    }
+  }
 }
 afterEvaluate {
   tasks.create("cmakeBuildAndCopy") {

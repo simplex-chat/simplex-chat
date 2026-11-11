@@ -40,11 +40,16 @@ extern char *chat_parse_server(const char *str);
 extern char *chat_parse_uri(const char *str, const int safe);
 extern char *chat_password_hash(const char *pwd, const char *salt);
 extern char *chat_valid_name(const char *name);
+extern char *chat_parse_badge_code(const char *code);
 extern int chat_json_length(const char *str);
 extern char *chat_write_file(chat_ctrl ctrl, const char *path, char *ptr, int length);
 extern char *chat_read_file(const char *path, const char *key, const char *nonce);
 extern char *chat_encrypt_file(chat_ctrl ctrl, const char *from_path, const char *to_path);
 extern char *chat_decrypt_file(const char *from_path, const char *key, const char *nonce, const char *to_path);
+extern char *chat_resize_image_uri(char *ptr, int length, int max_size);
+extern char *chat_resize_image(char *ptr, int length, int max_size, int png);
+extern char *chat_resize_image_file_uri(const char *path, int max_size);
+extern char *chat_resize_image_file(const char *path, int max_size, int png);
 
 // As a reference: https://stackoverflow.com/a/60002045
 jstring decode_to_utf8_string(JNIEnv *env, char *string) {
@@ -63,6 +68,7 @@ jstring decode_to_utf8_string(JNIEnv *env, char *string) {
     (*env)->DeleteLocalRef(env, bb);
     (*env)->DeleteLocalRef(env, charset);
     (*env)->DeleteLocalRef(env, cb);
+    free(string);
     return res;
 }
 
@@ -183,6 +189,14 @@ Java_chat_simplex_common_platform_CoreKt_chatValidName(JNIEnv *env, jclass clazz
     return res;
 }
 
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatParseBadgeCode(JNIEnv *env, jclass clazz, jstring code) {
+    const char *_code = encode_to_utf8_chars(env, code);
+    jstring res = decode_to_utf8_string(env, chat_parse_badge_code(_code));
+    (*env)->ReleaseStringUTFChars(env, code, _code);
+    return res;
+}
+
 JNIEXPORT int JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatJsonLength(JNIEnv *env, jclass clazz, jstring str) {
     const char *_str = encode_to_utf8_chars(env, str);
@@ -230,6 +244,7 @@ Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz,
         arr = (*env)->NewByteArray(env, len);
         (*env)->SetByteArrayRegion(env, arr, 0, len, res + 1);
     }
+    free(res);
 
     jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/Object"), NULL);
     jobject statusObj = (*env)->NewObject(env, (*env)->FindClass(env, "java/lang/Integer"),
@@ -261,5 +276,35 @@ Java_chat_simplex_common_platform_CoreKt_chatDecryptFile(JNIEnv *env, jclass cla
     (*env)->ReleaseStringUTFChars(env, key, _key);
     (*env)->ReleaseStringUTFChars(env,  nonce, _nonce);
     (*env)->ReleaseStringUTFChars(env, to_path, _to_path);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatResizeImageUri(JNIEnv *env, jclass clazz, jobject buffer, jint maxSize) {
+    jbyte *buff = (jbyte *) (*env)->GetDirectBufferAddress(env, buffer);
+    jlong capacity = (*env)->GetDirectBufferCapacity(env, buffer);
+    return decode_to_utf8_string(env, chat_resize_image_uri(buff, capacity, maxSize));
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatResizeImage(JNIEnv *env, jclass clazz, jobject buffer, jint maxSize, jint png) {
+    jbyte *buff = (jbyte *) (*env)->GetDirectBufferAddress(env, buffer);
+    jlong capacity = (*env)->GetDirectBufferCapacity(env, buffer);
+    return decode_to_utf8_string(env, chat_resize_image(buff, capacity, maxSize, png));
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatResizeImageFileUri(JNIEnv *env, jclass clazz, jstring path, jint maxSize) {
+    const char *_path = encode_to_utf8_chars(env, path);
+    jstring res = decode_to_utf8_string(env, chat_resize_image_file_uri(_path, maxSize));
+    (*env)->ReleaseStringUTFChars(env, path, _path);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatResizeImageFile(JNIEnv *env, jclass clazz, jstring path, jint maxSize, jint png) {
+    const char *_path = encode_to_utf8_chars(env, path);
+    jstring res = decode_to_utf8_string(env, chat_resize_image_file(_path, maxSize, png));
+    (*env)->ReleaseStringUTFChars(env, path, _path);
     return res;
 }

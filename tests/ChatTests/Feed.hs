@@ -172,10 +172,12 @@ testFeedDetached =
 testFeedFile :: HasCallStack => TestParams -> IO ()
 testFeedFile =
   testChatCfg3 feedTestCfg businessProfile aliceProfile bobProfile $
-    \biz alice bob -> withXFTPServer $ do
+    \biz alice bob -> withXFTPServer biz $ do
       createCCFeed biz
       connectUsers biz alice
       connectUsers biz bob
+      let aliceFile = tmpFile alice "test.pdf"
+          bobFile = tmpFile bob "bob_test.pdf"
 
       biz #> "/f % ./tests/fixtures/test.pdf"
       biz <## "use /fc 1 to cancel sending"
@@ -185,23 +187,23 @@ testFeedFile =
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       biz <## "completed uploading file 1 (test.pdf) for %"
 
-      alice ##> "/fr 1 ./tests/tmp"
+      alice ##> ("/fr 1 " <> tmpDir alice)
       alice
-        <### [ "saving file 1 from biz to ./tests/tmp/test.pdf",
+        <### [ ConsoleString $ "saving file 1 from biz to " <> aliceFile,
                "started receiving file 1 (test.pdf) from biz"
              ]
       alice <## "completed receiving file 1 (test.pdf) from biz"
 
-      bob ##> "/fr 1 ./tests/tmp/bob_test.pdf"
+      bob ##> ("/fr 1 " <> bobFile)
       bob
-        <### [ "saving file 1 from biz to ./tests/tmp/bob_test.pdf",
+        <### [ ConsoleString $ "saving file 1 from biz to " <> bobFile,
                "started receiving file 1 (test.pdf) from biz"
              ]
       bob <## "completed receiving file 1 (test.pdf) from biz"
 
       src <- B.readFile "./tests/fixtures/test.pdf"
-      B.readFile "./tests/tmp/test.pdf" `shouldReturn` src
-      B.readFile "./tests/tmp/bob_test.pdf" `shouldReturn` src
+      B.readFile aliceFile `shouldReturn` src
+      B.readFile bobFile `shouldReturn` src
 
 testFeedSkipsIncognito :: HasCallStack => TestParams -> IO ()
 testFeedSkipsIncognito =

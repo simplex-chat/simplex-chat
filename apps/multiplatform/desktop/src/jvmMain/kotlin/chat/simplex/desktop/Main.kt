@@ -9,19 +9,27 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.*
 import chat.simplex.common.acquireSingleInstance
+import chat.simplex.common.installOpenUriHandler
+import chat.simplex.common.linkFromArgs
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.size
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.DesktopPlatform
 import chat.simplex.common.showApp
+import chat.simplex.common.singleInstanceLock
+import chat.simplex.common.startShowFileWatcher
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.*
 import java.io.File
 
-fun main() {
+fun main(args: Array<String>) {
   try {
-    if (!acquireSingleInstance()) return
+    val link = linkFromArgs(args)
+    if (!acquireSingleInstance(link)) return
+    link?.let { chatModel.appOpenUrl.value = null to it }
+    // started after the launch link is stored, so a link it forwards later is not overwritten
+    if (singleInstanceLock) startShowFileWatcher()
     // Clean shared temp dirs only in the owning instance (not in a Files.desktop val
     // initializer, which a transient second instance would also run). Early: before settings writes.
     preferencesTmpDir.deleteRecursively()
@@ -31,13 +39,14 @@ fun main() {
     runMigrations()
     setupUpdateChecker()
     initApp()
+    registerLinkSchemes()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
     // Only the owning instance cleans tmpDir on exit (see preferencesTmpDir above).
     tmpDir.deleteOnExit()
-    // showApp is inside the try: its first statements (SystemTray probe, Compose setup) are the
-    // process's first AWT init, which is itself a known startup failure cause (#4146). Crashes
-    // after the window appears are handled by the WindowExceptionHandler in showApp instead.
+    // installOpenUriHandler and showApp stay inside the try: whichever touches AWT first makes the process's
+    // first AWT init, a known startup failure cause (#4146); later crashes go to showApp's WindowExceptionHandler.
+    if (desktopPlatform.isMac()) installOpenUriHandler()
     return showApp()
   } catch (e: Throwable) {
     showStartupError(e) // the jpackage launcher otherwise hides the error behind "Failed to launch JVM" (#4146)

@@ -166,6 +166,7 @@ After completing all changes (code + documentation), you MUST run an adversarial
 | Shared/SimpleXApp.swift | spec/architecture.md | product/flows/onboarding.md |
 | Shared/AppDelegate.swift | spec/services/notifications.md | product/flows/onboarding.md |
 | Shared/Views/ChatList/ChatListView.swift | spec/client/chat-list.md | product/views/chat-list.md |
+| Shared/Views/ChatList/GetStakeBanner.swift | spec/client/chat-list.md | product/views/chat-list.md |
 | Shared/Views/Chat/ChatView.swift | spec/client/chat-view.md | product/views/chat.md |
 | Shared/Views/Chat/ComposeMessage/ComposeView.swift | spec/client/compose.md | product/views/chat.md |
 | Shared/Views/Chat/ChatItem/ | spec/client/chat-view.md | product/views/chat.md |

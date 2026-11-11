@@ -1,12 +1,12 @@
 (async () => {
   const {bot} = await import("../dist/index.js")
-  const [chat, _user, _address] = await bot.run({
+  await bot.run({
     profile: {displayName: "Squaring bot example", fullName: ""},
     dbOpts: {type: "sqlite", filePrefix: "./squaring_bot"},
     options: {
       addressSettings: {welcomeMessage: "Send a number, I will square it."},
     },
-    onMessage: async (ci, content) => {
+    onMessage: async (ci, content, chat) => {
       const n = +content.text
       const reply = typeof n === "number" && !isNaN(n)
                     ? `${n} * ${n} = ${n * n}`

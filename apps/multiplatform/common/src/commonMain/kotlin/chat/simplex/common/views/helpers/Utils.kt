@@ -13,7 +13,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeModeOverrides
 import chat.simplex.common.ui.theme.ThemeOverrides
 import chat.simplex.common.views.chatlist.connectIfOpenedViaUri
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
@@ -172,20 +172,14 @@ fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverri
 }
 
 fun saveImage(uri: URI): CryptoFile? {
-  val bitmap = getBitmapFromUri(uri) ?: return null
-  return saveImage(bitmap)
-}
-
-fun saveImage(image: ImageBitmap): CryptoFile? {
   return try {
     val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
-    val ext = if (image.hasAlpha()) "png" else "jpg"
-    val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
+    val (dataResized, ext) = resizeImageFromUri(uri) ?: return null
     val destFileName = generateNewFileName("IMG", ext, File(getAppFilePath("")))
     val destFile = File(getAppFilePath(destFileName))
     if (encrypted) {
       try {
-        val args = writeCryptoFile(destFile.absolutePath, dataResized.toByteArray())
+        val args = writeCryptoFile(destFile.absolutePath, dataResized)
         CryptoFile(destFileName, args)
       } catch (e: Exception) {
         Log.e(TAG, "Unable to write crypto file: " + e.stackTraceToString())
@@ -194,7 +188,7 @@ fun saveImage(image: ImageBitmap): CryptoFile? {
       }
     } else {
       val output = FileOutputStream(destFile)
-      dataResized.writeTo(output)
+      output.write(dataResized)
       output.flush()
       output.close()
       CryptoFile.plain(destFileName)
@@ -206,14 +200,12 @@ fun saveImage(image: ImageBitmap): CryptoFile? {
 }
 
 fun desktopSaveImageInTmp(uri: URI): CryptoFile? {
-  val image = getBitmapFromUri(uri) ?: return null
   return try {
-    val ext = if (image.hasAlpha()) "png" else "jpg"
-    val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
+    val (dataResized, ext) = resizeImageFromUri(uri) ?: return null
     val destFileName = generateNewFileName("IMG", ext, tmpDir)
     val destFile = File(tmpDir, destFileName)
     val output = FileOutputStream(destFile)
-    dataResized.writeTo(output)
+    output.write(dataResized)
     output.flush()
     output.close()
     CryptoFile.plain(destFile.absolutePath)
@@ -221,6 +213,17 @@ fun desktopSaveImageInTmp(uri: URI): CryptoFile? {
     Log.e(TAG, "Util.kt desktopSaveImageInTmp error: ${e.stackTraceToString()}")
     null
   }
+}
+
+private fun resizeImageFromUri(uri: URI): Pair<ByteArray, String>? {
+  val data = resizeImageFileToDataSize(uri, MAX_IMAGE_SIZE)
+  if (data != null) {
+    val ext = if (data.firstOrNull() == 0x89.toByte()) "png" else "jpg"
+    return data to ext
+  }
+  val image = getBitmapFromUri(uri) ?: return null
+  val ext = if (image.hasAlpha()) "png" else "jpg"
+  return resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE).toByteArray() to ext
 }
 
 fun saveAnimImage(uri: URI): CryptoFile? {
@@ -617,11 +620,25 @@ fun UriHandler.openExternalLink(uri: String) {
   } else {
     AlertManager.shared.showAlertDialog(
       title = generalGetString(MR.strings.open_external_link_title),
-      text = uri,
+      text = displayedUri(uri),
       confirmText = generalGetString(MR.strings.open_verb),
-      onConfirm = { uriHandler.openUriCatching(uri) }
+      onConfirm = { uriHandler.openUriCatching(uri) },
+      parseHtml = false
     )
   }
+}
+
+val invisibleChar = Regex("\\p{Cf}")
+
+private val nonAsciiChar = Regex("[^\\x00-\\x7F]")
+
+fun unicodeMarker(c: String): String = "[U+" + Integer.toHexString(c.codePointAt(0)).uppercase().padStart(4, '0') + "]"
+
+fun displayedUri(uri: String): String {
+  val authorityStart = uri.indexOf("://").takeIf { it >= 0 }?.plus(3) ?: 0
+  val authorityEnd = uri.indexOfAny(charArrayOf('/', '?', '#'), authorityStart).takeIf { it >= 0 } ?: uri.length
+  val authority = uri.substring(authorityStart, authorityEnd).replace(nonAsciiChar) { unicodeMarker(it.value) }
+  return uri.replaceRange(authorityStart, authorityEnd, authority).replace(invisibleChar) { unicodeMarker(it.value) }
 }
 
 fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(

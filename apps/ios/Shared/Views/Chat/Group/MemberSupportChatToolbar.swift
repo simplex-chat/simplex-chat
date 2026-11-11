@@ -36,9 +36,11 @@ struct MemberSupportChatToolbar: View {
     }
 }
 
-#Preview {
-    MemberSupportChatToolbar(
-        groupMember: GroupMember.sampleData
-    )
-    .environmentObject(CurrentColors.toAppTheme())
+struct MemberSupportChatToolbar_Previews: PreviewProvider {
+    static var previews: some View {
+        MemberSupportChatToolbar(
+            groupMember: GroupMember.sampleData
+        )
+        .environmentObject(CurrentColors.toAppTheme())
+    }
 }

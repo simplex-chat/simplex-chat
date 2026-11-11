@@ -9,7 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.jthemedetecor.OsThemeDetector
 import com.russhwolf.settings.*
 import dev.icerock.moko.resources.ImageResource
@@ -26,9 +26,13 @@ actual fun font(name: String, res: String, weight: FontWeight, style: FontStyle)
 
 actual fun StringResource.localized(): String = desc().toString()
 
-private val detector: OsThemeDetector = OsThemeDetector.getDetector()
+internal val systemThemeDetector: OsThemeDetector? = try {
+  OsThemeDetector.getDetector()
+} catch (_: LinkageError) {
+  null
+}
 actual fun isInNightMode() = try {
-  detector.isDark
+  systemThemeDetector?.isDark ?: false
 }
 catch (e: Exception) {
   Log.e(TAG, e.stackTraceToString())

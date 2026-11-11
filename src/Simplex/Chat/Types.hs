@@ -30,7 +30,9 @@
 module Simplex.Chat.Types where
 
 import Control.Applicative ((<|>))
+import Control.Concurrent.STM (TVar)
 import Crypto.Number.Serialize (os2ip)
+import Crypto.Random (ChaChaDRG)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -52,7 +54,7 @@ import Data.Time.Clock (UTCTime)
 import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
-import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), ProofPresHeader, acceptedBadge, localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Names (SimplexDomainClaim (..))
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
@@ -218,6 +220,7 @@ data Contact = Contact
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
+    chatLayout :: Maybe ChatLayout,
     chatDeleted :: Bool,
     customData :: Maybe CustomData
   }
@@ -313,6 +316,13 @@ contactActive Contact {contactStatus} = contactStatus == CSActive
 
 contactDeleted :: Contact -> Bool
 contactDeleted Contact {contactStatus} = contactStatus == CSDeleted || contactStatus == CSDeletedByUser
+
+contactUpdatableFromMember :: Contact -> Bool
+contactUpdatableFromMember ct
+  | not (contactActive ct) = True
+  | otherwise = case contactConn ct of
+      Nothing -> True
+      Just conn -> not (connReady conn) || (authErrCounter conn >= 1)
 
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
@@ -437,7 +447,7 @@ instance ToJSON ConnReqUriHash where
 
 data RequestEntity
   = REContact Contact
-  | REBusinessChat GroupInfo GroupMember
+  | REBusinessChat GroupInfoKeys GroupMember
 
 type RepeatRequest = Bool
 
@@ -479,17 +489,30 @@ groupRootPubKey :: GroupRootKey -> C.PublicKeyEd25519
 groupRootPubKey (GRKPrivate pk) = C.publicKey pk
 groupRootPubKey (GRKPublic pk) = pk
 
-data GroupKeys = GroupKeys
-  { publicGroupKeys :: Maybe PublicGroupKeys,
-    memberPrivKey :: C.PrivateKeyEd25519
-  }
+data GroupKeys
+  = GKGroup
+      { memberPrivKey :: C.PrivateKeyEd25519
+      }
+  | GKPublicGroup
+      { groupRootKey :: GroupRootKey,
+        memberPrivKey :: C.PrivateKeyEd25519
+      }
+  | GKRelayRequest
+      { memberPrivKey :: C.PrivateKeyEd25519
+      }
+  | GKPreparedPublicGroup
+      { memberPrivKey :: C.PrivateKeyEd25519
+      }
   deriving (Eq, Show)
 
-data PublicGroupKeys = PublicGroupKeys
-  { publicGroupId :: B64UrlByteString,
-    groupRootKey :: GroupRootKey
-  }
-  deriving (Eq, Show)
+isPublicGroup :: GroupKeys -> Bool
+isPublicGroup = \case
+  GKGroup {} -> False
+  GKPublicGroup {} -> True
+  GKRelayRequest {} -> True
+  GKPreparedPublicGroup {} -> True
+
+data GroupInfoKeys = GIK GroupInfo GroupKeys
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
@@ -515,13 +538,15 @@ data GroupInfo = GroupInfo
     rosterVersion :: Maybe VersionRoster,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
-    groupKeys :: Maybe GroupKeys,
     groupDomainVerified :: Maybe Bool
   }
   deriving (Eq, Show)
 
 useRelays' :: GroupInfo -> Bool
 useRelays' GroupInfo {useRelays} = isTrue useRelays
+
+publicGroup' :: GroupInfo -> Maybe PublicGroupProfile
+publicGroup' g@GroupInfo {groupProfile = GroupProfile {publicGroup}} = if useRelays' g then publicGroup else Nothing
 
 relayServesGroup :: GroupInfo -> Bool
 relayServesGroup GroupInfo {relayOwnStatus} = case relayOwnStatus of
@@ -595,7 +620,7 @@ data GroupLink = GroupLink
 
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember] | CGFeed Feed
 
-data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
+data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfoKeys, hostMember :: GroupMember}
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId, Maybe FeedId)
 contactAndGroupIds = \case
@@ -728,7 +753,7 @@ data Profile = Profile
   }
   deriving (Eq, Show)
 
-data ChatPeerType = CPTHuman | CPTBot | CPTBusiness | CPTUnknown Text
+data ChatPeerType = CPTHuman | CPTBot | CPTBusiness | CPTAgent | CPTUnknown Text
   deriving (Eq, Show)
 
 instance FromJSON ChatPeerType where
@@ -747,11 +772,13 @@ instance TextEncoding ChatPeerType where
     "human" -> CPTHuman
     "bot" -> CPTBot
     "business" -> CPTBusiness
+    "agent" -> CPTAgent
     tag -> CPTUnknown tag
   textEncode = \case
     CPTHuman -> "human"
     CPTBot -> "bot"
     CPTBusiness -> "business"
+    CPTAgent -> "agent"
     CPTUnknown tag -> tag
 
 profileFromName :: ContactName -> Profile
@@ -834,15 +861,18 @@ fromLocalProfile LocalProfile {displayName, fullName, shortDescr, description, i
       OwnBadge _ _ -> Nothing -- the own credential is not sent, proof is generated on send
       ShownBadge _ _ -> Nothing -- a display-only badge is not sent
 
-profileBadgeVerified :: Map Int BBSPublicKey -> LocalProfile -> Profile -> IO (Maybe Bool)
-profileBadgeVerified keys LocalProfile {localBadge} Profile {badge = newBadge} =
-  case (localBadge, newBadge) of
+profileBadgeVerified :: Maybe ProofPresHeader -> Map Int BBSPublicKey -> Maybe LocalProfile -> Profile -> IO (Profile, Maybe Bool)
+profileBadgeVerified expected keys lp_ p@Profile {badge = rcvBadge} =
+  (,) p {badge = newBadge} <$> case (storedBadge, newBadge) of
     (_, Nothing) -> pure (Just False)
     -- an unchanged badge that verified before stays verified; failed or unknown-key badges
     -- are re-verified, so an unknown key heals once an app update adds it
     (Just lb, Just (BadgeProof _ _ _ newInfo))
       | localBadgeInfo lb == newInfo && localBadgeStatus lb `notElem` [BSFailed, BSUnknownKey] -> pure (Just True)
     (_, Just newB) -> verifyBadge keys newB
+  where
+    storedBadge = (\LocalProfile {localBadge} -> localBadge) =<< lp_
+    newBadge = acceptedBadge expected ((\Profile {badge} -> badge) . fromLocalProfile =<< lp_) rcvBadge
 
 -- a failed or unknown-key badge is re-verified on the next profile update even when its disclosed content
 -- is unchanged, so it heals once an app update adds the issuer key
@@ -893,7 +923,8 @@ data GroupProfile = GroupProfile
     image :: Maybe ImageData,
     publicGroup :: Maybe PublicGroupProfile,
     groupPreferences :: Maybe GroupPreferences,
-    memberAdmission :: Maybe GroupMemberAdmission
+    memberAdmission :: Maybe GroupMemberAdmission,
+    chatLayout :: Maybe ChatLayout
   }
   deriving (Eq, Show)
 
@@ -922,7 +953,10 @@ instance ToJSON ImageData where
 
 safeImageData :: Text -> Text
 safeImageData t
-  | "data:" `T.isPrefixOf` t = t
+  | Just b64 <- T.stripPrefix "data:image/jpg;base64," t <|> T.stripPrefix "data:image/png;base64," t,
+    Right header <- B64.decode $ encodeUtf8 $ T.take 12 b64,
+    any (`B.isPrefixOf` header) ["\xFF\xD8\xFF", "\x89PNG\r\n\x1a\n"] =
+      t
   | otherwise = ""
 
 instance ToField ImageData where toField (ImageData t) = toField t
@@ -986,7 +1020,9 @@ data GroupRelayInvitation = GroupRelayInvitation
   { fromMember :: MemberIdRole,
     fromMemberProfile :: Profile,
     relayMemberId :: MemberId,
-    groupLink :: ShortLinkContact
+    groupLink :: ShortLinkContact,
+    publicGroupId :: Maybe B64UrlByteString,
+    fromMemberKey :: Maybe MemberKey
   }
   deriving (Eq, Show)
 
@@ -1064,8 +1100,7 @@ data MemberIdRole = MemberIdRole
   deriving (Eq, Show)
 
 data IntroInvitation = IntroInvitation
-  { groupConnReq :: ConnReqInvitation,
-    directConnReq :: Maybe ConnReqInvitation
+  { groupConnReq :: ConnReqInvitation
   }
   deriving (Eq, Show)
 
@@ -1148,7 +1183,8 @@ memberRestrictions m
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
     connRequest :: ConnReqInvitation,
-    groupInfo :: GroupInfo
+    groupInfo :: GroupInfo,
+    groupKeys :: GroupKeys
   }
   deriving (Eq, Show)
 
@@ -1189,13 +1225,15 @@ data GroupMember = GroupMember
     relayLink :: Maybe ShortLinkContact,
     -- out-of-band verified security code for connectionless (channel) members;
     -- regular members carry it in activeConn instead (see memberSecurityCode)
-    memberVerifiedCode :: Maybe SecurityCode
+    memberVerifiedCode :: Maybe SecurityCode,
+    memberBadgeProof :: NoJSON BadgeProof
   }
   deriving (Eq, Show)
 
 data RelayRequestData = RelayRequestData
   { relayInvId :: InvitationId,
     reqGroupLink :: ShortLinkContact,
+    reqPublicGroupId :: Maybe B64UrlByteString,
     reqChatVRange :: VersionRangeChat,
     reqDelay :: Int64,
     reqRetries :: Int,
@@ -2256,8 +2294,8 @@ type VersionChat = Version ChatVersion
 type VersionRangeChat = VersionRange ChatVersion
 
 -- | Store-wide context passed to store functions in place of the bare `vr`
--- parameter. Built from config by mkStoreCxt; more fields are added here over time.
-data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey}
+-- parameter. Built from config by storeCxt; more fields are added here over time.
+data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey, drg :: TVar ChaChaDRG}
 
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v
@@ -2362,12 +2400,6 @@ $(JQ.deriveToJSON defaultJSON ''GroupSummary)
 instance FromJSON GroupSummary where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''GroupSummary)
   omittedField = Just GroupSummary {currentMembers = 0, publicMemberCount = Nothing}
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GRK") ''GroupRootKey)
-
-$(JQ.deriveJSON defaultJSON ''PublicGroupKeys)
-
-$(JQ.deriveJSON defaultJSON ''GroupKeys)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 

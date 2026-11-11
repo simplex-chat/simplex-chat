@@ -6,7 +6,7 @@
 
 # Interface: ErrorNotADatabase
 
-Defined in: [src/core.ts:139](../src/core.ts#L139)
+Defined in: [src/core.ts:215](../core.ts#L215)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:139](../src/core.ts#L139)
 
 > **dbFile**: `string`
 
-Defined in: [src/core.ts:141](../src/core.ts#L141)
+Defined in: [src/core.ts:217](../core.ts#L217)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:141](../src/core.ts#L141)
 
 > **type**: `"errorNotADatabase"`
 
-Defined in: [src/core.ts:140](../src/core.ts#L140)
+Defined in: [src/core.ts:216](../core.ts#L216)
 
 #### Overrides
 
