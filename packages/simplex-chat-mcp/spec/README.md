@@ -115,8 +115,8 @@ graph TD
 | Tool registration | [`src/tools.ts`](../src/tools.ts#L488) | `AgentTools.register` | [488](../src/tools.ts#L488) |
 | Downloads | [`src/tools.ts`](../src/tools.ts#L522) | `AgentTools.downloadFile` | [522](../src/tools.ts#L522) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L124) | `Actions` | [124](../src/actions.ts#L124) |
-| Agent control chat | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
-| Card text | [`src/control.ts`](../src/control.ts#L552) | `cardText` | [552](../src/control.ts#L552) |
+| Agent control chat | [`src/control.ts`](../src/control.ts#L82) | `Control` | [82](../src/control.ts#L82) |
+| Card text | [`src/control.ts`](../src/control.ts#L566) | `cardText` | [566](../src/control.ts#L566) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L12) | `createDataFolder`, `acquireLock` | [12](../src/files.ts#L12) |

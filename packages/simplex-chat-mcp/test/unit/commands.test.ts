@@ -19,7 +19,7 @@ afterEach(() => jest.restoreAllMocks())
 
 afterAll(() => rmSync(data, {recursive: true, force: true}))
 
-const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /copies, /leave, /delete, /pending, /list. Each card shows its commands."
 
 const alice = member(3, "Alice", T.GroupMemberRole.Owner)
 const bob = member(7, "Bob", T.GroupMemberRole.Member)
@@ -178,7 +178,7 @@ describe("owner commands", () => {
 
   it("answers other commands with the list", async () => {
     const {control} = await setup()
-    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "receive #2 all", "receive 5 all", "receive #2 5 files", "receive off", "forward", "forward #2 all", "forward #2 5 all", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all"]
+    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "receive #2 all", "receive 5 all", "receive #2 5 files", "receive off", "copies", "copies off", "copies #2", "copies #2 all", "forward", "forward #2 all", "forward #2 5 all", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all"]
     for (const text of others) {
       expect(await control.ownerCommand(bob, parseCommand(`/${text}`)!)).toBe(commandsReply)
     }
@@ -257,6 +257,26 @@ describe("approval of all messages to a chat", () => {
     expect(await control.ownerCommand(alice, {keyword: "revoke", params: "#10"})).toBe("Messages to #10 have no standing approval.")
     expect(await control.ownerCommand(alice, {keyword: "revoke", params: "#99"})).toBe("Messages to #99 have no standing approval.")
     expect(chat.customData.map(({chat: ref}) => ref)).toEqual(["@4", "@4"])
+  })
+
+  it("turns the copies of a chat's sends off and on, keeps other custom data, and refuses unknown chats", async () => {
+    const {control, actions, chat} = await setup()
+    const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
+    directory.customData = {other: 1}
+    expect(await control.ownerCommand(alice, {keyword: "copies", params: "@4 off"})).toBe("Copies of messages to bot SimpleX Directory (@4) are off. /'copies @4 on'")
+    expect(customDataOf(chat, "@4")).toEqual({other: 1, simplexMcpCopies: false})
+    expect((await control.ownerCommand(alice, {keyword: "list", params: ""}))!.split("\n")[0]).toBe("@4  bot SimpleX Directory, copies off")
+    expect(await control.ownerCommand(alice, {keyword: "approve", params: "@4 all"})).toBe("Approved for bot SimpleX Directory (@4) by Alice. /'revoke @4'\nCopies are off: /'copies @4 on'")
+    const download = actions.create("d1", downloadFields("@4"))
+    await settled()
+    expect(await control.ownerCommand(alice, {keyword: "receive", params: `@4 ${download.n} all`})).toBe("Files approved for bot SimpleX Directory (@4) by Alice. /'receive @4 off'")
+    expect(await control.ownerCommand(alice, {keyword: "copies", params: "@4 on"})).toBe("Copies of messages to bot SimpleX Directory (@4) are on.")
+    expect(customDataOf(chat, "@4")).toEqual({other: 1, simplexMcp: expect.any(Object), simplexMcpFiles: expect.any(Object)})
+    expect(await control.ownerCommand(alice, {keyword: "copies", params: "#2 off"})).toBe("Copies of messages to business ep (#2) are off. /'copies #2 on'")
+    expect(customDataOf(chat, "#2")).toEqual({simplexMcpCopies: false})
+    expect(await control.ownerCommand(alice, {keyword: "copies", params: "#10 off"})).toBe("No chat #10. /list shows the agent's chats.")
+    expect(await control.ownerCommand(alice, {keyword: "copies", params: "#99 on"})).toBe("No chat #99. /list shows the agent's chats.")
+    expect(chat.customData.map(({chat: ref}) => ref)).toEqual(["@4", "@4", "@4", "@4", "#2"])
   })
 
   it("applies only while the approving member is an approver", async () => {
@@ -791,7 +811,45 @@ describe("sends to a chat approved for all messages", () => {
     expect(result!.structuredContent).toMatchObject({action: 1, status: "done", chat: "@4", responses: [], more: 0})
     expect(chat.sent.filter(({chat: [, id]}) => id === 4).map(({messages: [{msgContent}]}) => msgContent.text)).toEqual(["trail shoes"])
     await settled()
-    expect(cards(chat)).toEqual(["I sent a message to bot SimpleX Directory:\n`trail shoes`\nApproved for this chat by Alice. /'revoke @4'"])
+    expect(cards(chat)).toEqual(["I sent a message to bot SimpleX Directory:\n`trail shoes`\nApproved for this chat by Alice. /'revoke @4' or /'copies @4 off'"])
+  })
+
+  it("posts no outcome card of a performed send after /copies CHAT off, and still posts a failed one and edits an approved card", async () => {
+    const {chat, control, tools} = await standing([alice])
+    await control.ownerCommand(alice, {keyword: "copies", params: "@4 off"})
+    expect((await tools.call("send", {chat: "@4", text: "trail shoes", wait: 0}, signal().call))!.structuredContent).toMatchObject({action: 1, status: "done"})
+    await settled()
+    expect(cards(chat)).toEqual([])
+    const send = chat.apiSendMessages.bind(chat)
+    chat.apiSendMessages = async (target, messages) => {
+      if (target[1] === 4) throw new Error("boom")
+      return send(target, messages)
+    }
+    await tools.call("send", {chat: "@4", text: "boots", wait: 0}, signal().call)
+    await settled()
+    expect(cards(chat)).toEqual(["I want to send a message to bot SimpleX Directory:\n`boots`\nApproved for this chat by Alice; failed: `boom`."])
+    chat.apiSendMessages = send
+    await control.ownerCommand(alice, {keyword: "revoke", params: "@4"})
+    const sending = tools.call("send", {chat: "@4", text: "socks", wait: 0}, signal().call)
+    await new Promise(resolve => setImmediate(resolve))
+    expect(await control.ownerCommand(alice, {keyword: "approve", params: "@4 3"})).toBeUndefined()
+    await sending
+    await settled()
+    expect(chat.updates.at(-1)!.text).toBe("I sent a message to bot SimpleX Directory:\n`socks`\nApproved by Alice.")
+  })
+
+  it("posts the outcome card of a send to a chat with copies off that is deleted before its outcome", async () => {
+    const {chat, control, tools} = await standing([alice])
+    await control.ownerCommand(alice, {keyword: "copies", params: "@4 off"})
+    const send = chat.apiSendMessages.bind(chat)
+    chat.apiSendMessages = async (target, messages) => {
+      const sent = await send(target, messages)
+      if (target[1] === 4) chat.chats.delete("@4")
+      return sent
+    }
+    await tools.call("send", {chat: "@4", text: "trail shoes", wait: 0}, signal().call)
+    await settled()
+    expect(cards(chat)).toEqual(["I sent a message to bot SimpleX Directory:\n`trail shoes`\nApproved for this chat by Alice. /'revoke @4' or /'copies @4 off'"])
   })
 
   it("posts a card when the approving member is no longer an approver", async () => {
@@ -819,6 +877,7 @@ describe("sends to a chat approved for all messages", () => {
 
   it("applies in no chat in mode host", async () => {
     const {chat, control, tools} = await standing([alice], "host")
+    Object.assign(customDataOf(chat, "@4")!, {simplexMcpCopies: false})
     expect(control.standingApprover(chatInfoOf(chat, "@4"), "messages")).toBeUndefined()
     const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: {chat: string}[]}
     expect(chats.find(({chat: ref}) => ref === "@4")).not.toHaveProperty("approved")

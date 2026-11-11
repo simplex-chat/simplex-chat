@@ -168,7 +168,7 @@ describe("send cards", () => {
   it("shows a send under the standing approval of its chat", () => {
     const fields: NewAction = {tool: "send", input: {chat: "#2", text: "hello"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2", mentions: [], responses: new Collected()}
     const standing = {standing: true, decidedBy: "Alice"}
-    expect(cardText(action(fields, "done", standing), mode).split("\n")).toEqual(["I sent a message to business ep:", "`hello`", "Approved for this chat by Alice. /'revoke #2'"])
+    expect(cardText(action(fields, "done", standing), mode).split("\n")).toEqual(["I sent a message to business ep:", "`hello`", "Approved for this chat by Alice. /'revoke #2' or /'copies #2 off'"])
     expect(cardText(action(fields, "failed", {...standing, error: "boom"}), mode).split("\n")).toEqual(["I want to send a message to business ep:", "`hello`", "Approved for this chat by Alice; failed: `boom`."])
     expect(cardText(action(fields, "performing", {...standing, interrupted: true}), mode).split("\n").at(-1)).toBe("Approved for this chat by Alice; interrupted: the server stopped.")
   })

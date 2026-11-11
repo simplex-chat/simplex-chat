@@ -54,8 +54,8 @@ The directory by its address (`docs/DIRECTORY.md`):
 Approval of all messages to a chat, and leaving:
 
 1. `Search the directory for Monero groups.` On the card, tap `/approve @N all`. The reply is `Approved for bot SimpleX Directory (@N) by Alice. /revoke @N`, and the search is sent.
-2. `Send /help to the directory.` It is sent without a card; the agent control chat then gets `I sent a message to bot SimpleX Directory:`, `` `/help` `` and `Approved for this chat by Alice. /revoke @N`. `list` shows `approved: true` for the directory.
-3. Tap `/list` in the command menu: one line per chat; the directory's line ends with `, approved for this chat by Alice`.
+2. `Search the directory for Bitcoin groups.` It is sent without a card; the agent control chat then gets `I sent a message to bot SimpleX Directory:`, the text and `Approved for this chat by Alice. /revoke @N or /copies @N off`. `list` shows `approved: true` for the directory.
+3. Tap `/copies @N off`: `Copies of messages to bot SimpleX Directory (@N) are off. /copies @N on`. `Search the directory for Linux groups.` It is sent without a card, and no copy is posted. Tap `/list` in the command menu: one line per chat; the directory's line ends with `, approved for this chat by Alice, copies off`. Tap `/copies @N on`: `Copies of messages to bot SimpleX Directory (@N) are on.`
 4. Tap `/revoke @N`: `Messages to bot SimpleX Directory (@N) need approval again.` The next send gets a card.
 5. `Leave the directory.` Card: `I want to delete bot SimpleX Directory (@N).` Approve it: the call returns `status: done`, and `list` no longer shows the directory.
 6. Join a group from the search results, then `Leave that group.` Card: `I want to leave group <name> (#N).` Approve it: the members see that the agent left.
