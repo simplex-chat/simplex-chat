@@ -189,4 +189,14 @@ In a session started as in step 2 above:
 
     Run `claude -p "Reply with ok." --strict-mcp-config --mcp-config /tmp/env-mcp-config.json --settings /tmp/env-settings.json` once in a terminal, and once from the Bash tool of the session of step 2 with `CLAUDE_CODE_ENTRYPOINT=claude-vscode` before it. After each run, `grep -o '"CLAUDE_CODE_SESSION_ATTENDED":"[01]"' /tmp/env-hook.json /tmp/env-mcp.json` shows the values. With Claude Code 2.1.319, 2026-11-08: in a terminal, the hook got `0` and the MCP server none; from the Bash tool, the hook got `0` and the MCP server `1`, the value of the session whose Bash tool ran it, and the hook's `CLAUDE_PID` is the parent process of the MCP server. For the second run, the plugin's SessionStart hook marks that process in the service, and the service refuses its session server.
 16. From the Bash tool of the session of step 2, run `CLAUDE_CODE_ENTRYPOINT=claude-vscode SIMPLEX_MCP_HOME=/tmp/simplex-mcp-test claude -p "Call the list tool of the simplex server." --plugin-dir /tmp/simplex-plugin` in another folder: no new group appears, and the answer quotes `This Claude Code run is not interactive, so it has no SimpleX group`.
-17. Stop the service: `kill $(cat /tmp/simplex-mcp-test/service.lock)`.
+17. Load the plugin from settings, as in [Shared settings](REFERENCE.md#shared-settings), with a plugin registry of its own:
+
+    ```
+    mkdir -p /tmp/simplex-plugins/.claude-plugin
+    cp -r /tmp/simplex-plugin /tmp/simplex-plugins/plugin
+    echo '{"name": "simplex-local", "owner": {"name": "Test"}, "plugins": [{"name": "simplex", "source": "./plugin"}]}' > /tmp/simplex-plugins/.claude-plugin/marketplace.json
+    echo '{"extraKnownMarketplaces": {"simplex-local": {"source": {"source": "directory", "path": "/tmp/simplex-plugins"}}}, "enabledPlugins": {"simplex@simplex-local": true}}' > /tmp/shared-settings.json
+    ```
+
+    In another folder, run `CLAUDE_CODE_PLUGIN_CACHE_DIR=/tmp/claude-plugins-test SIMPLEX_MCP_HOME=/tmp/simplex-mcp-test claude -p "Call the list tool of the simplex server." --settings /tmp/shared-settings.json`: the answer quotes `This Claude Code run is not interactive, so it has no SimpleX group`. `CLAUDE_CODE_PLUGIN_CACHE_DIR` keeps the marketplace out of `~/.claude/plugins`. Checked with Claude Code 2.1.322 on 2026-11-11: the answer quoted it, `/tmp/claude-plugins-test/known_marketplaces.json` listed `simplex-local`, and the plugin's folder had no `node_modules/.package-lock.json`; the same keys in `.claude/settings.json` of the folder, without `--settings`, gave the run no tool of the plugin.
+18. Stop the service: `kill $(cat /tmp/simplex-mcp-test/service.lock)`.

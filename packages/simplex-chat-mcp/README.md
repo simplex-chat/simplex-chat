@@ -34,53 +34,10 @@ You need Node.js 22 or later, Claude Code and the [SimpleX Chat app](https://sim
 
 4. Send a prompt in the session's group. Claude answers there. It asks there before it connects, sends, downloads a file or leaves a chat, and before it uses a tool such as Bash: one tap approves. Your prompts typed in the terminal appear in the group too.
 
-## Try it
-
-You need Node.js 22 or later, Claude Code and the [SimpleX Chat app](https://simplex.chat/downloads/).
-
-1. Start your agent and keep it running:
-
-   ```
-   npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
-   ```
-
-   Scan the QR code it prints with the SimpleX app, and tap Join. The chat "My Agent" appears: your agent asks there before it acts. Ctrl-C stops it; when requests were waiting, it first marks them cancelled in "My Agent", waiting up to 10 seconds (`--stop-wait`), and a second Ctrl-C stops it at once.
-
-2. In another terminal, add it to Claude Code:
-
-   ```
-   npx -y @simplex-chat/mcp register my-agent
-   ```
-
-3. Add `"mcp__simplex-my-agent"` to `permissions.allow` in `~/.claude/settings.json`. You approve in the app, so Claude Code doesn't need to ask too.
-
-4. Start `claude` and ask:
-
-   ```
-   Search the SimpleX Directory for security groups: https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok
-   ```
-
-   Approve its cards in "My Agent" with one tap.
-
-## Prompt your agent from the app
-
-Give Claude Code your SimpleX address:
-
-```
-Connect to me as yourself at <your SimpleX address>, with the message:
-"I'm your agent, connected as you asked in Claude Code. I'll act on your prompts here, except security-sensitive ones."
-Then take my prompts from that chat and answer there: wait for my messages with receive (wait 3600),
-answer each one in that chat, and call receive again after every answer, until I say stop.
-```
-
-Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
-
 ## Safety
 
-- The agent asks in "My Agent" before it connects, sends a message or a file, downloads a file or leaves; you approve or reject. On a download card, `/receive` gives the agent the file, and `/forward` sends it only to you.
+- Everyone in "SimpleX MCP" can join each session's group as an admin, prompt the session and approve its actions and tool use: invite there only people you trust with all your sessions. In a session's group, rights follow the role: admins and owners prompt the session, send its `/` commands, and approve its actions and tool use; moderators and members prompt it; observers only read. Claude Code runs no command from a prompt, also one that starts with `!`: Claude gets the text, and its tool use follows Claude Code's permissions. Claude posts a member's rights at their join and at each change of their role; the post for a member who can send names the command that makes them an observer. Claude's files reach the group at once, while the group's preference "Files and media" allows them.
 - `all` approves every message to one chat; `/revoke` ends it. `/receive CHAT N all` lets the agent receive that file and later files from one chat on the agent's servers; `/receive CHAT off` ends it.
-- Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you write.
-- With the plugin, everyone in "SimpleX MCP" can join each session's group as an admin, prompt the session and approve its actions and tool use: invite there only people you trust with all your sessions. In a session's group, rights follow the role: admins and owners prompt the session, send its `/` commands, and approve its actions and tool use; moderators and members prompt it; observers only read. Claude Code runs no command from a prompt, also one that starts with `!`: Claude gets the text, and its tool use follows Claude Code's permissions. Claude posts a member's rights at their join and at each change of their role; the post for a member who can send names the command that makes them an observer. Claude's files reach the group at once, while the group's preference "Files and media" allows them.
 - `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal, VERSION being the plugin's version, replaces "SimpleX MCP" and its owners at once, without their approval: any program running as you on your computer can do it.
 - The agent runs on your computer and has no address in SimpleX Network, so nobody can contact it first.
 
@@ -90,7 +47,7 @@ The agent is tested with Claude Code. Tell us which other apps and models you wa
 
 ## Reference
 
-The plugin, approval modes, owners, several agents, other MCP hosts, recovery and all options: [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md).
+Settings shared by several machines or containers, and the agent as an MCP server without the channel, by `serve` and `register`, are in [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md), with the plugin's options, recovery and security.
 
 ## Own a part of SimpleX
 

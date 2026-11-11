@@ -1,6 +1,6 @@
 # SimpleX MCP server: reference
 
-[README](README.md) has the short version.
+The plugin's installation and use in short: [README](README.md).
 
 `@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and files, and receives all the responses, with the files people send it. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends, downloads a file or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust, or all files from it. Six tools cover it: `connect`, `send`, `receive`, `download`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
 
@@ -27,6 +27,7 @@ Status: v0.3. [`TESTING.md`](TESTING.md) describes a local build and test. The d
 - [What the owner sees](#what-the-owner-sees)
 - [What the agent sees](#what-the-agent-sees)
 - [Waiting for approval in Claude Code](#waiting-for-approval-in-claude-code)
+- [Prompt the agent from the app](#prompt-the-agent-from-the-app)
 - [Several agents](#several-agents)
 - [Other MCP hosts](#other-mcp-hosts)
 - [Recovery](#recovery)
@@ -68,7 +69,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
    Listening on http://127.0.0.1:5226/mcp
    ```
 
-   `-y` answers npm's prompt to install the package. The server asks no questions: every choice is an option. The QR code of such a link is 37 columns wide and 19 lines high; `--qr-code large` draws it twice as wide and twice as high.
+   `-y` answers npm's prompt to install the package. The server asks no questions: every choice is an option. The QR code of such a link is 37 columns wide and 19 lines high; `--qr-code large` draws it twice as wide and twice as high. Ctrl-C stops the server, see [Expiry](#expiry).
 
 2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "My Agent" appears in the chat list, and the agent writes: `I'm your agent. I ask here before I connect, send, download a file or leave a chat.` The terminal prints:
 
@@ -328,6 +329,19 @@ An MCP server cannot start a turn of the agent: what the agent reads from the se
 - Calls from subagents, and calls in `claude -p` runs unless `CLAUDE_AUTO_BACKGROUND_TASKS=1`, stay in the foreground: the subagent or the run waits.
 - A background task ends with the session. The action stays in the server while it runs; `list` shows it, and the same call again picks it up.
 
+## Prompt the agent from the app
+
+Give Claude Code your SimpleX address:
+
+```
+Connect to me as yourself at <your SimpleX address>, with the message:
+"I'm your agent, connected as you asked in Claude Code. I'll act on your prompts here, except security-sensitive ones."
+Then take my prompts from that chat and answer there: wait for my messages with receive (wait 3600),
+answer each one in that chat, and call receive again after every answer, until I say stop.
+```
+
+Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
+
 ## Several agents
 
 Each agent is its own process, with its own data folder, port, agent control chat and Claude Code server:
@@ -431,6 +445,8 @@ One server runs per data folder: a second one exits, because two processes on on
 
 ## Security
 
+- In mode `requests`, the agent asks in the agent control chat before it connects, sends a message or a file, downloads a file or leaves, and the owner approves or rejects. On a download card, `/receive` gives the agent the file, and `/forward` sends it to the agent control chat, not to the agent.
+- Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you write, see [Prompt the agent from the app](#prompt-the-agent-from-the-app).
 - The server listens only on 127.0.0.1. Every request needs the token. Requests from web pages on other hosts, and requests with another `Host`, are refused (the SDK's localhost Origin and Host checks).
 - Any process with the token can act as the agent. The token is stored only in the data folder, in `token` and `headers.json`; Claude Code's config and the `claude mcp add-json` command line contain the command that prints `headers.json`, not the token.
 - Names written by peers are folded to one line, with control and format characters replaced by spaces, in the terminal and in the agent control chat; there, a name that is not a valid display name is shown as code.
@@ -476,6 +492,53 @@ The plugin adds:
 | UserPromptSubmit, Stop and PostModelSwitch hooks | Post your terminal prompts and Claude's answers in the session's group, and keep the model and the effort level in its description. They run in the background. |
 
 The plugin's server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, except the PreToolUse hook, which runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js`. The package bundles its production dependencies in its own `node_modules`, about 8 MB to download, and has no lockfile, so Claude Code installs nothing after it unpacks the package; Node.js loads the modules from the plugin's folder, so the `node_modules` of a project can't replace the plugin. The first session start downloads the SimpleX core library; Claude Code waits at most 600 seconds for the SessionStart hook.
+
+### Shared settings
+
+With settings shared by several machines or containers, Claude Code loads the plugin from a folder, without `/plugin` commands. Checked with Claude Code 2.1.322.
+
+1. Unpack the package into `plugin/` of a folder at the same path on each machine or container, here `/opt/simplex-plugins`; VERSION is the plugin's version, such as 0.3.0:
+
+   ```
+   mkdir -p /opt/simplex-plugins/.claude-plugin /opt/simplex-plugins/plugin
+   npm pack @simplex-chat/mcp@VERSION
+   tar -xzf simplex-chat-mcp-VERSION.tgz -C /opt/simplex-plugins/plugin --strip-components 1
+   ```
+
+   The dependencies are bundled in the package, so nothing is installed after the unpacking.
+
+2. Write `/opt/simplex-plugins/.claude-plugin/marketplace.json`:
+
+   ```json
+   {
+     "name": "simplex-local",
+     "owner": {"name": "Alice"},
+     "plugins": [{"name": "simplex", "source": "./plugin"}]
+   }
+   ```
+
+3. Add to the shared settings:
+
+   ```json
+   {
+     "extraKnownMarketplaces": {
+       "simplex-local": {"source": {"source": "directory", "path": "/opt/simplex-plugins"}}
+     },
+     "enabledPlugins": {"simplex@simplex-local": true}
+   }
+   ```
+
+   Claude Code reads `extraKnownMarketplaces` from user settings, `~/.claude/settings.json`, from a file passed by `--settings` and from managed settings, and loads the plugin when it starts. `path` is the absolute path of the folder.
+
+4. Start Claude Code with the channel, at each start:
+
+   ```
+   claude --dangerously-load-development-channels plugin:simplex@simplex-local
+   ```
+
+   Settings can't replace the flag: by `channelsEnabled` and `allowedChannelPlugins`, an organization's managed settings, an administrator allows the channels that a session names by `--channels`. `--channels plugin:simplex@simplex-local` needs `simplex@simplex-local` in `allowedChannelPlugins`.
+
+Each machine and each container needs its own data folder, on storage that no other machine or container uses: `~/.simplex-mcp` of its own home folder, or the folder in `SIMPLEX_MCP_HOME`, set in its own environment rather than in `env` of the shared settings. The service matches the hooks and the server of a session by the process ID of their Claude Code process, and checks its lock by the process ID of the running service: one process ID can name different processes on different machines and in different containers, and a process of another machine or container is invisible to these checks. Each data folder has its own Main group, whose link the first session start on that machine or container shows.
 
 ### The Main group
 
