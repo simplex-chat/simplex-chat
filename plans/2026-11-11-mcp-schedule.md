@@ -11,7 +11,7 @@ Status: draft for review. Decided on 2026-11-11. Code references: master `2205de
 5. A schedule applies while its author is an approver, as a standing approval does.
 6. One due prompt per schedule, kept in memory; the minutes while the server is stopped are skipped.
 7. Its own pull request from master, not stacked.
-8. Budget: about 140 changed lines in `src`, at most 20% more.
+8. Budget: about 140 changed lines in `src`, at most 20% more; the user accepted the 201 changed lines after the review rounds.
 
 ## Owner commands
 
