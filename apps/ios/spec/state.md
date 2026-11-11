@@ -163,7 +163,7 @@ ChatTagsModel (singleton -- filter state)
 |----------|------|-------------|------|
 | `messageDelivery` | `[Int64: () -> Void]` | Pending delivery confirmation callbacks | [L426](../Shared/Model/ChatModel.swift#L426) |
 | `filesToDelete` | `Set<URL>` | Files queued for deletion | [L428](../Shared/Model/ChatModel.swift#L428) |
-| `chatListBanner` | `ChatListBanner?` | The banner kind the chat list showed this app session; `bannerSlotFree(for:)` tells whether a kind may take the slot (see [chat-list.md](client/chat-list.md)) | [L474](../Shared/Model/ChatModel.swift#L474) |
+| `chatListBanner` | `ChatListBanner?` | The banner kind the chat list showed this app session; `bannerSlotFree(for:)` tells whether a kind may take the slot (see [chat-list.md](client/chat-list.md)) | [L489](../Shared/Model/ChatModel.swift#L489) |
 | `im` | `ItemsModel` | Reference to `ItemsModel.shared` | [L432](../Shared/Model/ChatModel.swift#L432) |
 
 ### Key Methods
@@ -183,7 +183,7 @@ ChatTagsModel (singleton -- filter state)
 
 ---
 
-## 3. [ItemsModel](../Shared/Model/ChatModel.swift#L74-L174)
+## 3. [ItemsModel](../Shared/Model/ChatModel.swift#L74-L189)
 
 **Class**: `class ItemsModel: ObservableObject`
 **Primary singleton**: `ItemsModel.shared`
@@ -201,14 +201,16 @@ ChatTagsModel (singleton -- filter state)
 | `showLoadingProgress` | `ChatId?` | Chat ID showing loading spinner | [L92](../Shared/Model/ChatModel.swift#L92) |
 | `preloadState` | `PreloadState` | State for infinite-scroll preloading | [L77](../Shared/Model/ChatModel.swift#L77) |
 | `secondaryIMFilter` | `SecondaryItemsModelFilter?` | Filter for secondary instances | [L76](../Shared/Model/ChatModel.swift#L76) |
+| `openingChatId` | `ChatId?` | Chat being opened by `loadOpenChat` (until `chatId` is set in its navigation timer step) or `loadOpenChatNoWait` (until its completion step) | [L96](../Shared/Model/ChatModel.swift#L96) |
+| `openingItemUpdates` | `ChatModel.ItemUpdatesWhileLoading?` | Record of the installed opening page; each newly recorded update is applied at once, until the record is stopped (`stopApplyingItemUpdates`) | [L97](../Shared/Model/ChatModel.swift#L97) |
 
 ### Computed Properties
 
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `lastItemsLoaded` | `Bool` | Whether the oldest messages have been loaded | [L97](../Shared/Model/ChatModel.swift#L97) |
-| `contentTag` | `MsgContentTag?` | Content type filter (if secondary) | [L159](../Shared/Model/ChatModel.swift#L159) |
-| `groupScopeInfo` | `GroupChatScopeInfo?` | Group scope filter (if secondary) | [L167](../Shared/Model/ChatModel.swift#L167) |
+| `lastItemsLoaded` | `Bool` | Whether the oldest messages have been loaded | [L99](../Shared/Model/ChatModel.swift#L99) |
+| `contentTag` | `MsgContentTag?` | Content type filter (if secondary) | [L174](../Shared/Model/ChatModel.swift#L174) |
+| `groupScopeInfo` | `GroupChatScopeInfo?` | Group scope filter (if secondary) | [L182](../Shared/Model/ChatModel.swift#L182) |
 
 ### Throttling
 
@@ -227,9 +229,14 @@ Direct `@Published` properties (`isLoading`, `showLoadingProgress`) bypass throt
 
 | Method | Description | Line |
 |--------|-------------|------|
-| `loadOpenChat(_ chatId:)` | Load chat with 250ms navigation delay | [L117](../Shared/Model/ChatModel.swift#L117) |
-| `loadOpenChatNoWait(_ chatId:, _ openAroundItemId:)` | Load chat without delay | [L143](../Shared/Model/ChatModel.swift#L143) |
-| `loadSecondaryChat(_ chatId:, chatFilter:)` | Create secondary ItemsModel instance | [L110](../Shared/Model/ChatModel.swift#L110) |
+| `loadOpenChat(_ chatId:)` | Load chat with 250ms navigation delay | [L119](../Shared/Model/ChatModel.swift#L119) |
+| `loadOpenChatNoWait(_ chatId:, _ openAroundItemId:)` | Load chat without delay | [L148](../Shared/Model/ChatModel.swift#L148) |
+| `loadSecondaryChat(_ chatId:, chatFilter:)` | Create secondary ItemsModel instance | [L112](../Shared/Model/ChatModel.swift#L112) |
+| `ChatModel.startRecordingItemUpdates(_ record:)` / `stopRecordingItemUpdates(_ record:)` | Record the list part of each item update while a page of items loads (`apiLoadMessages` in `ChatItemsLoader.swift`) | [L724](../Shared/Model/ChatModel.swift#L724) |
+| `ChatModel.recordItemUpdate(_ cInfo:, _ itemId:, _ update:)` | Record an update of an item missing from the list | [L783](../Shared/Model/ChatModel.swift#L783) |
+| `ChatModel.applyItemUpdatesWhileLoading(_ record:, _ loadingIM:, _ loadedChatId:)` | Re-run the recorded additions and then the other recorded updates on the items of `loadingIM`, each in order, resolved for the chat `loadedChatId` | [L732](../Shared/Model/ChatModel.swift#L732) |
+| `ChatModel.applyItemUpdatesUntilChatIsShown(_ record:, _ loadingIM:, _ loadedChatId:)` | After the install of an opening page while `openingChatId` is the loaded chat and `chatId` differs from it, apply each newly recorded update to `loadingIM` at once, until `stopApplyingItemUpdates()` | [L737](../Shared/Model/ChatModel.swift#L737) |
+| `stopApplyingItemUpdates()` | Stop the record of the opening page; called in the step that clears `openingChatId`, in the `loadChat` step that clears the items, when the next load starts and when a new opening record is kept | [L167](../Shared/Model/ChatModel.swift#L167) |
 
 ### [SecondaryItemsModelFilter](../Shared/Model/ChatModel.swift#L58-L70)
 
@@ -244,20 +251,20 @@ enum SecondaryItemsModelFilter {
 
 ---
 
-## 4. [ChatTagsModel](../Shared/Model/ChatModel.swift#L189-L291)
+## 4. [ChatTagsModel](../Shared/Model/ChatModel.swift#L204-L306)
 
 **Class**: `class ChatTagsModel: ObservableObject`
 **Singleton**: `ChatTagsModel.shared`
-**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L189)
+**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L204)
 
 ### Properties
 
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `userTags` | `[ChatTag]` | User-defined tags | [L192](../Shared/Model/ChatModel.swift#L192) |
-| `activeFilter` | `ActiveFilter?` | Currently active filter tab | [L193](../Shared/Model/ChatModel.swift#L193) |
-| `presetTags` | `[PresetTag: Int]` | Preset tag counts (groups, contacts, favorites, etc.) | [L194](../Shared/Model/ChatModel.swift#L194) |
-| `unreadTags` | `[Int64: Int]` | Unread count per user tag | [L195](../Shared/Model/ChatModel.swift#L195) |
+| `userTags` | `[ChatTag]` | User-defined tags | [L207](../Shared/Model/ChatModel.swift#L207) |
+| `activeFilter` | `ActiveFilter?` | Currently active filter tab | [L208](../Shared/Model/ChatModel.swift#L208) |
+| `presetTags` | `[PresetTag: Int]` | Preset tag counts (groups, contacts, favorites, etc.) | [L209](../Shared/Model/ChatModel.swift#L209) |
+| `unreadTags` | `[Int64: Int]` | Unread count per user tag | [L210](../Shared/Model/ChatModel.swift#L210) |
 
 ### [ActiveFilter](../Shared/Views/ChatList/ChatListView.swift#L52)
 
@@ -271,11 +278,11 @@ enum ActiveFilter {
 
 ---
 
-## 5. [ChannelRelaysModel](../Shared/Model/ChatModel.swift#L336-L350)
+## 5. [ChannelRelaysModel](../Shared/Model/ChatModel.swift#L351-L375)
 
 **Class**: `class ChannelRelaysModel: ObservableObject`
 **Singleton**: `ChannelRelaysModel.shared`
-**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L336)
+**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L351)
 
 Holds runtime relay state for the currently viewed channel. Used by `ChannelRelaysView` to display and manage relays. Reset when the view is dismissed.
 
@@ -283,14 +290,14 @@ Holds runtime relay state for the currently viewed channel. Used by `ChannelRela
 
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `groupId` | `Int64?` | Group ID of the channel whose relays are loaded | [L338](../Shared/Model/ChatModel.swift#L338) |
-| `groupRelays` | `[GroupRelay]` | Current relay instances for the channel | [L339](../Shared/Model/ChatModel.swift#L339) |
+| `groupId` | `Int64?` | Group ID of the channel whose relays are loaded | [L353](../Shared/Model/ChatModel.swift#L353) |
+| `groupRelays` | `[GroupRelay]` | Current relay instances for the channel | [L354](../Shared/Model/ChatModel.swift#L354) |
 
 ### Methods
 
 | Method | Description | Line |
 |--------|-------------|------|
-| `set(groupId:groupRelays:)` | Populate all properties at once | [L341](../Shared/Model/ChatModel.swift#L341) |
+| `set(groupId:groupRelays:)` | Populate all properties at once | [L356](../Shared/Model/ChatModel.swift#L356) |
 | `reset()` | Clear all properties to nil/empty | [L346](../Shared/Model/ChatModel.swift#L346) |
 
 ---
