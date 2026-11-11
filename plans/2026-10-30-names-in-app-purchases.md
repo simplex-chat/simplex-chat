@@ -732,7 +732,7 @@ Rules for every screen:
   - on `terms_changed` the tick comes back unticked under "The terms changed. Agree to them again.": on the checkout before paying, in place on 1·7 after.
 - The images show each lane's screens with their numbers and routes; where the words below differ from an image, the words below hold. A state not named here takes a listed state's words.
 - The checkout's alternative B, drawn in lane 1, is Q25.
-- Privacy disclosures stay off the checkouts: section 7 states each as a property, and P57a and P57b put them in `PRIVACY.md`. The names terms' text (https://github.com/simplex-chat/simplex-chat/pull/8002) is outside this plan.
+- Privacy disclosures stay off the screens: section 7 states each as a property, and P57a and P57b put them in `PRIVACY.md`. The names terms' text (https://github.com/simplex-chat/simplex-chat/pull/8002) is outside this plan.
 - The codes release: 1·1 opens 1·2 in every build, and 4·1's code-only form on iOS outside the US; 1·2 keeps "Register with code" whatever the catalog says, with the codes-only state's line while the catalog reads codes-only and "This version registers names with a code." once it reads open; its "Buy in browser" opens the site's search for the name (`/#/?name=<label>`, 3.2), with no 1·4, where D18 allows and the catalog reads open (Q26). 1·5, 1·6, 1·10, 4·1's priced form and the rest of row 4 come with the payments release.
 
 #### Row 1, buy in the app (Google Play; iOS when its payment is on). Stage 1, except 1·4's "I already have a key"
@@ -825,15 +825,15 @@ flowchart TD
     - Other terms: the tick unticked, in place, with the name's kind's lines.
     - Sale closed or store gone: the total row keeps the reason; the button gives way to "Register with code" → 2·1.
   - Store-account lines (6.5) above the terms block, Pay off.
-  - "Use a code" shows while the main button reads "Pay", on or off, and while the total first loads. Its slot is empty with a kept payment, during the re-check, and where the button gave way; with a kept code it holds "Nothing renews automatically."
+  - "Use a code" shows while the main button reads "Pay", on or off, and while the total first loads. Its slot is empty with a kept payment or a kept code, during the re-check, and where the button gave way.
   - Extremes at the largest text size: a 63-character name wraps and the content scrolls under the pinned lines and button; the longest price ("Rp 1.649.000,00") in a translated label; the button's bottom anchored.
 - **1·6** the platform's sheet; dismissed, nothing is charged → 1·5.
 - **1·7** stages "Ordering" ("Ordered"), "Waiting", "Registering" ("Registered"), each numbered before it starts, highlighted while running, ✓ done, ✕ failed. One notice under them; the card: "Paid", "$100.00 · Google Play" (row 4 "$100.00 · simplex.domains"; "Price" until the service confirms; a code: "Code", the shortened code, "Free SimpleX name"); "Until", "31 Dec 2028 · 2 years"; in a state that asks to contact the SimpleX team, "Reference" (row 4: the code's hash, shortened). Main "Close", which only leaves → 1·9.
   - The title, the lead and the notice keep the height of their longest text; the card keeps three rows, measured for the shown name; nothing moves between states and 1·8.
   - The notice in turn: "Confirming your payment."; "Placing your order. The wait starts once it is in."; the countdown "0:42" with "Registering takes about a minute."; "Registering the name. It is yours in a moment."; "This is taking longer than usual. It continues by itself."; offline after paying, "No connection: your payment is safe and is confirmed when you are back online."
-  - Until the reveal is sent, the notice ends in bold "Keep the app open to finish now."
+  - The lead while the stages run: "You can close this screen. If you leave the app, open it again to finish."
   - A store promo purchase reads "purchase" and "What you bought" for "payment" and "What you paid", drops "Paid, " from titles, and its card's first row reads "Store promo code", "Free SimpleX name".
-  - The app closed after paying: the order goes on at the next start, 1·9's row "Registering"; on iOS leaving it in the background stops it too (6.4); the service commits a lapsed commitment again (6.3), so the order reads Failed only past its commits or its signed deadline. The lead reads "You can close this screen. If you leave the app, open it again to finish."
+  - The app closed after paying: the order goes on at the next start, 1·9's row "Registering"; on iOS leaving it in the background stops it too (6.4); the service commits a lapsed commitment again (6.3), so the order reads Failed only past its commits or its signed deadline.
   - States:
 
 | State | Title and lead | Notice and rows | Main; secondary |
@@ -948,7 +948,7 @@ Support drafts add "This reference links this chat to the payment"; the contact 
 | A badge code: "This is a badge code. Redeem it in Support SimpleX." | |
 
 - **2·2** the code shortened; "Remove code" → 1·2, or 4·1, a kept code staying on its row; from 4·1 on iOS outside the US, 2·2 waits for a name. A name shorter than the code covers, here or from a checkout: the error under the answer, Register off.
-- **2·3** 1·5 with the code: Until is the code's term ("31 Dec 2031 · 5 years"; a community name 2 years, with "A community name is registered for 2 years, not your code's 5."); "Nothing renews automatically." under the button; → 1·7 and 1·8 with the code's card.
+- **2·3** 1·5 with the code: Until is the code's term ("31 Dec 2031 · 5 years"; a community name 2 years, with "A community name is registered for 2 years, not your code's 5."); → 1·7 and 1·8 with the code's card.
 - **2·4** taken, as drawn: Close leaves the row "Your kept code · Find a name". A failed registration: "Not registered", "Your code is kept. Trying again uses nothing more.", "Try again". A code no longer usable: "Your code can no longer be used for it, so trying again cannot register it.", its reason, main "Search a name". A code another registration holds: "Your code is held by another registration; try again later".
 
 #### Row 3, a name bought on the site. Stage 1, except what is marked
@@ -1060,7 +1060,7 @@ The path: search → key the first time → checkout with the terms tick → the
 - Row 3: a site-bought name moves in with its name code.
 - Row 5: under Advanced settings; each name's date and state; Restore purchases.
 - Row 6: a found name attaches to this phone's address; a key that finds nothing is kept after a warning (Q1).
-- Words: "SimpleX does not hold this key."; "SimpleX servers … together they can see them"; "this app on this device"; a refusal naming no name; a Play pending purchase reads "Waiting for your payment"; an unused code is "kept", never "spent".
+- Words: "SimpleX does not hold this key."; "this app on this device"; a refusal naming no name; a Play pending purchase reads "Waiting for your payment"; an unused code is "kept", never "spent".
 - Left out from the site: "Pay with ETH", transaction rows and explorer links, the "Use in the app" card, name code and QR on 1·8, "Being registered" on the search answer.
 - Added from the site: the order's rows; the name looked up again right before the store sheet.
 
@@ -1515,7 +1515,7 @@ P3, P4 and P10 can start at any time; P12 once P19 is in, which its token case n
   - Tested: simplexmq's server, client and agent tests.
 - P10 `wallet: restore from the recovery phrase`: `/_wallet import`, refused where a wallet exists and from a paired device, the counter set past the accounts found, the shown-words record set · medium · high
   - Tested: terminal: each refusal; the counter past the accounts found.
-- P12 `wallet: find the names a phrase owns`: the scan over ROWN with a gap limit, a start index, progress events and a stop; an `ArchiveConfig` field set only by the database import screen, never by device migration, kept in preferences until the next start, so "Look for your names again" asks before registering · large · high · P4, P10, P19
+- P12 `wallet: find the names a phrase owns`: the scan over ROWN with a gap limit, a start index, progress events and a stop; an `ArchiveConfig` field set only by the database import screen, never by device migration, kept in preferences until the next start, so "Look for your names again" asks before registering; section 7's line on the scan in `PRIVACY.md` · large · high · P4, P10, P19
   - Tested: terminal against the local simplexmq: 6.10's scan rules; a reinstall recovering an open purchase by its token without "Restore purchases".
 - P25 `store: names over SMP — the record edit` · small · high · P22
   - Tested: service tests: the SMP and web forms answer alike.
