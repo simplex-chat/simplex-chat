@@ -22,6 +22,14 @@ class StorageViewTest {
   }
 
   @Test
+  fun testFolderInsideClosedFolderDoesNotOpen() = withTempDir { root ->
+    Files.createDirectory(root.resolve("simplex-chat.1"))
+
+    val entries = rootUsage(root, closedDirs = listOf(root)).entries.associateBy { it.name }
+    assertNull(entries.getValue("simplex-chat.1").dir)
+  }
+
+  @Test
   fun testSymlinkToFolderDoesNotOpen() = withTempDir { root ->
     val tempFiles = Files.createDirectory(root.resolve("temp_files"))
     try {

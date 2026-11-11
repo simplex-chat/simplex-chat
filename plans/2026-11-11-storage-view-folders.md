@@ -12,9 +12,9 @@ The Storage screen in Developer options shows the size of each top-level entry o
 
 - `StorageView` takes the directories to list, `storageRoots()` by default.
 - For an entry that is a directory and not a symlink, `EntryUsage.dir` is set to its `Path` from `Files.newDirectoryStream`; a tap on its row opens `StorageView` for that directory.
-- The rows of `appFilesDir`, `tmpDir`, `remoteHostsDir` and `databaseExportDir` are not clickable; this list is the default of the `closedDirs` parameter of `rootUsage`.
+- The rows of `appFilesDir`, `tmpDir`, `remoteHostsDir`, `databaseExportDir` and of folders inside them are not clickable; this list is the default of the `closedDirs` parameter of `rootUsage`.
 - The listing of each screen is stored in its `ModalData` under "usage"; after Back, the parent's listing is shown without a new walk.
-- The entry rows are items of a `LazyColumnWithScrollBar`; the folder path and its total are one `SectionView` item.
+- A folder shows its 200 largest entries; the other entries are one row "… +N" with their total size.
 - `rootUsage`, `RootUsage` and `EntryUsage` are `internal`; `StorageViewTest` passes its own `closedDirs`.
 
 ```mermaid

@@ -5,15 +5,11 @@ import SectionDividerSpaced
 import SectionItemViewSpaceBetween
 import SectionView
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import chat.simplex.common.model.ChatController
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
-import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
@@ -22,6 +18,8 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
+
+private const val MAX_ENTRY_ROWS = 200
 
 internal class EntryUsage(val name: String, val bytes: Long, val dir: Path?)
 
@@ -35,31 +33,28 @@ fun ModalData.StorageView(dirs: List<Path> = storageRoots()) {
   LaunchedEffect(Unit) {
     if (usage == null) usage = withContext(Dispatchers.IO) { dirs.map(::rootUsage) }
   }
-  val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
-  LazyColumnWithScrollBar(
-    contentPadding = PaddingValues(
-      top = if (oneHandUI.value) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp else topPaddingToContent(false)
-    )
-  ) {
-    item { AppBarTitle(stringResource(MR.strings.storage)) }
+  ColumnWithScrollBar {
+    AppBarTitle(stringResource(MR.strings.storage))
     val roots = usage
     if (roots == null) {
-      item { DefaultProgressView(null) }
+      DefaultProgressView(null)
     } else {
       roots.forEachIndexed { i, root ->
-        item {
-          if (i > 0) SectionDividerSpaced()
-          SectionView(root.dir.toString()) {
-            UsageRow(stringResource(MR.strings.storage_total), root.bytes)
+        if (i > 0) SectionDividerSpaced()
+        SectionView(root.dir.toString()) {
+          UsageRow(stringResource(MR.strings.storage_total), root.bytes)
+          root.entries.take(MAX_ENTRY_ROWS).forEach { entry ->
+            val click = entry.dir?.let { dir -> { ModalManager.start.showModal(cardScreen = true) { StorageView(listOf(dir)) } } }
+            UsageRow(entry.name, entry.bytes, click)
           }
-        }
-        items(root.entries) { entry ->
-          val click = entry.dir?.let { dir -> { ModalManager.start.showModal(cardScreen = true) { StorageView(listOf(dir)) } } }
-          UsageRow(entry.name, entry.bytes, click)
+          val otherEntries = root.entries.drop(MAX_ENTRY_ROWS)
+          if (otherEntries.isNotEmpty()) {
+            UsageRow("… +${otherEntries.size}", otherEntries.sumOf { it.bytes })
+          }
         }
       }
     }
-    item { SectionBottomSpacer() }
+    SectionBottomSpacer()
   }
 }
 
@@ -85,7 +80,7 @@ internal fun rootUsage(root: Path, closedDirs: List<Path> = listOf(appFilesDir, 
   )
 
 private fun opensAsFolder(path: Path, closedDirs: List<Path>): Boolean =
-  Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && closedDirs.none { it.toAbsolutePath().normalize() == path.toAbsolutePath().normalize() }
+  Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && closedDirs.none { path.toAbsolutePath().normalize().startsWith(it.toAbsolutePath().normalize()) }
 
 private fun rootEntries(root: Path): List<Path> =
   try {
