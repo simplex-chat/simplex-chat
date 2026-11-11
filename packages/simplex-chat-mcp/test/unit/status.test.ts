@@ -2,7 +2,7 @@ import {T} from "@simplex-chat/types"
 import {Actions, ToolError, stoppingMessage} from "../../src/actions"
 import {InferenceState} from "../../src/inference"
 import {Statuses} from "../../src/status"
-import {FakeChat, contact, direct, item} from "./fixtures"
+import {FakeChat, broadcastDeletion, contact, direct, item, livePost, texts} from "./fixtures"
 
 const start = Date.parse("2026-10-17T10:00:00Z")
 const frozen = "◌ working since 2026-10-17 10:00 UTC"
@@ -45,14 +45,6 @@ function logged(): string[] {
   return lines
 }
 
-function deletion(chatId: number, itemId: number): object {
-  return {chatType: T.ChatType.Direct, chatId, itemIds: [itemId], mode: T.CIDeleteMode.Broadcast}
-}
-
-function texts(chat: FakeChat): string[] {
-  return [...chat.sent.map(({messages: [{msgContent}]}) => msgContent.text), ...chat.updates.map(({text}) => text)]
-}
-
 function labelOf(text: string): string {
   return text.slice(2, text.lastIndexOf(" · "))
 }
@@ -77,7 +69,7 @@ describe("status message", () => {
     expect(chat.sent).toEqual([])
     read.resolve()
     await jest.advanceTimersByTimeAsync(0)
-    expect(chat.sent).toEqual([{chat: [T.ChatType.Direct, 4], messages: [{msgContent: {type: "text", text: "◐ thinking · 0:00"}, mentions: {}}], live: true}])
+    expect(chat.sent).toEqual([livePost(T.ChatType.Direct, 4, "◐ thinking · 0:00")])
     await jest.advanceTimersByTimeAsync(600_000)
     expect(times.slice(0, 12).map(time => Math.round(time / 100) / 10)).toEqual([3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36.3])
     const late = times.filter(time => time >= 200_000)
@@ -162,7 +154,7 @@ describe("status message", () => {
     ])
   })
 
-  it("deletes the status when the chat is not eligible or its read fails, and sends no update after it", async () => {
+  it("deletes the status when the chat is not eligible or its read fails, and sends nothing after it", async () => {
     const lines = logged()
     let eligible = true
     const ineligible = statusesWith({allowed: async () => eligible})
@@ -179,10 +171,10 @@ describe("status message", () => {
     eligible = false
     failure = new Error("database busy")
     await jest.advanceTimersByTimeAsync(3_000)
-    expect([ineligible.chat.deletedItems, failing.chat.deletedItems]).toEqual([[deletion(4, 500)], [deletion(4, 500)]])
+    expect([ineligible.chat.deletedItems, failing.chat.deletedItems]).toEqual([[broadcastDeletion(T.ChatType.Direct, 4, 500)], [broadcastDeletion(T.ChatType.Direct, 4, 500)]])
     expect(lines).toEqual(["status of @4: database busy"])
     await jest.advanceTimersByTimeAsync(60_000)
-    expect([ineligible.chat.updates, failing.chat.updates]).toEqual([[], []])
+    expect([texts(ineligible.chat), texts(failing.chat)]).toEqual([["◐ thinking · 0:00"], ["◐ thinking · 0:00"]])
   })
 
   it("deletes the status at 23 hours while a download runs, and when frozen 30 minutes after the last call while only a receive runs", async () => {
@@ -195,11 +187,11 @@ describe("status message", () => {
     await jest.advanceTimersByTimeAsync(30 * 60_000)
     expect([lasting.chat.deletedItems, idle.chat.deletedItems]).toEqual([[], []])
     await jest.advanceTimersByTimeAsync(5 * 60_000)
-    expect([lasting.chat.deletedItems, idle.chat.deletedItems]).toEqual([[], [deletion(4, 500)]])
+    expect([lasting.chat.deletedItems, idle.chat.deletedItems]).toEqual([[], [broadcastDeletion(T.ChatType.Direct, 4, 500)]])
     await jest.advanceTimersByTimeAsync(23 * 3_600_000 - 35 * 60_000)
     expect(lasting.chat.deletedItems).toEqual([])
     await jest.advanceTimersByTimeAsync(5 * 60_000)
-    expect(lasting.chat.deletedItems).toEqual([deletion(4, 500)])
+    expect(lasting.chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, 500)])
   })
 
   it("logs nothing for a read that fails after the status was deleted", async () => {
@@ -245,8 +237,8 @@ describe("status message", () => {
     expect(chat.deletedItems).toEqual([])
     statuses.show("@4", "Still reading…")
     await jest.advanceTimersByTimeAsync(0)
-    expect(chat.deletedItems).toEqual([deletion(4, 500)])
-    expect(chat.sent.at(-1)).toEqual({chat: [T.ChatType.Direct, 4], messages: [{msgContent: {type: "text", text: "◐ thinking · 0:00\nStill reading…"}, mentions: {}}], live: true})
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, 500)])
+    expect(chat.sent.at(-1)).toEqual(livePost(T.ChatType.Direct, 4, "◐ thinking · 0:00\nStill reading…"))
     await jest.advanceTimersByTimeAsync(3_500)
     expect(chat.updates.at(-1)).toEqual({chatId: 4, itemId: 501, text: "◓ using download · 0:03\nStill reading…", live: true})
   })
@@ -271,11 +263,14 @@ describe("status message", () => {
     expect(() => statuses.show("@4", "Step 60")).toThrow(new ToolError(updateLimit))
   })
 
-  it("keeps one status per chat for concurrent starts, and statuses of two chats apart", async () => {
+  it("keeps one status per chat for concurrent and later starts, and statuses of two chats apart", async () => {
     const {chat, statuses} = statusesWith()
     statuses.start("@4")
     statuses.start("@4")
     statuses.start("@5")
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.sent).toHaveLength(2)
+    statuses.start("@4")
     await jest.advanceTimersByTimeAsync(3_500)
     expect(chat.sent.map(({chat: [, chatId]}) => chatId).sort()).toEqual([4, 5])
     expect(chat.updates.map(({chatId}) => chatId).sort()).toEqual([4, 5])
@@ -299,7 +294,7 @@ describe("status message", () => {
     await jest.advanceTimersByTimeAsync(60_000)
     for (const {chat} of [duringRead, duringPoll]) {
       expect(texts(chat)).toEqual(["◐ thinking · 0:00"])
-      expect(chat.deletedItems).toEqual([deletion(4, 500)])
+      expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, 500)])
     }
   })
 
@@ -313,10 +308,10 @@ describe("status message", () => {
     posting.statuses.start("@5")
     await jest.advanceTimersByTimeAsync(4_500)
     expect(lines).toEqual(["status of @5: no connection", "status of @4: chat item not found"])
-    expect(updating.chat.deletedItems).toEqual([deletion(4, 500)])
+    expect(updating.chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, 500)])
     expect([posting.chat.sent, posting.chat.updates, posting.chat.deletedItems]).toEqual([[], [], []])
     await jest.advanceTimersByTimeAsync(60_000)
-    expect([updating.chat.updates, posting.chat.updates]).toEqual([[], []])
+    expect([texts(updating.chat), texts(posting.chat)]).toEqual([["◐ thinking · 0:00"], []])
     updating.statuses.show("@4", "Still reading…")
     await jest.advanceTimersByTimeAsync(0)
     expect(texts(updating.chat)).toEqual(["◐ thinking · 0:00", "◐ thinking · 0:00\nStill reading…"])
@@ -374,7 +369,7 @@ describe("leftover status messages", () => {
     chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: [own(1, 31 * hour), own(2, deleteWindow), own(3, deleteWindow - 1_000), final, received, marked, ...messages]})
     await statuses.deleteLeftovers("@4")
     expect(chat.commands).toEqual(["/_get chat @4 count=100", "/_get chat @4 before=10 count=100"])
-    expect(chat.deletedItems).toEqual([deletion(4, 3)])
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, 3)])
     const older = Array.from({length: 60}, (_, i) => own(1 + i, 31 * hour))
     const newer = Array.from({length: 90}, (_, i) => item(61 + i, `message ${i}`, {type: "directRcv"}, {ts: at(hour)}))
     chat.chats.set("@5", {chatInfo: direct(contact(5, "Bob")), items: [...older, ...newer]})

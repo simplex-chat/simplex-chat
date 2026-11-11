@@ -10,7 +10,7 @@ import {Action, Actions, DownloadAction, Mode, SendAction, Standing} from "../..
 import {cardText} from "../../src/control"
 import {ChatItemsWatch, Collected, awaitResponses, chatRef, toMessage} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
-import {FakeChat, FakeHooks, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
+import {FakeChat, FakeHooks, actionsWith, broadcastDeletion, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, livePost, member, settled, signal, texts, user} from "./fixtures"
 
 const createdTools: AgentTools[] = []
 
@@ -214,10 +214,6 @@ async function statusChat(): Promise<ReturnType<typeof approvedTools> & {chat: F
   return {...agent, chat, status: chat.nextItemId - 1}
 }
 
-function statusDeletion(itemId: number): object {
-  return {chatType: T.ChatType.Direct, chatId: 4, itemIds: [itemId], mode: T.CIDeleteMode.Broadcast}
-}
-
 describe("receive", () => {
   it("returns unread messages and messages arriving during the call, once each, and marks them read", async () => {
     const chat = new FakeChat()
@@ -369,7 +365,7 @@ describe("receive", () => {
     watch.deliver([chat.addItem("@4", item(20, "summarize README.md"))])
     expect((await receiving)!.structuredContent).toMatchObject({messages: [{item: 20, text: "summarize README.md"}], more: 0})
     await jest.advanceTimersByTimeAsync(0)
-    expect(chat.sent).toEqual([{chat: [T.ChatType.Direct, 4], messages: [{msgContent: {type: "text", text: "◐ thinking · 0:00"}, mentions: {}}], live: true}])
+    expect(chat.sent).toEqual([livePost(T.ChatType.Direct, 4, "◐ thinking · 0:00")])
   })
 
   it("starts a status for returned messages with typing in an approved group and in an approved business chat", async () => {
@@ -383,7 +379,7 @@ describe("receive", () => {
       expect((await tools.call("receive", {chat: ref, typing: true}, signal().call))!.structuredContent).toMatchObject({messages: [{chat: ref}], more: 0})
     }
     await jest.advanceTimersByTimeAsync(0)
-    expect([...chat.sent].sort((a, b) => a.chat[1] - b.chat[1])).toEqual([15, 16].map(groupId => ({chat: [T.ChatType.Group, groupId], messages: [{msgContent: {type: "text", text: "◐ thinking · 0:00"}, mentions: {}}], live: true})))
+    expect([...chat.sent].sort((a, b) => a.chat[1] - b.chat[1])).toEqual([15, 16].map(groupId => livePost(T.ChatType.Group, groupId, "◐ thinking · 0:00")))
   })
 
   it("starts no status for an aborted call, without typing, without returned messages, without the approval, with a bot or an agent, with a disconnected contact, in a channel, with the observer role in a group, after the control chat is lost, or in mode host", async () => {
@@ -421,7 +417,7 @@ describe("receive", () => {
     const waiting = tools.call("receive", {chat: "@4", wait: 3600}, call)
     await jest.advanceTimersByTimeAsync(0)
     expect(progress).toEqual([expect.stringMatching(/^No new messages in @4; waiting until /)])
-    expect(chat.deletedItems).toEqual([statusDeletion(status)])
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
     controller.abort()
     expect(await waiting).toBeUndefined()
   })
@@ -662,8 +658,8 @@ describe("send", () => {
     expect((await tools.call("send", {chat: "#15", text: "Checking the map…", live: true}, signal().call))!.structuredContent).toEqual({status: "live", chat: "#15"})
     await jest.advanceTimersByTimeAsync(0)
     expect(chat.sent).toEqual([
-      {chat: [T.ChatType.Direct, 4], messages: [{msgContent: {type: "text", text: "◐ thinking · 0:00\nReading\nthe file…"}, mentions: {}}], live: true},
-      {chat: [T.ChatType.Group, 15], messages: [{msgContent: {type: "text", text: "◐ thinking · 0:00\nChecking the map…"}, mentions: {}}], live: true},
+      livePost(T.ChatType.Direct, 4, "◐ thinking · 0:00\nReading\nthe file…"),
+      livePost(T.ChatType.Group, 15, "◐ thinking · 0:00\nChecking the map…"),
     ])
     expect([actions.all(), actions.next, fake.calls]).toEqual([[], 1, []])
     expect(lines).toEqual(["Note to contact Alice (@4): Reading the file…", "Note to group Trail (#15): Checking the map…"])
@@ -748,7 +744,7 @@ describe("send", () => {
     expect((await sending)!.structuredContent).toMatchObject({action: 1, status: "done", item: answer, responses: [{item: answer + 1, text: "and the tests?"}], more: 0})
     expect(chat.sent.map(({messages: [{msgContent}], live}) => [msgContent.text, live])).toEqual([["◐ thinking · 0:00", true], ["The README describes the server.", undefined]])
     expect(deletionsAtAnswer).toEqual([0])
-    expect(chat.deletedItems).toEqual([statusDeletion(status)])
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
     expect(chat.updates).toEqual([])
   })
 
@@ -779,8 +775,8 @@ describe("send", () => {
     const {chat, tools, actions, fake, approved, status} = await statusChat()
     approved.delete("@4")
     await jest.advanceTimersByTimeAsync(3_500)
-    expect(chat.deletedItems).toEqual([statusDeletion(status)])
-    expect(chat.updates).toEqual([])
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
+    expect(texts(chat)).toEqual(["◐ thinking · 0:00"])
     const {controller, call} = signal()
     const sending = tools.call("send", {chat: "@4", text: "12:00"}, call)
     await jest.advanceTimersByTimeAsync(0)
@@ -794,8 +790,8 @@ describe("send", () => {
     const {chat, actions, status} = await statusChat()
     actions.loseControl()
     await jest.advanceTimersByTimeAsync(3_500)
-    expect(chat.deletedItems).toEqual([statusDeletion(status)])
-    expect(chat.updates).toEqual([])
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
+    expect(texts(chat)).toEqual(["◐ thinking · 0:00"])
   })
 })
 
@@ -1985,7 +1981,7 @@ describe("leave", () => {
     await jest.advanceTimersByTimeAsync(0)
     actions.approve(actions.get(1)!, "Alice")
     expect((await leaving)!.structuredContent).toEqual({action: 1, status: "done", chat: "@4"})
-    expect(chat.deletedItems).toEqual([statusDeletion(status)])
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
     expect(deletionsAtLeave).toEqual([1])
     expect(notesAtLeave).toEqual(["No chat @4. list shows the agent's chats."])
     expect(chat.sent).toHaveLength(1)
@@ -2059,6 +2055,6 @@ describe("deleteLeftoverStatuses", () => {
     for (const ref of ["@7", "@2", "#15", "#13", "#10"]) approved.add(ref)
     await tools.deleteLeftoverStatuses()
     expect(reads()).toEqual(["/_get chat @4 count=100", "/_get chat #15 count=100"])
-    expect(chat.deletedItems).toEqual([statusDeletion(20), {chatType: T.ChatType.Group, chatId: 15, itemIds: [24], mode: T.CIDeleteMode.Broadcast}])
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, 20), broadcastDeletion(T.ChatType.Group, 15, 24)])
   })
 })

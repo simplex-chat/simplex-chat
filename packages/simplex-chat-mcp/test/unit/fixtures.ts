@@ -113,6 +113,18 @@ export async function settled(): Promise<void> {
   for (let i = 0; i < 10; i++) await Promise.resolve()
 }
 
+export function livePost(chatType: T.ChatType, chatId: number, text: string): FakeChat["sent"][number] {
+  return {chat: [chatType, chatId], messages: [{msgContent: {type: "text", text}, mentions: {}}], live: true}
+}
+
+export function broadcastDeletion(chatType: T.ChatType, chatId: number, itemId: number): FakeChat["deletedItems"][number] {
+  return {chatType, chatId, itemIds: [itemId], mode: T.CIDeleteMode.Broadcast}
+}
+
+export function texts(chat: FakeChat): string[] {
+  return [...chat.sent.map(({messages: [{msgContent}]}) => msgContent.text), ...chat.updates.map(({text}) => text)]
+}
+
 interface FakeChatData {
   chatInfo: T.ChatInfo
   items: T.ChatItem[]
