@@ -90,6 +90,7 @@ SCOPE_CHANGES = {
         "packages/simplex-chat-nodejs/**",
         "packages/simplex-chat-client/types/typescript/**",
     ],
+    "webrtc": ["packages/simplex-chat-webrtc/**", "apps/multiplatform/common/src/commonMain/resources/assets/www/**"],
 }
 CABAL_FILE = "simplex-chat.cabal"
 CABAL_VERSION = re.compile(r"^(version:\s*)(\S+)", re.M)

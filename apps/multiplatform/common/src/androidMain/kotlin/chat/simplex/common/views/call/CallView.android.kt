@@ -56,17 +56,24 @@ import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import java.io.Closeable
+import kotlin.time.Duration.Companion.seconds
 
 // Should be destroy()'ed and set as null when call is ended. Otherwise, it will be a leak
 @SuppressLint("StaticFieldLeak")
 private var staticWebView: WebView? = null
 
+private val endedCallWebViewTimeout = 6.seconds
+
 // WebView methods must be called on Main thread
 fun activeCallDestroyWebView() = withApi {
   // Stop it when call ended
   platform.androidCallServiceSafeStop()
-  staticWebView?.destroy()
+  val webView = staticWebView ?: return@withApi
   staticWebView = null
+  webView.evaluateJavascript("sendMessageToNative = () => {}", null)
+  webView.evaluateJavascript("processCommand(${json.encodeToString(WVAPICall(command = WCallCommand.End))})", null)
+  delay(endedCallWebViewTimeout)
+  webView.destroy()
   Log.d(TAG, "CallView: webview was destroyed")
 }
 
@@ -131,7 +138,7 @@ actual fun ActiveCallView() {
   }
   Box(Modifier.fillMaxSize()) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
-      Log.d(TAG, "received from WebRTCView: ${apiMsg.resp.javaClass.simpleName}")
+      Log.d(TAG, "received from WebRTCView: ${apiMsg.resp.javaClass.simpleName} ${(apiMsg.resp as? WCallResponse.Connection)?.state?.connectionState ?: ""}")
       val call = chatModel.activeCall.value
       if (call != null) {
         val callState = call.androidCallState as ActiveCallState
@@ -326,6 +333,7 @@ fun ActiveCallOverlayDisabled(call: Call) {
 private fun dropAudioManagerOverrides() {
   val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
   am.mode = AudioManager.MODE_NORMAL
+  am.isMicrophoneMute = false
   // Clear selected communication device to default value after we changed it in call
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
     am.clearCommunicationDevice()

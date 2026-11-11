@@ -11,6 +11,22 @@ on:
         description: Start the test backend
         type: boolean
         default: false
+      calls:
+        description: Test video calls between two simulators, this branch's app with itself and with another ref's
+        type: boolean
+        default: false
+      calls_with:
+        description: The other ref's app for the call test, built with this branch's core library
+        type: string
+        default: master
+      apps_run:
+        description: Only test calls, with the two apps of this earlier run of ios-sim (its id), not built again
+        type: string
+        default: ""
+      calls_android:
+        description: Test video calls between this branch's iOS app and Android app, in an emulator on another runner
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -25,6 +41,7 @@ env:
   CABAL_VER: 3.10.2.0
   CORE_PKG: pkg-ios-aarch64-swift-json.zip
   BACKEND_PKG: ios-sim-backend.zip
+  ANDROID_CORE_PKG: android-core-arm64-v8a.tar.gz
   HOMEBREW_NO_AUTO_UPDATE: 1
   HOMEBREW_NO_INSTALL_CLEANUP: 1
   # newer images add Command Line Tools whose macOS SDK the default Xcode's linker cannot read
@@ -43,6 +60,8 @@ jobs:
       core-run: ${{ steps.core.outputs.run-id }}
       backend: ${{ steps.names.outputs.backend }}
       backend-run: ${{ steps.backend.outputs.run-id }}
+      android-core: ${{ steps.names.outputs.android-core }}
+      android-core-run: ${{ steps.android-core.outputs.run-id }}
     steps:
       - name: Choose jobs
         id: jobs
@@ -81,6 +100,7 @@ jobs:
         run: |
           echo "core=ios-sim-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-core.sh') }}" >> "$GITHUB_OUTPUT"
           echo "backend=ios-sim-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "android-core=android-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/ci/android/build-core.sh') }}" >> "$GITHUB_OUTPUT"
 
       - name: Find core library
         id: core
@@ -95,15 +115,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: scripts/ci/ios-sim/earlier-run.sh "${{ steps.names.outputs.backend }}"
 
+      - name: Find Android core library
+        id: android-core
+        if: inputs.calls_android
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/ios-sim/earlier-run.sh "${{ steps.names.outputs.android-core }}"
+
   app:
     name: app in the iOS simulator
     needs: plan
+    if: inputs.apps_run == ''
     runs-on: macos-26
     timeout-minutes: 360
+    outputs:
+      app: ${{ steps.upload-app.outcome }}
+      other-app: ${{ steps.upload-other-app.outcome }}
     env:
       START_BACKEND: ${{ needs.plan.outputs.run-backend }}
       BUILD_CORE: ${{ needs.plan.outputs.core-run == '' }}
       BUILD_BACKEND: ${{ needs.plan.outputs.run-backend == 'true' && needs.plan.outputs.backend-run == '' }}
+      CALLS: ${{ inputs.calls }}
+      CALLS_WITH: ${{ inputs.calls_with }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -188,28 +221,20 @@ jobs:
         timeout-minutes: 30
         run: scripts/ci/ios-sim/backend.sh start ~/Downloads/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
+      # the simulator has no camera: the app sends sounds/video.mp4 in its place
+      - name: Make test video
+        run: swift scripts/ci/ios-sim/test-video.swift apps/ios/sounds/video.mp4
+
       - name: Build app
-        run: |
-          xcodebuild build -quiet \
-            -project apps/ios/SimpleX.xcodeproj \
-            -scheme "SimpleX (iOS)" \
-            -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
-            -onlyUsePackageVersionsFromResolvedFile \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
-            ARCHS=arm64 \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY=- \
-            DEVELOPMENT_TEAM= \
-            PROVISIONING_PROFILE_SPECIFIER=
+        id: build
+        run: scripts/ci/ios-sim/build-app.sh "$RUNNER_TEMP/DerivedData"
 
       # a tarball keeps the app's file modes, which an artifact drops
       - name: Pack app
         run: tar -czf "$RUNNER_TEMP/SimpleX.app.tar.gz" -C "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator" SimpleX.app
 
       - name: Upload app
+        id: upload-app
         uses: actions/upload-artifact@v7
         with:
           name: ios-sim-app
@@ -218,15 +243,50 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+      - name: Build the other ref's app
+        id: other-app
+        if: env.CALLS == 'true'
+        run: |
+          scripts/ci/ios-sim/build-app.sh "$RUNNER_TEMP/DerivedData-other" "$CALLS_WITH"
+          tar -czf "$RUNNER_TEMP/SimpleX-other.app.tar.gz" -C "$RUNNER_TEMP/DerivedData-other/Build/Products/Debug-iphonesimulator" SimpleX.app
+
+      - name: Upload the other ref's app
+        id: upload-other-app
+        if: steps.other-app.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-sim-other-app
+          path: ${{ runner.temp }}/SimpleX-other.app.tar.gz
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Test calls between two call clients
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 30
+        run: scripts/ci/ios-sim/call-xctest.sh "$RUNNER_TEMP/DerivedData" "$RUNNER_TEMP/call-test/xctest"
+
+      # the tests after the call tests run whenever the app built: each checks something else
       - name: Install AXe
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: scripts/ci/ios-sim/install-axe.sh
 
       - name: Run smoke test
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test" images
 
       - name: Stop test backend
         if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
         run: scripts/ci/ios-sim/backend.sh stop "$RUNNER_TEMP/backend"
+
+      - name: Upload call test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-sim-call-test
+          path: ${{ runner.temp }}/call-test
+          retention-days: 3
+          if-no-files-found: warn
 
       - name: Upload smoke test results
         if: ${{ !cancelled() }}
@@ -245,6 +305,235 @@ jobs:
           path: |
             ${{ runner.temp }}/backend/*.log
             ${{ runner.temp }}/backend/seed.md
+          retention-days: 3
+          if-no-files-found: warn
+
+  calls:
+    name: calls between ${{ matrix.peers }}
+    needs: app
+    if: ${{ !cancelled() && inputs.calls && (inputs.apps_run != '' || needs.app.outputs.other-app == 'success') }}
+    runs-on: macos-26
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - peers: branch-branch
+            alice: branch
+            bob: branch
+            fixed: alice bob
+          - peers: branch-other
+            alice: branch
+            bob: other
+            fixed: alice
+          - peers: other-other
+            alice: other
+            bob: other
+            fixed: ""
+    env:
+      ALICE: ${{ matrix.alice }}
+      BOB: ${{ matrix.bob }}
+      FIXED: ${{ matrix.fixed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Use the macOS 26 SDK
+        run: scripts/ci/ios-sim/use-macos26-sdk.sh
+
+      - name: Download this branch's app
+        uses: actions/download-artifact@v8
+        with:
+          name: ios-sim-app
+          path: ${{ runner.temp }}/branch
+          run-id: ${{ inputs.apps_run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Download the other ref's app
+        uses: actions/download-artifact@v8
+        with:
+          name: ios-sim-other-app
+          path: ${{ runner.temp }}/other
+          run-id: ${{ inputs.apps_run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Unpack apps
+        run: |
+          tar -xzf "$RUNNER_TEMP/branch/SimpleX.app.tar.gz" -C "$RUNNER_TEMP/branch"
+          tar -xzf "$RUNNER_TEMP/other/SimpleX-other.app.tar.gz" -C "$RUNNER_TEMP/other"
+
+      - name: Install AXe
+        run: scripts/ci/ios-sim/install-axe.sh
+
+      - name: Test calls
+        run: scripts/ci/ios-sim/call-test.sh "$RUNNER_TEMP/$ALICE/SimpleX.app" "$RUNNER_TEMP/$BOB/SimpleX.app" "$RUNNER_TEMP/call-test" "$FIXED"
+
+      - name: Upload call test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-sim-call-test-${{ matrix.peers }}
+          path: ${{ runner.temp }}/call-test
+          retention-days: 3
+          if-no-files-found: warn
+
+  android-core:
+    name: core library for Android arm64
+    needs: plan
+    if: inputs.calls_android && needs.plan.outputs.android-core-run == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Build core library
+        run: scripts/ci/android/build-core.sh ~/core/${{ env.ANDROID_CORE_PKG }}
+
+      - name: Upload core library
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.android-core }}
+          path: ~/core/${{ env.ANDROID_CORE_PKG }}
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  ios-calls-android:
+    name: iOS app calls the Android app
+    needs: [plan, app]
+    if: ${{ !cancelled() && inputs.calls_android && (inputs.apps_run != '' || needs.app.outputs.app == 'success') }}
+    runs-on: macos-26
+    timeout-minutes: 180
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Use the macOS 26 SDK
+        run: scripts/ci/ios-sim/use-macos26-sdk.sh
+
+      - name: Download app
+        uses: actions/download-artifact@v8
+        with:
+          name: ios-sim-app
+          path: ${{ runner.temp }}/branch
+          run-id: ${{ inputs.apps_run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Unpack app
+        run: tar -xzf "$RUNNER_TEMP/branch/SimpleX.app.tar.gz" -C "$RUNNER_TEMP/branch"
+
+      - name: Install AXe
+        run: scripts/ci/ios-sim/install-axe.sh
+
+      - name: Start the iPhone and make its link
+        run: scripts/ci/ios-sim/call-android-test.sh link "$RUNNER_TEMP/branch/SimpleX.app" "$RUNNER_TEMP/call-test"
+
+      - name: Pass the link to the Android job
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-call-link
+          path: ${{ runner.temp }}/call-test/link
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Test calls with the Android app
+        run: scripts/ci/ios-sim/call-android-test.sh calls "$RUNNER_TEMP/call-test"
+
+      - name: Upload call test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-sim-call-test-android-ios
+          path: ${{ runner.temp }}/call-test
+          retention-days: 3
+          if-no-files-found: warn
+
+  android-calls-ios:
+    name: Android app calls the iOS app
+    needs: [plan, android-core]
+    if: ${{ !cancelled() && !failure() && inputs.calls_android && needs.plan.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      APK: android-foss-arm64-v8a-debug.apk
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpulse0 libegl1
+
+      - name: Download core library
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.android-core }}
+          path: ~/core
+          run-id: ${{ needs.plan.outputs.android-core-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Install core library
+        run: scripts/ci/android/install-core.sh ~/core/${{ env.ANDROID_CORE_PKG }}
+
+      - name: Build the call page
+        working-directory: packages/simplex-chat-webrtc
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+          git diff --stat -- ../../apps/multiplatform/common/src/commonMain/resources/assets/www
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: 17
+
+      - name: Build app
+        working-directory: apps/multiplatform
+        run: |
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=arm64-v8a :android:assembleFossDebug
+          mkdir -p "$RUNNER_TEMP/apk"
+          cp "android/build/intermediates/apk/foss/debug/$APK" "$RUNNER_TEMP/apk"
+
+      - name: Install emulator and system image
+        run: scripts/ci/android/install-sdk.sh "$RUNNER_TEMP/android-sdk"
+
+      - name: Boot emulator
+        env:
+          EMULATOR_CAMERA: emulated
+        run: scripts/ci/android/emulator.sh start "$RUNNER_TEMP/android-call"
+
+      - name: Onboard
+        run: scripts/ci/android/smoke-test.sh "$RUNNER_TEMP/apk/$APK" "$RUNNER_TEMP/android-call" onboarding
+
+      - name: Wait for the iPhone's link
+        timeout-minutes: 150
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          until id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=ios-call-link" --jq '.artifacts[0].id // empty') && [ -n "$id" ]; do
+            sleep 30
+          done
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > "$RUNNER_TEMP/link.zip"
+          unzip -o "$RUNNER_TEMP/link.zip" -d "$RUNNER_TEMP/link"
+          cat "$RUNNER_TEMP/link/link"
+
+      - name: Test calls with the iOS app
+        run: scripts/ci/android/call-peer.sh "$(cat "$RUNNER_TEMP/link/link")" "$RUNNER_TEMP/android-call"
+
+      - name: Upload call test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-call-test
+          path: ${{ runner.temp }}/android-call
           retention-days: 3
           if-no-files-found: warn
 

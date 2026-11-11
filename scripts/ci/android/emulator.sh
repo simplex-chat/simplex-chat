@@ -2,7 +2,7 @@
 
 # Boots the AVD "ci" (install-sdk.sh) without a window, with KVM, and waits until Android has booted and its
 # package manager answers; then turns animations off and keeps the screen on and unlocked.
-# Usage: scripts/ci/android/emulator.sh start <log dir>
+# Usage: scripts/ci/android/emulator.sh start <log dir>     EMULATOR_CAMERA=emulated gives it a front camera
 #        scripts/ci/android/emulator.sh reverse <port>   forwards the emulator's 127.0.0.1:<port> to the runner's,
 #                                                        and waits until the server there answers
 # The emulator keeps running for later steps of the job.
@@ -20,7 +20,7 @@ start() {
   ls -l /dev/kvm
   emulator -accel-check
 
-  local flags=(-avd ci -no-window -no-audio -no-boot-anim -no-snapshot -no-metrics -gpu swiftshader_indirect -camera-back none -camera-front none -memory 4096 -cores 4)
+  local flags=(-avd ci -no-window -no-audio -no-boot-anim -no-snapshot -no-metrics -gpu swiftshader_indirect -camera-back none -camera-front "${EMULATOR_CAMERA:-none}" -memory 4096 -cores 4)
   echo "emulator ${flags[*]}"
   started=$SECONDS
   nohup emulator "${flags[@]}" < /dev/null > "$log" 2>&1 &

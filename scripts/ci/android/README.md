@@ -30,7 +30,8 @@ A Google APIs x86_64 system image of API 34 (revision 14) with KVM, on the x86_6
 
 - `ui`: the UI driver, with desktop's command names: text and positions from uiautomator's accessibility tree, taps and keys with adb. `ui` alone prints its commands: start (with app settings), shot, text, tree, find, wait, click, click-text, scroll, type, key, layout (the `OneHandUI` preference and a restart), relaunch, text-size, do, stop. `screen-tree.py` reads the tree; `prefs.py` writes the settings, which only a debug build accepts (`run-as`).
 - `smoke-test.sh <apk> <out dir> [start|onboarding|layouts|backend]`: the scripted cases; the default is onboarding, a local group, both layouts, and `tests/fixtures/test.jpg` and `logo-large-rgba.png` pushed to Pictures, picked in the system's picker, resized by the core, previewed and sent in the group. Onboarding on Android includes the app's instant notifications alert and the system's battery dialog. `backend` also adds the test SMP server under Your servers and checks that it passes Test servers.
-- `install-sdk.sh`, `emulator.sh`: the emulator, above.
+- `install-sdk.sh`, `emulator.sh`: the emulator, above; `EMULATOR_CAMERA=emulated` gives it a front camera.
+- `call-peer.sh <link> <out dir>`: the Android side of ios-sim's call test with the iOS app ([iOS](../ios-sim/README.md), "Call tests"), after `smoke-test.sh` with `onboarding`.
 - `build-core.sh`, `install-core.sh`, `release-apk.sh`: builds and the release.
 - `claude-test.md` (the prompt) and `claude-scope` (whether it uses the test backend): the Claude job, which runs desktop-linux's `claude-test.sh`, `claude-guard.py` and `claude-usage.py`.
 

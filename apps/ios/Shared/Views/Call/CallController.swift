@@ -99,11 +99,10 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         fulfillOnConnect?.fail()
         fulfillOnConnect = nil
         callManager.endCall(callUUID: action.callUUID.uuidString.lowercased()) { ok in
-            if ok {
-                action.fulfill()
-            } else {
-                action.fail()
+            if !ok {
+                logger.debug("CallController.provider CXEndCallAction: the call already ended")
             }
+            action.fulfill()
             self.suspendOnEndCall()
         }
     }
