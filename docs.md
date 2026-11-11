@@ -26,6 +26,7 @@ All documentation pages in Markdown. The same pages in HTML are at the same addr
 - [Groups](https://simplex.chat/docs/guide/secret-groups.md)
 - [Sending messages](https://simplex.chat/docs/guide/send-messages.md)
 - [Supporter badges](https://simplex.chat/docs/guide/supporter-badges.md)
+- [SimpleX Names Conditions of Use](https://simplex.chat/docs/names-conditions.md)
 - [Agent protocols over SimpleX](https://simplex.chat/docs/protocol/agent-protocols.md)
 - [SimpleX Supporter Badges](https://simplex.chat/docs/protocol/badges-overview.md)
 - [Badge service RPC protocol](https://simplex.chat/docs/protocol/badges-rpc.md)
