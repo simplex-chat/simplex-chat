@@ -7,6 +7,7 @@ import {core} from "simplex-chat"
 import {Action, Actions, Mode, NewAction, ToolError} from "../../src/actions"
 import {Control, cardText, parseCommand} from "../../src/control"
 import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
+import {Schedules} from "../../src/schedule"
 import {OwnerEntry, waitForCancelledCards} from "../../src/serve"
 import {AgentTools} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
@@ -19,7 +20,7 @@ afterEach(() => jest.restoreAllMocks())
 
 afterAll(() => rmSync(data, {recursive: true, force: true}))
 
-const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /schedule, /unschedule, /schedules. Each card shows its commands."
 
 const alice = member(3, "Alice", T.GroupMemberRole.Owner)
 const bob = member(7, "Bob", T.GroupMemberRole.Member)
@@ -45,11 +46,12 @@ function agentChats(): FakeChat {
   return chat
 }
 
-async function controlWith(chat: FakeChat, actions: Actions, owners?: OwnerEntry[], mode: Mode = "requests"): Promise<{control: Control; tools: AgentTools}> {
-  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data}, mode)
-  const control: Control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint", qrCode: "small"}, actions, tools)
+async function controlWith(chat: FakeChat, actions: Actions, owners?: OwnerEntry[], mode: Mode = "requests"): Promise<{control: Control; tools: AgentTools; schedules: Schedules}> {
+  const schedules = new Schedules(memberId => control.hasApprover(memberId))
+  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data, schedules}, mode)
+  const control: Control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint", qrCode: "small"}, actions, tools, schedules)
   await control.load()
-  return {control, tools}
+  return {control, tools, schedules}
 }
 
 async function setup(owners?: OwnerEntry[]) {
@@ -178,7 +180,7 @@ describe("owner commands", () => {
 
   it("answers other commands with the list", async () => {
     const {control} = await setup()
-    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "receive #2 all", "receive 5 all", "receive #2 5 files", "receive off", "forward", "forward #2 all", "forward #2 5 all", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all"]
+    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "receive #2 all", "receive 5 all", "receive #2 5 files", "receive off", "forward", "forward #2 all", "forward #2 5 all", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all", "schedule", "schedule #2", "schedule #2 0 7 * * *", "schedule 2 0 7 * * * hi", "unschedule", "unschedule #2", "unschedule #2 x", "unschedule 2 1", "unschedule #2 1 2", "schedules all"]
     for (const text of others) {
       expect(await control.ownerCommand(bob, parseCommand(`/${text}`)!)).toBe(commandsReply)
     }
@@ -189,6 +191,7 @@ describe("owner commands", () => {
     for (const params of ["5", "@4 all"]) expect(await unlisted.control.ownerCommand(bob, {keyword: "approve", params})).toBe("Only owners approve actions.")
     expect(await unlisted.control.ownerCommand(bob, {keyword: "revoke", params: "@4"})).toBe("Only owners approve actions.")
     expect(await unlisted.control.ownerCommand(bob, {keyword: "list", params: ""})).toBe("Only owners approve actions.")
+    for (const text of ["/schedule @4 0 7 * * * hi", "/unschedule @4 1", "/schedules"]) expect(await unlisted.control.ownerCommand(bob, parseCommand(text)!)).toBe("Only owners approve actions.")
     expect(unlisted.chat.customData).toEqual([])
     const listed = await setup([{memberId: 3, name: "Alice"}])
     expect(await listed.control.ownerCommand(member(8, "Carol", T.GroupMemberRole.Owner), {keyword: "approve", params: "5"})).toBe("Only the owners listed in --owners approve actions.")
@@ -724,6 +727,162 @@ describe("chat list in the agent control chat", () => {
   })
 })
 
+describe("scheduled prompts", () => {
+  afterEach(() => jest.useRealTimers())
+
+  async function scheduling(mode: Mode = "requests") {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const chat = agentChats()
+    const {control, schedules} = await controlWith(chat, actionsWith(mode, fakeHooks()), undefined, mode)
+    const send = (sender: T.GroupMember, text: string): Promise<string | undefined> => control.ownerCommand(sender, parseCommand(text)!)
+    return {chat, control, schedules, lines, send}
+  }
+
+  it("adds a schedule with its author and time to the custom data of its chat, keeps the other keys, logs it, and replies with the server's UTC offset", async () => {
+    const {chat, lines, send} = await scheduling()
+    const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
+    directory.customData = {other: 1}
+    const offset = jest.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(-120)
+    expect(await send(alice, "/schedule @4 0  7 * * 1-5   Find  trail shoes in size 44.")).toBe("Schedule 1 of bot SimpleX Directory (@4): 0 7 * * 1-5, server time UTC+02:00. /'unschedule @4 1'")
+    expect(customDataOf(chat, "@4")).toEqual({other: 1, simplexMcpSchedules: [{cron: "0 7 * * 1-5", prompt: "Find  trail shoes in size 44.", by: "Alice", byId: 3, at: expect.stringMatching(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/)}]})
+    offset.mockReturnValue(330)
+    expect(await send(alice, "/schedule @4 30 18 * * * Summarize the day.")).toBe("Schedule 2 of bot SimpleX Directory (@4): 30 18 * * *, server time UTC-05:30. /'unschedule @4 2'")
+    expect(lines).toEqual(["Schedule 1 of @4 added by Alice: 0 7 * * 1-5.", "Schedule 2 of @4 added by Alice: 30 18 * * *."])
+  })
+
+  it("keeps the approvals of its chat, and their commands keep its schedules", async () => {
+    const {chat, send} = await scheduling()
+    await send(alice, "/approve @4 all")
+    await send(alice, "/schedule @4 0 7 * * * Search for trail shoes.")
+    await send(alice, "/schedule @4 0 8 * * * Read the news.")
+    expect(await send(alice, "/unschedule @4 1")).toBe("Schedule 1 of bot SimpleX Directory (@4) is removed.")
+    expect(customDataOf(chat, "@4")).toEqual({simplexMcp: expect.objectContaining({approvedBy: "Alice"}), simplexMcpSchedules: [expect.objectContaining({prompt: "Read the news."})]})
+    await send(alice, "/revoke @4")
+    expect(customDataOf(chat, "@4")).toEqual({simplexMcpSchedules: [expect.objectContaining({prompt: "Read the news."})]})
+  })
+
+  it("lists the schedules of every chat in the order of /list, each on one line of at most 100 bytes", async () => {
+    const {send} = await scheduling()
+    expect(await send(alice, "/schedules")).toBe("No schedules.")
+    await send(alice, "/schedule #2 0 7 * * * Check\tthe trail report.")
+    await send(alice, "/schedule @4 */30 * * * * Search for trail shoes.")
+    await send(alice, `/schedule #2 0 18 * * * ${"x".repeat(100)}`)
+    expect((await send(alice, "/schedules"))!.split("\n")).toEqual(["@4  1  */30 * * * *  Search for trail shoes.", "#2  1  0 7 * * *  Check the trail report.", `#2  2  0 18 * * *  ${"x".repeat(78)}…`])
+  })
+
+  it("lists the first 100 schedules and counts the others", async () => {
+    const {chat, send} = await scheduling()
+    const entries = Array.from({length: 10}, (_, i) => ({cron: "0 7 * * *", prompt: `prompt ${i + 1}`, by: "Alice", byId: 3, at: "2026-11-10T08:00:00.000Z"}))
+    for (let i = 100; i < 111; i++) chat.chats.set(`@${i}`, {chatInfo: direct({...contact(i, `contact ${i}`), customData: {simplexMcpSchedules: entries}}), items: []})
+    const lines = (await send(alice, "/schedules"))!.split("\n")
+    expect(lines).toHaveLength(101)
+    expect([lines[0], lines[99], lines[100]]).toEqual(["@100  1  0 7 * * *  prompt 1", "@109  10  0 7 * * *  prompt 10", "10 more schedules are not shown."])
+    chat.chats.set("@110", {chatInfo: direct({...contact(110, "contact 110"), customData: {simplexMcpSchedules: entries.slice(0, 1)}}), items: []})
+    expect((await send(alice, "/schedules"))!.split("\n").at(-1)).toBe("1 more schedule is not shown.")
+  })
+
+  it("removes a schedule by its number, renumbers the later ones, keeps the other custom data, and logs it", async () => {
+    const {chat, lines, send} = await scheduling()
+    const {groupInfo: ep} = chatInfoOf(chat, "#2") as T.ChatInfo.Group
+    ep.customData = {other: 1}
+    for (const prompt of ["first", "second", "third"]) await send(alice, `/schedule #2 0 7 * * * ${prompt}`)
+    expect(await send(alice, "/unschedule #2 2")).toBe("Schedule 2 of business ep (#2) is removed.")
+    expect(customDataOf(chat, "#2")).toEqual({other: 1, simplexMcpSchedules: [expect.objectContaining({prompt: "first"}), expect.objectContaining({prompt: "third"})]})
+    expect((await send(alice, "/schedules"))!.split("\n")).toEqual(["#2  1  0 7 * * *  first", "#2  2  0 7 * * *  third"])
+    expect(await send(alice, "/unschedule #2 3")).toBe("#2 has no schedule 3.")
+    expect(await send(alice, "/unschedule #2 0")).toBe("#2 has no schedule 0.")
+    expect(chat.customData).toHaveLength(4)
+    expect(lines.at(-1)).toBe("Schedule 2 of #2 removed by Alice.")
+  })
+
+  it("drops the pending prompt of a removed schedule, and makes due only the others", async () => {
+    jest.useFakeTimers({now: new Date(2026, 10, 11, 6, 59, 30)})
+    const {schedules, send} = await scheduling()
+    for (const prompt of ["first", "second", "third"]) {
+      await send(alice, `/schedule #2 * * * * * ${prompt}`)
+      jest.advanceTimersByTime(1)
+    }
+    schedules.start()
+    jest.advanceTimersByTime(30_000)
+    await send(alice, "/unschedule #2 2")
+    expect(schedules.take("#2").map(({prompt}) => prompt)).toEqual(["first", "third"])
+    jest.advanceTimersByTime(60_000)
+    schedules.stop()
+    expect(schedules.take("#2").map(({prompt}) => prompt)).toEqual(["first", "third"])
+  })
+
+  it("refuses an unknown chat, the agent control chat, a cron that is not valid, a prompt over 2000 characters and an 11th schedule of a chat", async () => {
+    const {chat, send} = await scheduling()
+    expect(await send(alice, "/schedule @99 0 7 * * * Search for trail shoes.")).toBe("No chat @99. /list shows the agent's chats.")
+    expect(await send(alice, "/schedule #10 0 7 * * * Search for trail shoes.")).toBe("No chat #10. /list shows the agent's chats.")
+    expect(await send(alice, "/unschedule @99 1")).toBe("No chat @99. /list shows the agent's chats.")
+    expect(await send(alice, "/schedule @4 0 7 * * Mon Search for trail shoes.")).toBe("Schedule: 5 cron fields expected, such as 0 7 * * *.")
+    expect(await send(alice, "/schedule @4 0 7 * * Search for trail shoes.")).toBe("Schedule: 5 cron fields expected, such as 0 7 * * *.")
+    expect(await send(alice, "/schedule @4 0 7 * * 8 Search for trail shoes.")).toBe("Schedule: cron field 8 is out of range.")
+    expect(await send(alice, `/schedule @4 0 7 * * * ${"😀".repeat(2001)}`)).toBe("Schedule: the prompt is over 2000 characters.")
+    expect(chat.customData).toEqual([])
+    expect(await send(alice, `/schedule @4 0 7 * * * ${"😀".repeat(2000)}`)).toMatch(/^Schedule 1 of bot SimpleX Directory \(@4\): /)
+    for (let n = 2; n <= 10; n++) await send(alice, `/schedule @4 0 7 * * * prompt ${n}`)
+    expect(await send(alice, "/schedule @4 0 7 * * * Search for trail shoes.")).toBe("Schedule: bot SimpleX Directory (@4) has 10 schedules; /'unschedule @4 N' removes one.")
+    expect(chat.customData).toHaveLength(10)
+  })
+
+  it("logs the names of approvers on one line", async () => {
+    const {chat, control, lines, send} = await scheduling()
+    const mallory = {...alice, memberProfile: {...alice.memberProfile, displayName: "Mallory\n/'approve 9'"}}
+    chat.members.set(10, [self, mallory])
+    await control.load()
+    await send(mallory, "/schedule @4 0 7 * * * Search for trail shoes.")
+    expect(customDataOf(chat, "@4")).toMatchObject({simplexMcpSchedules: [{by: "Mallory\n/'approve 9'", byId: 3}]})
+    await send(mallory, "/unschedule @4 1")
+    expect(lines).toEqual(["Schedule 1 of @4 added by Mallory /'approve 9': 0 7 * * *.", "Schedule 1 of @4 removed by Mallory /'approve 9'."])
+  })
+
+  it("works in mode host as in mode requests", async () => {
+    jest.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(0)
+    const {send} = await scheduling("host")
+    expect(await send(alice, "/schedule @4 0 7 * * * Search for trail shoes.")).toBe("Schedule 1 of bot SimpleX Directory (@4): 0 7 * * *, server time UTC+00:00. /'unschedule @4 1'")
+    expect(await send(alice, "/schedules")).toBe("@4  1  0 7 * * *  Search for trail shoes.")
+    expect(await send(alice, "/unschedule @4 1")).toBe("Schedule 1 of bot SimpleX Directory (@4) is removed.")
+  })
+
+  it("loads the valid schedules of the agent's chats at the start, and makes due only those of current approvers", async () => {
+    jest.useFakeTimers({now: new Date(2026, 10, 11, 6, 59, 30)})
+    const chat = agentChats()
+    const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
+    directory.customData = {
+      simplexMcpSchedules: [
+        {cron: 7},
+        {cron: "* * * * *,", prompt: "Post the trail report.", by: "Alice", byId: 3, at: "2026-11-10T09:00:00.000Z"},
+        {cron: "* * * * *", prompt: "Search for trail shoes.", by: "Alice", byId: 3, at: "2026-11-10T08:00:00.000Z"},
+      ],
+    }
+    const {groupInfo: ep} = chatInfoOf(chat, "#2") as T.ChatInfo.Group
+    ep.customData = {simplexMcpSchedules: [{cron: "* * * * *", prompt: "Read the news.", by: "Bob", byId: 7, at: "2026-11-10T09:00:00.000Z"}]}
+    const {control, schedules} = await controlWith(chat, actionsWith("requests", fakeHooks()))
+    expect((await control.ownerCommand(alice, {keyword: "schedules", params: ""}))!.split("\n")).toEqual(["@4  1  * * * * *  Search for trail shoes.", "#2  1  * * * * *  Read the news."])
+    schedules.start()
+    jest.advanceTimersByTime(30_000)
+    schedules.stop()
+    expect(schedules.take("@4")).toEqual([{prompt: "Search for trail shoes.", at: utcMinutes(new Date(2026, 10, 11, 7).getTime())}])
+    expect(schedules.pending("#2")).toBe(0)
+  })
+
+  it("drops the schedules of a chat that an owner's /leave leaves", async () => {
+    jest.useFakeTimers({now: new Date(2026, 10, 11, 6, 59, 30)})
+    const {schedules, send} = await scheduling()
+    await send(alice, "/schedule #2 * * * * * Post the trail report.")
+    schedules.start()
+    jest.advanceTimersByTime(30_000)
+    expect(schedules.pending("#2")).toBe(1)
+    expect(await send(alice, "/leave #2")).toBe("Left business ep (#2), requested by Alice.")
+    jest.advanceTimersByTime(60_000)
+    schedules.stop()
+    expect(schedules.pending("#2")).toBe(0)
+  })
+})
+
 describe("member announcements", () => {
   it("quote a member's name and the restart command in the chat, and keep them on one line in the log", async () => {
     const lines: string[] = []
@@ -744,6 +903,7 @@ describe("command menu", () => {
   const menu = [
     {type: "command", keyword: "pending", label: "Pending actions"},
     {type: "command", keyword: "list", label: "Chats and approvals"},
+    {type: "command", keyword: "schedules", label: "Scheduled prompts"},
     {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
   ]
 
@@ -752,10 +912,11 @@ describe("command menu", () => {
     const actions = actionsWith("requests", fakeHooks())
     const old = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: [{type: "command", keyword: "approve", label: "Approve", params: "N"}]}}})
     const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined, refusedFile: () => undefined, data}, "requests")
-    await new Control(chat.api(), old, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools).load()
+    const schedules = new Schedules(() => false)
+    await new Control(chat.api(), old, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools, schedules).load()
     expect(chat.profiles).toEqual([{groupId: 10, groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}}])
     const current = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}})
-    await new Control(chat.api(), current, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools).load()
+    await new Control(chat.api(), current, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools, schedules).load()
     expect(chat.profiles).toHaveLength(1)
   })
 

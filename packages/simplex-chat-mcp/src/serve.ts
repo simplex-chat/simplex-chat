@@ -10,6 +10,7 @@ import {acquireLock, createDataFolder, releaseLock, serverToken, writeHeadersFil
 import {startHttp, stopHttp} from "./http"
 import {ExitError, log, logError, shellPath} from "./log"
 import {ChatItemsWatch} from "./messages"
+import {Schedules} from "./schedule"
 import {AgentTools, instructions} from "./tools"
 
 export const version: string = require("../package.json").version
@@ -105,8 +106,9 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     perform: (action, signal) => tools.perform(action, signal),
   })
   const watch = new ChatItemsWatch()
-  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data}, approve)
-  const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools)
+  const schedules = new Schedules(memberId => control.hasApprover(memberId))
+  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data, schedules}, approve)
+  const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools, schedules)
   await control.load()
   const factory = (): McpServer => {
     const mcp = new McpServer({name: "simplex-mcp", version}, {instructions: instructions(displayName)})
@@ -123,6 +125,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     throw error
   }
   started = true
+  schedules.start()
   log(`Listening on http://127.0.0.1:${port}/mcp`)
   let controlEvents = Promise.resolve()
   let stopped = false
@@ -170,6 +173,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     actions,
     async stop(endWait = new AbortController().signal) {
       stopped = true
+      schedules.stop()
       const cancelling = actions.stop()
       await stopHttp(server)
       const cancelled = await cancelling
