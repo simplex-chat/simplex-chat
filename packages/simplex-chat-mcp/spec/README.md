@@ -25,7 +25,9 @@ A tool call is held open by the server until the owner decides and, for `connect
 
 With `typing: true` on `receive`, the server starts a status message in the chat when the call returns messages: one live message, edited while the agent works and deleted after the agent's next message there is sent. Status messages are shown in chats with people, groups and business chats that have a standing approval of messages, in mode `requests`. With `live: true` on `send`, the text is shown at once under the status line, and the result is status `live`, without an action; each such note is printed in the terminal. With `--inference URL`, the server polls llama-swap or llama-server at URL, and the model loading, the prompt tokens read and the tokens per second are shown in the status line.
 
-The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
+`register` also adds status hooks to the Claude Code settings file of its scope. Claude Code then runs curl at each hook event, and curl posts the event to `/hook` of the server with the token. For the sessions that called a tool of this server, the Claude Code tool, permission prompt, subagent or compaction in progress is shown in the status line.
+
+The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers files for the host and its hooks, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
 ---
 
@@ -58,11 +60,15 @@ graph TD
   tools --> status["status.ts"]
   tools -.-> inference["inference.ts"]
   serve --> inference
+  serve --> activity["activity.ts"]
+  tools -.-> activity
   status --> actions
   status --> messages
   status --> log
   status -.-> tools
   status -.-> inference
+  status -.-> activity
+  activity --> inference
   inference --> log
   actions --> messages
   actions --> log
@@ -95,15 +101,16 @@ graph TD
 |---|---|
 | [`cli.ts`](../src/cli.ts) | `simplex-mcp` entry point: commands, options, exit codes |
 | [`serve.ts`](../src/serve.ts) | start sequence, event dispatch, stop sequence |
-| [`http.ts`](../src/http.ts) | HTTP listener, token check, `/mcp` route, SDK handler |
+| [`http.ts`](../src/http.ts) | HTTP listener, token check, `/mcp` route, SDK handler, `/hook` route |
 | [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send, status message refusals |
 | [`status.ts`](../src/status.ts) | status messages: start, ticks, labels, notes, deletion, leftovers, running calls |
 | [`inference.ts`](../src/inference.ts) | inference endpoint poller: model states, prompt tokens, tokens per second |
+| [`activity.ts`](../src/activity.ts) | Claude Code activity from hook events: agent sessions, running tools, subagents, permission prompts, compaction |
 | [`actions.ts`](../src/actions.ts) | action records, state machine, expiry, stop |
 | [`control.ts`](../src/control.ts) | agent control chat: link, owners, owner commands, cards, counter |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
-| [`files.ts`](../src/files.ts) | data folder, lock, token, `headers.json`, `server.json` |
-| [`register.ts`](../src/register.ts) | `register` command: Claude Code entry |
+| [`files.ts`](../src/files.ts) | data folder, lock, token, `headers.json`, `hook-headers`, `server.json` |
+| [`register.ts`](../src/register.ts) | `register` command: Claude Code entry, status hooks |
 | [`log.ts`](../src/log.ts) | terminal lines, error texts, shell quoting |
 
 ---
@@ -114,7 +121,7 @@ graph TD
 |---|---|
 | [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits |
 | [Flows](flows.md) | sequence diagrams of the main flows with source locations |
-| [API](api.md) | the six tools, the status message, the control chat commands, replies and cards, the CLI |
+| [API](api.md) | the six tools, the status message, the control chat commands, replies and cards, the CLI, the hook endpoint |
 
 ---
 
@@ -124,17 +131,20 @@ graph TD
 |---|---|---|---|
 | Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L214) | `main` | [214](../src/cli.ts#L214) |
 | Argument parser | [`src/cli.ts`](../src/cli.ts#L49) | `parseCommand` | [49](../src/cli.ts#L49) |
-| Server start | [`src/serve.ts`](../src/serve.ts#L67) | `startServer` | [67](../src/serve.ts#L67) |
-| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L92) | `startAgent` | [92](../src/serve.ts#L92) |
-| HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L502) | `AgentTools.register` | [502](../src/tools.ts#L502) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L539) | `AgentTools.downloadFile` | [539](../src/tools.ts#L539) |
-| Status messages | [`src/status.ts`](../src/status.ts#L28) | `Statuses` | [28](../src/status.ts#L28) |
+| Server start | [`src/serve.ts`](../src/serve.ts#L68) | `startServer` | [68](../src/serve.ts#L68) |
+| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L93) | `startAgent` | [93](../src/serve.ts#L93) |
+| HTTP listener | [`src/http.ts`](../src/http.ts#L18) | `startHttp` | [18](../src/http.ts#L18) |
+| Hook endpoint | [`src/http.ts`](../src/http.ts#L63) | `receiveHook` | [63](../src/http.ts#L63) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L504) | `AgentTools.register` | [504](../src/tools.ts#L504) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L541) | `AgentTools.downloadFile` | [541](../src/tools.ts#L541) |
+| Status messages | [`src/status.ts`](../src/status.ts#L31) | `Statuses` | [31](../src/status.ts#L31) |
 | Inference endpoint | [`src/inference.ts`](../src/inference.ts#L31) | `inferencePoller` | [31](../src/inference.ts#L31) |
+| Claude Code activity | [`src/activity.ts`](../src/activity.ts#L24) | `Activity` | [24](../src/activity.ts#L24) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L124) | `Actions` | [124](../src/actions.ts#L124) |
 | Agent control chat | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
 | Card text | [`src/control.ts`](../src/control.ts#L552) | `cardText` | [552](../src/control.ts#L552) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
-| Claude Code entry | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
+| Claude Code entry | [`src/register.ts`](../src/register.ts#L35) | `register` | [35](../src/register.ts#L35) |
+| Status hooks | [`src/register.ts`](../src/register.ts#L63) | `statusHooks` | [63](../src/register.ts#L63) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L12) | `createDataFolder`, `acquireLock` | [12](../src/files.ts#L12) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |

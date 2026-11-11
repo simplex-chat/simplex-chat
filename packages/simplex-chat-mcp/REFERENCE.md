@@ -195,7 +195,7 @@ invalid settings file      Added to Claude Code: scope user, server simplex-my-a
                            valid settings file; add these status hooks to it: {"hooks":{...}}
 ```
 
-A settings file is invalid when it is not a JSON object, when its `hooks` is not an object, or when the value of one of the events in `hooks` is not an array; `register` then leaves it unchanged. At each of these errors `register` exits with code 1.
+A settings file is invalid when it is not a JSON object, when its `hooks` is neither an object nor `null`, or when the value of one of the 14 events above in `hooks` is not an array; `register` then leaves it unchanged. At each of these errors `register` exits with code 1.
 
 The token is created at the agent's first start and saved in its data folder; every start writes it to `headers.json` and `hook-headers`. `serve my-agent --new-token` replaces it, and Claude Code sends the new token from its next connection, and curl from its next post, without a new `register`.
 
@@ -359,7 +359,7 @@ The apps show it under the header `LIVE`. The first line is the status line: a f
 | `reading the prompt with MODEL, N tokens read` | `--inference`: a model reads the prompt |
 | `generating with MODEL, N tokens/s` | `--inference`: a model generates |
 | `waiting for approval` | the agent waits in a call for your decision on a card |
-| `waiting for permission in Claude Code` | Claude Code asks for your permission to run a tool |
+| `waiting for permission in Claude Code` | from Claude Code's permission prompt to the end of a tool call, a batch or the turn of its session ([Status hooks](#status-hooks)), so also during the allowed call |
 | `using TOOL` | the agent runs `connect`, `send`, `download`, `list` or `leave`; TOOL is the latest of them |
 | `compacting the conversation` | Claude Code compacts the conversation |
 | `running a command`, `reading FILE`, `editing FILE`, `searching files`, `searching the web` or `using NAME` | Claude Code runs a tool; the latest running tool is named, as the next table shows |
@@ -422,11 +422,11 @@ With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-age
 - The server follows a session of Claude Code from its first event with a tool of this agent, such as `mcp__simplex-my-agent__receive`, and ignores the events of other sessions. It follows at most 16 sessions, and drops the oldest one with its state.
 - Of each event, the server uses only `hook_event_name`, `session_id`, `tool_name`, `tool_use_id`, `agent_id`, `agent_type`, and the base name of `tool_input.file_path` or `tool_input.notebook_path`. The rest of the event, prompts, commands, file contents and tool results included, is discarded after parsing; nothing of it is saved or logged.
 - A file's base name is kept only when it consists of 1 to 64 ASCII letters, digits and characters of `_.+@-`. Tool names and subagent types follow the same rule, with `_` and `-` as the only characters besides ASCII letters and digits.
-- At most 64 running tools and 64 running subagents are kept; the oldest is dropped.
+- At most 64 running tools and 64 running subagents are kept, and 256 IDs of ended tool calls; the oldest is dropped.
 
 | Event of a followed session | State of the session after it |
 |---|---|
-| `PreToolUse` | its tool running, except `Agent` and the agent's own tools; without `agent_id`, compaction ended |
+| `PreToolUse` | its tool running, except `Agent`, the agent's own tools and a tool whose end event was received first; without `agent_id`, compaction ended |
 | `PostToolUse`, `PostToolUseFailure`, `PermissionDenied` | its tool and the permission prompt ended |
 | `PostToolBatch` | the tools of its agent and the permission prompt ended |
 | `PermissionRequest` | a permission prompt open |
@@ -436,7 +436,7 @@ With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-age
 | `PostCompact` | compaction ended |
 | `UserPromptSubmit`, `Stop`, `StopFailure`, `SessionEnd` | all its tools, subagents, permission prompt and compaction ended |
 
-- Claude Code runs curl in the background and hides the outcome outside verbose mode (Ctrl+O), so no notice is shown for the posts that fail while the server is stopped.
+- Claude Code runs curl in the background and hides the outcome outside verbose mode (Ctrl+O), so the failures of the posts while the server is stopped are hidden too.
 - The server checks the token, `Host` and `Origin` of a request to `/hook` as for `/mcp`. It answers a `POST` with 204, or with 411 without Content-Length, 413 for a body over 4 MiB and 400 for invalid JSON, and another method with 405.
 
 ## Waiting for approval in Claude Code

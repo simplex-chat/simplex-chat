@@ -105,10 +105,10 @@ Status messages with llama-swap:
 Status messages with Claude Code's work, after steps 1 and 2 of "Status messages":
 
 1. `~/.claude/settings.json` has a group with the `curl` handler shown in REFERENCE.md, "Add the agent to Claude Code", for each of the 14 events named there; `/hooks` in Claude Code labels them as user settings. `~/.simplex-mcp/my-agent/hook-headers` holds `Authorization: Bearer <token>`, with mode 0600.
-2. Send `Run sleep 90 in the shell, then tell me that it is done.` from the app. When Claude Code asks for permission to run it, the label is `waiting for permission in Claude Code` until you allow it; then `running a command`.
-3. During that command, ask a second `claude` session in another terminal, which has not called the agent's tools, to search the web for SimpleX: the label stays `running a command`.
+2. Send `Run sleep 90 in the shell, then tell me that it is done.` from the app. When Claude Code asks for permission to run it, the label is `waiting for permission in Claude Code` until the command ends.
+3. Add `"Bash(sleep *)"` to `permissions.allow` in `~/.claude/settings.json`, and send the prompt of step 2 again: Claude Code runs the command without asking. Meanwhile, ask a second `claude` session in another terminal, which has not called the agent's tools, to search the web for SimpleX: the label is `running a command` until `sleep 90` ends.
 4. Send `Use a subagent to list the files of this folder.` The labels include `running subagent TYPE`, with TYPE as code.
-5. Stop `serve`, and ask a Claude Code session to run `ls`: Claude Code runs it, and no notice of the failed hooks is shown. Start `serve` again, and run `/mcp reconnect all`.
+5. Stop `serve`, and ask a Claude Code session to run `ls`: Claude Code runs it, and the failures of the hooks are hidden. Start `serve` again, and run `/mcp reconnect all`.
 6. `mkdir /tmp/cc`, `echo '[]' > /tmp/cc/settings.json`, then `CLAUDE_CONFIG_DIR=/tmp/cc node dist/cli.js register my-agent`: it prints `Added to Claude Code: scope user, server simplex-my-agent. /tmp/cc/settings.json is not a valid settings file; add these status hooks to it: {"hooks":{...}}` and exits with code 1, and the file still holds `[]`.
 7. In a new folder outside a git repository, for example `/tmp/project`, `node <this folder>/dist/cli.js register my-agent --scope local` prints `Added to Claude Code: scope local, server simplex-my-agent, status hooks in /tmp/project/.claude/settings.local.json.`, and that file has the hooks.
 

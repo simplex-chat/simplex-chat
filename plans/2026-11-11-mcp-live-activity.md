@@ -9,7 +9,7 @@ Dependencies:
 
 ## Decisions
 
-1. Transport: option A of section Transport; Claude Code runs curl as an async command hook, and curl posts each event to `/hook` with the token of `/mcp`.
+1. Transport: Claude Code runs curl as an async command hook, as in section Transport, and curl posts each event to `/hook` with the token of `/mcp`.
 2. Labels: the permission prompts, compaction, running tools and subagents of Claude Code, ranked as in section Labels; names only in code spans, after their patterns; the same labels in every status message of the process.
 3. Sessions: labels are changed only by events of agent sessions; at most 16 agent sessions are kept.
 4. `register` writes the hooks into the Claude Code settings file of its scope: `CONFIG/settings.json` for `user`, `PROJECT/.claude/settings.local.json` for `local`.
@@ -18,19 +18,6 @@ Dependencies:
 7. Source budget, decided by the user: about 150 changed lines in `src`, up to 20% above.
 
 ## Transport
-
-```
-option                                          cost
-A  command hook, async, curl (chosen)           curl on the PATH; a header-line file; tool_input bodies sent to the server and discarded there
-B  mcp_tool hook calling a new MCP tool         a 7th tool seen by the model; synchronous; a "hook error" notice on every tool call while
-                                                serve is down
-C  http hook with the token in settings.json    the access token in a settings file that people share and commit; synchronous; a "hook
-                                                error" notice on every tool call while serve is down
-D  http hook with an env var token              the user exports the token into Claude Code's environment; synchronous; a "hook error"
-                                                notice on every tool call while serve is down
-```
-
-- Costs of B to D, from the hooks reference: `async` is available on command hooks only ("Configure an async hook"); a non-blocking error is produced by a call to an MCP server that is not connected and by a failed HTTP hook connection, and such errors are shown as a "hook error" notice on events such as PreToolUse ("When the server is still connecting", "HTTP response handling", "Exit code output").
 
 Hook handler, written by `register` for each event of section Events:
 
@@ -229,6 +216,7 @@ file           function or item      change
 activity.ts    Activity              new
                ActivityState         new
 http.ts        HttpOptions           hook
+               maxHookBody           new: 4 MiB
                startHttp             /hook before the ready check
                receiveHook           new
 files.ts       hookHeadersFile       new
@@ -243,13 +231,14 @@ register.ts    hookEvents            new: the 14 events
                withoutHandlers       new
                isObject              new
 status.ts      Statuses              agent.activity; its state passed to statusLabel
-               statusLabel           the activity state
+               statusLabel           the activity state; the loading label by named
                otherLabel            the Claude Code rows
                toolLabel             new
                named                 new
                toolLabels            new
                fileVerbs             new
-inference.ts   textOf                new, exported, in place of modelName
+inference.ts   sample                the model by textOf
+               textOf                new, exported, in place of modelName
                fieldOf               exported
 serve.ts       startAgent            Activity of NAME; Agent.activity; the hook of startHttp
                listen                hook
