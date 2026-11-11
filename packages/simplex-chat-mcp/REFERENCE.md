@@ -536,9 +536,9 @@ With settings shared by several machines or containers, Claude Code loads the pl
    claude --dangerously-load-development-channels plugin:simplex@simplex-local
    ```
 
-   Settings can't replace the flag: by `channelsEnabled` and `allowedChannelPlugins`, an organization's managed settings, an administrator allows the channels that a session names by `--channels`. `--channels plugin:simplex@simplex-local` needs `simplex@simplex-local` in `allowedChannelPlugins`.
+   Settings can't replace the flag: by `channelsEnabled` and `allowedChannelPlugins`, an organization's managed settings, an administrator allows the channels named in `--channels`. `--channels plugin:simplex@simplex-local` needs `simplex@simplex-local` in `allowedChannelPlugins`.
 
-Each machine and each container needs its own data folder, on storage that no other machine or container uses: `~/.simplex-mcp` of its own home folder, or the folder in `SIMPLEX_MCP_HOME`, set in its own environment rather than in `env` of the shared settings. The service matches the hooks and the server of a session by the process ID of their Claude Code process, and checks its lock by the process ID of the running service: one process ID can name different processes on different machines and in different containers, and a process of another machine or container is invisible to these checks. Each data folder has its own Main group, whose link the first session start on that machine or container shows.
+Each machine and each container needs its own data folder, on storage that no other machine or container uses: `~/.simplex-mcp` of its own home folder, or the folder in `SIMPLEX_MCP_HOME`, set in its own environment rather than in `env` of the shared settings. The service matches the hooks and the server of a session by the process ID of their Claude Code process, and checks its lock by the process ID of the running service: the same process ID can be given to different processes on different machines and in different containers, and a process of another machine or container is invisible to these checks. Each data folder has its own Main group, whose link is shown at the first session start on that machine or container.
 
 ### The Main group
 
