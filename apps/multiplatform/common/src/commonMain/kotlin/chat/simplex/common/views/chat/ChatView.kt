@@ -3630,8 +3630,9 @@ fun providerForGallery(
   cItemId: Long,
   scrollTo: (Int) -> Unit
 ): ImageGalleryProvider {
+  val hiddenItemIds = chatItems.filter { it.meta.itemDeleted != null && it.id != cItemId }.map { it.id }.toSet()
   fun canShowMedia(item: ChatItem): Boolean =
-    (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && (getLoadedFilePath(item.file) != null || chatModel.connectedToRemote()))
+    item.id !in hiddenItemIds && (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && (getLoadedFilePath(item.file) != null || chatModel.connectedToRemote()))
 
   fun item(skipInternalIndex: Int, initialChatId: Long): Pair<Int, ChatItem>? {
     var processedInternalIndex = -skipInternalIndex.sign
