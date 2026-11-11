@@ -314,19 +314,19 @@ sequenceDiagram
   participant Chain as Ethereum
   App->>Svc: catalog
   Svc-->>App: state, product, years, terms, clock
-  Note over App: search (RSLV); 1·4 key the first time; 1·5 terms ticked, Pay
+  Note over App: search (RSLV), 1·4 key the first time, 1·5 terms ticked, Pay
   App->>Svc: catalog again, and the name looked up again
   Note over App: sale closed or name gone: no sheet
-  Note over App: order kept; nonce N; code C = derive(seed, N); token T
+  Note over App: order kept, nonce N, code C = derive(seed, N), token T
   App->>Store: buy the product with T
   Store-->>App: receipt
   Note over App: order signed by the service's clock
   App->>Svc: purchase a name: receipt + order(C, owner, commitment, sealed, terms, signature)
   Svc->>Store: verify the receipt
-  Note over Svc: product: any name, 2 years; T matches hash(C)
+  Note over Svc: product: any name, 2 years, T matches hash(C)
   Note over Svc: committed: payment row, code row {hash(C), paid}
-  Note over Svc: the order: sale, terms, name, code; code reserved
-  Svc-->>App: payment: unused; order: registration id, or a refusal
+  Note over Svc: the order checked: sale, terms, name, code, then the code reserved
+  Svc-->>App: payment: unused, order: registration id or a refusal
   Svc->>Chain: commit
   loop at least 60 s
     App->>Svc: registration view
@@ -334,7 +334,7 @@ sequenceDiagram
   App->>Svc: reveal: label, links, signed intent, terms acceptance
   Svc->>Chain: acceptance relayed, then registerWithCredit to the account
   Svc-->>App: registered, expires
-  Note over App: the address or channel claims the name; Play consumed, Apple finished
+  Note over App: the address or channel claims the name, Play consumed, Apple finished
 ```
 
 **Purchase a name:** `STCPurchaseName {payment :: ServicePayment, code :: NamePurchaseCode}`.
@@ -607,10 +607,10 @@ registration     the one it funds
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Kept: Keep the order, before the sheet: nonce, code, token
+  [*] --> Kept: Keep the order before the sheet, with its nonce, code and token
   Kept --> Paid: the receipt handed over and recorded
   Kept --> [*]: the sheet dismissed, nothing charged
-  Paid --> Used: its name registered; Play consumed, Apple finished
+  Paid --> Used: its name registered, Play consumed, Apple finished
   Paid --> Dropped: the store reports it refunded
   Used --> [*]
   Dropped --> [*]
@@ -883,7 +883,7 @@ stateDiagram-v2
   Stuck --> Failed: support raises the bound
   Stuck --> KeptPayment: sends_used_up, 30 days after the failure
   KeptPayment --> Kept: Choose another name
-  Registered --> [*]: the address or channel claims it; Play consumed, Apple finished
+  Registered --> [*]: the address or channel claims it, Play consumed, Apple finished
 ```
 
 - **1·8** "Registered until 31 Dec 2028. It opens Alice's address."; "Alice's address shows the name now."; Close → the address, its name's row with the footer "Registered until 31 Dec 2028.", or the channel's info. "Add to calendar" is undrawn.
@@ -1092,7 +1092,7 @@ sequenceDiagram
   participant Svc as Store service
   App->>Svc: catalog, over SMP: price, terms, the longest invoice window, clock
   Note over App: 1·4 key the first time
-  App->>App: 4·2 opens: nonce N, code C = derive(seed, N), order code from hash(C); the terms ticked
+  App->>App: 4·2 opens: nonce N, code C = derive(seed, N), order code from hash(C), the terms ticked
   App->>Svc: Pay in browser or Copy link: open C for payment, over SMP
   Svc-->>App: the unpaid code row for hash(C), open for payment until T
   App->>App: the order kept with N, ask until T
