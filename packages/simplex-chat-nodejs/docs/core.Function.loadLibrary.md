@@ -8,7 +8,7 @@
 
 > **loadLibrary**(`backend`): `Promise`\<`void`\>
 
-Defined in: [src/core.ts:13](../src/core.ts#L13)
+Defined in: [src/core.ts:13](../core.ts#L13)
 
 Resolve (downloading on first use) and load libsimplex for the backend.
 One libsimplex per process: the Haskell runtime is initialized once, and another backend is rejected.

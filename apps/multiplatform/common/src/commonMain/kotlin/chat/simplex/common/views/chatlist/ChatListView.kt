@@ -64,6 +64,28 @@ sealed class ActiveFilter {
   data object Unread: ActiveFilter()
 }
 
+private fun renewalPrice(): String? {
+  val badgeState = BadgeModel.badgeState.value ?: return null
+  val subscription = badgeState.subscription ?: return null
+  return BadgeStore.subscriptionPrice(badgeState.badgeType, subscription.planMonths)
+}
+
+private fun renewalFailure(): String {
+  val issueError = BadgeModel.badgeState.value?.issueError ?: return generalGetString(MR.strings.badges_renewal_failed_unknown)
+  return issueError.reason.text
+}
+
+@Composable
+private fun BadgeAlertBanner(title: String, subtitle: String, warning: Boolean = false) {
+  SupportSimpleXBanner(
+    title = title,
+    subtitle = subtitle,
+    warning = warning,
+    onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
+    onDismiss = { showBadgeAlertDismissAlert(title) }
+  )
+}
+
 private fun showBadgeAlertDismissAlert(title: String) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = title,
@@ -217,12 +239,14 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   LaunchedEffect(Unit) {
+    if (noticesShown) return@LaunchedEffect
     val showWhatsNew = shouldShowWhatsNew(chatModel)
     val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
     if (showWhatsNew || showUpdatedConditions) {
       // Requested here, so that the country is known by the time the modal opens
       platform.androidLoadPlayStoreCountry()
       delay(1000L)
+      noticesShown = true
       ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
     }
   }
@@ -874,10 +898,10 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
             } else {
               val candidate = nameSearchCandidate(it.trim())
               connectNameCandidate.value = candidate
-              // clear the previous match immediately so the list falls back to text search during the debounce,
-              // instead of showing a stale filtered chat while the new search runs
-              searchChatFilteredBySimplexLink.value = emptySet()
               if (candidate != null) {
+                // clear the previous match immediately so the list falls back to text search during the debounce,
+                // instead of showing a stale filtered chat while the new search runs
+                searchChatFilteredBySimplexLink.value = emptySet()
                 // resolve the name locally on each keystroke, debounced; collectLatest cancels the in-flight
                 // search when the next keystroke arrives. A bare name can be a contact or a channel, so search
                 // both and filter every known chat found; drop the row only when both types are already known.
@@ -934,6 +958,7 @@ private fun ErrorSettingsView() {
 }
 
 private var lazyListState = 0 to 0
+private var noticesShown = false
 
 enum class ScrollDirection {
   Up, Down, Idle
@@ -1072,31 +1097,33 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         ToggleChatListCard()
       }
     }
-    // one slot: a badge the user paid for ending outranks the pitch to get one
-    val alert = BadgeModel.alert.value
-    if (supportEnded() && alert != null) {
+    // one slot: an alert about a badge the user paid for outranks the pitch to get one
+    val alert = bannerBadgeAlert()
+    if (alert != null) {
       item {
-        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeExpired }
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeAlert }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
-          SupportSimpleXBanner(
-            title = stringResource(MR.strings.badges_support_ended),
-            subtitle = String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText),
-            onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
-            onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_support_ended)) }
-          )
-        }
-      }
-    } else if (badgeIssueFailed()) {
-      item {
-        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeIssueFailed }
-        Box(Modifier.zIndex(1f).padding(16.dp)) {
-          SupportSimpleXBanner(
-            title = stringResource(MR.strings.badges_renewal_failed),
-            subtitle = stringResource(MR.strings.badges_tap_for_details),
-            warning = true,
-            onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
-            onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_renewal_failed)) }
-          )
+          when (alert.kind) {
+            is BadgeAlertKind.SupportEnded ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_support_ended), String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText))
+            is BadgeAlertKind.IssueFailed ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_renewal_failed), renewalFailure(), warning = true)
+            is BadgeAlertKind.SubscriptionEnded ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_subscription_ended_title), String.format(stringResource(MR.strings.badges_subscription_ended_on), alert.dateText))
+            is BadgeAlertKind.PaymentIssue ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_payment_problem_title), stringResource(MR.strings.badges_payment_problem_subtitle), warning = true)
+            is BadgeAlertKind.SubscriptionCancelled ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_subscription_cancelled_title), String.format(stringResource(MR.strings.badges_stays_until), alert.dateText))
+            is BadgeAlertKind.RenewalApproaching -> {
+              val price = renewalPrice()
+              if (price != null) {
+                BadgeAlertBanner(stringResource(MR.strings.badges_renews_soon), String.format(stringResource(MR.strings.badges_renews_on_for), alert.dateText, price))
+              } else {
+                BadgeAlertBanner(stringResource(MR.strings.badges_renews_soon), String.format(stringResource(MR.strings.badges_renews_on), alert.dateText))
+              }
+            }
+            is BadgeAlertKind.PrepaidEnding, is BadgeAlertKind.Unknown -> {}
+          }
         }
       }
     } else if (chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {

@@ -47,8 +47,9 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     showHiddenProfilesNotice = m.controller.appPrefs.showHiddenProfilesNotice,
     visibleUsersCount = visibleUsersCount(m),
     addUser = {
+      if (ModalManager.center.isTopModalOpen(ModalViewId.CREATE_PROFILE)) return@UserProfilesLayout
       withAuth {
-        ModalManager.center.showModalCloseable { close ->
+        ModalManager.center.showModalCloseable(id = ModalViewId.CREATE_PROFILE) { close ->
           CreateProfile(m, close)
         }
       }

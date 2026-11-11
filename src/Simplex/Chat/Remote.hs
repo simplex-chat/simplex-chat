@@ -75,11 +75,11 @@ remoteFilesFolder = "simplex_v1_files"
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
-minRemoteCtrlVersion = AppVersion [7, 1, 0, 11]
+minRemoteCtrlVersion = AppVersion [7, 1, 0, 16]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [7, 1, 0, 11]
+minRemoteHostVersion = AppVersion [7, 1, 0, 16]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version
@@ -254,7 +254,7 @@ startRemoteHostSession rhKey = do
     TM.lookup rhKey sessions >>= \case
       Just _ -> pure . Left $ ChatErrorRemoteHost rhKey RHEBusy
       Nothing -> do
-        sessionSeq <- stateTVar nextSessionSeq $ \s -> (s, s + 1)
+        sessionSeq <- stateTVar' nextSessionSeq $ \s -> (s, s + 1)
         Right sessionSeq <$ TM.insert rhKey (sessionSeq, RHSessionStarting) sessions
 
 closeRemoteHost :: RHKey -> CM ()
@@ -297,9 +297,9 @@ cancelRemoteHost handlingError = \case
     closeConnection tls
   RHSessionConnected {rchClient, tls, rhClient = RemoteHostClient {httpClient}, pollAction} -> do
     uninterruptibleCancel pollAction
+    unless handlingError $ closeHTTP2Client httpClient `catchAny` (logError . tshow)
     cancelHostClient rchClient `catchAny` (logError . tshow)
     closeConnection tls `catchAny` (logError . tshow)
-    unless handlingError $ closeHTTP2Client httpClient `catchAny` (logError . tshow)
   where
     cancelPendingSession RHPendingSession {rchClient, rhsWaitSession} = do
       unless handlingError $ uninterruptibleCancel rhsWaitSession `catchAny` (logError . tshow)
@@ -457,7 +457,7 @@ startRemoteCtrlSession = do
     readTVar session >>= \case
       Just _ -> pure . Left $ ChatErrorRemoteCtrl RCEBusy
       Nothing -> do
-        sseq <- stateTVar nextSessionSeq $ \s -> (s, s + 1)
+        sseq <- stateTVar' nextSessionSeq $ \s -> (s, s + 1)
         Right sseq <$ writeTVar session (Just (sseq, RCSessionStarting))
 
 connectRemoteCtrl :: RCVerifiedInvitation -> SessionSeq -> CM (Maybe RemoteCtrlInfo, CtrlAppInfo)

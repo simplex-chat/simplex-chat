@@ -17,9 +17,6 @@
 "Comment" = "Комментарий";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "В настоящее время максимальный поддерживаемый размер файла составляет %@.";
-
-/* No comment provided by engineer. */
 "Database downgrade required" = "Требуется откат базы данных";
 
 /* No comment provided by engineer. */

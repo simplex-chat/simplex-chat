@@ -11,6 +11,7 @@ module BadgeService.Config
     speedPolicyName,
     PollConfig (..),
     AppleStoreConfig (..),
+    AppleServerApi (..),
     PlayStoreConfig (..),
     BadgeIssuerKey (..),
     GroupConfig (..),
@@ -24,7 +25,7 @@ where
 
 import qualified Control.Exception as E
 import BadgeService.Log (logWarn)
-import Control.Monad (mfilter, when)
+import Control.Monad (mfilter, unless, when)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
@@ -97,7 +98,17 @@ data PollConfig = PollConfig {pWaitingSeconds :: Int, pIdleSeconds :: Int}
 
 data AppleStoreConfig = AppleStoreConfig
   { aBundleId :: Text,
-    aRootCertificates :: NonEmpty FilePath
+    aRootCertificates :: NonEmpty FilePath,
+    aServerApi :: Maybe AppleServerApi -- without it, App Store subscriptions are not verified
+  }
+  deriving (Eq, Show)
+
+-- | The App Store Server API key, which subscription checks sign their requests with.
+data AppleServerApi = AppleServerApi
+  { aKeyId :: Text,
+    aIssuerId :: Text,
+    aPrivateKeyFile :: FilePath,
+    aApiHost :: Text
   }
   deriving (Eq, Show)
 
@@ -135,7 +146,11 @@ data ServiceConfig = ServiceConfig
     issuer :: Maybe BadgeIssuerKey,
     group :: Maybe GroupConfig,
     -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
-    devAcceptUnverifiedStoreReceipts :: Bool
+    devAcceptUnverifiedStoreReceipts :: Bool,
+    -- Local testing only; every issue request for a subscription asks its store and banks the months it charges.
+    devCheckStoreDuringCoverage :: Bool,
+    -- Local testing only; credits a purchase the store itself calls a test, which no real buyer pays for.
+    devCreditTestPurchases :: Bool
   }
   deriving (Eq, Show)
 
@@ -150,6 +165,13 @@ defaultSessionMinutes = 60
 
 defaultPlayApiHost :: Text
 defaultPlayApiHost = "https://androidpublisher.googleapis.com"
+
+-- | Production: it answers 404 for a Sandbox transaction, which a test deployment reaches through api_host.
+defaultAppleApiHost :: Text
+defaultAppleApiHost = "https://api.storekit.itunes.apple.com"
+
+appleSandboxHost :: Text
+appleSandboxHost = "https://api.storekit-sandbox.itunes.apple.com"
 
 defaultPlayTokenUrl :: Text
 defaultPlayTokenUrl = "https://oauth2.googleapis.com/token"
@@ -168,6 +190,16 @@ requireHttps u
 -- | Well below 100, where BTCPay settles an invoice for one satoshi.
 maxTolerance :: Double
 maxTolerance = 10
+
+-- | A Sandbox receipt verifies like a real one, offline too, so test purchases are credited only beside the Sandbox's
+-- server API; and the Sandbox charges no one, so without them only the production host can credit a subscription.
+checkAppleHost :: Bool -> AppleStoreConfig -> Either String ()
+checkAppleHost creditTestPurchases AppleStoreConfig {aServerApi} = case (creditTestPurchases, aApiHost <$> aServerApi) of
+  (False, Nothing) -> Right ()
+  (False, Just h) | h == defaultAppleApiHost -> Right ()
+  (True, Just h) | h == appleSandboxHost -> Right ()
+  (False, _) -> Left $ "apple.api_host must be " <> T.unpack defaultAppleApiHost <> " unless [dev] credit_test_purchases = on, as no other host credits a real subscription"
+  (True, _) -> Left $ "[dev] credit_test_purchases = on needs [apple]'s server API key with api_host = " <> T.unpack appleSandboxHost <> ", as a Sandbox receipt would otherwise be credited as a real purchase"
 
 readServiceConfig :: FilePath -> IO (Either String ServiceConfig)
 readServiceConfig path =
@@ -192,10 +224,10 @@ knownSettings =
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
-    ("apple", ["bundle_id", "root_certificates"]),
+    ("apple", ["bundle_id", "root_certificates", "api_key_id", "api_issuer_id", "api_private_key_file", "api_host"]),
     ("google", ["package_name", "service_account_file"]),
     ("group", ["display_name", "description"]),
-    ("dev", ["accept_unverified_store_receipts"]),
+    ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key"])
   ]
 
@@ -232,6 +264,11 @@ parseConfig ini = do
   devUnverifiedReceipts <- bool "dev" "accept_unverified_store_receipts" False
   when (devUnverifiedReceipts && (isJust apple || isJust google)) $
     Left "[dev] accept_unverified_store_receipts must be off where [apple] or [google] verifies store receipts"
+  devCheckStoreDuringCoverage <- bool "dev" "check_store_during_coverage" False
+  devCreditTestPurchases <- bool "dev" "credit_test_purchases" False
+  mapM_ (checkAppleHost devCreditTestPurchases) apple
+  when (devCheckStoreDuringCoverage && not (devUnverifiedReceipts || devCreditTestPurchases)) $
+    Left "[dev] check_store_during_coverage needs accept_unverified_store_receipts or credit_test_purchases = on, as only a dev deployment may ask a store while coverage runs"
   pure
     ServiceConfig
       { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor},
@@ -242,7 +279,9 @@ parseConfig ini = do
         playStore = google,
         issuer = iss,
         group = grp,
-        devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts
+        devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts,
+        devCheckStoreDuringCoverage,
+        devCreditTestPurchases
       }
   where
     hasSection s = s `elem` sections ini
@@ -339,11 +378,20 @@ parseConfig ini = do
       | otherwise = do
           aBundleId <- required "apple" "bundle_id"
           aRootCertificates <- rootCertificates
-          pure (Just AppleStoreConfig {aBundleId, aRootCertificates})
+          aServerApi <- appleServerApi
+          pure (Just AppleStoreConfig {aBundleId, aRootCertificates, aServerApi})
     rootCertificates = do
       v <- required "apple" "root_certificates"
       maybe (Left "apple.root_certificates must list at least one file") Right $
         L.nonEmpty $ map T.unpack $ filter (not . T.null) $ map T.strip $ T.splitOn "," v
+    -- the key is three settings, and one or two of them would leave subscriptions silently unverified
+    appleServerApi = case (present "apple" "api_key_id", present "apple" "api_issuer_id", present "apple" "api_private_key_file") of
+      (Nothing, Nothing, Nothing) -> Right Nothing
+      (Just aKeyId, Just aIssuerId, Just keyFile) -> do
+        aApiHost <- T.toLower . T.dropWhileEnd (== '/') <$> optional "apple" "api_host" defaultAppleApiHost
+        unless ("https://" `T.isPrefixOf` aApiHost) $ Left "apple.api_host must be an absolute https URL"
+        pure (Just AppleServerApi {aKeyId, aIssuerId, aPrivateKeyFile = T.unpack keyFile, aApiHost})
+      _ -> Left "apple.api_key_id, apple.api_issuer_id and apple.api_private_key_file are required together"
     googleSection
       | not (hasSection "google") = Right Nothing
       | otherwise = do

@@ -15,6 +15,7 @@ import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.MREmojiChar
 import chat.simplex.common.ui.theme.EmojiFont
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.helpers.toDp
 import java.sql.Timestamp
 
 val largeEmojiFont: TextStyle = TextStyle(fontSize = 48.sp, fontFamily = EmojiFont)
@@ -25,18 +26,20 @@ fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Bool
   val emojiText = chatItem.content.text.trim()
   val isSelected = setupEmojiSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, emojiText.length)
 
-  Column(
-    Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    if (isSelected) {
-      Box(Modifier.background(SelectionHighlightColor)) {
+  ItemWithMeta(meta = { CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }, metaReserved = true, gapBelowCard = terminalReactionsGap(chatItem).toDp()) { inlineMeta ->
+    Column(
+      if (LocalTerminalLayout.current) Modifier.padding(horizontal = CHAT_ITEM_TEXT_PADDING).messageCard().messageLastLine() else Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      if (isSelected) {
+        Box(Modifier.background(SelectionHighlightColor)) {
+          EmojiText(chatItem.content.text)
+        }
+      } else {
         EmojiText(chatItem.content.text)
       }
-    } else {
-      EmojiText(chatItem.content.text)
+      inlineMeta?.invoke()
     }
-    CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
   }
 }
 

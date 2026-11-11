@@ -25,9 +25,14 @@ import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.*
+import coil.size.Size
 import dev.icerock.moko.resources.StringResource
 import java.io.*
 import java.net.URI
+
+private const val MAX_IMAGE_DIMENSION = 4320
+private const val MAX_SOURCE_IMAGE_DIMENSION = 16384
+private const val MAX_DECODED_PIXELS = MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION
 
 fun Spanned.toHtmlWithoutParagraphs(): String {
   return HtmlCompat.toHtml(this, HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE)
@@ -183,6 +188,7 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
       } else {
         File(getAppFilePath(file.fileName)).readBytes()
       }
+      if (!isImageFile(data)) return null
       decodeSampledBitmapFromByteArray(data, 1000, 1000).asImageBitmap() to data
     } catch (e: Exception) {
       Log.e(TAG, e.stackTraceToString())
@@ -194,12 +200,12 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
 }
 
 // https://developer.android.com/topic/performance/graphics/load-bitmap#load-bitmap
-internal fun decodeSampledBitmapFromByteArray(data: ByteArray, reqWidth: Int, reqHeight: Int, maxDimension: Int = Int.MAX_VALUE): Bitmap {
+internal fun decodeSampledBitmapFromByteArray(data: ByteArray, reqWidth: Int, reqHeight: Int, maxDimension: Int = MAX_SOURCE_IMAGE_DIMENSION): Bitmap {
   // First decode with inJustDecodeBounds=true to check dimensions
   return BitmapFactory.Options().run {
     inJustDecodeBounds = true
     BitmapFactory.decodeByteArray(data, 0, data.size, this)
-    if (outWidth > maxDimension || outHeight > maxDimension) throw IOException("Image dimensions exceed limit")
+    if (outWidth !in 1..maxDimension || outHeight !in 1..maxDimension) throw IOException("Image dimensions exceed limit")
     // Calculate inSampleSize
     inSampleSize = calculateInSampleSize(this, reqWidth, reqHeight)
     // Decode bitmap with inSampleSize set
@@ -209,6 +215,14 @@ internal fun decodeSampledBitmapFromByteArray(data: ByteArray, reqWidth: Int, re
       ?: throw IOException("Unable to decode image")
   }
 }
+
+internal fun boundedImageSize(data: ByteArray): Size =
+  BitmapFactory.Options().run {
+    inJustDecodeBounds = true
+    BitmapFactory.decodeByteArray(data, 0, data.size, this)
+    val sampleSize = calculateInSampleSize(this, MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION)
+    Size(outWidth / sampleSize, outHeight / sampleSize)
+  }
 
 private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
   // Raw height and width of image
@@ -223,6 +237,9 @@ private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int,
     while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
       inSampleSize *= 2
     }
+  }
+  while ((width / inSampleSize).toLong() * (height / inSampleSize) > MAX_DECODED_PIXELS) {
+    inSampleSize *= 2
   }
 
   return inSampleSize

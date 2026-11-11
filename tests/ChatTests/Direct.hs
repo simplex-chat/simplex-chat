@@ -1362,6 +1362,13 @@ testNegotiateCall =
     bob <## "ok"
     threadDelay 100000
     bob #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(0, "incoming call: in progress")])
+    -- either party can restart ICE of a connected call
+    bob ##> "/_call extra @2 {\"rtcSession\":\"{}\",\"rtcIceCandidates\":\"[]\"}"
+    bob <## "ok"
+    alice <## "call extra info from bob"
+    alice ##> "/_call extra @2 {\"rtcSession\":\"{}\",\"rtcIceCandidates\":\"[]\"}"
+    alice <## "ok"
+    bob <## "call extra info from alice"
     -- either party can end the call
     bob ##> "/_call end @2"
     bob <## "ok"

@@ -62,7 +62,8 @@ class CallManager(val chatModel: ChatModel) {
         media = invitation.callType.media,
         aesKey = invitation.sharedKey,
         iceServers = iceServers,
-        relay = useRelay
+        relay = useRelay,
+        canReconnect = invitation.contact.callReconnectSupported
       ))
       callInvitations.remove(invitation.contact.id)
       if (invitation.contact.id == activeCallInvitation.value?.contact?.id) {

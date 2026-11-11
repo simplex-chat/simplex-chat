@@ -127,4 +127,32 @@ describe("run", () => {
     await runBot("calc.simplex", {updateAddress: false})
     expect(chat.apiSetUserDomain).not.toHaveBeenCalled()
   })
+
+  it("updates the address settings when they changed", async () => {
+    const chat = fakeChat()
+    await runBot(undefined, {addressSettings: {welcomeMessage: "hello"}})
+    expect(chat.apiSetAddressSettings).toHaveBeenCalledWith(1, {autoAccept: true, welcomeMessage: {type: "text", text: "hello"}, businessAddress: false})
+  })
+
+  it("updates the address settings when the chat layout changed", async () => {
+    const chat = fakeChat()
+    await runBot(undefined, {addressSettings: {chatLayout: T.ChatLayout.Terminal}})
+    expect(chat.apiSetAddressSettings).toHaveBeenCalledWith(1, {autoAccept: true, businessAddress: false, chatLayout: T.ChatLayout.Terminal})
+  })
+
+  it("does not update the address settings when they are the same", async () => {
+    const chat = fakeChat()
+    chat.apiGetUserAddress.mockResolvedValue({...address, addressSettings: {...address.addressSettings, chatLayout: T.ChatLayout.Terminal}})
+    await runBot(undefined, {addressSettings: {chatLayout: T.ChatLayout.Terminal}})
+    expect(chat.apiSetAddressSettings).not.toHaveBeenCalled()
+  })
+})
+
+describe("apiSetAddressSettings", () => {
+  it("writes the chat layout of the bot address settings", async () => {
+    const sendChatCmd = jest.fn().mockResolvedValue({type: "userContactLinkUpdated"})
+    await api.ChatApi.prototype.apiSetAddressSettings.call({sendChatCmd} as unknown as api.ChatApi, 1, {autoAccept: true, chatLayout: T.ChatLayout.Terminal})
+    const cmd: string = sendChatCmd.mock.calls[0][0]
+    expect(JSON.parse(cmd.slice(cmd.indexOf("{")))).toEqual({businessAddress: false, autoAccept: {acceptIncognito: false}, chatLayout: "terminal"})
+  })
 })

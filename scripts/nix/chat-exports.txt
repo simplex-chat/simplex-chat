@@ -24,3 +24,9 @@ chat_json_length
 chat_badge_keygen
 chat_badge_issue
 chat_write_file
+chat_resize_image_uri
+chat_resize_image
+chat_resize_image_file_uri
+chat_resize_image_file
+chat_resize_image_fd_uri
+chat_resize_image_fd

@@ -546,9 +546,9 @@ setSupportChatMemberAttention db cxt user g m memberAttention = do
       m_ <- runExceptT $ getGroupMemberById db cxt user (groupMemberId' m)
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
-createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> ShowGroupAsSender -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> UTCTime -> IO ChatItemId
-createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, sharedMsgId, signedMsg_} ciContent quotedItem itemForwarded timed live hasLink createdAt =
-  createNewChatItem_ db user chatDirection showGroupAsSender createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False hasLink createdAt Nothing (toMsgVerified (signMessagesRequired chatDirection) (MSSVerified <$ signedMsg_)) signedMsg_ Nothing createdAt
+createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> ShowGroupAsSender -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> UTCTime -> UTCTime -> IO ChatItemId
+createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, sharedMsgId, signedMsg_} ciContent quotedItem itemForwarded timed live hasLink itemTs createdAt =
+  createNewChatItem_ db user chatDirection showGroupAsSender createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False hasLink itemTs Nothing (toMsgVerified (signMessagesRequired chatDirection) (MSSVerified <$ signedMsg_)) signedMsg_ Nothing createdAt
   where
     createdByMsgId = if msgId == 0 then Nothing else Just msgId
     quoteRow :: NewQuoteRow
@@ -1121,7 +1121,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
     cItem d chatDir ciStatus content file =
       CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = Nothing, reactions = [], file}
       where
-        ParsedMarkdown formattedText markdownBlocks = parsedMarkdown itemText
+        ParsedMarkdown formattedText markdownBlocks = parsedCIContent content itemText
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTLocal d
     ciMeta content status =
@@ -2338,7 +2338,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
     cItem d chatDir ciStatus content file =
       CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = toDirectQuote quoteRow, reactions = [], file}
       where
-        ParsedMarkdown formattedText markdownBlocks = parsedMarkdown itemText
+        ParsedMarkdown formattedText markdownBlocks = parsedCIContent content itemText
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTDirect d
     ciMeta content status =
@@ -2432,7 +2432,7 @@ toGroupChatItem
       cItem d chatDir ciStatus content file =
         CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
         where
-          ParsedMarkdown formattedText markdownBlocks = parsedMarkdown itemText
+          ParsedMarkdown formattedText markdownBlocks = parsedCIContent content itemText
       badItem = Left $ SEBadChatItem itemId (Just itemTs)
       ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTGroup d
       ciMeta content status =
@@ -2578,7 +2578,7 @@ updateDirectChatItem' db User {userId} contactId ci newContent edited live timed
 updatedChatItem :: ChatItem c d -> CIContent d -> Bool -> Bool -> Maybe CITimed -> UTCTime -> ChatItem c d
 updatedChatItem ci@ChatItem {meta = meta@CIMeta {itemStatus, itemEdited, itemTimed, itemLive}} newContent edited live timed_ currentTs =
   let newText = ciContentToText newContent
-      ParsedMarkdown formattedText markdownBlocks = parsedMarkdown newText
+      ParsedMarkdown formattedText markdownBlocks = parsedCIContent newContent newText
       edited' = itemEdited || edited
       live' = (live &&) <$> itemLive
       timed' = case timed_ of
@@ -3380,7 +3380,7 @@ getChatItemVersions db itemId = do
   where
     toChatItemVersion :: (Int64, MsgContent, UTCTime, UTCTime) -> ChatItemVersion
     toChatItemVersion (chatItemVersionId, msgContent, itemVersionTs, createdAt) =
-      let ParsedMarkdown formattedText markdownBlocks = parsedMarkdown $ msgContentText msgContent
+      let ParsedMarkdown formattedText markdownBlocks = parsedMsgContent msgContent
        in ChatItemVersion {chatItemVersionId, msgContent, formattedText, markdownBlocks, itemVersionTs, createdAt}
 
 directCIWithReactions :: DB.Connection -> Contact -> CChatItem 'CTDirect -> IO (CChatItem 'CTDirect)

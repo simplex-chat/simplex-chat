@@ -67,7 +67,7 @@ db_query() {
   sqlite3 "$work/$1_chat.db" "$2"
 }
 
-# Prints a profile image data URI made as the apps make one: JPEG at quality 85, scaled down by the square root
+# Prints a profile image data URI: JPEG at quality 85, scaled down by the square root
 # of its excess, at most halved per step, until it is at most max_image_size characters. The picture fills the
 # whole square, a gradient between two shades of one colour with a large white letter; noise keeps JPEG from
 # compressing it much, so the image ends up near the limit.
@@ -120,21 +120,27 @@ create_directory() {
 }
 
 start_directory() {
+  local pid deadline=$((SECONDS + 60))
   # -y: the service adds its own tables to the database the CLI created, and would otherwise ask on stdin
   nohup "$bin/simplex-directory-service" -d "$work/directory" -y --super-users "$1" < /dev/null >> "$work/directory.log" 2>&1 &
-  echo $! > "$work/directory.pid"
-  sleep 5
-  if ! kill -0 "$(cat "$work/directory.pid")" 2> /dev/null; then
-    echo "error: the directory service exited"
-    cat "$work/directory.log"
-    return 1
-  fi
+  pid=$!
+  echo "$pid" > "$work/directory.pid"
+  # its output is block-buffered, so it shows that its chat has started by connecting to its servers
+  until grep -q "pid=$pid," <<< "$(ss -Htnp state established)"; do
+    if ! kill -0 "$pid" 2> /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
+      echo "error: the directory service did not start"
+      cat "$work/directory.log"
+      return 1
+    fi
+    sleep 1
+  done
 }
 
-stop_directory() {
+# Waits for the process to exit, which completes its output, and kills it after 30 s.
+stop_process() {
   local pid deadline
-  pid=$(cat "$work/directory.pid")
-  kill -INT "$pid" 2> /dev/null || true
+  pid=$(cat "$work/$1.pid")
+  kill "-$2" "$pid" 2> /dev/null || true
   deadline=$((SECONDS + 30))
   while kill -0 "$pid" 2> /dev/null; do
     if [ "$SECONDS" -ge "$deadline" ]; then
@@ -152,7 +158,7 @@ connect_admin() {
   admin_until "Welcome to $directory_name" 180 "/tail @'$directory_name' 10"
   local id
   id=$(db_query directory "SELECT contact_id FROM contacts WHERE local_display_name = '$admin'")
-  stop_directory
+  stop_process directory INT
   start_directory "$id:$admin"
   echo "directory restarted with super user $id:$admin"
 }
@@ -311,12 +317,15 @@ start() {
 
 stop() {
   local p
-  for p in directory relay smp-server resolver; do
+  for p in directory relay smp-server; do
     if [ -f "$work/$p.pid" ]; then
-      kill -INT "$(cat "$work/$p.pid")" 2> /dev/null || true
+      stop_process "$p" INT
     fi
   done
-  sleep 3
+  # Python, started in the background by a script, ignores SIGINT
+  if [ -f "$work/resolver.pid" ]; then
+    stop_process resolver TERM
+  fi
   for p in directory relay smp-server resolver; do
     echo "::group::$p log"
     cat "$work/$p.log" 2> /dev/null || true

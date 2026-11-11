@@ -174,8 +174,11 @@ toTypeInfo tr =
       "BoolDef" -> ST TBool []
       "PQEncryption" -> ST TBool []
       "PQSupport" -> ST TBool []
+      "AChatInfo" -> ST "ChatInfo" []
       "ACreatedConnLink" -> ST "CreatedConnLink" []
       "UserChatRelay'" -> ST "UserChatRelay" []
+      "ServerOperator'" -> ST "ServerOperator" []
+      "UserServer'" -> ST "UserServer" []
       "CChatItem" -> ST "ChatItem" []
       "FormatColor" -> ST "Color" []
       "CustomData" -> ST "JSONObject" []
@@ -219,11 +222,13 @@ toTypeInfo tr =
         "PrivateKey",
         "ProofPresHeader",
         "PublicKey",
+        "ProtoServerWithAuth",
         "ProtocolServer",
         "RCSignedInvitation",
         "SbKey",
         "SharedMsgId",
         "Signature",
+        "SocksProxyWithAuth",
         "StrJSON",
         "TransportHost",
         "UIColor",

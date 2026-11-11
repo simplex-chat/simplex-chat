@@ -19,7 +19,6 @@ cabal --version
 echo "rts extra-libraries: $(ghc-pkg field rts extra-libraries --simple-output)"
 echo "ghc-bignum extra-libraries: $(ghc-pkg field ghc-bignum extra-libraries --simple-output)"
 find "$(ghc --print-libdir)" -name 'lib*ffi*.a' -o -name 'libgmp*.a' -o -name 'libHSrts*_thr.a'
-du -sh ~/.cabal/store dist-newstyle || true
 
 cat > cabal.project.local <<EOF
 ignore-project: False

@@ -125,7 +125,7 @@ struct GroupChatInfoView: View {
                                     Label("Share via chat", systemImage: "arrowshape.turn.up.forward")
                                 }
                             }
-                            if groupInfo.isOwner || members.contains(where: { $0.wrapped.memberRole >= .owner }) {
+                            if groupInfo.canModerate || members.contains(where: { $0.wrapped.memberRole >= .owner }) {
                                 channelMembersButton()
                             }
                             if groupInfo.membership.memberRole >= .moderator {
@@ -154,8 +154,6 @@ struct GroupChatInfoView: View {
                             if showUserSupportChat {
                                 UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
                             }
-                        } header: {
-                            Text("")
                         }
                     }
 
@@ -314,14 +312,14 @@ struct GroupChatInfoView: View {
     }
 
     private func groupInfoHeader() -> some View {
-        VStack {
+        VStack(spacing: 8) {
             let cInfo = chat.chatInfo
             // show actual display name, alias can be edited in this view
             let displayName = (cInfo.groupInfo?.groupProfile.displayName ?? cInfo.displayName).trimmingCharacters(in: .whitespacesAndNewlines)
             let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             ChatInfoImage(chat: chat, size: 192, color: Color(uiColor: .tertiarySystemFill))
-                .padding(.top, 12)
-                .padding()
+                .padding(.top, 20)
+                .padding(.bottom, 12)
             Text(displayName)
                 .font(.largeTitle)
                 .multilineTextAlignment(.center)
@@ -734,7 +732,7 @@ struct GroupChatInfoView: View {
     }
 
     private func channelMembersButton() -> some View {
-        let label: LocalizedStringKey = groupInfo.isOwner ? "Subscribers" : "Owners & contributors"
+        let label: LocalizedStringKey = groupInfo.canModerate ? "Subscribers" : "Owners & contributors"
         return NavigationLink {
             ChannelMembersView(chat: chat, groupInfo: groupInfo)
                 .navigationTitle(label)

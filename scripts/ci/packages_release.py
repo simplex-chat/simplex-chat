@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Release automation for simplex-chat and @simplex-chat/types on npm and simplex-chat on PyPI.
+"""Release automation for simplex-chat, @simplex-chat/types and @simplex-chat/mcp on npm and simplex-chat on PyPI.
 
 core-release      set the core version and the types version for a library release
 claim-core        claim the library release of the core version for a commit
@@ -10,8 +10,9 @@ publish-release   publish a draft release that has every asset
 check-pins        check the pins of the packages against the published releases
 download          download a release asset and check its digest
 download-pinned   download a pinned asset and check its pin
-changes           print whether the changes since a commit touch the chat core and the add-on
-build-plan        print the platforms to build the add-on on and whether to run the package tests
+changes           print whether the changes since a commit touch the chat core, the add-on, each build of build.yml and each scope of scope-tests.sh
+scopes            print every scope of scope-tests.sh
+build-plan        print the platforms to test the packages on, none when build.yml builds the core for the pull request
 prepare           update pins and versions of the packages
 publish-plan      print the package versions that are not published yet
 record            record releases and published versions in releases.toml of simplex-chat-libs
@@ -42,14 +43,58 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 NODEJS_DIR = "packages/simplex-chat-nodejs"
 TYPES_DIR = "packages/simplex-chat-client/types/typescript"
+MCP_DIR = "packages/simplex-chat-mcp"
+MCP_PINNED = ["simplex-chat", "@simplex-chat/types"]
 PYTHON_DIR = "packages/simplex-chat-python"
 RELEASE_FILE = f"{NODEJS_DIR}/src/release.ts"
 PYTHON_VERSION_FILE = f"{PYTHON_DIR}/src/simplex_chat/_version.py"
 ADDON_SOURCES = [f"{NODEJS_DIR}/binding.gyp", f"{NODEJS_DIR}/cpp"]
 CORE_SOURCES = ["src", "simplex-chat.cabal", "cabal.project"]
+# The pull_request paths of build.yml are the union of the globs of BUILD_CHANGES and SCOPE_CHANGES; ":!" excludes a path from its build.
+BUILD_CHANGES = {
+    "haskell": [
+        "src/**",
+        "apps/simplex-chat/**",
+        "apps/simplex-bot/**",
+        "apps/simplex-bot-advanced/**",
+        "apps/simplex-badge-service/**",
+        "apps/simplex-broadcast-bot/**",
+        "apps/simplex-directory-service/**",
+        "tests/**",
+        "bots/src/**",
+        "simplex-chat.cabal",
+        "cabal.project",
+        "Dockerfile*",
+        "scripts/ci/*.sh",
+        ":!scripts/ci/ios-stub-libs.sh",
+        "scripts/desktop/**",
+        ".github/workflows/build.yml",
+        ".github/actions/**",
+        ".github/changelog_conf.json",
+    ],
+    "kotlin": ["apps/multiplatform/**", "Dockerfile*", ".github/workflows/build.yml", ".github/actions/**"],
+    "ios": ["apps/ios/**", "scripts/ci/ios-stub-libs.sh"],
+    "packages": [
+        "packages/simplex-chat-nodejs/**",
+        "packages/simplex-chat-client/types/typescript/**",
+        "packages/simplex-chat-python/**",
+        "scripts/ci/package-tests.sh",
+    ],
+}
+SCOPE_CHANGES = {
+    "badge-web": ["apps/simplex-badge-service/web/**"],
+    "ci-scripts": ["scripts/ci/packages_release.py", "scripts/ci/test_packages_release.py"],
+    "website": ["website/src/js/simplex-lib.jsc", "website/test/**", "website/package.json"],
+    "mcp": [
+        "packages/simplex-chat-mcp/**",
+        "packages/simplex-chat-nodejs/**",
+        "packages/simplex-chat-client/types/typescript/**",
+    ],
+}
 CABAL_FILE = "simplex-chat.cabal"
 CABAL_VERSION = re.compile(r"^(version:\s*)(\S+)", re.M)
 TYPES_SOURCES = [f"{TYPES_DIR}/src"]
+TYPES_RELEASE_FIELDS = ["version", "simplexChatCore"]
 TYPES_README = f"{TYPES_DIR}/README.md"
 TYPES_README_CORE = re.compile(r"^SimpleX Chat core: .*$", re.M)
 PYTHON_TYPES_SOURCES = [f"{PYTHON_DIR}/src/simplex_chat/types"]
@@ -357,19 +402,6 @@ def plan(state: State) -> Plan:
     )
 
 
-@dataclass(frozen=True)
-class BuildPlan:
-    platforms: list[str]
-    test: bool
-
-
-def build_plan(core_changed: bool, addon_changed: bool) -> BuildPlan:
-    """The package tests of a pull request that changes the core run in build.yml, with its own libsimplex."""
-    if core_changed:
-        return BuildPlan(ADDON_PLATFORMS if addon_changed else [], test=False)
-    return BuildPlan(ADDON_PLATFORMS, test=True)
-
-
 def build_matrix(platforms: list[str]) -> str:
     return json.dumps([{"platform": platform, "os": ADDON_RUNNERS[platform]} for platform in platforms])
 
@@ -485,18 +517,21 @@ def changed_since(base: str, sources: list[str]) -> bool:
     return diff.returncode != 0
 
 
+def build_pathspecs(build: str) -> list[str]:
+    return [path if path.startswith(":") else f":(glob){path}" for path in (BUILD_CHANGES | SCOPE_CHANGES)[build]]
+
+
 def changes(base: str) -> None:
     print(f"core={'true' if changed_since(base, CORE_SOURCES) else ''}")
     print(f"addon={'true' if changed_since(base, ADDON_SOURCES) else ''}")
+    for build in BUILD_CHANGES:
+        print(f"{build}={'true' if changed_since(base, build_pathspecs(build)) else ''}")
+    print(f"scopes={' '.join(scope for scope in SCOPE_CHANGES if changed_since(base, build_pathspecs(scope)))}")
 
 
 def print_build_plan(args: argparse.Namespace) -> None:
-    result = build_plan(
-        core_changed=changed_since(args.base, CORE_SOURCES),
-        addon_changed=changed_since(args.base, ADDON_SOURCES),
-    )
-    print(f"platforms={build_matrix(result.platforms)}")
-    print(f"test={'true' if result.test else ''}")
+    platforms = [] if changed_since(args.base, build_pathspecs("haskell")) else ADDON_PLATFORMS
+    print(f"platforms={build_matrix(platforms)}")
 
 
 def package_state(
@@ -545,6 +580,15 @@ def npm_package_url(name: str) -> str:
 
 def npm_published(name: str, version: str) -> bool:
     return http_json(f"{npm_package_url(name)}/{version}") is not None
+
+
+def npm_released(releases: dict, name: str, version: str) -> bool:
+    return recorded_commit(releases, f"npm/{name}", version) is not None or npm_published(name, version)
+
+
+def unreleased_pins(releases: dict, package: dict, pinned: list[str]) -> list[str]:
+    versions = [(name, package["dependencies"][name].removeprefix("^")) for name in pinned]
+    return [f"{name} {version}" for name, version in versions if not npm_released(releases, name, version)]
 
 
 def python_project() -> str:
@@ -667,10 +711,19 @@ def npm_package(directory: str, releases: dict) -> Package:
     )
 
 
+def types_manifest(commit: str) -> dict:
+    """package.json of the types at the commit, without the fields that core-release writes."""
+    types = json.loads(git("show", f"{commit}:{TYPES_DIR}/package.json"))
+    return {key: value for key, value in types.items() if key not in TYPES_RELEASE_FIELDS}
+
+
 def types_changed(releases: dict, branch: str) -> bool:
-    """Whether the types sources differ from those of the previous core release on the branch."""
+    """Whether the types sources or their package.json differ from those of the previous core release on the branch."""
     previous = previous_core_commit(releases, branch)
-    return previous is None or changed_since(fetch_commit(previous), TYPES_SOURCES)
+    if previous is None:
+        return True
+    fetch_commit(previous)
+    return changed_since(previous, TYPES_SOURCES) or types_manifest(previous) != types_manifest("HEAD")
 
 
 def types_problem(version: str, releases: dict, branch: str) -> str | None:
@@ -678,7 +731,7 @@ def types_problem(version: str, releases: dict, branch: str) -> str | None:
     if not types_changed(releases, branch):
         return None
     types = read_json(f"{TYPES_DIR}/package.json")
-    if recorded_commit(releases, npm_key(TYPES_DIR), types["version"]) or npm_published(types["name"], types["version"]):
+    if npm_released(releases, types["name"], types["version"]):
         return f"{types['name']} changed, and its version {types['version']} is published"
     if types.get("simplexChatCore") != version:
         return f"simplexChatCore of {types['name']} is {types.get('simplexChatCore')}, expected {version}"
@@ -818,12 +871,14 @@ def prepare(args: argparse.Namespace) -> None:
 def publish_plan() -> None:
     """A recorded version is published: npm and PyPI list a new version minutes after it is published."""
     releases, _ = read_releases()
-    for key, directory in [("types", TYPES_DIR), ("nodejs", NODEJS_DIR)]:
+    for key, directory, pinned in [("types", TYPES_DIR, []), ("nodejs", NODEJS_DIR, []), ("mcp", MCP_DIR, MCP_PINNED)]:
         package = read_json(f"{directory}/package.json")
-        published = recorded_commit(releases, npm_key(directory), package["version"]) or npm_published(
-            package["name"], package["version"]
-        )
-        print(f"{key}_version={'' if published else package['version']}")
+        published = npm_released(releases, package["name"], package["version"])
+        unreleased = [] if published else unreleased_pins(releases, package, pinned)
+        if unreleased:
+            waits_for = ", ".join(unreleased)
+            print(f"::notice title=Package release::{package['name']} {package['version']} waits for {waits_for}", file=sys.stderr)
+        print(f"{key}_version={'' if published or unreleased else package['version']}")
         print(f"{key}_dist_tag={dist_tag(package['version'])}")
     version, _ = parse_python_version(read_text(PYTHON_VERSION_FILE))
     published = recorded_commit(releases, pypi_key(), version) or pypi_published(version)
@@ -835,6 +890,7 @@ def record(args: argparse.Namespace) -> None:
         (core_key(args.branch), args.core),
         (npm_key(TYPES_DIR), args.types),
         (npm_key(NODEJS_DIR), args.nodejs),
+        (npm_key(MCP_DIR), args.mcp),
         (pypi_key(), args.python),
     ]
     entries = [(key, version) for key, version in versions if version]
@@ -861,6 +917,17 @@ def test_names() -> None:
                 "name": registry_name(nodejs["name"], scope),
                 "repository": {**nodejs["repository"], "url": url},
                 "dependencies": {**nodejs["dependencies"], types["name"]: alias},
+            },
+        )
+        mcp = read_json(f"{MCP_DIR}/package.json")
+        aliases = {name: f"npm:{registry_name(name, scope)}@{mcp['dependencies'][name]}" for name in MCP_PINNED}
+        write_json(
+            f"{MCP_DIR}/package.json",
+            {
+                **mcp,
+                "name": registry_name(mcp["name"], scope),
+                "repository": {**mcp["repository"], "url": url},
+                "dependencies": {**mcp["dependencies"], **aliases},
             },
         )
     if project := os.environ.get("PYPI_PROJECT"):
@@ -947,6 +1014,7 @@ def main(argv: list[str]) -> None:
     download_pinned_parser.add_argument("directory")
     changes_parser = commands.add_parser("changes")
     changes_parser.add_argument("base", help="the commit to compare with")
+    commands.add_parser("scopes")
     build_parser = commands.add_parser("build-plan")
     build_parser.add_argument("--base", required=True, help="the base commit of the pull request")
     prepare_parser = commands.add_parser("prepare")
@@ -958,7 +1026,7 @@ def main(argv: list[str]) -> None:
     record_parser = commands.add_parser("record")
     record_parser.add_argument("--commit", required=True, help="the simplex-chat commit released or published from")
     record_parser.add_argument("--branch", default="master", help="the branch of the core version")
-    for name in ["core", "types", "nodejs", "python"]:
+    for name in ["core", "types", "nodejs", "mcp", "python"]:
         record_parser.add_argument(f"--{name}", default="", help=f"{name} version, recorded when not empty")
     commands.add_parser("test-names")
     args = parser.parse_args(argv)
@@ -984,6 +1052,8 @@ def main(argv: list[str]) -> None:
         download_pinned(args.asset, args.directory)
     elif args.command == "changes":
         changes(args.base)
+    elif args.command == "scopes":
+        print(f"scopes={' '.join(SCOPE_CHANGES)}")
     elif args.command == "build-plan":
         print_build_plan(args)
     elif args.command == "prepare":

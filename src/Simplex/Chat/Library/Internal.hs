@@ -40,7 +40,7 @@ import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
-import Data.List (find, foldl', mapAccumL, partition)
+import Data.List (foldl', mapAccumL, partition)
 import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -78,6 +78,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme (ChatLayout)
 import Simplex.Chat.Util (encryptFile, shuffle)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
@@ -217,11 +218,12 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc m
       fl_ <- liftIO $ ciffForwardLink db ciff
       pure (mcForward fl_ mc, Nothing)
     (Just quotedItemId, Nothing) -> do
-      CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, markdownBlocks, mentions = quoteMentions, file} <-
+      CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, mentions = quoteMentions, file} <-
         getGroupCIWithReactions db user g quotedItemId
       (origQmc, qd, sent, member_) <- quoteData qci membership
       let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = memberId' <$> member_}
           qmc = quoteContent mc origQmc file
+          ParsedMarkdown formattedText markdownBlocks = parsedMsgContent qmc
           (qmc', ft', _) = updatedMentionNames qmc formattedText quoteMentions
           quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft', markdownBlocks}
       pure (mcQuote QuotedMsg {msgRef, content = qmc'} mc, Just quotedItem)
@@ -363,10 +365,10 @@ getMessageMentions db user gId msg = case parseMaybeMarkdownList msg of
         <$> runExceptT (getGroupMemberIdByName db user gId name)
 
 msgContentTexts :: MsgContent -> (Text, ParsedMarkdown)
-msgContentTexts mc = let t = msgContentText mc in (t, parsedMarkdown t)
+msgContentTexts mc = (msgContentText mc, parsedMsgContent mc)
 
 ciContentTexts :: CIContent d -> (Text, ParsedMarkdown)
-ciContentTexts content = let t = ciContentToText content in (t, parsedMarkdown t)
+ciContentTexts content = let t = ciContentToText content in (t, parsedCIContent content t)
 
 quoteContent :: forall d. MsgContent -> MsgContent -> Maybe (CIFile d) -> MsgContent
 quoteContent mc qmc ciFile_
@@ -1125,10 +1127,11 @@ acceptGroupJoinSendRejectAsync
     agentAcceptContactAsync cmdId acId False cReqInvId msg PQSupportOff subMode
     pure m
 
-acceptBusinessJoinRequestAsync :: User -> Int64 -> GroupInfoKeys -> GroupMember -> UserContactRequest -> CM (GroupInfo, GroupMember)
+acceptBusinessJoinRequestAsync :: User -> Int64 -> Maybe ChatLayout -> GroupInfoKeys -> GroupMember -> UserContactRequest -> CM (GroupInfo, GroupMember)
 acceptBusinessJoinRequestAsync
   user
   uclId
+  chatLayout
   (GIK gInfo@GroupInfo {membership = GroupMember {memberRole = userRole, memberId = userMemberId}} gks)
   clientMember@GroupMember {groupMemberId, memberId}
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId} = do
@@ -1143,7 +1146,7 @@ acceptBusinessJoinRequestAsync
                 fromMemberName = displayName,
                 fromMemberKey = Just $ groupMemberKey gks,
                 invitedMember = MemberIdRole memberId GRMember,
-                groupProfile = businessGroupProfile userProfile groupPreferences,
+                groupProfile = businessGroupProfile userProfile groupPreferences chatLayout,
                 accepted = Just GAAccepted,
                 -- This refers to the "title member" that defines the group name and profile.
                 -- This coincides with fromMember to be current user when accepting the connecting user,
@@ -1213,9 +1216,9 @@ rejectRelayInvitationAsync user uclId cxt groupRelayInv presHeader_ invId reqCha
     createJoiningMemberConnection db user uclId (cmdId, acId) chatV reqChatVRange groupMemberId subMode
   agentAcceptContactAsync cmdId acId False invId msg PQSupportOff subMode
 
-businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
-businessGroupProfile Profile {displayName, fullName, shortDescr, description, image} groupPreferences =
-  GroupProfile {displayName, fullName, description, shortDescr, image, publicGroup = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
+businessGroupProfile :: Profile -> GroupPreferences -> Maybe ChatLayout -> GroupProfile
+businessGroupProfile Profile {displayName, fullName, shortDescr, description, image} groupPreferences chatLayout =
+  GroupProfile {displayName, fullName, description, shortDescr, image, publicGroup = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing, chatLayout}
 
 introduceToModerators :: StoreCxt -> User -> GroupInfoKeys -> GroupMember -> CM ()
 introduceToModerators cxt user gInfo@(GIK g@GroupInfo {groupId} _) m@GroupMember {memberRole, memberId} = do
@@ -1891,7 +1894,8 @@ getChatItemFileServers user dir ci = case ci of
           Just sfdText -> fileDescrServers <$> (parseFileDescription sfdText :: CM (ValidFileDescription 'FSender))
           Nothing -> pure []
       SMDRcv -> do
-        RcvFileDescr {fileDescrText} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+        RcvFileDescr {fileDescrText, fileDescrComplete} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+        unless fileDescrComplete $ throwChatError $ CEInvalidFileDescription "incomplete file description"
         fileDescrServers <$> (parseFileDescription fileDescrText :: CM (ValidFileDescription 'FRecipient))
 
 sendDirectFileInline :: User -> Contact -> FileTransferMeta -> SharedMsgId -> CM ()
@@ -2122,7 +2126,7 @@ cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, fil
 closeFileHandle :: Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> CM' ()
 closeFileHandle fileId files = do
   fs <- asks files
-  h_ <- atomically . stateTVar fs $ \m -> (M.lookup fileId m, M.delete fileId m)
+  h_ <- atomically . stateTVar' fs $ \m -> (M.lookup fileId m, M.delete fileId m)
   liftIO $ mapM_ hClose h_ `catchAll_` pure ()
 
 -- The roster file has no chat item, so chat-item file enumeration misses it; clean it up by group.
@@ -3020,12 +3024,16 @@ saveSndChatItems user cd showGroupAsSender itemsData itemTimed live = do
     createItem :: DB.Connection -> UTCTime -> NewSndChatItemData c -> IO (Either ChatError (ChatItem c 'MDSnd))
     createItem db createdAt NewSndChatItemData {msg = msg@SndMessage {sharedMsgId, signedMsg_}, content, itemTexts = itemTexts@(_, ParsedMarkdown ft_ _), itemMentions, ciFile, quotedItem, itemForwarded} = do
       let hasLink_ = ciContentHasLink content ft_
-      ciId <- createNewSndChatItem db user cd showGroupAsSender msg content quotedItem itemForwarded itemTimed live hasLink_ createdAt
+          itemTs = roundDownToSecond createdAt
+      ciId <- createNewSndChatItem db user cd showGroupAsSender msg content quotedItem itemForwarded itemTimed live hasLink_ itemTs createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      let ci = mkChatItem_ cd showGroupAsSender ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False hasLink_ createdAt Nothing (toMsgVerified (signMessagesRequired cd) (MSSVerified <$ signedMsg_)) createdAt
+      let ci = mkChatItem_ cd showGroupAsSender ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False hasLink_ itemTs Nothing (toMsgVerified (signMessagesRequired cd) (MSSVerified <$ signedMsg_)) createdAt
       Right <$> case cd of
         CDGroupSnd g _scope | not (null itemMentions) -> createGroupCIMentions db g ci itemMentions
         _ -> pure ci
+
+roundDownToSecond :: UTCTime -> UTCTime
+roundDownToSecond t@UTCTime {utctDayTime} = t {utctDayTime = fromInteger (floor utctDayTime)}
 
 saveRcvChatItemNoParse :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> CM (ChatItem c 'MDRcv, ChatInfo c)
 saveRcvChatItemNoParse user cd msg brokerTs = saveRcvChatItem user cd msg brokerTs . ciContentNoParse
@@ -3363,7 +3371,7 @@ createChatItems ::
   CM' [Either ChatError AChatItem]
 createChatItems user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
-  let itemTs = fromMaybe createdAt itemTs_
+  let itemTs = fromMaybe (roundDownToSecond createdAt) itemTs_
   cxt <- asks storeCxt
   void . withStoreBatch' $ \db -> map (updateChat db cxt createdAt) dirsCIContents
   withStoreBatch' $ \db -> concatMap (createACIs db itemTs createdAt) dirsCIContents
@@ -3419,9 +3427,10 @@ createLocalChatItems user cd itemsData createdAt = do
     createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, ParsedMarkdown)) -> IO (ChatItem 'CTLocal 'MDSnd)
     createItem db (content, ciFile, itemForwarded, ts@(_, ParsedMarkdown ft_ _)) = do
       let hasLink_ = ciContentHasLink content ft_
-      ciId <- createNewChatItem_ db user cd False Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing Nothing Nothing createdAt
+          itemTs = roundDownToSecond createdAt
+      ciId <- createNewChatItem_ db user cd False Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False hasLink_ itemTs Nothing Nothing Nothing Nothing createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      pure $ mkChatItem_ cd False ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing createdAt
+      pure $ mkChatItem_ cd False ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False hasLink_ itemTs Nothing Nothing createdAt
 
 withUser' :: (User -> CM ChatResponse) -> CM ChatResponse
 withUser' action =

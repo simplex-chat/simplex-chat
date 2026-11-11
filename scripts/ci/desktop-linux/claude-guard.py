@@ -11,12 +11,18 @@ import os
 import re
 import sys
 
-# nothing that chains, pipes, redirects, substitutes, expands or escapes
+# nothing that chains, pipes, redirects, substitutes, expands with $ or escapes
 UI_COMMAND = re.compile(r"ui( [^;&|<>$`()\\\r\n]*)?")
+# and, outside quotes, no glob, brace or tilde expansion, which could turn names of files the session creates into
+# arguments; QUOTED finds the shell's quotes only because UI_COMMAND refuses backslashes
+UNQUOTED_EXPANSION = re.compile(r"[*?\[\]{}~]")
+QUOTED = re.compile(r"\"[^\"]*\"|'[^']*'")
 
 call = json.load(sys.stdin)
 command = (call.get("tool_input") or {}).get("command", "").strip()
-allowed = call.get("tool_name") != "Bash" or UI_COMMAND.fullmatch(command)
+allowed = call.get("tool_name") != "Bash" or (
+    UI_COMMAND.fullmatch(command) and not UNQUOTED_EXPANSION.search(QUOTED.sub("", command))
+)
 if os.environ.get("CLAUDE_GUARD_LOG"):
     with open(os.environ["CLAUDE_GUARD_LOG"], "a") as log:
         log.write(f"{'allow' if allowed else 'refuse'} {call.get('tool_name')}: {command[:200]!r}\n")

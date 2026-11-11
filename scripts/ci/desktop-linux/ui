@@ -14,6 +14,7 @@
 #   ui ink <text>                 print the height in pixels of the text's ink, to compare text sizes
 #   ui wait <text> [secs]         wait up to secs (30) until the text is on screen
 #   ui click <x> <y>              click at x,y
+#   ui right-click <x> <y>        right-click at x,y, e.g. to open a list row's menu
 #   ui click-text <text> [secs]   wait up to secs (20) for the text and click its centre
 #   ui scroll <x> <y> <up|down> [clicks]
 #                                 turn the mouse wheel over x,y, 3 clicks unless given
@@ -155,8 +156,17 @@ shot() {
   log "shot $(basename "$f").png"
 }
 
+number() {
+  if ! [[ "$1" =~ ^[0-9]+$ ]]; then
+    echo "error: \"$1\" is not a number"
+    exit 1
+  fi
+}
+
 click() {
-  xdotool mousemove --sync "$1" "$2" click 1
+  number "$1"
+  number "$2"
+  xdotool mousemove --sync "$1" "$2" click "${3:-1}"
   sleep 1
 }
 
@@ -171,6 +181,9 @@ scroll() {
       return 1
       ;;
   esac
+  number "$1"
+  number "$2"
+  number "$4"
   xdotool mousemove --sync "$1" "$2" click --repeat "$4" --delay 100 "$button"
   sleep 1
 }
@@ -223,6 +236,7 @@ case "${1:-}" in
     ;;
   wait)
     secs=${3:-30}
+    number "$secs"
     if ! pos=$(wait_for "$2" "$secs"); then
       log "wait \"$2\": not on screen after $secs s"
       exit 1
@@ -234,8 +248,13 @@ case "${1:-}" in
     click "$2" "$3"
     log "click $2,$3"
     ;;
+  right-click)
+    click "$2" "$3" 3
+    log "right-click $2,$3"
+    ;;
   click-text)
     secs=${3:-20}
+    number "$secs"
     if ! pos=$(wait_for "$2" "$secs"); then
       log "click-text \"$2\": not on screen after $secs s"
       exit 1
@@ -255,7 +274,16 @@ case "${1:-}" in
     ;;
   key)
     shift
-    xdotool key --delay 100 -- "$@"
+    for k in "$@"; do
+      if ! [[ "$k" =~ ^[A-Za-z0-9_]+(\+[A-Za-z0-9_]+)*$ ]]; then
+        echo "error: \"$k\" is not a key name"
+        exit 1
+      fi
+    done
+    # one key per call: xdotool key runs any later argument that names one of its commands, such as exec
+    for k in "$@"; do
+      xdotool key --delay 100 -- "$k"
+    done
     log "key $*"
     ;;
   do)

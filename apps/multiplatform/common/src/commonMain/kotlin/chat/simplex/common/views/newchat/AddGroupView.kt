@@ -39,8 +39,11 @@ import java.net.URI
 fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
   val rhId = rh?.remoteHostId
   val view = LocalMultiplatformView()
+  val inProgress = remember { mutableStateOf(false) }
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
+      if (inProgress.value) return@AddGroupLayout
+      inProgress.value = true
       hideKeyboard(view)
       withBGApi {
         val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
@@ -61,6 +64,8 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, c
               GroupLinkView(chatModel, rhId, groupInfo, groupLink = null, onGroupLinkUpdated = null, creatingGroup = true, close = close)
             }
           }
+        } else {
+          inProgress.value = false
         }
       }
     },

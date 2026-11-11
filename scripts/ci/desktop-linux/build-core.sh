@@ -8,13 +8,10 @@ set -euo pipefail
 mkdir -p "$(dirname "$1")"
 out="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 arch=$(uname -m)
-ghc_ver=$(ghc --numeric-version)
-version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
 libs_dir=apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-$arch
 
 ghc --version
 cabal --version
-du -sh ~/.local/state/cabal/store ~/.cabal/store dist-newstyle 2> /dev/null || true
 
 cat > cabal.project.local << EOF
 ignore-project: False
@@ -23,9 +20,6 @@ jobs: \$ncpus
 package direct-sqlcipher
     flags: +openssl
 EOF
-
-# a restored dist-newstyle can hold an older version's build directory, which breaks the script's simplex-chat-* glob
-find "dist-newstyle/build/$arch-linux/ghc-$ghc_ver" -maxdepth 1 -name 'simplex-chat-*' ! -name "simplex-chat-$version" -exec rm -rf {} + 2> /dev/null || true
 
 SKIP_VLC=1 scripts/desktop/build-lib-linux.sh
 

@@ -41,7 +41,6 @@
     "docs-dropdown-14": "SimpleX untuk bisnis",
     "guide-dropdown-8": "Pengaturan aplikasi",
     "guide-dropdown-9": "Membuat koneksi",
-    "guide-dropdown-6": "Panggilan Suara & Video",
     "guide-dropdown-7": "Privasi & keamanan",
     "guide-dropdown-5": "Mengelola data",
     "guide-dropdown-4": "Profil obrolan",
@@ -106,8 +105,6 @@
     "simplex-chat-for-the-terminal": "SimpleX Chat untuk terminal",
     "copy-the-command-below-text": "salin perintah di bawah ini dan gunakan dalam obrolan:",
     "protocol-1-text": "Signal, platform besar",
-    "guide-dropdown-2": "Mengirim pesan",
-    "guide-dropdown-3": "Grup rahasia",
     "comparison-section-list-point-2": "Alamat berbasis DNS",
     "comparison-section-list-point-3": "Kunci publik atau ID unik global lainnya",
     "feature-7-title": "Penyimpanan aplikasi terenkripsi portabel &mdash; pindahkan profil ke perangkat lain",
@@ -263,7 +260,6 @@
     "index-hero-h2": "Di Jaringan Anda",
     "index-hero-p1": "<span class=\"nowrap\">Satu-satunya jaringan pesan</span> <span class=\"nowrap\">tanpa pengenal pengguna apa pun.</span><br>Anda pemilik kontak, grup, dan kanal Anda.",
     "index-hero-own-part": "Miliki sebagian darinya.",
-    "index-hero-invest": "Berinvestasi di SimpleX Chat.",
     "index-hero-downloads": "Unduhan",
     "index-hero-monthly-users": "Pengguna bulanan",
     "index-hero-countdown-lead": "Peluncuran domain SimpleX",
@@ -378,8 +374,11 @@
     "file-proto-h-4": "Router data independen",
     "file-proto-p-4": "Saat file dipecah menjadi fragmen, file tersebut dikirim melalui router jaringan yang dioperasikan oleh pihak independen. Tidak ada operator yang dapat melihat ukuran atau nama file yang sebenarnya. Bahkan jika sebuah router dikompromikan, router itu hanya dapat melihat fragmen terenkripsi berukuran tetap. Fragmen file di-cache oleh router jaringan selama sekitar 48 jam.",
     "file-proto-spec": "Baca spesifikasi protokol XFTP →",
-    "links": "Tautan",
+    "links": "Komunitas",
     "links-title": "Tautan Komunitas",
     "links-all-languages": "Semua Bahasa",
-    "why-film": "Tonton film 2 menit di YouTube"
+    "why-film": "Tonton film 2 menit di YouTube",
+    "index-hero-invest": "Berinvestasilah di SimpleX Chat.",
+    "index-hero-invest-cta": "Pelajari lebih lanjut di Wefunder.",
+    "docs-dropdown-16": ""
 }

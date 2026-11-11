@@ -10,3 +10,5 @@ export function chat_write_file(ctrl: bigint, path: string, buffer: ArrayBuffer 
 export function chat_read_file(path: string, key: string, nonce: string): Promise<Buffer>
 export function chat_encrypt_file(ctrl: bigint, fromPath: string, toPath: string): Promise<string>
 export function chat_decrypt_file(fromPath: string, key: string, nonce: string, toPath: string): Promise<string>
+export function chat_resize_image(image: ArrayBuffer | Uint8Array, maxSize: number, png: number): Promise<string>
+export function chat_resize_image_uri(image: ArrayBuffer | Uint8Array, maxSize: number): Promise<string>

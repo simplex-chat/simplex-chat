@@ -123,7 +123,8 @@ badgeGroupTests = describe "badge group" $ do
               image = Nothing,
               publicGroup = Nothing,
               groupPreferences = Nothing,
-              memberAdmission = Nothing
+              memberAdmission = Nothing,
+              chatLayout = Nothing
             }
     it "says nothing when the config matches the group profile" $ do
       inertGroupConfig (cfg "SimpleX Badges" (Just "badge ops desk")) (profile "SimpleX Badges" (Just "badge ops desk"))

@@ -13,7 +13,6 @@ out="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 
 ghc --version
 cabal --version
-du -sh ~/.cabal/store dist-newstyle 2> /dev/null || true
 
 cat > cabal.project.local << EOF
 ignore-project: False

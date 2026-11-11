@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import itemHPadding
 import SectionItemView
 import SectionDividerSpaced
+import SectionTextFooter
 import SectionView
 import TextIconSpaced
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -27,6 +28,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.badges.BadgesView
+import chat.simplex.common.views.badges.currentShownBadge
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrateFromDeviceView
@@ -89,6 +91,7 @@ fun SettingsLayout(
   showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
+  versionInfo: Pair<String, Int?> = appVersionInfo,
 ) {
   val view = LocalMultiplatformView()
   LaunchedEffect(Unit) {
@@ -107,16 +110,22 @@ fun SettingsLayout(
     }
     SectionDividerSpaced()
 
+    val (badgeLabel, badgeBenefits) = when (currentShownBadge()?.badgeType) {
+      null -> MR.strings.badges_support_simplex_title to MR.strings.v7_1_supporter_badge_descr
+      is BadgeType.Legend -> MR.strings.badges_your_legend_badge to MR.strings.badges_legend_benefits
+      is BadgeType.Supporter, is BadgeType.Investor, is BadgeType.Unknown -> MR.strings.badges_your_badge to MR.strings.badges_supporter_benefits
+    }
     SectionView {
       // Direct showModal (no settings / cardScreen flags) — settings-style card chrome would render
       // a gray top bar / back button that badges views don't want (they have their own inline titles).
       SectionItemView(click = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } }) {
         val badgeType = chatModel.currentUser.value?.profile?.localBadge?.badge?.badgeType ?: BadgeType.Supporter
-        Image(painterResource(badgeImage(badgeType)), stringResource(MR.strings.supporter_perks), Modifier.size(24.dp))
+        Image(painterResource(badgeImage(badgeType)), stringResource(badgeLabel), Modifier.size(24.dp))
         TextIconSpaced()
-        Text(stringResource(MR.strings.supporter_perks))
+        Text(stringResource(badgeLabel))
       }
     }
+    SectionTextFooter(stringResource(badgeBenefits))
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.advanced_settings)) {
@@ -126,12 +135,12 @@ fun SettingsLayout(
       }
       SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
       AppShutdownItem()
-      AppVersionItem(showVersion)
+      AppVersionItem(showVersion, versionInfo)
     }
 
     if (crowdfundingAvailable()) {
       SectionDividerSpaced()
-      SectionView(stringResource(MR.strings.v7_0_invest)) {
+      SectionView(stringResource(MR.strings.invest_settings_title)) {
         SettingsActionItem(
           painterResource(MR.images.ic_redeem),
           stringResource(MR.strings.v7_0_crowdfunding),
@@ -347,12 +356,12 @@ private fun resetHintPreferences() {
 fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { it.isUnchanged() }
 
 @Composable
-fun AppVersionItem(showVersion: () -> Unit) {
-  SectionItemView(showVersion) { AppVersionText() }
+fun AppVersionItem(showVersion: () -> Unit, versionInfo: Pair<String, Int?> = appVersionInfo) {
+  SectionItemView(showVersion) { AppVersionText(versionInfo) }
 }
 
-@Composable fun AppVersionText() {
-  Text(appVersionInfo.first + (if (appVersionInfo.second != null) " (" + appVersionInfo.second + ")" else ""))
+@Composable fun AppVersionText(versionInfo: Pair<String, Int?> = appVersionInfo) {
+  Text(versionInfo.first + (if (versionInfo.second != null) " (" + versionInfo.second + ")" else ""))
 }
 
 @Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, textColor: Color = MaterialTheme.colors.onBackground, stopped: Boolean = false, badge: LocalBadge? = null) {
@@ -538,6 +547,7 @@ fun PreviewSettingsLayout() {
       showCustomModal = { {} },
       showVersion = {},
       withAuth = { _, _, _ -> },
+      versionInfo = "7.1" to 172,
     )
   }
 }

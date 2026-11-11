@@ -5,7 +5,7 @@ import * as https from "https"
 import * as os from "os"
 import * as path from "path"
 import {pipeline} from "stream/promises"
-import extract = require("extract-zip")
+import * as yauzl from "yauzl"
 import type {Backend} from "./core"
 import {ADDON_RELEASE, LIBS_RELEASE, SHA256} from "./release"
 
@@ -19,6 +19,8 @@ const PLATFORMS: {[platform: string]: {name: string, lib: string} | undefined} =
 }
 const ARCHS: {[arch: string]: string | undefined} = {x64: "x86_64", arm64: "aarch64"}
 const SUPPORTED = ["linux-x86_64", "linux-aarch64", "macos-x86_64", "macos-aarch64", "windows-x86_64"]
+const S_IFMT = 0o170000
+const S_IFLNK = 0o120000
 
 function unsupported(platform: string, arch: string): Error {
   return new Error(`Unsupported platform: ${platform}/${arch}; supported: ${SUPPORTED.join(", ")}`)
@@ -115,7 +117,7 @@ export function installLibs(url: string, sha256: string, target: string, lib: st
     const zipPath = path.join(tmp, "libs.zip")
     await download(url, zipPath, timeoutMs)
     await verifySha256(zipPath, sha256, url)
-    await extract(zipPath, {dir: tmp})
+    await unzip(zipPath, tmp)
     const extracted = path.join(tmp, "libs")
     if (!fs.existsSync(path.join(extracted, lib))) throw new Error(`libs/${lib} missing from ${url}`)
     await renameInto(extracted, target, path.join(target, lib))
@@ -129,6 +131,44 @@ export function installAddon(url: string, sha256: string, target: string, timeou
     await download(url, file, timeoutMs)
     await verifySha256(file, sha256, url)
     await renameInto(file, target, target)
+  })
+}
+
+function unzip(zipPath: string, dir: string): Promise<void> {
+  const root = path.resolve(dir)
+  return new Promise((resolve, reject) => {
+    yauzl.open(zipPath, {lazyEntries: true}, (err, zip) => {
+      if (err || !zip) return reject(err ?? new Error(`cannot open ${zipPath}`))
+      let failed = false
+      const fail = (e: unknown) => {
+        if (failed) return
+        failed = true
+        zip.close()
+        reject(e)
+      }
+      zip.on("error", e => {
+        failed = true
+        reject(e)
+      })
+      zip.on("end", () => resolve())
+      zip.on("entry", (entry: yauzl.Entry) => {
+        const dest = path.resolve(root, entry.fileName)
+        if (!dest.startsWith(root + path.sep)) return fail(new Error(`zip entry outside the target folder: ${entry.fileName}`))
+        const mode = entry.externalFileAttributes >>> 16
+        if ((mode & S_IFMT) === S_IFLNK) return fail(new Error(`zip entry is a symlink: ${entry.fileName}`))
+        if (entry.fileName.endsWith("/")) {
+          fs.promises.mkdir(dest, {recursive: true}).then(() => zip.readEntry(), fail)
+          return
+        }
+        zip.openReadStream(entry, (e, stream) => {
+          if (e || !stream) return fail(e ?? new Error(`cannot read ${entry.fileName}`))
+          fs.promises.mkdir(path.dirname(dest), {recursive: true})
+            .then(() => pipeline(stream, fs.createWriteStream(dest, {mode: (mode & 0o777) || 0o644})))
+            .then(() => zip.readEntry(), fail)
+        })
+      })
+      zip.readEntry()
+    })
   })
 }
 

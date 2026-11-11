@@ -105,10 +105,9 @@ build() {
   sed -i.bak "s/android.version_code=.*/android.version_code=${vercode}/" "$folder/apps/multiplatform/gradle.properties"
 
   for arch in $arches; do
-    # Both ABIs use this checkout and the same compiler selected by flake.lock.
     android_simplex_lib="${folder}#hydraJobs.x86_64-linux.${arch}-android:lib:simplex-chat"
     android_support_lib="${folder}#hydraJobs.x86_64-linux.${arch}-android:lib:support"
-    
+
     android_simplex_lib_output="${PWD}/result/pkg-${arch}-android-libsimplex.zip"
     android_support_lib_output="${PWD}/result/pkg-${arch}-android-libsupport.zip"
 
