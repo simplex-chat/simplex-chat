@@ -503,25 +503,20 @@ struct DatabaseView: View {
                 progressIndicator.wrappedValue = true
             }
             do {
-                try await apiDeleteStorage()
-                try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
-                do {
-                    let config = ArchiveConfig(archivePath: archivePath.path)
-                    let archiveErrors = try await apiImportArchive(config: config)
-                    shouldImportAppSettingsDefault.set(true)
-                    _ = kcDatabasePassword.remove()
-                    if archiveErrors.isEmpty {
-                        await operationEnded(.archiveImported, progressIndicator, alert)
-                        return true
-                    } else {
-                        await operationEnded(.archiveImportedWithErrors(archiveErrors: archiveErrors), progressIndicator, alert)
-                        return migration
-                    }
-                } catch let error {
-                    await operationEnded(.error(title: NSLocalizedString("Error importing chat database", comment: "alert title"), error: responseError(error)), progressIndicator, alert)
+                defer { try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true) }
+                let config = ArchiveConfig(archivePath: archivePath.path, replaceStorage: true)
+                let archiveErrors = try await apiImportArchive(config: config)
+                shouldImportAppSettingsDefault.set(true)
+                _ = kcDatabasePassword.remove()
+                if archiveErrors.isEmpty {
+                    await operationEnded(.archiveImported, progressIndicator, alert)
+                    return true
+                } else {
+                    await operationEnded(.archiveImportedWithErrors(archiveErrors: archiveErrors), progressIndicator, alert)
+                    return migration
                 }
             } catch let error {
-                await operationEnded(.error(title: NSLocalizedString("Error deleting chat database", comment: "alert title"), error: responseError(error)), progressIndicator, alert)
+                await operationEnded(.error(title: NSLocalizedString("Error importing chat database", comment: "alert title"), error: responseError(error)), progressIndicator, alert)
             }
         } else {
             showAlert("Error accessing database file")

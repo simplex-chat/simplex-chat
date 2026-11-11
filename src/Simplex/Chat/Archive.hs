@@ -70,12 +70,14 @@ exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
     entrySelectorError f = (Z.mkEntrySelector f $> Nothing) `E.catchAny` (pure . Just . show)
 
 importArchive :: ArchiveConfig -> CM' [ArchiveError]
-importArchive cfg@ArchiveConfig {archivePath} =
+importArchive cfg@ArchiveConfig {archivePath, replaceStorage} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     Z.withArchive archivePath $ Z.unpackInto dir
+    forM_ [archiveChatDbFile, archiveAgentDbFile] $ \f ->
+      unlessM (doesFileExist $ dir </> f) $ E.throwIO $ userError $ "not a chat archive: no " <> f
     fs@StorageFiles {chatStore, agentStore, filesPath, assetsPath} <- storageFiles
     liftIO $ closeDBStore `withStores` fs
-    backup `withDBs` fs
+    if replaceStorage == Just True then removeStorage fs else backup `withDBs` fs
     copyFile (dir </> archiveChatDbFile) $ dbFilePath chatStore
     copyFile (dir </> archiveAgentDbFile) $ dbFilePath agentStore
     errs <- copyFiles (dir </> archiveFilesFolder) filesPath
@@ -123,12 +125,16 @@ deleteStorage :: CM ()
 deleteStorage = do
   fs <- lift storageFiles
   liftIO $ closeDBStore `withStores` fs
+  lift $ removeStorage fs
+
+removeStorage :: StorageFiles -> CM' ()
+removeStorage fs = do
   remove `withDBs` fs
   removeExported `withDBs` fs
   removeBackup `withDBs` fs
   mapM_ removeDir $ filesPath fs
   mapM_ removeDir $ assetsPath fs
-  mapM_ removeDir =<< chatReadVar tempDirectory
+  mapM_ removeDir =<< chatReadVar' tempDirectory
   where
     remove f = whenM (doesFileExist f) $ removeFile f
     removeExported f = remove $ f <> ".exported"
