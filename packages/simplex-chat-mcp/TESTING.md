@@ -19,7 +19,7 @@ SMP_SERVER=/code/steward/node_modules/.cache/smp-server/smp-server-v7.1.0-beta.3
 ### On your own machine
 
 1. Check out simplex-chat master; the package is `packages/simplex-chat-mcp`.
-2. In that folder: `npm install`, then `npx tsc`. `tsc` leaves the output of deleted sources in `dist`; `npm pack` and `npm publish` delete `dist` first and build it again, and pack `package.json` and `npm-shrinkwrap.json` without the development dependencies (scripts `prepack` and `postpack`, [`scripts/strip-dev.js`](scripts/strip-dev.js)). The files in the folder are restored after the pack; after a pack that failed, the next pack restores them first.
+2. In that folder: `npm ci`, then `npx tsc`. `tsc` leaves the output of deleted sources in `dist`; `npm pack` and `npm publish` delete `dist` first and build it again (script `prepack`), and bundle the production packages of `node_modules` (`bundleDependencies`), without a lockfile: run `npm ci` before a pack, so that `node_modules` holds the tree of `package-lock.json`, as in the publication by `build.yml`.
 3. `node dist/cli.js serve my-agent --display-name "My Agent"`. At the first start, `simplex-chat` downloads libsimplex and its Node.js add-on, with a `Downloading ...` line each on stderr.
 4. Tests: `npx jest test/unit`; `npx jest test/e2e` downloads smp-server and xftp-server v7.1.0-beta.3 on Linux, and elsewhere takes `SMP_SERVER=/path/to/smp-server XFTP_SERVER=/path/to/xftp-server`.
 
@@ -123,16 +123,15 @@ Stop and restart:
 
 ### Install the plugin before it is published
 
-The plugin's server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, with the modules that Claude Code installs into the plugin's folder from `npm-shrinkwrap.json`, except the PreToolUse hook, which runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js`. Step 1 lays out a packed build the same way; `test/e2e/launch.test.ts` checks that layout.
+The plugin's server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, with the modules bundled in the package, except the PreToolUse hook, which runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js`. The package has no lockfile, so Claude Code 2.1.322 installs nothing in the plugin's folder: it installs a plugin's dependencies only when the folder has `bun.lock`, `npm-shrinkwrap.json`, `package-lock.json` or `bun.lockb`. Step 1 lays out a packed build the same way; `test/e2e/launch.test.ts` checks that layout.
 
-1. In `packages/simplex-chat-mcp`, pack the build, unpack it into a new folder, and install its modules from the shrinkwrap with the command of Claude Code 2.1.319, which stops it after 60 seconds:
+1. In `packages/simplex-chat-mcp`, install the tree of `package-lock.json`, pack the build, and unpack it into a new folder, with nothing else:
 
    ```
+   npm ci
    npm pack --pack-destination /tmp
    mkdir /tmp/simplex-plugin
    tar -xzf /tmp/simplex-chat-mcp-0.3.0.tgz -C /tmp/simplex-plugin --strip-components 1
-   cd /tmp/simplex-plugin
-   npm ci --ignore-scripts --workspaces=false --no-audit --no-fund
    ```
 
 2. Start Claude Code in any project folder, with the plugin and its channel, and with its own data folder:
@@ -148,7 +147,7 @@ The plugin's server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, with
 ### Automated tests
 
 - `npm test`: unit tests of the plugin's parts: the session server and its channel, the service, the hub with its Main group, sessions' groups and tool-use cards, the hooks and the plugin files. The hooks, the session server and the service are tested with the environments of a `claude -p` run with the entrypoint `claude-vscode` of a VS Code session and of a plain `claude -p` run, recorded with Claude Code 2.1.319 in `test/unit/claude-p-runs.jsonl`. The session server must answer `server/discover` with `Method not found` and negotiate the revision 2025-11-25: Claude Code 2.1.319 registers no channel for a server in the modern MCP era, 2026-07-28, so an SDK upgrade that turns that era on fails this test.
-- `npm run test:e2e`, file `test/e2e/launch.test.ts`: the packed `package.json` has no development dependencies, its shrinkwrap has no development entry and lists the dependencies of `package.json`, and the folder's files are restored after the pack; the packed build, installed with the command of Claude Code within 60 seconds, runs a hook and the session server with the commands of `hooks/hooks.json` and `.mcp.json`; installed into a project, `simplex-mcp` runs.
+- `npm run test:e2e`, file `test/e2e/launch.test.ts`: a copy of the package is installed by `npm ci` and packed, as `build.yml` publishes it; the tarball has no lockfile, its top-level entries are the build, `node_modules` and the plugin files, and its `node_modules` holds exactly the production packages of `package-lock.json`; unpacked, with nothing installed, it runs a hook and the session server with the commands of `hooks/hooks.json` and `.mcp.json`; installed into a project from the tarball alone, offline, it keeps its modules in its own folder, and `simplex-mcp` runs.
 - `npm run test:e2e`, file `test/e2e/service.test.ts`, with a local smp-server and xftp-server:
   - an owner joins the Main group and the groups of two sessions, and approves `connect`, `send`, `download` and `leave` there; chats belong to their sessions, `/give` moves one, and `/list` works after a service restart; the short description and welcome message the owner set in the Main group stay after the restart;
   - while files and media are off in a session's group, the card of a `send` of an image is text, the image message, with its caption and its file, reaches the bot after the owner's approval, and the card is edited as text;
@@ -180,7 +179,7 @@ In a session started as in step 2 above:
 11. Exit Claude Code, and send a message in the group within 10 minutes, while the service runs: Claude replies `Session 1 is not running.`
 12. Start Claude Code again as in step 2, with `--continue`: the session start opens no new group, and a prompt from "1 · <folder>" reaches the session.
 13. In a second terminal, start Claude Code as in step 2 in another folder, and exit it: the group "2 · <other folder>" appears. In the first session, `/resume` that session, and send `Reply with the word resumed.` in "1 · <folder>": the answer comes there. Exit, and start Claude Code with `--resume` of that session: a prompt from "2 · <other folder>" reaches it.
-14. In another folder, run `SIMPLEX_MCP_HOME=/tmp/simplex-mcp-test claude -p "Call the list tool of the simplex server." --plugin-dir /tmp/simplex-plugin`: no new group appears, and the answer quotes `This Claude Code run is not interactive, so it has no SimpleX group`.
+14. In another folder, run `SIMPLEX_MCP_HOME=/tmp/simplex-mcp-test claude -p "Call the list tool of the simplex server." --plugin-dir /tmp/simplex-plugin`: no new group appears, and the answer quotes `This Claude Code run is not interactive, so it has no SimpleX group`. Checked with Claude Code 2.1.322 on 2026-11-11 on a folder that holds only the unpacked package: the answer quoted it, and the folder had no `node_modules/.package-lock.json`, the record of an npm install.
 15. Record which values of `CLAUDE_CODE_SESSION_ATTENDED` the hooks and the MCP servers of a run get. Write the MCP config and the hook settings:
 
     ```
