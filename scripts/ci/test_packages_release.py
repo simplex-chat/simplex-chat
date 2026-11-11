@@ -88,6 +88,10 @@ def listed_release(tag: str, assets: list[str], n: int, draft: bool = False, bod
     return {"id": n, "tag_name": tag, "draft": draft, "body": body, **github_release(assets, n)}
 
 
+def releases_file(releases: dict, blob: str) -> dict:
+    return {"content": base64.b64encode(render_releases(releases).encode()).decode(), "sha": blob}
+
+
 def state(**overrides) -> State:
     current = State(
         libs_tag="core-1.0.0.1",
@@ -339,9 +343,6 @@ class ReleasesFileTest(unittest.TestCase):
 
 
 class RecordReleasesTest(unittest.TestCase):
-    def file(self, releases, blob):
-        return {"content": base64.b64encode(render_releases(releases).encode()).decode(), "sha": blob}
-
     def conflict(self):
         error = urllib.error.HTTPError("url", 409, "Conflict", email.message.Message(), io.BytesIO())
         self.addCleanup(error.close)
@@ -361,7 +362,7 @@ class RecordReleasesTest(unittest.TestCase):
         self.assertEqual(tomllib.loads(base64.b64decode(body["content"]).decode()), {"core": {"7.1.0.12": "sx1"}})
 
     def test_retries_when_another_writer_changed_the_file(self):
-        reads = iter([self.file({"core": {"1": "a"}}, "blob1"), self.file({"core": {"1": "a", "2": "b"}}, "blob2")])
+        reads = iter([releases_file({"core": {"1": "a"}}, "blob1"), releases_file({"core": {"1": "a", "2": "b"}}, "blob2")])
         puts = []
 
         def api(path, method="GET", body=None):
@@ -383,7 +384,7 @@ class RecordReleasesTest(unittest.TestCase):
     def test_recorded_entries_return_the_last_commit_of_the_file(self):
         def api(path, method="GET", body=None):
             self.assertEqual(method, "GET")
-            return [{"sha": "libs0"}] if path.startswith("commits") else self.file({"core": {"1": "a"}}, "blob1")
+            return [{"sha": "libs0"}] if path.startswith("commits") else releases_file({"core": {"1": "a"}}, "blob1")
 
         with mock.patch.object(packages_release, "libs_api", api):
             self.assertEqual(record_releases([("core", "1")], "other"), "libs0")
@@ -820,6 +821,30 @@ class ClaimCoreTest(unittest.TestCase):
     def test_concurrent_claim_of_another_commit_is_skipped(self):
         claimed = {"core": {"master": {"7.1.0.11": "sx0", "7.1.0.12": "sx2"}}}
         self.assertEqual(self.claim({"core": {"master": {"7.1.0.11": "sx0"}}}, claimed), ["claim=skip"])
+
+    def test_written_claim_is_new_when_reads_return_the_previous_file(self):
+        previous = {"core": {"master": {"7.1.0.11": "sx0"}}}
+        puts = []
+
+        def api(path, method="GET", body=None):
+            if method == "GET":
+                return releases_file(previous, "blob1")
+            puts.append(body)
+            return {"commit": {"sha": "libs1"}}
+
+        output = io.StringIO()
+        with (
+            mock.patch.object(packages_release, "libs_api", api),
+            mock.patch.object(packages_release, "types_problem", return_value=None),
+            contextlib.redirect_stdout(output),
+        ):
+            claim_core("7.1.0.12", "sx1", "master")
+        self.assertEqual(output.getvalue().splitlines(), ["claim=new", "commit=libs1"])
+        self.assertEqual([body["sha"] for body in puts], ["blob1"])
+        self.assertEqual(
+            tomllib.loads(base64.b64decode(puts[0]["content"]).decode()),
+            {"core": {"master": {"7.1.0.11": "sx0", "7.1.0.12": "sx1"}}},
+        )
 
 
 class TypesProblemTest(unittest.TestCase):
