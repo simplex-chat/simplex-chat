@@ -747,7 +747,7 @@ Rules for every screen:
   - The expired alert's Renew gives way to "Renewing isn't available in this version yet." until stage 3.
   - "How to register a test name" and the sale's footer go.
 - **1·2** today's name screen, for a profile without a name.
-  - Three controls: main "Register" → 1·4 the first time, else 1·5, off until a free name; "I have a code" → 2·1, styled as "Buy in browser"; "Buy in browser" → 1·4 the first time, then 4·2 (in the codes release, the site's search, as this section's rules say), only where D18 allows. Their frames and the third slot stay in place across states.
+  - Three controls: main "Register" → 1·4 the first time, else 1·5, off until a free name; "I have a code" → 2·1, styled as "Buy in browser", its slot empty beside "Register with code"; "Buy in browser" → 1·4 the first time, then 4·2 (in the codes release, the site's search, as this section's rules say), only where D18 allows. Their frames and the third slot stay in place across states.
   - Length and grammar are checked while typing, without a request; the lookup goes over SMP on Return or Search, with "Checking the name…".
   - A community name's row adds "Community ⓘ", whose ⓘ says what the name is for.
   - The price slot and the row keep the height of their tallest content across states, at the largest text size; while the product loads the slot reads "…" and Register stays in place, off.
@@ -831,7 +831,7 @@ flowchart TD
 - **1·7** stages "Ordering" ("Ordered"), "Waiting", "Registering" ("Registered"), each numbered before it starts, highlighted while running, ✓ done, ✕ failed. One notice under them; the card: "Paid", "$100.00 · Google Play" (row 4 "$100.00 · simplex.domains"; "Price" until the service confirms; a code: "Code", the shortened code, "Free SimpleX name"); "Until", "31 Dec 2028 · 2 years"; in a state that asks to contact the SimpleX team, "Reference" (row 4: the code's hash, shortened). Main "Close", which only leaves → 1·9.
   - The title, the lead and the notice keep the height of their longest text; the card keeps three rows, measured for the shown name; nothing moves between states and 1·8.
   - The notice in turn: "Confirming your payment."; "Placing your order. The wait starts once it is in."; the countdown "0:42" with "Registering takes about a minute."; "Registering the name. It is yours in a moment."; "This is taking longer than usual. It continues by itself."; offline after paying, "No connection: your payment is safe and is confirmed when you are back online."
-  - Until the reveal is sent, the notice ends in bold "Keep the app open until the name is yours."
+  - Until the reveal is sent, the notice ends in bold "Keep the app open to finish now."
   - A store promo purchase reads "purchase" and "What you bought" for "payment" and "What you paid", drops "Paid, " from titles, and its card's first row reads "Store promo code", "Free SimpleX name".
   - The app closed after paying: the order goes on at the next start, 1·9's row "Registering"; on iOS leaving it in the background stops it too (6.4); the service commits a lapsed commitment again (6.3), so the order reads Failed only past its commits or its signed deadline. The lead reads "You can close this screen. If you leave the app, open it again to finish."
   - States:
