@@ -50,12 +50,13 @@ export function botAddressSettings({addressSettings}: T.UserContactLink): BotAdd
   return {
     autoAccept: addressSettings.autoAccept ? true : false,
     welcomeMessage: addressSettings.autoReply,
-    businessAddress: addressSettings.businessAddress
+    businessAddress: addressSettings.businessAddress,
+    chatLayout: addressSettings.chatLayout
   }
 }
 
-export function fromLocalProfile({displayName, fullName, shortDescr, image, contactLink, preferences, peerType}: T.LocalProfile): T.Profile {
-  const profile = {displayName, fullName, shortDescr, image, contactLink, preferences, peerType}
+export function fromLocalProfile({displayName, fullName, shortDescr, image, contactLink, preferences, peerType, contactDomain}: T.LocalProfile): T.Profile {
+  const profile = {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, contactDomain: contactDomain && {domain: contactDomain.domain}}
   for (const key in profile) {
     if (typeof (profile as any)[key] === "undefined") delete (profile as any)[key]
   }
@@ -79,7 +80,7 @@ export interface BotCommand {
 export function ciBotCommand(chatItem: T.ChatItem): BotCommand | undefined {
   const msg = ciContentText(chatItem)?.trim()
   if (msg) {
-    const r = msg.match(/^\/([^\s]+)(.*)/)
+    const r = msg.match(/^\/([^\s]+)([\s\S]*)/)
     if (r && r.length >= 3) {
       return {keyword: r[1], params: r[2].trim()}
     }

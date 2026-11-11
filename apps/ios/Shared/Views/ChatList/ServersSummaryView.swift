@@ -737,6 +737,8 @@ struct DetailedXFTPStatsView: View {
     }
 }
 
-#Preview {
-    ServersSummaryView()
+struct ServersSummaryView_Previews: PreviewProvider {
+    static var previews: some View {
+        ServersSummaryView()
+    }
 }

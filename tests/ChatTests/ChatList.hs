@@ -5,11 +5,13 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.Format.ISO8601 (iso8601Show)
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Test.Hspec hiding (it)
 
 chatListTests :: SpecWith TestParams
 chatListTests = do
   it "get last chats" testPaginationLast
+  it "get last chats with max chats option" testMaxChats
   it "get chats before/after timestamp" testPaginationTs
   it "filter by search query" testFilterSearch
   it "filter favorite" testFilterFavorite
@@ -32,6 +34,23 @@ testPaginationLast =
       alice ##> "/chats 2"
       alice <# "bob> hey"
       alice <# "@cath hey"
+
+testMaxChats :: HasCallStack => TestParams -> IO ()
+testMaxChats =
+  testChatOpts3 testOpts {coreOptions = testCoreOpts {maxChats = 1}} aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      alice <##> bob
+      connectUsers alice cath
+      cath <##> alice
+
+      alice ##> "/chats all"
+      alice <# "@cath hey"
+      alice ##> "/chats 2"
+      alice <# "bob> hey"
+      alice <# "@cath hey"
+      alice #$> ("/_get chats 1 pcc=on", chats, [("@cath", "hey")])
+      getChats_ alice "count=2" [("@cath", "hey"), ("@bob", "hey")]
 
 testPaginationTs :: HasCallStack => TestParams -> IO ()
 testPaginationTs =

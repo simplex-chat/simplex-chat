@@ -12,4 +12,6 @@ actual val cryptor: CryptorInterface = object : CryptorInterface {
   override fun deleteKey(alias: String) {
     // LALAL
   }
+
+  override fun keyStorage(alias: String): String? = null
 }

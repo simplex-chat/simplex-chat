@@ -139,13 +139,20 @@ All JNI declarations reside in [`Core.kt`](../common/src/commonMain/kotlin/chat/
 | 11 | [`chatParseUri()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L33) | `external fun chatParseUri(str: String, safe: Int): String` | 33 | Parse SimpleX connection URI |
 | 12 | [`chatPasswordHash()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L34) | `external fun chatPasswordHash(pwd: String, salt: String): String` | 34 | Hash password with salt |
 | 13 | [`chatValidName()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L35) | `external fun chatValidName(name: String): String` | 35 | Validate/sanitize display name |
-| 14 | [`chatJsonLength()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L36) | `external fun chatJsonLength(str: String): Int` | 36 | Get JSON-encoded string length |
-| 15 | [`chatWriteFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L37) | `external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): String` | 37 | Write encrypted file via core |
-| 16 | [`chatReadFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L38) | `external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>` | 38 | Read and decrypt file |
-| 17 | [`chatEncryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L39) | `external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String` | 39 | Encrypt file on disk |
-| 18 | [`chatDecryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L40) | `external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String` | 40 | Decrypt file on disk |
+| 14 | [`chatParseBadgeCode()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L36) | `external fun chatParseBadgeCode(code: String): String` | 36 | Canonical form of a badge code, or an empty string |
+| 15 | [`chatJsonLength()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L37) | `external fun chatJsonLength(str: String): Int` | 37 | Get JSON-encoded string length |
+| 16 | [`chatWriteFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L38) | `external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): String` | 38 | Write encrypted file via core |
+| 17 | [`chatReadFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L39) | `external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>` | 39 | Read and decrypt file |
+| 18 | [`chatEncryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L40) | `external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String` | 40 | Encrypt file on disk |
+| 19 | [`chatDecryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L41) | `external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String` | 41 | Decrypt file on disk |
+| 20 | [`chatResizeImageUri()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L42) | `external fun chatResizeImageUri(buffer: ByteBuffer, maxSize: Int): String` | 42 | Resize encoded image to a data URI of at most `maxSize` characters |
+| 21 | [`chatResizeImage()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L43) | `external fun chatResizeImage(buffer: ByteBuffer, maxSize: Int, png: Int): String` | 43 | Resize encoded image to base64 of PNG or JPEG data of at most `maxSize` bytes |
+| 22 | [`chatResizeImageFileUri()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L44) | `external fun chatResizeImageFileUri(path: String, maxSize: Int): String` | 44 | Desktop: as `chatResizeImageUri`, from the file at `path` |
+| 23 | [`chatResizeImageFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L45) | `external fun chatResizeImageFile(path: String, maxSize: Int, png: Int): String` | 45 | Desktop: as `chatResizeImage`, from the file at `path`; `png` −1 selects the format by transparency |
+| 24 | [`chatResizeImageFdUri()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L46) | `external fun chatResizeImageFdUri(fd: Int, maxSize: Int): String` | 46 | Android: as `chatResizeImageUri`, from the file descriptor `fd`, which core closes |
+| 25 | [`chatResizeImageFd()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L47) | `external fun chatResizeImageFd(fd: Int, maxSize: Int, png: Int): String` | 47 | Android: as `chatResizeImage`, from the file descriptor `fd`, which core closes |
 
-**Total: 18 external native functions** (the `ChatCtrl` type alias at [line 23](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L23) is `Long`, representing the Haskell-side controller pointer).
+**Total: 25 external native functions** (the `ChatCtrl` type alias at [line 23](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L23) is `Long`, representing the Haskell-side controller pointer).
 
 <a id="initChatControllerOnStart"></a>
 <a id="chatInitTemporaryDatabase"></a>
@@ -222,20 +229,28 @@ Lifecycle callbacks in `SimplexApp` (implements `LifecycleEventObserver`):
 
 ### Desktop
 
-Entry: [`main()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L21)
+Entry: [`main()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L26)
 
 ```
-main()
+main(args)
+  +-- linkFromArgs(args)                 // A simplexchat: or simplex: link passed by the OS
+  +-- acquireSingleInstance(link)        // Or forward the link to the running instance and exit
+  +-- appOpenUrl = link                  // Stored before the watcher can forward a newer link
+  +-- startShowFileWatcher()             // Only while holding the single-instance lock
   +-- initHaskell()                      // Load native lib from resources dir, call initHS()
   |     +-- System.load(libapp-lib.so/dll/dylib)
   |     +-- initHS()
   +-- runMigrations()
   +-- setupUpdateChecker()
   +-- initApp()                          // Set ntfManager, applyAppLocale, initChatControllerOnStart
+  +-- registerLinkSchemes()              // Background thread, per-OS registration and detection
+  +-- installOpenUriHandler()            // macOS only: links arrive as Apple Events
   +-- showApp()                          // Compose window with AppScreen()
 ```
 
 [`showApp()`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt#L33) creates a Compose `Window` with error recovery -- if a crash occurs, it closes the offending modal/view and re-opens the window.
+
+[`showWindow()`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt#L258) un-minimizes and raises the window when a second launch or a link reaches the running app. On Linux it also sends `_NET_ACTIVE_WINDOW` through [`requestX11Activation()`](../common/src/desktopMain/kotlin/chat/simplex/common/WindowActivation.kt#L17), because wlroots compositors such as Sway ignore the raise that AWT's `toFront()` sends under XWayland. On Windows the second process, which the browser left holding the foreground right, calls `AllowSetForegroundWindow` before it signals so that the running instance may raise its window. During a crash restart `showWindow()` skips the disposed window, so it does not come back; the new window opens visible.
 
 [`initApp()`](../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppCommon.desktop.kt#L21) sets the `ntfManager` implementation (desktop notifications via `NtfManager` in `common/model/`) and calls `initChatControllerOnStart()`.
 
@@ -330,7 +345,7 @@ Examples from platform files:
 | `expect class VideoPlayer` | [`VideoPlayer.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/VideoPlayer.kt#L25) | 25 |
 | `expect class RecorderNative` | [`RecAndPlay.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/RecAndPlay.kt#L17) | 17 |
 | `expect val cryptor: CryptorInterface` | [`Cryptor.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Cryptor.kt#L9) | 9 |
-| `expect fun base64ToBitmap(base64ImageString: String): ImageBitmap` | [`Images.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Images.kt#L17) | 17 |
+| `expect fun base64ToBitmap(base64ImageString: String): ImageBitmap` | [`Images.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Images.kt#L18) | 18 |
 | `expect fun getWakeLock(timeout: Long): (() -> Unit)` | [`SimplexService.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/SimplexService.kt#L3) | 3 |
 | `expect class GlobalExceptionsHandler` | [`UI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/UI.kt#L24) | 24 |
 | `expect fun UriHandler.sendEmail(subject: String, body: CharSequence)` | [`Share.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Share.kt#L7) | 7 |
@@ -341,8 +356,8 @@ Examples from platform files:
 
 [`PlatformInterface`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L15) is an interface with default no-op implementations. It is assigned at runtime by each platform entry point:
 
-- **Android**: assigned in [`SimplexApp.initMultiplatform()`](../android/src/main/java/chat/simplex/app/SimplexApp.kt#L187) (line 187)
-- **Desktop**: assigned in [`Main.kt initHaskell()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L50) (line 50)
+- **Android**: assigned in [`SimplexApp.initMultiplatform()`](../android/src/main/java/chat/simplex/app/SimplexApp.kt#L193)
+- **Desktop**: assigned in [`Main.kt initHaskell()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L59)
 
 The global variable is declared at [`Platform.kt line 50`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L50):
 ```kotlin
@@ -417,6 +432,8 @@ var platform: PlatformInterface = object : PlatformInterface {}
 | SimplexService.kt | [`android/src/main/java/chat/simplex/app/SimplexService.kt`](../android/src/main/java/chat/simplex/app/SimplexService.kt) | Android foreground service |
 | Main.kt | [`desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt) | Desktop `main()` |
 | DesktopApp.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt) | `showApp()`, `SimplexWindowState` |
+| SingleInstance.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt) | `acquireSingleInstance()`, `startShowFileWatcher()`, signal file hand-over |
+| WindowActivation.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/WindowActivation.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/WindowActivation.kt) | `requestX11Activation()`, `sendActivation()`, `activationEvent()` |
 
 ### Theme
 

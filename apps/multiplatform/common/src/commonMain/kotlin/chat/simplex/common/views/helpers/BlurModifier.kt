@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.unit.*
 import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.platform.drawBarsBlurred
 import chat.simplex.common.ui.theme.CurrentColors
 
 fun Modifier.blurredBackgroundModifier(
@@ -32,7 +33,7 @@ fun Modifier.blurredBackgroundModifier(
   return if (appPlatform.isAndroid) {
     this.androidBlurredModifier(keyboardInset, blurRadius.value, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
   } else {
-    this.desktopBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
+    this.desktopBlurredModifier(keyboardInset, blurRadius, keyboardCoversBar, onTop, handler, graphicsLayer, backgroundGraphicsLayer, backgroundGraphicsLayerSize, density)
   }
 }
 
@@ -100,40 +101,44 @@ private fun Modifier.desktopBlurredModifier(
   blurRadius: State<Int>,
   keyboardCoversBar: Boolean,
   onTop: Boolean,
+  handler: AppBarHandler,
   graphicsLayer: GraphicsLayer,
   backgroundGraphicsLayer: GraphicsLayer,
   backgroundGraphicsLayerSize: State<IntSize>,
   density: Density
 ): Modifier = this
-  .graphicsLayer {
-    renderEffect = if (blurRadius.value > 0) BlurEffect(blurRadius.value.dp.toPx(), blurRadius.value.dp.toPx()) else null
-    clip = blurRadius.value > 0
-  }
   .drawBehind {
-    drawRect(CurrentColors.value.colors.background)
-    if (onTop) {
-      clipRect {
-        if (backgroundGraphicsLayer.size != IntSize.Zero) {
-          drawLayer(backgroundGraphicsLayer)
-        } else {
-          drawRect(CurrentColors.value.colors.background, size = Size(graphicsLayer.size.width.toFloat(), graphicsLayer.size.height.toFloat()))
+    val barWidth = size.width
+    val barHeight = size.height
+    // The blur is taken from a copy of the scrolled content rather than drawn from that layer, so unlike a layer's own
+    // filter it does not follow the content on its own: the bar is redrawn when the container reports the copy moved.
+    handler.contentVersion.value
+    drawBarsBlurred(blurRadius.value.dp.toPx(), barWidth, barHeight) {
+      drawRect(CurrentColors.value.colors.background, size = Size(barWidth, barHeight))
+      if (onTop) {
+        clipRect(0f, 0f, barWidth, barHeight) {
+          if (backgroundGraphicsLayer.size != IntSize.Zero) {
+            drawLayer(backgroundGraphicsLayer)
+          } else {
+            drawRect(CurrentColors.value.colors.background, size = Size(graphicsLayer.size.width.toFloat(), graphicsLayer.size.height.toFloat()))
+          }
+          drawLayer(graphicsLayer)
         }
-        drawLayer(graphicsLayer)
-      }
-    } else {
-      val bgSize = when {
-        backgroundGraphicsLayerSize.value.height == 0 && backgroundGraphicsLayer.size.height != 0 -> backgroundGraphicsLayer.size.height
-        backgroundGraphicsLayerSize.value.height == 0 -> graphicsLayer.size.height
-        else -> backgroundGraphicsLayerSize.value.height
-      }
-      val keyboardHeightCovered = if (!keyboardCoversBar) keyboardInset.getBottom(density) else 0
-      translate(top = -bgSize + size.height + keyboardHeightCovered) {
-        if (backgroundGraphicsLayer.size != IntSize.Zero) {
-          drawLayer(backgroundGraphicsLayer)
-        } else {
-          drawRect(CurrentColors.value.colors.background, size = Size(graphicsLayer.size.width.toFloat(), graphicsLayer.size.height.toFloat()))
+      } else {
+        val bgSize = when {
+          backgroundGraphicsLayerSize.value.height == 0 && backgroundGraphicsLayer.size.height != 0 -> backgroundGraphicsLayer.size.height
+          backgroundGraphicsLayerSize.value.height == 0 -> graphicsLayer.size.height
+          else -> backgroundGraphicsLayerSize.value.height
         }
-        drawLayer(graphicsLayer)
+        val keyboardHeightCovered = if (!keyboardCoversBar) keyboardInset.getBottom(density) else 0
+        translate(top = -bgSize + barHeight + keyboardHeightCovered) {
+          if (backgroundGraphicsLayer.size != IntSize.Zero) {
+            drawLayer(backgroundGraphicsLayer)
+          } else {
+            drawRect(CurrentColors.value.colors.background, size = Size(graphicsLayer.size.width.toFloat(), graphicsLayer.size.height.toFloat()))
+          }
+          drawLayer(graphicsLayer)
+        }
       }
     }
   }

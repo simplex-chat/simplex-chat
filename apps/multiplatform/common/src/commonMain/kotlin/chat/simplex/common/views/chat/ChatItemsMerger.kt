@@ -111,12 +111,15 @@ data class MergedItems (
 
 sealed class MergedItem {
   abstract val startIndexInReversedItems: Int
+  abstract val revealed: Boolean
 
   // the item that is always single, cannot be grouped and always revealed
   data class Single(
     val item: ListItem,
     override val startIndexInReversedItems: Int,
-  ): MergedItem()
+  ): MergedItem() {
+    override val revealed: Boolean get() = true
+  }
 
   /** The item that can contain multiple items or just one depending on revealed state. When the whole group of merged items is revealed,
    * there will be multiple [Grouped] items with revealed flag set to true. When the whole group is collapsed, it will be just one instance
@@ -125,7 +128,7 @@ sealed class MergedItem {
   @Stable
   data class Grouped (
     val items: ArrayList<ListItem>,
-    val revealed: Boolean,
+    override val revealed: Boolean,
     // it stores ids for all consecutive revealed items from the same group in order to hide them all on user's action
     // it's the same list instance for all Grouped items within revealed group
     /** @see reveal */

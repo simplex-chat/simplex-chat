@@ -16,16 +16,14 @@ function initializePage() {
     const appleStoreBtn = document.querySelector('.apple-store-btn');
     const fDroidBtn = document.querySelector('.f-droid-btn');
     const testflightBtn = document.querySelector('.testflight-btn');
-    const androidBtn = document.querySelector('.android-btn');
     const desktopAppBtn = document.querySelector('.desktop-app-btn');
 
-    if (!googlePlayBtn || !appleStoreBtn || !fDroidBtn || !testflightBtn || !androidBtn || !desktopAppBtn) return;
+    if (!googlePlayBtn || !appleStoreBtn || !fDroidBtn || !testflightBtn || !desktopAppBtn) return;
 
 
     if (isMobile.Android()) {
         googlePlayBtn.classList.remove('hidden');
         fDroidBtn.classList.remove('hidden');
-        androidBtn.classList.remove('hidden');
     }
     else if (isMobile.iOS()) {
         appleStoreBtn.classList.remove('hidden');
@@ -37,7 +35,6 @@ function initializePage() {
         desktopAppBtn.classList.remove('hidden');
         // fDroidBtn.classList.remove('hidden');
         // testflightBtn.classList.remove('hidden');
-        // androidBtn.classList.remove('hidden');
     }
 
     showPromotedGroups();

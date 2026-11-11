@@ -8,7 +8,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.views.localauth.LocalAuthView
 import chat.simplex.common.views.usersettings.LAMode
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 sealed class LAResult {
   object Success: LAResult()

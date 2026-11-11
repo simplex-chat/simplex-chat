@@ -1,11 +1,36 @@
 import {ChatEvent, ChatResponse, T} from "@simplex-chat/types"
+import * as libs from "./libs"
 import * as simplex from "./simplex"
+
+export type Backend = "sqlite" | "postgres"
+
+let loading: {backend: Backend, promise: Promise<void>} | undefined
+
+/**
+ * Resolve (downloading on first use) and load libsimplex for the backend.
+ * One libsimplex per process: the Haskell runtime is initialized once, and another backend is rejected.
+ */
+export function loadLibrary(backend: Backend): Promise<void> {
+  if (loading) {
+    if (loading.backend === backend) return loading.promise
+    return Promise.reject(new Error(`libsimplex already loaded with backend=${loading.backend}; cannot switch to ${backend} in the same process`))
+  }
+  const promise = Promise.all([libs.resolveLibsDir(backend), libs.resolveAddonPath()])
+    .then(([dir, addon]) => simplex.load(addon, libs.libPath(dir)))
+  loading = {backend, promise}
+  // a failed download or load can be retried
+  promise.catch(() => { loading = undefined })
+  return promise
+}
 
 /**
  * Initialize chat controller
+ * @param {number} [queueSize] - Size of internal queues, the core default is used when omitted.
  */
-export async function chatMigrateInit(dbPath: string, dbKey: string, confirm: MigrationConfirmation): Promise<bigint> {
-  const [ctrl, res] = await simplex.chat_migrate_init(dbPath, dbKey, confirm)
+export async function chatMigrateInit(dbPath: string, dbKey: string, confirm: MigrationConfirmation, queueSize?: number): Promise<bigint> {
+  const [ctrl, res] = queueSize === undefined
+    ? await simplex.chat_migrate_init(dbPath, dbKey, confirm)
+    : await simplex.chat_migrate_init_queue(dbPath, dbKey, confirm, queueSize)
   const json = JSON.parse(res)
   if (json.type === 'ok') return ctrl
   throw new ChatInitError("Database or migration error (see dbMigrationError property)", json as DBMigrationError)
@@ -47,7 +72,7 @@ export async function chatRecvMsgWait(ctrl: bigint, wait: number): Promise<ChatE
 /**
  * Write buffer to encrypted file
  */
-export async function chatWriteFile(ctrl: bigint, path: string, buffer: ArrayBuffer): Promise<CryptoArgs> {
+export async function chatWriteFile(ctrl: bigint, path: string, buffer: ArrayBuffer | Uint8Array): Promise<CryptoArgs> {
   const res = await simplex.chat_write_file(ctrl, path, buffer)
   return cryptoArgsResult(res)
 }
@@ -55,7 +80,7 @@ export async function chatWriteFile(ctrl: bigint, path: string, buffer: ArrayBuf
 /**
  * Read buffer from encrypted file
  */
-export async function chatReadFile(path: string, {fileKey, fileNonce}: CryptoArgs): Promise<ArrayBuffer> {
+export async function chatReadFile(path: string, {fileKey, fileNonce}: CryptoArgs): Promise<Buffer> {
   return await simplex.chat_read_file(path, fileKey, fileNonce)
 }
 
@@ -84,6 +109,43 @@ function cryptoArgsResult(res: string): CryptoArgs {
   }  
 }
 
+/**
+ * Resize image to a data URI of at most maxSize characters
+ */
+export async function chatResizeImageUri(image: ArrayBuffer | Uint8Array, maxSize: number): Promise<string> {
+  return resizedImage(await simplex.chat_resize_image_uri(image, maxSize))
+}
+
+/**
+ * Resize image to JPEG or PNG of at most maxSize bytes
+ */
+export async function chatResizeImage(image: ArrayBuffer | Uint8Array, maxSize: number, format: "jpeg" | "png"): Promise<Buffer> {
+  return resizeImageData(image, maxSize, format === "png" ? 1 : 0)
+}
+
+/**
+ * Resize image to the app size limit: JPEG or PNG for an image, a data URI for a preview
+ */
+export function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize.Image): Promise<Buffer>
+export function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize.ProfilePreview | ImageSize.MessagePreview): Promise<string>
+export function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize): Promise<Buffer | string>
+export async function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize): Promise<Buffer | string> {
+  switch (size) {
+    case ImageSize.Image: return resizeImageData(image, 261120, -1)
+    case ImageSize.ProfilePreview: return chatResizeImageUri(image, 12500)
+    case ImageSize.MessagePreview: return chatResizeImageUri(image, 14000)
+  }
+}
+
+async function resizeImageData(image: ArrayBuffer | Uint8Array, maxSize: number, png: number): Promise<Buffer> {
+  return Buffer.from(resizedImage(await simplex.chat_resize_image(image, maxSize, png)), "base64")
+}
+
+function resizedImage(res: string): string {
+  if (res === "") throw new Error("image cannot be decoded or does not fit maxSize")
+  return res
+}
+
 export interface APIResult<R> {
   result?: R
   error?: T.ChatError
@@ -106,6 +168,15 @@ export enum MigrationConfirmation {
 }
 
 /**
+ * App image size limit
+ */
+export enum ImageSize {
+  Image = "image",
+  ProfilePreview = "profilePreview",
+  MessagePreview = "messagePreview"
+}
+
+/**
  * File encryption key and nonce
  */
 export interface CryptoArgs {
@@ -121,12 +192,13 @@ export class ChatInitError extends Error {
 
 export type DBMigrationError = 
   | DBMigrationError.InvalidConfirmation
+  | DBMigrationError.InvalidQueueSize
   | DBMigrationError.ErrorNotADatabase // invalid/corrupt database file or incorrect encryption key
   | DBMigrationError.ErrorMigration
   | DBMigrationError.ErrorSQL
 
 export namespace DBMigrationError {
-  export type Tag = "invalidConfirmation" | "errorNotADatabase" | "errorMigration" | "errorSQL"
+  export type Tag = "invalidConfirmation" | "invalidQueueSize" | "errorNotADatabase" | "errorMigration" | "errorSQL"
 
   interface Interface {
     type: Tag
@@ -134,6 +206,10 @@ export namespace DBMigrationError {
 
   export interface InvalidConfirmation extends Interface {
     type: "invalidConfirmation"
+  }
+
+  export interface InvalidQueueSize extends Interface {
+    type: "invalidQueueSize"
   }
 
   export interface ErrorNotADatabase extends Interface {

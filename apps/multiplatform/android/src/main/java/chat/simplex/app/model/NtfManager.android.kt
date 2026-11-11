@@ -22,7 +22,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.call.RcvCallInvitation
 import kotlinx.datetime.Clock
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 object NtfManager {
   const val MessageChannel: String = "chat.simplex.app.MESSAGE_NOTIFICATION"
@@ -178,7 +178,6 @@ object NtfManager {
         val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationCompat.Builder(context, CallChannel)
           .setFullScreenIntent(fullScreenPendingIntent, true)
-          .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       } else {
         val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/raw/ring_once")
         val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, Intent(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)

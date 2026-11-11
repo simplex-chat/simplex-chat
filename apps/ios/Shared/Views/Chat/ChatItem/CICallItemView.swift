@@ -20,26 +20,34 @@ struct CICallItemView: View {
 
     var body: some View {
         let sent = chatItem.chatDir.sent
-        VStack(spacing: 4) {
-            switch status {
-            case .pending:
-                if sent {
-                    Image(systemName: "phone.arrow.up.right").foregroundColor(theme.colors.secondary)
-                } else {
-                    acceptCallButton()
-                }
-            case .missed: missedCallIcon(sent).foregroundColor(.red)
-            case .rejected: Image(systemName: "phone.down").foregroundColor(.red)
-            case .accepted: connectingCallIcon()
-            case .negotiated: connectingCallIcon()
-            case .progress: Image(systemName: "phone.and.waveform.fill").foregroundColor(.green)
-            case .ended: endedCallIcon(sent)
-            case .error: missedCallIcon(sent).foregroundColor(.orange)
-            }
-
+        ItemWithMeta {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary, showStatus: false, showEdited: false)
-                .padding(.bottom, 8)
-                .padding(.horizontal, 12)
+        } content: { inlineMeta in
+            VStack(spacing: 4) {
+                switch status {
+                case .pending:
+                    if sent {
+                        Image(systemName: "phone.arrow.up.right").foregroundColor(theme.colors.secondary)
+                    } else {
+                        acceptCallButton()
+                    }
+                case .missed: missedCallIcon(sent).foregroundColor(.red)
+                case .rejected: Image(systemName: "phone.down").foregroundColor(.red)
+                case .accepted: connectingCallIcon()
+                case .negotiated: connectingCallIcon()
+                case .progress: Image(systemName: "phone.and.waveform.fill").foregroundColor(.green)
+                case .ended: endedCallIcon(sent)
+                case .error: missedCallIcon(sent).foregroundColor(.orange)
+                }
+
+                if let inlineMeta {
+                    inlineMeta
+                        .padding(.bottom, 8)
+                        .padding(.horizontal, 12)
+                }
+            }
+            .padding(.leading, inlineMeta == nil ? chatItemTextPadding : 0)
+            .padding(.bottom, inlineMeta == nil ? 8 : 0)
         }
     }
 

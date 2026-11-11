@@ -1,12 +1,10 @@
-import {Command} from "commander"
+import {Command, Option} from "commander"
 import {api} from "simplex-chat"
 
 export interface IdName {
   id: number
   name: string
 }
-
-export type Backend = "sqlite" | "postgres"
 
 export interface Config {
   stateFile: string          // local path to the bot's state JSON
@@ -22,18 +20,6 @@ export interface Config {
   dryRun: boolean
   allowMigrations: boolean
   grokApiKey: string | null
-}
-
-// Mirrors packages/simplex-chat-nodejs/src/download-libs.js so runtime detection
-// matches what was used at install time. Works whether the user installed via
-// SIMPLEX_BACKEND env var, .npmrc (→ npm_config_simplex_backend), or the
-// --simplex_backend=postgres CLI flag (also surfaced as npm_config_*).
-export function detectBackend(): Backend {
-  const raw = (process.env.SIMPLEX_BACKEND || process.env.npm_config_simplex_backend || "sqlite").toLowerCase()
-  if (raw !== "sqlite" && raw !== "postgres") {
-    throw new Error(`Invalid SIMPLEX_BACKEND: "${raw}". Must be "sqlite" or "postgres".`)
-  }
-  return raw
 }
 
 export function parseIdName(s: string): IdName {
@@ -64,9 +50,10 @@ function buildCommand(): Command {
     .description("business-address triage bot")
     .requiredOption("--team-group <name>", "team group display name")
     .option("--state-file <path>", "state JSON path", "./data/state.json")
+    .addOption(new Option("--db <backend>", "database backend").choices(["sqlite", "postgres"]).default("sqlite"))
     .option("--sqlite-file-prefix <path>", "SQLite DB file prefix", "./data/simplex")
     .option("--sqlite-key <key>", "SQLCipher encryption key (default: unencrypted)")
-    .option("--pg-conn <conn>", "PostgreSQL connection string (required for postgres)")
+    .option("--pg-conn <conn>", "PostgreSQL connection string (required with --db postgres)")
     .option("--pg-schema <prefix>", "PostgreSQL schema prefix (default: simplex_v1)")
     .option("-a, --auto-add-team-members <list>", "comma-separated ID:name pairs (e.g. 1:Alice,2:Bob)")
     .option("--broadcasters <list>", "comma-separated ID:name pairs of contacts allowed to use /broadcast in the team group")
@@ -76,12 +63,13 @@ function buildCommand(): Command {
     .option("--context-file <path>", "text file with Grok system context (required if GROK_API_KEY set)")
     .option("--dry-run", "check config, database and state, then exit without starting chat")
     .option("--allow-migrations", "with --dry-run: apply pending migrations instead of reporting them")
-    .addHelpText("after", "\nEnvironment:\n  GROK_API_KEY     xAI API key — enables Grok replies\n  SIMPLEX_BACKEND  sqlite | postgres — alternative to .npmrc for backend selection\n")
+    .addHelpText("after", "\nEnvironment:\n  GROK_API_KEY        xAI API key — enables Grok replies\n  SIMPLEX_LIBS_DIR    local libsimplex build for the --db backend\n  SIMPLEX_ADDON_PATH  locally built Node.js add-on\n")
 }
 
 interface RawOpts {
   teamGroup: string
   stateFile: string
+  db: api.DbConfig["type"]
   sqliteFilePrefix: string
   sqliteKey?: string
   pgConn?: string
@@ -106,19 +94,19 @@ export function parseConfig(args: string[]): Config {
     throw err
   }
   const opts = cmd.opts<RawOpts>()
+  const given = (option: keyof RawOpts) => cmd.getOptionValueSource(option) === "cli"
 
   const grokApiKey = process.env.GROK_API_KEY || null
 
-  const backend = detectBackend()
   let db: api.DbConfig
-  if (backend === "sqlite") {
+  if (opts.db === "sqlite") {
+    if (given("pgConn") || given("pgSchema")) throw new Error("--pg-conn and --pg-schema require --db postgres")
     db = opts.sqliteKey
       ? {type: "sqlite", filePrefix: opts.sqliteFilePrefix, encryptionKey: opts.sqliteKey}
       : {type: "sqlite", filePrefix: opts.sqliteFilePrefix}
   } else {
-    if (!opts.pgConn) {
-      throw new Error("--pg-conn is required when backend is postgres (PostgreSQL connection string)")
-    }
+    if (given("sqliteFilePrefix") || given("sqliteKey")) throw new Error("--sqlite-file-prefix and --sqlite-key require --db sqlite")
+    if (!opts.pgConn) throw new Error("--pg-conn is required with --db postgres")
     db = opts.pgSchema
       ? {type: "postgres", connectionString: opts.pgConn, schemaPrefix: opts.pgSchema}
       : {type: "postgres", connectionString: opts.pgConn}

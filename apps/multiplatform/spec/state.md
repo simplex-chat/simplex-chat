@@ -152,6 +152,7 @@ Defined at [`ChatModel.kt line 86`](../common/src/commonMain/kotlin/chat/simplex
 | [`appOpenUrlConnecting`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L138) | `MutableState<Boolean>` | 138 | Whether a deep link connection is in progress |
 | [`newChatSheetVisible`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L141) | `MutableState<Boolean>` | 141 | Whether new chat bottom sheet is visible |
 | [`fullscreenGalleryVisible`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L144) | `MutableState<Boolean>` | 144 | Fullscreen gallery mode |
+| [`chatListBanner`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L206) | `ChatListBanner?` (plain var) | 206 | The banner kind the chat list showed this app session; `bannerSlotFree(banner)` tells whether a kind may take the slot (see [chat-list.md](client/chat-list.md)) |
 | [`notificationPreviewMode`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L147) | `MutableState<NotificationPreviewMode>` | 147 | Notification content preview level |
 | [`showAuthScreen`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L156) | `MutableState<Boolean>` | 156 | Whether to show authentication screen |
 | [`showChatPreviews`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L158) | `MutableState<Boolean>` | 158 | Whether to show chat preview text in list |
@@ -298,6 +299,18 @@ data class ChatStats(
 | `ChatInfo.ContactRequest` | `"contactRequest"` | `contactRequest: UserContactRequest` |
 | `ChatInfo.ContactConnection` | `"contactConnection"` | `contactConnection: PendingContactConnection` |
 | `ChatInfo.InvalidJSON` | `"invalidJSON"` | `json: String` |
+
+[`ChatInfo.activeChatLayout(user)`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1876) is computed in the app, skipping `ChatLayoutMode.Unknown` values:
+
+```
+chat choice        ChatInfo.uiThemes.chatLayout (contact or group theme record)
+chat layout        ChatInfo.chatLayout: groupProfile.chatLayout of a group; Contact.chatLayout (address link data, stored when the contact is prepared)
+profile choice     User.uiThemes.chatLayout (profileChatLayout)
+app choice         appPrefs.chatLayout
+otherwise          ChatLayoutMode.Classic
+```
+
+[`defaultChatLayout(user)`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1873) is the same without the chat choice. Note folders have no chat values, so the profile and app choices apply. `ChatView` reads `chatModel.currentUser`, and `profileChatLayout` reads `appPrefs.chatLayout.state`, so a change of either recomposes the open chat; the chat list is not reloaded. The chat choice is written with `apiSetChatUIThemes` (`setChatLayout`, `ChatInfoView.kt`), the profile choice with `apiSetUserUIThemes` (`ChatLayoutRow`, `Appearance.kt`), together with the colours of the same record.
 
 ### RelayStatus (Channels)
 
@@ -449,6 +462,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 |---|---|---|---|
 | `oneHandUI` | `Boolean` | `true` | One-hand mode |
 | `chatBottomBar` | `Boolean` | `true` | Bottom bar in chat |
+| `chatLayout` | `ChatLayoutMode` | `Classic` | App chat layout (`activeChatLayout`) |
 
 #### Remote Access (lines 238-243)
 

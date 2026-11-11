@@ -15,6 +15,7 @@ import qualified Data.Text as T
 import Simplex.Chat.Library.Commands (fixedImagePreview)
 import Simplex.Chat.Types (ImageData (..))
 import System.Directory (copyFile, doesFileExist, removeFile)
+import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 
 chatForwardTests :: SpecWith TestParams
@@ -500,7 +501,7 @@ testForwardDeleteForOther =
 testForwardFileNoFilesFolder :: HasCallStack => TestParams -> IO ()
 testForwardFileNoFilesFolder =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
+    \alice bob cath -> withXFTPServer alice $ do
       connectUsers alice bob
       connectUsers bob cath
 
@@ -513,51 +514,51 @@ testForwardFileNoFilesFolder =
       bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
 
-      bob ##> "/fr 1 ./tests/tmp"
+      bob ##> ("/fr 1 " <> tmpDir bob)
       concurrentlyN_
         [ alice <## "completed uploading file 1 (test.pdf) for bob",
           bob
-            <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+            <### [ ConsoleString $ "saving file 1 from alice to " <> tmpFile bob "test.pdf",
                    "started receiving file 1 (test.pdf) from alice"
                  ]
         ]
       bob <## "completed receiving file 1 (test.pdf) from alice"
 
       src <- B.readFile "./tests/fixtures/test.pdf"
-      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest <- B.readFile (tmpFile bob "test.pdf")
       dest `shouldBe` src
 
       -- forward file
       bob `send` "@cath <- @alice hi"
       bob <# "@cath <- @alice"
       bob <## "      hi"
-      bob <# "/f @cath ./tests/tmp/test.pdf"
+      bob <# ("/f @cath " <> tmpFile bob "test.pdf")
       bob <## "use /fc 2 to cancel sending"
       cath <# "bob> -> forwarded"
       cath <## "      hi"
       cath <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
       cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir cath)
       concurrentlyN_
         [ bob <## "completed uploading file 2 (test.pdf) for cath",
           cath
-            <### [ "saving file 1 from bob to ./tests/tmp/test_1.pdf",
+            <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile cath "test_1.pdf",
                    "started receiving file 1 (test.pdf) from bob"
                  ]
         ]
       cath <## "completed receiving file 1 (test.pdf) from bob"
 
-      dest2 <- B.readFile "./tests/tmp/test_1.pdf"
+      dest2 <- B.readFile (tmpFile cath "test_1.pdf")
       dest2 `shouldBe` src
 
 testForwardFileContactToContact :: HasCallStack => TestParams -> IO ()
 testForwardFileContactToContact =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
-      setRelativePaths alice "./tests/fixtures" "./tests/tmp/alice_xftp"
-      setRelativePaths bob "./tests/tmp/bob_files" "./tests/tmp/bob_xftp"
-      setRelativePaths cath "./tests/tmp/cath_files" "./tests/tmp/cath_xftp"
+    \alice bob cath -> withXFTPServer alice $ do
+      setRelativePaths alice "./tests/fixtures" (tmpFile alice "alice_xftp")
+      setRelativePaths bob (tmpFile bob "bob_files") (tmpFile bob "bob_xftp")
+      setRelativePaths cath (tmpFile cath "cath_files") (tmpFile cath "cath_xftp")
       connectUsers alice bob
       connectUsers bob cath
 
@@ -581,7 +582,7 @@ testForwardFileContactToContact =
       bob <## "completed receiving file 1 (test.pdf) from alice"
 
       src <- B.readFile "./tests/fixtures/test.pdf"
-      dest <- B.readFile "./tests/tmp/bob_files/test.pdf"
+      dest <- B.readFile (tmpFile bob "bob_files/test.pdf")
       dest `shouldBe` src
 
       -- forward file
@@ -605,24 +606,24 @@ testForwardFileContactToContact =
         ]
       cath <## "completed receiving file 1 (test_1.pdf) from bob"
 
-      src2 <- B.readFile "./tests/tmp/bob_files/test_1.pdf"
+      src2 <- B.readFile (tmpFile bob "bob_files/test_1.pdf")
       src2 `shouldBe` dest
-      dest2 <- B.readFile "./tests/tmp/cath_files/test_1.pdf"
+      dest2 <- B.readFile (tmpFile cath "cath_files/test_1.pdf")
       dest2 `shouldBe` src2
 
       -- deleting original file doesn't delete forwarded file
-      checkActionDeletesFile "./tests/tmp/bob_files/test.pdf" $ do
+      checkActionDeletesFile (tmpFile bob "bob_files/test.pdf") $ do
         bob ##> "/clear alice"
         bob <## "alice: all messages are removed locally ONLY"
-      fwdFileExists <- doesFileExist "./tests/tmp/bob_files/test_1.pdf"
+      fwdFileExists <- doesFileExist (tmpFile bob "bob_files/test_1.pdf")
       fwdFileExists `shouldBe` True
 
 testForwardFileGroupToNotes :: HasCallStack => TestParams -> IO ()
 testForwardFileGroupToNotes =
   testChat2 aliceProfile cathProfile $
-    \alice cath -> withXFTPServer $ do
-      setRelativePaths alice "./tests/fixtures" "./tests/tmp/alice_xftp"
-      setRelativePaths cath "./tests/tmp/cath_files" "./tests/tmp/cath_xftp"
+    \alice cath -> withXFTPServer alice $ do
+      setRelativePaths alice "./tests/fixtures" (tmpFile alice "alice_xftp")
+      setRelativePaths cath (tmpFile cath "cath_files") (tmpFile cath "cath_xftp")
       createGroup2 "team" alice cath
       createCCNoteFolder cath
 
@@ -646,7 +647,7 @@ testForwardFileGroupToNotes =
       cath <## "completed receiving file 1 (test.pdf) from alice"
 
       src <- B.readFile "./tests/fixtures/test.pdf"
-      dest <- B.readFile "./tests/tmp/cath_files/test.pdf"
+      dest <- B.readFile (tmpFile cath "cath_files/test.pdf")
       dest `shouldBe` src
 
       -- forward file
@@ -655,23 +656,23 @@ testForwardFileGroupToNotes =
       cath <## "      hi"
       cath <# "* file 2 (test_1.pdf)"
 
-      dest2 <- B.readFile "./tests/tmp/cath_files/test_1.pdf"
+      dest2 <- B.readFile (tmpFile cath "cath_files/test_1.pdf")
       dest2 `shouldBe` dest
 
       -- deleting original file doesn't delete forwarded file
-      checkActionDeletesFile "./tests/tmp/cath_files/test.pdf" $ do
+      checkActionDeletesFile (tmpFile cath "cath_files/test.pdf") $ do
         cath ##> "/clear #team"
         cath <## "#team: all messages are removed locally ONLY"
-      fwdFileExists <- doesFileExist "./tests/tmp/cath_files/test_1.pdf"
+      fwdFileExists <- doesFileExist (tmpFile cath "cath_files/test_1.pdf")
       fwdFileExists `shouldBe` True
 
 testForwardFileNotesToGroup :: HasCallStack => TestParams -> IO ()
 testForwardFileNotesToGroup =
   testChat2 aliceProfile cathProfile $
-    \alice cath -> withXFTPServer $ do
-      setRelativePaths alice "./tests/tmp/alice_files" "./tests/tmp/alice_xftp"
-      setRelativePaths cath "./tests/tmp/cath_files" "./tests/tmp/cath_xftp"
-      copyFile "./tests/fixtures/test.pdf" "./tests/tmp/alice_files/test.pdf"
+    \alice cath -> withXFTPServer alice $ do
+      setRelativePaths alice (tmpFile alice "alice_files") (tmpFile alice "alice_xftp")
+      setRelativePaths cath (tmpFile cath "cath_files") (tmpFile cath "cath_xftp")
+      copyFile "./tests/fixtures/test.pdf" (tmpFile alice "alice_files/test.pdf")
       createCCNoteFolder alice
       createGroup2 "team" alice cath
 
@@ -699,17 +700,17 @@ testForwardFileNotesToGroup =
         ]
       cath <## "completed receiving file 1 (test_1.pdf) from alice"
 
-      src <- B.readFile "./tests/tmp/alice_files/test.pdf"
-      src2 <- B.readFile "./tests/tmp/alice_files/test_1.pdf"
+      src <- B.readFile (tmpFile alice "alice_files/test.pdf")
+      src2 <- B.readFile (tmpFile alice "alice_files/test_1.pdf")
       src2 `shouldBe` src
-      dest2 <- B.readFile "./tests/tmp/cath_files/test_1.pdf"
+      dest2 <- B.readFile (tmpFile cath "cath_files/test_1.pdf")
       dest2 `shouldBe` src2
 
       -- deleting original file doesn't delete forwarded file
-      checkActionDeletesFile "./tests/tmp/alice_files/test.pdf" $ do
+      checkActionDeletesFile (tmpFile alice "alice_files/test.pdf") $ do
         alice ##> "/clear *"
         alice <## "notes: all messages are removed"
-      fwdFileExists <- doesFileExist "./tests/tmp/alice_files/test_1.pdf"
+      fwdFileExists <- doesFileExist (tmpFile alice "alice_files/test_1.pdf")
       fwdFileExists `shouldBe` True
 
 testForwardContactToContactMulti :: HasCallStack => TestParams -> IO ()
@@ -789,14 +790,17 @@ testForwardGroupToGroupMulti =
 testMultiForwardFiles :: HasCallStack => TestParams -> IO ()
 testMultiForwardFiles =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
-      setRelativePaths alice "./tests/tmp/alice_app_files" "./tests/tmp/alice_xftp"
-      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"
-      copyFile "./tests/fixtures/test.pdf" "./tests/tmp/alice_app_files/test.pdf"
-      copyFile "./tests/fixtures/test_1MB.pdf" "./tests/tmp/alice_app_files/test_1MB.pdf"
-      copyFile "./tests/fixtures/logo.jpg" "./tests/tmp/alice_app_files/logo.jpg"
-      setRelativePaths bob "./tests/tmp/bob_app_files" "./tests/tmp/bob_xftp"
-      setRelativePaths cath "./tests/tmp/cath_app_files" "./tests/tmp/cath_xftp"
+    \alice bob cath -> withXFTPServer alice $ do
+      let aliceFiles = tmpFile alice "alice_app_files"
+          bobFiles = tmpFile bob "bob_app_files"
+          cathFiles = tmpFile cath "cath_app_files"
+      setRelativePaths alice aliceFiles (tmpFile alice "alice_xftp")
+      copyFile "./tests/fixtures/test.jpg" (aliceFiles </> "test.jpg")
+      copyFile "./tests/fixtures/test.pdf" (aliceFiles </> "test.pdf")
+      copyFile "./tests/fixtures/test_1MB.pdf" (aliceFiles </> "test_1MB.pdf")
+      copyFile "./tests/fixtures/logo.jpg" (aliceFiles </> "logo.jpg")
+      setRelativePaths bob bobFiles (tmpFile bob "bob_xftp")
+      setRelativePaths cath cathFiles (tmpFile cath "cath_xftp")
       connectUsers alice bob
       connectUsers bob cath
 
@@ -876,12 +880,12 @@ testMultiForwardFiles =
              ]
       bob <## "completed receiving file 2 (test.pdf) from alice"
 
-      src1 <- B.readFile "./tests/tmp/alice_app_files/test.jpg"
-      dest1 <- B.readFile "./tests/tmp/bob_app_files/test.jpg"
+      src1 <- B.readFile (aliceFiles </> "test.jpg")
+      dest1 <- B.readFile (bobFiles </> "test.jpg")
       dest1 `shouldBe` src1
 
-      src2 <- B.readFile "./tests/tmp/alice_app_files/test.pdf"
-      dest2 <- B.readFile "./tests/tmp/bob_app_files/test.pdf"
+      src2 <- B.readFile (aliceFiles </> "test.pdf")
+      dest2 <- B.readFile (bobFiles </> "test.pdf")
       dest2 `shouldBe` src2
 
       -- forward file
@@ -955,14 +959,14 @@ testMultiForwardFiles =
              ]
       cath <## "completed receiving file 2 (test_1.pdf) from bob"
 
-      src1B <- B.readFile ("./tests/tmp/bob_app_files/" <> jpgFileName)
+      src1B <- B.readFile (bobFiles </> jpgFileName)
       src1B `shouldBe` dest1
-      dest1C <- B.readFile ("./tests/tmp/cath_app_files/" <> jpgFileName)
+      dest1C <- B.readFile (cathFiles </> jpgFileName)
       dest1C `shouldBe` src1B
 
-      src2B <- B.readFile "./tests/tmp/bob_app_files/test_1.pdf"
+      src2B <- B.readFile (bobFiles </> "test_1.pdf")
       src2B `shouldBe` dest2
-      dest2C <- B.readFile "./tests/tmp/cath_app_files/test_1.pdf"
+      dest2C <- B.readFile (cathFiles </> "test_1.pdf")
       dest2C `shouldBe` src2B
 
       bob ##> "/fr 3"
@@ -986,19 +990,19 @@ testMultiForwardFiles =
       bob ##> ("/_forward plan @2 " <> msgIds)
       bob <## "all messages can be forwarded"
 
-      removeFile "./tests/tmp/bob_app_files/test_1MB.pdf"
+      removeFile (bobFiles </> "test_1MB.pdf")
       bob ##> ("/_forward plan @2 " <> msgIds)
       bob <## "1 file(s) are missing"
       bob <## "all messages can be forwarded"
 
-      removeFile "./tests/tmp/bob_app_files/test.pdf"
+      removeFile (bobFiles </> "test.pdf")
       bob ##> ("/_forward plan @2 " <> msgIds)
       bob <## "2 file(s) are missing"
       bob <## "5 message(s) out of 6 can be forwarded"
 
       -- deleting original file doesn't delete forwarded file
-      checkActionDeletesFile "./tests/tmp/bob_app_files/test.jpg" $ do
+      checkActionDeletesFile (bobFiles </> "test.jpg") $ do
         bob ##> "/clear alice"
         bob <## "alice: all messages are removed locally ONLY"
-      fwdFileExists <- doesFileExist ("./tests/tmp/bob_app_files/" <> jpgFileName)
+      fwdFileExists <- doesFileExist (bobFiles </> jpgFileName)
       fwdFileExists `shouldBe` True

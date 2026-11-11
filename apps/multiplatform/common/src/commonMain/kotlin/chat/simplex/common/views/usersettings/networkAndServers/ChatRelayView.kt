@@ -23,7 +23,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.PreferenceToggle
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 

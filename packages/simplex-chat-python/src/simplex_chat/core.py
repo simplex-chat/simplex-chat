@@ -1,16 +1,19 @@
-"""Internal typed async wrapper around libsimplex's 8 C ABI functions.
+"""Typed async wrapper around libsimplex's C ABI functions.
 
 Users interact with `Bot` / `ChatApi`. This module is exposed as
-`simplex_chat.core` for tests and the api.ChatApi class only.
+`simplex_chat.core` for tests, the api.ChatApi class and image resizing
+(`resize_image`, `chat_resize_image`, `chat_resize_image_uri`).
 """
 
 from __future__ import annotations
 
 import asyncio
+import base64
 import ctypes
 import json
+from concurrent.futures import Executor
 from enum import StrEnum
-from typing import Any, TypedDict
+from typing import Any, Literal, TypedDict, overload
 
 from . import _native
 from .types import CR, CEvt, T
@@ -69,6 +72,12 @@ class MigrationConfirmation(StrEnum):
     ERROR = "error"
 
 
+class ImageSize(StrEnum):
+    IMAGE = "image"
+    PROFILE_PREVIEW = "profilePreview"
+    MESSAGE_PREVIEW = "messagePreview"
+
+
 class CryptoArgs(TypedDict):  # wire-format JSON; camelCase fields
     fileKey: str
     fileNonce: str
@@ -87,6 +96,12 @@ def _read_and_free(ptr: int | None) -> str:
         _native.libc().free(ctypes.c_void_p(ptr))
 
 
+def _check_c_int(name: str, value: int) -> None:
+    # ctypes silently wraps ints that do not fit C int.
+    if ctypes.c_int(value).value != value:
+        raise ValueError(f"{name} {value} does not fit C int")
+
+
 async def chat_send_cmd(ctrl: int, cmd: str) -> CR.ChatResponse:
     def _call() -> str:
         ptr = _native.lib().chat_send_cmd(ctrl, cmd.encode("utf-8"))
@@ -102,7 +117,9 @@ async def chat_send_cmd(ctrl: int, cmd: str) -> CR.ChatResponse:
     raise ChatAPIError(f"invalid chat command result: {raw[:200]}")
 
 
-async def chat_recv_msg_wait(ctrl: int, wait_us: int = 500_000) -> CEvt.ChatEvent | None:
+async def chat_recv_msg_wait(
+    ctrl: int, wait_us: int = 500_000, executor: Executor | None = None
+) -> CEvt.ChatEvent | None:
     def _call() -> str:
         # On timeout, the C side returns a non-NULL pointer to a single NUL byte
         # (see Mobile.hs `fromMaybe ""`), so `_read_and_free` returns "" — no
@@ -110,7 +127,10 @@ async def chat_recv_msg_wait(ctrl: int, wait_us: int = 500_000) -> CEvt.ChatEven
         ptr = _native.lib().chat_recv_msg_wait(ctrl, wait_us)
         return _read_and_free(ptr)
 
-    raw = await asyncio.to_thread(_call)
+    if executor is None:
+        raw = await asyncio.to_thread(_call)
+    else:
+        raw = await asyncio.get_running_loop().run_in_executor(executor, _call)
     if not raw:
         return None
     parsed = json.loads(raw)
@@ -122,17 +142,28 @@ async def chat_recv_msg_wait(ctrl: int, wait_us: int = 500_000) -> CEvt.ChatEven
     raise ChatAPIError(f"invalid chat event: {raw[:200]}")
 
 
-async def chat_migrate_init(db_path: str, db_key: str, confirm: MigrationConfirmation) -> int:
-    """Initialize chat controller. Returns opaque ctrl pointer as Python int."""
+async def chat_migrate_init(
+    db_path: str,
+    db_key: str,
+    confirm: MigrationConfirmation,
+    queue_size: int | None = None,
+) -> int:
+    """Initialize chat controller. Returns opaque ctrl pointer as Python int.
+
+    `queue_size` is the size of internal queues; the core default is used when None.
+    """
+    if queue_size is not None:
+        _check_c_int("queue_size", queue_size)
+
+    init_queue = _native.migrate_init_queue() if queue_size is not None else None
 
     def _call() -> tuple[int, str]:
         ctrl = ctypes.c_void_p()
-        ptr = _native.lib().chat_migrate_init(
-            db_path.encode("utf-8"),
-            db_key.encode("utf-8"),
-            confirm.encode("utf-8"),
-            ctypes.byref(ctrl),
-        )
+        args = (db_path.encode("utf-8"), db_key.encode("utf-8"), confirm.encode("utf-8"))
+        if init_queue is None:
+            ptr = _native.lib().chat_migrate_init(*args, ctypes.byref(ctrl))
+        else:
+            ptr = init_queue(*args, queue_size, ctypes.byref(ctrl))
         return (ctrl.value or 0, _read_and_free(ptr))
 
     ctrl_val, raw = await asyncio.to_thread(_call)
@@ -228,3 +259,62 @@ def _crypto_args_result(raw: str) -> CryptoArgs:
     if parsed.get("type") == "error":
         raise RuntimeError(parsed.get("writeError", "unknown write error"))
     raise RuntimeError(f"unexpected result: {raw[:200]}")
+
+
+async def chat_resize_image_uri(data: bytes, max_size: int) -> str:
+    _check_c_int("len(data)", len(data))
+    _check_c_int("max_size", max_size)
+    resize = _native.resize_image_uri()
+
+    def _call() -> str:
+        return _read_and_free(resize(data, len(data), max_size))
+
+    return _resized_image(await asyncio.to_thread(_call))
+
+
+async def chat_resize_image(
+    data: bytes, max_size: int, image_format: Literal["jpeg", "png"]
+) -> bytes:
+    return await _resize_image_data(data, max_size, 1 if image_format == "png" else 0)
+
+
+@overload
+async def resize_image(data: bytes, size: Literal[ImageSize.IMAGE]) -> bytes: ...
+
+
+@overload
+async def resize_image(
+    data: bytes, size: Literal[ImageSize.PROFILE_PREVIEW, ImageSize.MESSAGE_PREVIEW]
+) -> str: ...
+
+
+@overload
+async def resize_image(data: bytes, size: ImageSize) -> bytes | str: ...
+
+
+async def resize_image(data: bytes, size: ImageSize) -> bytes | str:
+    """Resize image to the app size limit: JPEG or PNG for an image, a data URI for a preview."""
+    match size:
+        case ImageSize.IMAGE:
+            return await _resize_image_data(data, 261120, -1)
+        case ImageSize.PROFILE_PREVIEW:
+            return await chat_resize_image_uri(data, 12500)
+        case ImageSize.MESSAGE_PREVIEW:
+            return await chat_resize_image_uri(data, 14000)
+
+
+async def _resize_image_data(data: bytes, max_size: int, png: int) -> bytes:
+    _check_c_int("len(data)", len(data))
+    _check_c_int("max_size", max_size)
+    resize = _native.resize_image()
+
+    def _call() -> str:
+        return _read_and_free(resize(data, len(data), max_size, png))
+
+    return base64.b64decode(_resized_image(await asyncio.to_thread(_call)))
+
+
+def _resized_image(res: str) -> str:
+    if not res:
+        raise RuntimeError("image cannot be decoded or does not fit max_size")
+    return res

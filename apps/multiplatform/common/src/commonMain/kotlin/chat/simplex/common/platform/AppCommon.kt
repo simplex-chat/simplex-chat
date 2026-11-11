@@ -6,7 +6,7 @@ import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.DefaultTheme
 import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.util.*
 
 enum class AppPlatform {
@@ -24,6 +24,8 @@ expect val appPlatform: AppPlatform
 expect val deviceName: String
 
 expect fun isAppVisibleAndFocused(): Boolean
+
+expect fun appLinkSchemeRegistered(): Boolean
 
 val appVersionInfo: Pair<String, Int?> = if (appPlatform == AppPlatform.ANDROID)
   BuildConfigCommon.ANDROID_VERSION_NAME to BuildConfigCommon.ANDROID_VERSION_CODE

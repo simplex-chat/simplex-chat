@@ -12,4 +12,4 @@ main = do
   opts@DirectoryOpts {runCLI} <- welcomeGetOpts
   if runCLI
     then directoryServiceCLI opts
-    else directoryService opts terminalChatConfig
+    else newServiceState opts >>= directoryService opts terminalChatConfig

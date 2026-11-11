@@ -32,10 +32,11 @@ CREATE TABLE contact_profiles(
   contact_domain TEXT,
   contact_domain_proof TEXT,
   contact_domain_verified INTEGER,
-  description TEXT
+  description TEXT,
+  preferences_json TEXT
 ) STRICT;
 CREATE TABLE users(
-  user_id INTEGER PRIMARY KEY,
+  user_id INTEGER PRIMARY KEY AUTOINCREMENT,
   contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE RESTRICT
   DEFERRABLE INITIALLY DEFERRED,
   local_display_name TEXT NOT NULL UNIQUE,
@@ -54,13 +55,15 @@ CREATE TABLE users(
   auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0,
   is_user_chat_relay INTEGER NOT NULL DEFAULT 0,
   client_service INTEGER NOT NULL DEFAULT 0,
-  auto_accept_group_invitations INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  auto_accept_group_invitations INTEGER NOT NULL DEFAULT 0,
+  shown_badge_id INTEGER REFERENCES badge_purchases ON DELETE SET NULL, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
   ON UPDATE CASCADE
   DEFERRABLE INITIALLY DEFERRED
 ) STRICT;
+CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE display_names(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
@@ -72,7 +75,7 @@ CREATE TABLE display_names(
   UNIQUE(user_id, ldn_base, ldn_suffix) ON CONFLICT FAIL
 ) WITHOUT ROWID, STRICT;
 CREATE TABLE contacts(
-  contact_id INTEGER PRIMARY KEY,
+  contact_id INTEGER PRIMARY KEY AUTOINCREMENT,
   contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
@@ -106,7 +109,7 @@ CREATE TABLE contacts(
   grp_direct_inv_from_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
   grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
-  drop_feed INTEGER NOT NULL DEFAULT 0,
+  chat_layout TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -146,10 +149,12 @@ CREATE TABLE group_profiles(
   group_domain TEXT,
   domain_web_page INTEGER,
   allow_embedding INTEGER,
-  group_domain_proof TEXT
+  group_domain_proof TEXT,
+  preferences_json TEXT,
+  chat_layout TEXT
 ) STRICT;
 CREATE TABLE groups(
-  group_id INTEGER PRIMARY KEY, -- local group ID
+  group_id INTEGER PRIMARY KEY AUTOINCREMENT, -- local group ID
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL, -- local group name without spaces
   group_profile_id INTEGER REFERENCES group_profiles ON DELETE SET NULL, -- shared group profile
@@ -210,7 +215,7 @@ CREATE TABLE groups(
   group_domain_verified INTEGER,
   stored_roster_version INTEGER,
   applied_complete_roster_version INTEGER,
-  drop_feed INTEGER NOT NULL DEFAULT 0, -- received
+  relay_request_public_group_id BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -220,7 +225,7 @@ CREATE TABLE groups(
 ) STRICT;
 CREATE TABLE group_members(
   -- group members, excluding the local user
-  group_member_id INTEGER PRIMARY KEY,
+  group_member_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   member_id BLOB NOT NULL, -- shared member ID, unique per group
   member_role TEXT NOT NULL, -- owner, admin, member
@@ -258,6 +263,7 @@ CREATE TABLE group_members(
   roster_served_version INTEGER,
   member_security_code TEXT,
   member_security_code_verified_at TEXT,
+  invited_via_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -277,7 +283,7 @@ CREATE TABLE group_member_intros(
   UNIQUE(re_group_member_id, to_group_member_id)
 ) STRICT;
 CREATE TABLE files(
-  file_id INTEGER PRIMARY KEY,
+  file_id INTEGER PRIMARY KEY AUTOINCREMENT,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   file_name TEXT NOT NULL,
@@ -306,8 +312,7 @@ CREATE TABLE files(
   file_digest BLOB,
   file_expires_at TEXT,
   file_max_size INTEGER,
-  file_badge_status TEXT,
-  feed_id INTEGER DEFAULT NULL REFERENCES feeds ON DELETE CASCADE
+  file_badge_status TEXT
 ) STRICT;
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -350,7 +355,7 @@ CREATE TABLE rcv_file_chunks(
 ) WITHOUT ROWID, STRICT;
 CREATE TABLE connections(
   -- all SMP agent connections
-  connection_id INTEGER PRIMARY KEY,
+  connection_id INTEGER PRIMARY KEY AUTOINCREMENT,
   agent_conn_id BLOB NOT NULL UNIQUE,
   conn_level INTEGER NOT NULL DEFAULT 0,
   via_contact INTEGER REFERENCES contacts(contact_id) ON DELETE SET NULL,
@@ -390,6 +395,7 @@ CREATE TABLE connections(
   via_short_link_contact BLOB,
   via_contact_uri BLOB,
   relay_test INTEGER NOT NULL DEFAULT 0,
+  pres_header BLOB,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -413,10 +419,11 @@ CREATE TABLE user_contact_links(
   short_link_data_set INTEGER NOT NULL DEFAULT 0,
   short_link_large_data_set INTEGER NOT NULL DEFAULT 0,
   link_priv_sig_key BLOB,
+  chat_layout TEXT,
   UNIQUE(user_id, local_display_name)
 ) STRICT;
 CREATE TABLE contact_requests(
-  contact_request_id INTEGER PRIMARY KEY,
+  contact_request_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_contact_link_id INTEGER REFERENCES user_contact_links
   ON UPDATE CASCADE ON DELETE SET NULL,
   agent_invitation_id BLOB NOT NULL,
@@ -460,8 +467,7 @@ CREATE TABLE messages(
   forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   broker_ts TEXT,
   msg_chat_binding TEXT,
-  msg_signatures BLOB,
-  feed_id INTEGER DEFAULT NULL REFERENCES feeds ON DELETE CASCADE
+  msg_signatures BLOB
 ) STRICT;
 CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
@@ -526,12 +532,8 @@ CREATE TABLE chat_items(
   fwd_from_group_link BLOB,
   fwd_from_public_group_id BLOB,
   fwd_from_member_id BLOB,
-  fwd_from_shared_msg_id BLOB,
-  feed_id INTEGER DEFAULT NULL REFERENCES feeds ON DELETE CASCADE,
-  feed_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL,
-  item_feed INTEGER NOT NULL DEFAULT 0
+  fwd_from_shared_msg_id BLOB
 ) STRICT;
-CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   message_id INTEGER NOT NULL UNIQUE REFERENCES messages ON DELETE CASCADE,
@@ -807,7 +809,8 @@ CREATE TABLE delivery_jobs(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
-  sender_group_member_ids TEXT
+  sender_group_member_ids TEXT,
+  notification INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE TABLE group_member_status_predicates(
   member_status TEXT NOT NULL PRIMARY KEY,
@@ -848,7 +851,7 @@ CREATE TABLE group_relays(
   base_web_url TEXT
 ) STRICT;
 CREATE TABLE rcv_roster_transfers(
-  roster_transfer_id INTEGER PRIMARY KEY,
+  roster_transfer_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   from_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
   roster_version INTEGER NOT NULL,
@@ -874,28 +877,149 @@ CREATE TABLE file_badge_proofs(
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 ) STRICT;
-CREATE TABLE feeds(
-  feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
-  chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
-  favorite INTEGER NOT NULL DEFAULT 0,
-  unread_chat INTEGER NOT NULL DEFAULT 0
+CREATE TABLE invoices(
+  invoice_id TEXT NOT NULL PRIMARY KEY,
+  provider TEXT NOT NULL,
+  price INTEGER NOT NULL,
+  discount_amount INTEGER,
+  credit_amount INTEGER,
+  amount INTEGER NOT NULL,
+  currency TEXT NOT NULL,
+  payment_url TEXT,
+  payment_address TEXT,
+  payment_crypto_currency TEXT,
+  payment_crypto_amount TEXT,
+  expires_at TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
 ) STRICT;
-CREATE TABLE feed_jobs(
-  feed_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  feed_id INTEGER NOT NULL REFERENCES feeds ON DELETE CASCADE,
-  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
-  worker_scope TEXT NOT NULL,
-  action_tag TEXT NOT NULL,
-  message_ids TEXT,
-  cursor_id INTEGER,
-  job_status TEXT NOT NULL,
-  job_err_reason TEXT,
-  failed INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+CREATE TABLE payments(
+  payment_id TEXT NOT NULL PRIMARY KEY,
+  invoice_id TEXT REFERENCES invoices,
+  provider TEXT NOT NULL,
+  provider_ref TEXT,
+  amount INTEGER,
+  currency TEXT,
+  status TEXT NOT NULL,
+  exception TEXT,
+  subscription_renews_at TEXT,
+  grace_until TEXT,
+  cancelled INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE badge_prices(
+  price_id TEXT NOT NULL PRIMARY KEY,
+  badge_type TEXT NOT NULL,
+  month_price INTEGER NOT NULL,
+  currency TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE badge_offers(
+  offer_id TEXT NOT NULL PRIMARY KEY,
+  price_id TEXT REFERENCES badge_prices,
+  months INTEGER NOT NULL,
+  free_months INTEGER,
+  discount INTEGER,
+  status TEXT NOT NULL,
+  created_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE badge_purchases(
+  badge_purchase_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  purchase_key BLOB NOT NULL,
+  master_key BLOB NOT NULL,
+  initial_badge_type TEXT NOT NULL,
+  current_badge_type TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  user_id INTEGER REFERENCES users ON DELETE CASCADE,
+  purchase_priv_key BLOB,
+  alert_acked_kind TEXT,
+  alert_acked_episode TEXT,
+  alert_snooze_until TEXT,
+  badge_code_redemption_id INTEGER REFERENCES badge_code_redemptions,
+  issue_failed_since TEXT,
+  issue_error_at TEXT,
+  issue_error TEXT,
+  next_wake_at TEXT,
+  badge_store_receipt_id INTEGER REFERENCES badge_store_receipts,
+  subscription_status TEXT,
+  unrenewed_since TEXT,
+  last_unrenewed_at TEXT,
+  UNIQUE(purchase_key)
+) STRICT;
+CREATE TABLE badge_ledger(
+  entry_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entry_uuid TEXT NOT NULL,
+  badge_purchase_id INTEGER NOT NULL REFERENCES badge_purchases ON DELETE CASCADE,
+  change_months INTEGER NOT NULL,
+  balance_months INTEGER NOT NULL,
+  balance_start_ts TEXT NOT NULL,
+  balance_anchor_ts TEXT NOT NULL,
+  balance_badge_type TEXT NOT NULL,
+  was_paused_since TEXT,
+  service_created_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  entry_type TEXT NOT NULL,
+  entry_credit_type TEXT,
+  entry_debit_type TEXT
+  ,
+  entry_type_unknown INTEGER NOT NULL DEFAULT 0,
+  entry_type_value TEXT,
+  balance_checked INTEGER
+) STRICT;
+CREATE TABLE badge_issuances(
+  issuance_id TEXT NOT NULL PRIMARY KEY,
+  badge_purchase_id INTEGER NOT NULL REFERENCES badge_purchases ON DELETE CASCADE,
+  entry_id INTEGER REFERENCES badge_ledger,
+  badge_type TEXT NOT NULL,
+  period_start TEXT NOT NULL,
+  period_end TEXT NOT NULL,
+  expiry TEXT NOT NULL,
+  credential BLOB NOT NULL,
+  created_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE badge_code_redemptions(
+  badge_code_redemption_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  code TEXT NOT NULL,
+  purchase_key BLOB NOT NULL,
+  purchase_priv_key BLOB NOT NULL,
+  master_key BLOB NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(user_id, code)
+) STRICT;
+CREATE TABLE group_member_badge_proofs(
+  group_member_id INTEGER PRIMARY KEY REFERENCES group_members ON DELETE CASCADE,
+  badge_proof BLOB NOT NULL,
+  badge_pres_header BLOB NOT NULL,
+  badge_key_idx INTEGER NOT NULL,
+  badge_type TEXT NOT NULL,
+  badge_expiry TEXT NOT NULL,
+  badge_extra TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE badge_store_receipts(
+  badge_store_receipt_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  invoice_id TEXT UNIQUE,
+  provider TEXT,
+  transaction_ref TEXT,
+  purchase_key BLOB NOT NULL,
+  purchase_priv_key BLOB NOT NULL,
+  master_key BLOB NOT NULL,
+  created_at TEXT NOT NULL,
+  payment TEXT,
+  next_attempt_at TEXT,
+  retry_delay INTEGER,
+  retry_count INTEGER NOT NULL DEFAULT 0,
+  credit_error TEXT,
+  hold_kind TEXT NOT NULL DEFAULT 'purchase',
+  UNIQUE(provider, transaction_ref)
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1435,37 +1559,38 @@ CREATE UNIQUE INDEX idx_file_badge_proofs_file_id_kind ON file_badge_proofs(
   file_id,
   proof_kind
 );
-CREATE INDEX idx_feeds_user_id ON feeds(user_id);
-CREATE INDEX idx_chat_items_feed_id ON chat_items(feed_id);
-CREATE INDEX idx_chat_items_feeds_created_at ON chat_items(
-  user_id,
-  feed_id,
-  created_at
+CREATE INDEX idx_payments_provider_ref ON payments(provider, provider_ref);
+CREATE INDEX idx_payments_invoice ON payments(invoice_id);
+CREATE INDEX idx_badge_offers_price ON badge_offers(price_id);
+CREATE UNIQUE INDEX idx_badge_ledger_uuid ON badge_ledger(entry_uuid);
+CREATE INDEX idx_badge_ledger_purchase ON badge_ledger(
+  badge_purchase_id,
+  entry_id
 );
-CREATE INDEX idx_chat_items_feed_item_contact ON chat_items(
-  feed_item_id,
-  contact_id
+CREATE INDEX idx_badge_issuances_purchase ON badge_issuances(
+  badge_purchase_id,
+  issuance_id
 );
-CREATE INDEX idx_chat_items_feed_item_group ON chat_items(
-  feed_item_id,
-  group_id
+CREATE INDEX idx_badge_issuances_entry ON badge_issuances(entry_id);
+CREATE UNIQUE INDEX idx_badge_issuances_purchase_entry ON badge_issuances(
+  badge_purchase_id,
+  entry_id
 );
-CREATE INDEX idx_messages_feed_id ON messages(feed_id);
-CREATE INDEX idx_files_feed_id ON files(feed_id);
-CREATE INDEX idx_contacts_user_id ON contacts(user_id, contact_id);
-CREATE INDEX idx_groups_user_id_business_chat ON groups(
-  user_id,
-  business_chat,
-  group_id
+CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
+CREATE INDEX idx_users_shown_badge ON users(shown_badge_id);
+CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(
+  user_id
 );
-CREATE INDEX idx_feed_jobs_next ON feed_jobs(
-  feed_id,
-  worker_scope,
-  failed,
-  job_status,
-  feed_job_id
+CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON badge_purchases(
+  badge_code_redemption_id
 );
-CREATE INDEX idx_feed_jobs_chat_item_id ON feed_jobs(chat_item_id, action_tag);
+CREATE INDEX idx_group_members_invited_via_group_member_id ON group_members(
+  invited_via_group_member_id
+);
+CREATE INDEX idx_badge_store_receipts_user ON badge_store_receipts(user_id);
+CREATE UNIQUE INDEX idx_badge_purchases_store_receipt ON badge_purchases(
+  badge_store_receipt_id
+);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

@@ -299,15 +299,38 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
 // Spec: spec/client/compose.md#UploadContent
 enum UploadContent: Equatable {
     case simpleImage(image: UIImage)
+    case imageFile(image: UIImage, url: URL)
     case animatedImage(image: UIImage)
     case video(image: UIImage, url: URL, duration: Int)
 
     var uiImage: UIImage {
         switch self {
         case let .simpleImage(image): return image
+        case let .imageFile(image, _): return image
         case let .animatedImage(image): return image
         case let .video(image, _, _): return image
         }
+    }
+
+    func imagePreview() async -> String? {
+        if case let .imageFile(_, url) = self, let preview = resizeImageFileToStrSize(url, maxDataSize: 14000) {
+            return preview
+        }
+        return await resizeImageToStrSize(uiImage, maxDataSize: 14000)
+    }
+
+    static func loadImageFileFromURL(url: URL) -> UploadContent? {
+        let content = loadFromURL(url: url)
+        guard case let .simpleImage(image)? = content else { return content }
+        let tempUrl = URL(fileURLWithPath: generateNewFileName(getTempFilesDirectory().path + "/" + "image", url.pathExtension, fullPath: true))
+        do {
+            try FileManager.default.copyItem(at: url, to: tempUrl)
+        } catch let err {
+            logger.error("UploadContent copyItem error: \(err.localizedDescription)")
+            return content
+        }
+        _ = ChatModel.shared.filesToDelete.insert(tempUrl)
+        return .imageFile(image: image, url: tempUrl)
     }
 
     static func loadFromURL(url: URL) -> UploadContent? {
@@ -335,6 +358,18 @@ enum UploadContent: Equatable {
             return .video(image: image, url: url, duration: duration)
         }
         return nil
+    }
+}
+
+// A badge only helps below the largest badge's limit, and not in incognito chats, so outside that
+// the alert is informational as before.
+func showLargeFileAlert(_ fileSize: Int64, incognito: Bool, senderProfile: LocalProfile?) {
+    let title = NSLocalizedString("Large file!", comment: "file alert title")
+    let message = largeFileMessage(fileSize, incognito: incognito, badgeIssue: expiredBadgeReason(fileSize, senderProfile))
+    if !incognito && fileSize <= MAX_FILE_SIZE_XFTP_LEGEND && noShownBadge() {
+        showAlert(title, message: message) { [supportSimpleXAlertAction, okAlertAction] }
+    } else {
+        showAlert(title, message: message)
     }
 }
 
@@ -637,7 +672,7 @@ struct ComposeView: View {
             Task {
                 var media: [(String, UploadContent)] = []
                 for content in selected {
-                    if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+                    if let img = await content.imagePreview() {
                         media.append((img, content))
                         await MainActor.run {
                             composeState = composeState.copy(preview: .mediaPreviews(mediaPreviews: media))
@@ -668,10 +703,7 @@ struct ComposeView: View {
                         fileSize <= maxFileSize {
                         composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent, file: fileURL))
                     } else {
-                        showAlert(
-                            NSLocalizedString("Large file!", comment: "file alert title"),
-                            message: largeFileMessage(Int64(fileSize ?? 0), incognito: sendIncognito, badgeIssue: expiredBadgeReason(Int64(fileSize ?? 0), sendProfile))
-                        )
+                        showLargeFileAlert(Int64(fileSize ?? 0), incognito: sendIncognito, senderProfile: sendProfile)
                     }
                 } catch {
                     logger.error("ComposeView fileImporter error \(error.localizedDescription)")
@@ -758,6 +790,7 @@ struct ComposeView: View {
         let connectedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connStatus == .ready && $0.wrapped.activeConn?.connFailedErr == nil }.count
         let failedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connFailedErr != nil }.count
         let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
+        guard total > 0 || chatModel.membersLoaded else { return nil }
         let noActiveRelays = connectedCount == 0 && (removedCount + failedCount) == total
         return (hostnames, relayMembers, connectedCount, removedCount, failedCount, total, noActiveRelays)
     }
@@ -1242,7 +1275,7 @@ struct ComposeView: View {
 
     // Spec: spec/client/compose.md#addMediaContent
     private func addMediaContent(_ content: UploadContent) async {
-        if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+        if let img = await content.imagePreview() {
             var newMedia: [(String, UploadContent?)] = []
             if case var .mediaPreviews(media) = composeState.preview {
                 media.append((img, content))
@@ -1562,6 +1595,8 @@ struct ComposeView: View {
             return switch uploadContent {
             case let .simpleImage(image):
                 (saveImage(image), .image(text: text, image: previewImage))
+            case let .imageFile(image, url):
+                (imageCryptoFile(url, image), .image(text: text, image: previewImage))
             case let .animatedImage(image):
                 (saveAnimImage(image), .image(text: text, image: previewImage))
             case let .video(_, url, duration):
@@ -1569,6 +1604,13 @@ struct ComposeView: View {
             case .none:
                 nil
             }
+        }
+
+        func imageCryptoFile(_ url: URL, _ image: UIImage) -> CryptoFile? {
+            let file = saveImageFile(url) ?? saveImage(image)
+            removeFile(url)
+            ChatModel.shared.filesToDelete.remove(url)
+            return file
         }
 
         func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {

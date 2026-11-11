@@ -1,0 +1,3 @@
+# What the Claude job needs for the session claude-test.md describes.
+# backend: yes when the prompt uses the test backend; a run that asks for Claude must then start it too.
+backend: no

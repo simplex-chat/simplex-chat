@@ -1,0 +1,29 @@
+{
+  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- InvoicePaymentMethodDataModel[], from BTCPay's DOCUMENTED Greenfield schema (BTCPay 2.x naming). NOT captured from a live instance; replace `response` with a recorded body and rewrite this line. `totalPaid` is deliberately NOT equal to `paymentMethodPaid` -- at this rate reading the wrong one would report $1,080,001.20 instead of $54.00. The fake patches `paymentMethodPaid`, and serves `payments` as [] when nothing was paid.",
+  "response": [
+    {
+      "paymentMethodId": "BTC-CHAIN",
+      "currency": "BTC",
+      "destination": "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq",
+      "paymentLink": "bitcoin:bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq?amount=0.00050000",
+      "rate": "108000.12",
+      "paymentMethodPaid": "0.00050000",
+      "totalPaid": "9.99999999",
+      "due": "0.00000000",
+      "amount": "0.00050000",
+      "networkFee": "0.00000500",
+      "activated": true,
+      "payments": [
+        {
+          "id": "8e3a1f0c9d2b4a5768f90e1c2d3b4a5968f70e1c2d3b4a5968f70e1c2d3b4a59-0",
+          "receivedDate": 1700003600,
+          "value": "0.00050000",
+          "fee": "0.00000000",
+          "status": "Settled",
+          "destination": "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq"
+        }
+      ],
+      "additionalData": {}
+    }
+  ]
+}

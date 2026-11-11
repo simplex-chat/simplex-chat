@@ -17,6 +17,7 @@ export type ChatEvent =
   | CEvt.GroupChatItemsDeleted
   | CEvt.ChatItemsStatusesUpdated
   | CEvt.ReceivedGroupInvitation
+  | CEvt.ReceivedGroupInvitationViaGroup
   | CEvt.UserJoinedGroup
   | CEvt.GroupUpdated
   | CEvt.JoinedGroupMember
@@ -73,6 +74,7 @@ export namespace CEvt {
     | "groupChatItemsDeleted"
     | "chatItemsStatusesUpdated"
     | "receivedGroupInvitation"
+    | "receivedGroupInvitationViaGroup"
     | "userJoinedGroup"
     | "groupUpdated"
     | "joinedGroupMember"
@@ -206,6 +208,16 @@ export namespace CEvt {
     user: T.User
     groupInfo: T.GroupInfo
     contact: T.Contact
+    fromMemberRole: T.GroupMemberRole
+    memberRole: T.GroupMemberRole
+  }
+
+  export interface ReceivedGroupInvitationViaGroup extends Interface {
+    type: "receivedGroupInvitationViaGroup"
+    user: T.User
+    groupInfo: T.GroupInfo
+    viaGroupInfo: T.GroupInfo
+    viaMember: T.GroupMember
     fromMemberRole: T.GroupMemberRole
     memberRole: T.GroupMemberRole
   }

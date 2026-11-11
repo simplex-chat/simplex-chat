@@ -1,12 +1,13 @@
 package chat.simplex.common.platform
 
+import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
 import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.chatlist.acceptContactRequest
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 
 enum class NotificationAction {
@@ -96,6 +97,7 @@ abstract class NtfManager {
   }
 
   fun acceptCallAction(chatId: ChatId) {
+    AppLock.recheckAuthState()
     chatModel.clearOverlays.value = true
     val invitation = chatModel.callInvitations[chatId]
     if (invitation == null) {
@@ -134,9 +136,14 @@ abstract class NtfManager {
     return if (md != null) {
       var res = ""
       for (ft in md) {
-        res += if (ft.format is Format.Secret) "..." else ft.text
+        res += when (ft.format) {
+          is Format.Secret -> "..."
+          is Format.Markup -> ft.format.token.previewText
+          is Format.Escape -> ""
+          else -> ft.text
+        }
       }
-      res
+      if (cItem.content.msgContent is MsgContent.MCReport) generalGetString(MR.strings.notification_group_report).format(res) else res
     } else {
       val mc = cItem.content.msgContent
       if (mc is MsgContent.MCReport) {

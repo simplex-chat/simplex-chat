@@ -7,7 +7,7 @@ import chat.simplex.common.views.helpers.DatabaseUtils
 import chat.simplex.common.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.common.views.helpers.DatabaseUtils.ksSelfDestructPassword
 import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun SetAppPasscodeView(

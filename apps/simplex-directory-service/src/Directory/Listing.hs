@@ -25,6 +25,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.List (isPrefixOf)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -92,7 +93,9 @@ data DirectoryEntry = DirectoryEntry
     simplexName :: Maybe Text,
     groupLink :: PublicLink,
     shortDescr :: Maybe MarkdownList,
+    shortDescrBlocks :: Maybe (NonEmpty MarkdownBlock),
     welcomeMessage :: Maybe MarkdownList,
+    welcomeMessageBlocks :: Maybe (NonEmpty MarkdownBlock),
     imageFile :: Maybe String,
     activeAt :: Maybe UTCTime,
     createdAt :: Maybe UTCTime
@@ -133,6 +136,8 @@ groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSumma
                     linkLine = groupLinkLine displayName $ decodeUtf8 linkText
                  in Just $ maybe linkLine (<> "\n\n" <> linkLine) description
           _ -> description
+      shortDescr' = toFormattedText <$> shortDescr
+      welcomeMessage' = toFormattedText <$> description'
       entry groupLink =
         let de =
               DirectoryEntry
@@ -140,8 +145,10 @@ groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSumma
                   displayName,
                   simplexName = shortNameInfoStr . SimplexNameInfo NTPublicGroup <$> verifiedGroupDomain g,
                   groupLink,
-                  shortDescr = toFormattedText <$> shortDescr,
-                  welcomeMessage = toFormattedText <$> description',
+                  shortDescr = fst <$> shortDescr',
+                  shortDescrBlocks = snd =<< shortDescr',
+                  welcomeMessage = fst <$> welcomeMessage',
+                  welcomeMessageBlocks = snd =<< welcomeMessage',
                   imageFile = fst <$> imgData,
                   activeAt = recentRoundedTime 900 now $ fromMaybe createdAt chatTs,
                   createdAt = recentRoundedTime 86400 now createdAt
@@ -194,5 +201,5 @@ generateListing dir gs = do
   where
     saveListing newDir f = LB.writeFile (newDir </> f) . J.encode . DirectoryListing . map fst
 
-toFormattedText :: Text -> MarkdownList
-toFormattedText t = fromMaybe [FormattedText Nothing t] $ parseMaybeMarkdownList t
+toFormattedText :: Text -> (MarkdownList, Maybe (NonEmpty MarkdownBlock))
+toFormattedText t = let ParsedMarkdown ft blocks = parsedMarkdown t in (fromMaybe [FormattedText Nothing t] ft, blocks)

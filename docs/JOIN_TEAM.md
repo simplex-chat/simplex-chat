@@ -49,6 +49,6 @@ This is a part-time remote contract. You must be in UTC +/- 8 hours timezone.
 
 ## How to join the team
 
-To apply, please [install SimpleX Chat app](./DOWNLOADS.md) and send your achievements to this [SimpleX address](https://smp16.simplex.im/a#OGL3qf7utOrUERFoFOROgdQaAkj_znzoeACNKDAsFNA).
+To apply, please [install SimpleX Chat app](https://simplex.chat/downloads/) and send your achievements to this [SimpleX address](https://smp16.simplex.im/a#OGL3qf7utOrUERFoFOROgdQaAkj_znzoeACNKDAsFNA).
 
 **We do NOT review CVs at the initial stage, please only send the links to your achievements**.

@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import chat.simplex.common.model.CustomTimeUnit
 import chat.simplex.common.model.timeText
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 expect fun CustomTimePicker(

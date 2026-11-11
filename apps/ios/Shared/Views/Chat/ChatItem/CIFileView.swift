@@ -15,6 +15,7 @@ struct CIFileView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.showTimestamp) var showTimestamp: Bool
+    @Environment(\.terminalLayout) private var terminal
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
     @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
     @AppStorage(DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION) private var showFileEncryption = true
@@ -26,14 +27,14 @@ struct CIFileView: View {
     var body: some View {
         if smallViewSize != nil {
             fileIndicator()
-            .simultaneousGesture(TapGesture().onEnded(fileAction))
+            .simultaneousGesture(TapGesture().onEnded { fileAction(file) })
         } else {
             // reserve exact space for the overlaid meta (timestamp + all icons), rendered transparently - matches MsgContentView
             let encrypted: Bool? = if let fileSource = file?.fileSource { fileSource.cryptoArgs != nil } else { nil }
             let metaReserve = Text(verbatim: "   ") + ciMetaText(meta, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: encrypted, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, signedFileVerified: file?.loaded, showSignature: showSignature, showFileEncryption: showFileEncryption)
             HStack(alignment: .bottom, spacing: 6) {
                 fileIndicator()
-                    .padding(.top, 5)
+                    .padding(.top, terminal ? 0 : 5)
                     .padding(.bottom, 3)
                 if let file = file {
                     let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
@@ -52,11 +53,11 @@ struct CIFileView: View {
                     metaReserve.font(.caption)
                 }
             }
-            .padding(.top, 4)
-            .padding(.bottom, 6)
+            .padding(.top, terminal ? 0 : 4)
+            .padding(.bottom, terminal ? 0 : 6)
             .padding(.leading, 10)
             .padding(.trailing, 12)
-            .simultaneousGesture(TapGesture().onEnded(fileAction))
+            .simultaneousGesture(TapGesture().onEnded { fileAction(file) })
             .disabled(!itemInteractive)
         }
     }
@@ -85,7 +86,7 @@ struct CIFileView: View {
         return false
     }
 
-    private func fileAction() {
+    private func fileAction(_ file: CIFile?) {
         logger.debug("CIFileView fileAction")
         if let file = file {
             switch (file.fileStatus) {
@@ -93,6 +94,7 @@ struct CIFileView: View {
                 if let prohibited = file.fileProhibited {
                     showProhibitedFileAlert(file, prohibited)
                 } else {
+                    m.openWhenReceived(file) { fileAction($0) }
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
                         if let user = m.currentUser {
@@ -117,7 +119,7 @@ struct CIFileView: View {
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
                 if let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    openFile(file, fileSource)
                 }
             case let .rcvError(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvError")
@@ -128,12 +130,12 @@ struct CIFileView: View {
             case .sndStored:
                 logger.debug("CIFileView fileAction - in .sndStored")
                 if file.fileProtocol == .local, let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    openFile(file, fileSource)
                 }
             case .sndComplete:
                 logger.debug("CIFileView fileAction - in .sndComplete")
                 if let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    openFile(file, fileSource)
                 }
             case let .sndError(sndFileError):
                 logger.debug("CIFileView fileAction - in .sndError")
@@ -143,6 +145,14 @@ struct CIFileView: View {
                 showFileErrorAlert(sndFileError, temporary: true)
             default: break
             }
+        }
+    }
+
+    private func openFile(_ file: CIFile, _ fileSource: CryptoFile) {
+        if isMarkdownFile(file) {
+            showMarkdownFile(file)
+        } else {
+            saveCryptoFile(fileSource)
         }
     }
 
@@ -307,29 +317,37 @@ struct CIFileView_Previews: PreviewProvider {
         let im = ItemsModel.shared
         let sentFile: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
+            meta: CIMeta.getSample(1, previewDate, "", .sndSent(sndProgress: .complete), itemEdited: true),
             content: .sndMsgContent(msgContent: .file("")),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
         let fileChatItemWtFile = ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, "", .rcvRead),
+            meta: CIMeta.getSample(1, previewDate, "", .rcvRead),
             content: .rcvMsgContent(msgContent: .file("")),
             quotedItem: nil,
             file: nil
         )
         Group {
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: sentFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: fileChatItemWtFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: sentFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(sentFile, tailVisible: true))
+            let ci1 = previewDated(ChatItem.getFileMsgContentSample())
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci1, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci1, tailVisible: true))
+            let ci2 = previewDated(ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci2, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci2, tailVisible: true))
+            let ci3 = previewDated(ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci3, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci3, tailVisible: true))
+            let ci4 = previewDated(ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci4, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci4, tailVisible: true))
+            let ci5 = previewDated(ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci5, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci5, tailVisible: true))
+            let ci6 = previewDated(ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci6, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci6, tailVisible: true))
+            let ci7 = previewDated(ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci7, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci7, tailVisible: true))
+            let ci8 = previewDated(ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ci8, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(ci8, tailVisible: true))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: fileChatItemWtFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).modifier(ChatItemClipped(fileChatItemWtFile, tailVisible: true))
         }
         .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 360))

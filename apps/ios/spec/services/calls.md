@@ -116,7 +116,10 @@ Manages the WebRTC peer connection, media streams, and data channels.
 | [`sendCallCommand`](../../Shared/Views/Call/WebRTCClient.swift#L176) | Dispatches WCallCommand (offer/answer/ICE) | L176 |
 | [`addIceCandidates`](../../Shared/Views/Call/WebRTCClient.swift#L165) | `peerConnection.add(RTCIceCandidate)` | L165 |
 | [`getInitialIceCandidates`](../../Shared/Views/Call/WebRTCClient.swift#L285) | Collects initial ICE candidates | L285 |
-| [`sendIceCandidates`](../../Shared/Views/Call/WebRTCClient.swift#L305) | Sends gathered ICE candidates | L305 |
+| [`sendIceCandidates`](../../Shared/Views/Call/WebRTCClient.swift#L409) | Sends gathered ICE candidates | L409 |
+| [`startReconnecting`](../../Shared/Views/Call/WebRTCClient.swift#L313) | Reports "reconnecting", starts reconnection timeout and, for the party that sent the initial offer, periodic ICE restarts | L313 |
+| [`restartIce`](../../Shared/Views/Call/WebRTCClient.swift#L339) | Creates ICE restart offer and sends it with candidates in `.ice(iceCandidates:session:)` | L339 |
+| [`receiveRestartSession`](../../Shared/Views/Call/WebRTCClient.swift#L350) | Applies ICE restart offer (and sends the answer) or answer received in `.ice` command | L350 |
 | [`enableMedia`](../../Shared/Views/Call/WebRTCClient.swift#L365) | Enable/disable audio or video track | L365 |
 | [`setupLocalTracks`](../../Shared/Views/Call/WebRTCClient.swift#L423) | Creates audio/video tracks and adds to connection | L423 |
 | [`startCaptureLocalVideo`](../../Shared/Views/Call/WebRTCClient.swift#L581) | Front/back camera toggle and capture start | L581 |
@@ -179,6 +182,10 @@ All call signaling travels through the same encrypted SMP message channels used 
 5. P2P connection established
 ```
 
+### Reconnection
+
+When a connected call loses ICE connection (`.disconnected` or `.failed`), `WebRTCClient` reports `"reconnecting"` connection state instead of ending the call. `ActiveCallView` sets `.reconnecting` call state and plays the connecting sound; this state is not sent to the core via `apiCallStatus`, and `connectedAt` is kept. The party that sent the initial offer (callee) restarts ICE every 10 seconds: the restart offer and answer are sent via `apiSendCallExtraInfo` with `rtcSession` (`x.call.extra`). When ICE connects again, the call returns to `.connected`. If it does not reconnect in 30 seconds, `WebRTCClient` reports `"disconnected"` and ends the call. Reconnection happens only when the contact's peer chat version is at least `CALL_RECONNECT_VERSION` (22); otherwise the call ends as soon as the connection is lost.
+
 ### API Commands
 
 | Command | Direction | Purpose |
@@ -187,7 +194,7 @@ All call signaling travels through the same encrypted SMP message channels used 
 | `apiRejectCall(contact:)` | Callee -> Caller | Reject call |
 | `apiSendCallOffer(contact:, callOffer:)` | Callee -> Caller | Send SDP offer |
 | `apiSendCallAnswer(contact:, answer:)` | Caller -> Callee | Send SDP answer |
-| `apiSendCallExtraInfo(contact:, extraInfo:)` | Both | Send ICE candidates |
+| `apiSendCallExtraInfo(contact:, extraInfo:)` | Both | Send ICE candidates, or ICE restart offer/answer in `rtcSession` |
 | `apiEndCall(contact:)` | Either | End call |
 | `apiGetCallInvitations` | -- | Get pending invitations |
 | `apiCallStatus(contact:, callStatus:)` | -- | Report status change |
@@ -317,10 +324,11 @@ struct WebRTCSession {
 }
 ```
 
-### [WebRTCExtraInfo](../../SimpleXChat/CallTypes.swift#L36-L42)
+### [WebRTCExtraInfo](../../SimpleXChat/CallTypes.swift#L36-L45)
 
 ```swift
 struct WebRTCExtraInfo {
+    var rtcSession: String?       // ICE restart offer or answer
     var rtcIceCandidates: String  // Additional ICE candidates
 }
 ```
@@ -330,7 +338,7 @@ struct WebRTCExtraInfo {
 Stored in `ChatModel.activeCall`:
 - Contact reference
 - Call UUID
-- Call state (enum: `.waitCapabilities`, `.invitationAccepted`, `.offerSent`, `.answerReceived`, `.connected`, etc.)
+- Call state (enum: `.waitCapabilities`, `.invitationAccepted`, `.offerSent`, `.answerReceived`, `.connected`, `.reconnecting`, etc.)
 - Media type
 - WebRTCClient reference
 

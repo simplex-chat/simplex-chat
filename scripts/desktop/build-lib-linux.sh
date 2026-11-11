@@ -19,19 +19,20 @@ fi
 
 root_dir="$(dirname "$(dirname "$(readlink "$0")")")"
 cd $root_dir
-BUILD_DIR=dist-newstyle/build/$ARCH-$OS/ghc-${GHC_VERSION}/simplex-chat-*
+DIST_DIR="${DIST_DIR:-dist-newstyle}"
+BUILD_DIR=$DIST_DIR/build/$ARCH-$OS/ghc-${GHC_VERSION}/simplex-chat-*
 
 exports=( $(sed 's/foreign export ccall "chat_migrate_init_key"//' src/Simplex/Chat/Mobile.hs | sed 's/foreign export ccall "chat_reopen_store"//' |grep "foreign export ccall" | cut -d '"' -f2) )
 for elem in "${exports[@]}"; do count=$(grep -R "$elem$" libsimplex.dll.def | wc -l); if [ $count -ne 1 ]; then echo Wrong exports in libsimplex.dll.def. Add \"$elem\" to that file; exit 1; fi ; done
-for elem in "${exports[@]}"; do count=$(grep -R "\"$elem\"" flake.nix | wc -l); if [ $count -ne 2 ]; then echo Wrong exports in flake.nix. Add \"$elem\" in two places of the file; exit 1; fi ; done
+for elem in "${exports[@]}"; do count=$(grep -R "\"$elem\"" flake.nix | wc -l); if [ $count -ne 1 ]; then echo Wrong exports in flake.nix. Add \"$elem\" to aarch64-android:lib:simplex-chat; exit 1; fi ; done
 
 #rm -rf $BUILD_DIR
 if [[ "$DATABASE_BACKEND" == "postgres" ]]; then
     echo "Building with postgres backend..."
-    cabal build lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -optl-Wl,-soname,libsimplex.so -flink-rts -threaded' --constraint 'simplexmq +client_library +client_postgres' --constraint 'simplex-chat +client_library +client_postgres'
+    cabal build --builddir="$DIST_DIR" lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -optl-Wl,-soname,libsimplex.so -flink-rts -threaded' --constraint 'simplexmq +client_library +client_postgres' --constraint 'simplex-chat +client_library +client_postgres'
 else
     echo "Building with sqlite backend..."
-    cabal build lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -optl-Wl,-soname,libsimplex.so -flink-rts -threaded' --constraint 'simplexmq +client_library' --constraint 'simplex-chat +client_library'
+    cabal build --builddir="$DIST_DIR" lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -optl-Wl,-soname,libsimplex.so -flink-rts -threaded' --constraint 'simplexmq +client_library' --constraint 'simplex-chat +client_library'
 fi
 cd $BUILD_DIR/build
 mv libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so libsimplex.so 2> /dev/null || true
@@ -53,7 +54,7 @@ rm -rf apps/multiplatform/desktop/build/cmake
 mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp -r $BUILD_DIR/build/deps/* apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp $BUILD_DIR/build/libsimplex.so apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
-scripts/desktop/prepare-vlc-linux.sh
+[ -n "$SKIP_VLC" ] || scripts/desktop/prepare-vlc-linux.sh
 
 links_dir=apps/multiplatform/build/links
 mkdir -p $links_dir

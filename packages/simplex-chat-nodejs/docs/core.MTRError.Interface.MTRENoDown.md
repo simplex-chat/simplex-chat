@@ -6,7 +6,7 @@
 
 # Interface: MTRENoDown
 
-Defined in: [src/core.ts:201](../src/core.ts#L201)
+Defined in: [src/core.ts:277](../core.ts#L277)
 
 ## Extends
 
@@ -14,20 +14,20 @@ Defined in: [src/core.ts:201](../src/core.ts#L201)
 
 ## Properties
 
+### dbMigrations
+
+> **dbMigrations**: `string`[]
+
+Defined in: [src/core.ts:279](../core.ts#L279)
+
+***
+
 ### type
 
 > **type**: `"noDown"`
 
-Defined in: [src/core.ts:202](../src/core.ts#L202)
+Defined in: [src/core.ts:278](../core.ts#L278)
 
 #### Overrides
 
 `Interface.type`
-
-***
-
-### upMigrations
-
-> **upMigrations**: [`UpMigration`](core.Interface.UpMigration.md)
-
-Defined in: [src/core.ts:203](../src/core.ts#L203)

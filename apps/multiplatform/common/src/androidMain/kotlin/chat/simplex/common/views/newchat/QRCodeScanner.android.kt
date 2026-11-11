@@ -27,7 +27,7 @@ import boofcv.struct.image.GrayU8
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.common.util.concurrent.ListenableFuture
@@ -65,7 +65,7 @@ actual fun QRCodeScanner(
     val modifier = Modifier
       .padding(padding)
       .clipToBounds()
-      .widthIn(max = 400.dp)
+      .sizeIn(maxWidth = 400.dp, maxHeight = 400.dp)
       .aspectRatio(1f)
     val showScanner = remember { showQRCodeScanner }
     if (showScanner.value && cameraPermissionState.status == PermissionStatus.Granted) {

@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 public protocol ChatLike {
     var chatInfo: ChatInfo { get }
@@ -91,13 +92,13 @@ private func canForwardToChat(_ cInfo: ChatInfo) -> Bool {
     }
 }
 
-public func chatIconName(_ cInfo: ChatInfo) -> String {
+public func chatIcon(_ cInfo: ChatInfo) -> Image {
     switch cInfo {
-    case let .direct(contact): contact.chatIconName
-    case let .group(groupInfo, _): groupInfo.chatIconName
-    case .local: "folder.circle.fill"
-    case .contactRequest: "person.crop.circle.fill"
-    default:  "circle.fill"
+    case let .direct(contact): contact.chatIcon
+    case let .group(groupInfo, _): Image(systemName: groupInfo.chatIconName)
+    case .local: Image(systemName: "folder.circle.fill")
+    case .contactRequest: Image(systemName: "person.crop.circle.fill")
+    default:  Image(systemName: "circle.fill")
     }
 }
 

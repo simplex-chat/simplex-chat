@@ -126,7 +126,7 @@ getFeedContactsByCursor db cxt user@User {userId} feedItemId cursorId_ count = d
 getFeedCustomerGroupsByCursor :: DB.Connection -> StoreCxt -> User -> ChatItemId -> Maybe GroupId -> Int -> IO [(GroupInfo, Maybe ChatItemId)]
 getFeedCustomerGroupsByCursor db cxt User {userId, userContactId} feedItemId cursorId_ count = do
   currentTs <- getCurrentTime
-  map (\(row :. Only itemId_) -> (toGroupInfo currentTs cxt userContactId [] row, itemId_))
+  map (\(row :. Only itemId_) -> (toGroupInfo_ currentTs cxt userContactId [] row, itemId_))
     <$> DB.query
       db
       ( groupInfoQueryFields
@@ -197,7 +197,7 @@ getFeedContactInstancesByCursor db cxt user@User {userId} feedItemId spec cursor
 getFeedGroupInstancesByCursor :: DB.Connection -> StoreCxt -> User -> ChatItemId -> FeedJobAction -> Maybe GroupId -> Int -> IO [(GroupInfo, ChatItemId)]
 getFeedGroupInstancesByCursor db cxt User {userId, userContactId} feedItemId spec cursorId_ count = do
   currentTs <- getCurrentTime
-  map (\(row :. Only itemId) -> (toGroupInfo currentTs cxt userContactId [] row, itemId))
+  map (\(row :. Only itemId) -> (toGroupInfo_ currentTs cxt userContactId [] row, itemId))
     <$> DB.query
       db
       ( groupInfoQueryFields

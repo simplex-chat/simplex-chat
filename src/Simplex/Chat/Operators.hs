@@ -59,11 +59,15 @@ import Simplex.Messaging.Protocol (AProtocolType (..), ProtoServerWithAuth (..),
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8)
 
+-- Change the conditions only in a release whose What's new announces the change:
+-- the apps show changed conditions as a link in What's new, also in a release without other news.
+-- The notice is recorded when What's new is shown, and the conditions are accepted automatically
+-- 31 days later.
 usageConditionsCommit :: Text
-usageConditionsCommit = "05f99634c470f8bddac20046947a0606938b22ad"
+usageConditionsCommit = "5cb85b913989aa4dc618a0a47ffb9a758e44f375"
 
 previousConditionsCommit :: Text
-previousConditionsCommit = "7471fd2af5838dc0467aebc570b5ea75e5df3209"
+previousConditionsCommit = "05f99634c470f8bddac20046947a0606938b22ad"
 
 usageConditionsText :: Text
 usageConditionsText =
@@ -115,7 +119,7 @@ data ServerOperatorConditions = ServerOperatorConditions
   deriving (Show)
 
 usageConditionsAction :: [ServerOperator] -> UsageConditions -> UTCTime -> Maybe UsageConditionsAction
-usageConditionsAction operators UsageConditions {createdAt, notifiedAt} now = do
+usageConditionsAction operators UsageConditions {notifiedAt} now = do
   let enabledOperators = filter (\ServerOperator {enabled} -> enabled) operators
   if
     | null enabledOperators -> Nothing
@@ -124,18 +128,12 @@ usageConditionsAction operators UsageConditions {createdAt, notifiedAt} now = do
          in Just $ UCAAccepted acceptedForOperators
     | otherwise ->
         let acceptForOperators = filter (not . conditionsAccepted) enabledOperators
-            deadline = conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
+            deadline = Just $ conditionsDeadline (fromMaybe now notifiedAt)
             showNotice = isNothing notifiedAt
          in Just $ UCAReview acceptForOperators deadline showNotice
 
-conditionsRequiredOrDeadline :: UTCTime -> UTCTime -> Maybe UTCTime
-conditionsRequiredOrDeadline createdAt notifiedAtOrNow =
-  if notifiedAtOrNow < addUTCTime (14 * nominalDay) createdAt
-    then Just $ conditionsDeadline notifiedAtOrNow
-    else Nothing -- required
-  where
-    conditionsDeadline :: UTCTime -> UTCTime
-    conditionsDeadline = addUTCTime (31 * nominalDay)
+conditionsDeadline :: UTCTime -> UTCTime
+conditionsDeadline = addUTCTime (31 * nominalDay)
 
 data ConditionsAcceptance
   = CAAccepted {acceptedAt :: Maybe UTCTime, autoAccepted :: Bool}
@@ -525,6 +523,7 @@ data UserServersError
   | USEStorageMissing {protocol :: AProtocolType, user :: Maybe User}
   | USEProxyMissing {protocol :: AProtocolType, user :: Maybe User}
   | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: Text, duplicateHost :: TransportHost}
+  | USETooManyHosts {protocol :: AProtocolType, tooManyHostsServer :: Text}
   | USEDuplicateChatRelayAddress {duplicateChatRelay :: Text, duplicateAddress :: ShortLinkContact}
   deriving (Show)
 
@@ -547,13 +546,16 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
         noServers cond = not $ any srvEnabled $ userServers p $ filter cond uss
         srvEnabled (AUS _ UserServer {deleted, enabled}) = enabled && not deleted
     serverErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [u] -> [UserServersError]
-    serverErrs p uss = mapMaybe duplicateErr_ srvs
+    serverErrs p uss = mapMaybe duplicateErr_ srvs <> hostsErrs
       where
         p' = AProtocolType p
         srvs = filter (\(AUS _ UserServer {deleted}) -> not deleted) $ userServers p uss
         duplicateErr_ (AUS _ srv@UserServer {server}) =
           USEDuplicateServer p' (safeDecodeUtf8 $ strEncode server)
             <$> find (`S.member` duplicateHosts) (srvHost srv)
+        hostsErrs = case p of
+          SPSMP -> [USETooManyHosts p' (safeDecodeUtf8 $ strEncode server) | AUS _ srv@UserServer {server} <- srvs, L.length (srvHost srv) > 2]
+          _ -> []
         duplicateHosts = snd $ foldl' addDuplicate (S.empty, S.empty) allHosts
         allHosts = concatMap (\(AUS _ srv) -> L.toList $ srvHost srv) srvs
     userServers :: (UserServersClass u, UserProtocol p) => SProtocolType p -> [u] -> [AUserServer p]

@@ -446,7 +446,7 @@ struct SendMessageView_Previews: PreviewProvider {
     static var previews: some View {
         @State var composeStateNew = ComposeState()
         @State var selectedRange = NSRange()
-        let ci = ChatItem.getSample(1, .directSnd, .now, "hello")
+        let ci = ChatItem.getSample(1, .directSnd, previewDate, "hello")
         @State var composeStateEditing = ComposeState(editingItem: ci)
         @State var selectedRangeEditing = NSRange()
         @State var sendEnabled: Bool = true
@@ -461,7 +461,7 @@ struct SendMessageView_Previews: PreviewProvider {
                     sendMessage: { _ in },
                     onMediaAdded: { _ in },
                     keyboardVisible: Binding.constant(true),
-                    keyboardHiddenDate: Binding.constant(Date.now)
+                    keyboardHiddenDate: Binding.constant(previewDate)
                 )
             }
             VStack {
@@ -473,7 +473,7 @@ struct SendMessageView_Previews: PreviewProvider {
                     sendMessage: { _ in },
                     onMediaAdded: { _ in },
                     keyboardVisible: Binding.constant(true),
-                    keyboardHiddenDate: Binding.constant(Date.now)
+                    keyboardHiddenDate: Binding.constant(previewDate)
                 )
             }
         }

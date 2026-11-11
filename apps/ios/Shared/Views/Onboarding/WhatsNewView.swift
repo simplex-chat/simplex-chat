@@ -33,6 +33,7 @@ private struct Description {
     let icon: String?
     let title: LocalizedStringKey
     let description: LocalizedStringKey?
+    var learnMore: URL? = nil
     var subfeatures: [(icon: String, description: LocalizedStringKey)] = []
 }
 
@@ -676,7 +677,7 @@ private let versionDescriptions: [VersionDescription] = [
         features: (isInUS ? [
             .view(FeatureView(
                 icon: nil,
-                title: "You can now invest in SimpleX Chat",
+                title: "Own a part of SimpleX Chat",
                 view: { InvestInSimpleXChat() }
             ))
         ] : []) + [
@@ -698,6 +699,39 @@ private let versionDescriptions: [VersionDescription] = [
             ))
         ]
     ),
+    VersionDescription(
+        version: "v7.1",
+        post: nil,
+        features: (isInUS ? [
+            .view(FeatureView(
+                icon: nil,
+                title: "Own a part of SimpleX Chat",
+                view: { InvestInSimpleXChat() }
+            ))
+        ] : []) + [
+            .view(FeatureView(
+                icon: nil,
+                title: "Supporter badges",
+                view: { SupporterBadgeWhatsNew() }
+            )),
+            .feature(Description(
+                icon: "at",
+                title: "SimpleX public names",
+                description: "Sale starts on December 12.",
+                learnMore: URL(string: "https://simplex.domains/?utm_source=app_ios")
+            )),
+            .feature(Description(
+                icon: "antenna.radiowaves.left.and.right",
+                title: "Safer channels",
+                description: "Add moderators and sign every message."
+            )),
+            .feature(Description(
+                icon: "terminal",
+                title: "Flat layout and markdown",
+                description: "Enable in Appearance settings."
+            )),
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
@@ -710,6 +744,35 @@ func shouldShowWhatsNew() -> Bool {
     let v = UserDefaults.standard.string(forKey: DEFAULT_WHATS_NEW_VERSION)
     setLastVersionDefault()
     return v != lastVersion
+}
+
+fileprivate struct SupporterBadgeWhatsNew: View {
+    @EnvironmentObject var theme: AppTheme
+    @ObservedObject private var badgeModel = BadgeModel.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 4) {
+                Image(badgeImageName(.supporter))
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+                    .frame(minWidth: 30, alignment: .center)
+                Text("Supporter badges").font(.title3).bold()
+            }
+            Text("Larger files available for longer.")
+                .multilineTextAlignment(.leading)
+                .lineLimit(10)
+            if currentShownBadge() != nil {
+                Text("You already have a badge!")
+            } else if noShownBadge() {
+                Text("Support SimpleX and get a badge.")
+                    .foregroundColor(theme.colors.primary)
+                    .onTapGesture { openBadgesView() }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 }
 
 fileprivate struct NewOperatorsView: View {
@@ -780,22 +843,23 @@ fileprivate struct InvestInSimpleXChat: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("You can now invest in SimpleX Chat! 🚀").font(.title3).bold()
-            (Text("Crowdfunding on Wefunder.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
-                .multilineTextAlignment(.leading)
-                .onTapGesture { showGetStakeSheet = true }
+            Text("Own a part of SimpleX Chat! 🚀").font(.title3).bold()
             #if SIMPLEX_ASSETS
             Image("crowdfunding_1")
                 .resizable()
                 .scaledToFit()
                 .cornerRadius(12)
-                .padding(.vertical, 4)
+                .padding(.top, 4)
+                .padding(.bottom, 8)
                 .onTapGesture { showGetStakeSheet = true }
             #endif
+            (Text("Crowdfunding on Wefunder.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
+                .multilineTextAlignment(.leading)
+                .onTapGesture { showGetStakeSheet = true }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(isPresented: $showGetStakeSheet) {
-            GetStakeView(fromSettings: false)
+            GetStakeView(fromSettings: false, showFirstImage: false)
         }
     }
 }
@@ -821,13 +885,13 @@ fileprivate let getStakeSlides: [(image: String, heading: String, info: String?,
     ),
     (
         "crowdfunding_4",
-        "Revenue plan: free for users, channels & businesses pay",
+        "Revenue plan: businesses & big channels pay",
         "SimpleX Chat plans to earn from the infrastructure and services that creators, businesses and large communities need as they grow.",
         "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
     ),
 ]
 
-private let wefunderURL = URL(string: "https://wefunder.com/simplex.chat?utm_source=app")!
+let wefunderURL = URL(string: "https://wefunder.com/simplex.chat?utm_source=app_ios")!
 
 private let simplexCrowdfundingURL = URL(string: "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im")!
 
@@ -835,16 +899,17 @@ struct GetStakeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
     var fromSettings: Bool
+    var showFirstImage: Bool
 
     var body: some View {
         ZoomablePageView {
             VStack(alignment: .leading, spacing: 18) {
-                Text(verbatim: "Get a stake in\nSimpleX Chat")
+                Text(verbatim: "Invest in\nSimpleX Chat")
                     .font(.largeTitle)
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
                     .if(!fromSettings) { $0.padding(.top) }
-                if fromSettings {
+                if showFirstImage {
                     slideImage(getStakeSlides[0])
                 }
                 (Text(verbatim: getStakeSlides[0].text) + Text(verbatim: " Learn more and invest on Wefunder.").bold().foregroundColor(.accentColor))
@@ -1010,9 +1075,16 @@ struct WhatsNewView: View {
         VStack(alignment: .leading, spacing: 4) {
             featureHeader(f.icon, f.title)
             if let d = f.description {
-                Text(d)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(10)
+                if let url = f.learnMore {
+                    (Text(d) + Text(verbatim: " ") + Text("Learn more.").foregroundColor(theme.colors.primary))
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(10)
+                        .onTapGesture { UIApplication.shared.open(url) }
+                } else {
+                    Text(d)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(10)
+                }
             }
             if f.subfeatures.count > 0 {
                 ForEach(f.subfeatures, id: \.icon) { s in

@@ -3,7 +3,7 @@ import {bot, util} from "../dist"
 
 (async () => {
   const welcomeMessage = "Hello! I am a simple squaring bot.\n\nIf you send me a number, I will calculate its square."
-  const [chat, _user, _address] = await bot.run({
+  await bot.run({
     profile: {displayName: "Squaring bot example", fullName: ""},
     dbOpts: {type: "sqlite", filePrefix: "./squaring_bot"},
     options: {
@@ -15,7 +15,7 @@ import {bot, util} from "../dist"
       logContacts: true,
       logNetwork: false
     },
-    onMessage: async (ci, content) => {
+    onMessage: async (ci, content, chat) => {
       const n = +content.text
       const reply = typeof n === "number" && !isNaN(n)
                     ? `${n} * ${n} = ${n * n}`
@@ -23,11 +23,11 @@ import {bot, util} from "../dist"
       await chat.apiSendTextReply(ci, reply)
     },
     onCommands: { // command handlers can be different from commands to be shown in client UI
-      "help": async (ci: T.AChatItem, _cmd: util.BotCommand) => {
+      "help": async (ci: T.AChatItem, _cmd: util.BotCommand, chat) => {
         await chat.apiSendTextMessage(ci.chatInfo, welcomeMessage)
       },
       // fallback handler that will be called for all other commands
-      "": async (ci: T.AChatItem, _cmd: util.BotCommand) => {
+      "": async (ci: T.AChatItem, _cmd: util.BotCommand, chat) => {
         await chat.apiSendTextReply(ci, "This command is not supported")
       }
     },

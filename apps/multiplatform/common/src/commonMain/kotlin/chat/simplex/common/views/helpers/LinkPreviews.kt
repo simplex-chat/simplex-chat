@@ -23,7 +23,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.chatViewScrollState
 import chat.simplex.common.views.chat.item.CHAT_IMAGE_LAYOUT_ID
 import chat.simplex.common.views.chat.item.imageViewFullWidth
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -169,13 +169,18 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
       Image(
         imageBitmap,
         stringResource(MR.strings.image_descr_link_preview),
-        modifier = Modifier.width(80.dp).height(60.dp).padding(end = 8.dp)
+        modifier = Modifier.padding(start = 12.dp).width(80.dp).height(60.dp)
       )
-      Column(Modifier.fillMaxWidth().weight(1F)) {
+      Column(
+        Modifier.fillMaxWidth().weight(1F).padding(start = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+      ) {
         Text(linkPreview.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(
           linkPreview.uri, maxLines = 1, overflow = TextOverflow.Ellipsis,
-          style = MaterialTheme.typography.body2
+          color = MaterialTheme.colors.secondary,
+          fontSize = 12.sp
         )
       }
     }
@@ -194,7 +199,7 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
 
 @Composable
 fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongClick: () -> Unit) {
-  val image = base64ToBitmap(linkPreview.image)
+  val image = remember(linkPreview.image) { base64ToBitmap(linkPreview.image) }
   Column(
     Modifier
     .layoutId(CHAT_IMAGE_LAYOUT_ID)
@@ -206,8 +211,8 @@ fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongC
       stringResource(MR.strings.image_descr_link_preview),
       modifier = Modifier
         .fillMaxWidth()
-        .desktopModifyBlurredState(true, blurred, showMenu)
-        .privacyBlur(true, blurred, chatViewScrollState.collectAsState(), onLongClick = onLongClick),
+        .desktopModifyBlurredState(blurred, showMenu)
+        .privacyBlur(true, image, blurred, chatViewScrollState.collectAsState(), onLongClick = onLongClick),
       contentScale = ContentScale.FillWidth,
     )
     Column(Modifier.padding(top = 6.dp).padding(horizontal = 12.dp)) {

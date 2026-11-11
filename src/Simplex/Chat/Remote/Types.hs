@@ -18,6 +18,7 @@ import Control.Monad (when)
 import qualified Data.Aeson.TH as J
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
+import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import Data.Word (Word16, Word32)
 import Simplex.Chat.Remote.AppVersion
@@ -28,7 +29,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON
 import Simplex.Messaging.Transport (TLS (..), TSbChainKeys (..), TransportPeer (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (AnyError (..), tshow)
+import Simplex.Messaging.Util (AnyError (..), stateTVar', tshow)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
 
@@ -53,9 +54,9 @@ data RemoteCrypto = RemoteCrypto
 
 getRemoteSndKeys :: RemoteCrypto -> STM (Word32, C.SbKeyNonce, C.SbKeyNonce)
 getRemoteSndKeys RemoteCrypto {sndCounter, chainKeys = TSbChainKeys {sndKey}} = do
-  corrId <- stateTVar sndCounter $ \c -> let !c' = c + 1 in (c', c')
-  cmdKN <- stateTVar sndKey C.sbcHkdf
-  fileKN <- stateTVar sndKey C.sbcHkdf
+  corrId <- stateTVar' sndCounter $ \c -> let c' = c + 1 in (c', c')
+  cmdKN <- stateTVar' sndKey C.sbcHkdf
+  fileKN <- stateTVar' sndKey C.sbcHkdf
   pure (corrId, cmdKN, fileKN)
 
 getRemoteRcvKeys :: RemoteCrypto -> Word32 -> STM (Either RemoteProtocolError (C.SbKeyNonce, C.SbKeyNonce))
@@ -73,9 +74,11 @@ getRemoteRcvKeys RemoteCrypto {rcvCounter, chainKeys = TSbChainKeys {rcvKey}, sk
       | otherwise = do -- prevCorrId < corrId
           writeTVar rcvCounter corrId
           skipKeys (prevCorrId + 1)
+          modifyTVar' skippedKeys $ \m -> M.drop (M.size m - maxSkippedKeys) m
           Right <$> getKeys
     maxSkip = 256
-    getKeys = (,) <$> stateTVar rcvKey C.sbcHkdf <*> stateTVar rcvKey C.sbcHkdf
+    maxSkippedKeys = 1024
+    getKeys = (,) <$> stateTVar' rcvKey C.sbcHkdf <*> stateTVar' rcvKey C.sbcHkdf
     skipKeys !cId =
       when (cId < corrId) $ do
         keys <- getKeys

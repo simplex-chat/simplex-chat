@@ -95,7 +95,7 @@ The diagram below shows all the encryption layers used in private message routin
 
 For private routing to work, both the forwardig and the destination relays should support the updated messaging protocol - it is supported from v5.8 of the messaging relays. It is already released to all relays preset in the app, and available as a self-hosted server. We updated [the guide](../docs/SERVER.md) about how to host your own messaging relays.
 
-Because many self-hosted relays did not upgrade yet, private routing is not enabled by default. To enable it, you can open *Network & servers* settings in the app and change the settings in *Private message routing* section. We recommend setting *Private routing* option to *Unprotected* (to use it only with unknown relays and when not connecting via Tor) and *Allow downgrade* to *Yes* (so messages can still be delivered to the messaging relays that didn't upgrade yet) or to *When IP hidden* (in which case the messages will fail to deliver to unknown relays that didn't upgrade yet unless you connect to them via Tor).
+Because many self-hosted relays did not upgrade yet, private routing is not enabled by default. To enable it, you can open *Network & servers* settings in the app and change the settings in *Private message routing* section. We recommend setting *Private routing* option to *Unprotected* (to use it only with unknown relays and when not connecting via Tor) and *Allow downgrade* to *Yes* (so messages can still be delivered to the messaging relays that didn't upgrade yet) or to *When IP hidden* (in which case the messages will fail to deliver to unknown relays that didn't upgrade yet unless you connect to them via Tor).\
 See [F.A.Q. section](../docs/FAQ.md#does-simplex-protect-my-ip-address) for answers about private message routing.
 
 Read more about the technical design of the private message routing in [this document](https://github.com/simplex-chat/simplexmq/blob/stable/rfcs/done/2023-09-12-second-relays.md) and in [the messaging protocol specification](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md#proxying-sender-commands).
@@ -110,7 +110,7 @@ We [wrote previously](https://github.com/simplex-chat/simplexmq/blob/master/rfcs
 
 While we cannot require the operators of self-hosted and private servers to disclose any information about them (apart from which server code they use - this is the requirement of the AGPLv3 license to share this information with users connecting to the server), as we add other server operators to the app, it is important for the users to have all important information about these operators and servers location.
 
-This server release adds server information page where all this information can be made available to the users. For example, this is <a href="https://smp8.simplex.im" target="_blank">the information</a> about one of the servers preset in the app.
+This server release adds server information page where all this information can be made available to the users. For example, this is <a href="https://smp8.simplex.im" target="_blank" rel="noopener">the information</a> about one of the servers preset in the app.
 
 The updated server guide also includes [the instruction](../docs/SERVER.md#) about how to host this page for your server. It is generated as a static page when the server starts. We recommend using Caddy webserver to serve it.
 

@@ -71,7 +71,7 @@ struct ContextItemView: View {
     }
 
     private func contextMsgPreview(_ contextItem: ChatItem) -> some View {
-        let r = messageText(contextItem.text, contextItem.formattedText, sender: nil, preview: true, mentions: contextItem.mentions, userMemberId: nil, showSecrets: nil, backgroundColor: UIColor(background), stripLink: contextItem.content.msgContent?.chatLinkStr)
+        let r = messageText(contextItem.text, contextItem.formattedText, markdownBlocks: contextItem.markdownBlocks, sender: nil, preview: true, mentions: contextItem.mentions, userMemberId: nil, showSecrets: nil, backgroundColor: UIColor(background), stripLink: contextItem.content.msgContent?.chatLinkStr)
         let t = attachment() + Text(AttributedString(r.string))
         return t.if(r.hasSecrets, transform: hiddenSecretsView)
 
@@ -98,7 +98,7 @@ struct ContextItemView: View {
 
 struct ContextItemView_Previews: PreviewProvider {
     static var previews: some View {
-        let contextItem: ChatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
+        let contextItem: ChatItem = ChatItem.getSample(1, .directSnd, previewDate, "hello")
         return ContextItemView(chat: Chat.sampleData, contextItems: [contextItem], contextIcon: "pencil.circle", cancelContextItem: {}, contextIconForeground: Color.red)
     }
 }

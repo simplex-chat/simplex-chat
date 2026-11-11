@@ -1,0 +1,230 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "B4D6E1A0",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "7.00",
+      "familyShareable" : false,
+      "internalID" : "3010000001",
+      "localizations" : [
+        {
+          "description" : "Supporter badge for one month",
+          "displayName" : "SimpleX Supporter Badge",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "BADGE_SUPPORTER_01",
+      "referenceName" : "SimpleX Supporter Badge",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "70.00",
+      "familyShareable" : false,
+      "internalID" : "3010000002",
+      "localizations" : [
+        {
+          "description" : "Legend badge for one month",
+          "displayName" : "SimpleX Legend Badge",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "BADGE_LEGEND_01",
+      "referenceName" : "SimpleX Legend Badge",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "",
+    "_developerTeamID" : "",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "3020000001",
+      "localizations" : [
+
+      ],
+      "name" : "SimpleX Badge Subscription",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "7.00",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "3020000011",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Supporter badge, renews monthly",
+              "displayName" : "SimpleX Supporter Badge (Month)",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "SUBSCR_BADGE_SUPPORTER_MONTH_01",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "SimpleX Supporter Badge (Month)",
+          "subscriptionGroupID" : "3020000001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "42.00",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "3020000012",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Supporter badge, renews yearly",
+              "displayName" : "SimpleX Supporter Badge (Year)",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "SUBSCR_BADGE_SUPPORTER_YEAR_01",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "SimpleX Supporter Badge (Year)",
+          "subscriptionGroupID" : "3020000001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "70.00",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "3020000013",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Legend badge, renews monthly",
+              "displayName" : "SimpleX Legend Badge (Month)",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "SUBSCR_BADGE_LEGEND_MONTH_01",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "SimpleX Legend Badge (Month)",
+          "subscriptionGroupID" : "3020000001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "420.00",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "3020000014",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Legend badge, renews yearly",
+              "displayName" : "SimpleX Legend Badge (Year)",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "SUBSCR_BADGE_LEGEND_YEAR_01",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "SimpleX Legend Badge (Year)",
+          "subscriptionGroupID" : "3020000001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
