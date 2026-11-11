@@ -733,9 +733,9 @@ Rules for every screen:
 
 #### Row 1, buy in the app (Google Play; iOS when its payment is on). Stage 1, except 1·4's "I already have a key"
 
-![Lane 1, screens 1·1 to 1·4a](2026-10-30-names-in-app-purchases/lane1a.png)
+![Lane 1, screens 1·1 to 1·5 and 1·5's alternative B](2026-10-30-names-in-app-purchases/lane1a.png)
 
-![Lane 1, screens 1·5 to 1·11](2026-10-30-names-in-app-purchases/lane1b.png)
+![Lane 1, 1·5's community name and terms sheet, screens 1·6 to 1·11](2026-10-30-names-in-app-purchases/lane1b.png)
 
 - **1·1** "Get SimpleX name", without "BETA" → 1·2, or 4·1 where the build can't pay.
   - From a channel's info: the channel's row, "SimpleX name", "Let people join via name registered with this channel link.", where the channel has a link the user owns.
