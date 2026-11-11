@@ -24,6 +24,7 @@ Words:
 - Commit and reveal: a registration's transactions, the name's hash first and the name at least 60 s later, so that nobody watching the chain registers it first; the order carries the name sealed until the reveal.
 - Codes-only: the service's state before the sale, when it registers names only for prepaid codes.
 - Row 1 to row 6 and N·M: the screens' journeys and screens (6.6).
+- AC: acceptance criteria (1); M: what is missing (4); D: decisions (5); P: pull requests (8); Q: open questions (11).
 
 A name's life:
 
@@ -149,7 +150,7 @@ The contract source, ens-contracts `simplex`, is outside the public repos: contr
 - An order sends the plain code; the service hashes it (`parseCodeOrder`, `Web/Names/Orders.hs:231-234`).
 - An exact resend of an order is found by its hash before its timestamp is checked (`Web/Names/Orders.hs:210-215`).
 - A signed request's timestamp is within 600 s of the service's clock (`signedRequestSeconds`).
-- Another name: only for a failed order or one whose links were refused (`movable`, `Names/Orders.hs:316-320`), at most 3 times (`max_order_moves`).
+- Another name: only for a failed order or one whose links were refused (`movable`, `Names/Orders.hs:316-320`), at most 3 times (`max_order_moves`; past it, the refusal `move_limit`).
 - A committed order past `revealBefore` without a reveal reads failed (`registrationAt`, `Names/View.hs:148-156`).
 - Code orders can't be cancelled.
 - An order sends at most 5 transactions of each kind (commit, terms acceptance, register), counted per nonce, its moves included; past that it fails, and Try again and another name are refused, `bad_request` on the web (`maxSendsPerKind`, `Names/Worker.hs:430-451`; `Web/Names/Registration.hs:138`).
@@ -254,7 +255,7 @@ The contract source, ens-contracts `simplex`, is outside the public repos: contr
 
 ## 6. Design
 
-The parts stage 1 touches, step by step:
+The parts stage 1 touches, step by step; the figure numbers its own rows, one per step:
 
 ![The parts v1 touches, a row for each step](2026-10-30-names-in-app-purchases/v1-parts.svg)
 
@@ -337,7 +338,7 @@ sequenceDiagram
 The payment part, in order:
 
 1. The same receipt with the same hash: the years and the code's state now (unused, reserved, used, revoked), at any age.
-2. The product, looked up in the names catalog, which maps it to `NameProduct {minLength = 6, years = 2}` (Play: from the request, before any call to Play; Apple: after the signed transaction's offline check). An unknown one is refused. A retired product stays in the catalog.
+2. The product, looked up in the names catalog, which maps it to `NameProduct {minLength = 6, years = 2}` (Play: the product id the request names, before any call to Play; Apple: after the signed transaction's offline check). An unknown one is refused. A retired product stays in the catalog.
 3. The store verifies it, with the badge refusals (invalid, pending, test purchase) and a quantity other than 1. A Play read takes a slot of the names' own per-minute bound.
 4. The same receipt with another hash, or a token that doesn't match the hash: `receipt_used`, after the store vouches for it; nothing written.
 5. Play acknowledged; one transaction inserts the payment (unique by store and transaction; keyed for this product by `originalTransactionId`) and the code row, and commits:
@@ -438,8 +439,8 @@ The answer: `STPNamePurchase {payment, order}`. `payment`: the years and the cod
 
 - Its row counts them in the same save, across that code's orders, so a release by a taken name or the 30-day sweep keeps the count.
 - A failed read, a fee over the cap and a Try again that reuses a live commitment count nothing.
-- The bound, `max_code_commits`, 7, is enforced at the requests only.
-- P27c and P65 share the column; the first of them to land adds it.
+- The bound, `max_code_commits`, 7 commits across the code's orders, is enforced at the requests only; each order's own sends stay bounded at 5 a kind (3.3).
+- P27c and P65 share the commits column on prepaid codes; the first of them to land adds it.
 
 **Catalog:** the site's search answer without a name, from a cache a background thread fills every few seconds; the main lane answers from it without a chain read.
 
@@ -482,8 +483,6 @@ Otherwise the terms read as unavailable. Only test builds accept the site's loca
 - The buyer signs an order with the hash of its name's kind, with the `community/` prefix for a listed name (`termsFor`, `Names/Community.hs:40-48`; `checkTerms`, `Names/Orders.hs:284-291`).
 - The acceptance has two EIP-712 types, `AcceptGeneralTerms` and `AcceptCommunityTerms` (`termsKind`, `Names/Registration.hs:89-112`).
 - The operator sets both links to the one document, with its section on community names (`docs/NAMES-TERMS.md` at 672d13e9e), a chain operation as M13 is. If the contract refuses one link for both kinds, the two links name the same file at two commits.
-- The one tick on the checkout, or on 3·1 for a move, signs the kind of the name ordered; "SimpleX names terms" opens the text of that kind's link (6.6).
-- The service, the catalog and the resolver stay as they are.
 
 **The other SMP commands** call the functions D5 extracts:
 
@@ -520,16 +519,7 @@ Otherwise the terms read as unavailable. Only test builds accept the site's loca
 - Moves are bounded per name per 365 days, 3 by default; a move counts once; a dry run that reverts counts nothing.
 - The commands also return the code wallet's nonce, the name's offer, the app account's nonce, and whether the name policy lists the name, with its community text.
 - The claim relay takes the app account's terms acceptance, signed with 3·1's tick: the contract makes the receiving account sign the terms on chain before ownership moves.
-- P26 reads from the contract the acceptance's typed-data form (the service has acceptance types for a registration's commitment only, `StoreService/Names/Registration.hs:104-110`) and its place: in the claim's call, or relayed before it.
-
-```mermaid
-flowchart LR
-  move["3·1: the tick, Move into this app"] --> approve["approveWithSig: the code's wallet offers the name"]
-  approve --> where{"Where the contract takes the acceptance (P26)"}
-  where -->|"in the claim: two transactions"| claim["claimWithSig with the acceptance"]
-  where -->|"before it: three transactions"| accept["The acceptance relayed"]
-  accept --> claim2["claimWithSig"]
-```
+- P26 reads from the contract the acceptance's typed-data form (the service has acceptance types for a registration's commitment only, `StoreService/Names/Registration.hs:104-110`) and its place: in the claim's call (two transactions a move), or relayed before it (three); row 3's diagram draws both.
 
 **Refunds** are made in the stores, by their rules; a registered name stays registered.
 
@@ -542,7 +532,9 @@ flowchart LR
 - revoke the code and clear a failed order's reservation;
 - refund a Play payment: check the buyer's order number with `orders.get` against the reference, keeping nothing else it returns; in the code's turn revoke the code row by id, clear a failed order's reservation and record the refund as due; then call `orders.refund` with `revoke=true`; a failed call is retried by running the command again;
 - consume a Play purchase that can't be used and needn't be refunded (`purchases.products.consume`): a replaced promo purchase, or one whose name registered on a lost phone;
-- credit or replace a code (iOS after "Payment not confirmed" where Apple declines a refund; a lost promo purchase): a purchase with a token only to a hash whose tag matches it, carried by that state's contact draft, once the App Store Server API's transaction lookup says paid and uncredited; a tokenless one only with a `payments` row in the same transaction, after revoking an unused code row, refused for a spent one;
+- credit or replace a code, for iOS after "Payment not confirmed" where Apple declines a refund, or for a lost promo purchase:
+  - a purchase with a token: only to the code hash that state's support draft holds, when the token's tag matches it, once the App Store Server API's transaction lookup says paid and uncredited;
+  - a tokenless purchase: only with a `payments` row in the same transaction, after revoking an unused code row; refused for a spent one;
 - raise a code's bound of commits at `commit_limit`.
 
 A purchase stranded on a lost wallet is refunded: Play through this command, Apple through its sheet. The service account has Play's permission to manage orders.
@@ -734,7 +726,7 @@ Rules for every screen:
   - The expired alert's Renew gives way to "Renewing isn't available in this version yet." until stage 3.
   - "How to register a test name" and the sale's footer go.
 - **1·2** today's name screen, for a profile without a name.
-  - Three controls: main "Register" → 1·4 the first time, else 1·5, off until a free name; "I have a code" → 2·1, styled as "Buy in browser"; "Buy in browser" → 1·4 the first time, then 4·2, only where D18 allows. Their frames and the third slot stay in place across states.
+  - Three controls: main "Register" → 1·4 the first time, else 1·5, off until a free name; "I have a code" → 2·1, styled as "Buy in browser"; "Buy in browser" → 1·4 the first time, then 4·2 (in the codes release, the site's search, as this section's rules say), only where D18 allows. Their frames and the third slot stay in place across states.
   - Length and grammar are checked while typing, without a request; the lookup goes over SMP on Return or Search, with "Checking the name…".
   - A community name's row adds "Community ⓘ", whose ⓘ says what the name is for.
   - The price slot and the row keep the height of their tallest content across states, at the largest text size; while the product loads the slot reads "…" and Register stays in place, off.
@@ -936,23 +928,6 @@ Support drafts add "This reference links this chat to the payment"; the contact 
 - **2·3** 1·5 with the code: Until is the code's term ("31 Dec 2031 · 5 years"; a community name 2 years, with "A community name is registered for 2 years, not your code's 5."); "Nothing renews automatically." under the button; → 1·7 and 1·8 with the code's card.
 - **2·4** taken, as drawn: Close leaves the row "Your kept code · Find a name". A failed registration: "Not registered", "Your code is kept. Trying again uses nothing more.", "Try again". A code no longer usable: "Your code can no longer be used for it, so trying again cannot register it.", its reason, main "Search a name". A code another registration holds: "Your code is held by another registration; try again later".
 
-```mermaid
-flowchart LR
-  search["1·2 or 4·1: I have a code"] --> sheet["2·1 Enter your code, a sheet on the same step"]
-  opens["1·2 Opens your address: Bring it into the app"] --> sheet
-  order["1·5 or 4·2: Use a code"] -->|"from a checkout"| sheet
-  sheet -->|"a prepaid code: Use this code"| named["2·2 the name kept"]
-  sheet -->|"a prepaid code, from a checkout: Use this code"| check["2·3 Check your order"]
-  sheet -->|"from a checkout, a code that doesn't cover the name"| short["2·2 A name the code doesn't cover"]
-  sheet -->|"a name code: Continue"| bring["3·1 Bring in a name"]
-  sheet -->|"swiped away: nothing changes"| back["The screen it opened over"]
-  short -->|"a longer name"| named
-  named -->|"Register, first time"| key["1·4 Create a new key, 1·4a"]
-  named -->|"Register, a wallet exists"| check
-  key --> check
-  check -->|"Register with your code"| registering["1·7 Registering, 1·8 Yours"]
-```
-
 #### Row 3, a name bought on the site. Stage 1, except what is marked
 
 ![Lane 3, a name bought on the site](2026-10-30-names-in-app-purchases/lane3.png)
@@ -968,7 +943,7 @@ The path: the tick on 3·1 → 1·4 the first time → 3·2 → 3·3.
   - Proposed, for a moved name's edge cases: a link that isn't this profile's, or no links (the site's "Skip for now"), takes the path of another address; with no links, "It opens nothing yet. Set its links on the site first."; from stage 2, a profile without an address reads 1·5's "Create an address first" before moving attaches the name.
   - Before anything moves: past expiry, "dynamism.simplex expired on" its date and "Renewing isn't available in this version yet."; a code without a registered name, "This code holds no registered name yet. Finish its order on the site, then open the code here again."; already held by this profile (active profile's accounts), "dynamism.simplex is already in this app.", "Close"; a hidden profile, "A hidden profile can't add a name. Switch to another profile, then open the link again."; a reserved name says it can't be renewed; terms unreadable, "Names can't be ordered right now. Nothing changed. Try again later."
   - Refused, read from the code's order and the chain: "This name code no longer holds dynamism.simplex: it was moved." With a key on the phone: "The name is in the app on the phone you moved it to."; without one, from stage 2: "If you moved it to this app on a phone you no longer have, that phone's recovery key brings it here.", "Enter recovery key" → 6·2.
-- **3·2** as drawn, in 1·7's layout. The core records the move with the ticked terms before the first relay and resumes it at start until the claim lands; a move whose terms changed waits here with 3·1's tick back. Offline: "No connection.". Not moved: "Try again"; "Close".
+- **3·2** as drawn, in 1·7's layout. The core records the move with the ticked terms before the first relay and resumes it at start and on the return to the foreground until the claim lands; a move whose terms changed waits here with 3·1's tick back. Offline: "No connection.". Not moved: "Try again"; "Close".
 - **3·3**, proposed: a name that moved but can't show (its links changed during the move, or the step failed) keeps "The name is in your app", "Shown" unticked, "It doesn't show on Alice's address yet." and "Try again"; changed links need stage 2's "Set what it opens". The line names what the name opens: "#Bakery Deals shows the name now." or "Alice's address and #Bakery Deals show the name now.". The reminder until Copy or Show.
 - In stage 1 a name moves in once, within the yearly bound.
 
@@ -990,8 +965,6 @@ stateDiagram-v2
   Shown --> [*]
 ```
 
-The core resumes a recorded move at start and on the return to the foreground until the claim lands.
-
 #### Row 4, builds that can't pay in the app, and "Buy in browser". Stage 1
 
 ![Lane 4, paying in the browser](2026-10-30-names-in-app-purchases/lane4.png)
@@ -1009,7 +982,7 @@ The path: search → key the first time → checkout with the terms tick → the
   - 1·5's re-check runs before the link opens.
 - **4·2's waiting state**, as drawn, once "Pay in browser" has recorded the order and opened its code for payment; the name fixed:
   - "Pay in browser" opens the same invoice;
-  - "Remove order" while nothing reached an invoice: the code closed at the service, the order and its code dropped → 1·9, its row "Get SimpleX name";
+  - "Remove order" while nothing reached an invoice: the code closed at the service, the order and its code dropped → the address screen, its row "Get SimpleX name" (1·1);
   - ‹ → 1·9, its row "Waiting for your payment".
   - In the other states below, the state's lines replace the note.
   - The full amount on the invoice → 1·7 at "Confirming your payment.", then "Paid", "$100.00 · simplex.domains".
@@ -1262,7 +1235,7 @@ The chain, the network and the browser:
 - The search: the answering router sees the name's hash and can test guesses; the service gets none; SimpleX runs preset name routers and the service.
 - Over SMP the service process receives no IP address; the site, served by the same process, sees the browser's.
 - With private routing (the apps' default; the CLI's for unknown routers) only the proxy and the reply queue's router see the device's IP.
-- The reply queue's router is SimpleX's by preset (`Operators/Presets.hs`); the proxy is one of the user's enabled routers, about 4 in 7 of them SimpleX's with Flux enabled, all with it off.
+- The reply queue's router is SimpleX's by preset (`Operators/Presets.hs`); the proxy is one of the user's enabled routers: about 4 in 7 of them are SimpleX's while Flux's are enabled, all of them while Flux's are off.
 - SimpleX can link the device's IP to a request, its payment, its name, and the connection's other queues on that router.
 - Tor hides the IP; one's own router removes the link only with private routing on and no SimpleX router used to receive or proxy.
 - A code that support credits or the operator issues links its recipient to its name.
@@ -1428,7 +1401,7 @@ The resolver, the site and the docs:
 - P57a `docs: names through the store service`: the registrar in `docs/protocol/names-overview.md`, names data and retention in `PRIVACY.md`, the wallet RFC's hidden-profile line, as properties from section 7 · small · low · P23
   - Tested: read against section 7 in its review.
 
-The screens, after the screens' feedback, each tested on snapshots and the runners (9.1); each has a Swift copy after it (P39, P41–P45), tested on `ios-sim` the same way:
+The screens, after the screens' feedback, each tested on snapshots and the runners (9.1); each has a Swift copy, a pull request of its own after it (P39 and P41 to P45, one for each of P30 to P36a), tested on `ios-sim` the same way:
 
 - P30 `ui: search a name`: on today's name screen, the field, the checks while typing, the answer's states, the paired-desktop state, the three controls kept across states, "Register with code" and the codes release's "Buy in browser", every link of 3.4 replaced or gated by storefront; 2·2 with its uncovered-name state; 4·1 on iOS outside the US · medium · low · P11, P14, P15, P17, P68
   - Tested: runners: an available, a taken and a reserved name from the local chain; equal frames of the three controls across the states.
@@ -1438,7 +1411,7 @@ The screens, after the screens' feedback, each tested on snapshots and the runne
   - Tested: runners: 2·3's button off until ticked, the order signed with the ticked kind; snapshots of a community name and of changed terms.
 - P33 `ui: registering, done, taken and failed`: 1·7 and its states for an order with a code, 2·4, 1·9's row, the reminder on 1·8 · large · low · P16, P17, P18, P32
   - Tested: runners: AC13 from 1·2 to 1·8 with an issued code; a name a CLI peer registers first ends at 2·4; equal frames of 1·7 and 1·8 across their states.
-- P34 `ui: the code sheet, and Bring in a name`: 2·1; 3·1; the verified link back `/name/code`, with the website's association files and page, and the release check of the manifest's hosts; 3·2 and 3·3 with the reminder; every build · large · high · P20, P30, P32, P33, P35a
+- P34 `ui: the code sheet, and Bring in a name`: 2·1, opened by P30's "I have a code" and "Register with code"; 3·1; the verified link back `/name/code`, with the website's association files and page, and the release check of the manifest's hosts; 3·2 and 3·3 with the reminder; every build · large · high · P20, P30, P32, P33, P35a
   - Tested: runners: an issued code on 2·1; the backend's name-code name moved in from 3·1 to 3·3; the routers take the verified link before connection links; the page clears the code first.
 - P36a `ui: the expiry date` as the footer under the name's row · small · low · P11, P30
   - Tested: runners: a registered name's footer reads its expiry.
@@ -1452,7 +1425,7 @@ By hand, at the codes release's end:
 
 ### The payments release
 
-It starts once Q24 is answered for the browser path, and once the deferred questions are for the store path: receipt binding (Q9), the daily cap (Q10), the Apple product type (Q8), the release of iOS payment (Q5), the console and export check (Q14). What its runner tests need beyond P67 and P68 is built inside the pull requests whose code it stands in for: the mock verifier's name purchases (P27a), opened codes paid in dev mode (P59), the store stubs of test builds (P37, P46).
+It starts once Q24 is answered for the browser path, and once the deferred questions are for the store path: receipt binding (Q9), the daily cap (Q10), the Apple product type (Q8), the release of iOS payment (Q5), the console and export check (Q14). Its runner tests also need three stand-ins, each built in the pull request whose code it stands in for: the mock verifier's name purchases (P27a), opened codes paid in dev mode (P59), and the store stubs of test builds (P37, P46).
 
 - P7 `names: prepaid codes from the wallet`: the code derived from a seed and a nonce or a store reference, under the store's info string, on the existing `NamePrepaidCode`; the token; the wallet RFC's section and the crypto registry's info string · small · high
   - Tested: vectors against viem: a code from a nonce, a code from a reference, the token.
@@ -1614,7 +1587,7 @@ flowchart LR
 - The wallet's known limit 5: a database restored from an older backup can reuse an account, so two names share an owner address and are linked publicly; stage 2's "Look for your names again" covers a database imported on the app's database screen, not a file restored outside the app.
 - One price on chain: until `setPrices` holds one, a short name costs the registration budget more than the store takes.
 - The contract source is private: a registration one day under the 730-day minimum, refused, joins the store's end-to-end tests; the renewal rules are rechecked when stage 3 is built.
-- Store policy: Apple allows in-app purchase "to sell and sell services related to non-fungible tokens (NFTs), such as minting, listing, and transferring", and viewing them "provided that NFT ownership does not unlock features or functionality within the app" (3.1.1); Google requires the Tokenized Digital Asset marking and declaration; whether a key-holding app is a "software wallet" under Google's cryptocurrency policy is for the names work to settle before release ("my app is a non-custodial software wallet").
+- Store policy: Apple allows in-app purchase "to sell and sell services related to non-fungible tokens (NFTs), such as minting, listing, and transferring", and viewing them "provided that NFT ownership does not unlock features or functionality within the app" (3.1.1); Google requires the Tokenized Digital Asset marking and declaration; whether a key-holding app is a "software wallet" under Google's cryptocurrency policy is for the names work to settle before the codes release, the first to hold the key ("my app is a non-custodial software wallet").
 - iOS's code path before iOS sells names: an App Review risk under 3.1.3(b); Apple's restore duty is met from stage 2 (Q5).
 - Refund abuse after registration: a day's loss is at most the daily cap, 50 store-paid registrations by default, each its chain price and gas; watched by hand in the stores' reports.
 - Linking by time: accepted and stated at launch (Q6).
