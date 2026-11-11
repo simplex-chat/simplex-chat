@@ -61,24 +61,24 @@ ui_retry() {
 
 # From the app's first screen to the chat list, creating the profile $1; shot names start with $2.
 # Waits are long: a runner with two simulators read no accessibility tree for over 30 s (runs 41229483743, 41248278756),
-# and a second simulator's first screen took over 3 min (run 42709556460).
+# a second simulator's first screen took over 3 min (run 42709556460), and a later screen over 90 s (run 43004609272).
 onboard() {
-  local name=$1 prefix=${2:-}
+  local name=$1 prefix=${2:-} screen_secs=300
   "$ui" wait "Get started" 600
   "$ui" shot "${prefix}first-screen"
   ui_retry tap "Get started" 60
 
-  "$ui" wait "Create profile" 90
+  "$ui" wait "Create profile" "$screen_secs"
   ui_retry tap-value "Enter profile name..." 60
   "$ui" type "$name"
   "$ui" shot "${prefix}profile-name"
   ui_retry tap "Create profile" 60
 
-  "$ui" wait "Continue" 90
+  "$ui" wait "Continue" "$screen_secs"
   "$ui" shot "${prefix}your-network"
   ui_retry tap "Continue" 60
 
-  "$ui" wait "Accept" 90
+  "$ui" wait "Accept" "$screen_secs"
   "$ui" shot "${prefix}network-commitments"
   ui_retry tap "Accept" 60
 
@@ -87,6 +87,6 @@ onboard() {
   allow_notifications
   "$ui" shot "${prefix}notifications-allowed"
 
-  "$ui" wait "Talk to someone" 90
+  "$ui" wait "Talk to someone" "$screen_secs"
   "$ui" shot "${prefix}chat-list"
 }
