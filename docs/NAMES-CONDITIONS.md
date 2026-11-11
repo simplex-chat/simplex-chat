@@ -9,7 +9,7 @@ You accept these Conditions of Use of SimpleX Names ("Names Conditions") by regi
 **What the registry allows**.
 
 - Changing the record of the name, creating subnames and transferring control of the name require your key.
-- A name is registered for the period stored in the registry and can be extended until 90 days after that period ends, at the price set at the time of extension. During these 90 days control of the name cannot be transferred.
+- A name is registered for the period stored in the registry and can be extended until 90 days after that period ends, at the price set at the time of extension. Once the period ends, control of the name cannot be transferred.
 
 **You agree**:
 
