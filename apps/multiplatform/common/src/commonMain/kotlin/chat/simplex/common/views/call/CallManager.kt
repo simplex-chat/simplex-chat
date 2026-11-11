@@ -78,7 +78,6 @@ class CallManager(val chatModel: ChatModel) {
       // If there is active call currently and it's with other contact, don't interrupt it
       if (activeCall.value != null && !(activeCall.value?.remoteHostId == call.remoteHostId && activeCall.value?.contact?.id == call.contact.id)) return
 
-      // the peer sees the media stop and reconnects until the end message arrives, so it is sent first
       if (call.callState == CallState.Ended) {
         Log.d(TAG, "CallManager.endCall: call ended")
       } else {

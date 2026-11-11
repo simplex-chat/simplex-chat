@@ -98,7 +98,6 @@ class CallManager {
         } else {
             logger.debug("CallManager.endCall: ending call...")
             Task {
-                // the peer sees the media stop and reconnects until the end message arrives, so it is sent first
                 do {
                     try await apiEndCall(call.contact)
                 } catch {

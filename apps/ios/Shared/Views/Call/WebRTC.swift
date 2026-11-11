@@ -394,7 +394,6 @@ actor WebRTCCommandProcessor {
         logger.debug("WebRTC: process all commands, commands count \(self.commands.count), client == nil \(self.client == nil)")
         if let client = client {
             running = true
-            // A command that can't run yet waits without holding back the ones after it, such as the end of the call.
             while let i = commands.firstIndex(where: { shouldRunCommand(client, $0) }) {
                 let c = commands.remove(at: i)
                 if c == .end {

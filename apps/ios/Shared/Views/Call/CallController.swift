@@ -102,7 +102,6 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             if !ok {
                 logger.debug("CallController.provider CXEndCallAction: the call already ended")
             }
-            // a failed action left CallKit showing the ended call and holding the audio session
             action.fulfill()
             self.suspendOnEndCall()
         }
