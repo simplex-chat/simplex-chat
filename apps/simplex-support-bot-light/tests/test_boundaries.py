@@ -121,4 +121,5 @@ def test_the_command_menu_carries_every_command():
         commands.LIST,
         commands.LEAVE,
         commands.HELP,
+        commands.FEED,
     ]

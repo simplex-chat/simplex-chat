@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 
 from .roster import ACTIVE, RosterEntry
@@ -38,13 +39,23 @@ NOBODY_NEW_LOG = "Connected: {customer} → everyone on the roster was already i
 COMMAND_FAILED = "The command failed. Try again."
 REVOKE_FAILED = "Could not take {name} off the roster — retrying on the next restart."
 BUSINESS_FAILED_LOG = "Connected: {customer} → could not set up the chat, nobody added"
+FEED_QUEUED = "Feed message {item_id} is being sent to all chats."
+FEED_SENT = "Feed message {item_id} sent to all chats."
+FEED_FAILED = "Feed message {item_id} failed: {error}"
+FEED_EMPTY = "Add the message text after /feed."
+FEED_NOT_ALLOWED = (
+    "Only broadcasters can use /feed. Your contact id is {contact_id}: "
+    "the operator adds it to roster.broadcasters in config.toml."
+)
+FEED_NO_CONTACT = "Only broadcasters can use /feed, and they need a direct contact: run /dm first."
 
 HELP = (
     "I add roster members to chats started by anyone who connects to my address.\n\n"
     "/dm — join the roster. Without a direct contact I send a contact request; "
     "you join the roster once you accept it.\n"
     "/list — roster members, and contact requests not yet accepted.\n"
-    "/leave — leave the roster. Chats you have already joined are unchanged."
+    "/leave — leave the roster. Chats you have already joined are unchanged.\n"
+    "/feed <text> — send a message to every chat; only for broadcasters set by the operator."
 )
 
 
@@ -111,3 +122,7 @@ def invite_log(customer: str, added: Sequence[str], failed: Sequence[str]) -> st
     if failed:
         line += f" (failed: {', '.join(failed)})"
     return _bounded(line)
+
+
+def feed_failed(item_id: int, error: object) -> str:
+    return _bounded(FEED_FAILED.format(item_id=item_id, error=json.dumps(error)))

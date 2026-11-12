@@ -53,6 +53,12 @@ class Health:
 
 
 @dataclass(frozen=True, slots=True)
+class IdName:
+    id: int
+    name: str
+
+
+@dataclass(frozen=True, slots=True)
 class Config:
     """Validated settings loaded from `config.toml`."""
 
@@ -63,6 +69,8 @@ class Config:
     member_role: T.GroupMemberRole
     image: str | None = None
     health: Health | None = None
+    broadcasters: tuple[IdName, ...] = ()
+    queue_size: int | None = None
 
 
 def load_config(path: Path) -> Config:
@@ -97,7 +105,34 @@ def load_config(path: Path) -> Config:
         member_role=role,
         image=_image(bot, path.parent),
         health=_health(raw),
+        broadcasters=_broadcasters(roster),
+        queue_size=_queue_size(bot),
     )
+
+
+def _broadcasters(roster: dict[str, Any]) -> tuple[IdName, ...]:
+    value = roster.get("broadcasters", [])
+    if not isinstance(value, list):
+        raise ConfigError('roster.broadcasters must be a list of "ID:name" strings')
+    return tuple(_id_name(item) for item in value)
+
+
+def _id_name(item: Any) -> IdName:
+    if isinstance(item, str):
+        contact_id, sep, name = item.partition(":")
+        if sep and contact_id.strip().isdigit():
+            return IdName(int(contact_id), name)
+    raise ConfigError(f'roster.broadcasters entries must be "ID:name", got {item!r}')
+
+
+def _queue_size(bot: dict[str, Any]) -> int | None:
+    value = bot.get("queue_size")
+    if value is None:
+        return None
+    # bool is an int, and TOML has booleans.
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise ConfigError(f"bot.queue_size must be a positive integer, got {value!r}")
+    return value
 
 
 def _health(raw: dict[str, Any]) -> Health | None:
