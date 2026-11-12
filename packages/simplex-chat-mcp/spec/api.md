@@ -498,7 +498,7 @@ Command lines ([`commandsLine`](../src/control.ts#L735-L750)):
 | `download` | `/'receive CHAT N', /'receive CHAT N all', /'forward CHAT N' or /'reject CHAT N'`, without `/'receive CHAT N all'` for unknown servers |
 | `leave` | `/'approve CHAT N' or /'reject CHAT N'` |
 
-The app shows `/'approve N'` as the tappable command `/approve N` ([PLAN, What the owner sees](../PLAN.md#what-the-owner-sees-the-agent-control-chat)).
+The app shows `/'approve N'` as the tappable command `/approve N` ([PLAN, What the owner sees](../../../plans/2026-10-19-mcp-server.md#what-the-owner-sees-the-agent-control-chat)).
 
 An action performed without a card, in mode `host` or under a standing approval, gets its outcome as a new message; a `download` without a card gets none ([control.ts:190-197](../src/control.ts#L190-L197), [:601-603](../src/control.ts#L601-L603)).
 
