@@ -73,7 +73,7 @@ def _section(title: str, label: str, entries: Sequence[RosterEntry]) -> list[str
     rather than silently dropped.
     """
     lines = [f"{title} ({len(entries)}):"]
-    lines += [f"  • {e.name}{_since(label, e.since)}" for e in entries[:MAX_LISTED]]
+    lines += [f"  • {e.contact_id}:{e.name}{_since(label, e.since)}" for e in entries[:MAX_LISTED]]
     if len(entries) > MAX_LISTED:
         lines.append(f"  … and {len(entries) - MAX_LISTED} more")
     return lines

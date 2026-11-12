@@ -106,7 +106,7 @@ Available in the roster group.
 | Command | Effect |
 | --- | --- |
 | `/dm` | Join the roster. If the bot has no direct contact, it sends a contact request first; membership becomes active once that request is accepted. |
-| `/list` | List active members, members who are no longer reachable, and those pending a contact request. |
+| `/list` | List active members, members who are no longer reachable, and those pending a contact request, each as `ID:name`. |
 | `/leave` | Leave the roster. Chats already joined are unaffected. |
 | `/help` | Summarise the above. |
 | `/feed <text>` | Send a message to every chat. Only for `roster.broadcasters`. |
@@ -128,10 +128,11 @@ installation sets `SIMPLEX_LIBS_DIR` to the output of
 `scripts/desktop/build-lib-linux.sh`, in
 `apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-$(uname -m)`.
 
-`roster.broadcasters` lists `"ID:name"` strings, such as `["12:Alice", "15:Bob"]`.
-A broadcaster must be a contact of the bot; `/feed` from anyone else replies
-with their contact id, or asks them to run `/dm` when they have no contact. The
-bot exits at start if an id is not a contact or its display name differs.
+`roster.broadcasters` lists `"ID:name"` strings, such as `["12:Alice", "15:Bob"]`;
+`/list` shows the ID of each roster member. A broadcaster must be a contact of
+the bot; `/feed` from anyone else replies with their contact id, or asks them to
+run `/dm` when they have no contact. The bot exits at start if an id is not a
+contact or its display name differs.
 
 ## State
 

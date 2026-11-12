@@ -59,7 +59,7 @@ def test_list_shows_forty_before_it_summarises():
 
 
 def test_a_reply_at_the_byte_cap_is_not_truncated():
-    room = messages.MAX_REPLY_BYTES - len("On the roster (1):\n  • ") - len(" — since 2026-08-13")
+    room = messages.MAX_REPLY_BYTES - len("On the roster (1):\n  • 1:") - len(" — since 2026-08-13")
     assert messages.render_roster([entry("a" * min(room, text.MAX_NAME))]).endswith("2026-08-13")
 
     over = [entry("漢" * text.MAX_NAME) for _ in range(messages.MAX_LISTED)]
