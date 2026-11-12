@@ -76,11 +76,11 @@ metricsText NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, n
       gauge "simplex_store_names_transactions_pending" "Registrar transactions sent and not settled, one per nonce" (Just $ value ncPendingTransactions),
       gauge "simplex_store_names_transactions_oldest_pending_timestamp_seconds" "When the oldest pending registrar transaction was first signed" (timestamp <$> ncOldestPending),
       gauge "simplex_store_names_invoices_open" "Open invoices of name orders" (Just $ value ncOpenInvoices),
-      gauge "simplex_store_names_balances_held" "Balances an order holds while its invoice for the difference is open" (Just $ value ncHeldBalances),
+      gauge "simplex_store_names_balances_held" "Balances reserved by an order paying the difference, until that order is paid or closed" (Just $ value ncHeldBalances),
       gauge "simplex_store_names_balances_held_cents" "Cents of the balances orders hold" (Just $ value ncHeldCents),
       gauge "simplex_store_names_registrar_balance_wei" "The registrar key's ETH balance, as last read" (value . rfBalanceWei . fst <$> frFunds),
       gauge "simplex_store_names_sponsor_allowance_cents" "The registrar key's allowance left on the sponsor, as last read" (value . rfAllowanceCents . fst <$> frFunds),
-      gauge "simplex_store_names_funds_read_timestamp_seconds" "When the registrar's funds were last read" (timestamp . snd <$> frFunds),
+      gauge "simplex_store_names_funds_read_timestamp_seconds" "When the registrar's funds were last read successfully" (timestamp . snd <$> frFunds),
       gauge "simplex_store_names_funds_read_ok" "1 when the last read of the registrar's funds succeeded, 0 when it failed or none was made" (Just $ value $ fromEnum frOk)
     ]
   where
