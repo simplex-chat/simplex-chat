@@ -340,7 +340,7 @@ Similarly, in `planAndConnect()` (`NewChatView.swift`), `.simplexLink(_, .relay,
 
 ### Blocked link
 
-`planAndConnect()` handles `.contactAddress(.linkNotice)` and `.groupLink(.linkNotice)` with [`showLinkNoticeAlert()`](../../Shared/Views/NewChat/NewChatView.swift#L946-L948), which presents the alert that [`linkNoticeAlert()`](../../Shared/Views/NewChat/NewChatView.swift#L950-L982) builds, and connects nothing. [`LinkNoticeTarget`](../../Shared/Views/NewChat/NewChatView.swift#L923-L944) picks the first line of the alert: from the link type, from the group of a prepared chat, or contact. `apiConnectResponseAlert()` and `apiConnectContactViaAddress()` in `SimpleXAPI.swift` show the same alert for `ChatErrorType.linkNotice`.
+`planAndConnect()` handles `.contactAddress(.linkNotice)` and `.groupLink(.linkNotice)` with [`showLinkNoticeAlert()`](../../Shared/Views/NewChat/NewChatView.swift#L946-L948), which presents the alert that [`linkNoticeAlert()`](../../Shared/Views/NewChat/NewChatView.swift#L950-L980) builds, and connects nothing. [`LinkNoticeTarget`](../../Shared/Views/NewChat/NewChatView.swift#L923-L944) picks the text of the alert: from the link type, from the group of a prepared chat, or contact. `apiConnectResponseAlert()` and `apiConnectContactViaAddress()` in `SimpleXAPI.swift` show the same alert for `ChatErrorType.linkNotice`.
 
 ## 11. Channel-Specific NewChatView Behavior
 

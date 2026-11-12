@@ -118,7 +118,7 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 ### 7. Block Member for All
 
 1. Moderator, admin or owner taps "Block for all" in member info or in the member swipe actions.
-2. "Block member for all?" (`showBanMemberSheet`) offers "Block for" 1 day (default), 1 week or Forever; admins and owners also get "Block and remove" and "Block, remove and delete messages".
+2. "Block member for all?" (`showBanMemberSheet`) offers "Block for" 1 day (default), 1 week or Forever; admins and owners also get "Block and remove" and "Block, remove and delete messages". The footer: "**<name>** won't be notified, and the messages will be hidden for all." for moderators, "**<name>** won't be notified, and if removed, can't rejoin while blocked." for admins and owners.
 3. Calls `apiBlockMembersForAll(groupId:memberIds:blocked:ttl:)`; `ttl` is absent for Forever:
    ```swift
    func apiBlockMembersForAll(_ groupId: Int64, _ memberIds: [Int64], _ blocked: Bool, ttl: Int64? = nil) async throws -> [GroupMember]
@@ -147,7 +147,7 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
    func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async throws -> GroupInfo?
    ```
 4. Core notifies all members. With `.full` the chat is removed from `ChatModel.shared.chats`; with `.entity` core returns the group with membership status `memGroupDeleted`, and `ChatModel.updateGroup` keeps the chat in the list.
-5. Business chat of the owner: the alert adds "<customer> will be notified."; the sheet says "<customer> can connect to you again via your business address." when the user's address is a business address (`userAddress.addressSettings.businessAddress`).
+5. Business chat of the owner: the sheet says "**<customer>** will be notified.", or "**<customer>** will be notified, and can connect to you again via your address." when the user's address is a business address (`userAddress.addressSettings.businessAddress`).
 6. "Delete and block" for the owner of a business chat (`deleteAndBanCustomerDialog`): the dialogs of [connection flow 8](connection.md#8-delete-archive-or-block-a-contact) with the customer's name; `apiDeleteChat` with a `LinkNotice`, so the core removes the customer silently with the notice and then deletes the chat.
 
 ### 10. Group Link Management

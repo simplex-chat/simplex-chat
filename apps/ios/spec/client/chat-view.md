@@ -567,21 +567,21 @@ Contact deletion (`deleteContactDialog`):
 ready and active    deleteActiveContactDialog: privacyContactDeletionDefault
   .notify           deleteContactAlert (Alert): Delete, Cancel → dialog 2, notify on
   .ask              deleteContactActionSheet: Delete and notify, Delete silently → dialog 2
-  dialog 2          deleteContactKeepDialog: Delete; footer "<name> will be notified." or "won't be notified.",
-                    "<name> can connect to you again via your address." when ChatModel.userAddress is set
+  dialog 2          deleteContactKeepDialog: Delete; footer "**<name>** will be notified." or "won't be notified.",
+                    with ", and can connect to you again via your address." when ChatModel.userAddress is set
 otherwise           deleteNotReadyContact: Confirm contact deletion?
 ```
 
-`deleteContactMessage` is the message of both dialog 1 forms. `deleteContactMaybeErrorAlert` deletes with `deleteContactChat` and an optional `LinkNotice`, then shows `deleteContactNotice` after `.entity`: "Contact deleted!", with "in Archived contacts" for an archived contact (`chatDeleted`) and "in the list of chats" otherwise.
+`deleteContactMessage` is the message of both dialog 1 forms: "Contact with **<name>** will be deleted - this cannot be undone!". `deleteContactMaybeErrorAlert` deletes with `deleteContactChat` and an optional `LinkNotice`, then shows `deleteContactNotice` after `.entity`: "Contact deleted!", with "in Archived contacts" for an archived contact (`chatDeleted`) and "in the list of chats" otherwise.
 
 Archive (`archiveContact`): `deleteContactChat` with `.archive` (`/_delete @<id> archive`), then `deleteConversationNotice` through `AlertManager`: "Contact archived!", with the text for an active contact or for a deleted one. For `.entity` and `.archive`, `deleteContactChat` updates the contact in place (`ChatModel.updateContact`), so the chat keeps its items, stats, position and wallpaper files, and moves the chat's preset tag counts from the previous contact to the returned one.
 
-Delete and block (`showDeleteAndBanDialog`), for a `DeleteAndBanTarget` (`.contact` or `.customer`), which gives the name, the deletion line and the texts with the address or the business address:
+Delete and block (`showDeleteAndBanDialog`), for a `DeleteAndBanTarget` (`.contact` or `.customer`), which gives the name and the deletion line:
 
 ```
-dialog 1        deleteAndBanDialog: BanDialog "Delete and block?", "Block for", Delete and block, Cancel
+dialog 1        deleteAndBanDialog: BanDialog "Delete and block?", "Block for", Delete and block, Cancel; deletionText
 1 day, 1 week   deleteAndBanKeepDialog: "Delete and block?", Keep conversation; timedBanText
-Forever         deleteAndBanKeepDialog: "Delete and block forever?", Keep conversation, field "yes"; foreverText
+Forever         deleteAndBanKeepDialog: "Delete and block forever?", Keep conversation, field "Type yes"; foreverText
 result          delete(keepConversation, duration.notice)
 ```
 
@@ -591,11 +591,10 @@ result          delete(keepConversation, duration.notice)
 Group deletion (`deleteGroupAlert`, `GroupChatInfoView.swift`, also used by the chat list):
 
 ```
-alert           title and message as before; deleteGroupAlertMessage adds "<name> will be notified."
-                for isCustomerChatOwner
+alert           title and message as before
 owner           (isOwner && membership.memberActive && businessChat == nil) || isCustomerChatOwner:
-                deleteGroupKeepDialog, Delete; footer "<name> can connect to you again via your business
-                address." for isCustomerChatOwner when userAddress.addressSettings.businessAddress
+                deleteGroupKeepDialog, Delete; footer for isCustomerChatOwner "**<name>** will be notified.",
+                with ", and can connect to you again via your address." when userAddress.addressSettings.businessAddress
 others          deletion after the alert
 deletion        deleteGroup → deleteChat(chatDeleteMode, notice); afterDeletion on success
 ```

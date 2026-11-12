@@ -132,9 +132,8 @@ suspend fun apiConnect(rh: Long?, incognito: Boolean, connLink: CreatedConnLink)
 The core stores a notice for the link the user joined or connected through when a group admin removes the user with a block, or a contact or business deletes the user with a block. The plan returns `LinkNotice`, and a connect call (`apiConnect`, `apiConnectPreparedContact`, `apiConnectPreparedGroup`, `apiConnectContactViaAddress`) returns `ChatErrorType.LinkNotice(expiresAt)`. No connection is attempted.
 
 `showLinkNoticeAlert(target, expiresAt, cleanup)` in `ConnectPlan.kt` shows "Not allowed":
-- line 1 by target (`LinkNoticeTarget`): group "Blocked by the admins of this group.", channel "Blocked by the owners of this channel.", contact "Blocked by this contact.", business "Blocked by this business."
-- line 2: "No IDs shared, see How it works."
-- with an end time: "You can join again after <time>." (group, channel) or "You can connect again after <time>." (contact, business)
+- by target (`LinkNoticeTarget`): group "Blocked by the admins of this group.", channel "Blocked by the owners of this channel.", contact "Blocked by this contact.", business "Blocked by this business."
+- with an end time: "until <time>" before the full stop
 - buttons: OK; How it works opens the user guide section "Blocking members" (`bansGuideLink`)
 
 Target:

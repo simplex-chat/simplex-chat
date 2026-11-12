@@ -113,9 +113,8 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 1. The core stores a notice for the link the user joined or connected through when a group admin removes the user with a block, or a contact or business deletes the user with a block.
 2. The plan returns `.contactAddress(.linkNotice(expiresAt, contactSLinkData_))` or `.groupLink(.linkNotice(expiresAt))`; a connect call (`apiConnect`, `apiConnectPreparedContact`, `apiConnectPreparedGroup`, `apiConnectContactViaAddress`) returns `ChatErrorType.linkNotice(expiresAt)`.
 3. `showLinkNoticeAlert(_:expiresAt:cleanup:)` in `NewChatView.swift` shows "Not allowed":
-   - line 1 by target (`LinkNoticeTarget`): group "Blocked by the admins of this group.", channel "Blocked by the owners of this channel.", contact "Blocked by this contact.", business "Blocked by this business."
-   - line 2: "No IDs shared, see How it works."
-   - with an end time: "You can join again after <time>." (group, channel) or "You can connect again after <time>." (contact, business)
+   - by target (`LinkNoticeTarget`): group "Blocked by the admins of this group.", channel "Blocked by the owners of this channel.", contact "Blocked by this contact.", business "Blocked by this business."
+   - with an end time: "until <time>" before the full stop
    - buttons: OK; How it works opens the user guide section "Blocking members" (`bansGuideLink`)
 4. Target: plan `.linkNotice` from the link type, a SimpleX channel name gives channel, and business when the address link data has `business`; `apiConnect` from the link type of the connection link; `apiConnectPreparedGroup` from the group (business chat, channel, group); `apiConnectPreparedContact` and `apiConnectContactViaAddress`: contact.
 5. No connection is attempted.
@@ -159,8 +158,8 @@ flowchart TD
 
 Delete (`deleteContactDialog`):
 1. A contact that is ready and active, archived or not, gets two dialogs.
-2. Dialog 1 by the Contact deletion setting (`privacyContactDeletionDefault`): Notify shows "Delete contact?" with Delete; Ask shows "Delete contact?" with "Delete and notify" and "Delete silently". The message: the name, "Contact will be deleted - this cannot be undone!", "You won't be able to reconnect unless <name> sends you a new link."
-3. Dialog 2 (`KeepConversationDialog`): "Keep conversation", Delete, Cancel; the footer "<name> will be notified." or "<name> won't be notified.", and "<name> can connect to you again via your address." when the user has an address.
+2. Dialog 1 by the Contact deletion setting (`privacyContactDeletionDefault`): Notify shows "Delete contact?" with Delete; Ask shows "Delete contact?" with "Delete and notify" and "Delete silently". The message: "Contact with **<name>** will be deleted - this cannot be undone!"
+3. Dialog 2 (`KeepConversationDialog`): "Keep conversation", Delete, Cancel; the footer "**<name>** will be notified." or "**<name>** won't be notified."; with the user's address: "**<name>** will be notified, and can connect to you again via your address." or "won't be notified, and …".
 4. "Keep conversation" off: `apiDeleteChat` with `.full(notify:)`; on: `.entity(notify:)`, and an archived contact stays in Archived contacts.
 5. After `.entity`, "Contact deleted!" with "Don't show again" (`showDeleteContactNoticeDefault`): "You can still view conversation with <name> in the list of chats." or, for an archived contact, "You can still view conversation with <name> in Archived contacts."
 6. Other contacts: "Confirm contact deletion?" with Confirm, as before.
@@ -170,9 +169,9 @@ Archive (`archiveContact`):
 2. "Contact archived!" with "Don't show again" (`showDeleteConversationNoticeDefault`): "You can send messages to <name> from Archived contacts." or, for a deleted contact, "You can view the conversation with <name> in Archived contacts."
 
 Delete and block (`deleteAndBanContactDialog`), when `Contact.canDeleteAndBan`: the contact is ready and active, connected via the user's address (`Connection.viaUserContactLink`), and supports `LINK_NOTICE_VERSION`:
-1. "Delete and block?": "Block for" 1 day (default), 1 week or Forever; "Delete and block"; Cancel.
-2. 1 day or 1 week: "Delete and block?" with "Keep conversation" and the duration in the footer.
-3. Forever: "Delete and block forever?" with "Keep conversation" and a field; "Delete and block" is enabled when the field is "yes".
+1. "Delete and block?": "Block for" 1 day (default), 1 week or Forever; "Delete and block"; Cancel; the footer "Contact with **<name>** will be deleted - this cannot be undone!" ("Chat with **<name>** will be deleted for all members - this cannot be undone!" for a business customer).
+2. 1 day or 1 week: "Delete and block?" with "Keep conversation"; the footer "**<name>** won't be notified, and can't connect to you for <duration>."
+3. Forever: "Delete and block forever?" with "Keep conversation" and a field with the placeholder "Type yes"; "Delete and block" is enabled when the field is "yes"; the footer "**<name>** won't be notified, and can't connect via your address again, except from another app."
 4. `apiDeleteChat` with `notify=off` and a `LinkNotice`: the contact is not notified, whatever the setting, and the contact's app does not connect via the user's address for the duration; one-time links are not affected.
 
 ## Data Structures
