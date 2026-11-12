@@ -59,7 +59,7 @@ def migration_error_text(e: ChatInitError) -> str:
             names = me.get("downMigrations", [])
             return f"database is newer than this build, to roll back: {', '.join(names)}"
         return f"migration state error: {json.dumps(me)}"
-    return str(e)
+    return json.dumps(err)
 
 
 def probe_of(e: ChatInitError) -> Probe:
