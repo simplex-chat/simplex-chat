@@ -263,7 +263,7 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 - **D19.** Yearly allowances per name, defaults the service can change: 3 link edits; 3 moves in or transfers. A failed registration tries another name up to 3 times. Each registration and renewal is paid.
 - **D20.** Renewal is stage 3. The expiry date shows from stage 1. Reminders and `renewWithCredit` with its store products come before the first names expire.
 - **D21.** The main path: search → create key (first time only) → checkout with the terms tick → payment → registering → yours. A change to these steps is an open question in section 11 first. Row 3: the tick on 3·1 → create key (first time only) → moving. The screens use no crypto words, except "public blockchain" on 1·4.
-- **D22.** Stage 1 ships in two releases, each of its own pull requests: codes first, then payments; stages 2 and 3 follow (section 8).
+- **D22.** Stage 1 is built in two releases, each of its own pull requests: codes first, then payments, after which v1 ships to users; stages 2 and 3 follow (section 8).
 - **D23.** Later work: the app checks on the chain that the service sent the commit, and limits how long registering may take before it says the service failed. Commit and reveal stay separate steps of the API (section 7).
 - **D24.** A code is never worth money: redeeming one makes a name cost $0; no screen, page or receipt offers, prices or describes a code as an amount; a browser payment pays for a name.
 
@@ -1346,13 +1346,13 @@ flowchart LR
     browser --> hand2
     store --> hand2
   end
-  codes -->|"released first"| pay
+  codes -->|"built first"| pay
   pay --> later["Stage 2, then stage 3"]
 ```
 
 ### The codes release
 
-It starts now, its screens after the lead's feedback on the screens.
+It starts now, its screens after the lead's feedback on the screens. It is a step of the work: v1 ships to users after the payments release.
 
 The dev setup, first (9.2):
 
@@ -1435,13 +1435,13 @@ The screens, after the lead's feedback on them, each tested on snapshots and the
 - P71 `ui: SimpleX names, the stage-1 list`: the Advanced settings row, shown once the profile holds a name or an order; 5·2's names from `/_wallet names` (P11), each as 1·9's row, with "Opens nothing" from its order (P15), and "Replaced by …" and "On the site" from the name the profile shows; a name's row opening 1·11, its Opens row "Nothing" for a name that opens nothing, without "Remove name" for a name the profile doesn't show; the key row, opening 1·4a; the paired-desktop state; Register a name, Import, Restore purchases, 5·1a and 5·3 stay for P29 · medium · low · P11, P33, P34, P35a, P36a
   - Tested: runners: the list's row for each state of a code order; a name registered with 2·3's ✕ and one replaced by a second name on the same address, each listed with its line; snapshots of the list.
 
-By hand, at the codes release's end:
+By hand, for the codes release's work, at the payments release's end:
 
 - P35a: 1·4a's device check, its exception, capture protection and the clipboard marks on an iPhone, an Android phone, Android 8, Windows and macOS: with SimpleX Lock on and off, in both modes, after a new app passcode, without a device lock, from a channel's info.
 - P34, P47: the verified link from the site's "is yours" page into the app on a phone, once the website serves the association files.
-- Google's cryptocurrency policy: whether the app is a "software wallet" (section 10), settled with Google before the release.
-- The core's Postgres tests and the query plans, on the host.
-- Claude sessions on the runners, only on the user's word.
+- Google's cryptocurrency policy: whether the app is a "software wallet" (section 10), settled with Google before v1 ships to users.
+- The core's Postgres tests and the query plans, for all of v1.
+- If the codes release ever ships to users on its own, these checks come before it.
 
 ### The payments release
 
@@ -1490,7 +1490,7 @@ The store path:
 - P57b `docs: payment linking`: the stores and payment linking in `PRIVACY.md` and `docs/protocol/names-overview.md`, as properties from section 7 · small · low · P27c
   - Tested: read against section 7 in its review.
 
-By hand, at the payments release's end:
+By hand, also at the payments release's end:
 
 - P37: a Play test purchase by a licence tester, on a build from the internal track.
 - P46: an Apple sandbox run of 6.5's undocumented cases, the switch on, with 6.3's size of a real transaction and the longest short link the app makes.
@@ -1499,7 +1499,7 @@ By hand, at the payments release's end:
 - P35c: Q14's checks on devices, with the lock off and in passcode mode, desktop's floating console included.
 - P37, P46, by the operator: each store's product as 6.2 sets it.
 - The operator's chain operation M13 (`setPrices`, one base price), before the sale.
-- The core's Postgres tests and the query plans, on the host.
+- The codes release's checks above.
 
 ### Stage 2
 
@@ -1568,7 +1568,7 @@ By hand, at stage 3's end: a renewal bought in each store's test environment.
   - snapshot previews, references committed (iOS `previewScenes()` in `SimpleX Snapshots`; Kotlin `SnapshotTest.kt` up to the largest font scale), of every screen and state of 6.6, the store-account lines and the hub's rows: light and dark; shortest and longest names, 1·7 and 3·1 with 63 characters; smallest and largest widths; largest text size; storefronts in and outside the US; one list layout;
   - equal frames, asserted by the snapshot tests, of 1·2's three controls across its states, and of 1·7's main button, stages and card across its states and 1·8, with and without the reminder, at the default and largest text sizes;
   - the app test workflows (`desktop-linux`, `android-emu` and `ios-sim`, with the test backend), on a test branch: the pull request's branch with the names test branch merged, its scripted cases added to the feature tests of https://github.com/simplex-chat/simplex-chat/pull/8038, on the names test backend (9.2);
-  - Claude sessions on the runners only on the user's word.
+  - scripted cases; a Claude session on the runners is opt-in for a run.
 - Every pull request: each digest, calldata, derived wallet, code and token it adds matches its vector against viem and the deployed ABIs; each wallet or name command it adds is refused from a paired device; the schema dump and the API docs regenerated where needed; the reduced build passes on its final commit.
 
 ### 9.2 The names test backend and the test build
@@ -1603,7 +1603,7 @@ Besides those 6.5's sandbox run settles, section 7 states, and the questions lea
 - The wallet's known limit 5: a database restored from an older backup can reuse an account, so two names share an owner address and are linked publicly; stage 2's "Look for your names again" covers a database imported on the app's database screen, not a file restored outside the app.
 - One price on chain: until `setPrices` holds one, a short name costs the registration budget more than the store takes.
 - The deployed contracts' commit is unconfirmed against 6ccb5c52, which this plan read: a registration one day under the 730-day minimum, refused, joins the store's end-to-end tests; P26's acceptance and 6.11's renewal rules are rechecked against the deployed commit.
-- Store policy: Apple allows in-app purchase "to sell and sell services related to non-fungible tokens (NFTs), such as minting, listing, and transferring", and viewing them "provided that NFT ownership does not unlock features or functionality within the app" (3.1.1); Google requires the Tokenized Digital Asset marking and declaration; whether a key-holding app is a "software wallet" under Google's cryptocurrency policy is for the names work to settle before the codes release, the first to hold the key ("my app is a non-custodial software wallet").
+- Store policy: Apple allows in-app purchase "to sell and sell services related to non-fungible tokens (NFTs), such as minting, listing, and transferring", and viewing them "provided that NFT ownership does not unlock features or functionality within the app" (3.1.1); Google requires the Tokenized Digital Asset marking and declaration; whether a key-holding app is a "software wallet" under Google's cryptocurrency policy is for the names work to settle before v1 ships to users, the first version to hold the key ("my app is a non-custodial software wallet").
 - Refund abuse after registration: a day's loss is at most the daily cap, 50 store-paid registrations by default, each its chain price and gas; watched by hand in the stores' reports.
 
 ## 11. Open questions, for the lead
