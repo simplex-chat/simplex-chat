@@ -35,13 +35,11 @@ You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://si
 
 ## Safety
 
-- Everyone in "SimpleX MCP" can join every session's group as an admin. Invite there only people you trust with all your sessions.
-- In a session's group, rights follow the member's role. Admins and owners send prompts and the group's commands, and approve Claude's actions. Members and moderators send prompts. Observers only read. Claude posts these rights when someone joins or their role changes.
-- Claude Code never runs a command from the group, even one that starts with `!` or `/`. Claude receives each prompt as text.
-- `all` approves every message to one chat; `/revoke` ends it. `/receive CHAT N all` lets the agent receive that file and later files from one chat on the agent's servers; `/receive CHAT off` ends it.
-- Claude sends files to the group only while the group allows "Files and media".
-- Any program running as you can replace "SimpleX MCP" and its owners, without their approval, with the plugin's `reset-owners` command.
-- The agent runs on your computer and has no address in SimpleX Network, so nobody can contact it first.
+- Anyone in "SimpleX MCP" can join your sessions as an admin, so only invite people you trust.
+- In a session, admins and owners can prompt Claude and approve what it does. Other members can only prompt, and observers can only read.
+- Claude Code doesn't run `!` or `/` commands sent in the group.
+- Claude sends files to the group only if the group allows them.
+- Claude has no SimpleX address, so nobody can contact it first.
 
 ## Only Claude Code, for now
 
