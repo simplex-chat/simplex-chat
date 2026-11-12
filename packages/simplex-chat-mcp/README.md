@@ -27,6 +27,8 @@ You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://si
    claude --dangerously-load-development-channels plugin:simplex@simplex-chat
    ```
 
+   If you don't want to run SimpleX MCP as a channel, start `claude` without the flag to use it as an MCP server. [Read more](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md#install).
+
    Scan the QR code with the SimpleX app and tap Join. The group "SimpleX MCP" appears.
 
 3. Each Claude Code session gets its own group, such as "1 · my-project". Join it from the invitation in "SimpleX MCP".
