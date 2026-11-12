@@ -324,8 +324,8 @@ action decided                  Action 2 rejected by Alice. | Action 2 expired.
 mode host                       Action 2: performed without approval (mode host). | ...; failed: <error>.
 counter or card not written     Action 2: failed: <error>.
 owner's /leave CHAT             Left business Ridgeline (#9), requested by Alice. | Deleted bot SimpleX Directory (@4), requested by Alice.
-start, --models                 Model: gemma (kodiak/gemma-4-26b), in /run/agent-model/model
-owner's /model NAME             Model set to glm (privatemode/glm-latest) by Alice.
+start, --models                 Model: gemma (llama-swap/gemma-4-26b), in /run/agent-model/model
+owner's /model NAME             Model set to coder (llama-swap/qwen3-coder-next) by Alice.
 owner added, --owners LIST      Bob (member 7) is now an owner and can't approve actions yet. Restart the server with --owners 3:Alice,7:Bob
 owner gone, --owners LIST       Alice (member 3) is no longer an owner. Restart the server with --owners 7:Bob   (the human owners remaining)
 no human owner remains          Alice (member 3) is no longer an owner. No owners remain: restart the server with --reset-owners --owners
@@ -542,10 +542,10 @@ of the file fails
 /delete CHAT files, no files                No files from #9.
 /list, no chats                             No chats.
 /model | /model NAME, no --models           This server runs without --models.
-/model                                      The agent's model is `gemma`: `kodiak/gemma-4-26b`.
-                                            /'model glm'
-                                            /'model flash'
-/model NAME                                 The agent's model is `glm`: `privatemode/glm-latest`. The agent restarts with it. /'model gemma'
+/model                                      The agent's model is `gemma`: `llama-swap/gemma-4-26b`.
+                                            /'model coder'
+                                            /'model large'
+/model NAME                                 The agent's model is `coder`: `llama-swap/qwen3-coder-next`. The agent restarts with it. /'model gemma'
 /model NAME, NAME already selected          The agent's model is already `gemma`.
 /model NAME, NAME not in --models           No such model. /model shows the models.
 other one-line text starting with "/"       Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /model. Each card shows its commands.
@@ -1669,4 +1669,4 @@ C6      Claude Code closes the request stream when a call times out or its task 
 - `/model NAME` selects the agent's model among the items `NAME=PROVIDER/MODEL` of `--models`; approvers send it, in both modes. The plan: `plans/2026-11-12-mcp-model.md`.
 - The file of `--model-file` is the only store of the selection: read at start, written at each switch.
 - The script that runs opencode restarts the agent at once when the file changes, in a new opencode session.
-- kodiak: `--models gemma=kodiak/gemma-4-26b,glm=privatemode/glm-latest,flash=privatemode/glm-flash-latest`, gemma the default.
+- The example list is `--models gemma=llama-swap/gemma-4-26b,coder=llama-swap/qwen3-coder-next,large=hosted/large-latest`: two local models through llama-swap, gemma the default, then a hosted model.

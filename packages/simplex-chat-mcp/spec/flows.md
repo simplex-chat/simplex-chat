@@ -736,15 +736,15 @@ sequenceDiagram
   participant C as Core
   participant O as Owner
   participant F as FILE
-  Note over P,F: the person started serve with --models gemma=kodiak/gemma-4-26b,glm=privatemode/glm-latest,flash=privatemode/glm-flash-latest --model-file FILE
+  Note over P,F: the person started serve with --models gemma=llama-swap/gemma-4-26b,coder=llama-swap/qwen3-coder-next,large=hosted/large-latest --model-file FILE
   O->>C: /model
   C->>K: newChatItems
-  K->>O: The agent's model is `gemma`: `kodiak/gemma-4-26b`. /'model glm' /'model flash'
-  O->>C: /model glm
+  K->>O: The agent's model is `gemma`: `llama-swap/gemma-4-26b`. /'model coder' /'model large'
+  O->>C: /model coder
   C->>K: newChatItems
-  K->>F: FILE.part: privatemode/glm-latest, mode 0644, renamed to FILE
-  K->>P: Model set to glm (privatemode/glm-latest) by Alice.
-  K->>O: The agent's model is `glm`: `privatemode/glm-latest`. The agent restarts with it. /'model gemma'
+  K->>F: FILE.part: llama-swap/qwen3-coder-next, mode 0644, renamed to FILE
+  K->>P: Model set to coder (llama-swap/qwen3-coder-next) by Alice.
+  K->>O: The agent's model is `coder`: `llama-swap/qwen3-coder-next`. The agent restarts with it. /'model gemma'
   Note over F: the script that runs opencode reads FILE
 ```
 

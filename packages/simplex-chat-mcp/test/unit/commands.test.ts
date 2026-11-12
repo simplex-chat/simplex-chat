@@ -179,7 +179,7 @@ describe("owner commands", () => {
 
   it("answers other commands with the list", async () => {
     const {control} = await setup()
-    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "receive #2 all", "receive 5 all", "receive #2 5 files", "receive off", "forward", "forward #2 all", "forward #2 5 all", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all", "model a b", "model #2 glm"]
+    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "receive #2 all", "receive 5 all", "receive #2 5 files", "receive off", "forward", "forward #2 all", "forward #2 5 all", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all", "model a b", "model #2 coder"]
     for (const text of others) {
       expect(await control.ownerCommand(bob, parseCommand(`/${text}`)!)).toBe(commandsReply)
     }
@@ -762,7 +762,7 @@ describe("command menu", () => {
 
   it("has /model at the end with --models", async () => {
     const chat = agentChats()
-    const models: ModelEntry[] = [{name: "gemma", model: "kodiak/gemma-4-26b"}]
+    const models: ModelEntry[] = [{name: "gemma", model: "llama-swap/gemma-4-26b"}]
     await controlWith(chat, actionsWith("requests", fakeHooks()), undefined, "requests", {models, file: join(data, "model", "model"), selected: models[0]})
     expect(chat.profiles.map(({groupProfile}) => groupProfile.groupPreferences?.commands)).toEqual([[...menu, {type: "command", keyword: "model", label: "The agent's model"}]])
   })
@@ -777,12 +777,12 @@ describe("command menu", () => {
 describe("the agent's model", () => {
   const file = join(data, "model", "model")
   const models: ModelEntry[] = [
-    {name: "gemma", model: "kodiak/gemma-4-26b"},
-    {name: "glm", model: "privatemode/glm-latest"},
-    {name: "flash", model: "privatemode/glm-flash-latest"},
+    {name: "gemma", model: "llama-swap/gemma-4-26b"},
+    {name: "coder", model: "llama-swap/qwen3-coder-next"},
+    {name: "large", model: "hosted/large-latest"},
   ]
-  const selected = "The agent's model is `gemma`: `kodiak/gemma-4-26b`."
-  const toGlm = "The agent's model is `glm`: `privatemode/glm-latest`. The agent restarts with it. /'model gemma'"
+  const selected = "The agent's model is `gemma`: `llama-swap/gemma-4-26b`."
+  const toCoder = "The agent's model is `coder`: `llama-swap/qwen3-coder-next`. The agent restarts with it. /'model gemma'"
 
   async function modelControl(owners?: OwnerEntry[], mode: Mode = "requests", listed: ModelEntry[] = models) {
     rmSync(dirname(file), {recursive: true, force: true})
@@ -794,7 +794,7 @@ describe("the agent's model", () => {
 
   it("shows the selected model and a command for each other model, in the order of --models", async () => {
     const control = await modelControl()
-    expect(await control.ownerCommand(alice, {keyword: "model", params: ""})).toBe(`${selected}\n/'model glm'\n/'model flash'`)
+    expect(await control.ownerCommand(alice, {keyword: "model", params: ""})).toBe(`${selected}\n/'model coder'\n/'model large'`)
     const single = await modelControl(undefined, "requests", models.slice(0, 1))
     expect(await single.ownerCommand(alice, {keyword: "model", params: ""})).toBe(selected)
     expect(existsSync(file)).toBe(false)
@@ -804,13 +804,13 @@ describe("the agent's model", () => {
     const lines: string[] = []
     jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
     const control = await modelControl()
-    const mallory = {...alice, memberProfile: {...alice.memberProfile, displayName: "Mallory\n/'model flash'"}}
-    expect(await control.ownerCommand(mallory, {keyword: "model", params: "glm"})).toBe(toGlm)
-    expect(readFileSync(file, "utf8")).toBe("privatemode/glm-latest\n")
-    expect(lines.at(-1)).toBe("Model set to glm (privatemode/glm-latest) by Mallory /'model flash'.")
-    expect(await control.ownerCommand(alice, {keyword: "model", params: ""})).toBe("The agent's model is `glm`: `privatemode/glm-latest`.\n/'model gemma'\n/'model flash'")
-    expect(await control.ownerCommand(alice, {keyword: "model", params: "gemma"})).toBe("The agent's model is `gemma`: `kodiak/gemma-4-26b`. The agent restarts with it. /'model glm'")
-    expect(readFileSync(file, "utf8")).toBe("kodiak/gemma-4-26b\n")
+    const mallory = {...alice, memberProfile: {...alice.memberProfile, displayName: "Mallory\n/'model large'"}}
+    expect(await control.ownerCommand(mallory, {keyword: "model", params: "coder"})).toBe(toCoder)
+    expect(readFileSync(file, "utf8")).toBe("llama-swap/qwen3-coder-next\n")
+    expect(lines.at(-1)).toBe("Model set to coder (llama-swap/qwen3-coder-next) by Mallory /'model large'.")
+    expect(await control.ownerCommand(alice, {keyword: "model", params: ""})).toBe("The agent's model is `coder`: `llama-swap/qwen3-coder-next`.\n/'model gemma'\n/'model large'")
+    expect(await control.ownerCommand(alice, {keyword: "model", params: "gemma"})).toBe("The agent's model is `gemma`: `llama-swap/gemma-4-26b`. The agent restarts with it. /'model coder'")
+    expect(readFileSync(file, "utf8")).toBe("llama-swap/gemma-4-26b\n")
   })
 
   it("replies when the model is already selected, without writing the file", async () => {
@@ -821,7 +821,7 @@ describe("the agent's model", () => {
 
   it("refuses a name outside --models without repeating it, and a PROVIDER/MODEL value", async () => {
     const control = await modelControl()
-    for (const params of ["gpt", "GLM", "privatemode/glm-latest", "`glm`", "*glm*", "g".repeat(5000)]) {
+    for (const params of ["gpt", "CODER", "llama-swap/qwen3-coder-next", "`coder`", "*coder*", "g".repeat(5000)]) {
       expect(await control.ownerCommand(alice, {keyword: "model", params})).toBe("No such model. /model shows the models.")
     }
     expect(existsSync(file)).toBe(false)
@@ -829,23 +829,23 @@ describe("the agent's model", () => {
 
   it("refuses on a server without --models", async () => {
     const {control} = await setup()
-    for (const params of ["", "glm"]) expect(await control.ownerCommand(alice, {keyword: "model", params})).toBe("This server runs without --models.")
+    for (const params of ["", "coder"]) expect(await control.ownerCommand(alice, {keyword: "model", params})).toBe("This server runs without --models.")
   })
 
   it("accepts only approvers", async () => {
     const unlisted = await modelControl()
-    for (const params of ["", "glm"]) expect(await unlisted.ownerCommand(bob, {keyword: "model", params})).toBe("Only owners approve actions.")
+    for (const params of ["", "coder"]) expect(await unlisted.ownerCommand(bob, {keyword: "model", params})).toBe("Only owners approve actions.")
     const listed = await modelControl([{memberId: 3, name: "Alice"}])
-    expect(await listed.ownerCommand(member(8, "Carol", T.GroupMemberRole.Owner), {keyword: "model", params: "glm"})).toBe("Only the owners listed in --owners approve actions.")
+    expect(await listed.ownerCommand(member(8, "Carol", T.GroupMemberRole.Owner), {keyword: "model", params: "coder"})).toBe("Only the owners listed in --owners approve actions.")
     expect(existsSync(file)).toBe(false)
-    expect(await listed.ownerCommand(alice, {keyword: "model", params: "glm"})).toBe(toGlm)
+    expect(await listed.ownerCommand(alice, {keyword: "model", params: "coder"})).toBe(toCoder)
   })
 
   it("gives the same replies in mode host", async () => {
     const control = await modelControl(undefined, "host")
-    expect(await control.ownerCommand(alice, {keyword: "model", params: ""})).toBe(`${selected}\n/'model glm'\n/'model flash'`)
-    expect(await control.ownerCommand(alice, {keyword: "model", params: "glm"})).toBe(toGlm)
-    expect(readFileSync(file, "utf8")).toBe("privatemode/glm-latest\n")
+    expect(await control.ownerCommand(alice, {keyword: "model", params: ""})).toBe(`${selected}\n/'model coder'\n/'model large'`)
+    expect(await control.ownerCommand(alice, {keyword: "model", params: "coder"})).toBe(toCoder)
+    expect(readFileSync(file, "utf8")).toBe("llama-swap/qwen3-coder-next\n")
   })
 
   it("stops the start before the chat database is created when the folder of --model-file is missing, and releases the lock", async () => {

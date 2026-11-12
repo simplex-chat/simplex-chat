@@ -257,7 +257,7 @@ Commands:
 | `/delete #9 files` | Cancels the running downloads from chat #9, which then fail, also those the core continues after a restart, and deletes the chat's files in the data folder, forwarded ones included, for a current or a left chat: `Deleted 3 files from #9, 2.1 MB.` or `No files from #9.` |
 | `/pending` | Lists pending actions. |
 | `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages or all files: `, approved for this chat by NAME` and `, files approved by NAME`; a last line counts the older chats. |
-| `/model`, `/model glm` | With `--models`: shows the agent's model with a command for each other model, or selects model `glm`, in both approval modes. The script that runs the agent restarts it with that model: [The agent's model](#the-agents-model). |
+| `/model`, `/model coder` | With `--models`: shows the agent's model with a command for each other model, or selects model `coder`, in both approval modes. The script that runs the agent restarts it with that model: [The agent's model](#the-agents-model). |
 
 After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``. The files forwarded from #9 are deleted when the agent leaves it.
 
@@ -346,28 +346,28 @@ Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorizat
 With `--models` and `--model-file`, an owner selects the model of an agent that a script runs in opencode. The server only writes the selected model to the file; the script restarts the agent.
 
 ```
-npx -y @simplex-chat/mcp serve kodiak --models gemma=kodiak/gemma-4-26b,glm=privatemode/glm-latest,flash=privatemode/glm-flash-latest --model-file /run/agent-model/model
+npx -y @simplex-chat/mcp serve my-agent --models gemma=llama-swap/gemma-4-26b,coder=llama-swap/qwen3-coder-next,large=hosted/large-latest --model-file /run/agent-model/model
 ```
 
 - Each item of `--models` is `NAME=PROVIDER/MODEL`. Owners type NAME; opencode's `--model` takes PROVIDER/MODEL.
 - NAME: 1 to 16 lowercase letters, digits and hyphens, starting with a letter. PROVIDER: 1 to 32 letters, digits, `_`, `.` and `-`, starting with a letter or digit. MODEL: 1 to 64 letters, digits and `_.:/+@-`.
 - Names are unique, and so are PROVIDER/MODEL values. The first item is the default.
-- The start prints `Model: gemma (kodiak/gemma-4-26b), in /run/agent-model/model`.
+- The start prints `Model: gemma (llama-swap/gemma-4-26b), in /run/agent-model/model`.
 
 In the agent control chat:
 
 ```
-/model        The agent's model is `gemma`: `kodiak/gemma-4-26b`.
-              /model glm
-              /model flash
-/model glm    The agent's model is `glm`: `privatemode/glm-latest`. The agent restarts with it. /model gemma
+/model        The agent's model is `gemma`: `llama-swap/gemma-4-26b`.
+              /model coder
+              /model large
+/model coder  The agent's model is `coder`: `llama-swap/qwen3-coder-next`. The agent restarts with it. /model gemma
 /model gemma  The agent's model is already `gemma`.
 /model gpt    No such model. /model shows the models.
 ```
 
 - Only approvers select a model, in both approval modes. The command at the end of a switch reply selects the previous model.
 - With `--models`, `/model` is in the chat's command menu. Without it, `/model` replies `This server runs without --models.`
-- A switch is logged: `Model set to glm (privatemode/glm-latest) by Alice.`
+- A switch is logged: `Model set to coder (llama-swap/qwen3-coder-next) by Alice.`
 
 The file of `--model-file`, FILE:
 
