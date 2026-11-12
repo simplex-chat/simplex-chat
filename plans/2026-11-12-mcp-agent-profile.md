@@ -126,9 +126,11 @@ Core:
 5. The core of a member that receives `x.info` in a group stores the profile with its peer type (`redactedMemberProfile` keeps it, `src/Simplex/Chat/Library/Internal.hs:1367-1369`). It creates the event `updated profile` for any change of content, the peer type included (`src/Simplex/Chat/Library/Subscriber.hs:2911-2944`, `:2953-2966`, `src/Simplex/Chat/Types.hs:794-796`).
 
 Plugin today:
+
 6. Claude, `User` and the agents of `serve` have peer type `agent`. `openCore` creates each profile with `agent` and `updatedUser` sets `agent` at each start (`packages/simplex-chat-mcp/src/core.ts:24`, `:29`, `:54-59`). `serve` does the same (`src/serve.ts:89`, `:93`). A data folder of 0.3.0, read on 2026-11-12: `_hub` Claude `agent`, `_user` User `agent`, two agents of `serve` `agent`. In the hub's session group 1, the member Claude is `agent`, User `agent`, and the owner has no peer type.
 
 Apps today:
+
 7. Both apps choose a contact's placeholder by its peer type with `peerTypeIcon`: bot the cube, agent the agent placeholder, any other the person (`apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt:1989-1990`, `:2260-2265`; `apps/ios/SimpleXChat/ChatTypes.swift:313-319`, `:2685-2687`). The chat list and chat info use it for contacts (`.../views/helpers/ChatInfoImage.kt:47-56`; `apps/ios/SimpleXChat/ChatUtils.swift:95-103`). A group gets the group placeholder from `GroupInfo.chatIconName` (`ChatModel.kt:2704-2711`; `ChatTypes.swift:3077-3087`).
 8. Both apps draw a member's avatar with `MemberProfileImage`, which passes no icon, so a member without an image gets the person placeholder (`.../views/chat/group/GroupMemberInfoView.kt:931-947` with the default of `ChatInfoImage.kt:73`; `apps/ios/Shared/Views/Chat/Group/GroupMemberInfoView.swift:826-839` with the default of `apps/ios/Shared/Views/Helpers/ProfileImage.swift:15`). The callers of `MemberProfileImage`:
    ```
@@ -147,6 +149,7 @@ Apps today:
 9. Peer type `agent` exists from app 7.1.0-beta.7 (#7738, `77f9f4a46`); that pull request changed only the placeholders of contacts. Joining a session group needs app 7.1.0 or later (plan `2026-11-07-mcp-claude-code-channel.md`, section Groups). Every owner's app therefore decodes `agent`.
 
 Changes:
+
 10. `MemberProfileImage` passes `peerTypeIcon` of the member's peer type in both apps. So every place of decision 8 shows the placeholder of the member's peer type, and a bot member gets the cube, as a bot contact does.
 11. `User` is given the peer type `human`. `User` posts only prompts a person typed (`packages/simplex-chat-mcp/src/hub.ts:195`, decision 121 of the 0.3.0 plan). No consumer distinguishes `human` from an absent peer type: `peerTypeIcon` returns the person for both, and the core's views test only `bot` (`src/Simplex/Chat/View.hs:671-673`, `:1589`, `:1599`). With `human`, the role is stated in the profile.
 12. Claude and the agents of `serve` keep `agent`.
