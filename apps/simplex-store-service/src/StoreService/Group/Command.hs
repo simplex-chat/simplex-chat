@@ -45,7 +45,6 @@ data GroupCmd
   = GCIssue BadgeType Int Int
   | GCBulk BadgeType Int Int
   | GCIssueName Int Int
-  | GCBulkName Int Int Int
   | GCRevoke BadgeCode
   | GCRevokeName NamePrepaidCode
   deriving (Eq, Show)
@@ -59,18 +58,9 @@ data CmdAction
 groupCmdAction :: GroupMemberRole -> Text -> CmdAction
 groupCmdAction role t = case A.parseOnly cmdActionP (encodeUtf8 (T.strip t)) of
   Right (tag, r)
-    | role >= cmdMinRole tag -> either ReplyText runFor r
+    | role >= cmdMinRole tag -> either ReplyText RunCmd r
     | Right _ <- r, Just refusal <- cmdRefusal tag -> ReplyText refusal
   _ -> IgnoreMsg
-  where
-    -- a name code spends the sponsor allowance and the gas key's ETH when it registers, so only admins issue them
-    runFor cmd
-      | nameCode cmd && role < GRAdmin = ReplyText "Only admins can issue name codes."
-      | otherwise = RunCmd cmd
-    nameCode = \case
-      GCIssueName {} -> True
-      GCBulkName {} -> True
-      _ -> False
 
 -- | Left is the usage reply for an advertised command whose arguments do not parse.
 cmdActionP :: A.Parser (CmdTag, Either Text GroupCmd)
@@ -84,7 +74,7 @@ cmdActionP = A.choice (map cmdP [minBound .. maxBound])
 cmdArgsP :: CmdTag -> A.Parser GroupCmd
 cmdArgsP = \case
   CTIssue -> uncurry GCIssueName <$> nameCodeP <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> optP usesOpt
-  CTBulk -> uncurry GCBulkName <$> nameCodeP <*> countP <|> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
+  CTBulk -> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
   CTRevoke -> GCRevoke <$> codeP <|> GCRevokeName <$> prepaidCodeP
   where
     countP = A.space *> optValueP countOpt
@@ -175,28 +165,31 @@ cmdLabel = \case
 -- The menu hints and the usage replies are built from the same kinds, options and bounds, so they cannot drift apart.
 cmdParams :: CmdTag -> Text
 cmdParams = \case
-  CTIssue -> kindParams <> " [" <> optArg usesOpt <> "]"
-  CTBulk -> kindParams <> " " <> optArg countOpt
+  CTIssue -> kindParams (nameArg : badgeKinds) [yearsOpt, monthsOpt] <> " [" <> optArg usesOpt <> "]"
+  CTBulk -> kindParams badgeKinds [monthsOpt] <> " " <> optArg countOpt
   CTRevoke -> "<code>"
   where
-    kindParams = "<" <> T.intercalate "|" (nameArg : badgeKinds) <> "> [" <> optKey yearsOpt <> "|" <> optKey monthsOpt <> " <N>]"
+    kindParams kinds opts = "<" <> T.intercalate "|" kinds <> "> [" <> T.intercalate "|" (map optKey opts) <> " <N>]"
 
 cmdUsage :: CmdTag -> Text
 cmdUsage = \case
-  CTIssue -> kindUsage CTIssue ("[" <> optArg usesOpt <> "]") [] [usesOpt] ["name 6 years 5", "supporter months 12"]
-  CTBulk -> kindUsage CTBulk (optArg countOpt) [countOpt] [countOpt] ["name 6 count 100", "legend months 3 count 10"]
+  CTIssue ->
+    kindUsage
+      CTIssue
+      ("[" <> optVar lengthOpt <> "] [" <> optArg yearsOpt <> " | " <> optArg monthsOpt <> "] [" <> optArg usesOpt <> "]")
+      [(nameArg, [lengthOpt, yearsOpt]), (badgeKindsText, [monthsOpt, usesOpt])]
+      ["name 6 years 5", "supporter months 12"]
+  CTBulk -> kindUsage CTBulk ("[" <> optArg monthsOpt <> "] " <> optArg countOpt) [(badgeKindsText, [monthsOpt, countOpt])] ["legend months 3 count 10"]
   CTRevoke -> "Usage: " <> cmdText CTRevoke (cmdParams CTRevoke)
+  where
+    badgeKindsText = T.intercalate ", " badgeKinds
 
--- | nameOpts and badgeOpts are the command's own options that apply to each kind.
-kindUsage :: CmdTag -> Text -> [CmdOpt] -> [CmdOpt] -> [Text] -> Text
-kindUsage tag cmdOptArg nameOpts badgeOpts examples =
-  T.intercalate
-    "\n"
-    [ "Usage: " <> cmdText tag ("<kind> [" <> optVar lengthOpt <> "] [" <> optArg yearsOpt <> " | " <> optArg monthsOpt <> "] " <> cmdOptArg),
-      nameArg <> ": " <> bounds (lengthOpt : yearsOpt : nameOpts),
-      T.intercalate ", " badgeKinds <> ": " <> bounds (monthsOpt : badgeOpts),
-      "e.g. " <> T.intercalate " · " (map (cmdText tag) examples)
-    ]
+kindUsage :: CmdTag -> Text -> [(Text, [CmdOpt])] -> [Text] -> Text
+kindUsage tag kindArgs kinds examples =
+  T.intercalate "\n" $
+    ["Usage: " <> cmdText tag ("<kind> " <> kindArgs)]
+      <> map (\(kind, opts) -> kind <> ": " <> bounds opts) kinds
+      <> ["e.g. " <> T.intercalate " · " (map (cmdText tag) examples)]
   where
     bounds = T.intercalate ", " . map optBounds
     optBounds CmdOpt {optKey, optMin, optMax} = optKey <> " " <> tshow optMin <> "–" <> tshow optMax

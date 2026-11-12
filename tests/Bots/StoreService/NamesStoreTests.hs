@@ -150,7 +150,7 @@ issue st n c = withTransaction st $ \db -> do
   fromJust <$> getPrepaidCodeById db codeId
 
 usable :: NewPrepaidCode
-usable = NewPrepaidCode {npcCodeHash = "", npcMinLength = 8, npcYears = twoYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing}
+usable = NewPrepaidCode {npcCodeHash = "", npcMinLength = 8, npcYears = twoYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
 
 placeCode :: DBStore -> Text -> Address -> OrderFields -> PrepaidCode -> IO (Either RegistrationRefused ())
 placeCode st rid owner o code = withTransaction st $ \db -> createCodeRegistration db (newReg rid owner o) code t0

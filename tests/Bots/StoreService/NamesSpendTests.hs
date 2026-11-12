@@ -8,7 +8,7 @@ module Bots.StoreService.NamesSpendTests (namesSpendChatTests, namesSpendTests) 
 import Bots.StoreService.BotTests (operatorCmd, withStoreService)
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates, webhookEvent, webhookSigHeader, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (reservedNamesCall)
+import Bots.StoreService.NamesContractsTests (rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind, woken)
 import Bots.StoreService.NamesPhasesTests (registrationPath)
@@ -75,7 +75,7 @@ namesSpendTests = describe "StoreService names: spend" $ do
   describe "refusals" $ do
     it "answers balance_changed with the current balance for a stale amount, a held balance and an order with none" testBalanceChanged
     it "refuses a method with a covered price, none with a difference, and prices and balances not positive" testMethodRule
-    it "answers name_taken, catalog_changed, name_check_unavailable, provider_unavailable and order_exists, spending nothing" testOrderChecks
+    it "answers name_taken, catalog_changed, name_check_unavailable, also for a price under the floor, provider_unavailable and order_exists, spending nothing" testOrderChecks
     it "runs its checks in the contract's order" testCheckOrder
     it "refuses a card difference below the card minimum after the price check, accepting it by crypto and at the minimum" testCardMinimum
     it "refuses a malformed order and a body over 16384 bytes, accepting the longest" testSpendSizes
@@ -380,6 +380,8 @@ testOrderChecks = withSpend $ \ctx@Ctx {cNode = node, cStub} -> do
   setFault node "eth_getBlockByNumber" HttpFailure
   spend ctx src (covered 30000) `shouldReturn` refusedWith 503 "name_check_unavailable"
   clearFault node "eth_getBlockByNumber"
+  answerCallOnce node fakeController (rentPriceCall 11) $ Returns $ rentPriceAnswer 9999
+  spend ctx src (covered 30000) {sbOrder = aliceOrder {oPrice = 9999}} `shouldReturn` refusedWith 503 "name_check_unavailable"
   low <- sourceOf ctx "low" 6000
   modifyIORef' cStub $ \s -> s {ssCreateResult = Left (ProviderError "down")}
   spend ctx low (difference 6000) `shouldReturn` refusedWith 503 "provider_unavailable"
