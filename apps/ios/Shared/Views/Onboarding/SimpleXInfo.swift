@@ -70,9 +70,9 @@ struct SimpleXInfo: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Spacer(minLength: 0)
-
                 if onboarding {
+                    Spacer(minLength: 0)
+
                     createFirstProfileButton()
                         .padding(.vertical, 10)
                 }
@@ -144,11 +144,5 @@ let textNewLine = Text(verbatim: "\n")
 struct SimpleXInfo_Previews: PreviewProvider {
     static var previews: some View {
         SimpleXInfo(onboarding: true)
-    }
-}
-
-struct SimpleXInfoFromSettings_Previews: PreviewProvider {
-    static var previews: some View {
-        SimpleXInfo(onboarding: false)
     }
 }

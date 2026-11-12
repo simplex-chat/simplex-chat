@@ -158,7 +158,7 @@ fun SimpleXInfoLayout(
           OnboardingActionButton(user, onboardingStage)
         }
         TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built), icon = painterResource(MR.images.ic_info), onClick = {
-          ModalManager.start.showModal { HowItWorks(user, onboardingStage) }
+          ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) }
         })
       }
     }
