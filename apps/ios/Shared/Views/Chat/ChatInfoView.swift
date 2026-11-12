@@ -1228,8 +1228,8 @@ private func deleteContactMessage(_ contact: Contact) -> Text {
 private func deleteContactKeepDialog(_ contact: Contact, notify: Bool, hasAddress: Bool, close: @escaping CloseSheet, delete: @escaping (_ keepConversation: Bool) -> Void) -> KeepConversationDialog {
     let name = contact.displayName
     let footer: Text = switch (notify, hasAddress) {
-    case (true, true): Text("**\(name)** will be notified, and can connect to you again via your address.")
-    case (false, true): Text("**\(name)** won't be notified, and can connect to you again via your address.")
+    case (true, true): Text("**\(name)** will be notified, and can reconnect via your address.")
+    case (false, true): Text("**\(name)** won't be notified, and can reconnect via your address.")
     case (true, false): Text("**\(name)** will be notified.")
     case (false, false): Text("**\(name)** won't be notified.")
     }

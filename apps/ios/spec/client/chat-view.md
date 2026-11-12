@@ -568,7 +568,7 @@ ready and active    deleteActiveContactDialog: privacyContactDeletionDefault
   .notify           deleteContactAlert (Alert): Delete, Cancel → dialog 2, notify on
   .ask              deleteContactActionSheet: Delete and notify, Delete silently → dialog 2
   dialog 2          deleteContactKeepDialog: Delete; footer "**<name>** will be notified." or "won't be notified.",
-                    with ", and can connect to you again via your address." when ChatModel.userAddress is set
+                    with ", and can reconnect via your address." when ChatModel.userAddress is set
 otherwise           deleteNotReadyContact: Confirm contact deletion?
 ```
 
@@ -594,7 +594,7 @@ Group deletion (`deleteGroupAlert`, `GroupChatInfoView.swift`, also used by the 
 alert           title and message as before
 owner           (isOwner && membership.memberActive && businessChat == nil) || isCustomerChatOwner:
                 deleteGroupKeepDialog, Delete; footer for isCustomerChatOwner "**<name>** will be notified.",
-                with ", and can connect to you again via your address." when userAddress.addressSettings.businessAddress
+                with ", and can reconnect via your address." when userAddress.addressSettings.businessAddress
 others          deletion after the alert
 deletion        deleteGroup → deleteChat(chatDeleteMode, notice); afterDeletion on success
 ```

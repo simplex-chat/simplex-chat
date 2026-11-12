@@ -159,7 +159,7 @@ flowchart TD
 Delete (`deleteContactDialog`):
 1. A contact that is ready and active, archived or not, gets two dialogs.
 2. Dialog 1 by the Contact deletion setting (`privacyContactDeletionDefault`): Notify shows "Delete contact?" with Delete; Ask shows "Delete contact?" with "Delete and notify" and "Delete silently". The message: "Contact with **<name>** will be deleted - this cannot be undone!"
-3. Dialog 2 (`KeepConversationDialog`): "Keep conversation", Delete, Cancel; the footer "**<name>** will be notified." or "**<name>** won't be notified."; with the user's address: "**<name>** will be notified, and can connect to you again via your address." or "won't be notified, and …".
+3. Dialog 2 (`KeepConversationDialog`): "Keep conversation", Delete, Cancel; the footer "**<name>** will be notified." or "**<name>** won't be notified."; with the user's address: "**<name>** will be notified, and can reconnect via your address." or "won't be notified, and …".
 4. "Keep conversation" off: `apiDeleteChat` with `.full(notify:)`; on: `.entity(notify:)`, and an archived contact stays in Archived contacts.
 5. After `.entity`, "Contact deleted!" with "Don't show again" (`showDeleteContactNoticeDefault`): "You can still view conversation with <name> in the list of chats." or, for an archived contact, "You can still view conversation with <name> in Archived contacts."
 6. Other contacts: "Confirm contact deletion?" with Confirm, as before.

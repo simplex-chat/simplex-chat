@@ -739,8 +739,8 @@
   <string name="delete_chat_with_for_all_members_cannot_undo_warning">Chat with %s will be deleted for all members - this cannot be undone!</string>
   <string name="contact_will_be_notified">%s will be notified.</string>
   <string name="contact_wont_be_notified">%s won\'t be notified.</string>
-  <string name="contact_will_be_notified_can_connect_again">%s will be notified, and can connect to you again via your address.</string>
-  <string name="contact_wont_be_notified_can_connect_again">%s won\'t be notified, and can connect to you again via your address.</string>
+  <string name="contact_will_be_notified_can_connect_again">%s will be notified, and can reconnect via your address.</string>
+  <string name="contact_wont_be_notified_can_connect_again">%s won\'t be notified, and can reconnect via your address.</string>
   <string name="keep_conversation">Keep conversation</string>
   <string name="only_delete_conversation">Only delete conversation</string>
   <string name="confirm_delete_contact_question">Confirm contact deletion?</string>

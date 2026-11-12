@@ -1107,7 +1107,7 @@ private func deleteGroupKeepDialog(_ groupInfo: GroupInfo, hasBusinessAddress: B
         actionTitle: NSLocalizedString("Delete", comment: "delete group dialog"),
         footer: groupInfo.isCustomerChatOwner
             ? (hasBusinessAddress
-               ? Text("**\(groupInfo.displayName)** will be notified, and can connect to you again via your address.")
+               ? Text("**\(groupInfo.displayName)** will be notified, and can reconnect via your address.")
                : Text("**\(groupInfo.displayName)** will be notified."))
             : nil,
         close: close,
