@@ -53,6 +53,7 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 | `--pg-conn` | postgres | yes | — | PostgreSQL connection string |
 | `--pg-schema` | postgres | no | `simplex_v1` | schema prefix used for bot tables |
 | `-a` / `--auto-add-team-members` | both | no | | comma-separated `ID:name` pairs (e.g. `1:Alice,2:Bob`) |
+| `--broadcasters` | both | no | | comma-separated `ID:name` pairs of contacts allowed to use `/feed` in the team group |
 | `--timezone` | both | no | `UTC` | IANA zone for weekend detection |
 | `--complete-hours` | both | no | `3` | auto-complete chats after N hours idle (`0` disables) |
 | `--card-flush-seconds` | both | no | `300` | debounce card state writes |
@@ -71,6 +72,7 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 |---|---|
 | `bot.team_group` | `--team-group` |
 | `bot.auto_add_team_members` | `--auto-add-team-members` |
+| `bot.broadcasters` | `--broadcasters` |
 | `bot.state_file` | `--state-file` |
 | `bot.timezone` | `--timezone` |
 | `bot.complete_hours` | `--complete-hours` |
@@ -164,7 +166,15 @@ With `--allow-down-migrations`, those migrations are rolled back with the down S
 
 A line is `ok`, `FAIL` or `?`. `?` marks an id absent from the chat previews: with chat stopped, only chats that were used are listed, so the bot verifies such ids at startup.
 
-The exit code is 0 when no line is `FAIL`, 1 otherwise. The checks cover the database connection and migrations, the persisted team group, Grok user and Grok contact, the `--auto-add-team-members` ids and names, and the `--context-file`.
+The exit code is 0 when no line is `FAIL`, 1 otherwise. The checks cover the database connection and migrations, the persisted team group, Grok user and Grok contact, the `--auto-add-team-members` and `--broadcasters` ids and names, and the `--context-file`.
+
+## Feed
+
+A contact listed in `bot.broadcasters` sends `/feed <text>` in the team group. The bot sends the text as a feed message to every customer chat and every direct contact of the bot, replies that it is being sent, and posts again when it is sent to all chats or fails. The text may span several lines. `/feed` from another contact gets an error reply with that contact's id, which the operator adds to `bot.broadcasters`.
+
+A broadcaster must be a contact of the bot: the bot sends every team group member the contact id it knows them by. The bot exits at start if an id is not a contact or its display name differs, as for `bot.auto_add_team_members`.
+
+Feeds are part of the core, and no released libsimplex has them yet: build the Docker image with `LIBS=source`. The default `LIBS=release` build fails to compile the bot, because the published `@simplex-chat/types` has no feed chats.
 
 ## Local development against unreleased lib changes
 

@@ -158,8 +158,14 @@ class MockChatApi {
   }
 
   rawCmds: string[] = []
+  feedItemIds: number[] = []
   async sendChatCmd(cmd: string) {
     this.rawCmds.push(cmd)
+    if (cmd.startsWith("/feed ")) {
+      const itemId = nextItemId++
+      this.feedItemIds.push(itemId)
+      return {type: "newChatItems", user: makeUser(MAIN_USER_ID), chatItems: [makeFeedAChatItem(itemId, {type: "sndNew"})]}
+    }
     return {type: "cmdOk"}
   }
 
@@ -267,6 +273,7 @@ function makeConfig(overrides: Partial<any> = {}) {
       {id: TEAM_MEMBER_1_ID, name: "Alice"},
       {id: TEAM_MEMBER_2_ID, name: "Bob"},
     ],
+    broadcasters: [{id: TEAM_MEMBER_1_ID, name: "Alice"}],
     groupLinks: "",
     timezone: "UTC",
     completeHours: 3,
@@ -359,6 +366,13 @@ function makeDirectAChatItem(chatItem: any, contactId: number): any {
   return {
     chatInfo: {type: "direct", contact: {contactId, profile: {displayName: "Someone"}}},
     chatItem,
+  }
+}
+
+function makeFeedAChatItem(itemId: number, itemStatus: any): any {
+  return {
+    chatInfo: {type: "feed", feed: {feedId: 1, userId: MAIN_USER_ID}},
+    chatItem: {chatDir: {type: "feedSnd"}, meta: {itemId, itemStatus}, content: {type: "sndMsgContent", msgContent: {type: "text", text: ""}}},
   }
 }
 
@@ -1359,6 +1373,90 @@ describe("/join Command (Team Group)", () => {
     await bot.onNewChatItems(teamGroupMessage("/join abc"))
     expectSentToGroup(TEAM_GROUP_ID, `Error: invalid group id "abc"`)
     expect(chat.added.length).toBe(0)
+  })
+})
+
+describe("/feed Command (Team Group)", () => {
+  beforeEach(() => setup())
+
+  function statusEvent(itemId: number, itemStatus: any): any {
+    return {
+      type: "chatItemsStatusesUpdated" as const,
+      user: makeUser(MAIN_USER_ID),
+      chatItems: [makeFeedAChatItem(itemId, itemStatus)],
+    }
+  }
+
+  test("/feed from a broadcaster → core /feed with JSON text, queued reply", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/feed hello everyone"))
+    expect(chat.rawCmds).toEqual(['/feed "hello everyone"'])
+    expectSentToGroup(TEAM_GROUP_ID, `Feed message ${chat.feedItemIds[0]} is being sent to all chats.`)
+  })
+
+  test("/feed keeps newlines and quotes", async () => {
+    await bot.onNewChatItems(teamGroupMessage('/feed line "one"\nline two'))
+    expect(chat.rawCmds).toEqual(['/feed "line \\"one\\"\\nline two"'])
+  })
+
+  test("/feed on its own line → text starts after the newline", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/feed\nline one\nline two"))
+    expect(chat.rawCmds).toEqual(['/feed "line one\\nline two"'])
+  })
+
+  test("/feed with extra spaces → text has no leading whitespace", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/feed   hello"))
+    expect(chat.rawCmds).toEqual(['/feed "hello"'])
+  })
+
+  test("/feed from a non-broadcaster → error reply, nothing sent", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/feed hello", TEAM_MEMBER_2_ID))
+    expect(chat.rawCmds.length).toBe(0)
+    expectSentToGroup(TEAM_GROUP_ID, `Error: contact ${TEAM_MEMBER_2_ID} is not allowed to use /feed`)
+  })
+
+  test("/feed without text → error reply, nothing sent", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/feed  "))
+    expect(chat.rawCmds.length).toBe(0)
+    expectSentToGroup(TEAM_GROUP_ID, "Error: add the message text after /feed")
+  })
+
+  test("/feed with an unexpected core response → error reply, nothing tracked", async () => {
+    chat.sendChatCmd = async (cmd: string) => {
+      chat.rawCmds.push(cmd)
+      return {type: "cmdOk"}
+    }
+    await bot.onNewChatItems(teamGroupMessage("/feed hello"))
+    expectSentToGroup(TEAM_GROUP_ID, "Error sending feed message")
+  })
+
+  test("customer sending /feed in customer group → treated as normal message", async () => {
+    await bot.onNewChatItems(customerMessage("/feed hello"))
+    expect(chat.rawCmds.length).toBe(0)
+    expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
+  })
+
+  test("feed item complete → one report, after partial progress is ignored", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/feed hello"))
+    const itemId = chat.feedItemIds[0]
+    const report = `Feed message ${itemId} sent to all chats.`
+    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndSent", sndProgress: "partial"}))
+    expectNotSentToGroup(TEAM_GROUP_ID, report)
+    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndSent", sndProgress: "complete"}))
+    expectSentToGroup(TEAM_GROUP_ID, report)
+    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndSent", sndProgress: "complete"}))
+    expect(chat.sentTo(TEAM_GROUP_ID).filter(m => m === report).length).toBe(1)
+  })
+
+  test("feed item error → failure report with the error", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/feed hello"))
+    const itemId = chat.feedItemIds[0]
+    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndError", agentError: {type: "other", sndError: "boom"}}))
+    expectSentToGroup(TEAM_GROUP_ID, `Feed message ${itemId} failed: {"type":"other","sndError":"boom"}`)
+  })
+
+  test("status of an unknown feed item → ignored", async () => {
+    await bot.onChatItemsStatusesUpdated(statusEvent(4242, {type: "sndSent", sndProgress: "complete"}))
+    expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(0)
   })
 })
 
@@ -2488,6 +2586,16 @@ describe("parseConfig Validation", () => {
     expect(parseConfig(baseArgs).queueSize).toBeUndefined()
   })
 
+  test("--broadcasters → parsed as ID:name pairs, empty when absent", () => {
+    expect(parseConfig(baseArgs).broadcasters).toEqual([])
+    const cfg = parseConfig([...baseArgs, "--broadcasters", "3:Carol,4:Dave"])
+    expect(cfg.broadcasters).toEqual([{id: 3, name: "Carol"}, {id: 4, name: "Dave"}])
+  })
+
+  test("--broadcasters with a malformed pair → throws", () => {
+    expect(() => parseConfig([...baseArgs, "--broadcasters", "Carol"])).toThrow(/Invalid ID:name format/)
+  })
+
   test("--queue-size parses a positive integer", () => {
     expect(parseConfig([...baseArgs, "--queue-size", "65536"]).queueSize).toBe(65536)
   })
@@ -2518,6 +2626,7 @@ describe("parseConfig Validation", () => {
         `[bot]`,
         `team_group = "SimpleX Support Team"`,
         `auto_add_team_members = ["1:Alice", "2:Bob"]`,
+        `broadcasters = ["3:Carol"]`,
         `complete_hours = 0`,
         `queue_size = 65536`,
         `[database]`,
@@ -2533,6 +2642,7 @@ describe("parseConfig Validation", () => {
       const cfg = parseConfig(["--config", path])
       expect(cfg.teamGroup).toEqual({id: 0, name: "SimpleX Support Team"})
       expect(cfg.teamMembers).toEqual([{id: 1, name: "Alice"}, {id: 2, name: "Bob"}])
+      expect(cfg.broadcasters).toEqual([{id: 3, name: "Carol"}])
       expect(cfg.completeHours).toBe(0)
       expect(cfg.queueSize).toBe(65536)
       expect(cfg.db).toEqual({type: "postgres", connectionString: "postgres://localhost/db"})
@@ -2887,6 +2997,7 @@ describe("Dry Run", () => {
     ({
       teamGroup: {id: 0, name: "Support Team"},
       teamMembers: [],
+      broadcasters: [],
       contextFile: null,
       ...over,
     }) as any
@@ -2915,6 +3026,16 @@ describe("Dry Run", () => {
   test("team member found by id after a rename → fails", async () => {
     const chat = mkChat([groupChat(1, "Support Team"), directChat(3, "alice")])
     expect(await dryRun(chat, config({teamMembers: [{id: 3, name: "bob"}]}), {teamGroupId: 1})).toBe(false)
+  })
+
+  test("broadcaster found by id after a rename → fails", async () => {
+    const chat = mkChat([groupChat(1, "Support Team"), directChat(3, "alice")])
+    expect(await dryRun(chat, config({broadcasters: [{id: 3, name: "bob"}]}), {teamGroupId: 1})).toBe(false)
+  })
+
+  test("broadcaster id resolves → passes", async () => {
+    const chat = mkChat([groupChat(1, "Support Team"), directChat(3, "alice")])
+    expect(await dryRun(chat, config({broadcasters: [{id: 3, name: "alice"}]}), {teamGroupId: 1})).toBe(true)
   })
 
   test("persisted Grok user missing → fails", async () => {
