@@ -1780,6 +1780,14 @@ object ChatController {
         )
       }
       r is API.Error && r.err is ChatError.ChatErrorAgent
+          && r.err.agentError is AgentErrorType.CONN
+          && r.err.agentError.connErr is ConnectionErrorType.DUPLICATE -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.connection_error_duplicate),
+          generalGetString(MR.strings.connection_error_duplicate_desc).format("CONN DUPLICATE")
+        )
+      }
+      r is API.Error && r.err is ChatError.ChatErrorAgent
           && r.err.agentError is AgentErrorType.SMP
           && r.err.agentError.smpErr is SMPErrorType.BLOCKED -> {
         showContentBlockedAlert(
@@ -2673,7 +2681,7 @@ object ChatController {
   }
 
   suspend fun allowFeatureToContact(rh: Long?, contact: Contact, feature: ChatFeature, param: Int? = null) {
-    val prefs = contact.mergedPreferences.toPreferences().setAllowed(feature, param = param)
+    val prefs = contact.userPreferences.setAllowed(feature, param = param)
     val toContact = apiSetContactPrefs(rh, contact.contactId, prefs)
     if (toContact != null) {
       withContext(Dispatchers.Main) {
@@ -5931,16 +5939,6 @@ data class ContactUserPreferences(
   val calls: ContactUserPreference,
   val commands: List<ChatBotCommand>?,
 ) {
-  fun toPreferences(): ChatPreferences = ChatPreferences(
-    timedMessages = timedMessages.userPreference.pref,
-    fullDelete = fullDelete.userPreference.pref,
-    reactions = reactions.userPreference.pref,
-    voice = voice.userPreference.pref,
-    files = files.userPreference.pref,
-    calls = calls.userPreference.pref,
-    commands = commands,
-  )
-
   companion object {
     val sampleData = ContactUserPreferences(
       timedMessages = ContactUserPreferenceTimed(

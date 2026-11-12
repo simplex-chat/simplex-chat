@@ -160,6 +160,15 @@ final class SnapshotTests: XCTestCase {
         let rowHash = { (older: ChatItem) in ListItem(item: items[4], prevItem: items[5], nextItem: older, unreadBefore: 0).genHash(false, false) }
         XCTAssertNotEqual(rowHash(items[3]), rowHash(unreacted))
     }
+
+    func testVoiceMessageTimeFormatting() {
+        XCTAssertEqual(voiceMessageTime(90), "01:30")
+        XCTAssertEqual(voiceMessageTime(3600), "01:00:00")
+        XCTAssertEqual(voiceMessageTime(TimeInterval(Int.max)), "00:00")
+        XCTAssertEqual(voiceMessageTime(.nan), "00:00")
+        XCTAssertEqual(voiceMessageTime_(nil), "00:00")
+        XCTAssertEqual(voiceMessageTime_(TimeInterval(Int.max)), "00:00")
+    }
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {

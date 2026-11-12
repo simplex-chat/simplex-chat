@@ -15,13 +15,16 @@ serve options:
   --data DIR             data folder (default: ~/.simplex-mcp/NAME)
   --display-name TEXT    the agent's name in SimpleX (default at the first start: NAME)
   --approve MODE         what the owner approves in the agent control chat:
-                           requests  the agent's connections and messages (default)
+                           requests  the agent's connections, messages, downloads
+                                     and leaving chats (default)
                            host      nothing; the MCP host asks
   --owners [ID:NAME,...] only these owners approve; without a list, the link
                          adds an observer and its ID is printed at the join.
                          Without --owners, whoever joins becomes an owner and
                          every owner approves.
   --expire HOURS         pending actions expire after HOURS, 1 to 23 (default: 23)
+  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,
+                         0 to 60 (default: 10)
   --reset-owners         replace the owners: a new agent control chat and link
   --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)
@@ -58,6 +61,7 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
     newToken: false,
     port: 5226,
     qrCode: "small",
+    stopWait: 10,
     dataGiven: false,
   }
   for (let option = options.next(); option !== undefined; option = options.next()) {
@@ -77,6 +81,9 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
         break
       case "--expire":
         serve.expireHours = integer(option, options.value(option), 1, 23, "hours from 1 to 23")
+        break
+      case "--stop-wait":
+        serve.stopWait = integer(option, options.value(option), 0, 60, "seconds from 0 to 60")
         break
       case "--reset-owners":
         serve.resetOwners = true
