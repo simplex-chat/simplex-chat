@@ -104,7 +104,7 @@ class AlertManager {
 
   fun showAlertDialogButtonsColumn(
     title: String,
-    text: AnnotatedString?,
+    text: AnnotatedString,
     onDismissRequest: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
     buttons: @Composable () -> Unit,

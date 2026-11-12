@@ -324,27 +324,27 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, notify: Bool
 
 fun showKeepConversationDialog(title: String, text: AnnotatedString?, confirmText: String, notify: Boolean, confirm: (ChatDeleteMode) -> Unit) {
   val contactDeleteMode = mutableStateOf<ContactDeleteMode>(ContactDeleteMode.Full())
-
-  AlertManager.shared.showAlertDialogButtonsColumn(
-    title = title,
-    text = text,
-    buttons = {
-      Column {
-        KeepConversationToggle(contactDeleteMode)
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          confirm(contactDeleteMode.value.toChatDeleteMode(notify))
-        }) {
-          Text(confirmText, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
-        }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-        }) {
-          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
+  val buttons: @Composable () -> Unit = {
+    Column {
+      KeepConversationToggle(contactDeleteMode)
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+        confirm(contactDeleteMode.value.toChatDeleteMode(notify))
+      }) {
+        Text(confirmText, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+      }
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+      }) {
+        Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
       }
     }
-  )
+  }
+  if (text != null) {
+    AlertManager.shared.showAlertDialogButtonsColumn(title = title, text = text, buttons = buttons)
+  } else {
+    AlertManager.shared.showAlertDialogButtonsColumn(title = title, parseHtml = false, buttons = buttons)
+  }
 }
 
 @Composable
