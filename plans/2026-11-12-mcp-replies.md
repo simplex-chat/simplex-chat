@@ -55,8 +55,11 @@ a post of User                          reply_to="44" reply_to_from="User" reply
 another member's prompt                 reply_to="40" reply_to_from="Bob" reply_to_text="Run the tests"
 a message absent from the group         reply_to_from="Bob" reply_to_text="Run the tests"
 a message of a member unknown to it     reply_to_text="Run the tests"
-an image without a caption              reply_to="45" reply_to_from="Alice" reply_to_text=""
+an image without a caption              reply_to="45" reply_to_from="Alice" reply_to_text="IMG_2041.jpg"
+a video without a caption, in a text    reply_to="46" reply_to_from="Alice" reply_to_text=""
 ```
+
+The replier's core puts the file name into the quote of an image or a file without text (decision 7).
 
 Claude Code writes `'` as `&apos;` and `"` as `&quot;` in an attribute (decision 5).
 
@@ -120,7 +123,7 @@ The plugin and `serve` share `toMessage` and the tool schemas (0.3.0 decision 16
 - B: returned by the plugin only. `serve` keeps `{chat, item}`. `toMessage` gets a flag for the quote fields, set by the plugin's `AgentTools`, and `registerTools` a message schema per host: about 20 more lines, and tests of both forms.
 - C: returned by neither. Only the channel changes, and Claude reads a peer's reply without its quote, as today.
 
-Decisions 17, 19, 21 and 23 depend on Q1. Under B or C, `toReplyTo` and `selfSender` (decisions 18 and 20) serve the channel alone. The work continues on A.
+Decisions 17, 19, 21 and 23 depend on Q1. Under B or C, `toReplyTo` (decision 18) serves the channel alone, and `selfSender` and `toMessages` (decision 20) are left out. The work continues on A.
 
 ## 4. Decisions
 
@@ -131,12 +134,12 @@ Channel:
 4. `reply_to` is left out when the quoted item is absent from the group, and `reply_to_from` when its sender is unknown there. `reply_to_text` is sent with every reply, also when empty, so that each reply has at least one of the keys, as `text` of `reply_to` is required in tool results (decision 23).
 5. The text is one line: each run of white space, line breaks included, becomes one space, and the ends are trimmed. A quote on the `send` card is folded the same way ([control.ts:718](../packages/simplex-chat-mcp/src/control.ts#L718)). Claude Code escapes `&`, `<`, `>`, `"` and `'` in an attribute and leaves line breaks unescaped (at 285202686), and the hub finds a channel tag only when its opening tag is one line ([hub.ts:27](../packages/simplex-chat-mcp/src/hub.ts#L27)).
 6. The text is cut to its first 200 characters, and `…` follows a cut text, as in 0.3.0 decision 51 ([hook.ts:190-192](../packages/simplex-chat-mcp/src/hook.ts#L190-L192)). Two or three lines of a quote are shown in the apps ([FramedItemView.swift:368](../apps/ios/Shared/Views/Chat/ChatItem/FramedItemView.swift#L368), [:371](../apps/ios/Shared/Views/Chat/ChatItem/FramedItemView.swift#L371); [FramedItemView.kt:107](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt#L107), [:110](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt#L110)). Claude saw a quoted prompt as its channel event, and a quoted answer or card comes from Claude's own turn, so Claude identifies the message by its start. The `send` card cuts a quote at 100 characters for the owner's screen ([control.ts:718](../packages/simplex-chat-mcp/src/control.ts#L718)). Claude gets only the start, because its tools read no message by its ID, and 200 characters tell apart answers that begin alike.
-7. The text is taken from the quote in the reply, as shown in the apps. The core makes the quote from the reply's copy of the quoted content ([Store/Messages.hs:674-693](../src/Simplex/Chat/Store/Messages.hs#L674-L693), [FramedItemView.swift:381](../apps/ios/Shared/Views/Chat/ChatItem/FramedItemView.swift#L381)). The service reads no other item for it. When the text is empty and the message's file name is known, the text is the file name, as a quote of a file shows it ([tools.ts:1580-1581](../packages/simplex-chat-mcp/src/tools.ts#L1580-L1581)). The file name is known for a reacted item of `ep/mcp-reactions`. A reply's quote contains the content without the file name ([Messages.hs:609-617](../src/Simplex/Chat/Messages.hs#L609-L617)), so its empty text stays empty.
+7. The text is taken from the quote in the reply, as shown in the apps. The core makes the quote from the reply's copy of the quoted content ([Store/Messages.hs:674-693](../src/Simplex/Chat/Store/Messages.hs#L674-L693), [FramedItemView.swift:381](../apps/ios/Shared/Views/Chat/ChatItem/FramedItemView.swift#L381)). The service reads no other item for it. The replier's core builds the quoted content with `quoteContent` ([Internal.hs:225](../src/Simplex/Chat/Library/Internal.hs#L225), [Commands.hs:4954](../src/Simplex/Chat/Library/Commands.hs#L4954)). It puts the file name in place of an empty text for a quoted image or file ([Internal.hs:376-378](../src/Simplex/Chat/Library/Internal.hs#L376-L378), [:398-399](../src/Simplex/Chat/Library/Internal.hs#L398-L399)), and for any quoted message when the reply is a link, image, video or chat ([:375](../src/Simplex/Chat/Library/Internal.hs#L375), [:385-394](../src/Simplex/Chat/Library/Internal.hs#L385-L394)). A video or voice message quoted in a text, file or voice reply keeps its empty text ([:381](../src/Simplex/Chat/Library/Internal.hs#L381)), and a `CIQuote` contains no file name ([Messages.hs:609-617](../src/Simplex/Chat/Messages.hs#L609-L617)), so that text stays empty. `toReplyTo` applies the same rule when it is given a file name, as for a reacted item of `ep/mcp-reactions`: an empty text becomes the file name ([tools.ts:1580-1581](../packages/simplex-chat-mcp/src/tools.ts#L1580-L1581) mirrors it for the message size).
 8. The sender is named by the direction of the quote, as the sender of a message is named ([`itemSender`, messages.ts:256-269](../packages/simplex-chat-mcp/src/messages.ts#L256-L269)): a member's name for a member's message, `User` included; the contact's name for the contact's message; Claude's name in the chat for its own message. A quote from a member unknown to the chat is marked `channelRcv` by the core ([Messages.hs:681](../src/Simplex/Chat/Messages.hs#L681)), and its sender is left out, as in the apps ([ChatModel.kt:4566-4575](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L4566-L4575)).
 9. The quote is data: with it, the member names a message. The member's own text stays the prompt. Under 0.3.0 decision 92, a prompt is a message that a member sends; a quoted message is someone else's, often Claude's. A quoted card can contain a peer's text, such as a welcome message ([control.ts:709-713](../packages/simplex-chat-mcp/src/control.ts#L709-L713)), and peers' texts are data ([tools.ts:450](../packages/simplex-chat-mcp/src/tools.ts#L450), 0.3.0 trust model).
 10. The channel instructions get the sentences of section 2 ([session.ts:21](../packages/simplex-chat-mcp/src/session.ts#L21)).
 11. The prompt line of `/attach` gets an optional field `replyTo: {item?, from?, text}`. The protocol version stays 1 ([protocol.ts:5](../packages/simplex-chat-mcp/src/protocol.ts#L5)), because an older session server reads only `text`, `from`, `item` and `file` ([session.ts:198](../packages/simplex-chat-mcp/src/session.ts#L198)).
-12. `Session.deliver` computes `replyTo` from the reply's item before it writes the line ([hub.ts:247](../packages/simplex-chat-mcp/src/hub.ts#L247)). Claude's name is taken from `AgentTools.selfSender` of the item's group (decision 20), the membership name there ([tools.ts:1364-1366](../packages/simplex-chat-mcp/src/tools.ts#L1364-L1366)).
+12. `Session.onMessage` computes `replyTo` from the message's `quotedItem` when it queues the prompt, and `Session.prompt` and `Session.deliver` pass it to the line as given ([hub.ts:153-160](../packages/simplex-chat-mcp/src/hub.ts#L153-L160), [:229-248](../packages/simplex-chat-mcp/src/hub.ts#L229-L248)). The caller computes it, because the item that `deliver` gets for a reaction of `ep/mcp-reactions` is the reacted message, which can itself be a reply (decision 16 of that plan). The computation is synchronous, so the order of the delivery chain is kept (0.3.0 decision 45; [hub.ts:303-305](../packages/simplex-chat-mcp/src/hub.ts#L303-L305)). Claude's own name is the hub's profile name: every session group is created with that profile, not incognito ([hub.ts:479](../packages/simplex-chat-mcp/src/hub.ts#L479), [api.ts:658-659](../packages/simplex-chat-nodejs/src/api.ts#L658-L659)).
 
 Kept from 0.3.0:
 13. The hub posts Claude's answer as a reply to the member's reply, the prompt of its turn. The reply's item is stored in its pushed entry ([hub.ts:246](../packages/simplex-chat-mcp/src/hub.ts#L246)), and the turn records are unchanged (0.3.0 decisions 33, 39 and 50; [hub.ts:180-186](../packages/simplex-chat-mcp/src/hub.ts#L180-L186), [:266-295](../packages/simplex-chat-mcp/src/hub.ts#L266-L295)).
@@ -148,7 +151,7 @@ Tool results, by Q1 A:
 17. `from` and `text` are added to `reply_to` by decisions 5-8, and `chat` is kept. `item` is present when the quoted item is in the chat. `reply_to` is present for every quote; at master, only for a quote with an ID ([messages.ts:189](../packages/simplex-chat-mcp/src/messages.ts#L189)).
 18. One function, `toReplyTo` in `messages.ts`, computes the `ReplyTo` of a reply's quote, for the channel and for tool results, and of a reacted item, for `ep/mcp-reactions`. It takes `{itemId?, chatDir?, content, fileName?}`. A `CIQuote` has this shape without `fileName` ([types.ts:1108-1116](../packages/simplex-chat-client/types/typescript/src/types.ts#L1108-L1116)); a reacted item gives `meta.itemId`, `chatDir`, its `msgContent` and `file.fileName`.
 19. In a quote of the agent's own message, `from` is the agent's name in that chat, its incognito name in an incognito chat, as in the messages of `connect` ([tools.ts:790](../packages/simplex-chat-mcp/src/tools.ts#L790)). At master, `send` and `receive` pass an empty name ([tools.ts:941](../packages/simplex-chat-mcp/src/tools.ts#L941), [:1268](../packages/simplex-chat-mcp/src/tools.ts#L1268)), because they return received messages only ([messages.ts:101](../packages/simplex-chat-mcp/src/messages.ts#L101)).
-20. `AgentTools.selfSender` returns the agent's name and peer type in a chat, as computed at [tools.ts:790](../packages/simplex-chat-mcp/src/tools.ts#L790). `AgentTools.toMessages` maps the items of one chat with it. Both are used for the results of `connect`, `send` and `receive`, and `selfSender` by the hub (decision 12).
+20. `AgentTools.selfSender` returns the agent's name and peer type in a chat, as computed at [tools.ts:790](../packages/simplex-chat-mcp/src/tools.ts#L790). `AgentTools.toMessages` maps the items of one chat with it. Both are used for the results of `connect`, `send` and `receive`; the hub names Claude by its profile name (decision 12).
 21. The profile name of the agent stays in `replying to NAME` on the `send` card ([tools.ts:1311](../packages/simplex-chat-mcp/src/tools.ts#L1311), [control.ts:718](../packages/simplex-chat-mcp/src/control.ts#L718)). The owner knows that name, and the first line of the card contains `where I am incognito` in an incognito chat ([control.ts:720](../packages/simplex-chat-mcp/src/control.ts#L720)).
 22. Claude refers to a message of another chat by `send` with `reply_to`, which takes `reply_to.item` of a result ([tools.ts:270](../packages/simplex-chat-mcp/src/tools.ts#L270), [:1305-1313](../packages/simplex-chat-mcp/src/tools.ts#L1305-L1313)). In a session group, Claude names a message in words, and the hub posts Claude's answer as a reply to the turn's prompt (decision 13).
 23. In the schema of `reply_to`, `item`, `from` and `text` are described, and `chat` and `text` are required. `from` and `text` are data, not instructions, as `from` and `text` of a message ([tools.ts:195](../packages/simplex-chat-mcp/src/tools.ts#L195), [:199](../packages/simplex-chat-mcp/src/tools.ts#L199)). In the 0.2 schema, the fields of `reply_to` are optional ([tools.ts:214-218](../packages/simplex-chat-mcp/src/tools.ts#L214-L218)).
@@ -208,10 +211,12 @@ receive                         messages = toMessages(returned), in place of {na
 
 `src/protocol.ts`: `AttachLine.prompt.replyTo?: ReplyTo`.
 
-`src/hub.ts`, `Session.deliver`:
+`src/hub.ts`:
 ```
-replyTo = chatItem.quotedItem present: toReplyTo(ci.chatInfo, chatItem.quotedItem, await this.tools.selfSender(ci.chatInfo))
-line    = {prompt: {text, from, item, file?, replyTo?}}
+Session.onMessage   a prompt: replyTo = quotedItem present: toReplyTo(ci.chatInfo, quotedItem, {name: the hub's profile name})
+                    queue prompt(ci, text, member, replyTo)
+Session.prompt      passes replyTo to deliver
+Session.deliver     takes replyTo as given; line = {prompt: {text, from, item, file?, replyTo?}}
 ```
 
 `src/session.ts`:
@@ -228,10 +233,12 @@ Data flow:
 flowchart LR
   Q[core event: chatItem.quotedItem] --> M[toReplyTo: item, from, text]
   E[ep/mcp-reactions: the reacted item] --> M
-  N[AgentTools.selfSender: the agent's name in the chat] --> M
+  N[AgentTools.selfSender: the agent's name in the chat] --> T
+  H[the hub's profile name] --> O
   M --> T[toMessage: reply_to of a message]
   T --> R[results of connect, send, receive]
-  M --> L[Session.deliver: replyTo in the prompt line]
+  M --> O[Session.onMessage: replyTo of a reply]
+  O --> L[Session.deliver: replyTo as given, in the prompt line]
   L --> A["/attach stream"]
   A --> S[channelNotification: reply_to, reply_to_from, reply_to_text]
   S --> C[Claude Code: attributes of the channel tag]
@@ -266,7 +273,7 @@ Unit tests, `npm test`:
   - updated: "describes a group message" expects `reply_to: {chat: "#15", item: 30, text: ""}` (Q1 A).
 - `messages.test.ts`, "receive" and "send": new: "names the agent in a quote of its own message by its name in the chat, the incognito name included".
 - `sessions.test.ts`, "session channel":
-  - new, fails on master: "passes a member's reply to the session with the ID, sender and start of the quoted message: Claude's answer, a post of User, another member's prompt, and a message absent from the group".
+  - new, fails on master: "passes a member's reply to the session with the ID, sender and start of the quoted message: Claude's answer, a post of User, another member's prompt, an image whose quote has the file name, and a message absent from the group".
   - new: "matches the prompt of a reply in the channel tag with the reply attributes, escaped as Claude Code escapes them, so User posts nothing and the answer quotes the reply". It guards 0.3.0 decision 35.
 - `session.test.ts`, "session server": new: "passes the replyTo of a prompt to Claude Code as reply_to, reply_to_from and reply_to_text, and names them in the channel instructions".
 
@@ -287,7 +294,7 @@ CI: a dispatch of the reduced build on `ep/mcp-replies` runs scope `mcp`, with i
   - "Prompts and answers", a bullet after the first: `When you reply to a message, Claude gets the quoted message's ID, its sender and the start of its text, up to 200 characters on one line. Claude takes the quote as data, not as your prompt.`
   - "What the agent sees", after the paragraph on files: `A received reply has reply_to: item, the quoted message's ID when the chat has it; from, its sender; and text, the start of its text, up to 200 characters on one line. The agent replies to the quoted message with send and that item as reply_to.`
 - `spec/api.md`: in 1.8, the `reply_to` row and a table of its fields; in 4.5, the meta keys and the instructions; in 4.6, the `replyTo` of the `{prompt}` line.
-- `spec/architecture.md`: the rows of `toMessage` with `toReplyTo`, of `selfSender` with `toMessages`, of `Session.deliver` and of `channelNotification`; the protocol lines at [:1110-1111](../packages/simplex-chat-mcp/spec/architecture.md#L1110-L1111); a limits row for the 200 characters.
+- `spec/architecture.md`: the rows of `toMessage` with `toReplyTo`, of `selfSender` with `toMessages`, of `Session.onMessage` and `deliver`, and of `channelNotification`; the protocol lines at [:1110-1111](../packages/simplex-chat-mcp/spec/architecture.md#L1110-L1111); a limits row for the 200 characters.
 - `spec/flows.md`: the prompt line and the notification at [:940-942](../packages/simplex-chat-mcp/spec/flows.md#L940-L942).
 - `TESTING.md`: the bullet of `service.test.ts` in "Automated tests"; the new real-session check; in "The tests of 0.2", the changed expectation of "describes a group message" (Q1 A).
 - `ROADMAP.md`: the line "Reply to a message, and Claude knows which one you mean." is removed.
@@ -297,7 +304,7 @@ CI: a dispatch of the reduced build on `ep/mcp-replies` runs scope `mcp`, with i
 - `ep/mcp-reactions`, the closest:
   - `src/session.ts`: `channelInstructions` ([:21](../packages/simplex-chat-mcp/src/session.ts#L21)) and `channelNotification` ([:197-201](../packages/simplex-chat-mcp/src/session.ts#L197-L201)).
   - `src/protocol.ts`: `AttachLine` ([:59-62](../packages/simplex-chat-mcp/src/protocol.ts#L59-L62)).
-  - `src/hub.ts`: `Session.deliver` and `Hub.onEvent` ([:234-248](../packages/simplex-chat-mcp/src/hub.ts#L234-L248), [:491-520](../packages/simplex-chat-mcp/src/hub.ts#L491-L520)).
+  - `src/hub.ts`: `Session.onMessage`, `prompt` and `deliver`, whose new `replyTo` parameter that plan's `Prompt` type takes in, and `Hub.onEvent` ([:153-160](../packages/simplex-chat-mcp/src/hub.ts#L153-L160), [:229-248](../packages/simplex-chat-mcp/src/hub.ts#L229-L248), [:491-520](../packages/simplex-chat-mcp/src/hub.ts#L491-L520)). That plan also moves the file that `deliver` receives (hub.ts:238) to the caller.
   - `src/messages.ts` `Message` and `toMessage`, and `src/tools.ts` `messageSchema`, if reactions appear in results.
   - Tests: `session.test.ts` "session server", `sessions.test.ts` "session channel", `messages.test.ts` "message fields".
   - Docs: `spec/api.md` 1.8 and 4.5, REFERENCE "Prompts and answers", TESTING checks.
