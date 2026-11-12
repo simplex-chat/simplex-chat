@@ -1417,26 +1417,26 @@ commands of this console, are in [Refunding a name balance](#refunding-a-name-ba
 ### From the group
 
 With `[group]` in `store_service.ini`, the service manages one group and serves three commands in
-it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners. Name codes
-need an admin or owner too, as each one registers at the sponsor allowance's and the gas key's cost,
-and the group issues at most 100 of them in 24 hours (`//issue name` in `--run-cli` has no limit). Both
-code commands take every kind of code in one form:
+it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners. Each name code
+registers at the sponsor allowance's and the gas key's cost, so the group issues at most 10 of them
+in 24 hours (`//issue name` in `--run-cli` has no limit, and
+its codes are not counted). The code commands take these forms:
 
 ```
 /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]
-/bulk <kind> [<length>] [years <Y> | months <M>] count <N>
+/bulk <kind> [months <M>] count <N>
 ```
 
-`/issue` makes one code and `/bulk` makes `<N>` single-use codes of the kind. `<kind>` is `name`
-with a length, or a badge type: `supporter`, `legend` or `investor`. A name takes `years`, with the
-bounds of `//issue name` (length 6 to 63, years 2 to 10, 2 by default); a name code issued in the
-group is single-use and `free`. A badge takes `months`, 1 to 255 and 1 by default, and in `/issue`
-also `uses`, 1 to 1000. `count` is 1 to 100. A value outside these bounds, a length for a badge, or
-the other kind's unit gets the usage reply, which lists the form, each kind's bounds and an example
-of each. The group's command menu shows every kind in each command's hint and fills the hint into
-the message box. Without `[names]`, `/issue name` and `/bulk name` get a reply that names are not
-enabled, and issue nothing. `/revoke` takes badge and name codes, so a name code issued before names
-were turned off can still be withdrawn. The group has no `/refund`. A member's role
+`/issue` makes one code and `/bulk` makes `<N>` single-use badge codes. `<kind>` is `name` with a
+length, in `/issue` only, or a badge type: `supporter`, `legend` or `investor`. A name takes a length
+of 6 to 63 and `years`, 2 to 10 and 2 by default; a name code issued in the group is single-use and
+`free`. A badge takes `months`, 1 to 255 and 1
+by default, and in `/issue` also `uses`, 1 to 1000. `count` is 1 to 100. A value outside these
+bounds, a length for a badge, `months` or `uses` for a name, or `name` in `/bulk` gets the usage reply, which
+lists the form, each kind's bounds and an example of each. The group's command menu shows the kinds
+of each command in its hint and fills the hint into the message box. Without `[names]`, `/issue name`
+gets a reply that names are not enabled, and issues nothing. `/revoke` takes badge and name codes, so
+a name code issued before names were turned off can still be withdrawn. The group has no `/refund`. A member's role
 is checked as the service last saw it, so a command sent by a moderator just demoted or removed can still run if it
 reaches the service first; revoke any code the service posts for them after the change. `uses`
 above 1 makes a multi-use code, tracked by a group message showing its remaining uses and the time
@@ -1462,11 +1462,13 @@ group command the service received but had not run when it stopped, or received 
 `--run-cli` mode, is dropped with no reply, so resend it, or use `//revoke`.
 
 The first member to join through the link is promoted to owner, so the operator joins before sharing
-it. Keep the service an owner too: below owner it cannot update the group's command menu, and below
-author it cannot post codes or replies. A failed promotion is logged at once, and an owner who left
-is logged at the next start or join. Then make the member you choose owner with the `/mr` command
-that the log line names, in `--run-cli` mode; the service never promotes anyone once the first
-promotion was attempted.
+it. Keep the service an owner too: below owner it cannot update the group's command menu or its member
+review setting, though as an admin it still holds joiners for review; below admin it ignores join
+requests, and below author it cannot post codes or replies. A failed promotion is logged at
+once, and an owner who left is logged at the next start or join. Then make the member you choose
+owner with the `/mr` command that the log line names, in `--run-cli` mode; a member pending review
+is accepted as owner with the log line's `/accept member #<group> @<member> owner` instead, as `/mr`
+refuses a pending member. The service never promotes anyone once the first promotion was attempted.
 
 The join link is never logged, as anyone who has it can join. The service stores it in the
 `group_link` column of `sx_badge_service_group`, and the operator reads it there to join, in the chat
@@ -1476,9 +1478,16 @@ schema (`simplex_v1_chat_schema` by default):
 psql "$BADGE_DB_CONN" -Atc 'SELECT group_link FROM simplex_v1_chat_schema.sx_badge_service_group'
 ```
 
-The link stays valid: anyone who has it can join later, as a member, and read every code posted or
-edited from then on. That includes a removed member, who can rejoin through it, so removing a member
-does not stop them seeing new codes. A database copy holds it, as it holds the codes.
+The link stays valid, but once the first promotion was attempted the service holds every joiner for
+review, a removed member who rejoins included, in `--run-cli` mode too: the joiner waits until a
+moderator, admin or owner accepts them, and receives no group messages until then. The service decides
+this from its own record when the join request arrives, so a request handled at start, before the group
+lane runs, and one that arrives while an owner has turned review off are held too. The first member is
+not reviewed, as only the service could accept them. The group's member review setting is turned on
+with that promotion, or at the next start for a group promoted before. In service mode it is turned
+on again when an owner turns it off, and at every join while the group has an owner; an owner's
+change made while the service runs in `--run-cli` mode stays until the next start in service mode. A
+database copy holds the link, as it holds the codes.
 
 If an owner deletes the group, or removes the service from it, the service logs an error on start
 and stops serving the group. To create a new group, stop the service, delete the row, and start it

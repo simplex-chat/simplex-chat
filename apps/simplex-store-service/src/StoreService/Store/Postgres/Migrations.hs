@@ -294,6 +294,7 @@ CREATE TABLE @name_prepaid_codes(
   revoked_at TIMESTAMPTZ,
   expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL,
+  issued_in_group SMALLINT NOT NULL DEFAULT 0,
   UNIQUE(code_hash)
 );
 
