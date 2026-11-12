@@ -90,6 +90,7 @@ Facts:
 6. A core before `ep/mcp-silent-messages` ignores `priority` of a composed message (`src/Simplex/Chat/Controller.hs:1957-1968`). The plugin's core libraries are the release pinned by `packages/simplex-chat-nodejs/src/release.ts:3`, `core-7.1.3.0`.
 
 Choices:
+
 7. A second PreToolUse entry, matcher `*`, `async: true`, runs `hook turn` (Q1 A).
 8. The hook makes the line of a PreToolUse input and sends it as `note` with `{id, pid, at}`. It sends nothing for an input with `agent_id`, or for a tool whose name starts with `mcp__plugin_simplex_simplex__`.
 9. The hub posts every `note` with `priority: -1`. The refusal subject becomes `Claude's note was not posted: ` for the notes of both items.
