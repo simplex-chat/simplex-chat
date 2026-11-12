@@ -348,7 +348,7 @@ test("while SimpleX links are off in a session's group, the connect card of a bo
   await sendNotice
 }, 600_000)
 
-test("the hooks post a prompt typed in the terminal as User, and not a task notification, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
+test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, and not a task notification, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -367,9 +367,11 @@ test("the hooks post a prompt typed in the terminal as User, and not a task noti
 
   const transcript = join(dir, "mirror", "transcript.jsonl")
   const userEntry = (promptId: string, content: string, kind: string) => `${JSON.stringify({type: "user", promptId, origin: {kind}, message: {role: "user", content}})}\n`
-  writeFileSync(transcript, userEntry("p1", "Fix the build", "human"))
   const typed = received(alice.chat, message("Fix the build", "User"))
-  expect(await hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p1", prompt: "Fix the build"})).toEqual({})
+  const submitted = hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p1", prompt: "Fix the build"})
+  await new Promise(resolve => setTimeout(resolve, 1_000))
+  writeFileSync(transcript, userEntry("p1", "Fix the build", "human"))
+  expect(await submitted).toEqual({})
   await typed
   const fixed = received(alice.chat, message("Fixed.", "Claude"))
   appendFileSync(transcript, `${JSON.stringify({type: "assistant", message: {model: "claude-opus-5", content: [{type: "text", text: "Fixed."}]}})}\n`)

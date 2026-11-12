@@ -14,7 +14,8 @@ const unknownSession = 409
 const turnAttempts = 15
 const turnRetryMs = 1_000
 const maxText = 250_000
-const transcriptReads = 20
+const answerReads = 20
+const promptReads = 600
 const transcriptReadMs = 100
 const transcriptTailBytes = 1_048_576
 const syntheticModel = "<synthetic>"
@@ -87,12 +88,12 @@ async function markUnattended(stdin: string, env: NodeJS.ProcessEnv, client: Hoo
   }
 }
 
-export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env)), retryMs = turnRetryMs, at = performance.timeOrigin): Promise<HookOutput> {
+export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env)), retryMs = turnRetryMs, at = performance.timeOrigin, readMs = transcriptReadMs): Promise<HookOutput> {
   if (!interactive(env)) return {}
   try {
     const input = JSON.parse(stdin) as TurnInput
-    const model = input.to_model ?? (input.hook_event_name === "Stop" ? await answerModel(input) : undefined)
-    const typed = input.hook_event_name === "UserPromptSubmit" ? await promptTyped(input) : undefined
+    const model = input.to_model ?? (input.hook_event_name === "Stop" ? await answerModel(input, readMs) : undefined)
+    const typed = input.hook_event_name === "UserPromptSubmit" ? await promptTyped(input, readMs) : undefined
     const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), typed, answer: cut(input.last_assistant_message), model, effort: input.effort?.level}
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
@@ -110,31 +111,30 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   return {}
 }
 
-async function answerModel({transcript_path: path, last_assistant_message: message}: TurnInput): Promise<string | undefined> {
+async function answerModel({transcript_path: path, last_assistant_message: message}: TurnInput, readMs: number): Promise<string | undefined> {
   const answer = message?.trim()
   if (!path || !answer) return undefined
-  const last = await findInTranscript(path, answer, tail => {
+  const last = await findInTranscript(path, answer, answerReads, readMs, tail => {
     const entry = lastAnswer(tail)
     return entry?.text === answer ? entry : undefined
   })
   return last?.model
 }
 
-async function promptTyped({transcript_path: path, prompt_id: id, prompt}: TurnInput): Promise<boolean> {
+async function promptTyped({transcript_path: path, prompt_id: id, prompt}: TurnInput, readMs: number): Promise<boolean> {
   const text = prompt?.trim()
   if (!path || !text) return false
-  const entry = await findInTranscript(path, text, tail => promptEntry(tail, id, text))
+  const entry = await findInTranscript(path, text, promptReads, readMs, tail => promptEntry(tail, id, text))
   return entry?.origin?.kind === "human"
 }
 
-async function findInTranscript<T>(path: string, text: string, find: (tail: string) => T | undefined): Promise<T | undefined> {
+async function findInTranscript<T>(path: string, text: string, reads: number, readMs: number, find: (tail: string) => T | undefined): Promise<T | undefined> {
   const bytes = transcriptTailBytes + 2 * Buffer.byteLength(text)
   for (let read = 1; ; read++) {
-    const tail = await readTail(path, bytes).catch(() => undefined)
-    if (tail === undefined) return undefined
+    const tail = await readTail(path, bytes).catch(() => "")
     const found = find(tail)
-    if (found !== undefined || read === transcriptReads) return found
-    await new Promise(resolve => setTimeout(resolve, transcriptReadMs))
+    if (found !== undefined || read === reads) return found
+    await new Promise(resolve => setTimeout(resolve, readMs))
   }
 }
 

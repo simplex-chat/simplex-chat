@@ -160,7 +160,7 @@ describe("turn hooks", () => {
       truncateSync(transcript, 3 * 1024 ** 3)
       appendFileSync(transcript, `\n${JSON.stringify({type: "user", message: {role: "user", content: "fix the build"}})}\n${JSON.stringify({type: "assistant", message: {model: "claude-opus-5", content: [{type: "thinking", thinking: "The build."}]}})}\n${entry("Fixed.", "claude-opus-5")}`)
       const {client, requests} = turnClient()
-      const stop = (answer: string, extra: object = {}) => turn(JSON.stringify({session_id: id, hook_event_name: "Stop", transcript_path: transcript, last_assistant_message: answer, ...extra}), {}, client, 0, 1)
+      const stop = (answer: string, extra: object = {}) => turn(JSON.stringify({session_id: id, hook_event_name: "Stop", transcript_path: transcript, last_assistant_message: answer, ...extra}), {}, client, 0, 1, 10)
       await stop("Fixed.")
       const later = stop("Tests pass.")
       const written = new Promise<void>(resolve => setTimeout(() => resolve(appendFileSync(transcript, `${entry("Tests pass.", "claude-sonnet-5")}${entry("Subagent done.", "claude-haiku-5", {isSidechain: true})}`)), 30))
@@ -170,7 +170,7 @@ describe("turn hooks", () => {
       await stop("No response requested.")
       await stop("Never written.")
       await stop("Lost.", {transcript_path: join(folder, "missing.jsonl")})
-      await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt: "Run the tests"}), {}, client, 0, 1)
+      await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt: "fix the build"}), {}, client, 0, 1, 10)
       await turn(JSON.stringify({session_id: id, hook_event_name: "PostModelSwitch", transcript_path: transcript, to_model: "claude-opus-5"}), {}, client, 0, 1)
       expect(requests).toEqual([
         {method: "POST", route: "/turn", body: {id, at: 1, answer: "Fixed.", model: "claude-opus-5"}},
@@ -178,7 +178,7 @@ describe("turn hooks", () => {
         {method: "POST", route: "/turn", body: {id, at: 1, answer: "No response requested."}},
         {method: "POST", route: "/turn", body: {id, at: 1, answer: "Never written."}},
         {method: "POST", route: "/turn", body: {id, at: 1, answer: "Lost."}},
-        {method: "POST", route: "/turn", body: {id, at: 1, prompt: "Run the tests", typed: false}},
+        {method: "POST", route: "/turn", body: {id, at: 1, prompt: "fix the build", typed: false}},
         {method: "POST", route: "/turn", body: {id, at: 1, model: "claude-opus-5"}},
       ])
     } finally {
@@ -201,7 +201,7 @@ describe("turn hooks", () => {
         `${JSON.stringify({type: "user", isSidechain: true, promptId: "p6", origin: {kind: "human"}, message: {role: "user", content: "Subagent task"}})}\n`,
       ].join(""))
       const {client, requests} = turnClient()
-      const submit = (input: object) => turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, ...input}), {}, client, 0, 1)
+      const submit = (input: object) => turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, ...input}), {}, client, 0, 1, 1)
       await submit({prompt_id: "p1", prompt: "Fix the build"})
       await submit({prompt_id: "p2", prompt: "<task-notification>\n<task-id>b1</task-id>\n</task-notification>"})
       await submit({prompt_id: "p3", prompt: "Another Claude session sent a message: hi"})
@@ -223,6 +223,21 @@ describe("turn hooks", () => {
         ["Run the linter", true],
         ["Never written.", false],
       ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("mark a prompt as typed when the transcript with the prompt's entry is created 30 reads after the hook starts, as behind a user's own prompt hook of 3 s", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const {client, requests} = turnClient()
+      const submitted = turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p1", prompt: "Fix the build"}), {}, client, 0, 1, 10)
+      const written = new Promise<void>(resolve => setTimeout(() => resolve(writeFileSync(transcript, `${JSON.stringify({type: "user", promptId: "p1", origin: {kind: "human"}, message: {role: "user", content: "Fix the build"}})}\n`)), 300))
+      await submitted
+      await written
+      expect(requests).toEqual([{method: "POST", route: "/turn", body: {id, at: 1, prompt: "Fix the build", typed: true}}])
     } finally {
       rmSync(folder, {recursive: true, force: true})
     }
