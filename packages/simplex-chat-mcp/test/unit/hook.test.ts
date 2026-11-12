@@ -243,6 +243,125 @@ describe("turn hooks", () => {
     }
   })
 
+  const notification = (fields: string, after = "") => `<task-notification>\n${fields}\n</task-notification>${after}`
+  const userEntry = (promptId: string, content: unknown, extra: object = {}) => `${JSON.stringify({type: "user", promptId, ...extra, message: {role: "user", content}})}\n`
+  const queuedEntry = (prompt: string, origin: object) => `${JSON.stringify({type: "attachment", attachment: {type: "queued_command", prompt, origin, commandMode: "prompt"}})}\n`
+  const enqueueEntry = (content: string) => `${JSON.stringify({type: "queue-operation", operation: "enqueue", content})}\n`
+  const kinds = (requests: unknown[]) => requests.map(request => (request as {body: {note?: string; typed: boolean; midTurn?: boolean}}).body).map(({note, typed, midTurn}) => [note, typed, midTurn])
+
+  it("send a one-line note of each kind of Claude Code's own prompt, from the origin of its transcript entry, and none for a typed or a channel prompt", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const long = "x".repeat(300)
+      const prompts: [string, string, object][] = [
+        ["p1", notification(`<task-id>b2gj1pdcw</task-id>\n<output-file>/p/tasks/b2gj1pdcw.output</output-file>\n<status>completed</status>\n<summary>Background command "Rebuild tests &amp;&amp; show errors" completed (exit code 0)</summary>`), {origin: {kind: "task-notification", producer: "session-task"}}],
+        ["p2", notification(`<task-id>w5asfny36</task-id>\n<status>failed</status>\n<summary>Dynamic workflow "Research" failed: TypeError: null is not an object\n    at &lt;anonymous&gt; (workflow.js:144:22)</summary>`), {origin: {kind: "task-notification"}}],
+        ["p3", notification(`<task-id>b4mg8bpso</task-id>\n<status>killed</status>\n<summary>Background command "Serve the docs" was stopped</summary>`), {origin: {kind: "task-notification"}}],
+        ["p4", notification(`<task-id>boud456ze</task-id>\n<summary>Monitor event: "Exit status of each of the 4 flag-combination builds"</summary>\n<event>\nserverpg exit 0\nclientpg exit 0</event>`, "\nIf this event is something the user would act on now, send a PushNotification."), {origin: {kind: "task-notification"}}],
+        ["p5", notification("<summary>Goal check-in: background work still running</summary>", "\n<system-reminder>\nThe goal is still active.\n</system-reminder>"), {origin: {kind: "task-notification"}}],
+        ["p6", 'Another Claude session sent a message:\n<agent-message from="mcp-impl2">\nI read the evidence.\n\nDetails follow.\n</agent-message>', {origin: {kind: "peer", from: "mcp-impl2", senderTaskId: "amcp-impl2-1", name: "mcp-impl2", body: "I read the evidence.\n\nDetails follow."}}],
+        ["p7", 'Another Claude session sent a message:\n<agent-message from="a43be993e71d0a22f">\n[Subagent hand-back] The report follows:\n  \n  ## Review of the race fix\n</agent-message>', {origin: {kind: "peer", from: "a43be993e71d0a22f", senderTaskId: "a43be993e71d0a22f", name: "general-purpose", body: "[Subagent hand-back] The report follows:\n  \n  ## Review of the race fix", handback: true, handbackReportText: "\n## Review of the race fix\n\nNo defect."}}],
+        ["p8", 'Another Claude session sent a message:\n<agent-message from="ios-terminal">\n[Subagent hand-back] The report follows:\n  All done.\n</agent-message>', {origin: {kind: "peer", from: "ios-terminal", senderTaskId: "a1", name: "ios-terminal", body: "[Subagent hand-back] The report follows:\n  All done.", handback: true}}],
+        ["p9", "Reply with the single word tick.", {isMeta: true, turnOrigin: "scheduled", scheduledTaskId: "d2657e37"}],
+        ["p10", "Your claude.ai usage limit has reset. Continue the task you were working on when the limit was reached; do not repeat work that is already complete.", {isMeta: true, origin: {kind: "auto-continuation"}}],
+        ["p11", "The coordinator sent a message while you were working:\nApproved.", {isMeta: true, origin: {kind: "coordinator"}}],
+        ["p12", "Fix the build", {origin: {kind: "human"}}],
+        ["p13", '<channel source="plugin:simplex:simplex" from="Alice" item="7">\nRun the tests\n</channel>', {isMeta: true, origin: {kind: "channel", server: "plugin:simplex:simplex"}}],
+        ["p14", "Run the checks", {turnOrigin: "sdk"}],
+        ["p15", `Another Claude session sent a message:\n<agent-message from="reviewer">\n${long}\n</agent-message>`, {origin: {kind: "peer", from: "reviewer", name: "reviewer", body: long}}],
+      ]
+      writeFileSync(transcript, prompts.map(([promptId, content, extra]) => userEntry(promptId, content, extra)).join(""))
+      const {client, requests} = turnClient()
+      for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
+      const prefix = "✉️ Message from reviewer: "
+      expect(kinds(requests)).toEqual([
+        ['✅ Background command "Rebuild tests && show errors" completed (exit code 0)', false, undefined],
+        ['❌ Dynamic workflow "Research" failed: TypeError: null is not an object', false, undefined],
+        ['⏹️ Background command "Serve the docs" was stopped', false, undefined],
+        ['📡 Monitor event: "Exit status of each of the 4 flag-combination builds": serverpg exit 0', false, undefined],
+        ["🔔 Goal check-in: background work still running", false, undefined],
+        ["✉️ Message from mcp-impl2: I read the evidence.", false, undefined],
+        ["📋 Report from subagent general-purpose: ## Review of the race fix", false, undefined],
+        ["📋 Report from subagent ios-terminal: [Subagent hand-back] The report follows:", false, undefined],
+        ["⏰ Scheduled prompt: Reply with the single word tick.", false, undefined],
+        ["🔄 Automatic prompt: Your claude.ai usage limit has reset. Continue the task you were working on when the limit was reached; do not repeat work that is already complete.", false, undefined],
+        ["⚙️ Claude Code: The coordinator sent a message while you were working:", false, undefined],
+        [undefined, true, undefined],
+        [undefined, false, undefined],
+        [undefined, false, undefined],
+        [`${prefix}${"x".repeat(199 - [...prefix].length)}…`, false, undefined],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("find a prompt that reaches a running turn by its queued command or its own later entry after the entry of the turn's prompt ID, and mark it mid-turn", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const alpha = notification('<task-id>buq1jepzn</task-id>\n<status>completed</status>\n<summary>Background command "Run the tests" completed (exit code 0)</summary>')
+      const gamma = notification('<task-id>btjw2lm2a</task-id>\n<status>completed</status>\n<summary>Background command "Echo gamma" completed (exit code 0)</summary>')
+      writeFileSync(transcript, [
+        userEntry("t1", "Run the tests in the background, then wait.", {origin: {kind: "human"}}),
+        userEntry("t1", [{type: "tool_result", tool_use_id: "toolu_1", content: "Command running in background with ID: buq1jepzn."}]),
+        enqueueEntry(alpha),
+        enqueueEntry("Also say the word bravo."),
+      ].join(""))
+      const {client, requests} = turnClient()
+      const submit = (promptId: string, prompt: string) => turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt}), {}, client, 0, 1, 10)
+      const added = submit("t1", alpha)
+      const queued = new Promise<void>(resolve => setTimeout(() => resolve(appendFileSync(transcript, `${queuedEntry(alpha, {kind: "task-notification", producer: "session-task"})}${queuedEntry("Also say the word bravo.", {kind: "human"})}`)), 30))
+      await added
+      await queued
+      await submit("t1", "Also say the word bravo.")
+      appendFileSync(transcript, [
+        userEntry("t2", gamma, {origin: {kind: "task-notification"}}),
+        enqueueEntry("Say the word charlie."),
+        queuedEntry("Say the word charlie.", {kind: "human"}),
+        userEntry("t3", "Then lint it.", {origin: {kind: "human"}}),
+      ].join(""))
+      await submit("t2", gamma)
+      await submit("t2", "Say the word charlie.")
+      await submit("t2", "Then lint it.")
+      expect(kinds(requests)).toEqual([
+        ['✅ Background command "Run the tests" completed (exit code 0)', false, true],
+        [undefined, true, true],
+        ['✅ Background command "Echo gamma" completed (exit code 0)', false, undefined],
+        [undefined, true, true],
+        [undefined, true, true],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("take the entry of the prompt ID whose text is the prompt, mark a prompt still queued after the reads as typed and mid-turn, and fall back to the origin of the prompt ID's entry", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      writeFileSync(transcript, [
+        userEntry("p1", "<system-reminder>\nTools used before the summary.\n</system-reminder>", {isMeta: true}),
+        userEntry("p1", "Fix the build", {origin: {kind: "human"}}),
+        userEntry("p2", notification("<status>completed</status>\n<summary>Agent \"Review\" finished</summary>"), {origin: {kind: "task-notification"}}),
+        enqueueEntry("Run the linter"),
+      ].join(""))
+      const {client, requests} = turnClient()
+      const submit = (promptId: string, prompt: string) => turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt}), {}, client, 0, 1, 1)
+      await submit("p1", "Fix the build")
+      await submit("p2", "Run the linter")
+      await submit("p1", "Fix the build, then deploy")
+      expect(kinds(requests)).toEqual([
+        [undefined, true, undefined],
+        [undefined, true, true],
+        [undefined, true, undefined],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
   it("cut a prompt or an answer over 250,000 characters, so that the request fits the socket's 1 MiB", async () => {
     const {client, requests} = turnClient()
     await turn(JSON.stringify({session_id: id, last_assistant_message: `${"a".repeat(249_999)}😀${"b".repeat(1_000_000)}`}), {}, client)
