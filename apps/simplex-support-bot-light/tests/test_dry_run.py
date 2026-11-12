@@ -43,7 +43,10 @@ DIFFERENT = ChatInitError(
         },
     },
 )
-NOT_A_DATABASE = ChatInitError("not a database", {"type": "errorNotADatabase", "dbFile": "x"})
+NOT_A_DATABASE = ChatInitError(
+    "Database or migration error (see db_migration_error)",
+    {"type": "errorNotADatabase", "dbFile": "x"},
+)
 
 
 CHAT_NOT_STARTED = {"type": "error", "errorType": {"type": "chatNotStarted"}}
@@ -97,7 +100,9 @@ def test_probe_reports_other_errors_as_failed_with_their_text():
     different = dr.probe_of(DIFFERENT)
     assert different.kind == "failed"
     assert different.text.startswith("migration state error: ")
-    assert dr.probe_of(NOT_A_DATABASE) == dr.Probe("failed", text="not a database")
+    assert dr.probe_of(NOT_A_DATABASE) == dr.Probe(
+        "failed", text='{"type": "errorNotADatabase", "dbFile": "x"}'
+    )
 
 
 def test_plan_for_a_current_schema_opens_without_migrating():
