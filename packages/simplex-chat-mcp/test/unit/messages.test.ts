@@ -787,7 +787,7 @@ describe("send", () => {
     watch.deliver(response)
     await jest.advanceTimersByTimeAsync(5_000)
     expect((await sending)!.structuredContent).toMatchObject({action: 1, status: "done", item: answer, responses: [{item: answer + 1, text: "and the tests?"}], more: 0})
-    await jest.advanceTimersByTimeAsync(0)
+    await jest.advanceTimersByTimeAsync(1)
     expect(chat.sent.map(({messages: [{msgContent}], live}) => [msgContent.text, live])).toEqual([["◐ thinking · 0:00", true], ["The README describes the server.", undefined], ["◐ received, waiting for the agent · 0:00", true]])
     expect(deletionsAtAnswer).toEqual([0])
     expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
