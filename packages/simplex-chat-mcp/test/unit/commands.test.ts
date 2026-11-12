@@ -20,7 +20,7 @@ afterEach(() => jest.restoreAllMocks())
 
 afterAll(() => rmSync(data, {recursive: true, force: true}))
 
-const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /schedule, /unschedule, /schedules. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /schedule, /unschedule, /schedules, /help. Each card shows its commands."
 
 const alice = member(3, "Alice", T.GroupMemberRole.Owner)
 const bob = member(7, "Bob", T.GroupMemberRole.Member)
@@ -180,7 +180,7 @@ describe("owner commands", () => {
 
   it("answers other commands with the list", async () => {
     const {control} = await setup()
-    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "receive #2 all", "receive 5 all", "receive #2 5 files", "receive off", "forward", "forward #2 all", "forward #2 5 all", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all", "schedule", "schedule #2", "schedule #2 0 7 * * *", "schedule 2 0 7 * * * hi", "unschedule", "unschedule #2", "unschedule #2 x", "unschedule 2 1", "unschedule #2 1 2", "schedules all"]
+    const others = ["approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "receive #2 all", "receive 5 all", "receive #2 5 files", "receive off", "forward", "forward #2 all", "forward #2 5 all", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all", "schedule", "schedule #2", "schedule #2 0 7 * * *", "schedule 2 0 7 * * * hi", "unschedule", "unschedule #2", "unschedule #2 x", "unschedule 2 1", "unschedule #2 1 2", "schedules all"]
     for (const text of others) {
       expect(await control.ownerCommand(bob, parseCommand(`/${text}`)!)).toBe(commandsReply)
     }
@@ -918,6 +918,7 @@ describe("command menu", () => {
     {type: "command", keyword: "list", label: "Chats and approvals"},
     {type: "command", keyword: "schedules", label: "Scheduled prompts"},
     {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
+    {type: "command", keyword: "help", label: "Help"},
   ]
 
   it("is updated at load when it differs", async () => {
@@ -937,6 +938,68 @@ describe("command menu", () => {
     const {control, chat} = await setup()
     expect(await control.ownerCommand(alice, parseCommand("/leave <chat ID>")!)).toBe(commandsReply)
     expect(chat.deleted).toEqual([])
+  })
+})
+
+describe("help", () => {
+  const noHelp = "No help for that. /help lists the commands."
+  const topics = commandsReply.match(/(?<=\/)\w+/g)!
+
+  it("lists the commands of the commands reply in its order, one line each, to every member", async () => {
+    const {control} = await setup()
+    const lines = [
+      "/'approve N' or /'approve CHAT N' performs pending action N, other than a download; /'approve CHAT all' approves all sends to CHAT.",
+      "/'reject N' or /'reject CHAT N' rejects pending action N.",
+      "/'receive CHAT N' downloads the file of pending download N; /'receive CHAT N all' also approves later files from CHAT on the agent's XFTP servers.",
+      "/'forward CHAT N' sends you the file of pending download N here.",
+      "/'revoke CHAT' ends the approval of all sends to CHAT.",
+      "/'leave CHAT' leaves the group or deletes the contact CHAT.",
+      "/'delete CHAT files' deletes the agent's files from CHAT.",
+      "/pending lists the pending actions.",
+      "/list lists the agent's chats and their approvals.",
+      "/'schedule CHAT CRON PROMPT' schedules a prompt for the agent in CHAT.",
+      "/'unschedule CHAT N' removes schedule N of CHAT.",
+      "/schedules lists the schedules of all chats.",
+      "/'help COMMAND' shows how to use COMMAND, such as /'help schedule'.",
+    ]
+    for (const sender of [alice, bob]) expect((await control.ownerCommand(sender, parseCommand("/help")!))!.split("\n")).toEqual(lines)
+    expect(lines.map(line => /^\/'?(\w+)/.exec(line)![1])).toEqual(topics)
+  })
+
+  it("explains each command, written with or without its slash, to every member, with one text for the commands that share a form", async () => {
+    const {control} = await setup()
+    const help = (sender: T.GroupMember, topic: string): Promise<string | undefined> => control.ownerCommand(sender, parseCommand(`/help ${topic}`)!)
+    const texts: {[topic: string]: string | undefined} = {}
+    for (const topic of topics) {
+      texts[topic] = await help(alice, topic)
+      expect(texts[topic]).toMatch(new RegExp(`/'?${topic}\\b`))
+      expect(texts[topic]).not.toBe(noHelp)
+      expect(await help(bob, `/${topic}`)).toBe(texts[topic])
+    }
+    expect([texts.reject, texts.forward, texts.unschedule, texts.schedules]).toEqual([texts.approve, texts.receive, texts.schedule, texts.schedule])
+    expect(new Set(Object.values(texts)).size).toBe(9)
+    expect(Object.values(texts)).not.toContain(await help(alice, ""))
+  })
+
+  it("explains the cron, the server time, the limits, when a prompt is due and who adds a schedule", async () => {
+    const {control} = await setup()
+    expect((await control.ownerCommand(bob, parseCommand("/help schedule")!))!.split("\n")).toEqual([
+      "/'schedule CHAT CRON PROMPT' makes PROMPT due for the agent in CHAT at each minute that CRON matches, in the server's time zone; the reply shows its UTC offset.",
+      "CRON: 5 fields, minute 0-59, hour 0-23, day of month 1-31, month 1-12 and day of week 0-7, with 0 and 7 for Sunday.",
+      "A field is `*`, `N`, `A-B`, `*/S` or `A-B/S`, or a comma list of them. When neither day field starts with `*`, a match of either one suffices.",
+      "CHAT: a chat ID from /list. PROMPT: the rest of the line, at most 2000 characters. A chat has at most 10 schedules.",
+      "The agent's `receive` of CHAT returns a due prompt once; until then, the later times of its schedule are skipped, and it is lost when the server stops.",
+      "An owner who approves actions adds a schedule, and its prompts become due only while that owner approves actions.",
+      "/'unschedule CHAT N' removes schedule N of CHAT and renumbers the later ones. /schedules lists up to 100 schedules of all chats.",
+      "Example: `/schedule #3 0 7 * * 1-5 Post the trail report.`, at 07:00 on weekdays.",
+    ])
+  })
+
+  it("answers an unknown topic without repeating it", async () => {
+    const {control} = await setup()
+    for (const text of ["/help Schedule", "/help schedule now", "/help /", "/help //schedule", "/help #2", "/help constructor", "/help __proto__"]) {
+      expect(await control.ownerCommand(bob, parseCommand(text)!)).toBe(noHelp)
+    }
   })
 })
 
