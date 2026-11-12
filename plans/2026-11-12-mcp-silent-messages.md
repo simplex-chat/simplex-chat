@@ -72,6 +72,7 @@ Facts:
 7. The approved plan `2026-10-13-message-priority.md` defines `priority` as an integer, −1 low, 0 normal, 1 high, with the column `chat_items.item_priority`; it was decided on 2026-10-13, after the silent messages plan was rejected that day.
 
 Choices:
+
 8. Q1 A: `MsgContainer.priority :: Maybe Int`, JSON `"priority"`, omitted when absent; a received value of −1 or below is low, 0 normal, 1 or above high, limited to −1 .. 1 when stored. In this pull request, low is silent, and high is stored and treated as normal.
 9. The SMP notification flag is set by `eventHasNotification :: ChatMsgEvent e -> Bool`: `False` for `x.msg.new` with low priority, otherwise `hasNotification` of its tag. It replaces the tag check at `Internal.hs:2255`, `:2755` and in `deliverMessage`, which takes the event in place of its tag (callers `:2342`, `:2901`), and inside `msgHasNotification`, so relays and members forward a silent message silently. Pending messages keep `True` (fact 2): a batch there can hold normal messages, and it is sent once, when the member connects.
 10. The received item's `CIMeta.priority :: Maybe Int` is set from the container in `saveRcvChatItem'` (`Internal.hs:3048-3098`), `Nothing` for 0. A sent item has the priority of its composed message.
