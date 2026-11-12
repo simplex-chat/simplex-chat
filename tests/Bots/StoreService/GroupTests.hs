@@ -113,9 +113,9 @@ badgeGroupTests = describe "badge group" $ do
         `shouldBe` [IgnoreMsg, bulkUsage, bulkUsage]
       map (`groupCmdAction` "/revoke not-a-badge-code") [GRMember, GRModerator, GRAdmin]
         `shouldBe` [IgnoreMsg, IgnoreMsg, revokeUsage]
-    it "runs a name code command only for an admin or owner, refusing a moderator" $ do
+    it "runs a name code command for a moderator and above, saying nothing to a member" $ do
       map (`groupCmdAction` "/issue name 6") [GRMember, GRModerator, GRAdmin, GROwner]
-        `shouldBe` [IgnoreMsg, ReplyText "Only admins can issue name codes.", RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2)]
+        `shouldBe` [IgnoreMsg, RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2)]
     it "runs /balance, /record_refund and /close only for an owner, saying nothing to others" $ do
       let roles = [GRMember, GRModerator, GRAdmin, GROwner]
           ownerOnly cmd = replicate 3 IgnoreMsg <> [RunCmd (GCMoney cmd)]

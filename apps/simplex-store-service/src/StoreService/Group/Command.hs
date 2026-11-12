@@ -66,17 +66,9 @@ data CmdAction
 groupCmdAction :: GroupMemberRole -> Text -> CmdAction
 groupCmdAction role t = case A.parseOnly cmdActionP (encodeUtf8 (T.strip t)) of
   Right (tag, r)
-    | role >= cmdMinRole tag -> either ReplyText runFor r
+    | role >= cmdMinRole tag -> either ReplyText RunCmd r
     | Right _ <- r, Just refusal <- cmdRefusal tag -> ReplyText refusal
   _ -> IgnoreMsg
-  where
-    -- a name code spends the sponsor allowance and the gas key's ETH when it registers, so only admins issue them
-    runFor cmd
-      | nameCode cmd && role < GRAdmin = ReplyText "Only admins can issue name codes."
-      | otherwise = RunCmd cmd
-    nameCode = \case
-      GCIssueName {} -> True
-      _ -> False
 
 -- | Left is the usage reply for an advertised command whose arguments do not parse.
 cmdActionP :: A.Parser (CmdTag, Either Text GroupCmd)
