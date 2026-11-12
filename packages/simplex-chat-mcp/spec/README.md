@@ -123,8 +123,8 @@ graph TD
 | Tool registration | [`src/tools.ts`](../src/tools.ts#L496) | `AgentTools.register` | [496](../src/tools.ts#L496) |
 | Downloads | [`src/tools.ts`](../src/tools.ts#L530) | `AgentTools.downloadFile` | [530](../src/tools.ts#L530) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L124) | `Actions` | [124](../src/actions.ts#L124) |
-| Agent control chat | [`src/control.ts`](../src/control.ts#L88) | `Control` | [88](../src/control.ts#L88) |
-| Card text | [`src/control.ts`](../src/control.ts#L606) | `cardText` | [606](../src/control.ts#L606) |
+| Agent control chat | [`src/control.ts`](../src/control.ts#L153) | `Control` | [153](../src/control.ts#L153) |
+| Card text | [`src/control.ts`](../src/control.ts#L672) | `cardText` | [672](../src/control.ts#L672) |
 | Scheduled prompts | [`src/schedule.ts`](../src/schedule.ts#L12) | `Schedules` | [12](../src/schedule.ts#L12) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |

@@ -60,6 +60,8 @@ To prompt it on a schedule, send in "My Agent", with your chat's ID from `/list`
 
 `0 7 * * 1-5` is cron syntax for 07:00 on weekdays, server time. At that time the agent gets this prompt from its next `receive` in your chat, and answers you there. Send `/schedules` to list the schedules, and `/unschedule @5 1` to remove this one.
 
+Send `/help` for the commands; the cron fields, the limits and an example are in the reply to `/help schedule`.
+
 ## Safety
 
 - The agent asks in "My Agent" before it connects, sends a message or a file, downloads a file or leaves; you approve or reject. On a download card, `/receive` gives the agent the file, and `/forward` sends it only to you.

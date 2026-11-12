@@ -259,10 +259,12 @@ Commands:
 | `/schedule #3 0 7 * * 1-5 TEXT` | Schedules the prompt TEXT for chat #3 at 07:00 on weekdays, server time: [Scheduled prompts](#scheduled-prompts). |
 | `/unschedule #3 1` | Removes schedule 1 of chat #3. |
 | `/schedules` | Lists the schedules of all chats. |
+| `/help` | Lists the commands, one line each: [Help](#help). |
+| `/help schedule` | Shows how to use `/schedule`, with an example. |
 
 After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``. The files forwarded from #9 are deleted when the agent leaves it.
 
-`/pending`, `/list`, `/schedules` and `/leave` are in the chat's command menu, and each pending card shows the commands of its action. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
+`/pending`, `/list`, `/schedules`, `/leave` and `/help` are in the chat's command menu, and each pending card shows the commands of its action. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
 
 ### Approval of all messages to a chat
 
@@ -338,6 +340,23 @@ Schedule 1 of #3 added by Alice: 0 7 * * 1-5.
 Scheduled prompt 1 of #3 is due.
 Schedule 1 of #3 removed by Alice.
 ```
+
+### Help
+
+The agent answers `/help` with the commands, one line each:
+
+```
+My Agent: /approve N or /approve CHAT N performs pending action N, other than a download; /approve CHAT all approves all sends to CHAT.
+          /reject N or /reject CHAT N rejects pending action N.
+          ...
+          /help COMMAND shows how to use COMMAND, such as /help schedule.
+```
+
+`/help COMMAND` is answered with how to use COMMAND, a command of the list, written with or without its `/`: its forms and, where they apply, its parameters, rules, limits, an example and related commands. For `/help schedule`, these include the cron fields, the server's time zone, the limits of schedules and prompts, and when a prompt becomes due. The reply to other text after `/help` is `No help for that. /help lists the commands.`
+
+The forms in the reply to `/help` are tappable, and each is sent as written, placeholders included.
+
+Every member who can post in the agent control chat gets these replies; the agent accepts the other commands from approvers only.
 
 ## What the agent sees
 

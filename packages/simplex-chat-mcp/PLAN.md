@@ -472,7 +472,7 @@ host, interrupted   the request's lines except the commands line + "Performed wi
 
 ### Commands
 
-The group's command menu has `/pending`, `/list`, `/schedules` and `/leave`; the cards show the others, except the schedule commands (section Schedules).
+The group's command menu has `/pending`, `/list`, `/schedules`, `/leave` and `/help`; the cards show the others, except the schedule commands (section Schedules).
 
 ```
 menu entry   keyword   label                 params      tapped
@@ -480,6 +480,7 @@ menu entry   keyword   label                 params      tapped
 /list        list      Chats and approvals   none        sent
 /schedules   schedules Scheduled prompts     none        sent
 /leave       leave     Leave a chat          <chat ID>   "/leave <chat ID>" in the entry field, the cursor at its end
+/help        help      Help                  none        sent
 ```
 
 - The apps put "/keyword params" into the entry field for a command with params, and send "/keyword" for one without (`CommandsMenuView.kt:154-159`, `CommandsMenuView.swift:118-124`).
@@ -503,6 +504,8 @@ command             result
   PROMPT
 /unschedule CHAT N  schedule N of CHAT is removed; the later ones are renumbered
 /schedules          one line per schedule, for the chats in the order of /list, then by N: "#3  1  0 7 * * 1-5  Post the trail report."; the prompt on one line; each line cut to 100 bytes as /list lines; the first 100 lines, then "K more schedules are not shown." ("1 more schedule is not shown.") when more exist
+/help               one line per command of the commands reply, in its order: its forms and its effect; from any sender
+/help COMMAND       how to use COMMAND, a keyword of the commands reply, written with or without "/": its forms and, where they apply, its parameters, rules, limits, an example and related commands; one text per group: {approve, reject}, {receive, forward}, {schedule, unschedule, schedules}; from any sender
 ```
 
 `/list`:
@@ -518,7 +521,7 @@ Replies:
 
 ```
 situation                                   reply
-sender is not an approver                   Only owners approve actions. (--owners: Only the owners listed in --owners approve actions.)
+sender is not an approver, other than /help Only owners approve actions. (--owners: Only the owners listed in --owners approve actions.)
 N unknown, decided or from an earlier run   Action 9 is not pending.
 CHAT not the action's chat                  Action 10 is not for #3.
 /approve CHAT all                           Approved for business Ridgeline (#9) by Alice. /'revoke #9'
@@ -552,7 +555,16 @@ agent's
 /unschedule CHAT N                          Schedule 2 of group Builders (#3) is removed.
 /unschedule CHAT N, no schedule N           #3 has no schedule 4.
 /schedules, no schedules                    No schedules.
-other one-line text starting with "/"       Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /schedule, /unschedule, /schedules. Each card shows its commands.
+/help                                       /'approve N' or /'approve CHAT N' performs pending action N, other than a download; /'approve CHAT all' approves all sends to CHAT.
+                                            ... one line per command ...
+                                            /'help COMMAND' shows how to use COMMAND, such as /'help schedule'.
+/help COMMAND, COMMAND a keyword of the     its help text, such as for /help revoke:
+commands reply                              /'revoke CHAT' ends the approval of all sends to CHAT given with /'approve CHAT all': each later send to CHAT needs approval again.
+                                            /'receive CHAT off' ends the approval of all files from CHAT in the same way.
+                                            Example: `/revoke #3`. Related: /list, /'help approve'.
+/help COMMAND, COMMAND not a keyword of     No help for that. /help lists the commands.
+the commands reply
+other one-line text starting with "/"       Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /schedule, /unschedule, /schedules, /help. Each card shows its commands.
 ```
 
 After `/leave CHAT`, after its reply, and after the outcome of a leave action in state done, when the folder of CHAT has files:
@@ -995,7 +1007,8 @@ g = /_group <user> {displayName: DISPLAY, fullName: "",
     {type: "command", keyword: "pending", label: "Pending actions"},
     {type: "command", keyword: "list", label: "Chats and approvals"},
     {type: "command", keyword: "schedules", label: "Scheduled prompts"},
-    {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"}]}}
+    {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
+    {type: "command", keyword: "help", label: "Help"}]}}
 /_set custom #g {simplexMcp: {control: true, nextAction: n}}
 log "Agent control chat \"DISPLAY\" created."
 return g with customData {simplexMcp: {control: true, nextAction: n}}       # the /_group response precedes the custom data
@@ -1052,7 +1065,9 @@ newChatItems, groupRcv, main scope       text starts with "/"                   
 
 ```
 command = parseCommand(text)                      # steward src/commands.ts; undefined: ignore
-not one of the commands below: reply "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /schedule, /unschedule, /schedules. Each card shows its commands."
+not one of the commands below: reply "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /schedule, /unschedule, /schedules, /help. Each card shows its commands."
+help TOPIC:       TOPIC = PARAMS without a leading "/" followed by a character other than a line break; reply the help text of TOPIC: the commands for "", how to use a command for its keyword,
+                  otherwise "No help for that. /help lists the commands."
 sender not an approver: reply "Only owners approve actions." (--owners: "Only the owners listed in --owners approve actions.")
 approve | reject | receive | forward [CHAT] N, receive CHAT N all, action N not pending in memory, or its card unset: reply "Action N is not pending."
 the same with CHAT, action N a connect or for another chat: reply "Action N is not for CHAT."
@@ -1665,7 +1680,7 @@ Unit:
 ```
 test        covers
 options     defaults, ranges, --stop-wait from 0 to 60, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text
-commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /receive CHAT N all and /receive CHAT off beside the approval of messages; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview; /schedule, /unschedule and /schedules: replies, every refusal, renumbering, the due prompt of a removed schedule dropped, the first 100 lines and the count of the others, other custom data and approvals kept, log lines with names on one line, mode host, the load at start, a lost control chat, the schedules of a chat left by /leave
+commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /receive CHAT N all and /receive CHAT off beside the approval of messages; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview; /schedule, /unschedule and /schedules: replies, every refusal, renumbering, the due prompt of a removed schedule dropped, the first 100 lines and the count of the others, other custom data and approvals kept, log lines with names on one line, mode host, the load at start, a lost control chat, the schedules of a chat left by /leave; /help to every member: the list in the order of the commands reply, the text of each command with and without "/", none of them the list, shared texts, the text of /schedule, unknown topics
 actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
 cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes and the servers line; the attaching line of sends
 messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected, a forwarded file offered and then received; download: attach, performing at wait, a received file, a forwarded file kept outside the chat's folder and moved there at the approval, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request; receive with due prompts: scheduled once, with wait 0 and at once with wait, a waiting call ended by a due prompt, the prompts of other chats left due, an aborted call leaving them due
@@ -1745,3 +1760,12 @@ C6      Claude Code closes the request stream when a call times out or its task 
 - Approvers add, remove and list schedules with `/schedule`, `/unschedule` and `/schedules` in the agent control chat, in both modes; a deployment needs no configuration change.
 - Cron syntax, numbers only, in the local time of the server process.
 - A schedule applies while its author is an approver.
+
+## Decisions of 2026-11-12
+
+- The reply to `/help` has one line per command of the commands reply, in its order.
+- How to use a command is shown by `/help COMMAND`, COMMAND written with or without its `/`. One text is given for related commands: `/approve` and `/reject`; `/receive` and `/forward`; `/schedule`, `/unschedule` and `/schedules`.
+- Other text after `/help` is answered with one fixed reply, without that text.
+- The server answers `/help` and `/help COMMAND` from every member who can post in the agent control chat; it accepts the other commands from approvers only.
+- The command menu has `/help`.
+- The limits in the help texts are read from the constants that the server checks.

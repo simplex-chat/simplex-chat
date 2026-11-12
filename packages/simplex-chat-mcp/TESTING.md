@@ -57,6 +57,7 @@ Scheduled prompts, in the directory's chat:
 2. `Wait up to 5 minutes for new messages from the directory.` Within a minute of step 1, the terminal prints `Scheduled prompt 1 of @N is due.`, and `receive` returns the prompt in `scheduled`, with that minute in UTC. Claude takes it as your prompt and asks to send the search: reject the card.
 3. Wait three minutes: since the call of step 2 returned, the terminal has printed the line of step 2 once more. `Check for new messages from the directory.` `scheduled` has one prompt, due at the first minute after that call.
 4. Tap `/schedules` in the command menu: `@N  1  * * * * *  Search the directory for hiking groups.` Tap `/unschedule @N 1` in the reply of step 1: `Schedule 1 of bot SimpleX Directory (@N) is removed.`, and the terminal prints `Schedule 1 of @N removed by Alice.` The reply to `/schedules` is then `No schedules.`
+5. Tap `/help` in the command menu, then `/help schedule` in the last of the 13 lines of the reply, one per command: 8 lines on `/schedule`, with the example `/schedule #3 0 7 * * 1-5 Post the trail report.` `/help /schedule` is answered alike, and `/help cron` with `No help for that. /help lists the commands.`
 
 Approval of all messages to a chat, and leaving:
 
