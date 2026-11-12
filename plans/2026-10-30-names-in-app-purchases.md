@@ -254,7 +254,7 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 - **D10.** Signing stays in the core: a library function takes an account index and uses the account key only inside it; named commands build and sign their own messages; no chat command signs text its caller gives.
 - **D11.** A name code is a wallet, and redeeming one is a transfer. The name code stays on the device and the app sends only that wallet's signatures; a prepaid code is sent as it is. The code's wallet offers the name with `approveWithSig`, and the app's account accepts the terms and takes it with `claimWithSig`: three transactions, each relayed by the service; then the recovery key owns the name. In stage 1 only a name that already opens this profile's address or channel moves.
 - **D12.** The recovery key comes after the search and before the checkout, the first time only. 1·4 creates it; a half-screen sheet over it, 1·4a, offers to save it; saving is optional; the words show only on Show; a quiet reminder until Copy or Show. Restore comes in stage 2, with its scan.
-- **D13.** The app signs each order with the terms the user ticked for it on the checkout: one tick, two obligations and a third for a community name (A; B is Q25), one link to one document with a section on community names, opened as onboarding's conditions of use; the checkout's buttons stay off until ticked. The obligations' words are placeholders for the terms' own.
+- **D13.** The app signs each order with the terms the user ticked for it on the checkout: one tick, whose link opens a half-screen sheet with two obligations, a third for a community name, and Agree (the obligations on the checkout itself are Q25's alternative B), one link to one document with a section on community names, opened from the sheet as onboarding's conditions of use; the checkout's buttons stay off until ticked. The obligations' words are placeholders for the terms' own.
 - **D14.** In stage 1 buying and codes start from the address and a channel's info; the hub comes in stage 2, under Advanced settings.
 - **D15.** In stage 1 every name opens something from the start (Q12).
 - **D16.** A taken name shows "Taken", without pictures, and a separate "What it's used for" button (Q18).
@@ -725,13 +725,13 @@ Rules for every screen:
 - Names are counted in characters.
 - Every price is the store's, in its currency; on row 4, the service's, in US dollars.
 - The terms block, on the checkout of every order (1·5, 2·3, 4·2) and on 3·1 for a move, above the main button:
-  - one tick, "I agree to the SimpleX names terms:", then "to use the name lawfully, respecting others' rights;" and "not to use it for fraud or impersonation."; for a community name, "not to use it for fraud or impersonation;" and a third line, "to use it for its community, not as a brand.";
+  - one tick, "I agree to the SimpleX names terms", ticked there or by the sheet's Agree; its link opens a half-screen sheet, 1·5a, as 1·4a is for the key: "SimpleX names terms", "You agree:", "to use the name lawfully, respecting others' rights;" and "not to use it for fraud or impersonation."; for a community name, "bakery.simplex is a community name. You agree:", "not to use it for fraud or impersonation;" and a third line, "to use it for its community, not as a brand."; then "Read the full terms" and "Agree", which ticks and closes the sheet; swiped away, the sheet changes nothing;
   - the words are placeholders for the terms' own;
-  - "SimpleX names terms" opens the text as onboarding's conditions of use do: iOS a `.sheet` (`OnboardingConditionsView`, `ChooseServerOperators.swift:107`); Android and desktop `ModalManager.fullscreen.showModal`, a full-screen modal (`ChooseServerOperators.kt:111, 157`). It shows the text whose hash the app signs, by the link of the name's kind; "Loading the terms…" while it loads; "The terms can't be shown now. Try again in a moment." with "Try again" when it can't;
+  - "Read the full terms" opens the text as onboarding's conditions of use do: iOS a `.sheet` (`OnboardingConditionsView`, `ChooseServerOperators.swift:107`); Android and desktop `ModalManager.fullscreen.showModal`, a full-screen modal (`ChooseServerOperators.kt:111, 157`). It shows the text whose hash the app signs, by the link of the name's kind; "Loading the terms…" while it loads; "The terms can't be shown now. Try again in a moment." with "Try again" when it can't;
   - Pay, "Register with your payment", "Register with your code", "Pay in browser" and 3·1's "Move into this app" stay off until ticked;
   - on `terms_changed` the tick comes back unticked under "The terms changed. Agree to them again.": on the checkout before paying, in place on 1·7 after.
 - The images show each lane's screens with their numbers and routes; where the words below differ from an image, the words below hold. A state not named here takes a listed state's words.
-- The checkout's alternative B, drawn in lane 1 and noted beside 2·3, 3·1 and 4·2, is Q25.
+- Alternative B, the obligations under the tick on the checkout itself with no sheet, drawn in lane 1 and noted beside 2·3, 3·1 and 4·2, is Q25.
 - Privacy disclosures stay off the screens: section 7 states each as a property, and P57a and P57b put them in `PRIVACY.md`. The names terms' text (https://github.com/simplex-chat/simplex-chat/pull/8002) is outside this plan.
 - The codes release: 1·1 opens 1·2 in every build, and 4·1's code-only form on iOS outside the US; 1·2 keeps "Register with code" whatever the catalog says, with the codes-only state's line while the catalog reads codes-only and "This version registers names with a code." once it reads open; its "Buy in browser" opens the site's search for the name (`/#/?name=<label>`, 3.2), with no 1·4, where D18 allows and the catalog reads open (Q26). 1·5, 1·6, 1·10, 4·1's priced form and the rest of row 4 come with the payments release.
 
@@ -739,7 +739,7 @@ Rules for every screen:
 
 ![Lane 1, screens 1·1 to 1·5 and 1·5's alternative B](2026-10-30-names-in-app-purchases/lane1a.png)
 
-![Lane 1, 1·5's community-name boxes and alternative B's terms sheet, screens 1·6 to 1·11](2026-10-30-names-in-app-purchases/lane1b.png)
+![Lane 1, 1·5's terms sheet and community-name boxes, screens 1·6 to 1·11](2026-10-30-names-in-app-purchases/lane1b.png)
 
 - **1·1** "Get SimpleX name", without "BETA" → 1·2, or 4·1 where the build can't pay.
   - From a channel's info: the channel's row, "SimpleX name", "Let people join via name registered with this channel link.", where the channel has a link the user owns.
@@ -1050,7 +1050,7 @@ The path: search → key the first time → checkout with the terms tick → the
 - Search: on today's name screen; "I have a code" under Register, above "Buy in browser".
 - A taken name: "What it's used for" (Q18).
 - Opens: the address or channel it started from (Q12).
-- Terms: one tick on the checkout for each order, with two obligations and a third for a community name; its link opens one document, as onboarding's conditions of use.
+- Terms: one tick on the checkout for each order; its link opens a half-screen sheet with two obligations and a third for a community name, and the one document from there, as onboarding's conditions of use.
 - Recovery key: after the search, before the checkout; one screen and a sheet; the device's check when opened later; stage 1's own words.
 - Registering: "Ordered · Waiting (countdown) · Registering"; the site's keep-the-app-open warning until the reveal; Close only leaves; reopening continues without asking.
 - Done: a screen; a quiet key reminder; 1·11's key row.
@@ -1644,7 +1644,7 @@ The other questions:
 - **Q20.** Detail of Q24. Browser money that arrives late, short or beyond the price? → Support refunds it through `//name-invoice`, without a revoke or a balance.
 - **Q21.** Detail of Q24. A phone lost after paying in the browser? → A card payment refunded through `//name-invoice` after the 30-day conditions; crypto isn't. A different answer that changes the nonce is due before P62.
 - **Q22.** Deferred. Ask for the device's check on Copy and Show straight after the key is created? → The plan builds on no (1·4a's exception); the recommendation is yes.
-- **Q25.** The terms on the checkout: the obligations under the tick (A), or one tick line whose link opens a half-screen sheet with the obligations and Agree (B)? → A (6.6's terms block).
+- **Q25.** The terms on the checkout: one tick line whose link opens a half-screen sheet with the obligations and Agree (A), or the obligations under the tick on the checkout itself (B)? → A, the sheet (6.6's terms block).
 - **Q27.** Stage 2's "Set what it opens" takes "any link": a contact or channel link, also one outside the app, or a web address too? → Contact and channel links: the service's record edit takes a name's contact and channel records only and refuses any other value (`recordKinds`, `EIInvalidLink`, `StoreService/Web/Names/Records.hs:58, 75-76`), so a web address is new work in the service.
 
 ## 12. Out of scope (noticed, not doing)
