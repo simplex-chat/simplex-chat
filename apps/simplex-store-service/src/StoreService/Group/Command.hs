@@ -48,7 +48,7 @@ maxNameYears = 10
 data GroupCmd
   = GCIssue BadgeType Int Int
   | GCBulk BadgeType Int Int
-  | GCIssueName Int
+  | GCIssueName Int Int
   | GCRevoke BadgeCode
   | GCRevokeName NamePrepaidCode
   | GCMoney MoneyCmd
@@ -89,7 +89,7 @@ cmdActionP = A.choice (map cmdP [minBound .. maxBound])
 
 cmdArgsP :: CmdTag -> A.Parser GroupCmd
 cmdArgsP = \case
-  CTIssue -> GCIssueName <$> nameArgP <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> optP usesOpt
+  CTIssue -> uncurry GCIssueName <$> nameCodeP <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> optP usesOpt
   CTBulk -> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
   CTRevoke -> GCRevoke <$> codeP <|> GCRevokeName <$> prepaidCodeP
   CTBalance -> GCMoney <$> balanceArgsP
@@ -117,10 +117,7 @@ optValueP opt = A.string (encodeUtf8 (optKey opt)) *> A.space *> boundedInt opt
 
 -- | "name <length> [years <Y>]", the length and years of a prepaid name code.
 nameCodeP :: A.Parser (Int, Int)
-nameCodeP = (,) <$> nameArgP <*> optP yearsOpt
-
-nameArgP :: A.Parser Int
-nameArgP = A.string (encodeUtf8 nameKind) *> A.char ' ' *> nameLengthP
+nameCodeP = A.string (encodeUtf8 nameKind) *> A.char ' ' *> ((,) <$> nameLengthP <*> optP yearsOpt)
 
 -- | A code's text carries the length as typed, so a leading zero is refused.
 nameLengthP :: A.Parser Int
@@ -202,24 +199,24 @@ cmdLabel = \case
 -- The menu hints and the usage replies are built from the same kinds, options and bounds, so they cannot drift apart.
 cmdParams :: CmdTag -> Text
 cmdParams = \case
-  CTIssue -> kindParams (nameArg : badgeKinds) <> " [" <> optArg usesOpt <> "]"
-  CTBulk -> kindParams badgeKinds <> " " <> optArg countOpt
+  CTIssue -> kindParams (nameArg : badgeKinds) [yearsOpt, monthsOpt] <> " [" <> optArg usesOpt <> "]"
+  CTBulk -> kindParams badgeKinds [monthsOpt] <> " " <> optArg countOpt
   CTRevoke -> "<code>"
   CTBalance -> referenceArg
   CTRecordRefund -> referenceArg <> " " <> optVar centsOpt
   CTClose -> referenceArg
   where
     referenceArg = "<reference>"
-    kindParams kinds = "<" <> T.intercalate "|" kinds <> "> [" <> optKey monthsOpt <> " <N>]"
+    kindParams kinds opts = "<" <> T.intercalate "|" kinds <> "> [" <> T.intercalate "|" (map optKey opts) <> " <N>]"
 
 cmdUsage :: CmdTag -> Text
 cmdUsage = \case
   CTIssue ->
     kindUsage
       CTIssue
-      ("[" <> optVar lengthOpt <> "] [" <> optArg monthsOpt <> "] [" <> optArg usesOpt <> "]")
-      [(nameArg, [lengthOpt]), (badgeKindsText, [monthsOpt, usesOpt])]
-      ["name 6", "supporter months 12"]
+      ("[" <> optVar lengthOpt <> "] [" <> optArg yearsOpt <> " | " <> optArg monthsOpt <> "] [" <> optArg usesOpt <> "]")
+      [(nameArg, [lengthOpt, yearsOpt]), (badgeKindsText, [monthsOpt, usesOpt])]
+      ["name 6 years 5", "supporter months 12"]
   CTBulk -> kindUsage CTBulk ("[" <> optArg monthsOpt <> "] " <> optArg countOpt) [(badgeKindsText, [monthsOpt, countOpt])] ["legend months 3 count 10"]
   tag -> "Usage: " <> cmdText tag (cmdParams tag)
   where

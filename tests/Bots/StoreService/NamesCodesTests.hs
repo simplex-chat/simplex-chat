@@ -295,9 +295,10 @@ testReleaseSpend = withOrders $ \turns st -> do
 testGroupNameCommands :: IO ()
 testGroupNameCommands = do
   let p = groupCmdAction GRAdmin
-  p "/issue name 8" `shouldBe` RunCmd (GCIssueName 8)
-  p "/issue name 63" `shouldBe` RunCmd (GCIssueName 63)
-  map p ["/issue name 6 years 2", "/issue name 63 years 10"] `shouldBe` replicate 2 issueUsage
+  p "/issue name 8" `shouldBe` RunCmd (GCIssueName 8 2)
+  p "/issue name 63" `shouldBe` RunCmd (GCIssueName 63 2)
+  p "/issue name 6 years 2" `shouldBe` RunCmd (GCIssueName 6 2)
+  p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName 63 10)
   map p ["/bulk name 7 count 3", "/bulk name 12 years 2 count 100", "/bulk name 6 count 1"] `shouldBe` replicate 3 bulkUsage
   groupCmdAction GRMember "/issue name 8" `shouldBe` IgnoreMsg
 
@@ -312,11 +313,11 @@ testGroupRevokeNameCommand = do
 testGroupNameCommandsRefused :: IO ()
 testGroupNameCommandsRefused = do
   let p = groupCmdAction GRModerator
-  forM_ ["name", "name 5", "name 64", "name 06", "name 8 years 1", "name 8 years 0", "name 8 years 3", "name 8 years 11", "name 8 uses 2", "name 8 months 2", "name 8 paid", "name 8 years 18446744073709551618", "name 8 count 2", "name 8 count 1"] $ \args ->
+  forM_ ["name", "name 5", "name 64", "name 06", "name 8 years 1", "name 8 years 0", "name 8 years 11", "name 8 uses 2", "name 8 months 2", "name 8 paid", "name 8 years 18446744073709551618", "name 8 count 2", "name 8 count 1"] $ \args ->
     (args, p ("/issue " <> args)) `shouldBe` (args, issueUsage)
   forM_ ["name 8", "name 8 count 0", "name 8 count 101", "name 8 years 1 count 2", "name 5 count 2", "name 08 count 2", "name 8 months 2 count 2", "name 8 count 2 uses 2", "name 8 uses 2 count 2", "name 8 count 2 years 5", "name count 2"] $ \args ->
     (args, p ("/bulk " <> args)) `shouldBe` (args, bulkUsage)
 
 issueUsage, bulkUsage :: CmdAction
-issueUsage = ReplyText "Usage: /issue <kind> [<length>] [months <M>] [uses <N>]\nname <length>: length 6–63\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 · /issue supporter months 12"
+issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
 bulkUsage = ReplyText "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk legend months 3 count 10"
