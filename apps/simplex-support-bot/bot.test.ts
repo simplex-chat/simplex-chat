@@ -2515,11 +2515,13 @@ describe("parseConfig Validation", () => {
 
     test("option values and messages are read; missing messages keep the defaults", () => {
       const path = configFile([
+        `[bot]`,
         `team_group = "SimpleX Support Team"`,
         `auto_add_team_members = ["1:Alice", "2:Bob"]`,
         `complete_hours = 0`,
         `queue_size = 65536`,
-        `db = "postgres"`,
+        `[database]`,
+        `type = "postgres"`,
         `pg_conn = "postgres://localhost/db"`,
         `[messages]`,
         `welcome = """`,
@@ -2540,7 +2542,7 @@ describe("parseConfig Validation", () => {
     })
 
     test("command-line options take precedence over the file, given before or after --config", () => {
-      const path = configFile(`team_group = "From file"\ntimezone = "Europe/London"`)
+      const path = configFile(`[bot]\nteam_group = "From file"\ntimezone = "Europe/London"`)
       expect(parseConfig(["--team-group", "From CLI", "--config", path]).teamGroup.name).toBe("From CLI")
       expect(parseConfig([`--config=${path}`, "--team-group", "From CLI"]).timezone).toBe("Europe/London")
     })
@@ -2550,40 +2552,46 @@ describe("parseConfig Validation", () => {
     })
 
     test("values are validated as on the command line", () => {
-      expect(() => parseConfig(["--config", configFile(`team_group = "T"\ncomplete_hours = -1`)]))
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\ncomplete_hours = -1`)]))
         .toThrow(/--complete-hours must be a non-negative integer, got "-1"/)
-      expect(() => parseConfig(["--config", configFile(`team_group = "T"\ndb = "mysql"`)]))
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[database]\ntype = "mysql"`)]))
         .toThrow(/Allowed choices are sqlite, postgres/)
-      expect(() => parseConfig(["--config", configFile(`team_group = "T"\nteam_grup = "U"`)]))
-        .toThrow(/unknown option '--team-grup=U'/)
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[database]\ntype = "sqlite"\npg_conn = "c"`)]))
+        .toThrow(/--pg-conn and --pg-schema require --db postgres/)
     })
 
-    test("dashed keys, flags, nested config and non-scalar values → throw", () => {
-      expect(() => parseConfig(["--config", configFile(`team-group = "T"`)]))
-        .toThrow(/key team-group must be lowercase with underscores, as team_group/)
-      expect(() => parseConfig(["--config", configFile(`team_group = "T"\ndry_run = true`)]))
-        .toThrow(/dry_run must be a string, a number or a list of strings/)
-      expect(() => parseConfig(["--config", configFile(`team_group = "T"\nconfig = "other.toml"`)]))
-        .toThrow(/config cannot be set in a config file/)
+    test("unknown sections and keys, top-level keys and non-scalar values → throw", () => {
+      expect(() => parseConfig(["--config", configFile(`[server]\nport = 1`)]))
+        .toThrow(/unknown section \[server\], known sections: bot, database, grok, messages/)
+      expect(() => parseConfig(["--config", configFile(`team_group = "T"`)]))
+        .toThrow(/unknown section \[team_group\]/)
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_grup = "T"`)]))
+        .toThrow(/unknown key bot.team_grup, known keys: team_group, auto_add_team_members,/)
+      expect(() => parseConfig(["--config", configFile(`[bot]\ndry_run = true`)]))
+        .toThrow(/unknown key bot.dry_run/)
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = true`)]))
+        .toThrow(/bot.team_group must be a string, a number or a list of strings/)
+      expect(() => parseConfig(["--config", configFile(`bot = "T"`)]))
+        .toThrow(/\[bot\] must be a section/)
     })
 
     test("unknown or non-string messages → throw", () => {
-      expect(() => parseConfig(["--config", configFile(`team_group = "T"\n[messages]\nteamAdded = "Hi"`)]))
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[messages]\nteamAdded = "Hi"`)]))
         .toThrow(/unknown message teamAdded, known messages: welcome, queue, queue_grok, grok_activated, team_added,/)
-      expect(() => parseConfig(["--config", configFile(`team_group = "T"\n[messages]\nwelcome = 1`)]))
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[messages]\nwelcome = 1`)]))
         .toThrow(/message welcome must be a string/)
-      expect(() => parseConfig(["--config", configFile(`team_group = "T"\nmessages = "Hi"`)]))
-        .toThrow(/messages must be a table/)
+      expect(() => parseConfig(["--config", configFile(`messages = "Hi"\n[bot]\nteam_group = "T"`)]))
+        .toThrow(/\[messages\] must be a section/)
     })
 
-    describe("grok_api_key", () => {
+    describe("grok.api_key", () => {
       const savedKey = process.env.GROK_API_KEY
       beforeEach(() => { delete process.env.GROK_API_KEY })
       afterEach(() => {
         if (savedKey === undefined) delete process.env.GROK_API_KEY
         else process.env.GROK_API_KEY = savedKey
       })
-      const withKey = (extra = "") => configFile(`team_group = "T"\ncontext_file = "ctx.yaml"\ngrok_api_key = "file-key"${extra}`)
+      const withKey = () => configFile(`[bot]\nteam_group = "T"\n[grok]\ncontext_file = "ctx.yaml"\napi_key = "file-key"`)
 
       test("is read from the file", () => {
         expect(parseConfig(["--config", withKey()]).grokApiKey).toBe("file-key")
@@ -2597,24 +2605,24 @@ describe("parseConfig Validation", () => {
       })
 
       test("requires a context file", () => {
-        expect(() => parseConfig(["--config", configFile(`team_group = "T"\ngrok_api_key = "file-key"`)]))
+        expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[grok]\napi_key = "file-key"`)]))
           .toThrow(/A Grok API key is set but --context-file is not provided/)
       })
 
       test("must be a non-empty string", () => {
-        expect(() => parseConfig(["--config", configFile(`team_group = "T"\ngrok_api_key = ""`)]))
-          .toThrow(/grok_api_key must be a non-empty string/)
-        expect(() => parseConfig(["--config", configFile(`team_group = "T"\ngrok_api_key = 1`)]))
-          .toThrow(/grok_api_key must be a non-empty string/)
+        expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[grok]\napi_key = ""`)]))
+          .toThrow(/grok.api_key must be a non-empty string/)
+        expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[grok]\napi_key = 1`)]))
+          .toThrow(/grok.api_key must be a non-empty string/)
       })
 
       test("absent from file and environment → Grok disabled", () => {
-        expect(parseConfig(["--config", configFile(`team_group = "T"`)]).grokApiKey).toBeNull()
+        expect(parseConfig(["--config", configFile(`[bot]\nteam_group = "T"`)]).grokApiKey).toBeNull()
       })
     })
 
     test("malformed TOML → throws", () => {
-      expect(() => parseConfig(["--config", configFile(`team_group = "unclosed`)])).toThrow()
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "unclosed`)])).toThrow()
     })
   })
 

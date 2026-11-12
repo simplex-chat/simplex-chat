@@ -76,7 +76,7 @@ function buildCommand(): Command {
     .option("--dry-run", "check config, database and state, then exit without starting chat")
     .option("--allow-migrations", "with --dry-run: apply pending migrations instead of reporting them")
     .option("--allow-down-migrations", "with --dry-run: roll back migrations that this build does not have")
-    .addHelpText("after", "\nEnvironment:\n  GROK_API_KEY        xAI API key — enables Grok replies, takes precedence over grok_api_key in --config\n  SIMPLEX_LIBS_DIR    local libsimplex build for the --db backend\n  SIMPLEX_ADDON_PATH  locally built Node.js add-on\n")
+    .addHelpText("after", "\nEnvironment:\n  GROK_API_KEY        xAI API key — enables Grok replies, takes precedence over grok.api_key in --config\n  SIMPLEX_LIBS_DIR    local libsimplex build for the --db backend\n  SIMPLEX_ADDON_PATH  locally built Node.js add-on\n")
 }
 
 interface RawOpts {
@@ -110,35 +110,76 @@ function configFilePath(args: string[]): string | undefined {
   return args.find(arg => arg.startsWith("--config="))?.slice("--config=".length)
 }
 
+const configFlags = new Map(
+  Object.entries({
+    bot: {
+      team_group: "--team-group",
+      auto_add_team_members: "--auto-add-team-members",
+      state_file: "--state-file",
+      timezone: "--timezone",
+      complete_hours: "--complete-hours",
+      card_flush_seconds: "--card-flush-seconds",
+      queue_size: "--queue-size",
+    },
+    database: {
+      type: "--db",
+      pg_conn: "--pg-conn",
+      pg_schema: "--pg-schema",
+      sqlite_file_prefix: "--sqlite-file-prefix",
+      sqlite_key: "--sqlite-key",
+    },
+    grok: {
+      context_file: "--context-file",
+    },
+  }).map(([section, flags]): [string, Map<string, string>] => [section, new Map(Object.entries(flags))])
+)
+
 function readConfigFile(path: string): ConfigFile {
-  const {messages = {}, grok_api_key = null, ...options} = parseToml(readFileSync(path, "utf-8"))
-  if (grok_api_key !== null && (typeof grok_api_key !== "string" || grok_api_key === "")) {
-    throw new Error(`${path}: grok_api_key must be a non-empty string`)
-  }
+  const {messages = {}, grok = {}, ...sections} = parseToml(readFileSync(path, "utf-8"))
+  const {api_key, ...grokOptions} = configTable(path, "grok", grok)
   return {
-    args: Object.entries(options).map(([key, value]) => configOptionArg(path, key, value)),
-    messages: configMessages(path, messages),
-    grokApiKey: grok_api_key,
+    args: Object.entries({...sections, grok: grokOptions}).flatMap(([section, options]) => configSectionArgs(path, section, options)),
+    messages: configMessages(path, configTable(path, "messages", messages)),
+    grokApiKey: configGrokApiKey(path, api_key),
   }
 }
 
-function configOptionArg(path: string, key: string, value: unknown): string {
-  if (!/^[a-z][a-z_]*$/.test(key)) throw new Error(`${path}: key ${key} must be lowercase with underscores, as team_group`)
-  if (key === "config") throw new Error(`${path}: config cannot be set in a config file`)
-  const flag = `--${key.replaceAll("_", "-")}`
+function configGrokApiKey(path: string, value: unknown): string | null {
+  if (value === undefined) return null
+  if (typeof value !== "string" || value === "") throw new Error(`${path}: grok.api_key must be a non-empty string`)
+  return value
+}
+
+function configTable(path: string, section: string, value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`${path}: [${section}] must be a section`)
+  }
+  return value as Record<string, unknown>
+}
+
+function configSectionArgs(path: string, section: string, options: unknown): string[] {
+  const flags = configFlags.get(section)
+  if (!flags) {
+    throw new Error(`${path}: unknown section [${section}], known sections: ${[...configFlags.keys(), "messages"].join(", ")}`)
+  }
+  return Object.entries(configTable(path, section, options)).map(([key, value]) => {
+    const flag = flags.get(key)
+    if (!flag) throw new Error(`${path}: unknown key ${section}.${key}, known keys: ${[...flags.keys()].join(", ")}`)
+    return configOptionArg(path, `${section}.${key}`, flag, value)
+  })
+}
+
+function configOptionArg(path: string, name: string, flag: string, value: unknown): string {
   if (typeof value === "string" || typeof value === "number") return `${flag}=${value}`
   if (Array.isArray(value) && value.every(v => typeof v === "string")) return `${flag}=${value.join(",")}`
-  throw new Error(`${path}: ${key} must be a string, a number or a list of strings`)
+  throw new Error(`${path}: ${name} must be a string, a number or a list of strings`)
 }
 
 const messageKeys = new Map(
   (Object.keys(defaultMessages) as (keyof Messages)[]).map(field => [field.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`), field])
 )
 
-function configMessages(path: string, table: unknown): Messages {
-  if (typeof table !== "object" || table === null || Array.isArray(table)) {
-    throw new Error(`${path}: messages must be a table`)
-  }
+function configMessages(path: string, table: Record<string, unknown>): Messages {
   const messages = {...defaultMessages}
   for (const [key, value] of Object.entries(table)) {
     const field = messageKeys.get(key)

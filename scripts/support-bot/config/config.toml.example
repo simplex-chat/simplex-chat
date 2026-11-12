@@ -1,19 +1,27 @@
-# Copy to config.toml. Keys are the command-line options in snake_case;
+# Copy to config.toml. Each key sets the command-line option named next to it;
 # an option given on the command line takes precedence.
-team_group = "SimpleX Support Team"
-auto_add_team_members = ["1:Alice"]
-context_file = "/etc/support-bot/grok-context.yaml"
-state_file = "/data/state.json"
-db = "postgres"
-pg_conn = "postgres://simplex@127.0.0.1/simplex_support_bot"
+
+[bot]
+team_group = "SimpleX Support Team"            # --team-group
+auto_add_team_members = ["1:Alice"]            # --auto-add-team-members
+state_file = "/data/state.json"                # --state-file
+timezone = "UTC"                               # --timezone
+# complete_hours = 3                           # --complete-hours
+# card_flush_seconds = 300                     # --card-flush-seconds
+# queue_size = 65536                           # --queue-size, core default 1024
+
+[database]
+type = "postgres"                              # --db
+pg_conn = "postgres://simplex@127.0.0.1/simplex_support_bot"   # --pg-conn
+# pg_schema = "simplex_v1"                     # --pg-schema
+
+[grok]
+context_file = "/etc/support-bot/grok-context.yaml"   # --context-file
 # Enables Grok replies; GROK_API_KEY takes precedence.
-# grok_api_key = "xai-..."
-timezone = "UTC"
-# Internal queue size of the chat core, as the CLI's --queue-size; default 1024.
-# queue_size = 65536
+# api_key = "xai-..."
 
 # A message left out keeps its built-in text.
-# {hours} is 24 on weekdays and 48 at weekends in the timezone above.
+# {hours} is 24 on weekdays and 48 at weekends in bot.timezone.
 [messages]
 welcome = """
 Hello! This is a *SimpleX team* support bot - not an AI.

@@ -5,7 +5,7 @@ A business-address bot that triages incoming support chats, optionally runs them
 ## Prerequisites
 
 - Node.js v18 or newer (v24 tested)
-- an xAI API key in `GROK_API_KEY` or in `grok_api_key` of the config file — optional; the bot runs without it
+- an xAI API key in `GROK_API_KEY` or in `grok.api_key` of the config file — optional; the bot runs without it
 - For the PostgreSQL backend: Linux x86_64, `libpq5` installed on the host, and a reachable PostgreSQL server
 
 ## Install & build
@@ -65,9 +65,26 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 
 ## Config file
 
-`--config config.toml` reads option values and message texts from a TOML file, as [config.toml.example](../../scripts/support-bot/config/config.toml.example) shows. Keys are the command-line options in snake_case (`team_group` for `--team-group`); a list is joined with commas. An option given on the command line takes precedence over the file. `--dry-run`, `--allow-migrations` and `--allow-down-migrations` are command-line only. `grok_api_key` is file-only, so that the key is not visible in the process list; `GROK_API_KEY` takes precedence over it. The file holds the `pg_conn` password and the Grok key, so keep it readable only by the user that runs the bot.
+`--config config.toml` reads option values and message texts from a TOML file, as [config.toml.example](../../scripts/support-bot/config/config.toml.example) shows. A list is joined with commas. An option given on the command line takes precedence over the file. `--dry-run`, `--allow-migrations` and `--allow-down-migrations` are command-line only. `grok.api_key` is file-only, so that the key is not visible in the process list; `GROK_API_KEY` takes precedence over it. The file holds the `pg_conn` password and the Grok key, so keep it readable only by the user that runs the bot.
 
-A message left out of `[messages]` keeps its built-in text. `{hours}` is replaced with 24 on weekdays and 48 at weekends in `timezone`. The welcome message is updated in the bot address on the next start.
+| Key | Option |
+|---|---|
+| `bot.team_group` | `--team-group` |
+| `bot.auto_add_team_members` | `--auto-add-team-members` |
+| `bot.state_file` | `--state-file` |
+| `bot.timezone` | `--timezone` |
+| `bot.complete_hours` | `--complete-hours` |
+| `bot.card_flush_seconds` | `--card-flush-seconds` |
+| `bot.queue_size` | `--queue-size` |
+| `database.type` | `--db` |
+| `database.pg_conn` | `--pg-conn` |
+| `database.pg_schema` | `--pg-schema` |
+| `database.sqlite_file_prefix` | `--sqlite-file-prefix` |
+| `database.sqlite_key` | `--sqlite-key` |
+| `grok.context_file` | `--context-file` |
+| `grok.api_key` | `GROK_API_KEY` |
+
+A message left out of `[messages]` keeps its built-in text. `{hours}` is replaced with 24 on weekdays and 48 at weekends in `bot.timezone`. The welcome message is updated in the bot address on the next start.
 
 | Message | Sent when |
 |---|---|
@@ -90,7 +107,7 @@ A message left out of `[messages]` keeps its built-in text. `{hours}` is replace
 
 | Var | Purpose |
 |---|---|
-| `GROK_API_KEY` | xAI API key; enables Grok replies; takes precedence over `grok_api_key` of the config file |
+| `GROK_API_KEY` | xAI API key; enables Grok replies; takes precedence over `grok.api_key` of the config file |
 | `SIMPLEX_LIBS_DIR` | directory with a local libsimplex build for the `--db` backend, instead of the downloaded one |
 | `SIMPLEX_ADDON_PATH` | locally built Node.js add-on (`simplex.node`), instead of the downloaded one |
 | `NODE_OPTIONS` | `--max-old-space-size=8192` on a bot with many chats: single API responses outgrow the default heap |
@@ -111,7 +128,7 @@ docker compose up --build
 LIBS=source docker compose build
 ```
 
-`scripts/support-bot/config` is mounted at `/etc/support-bot` and holds `config.toml`, with `pg_conn` and `grok_api_key`, and the Grok context file; the bot runs as uid 1000, which must be able to read them. Other arguments are passed after the service name, for example `docker compose run --rm support-bot --config /etc/support-bot/config.toml --dry-run`.
+`scripts/support-bot/config` is mounted at `/etc/support-bot` and holds `config.toml`, with `database.pg_conn` and `grok.api_key`, and the Grok context file; the bot runs as uid 1000, which must be able to read them. Other arguments are passed after the service name, for example `docker compose run --rm support-bot --config /etc/support-bot/config.toml --dry-run`.
 
 ## Dry run
 
