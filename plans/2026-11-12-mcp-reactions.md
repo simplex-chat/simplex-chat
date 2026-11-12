@@ -1,6 +1,6 @@
 # SimpleX MCP plugin: reactions are passed to Claude
 
-Status: plan for review. Code references: master `9d3241b06` (MCP 0.3.0). Claude Code references: the binary of Claude Code 2.1.322, by byte offset, and https://code.claude.com/docs/en/channels-reference.
+Status: plan for review; Q1 is decided, Q2 is open. Code references: master `9d3241b06` (MCP 0.3.0). Claude Code references: the binary of Claude Code 2.1.322, by byte offset, and https://code.claude.com/docs/en/channels-reference.
 
 ## Goal
 
@@ -27,6 +27,7 @@ Done when:
 6   a reaction to a pending tool-use card leaves the card pending                              unit test
 7   each channel tag of a turn's prompt matches one pushed prompt                               unit test
 8   in a real session, a reaction to Claude's answer gets an answer that quotes it              TESTING.md, check 6
+9   with Q2 C: Claude reacts 👍 to a member's message when the turn of that message starts       unit test; end-to-end test
 ```
 
 ## What users see
@@ -54,6 +55,7 @@ Texts:
 - Claude writes its answers. The only text of the hub for a reaction is `Session N is not running.` of 0.3.0.
 - `User` posts nothing for the prompt of a reaction.
 - Claude Code shows the reaction in the terminal as it shows a message from the group.
+- With Q2 C: Claude's 👍 appears on a member's message when Claude starts the turn of that message.
 
 What Claude gets for Bob's 👍 on Claude's answer with the item ID 57:
 ```
@@ -108,13 +110,24 @@ sequenceDiagram
 
 ## Questions for the user
 
-Q1. Does a reaction start a turn of Claude?
-- A, recommended: yes, as an emoji reply does. Claude answers in the group, as a reply to the reacted message. A reaction sent while Claude works is queued and taken in the next turn, with the other queued messages. Each reaction costs a turn and adds Claude's answer to the group. Owners stop reactions in a group by its preference "Message reactions".
+Q1. Does a reaction start a turn of Claude? Decided by the user on 2026-11-12: A.
+- A, chosen: yes, as an emoji reply does. Claude answers in the group, as a reply to the reacted message. A reaction sent while Claude works is queued and taken in the next turn, with the other queued messages. Each reaction costs a turn and adds Claude's answer to the group. Owners stop reactions in a group by its preference "Message reactions".
 - B: Claude sees reactions only with a later prompt. A reaction costs no turn, and Claude posts nothing for it. Claude learns of a 👎 only when someone prompts. A prompt from the group gets the reactions in its channel message. A prompt typed in the terminal gets them one turn late, because the turn hooks run in the background (decision 32 of the 0.3.0 plan); the docs: "After the background process exits, Claude Code delivers the `additionalContext` and `systemMessage` fields from the hook's JSON response to Claude on the next conversation turn". The hub keeps a list of reactions per session, removes the withdrawn ones, merges the list into the next prompt and loses it at a service restart. The code is about twice that of A.
 
-Q2. Does Claude also react to messages, in this pull request?
-- A, recommended: no. Claude answers in text. Claude's own reactions are a separate roadmap item.
-- B: a `react` tool. Claude adds an emoji to a message of the session group by its item, as the Telegram and Discord channels of Claude Code allow. It is about 40 source lines with its refusals: the preference "Message reactions" off, three reactions on a message, an unknown item. Claude still posts the final answer of each turn.
+Q2. Does Claude also react to messages, in this pull request? Open.
+
+The user asked what Claude does with reactions in the Telegram and Discord channels of Claude Code. Their servers, in https://github.com/anthropics/claude-plugins-official at `23c304a6`, `external_plugins/telegram/server.ts` and `external_plugins/discord/server.ts`:
+- Members' reactions are not passed to Claude. The Telegram server handles messages and button presses only (telegram:738-882). The Discord server handles new messages and interactions only, and asks for no reaction events (discord:83-86, :747, :805).
+- Claude has a `react` tool. It adds an emoji to a message, given the chat's and the message's IDs from the channel tag (telegram:484-495, :599-604; discord:545-556, :680-685). The instructions say: "Use react to add emoji reactions" (telegram:411, discord:460).
+- The server reacts to each received message with `ackReaction`, before it passes the message to Claude (telegram:958-963, discord:856-860). It is off by default: `defaultAccess` sets no `ackReaction` (telegram:128-135, discord:123-130), and the user turns it on with `/telegram:access set ackReaction 👀` (`ACCESS.md`).
+- The server reacts with ✅ or ❌ to a permission reply `yes ID` or `no ID` (telegram:944-946, discord:846-847). In SimpleX, the tool-use card is edited to `Approved by NAME.` or `Rejected by NAME.` instead (0.3.0 decision 28).
+
+Options:
+- A: none. Claude answers in text.
+- B: a `react` tool. Claude adds an emoji to a message of the session group by its `item`. It is about 40 source lines with its refusals: the preference "Message reactions" off, three reactions of Claude on a message, an unknown item. Claude still posts the final answer of each turn.
+- C, recommended: Claude's receipt reaction. When Claude Code starts the turn of a member's message, Claude reacts 👍 to that message. The hub adds it when the turn's prompt matches the pushed message (decision 27). It costs about 10 source lines, and no turn. Members see which of their messages Claude has taken, also while earlier prompts wait in the queue. A reaction to the push itself would be false for a session started without the channel flag, because Claude Code then drops the message, and the hub cannot detect it (0.3.0 plan, "Session mirroring"). The core accepts only 👍 👎 😀 😂 😢 ❤ 🚀 ✅ from a client, so 👀 of the Telegram channel is not available ([Protocol.hs:598-601](../src/Simplex/Chat/Protocol.hs#L598-L601), [Commands.hs:6773](../src/Simplex/Chat/Library/Commands.hs#L6773)). The receipt may later give way to the roadmap item "Answers appear live as Claude writes them, from the moment it starts working."
+
+B and C can be combined.
 
 ## Decisions
 
@@ -152,7 +165,8 @@ The answer:
 
 Shared with `ep/mcp-replies`:
 25. Of this pull request and `ep/mcp-replies`, the one merged first adds `ReplyTo`, `toReplyTo`, `replyText` and `replyTextLength` in `messages.ts`, the field `replyTo` of the prompt line, its three meta keys and the instructions' sentences on replies. The one merged second reuses them.
-26. Claude's own reactions are not in this pull request (Q2 A). They are cheap: `apiChatItemReaction` is in `simplex-chat` 7.1.3 ([api.ts:530-540](../packages/simplex-chat-nodejs/src/api.ts#L530-L540)), and the Telegram and Discord channels of Claude Code have a `react` tool (`external_plugins/telegram/server.ts` and `external_plugins/discord/server.ts` in https://github.com/anthropics/claude-plugins-official).
+26. Claude's own reactions depend on Q2. The hub sends them with `apiChatItemReaction` of `simplex-chat` 7.1.3 ([api.ts:530-540](../packages/simplex-chat-nodejs/src/api.ts#L530-L540)). The core refuses a reaction while the preference "Message reactions" is off, and refuses a fourth reaction of Claude on a message ([Commands.hs:1028-1029](../src/Simplex/Chat/Library/Commands.hs#L1028-L1029), [:1049-1053](../src/Simplex/Chat/Library/Commands.hs#L1049-L1053)).
+27. With Q2 C: the hub reacts 👍 to a member's message when a turn's prompt matches its pushed entry ([hub.ts:184](../packages/simplex-chat-mcp/src/hub.ts#L184)). The pushed entry of a reaction is marked, and it gets no receipt, because its item is the reacted message. A refused receipt is logged, and the turn goes on. Claude Code's channel delivery has no acknowledgement (the docs: "Claude Code doesn't acknowledge notifications"), so the turn's prompt is the first sign that Claude took the message.
 
 ## Design
 
@@ -214,6 +228,7 @@ src/hub.ts           Prompt                      new type: {item, text, member, 
 src/hub.ts           Session.prompt, deliver     take a Prompt; deliver receives the Prompt's file and writes its replyTo
 src/hub.ts           Session.answer              quotes sndMsgContent items too
 src/hub.ts           Session.pushedIn            one pushed prompt per channel tag
+src/hub.ts           Session.turn, deliver       with Q2 C: the mark of a reaction's pushed entry; the receipt of decision 27
 ```
 
 Mechanics:
@@ -235,6 +250,24 @@ answer(a, q):  quote q when its content is rcvMsgContent or sndMsgContent
 pushedIn(prompt):  each channel tag (item, content) takes the oldest pushed entry with that item and text that is not taken yet
                    an entry equal to the raw prompt, pushed in the last 60 s: matched, as at 0.3.0
                    the matched entries in pushed order
+with Q2 C:
+deliver(p):        the pushed entry of a reaction is marked reaction: true
+turn({prompt}):    each matched entry without the mark: apiChatItemReaction(group, its item, add, 👍); a refusal is logged
+```
+
+With Q2 C, the receipt of a message:
+```mermaid
+sequenceDiagram
+  participant A as Alice in the app
+  participant N as Session N
+  participant CC as Claude Code
+  participant HK as UserPromptSubmit hook
+  A->>N: Run the tests, item 60
+  N->>CC: the channel message of item 60, queued while Claude works
+  CC->>HK: the turn of item 60 starts
+  HK->>N: POST /turn, the prompt with the channel tag of item 60
+  N->>A: Claude's 👍 on item 60
+  Note over N,A: the answer of the turn follows, quoting item 60
 ```
 
 Two equal reactions to one message, each taken in its own turn (decision 24):
@@ -300,12 +333,14 @@ Unit tests, `test/unit/sessions.test.ts`, "session channel":
 5. `replies that the session is not running to a reaction, quoting the reacted message, and receives no file of the reacted message`.
 6. `leaves a pending tool-use card pending when an approver reacts to it, and passes the reaction as a prompt`.
 7. `matches each channel tag of a turn's prompt to one pushed prompt, so two equal reactions to one message are quoted in their own turns`.
+8. With Q2 C: `reacts 👍 to a member's message when the turn of that message starts, not at its push and not for a reaction, and goes on when the core refuses the receipt`.
 
 The unit tests of `toReplyTo` and of the meta keys in `session.test.ts` are those of the replies plan, made by the pull request merged first. This one adds to `is a channel` of `session.test.ts` that the instructions describe a reaction.
 
 End-to-end tests, `test/e2e/service.test.ts`:
 - In the test of the hooks: Alice reacts 👍 to Claude's answer `Fixed.` before the session attaches. Claude replies `Session 1 is not running.`, quoting `Fixed.` After the attachment, Alice reacts 👍 to `Tests pass.`, and the stream gets `{prompt: {text: "👍", from: "Alice", item, replyTo: {item, from: "Claude", text: "Tests pass."}}}`. The hooks pass the channel tag and an answer, and Alice gets the answer quoting `Tests pass.`. Alice removes the reaction, and the stream gets no line for it. This test fails on master.
 - In the test of the roles: Carol, an observer, reacts to a message, and then Bob reacts. The stream gets Bob's reaction only.
+- With Q2 C, in the test of the hooks: after the prompt hook of `Run the tests`, Alice sees Claude's 👍 on her message.
 
 CI: the reduced build of the fork branch runs scope `mcp` in build-linux, `scripts/ci/scope-tests.sh mcp`, with the unit and end-to-end tests ([scripts/ci/README.md](../scripts/ci/README.md), section "mcp"). Only `packages/simplex-chat-mcp` changes, so the app test workflows are not run.
 
@@ -314,7 +349,7 @@ Real session, `TESTING.md`, a new check 6: react 👍 to Claude's answer in the 
 ## Docs to change
 
 - `README.md`, step 4: `A reaction to a message is passed to Claude too.`
-- `REFERENCE.md`, "Prompts and answers": one item on reactions, decisions 8 to 23 in users' terms.
+- `REFERENCE.md`, "Prompts and answers": one item on reactions, decisions 8 to 23 in users' terms; with Q2 C, one item on Claude's 👍 when it takes a message.
 - `ROADMAP.md`: the line `React to a message, and Claude sees your reaction.` is removed.
 - `spec/api.md`: 4.3, the rules of the session group, and the post `Session N is not running.` for a reaction; 4.5, the meta of a reaction and the instructions; 4.6, the prompt line of `/attach` for a reaction.
 - `spec/architecture.md`: 8.2, the rows of `hub.ts`, `session.ts` and `protocol.ts`; 8.3, the pushed prompts with reactions; 8.4, the event dispatch of `chatItemReaction`; 8.6, the prompt line and the mechanics.
@@ -337,6 +372,7 @@ Real session, `TESTING.md`, a new check 6: react 👍 to Claude's answer in the 
 part                                     lines
 source: hub.ts, control.ts               about 30
 source of the rows marked first          about 20, when this pull request is merged first
+source of Q2 C                           about 10, with about 25 lines of tests
 unit tests                               about 115
 end-to-end tests                         about 35
 docs                                     about 80
