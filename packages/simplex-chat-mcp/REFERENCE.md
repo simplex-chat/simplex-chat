@@ -1,10 +1,10 @@
 # SimpleX MCP server: reference
 
-The plugin's installation and use in short: [README](README.md).
+[README](README.md) explains how to install and use the plugin.
 
 `@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and files, and receives all the responses, with the files people send it. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends, downloads a file or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust, or all files from it. Six tools cover it: `connect`, `send`, `receive`, `download`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
 
-The package is also a Claude Code plugin: each Claude Code session gets its own SimpleX group, where you prompt it, approve its actions and its tool use, and read its answers. See [Claude Code plugin](#claude-code-plugin).
+The package is also a Claude Code plugin, which gives each Claude Code session its own SimpleX group. There you prompt the session, approve its actions and tool use, and read its answers, see [Claude Code plugin](#claude-code-plugin).
 
 What it isn't:
 - **Not a directory or a search service.** The agent reaches chats through links, SimpleX names and the directories it connects to.
@@ -461,7 +461,7 @@ One server runs per data folder: a second one exits, because two processes on on
 
 ## Claude Code plugin
 
-The plugin gives every Claude Code session its own SimpleX group. There you send the session prompts, approve its actions and its tool use, and read its answers. One service runs all sessions of a data folder. Peers see one SimpleX profile, `Claude`, and the sessions have the tools of `serve`: `connect`, `send`, `receive`, `download`, `list` and `leave`, and `reply` for files to the session's group.
+The plugin gives every Claude Code session its own SimpleX group. In that group you send the session prompts, approve its actions and tool use, and read its answers. One service runs all sessions that share a data folder. Peers see one SimpleX profile, `Claude`. Sessions have the tools of `serve` (`connect`, `send`, `receive`, `download`, `list` and `leave`), and `reply`, which sends files to the session's group.
 
 ### Install
 
@@ -472,7 +472,7 @@ The plugin needs Claude Code 2.1.214 or later and Node.js 22 or later. In Claude
 /plugin install simplex@simplex-chat
 ```
 
-Prompts from SimpleX and the relay of tool-use prompts need the plugin's channel. Start Claude Code with it:
+Prompts from SimpleX and approvals of tool use in the group need the plugin's channel. Start Claude Code with it:
 
 | When | Command |
 |---|---|
@@ -480,24 +480,24 @@ Prompts from SimpleX and the relay of tool-use prompts need the plugin's channel
 | After the listing | `claude --channels plugin:simplex@simplex-chat` |
 | Team and Enterprise plans | An admin adds `simplex@simplex-chat` to `allowedChannelPlugins`. |
 
-The development flag works in interactive sessions only. Without either flag, the plugin works without prompts from SimpleX and without the tool-use relay. Channels need Anthropic authentication through claude.ai or a Console API key.
+The development flag works only in interactive sessions. Without a channel, the plugin still works, but prompts from SimpleX and approvals of tool use in the group don't. Channels need Anthropic authentication through claude.ai or a Console API key.
 
 The plugin adds:
 
 | Part | What it does |
 |---|---|
-| MCP server `simplex` | Runs `simplex-mcp session` for each session: the tools `mcp__plugin_simplex_simplex__connect` and the rest, and the channel. |
-| SessionStart hook | Checks the Node.js version, starts the service, opens the session and its group, and shows the Main group link while the Main group has no owner. |
-| PreToolUse hook | Allows the plugin's tool calls without a Claude Code prompt: you approve in the SimpleX app. |
-| UserPromptSubmit, Stop and PostModelSwitch hooks | Post your terminal prompts and Claude's answers in the session's group, and keep the model and the effort level in its description. They run in the background. |
+| MCP server `simplex` | Runs `simplex-mcp session` for each session. It provides the tools, such as `mcp__plugin_simplex_simplex__connect`, and the channel. |
+| SessionStart hook | Checks the Node.js version and starts the service. It opens the session and its group, and shows the Main group link while the Main group has no owner. |
+| PreToolUse hook | Lets the plugin's tools run without a Claude Code prompt, because you approve them in the SimpleX app. |
+| UserPromptSubmit, Stop and PostModelSwitch hooks | Post your terminal prompts and Claude's answers in the session's group, and keep the model and effort in its description. They run in the background. |
 
-The plugin's server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`, except the PreToolUse hook, which runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js`. The package bundles its production dependencies in its own `node_modules`, about 8 MB to download, and has no lockfile, so Claude Code installs nothing after it unpacks the package; Node.js loads the modules from the plugin's folder, so the `node_modules` of a project can't replace the plugin. The first session start downloads the SimpleX core library; Claude Code waits at most 600 seconds for the SessionStart hook.
+The server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. The PreToolUse hook runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js` instead. The package bundles its dependencies, about 8 MB, and has no lockfile, so Claude Code installs nothing after unpacking it. Node.js loads the modules from the plugin's folder, so a project's `node_modules` can't replace them. The first session start downloads the SimpleX core library. Claude Code waits up to 600 seconds for the SessionStart hook.
 
 ### Shared settings
 
-With settings shared by several machines or containers, Claude Code loads the plugin from a folder, without `/plugin` commands. Checked with Claude Code 2.1.322.
+Settings shared by several machines or containers can load the plugin from a folder, without `/plugin` commands. This setup was checked with Claude Code 2.1.322.
 
-1. Unpack the package into `plugin/` of a folder at the same path on each machine or container, here `/opt/simplex-plugins`; VERSION is the plugin's version, such as 0.3.0:
+1. On each machine or container, unpack the package into `plugin/` of a folder at the same path, here `/opt/simplex-plugins`. VERSION is the plugin's version, such as 0.3.0:
 
    ```
    mkdir -p /opt/simplex-plugins/.claude-plugin /opt/simplex-plugins/plugin
@@ -505,7 +505,7 @@ With settings shared by several machines or containers, Claude Code loads the pl
    tar -xzf simplex-chat-mcp-VERSION.tgz -C /opt/simplex-plugins/plugin --strip-components 1
    ```
 
-   The dependencies are bundled in the package, so nothing is installed after the unpacking.
+   The dependencies are bundled, so nothing needs installing.
 
 2. Write `/opt/simplex-plugins/.claude-plugin/marketplace.json`:
 
@@ -528,21 +528,21 @@ With settings shared by several machines or containers, Claude Code loads the pl
    }
    ```
 
-   Claude Code reads `extraKnownMarketplaces` from user settings, `~/.claude/settings.json`, from a file passed by `--settings` and from managed settings, and loads the plugin when it starts. `path` is the absolute path of the folder.
+   `path` is the folder's absolute path. Claude Code reads `extraKnownMarketplaces` from user settings (`~/.claude/settings.json`), from a file passed with `--settings`, and from managed settings. It loads the plugin when it starts.
 
-4. Start Claude Code with the channel, at each start:
+4. Start Claude Code with the channel each time:
 
    ```
    claude --dangerously-load-development-channels plugin:simplex@simplex-local
    ```
 
-   Settings can't replace the flag: by `channelsEnabled` and `allowedChannelPlugins`, an organization's managed settings, an administrator allows the channels named in `--channels`. `--channels plugin:simplex@simplex-local` needs `simplex@simplex-local` in `allowedChannelPlugins`.
+   Settings can't replace this flag. An organization's managed settings, `channelsEnabled` and `allowedChannelPlugins`, only allow the channels that a session names with `--channels`. `--channels plugin:simplex@simplex-local` works only when `simplex@simplex-local` is in `allowedChannelPlugins`.
 
-Each machine and each container needs its own data folder, on storage that no other machine or container uses: `~/.simplex-mcp` of its own home folder, or the folder in `SIMPLEX_MCP_HOME`, set in its own environment rather than in `env` of the shared settings. The service matches the hooks and the server of a session by the process ID of their Claude Code process, and checks its lock by the process ID of the running service: the same process ID can be given to different processes on different machines and in different containers, and a process of another machine or container is invisible to these checks. Each data folder has its own Main group, whose link is shown at the first session start on that machine or container.
+Each machine and each container needs its own data folder, on storage that no other one uses. Use `~/.simplex-mcp` in its own home folder, or set `SIMPLEX_MCP_HOME` in its own environment, not in the `env` of the shared settings. The service matches sessions and checks its lock by process IDs, and process IDs are only meaningful within one machine or container. Each data folder has its own Main group, whose link shows at the first session start there.
 
 ### The Main group
 
-At the first session start, Claude Code shows you:
+At the first session start, Claude Code shows:
 
 ```
 SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "SimpleX MCP":
@@ -550,30 +550,32 @@ SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise yo
 https://smp4.simplex.im/g#...
 ```
 
-The link reaches only you: Claude's context and tool results never contain it. Scan the QR code or paste the link into the SimpleX app, 7.1.0 or later, and tap Join. The group "SimpleX MCP" appears, and Claude writes: `I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.`
+Only you see this link: it never enters Claude's context or tool results. Scan the QR code, or paste the link into the SimpleX app, 7.1.0 or later, and tap Join. The group "SimpleX MCP" appears, and Claude writes: `I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.`
 
-- Whoever joins by the link first becomes an owner, and the link is deleted. The link works once, and stays the same across service restarts until someone joins.
-- Everyone in the Main group is trusted with all sessions, whatever their role there: they join the group of any session by `/join N`, without approval, as admins, and prompt the session and approve its actions there. The group's short description and welcome message say so; Claude sets them when it creates the group, and owners can change them. The welcome message reads `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.` At each member's join Claude posts `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.` Owners add people by a group link of their own or by inviting their contacts.
-- A member with the role observer can't send messages in the Main group, as the core refuses them, so they can't send `/join N`.
-- Owners of the Main group get an invitation to the group of each session, in the Main group, for them only, as owners.
-- `/sessions` lists the sessions, with `, closed` after the closed ones. `/join N` sends you an invitation to the group of session N, as an admin, or as an owner when you are an owner of the Main group.
-- A member who leaves the Main group, is removed from it or gets another role there stays in the sessions' groups they joined, with the same role.
-- Claude sets the short description and the welcome message when it creates the Main group; later it changes only the name and the commands of the group's profile, starting from the profile as it stands in the chat database, so the texts and preferences the owners set stay.
-- When no owner remains, the service creates a new link. `npx -y @simplex-chat/mcp@VERSION link` in a terminal prints it with a QR code; while the Main group has owners, it names them.
+- The first person who joins by the link becomes an owner, and the link is deleted. Until someone joins, the link stays the same across service restarts.
+- Everyone in the Main group is trusted with all sessions, whatever their role there. They can join any session's group with `/join N`, without approval, as admins. There they can prompt the session and approve its actions.
+- The group's welcome message says so: `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.` When someone joins, Claude posts `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
+- Claude sets the short description and the welcome message when it creates the group. Later it changes only the group's name and commands, so the texts and preferences that owners set stay.
+- Owners can add people with a group link of their own or by inviting their contacts.
+- Observers can't send messages in the Main group, so they can't use `/join N`.
+- Owners of the Main group are invited to every session's group as owners. They get each invitation in the Main group.
+- `/sessions` lists the sessions and marks the closed ones with `, closed`. `/join N` sends you an invitation to the group of session N, as an admin, or as an owner if you own the Main group.
+- Leaving the Main group, being removed from it, or getting another role there changes nothing in the session groups.
+- When no owner remains, the service creates a new link. In a terminal, `npx -y @simplex-chat/mcp@VERSION link` prints it with a QR code. While the group has owners, the command names them instead.
 
-To replace the owners, run `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal. It replaces the Main group at once, also while owners exist, without their approval:
+To replace the owners, run `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal. It replaces the Main group at once, without the owners' approval:
 
-- The Main group is deleted for all its members, and a new one replaces it. The sessions' groups stay as they are: the members who joined them from the old Main group keep their roles there, and the rights of those roles.
-- The command in a terminal prints the new link with a QR code. Run without a terminal, as by Claude's tools, it shows no link, as Claude's context never contains it: it asks you to run `npx -y @simplex-chat/mcp@VERSION link` in a terminal, which prints the link.
+- The old Main group is deleted for all its members, and a new one is created. The session groups don't change: members who joined them from the old Main group keep their roles.
+- In a terminal, the command prints the new link with a QR code. Run without a terminal, for example by Claude's tools, it shows no link and asks you to run `link` in a terminal.
 
-VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`; the plugin's messages print these commands with it. A newer version from npm would replace the plugin's service.
+VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`. The plugin's messages print these commands with the right version. The same command with a newer version would replace the plugin's service.
 
 ### Sessions and their groups
 
-- Each Claude Code session has a number, 1 for the first, kept across service restarts, and its group `N · NAME`. NAME is the session's name from `claude -n NAME` or `/rename`, else the name of the project folder, else `Claude Code`. A new name shows at the next session start.
-- The group is created at the session start. The Main group's owners are invited to it then, as owners, and an owner who joins the Main group later is invited to the groups of the open sessions.
-- Members of the group: Claude, the owners and the members who joined by `/join`, the people its members added to it directly, with the role the adding member set, and `User`, a second profile of the service, which posts your terminal prompts.
-- Rights in the group follow the member's role there, whatever way they joined:
+- Each session has a number, starting at 1, which is kept across service restarts. Its group is named `N · NAME`. NAME is the session's name from `claude -n NAME` or `/rename`, otherwise the project folder's name, otherwise `Claude Code`. A new name shows from the next session start.
+- The group is created at the session start, and the Main group's owners are invited to it as owners. An owner who joins the Main group later is invited to the groups of the open sessions.
+- The group's members are Claude, the Main group's owners, members who joined with `/join`, people whom members added directly, and `User`. People added directly get the role that the adding member set. `User` is a second profile of the service that posts your terminal prompts.
+- Rights follow the member's role in the group, however they joined:
 
   | Role | Rights |
   |---|---|
@@ -582,32 +584,51 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`; th
   | observer | none: the app can't send their messages |
 
   `User`'s messages are never prompts, commands or approvals.
-- When a member joins the group, and when a member's role changes there, Claude posts the member's rights, for example `Bob is an admin and can send prompts to Claude and the group's commands, and approve tool use. You can change role to observer to stop it: /'observer #G ID'`, with the group's and the member's IDs. For a moderator, member or author the rights are `can send prompts to Claude; the group's commands and approvals need the role admin or owner`. The post for an owner, `NAME is an owner and can send prompts to Claude and the group's commands, and approve tool use.`, and for an observer, `NAME is an observer and can't send messages.`, have no command. Claude posts nothing for `User`.
-- `/observer #G ID` sets that member's role to observer, and Claude replies `NAME is an observer and can't send messages.` The approvals of all messages to a chat and of all files from it that the new observer gave count no more while that member is not an admin or owner, and count again when the member becomes one again. Claude accepts it from a member whose role lets them change that member's role in SimpleX: admin or owner, and not below the member's role. For a member invited who has not joined yet, Claude replies `No member ID in this group.`: that member joins with the role of the invitation, and their role can change after the join.
-- The group's description is `The Claude Code session N. Members send it prompts; admins and owners also send the group's commands and approve tool use.`, set when the group is created. Its short description shows the model and the effort level, see [Model and effort](#model-and-effort).
-- The group's commands are those of the agent control chat of `serve`, see [What the owner sees](#what-the-owner-sees), without a session prefix: `/approve 7`, `/receive @3 9`, `/leave #2`, and `/give CHAT N` and `/observer #G ID`.
-- A chat belongs to the session that connected it, also when the other side accepts after the `connect` call returned: the tools of other sessions don't show it, and their `connect` to its address returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` `/give @3 2` in the group of the session that has chat @3 gives it to session 2.
-- `/list` and `/revoke` work in the group of a closed session too. A `/revoke` sent while the service is stopped applies when the service receives it after its next start.
-- `claude --resume` and `claude --continue` reopen the session with its group and chats. `/clear` in a running session keeps its group: the service joins the new session IDs of a Claude Code process to the session of that process. So does `claude --resume ID --fork-session`: the fork continues in the group of the resumed session. After `/resume` of another session in a running session, its prompts and answers are posted in the group of the running session, and a later `claude --resume` of that session reopens its own group and chats.
-- A session closes 10 minutes after its Claude Code session ends, once the expiry times of its actions have passed. The service stops 10 minutes after the last session closes; the next session start or tool call starts it again.
-- A non-interactive run, `claude -p` or the Agent SDK, gets no session and no group: its hooks post nothing, and its SimpleX tools return `This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions.` The plugin tells such a run by `CLAUDE_CODE_ENTRYPOINT`, which Claude Code sets to `sdk-cli` for `claude -p` and to `sdk-ts` or `sdk-py` for the Agent SDK, for its hooks and its MCP servers alike, and by `CLAUDE_CODE_SESSION_ATTENDED`, which Claude Code sets to `0` for the hooks of a run nobody attends. A `claude -p` run started by a command of a session of the VS Code extension or the desktop app keeps the entrypoint of that session, and its MCP server gets only that session's `CLAUDE_CODE_SESSION_ATTENDED`: its SessionStart hook marks its Claude Code process in the service, the service refuses the session server of that process when it registers within 10 seconds of the mark, and the refused server's tools return the same text.
+- When someone joins or their role changes, Claude posts their rights. For an admin the post is `Bob is an admin and can send prompts to Claude and the group's commands, and approve tool use. You can change role to observer to stop it: /'observer #G ID'`, with the group's and the member's IDs. For a moderator, member or author it is `NAME is a ROLE and can send prompts to Claude; the group's commands and approvals need the role admin or owner.`, followed by the same command. The posts for an owner and for an observer have no command: `NAME is an owner and can send prompts to Claude and the group's commands, and approve tool use.` and `NAME is an observer and can't send messages.` Claude posts nothing for `User`.
+- `/observer #G ID` makes that member an observer, and Claude replies `NAME is an observer and can't send messages.` Admins and owners can use it on a member whose role isn't above their own. Standing approvals that the observer gave, of all messages to a chat or all files from it, stop counting while they aren't an admin or owner, and count again if they become one. For a member who was invited and hasn't joined yet, Claude replies `No member ID in this group.` That member joins with the role of the invitation, which can be changed after the join.
+- The group's description is `The Claude Code session N. Members send it prompts; admins and owners also send the group's commands and approve tool use.`, set when the group is created. Its short description shows the model and effort, see [Model and effort](#model-and-effort).
+- The group has the commands of the agent control chat of `serve` (see [What the owner sees](#what-the-owner-sees)), without a session prefix, such as `/approve 7`, `/receive @3 9` and `/leave #2`. It also has `/give CHAT N` and `/observer #G ID`.
+- A chat belongs to the session that connected it, even when the other side accepts after `connect` returned. The tools of other sessions don't show it. Their `connect` to its address returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` For example, `/give @3 2` in the group of the session that owns chat @3 gives it to session 2.
+- `/list` and `/revoke` also work in the group of a closed session. A `/revoke` sent while the service is stopped applies when the service starts again.
+- `claude --resume` and `claude --continue` reopen a session with its group and chats. `/clear` keeps the session's group, because the service links the new session IDs of a Claude Code process to that process's session. A fork made with `claude --resume ID --fork-session` continues in the group of the resumed session. After `/resume` of another session inside a running one, prompts and answers go to the running session's group. A later `claude --resume` of that other session reopens its own group and chats.
+- A session closes 10 minutes after its Claude Code session ends, once the expiry times of its actions have passed. The service stops 10 minutes after the last session closes. The next session start or tool call starts it again.
+- A non-interactive run, `claude -p` or the Agent SDK, gets no session and no group. Its hooks post nothing, and its SimpleX tools return `This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions.`
+  - The plugin recognizes such a run by `CLAUDE_CODE_ENTRYPOINT`. Claude Code sets it to `sdk-cli` for `claude -p` and to `sdk-ts` or `sdk-py` for the Agent SDK. It also uses `CLAUDE_CODE_SESSION_ATTENDED`, which Claude Code sets to `0` for the hooks of a run nobody attends.
+  - A `claude -p` run started from a session of the VS Code extension or the desktop app keeps that session's entrypoint, and its MCP server gets that session's attended value. For such a run, the SessionStart hook marks its Claude Code process, and the service refuses that process's session server when it registers within 10 seconds. Its tools then return the same text.
 
 ### Prompts and answers
 
-With the channel, a message of a member of a session's group, other than `User`, is a prompt of the running session, as one typed in the terminal.
+With the channel, a message from a member of a session's group, other than `User`, is a prompt to the running session, like one typed in the terminal.
 
-- A file in the message is received without a card into `_sessions/<session ID>/files/group/` of the data folder, and Claude gets its path. When the file fails or does not arrive in 10 minutes, Claude replies `The file of this message was not received: ERROR`, and the session gets the text.
-- The session gets the prompts in the order they were sent: a later prompt waits for the file of an earlier one.
-- Every message of a member whose role can send is a prompt, also one that starts with `!`, except the one-line messages that start with `/`, below. Claude Code runs no command from a prompt: Claude gets the text, and runs a shell command only as a tool use, such as Bash, under Claude Code's permissions, see [Tool use](#tool-use).
-- A one-line message that starts with `/` is a command of the group, such as `/approve 5` or `/list`, not a prompt; from an admin or owner, one that is not a command of the group gets `Unknown command.`
-- From a moderator, member or author, every one-line message that starts with `/` gets `Only admins and owners of this group can send / commands.`, and reaches neither the commands nor Claude.
-- When the session's Claude Code is not running, also when it ends while the file of a prompt arrives, Claude replies `Session N is not running.` while the service runs. In the first 30 seconds after a service start, a prompt waits for its session to attach again, so a prompt sent while the service was stopped reaches the session.
-- Claude posts its final answer of each turn in the group, as a reply to the prompt of that turn when the prompt came from the group, also when the next prompt arrives while Claude answers. When the quote leaves no room in the message for the answer's first character, the answer is posted without it. When the prompt was deleted, or a reply is too large for a message with its quote, the answer and Claude's replies are posted without the quote. `User` posts the prompts typed in the terminal, except commands such as `/compact`, empty prompts, such as one with images only, and prompts made only of the plugin's `<channel source="plugin:simplex:simplex" ...>` tags; `User`'s posts are never commands of the group, also a part that starts with `/`. A text that does not fit one message is posted as several messages, each as long as a message can be, measured as for `send`, with the quote in the first part of an answer: a part without a quote holds up to 14,962 Latin, 7,481 Cyrillic or 4,987 CJK characters. A prompt or an answer over 250,000 characters is posted up to there, ending with `…`.
-- The `reply` tool sends a file to the group at once, without a card, with its text as the caption, under the file rules of `send`, and returns the file's message as `item`; a caption too long for a message with the file's preview is refused with `text: too long for a message with this TYPE; shorten it.` The group's preference "Files and media", which owners set in the app, controls Claude's files there: when it does not allow them, the core refuses the file, and the call returns `Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` While it does not allow them, the cards of `send` and `download` of an image or video are text, without the preview, and the sends and downloads themselves work as before; `/forward` gets `Action N: Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` The group's other preferences work the same way: when one of them refuses a post, Claude posts in its place a text that names it, such as `Claude's answer was not posted: SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences.` for an answer with a SimpleX link, `User's prompt was not posted: SimpleX links are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` for a terminal prompt, also while they are allowed only for roles above that of `User`, a member unless the owners change it, and `Action N: ...` for a card that waits for approval, after which the action fails, or for `/forward` of a voice message; `reply` returns the text after `Claude's answer was not posted: `. After the decision, Claude's post names the outcome and the card, and the action stays as it was: the card of an action performed in mode `host` or under a standing approval, posted after the action, gets `Action N was performed; its card was not posted: ...` or `Action N failed; its card was not posted: ...`, and a card edited at its outcome gets `Action N was performed; its card was not updated: ...`, with `failed`, `was rejected`, `expired` or `ended` in place of `was performed`; a card posted or edited at a server stop gets `Action N: ...`. Claude changes only the name, the short description and the commands of the group's profile, starting from the profile as it stands in the chat database, so the preferences the owners set stay.
+- A file attached to the message is saved without approval to `_sessions/<session ID>/files/group/` in the data folder, and Claude gets its path. When the file fails or doesn't arrive within 10 minutes, Claude replies `The file of this message was not received: ERROR`, and the session gets the text.
+- Prompts reach the session in the order they were sent. A later prompt waits for the file of an earlier one.
+- Every message from a member who can send is a prompt, including one that starts with `!`. Only one-line messages that start with `/` are not prompts, see below. Claude Code runs no command from a prompt. Claude gets the text, and runs shell commands only as tool use, such as Bash, under Claude Code's permissions, see [Tool use](#tool-use).
+- A one-line message that starts with `/` is a command of the group, such as `/approve 5` or `/list`. From an admin or owner, an unknown command gets `Unknown command.` From a moderator, member or author, any such message gets `Only admins and owners of this group can send / commands.`, and it reaches neither the commands nor Claude.
+- While the service runs and the session's Claude Code doesn't, Claude replies `Session N is not running.` It also replies so when Claude Code ends while a prompt's file arrives. For 30 seconds after the service starts, a prompt waits for its session to attach again, so a prompt sent while the service was stopped still arrives.
+- Claude posts its final answer of each turn in the group. When the turn's prompt came from the group, the answer replies to it, even when the next prompt arrives while Claude answers.
+- Claude's replies to a prompt, its answer included, are posted without the quote when the prompt was deleted or the quote makes the message too large. An answer is also posted without the quote when the quote leaves no room for its first character.
+- `User` posts the prompts typed in the terminal. It skips commands such as `/compact`, empty prompts such as one with images only, and prompts made only of the plugin's `<channel source="plugin:simplex:simplex" ...>` tags. `User`'s posts are never commands of the group, even a part that starts with `/`.
+- A text too long for one message is posted as several messages, each as long as a message can be, measured as for `send`. The first part of an answer carries the quote. A part without a quote holds up to 14,962 Latin, 7,481 Cyrillic or 4,987 CJK characters. A prompt or an answer over 250,000 characters is cut there and ends with `…`.
+- The `reply` tool sends a file to the group at once, without approval, with its text as the caption, under the file rules of `send`. It returns the file's message as `item`. A caption too long for a message with the file's preview is refused with `text: too long for a message with this TYPE; shorten it.`
+
+### Group preferences
+
+Owners set the group's preferences in the app, and SimpleX enforces them. Claude never overwrites them: it changes only the group's name, short description and commands, starting from the profile in the chat database.
+
+- While "Files and media" is off, `reply` returns `Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` The cards of sends and downloads of images and videos are posted as text, without the preview, and the sends and downloads still work. `/forward` gets `Action N: Files and media are off in the group of this session; its owners can turn them on in the group's preferences.`
+- When another preference refuses one of Claude's posts, Claude posts a text that names it instead:
+  - For an answer with a SimpleX link: `Claude's answer was not posted: SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences.`
+  - For a terminal prompt: `User's prompt was not posted: SimpleX links are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` This also happens while the preference allows SimpleX links only for roles above `User`'s role, which is member unless the owners change it.
+  - For a card that waits for approval, or for `/forward` of a voice message: `Action N: ...`. The action then fails.
+  - `reply` returns the same text without the prefix `Claude's answer was not posted: `.
+- After an action is decided, the text names the outcome and the card, and the action stays as it was:
+  - The card of an action performed in mode `host` or under a standing approval is posted after the action. When that post is refused, Claude posts `Action N was performed; its card was not posted: ...` or `Action N failed; its card was not posted: ...`.
+  - When the edit of a card with its outcome is refused, Claude posts `Action N was performed; its card was not updated: ...`, with `failed`, `was rejected`, `expired` or `ended` in place of `was performed`.
+  - A card posted or edited when the service stops gets `Action N: ...`.
 
 ### Tool use
 
-With the channel, Claude Code's permission prompts, such as the one before a Bash command, are posted in the session's group too:
+With the channel, Claude Code's permission prompts, such as the one before a Bash command, are also posted in the session's group:
 
 ```
 Claude: I want to use `Bash`: `List files`
@@ -615,11 +636,11 @@ Claude: I want to use `Bash`: `List files`
         /approve 5 or /reject 5
 ```
 
-`/approve 5` allows the tool use, and `/reject 5` denies it. The dialog in the terminal stays open: the first answer, in the terminal or in the group, applies. A card that is still pending when its turn ends, when the next prompt arrives, or when the session ends, ends with `Ended.` The preview of the tool's input is cut to fit the card.
+`/approve 5` allows the tool use, and `/reject 5` denies it. The dialog in the terminal stays open, and the first answer, in the terminal or in the group, applies. A card that is still pending when its turn ends, when the next prompt arrives or when the session ends gets `Ended.` The preview of the tool's input is shortened to fit the card.
 
 ### Model and effort
 
-The short description of a session's group shows the model and the effort level: `MODEL · effort LEVEL`. The model is set at the session start, when Claude Code passes it, at each model change, and at the end of each turn, from the model of its answer in the session's transcript, so it is shown from the first answer, also in a resumed session; the effort level is set at the end of each turn. Changes made in the terminal, or from the Claude app by Remote Control, show the same way.
+The short description of a session's group shows `MODEL · effort LEVEL`. The model is updated at the session start when Claude Code passes it, at each model change, and at the end of each turn from the model of the answer in the session's transcript. So the model shows from the first answer, also in a resumed session. The effort level is updated at the end of each turn. Changes made in the terminal, or from the Claude app by Remote Control, show the same way.
 
 ### Options
 
@@ -631,9 +652,9 @@ Set in `/plugin` > Installed > simplex > Configure options:
 | `approve` | `requests` | `requests`, `host` | The approval mode of the sessions. |
 | `expire_hours` | `23` | 1 to 23 | How long an action waits for a decision, see [Expiry](#expiry). |
 
-A changed option applies from the next session start. An invalid value is shown at the session start, and every tool call of that session returns the same text, for example `Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /plugin > Installed > simplex > Configure options.` A value of `approve` other than `requests` and `host`, which only a hand edit of the settings saves, is shown at the session start only: Claude Code gives the session's tools `requests` in its place, and they run in mode `requests`.
+A changed option applies from the next session start. An invalid value is shown at the session start, and every tool call of that session returns the same text, for example `Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /plugin > Installed > simplex > Configure options.` A value of `approve` other than `requests` and `host` can come only from a hand edit of the settings. It is shown only at the session start, and the session's tools run in mode `requests`.
 
-In mode `host`, a session posts in its group `I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.`, with `/approve N or /reject N`, at its start or when the group gets its first admin or owner other than Claude, by a join or a role change. It runs in mode `host` after an admin or owner approves it, and keeps the mode across restarts: the approved mode is kept in the custom data of the session's group, in the chat database. After an admin or owner rejects the card, the session asks again only after a session start with `requests`. A change back to `requests` applies at the next session start, without a card, and a pending card then ends with `Ended.`
+In mode `host`, a session asks in its group to run in that mode: `I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.`, with `/approve N or /reject N`. It asks at its start, or when the group gets its first admin or owner other than Claude, by a join or a role change. The session runs in mode `host` after an admin or owner approves, and keeps the mode across restarts, in the custom data of its group in the chat database. After a rejection, it asks again only after a session start with `requests`. A change back to `requests` applies at the next session start without a card, and a pending card then gets `Ended.`
 
 ### Plugin data folder
 
@@ -643,25 +664,25 @@ In mode `host`, a session posts in its group `I want to run in mode host: Claude
 |---|---|
 | `service.token` | The access token of the service's socket, readable only by the user. |
 | `service.lock` | The PID of the running service. |
-| `service.sock` | The service's Unix socket. On Windows it is the named pipe `\\.\pipe\simplex-mcp-<hash>`; for a path over 103 bytes, `simplex-mcp-<hash>.sock` in the system temporary folder. |
+| `service.sock` | The service's Unix socket. On Windows it is the named pipe `\\.\pipe\simplex-mcp-<hash>`. For a path over 103 bytes, it is `simplex-mcp-<hash>.sock` in the system temporary folder. |
 | `service.log` | The service's log, emptied when it is over 10 MB, at a service start and every hour. |
-| `titles.json` | The titles of new sessions whose session server had not registered when the service stopped; the next start reads and removes it. |
-| `_hub/` | The databases of the profile `Claude`: the Main group, the sessions' groups and the chats with peers. |
+| `titles.json` | The titles of new sessions whose session server had not registered when the service stopped. The next start reads and removes it. |
+| `_hub/` | The databases of the profile `Claude`: the Main group, the session groups and the chats with peers. |
 | `_user/` | The databases of the profile `User`. |
-| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, a rejected mode `host`, model, effort level and its other session IDs, and `files/` with the files of its chats and of its group. |
+| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, a rejected mode `host`, model, effort level and other session IDs. `files/` holds the files of its chats and of its group. |
 
-The folders are readable only by the user, and so are the files the service writes, except on Windows. One service runs per data folder. The names of these files and folders have a dot or start with `_`, which agent names of `serve` can't, so the folders of agents in `~/.simplex-mcp` stay as they are.
+The folders, and the files the service writes, are readable only by the user, except on Windows. One service runs per data folder. These names contain a dot or start with `_`, which agent names of `serve` can't, so the folders of agents in `~/.simplex-mcp` never collide with them.
 
 ### Plugin recovery
 
 | Situation | What happens, what to do |
 |---|---|
-| The session start shows an error | The text follows `SimpleX MCP:`, and details are in `service.log`. The session starts without the service, and the next tool call tries again. |
+| The session start shows an error | The error follows `SimpleX MCP:`, with details in `service.log`. The session starts without the service, and the next tool call tries again. |
 | Node.js is older than 22 | The session start shows `SimpleX MCP needs Node.js 22 or later; found <version>.` |
-| The service stopped during a call | The call returns `The SimpleX service stopped; repeat the call.`, and the next call starts the service again. The actions of the stopped service are lost; a repeated call creates a new action. |
-| The service stopped between calls, or its start failed | The session starts it again and attaches to it after 1 second, and while that fails, at intervals that double up to 30 seconds. |
+| The service stopped during a call | The call returns `The SimpleX service stopped; repeat the call.`, and the next call starts the service again. The actions of the stopped service are lost, and a repeated call creates a new action. |
+| The service stopped between calls, or its start failed | The session starts it again and attaches after 1 second. While that fails, it retries at intervals that double up to 30 seconds. |
 | A session starts while the service stops | The new service waits up to 15 seconds for the stopping one to release its lock, and then starts. |
-| The `service.lock` file of the data folder names a running process that is not the service | After 15 seconds, the session start shows `SimpleX MCP: Another service uses FOLDER (PID N). If no service runs, remove FOLDER/service.lock.` |
+| `service.lock` names a running process that is not the service | After 15 seconds, the session start shows `SimpleX MCP: Another service uses FOLDER (PID N). If no service runs, remove FOLDER/service.lock.` |
 | A newer plugin version starts | It stops the older service and starts its own. When the two versions can't talk to each other, tool calls return `Restart Claude Code to update the SimpleX plugin.` |
 | A session's group has no admin or owner but Claude | Its actions are refused with `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.` |
 | A session's group was deleted, or Claude lost its owner role there | The session's actions fail with `The group of this session is lost. Start a new Claude Code session.` |
@@ -671,14 +692,14 @@ The folders are readable only by the user, and so are the files the service writ
 
 ### Plugin security
 
-- The service listens only on its local socket, in a folder readable only by the user, and every request needs the token. On Windows, where the named pipe has no folder permissions, the token is the only check.
+- The service listens only on its local socket, in a folder only the user can read, and every request needs the token. On Windows the named pipe has no folder permissions, so the token is the only check.
 - The service gets only the environment variables it uses: the paths of the home, temporary and cache folders, the locale, the proxy and certificate settings, `NODE_OPTIONS`, the `SIMPLEX_` variables and the plugin options.
-- Everyone in the Main group is trusted with all sessions. In a session's group, rights follow the member's role there: admins and owners prompt the session, send the group's `/` commands, and approve its actions and tool use; moderators, members and authors prompt it, and their `/` commands get a refusal; observers can't send messages.
-- Claude Code runs no command from a prompt of a session's group, also one that starts with `!`: Claude gets the text, and its tool use follows Claude Code's permissions.
-- The Main group link reaches only you: the session start shows it, and `link` prints it in a terminal.
+- Everyone in the Main group is trusted with all sessions. In a session's group, rights follow the member's role, see [Sessions and their groups](#sessions-and-their-groups).
+- Claude Code runs no command from a message of a session's group, even one that starts with `!`. Claude gets the text, and its tool use follows Claude Code's permissions.
+- Only you get the Main group link. The session start shows it, and `link` prints it in a terminal.
 - A session runs in mode `host` only after an admin or owner approves it in the session's group.
-- Claude's files of `reply` reach the group while its preference "Files and media" allows them; owners set it, and the core enforces it. A post that a preference of the group refuses is replaced by Claude's text that names the preference.
-- Any program running as you on this computer can replace the Main group and its owners at once, without their approval, by `reset-owners` or a request to the service.
+- Claude's files reach the group only while its preference "Files and media" allows them. Owners set it, and SimpleX enforces it. A post that a preference refuses is replaced by Claude's text that names the preference.
+- Any program running as you on this computer can replace the Main group and its owners at once, without their approval, with `reset-owners` or a request to the service.
 - The plugin refuses to send private keys and the files of its data folder, except the files under `files/` of the session's own folder.
 - Peers of a chat see the profile `Claude`, or a random profile in a chat connected incognito.
-- These protections hold against Claude's tools, but not against a shell running as the same user: such a shell can read the data folder, with the token and the chat databases, and send requests to the service.
+- These protections hold against Claude's tools, but not against a shell running as the same user. Such a shell can read the data folder, with the token and the chat databases, and send requests to the service.
