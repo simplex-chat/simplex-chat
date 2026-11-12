@@ -63,6 +63,8 @@ Approve the connection in "My Agent", and accept the request in the app if it as
 
 The agent is tested with Claude Code. Tell us which other apps and models you want to use in [an issue](https://github.com/simplex-chat/simplex-chat/issues), or contribute.
 
+opencode with a local model is configured by hand: [LOCAL-MODELS.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/LOCAL-MODELS.md).
+
 ## Reference
 
 Approval modes, owners, several agents, other MCP hosts, recovery and all options: [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md).

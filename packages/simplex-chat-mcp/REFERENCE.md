@@ -339,6 +339,8 @@ npx -y @simplex-chat/mcp register my-agent-2
 
 Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorization: Bearer <token>`, as in `headers.json` of the data folder; after `--new-token`, update the entry. A host that ends a tool call early returns a timeout to the agent; the agent repeats the call with the same arguments, which picks up the same action. Hosts with a fixed tool-call limit, between 60 and 300 seconds in several hosts, need `wait` below it.
 
+opencode with a local llama.cpp model behind llama-swap: [LOCAL-MODELS.md](LOCAL-MODELS.md).
+
 ## Recovery
 
 | Situation | What to do |
