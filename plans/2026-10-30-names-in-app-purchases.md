@@ -1354,17 +1354,11 @@ flowchart LR
 
 It starts now, its screens after the lead's feedback on the screens.
 
-Set up by the user first, as agents here can't:
-
-- a fork of simplex.domains for the agents' account, with their work extended to it (P47, P60, P69, P70);
-- `sx npm-ci` for simplex.domains' `webapp` (viem for the vectors, Playwright with Chromium for the site's cases) and for the namespace contract (`ENS_CONTRACTS_DIR`, which `contract-run.sh` reads);
-- `uv` in the container, for the resolver's tests (P2, P3).
-
 The dev setup, first (9.2):
 
 - P67 `ci: names on the app test backend`: a local chain with the names contracts, simplexmq's resolver on it behind a second SMP server, and the store service on that chain, on all three runners; stacked on https://github.com/simplex-chat/simplex-chat/pull/8038's branch until it merges · medium · low · #8038
   - Tested: a run with `--backend` per platform: the second server resolves an available name and a seeded one from the chain; the service's code check answers an issued code unused.
-- P68 `names: point a test build at a dev store service`: `ChatConfig.storeServiceDev`, false in every shipped config, as `badgeDevRequests` (`src/Simplex/Chat.hs:78`); `/_store service <address>` sets the address for the running app, refused without it and from a paired device; the commit that sets it stays on the fork's `f/test-names-dev`, never merged · small · high
+- P68 `names: point a test build at a dev store service`: `ChatConfig.storeServiceDev`, false in every shipped config, as `badgeDevRequests` (`src/Simplex/Chat.hs:78`); `/_store service <address>` sets the address for the running app, refused without it and from a paired device; the commit that sets it stays on the names test branch, never merged · small · high
   - Tested: terminal: refused with the shipped config and from a paired device; set, a CLI client reaches a second test service at its address.
 
 Library and types:
@@ -1418,9 +1412,9 @@ The resolver, the site and the docs:
 - P2 simplexmq `resolver: the terms of an available name`: the resolver reads the name policy's terms link and community list and fills `nameTerms`; name routers run a release with it; until they do, the app reads the catalog's community texts (6.3) · medium · low
   - Tested: the resolver's tests (`uv run pytest` in `scripts/resolver/service`).
 - P47 simplex.domains `webapp: Open in SimpleX on the is-yours page`: 3·0's card and button; the page's "tap Set SimpleX name" becomes "Get SimpleX name" · small · low · P34
-  - Tested: the webapp's end-to-end cases for the "is yours" page, in the container against the service, as `scripts/store-service/dev/contract-run.sh` runs them.
+  - Tested: the webapp's end-to-end cases for the "is yours" page, locally against the service, as `scripts/store-service/dev/contract-run.sh` runs them.
 - P69 `names: the site with Open in SimpleX`: `apps/simplex-domains` moved to P47's commit, which the service serves · small · low · P47
-  - Tested: the store service's tests in the fork's reduced build; `contract-run.sh` against the moved site, its list of cases gaining P47's.
+  - Tested: the store service's tests in the reduced build; `contract-run.sh` against the moved site, its list of cases gaining P47's.
 - P57a `docs: names through the store service`: the registrar in `docs/protocol/names-overview.md`, names data and retention in `PRIVACY.md`, the wallet RFC's hidden-profile line, as properties from section 7 · small · low · P23
   - Tested: read against section 7 in its review.
 
@@ -1467,9 +1461,9 @@ The browser path:
 - P66 `store: the operator command for a browser payment`: `//name-invoice` as in 6.3; the refund record and its migration on both backends · small · high · P59, P65
   - Tested: service tests: each branch of the refund diagram (6.3), one refund per part of a payment.
 - P60 simplex.domains `webapp: the invoice for a code, and Payment received`: 4·3 and 4·4 as in 6.6 and 6.8 · medium · high · P59
-  - Tested: the webapp's end-to-end cases for 4·3 and 4·4, in the container against the webapp's mock service.
+  - Tested: the webapp's end-to-end cases for 4·3 and 4·4, locally against the webapp's mock service.
 - P70 `names: the site with the invoice for a code`: `apps/simplex-domains` moved to P60's commit, which the service serves · small · low · P60, P69
-  - Tested: the store service's tests in the fork's reduced build; `contract-run.sh` against the moved site.
+  - Tested: the store service's tests in the reduced build; `contract-run.sh` against the moved site.
 - P62 `names: pay in the browser`: the browser code's info string and the reference, with vectors; `/_name browser` as in 6.8, its record and migration on both backends · medium · high · P7, P15, P16, P22, P58, P59
   - Tested: terminal with the fake chain node and the fake BTCPay: each rule of 6.8's "The code", "Close", "The app notices payment" and "ask until"; the code made on 4·2 with nothing recorded, the same code while the order waits, "Remove order" dropping it; the drafts holding the reference and the second hash, never the code; AC7 with no link back.
 - P61 `ui: pay in the browser, and a paid order's screens`: 1·2's priced states; 4·1 priced from the catalog; 4·2, its waiting state with "Remove order" and its three other states; 1·7's paid states that store payments share, and 1·10; 1·9's rows; 1·11's "Payment" row; the drafts with the reference and the second hash; the verified link back `/name/paid`, routed to the waiting order; its Swift copy P63 · large · low · P30, P32, P33, P34, P35a, P62
@@ -1566,22 +1560,22 @@ By hand, at stage 3's end: a renewal bought in each store's test environment.
 
 ### 9.1 Where a pull request is tested
 
-- The core: its CLI form and a terminal test, in the container, against the test servers; a test that needs the store service starts it with names on the fake chain node, its client set to the service's address (P22's harness).
-- The store service: its tests with the fake Play and App Store verifiers, the fake BTCPay and Stripe and the fake chain node (`tests/Bots/StoreService/Fake*.hs`), on Postgres too in the fork's reduced build (`test-store-postgres`).
-- simplexmq and its resolver: their tests, in simplexmq's clone. A simplex-chat pull request that needs an unmerged simplexmq change is tested in the container against that clone (`use-local-simplexmq`), and on the runners once simplex-chat/simplexmq has the change.
-- The site: the webapp's end-to-end cases, in the container once `sx npm-ci` has run for `webapp`: all of them against the webapp's mock service, and those that pay nothing against the store service with `contract-run.sh`.
+- The core: its CLI form and a terminal test, locally, against the test servers; a test that needs the store service starts it with names on the fake chain node, its client set to the service's address (P22's harness).
+- The store service: its tests with the fake Play and App Store verifiers, the fake BTCPay and Stripe and the fake chain node (`tests/Bots/StoreService/Fake*.hs`), on Postgres too in the reduced build (`test-store-postgres`).
+- simplexmq and its resolver: their tests, in simplexmq's clone. A simplex-chat pull request that needs an unmerged simplexmq change is tested locally against that clone, and on the runners once simplex-chat/simplexmq has the change.
+- The site: the webapp's end-to-end cases, locally: all of them against the webapp's mock service, and those that pay nothing against the store service with `contract-run.sh`.
 - The apps:
   - snapshot previews, references committed (iOS `previewScenes()` in `SimpleX Snapshots`; Kotlin `SnapshotTest.kt` up to the largest font scale), of every screen and state of 6.6, the store-account lines and the hub's rows: light and dark; shortest and longest names, 1·7 and 3·1 with 63 characters; smallest and largest widths; largest text size; storefronts in and outside the US; one list layout;
   - equal frames, asserted by the snapshot tests, of 1·2's three controls across its states, and of 1·7's main button, stages and card across its states and 1·8, with and without the reminder, at the default and largest text sizes;
-  - the app test workflows (`ci-run desktop-linux`, `android-emu` and `ios-sim`, with `--backend`), on a test branch: the pull request's branch with `f/test-names-dev` merged, its scripted cases added to the feature tests of https://github.com/simplex-chat/simplex-chat/pull/8038, on the names test backend (9.2);
+  - the app test workflows (`desktop-linux`, `android-emu` and `ios-sim`, with the test backend), on a test branch: the pull request's branch with the names test branch merged, its scripted cases added to the feature tests of https://github.com/simplex-chat/simplex-chat/pull/8038, on the names test backend (9.2);
   - Claude sessions on the runners only on the user's word.
-- Every pull request: each digest, calldata, derived wallet, code and token it adds matches its vector against viem and the deployed ABIs; each wallet or name command it adds is refused from a paired device; the schema dump and the API docs regenerated where needed; the fork's reduced build passes on its final commit.
+- Every pull request: each digest, calldata, derived wallet, code and token it adds matches its vector against viem and the deployed ABIs; each wallet or name command it adds is refused from a paired device; the schema dump and the API docs regenerated where needed; the reduced build passes on its final commit.
 
 ### 9.2 The names test backend and the test build
 
 ```mermaid
 flowchart LR
-  app["The app, a test build with f/test-names-dev"] -->|"RSLV over SMP"| smp2["Second SMP server, names role"]
+  app["The app, a test build from the names test branch"] -->|"RSLV over SMP"| smp2["Second SMP server, names role"]
   smp2 -->|"/v2/resolve"| resolver["simplexmq's resolver"]
   resolver -->|"chain reads"| chain["Local chain: anvil and the names contracts"]
   app -->|"name commands over SMP"| svc["Store service on the local chain"]
@@ -1599,7 +1593,7 @@ flowchart LR
   - a name held by a name code, registered through the site's order API by a script that signs as the site does, with viem from the webapp's dependencies;
   - a command of that script that the test runs before 3·1: with the name code's wallet it signs an edit of the name's link to the address the test passes, and relays it through `POST /api/name/records`;
   - the service's address, the second server's address and the codes, written to the work folder.
-- The test build: the commit on `f/test-names-dev` sets `storeServiceDev` (P68), the local chain's id, addresses and namespace, and `simplexNameSaleStart` in the past in both apps (`UserAddressView.swift:818`, `SetSimplexNameView.kt:33`), so the countdown has ended and the store sheet, "Buy in browser" and row 4 open before 12 Dec 2026; the test's setup types `/_store service <address>` in the chat console. The payments release adds to that commit the store test switches (P37, P46), iOS's build-time switch, the Google Play flavor for `android-emu`, and the local service's names site as the browser path's site.
+- The test build: the commit on the names test branch sets `storeServiceDev` (P68), the local chain's id, addresses and namespace, and `simplexNameSaleStart` in the past in both apps (`UserAddressView.swift:818`, `SetSimplexNameView.kt:33`), so the countdown has ended and the store sheet, "Buy in browser" and row 4 open before 12 Dec 2026; the test's setup types `/_store service <address>` in the chat console. The payments release adds to that commit the store test switches (P37, P46), iOS's build-time switch, the Google Play flavor for `android-emu`, and the local service's names site as the browser path's site.
 - The payments release adds to the backend's service `[dev] accept_unverified_store_receipts = on`, whose mock verifier credits the test builds' purchases (P27a), and `[dev] pay_opened_codes_after_seconds` (P59).
 
 ## 10. Risks
