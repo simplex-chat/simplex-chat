@@ -2,7 +2,7 @@
 
 > Technical specification of `@simplex-chat/mcp` 0.2.0 in `packages/simplex-chat-mcp`. Statements are checked against the source at commit `937a975a6`, and each section links to the code.
 >
-> Related: [README](../README.md) (user manual) | [PLAN](../PLAN.md) (design record) | [TESTING](../TESTING.md) (local build and test)
+> Related: [README](../README.md) (user manual) | [PLAN](../../../plans/2026-10-19-mcp-server.md) (design record) | [TESTING](../TESTING.md) (local build and test)
 
 ## Table of contents
 
