@@ -776,7 +776,7 @@ struct OpenStorePurchase: Decodable {
 
 // ChatResponse is split to three enums to reduce stack size used when parsing it, parsing large enums is very inefficient.
 // Spec: spec/api.md#ChatResponse0
-enum ChatResponse0: Decodable, ChatAPIResult {
+indirect enum ChatResponse0: Decodable, ChatAPIResult {
     case activeUser(user: User)
     case usersList(users: [UserInfo])
     case chatStarted
@@ -904,7 +904,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
 }
 
 // Spec: spec/api.md#ChatResponse1
-enum ChatResponse1: Decodable, ChatAPIResult {
+indirect enum ChatResponse1: Decodable, ChatAPIResult {
     case invitation(user: UserRef, connLinkInvitation: CreatedConnLink, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
@@ -1047,7 +1047,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
 }
 
 // Spec: spec/api.md#ChatResponse2
-enum ChatResponse2: Decodable, ChatAPIResult {
+indirect enum ChatResponse2: Decodable, ChatAPIResult {
     // group responses
     case groupCreated(user: UserRef, groupInfo: GroupInfo)
     case publicGroupCreated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay])
@@ -1229,7 +1229,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
 }
 
 // Spec: spec/api.md#ChatEvent
-enum ChatEvent: Decodable, ChatAPIResult {
+indirect enum ChatEvent: Decodable, ChatAPIResult {
     case chatSuspended
     case contactSwitch(user: UserRef, contact: Contact, switchProgress: SwitchProgress)
     case groupMemberSwitch(user: UserRef, groupInfo: GroupInfo, member: GroupMember, switchProgress: SwitchProgress)
