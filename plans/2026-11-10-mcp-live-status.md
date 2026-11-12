@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.3.0: live status message and inference speed
 
-Status: draft for review. Design of 2026-11-10; Q8 (groups) and Q18 (size budgets) decided on 2026-11-11; the other questions as recommended. Code: branch `ab/mcp-live-typing` on master `f8776692df`; library references: `packages/simplex-chat-nodejs/src/api.ts` at `f8776692df`, published as `simplex-chat` 7.1.0-beta.10.2.
+Status: draft for review. Design of 2026-11-10; Q8 (groups) and Q18 (size budgets) decided on 2026-11-11; the other questions as recommended. Code references: master `f8776692df`; library references: `packages/simplex-chat-nodejs/src/api.ts` at `f8776692df`, published as `simplex-chat` 7.1.0-beta.10.2.
 
 Dependencies:
 1. `LiveMessage` of `simplex-chat` 7.1.0-beta.10.2 (`api.ts:1134-1214`), used unchanged, with interval 0.
@@ -331,5 +331,5 @@ package.json   version                    0.3.0, with package-lock.json
 
 ## Pull request
 
-- Branch `ab/mcp-live-typing` of `brenzi-agent/simplex-chat`; one draft pull request into `simplex-chat/simplex-chat` master, titled `mcp server: live status while the agent works`, linking this file.
+- One draft pull request into `simplex-chat/simplex-chat` master, titled `mcp server: live status while the agent works`, linking this file.
 - Changed paths: `packages/simplex-chat-mcp/**` and `plans/`; the reduced build runs the `mcp` scope.
