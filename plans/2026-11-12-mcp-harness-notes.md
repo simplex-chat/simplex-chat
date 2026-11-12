@@ -1,6 +1,6 @@
 # SimpleX MCP: notes of Claude Code's own prompts
 
-Status: draft for review. Code references: master `9d3241b06` (MCP 0.3.0). Claude Code references: version 2.1.322 and its binary at the offsets given; the transcripts of one machine, Claude Code 2.1.186 to 2.1.322; and two interactive sessions of Claude Code 2.1.322, recorded on 2026-11-12 with a UserPromptSubmit hook that logs its input. R1 has task notifications, a background subagent and a scheduled prompt. R2 has prompts that arrive during running turns. Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
+Status: implemented on `ep/mcp-harness-notes`. Q1 was answered A by the user on 2026-11-12. Code references: master `9d3241b06` (MCP 0.3.0). Claude Code references: version 2.1.322 and its binary at the offsets given; the transcripts of one machine, Claude Code 2.1.186 to 2.1.322; and two interactive sessions of Claude Code 2.1.322, recorded on 2026-11-12 with a UserPromptSubmit hook that logs its input. R1 has task notifications, a background subagent and a scheduled prompt. R2 has prompts that arrive during running turns. Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
 
 ## 1. Goal
 
@@ -119,7 +119,7 @@ sequenceDiagram
 
 ## 3. Questions for the user
 
-Q1. Who posts these lines?
+Q1. Who posts these lines? Answered A by the user on 2026-11-12.
 - A, recommended: Claude. Claude is in every session group already, so the lines appear in existing groups after the update. Claude's answers and the notes share one sender; the emoji tells them apart. Cost: the hook and one call in the hub, about 100 source lines.
 - B: a new member "Claude Code". It separates the harness from the model, as the user proposed. It adds a third profile of the service in `ROOT/_code`, with its own database and SimpleX connections, connected to Claude once, like `User`. Claude adds it to every new session group, and to each existing group at the first start after the update; it joins by itself. The hub drops its messages and leaves it out of approvers and rights posts. A group preference limited to roles above its own refuses its posts, with a text that names it. Each member sees one more member in every session group, and each member's app keeps one more connection per group. A member can hide all notes in the app with "Block member". Cost: about 150 more source lines and 150 more test lines than A, a change of the data folder, and conflicts with the agent profile item, which changes the profiles. B can follow A later without changing the lines.
 
@@ -142,8 +142,8 @@ Facts:
 Choices:
 13. Claude posts the notes (Q1 A). `User`'s posts keep meaning prompts a person typed (0.3.0 decision 121).
 14. The hook composes the line and sends it as `note` in `POST /turn`; the hub posts it unchanged as one message of Claude, without a quote ([hub.ts:289-295](../packages/simplex-chat-mcp/src/hub.ts#L289-L295)).
-15. The hook finds the prompt's record by its text, so that a prompt added to a running turn gets its own origin. The record is the newest of these whose text is the prompt: the entry with `prompt_id`, and the records after the first entry with `prompt_id`, both user entries and `queued_command` attachments; when no entry with `prompt_id` is in the tail, any such record of the tail. User entries of subagents and tool results are skipped, as in 0.3.0. Without `prompt_id`, the newest such record. The hook reads up to 600 times, 100 ms apart, as in 0.3.0.
-16. After the last read without a record, a `queue-operation` `enqueue` entry with the prompt's text after the entry with `prompt_id` makes the prompt typed and mid-turn: by fact 5, only a submitted prompt runs its hook while it waits. Otherwise the origin of the first entry with `prompt_id` decides only `typed`, as in 0.3.0, and the prompt gets no note.
+15. The hook finds the prompt's record by its text, so that a prompt added to a running turn gets its own origin. The record is the newest of these whose text is the prompt: the entry with `prompt_id`, and the records after the first entry with `prompt_id`, both user entries and `queued_command` attachments. Until an entry with `prompt_id` is in the tail, the hook waits for it, so that an older prompt with the same text is not taken; at the last read it takes any record of the tail. User entries of subagents and tool results are skipped, as in 0.3.0. Without `prompt_id`, the newest such record at once. The hook reads up to 600 times, 100 ms apart, as in 0.3.0.
+16. After the last read without a record, a `queue-operation` `enqueue` entry with the prompt's text after the entry with `prompt_id` makes the prompt typed and mid-turn: by fact 5, only a submitted prompt runs its hook while it waits. Otherwise the prompt is typed when an entry with `prompt_id` has the origin `human`, past a meta entry without origin, and it gets no note.
 17. A prompt is mid-turn when its record is not an entry with `prompt_id`. The hook sends `midTurn: true` for it.
 18. A mid-turn prompt ends no tool-use card, and adds a turn record only when it matched a pushed prompt. So the answer of the turn quotes the turn's prompt, or an owner's prompt added to the turn, as in 0.3.0. It amends 0.3.0 decisions 29 and 39.
 19. The kind comes from the record's `origin.kind`, and from `turnOrigin: "scheduled"` without `origin`. `human` is typed. `channel` gets no note: its messages are in the group, or come from another channel's people, and Claude's answer is posted. A record without `origin` and not scheduled gets no note.
@@ -201,9 +201,10 @@ on UserPromptSubmit {prompt_id, prompt, transcript_path}:
     first     = the first entry with promptId = prompt_id
     record    = the newest record whose text is text: at or after first, or anywhere without first
     found: stop
+    first absent and prompt_id given: wait, except at the last read
   last read, no record:
     an enqueue entry of content text after first: typed true, midTurn true, no note
-    else: typed = first.origin.kind = human, as 0.3.0; no note
+    else: typed = an entry with promptId = prompt_id has origin.kind human; no note
   typed   = record.origin.kind = human
   midTurn = record is not an entry with promptId = prompt_id
   note    = noteOf(record, prompt), cut to 200
@@ -265,9 +266,8 @@ Done when:
 Tests:
 - `test/unit/hook.test.ts`, new: "sends a one-line note for each kind of Claude Code's prompt, from its transcript record, and none for typed and channel prompts": entries of R1 and of this machine's transcripts, with paths replaced. It fails on master, which sends no `note`.
 - `test/unit/hook.test.ts`, new: "finds a prompt added to a running turn by its queued command after the turn's entry, and marks it mid-turn": the R2 records. With master, the notification in the typed turn is typed and "Say the word charlie." is not, so it fails.
-- `test/unit/hook.test.ts`, new: the meta entry before the prompt's entry, and the queued typed prompt after the reads.
-- `test/unit/hook.test.ts`, changed: the test of 0.3.0 decision 121 adds `note` to its expectations.
-- `test/unit/claude-code-prompts.jsonl`, new fixture: R1 and R2 hook inputs and transcript records, paths replaced by `/p`.
+- `test/unit/hook.test.ts`, new: the meta entry before the prompt's entry, an older prompt with the same text, and the queued typed prompt after the reads.
+- The tests build the records of R1 and R2 in their own code, so the test of 0.3.0 decision 121 stays unchanged and no fixture file is added.
 - `test/unit/sessions.test.ts`, new: "posts the note of Claude Code's prompt as Claude without a quote, and the turn's answer without a quote" (fails on master: nothing is posted); "keeps the turn's quote and tool-use cards for a mid-turn prompt" (fails on master: the answer loses the quote and the card ends); "replaces a refused note with the preference's text".
 - `test/e2e/service.test.ts`, changed: the mirroring test adds a summary to its notification, expects Claude's line and no post of `User`, and adds a notification as a queued command of the typed turn `p1`.
 - Run: `npm test --prefix packages/simplex-chat-mcp` for unit tests, and the end-to-end tests as TESTING.md states. The reduced build runs them in CI. No app changes, so no app test workflows.
@@ -276,7 +276,7 @@ Tests:
 
 - `README.md:36`: Claude Code's own prompts appear as one line each.
 - `REFERENCE.md`, "Prompts and answers" (603-617): the lines, the kinds, the cut, the refusal text; `User` posts typed prompts also when typed during a turn.
-- `ROADMAP.md:18`: "See Claude's code changes as diffs while it works."
+- `ROADMAP.md:18` stays as it is: the line also names the diffs.
 - `spec/flows.md`: flow 21 notes; a new flow, a prompt of Claude Code at a turn's start and during a turn.
 - `spec/api.md`: 4.3 (Claude's posts), 4.6 (`POST /turn` with `note` and `midTurn`), the hook's record rules (1020).
 - `spec/architecture.md`: 8.2 (`promptKind`, `promptRecord`, `noteOf`), 8.6 (the wire and the turn rules).
