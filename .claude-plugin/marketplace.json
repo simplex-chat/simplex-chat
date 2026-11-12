@@ -1,6 +1,6 @@
 {
   "name": "simplex-chat",
-  "description": "Plugins for using SimpleX Chat with coding agents.",
+  "description": "The SimpleX Chat plugin for Claude Code.",
   "owner": {"name": "SimpleX Chat", "url": "https://simplex.chat"},
   "plugins": [
     {
