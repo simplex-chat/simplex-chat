@@ -25,8 +25,11 @@ case "${1:-}" in
     npm test
     npm run test:e2e
     ;;
+  support-bot)
+    (cd apps/simplex-support-bot && npm ci --no-audit --no-fund && npm run build && npm test)
+    ;;
   *)
-    echo "usage: $0 badge-web | ci-scripts | website | mcp" >&2
+    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot" >&2
     exit 1
     ;;
 esac
