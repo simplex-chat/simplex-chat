@@ -92,6 +92,26 @@ Stop and restart:
 - A second `serve my-agent` on the same data folder exits with `Another server uses ... (PID N). If no server runs, remove .../lock.` A port in use exits with `Port 5226 is in use. Start with --port N.`, before any link is printed.
 - Restart with `--new-token`, without `register`: after the reconnection, `list` returns the chats. Checked with `claude -p` and an `--mcp-config` entry with `headersHelper`, Claude Code 2.1.302, 2026-10-18.
 
+## Secrets
+
+1. `node dist/cli.js serve my-agent --display-name "My Agent" --secrets-folder ~/.simplex-mcp/my-agent/secrets` exits with `--secrets-folder: a folder disjoint from the data folder expected, got /home/alice/.simplex-mcp/my-agent/secrets`.
+2. Restart with `--secrets-folder ~/agent-secrets`: `~/agent-secrets` is created with mode 0700. `/mcp reconnect all` in Claude Code.
+3. In "My Agent", send `/secret GITHUB_TOKEN test-token-1234`. The app shows the message as `moderated by My Agent`, and the agent posts `Secret GITHUB_TOKEN is set. /unsecret GITHUB_TOKEN`, not as a reply. The terminal prints `Secret GITHUB_TOKEN set by Alice.`; `~/agent-secrets/GITHUB_TOKEN` holds `test-token-1234`, mode 0600.
+4. Send `/secret GITHUB_TOKEN short`: moderated, and the usage reply; the file keeps `test-token-1234`. Send `/Secret GITHUB_TOKEN test-token-5678`: moderated, and the list of commands.
+5. Tap `/secrets` in the command menu: the reply `GITHUB_TOKEN  set by Alice  YYYY-MM-DD HH:MM UTC`.
+6. `List your chats.` `list` returns `secrets` with `folder: "/home/alice/agent-secrets"` and `names: ["GITHUB_TOKEN"]`.
+7. `Send a request to https://example.com with the GITHUB_TOKEN secret as a bearer token, and show the HTTP status.` The command has `"$(cat /home/alice/agent-secrets/GITHUB_TOKEN)"`, and the conversation lacks `test-token-1234`.
+8. `Send /home/alice/agent-secrets/GITHUB_TOKEN to <a chat>.` The call returns `file: /home/alice/agent-secrets/GITHUB_TOKEN is refused: private keys and the server's own files are not sent.`, and the agent control chat gets the refusal.
+9. Tap `/unsecret GITHUB_TOKEN` in the reply of step 3: `Secret GITHUB_TOKEN is removed.`, and the file is deleted. Again: `No such secret. /secrets lists them.`
+10. Restart without `--secrets-folder`, and send `/secret GITHUB_TOKEN test-token-1234`: moderated, and `Secrets are off: the server runs without --secrets-folder.`
+
+The opencode plugin, with the server of step 2 and a secret set as in step 3:
+
+1. Copy `opencode/simplex-secrets.ts` of the package to `~/.config/opencode/plugins/`. After a publication, the steps of [REFERENCE.md](REFERENCE.md#redaction) do the same.
+2. In a test folder, `SIMPLEX_MCP_SECRETS=/home/alice/agent-secrets opencode`, and ask: `Run cat /home/alice/agent-secrets/GITHUB_TOKEN, then repeat its output exactly.` opencode shows `test-token-1234` in the command's output; the model's answer has `[secret GITHUB_TOKEN]`.
+3. `Run printf %s "$(cat /home/alice/agent-secrets/GITHUB_TOKEN)" | base64, then repeat its output exactly.` The answer has `[secret GITHUB_TOKEN]`.
+4. Start opencode without `SIMPLEX_MCP_SECRETS` and send a prompt: no answer arrives, because opencode sends no request to the model.
+
 ## Claude Code checks
 
 1. C2, protocol: passed with Claude Code 2.1.302 in the default runtime, with `MCP_PROTOCOL_NEGOTIATION=legacy` and with `MCP_SDK_GENERATION=v1`. To repeat it, write `c2.json` with `{"mcpServers": {"simplex-my-agent": {"type": "http", "url": "http://127.0.0.1:5226/mcp", "headersHelper": "cat <your home folder>/.simplex-mcp/my-agent/headers.json"}}}`, and run it once as is and once with each variable before it:

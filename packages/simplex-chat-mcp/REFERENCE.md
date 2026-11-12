@@ -28,6 +28,7 @@ Status: v0.2. [`TESTING.md`](TESTING.md) describes a local build and test. The d
 - [Waiting for approval in Claude Code](#waiting-for-approval-in-claude-code)
 - [Several agents](#several-agents)
 - [Other MCP hosts](#other-mcp-hosts)
+- [Secrets](#secrets)
 - [Recovery](#recovery)
 - [Command reference](#command-reference)
 - [Data folder](#data-folder)
@@ -256,10 +257,13 @@ Commands:
 | `/delete #9 files` | Cancels the running downloads from chat #9, which then fail, also those the core continues after a restart, and deletes the chat's files in the data folder, forwarded ones included, for a current or a left chat: `Deleted 3 files from #9, 2.1 MB.` or `No files from #9.` |
 | `/pending` | Lists pending actions. |
 | `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages or all files: `, approved for this chat by NAME` and `, files approved by NAME`; a last line counts the older chats. |
+| `/secret NAME VALUE` | Saves a secret for the agent, with `--secrets-folder`; the server first deletes the message for all members ([Secrets](#secrets)). |
+| `/unsecret NAME` | Deletes the secret. |
+| `/secrets` | Lists the secrets, with the owner who set each one and when. |
 
 After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``. The files forwarded from #9 are deleted when the agent leaves it.
 
-`/pending`, `/list` and `/leave` are in the chat's command menu, and the cards carry the others. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
+`/pending`, `/list`, `/leave` and `/secrets` are in the chat's command menu; the cards show the action commands, and the reply to `/secret` shows `/unsecret`. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
 
 ### Approval of all messages to a chat
 
@@ -296,7 +300,7 @@ Six tools:
 | `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
 | `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. |
 | `download` | Downloads the file of a received message to the data folder and returns its full path. |
-| `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
+| `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result; with `--secrets-folder`, also the folder and the names of the secrets. |
 | `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
 
 A `send` to a chat that `list` shows with `connected: false` is refused before any card. A `send` is refused with `text: too long for its approval card; shorten it.` when its card, in its longest outcome form, would exceed 15000 bytes in the SimpleX message, which holds at most 15602; a text of many lines or multi-byte characters reaches it below 12000 characters.
@@ -313,7 +317,7 @@ A short voice message can arrive with its file already received. The server move
 
 An empty file is refused, and so is `as` without `file`. A message holds at most 15602 bytes with its text, the file's name and preview, the message `reply_to` quotes and the mentioned names. The quote is the quoted text when the message is an image or video; otherwise it is the quoted content, an image's preview included. A `send` over it is refused with `text: too long for a message with this image; shorten it.`, or without a file `text: too long for the message with its quote; shorten it.` An image's preview takes up to 14000 bytes, so its text has about 1 KB.
 
-The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh` and `~/.gnupg`, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files under its data folder and under `~/.simplex-mcp`, except those under `files/` of its own data folder; each folder is taken by its real path too. The card shows the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
+The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh`, `~/.gnupg` and the secrets folder, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files under its data folder and under `~/.simplex-mcp`, except those under `files/` of its own data folder; each folder is taken by its real path too. The card shows the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
@@ -338,6 +342,107 @@ npx -y @simplex-chat/mcp register my-agent-2
 ## Other MCP hosts
 
 Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorization: Bearer <token>`, as in `headers.json` of the data folder; after `--new-token`, update the entry. A host that ends a tool call early returns a timeout to the agent; the agent repeats the call with the same arguments, which picks up the same action. Hosts with a fixed tool-call limit, between 60 and 300 seconds in several hosts, need `wait` below it.
+
+## Secrets
+
+With `--secrets-folder DIR`, owners give the agent secrets, such as access tokens, in the agent control chat. The agent gets the folder and the names, and uses a value in shell commands by its path.
+
+```
+npx -y @simplex-chat/mcp serve my-agent --secrets-folder /run/agent-secrets
+```
+
+The server creates DIR with mode 0700 when it is missing; the mode of an existing folder is unchanged. DIR must be disjoint from the data folder: when it is the data folder, inside it or contains it, the server exits with code 2 and `--secrets-folder: a folder disjoint from the data folder expected, got DIR`.
+
+### Commands
+
+| Command | Effect | Reply |
+|---|---|---|
+| `/secret NAME VALUE` | Saves VALUE in `DIR/NAME`, readable only by the user, in place of an earlier value. | `Secret NAME is set. /unsecret NAME`, as a new message |
+| `/unsecret NAME` | Deletes `DIR/NAME`. | `Secret NAME is removed.`, or `No such secret. /secrets lists them.` |
+| `/secrets` | Lists the secrets, with the owner who set each one and when. | `GITHUB_TOKEN  set by Alice  2026-11-12 10:00 UTC`, one line per secret, or `No secrets.` |
+
+- NAME: 1 to 64 capital letters, digits and `_`, starting with a letter.
+- VALUE: the rest of the line, without the spaces around it, 8 characters or more.
+- `/secrets` is in the command menu. The commands work in both approval modes.
+
+Replies to `/secret`, first match:
+
+1. a message of several lines, from any member: `Usage: /secret NAME VALUE on one line. NAME: capital letters, digits and _, starting with a letter, up to 64 characters. VALUE: 8 characters or more.`
+2. a sender who is not an approver: `Only owners approve actions.`, or with `--owners` `Only the owners listed in --owners approve actions.`
+3. a server without `--secrets-folder`: `Secrets are off: the server runs without --secrets-folder.`
+4. an invalid NAME or VALUE: the usage reply of 1.
+5. otherwise: `Secret NAME is set. /unsecret NAME`.
+
+`/Secret` and other letter cases are deleted too, and get the list of commands; the value is not saved.
+
+`/unsecret` and `/secrets` get the replies of 2 and 3 in the same way.
+
+- A secret stays until `/unsecret`, also when the owner who set it is no longer an owner.
+- The terminal prints `Secret GITHUB_TOKEN set by Alice.` and `Secret GITHUB_TOKEN removed by Alice.`, without the value. `secrets.json` in the data folder records who set each secret and when.
+
+### Deletion of `/secret` messages
+
+The server deletes every message whose first word is `/secret`, in any letter case, for all members, before it runs the command: a message of any member, also a refused or invalid one, and also one in a member support chat, which gets no reply. The agent control chat has full deletion on, so the text of the message is deleted in the agent's database and in the members' apps, the sender's included, which show `moderated by My Agent`; a member who receives the message later gets it deleted. At every start, the server turns full deletion on when it is off. The reply to `/secret` is a new message, without a quote of the value.
+
+- The owners' apps show the message until the deletion reaches them.
+- While the server is stopped, the message stays until the next start.
+- Only the first text of a message is checked: an edit, and the later text of a live message, are neither deleted nor run. Send `/secret` as a new message, not a live one.
+- A mistyped command, such as `/secrt NAME VALUE`, is an ordinary message and stays in the chat: delete it for everyone in the app.
+- After the agent lost its control chat, `/secret` messages are neither deleted nor run.
+
+### Use by the agent
+
+`list` returns `"secrets": {"folder": "/run/agent-secrets", "names": ["GITHUB_TOKEN"]}`, without the values. The `list` description and the server instructions state the use of a secret: only inside a shell command, as `"$(cat /run/agent-secrets/GITHUB_TOKEN)"`, never by its value. For example:
+
+```
+curl -H "Authorization: Bearer $(cat /run/agent-secrets/GITHUB_TOKEN)" https://example.com/api
+```
+
+`send` refuses the files of the folder, as private keys: `file: PATH is refused: private keys and the server's own files are not sent.`
+
+The agent's commands read `DIR/NAME` at the path that `list` returns. When they run in a sandbox, such as a container:
+
+- mount DIR in the sandbox at the same path;
+- run the sandbox with the server's user ID: the files have mode 0600, and a folder that the server creates has mode 0700.
+
+### Redaction
+
+A value that a command prints becomes part of the conversation, which the MCP host sends to the model provider.
+
+- Claude Code sends values as printed, without redaction.
+- With the plugin `opencode/simplex-secrets.ts` of this package, opencode replaces each value with `[secret NAME]` before it sends the conversation.
+
+Install the plugin as the user who runs opencode:
+
+```
+npm pack @simplex-chat/mcp
+tar -xzf simplex-chat-mcp-*.tgz package/opencode/simplex-secrets.ts
+mkdir -p ~/.config/opencode/plugins
+mv package/opencode/simplex-secrets.ts ~/.config/opencode/plugins/
+```
+
+opencode loads the `.ts` and `.js` files of `plugins/` in `~/.config/opencode` (`$XDG_CONFIG_HOME/opencode` when it is set) and in `.opencode` of the project. Start opencode with the folder of the secrets in `SIMPLEX_MCP_SECRETS`:
+
+```
+SIMPLEX_MCP_SECRETS=/run/agent-secrets opencode
+```
+
+Before each request to the model, and before the request for a compaction summary, opencode passes the messages of the session to the plugin. In every text of their parts, such as texts, tool inputs, outputs, errors and metadata, each value of the folder is replaced, also:
+
+- its URL encoding, as `encodeURIComponent` makes it;
+- its base64 and base64url encodings at any byte position, as in `Authorization: Basic ...`, except at most one character at each end, which holds at most 4 bits of the value.
+
+The values are read from the folder at each request. Values read earlier, also of removed or replaced secrets, are replaced until opencode restarts. The values remain in the session that opencode stores; only the copies sent to the model are changed.
+
+These are sent to the model provider as they are:
+
+- the first user message of a session, in the request for its title, which opencode sends before the plugin runs;
+- system text: agent prompts, instruction files such as `AGENTS.md`, MCP server instructions and skills;
+- values in other forms: hex, other percent-encodings, `+` for spaces, escaped, split, partial or otherwise transformed by a command;
+- values removed or replaced before an opencode restart, in earlier outputs;
+- tool results of workflow models, which opencode returns to the provider without the plugin.
+
+The plugin fails closed: when `SIMPLEX_MCP_SECRETS` is unset, when the folder or one of its files can't be read, or when a value has fewer than 8 characters, it throws, and opencode sends no request to the model for that step. The hook it uses, `experimental.chat.messages.transform`, is experimental in opencode. This section describes opencode 1.19.5.
 
 ## Recovery
 
@@ -381,6 +486,8 @@ serve options:
   --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)
   --qr-code SIZE         QR code of the link: small (default) or large
+  --secrets-folder DIR   folder of the secrets that owners set with /secret,
+                         one file per name; disjoint from the data folder
 
 register options:
   --scope SCOPE          user (default) or local
@@ -399,6 +506,7 @@ register options:
   headers.json       the token as the Authorization header for Claude Code, readable only by the user
   server.json        name, port and expiry of the server, read by register
   lock               PID of the running server
+  secrets.json       with --secrets-folder: who set each secret and when, readable only by the user
   tmp/               the SimpleX core's work folder for files in transfer
   files/group-3/     files downloaded from chat #3, and files received there without a download, each named by its file ID
                      and the extension of its name, such as 12.pdf; files/contact-4/ for contact @4
@@ -424,7 +532,10 @@ One server runs per data folder: a second one exits, because two processes on on
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
 - After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
-- The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
+- The server refuses to send private keys, its own files, the secrets and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
+- With secrets, values are protected from accidental exposure to the model provider: the server deletes `/secret` messages for all members, and the agent gets the names, not the values. A prompt injection can make the agent send a value away by reference, for example in a command that reads the file of a secret into a request to another host; this is out of scope.
+- Every process of the server's user can read the secrets, and `send` and `connect` texts are not checked for their values: the approval cards show the texts.
+- The agent forwards the messages of its control chat to members as an owner: a copy of a forwarded `/secret` message can remain with its delivery job in `simplex_chat.db` of the data folder until the job is done and 7 days old.
 - After `/receive #N 7 all`, the agent's later downloads from that chat, of files on its XFTP servers, run without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; any other download of it fails, unless the IP address is protected.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
 - The agent has no address, so nobody can contact it first.

@@ -40,6 +40,7 @@ Participants:
 14. [`/forward`](#14-forward)
 15. [`send` with a file](#15-send-with-a-file)
 16. [`/leave` and `/delete CHAT files`](#16-leave-and-delete-chat-files)
+17. [`/secret` and its use](#17-secret-and-its-use)
 
 ---
 
@@ -63,7 +64,7 @@ sequenceDiagram
   S->>S: DATA/files/sent deleted
   S->>C: startChat, events buffered
   S->>C: apiListGroups USER (no control marker)
-  S->>C: apiNewGroup USER {My Agent, history on, menu pending, list and leave}
+  S->>C: apiNewGroup USER {My Agent, history on, full deletion on, menu pending, list, leave and secrets}
   S->>C: apiSetGroupCustomData #G {"simplexMcp":{"control":true,"nextAction":1}}
   S->>P: Agent control chat "My Agent" created.
   S->>K: load
@@ -89,12 +90,13 @@ sequenceDiagram
 Notes:
 
 - At first use, libsimplex and the Node.js add-on are downloaded, with one `Downloading ...` line each on stderr ([libs.ts:114-135](../../simplex-chat-nodejs/src/libs.ts#L114-L135)).
-- With `--data`, `--data <folder>` is appended to the register hint, shell-quoted ([serve.ts:185-187](../src/serve.ts#L185-L187)).
-- With `--qr-code small`, the line `If the QR code does not scan, ...` is printed after the link ([control.ts:412](../src/control.ts#L412)).
-- Events that arrive before the HTTP listener starts are buffered and handled in order ([serve.ts:234-248](../src/serve.ts#L234-L248)).
-- The server runs `ownerJoined` for every `joinedGroupMember` event of a human without `--owners`, and the link is deleted in that handler ([control.ts:189-190](../src/control.ts#L189-L190), [:371-378](../src/control.ts#L371-L378)).
+- With `--data`, `--data <folder>` is appended to the register hint, shell-quoted ([serve.ts:187-189](../src/serve.ts#L187-L189)).
+- With `--qr-code small`, the line `If the QR code does not scan, ...` is printed after the link ([control.ts:452](../src/control.ts#L452)).
+- Events that arrive before the HTTP listener starts are buffered and handled in order ([serve.ts:236-250](../src/serve.ts#L236-L250)).
+- The server runs `ownerJoined` for every `joinedGroupMember` event of a human without `--owners`, and the link is deleted in that handler ([control.ts:200-201](../src/control.ts#L200-L201), [:411-418](../src/control.ts#L411-L418)).
+- With `--secrets-folder`, the folder is created before the user is read, when missing ([serve.ts:91](../src/serve.ts#L91)).
 
-Source: [cli.ts:198-209](../src/cli.ts#L198-L209), [serve.ts:65-126](../src/serve.ts#L65-L126), [:205-223](../src/serve.ts#L205-L223), [files.ts:12-48](../src/files.ts#L12-L48), [http.ts:14-46](../src/http.ts#L14-L46), [control.ts:102-117](../src/control.ts#L102-L117), [:341-345](../src/control.ts#L341-L345), [:406-425](../src/control.ts#L406-L425), [:499-520](../src/control.ts#L499-L520).
+Source: [cli.ts:205-216](../src/cli.ts#L205-L216), [serve.ts:66-128](../src/serve.ts#L66-L128), [:207-225](../src/serve.ts#L207-L225), [files.ts:16-52](../src/files.ts#L16-L52), [http.ts:14-46](../src/http.ts#L14-L46), [control.ts:110-125](../src/control.ts#L110-L125), [:381-385](../src/control.ts#L381-L385), [:446-465](../src/control.ts#L446-L465), [:539-560](../src/control.ts#L539-L560).
 
 ---
 
@@ -131,7 +133,7 @@ Notes:
 - `timeout` is `(expireHours + 24) × 3600000 + 600000` ms from `server.json` ([register.ts:51](../src/register.ts#L51)).
 - With `--scope local`, the project folder in the manual entry is the git repository root, the main repository of a worktree, or the current folder outside a repository ([register.ts:56](../src/register.ts#L56), [:60-84](../src/register.ts#L60-L84)).
 
-Source: [cli.ts:110-125](../src/cli.ts#L110-L125), [:207](../src/cli.ts#L207), [register.ts:33-58](../src/register.ts#L33-L58), [files.ts:50-53](../src/files.ts#L50-L53).
+Source: [cli.ts:117-132](../src/cli.ts#L117-L132), [:214](../src/cli.ts#L214), [register.ts:33-58](../src/register.ts#L33-L58), [files.ts:54-57](../src/files.ts#L54-L57).
 
 ---
 
@@ -182,8 +184,8 @@ sequenceDiagram
 
 Notes:
 
-- The plan is read again in the perform step ([tools.ts:690](../src/tools.ts#L690)).
-- Join methods per plan ([tools.ts:719-747](../src/tools.ts#L719-L747), [:1260-1323](../src/tools.ts#L1260-L1323)):
+- The plan is read again in the perform step ([tools.ts:699](../src/tools.ts#L699)).
+- Join methods per plan ([tools.ts:728-756](../src/tools.ts#L728-L756), [:1270-1333](../src/tools.ts#L1270-L1333)):
 
 | Plan | Methods |
 |---|---|
@@ -193,14 +195,14 @@ Notes:
 | `contactViaAddress` | `apiConnectContactViaAddress(USER, incognito, CONTACT_ID)` |
 | other links | `apiConnectPreparedLink(USER, incognito, LINK)` |
 
-- After a failed prepared connect, the server deletes the prepared chat without notifying ([tools.ts:749-756](../src/tools.ts#L749-L756)).
-- The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([tools.ts:590-598](../src/tools.ts#L590-L598), [:758-763](../src/tools.ts#L758-L763)).
-- In the perform step the server waits for the other side until `startedAt + wait`, at most until `created + 23 h 50 min`, and then reports `connected: false` ([tools.ts:143](../src/tools.ts#L143), [:689](../src/tools.ts#L689), [:713-716](../src/tools.ts#L713-L716)).
-- Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([tools.ts:769](../src/tools.ts#L769), [messages.ts:323-331](../src/messages.ts#L323-L331)).
-- For a target the agent is connected to, the result is `status: known` with its chat fields, and no action is created ([tools.ts:622](../src/tools.ts#L622)).
-- Exact progress texts: `Action N waits for an approver until TIME.`, then `Action N waits for the connection until TIME.`, then `K messages in CHAT; waiting until TIME.` ([actions.ts:343-354](../src/actions.ts#L343-L354), [tools.ts:658](../src/tools.ts#L658)).
+- After a failed prepared connect, the server deletes the prepared chat without notifying ([tools.ts:758-765](../src/tools.ts#L758-L765)).
+- The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([tools.ts:599-607](../src/tools.ts#L599-L607), [:767-772](../src/tools.ts#L767-L772)).
+- In the perform step the server waits for the other side until `startedAt + wait`, at most until `created + 23 h 50 min`, and then reports `connected: false` ([tools.ts:145](../src/tools.ts#L145), [:698](../src/tools.ts#L698), [:722-725](../src/tools.ts#L722-L725)).
+- Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([tools.ts:778](../src/tools.ts#L778), [messages.ts:323-331](../src/messages.ts#L323-L331)).
+- For a target the agent is connected to, the result is `status: known` with its chat fields, and no action is created ([tools.ts:631](../src/tools.ts#L631)).
+- Exact progress texts: `Action N waits for an approver until TIME.`, then `Action N waits for the connection until TIME.`, then `K messages in CHAT; waiting until TIME.` ([actions.ts:343-354](../src/actions.ts#L343-L354), [tools.ts:667](../src/tools.ts#L667)).
 
-Source: [tools.ts:617-672](../src/tools.ts#L617-L672), [:686-772](../src/tools.ts#L686-L772), [actions.ts:155-186](../src/actions.ts#L155-L186), [:206-223](../src/actions.ts#L206-L223), [control.ts:141-152](../src/control.ts#L141-L152).
+Source: [tools.ts:626-681](../src/tools.ts#L626-L681), [:695-781](../src/tools.ts#L695-L781), [actions.ts:155-186](../src/actions.ts#L155-L186), [:206-223](../src/actions.ts#L206-L223), [control.ts:149-160](../src/control.ts#L149-L160).
 
 ---
 
@@ -242,13 +244,13 @@ sequenceDiagram
 
 Notes:
 
-- Checks before the action: `text` or `file`, the chat connected, role `observer` or `relay` refused, `reply_to` item a message, mentioned members present and the chat a group, and the message length with its quote ([tools.ts:779-792](../src/tools.ts#L779-L792)).
-- The server starts collecting before the send and, after it, drops items with IDs up to the sent item ([tools.ts:825](../src/tools.ts#L825), [:838-840](../src/tools.ts#L838-L840)).
-- Mentioned names missing from the text are prefixed as `@name` ([tools.ts:1424-1427](../src/tools.ts#L1424-L1427)).
-- While a collected message is live, the server waits for its final update; live items are left out of `responses` and counted in `more` ([messages.ts:323-331](../src/messages.ts#L323-L331), [tools.ts:811](../src/tools.ts#L811), [:817](../src/tools.ts#L817)).
+- Checks before the action: `text` or `file`, the chat connected, role `observer` or `relay` refused, `reply_to` item a message, mentioned members present and the chat a group, and the message length with its quote ([tools.ts:788-801](../src/tools.ts#L788-L801)).
+- The server starts collecting before the send and, after it, drops items with IDs up to the sent item ([tools.ts:834](../src/tools.ts#L834), [:847-849](../src/tools.ts#L847-L849)).
+- Mentioned names missing from the text are prefixed as `@name` ([tools.ts:1434-1437](../src/tools.ts#L1434-L1437)).
+- While a collected message is live, the server waits for its final update; live items are left out of `responses` and counted in `more` ([messages.ts:323-331](../src/messages.ts#L323-L331), [tools.ts:820](../src/tools.ts#L820), [:826](../src/tools.ts#L826)).
 - At most 100 replies are kept per action; later ones are counted as overflow ([messages.ts:10](../src/messages.ts#L10), [:109-110](../src/messages.ts#L109-L110)).
 
-Source: [tools.ts:774-846](../src/tools.ts#L774-L846), [messages.ts:99-114](../src/messages.ts#L99-L114), [:323-331](../src/messages.ts#L323-L331), [control.ts:583-589](../src/control.ts#L583-L589).
+Source: [tools.ts:783-855](../src/tools.ts#L783-L855), [messages.ts:99-114](../src/messages.ts#L99-L114), [:323-331](../src/messages.ts#L323-L331), [control.ts:623-629](../src/control.ts#L623-L629).
 
 ---
 
@@ -276,12 +278,12 @@ sequenceDiagram
 Notes:
 
 - With unread items the server reads `around` the first unread item, `count` 0, then pages of `after` the last item, `count` 100, until it holds `limit + 1` unread, non-live messages or a page is short ([messages.ts:285-299](../src/messages.ts#L285-L299)).
-- Unread items other than messages in the read pages are marked read with the returned messages ([tools.ts:1125](../src/tools.ts#L1125), [:1142](../src/tools.ts#L1142)).
-- `more`: the arrived messages not returned, the overflow and the unread items not read ([tools.ts:1144](../src/tools.ts#L1144)).
-- Items received while the pages are read are returned once ([tools.ts:1124-1127](../src/tools.ts#L1124-L1127)).
-- Exact progress text: `No new messages in CHAT; waiting until TIME.` ([tools.ts:1131](../src/tools.ts#L1131)).
+- Unread items other than messages in the read pages are marked read with the returned messages ([tools.ts:1134](../src/tools.ts#L1134), [:1151](../src/tools.ts#L1151)).
+- `more`: the arrived messages not returned, the overflow and the unread items not read ([tools.ts:1153](../src/tools.ts#L1153)).
+- Items received while the pages are read are returned once ([tools.ts:1133-1136](../src/tools.ts#L1133-L1136)).
+- Exact progress text: `No new messages in CHAT; waiting until TIME.` ([tools.ts:1140](../src/tools.ts#L1140)).
 
-Source: [tools.ts:1114-1148](../src/tools.ts#L1114-L1148), [messages.ts:285-331](../src/messages.ts#L285-L331).
+Source: [tools.ts:1123-1157](../src/tools.ts#L1123-L1157), [messages.ts:285-331](../src/messages.ts#L285-L331).
 
 ---
 
@@ -319,12 +321,12 @@ sequenceDiagram
 
 Notes:
 
-- The approval is used in mode `requests` while member `approvedById` is an approver ([control.ts:130-133](../src/control.ts#L130-L133)).
-- For sends that were pending at `/approve CHAT all`, the card ends with the plain `Approved by Alice.` ([control.ts:554](../src/control.ts#L554), [:563](../src/control.ts#L563)).
-- `connect` and `leave` actions are created without the standing approver, so they stay pending ([tools.ts:628](../src/tools.ts#L628), [:942](../src/tools.ts#L942)).
-- `/receive CHAT N all` and `/receive CHAT off` work the same way for downloads, with the key `simplexMcpFiles`, except that download N alone is performed, and the other pending downloads of the chat stay pending ([control.ts:22-25](../src/control.ts#L22-L25), [:251-253](../src/control.ts#L251-L253), [tools.ts:975](../src/tools.ts#L975)).
+- The approval is used in mode `requests` while member `approvedById` is an approver ([control.ts:138-141](../src/control.ts#L138-L141)).
+- For sends that were pending at `/approve CHAT all`, the card ends with the plain `Approved by Alice.` ([control.ts:594](../src/control.ts#L594), [:603](../src/control.ts#L603)).
+- `connect` and `leave` actions are created without the standing approver, so they stay pending ([tools.ts:637](../src/tools.ts#L637), [:951](../src/tools.ts#L951)).
+- `/receive CHAT N all` and `/receive CHAT off` work the same way for downloads, with the key `simplexMcpFiles`, except that download N alone is performed, and the other pending downloads of the chat stay pending ([control.ts:27-30](../src/control.ts#L27-L30), [:268-270](../src/control.ts#L268-L270), [tools.ts:984](../src/tools.ts#L984)).
 
-Source: [control.ts:243-263](../src/control.ts#L243-L263), [:337-339](../src/control.ts#L337-L339), [tools.ts:796-798](../src/tools.ts#L796-L798), [actions.ts:155-186](../src/actions.ts#L155-L186), [:265-283](../src/actions.ts#L265-L283).
+Source: [control.ts:260-280](../src/control.ts#L260-L280), [:377-379](../src/control.ts#L377-L379), [tools.ts:805-807](../src/tools.ts#L805-L807), [actions.ts:155-186](../src/actions.ts#L155-L186), [:265-283](../src/actions.ts#L265-L283).
 
 ---
 
@@ -358,11 +360,11 @@ sequenceDiagram
 
 Notes:
 
-- For a contact, the card text is `I want to delete KIND NAME (@N).`, and the perform step calls `apiDeleteChat` for the contact, full, with notify ([control.ts:590-593](../src/control.ts#L590-L593), [tools.ts:951](../src/tools.ts#L951)).
-- The delete notifies, so the core notifies the contact or the members ([tools.ts:951](../src/tools.ts#L951), [:954](../src/tools.ts#L954)).
-- The server looks for an attached action before it reads the chat, so a repeated call after the deletion is attached to the done action ([tools.ts:937-940](../src/tools.ts#L937-L940)).
+- For a contact, the card text is `I want to delete KIND NAME (@N).`, and the perform step calls `apiDeleteChat` for the contact, full, with notify ([control.ts:630-633](../src/control.ts#L630-L633), [tools.ts:960](../src/tools.ts#L960)).
+- The delete notifies, so the core notifies the contact or the members ([tools.ts:960](../src/tools.ts#L960), [:963](../src/tools.ts#L963)).
+- The server looks for an attached action before it reads the chat, so a repeated call after the deletion is attached to the done action ([tools.ts:946-949](../src/tools.ts#L946-L949)).
 
-Source: [tools.ts:935-958](../src/tools.ts#L935-L958), [control.ts:145-152](../src/control.ts#L145-L152), [:299-302](../src/control.ts#L299-L302).
+Source: [tools.ts:944-967](../src/tools.ts#L944-L967), [control.ts:153-160](../src/control.ts#L153-L160), [:316-319](../src/control.ts#L316-L319).
 
 ---
 
@@ -393,12 +395,13 @@ sequenceDiagram
 
 Notes:
 
-- New actions are still refused unless the control chat has an approver ([control.ts:124-127](../src/control.ts#L124-L127)).
-- In mode `host`, `standingApprover` returns `undefined`, so standing approvals are ignored by `send`, `download`, `list` and `/list`, and `/approve CHAT all` stores nothing; downloads get no card, so `/receive CHAT N all` has no card to act on ([control.ts:132](../src/control.ts#L132), [:213](../src/control.ts#L213)).
-- A download in mode `host` is received without the approval of unknown servers, and it gets no card and no outcome post ([tools.ts:545](../src/tools.ts#L545), [:1030](../src/tools.ts#L1030), [control.ts:495-497](../src/control.ts#L495-L497)).
-- The kept-files message also follows a done `leave` in mode `host` ([control.ts:150-151](../src/control.ts#L150-L151)).
+- New actions are still refused unless the control chat has an approver ([control.ts:132-135](../src/control.ts#L132-L135)).
+- In mode `host`, `standingApprover` returns `undefined`, so standing approvals are ignored by `send`, `download`, `list` and `/list`, and `/approve CHAT all` stores nothing; downloads get no card, so `/receive CHAT N all` has no card to act on ([control.ts:140](../src/control.ts#L140), [:224](../src/control.ts#L224)).
+- A download in mode `host` is received without the approval of unknown servers, and it gets no card and no outcome post ([tools.ts:554](../src/tools.ts#L554), [:1039](../src/tools.ts#L1039), [control.ts:535-537](../src/control.ts#L535-L537)).
+- The kept-files message also follows a done `leave` in mode `host` ([control.ts:158-159](../src/control.ts#L158-L159)).
+- The secret commands work as in mode `requests` ([control.ts:232-237](../src/control.ts#L232-L237)).
 
-Source: [tools.ts:488-498](../src/tools.ts#L488-L498), [actions.ts:166](../src/actions.ts#L166), [:281](../src/actions.ts#L281), [control.ts:145-152](../src/control.ts#L145-L152), [:554](../src/control.ts#L554).
+Source: [tools.ts:497-507](../src/tools.ts#L497-L507), [actions.ts:166](../src/actions.ts#L166), [:281](../src/actions.ts#L281), [control.ts:153-160](../src/control.ts#L153-L160), [:594](../src/control.ts#L594).
 
 ---
 
@@ -428,10 +431,10 @@ sequenceDiagram
 Notes:
 
 - A decided action with an open count of 0 is removed at the first tick after its expiry time ([actions.ts:200-201](../src/actions.ts#L200-L201)).
-- Expiry times are listed in the `/pending` reply ([control.ts:618-620](../src/control.ts#L618-L620)).
-- The server ends the connect wait at `created + 23 h 50 min`, within the 24 hours in which a message can be edited ([tools.ts:143](../src/tools.ts#L143), [:689](../src/tools.ts#L689)).
+- Expiry times are listed in the `/pending` reply ([control.ts:658-660](../src/control.ts#L658-L660)).
+- The server ends the connect wait at `created + 23 h 50 min`, within the 24 hours in which a message can be edited ([tools.ts:145](../src/tools.ts#L145), [:698](../src/tools.ts#L698)).
 
-Source: [actions.ts:129](../src/actions.ts#L129), [:163](../src/actions.ts#L163), [:193-204](../src/actions.ts#L193-L204), [control.ts:201](../src/control.ts#L201), [:227](../src/control.ts#L227).
+Source: [actions.ts:129](../src/actions.ts#L129), [:163](../src/actions.ts#L163), [:193-204](../src/actions.ts#L193-L204), [control.ts:212](../src/control.ts#L212), [:244](../src/control.ts#L244).
 
 ---
 
@@ -464,12 +467,12 @@ sequenceDiagram
 
 Notes:
 
-- The key is the tool name with the action fields: `target`, `incognito`, `message` for `connect`; `chat`, `text`, `file`, `as`, `reply_to`, `mention` for `send`; `chat`, `item` for `download`; `chat` for `leave` ([tools.ts:618](../src/tools.ts#L618), [:776](../src/tools.ts#L776), [:937](../src/tools.ts#L937), [:962](../src/tools.ts#L962), [:1554-1556](../src/tools.ts#L1554-L1556)).
-- The `wait`, `idle` and `limit` of the attaching call are used ([tools.ts:805](../src/tools.ts#L805)).
-- For a call aborted before `create`, the server returns before it creates an action ([tools.ts:627](../src/tools.ts#L627), [:797](../src/tools.ts#L797), [:941](../src/tools.ts#L941), [:976](../src/tools.ts#L976)).
+- The key is the tool name with the action fields: `target`, `incognito`, `message` for `connect`; `chat`, `text`, `file`, `as`, `reply_to`, `mention` for `send`; `chat`, `item` for `download`; `chat` for `leave` ([tools.ts:627](../src/tools.ts#L627), [:785](../src/tools.ts#L785), [:946](../src/tools.ts#L946), [:971](../src/tools.ts#L971), [:1564-1566](../src/tools.ts#L1564-L1566)).
+- The `wait`, `idle` and `limit` of the attaching call are used ([tools.ts:814](../src/tools.ts#L814)).
+- For a call aborted before `create`, the server returns before it creates an action ([tools.ts:636](../src/tools.ts#L636), [:806](../src/tools.ts#L806), [:950](../src/tools.ts#L950), [:985](../src/tools.ts#L985)).
 - Abort path in the SDK: on `res` close the web request is aborted ([node index.cjs:299-303](../node_modules/@modelcontextprotocol/node/dist/index.cjs#L299-L303)); the per-request transport is closed ([server index.cjs:86-90](../node_modules/@modelcontextprotocol/server/dist/index.cjs#L86-L90)); the handler signal is aborted ([src-BhnGYybN.cjs:6425](../node_modules/@modelcontextprotocol/server/dist/src-BhnGYybN.cjs#L6425)).
 
-Source: [tools.ts:636-648](../src/tools.ts#L636-L648), [:802-820](../src/tools.ts#L802-L820), [:1156](../src/tools.ts#L1156), [actions.ts:206-217](../src/actions.ts#L206-L217), [messages.ts:307-321](../src/messages.ts#L307-L321).
+Source: [tools.ts:645-657](../src/tools.ts#L645-L657), [:811-829](../src/tools.ts#L811-L829), [:1165](../src/tools.ts#L1165), [actions.ts:206-217](../src/actions.ts#L206-L217), [messages.ts:307-321](../src/messages.ts#L307-L321).
 
 ---
 
@@ -507,13 +510,13 @@ sequenceDiagram
 
 Notes:
 
-- The interrupted card line is `DECIDER; interrupted: the server stopped.` ([control.ts:561](../src/control.ts#L561)).
+- The interrupted card line is `DECIDER; interrupted: the server stopped.` ([control.ts:601](../src/control.ts#L601)).
 - An action of mode `host` or of a standing approval whose counter is being written at the stop is set to `pending` and cancelled without a perform ([actions.ts:265-270](../src/actions.ts#L265-L270)).
-- After a crash, the cards of that run are left with their commands; `/approve` of their numbers gets the reply `Action N is not pending.` ([control.ts:227](../src/control.ts#L227)).
-- The stop signal of the performs is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([actions.ts:245-246](../src/actions.ts#L245-L246), [:280](../src/actions.ts#L280), [tools.ts:713-714](../src/tools.ts#L713-L714)).
-- The wait applies only when cards were edited or posted at the stop, a `download` without a card excluded, and `--stop-wait` is above 0 ([serve.ts:177](../src/serve.ts#L177), [:189-203](../src/serve.ts#L189-L203)).
+- After a crash, the cards of that run are left with their commands; `/approve` of their numbers gets the reply `Action N is not pending.` ([control.ts:244](../src/control.ts#L244)).
+- The stop signal of the performs is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([actions.ts:245-246](../src/actions.ts#L245-L246), [:280](../src/actions.ts#L280), [tools.ts:722-723](../src/tools.ts#L722-L723)).
+- The wait applies only when cards were edited or posted at the stop, a `download` without a card excluded, and `--stop-wait` is above 0 ([serve.ts:179](../src/serve.ts#L179), [:191-205](../src/serve.ts#L191-L205)).
 
-Source: [serve.ts:47-63](../src/serve.ts#L47-L63), [:171-181](../src/serve.ts#L171-L181), [:189-203](../src/serve.ts#L189-L203), [actions.ts:240-250](../src/actions.ts#L240-L250), [http.ts:48-52](../src/http.ts#L48-L52), [control.ts:552-571](../src/control.ts#L552-L571).
+Source: [serve.ts:48-64](../src/serve.ts#L48-L64), [:173-183](../src/serve.ts#L173-L183), [:191-205](../src/serve.ts#L191-L205), [actions.ts:240-250](../src/actions.ts#L240-L250), [http.ts:48-52](../src/http.ts#L48-L52), [control.ts:592-611](../src/control.ts#L592-L611).
 
 ---
 
@@ -550,12 +553,12 @@ sequenceDiagram
 
 Notes:
 
-- Until the restart with a list, new actions are refused: `The agent has no approving owner. ...` ([control.ts:125-127](../src/control.ts#L125-L127)).
-- An entry must match a human by member ID and display name, folded to one line as the restart line prints it, or the server exits with code 2 ([control.ts:354-358](../src/control.ts#L354-L358), [:758-760](../src/control.ts#L758-L760)).
-- With `--reset-owners`, the server deletes the control chat for all members and creates a new one with the same counter; the CLI refuses the option with an `--owners` list ([control.ts:522-527](../src/control.ts#L522-L527), [serve.ts:222](../src/serve.ts#L222), [cli.ts:104-106](../src/cli.ts#L104-L106)).
-- When a listed owner leaves and none remains: `... is no longer an owner. No owners remain: restart the server with --reset-owners --owners` ([control.ts:393-398](../src/control.ts#L393-L398)).
+- Until the restart with a list, new actions are refused: `The agent has no approving owner. ...` ([control.ts:133-135](../src/control.ts#L133-L135)).
+- An entry must match a human by member ID and display name, folded to one line as the restart line prints it, or the server exits with code 2 ([control.ts:394-398](../src/control.ts#L394-L398), [:800-802](../src/control.ts#L800-L802)).
+- With `--reset-owners`, the server deletes the control chat for all members and creates a new one with the same counter; the CLI refuses the option with an `--owners` list ([control.ts:562-567](../src/control.ts#L562-L567), [serve.ts:224](../src/serve.ts#L224), [cli.ts:109-111](../src/cli.ts#L109-L111)).
+- When a listed owner leaves and none remains: `... is no longer an owner. No owners remain: restart the server with --reset-owners --owners` ([control.ts:433-438](../src/control.ts#L433-L438)).
 
-Source: [control.ts:347-369](../src/control.ts#L347-L369), [:380-399](../src/control.ts#L380-L399), [:406-416](../src/control.ts#L406-L416), [:758-784](../src/control.ts#L758-L784).
+Source: [control.ts:387-409](../src/control.ts#L387-L409), [:420-439](../src/control.ts#L420-L439), [:446-456](../src/control.ts#L446-L456), [:800-826](../src/control.ts#L800-L826).
 
 ---
 
@@ -598,14 +601,14 @@ sequenceDiagram
 
 Notes:
 
-- A check every 60 s reads the item: a deleted message or chat fails the download; 30 minutes without a rise of `rcvProgress` fail and cancel it ([tools.ts:1035-1062](../src/tools.ts#L1035-L1062)).
-- A download still running `wait` seconds after the perform starts returns `status: performing`; the same call again attaches to the action ([tools.ts:1008-1011](../src/tools.ts#L1008-L1011)).
-- `/approve #15 N` on a download card gets the reply `Action N is a download: ...` with the card's command line ([control.ts:234](../src/control.ts#L234)).
-- A file on unknown servers gets a card that names their hosts and leaves out `/'receive CHAT N all'` ([control.ts:594-599](../src/control.ts#L594-L599), [:611-614](../src/control.ts#L611-L614), [:664-668](../src/control.ts#L664-L668)). Only such a card approves the relays; the core checks the complete description of every other download, which fails at the acceptance, or at the next check when the description completes later ([tools.ts:545](../src/tools.ts#L545), [:1043](../src/tools.ts#L1043)).
-- The card of an image or video shows the sender's preview ([control.ts:441-461](../src/control.ts#L441-L461)).
-- A file the core receives without a request, a short voice message, also in a member chat of a group, is moved into the chat's folder at `rcvFileComplete`; one whose transfer started before a restart, only when it has its full size. Its message then shows it as `offered`, and `download` returns its path after the approval ([tools.ts:551-571](../src/tools.ts#L551-L571), [:1082-1091](../src/tools.ts#L1082-L1091), [messages.ts:194-208](../src/messages.ts#L194-L208)).
+- A check every 60 s reads the item: a deleted message or chat fails the download; 30 minutes without a rise of `rcvProgress` fail and cancel it ([tools.ts:1044-1071](../src/tools.ts#L1044-L1071)).
+- A download still running `wait` seconds after the perform starts returns `status: performing`; the same call again attaches to the action ([tools.ts:1017-1020](../src/tools.ts#L1017-L1020)).
+- `/approve #15 N` on a download card gets the reply `Action N is a download: ...` with the card's command line ([control.ts:251](../src/control.ts#L251)).
+- A file on unknown servers gets a card that names their hosts and leaves out `/'receive CHAT N all'` ([control.ts:634-639](../src/control.ts#L634-L639), [:651-654](../src/control.ts#L651-L654), [:704-708](../src/control.ts#L704-L708)). Only such a card approves the relays; the core checks the complete description of every other download, which fails at the acceptance, or at the next check when the description completes later ([tools.ts:554](../src/tools.ts#L554), [:1052](../src/tools.ts#L1052)).
+- The card of an image or video shows the sender's preview ([control.ts:481-501](../src/control.ts#L481-L501)).
+- A file the core receives without a request, a short voice message, also in a member chat of a group, is moved into the chat's folder at `rcvFileComplete`; one whose transfer started before a restart, only when it has its full size. Its message then shows it as `offered`, and `download` returns its path after the approval ([tools.ts:560-580](../src/tools.ts#L560-L580), [:1091-1100](../src/tools.ts#L1091-L1100), [messages.ts:194-208](../src/messages.ts#L194-L208)).
 
-Source: [tools.ts:960-1103](../src/tools.ts#L960-L1103), [control.ts:573-616](../src/control.ts#L573-L616), [serve.ts:139-155](../src/serve.ts#L139-L155).
+Source: [tools.ts:969-1112](../src/tools.ts#L969-L1112), [control.ts:613-656](../src/control.ts#L613-L656), [serve.ts:141-157](../src/serve.ts#L141-L157).
 
 ---
 
@@ -635,13 +638,13 @@ sequenceDiagram
 
 Notes:
 
-- `/forward` gets no reply; a download or post that fails is posted as ``Action N: the file was not received: `ERROR`.``, and a failed post deletes the copy ([control.ts:265-281](../src/control.ts#L265-L281)).
-- The copy is named by the name the sender gave ([tools.ts:898-902](../src/tools.ts#L898-L902)).
-- The post keeps the sender's preview of an image or video; it replies to the card when the message, with the card as its quote, is within 15602 bytes by the length rule of `send` ([control.ts:265-281](../src/control.ts#L265-L281), [tools.ts:1433-1449](../src/tools.ts#L1433-L1449)).
-- The download is shared with the agent's: one download per file ID; the move to the download path waits for the copy of the post ([tools.ts:522-549](../src/tools.ts#L522-L549)).
-- The forwarded path is outside `DATA/files/`, so `send` refuses the file there; it is deleted when the agent leaves the chat, and by `/delete CHAT files` ([tools.ts:871-876](../src/tools.ts#L871-L876), [:909-927](../src/tools.ts#L909-L927), [:950-958](../src/tools.ts#L950-L958)).
+- `/forward` gets no reply; a download or post that fails is posted as ``Action N: the file was not received: `ERROR`.``, and a failed post deletes the copy ([control.ts:282-298](../src/control.ts#L282-L298)).
+- The copy is named by the name the sender gave ([tools.ts:907-911](../src/tools.ts#L907-L911)).
+- The post keeps the sender's preview of an image or video; it replies to the card when the message, with the card as its quote, is within 15602 bytes by the length rule of `send` ([control.ts:282-298](../src/control.ts#L282-L298), [tools.ts:1443-1459](../src/tools.ts#L1443-L1459)).
+- The download is shared with the agent's: one download per file ID; the move to the download path waits for the copy of the post ([tools.ts:531-558](../src/tools.ts#L531-L558)).
+- The forwarded path is outside `DATA/files/`, so `send` refuses the file there; it is deleted when the agent leaves the chat, and by `/delete CHAT files` ([tools.ts:880-885](../src/tools.ts#L880-L885), [:918-936](../src/tools.ts#L918-L936), [:959-967](../src/tools.ts#L959-L967)).
 
-Source: [control.ts:221-239](../src/control.ts#L221-L239), [:265-281](../src/control.ts#L265-L281), [tools.ts:522-539](../src/tools.ts#L522-L539), [:848-858](../src/tools.ts#L848-L858), [:898-902](../src/tools.ts#L898-L902).
+Source: [control.ts:238-256](../src/control.ts#L238-L256), [:282-298](../src/control.ts#L282-L298), [tools.ts:531-548](../src/tools.ts#L531-L548), [:857-867](../src/tools.ts#L857-L867), [:907-911](../src/tools.ts#L907-L911).
 
 ---
 
@@ -673,12 +676,12 @@ sequenceDiagram
 
 Notes:
 
-- A refused file ends the call with an error, and the refusal is posted to the control chat and logged ([tools.ts:862-865](../src/tools.ts#L862-L865), [control.ts:154-158](../src/control.ts#L154-L158)).
-- A video's preview is the first frame from `ffmpeg` and its duration comes from `ffprobe`; a GIF or WebP gets the fixed preview ([tools.ts:1512-1546](../src/tools.ts#L1512-L1546)).
-- A changed file fails the perform: ``file: PATH changed after the request.`` ([tools.ts:878-883](../src/tools.ts#L878-L883)).
-- `sndFileError` deletes the copy too, and the failure is posted to the control chat and logged ([serve.ts:158-160](../src/serve.ts#L158-L160), [control.ts:160-169](../src/control.ts#L160-L169)).
+- A refused file ends the call with an error, and the refusal is posted to the control chat and logged ([tools.ts:871-874](../src/tools.ts#L871-L874), [control.ts:162-166](../src/control.ts#L162-L166)).
+- A video's preview is the first frame from `ffmpeg` and its duration comes from `ffprobe`; a GIF or WebP gets the fixed preview ([tools.ts:1522-1556](../src/tools.ts#L1522-L1556)).
+- A changed file fails the perform: ``file: PATH changed after the request.`` ([tools.ts:887-892](../src/tools.ts#L887-L892)).
+- `sndFileError` deletes the copy too, and the failure is posted to the control chat and logged ([serve.ts:160-162](../src/serve.ts#L160-L162), [control.ts:168-177](../src/control.ts#L168-L177)).
 
-Source: [tools.ts:774-800](../src/tools.ts#L774-L800), [:822-896](../src/tools.ts#L822-L896), [control.ts:441-461](../src/control.ts#L441-L461), [:583-589](../src/control.ts#L583-L589).
+Source: [tools.ts:783-809](../src/tools.ts#L783-L809), [:831-905](../src/tools.ts#L831-L905), [control.ts:481-501](../src/control.ts#L481-L501), [:623-629](../src/control.ts#L623-L629).
 
 ---
 
@@ -714,10 +717,50 @@ sequenceDiagram
 
 Notes:
 
-- `/leave` acts at once in both modes, and works for a contact as `Deleted bot X (@4), requested by Alice.` ([control.ts:283-297](../src/control.ts#L283-L297)).
+- `/leave` acts at once in both modes, and works for a contact as `Deleted bot X (@4), requested by Alice.` ([control.ts:300-314](../src/control.ts#L300-L314)).
 - The line `Left ...` goes to the log and to the owners; the members of #9 see only that the agent left.
-- The files message is posted after the reply, and only when the folder has files ([control.ts:294-295](../src/control.ts#L294-L295), [:309-311](../src/control.ts#L309-L311)).
-- `/delete CHAT files` works for a current or a left chat; the failed downloads return `Your owner deleted the files of this chat.`, and the reply counts the forwarded files too ([tools.ts:909-927](../src/tools.ts#L909-L927)).
-- The paged reads find the downloads the core continues after a restart, which have no download in memory; for a left chat they find none ([messages.ts:271-279](../src/messages.ts#L271-L279), [tools.ts:916-922](../src/tools.ts#L916-L922)).
+- The files message is posted after the reply, and only when the folder has files ([control.ts:311-312](../src/control.ts#L311-L312), [:326-328](../src/control.ts#L326-L328)).
+- `/delete CHAT files` works for a current or a left chat; the failed downloads return `Your owner deleted the files of this chat.`, and the reply counts the forwarded files too ([tools.ts:918-936](../src/tools.ts#L918-L936)).
+- The paged reads find the downloads the core continues after a restart, which have no download in memory; for a left chat they find none ([messages.ts:271-279](../src/messages.ts#L271-L279), [tools.ts:925-931](../src/tools.ts#L925-L931)).
 
-Source: [control.ts:283-307](../src/control.ts#L283-L307), [tools.ts:904-927](../src/tools.ts#L904-L927), [:950-958](../src/tools.ts#L950-L958).
+Source: [control.ts:300-324](../src/control.ts#L300-L324), [tools.ts:913-936](../src/tools.ts#L913-L936), [:959-967](../src/tools.ts#L959-L967).
+
+---
+
+## 17. `/secret` and its use
+
+`SECRETS` is the folder of `--secrets-folder`.
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant K as Control
+  participant C as Core
+  participant O as Owner
+  participant D as Member
+  participant A as Agent
+  participant T as AgentTools
+  O->>C: /secret GITHUB_TOKEN VALUE
+  C->>K: newChatItems
+  K->>K: first word /secret: queued after the earlier commands
+  K->>C: apiDeleteMemberChatItem #G [item]
+  C->>O: the message deleted: moderated by the agent
+  C->>D: the message deleted: moderated by the agent
+  K->>K: ownerCommand: approver, --secrets-folder, NAME and VALUE checked
+  K->>K: Secrets.set: SECRETS/GITHUB_TOKEN.part written and renamed to SECRETS/GITHUB_TOKEN, the record in DATA/secrets.json
+  K->>P: Secret GITHUB_TOKEN set by Alice.
+  K->>C: apiSendMessages #G [Secret GITHUB_TOKEN is set. /'unsecret GITHUB_TOKEN'], without a quote
+  A->>T: list
+  T-->>A: {chats, actions, secrets: {folder: SECRETS, names: [GITHUB_TOKEN]}}
+  A->>A: a shell command with "$(cat SECRETS/GITHUB_TOKEN)"
+```
+
+Notes:
+
+- While the control chat is not lost, every `/secret` message is deleted, also one from a member who is not an approver, one with an invalid NAME or VALUE, and one in a member support chat, which gets no reply ([control.ts:181-185](../src/control.ts#L181-L185), [:188](../src/control.ts#L188)).
+- After a failed deletion the command does not run, and `control chat command: ERROR` is logged ([control.ts:187-191](../src/control.ts#L187-L191)).
+- With full deletion on, the message is replaced by a moderated item in the agent's database and at each member; a member who receives the message after the deletion stores it as moderated ([Commands.hs:4294-4297](../../../src/Simplex/Chat/Library/Commands.hs#L4294-L4297), [Subscriber.hs:2490-2499](../../../src/Simplex/Chat/Library/Subscriber.hs#L2490-L2499), [:2228-2232](../../../src/Simplex/Chat/Library/Subscriber.hs#L2228-L2232), [:2268-2274](../../../src/Simplex/Chat/Library/Subscriber.hs#L2268-L2274)).
+- `/unsecret NAME` and `/secrets` are answered with replies that quote them, as other commands ([control.ts:190](../src/control.ts#L190)).
+- The value is absent from the log line, the reply and the `list` result ([control.ts:349-350](../src/control.ts#L349-L350), [tools.ts:1166-1167](../src/tools.ts#L1166-L1167)).
+
+Source: [control.ts:179-192](../src/control.ts#L179-L192), [:211-237](../src/control.ts#L211-L237), [:345-366](../src/control.ts#L345-L366), [files.ts:59-86](../src/files.ts#L59-L86), [tools.ts:1159-1168](../src/tools.ts#L1159-L1168).
