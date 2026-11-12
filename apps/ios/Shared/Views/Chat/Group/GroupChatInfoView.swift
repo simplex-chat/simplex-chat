@@ -1087,12 +1087,7 @@ func deleteGroupAlert(_ chat: Chat, _ groupInfo: GroupInfo, afterDeletion: @esca
 }
 
 func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
-    if groupInfo.isCustomerChatOwner {
-        return Text("Chat will be deleted for all members - this cannot be undone!")
-            + Text(verbatim: "\n")
-            + Text("\(groupInfo.displayName) will be notified.")
-    }
-    return groupInfo.useRelays ? (
+    groupInfo.useRelays ? (
         groupInfo.membership.memberCurrent
             ? Text("Channel will be deleted for all subscribers - this cannot be undone!")
             : Text("Channel will be deleted for you - this cannot be undone!")
@@ -1110,8 +1105,10 @@ func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
 private func deleteGroupKeepDialog(_ groupInfo: GroupInfo, hasBusinessAddress: Bool, close: @escaping CloseSheet, delete: @escaping (_ keepConversation: Bool) -> Void) -> KeepConversationDialog {
     KeepConversationDialog(
         actionTitle: NSLocalizedString("Delete", comment: "delete group dialog"),
-        footer: groupInfo.isCustomerChatOwner && hasBusinessAddress
-            ? String.localizedStringWithFormat(NSLocalizedString("%@ can connect to you again via your business address.", comment: "delete business chat dialog"), groupInfo.displayName)
+        footer: groupInfo.isCustomerChatOwner
+            ? (hasBusinessAddress
+               ? Text("**\(groupInfo.displayName)** will be notified, and can connect to you again via your address.")
+               : Text("**\(groupInfo.displayName)** will be notified."))
             : nil,
         close: close,
         delete: delete

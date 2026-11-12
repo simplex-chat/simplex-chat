@@ -660,7 +660,7 @@ struct ChatListMoreDialog: ViewModifier {
 private func deleteAndBanUnavailableAlert(_ groupInfo: GroupInfo) -> Alert {
     Alert(
         title: Text("Can't block"),
-        message: Text("\(groupInfo.displayName) left this chat or uses an older app version.")
+        message: Text("**\(groupInfo.displayName)** left this chat or uses an older app version.")
     )
 }
 

@@ -232,15 +232,19 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
   when {
     groupInfo.isOwner && groupInfo.membership.memberActive && groupInfo.businessChat == null ->
       deleteOwnGroupDialog(chat.remoteHostId, groupInfo, title, text, keepConversationText = null, close)
-    groupInfo.isCustomerChatOwner ->
+    groupInfo.isCustomerChatOwner -> {
+      val keepConversationTextId =
+        if (chatModel.userAddress.value?.addressSettings?.businessAddress == true) MR.strings.contact_will_be_notified_can_connect_again
+        else MR.strings.contact_will_be_notified
       deleteOwnGroupDialog(
         chat.remoteHostId,
         groupInfo,
         title,
-        text = text + "\n" + String.format(generalGetString(MR.strings.contact_will_be_notified), groupInfo.displayName),
-        keepConversationText = if (chatModel.userAddress.value?.addressSettings?.businessAddress == true) String.format(generalGetString(MR.strings.customer_can_connect_again_via_business_address), groupInfo.displayName) else null,
+        text,
+        keepConversationText = formatWithBoldName(generalGetString(keepConversationTextId), groupInfo.displayName),
         close
       )
+    }
     else ->
       AlertManager.shared.showAlertDialog(
         title = title,
@@ -253,7 +257,7 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
   }
 }
 
-private fun deleteOwnGroupDialog(rhId: Long?, groupInfo: GroupInfo, title: String, text: String, keepConversationText: String?, close: (() -> Unit)?) {
+private fun deleteOwnGroupDialog(rhId: Long?, groupInfo: GroupInfo, title: String, text: String, keepConversationText: AnnotatedString?, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = title,
     text = text,
@@ -276,7 +280,7 @@ private fun deleteOwnGroupDialog(rhId: Long?, groupInfo: GroupInfo, title: Strin
   )
 }
 
-private fun keepGroupConversationDialog(rhId: Long?, groupInfo: GroupInfo, title: String, text: String?, close: (() -> Unit)?) {
+private fun keepGroupConversationDialog(rhId: Long?, groupInfo: GroupInfo, title: String, text: AnnotatedString?, close: (() -> Unit)?) {
   showKeepConversationDialog(title, text, generalGetString(MR.strings.delete_verb), notify = true) { chatDeleteMode ->
     deleteGroupChat(rhId, groupInfo, chatDeleteMode, notice = null, close)
   }
@@ -307,7 +311,7 @@ fun canDeleteAndBanCustomer(groupInfo: GroupInfo, members: List<GroupMember>): B
   groupInfo.isCustomerChatOwner && members.any { it.memberId == groupInfo.businessChat?.customerId && it.canBanAndRemove(groupInfo) }
 
 fun deleteAndBanCustomerDialog(chat: Chat, groupInfo: GroupInfo, close: (() -> Unit)? = null) {
-  deleteAndBanDialog(groupInfo.displayName, MR.strings.delete_chat_for_all_members_cannot_undo_warning, MR.strings.delete_and_ban_customer_forever_desc) { chatDeleteMode, notice ->
+  deleteAndBanDialog(groupInfo.displayName, MR.strings.delete_chat_with_for_all_members_cannot_undo_warning) { chatDeleteMode, notice ->
     deleteGroupChat(chat.remoteHostId, groupInfo, chatDeleteMode, notice, close)
   }
 }
@@ -326,8 +330,7 @@ fun deleteAndBanCustomer(chat: Chat, groupInfo: GroupInfo) {
 private fun showCantBanCustomerAlert(groupInfo: GroupInfo) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.cant_ban),
-    text = String.format(generalGetString(MR.strings.cant_ban_customer_desc), groupInfo.displayName),
-    parseHtml = false,
+    text = formatWithBoldName(generalGetString(MR.strings.cant_ban_customer_desc), groupInfo.displayName),
     buttons = {
       SectionItemView({
         AlertManager.shared.hideAlert()
@@ -1678,7 +1681,7 @@ fun PreviewDeleteBusinessChatDialog() {
 @Preview
 @Composable
 fun PreviewDeleteBusinessChatKeepConversationDialog() {
-  val canConnectAgain = String.format(generalGetString(MR.strings.customer_can_connect_again_via_business_address), previewBusinessChatInfo.displayName)
+  val canConnectAgain = formatWithBoldName(generalGetString(MR.strings.contact_will_be_notified_can_connect_again), previewBusinessChatInfo.displayName)
   SimpleXTheme {
     AlertPreview { keepGroupConversationDialog(null, previewBusinessChatInfo, generalGetString(MR.strings.delete_chat_question), canConnectAgain, close = null) }
   }

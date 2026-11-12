@@ -74,6 +74,10 @@ func alertController(_ title: String, message: String?, actions: [UIAlertAction]
     return alert
 }
 
+func typeToConfirmPlaceholder(_ word: String) -> String {
+    String.localizedStringWithFormat(NSLocalizedString("Type %@", comment: "confirmation field placeholder"), word)
+}
+
 func typedConfirmationAlert(
     _ title: String,
     message: String,
@@ -85,7 +89,7 @@ func typedConfirmationAlert(
     let confirmAction = UIAlertAction(title: confirmTitle, style: .destructive) { _ in confirm() }
     confirmAction.isEnabled = false
     alert.addTextField { field in
-        field.placeholder = word
+        field.placeholder = typeToConfirmPlaceholder(word)
         field.autocapitalizationType = .none
         field.autocorrectionType = .no
         field.addAction(UIAction { [weak field] _ in

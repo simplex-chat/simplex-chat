@@ -1037,7 +1037,7 @@ fun connectViaMemberAddressAlert(rhId: Long?, connReqUri: String) {
 fun blockMemberAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.block_member_question),
-    text = generalGetString(MR.strings.block_member_desc).format(mem.chatViewName),
+    text = generalGetString(MR.strings.block_member_desc).format(mem.displayName),
     confirmText = generalGetString(MR.strings.block_member_confirmation),
     onConfirm = {
       toggleShowMemberMessages(rhId, gInfo, mem, false)
@@ -1049,7 +1049,7 @@ fun blockMemberAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
 fun unblockMemberAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.unblock_member_question),
-    text = generalGetString(MR.strings.unblock_member_desc).format(mem.chatViewName),
+    text = generalGetString(MR.strings.unblock_member_desc).format(mem.displayName),
     confirmText = generalGetString(MR.strings.unblock_member_confirmation),
     onConfirm = {
       toggleShowMemberMessages(rhId, gInfo, mem, true)
@@ -1078,11 +1078,11 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
 
 class BanDialogAction(val title: String, val action: (BanDuration) -> Unit)
 
-fun showBanDialog(title: String, actions: List<BanDialogAction>, initialDuration: BanDuration = BanDuration.Day, warning: String? = null, text: (BanDuration) -> String) {
+fun showBanDialog(title: String, text: AnnotatedString, actions: List<BanDialogAction>, initialDuration: BanDuration = BanDuration.Day, warning: String? = null) {
   AlertManager.shared.showAlertDialogButtonsColumn(title) {
     val duration = remember { mutableStateOf(initialDuration) }
     Column(Modifier.verticalScroll(rememberScrollState())) {
-      BanDialogText(text(duration.value))
+      BanDialogText(text)
       if (warning != null) {
         PreviousVersionWarning(warning, Modifier.padding(horizontal = DEFAULT_PADDING))
         Spacer(Modifier.height(DEFAULT_PADDING))
@@ -1111,7 +1111,7 @@ fun showBanDialog(title: String, actions: List<BanDialogAction>, initialDuration
 }
 
 @Composable
-private fun BanDialogText(text: String) {
+private fun BanDialogText(text: AnnotatedString) {
   Text(text, Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), fontSize = 16.sp, textAlign = TextAlign.Center, color = MaterialTheme.colors.secondary)
   Spacer(Modifier.height(DEFAULT_PADDING))
 }
@@ -1145,31 +1145,8 @@ fun banMemberDialog(rhId: Long?, gInfo: GroupInfo, mem: GroupMember, close: (() 
     listOf(ban)
   }
   val title = generalGetString(if (gInfo.useRelays) MR.strings.block_subscriber_for_all_question else MR.strings.block_for_all_question)
-  showBanDialog(title, actions, initialDuration) { duration ->
-    val forever = duration == BanDuration.Forever
-    val lines = if (canRemove) {
-      if (gInfo.useRelays) {
-        listOf(
-          if (forever) MR.strings.ban_subscriber_forever_desc_ban else MR.strings.ban_subscriber_desc_ban,
-          if (forever) MR.strings.ban_subscriber_forever_desc_ban_and_remove else MR.strings.ban_subscriber_desc_ban_and_remove
-        )
-      } else {
-        listOf(
-          if (forever) MR.strings.ban_member_forever_desc_ban else MR.strings.ban_member_desc_ban,
-          if (forever) MR.strings.ban_member_forever_desc_ban_and_remove else MR.strings.ban_member_desc_ban_and_remove
-        )
-      }
-    } else {
-      listOf(
-        if (gInfo.useRelays) {
-          if (forever) MR.strings.ban_subscriber_forever_desc else MR.strings.ban_subscriber_desc
-        } else {
-          if (forever) MR.strings.ban_member_forever_desc else MR.strings.ban_member_desc
-        }
-      )
-    }
-    (listOf(MR.strings.member_wont_be_notified) + lines).joinToString("\n") { generalGetString(it).format(mem.chatViewName) }
-  }
+  val text = formatWithBoldName(generalGetString(if (canRemove) MR.strings.ban_member_desc_ban_and_remove else MR.strings.ban_member_desc), mem.displayName)
+  showBanDialog(title, text, actions, initialDuration)
 }
 
 fun banMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, onSuccess: () -> Unit = {}) {
@@ -1187,31 +1164,12 @@ fun banMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, 
   }
   val title = generalGetString(if (gInfo.useRelays) MR.strings.block_subscribers_for_all_question else MR.strings.block_members_for_all_question)
   val warning = previousVersionWarningText(members, MR.strings.member_previous_version_ban_only, MR.strings.members_previous_version_ban_only)
-  showBanDialog(title, actions, warning = warning) { duration ->
-    val forever = duration == BanDuration.Forever
-    val lines = if (canRemove) {
-      if (gInfo.useRelays) {
-        listOf(
-          if (forever) MR.strings.ban_subscribers_forever_desc_ban else MR.strings.ban_subscribers_desc_ban,
-          if (forever) MR.strings.ban_subscribers_forever_desc_ban_and_remove else MR.strings.ban_subscribers_desc_ban_and_remove
-        )
-      } else {
-        listOf(
-          if (forever) MR.strings.ban_members_forever_desc_ban else MR.strings.ban_members_desc_ban,
-          if (forever) MR.strings.ban_members_forever_desc_ban_and_remove else MR.strings.ban_members_desc_ban_and_remove
-        )
-      }
-    } else {
-      listOf(
-        if (gInfo.useRelays) {
-          if (forever) MR.strings.ban_subscribers_forever_desc else MR.strings.ban_subscribers_desc
-        } else {
-          if (forever) MR.strings.ban_members_forever_desc else MR.strings.ban_members_desc
-        }
-      )
-    }
-    (listOf(MR.strings.members_wont_be_notified) + lines).joinToString("\n") { generalGetString(it) }
+  val textId = if (gInfo.useRelays) {
+    if (canRemove) MR.strings.ban_subscribers_desc_ban_and_remove else MR.strings.ban_subscribers_desc
+  } else {
+    if (canRemove) MR.strings.ban_members_desc_ban_and_remove else MR.strings.ban_members_desc
   }
+  showBanDialog(title, AnnotatedString(generalGetString(textId)), actions, warning = warning)
 }
 
 fun removeBannedMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, initialDuration: BanDuration = BanDuration.Day, onSuccess: () -> Unit = {}) {
@@ -1222,33 +1180,21 @@ fun removeBannedMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<Group
       MR.strings.button_remove_members_question
     }
   )
+  val member = members.singleOrNull()
+  val text = if (member != null) {
+    formatWithBoldName(generalGetString(MR.strings.remove_banned_member_desc), member.displayName)
+  } else {
+    AnnotatedString(generalGetString(if (gInfo.useRelays) MR.strings.remove_banned_subscribers_desc else MR.strings.remove_banned_members_desc))
+  }
   showBanDialog(
     title,
+    text,
     listOf(
       BanDialogAction(generalGetString(MR.strings.remove_member_confirmation)) { removeBannedMembers(rhId, gInfo, members, it, withMessages = false, onSuccess) },
       BanDialogAction(generalGetString(MR.strings.remove_member_delete_messages_confirmation)) { removeBannedMembers(rhId, gInfo, members, it, withMessages = true, onSuccess) }
     ),
     initialDuration
-  ) { duration ->
-    val forever = duration == BanDuration.Forever
-    val member = members.singleOrNull()
-    if (member != null) {
-      val textId = if (gInfo.useRelays) {
-        if (forever) MR.strings.remove_banned_subscriber_forever_desc else MR.strings.remove_banned_subscriber_desc
-      } else {
-        if (forever) MR.strings.remove_banned_member_forever_desc else MR.strings.remove_banned_member_desc
-      }
-      generalGetString(textId).format(member.chatViewName)
-    } else {
-      generalGetString(
-        if (gInfo.useRelays) {
-          if (forever) MR.strings.remove_banned_subscribers_forever_desc else MR.strings.remove_banned_subscribers_desc
-        } else {
-          if (forever) MR.strings.remove_banned_members_forever_desc else MR.strings.remove_banned_members_desc
-        }
-      )
-    }
-  }
+  )
 }
 
 const val FOREVER_CONFIRMATION_WORD = "yes"
@@ -1258,13 +1204,13 @@ fun removeBannedMembers(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember
   if (duration == BanDuration.Forever) {
     val member = members.singleOrNull()
     val desc = if (member != null) {
-      String.format(generalGetString(if (gInfo.useRelays) MR.strings.remove_forever_subscriber_desc else MR.strings.remove_forever_desc), member.chatViewName)
+      formatWithBoldName(generalGetString(if (gInfo.useRelays) MR.strings.remove_forever_subscriber_desc else MR.strings.remove_forever_desc), member.displayName)
     } else {
-      generalGetString(if (gInfo.useRelays) MR.strings.remove_forever_subscribers_desc else MR.strings.remove_forever_members_desc)
+      AnnotatedString(generalGetString(if (gInfo.useRelays) MR.strings.remove_forever_subscribers_desc else MR.strings.remove_forever_members_desc))
     }
     showTypedConfirmationDialog(
       title = generalGetString(MR.strings.remove_forever_question),
-      text = desc + "\n\n" + String.format(generalGetString(MR.strings.type_to_confirm), FOREVER_CONFIRMATION_WORD),
+      text = desc,
       word = FOREVER_CONFIRMATION_WORD,
       confirmText = generalGetString(MR.strings.remove_member_confirmation)
     ) {
@@ -1275,7 +1221,7 @@ fun removeBannedMembers(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember
   }
 }
 
-fun showTypedConfirmationDialog(title: String, text: String, word: String, confirmText: String, content: @Composable () -> Unit = {}, confirm: () -> Unit) {
+fun showTypedConfirmationDialog(title: String, text: AnnotatedString, word: String, confirmText: String, content: @Composable () -> Unit = {}, confirm: () -> Unit) {
   AlertManager.shared.showAlertDialogButtonsColumn(title) {
     val field = remember { mutableStateOf("") }
     val matches = field.value.trim().lowercase() == word
@@ -1283,7 +1229,7 @@ fun showTypedConfirmationDialog(title: String, text: String, word: String, confi
       BanDialogText(text)
       content()
       val focusRequester = remember { FocusRequester() }
-      TextEditor(field, Modifier, word, focusRequester = focusRequester, maxLines = 1)
+      TextEditor(field, Modifier, String.format(generalGetString(MR.strings.type_to_confirm), word), focusRequester = focusRequester, maxLines = 1)
       LaunchedEffect(Unit) {
         delay(300)
         focusRequester.requestFocus()
@@ -1309,7 +1255,7 @@ fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
   val textId = if (gInfo.useRelays) MR.strings.lift_ban_subscriber_desc else MR.strings.lift_ban_desc
   AlertManager.shared.showAlertDialog(
     title = generalGetString(titleId),
-    text = generalGetString(textId).format(mem.chatViewName),
+    text = generalGetString(textId).format(mem.displayName),
     confirmText = generalGetString(MR.strings.unblock_for_all),
     onConfirm = {
       blockMemberForAll(rhId, gInfo, listOf(mem.groupMemberId), false)

@@ -948,29 +948,27 @@ func showLinkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: 
 }
 
 func linkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: (() -> Void)?) -> UIAlertController {
-    let (banned, againAfter) = switch target {
+    let (banned, bannedUntil) = switch target {
     case .group: (
         NSLocalizedString("Blocked by the admins of this group.", comment: "alert message"),
-        NSLocalizedString("You can join again after %@.", comment: "alert message")
+        NSLocalizedString("Blocked by the admins of this group until %@.", comment: "alert message")
     )
     case .channel: (
         NSLocalizedString("Blocked by the owners of this channel.", comment: "alert message"),
-        NSLocalizedString("You can join again after %@.", comment: "alert message")
+        NSLocalizedString("Blocked by the owners of this channel until %@.", comment: "alert message")
     )
     case .contact: (
         NSLocalizedString("Blocked by this contact.", comment: "alert message"),
-        NSLocalizedString("You can connect again after %@.", comment: "alert message")
+        NSLocalizedString("Blocked by this contact until %@.", comment: "alert message")
     )
     case .business: (
         NSLocalizedString("Blocked by this business.", comment: "alert message"),
-        NSLocalizedString("You can connect again after %@.", comment: "alert message")
+        NSLocalizedString("Blocked by this business until %@.", comment: "alert message")
     )
     }
-    let noIds = NSLocalizedString("No IDs shared, see How it works.", comment: "alert message")
-    let endTime = expiresAt.map { String.localizedStringWithFormat(againAfter, $0.formatted(date: .abbreviated, time: .shortened)) }
     return alertController(
         NSLocalizedString("Not allowed", comment: "alert title"),
-        message: banned + "\n" + noIds + (endTime.map { "\n\n" + $0 } ?? ""),
+        message: expiresAt.map { String.localizedStringWithFormat(bannedUntil, $0.formatted(date: .abbreviated, time: .shortened)) } ?? banned,
         actions: [
             okCleanupAlertAction(cleanup: cleanup),
             UIAlertAction(title: NSLocalizedString("How it works", comment: "alert button"), style: .default) { _ in

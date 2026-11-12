@@ -1222,21 +1222,20 @@ private func deleteContactActionSheet(_ contact: Contact, delete: @escaping (_ n
 }
 
 private func deleteContactMessage(_ contact: Contact) -> Text {
-    Text(contact.displayName + "\n\n")
-    + Text("Contact will be deleted - this cannot be undone!")
-    + Text(verbatim: "\n")
-    + Text("You won't be able to reconnect unless \(contact.displayName) sends you a new link.")
+    Text("Contact with **\(contact.displayName)** will be deleted - this cannot be undone!")
 }
 
 private func deleteContactKeepDialog(_ contact: Contact, notify: Bool, hasAddress: Bool, close: @escaping CloseSheet, delete: @escaping (_ keepConversation: Bool) -> Void) -> KeepConversationDialog {
     let name = contact.displayName
-    let notified = notify
-        ? String.localizedStringWithFormat(NSLocalizedString("%@ will be notified.", comment: "delete contact dialog"), name)
-        : String.localizedStringWithFormat(NSLocalizedString("%@ won't be notified.", comment: "delete contact dialog"), name)
-    let canConnect = String.localizedStringWithFormat(NSLocalizedString("%@ can connect to you again via your address.", comment: "delete contact dialog"), name)
+    let footer: Text = switch (notify, hasAddress) {
+    case (true, true): Text("**\(name)** will be notified, and can connect to you again via your address.")
+    case (false, true): Text("**\(name)** won't be notified, and can connect to you again via your address.")
+    case (true, false): Text("**\(name)** will be notified.")
+    case (false, false): Text("**\(name)** won't be notified.")
+    }
     return KeepConversationDialog(
         actionTitle: NSLocalizedString("Delete", comment: "delete contact dialog"),
-        footer: hasAddress ? notified + "\n" + canConnect : notified,
+        footer: footer,
         close: close,
         delete: delete
     )
@@ -1292,25 +1291,19 @@ enum DeleteAndBanTarget {
         }
     }
 
-    var deletionText: String {
+    var deletionText: Text {
         switch self {
-        case .contact: NSLocalizedString("Contact will be deleted - this cannot be undone!", comment: "delete and ban dialog")
-        case .customer: NSLocalizedString("Chat will be deleted for all members - this cannot be undone!", comment: "delete and ban dialog")
+        case .contact: Text("Contact with **\(name)** will be deleted - this cannot be undone!")
+        case .customer: Text("Chat with **\(name)** will be deleted for all members - this cannot be undone!")
         }
     }
 
-    func timedBanText(_ duration: BanDuration) -> String {
-        String.localizedStringWithFormat(NSLocalizedString("%@ won't be notified.", comment: "delete and ban dialog"), name)
-        + "\n"
-        + String.localizedStringWithFormat(NSLocalizedString("%1$@ won't be able to connect to you for %2$@.", comment: "delete and ban dialog"), name, duration.text)
+    func timedBanText(_ duration: BanDuration) -> Text {
+        Text("**\(name)** won't be notified, and can't connect to you for \(duration.text).")
     }
 
-    var foreverText: String {
-        let format = switch self {
-        case .contact: NSLocalizedString("%1$@ can't connect via your address again, except from another device or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "delete and ban forever dialog")
-        case .customer: NSLocalizedString("%1$@ can't connect via your business address again, except from another device or after reinstalling the app.\n\nType %2$@ to confirm.", comment: "delete and ban forever dialog")
-        }
-        return String.localizedStringWithFormat(format, name, foreverConfirmationWord)
+    var foreverText: Text {
+        Text("**\(name)** won't be notified, and can't connect via your address again, except from another app.")
     }
 }
 
@@ -1327,17 +1320,16 @@ func showDeleteAndBanDialog(_ target: DeleteAndBanTarget, delete: @escaping (_ k
 }
 
 private func deleteAndBanDialog(_ target: DeleteAndBanTarget, close: @escaping CloseSheet, ban: @escaping (BanDuration) -> Void) -> BanDialog {
-    let notNotified = String.localizedStringWithFormat(NSLocalizedString("%@ won't be notified and won't be able to connect to you while blocked.", comment: "delete and ban dialog"), target.name)
-    return BanDialog(
+    BanDialog(
         title: NSLocalizedString("Delete and block?", comment: "delete and ban dialog title"),
         actions: [BanDialogAction(title: NSLocalizedString("Delete and block", comment: "delete and ban dialog action"), action: ban)],
-        footer: { _ in target.deletionText + "\n" + notNotified },
+        footer: target.deletionText,
         close: close
     )
 }
 
 private func deleteAndBanKeepDialog(_ target: DeleteAndBanTarget, _ duration: BanDuration, close: @escaping CloseSheet, delete: @escaping (_ keepConversation: Bool) -> Void) -> KeepConversationDialog {
-    let (title, footer, confirmWord): (String, String, String?) = switch duration {
+    let (title, footer, confirmWord): (String, Text, String?) = switch duration {
     case .day, .week: (NSLocalizedString("Delete and block?", comment: "delete and ban dialog title"), target.timedBanText(duration), nil)
     case .forever: (NSLocalizedString("Delete and block forever?", comment: "delete and ban dialog title"), target.foreverText, foreverConfirmationWord)
     }
@@ -1391,7 +1383,7 @@ struct KeepConversationDialog: View {
     @EnvironmentObject var theme: AppTheme
     var title: String?
     var actionTitle: String
-    var footer: String?
+    var footer: Text?
     var confirmWord: String?
     var close: CloseSheet
     var delete: (_ keepConversation: Bool) -> Void
@@ -1404,7 +1396,7 @@ struct KeepConversationDialog: View {
                 Section {
                     Toggle("Keep conversation", isOn: $keepConversation)
                     if let confirmWord {
-                        TextField(confirmWord, text: $typedWord)
+                        TextField(typeToConfirmPlaceholder(confirmWord), text: $typedWord)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled(true)
                     }
@@ -1416,7 +1408,7 @@ struct KeepConversationDialog: View {
                     Button("Cancel", role: .cancel) { close {} }
                 } footer: {
                     if let footer {
-                        Text(footer).foregroundColor(theme.colors.secondary)
+                        footer.foregroundColor(theme.colors.secondary)
                     }
                 }
             }

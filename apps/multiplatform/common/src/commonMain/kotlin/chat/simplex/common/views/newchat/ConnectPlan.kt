@@ -51,14 +51,13 @@ enum class LinkNoticeTarget {
 }
 
 fun showLinkNoticeAlert(target: LinkNoticeTarget, expiresAt: Instant?, cleanup: (() -> Unit)? = null) {
-  val (banned, againAfter) = when (target) {
-    LinkNoticeTarget.Group -> MR.strings.link_notice_banned_group to MR.strings.link_notice_join_again_after
-    LinkNoticeTarget.Channel -> MR.strings.link_notice_banned_channel to MR.strings.link_notice_join_again_after
-    LinkNoticeTarget.Contact -> MR.strings.link_notice_banned_contact to MR.strings.link_notice_connect_again_after
-    LinkNoticeTarget.Business -> MR.strings.link_notice_banned_business to MR.strings.link_notice_connect_again_after
+  val (banned, bannedUntil) = when (target) {
+    LinkNoticeTarget.Group -> MR.strings.link_notice_banned_group to MR.strings.link_notice_banned_group_until
+    LinkNoticeTarget.Channel -> MR.strings.link_notice_banned_channel to MR.strings.link_notice_banned_channel_until
+    LinkNoticeTarget.Contact -> MR.strings.link_notice_banned_contact to MR.strings.link_notice_banned_contact_until
+    LinkNoticeTarget.Business -> MR.strings.link_notice_banned_business to MR.strings.link_notice_banned_business_until
   }
-  val endTime = expiresAt?.let { String.format(generalGetString(againAfter), localTimestamp(it, FormatStyle.SHORT)) }
-  val text = generalGetString(banned) + "\n" + generalGetString(MR.strings.link_notice_no_ids_shared) + (endTime?.let { "\n\n$it" } ?: "")
+  val text = expiresAt?.let { String.format(generalGetString(bannedUntil), localTimestamp(it, FormatStyle.SHORT)) } ?: generalGetString(banned)
   AlertManager.privacySensitive.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.link_notice_alert_title),
     text = AnnotatedString(text),

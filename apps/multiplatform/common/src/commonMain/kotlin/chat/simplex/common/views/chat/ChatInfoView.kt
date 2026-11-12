@@ -258,8 +258,7 @@ private fun confirmActiveContactDeletion(chat: Chat, contact: Contact, contactDe
   }
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
-    text = "${contact.displayName}\n\n${generalGetString(MR.strings.delete_contact_cannot_undo_warning)}\n${String.format(generalGetString(MR.strings.delete_contact_reconnect_needs_new_link), contact.displayName)}",
-    parseHtml = false,
+    text = formatWithBoldName(generalGetString(MR.strings.delete_contact_with_cannot_undo_warning), contact.displayName),
     buttons = {
       Column {
         notifyOptions.forEach { (textId, notify) ->
@@ -304,11 +303,14 @@ sealed class ContactDeleteMode {
 }
 
 private fun deleteActiveContactDialog(chat: Chat, contact: Contact, notify: Boolean, hasAddress: Boolean, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  val notified = String.format(generalGetString(if (notify) MR.strings.contact_will_be_notified else MR.strings.contact_wont_be_notified), contact.displayName)
-  val canConnectAgain = String.format(generalGetString(MR.strings.contact_can_connect_again_via_address), contact.displayName)
+  val textId = if (hasAddress) {
+    if (notify) MR.strings.contact_will_be_notified_can_connect_again else MR.strings.contact_wont_be_notified_can_connect_again
+  } else {
+    if (notify) MR.strings.contact_will_be_notified else MR.strings.contact_wont_be_notified
+  }
   showKeepConversationDialog(
     title = generalGetString(MR.strings.delete_contact_question),
-    text = if (hasAddress) "$notified\n$canConnectAgain" else notified,
+    text = formatWithBoldName(generalGetString(textId), contact.displayName),
     confirmText = generalGetString(MR.strings.delete_verb),
     notify = notify
   ) { chatDeleteMode ->
@@ -320,13 +322,12 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, notify: Bool
   }
 }
 
-fun showKeepConversationDialog(title: String, text: String?, confirmText: String, notify: Boolean, confirm: (ChatDeleteMode) -> Unit) {
+fun showKeepConversationDialog(title: String, text: AnnotatedString?, confirmText: String, notify: Boolean, confirm: (ChatDeleteMode) -> Unit) {
   val contactDeleteMode = mutableStateOf<ContactDeleteMode>(ContactDeleteMode.Full())
 
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = title,
     text = text,
-    parseHtml = false,
     buttons = {
       Column {
         KeepConversationToggle(contactDeleteMode)
@@ -454,7 +455,7 @@ fun archiveContact(chat: Chat, contact: Contact, chatModel: ChatModel) {
 }
 
 fun deleteAndBanContactDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  deleteAndBanDialog(contact.displayName, MR.strings.delete_contact_cannot_undo_warning, MR.strings.delete_and_ban_contact_forever_desc) { chatDeleteMode, notice ->
+  deleteAndBanDialog(contact.displayName, MR.strings.delete_contact_with_cannot_undo_warning) { chatDeleteMode, notice ->
     deleteContact(chat, chatModel, close, chatDeleteMode, notice) {
       if (chatDeleteMode is ChatDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
         showDeleteContactNotice(contact)
@@ -463,34 +464,32 @@ fun deleteAndBanContactDialog(chat: Chat, contact: Contact, chatModel: ChatModel
   }
 }
 
-fun deleteAndBanDialog(name: String, deletionWarningId: StringResource, foreverDescId: StringResource, delete: (ChatDeleteMode, LinkNotice) -> Unit) {
+fun deleteAndBanDialog(name: String, deletionWarningId: StringResource, delete: (ChatDeleteMode, LinkNotice) -> Unit) {
   val deleteAndBan = BanDialogAction(generalGetString(MR.strings.delete_and_ban)) { duration ->
     if (duration == BanDuration.Forever) {
-      deleteAndBanForeverDialog(name, foreverDescId) { delete(it, duration.notice) }
+      deleteAndBanForeverDialog(name) { delete(it, duration.notice) }
     } else {
       deleteAndBanKeepConversationDialog(name, duration) { delete(it, duration.notice) }
     }
   }
-  showBanDialog(generalGetString(MR.strings.delete_and_ban_question), listOf(deleteAndBan)) {
-    "$name\n\n${generalGetString(deletionWarningId)}\n${String.format(generalGetString(MR.strings.delete_and_ban_contact_desc), name)}"
-  }
+  showBanDialog(generalGetString(MR.strings.delete_and_ban_question), formatWithBoldName(generalGetString(deletionWarningId), name), listOf(deleteAndBan))
 }
 
 private fun deleteAndBanKeepConversationDialog(name: String, duration: BanDuration, delete: (ChatDeleteMode) -> Unit) {
   showKeepConversationDialog(
     title = generalGetString(MR.strings.delete_and_ban_question),
-    text = String.format(generalGetString(MR.strings.contact_wont_be_notified), name) + "\n" + String.format(generalGetString(MR.strings.contact_cant_connect_for_duration), name, duration.text),
+    text = formatWithBoldName(generalGetString(MR.strings.contact_cant_connect_for_duration), name, duration.text),
     confirmText = generalGetString(MR.strings.delete_and_ban),
     notify = false,
     confirm = delete
   )
 }
 
-private fun deleteAndBanForeverDialog(name: String, foreverDescId: StringResource, delete: (ChatDeleteMode) -> Unit) {
+private fun deleteAndBanForeverDialog(name: String, delete: (ChatDeleteMode) -> Unit) {
   val contactDeleteMode = mutableStateOf<ContactDeleteMode>(ContactDeleteMode.Full())
   showTypedConfirmationDialog(
     title = generalGetString(MR.strings.delete_and_ban_forever_question),
-    text = String.format(generalGetString(foreverDescId), name) + "\n\n" + String.format(generalGetString(MR.strings.type_to_confirm), FOREVER_CONFIRMATION_WORD),
+    text = formatWithBoldName(generalGetString(MR.strings.delete_and_ban_forever_desc), name),
     word = FOREVER_CONFIRMATION_WORD,
     confirmText = generalGetString(MR.strings.delete_and_ban),
     content = { KeepConversationToggle(contactDeleteMode) }
@@ -1662,7 +1661,7 @@ fun PreviewDeleteAndBanKeepConversationDialog() {
 @Composable
 fun PreviewDeleteAndBanContactForeverDialog() {
   SimpleXTheme {
-    AlertPreview { deleteAndBanForeverDialog(Contact.sampleData.displayName, MR.strings.delete_and_ban_contact_forever_desc) {} }
+    AlertPreview { deleteAndBanForeverDialog(Contact.sampleData.displayName) {} }
   }
 }
 
@@ -1670,6 +1669,6 @@ fun PreviewDeleteAndBanContactForeverDialog() {
 @Composable
 fun PreviewDeleteAndBanCustomerForeverDialog() {
   SimpleXTheme {
-    AlertPreview { deleteAndBanForeverDialog(previewBusinessChatInfo.displayName, MR.strings.delete_and_ban_customer_forever_desc) {} }
+    AlertPreview { deleteAndBanForeverDialog(previewBusinessChatInfo.displayName) {} }
   }
 }
