@@ -104,7 +104,7 @@ fun MainScreen()
 
 When onboarding is complete:
 
-1. Shows "advertise lock" alert once chats are loaded, if conditions met (not shown before, LA not enabled, >3 chats, no active call, no link being opened, no other alert shown).
+1. Shows "advertise lock" alert if conditions met (not shown before, LA not enabled, >3 chats, no active call).
 2. Routes to `AndroidScreen` or `DesktopScreen` based on platform.
 
 ### URL Deep Link

@@ -91,8 +91,7 @@ fun MainScreen() {
     showChatDatabaseError = chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null
   }
   var showAdvertiseLAAlert by remember { mutableStateOf(false) }
-  val chatsLoaded = chatModel.chatRunning.value != null
-  LaunchedEffect(showAdvertiseLAAlert, chatsLoaded) {
+  LaunchedEffect(showAdvertiseLAAlert, chatModel.chatRunning.value != null) {
     if (
       !chatModel.controller.appPrefs.laNoticeShown.get()
       && !appPrefs.performLA.get()
@@ -100,9 +99,7 @@ fun MainScreen() {
       && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
       && chatModel.chats.size > 3
       && chatModel.activeCallInvitation.value == null
-      && chatModel.appOpenUrl.value == null
       && !AlertManager.shared.hasAlertsShown()
-      && !AlertManager.privacySensitive.hasAlertsShown()
     ) {
       AppLock.showLANotice(ChatModel.controller.appPrefs.laNoticeShown) }
   }
