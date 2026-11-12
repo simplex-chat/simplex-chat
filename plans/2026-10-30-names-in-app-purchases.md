@@ -1157,7 +1157,7 @@ stateDiagram-v2
 - App Store builds: 1·5's Pay and the store sheet; "Buy in browser" in the US storefront only (D18).
 - TestFlight, App Review and Xcode builds can't pay in the app: row 4 in every storefront, and a code, as the badges show their site button and code there (`BadgesSupportSimplexView.swift:50-74`).
 - App Review's and TestFlight's purchases are test purchases, refused in production.
-- The name product is submitted with the payments release's version; App Review sees the browser path, as for the badges.
+- The name product is submitted with the payments release's version; App Review sees the browser path, as for the badges, whose products Apple approved in 7.1.1.
 - A sandbox run (section 8, by hand) uses P46's test switch, which shows the store purchase in a test build, false in every shipped build.
 - Apple doesn't restore a consumable; a registered name comes back from the 24 words from stage 2 (6.2).
 - The badge and name lanes read the same check, so a build sells both or neither.
