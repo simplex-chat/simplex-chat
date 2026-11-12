@@ -210,8 +210,12 @@ cmdUsage = \case
       [(nameArg, [lengthOpt, yearsOpt]), (badgeKindsText, [monthsOpt, usesOpt])]
       ["name 6 years 5", "supporter months 12"]
   CTBulk -> kindUsage CTBulk ("[" <> optArg monthsOpt <> "] " <> optArg countOpt) [(badgeKindsText, [monthsOpt, countOpt])] ["legend months 3 count 10"]
-  tag -> "Usage: " <> cmdText tag (cmdParams tag)
+  CTRevoke -> plainUsage CTRevoke
+  CTBalance -> plainUsage CTBalance
+  CTRecordRefund -> plainUsage CTRecordRefund
+  CTClose -> plainUsage CTClose
   where
+    plainUsage tag = "Usage: " <> cmdText tag (cmdParams tag)
     badgeKindsText = T.intercalate ", " badgeKinds
 
 kindUsage :: CmdTag -> Text -> [(Text, [CmdOpt])] -> [Text] -> Text

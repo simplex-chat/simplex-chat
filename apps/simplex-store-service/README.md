@@ -1577,9 +1577,11 @@ slash:
 
 The service answers each in the group with the console's answer, which names `/record_refund` and
 `/close` in place of `//record_refund` and `//close`, and says that the running poller closes an
-overdue holder rather than asking to start the service. A command waits for the same per-name and
-per-balance locks as the service's workers and web routes, so it and they never write the same order
-or balance at once. `/close` reads the chain through the client the console uses, made at
+overdue holder rather than asking to start the service. A command takes the same per-name and
+per-balance locks as Try again, moves and spends, and writes a balance only while it still holds the
+amount read and no order holds it, so a payment settled or an invoice cancelled meanwhile makes it
+refuse rather than write. The group's commands run one at a time, so a `/close` waiting on a slow
+chain node delays the group's other replies by up to its three reads' timeouts. `/close` reads the chain through the client the console uses, made at
 start with `[names]`, and without `[names]` answers that names are not enabled.
 
 A member below owner gets no reply and nothing runs; a malformed command from an owner gets the usage

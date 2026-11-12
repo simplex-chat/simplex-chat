@@ -317,7 +317,7 @@ runGroupCmd cc turns namesOn runMoney groupId = \case
   GCRevokeName code -> do
     outcome <- either id id <$> revokeNameCode turns cc code
     reply (formatNameCode (NCPrepaid code) <> ": " <> outcome)
-  GCMoney cmd -> runMoney cmd >>= void . sendGroupText cc groupId "command reply" . either id id
+  GCMoney cmd -> runMoney cmd >>= void . sendGroupText cc groupId "money reply, /balance shows what was recorded" . either id id
   where
     reply = void . sendGroupText cc groupId "reply, any codes in it are lost"
     withinNameCodes issue = do
