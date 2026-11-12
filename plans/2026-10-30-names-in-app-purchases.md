@@ -1497,7 +1497,7 @@ By hand, also at the payments release's end:
 - P59, P60: a card payment in Stripe's test mode and a Bitcoin payment through BTCPay on a test network, through the page.
 - P63: row 4 on an iPhone with a TestFlight build, which can't pay in the app: 1·2 and 4·1 reach 4·2 and open its invoice (AC4).
 - P35c: Q14's checks on devices, with the lock off and in passcode mode, desktop's floating console included.
-- P37, P46, by hand in App Store Connect and the Google Play Console, before the store test purchases above: each store's product and price as 6.2 sets them, Play's Tokenized Digital Asset marking and Financial features declaration, and the App Store product submitted with the payments release's version.
+- P37, P46, by the lead, by hand in App Store Connect and the Google Play Console, before the store test purchases above: each store's product and price as 6.2 sets them, Play's Tokenized Digital Asset marking and Financial features declaration, and the App Store product submitted with the payments release's version.
 - The operator's chain operation M13 (`setPrices`, one base price), before the sale.
 - The codes release's checks above.
 
