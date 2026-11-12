@@ -4,6 +4,7 @@ import ChatTests.ChatList
 import ChatTests.ChatRelays
 import ChatTests.DBUtils
 import ChatTests.Direct
+import ChatTests.Feed
 import ChatTests.Files
 import ChatTests.Forward
 import ChatTests.Groups
@@ -18,6 +19,7 @@ chatTests = do
   describe "group tests" chatGroupTests
   describe "chat relay tests" chatRelayTests
   describe "local chats tests" chatLocalChatsTests
+  describe "feed tests" chatFeedTests
   describe "file tests" chatFileTests
   describe "profile tests" chatProfileTests
   describe "chat list pagination tests" chatListTests

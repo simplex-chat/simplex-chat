@@ -23,6 +23,7 @@ class BotContext:
     # Business chats repaired by the startup pass, so the queued event for the
     # same chat does not report the customer a second time.
     repaired: set[int] = field(default_factory=set)
+    feed_items: set[int] = field(default_factory=set)
 
     async def post_to_roster(self, text: str) -> None:
         """Send a message to the roster group.

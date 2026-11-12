@@ -1,3 +1,6 @@
+import dataclasses
+import sys
+
 import pytest
 from simplex_chat import Bot, BotProfile, SqliteDb
 from simplex_chat.core import ChatAPIError
@@ -9,17 +12,20 @@ from support_bot_light.__main__ import (
     _serve,
     bot_profile,
     build_bot,
+    main,
     startup_error,
 )
-from support_bot_light.config import Config, Health
+from support_bot_light.config import Config, ConfigError, Health, IdName
 from support_bot_light.context import BotContext
 from tests.conftest import (
     ROSTER_GROUP_ID,
     USER_ID,
+    make_contact,
     make_group,
     make_group_message,
     make_member,
 )
+from tests.test_config import VALID
 
 CONFIG = Config("Support", "./x", "hi", "Invite roster", "owner")
 OTHER_GROUP_ID = 99
@@ -40,13 +46,13 @@ def registered(api) -> Bot:
     return bot
 
 
-def test_registers_all_four_commands(api):
+def test_registers_all_five_commands(api):
     bot = registered(api)
     keywords = [names for names, _predicate, _handler in bot._command_handlers]
-    assert keywords == [("dm",), ("list",), ("leave",), ("help",)]
+    assert keywords == [("dm",), ("list",), ("leave",), ("help",), ("feed",)]
 
 
-def test_registers_connection_and_business_events(api):
+def test_registers_connection_business_and_status_events(api):
     bot = registered(api)
     assert set(bot._event_handlers) == {
         "acceptingBusinessRequest",
@@ -54,6 +60,7 @@ def test_registers_connection_and_business_events(api):
         "contactSndReady",
         "deletedMember",
         "leftMember",
+        "chatItemsStatusesUpdated",
     }
 
 
@@ -84,7 +91,9 @@ def test_bot_profile_without_image():
     assert bot_profile(CONFIG).image is None
 
 
-@pytest.mark.parametrize("index,keyword", [(0, "dm"), (1, "list"), (2, "leave"), (3, "help")])
+@pytest.mark.parametrize(
+    "index,keyword", [(0, "dm"), (1, "list"), (2, "leave"), (3, "help"), (4, "feed")]
+)
 def test_every_command_is_scoped_to_the_roster_group(api, index, keyword):
     # A /list answered in a business chat would show the roster to a customer.
     bot = registered(api)
@@ -107,11 +116,11 @@ async def test_registered_handlers_call_the_matching_handler(api, monkeypatch):
 
         return handler
 
-    for name in ("dm", "list_roster", "leave", "help_cmd"):
+    for name in ("dm", "list_roster", "leave", "help_cmd", "feed"):
         monkeypatch.setattr(handlers, name, spy(name))
     for keywords, _predicate, handler in bot._command_handlers:
         await handler(make_group_message(api, make_member(1), f"/{keywords[0]}"), None)
-    assert called == ["dm", "list_roster", "leave", "help_cmd"]
+    assert called == ["dm", "list_roster", "leave", "help_cmd", "feed"]
 
 
 def test_a_taken_display_name_is_explained():
@@ -146,6 +155,11 @@ def test_the_bot_opens_a_business_address():
     assert bot._business_address is True
     assert bot._auto_accept is True
     assert bot._welcome == "hi"
+
+
+def test_the_bot_passes_the_queue_size_to_the_core():
+    assert build_bot(CONFIG)._queue_size is None
+    assert build_bot(dataclasses.replace(CONFIG, queue_size=65536))._queue_size == 65536
 
 
 def test_the_bot_does_not_apply_its_profile_while_starting():
@@ -227,13 +241,14 @@ async def test_serve_wires_the_handlers_and_serves(api):
     bot = FakeBot(serve_api(api))
     await _serve(CONFIG, bot)
     assert bot.served == 1
-    assert len(bot._command_handlers) == 4  # nothing is delivered without these
+    assert len(bot._command_handlers) == 5  # nothing is delivered without these
     assert set(bot._event_handlers) == {
         "acceptingBusinessRequest",
         "contactConnected",
         "contactSndReady",
         "deletedMember",
         "leftMember",
+        "chatItemsStatusesUpdated",
     }
 
 
@@ -292,6 +307,57 @@ async def test_the_profile_is_applied_after_start(api, monkeypatch):
     bot = FakeBot(serve_api(api))
     await _serve(CONFIG, bot)
     assert bot.syncs == 1
+
+
+BROADCASTING = dataclasses.replace(CONFIG, broadcasters=(IdName(7, "sh"),))
+
+
+async def test_serve_checks_the_broadcasters_and_serves(api):
+    api.contacts.append(make_contact(7, "sh", connected=True))
+    bot = FakeBot(serve_api(api))
+    await _serve(BROADCASTING, bot)
+    assert bot.served == 1
+
+
+async def test_serve_stops_on_a_broadcaster_who_is_not_a_contact(api):
+    bot = FakeBot(serve_api(api))
+    with pytest.raises(ConfigError, match="broadcaster not found: ID=7"):
+        await _serve(BROADCASTING, bot)
+    assert bot.served == 0
+
+
+async def test_serve_stops_on_a_broadcaster_with_another_name(api):
+    api.contacts.append(make_contact(7, "Alex", connected=True))
+    bot = FakeBot(serve_api(api))
+    with pytest.raises(ConfigError, match='expected "sh", got "Alex"'):
+        await _serve(BROADCASTING, bot)
+    assert bot.served == 0
+
+
+def test_broadcasters_and_queue_size_are_read_from_the_config_file(tmp_path, monkeypatch):
+    text = VALID.replace("[roster]", "queue_size = 65536\n\n[roster]")
+    (tmp_path / "config.toml").write_text(
+        text + 'broadcasters = ["7:sh", "9:Alex"]\n', encoding="utf-8"
+    )
+    configs: list[Config] = []
+
+    async def run(config):
+        configs.append(config)
+
+    monkeypatch.setattr("support_bot_light.__main__._run", run)
+    monkeypatch.setattr("support_bot_light.__main__.os.umask", lambda _mask: 0)
+    monkeypatch.setattr(
+        sys, "argv", ["support-bot-light", "--config", str(tmp_path / "config.toml")]
+    )
+    assert main() == 0
+    assert configs[0].broadcasters == (IdName(7, "sh"), IdName(9, "Alex"))
+    assert configs[0].queue_size == 65536
+
+
+def test_the_command_line_rejects_broadcasters(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["support-bot-light", "--broadcasters", "7:sh"])
+    with pytest.raises(SystemExit):
+        main()
 
 
 async def test_run_installs_signal_handlers_before_starting(monkeypatch):

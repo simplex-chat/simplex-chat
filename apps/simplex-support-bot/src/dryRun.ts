@@ -99,25 +99,27 @@ export async function dryRun(chat: api.ChatApi, config: Config, state: DryRunSta
     else unverified(`Grok contact ${state.grokContactId} not in chat previews, the bot verifies it at startup`)
   }
 
-  await checkTeamMembers(chat, user.userId, config.teamMembers, check, unverified)
+  await checkContacts(chat, user.userId, "team member", config.teamMembers, check, unverified)
+  await checkContacts(chat, user.userId, "broadcaster", config.broadcasters, check, unverified)
 
   return results.every(Boolean)
 }
 
-async function checkTeamMembers(
+async function checkContacts(
   chat: api.ChatApi,
   userId: number,
-  members: IdName[],
+  role: string,
+  contacts: IdName[],
   check: Check,
   unverified: Unverified
 ): Promise<void> {
-  for (const {id, name} of members) {
+  for (const {id, name} of contacts) {
     const contact = await findContact(chat, userId, name, id)
     if (!contact) {
-      unverified(`team member ${id}:${name} not in chat previews, the bot verifies it at startup`)
+      unverified(`${role} ${id}:${name} not in chat previews, the bot verifies it at startup`)
     } else {
       const match = contact.profile.displayName === name
-      check(match, `team member ${id}:${name}${match ? "" : ` has display name "${contact.profile.displayName}", the bot would exit`}`)
+      check(match, `${role} ${id}:${name}${match ? "" : ` has display name "${contact.profile.displayName}", the bot would exit`}`)
     }
   }
 }

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import functools
+import json
 import logging
 from collections.abc import Awaitable, Callable
 
-from simplex_chat import ChatError, Message
-from simplex_chat.types import T
+from simplex_chat import ChatCommandError, ChatError, Message, util
+from simplex_chat.types import CEvt, T
 
 from . import messages, roster, setup
 from .context import BotContext
@@ -298,3 +299,46 @@ async def leave(ctx: BotContext, msg: Message) -> None:
 async def help_cmd(ctx: BotContext, msg: Message) -> None:
     """Reply with the help text."""
     await msg.reply(messages.HELP)
+
+
+@_reply_on_error
+async def feed(ctx: BotContext, msg: Message) -> None:
+    member = group_sender(msg)
+    if member is None:
+        return
+    contact = await _contact_of(ctx, member)
+    if contact is None:
+        await msg.reply(messages.FEED_NO_CONTACT)
+        return
+    if not any(b.id == contact["contactId"] for b in ctx.config.broadcasters):
+        await msg.reply(messages.FEED_NOT_ALLOWED.format(contact_id=contact["contactId"]))
+        return
+    command = util.ci_bot_command(msg.chat_item["chatItem"])
+    text = command[1] if command else ""
+    if not text:
+        await msg.reply(messages.FEED_EMPTY)
+        return
+    r = await ctx.api.send_chat_cmd(f"/feed {json.dumps(text, ensure_ascii=False)}")
+    if r["type"] != "newChatItems":
+        raise ChatCommandError("unexpected response to /feed", r)
+    item_id = r["chatItems"][0]["chatItem"]["meta"]["itemId"]
+    ctx.feed_items.add(item_id)
+    await msg.reply(messages.FEED_QUEUED.format(item_id=item_id))
+
+
+async def feed_status(ctx: BotContext, evt: CEvt.ChatItemsStatusesUpdated) -> None:
+    for item in evt["chatItems"]:
+        if item["chatInfo"]["type"] != "feed":
+            continue
+        item_id = item["chatItem"]["meta"]["itemId"]
+        if item_id not in ctx.feed_items:
+            continue
+        status = item["chatItem"]["meta"]["itemStatus"]
+        if status["type"] == "sndSent" and status["sndProgress"] == "complete":
+            report = messages.FEED_SENT.format(item_id=item_id)
+        elif status["type"] == "sndError":
+            report = messages.feed_failed(item_id, status["agentError"])
+        else:
+            continue
+        ctx.feed_items.discard(item_id)
+        await ctx.post_to_roster(report)

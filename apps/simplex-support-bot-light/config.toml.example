@@ -7,6 +7,8 @@ display_name = "Support"
 # Creates <prefix>_chat.db and <prefix>_agent.db.
 db_prefix = "./support_bot_light"
 welcome = "Hi! Someone from the team will join this chat in a moment."
+# Optional. Internal queue size of the chat core; defaults to 1024.
+# queue_size = 65536
 
 [roster]
 # Renaming the group later has no effect: it is found by a marker in its custom
@@ -15,6 +17,8 @@ group_name = "Invite roster"
 # One of: observer, author, member, moderator, admin, owner. "relay" is also
 # accepted by the core but is an infrastructure role.
 member_role = "owner"
+# Optional. Contacts allowed to use /feed in the roster group, as "ID:name".
+# broadcasters = ["12:Alice", "15:Bob"]
 
 # Monitoring endpoint: GET /health answers 200 while the chat controller
 # responds to a command, 503 when it does not. On by default, at the values

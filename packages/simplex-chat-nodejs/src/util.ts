@@ -26,6 +26,7 @@ export function chatInfoName(cInfo: T.ChatInfo): string {
       return `#${cInfo.groupInfo.groupProfile.displayName}${scopeName}`
     }
     case "local": return "private notes"
+    case "feed": return "%"
     case "contactRequest": return `request from @${cInfo.contactRequest.profile.displayName}`
     case "contactConnection": {
       const alias = cInfo.contactConnection.localAlias

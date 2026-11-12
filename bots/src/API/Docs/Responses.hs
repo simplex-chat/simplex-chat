@@ -144,7 +144,6 @@ undocumentedResponses =
     "CRBadgeLedger",
     "CRBadgeRedeemed",
     "CRBadgeState",
-    "CRBroadcastSent",
     "CRCallInvitations",
     "CRChatCleared",
     "CRChatContentTypes",

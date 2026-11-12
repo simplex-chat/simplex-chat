@@ -2,16 +2,20 @@ from support_bot_light import messages
 from support_bot_light.roster import RosterEntry
 
 
-def entry(name, state, since="2026-08-13T09:00:00+00:00", reachable=True):
-    return RosterEntry(contact_id=1, name=name, state=state, since=since, reachable=reachable)
+def entry(name, state, since="2026-08-13T09:00:00+00:00", reachable=True, contact_id=1):
+    return RosterEntry(
+        contact_id=contact_id, name=name, state=state, since=since, reachable=reachable
+    )
 
 
-def test_render_roster_lists_active_and_pending():
-    out = messages.render_roster([entry("sh", "active"), entry("Alex", "pending")])
+def test_render_roster_lists_active_and_pending_with_contact_ids():
+    out = messages.render_roster(
+        [entry("sh", "active", contact_id=142682), entry("Alex", "pending", contact_id=7)]
+    )
     assert "On the roster (1):" in out
-    assert "• sh — since 2026-08-13" in out
+    assert "• 142682:sh — since 2026-08-13" in out
     assert "Contact request not accepted (1):" in out
-    assert "• Alex — asked 2026-08-13" in out
+    assert "• 7:Alex — asked 2026-08-13" in out
 
 
 def test_render_roster_empty():
@@ -25,13 +29,13 @@ def test_render_roster_omits_pending_section_when_none():
 
 def test_render_roster_omits_date_suffix_when_since_is_empty():
     out = messages.render_roster([entry("sh", "active", since="")])
-    assert out == "On the roster (1):\n  • sh"
+    assert out == "On the roster (1):\n  • 1:sh"
     assert "since" not in out
 
 
 def test_render_roster_formats_date_suffix():
     out = messages.render_roster([entry("sh", "active")])
-    assert out == "On the roster (1):\n  • sh — since 2026-08-13"
+    assert out == "On the roster (1):\n  • 1:sh — since 2026-08-13"
 
 
 def test_invite_log_lists_added_names():
@@ -46,7 +50,7 @@ def test_invite_log_reports_failures():
 
 
 def test_help_mentions_every_command():
-    for keyword in ("dm", "list", "leave"):
+    for keyword in ("dm", "list", "leave", "feed"):
         assert f"/{keyword}" in messages.HELP
 
 
@@ -56,7 +60,7 @@ def test_render_roster_separates_unreachable_members():
     )
     assert "On the roster (1):" in out
     assert "Not reachable, not being added (1):" in out
-    assert "• dead" in out
+    assert "• 1:dead" in out
 
 
 def test_render_roster_caps_long_sections():
@@ -81,5 +85,16 @@ def test_render_roster_bounds_the_whole_reply_in_bytes():
 def test_invite_log_is_bounded_in_bytes():
     names = ["漢" * 50 for _ in range(100)]
     out = messages.invite_log("Alex", names, [])
+    assert len(out.encode()) <= messages.MAX_REPLY_BYTES
+    assert out.endswith(messages.TRUNCATED)
+
+
+def test_feed_failure_quotes_the_error():
+    out = messages.feed_failed(5, {"type": "other", "sndError": "x"})
+    assert out == 'Feed message 5 failed: {"type": "other", "sndError": "x"}'
+
+
+def test_feed_failure_is_bounded_in_bytes():
+    out = messages.feed_failed(5, {"type": "other", "sndError": "e" * 20000})
     assert len(out.encode()) <= messages.MAX_REPLY_BYTES
     assert out.endswith(messages.TRUNCATED)

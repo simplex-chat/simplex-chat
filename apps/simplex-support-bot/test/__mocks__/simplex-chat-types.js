@@ -5,8 +5,9 @@ const GroupMemberRole = {Member: "member", Owner: "owner", Admin: "admin", Relay
 const GroupMemberStatus = {Connected: "connected", Complete: "complete", Announced: "announced", Left: "left", Removed: "removed", Invited: "invited"}
 const GroupFeatureEnabled = {On: "on", Off: "off"}
 const CIDeleteMode = {Broadcast: "broadcast", Internal: "internal"}
+const SndCIStatusProgress = {Partial: "partial", Complete: "complete"}
 
 module.exports = {
-  T: {ChatType, GroupMemberRole, GroupMemberStatus, GroupFeatureEnabled, CIDeleteMode},
+  T: {ChatType, GroupMemberRole, GroupMemberStatus, GroupFeatureEnabled, CIDeleteMode, SndCIStatusProgress},
   CEvt: {},
 }

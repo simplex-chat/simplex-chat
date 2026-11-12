@@ -26,7 +26,22 @@ case "${1:-}" in
     npm run test:e2e
     ;;
   support-bot)
-    (cd apps/simplex-support-bot && npm ci --no-audit --no-fund && npm run build && npm test)
+    (cd packages/simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
+    (cd packages/simplex-chat-nodejs && npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript && npx tsc && cp src/simplex.* dist)
+    cd apps/simplex-support-bot
+    npm ci --no-audit --no-fund
+    npm install --no-save --no-audit --no-fund ../../packages/simplex-chat-nodejs ../../packages/simplex-chat-client/types/typescript
+    npm run build
+    npm test
+    ;;
+  support-bot-light)
+    cd apps/simplex-support-bot-light
+    python3 -m venv .venv
+    .venv/bin/pip install -e ../../packages/simplex-chat-python -e '.[dev]'
+    .venv/bin/ruff check
+    .venv/bin/ruff format --check src tests
+    .venv/bin/pyright
+    .venv/bin/pytest tests
     ;;
   support-bot-light)
     cd apps/simplex-support-bot-light

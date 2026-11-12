@@ -30,6 +30,7 @@ import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct (getContact, getContactIdByName, getContactRequest, getContactRequestIdByName)
+import Simplex.Chat.Store.Feeds (createFeed)
 import Simplex.Chat.Store.Groups (getGroupIdByName, getGroupMember, getGroupMemberIdByName)
 import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
@@ -683,6 +684,12 @@ createCCNoteFolder cc =
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
       runExceptT (createNoteFolder db user) >>= either (fail . show) pure
+
+createCCFeed :: TestCC -> IO ()
+createCCFeed cc =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (createFeed db user) >>= either (fail . show) pure
 
 shouldEventuallyReturn :: (HasCallStack, Eq a, Show a) => IO a -> a -> Expectation
 shouldEventuallyReturn action expected = go (200 :: Int)

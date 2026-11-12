@@ -89,6 +89,7 @@ library
       Simplex.Chat.Store.ContactRequest
       Simplex.Chat.Store.Delivery
       Simplex.Chat.Store.Direct
+      Simplex.Chat.Store.Feeds
       Simplex.Chat.Store.Files
       Simplex.Chat.Store.Groups
       Simplex.Chat.Store.Messages
@@ -177,6 +178,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20261016_badge_store_receipts
           Simplex.Chat.Store.Postgres.Migrations.M20261019_chat_layout
           Simplex.Chat.Store.Postgres.Migrations.M20261021_badge_subscriptions
+          Simplex.Chat.Store.Postgres.Migrations.M20261111_feeds
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -361,6 +363,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20261018_autoincrement_ids
           Simplex.Chat.Store.SQLite.Migrations.M20261019_chat_layout
           Simplex.Chat.Store.SQLite.Migrations.M20261021_badge_subscriptions
+          Simplex.Chat.Store.SQLite.Migrations.M20261111_feeds
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -723,6 +726,7 @@ test-suite simplex-chat-test
       ChatTests.Files
       ChatTests.Forward
       ChatTests.Groups
+      ChatTests.Feed
       ChatTests.Local
       ChatTests.Names
       ChatTests.Profiles

@@ -4,6 +4,7 @@
 [bot]
 team_group = "SimpleX Support Team"            # --team-group
 auto_add_team_members = ["1:Alice"]            # --auto-add-team-members
+# broadcasters = ["1:Alice"]                   # --broadcasters, may use /feed
 state_file = "/data/state.json"                # --state-file
 timezone = "UTC"                               # --timezone
 # complete_hours = 3                           # --complete-hours

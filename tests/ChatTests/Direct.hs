@@ -21,7 +21,7 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.List (intercalate, isPrefixOf, stripPrefix)
+import Data.List (intercalate, isPrefixOf, sort, stripPrefix)
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, isNothing)
 import qualified Data.Text as T
@@ -1001,8 +1001,9 @@ testMultilineMessage = testChat3 aliceProfile bobProfile cathProfile $ \alice bo
   alice <## "there"
   bob <# "alice> hello"
   bob <## "there"
+  createCCFeed alice
   alice `send` "/feed \"hello\\nthere\"" -- /feed "hello\nthere"
-  alice <##. "/feed (2)"
+  alice <# "% hello"
   alice <## "there"
   bob <# "alice> hello"
   bob <## "there"
@@ -2144,14 +2145,14 @@ testMultipleUserAddresses =
       cLinkAlisa <- getContactLink alice True
       bob ##> ("/c " <> cLinkAlisa)
       alice <#? bob
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", "Audio/video calls: enabled"), ("@Ask SimpleX Team", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", sort . chats, sort [("@bob", "Audio/video calls: enabled"), ("@Ask SimpleX Team", ""), ("*", ""), ("%", "")])
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alisa: contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature), ("@Ask SimpleX Team", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", sort . chats, sort [("@bob", lastChatFeature), ("@Ask SimpleX Team", ""), ("*", ""), ("%", "")])
       alice <##> bob
 
       bob #> "@alice hey alice"
@@ -2182,7 +2183,7 @@ testMultipleUserAddresses =
         (cath <## "alisa: contact is connected")
         (alice <## "cath (Catherine): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey"), ("@Ask SimpleX Team", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", sort . chats, sort [("@cath", lastChatFeature), ("@bob", "hey"), ("@Ask SimpleX Team", ""), ("*", ""), ("%", "")])
       alice <##> cath
 
       -- first user doesn't have cath as contact
