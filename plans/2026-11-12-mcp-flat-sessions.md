@@ -28,6 +28,9 @@ The user's review of the first design images, 2026-11-12:
 The user's review of the second design images:
 > it feels like there should be a bit larger gap under name/avatar on ios. Also, the padding around the avatar, especially on the right on android is a bit too large. Make it precise
 
+The user's question on the third design images, answered by equal gaps (decision 14):
+> is the gap under the name the same as above now?
+
 The target is the README mockup, `packages/simplex-chat-mcp/images/session.png`: the avatar on the name line, the message text under the avatar at the left padding.
 
 One pull request: branch `ep/mcp-flat-sessions`, against master.
@@ -70,8 +73,8 @@ name and role                    58 pt iOS, 61 dp Android and desktop         12
                                                                               51 dp Android and desktop
 message text, horizontal         after the avatar column: 58 pt iOS,          12 from the screen edge
                                  61 dp Android and desktop
-message top                      the bottom of the name line                  half the level step below the avatar: 2.5 pt on iOS,
-                                                                              2.4 dp on Android and desktop
+message top                      the bottom of the name line                  one paragraph gap below the name line, as above it:
+                                                                              7.8 pt on iOS, 7.3 dp on Android and desktop
 rows without a name              58 pt iOS, 61 dp Android and desktop         12 from the screen edge
 events, such as carol connected  58 pt iOS, 61 dp Android and desktop         12 from the screen edge
 gap above a name row             7.8 pt iOS, 7.3 dp Android and desktop       the same
@@ -98,10 +101,12 @@ Visible distances at the default text size, measured between shapes and glyphs, 
 distance                                              iOS now   iOS proposed   Android, desktop now   Android, desktop proposed
 screen edge to the avatar                             12        12             15.1                   12
 avatar to the name                                    12        12             15.1                   12
+line above to the name: its baseline to the capitals  19.2      19.2           17.7                   17.7
+name to the message: its baseline to the capitals     11.4      19.2           10.4                   17.7
 line above to the avatar: its baseline to the top     12.5      9.2            14.8                   9.2
-avatar to the message: the bottom to the capitals     beside    9.2            beside                 8.3
-name to the message: its baseline to the capitals     11.4      17.2           10.4                   15.2
+avatar to the message: the bottom to the capitals     beside    11.2           beside                 10.8
 gap above a name row: box to box                      7.8       7.8            7.3                    7.3
+gap below a name row: box to box                      0         7.8            0                      7.3
 message text from the screen edge                     58        12             61                     12
 ```
 
@@ -167,7 +172,7 @@ The Flat layout in the apps:
 11. The new geometry applies to every Flat row with an avatar, in groups and channels, also outside the plugin (Q2 (a)).
 12. The avatar is centred on the name line (mockup source: `.avatar { top: calc(var(--line) / 2 - var(--avatar) / 2) }`).
 13. Messages, events and rows without a name start at the row's start; their text is at the text edge, `CHAT_ITEM_TEXT_PADDING`, 12 (mockup: `.content { padding: 0 var(--pad) }`).
-14. A message starts below the name line, and half the level step below the avatar: `terminalHeadingBottomGap`, 2.5 pt (`TerminalItemView.swift:18`), and `TERMINAL_HEADING_BOTTOM_GAP`, 2.4 dp (`TerminalItemView.kt:66`). When it starts with a card, the paragraph gap is added below the lower of the two, as below the name now (`TerminalItemView.kt:431`; `TerminalItemView.swift:404`). The user: "there should be a bit larger gap under name/avatar on ios". Without it, the first line's capitals were 6.7 pt below the avatar on iOS: its line box starts at the avatar's bottom, and SF Pro's capitals sit 6.7 pt into a 23.4 pt line. With it, they are 9.2 pt below, as far as the avatar is from the baseline of the line above, 9.2 pt. On Android and desktop the same constant gives 8.3 dp, because Inter's capitals sit 6 dp into a 22 dp line. Equal numbers would need a value for Android alone, 3.25 dp, or a gap computed from the fonts; the shared constant keeps one rule, with gaps of 0.54 and 0.52 of the body size.
+14. In a row with an avatar, the message starts one paragraph gap below the name line, the same gap the name line has above it: `terminalParagraphGap`, 7.8 pt (`TerminalItemView.swift:16`), and `TERMINAL_PARAGRAPH_GAP`, 7.3 dp (`TerminalItemView.kt:67`). So the name has equal visible gaps above and below, from a baseline to the capitals: 19.2 pt on iOS, 17.7 dp on Android and desktop (the user: "is the gap under the name the same as above now?"; confirmed 2026-11-12). The avatar's part below the name line, at most 3.5, is less than the gap, at least 5.5 at any text size (iOS 26.2 pt avatar and 6.4 pt gap at the smallest size; Android and desktop 3.4 dp and 5.5 dp at the font scale 0.75), so the message clears the avatar. When the message starts with a card, the paragraph gap is added below the lower of the name line and the avatar, as below the name now (`TerminalItemView.kt:431`; `TerminalItemView.swift:404`). A row without an avatar, as in a direct chat, keeps its text right below the name. The two platforms differ as their body sizes do, 17 to 16, and by 0.4 from SF Pro's line metrics; equal numbers would change the gap between every two senders on one platform, which was not taken.
 15. The name stays 12 after the visible avatar, by the user's rule of one 12 padding (I26: `plans/2026-10-13-flat-chat-layout-ui.md:39`; `apps/ios/spec/client/chat-view.md:360`). With the 30 pt avatar the name is at 54 pt, where the README mockup has it; the README image is drawn again with the 30 pt avatar (section 8).
 16. The gap above a row is at least the avatar's part above the name line. `terminalRowGap` is 0 below a date separator, below the chat banner and for the oldest loaded item (`TerminalItemView.kt:138-139`; `TerminalItemView.swift:130-135`); there the avatar's part sets the gap, so the avatar stays inside its own row.
 17. In the Flat layout both platforms size media by one width, W = min(500, row width − 24), in groups, channels and direct chats (the user, 2026-11-12: "horizontal images ... take full screen width, as on android, and limited on desktop"). A wide image, video or link preview image is W wide; a tall or square one is 0.75 W. Each platform keeps its test of wide: width > height on iOS (`CIImageView.swift:101`, `CIVideoView.swift:204`), width × 0.97 > height on Android and desktop (`CIImageView.kt:111`). Heights keep their rule, at most 2.33 of the width (`ImageUtils.swift:425-427`; `CIImageView.kt:193`).
@@ -231,8 +236,8 @@ avatarOffset   (name height − avatar height) / 2, negative for an avatar talle
 nameTop        max(topGap, −avatarOffset)
 avatarTop      nameTop + avatarOffset
 messageTop     a card first: max(nameTop + name height, avatarTop + avatar height) + TERMINAL_PARAGRAPH_GAP
-               otherwise: max(nameTop + name height, avatarTop + avatar height + TERMINAL_HEADING_BOTTOM_GAP), the gap
-               with an avatar only
+               otherwise, with an avatar: max(nameTop + name height + TERMINAL_PARAGRAPH_GAP, avatarTop + avatar height)
+               otherwise: nameTop + name height
 avatar at      (CHAT_ITEM_TEXT_PADDING, avatarTop)
 name at        (gutter, nameTop)
 message at     (0, messageTop)
@@ -266,8 +271,9 @@ body          VStack, leading
                 sender row: HStack, centred
                   gutter column: ZStack, the avatar chatItemTextPadding from the start
                   name and role, chatItemTextPadding from the column
-                  below it: terminalParagraphGap when contentStartsWithCard, otherwise terminalHeadingBottomGap
-                  with an avatar
+                  below it: terminalParagraphGap when contentStartsWithCard; otherwise, with an avatar,
+                  terminalParagraphGap − overhang, so the message is one paragraph gap below the name line;
+                  otherwise 0
                 content
 top padding   max(0, topGap − overhang)
 overhang      with an avatar: max(0, (gutter − chatItemTextPadding − terminalLineHeight(body font)) / 2); otherwise 0
@@ -318,7 +324,7 @@ Done when:
 2   a new session's group has chatLayout terminal; the Main group has none                      unit tests; e2e test
 3   an owner's copy of the session group has chatLayout terminal                                e2e test
 4   Flat rows: 30 pt or 27 dp avatar centred on the name line, messages from the row start,     desktop test; snapshot references
-    half the level step below it
+    one paragraph gap below the name line
 5   the visible distances of section 2.2: 12 to the avatar, 12 to the name, the avatar drawn    FlatAvatarTest; snapshot references
     to the edge of its box on Android and desktop
 6   the name and the gap above it are unchanged where the gap covers the avatar                 desktop test; snapshot references
@@ -329,7 +335,7 @@ Done when:
 
 Tests that fail on master and pass after the change:
 - `test/unit/sessions.test.ts`, "are created at the session start, ...": `chat.newGroups` holds `chatLayout: "terminal"`.
-- `TerminalChatItemRowTest`, `messagesStartAtRowStartBelowAvatar`: with gutter 39 and a 27 px avatar, the message is at x 0 and `TERMINAL_HEADING_BOTTOM_GAP` below the avatar's bottom. On master it is at x 39, at the name's bottom.
+- `TerminalChatItemRowTest`, `messagesStartAtRowStartBelowAvatar`: with gutter 39 and a 27 px avatar, the message is at x 0 and `TERMINAL_PARAGRAPH_GAP` below the name's bottom, and its top is below the avatar's bottom. On master it is at x 39, at the name's bottom.
 - The snapshot references recorded on the branch: master renders differ, and `snapshots-compare.py` fails.
 
 Media widths, unit tests of the new functions:
