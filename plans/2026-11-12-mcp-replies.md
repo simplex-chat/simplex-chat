@@ -1,6 +1,6 @@
 # SimpleX MCP: Claude gets the message that a reply quotes
 
-Status: draft for review; Q1 is open. Code references: master `9d3241b06` (`@simplex-chat/mcp` 0.3.0). Claude Code references: byte offsets in its binary, 2.1.322 unless named. Decisions of the 0.3.0 plan are cited as "0.3.0 decision N" ([2026-11-07-mcp-claude-code-channel.md](2026-11-07-mcp-claude-code-channel.md)).
+Status: draft for review; Q1 decided by the user on 2026-11-12: A. Code references: master `9d3241b06` (`@simplex-chat/mcp` 0.3.0). Claude Code references: byte offsets in its binary, 2.1.322 unless named. Decisions of the 0.3.0 plan are cited as "0.3.0 decision N" ([2026-11-07-mcp-claude-code-channel.md](2026-11-07-mcp-claude-code-channel.md)).
 
 ## 1. Goal
 
@@ -123,7 +123,7 @@ The plugin and `serve` share `toMessage` and the tool schemas (0.3.0 decision 16
 - B: returned by the plugin only. `serve` keeps `{chat, item}`. `toMessage` gets a flag for the quote fields, set by the plugin's `AgentTools`, and `registerTools` a message schema per host: about 20 more lines, and tests of both forms.
 - C: returned by neither. Only the channel changes, and Claude reads a peer's reply without its quote, as today.
 
-Decisions 17, 19, 21 and 23 depend on Q1. Under B or C, `toReplyTo` (decision 18) serves the channel alone, and `selfSender` and `toMessages` (decision 20) are left out. The work continues on A.
+Decided by the user on 2026-11-12: A. `serve` returns the new `reply_to` from the same code, and decisions 17, 19, 21 and 23 apply to both.
 
 ## 4. Decisions
 
