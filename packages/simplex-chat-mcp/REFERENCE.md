@@ -54,7 +54,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
    The first start prints, after two lines about downloading the SimpleX core library and the Node.js add-on:
 
    ```
-   SimpleX MCP server 0.2.0, agent "my-agent"
+   SimpleX MCP server 0.2.0 (8e4b6f1c2d), agent "my-agent"
    Data folder: /home/alice/.simplex-mcp/my-agent
    Approval mode: requests
    Agent control chat "My Agent" created.
@@ -68,7 +68,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
 
    `-y` answers npm's prompt to install the package. The server asks no questions: every choice is an option. The QR code of such a link is 37 columns wide and 19 lines high; `--qr-code large` draws it twice as wide and twice as high.
 
-2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "My Agent" appears in the chat list, and the agent writes: `I'm your agent. I ask here before I connect, send, download a file or leave a chat.` The terminal prints:
+2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "My Agent" appears in the chat list, with the [restart notice](#restart-notice) of this start, and the agent writes: `I'm your agent. I ask here before I connect, send, download a file or leave a chat.` The terminal prints:
 
    ```
    Alice joined (member 3) and is now an owner. The link is deleted.
@@ -286,6 +286,19 @@ After `/receive #3 7 all`, the agent's later downloads from #3 are performed at 
 - It lasts as the approval of messages does, until `/receive #3 off`, and is kept next to it in the chat's custom data.
 - `/list` shows it as `, files approved by Alice`.
 
+### Restart notice
+
+At each start, after the owner setup, the agent posts its version and the commit of its build:
+
+```
+My Agent: SimpleX MCP server 0.2.0 (8e4b6f1c2d) started.
+```
+
+- It is posted in the agent control chat and, in mode `requests`, in each chat approved for all messages where the agent is connected, can post by its role, and is not incognito.
+- `8e4b6f1c2d` is the commit the package was built from, as `git rev-parse --short=10 HEAD` printed it at `npm pack` or `npm publish`. No commit is written by `npx tsc`: with a build by it alone, the notice is `SimpleX MCP server 0.2.0 started.` The same version is in the first line the server prints: `SimpleX MCP server 0.2.0 (8e4b6f1c2d), agent "my-agent"`.
+- The server posts it by itself: it is not an action, and no card is posted for it. An owner who joins later receives it among the chat's recent messages.
+- A failed post is logged on stderr, for example `restart notice to #9: <error>`, and the server continues the start. After the agent lost its control chat, no notice is posted.
+
 ## What the agent sees
 
 Six tools:
@@ -423,7 +436,7 @@ One server runs per data folder: a second one exits, because two processes on on
 - Names written by peers are folded to one line, with control and format characters replaced by spaces, in the terminal and in the agent control chat; there, a name that is not a valid display name is shown as code.
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
-- After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
+- After `/approve #N all`, the agent sends to that chat without asking, files included, and at each start the server posts there its version and the commit of its build, unless the agent is incognito there; `/revoke #N` ends it.
 - The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
 - After `/receive #N 7 all`, the agent's later downloads from that chat, of files on its XFTP servers, run without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; any other download of it fails, unless the IP address is protected.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.

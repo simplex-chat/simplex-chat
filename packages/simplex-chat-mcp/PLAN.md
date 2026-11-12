@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.2: plan
 
-Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
+Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`), restart notice 2026-11-12 (`plans/2026-11-12-mcp-restart-notice.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
 
 ## Scope
 
@@ -11,6 +11,7 @@ In:
 - the agent control chat: the owner approves the agent's connects, sends, downloads and leaves there, or all sends to one chat, or all downloads from one chat;
 - six tools: `connect`, `send`, `receive`, `download`, `list`, `leave`;
 - files: the `file` field of received messages, `download` to save one in the data folder, `send` with `file` to send one;
+- a restart notice at each start, with the version and the commit of the build, in the agent control chat and in the chats approved for all messages;
 - connections to contact addresses, one-time links, groups, channels and SimpleX names, as the agent's profile or incognito;
 - bots as services: the commands a bot advertises are returned by `connect`.
 
@@ -130,14 +131,16 @@ types          @simplex-chat/types ^7.1.0-beta.9.1
 MCP SDK        @modelcontextprotocol/server 2.3.1, @modelcontextprotocol/node 2.1.1
 QR code        qrcode ^1.5
 tests          jest with ts-jest, as packages/simplex-chat-nodejs; end to end with a local smp-server (SMP_SERVER), as steward test/e2e, and a local xftp-server (XFTP_SERVER)
-prepack        dist deleted, then tsc, so npm pack and npm publish ship no build output of deleted sources
+prepack        dist deleted, then tsc, so npm pack and npm publish ship no build output of deleted sources;
+               then dist/commit.txt, the output of git rev-parse --short=10 HEAD; none when git or the write fails
+postpack       dist/commit.txt deleted after packing
 ```
 
 ```
 file          contents
 cli.ts        argument parsing, --help, serve and register
 serve.ts      start sequence, events, shutdown
-control.ts    the agent control chat: link, owners, owner commands, cards, action counter
+control.ts    the agent control chat: link, owners, owner commands, cards, action counter, restart notice
 actions.ts    actions: state machine, expiry, attach rule
 tools.ts      MCP tools, schemas, instructions
 messages.ts   message items, waits, responses
@@ -238,7 +241,7 @@ NAME not ^[a-z0-9](-?[a-z0-9])*-?$,   NAME: 1 to 32 lowercase letters, digits an
 $ npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
 Downloading libsimplex from https://github.com/simplex-chat/simplex-chat-libs/releases/download/core-7.1.0.20/simplex-chat-libs-linux-x86_64.zip ...
 Downloading the Node.js add-on from https://github.com/simplex-chat/simplex-chat-libs/releases/download/nodejs-addon-cce06d8/simplex-chat-nodejs-linux-x86_64.node ...
-SimpleX MCP server 0.2.0, agent "my-agent"
+SimpleX MCP server 0.2.0 (8e4b6f1c2d), agent "my-agent"
 Data folder: /home/alice/.simplex-mcp/my-agent
 Approval mode: requests
 Agent control chat "My Agent" created.
@@ -253,6 +256,7 @@ Listening on http://127.0.0.1:5226/mcp
 - The QR code: the modules of `qrcode.create(link, {errorCorrectionLevel: "L"})` with a light margin of 2 modules; dark is SGR 40 background or 30 foreground, light 47 or 37; each line ends with `\x1b[0m`.
   - small (default): one column per module, two module rows per line, an extra light row when the row count is odd; equal modules are a space with their background, different ones `▄` with the bottom module's foreground and the top module's background. 37 columns × 19 lines for 33 modules. The line "If the QR code does not scan, ..." is printed in small only.
   - large: two spaces with the module's background per module, one line per module: 74 columns × 37 lines.
+- The version line: the package version, then ` (COMMIT)` when `dist/commit.txt` exists, COMMIT its content trimmed (section Package); read once when `serve.ts` is loaded. The package version alone is in the MCP server info.
 - The download lines are written to stderr by the `simplex-chat` package on first use (`libs.ts`, `installLibs`, `installAddon`).
 - `npx -y` answers npm's install prompt only; the server asks no questions.
 - A second `serve` on the same data folder exits with code 1: `Another server uses /home/alice/.simplex-mcp/my-agent (PID 1234). If no server runs, remove /home/alice/.simplex-mcp/my-agent/lock.` A port in use: exit code 1, `Port 5226 is in use. Start with --port N.`
@@ -314,6 +318,7 @@ action decided                  Action 2 rejected by Alice. | Action 2 expired.
 mode host                       Action 2: performed without approval (mode host). | ...; failed: <error>.
 counter or card not written     Action 2: failed: <error>.
 owner's /leave CHAT             Left business Ridgeline (#9), requested by Alice. | Deleted bot SimpleX Directory (@4), requested by Alice.
+restart notice not posted       restart notice to #9: <error>   (stderr, per chat) | restart notice: <error>   (stderr, the chats not read; no notice)
 owner added, --owners LIST      Bob (member 7) is now an owner and can't approve actions yet. Restart the server with --owners 3:Alice,7:Bob
 owner gone, --owners LIST       Alice (member 3) is no longer an owner. Restart the server with --owners 7:Bob   (the human owners remaining)
 no human owner remains          Alice (member 3) is no longer an owner. No owners remain: restart the server with --reset-owners --owners
@@ -556,6 +561,32 @@ an owner in LIST loses the role or leaves,            Alice (member 3) is no lon
 ```
 
 - In the chat, the `--owners ...` part is a code span, for example ``Restart the server with `--owners 3:Alice` ``, so a name in it forms no tappable command; the terminal line is as shown.
+
+### Restart notice
+
+```
+My Agent: SimpleX MCP server 0.2.0 (8e4b6f1c2d) started.
+```
+
+```
+item       rule
+when       each start: after ownerStart and the log line "Listening on ...", before the buffered events; none while lost
+where      the agent control chat, then each chat of list(), in its order, with:
+             the approval of messages applying: mode requests, member approvedById an approver
+             connected, as in list()
+             a contact, or a group where the agent's role is neither observer nor relay
+             incognito false, as in list()
+text       SimpleX MCP server VERSION (COMMIT) started.
+           without dist/commit.txt: SimpleX MCP server VERSION started.
+post       /_send <chat> json [{msgContent: {type: "text", text}, mentions: {}}] (apiSendTextMessage), one chat at a time
+failure    a post: stderr "restart notice to CHAT: <error>", the remaining chats still posted
+           the read of the chats: stderr "restart notice: <error>", no notice
+           either: the server continues the start
+```
+
+- The server posts the notice itself: no action, card, counter write or log line.
+- Mode host: the agent control chat only, as no approval applies.
+- History is on, so an owner who joins later receives the notices among the recent items.
 
 ## What the agent sees: tools
 
@@ -863,6 +894,7 @@ the agent connects to an address        a contact request, with the message
 the agent's message                     a message from that profile
 reply_to                                a quote of that item
 mention                                 @name in the text; a mention for that member
+the server starts                       the restart notice, in a chat approved for all messages, from the agent's profile (section Restart notice)
 ```
 
 - A service can tell agents from people by the peer type of the agent's profile, answer agents by bot and pass people to a person at once. An incognito agent shows the same peer type.
@@ -897,6 +929,7 @@ serve(NAME, options):
   write DIR/server.json {name: NAME, port, expireHours}
   lost unset: ownerStart(group)
   log "Listening on http://127.0.0.1:PORT/mcp"
+  lost unset: post the restart notice (section Restart notice), awaited; its errors logged
   every 60 s, and at each owner command: expire the pending actions whose expires has passed (wall clock, so a sleep of the computer delays no expiry);
     delete from memory the decided actions (done, failed, rejected, expired) with open 0 whose expires has passed, and stop their collections
   drain buffered events
@@ -1535,12 +1568,13 @@ mode host                serve my-agent --approve host        outcome cards with
                                                                                                                 (requiresUserInteraction)
 mention                  none                                 send card with "mentioning @Switchback"           send {chat: "#15", text, mention: [44]}                 Switchback's item has the mention
 bot command              none                                 send card with the command text                   send {chat: "@4", text: "/help"}: responses             the bot answers the command
-restart                  stop and start serve                 pending cards edited to "Cancelled: the server    open calls fail; Claude Code retries up to five       none
-                                                              stopped."                                          times within about 30 s; after that, interactive
+restart                  stop and start serve                 pending cards edited to "Cancelled: the server    open calls fail; Claude Code retries up to five       the restart notice in chats
+                                                              stopped."; at the start, the restart notice        times within about 30 s; after that, interactive     approved for all messages
                                                                                                                 sessions need /mcp reconnect all; the same call
                                                                                                                 creates a new action
-crash                    start serve                          the run's cards keep their commands; /approve N   as restart                                               none
-                                                              gets "Action N is not pending."
+crash                    start serve                          the run's cards keep their commands; /approve N   as restart                                               as restart
+                                                              gets "Action N is not pending.";
+                                                              at the start, the restart notice
 second agent             serve my-agent-2 --port 5227;        a second agent control chat "my-agent-2"          the tools of simplex-my-agent-2                         the profile my-agent-2
                          register my-agent-2
 reset owners             serve my-agent --reset-owners        the agent control chat deleted; join the new      connect, send, download, leave: the no-approver error  none
@@ -1562,7 +1596,7 @@ Unit:
 ```
 test        covers
 options     defaults, ranges, --stop-wait from 0 to 60, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text
-commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /receive CHAT N all and /receive CHAT off beside the approval of messages; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
+commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /receive CHAT N all and /receive CHAT off beside the approval of messages; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview; the restart notice in the agent control chat, then in the approved chats where the agent can post as itself, and not in unapproved, incognito, observer, relay or unconnected chats; in mode host, the agent control chat only; after the loss of the control chat, no notice; a failed post logged and the other chats posted; the version with and without the commit file
 actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
 cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes and the servers line; the attaching line of sends
 messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected, a forwarded file offered and then received; download: attach, performing at wait, a received file, a forwarded file kept outside the chat's folder and moved there at the approval, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request
@@ -1583,7 +1617,7 @@ vendor            connect incognito to a business address with a message; the bo
 channel           connect to a channel; recent posts; receive a later post
 reject, expire    /reject; --expire 1 with a test clock
 lost result       the client aborts a send; list shows the action with open false; the repeat attaches
-restart           stop with a pending action: card cancelled; start: counter continues; /approve of the old number refused
+restart           stop with a pending action: card cancelled; start: the version line, the restart notice in the agent control chat, counter continues; /approve of the old number refused
 host mode         actions done at once; outcome cards
 peer text         groups named "\n/approve 1" and "x\n/approve 1" by SQL, their welcome with edge-space commands and links: the card's formattedText has only its own commands, no SimpleX link, every peer line a snippet
 alias             a 20-digit reference that the core reads as the agent control chat: receive, send and leave refuse it
@@ -1634,3 +1668,9 @@ C6      Claude Code closes the request stream when a call times out or its task 
 ## Decisions of 2026-10-31
 
 - The wait at stop is fixed for now: `--stop-wait` seconds, 10 by default, when cards were edited or posted at the stop; a second signal ends it. It replaces the count of pending deliveries read with `/sql`. A later change can post a final message and wait for its "sent" status for each owner.
+
+## Decisions of 2026-11-12
+
+- Restart notice (`plans/2026-11-12-mcp-restart-notice.md`): at each start the server posts `SimpleX MCP server VERSION (COMMIT) started.` in the agent control chat and in the chats approved for all messages where the agent can post as itself.
+- COMMIT: `git rev-parse --short=10 HEAD`, written to `dist/commit.txt` by `prepack`; without the file, ` (COMMIT)` is left out. The same version is in the start line.
+- The server posts the notice itself, without an action or a card; a failed post is logged, and the server continues the start.

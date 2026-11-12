@@ -52,6 +52,8 @@ answer each one in that chat, and call receive again after every answer, until I
 
 Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
 
+When its server starts, the agent posts `SimpleX MCP server 0.2.0 (8e4b6f1c2d) started.` in "My Agent" and in each chat approved with `all` for its messages, such as this one, unless it is incognito there: you see when it restarted, and the version and commit of its build.
+
 ## Safety
 
 - The agent asks in "My Agent" before it connects, sends a message or a file, downloads a file or leaves; you approve or reject. On a download card, `/receive` gives the agent the file, and `/forward` sends it only to you.
