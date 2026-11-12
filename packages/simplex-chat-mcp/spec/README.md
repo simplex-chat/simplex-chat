@@ -238,7 +238,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Session and its group | [`src/hub.ts`](../src/hub.ts#L43) | `Session` | [43](../src/hub.ts#L43) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L26) | `MainGroup` | [26](../src/main-group.ts#L26) |
 | Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
-| Hooks | [`src/hook.ts`](../src/hook.ts#L48) | `sessionStart`, `turn` | [48](../src/hook.ts#L48), [81](../src/hook.ts#L81) |
+| Hooks | [`src/hook.ts`](../src/hook.ts#L57) | `sessionStart`, `turn` | [57](../src/hook.ts#L57), [90](../src/hook.ts#L90) |
 | `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts#L22) | `showLink`, `resetOwners` | [22](../src/owner.ts#L22), [28](../src/owner.ts#L28) |
 | SimpleX core | [`src/core.ts`](../src/core.ts#L19) | `openCore` | [19](../src/core.ts#L19) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |

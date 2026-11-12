@@ -177,7 +177,7 @@ export class Session {
     })
   }
 
-  async turn({at, prompt, answer, model, effort}: TurnRequest): Promise<void> {
+  async turn({at, prompt, typed, answer, model, effort}: TurnRequest): Promise<void> {
     if (prompt !== undefined || answer !== undefined) this.endPermissions(at)
     const quoted = answer === undefined ? undefined : this.turnQuote(at ?? Infinity)
     if (answer !== undefined) this.answeredAt = Math.max(this.answeredAt, at ?? Date.now())
@@ -192,7 +192,7 @@ export class Session {
       this.store(this.description)
     }
     try {
-      if (prompt !== undefined && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser))
+      if (prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser))
       if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
     } finally {
       const {model: shown, effort: level} = this.description

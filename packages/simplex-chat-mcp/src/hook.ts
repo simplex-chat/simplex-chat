@@ -30,10 +30,19 @@ interface TurnInput {
   session_id: string
   hook_event_name?: string
   transcript_path?: string
+  prompt_id?: string
   prompt?: string
   last_assistant_message?: string
   to_model?: string
   effort?: {level?: string}
+}
+
+interface TranscriptEntry {
+  type?: unknown
+  isSidechain?: unknown
+  promptId?: unknown
+  origin?: {kind?: unknown} | null
+  message?: {model?: unknown; content?: unknown}
 }
 
 export interface HookOutput {
@@ -83,7 +92,8 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   try {
     const input = JSON.parse(stdin) as TurnInput
     const model = input.to_model ?? (input.hook_event_name === "Stop" ? await answerModel(input) : undefined)
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: cut(input.last_assistant_message), model, effort: input.effort?.level}
+    const typed = input.hook_event_name === "UserPromptSubmit" ? await promptTyped(input) : undefined
+    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), typed, answer: cut(input.last_assistant_message), model, effort: input.effort?.level}
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -103,13 +113,27 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
 async function answerModel({transcript_path: path, last_assistant_message: message}: TurnInput): Promise<string | undefined> {
   const answer = message?.trim()
   if (!path || !answer) return undefined
-  const bytes = transcriptTailBytes + 2 * Buffer.byteLength(answer)
+  const last = await findInTranscript(path, answer, tail => {
+    const entry = lastAnswer(tail)
+    return entry?.text === answer ? entry : undefined
+  })
+  return last?.model
+}
+
+async function promptTyped({transcript_path: path, prompt_id: id, prompt}: TurnInput): Promise<boolean> {
+  const text = prompt?.trim()
+  if (!path || !text) return false
+  const entry = await findInTranscript(path, text, tail => promptEntry(tail, id, text))
+  return entry?.origin?.kind === "human"
+}
+
+async function findInTranscript<T>(path: string, text: string, find: (tail: string) => T | undefined): Promise<T | undefined> {
+  const bytes = transcriptTailBytes + 2 * Buffer.byteLength(text)
   for (let read = 1; ; read++) {
     const tail = await readTail(path, bytes).catch(() => undefined)
     if (tail === undefined) return undefined
-    const last = lastAnswer(tail)
-    if (last?.text === answer) return last.model
-    if (read === transcriptReads) return undefined
+    const found = find(tail)
+    if (found !== undefined || read === transcriptReads) return found
     await new Promise(resolve => setTimeout(resolve, transcriptReadMs))
   }
 }
@@ -138,7 +162,17 @@ function lastAnswer(tail: string): {text: string; model?: string} | undefined {
   return undefined
 }
 
-function transcriptEntry(line: string): {type?: unknown; isSidechain?: unknown; message?: {model?: unknown; content?: unknown}} | undefined {
+function promptEntry(tail: string, id: string | undefined, text: string): TranscriptEntry | undefined {
+  const prompts = tail.split("\n").flatMap(line => {
+    const entry = transcriptEntry(line)
+    const content = entry?.message?.content
+    const toolResult = Array.isArray(content) && content.some((part: {type?: unknown} | null) => part?.type === "tool_result")
+    return entry?.type === "user" && entry.isSidechain !== true && !toolResult ? [entry] : []
+  })
+  return id !== undefined ? prompts.find(entry => entry.promptId === id) : prompts.filter(entry => textOf(entry.message?.content) === text).at(-1)
+}
+
+function transcriptEntry(line: string): TranscriptEntry | undefined {
   if (!line.startsWith("{")) return undefined
   try {
     return JSON.parse(line)
@@ -148,6 +182,7 @@ function transcriptEntry(line: string): {type?: unknown; isSidechain?: unknown; 
 }
 
 function textOf(content: unknown): string {
+  if (typeof content === "string") return content.trim()
   if (!Array.isArray(content)) return ""
   return content.flatMap((part: {type?: unknown; text?: unknown} | null) => (part?.type === "text" && typeof part.text === "string" ? [part.text] : [])).join("\n").trim()
 }

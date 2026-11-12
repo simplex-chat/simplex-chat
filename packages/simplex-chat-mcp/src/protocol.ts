@@ -50,6 +50,7 @@ export interface TurnRequest {
   pid?: number
   at?: number
   prompt?: string
+  typed?: boolean
   answer?: string
   model?: string
   effort?: string

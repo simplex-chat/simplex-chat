@@ -141,7 +141,7 @@ describe("turn hooks", () => {
     expect(await turn(JSON.stringify({session_id: id, hook_event_name: "PostModelSwitch", to_model: "claude-sonnet-5"}), {CLAUDE_PID: "x"}, client)).toEqual({})
     const at = performance.timeOrigin
     expect(requests).toEqual([
-      {method: "POST", route: "/turn", body: {id, pid: 4321, at, prompt: "fix the build"}},
+      {method: "POST", route: "/turn", body: {id, pid: 4321, at, prompt: "fix the build", typed: false}},
       {method: "POST", route: "/turn", body: {id, at, answer: "Fixed.", effort: "high"}},
       {method: "POST", route: "/turn", body: {id, at, model: "claude-sonnet-5"}},
     ])
@@ -178,8 +178,50 @@ describe("turn hooks", () => {
         {method: "POST", route: "/turn", body: {id, at: 1, answer: "No response requested."}},
         {method: "POST", route: "/turn", body: {id, at: 1, answer: "Never written."}},
         {method: "POST", route: "/turn", body: {id, at: 1, answer: "Lost."}},
-        {method: "POST", route: "/turn", body: {id, at: 1, prompt: "Run the tests"}},
+        {method: "POST", route: "/turn", body: {id, at: 1, prompt: "Run the tests", typed: false}},
         {method: "POST", route: "/turn", body: {id, at: 1, model: "claude-opus-5"}},
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("mark a prompt as typed only when its entry in the transcript, found by its prompt ID or else by its text, has the origin human, after that entry is written", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const prompt = (promptId: string | undefined, content: unknown, origin?: object) => `${JSON.stringify({type: "user", ...(promptId === undefined ? {} : {promptId}), ...(origin === undefined ? {} : {origin}), message: {role: "user", content}})}\n`
+      writeFileSync(transcript, [
+        prompt("p1", "Fix the build", {kind: "human"}),
+        prompt("p1", [{type: "tool_result", tool_use_id: "t1", content: "ok"}]),
+        prompt("p2", "<task-notification>\n<task-id>b1</task-id>\n</task-notification>", {kind: "task-notification"}),
+        prompt("p3", "Another Claude session sent a message: hi", {kind: "peer"}),
+        prompt("p4", '<channel source="plugin:simplex:simplex" from="Alice" item="7">\nRun the tests\n</channel>', {kind: "channel", server: "plugin:simplex:simplex"}),
+        prompt(undefined, [{type: "text", text: "Ship it"}, {type: "image", source: {}}], {kind: "human"}),
+        `${JSON.stringify({type: "user", isSidechain: true, promptId: "p6", origin: {kind: "human"}, message: {role: "user", content: "Subagent task"}})}\n`,
+      ].join(""))
+      const {client, requests} = turnClient()
+      const submit = (input: object) => turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, ...input}), {}, client, 0, 1)
+      await submit({prompt_id: "p1", prompt: "Fix the build"})
+      await submit({prompt_id: "p2", prompt: "<task-notification>\n<task-id>b1</task-id>\n</task-notification>"})
+      await submit({prompt_id: "p3", prompt: "Another Claude session sent a message: hi"})
+      await submit({prompt_id: "p4", prompt: '<channel source="plugin:simplex:simplex" from="Alice" item="7">\nRun the tests\n</channel>'})
+      await submit({prompt: "Ship it"})
+      await submit({prompt_id: "p6", prompt: "Subagent task"})
+      const later = submit({prompt_id: "p7", prompt: "Run the linter"})
+      const written = new Promise<void>(resolve => setTimeout(() => resolve(appendFileSync(transcript, prompt("p7", "Run the linter", {kind: "human"}))), 30))
+      await later
+      await written
+      await submit({prompt_id: "p8", prompt: "Never written."})
+      expect(requests.map(request => (request as {body: {prompt: string; typed: boolean}}).body).map(({prompt, typed}) => [prompt.slice(0, 20), typed])).toEqual([
+        ["Fix the build", true],
+        ["<task-notification>\n", false],
+        ["Another Claude sessi", false],
+        ['<channel source="plu', false],
+        ["Ship it", true],
+        ["Subagent task", false],
+        ["Run the linter", true],
+        ["Never written.", false],
       ])
     } finally {
       rmSync(folder, {recursive: true, force: true})

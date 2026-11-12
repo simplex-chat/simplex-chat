@@ -679,6 +679,24 @@ describe("session channel", () => {
     expect(described()).toEqual(["claude-sonnet-5"])
   })
 
+  it("posts as User only the prompts a person typed, keeps a turn record for every prompt, and quotes an owner's prompt in its answer", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posts: string[] = []
+    hub.user = {post: async (_n: number, parts: string[]) => void posts.push(parts.join(""))} as unknown as User
+    await ownerPrompt(session, 42, "Fix the build")
+    await session.turn({id: id1, at: 1, prompt: tag(42, "Fix the build"), typed: false})
+    await session.turn({id: id1, at: 2, answer: "Fixed."})
+    await session.turn({id: id1, at: 3, prompt: "<task-notification>\n<task-id>b1</task-id>\n</task-notification>", typed: false})
+    await session.turn({id: id1, at: 4, answer: "Noted."})
+    await session.turn({id: id1, at: 5, prompt: "Run the tests", typed: true})
+    await session.turn({id: id1, at: 6, answer: "Tests pass."})
+    await session.turn({id: id1, at: 7, prompt: "Run the linter"})
+    expect(posts).toEqual(["Run the tests", "Run the linter"])
+    expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "Noted.", quotedItemId: undefined}], [{text: "Tests pass.", quotedItemId: undefined}]])
+    expect(session["turns"]).toEqual([{at: 7, item: null}])
+  })
+
   it("splits an answer and a terminal prompt where a message reaches the size the core accepts, with the quote in the first part of an answer, for Latin, Cyrillic and CJK texts", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)

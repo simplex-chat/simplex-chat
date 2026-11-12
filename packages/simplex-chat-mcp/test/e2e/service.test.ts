@@ -1,4 +1,4 @@
-import {mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
+import {appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {dirname, join} from "path"
 import {T} from "@simplex-chat/types"
@@ -348,7 +348,7 @@ test("while SimpleX links are off in a session's group, the connect card of a bo
   await sendNotice
 }, 600_000)
 
-test("the hooks post a terminal prompt as User and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
+test("the hooks post a prompt typed in the terminal as User, and not a task notification, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -365,12 +365,14 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   let hookStart = 0
   const hook = (input: object) => turn(JSON.stringify({session_id: five, ...input}), {}, client, undefined, ++hookStart)
 
+  const transcript = join(dir, "mirror", "transcript.jsonl")
+  const userEntry = (promptId: string, content: string, kind: string) => `${JSON.stringify({type: "user", promptId, origin: {kind}, message: {role: "user", content}})}\n`
+  writeFileSync(transcript, userEntry("p1", "Fix the build", "human"))
   const typed = received(alice.chat, message("Fix the build", "User"))
-  expect(await hook({hook_event_name: "UserPromptSubmit", prompt: "Fix the build"})).toEqual({})
+  expect(await hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p1", prompt: "Fix the build"})).toEqual({})
   await typed
   const fixed = received(alice.chat, message("Fixed.", "Claude"))
-  const transcript = join(dir, "mirror", "transcript.jsonl")
-  writeFileSync(transcript, `${JSON.stringify({type: "assistant", message: {model: "claude-opus-5", content: [{type: "text", text: "Fixed."}]}})}\n`)
+  appendFileSync(transcript, `${JSON.stringify({type: "assistant", message: {model: "claude-opus-5", content: [{type: "text", text: "Fixed."}]}})}\n`)
   const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupId && toGroup.groupProfile.shortDescr === "claude-opus-5", 60_000)
   await hook({hook_event_name: "Stop", transcript_path: transcript, last_assistant_message: "Fixed."})
   await fixed
@@ -398,6 +400,9 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   await hook({hook_event_name: "UserPromptSubmit", prompt: `<channel source="plugin:simplex:simplex" from="Alice" item="${item}">\nRun the tests\n</channel>`})
   await hook({hook_event_name: "Stop", last_assistant_message: "Tests pass."})
   await passed
+  const notification = "<task-notification>\n<task-id>b1</task-id>\n<status>completed</status>\n</task-notification>"
+  appendFileSync(transcript, userEntry("p2", notification, "task-notification"))
+  await hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p2", prompt: notification})
   const [lint] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Run the linter")
   await until(() => attached.length === 3)
   const linted = received(alice.chat, message("Lint passes.", "Claude", lint.chatItem.meta.itemId))
