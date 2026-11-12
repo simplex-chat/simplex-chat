@@ -765,7 +765,7 @@ Data flow of a prompt from the session group:
 1. A message of a member in the group of session N reaches `Session.onMessage`: a one-line `/` command goes to `Control`; another message is queued after the earlier ones, and `Session.prompt` drops a message of `User` and delivers the rest ([hub.ts:486-491](../src/hub.ts#L486-L491), [:152-159](../src/hub.ts#L152-L159), [:226-229](../src/hub.ts#L226-L229)).
 2. In the first 30 s after the hub opened, a delivery without an attachment waits for one. With an attachment, its file, when it has one, is received. Then, without an attachment, the hub replies `Session N is not running.`; with one, the prompt is pushed, and the line `{prompt}` is written to every `/attach` stream of the session ([hub.ts:231-245](../src/hub.ts#L231-L245), [service.ts:314](../src/service.ts#L314)).
 3. The session process sends it to Claude Code as `notifications/claude/channel` ([session.ts:53-56](../src/session.ts#L53-L56), [:197-201](../src/session.ts#L197-L201)).
-4. The hooks post the terminal prompts and the final answer of each turn with `POST /turn` ([hook.ts:74-93](../src/hook.ts#L74-L93), [hub.ts:179-198](../src/hub.ts#L179-L198)).
+4. The hooks post the terminal prompts and the final answer of each turn with `POST /turn` ([hook.ts:81-101](../src/hook.ts#L81-L101), [hub.ts:179-198](../src/hub.ts#L179-L198)).
 
 ### 8.2 Modules
 
@@ -908,9 +908,10 @@ Data flow of a prompt from the session group:
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `sessionStart` | [hook.ts:41](../src/hook.ts#L41) | `{}` for a run that is not interactive, after the mark of its process when only `CLAUDE_CODE_SESSION_ATTENDED` makes it so; Node.js check, options, `ensureService`, `POST /title` with the title, the folder and the model, the link message |
-| `markUnattended` | [hook.ts:62](../src/hook.ts#L62) | with `CLAUDE_PID`: `ensureService`, `POST /title` with `unattended`; a failure logged |
-| `turn` | [hook.ts:74](../src/hook.ts#L74) | `{}` for a run that is not interactive; `ensureService`, then `POST /turn` with `CLAUDE_PID`, the hook process's start time `performance.timeOrigin`, the prompt and the last answer, each cut to 250,000 characters, the new model and the effort level, repeated after status 409 up to 15 times 1 s apart; output `{}` |
+| `sessionStart` | [hook.ts:48](../src/hook.ts#L48) | `{}` for a run that is not interactive, after the mark of its process when only `CLAUDE_CODE_SESSION_ATTENDED` makes it so; Node.js check, options, `ensureService`, `POST /title` with the title, the folder and the model, the link message |
+| `markUnattended` | [hook.ts:69](../src/hook.ts#L69) | with `CLAUDE_PID`: `ensureService`, `POST /title` with `unattended`; a failure logged |
+| `turn` | [hook.ts:81](../src/hook.ts#L81) | `{}` for a run that is not interactive; `ensureService`, then `POST /turn` with `CLAUDE_PID`, the hook process's start time `performance.timeOrigin`, the prompt and the last answer, each cut to 250,000 characters, the new model of PostModelSwitch or the model of Stop's answer, and the effort level, repeated after status 409 up to 15 times 1 s apart; output `{}` |
+| `answerModel`, `readTail`, `lastAnswer` | [hook.ts:103-153](../src/hook.ts#L103-L153) | the model of Stop's answer: the `message.model` of the last entry of type `assistant` without `isSidechain` in the last 1 MiB and twice the answer's bytes of `transcript_path`, once that entry's text is the answer, read up to 20 times 100 ms apart; none for `<synthetic>`, an answer without text, an empty path, an unreadable transcript, or an entry not written within the reads |
 | `linkCommand`, `resetCommand` | [owner.ts:7-8](../src/owner.ts#L7-L8) | `npx -y @simplex-chat/mcp@VERSION link` and `reset-owners`, VERSION of this package |
 | `linkText`, `resetOwnersText` | [owner.ts:10-20](../src/owner.ts#L10-L20) | the Main group's name with the owners, or with the link and a QR code on a terminal only |
 | `showLink`, `resetOwners` | [owner.ts:22-33](../src/owner.ts#L22-L33) | `link`, with the link from `GET /link` while the Main group has no owner; `reset-owners`, the Main group replaced at once, the new link shown on a terminal only |
@@ -1000,9 +1001,9 @@ Files:
 
 #### Session start
 
-1. The SessionStart hook checks Node.js 22, reads the options, starts the service when it is not running, and sends `POST /title` with the session ID, `CLAUDE_PID`, title, project folder, model and options ([hook.ts:41-60](../src/hook.ts#L41-L60)). In a run that is not interactive, it returns `{}`; when only `CLAUDE_CODE_SESSION_ATTENDED` `0` makes the run so, it first sends `POST /title` with `unattended`, and `/session` from that `CLAUDE_PID` gets 403 for 10 s ([flow 30](flows.md#30-a-run-that-is-not-interactive)).
+1. The SessionStart hook checks Node.js 22, reads the options, starts the service when it is not running, and sends `POST /title` with the session ID, `CLAUDE_PID`, title, project folder, model and options ([hook.ts:48-67](../src/hook.ts#L48-L67)). In a run that is not interactive, it returns `{}`; when only `CLAUDE_CODE_SESSION_ATTENDED` `0` makes the run so, it first sends `POST /title` with `unattended`, and `/session` from that `CLAUDE_PID` gets 403 for 10 s ([flow 30](flows.md#30-a-run-that-is-not-interactive)).
 2. `/title` resolves the ID to a session as in [API 4.6](api.md#46-socket-protocol), so that `/clear`, `/resume` and `--continue` keep the session of the running Claude Code process, with an alias only for an ID without `session.json`; a new ID from a process without a known session waits, after the reply, for the server of that process to register, up to 10 s; then `/title` opens the session: from `session.json`, or with a new number and the name from the title or the folder; `Hub.session` finds the group of `session.json` or creates one, adds `User`, invites the Main group's owners, and loads its `Control` ([service.ts:218-262](../src/service.ts#L218-L262), [:392-402](../src/service.ts#L392-L402), [hub.ts:397-415](../src/hub.ts#L397-L415)).
-3. A new title renames the group and `session.json`; the model is written to the group's short description ([service.ts:260-261](../src/service.ts#L260-L261)).
+3. A new title renames the group and `session.json`; the model, when Claude Code passes it, is written to the group's short description ([service.ts:260-261](../src/service.ts#L260-L261)). The Stop hook of each turn sends the model of its answer from the transcript, so the short description shows the model from the first answer also when the SessionStart hook has none ([hook.ts:85](../src/hook.ts#L85), [:103-115](../src/hook.ts#L103-L115)).
 4. The hook prints the link message while the Main group has no owner, else `{}`.
 5. The session process connects in the background: `/session` resolves its ID, waiting up to 10 s for the title of its process when the ID is new, registers the options and its parent process, and requests the mode; `/attach` sets the session's line writer ([service.ts:201-216](../src/service.ts#L201-L216), [:304-324](../src/service.ts#L304-L324)). When `/attach` ends or the connection fails, except with a `ProtocolError` or a 403 of `/session`, the session process connects again ([session.ts:88-112](../src/session.ts#L88-L112)).
 
@@ -1106,7 +1107,7 @@ stateDiagram-v2
 | session to Claude Code | `notifications/claude/channel` `{content, meta: {from, item, file?}}`; `notifications/claude/channel/permission` `{request_id, behavior}` | [session.ts:197-201](../src/session.ts#L197-L201) |
 | Claude Code to session | `notifications/claude/channel/permission_request` `{request_id, tool_name, description, input_preview}` | [session.ts:58-62](../src/session.ts#L58-L62) |
 | session to service | `POST /permission` | [session.ts:114-118](../src/session.ts#L114-L118) |
-| hooks to service | `POST /turn` `{id, pid?, at?, prompt?, answer?, model?, effort?}`, `at` the hook's `performance.timeOrigin`, `prompt` and `answer` cut to 250,000 characters | [hook.ts:74-97](../src/hook.ts#L74-L97) |
+| hooks to service | `POST /turn` `{id, pid?, at?, prompt?, answer?, model?, effort?}`, `at` the hook's `performance.timeOrigin`, `prompt` and `answer` cut to 250,000 characters, `model` of PostModelSwitch, or of Stop's answer in the transcript | [hook.ts:81-157](../src/hook.ts#L81-L157) |
 
 ```
 on a message m in N:               one-line "/" text from a member who is neither an admin, an owner nor User:
@@ -1153,7 +1154,7 @@ Sources: [hub.ts:152-204](../src/hub.ts#L152-L204), [:226-292](../src/hub.ts#L22
 | Rule | Code |
 |---|---|
 | The socket is in ROOT, mode 0700, or a named pipe on Windows; every request needs the token, compared with `timingSafeEqual` | [socket.ts:19-25](../src/socket.ts#L19-L25), [files.ts:74-79](../src/files.ts#L74-L79) |
-| The Main group link is shown only in the hook's `systemMessage` and by `link` on a terminal; tool results, refusals and other output name the command instead; of the socket's routes, only `/title` and `/link` return it | [hook.ts:54-56](../src/hook.ts#L54-L56), [owner.ts:7-15](../src/owner.ts#L7-L15), [control.ts:39](../src/control.ts#L39), [service.ts:154](../src/service.ts#L154), [:215](../src/service.ts#L215), [:426](../src/service.ts#L426) |
+| The Main group link is shown only in the hook's `systemMessage` and by `link` on a terminal; tool results, refusals and other output name the command instead; of the socket's routes, only `/title` and `/link` return it | [hook.ts:61-63](../src/hook.ts#L61-L63), [owner.ts:7-15](../src/owner.ts#L7-L15), [control.ts:39](../src/control.ts#L39), [service.ts:154](../src/service.ts#L154), [:215](../src/service.ts#L215), [:426](../src/service.ts#L426) |
 | `reset-owners` shows the new link only on a terminal | [owner.ts:17-20](../src/owner.ts#L17-L20), [:28-33](../src/owner.ts#L28-L33) |
 | The plugin runs its own `dist/cli.js`, and Node.js loads its modules, bundled in the package, from the plugin's folder, so the `node_modules` of a project can't replace them | [.mcp.json:5](../.mcp.json#L5), [hooks.json:3-7](../hooks/hooks.json#L3-L7), [package.json:35](../package.json#L35) |
 | The service gets only the environment variables of `serviceVariables` | [client.ts:13](../src/client.ts#L13), [:78](../src/client.ts#L78) |
@@ -1177,7 +1178,8 @@ Sources: [hub.ts:152-204](../src/hub.ts#L152-L204), [:226-292](../src/hub.ts#L22
 | prompts held for an attachment after the hub opens | 30 s | [hub.ts:26](../src/hub.ts#L26) |
 | record of a pending connection | 1 day | [hub.ts:25](../src/hub.ts#L25) |
 | wait of a session server for the title of its process; a detached session server's process kept; the mark of an unattended run's process, removed at a later mark | 10 s | [service.ts:19](../src/service.ts#L19), [:237-243](../src/service.ts#L237-L243) |
-| attempts of a turn the service refuses with status 409 | 15, 1 s apart | [hook.ts:12-14](../src/hook.ts#L12-L14) |
+| attempts of a turn the service refuses with status 409 | 15, 1 s apart | [hook.ts:13-15](../src/hook.ts#L13-L15) |
+| reads of the transcript for the model of Stop's answer | 20, 100 ms apart, each of the last 1 MiB and twice the answer's bytes | [hook.ts:17-19](../src/hook.ts#L17-L19), [:103-128](../src/hook.ts#L103-L128) |
 | attachment retries of a session server | 1 s, doubled up to 30 s | [session.ts:19-20](../src/session.ts#L19-L20) |
 | part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [hub.ts:522-539](../src/hub.ts#L522-L539), [tools.ts:163-164](../src/tools.ts#L163-L164), [:1575-1578](../src/tools.ts#L1575-L1578) |
 | cancelled cards wait at stop | 10 s | [hub.ts:21](../src/hub.ts#L21) |

@@ -805,7 +805,7 @@ sequenceDiagram
 
 Notes:
 
-- The link reaches the person only: the hook's `systemMessage` carries it, and no hook context or tool result does ([hook.ts:54-56](../src/hook.ts#L54-L56)).
+- The link reaches the person only: the hook's `systemMessage` carries it, and no hook context or tool result does ([hook.ts:61-63](../src/hook.ts#L61-L63)).
 - The core deletes the preset contact of a new profile, both in `_hub` and in `_user` ([core.ts:28](../src/core.ts#L28), [:44-52](../src/core.ts#L44-L52)).
 - `User` connects at the first start only: later starts find the hub's contact marked `simplexMcpUser`. The contact is the one whose connection is that of the invitation the hub created; when `User` does not connect in 60 s, the service runs without it, and terminal prompts are not posted ([user.ts:21](../src/user.ts#L21), [:38-48](../src/user.ts#L38-L48), [:60-62](../src/user.ts#L60-L62), [hub.ts:366](../src/hub.ts#L366)).
 - A later service start without owners keeps the Main group's link ([main-group.ts:68-76](../src/main-group.ts#L68-L76)).
@@ -814,7 +814,7 @@ Notes:
 - A session group states at each join other than `User`'s the rights of the joiner's role, with the command that makes them an observer for a role that sends ([hub.ts:217-224](../src/hub.ts#L217-L224), [:509](../src/hub.ts#L509)).
 - The service reads the hub's contact of `User` after `User` opens, so that the sessions tell `User`'s messages ([hub.ts:367](../src/hub.ts#L367)).
 
-Source: [hook.ts:41-60](../src/hook.ts#L41-L60), [client.ts:35-92](../src/client.ts#L35-L92), [service.ts:93-119](../src/service.ts#L93-L119), [:218-262](../src/service.ts#L218-L262), [hub.ts:358-376](../src/hub.ts#L358-L376), [:397-415](../src/hub.ts#L397-L415), [:468-480](../src/hub.ts#L468-L480), [main-group.ts:117-140](../src/main-group.ts#L117-L140), [user.ts:16-57](../src/user.ts#L16-L57).
+Source: [hook.ts:48-67](../src/hook.ts#L48-L67), [client.ts:35-92](../src/client.ts#L35-L92), [service.ts:93-119](../src/service.ts#L93-L119), [:218-262](../src/service.ts#L218-L262), [hub.ts:358-376](../src/hub.ts#L358-L376), [:397-415](../src/hub.ts#L397-L415), [:468-480](../src/hub.ts#L468-L480), [main-group.ts:117-140](../src/main-group.ts#L117-L140), [user.ts:16-57](../src/user.ts#L16-L57).
 
 ---
 
@@ -952,6 +952,7 @@ sequenceDiagram
   participant P as Person
   participant CC as Claude Code
   participant HK as Turn hook
+  participant T as Transcript
   participant D as Service
   participant N as Session N
   participant U as User
@@ -966,12 +967,16 @@ sequenceDiagram
   N->>U: post(N, parts), unless a "/" command
   U->>O: the prompt in #35;G, from User
   CC->>CC: turn ends
-  CC->>HK: Stop {session_id, last_assistant_message, effort}
-  HK->>D: ensureService, POST /turn {id, pid, at, answer, effort}
+  CC->>HK: Stop {session_id, transcript_path, last_assistant_message, effort}
+  CC->>T: the answer's entry, within about 100 ms
+  loop up to 20 reads, 100 ms apart, until Claude's last entry is the answer
+    HK->>T: read the last 1 MiB and twice the answer's bytes
+  end
+  HK->>D: ensureService, POST /turn {id, pid, at, answer, model, effort}
   D->>N: turn
   N->>N: end pending permissions created before at
   N->>N: quote = the newest turn record before at#59; it and the older ones leave turns
-  N->>N: a changed effort: description, session.json
+  N->>N: a changed model or effort: description, session.json
   N->>C: apiSendMessages #35;G parts, the first quoting the quote when it came from the group and fits with the first character
   opt the core refuses the quote
     N->>C: apiSendMessages #35;G parts without the quote
@@ -982,7 +987,7 @@ sequenceDiagram
 
 Notes:
 
-- `at` is `performance.timeOrigin` of the hook process. An answer quotes the newest prompt record whose hook started before its own, also when the request of the next prompt arrives first, or while the answer's request waits for the short description ([hook.ts:74](../src/hook.ts#L74), [hub.ts:179-185](../src/hub.ts#L179-L185), [:257-266](../src/hub.ts#L257-L266)).
+- `at` is `performance.timeOrigin` of the hook process. An answer quotes the newest prompt record whose hook started before its own, also when the request of the next prompt arrives first, or while the answer's request waits for the short description ([hook.ts:81](../src/hook.ts#L81), [hub.ts:179-185](../src/hub.ts#L179-L185), [:257-266](../src/hub.ts#L257-L266)).
 - A prompt from the group is not posted again: the pushed prompts in `<channel source="plugin:simplex:simplex" ... item="I" ...>` tags of the prompt with their item, or equal to the raw prompt and pushed in the last 60 s, leave the pushed prompts, and the oldest of them is the item of the turn record. Without a turn record before the answer, the answer quotes the oldest pushed prompt not quoted yet and marks it; it stays pushed, so that a prompt request handled after the Stop request still matches it and `User` does not post it ([hub.ts:23-27](../src/hub.ts#L23-L27), [:183-185](../src/hub.ts#L183-L185), [:259-263](../src/hub.ts#L259-L263), [:288-292](../src/hub.ts#L288-L292)).
 - An empty answer takes its turn record too, without a post ([hub.ts:181](../src/hub.ts#L181), [:193](../src/hub.ts#L193)).
 - A prompt request whose hook started before an answer already handled records no turn, so that a later answer does not quote its prompt ([hub.ts:182](../src/hub.ts#L182), [:184](../src/hub.ts#L184)).
@@ -990,11 +995,12 @@ Notes:
 - An answer and a terminal prompt are posted in parts: the longest runs of whole characters that each fit one message as `send` measures it, the first part of an answer with its quote; each part is searched among the next 15602 characters. A part that `User` posts and that starts with `/` gets no command reply ([hub.ts:192](../src/hub.ts#L192), [:268-278](../src/hub.ts#L268-L278), [:522-539](../src/hub.ts#L522-L539), [tools.ts:1575-1578](../src/tools.ts#L1575-L1578), [control.ts:223](../src/control.ts#L223)).
 - An answer whose quote the core refuses with `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or which the core refuses with the quote as too large, `largeMsg`, is posted without the quote; so are the replies `Session N is not running.`, `The file of this message was not received: ERROR` and the reply to a one-line `/` text of a moderator, member or author ([hub.ts:280-286](../src/hub.ts#L280-L286), [:541-544](../src/hub.ts#L541-L544)).
 - An answer or a terminal prompt that the core refuses with `feature not allowed NAME`, as `SimpleX links` for a SimpleX link while that preference is off, or, for a prompt of `User`, on only for roles above that of `User`, is replaced by Claude's post `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would, or `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`; the turn goes on ([hub.ts:192](../src/hub.ts#L192), [:268-278](../src/hub.ts#L268-L278), [:514-516](../src/hub.ts#L514-L516)).
-- The hook cuts a prompt or an answer over 250,000 characters there, ending with `…`, so that the request fits the socket's 1 MiB ([hook.ts:15](../src/hook.ts#L15), [:95-97](../src/hook.ts#L95-L97)).
-- A card of a tool use that started after the hook is kept: the hook's start time `at` is earlier than its creation ([hook.ts:74](../src/hook.ts#L74), [hub.ts:200-204](../src/hub.ts#L200-L204)).
-- PostModelSwitch sends `{id, model}`; only the short description changes ([hook.ts:78](../src/hook.ts#L78), [hub.ts:186-197](../src/hub.ts#L186-L197)).
-- A Stop request with a changed effort posts the answer before it updates the short description, so that a prompt request handled meanwhile posts after the answer; the description is updated also when a post fails ([hub.ts:191-197](../src/hub.ts#L191-L197)).
-- A turn hook starts the service when none runs, repeats a turn refused with 409 up to 15 times 1 s apart, past the 10 s a held title waits, prints `{}`, and logs errors on its stderr ([hook.ts:74-93](../src/hook.ts#L74-L93)).
+- The hook cuts a prompt or an answer over 250,000 characters there, ending with `…`, so that the request fits the socket's 1 MiB ([hook.ts:16](../src/hook.ts#L16), [:155-157](../src/hook.ts#L155-L157)).
+- A card of a tool use that started after the hook is kept: the hook's start time `at` is earlier than its creation ([hook.ts:81](../src/hook.ts#L81), [hub.ts:200-204](../src/hub.ts#L200-L204)).
+- The Stop hook sends the model of its answer: the `message.model` of Claude's last entry in the transcript, an entry of type `assistant` without `isSidechain`, once the text of that entry is the answer. It reads only the end of the transcript, the last 1 MiB and twice the answer's bytes, up to 20 times 100 ms apart, as Claude Code writes the transcript every 100 ms. It sends no model for the model `<synthetic>`, for an answer without text, for an empty `transcript_path` or an unreadable transcript, and when the answer's entry is not written within the reads ([hook.ts:17-20](../src/hook.ts#L17-L20), [:85](../src/hook.ts#L85), [:103-153](../src/hook.ts#L103-L153)).
+- PostModelSwitch sends `{id, model}`; only the short description changes ([hook.ts:85-86](../src/hook.ts#L85-L86), [hub.ts:186-197](../src/hub.ts#L186-L197)).
+- A Stop request with a changed model or effort posts the answer before it updates the short description, so that a prompt request handled meanwhile posts after the answer; the description is updated also when a post fails ([hub.ts:191-197](../src/hub.ts#L191-L197)).
+- A turn hook starts the service when none runs, repeats a turn refused with 409 up to 15 times 1 s apart, past the 10 s a held title waits, prints `{}`, and logs errors on its stderr ([hook.ts:81-101](../src/hook.ts#L81-L101)).
 
 Source: [hooks.json:5-7](../hooks/hooks.json#L5-L7), [hub.ts:179-198](../src/hub.ts#L179-L198), [:257-286](../src/hub.ts#L257-L286), [:522-539](../src/hub.ts#L522-L539), [user.ts:29-32](../src/user.ts#L29-L32).
 
@@ -1202,12 +1208,12 @@ Notes:
 - Only an ID without `session.json` gets an alias. A hook of an ID with `session.json` goes to the session attached from its process, in memory, else to its own session; a session server with such an ID registers it ([service.ts:268-277](../src/service.ts#L268-L277)).
 - A title of a new ID from a process without a known session is answered at once and applied after the session server of that process registers, or after 10 s without one; then it opens a session of its own. So `/clear` during the re-attach of a session server after a service start, and `--fork-session` in either order, join the new ID to the session the server registers ([service.ts:201-262](../src/service.ts#L201-L262), [:466-476](../src/service.ts#L466-L476)).
 - A session created for an ID records the aliases that already point to it in its first `session.json` ([service.ts:397-398](../src/service.ts#L397-L398)).
-- Turn hooks of an ID whose title is held get 409 and repeat up to 15 times 1 s apart, past the 10 s ([hook.ts:13](../src/hook.ts#L13)).
+- Turn hooks of an ID whose title is held get 409 and repeat up to 15 times 1 s apart, past the 10 s ([hook.ts:14](../src/hook.ts#L14)).
 - A second title of a process whose title is held is held too, so that two `/clear` within the wait join both new IDs to the session the server registers. A service stop saves the held titles in `ROOT/titles.json`; the next start takes them as new titles ([service.ts:106](../src/service.ts#L106), [:180](../src/service.ts#L180), [:222-232](../src/service.ts#L222-L232)).
 - Aliases are read from `session.json` at the service's start, so later hooks and calls with B or X reach the same session ([service.ts:87-91](../src/service.ts#L87-L91), [:290-295](../src/service.ts#L290-L295)).
 - Without `CLAUDE_PID`, before Claude Code 2.1.214, a new session server waits the 10 s and then registers its own ID.
 
-Source: [hook.ts:53](../src/hook.ts#L53), [:78](../src/hook.ts#L78), [:99-102](../src/hook.ts#L99-L102), [session.ts:53](../src/session.ts#L53), [service.ts:201-295](../src/service.ts#L201-L295).
+Source: [hook.ts:60](../src/hook.ts#L60), [:86](../src/hook.ts#L86), [:159-162](../src/hook.ts#L159-L162), [session.ts:53](../src/session.ts#L53), [service.ts:201-295](../src/service.ts#L201-L295).
 
 ---
 
@@ -1337,6 +1343,6 @@ Notes:
 - Claude Code sets `CLAUDE_CODE_SESSION_ATTENDED`, `1` or `0`, for its hooks, `0` for a run nobody attends; its MCP servers get the variable only from the environment of the command that started Claude Code. The run recorded with Claude Code 2.1.319 in [`claude-p-runs.jsonl`](../test/unit/claude-p-runs.jsonl): the hooks got `0` and a `CLAUDE_PID` equal to the server's parent process; the server got the parent session's `1` and `CLAUDE_PID`.
 - The service checks the mark before the wait of `/session` for the title of its process and after it, so either order of the hook and the server ends in the refusal; a mark counts for 10 s, and the next mark removes it after that ([service.ts:203-205](../src/service.ts#L203-L205), [:237-248](../src/service.ts#L237-L248)).
 - A refused server answers every call with that text, relays no permission request and registers no more ([session.ts:79-80](../src/session.ts#L79-L80), [:92](../src/session.ts#L92), [:115](../src/session.ts#L115), [:127](../src/session.ts#L127), [:162-165](../src/session.ts#L162-L165)).
-- A hook without `CLAUDE_PID` sends no mark; a failed mark is logged as `SimpleX MCP session start` ([hook.ts:62-72](../src/hook.ts#L62-L72)).
+- A hook without `CLAUDE_PID` sends no mark; a failed mark is logged as `SimpleX MCP session start` ([hook.ts:69-79](../src/hook.ts#L69-L79)).
 
-Source: [config.ts:22-32](../src/config.ts#L22-L32), [hook.ts:41-45](../src/hook.ts#L41-L45), [:75](../src/hook.ts#L75), [service.ts:221](../src/service.ts#L221), [:237-248](../src/service.ts#L237-L248), [session.ts:45](../src/session.ts#L45).
+Source: [config.ts:22-32](../src/config.ts#L22-L32), [hook.ts:48-52](../src/hook.ts#L48-L52), [:82](../src/hook.ts#L82), [service.ts:221](../src/service.ts#L221), [:237-248](../src/service.ts#L237-L248), [session.ts:45](../src/session.ts#L45).

@@ -619,7 +619,7 @@ Claude: I want to use `Bash`: `List files`
 
 ### Model and effort
 
-The short description of a session's group shows the model and the effort level: `MODEL · effort LEVEL`. The model is set at the session start, when Claude Code passes it, and at each model change; the effort level at the end of each turn. Changes made in the terminal, or from the Claude app by Remote Control, show the same way.
+The short description of a session's group shows the model and the effort level: `MODEL · effort LEVEL`. The model is set at the session start, when Claude Code passes it, at each model change, and at the end of each turn, from the model of its answer in the session's transcript, so it is shown from the first answer, also in a resumed session; the effort level is set at the end of each turn. Changes made in the terminal, or from the Claude app by Remote Control, show the same way.
 
 ### Options
 
