@@ -933,7 +933,7 @@ testTermsCheckOrder = withOrders $ \ctx@Ctx {cNode = node} -> do
 issueCode :: Ctx -> Int -> Int -> (NewPrepaidCode -> NewPrepaidCode) -> IO (Text, PrepaidCode)
 issueCode Ctx {cStore, cRandom} len years change = do
   code <- randomNamePrepaidCode cRandom len
-  let new = change NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing}
+  let new = change NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
   stored <- withTransaction cStore $ \db ->
     insertPrepaidCode db new orderTime >>= \case
       Right codeId -> fromJust <$> getPrepaidCodeById db codeId

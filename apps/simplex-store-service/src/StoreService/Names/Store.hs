@@ -28,6 +28,7 @@ module StoreService.Names.Store
     CleanupKept (..),
     PrepaidCode (..),
     NewPrepaidCode (..),
+    CodeIssuer (..),
     CodeHashTaken (..),
     TxFor (..),
     TxStatus (..),
@@ -78,7 +79,7 @@ module StoreService.Names.Store
     lateWait,
     insertPrepaidCode,
     getPrepaidCode,
-    nameCodesIssuedSince,
+    groupNameCodesIssuedSince,
     getPrepaidCodeById,
     reservePrepaidCode,
     releasePrepaidCode,
@@ -401,8 +402,12 @@ data NewPrepaidCode = NewPrepaidCode
     npcMinLength :: Int,
     npcYears :: Int,
     npcPaymentStatus :: BadgeCodePaymentStatus,
-    npcExpiresAt :: Maybe UTCTime
+    npcExpiresAt :: Maybe UTCTime,
+    npcIssuer :: CodeIssuer
   }
+
+data CodeIssuer = IssuedInGroup | IssuedInConsole
+  deriving (Eq, Show)
 
 data CodeHashTaken = CodeHashTaken
   deriving (Eq, Show)
@@ -1263,16 +1268,16 @@ setLateSupport db (InvoiceId invId) support =
   DB.execute db "UPDATE sx_badge_service_name_invoices SET late_support = COALESCE(late_support, ?) WHERE invoice_id = ?" (support, invId)
 
 insertPrepaidCode :: DB.Connection -> NewPrepaidCode -> UTCTime -> IO (Either CodeHashTaken Int64)
-insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, npcExpiresAt} now = do
+insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, npcExpiresAt, npcIssuer} now = do
   inserted <-
     executeChanging
       db
       [sql|
-        INSERT INTO sx_badge_service_name_prepaid_codes (code_hash, min_length, years, code_payment_status, expires_at, created_at)
-        VALUES (?,?,?,?,?,?)
+        INSERT INTO sx_badge_service_name_prepaid_codes (code_hash, min_length, years, code_payment_status, expires_at, created_at, issued_in_group)
+        VALUES (?,?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
       |]
-      (Binary npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, truncateToSecond <$> npcExpiresAt, truncateToSecond now)
+      (Binary npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, truncateToSecond <$> npcExpiresAt, truncateToSecond now, BI (npcIssuer == IssuedInGroup))
   if inserted > 0 then Right <$> insertedRowId db else pure $ Left CodeHashTaken
 
 prepaidCodeColumns :: Query
@@ -1288,8 +1293,8 @@ toPrepaidCode :: PrepaidCodeRow -> PrepaidCode
 toPrepaidCode ((pcId, Binary pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt) :. Only pcCreatedAt) =
   PrepaidCode {pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, pcReservedBy = RegistrationId <$> reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt, pcCreatedAt}
 
-nameCodesIssuedSince :: DB.Connection -> UTCTime -> IO Int
-nameCodesIssuedSince db since = maybe 0 fromOnly <$> maybeFirstRow id (DB.query db "SELECT COUNT(*) FROM sx_badge_service_name_prepaid_codes WHERE created_at >= ?" (Only since))
+groupNameCodesIssuedSince :: DB.Connection -> UTCTime -> IO Int
+groupNameCodesIssuedSince db since = maybe 0 fromOnly <$> maybeFirstRow id (DB.query db "SELECT COUNT(*) FROM sx_badge_service_name_prepaid_codes WHERE created_at >= ? AND issued_in_group = 1" (Only since))
 
 getPrepaidCode :: DB.Connection -> ByteString -> IO (Maybe PrepaidCode)
 getPrepaidCode db codeHash =
