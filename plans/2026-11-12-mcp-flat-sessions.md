@@ -67,14 +67,16 @@ gap above a name row             7.8 pt iOS, 7.3 dp Android and desktop       at
 the same, below a date           0                                            the avatar's part above the name line
 separator or the chat banner,
 and for the oldest loaded item
-media and cards                  their widths                                 the same widths, 12 from the screen edge
-time over captionless media      over the media when the media and the        the same rule in the wider row, so the time is
-                                 time are wider than the row                  beside more media
+images on iOS                    the classic width, after the avatar column   the same width, 12 from the screen edge
+wide images on Android and       the row less 12 dp on each side              the same rule in the wider row: 49 dp wider
+desktop
+time of an image without         over the image when the image and the        the same rule; on iOS the time moves beside the
+caption                          time are wider than the row                  image, on Android and desktop it stays over it
 ```
 
 Each line of text is 46 pt wider on iOS and 49 dp wider on Android and desktop.
 
-The exact design is drawn for both platforms, before and after, and approved by the user before the app code.
+The exact design is drawn for both platforms, before and after, and approved by the user before the app code. The drawings follow the code's geometry; their agreement with the apps is checked against the snapshot references of master.
 
 ```mermaid
 flowchart TB
@@ -134,8 +136,8 @@ The Flat layout in the apps:
 14. A message starts below the lower of the name line and the avatar. When it starts with a card, the paragraph gap is added below that, as below the name now (`TerminalItemView.kt:431`; `TerminalItemView.swift:404`).
 15. The name stays 12 after the avatar, by the user's rule of one 12 padding (I26: `plans/2026-10-13-flat-chat-layout-ui.md:39`; `apps/ios/spec/client/chat-view.md:360`). The mockup has 8 px there; the README image is drawn again with 12 (section 8).
 16. The gap above a row is at least the avatar's part above the name line. `terminalRowGap` is 0 below a date separator, below the chat banner and for the oldest loaded item (`TerminalItemView.kt:138-139`; `TerminalItemView.swift:130-135`); there the avatar's part sets the gap, so the avatar stays inside its own row.
-17. Media and cards keep their widths. On iOS the gutter is removed from the media limit `listWidth − leading − gutter − 24` (`ChatView.swift:2172`), and the classic `maxWidth` stays (`ChatView.swift:936-944`). On Android and desktop media widths are fixed (`CIImageView.kt:111`).
-18. The time's placement keeps its rules; the row is wider, so the time over captionless media moves beside the media when both fit (`TerminalItemView.kt:294`, `TerminalItemView.swift:330`).
+17. Media sizes keep their rules. On iOS an image is as wide as the classic `maxWidth` (`ChatView.swift:936-944`), and the gutter is removed from the media limit `listWidth − leading − gutter − 24` (`ChatView.swift:2172`), so images keep their width. On Android and desktop a wide image asks for 500 dp (`CIImageView.kt:111`) inside 12 dp paddings on both sides (`FramedItemView.kt:57`), so in the wider row it is 49 dp wider.
+18. The time's placement keeps its rules: over an image without caption only when the image and the time are wider than the row (`TerminalItemView.kt:294`, `TerminalItemView.swift:330`). So on iOS the time moves beside such an image; on Android and desktop it stays over it.
 19. `gutter` keeps its value on both platforms, the avatar column, and now places only the name (`TerminalItemView.kt:392-394`; `ChatView.swift:2152`). Callers stay as they are.
 
 ## 5. Design
