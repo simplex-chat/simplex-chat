@@ -354,16 +354,6 @@ struct ChatInfoView: View {
                 $0.content
             }
         }
-        .onChange(of: chat.chatInfo.contact?.mergedPreferences) { _ in
-            if let ct = chat.chatInfo.contact {
-                contact = ct
-                let allowed = contactUserPrefsToFeaturesAllowed(ct.mergedPreferences)
-                if allowed != currentFeaturesAllowed {
-                    featuresAllowed = allowed
-                    currentFeaturesAllowed = allowed
-                }
-            }
-        }
         .onDisappear {
             if currentFeaturesAllowed != featuresAllowed {
                 showAlert(
@@ -372,6 +362,12 @@ struct ChatInfoView: View {
                     buttonAction: { savePreferences() },
                     cancelButton: true
                 )
+            }
+        }
+        .onChange(of: chat.chatInfo.contact.map { contactUserPrefsToFeaturesAllowed($0.mergedPreferences) }) { allowed in
+            if let allowed {
+                featuresAllowed = allowed
+                currentFeaturesAllowed = allowed
             }
         }
     }
