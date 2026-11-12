@@ -542,3 +542,23 @@ test("--display-name names the profile and the agent control chat", async () => 
   expect((await controlGroupOf(agent.server.chat, agent.server.user.userId)).groupProfile.displayName).toBe("Ridge Scout")
   expect(await renamed).toBeDefined()
 }, 600_000)
+
+test("/secret: the owner's message is moderated in the agent control chat, its value is stored, and list returns its name", async () => {
+  const alice = await personIn("secret", "Alice")
+  const agent = await agentIn("secret")
+  const folder = join(dir, "secret", "secrets")
+  await agent.start({secrets: folder})
+  const controlId = await joinAsOwner(alice)
+
+  const value = "tok en/+?=é-1234"
+  const deleted = alice.chat.wait("chatItemsDeleted", timeout)
+  const reply = received(alice.chat, textStarts("Secret API_TOKEN is set."))
+  const [sent] = await alice.chat.apiSendTextMessage([T.ChatType.Group, controlId], `/secret API_TOKEN ${value}`)
+  expect((await deleted)!.chatItemDeletions.map(({deletedChatItem}) => deletedChatItem.chatItem.meta.itemId)).toEqual([sent.chatItem.meta.itemId])
+  expect((await reply).chatItem.quotedItem).toBeUndefined()
+  expect(readFileSync(join(folder, "API_TOKEN"), "utf8")).toBe(value)
+  const {server} = agent
+  const {chatItems} = await server.chat.apiGetChat(T.ChatType.Group, (await controlGroupOf(server.chat, server.user.userId)).groupId, 100)
+  expect(chatItems.filter(chatItem => JSON.stringify(chatItem).includes(value))).toEqual([])
+  expect((await agent.client.tool("list", {})).result.secrets).toEqual({folder, names: ["API_TOKEN"]})
+}, 600_000)

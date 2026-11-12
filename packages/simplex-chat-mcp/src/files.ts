@@ -1,5 +1,5 @@
 import {randomBytes} from "crypto"
-import {chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync} from "fs"
+import {chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync} from "fs"
 import {join} from "path"
 import {ExitError} from "./log"
 
@@ -8,6 +8,10 @@ export interface ServerFile {
   port: number
   expireHours: number
 }
+
+export type SecretRecord = {setBy: string; setById: number; setAt: string}
+
+export const secretName = /^[A-Z][A-Z0-9_]{0,63}$/
 
 export function createDataFolder(dir: string): void {
   mkdirSync(dir, {recursive: true, mode: 0o700})
@@ -50,6 +54,35 @@ export function writeServerFile(dir: string, server: ServerFile): void {
 export function readServerFile(dir: string): ServerFile | undefined {
   const file = join(dir, "server.json")
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined
+}
+
+export class Secrets {
+  constructor(readonly folder: string, private readonly index: string) {
+    mkdirSync(folder, {recursive: true, mode: 0o700})
+  }
+
+  names(): string[] {
+    return readdirSync(this.folder).filter(name => secretName.test(name)).sort()
+  }
+
+  records(): {[name: string]: SecretRecord | undefined} {
+    return existsSync(this.index) ? JSON.parse(readFileSync(this.index, "utf8")) : {}
+  }
+
+  set(name: string, value: string, record: SecretRecord): void {
+    const part = join(this.folder, `${name}.part`)
+    writePrivateFile(part, value)
+    renameSync(part, join(this.folder, name))
+    writePrivateFile(this.index, `${JSON.stringify({...this.records(), [name]: record})}\n`)
+  }
+
+  remove(name: string): boolean {
+    if (!this.names().includes(name)) return false
+    unlinkSync(join(this.folder, name))
+    const {[name]: _, ...records} = this.records()
+    writePrivateFile(this.index, `${JSON.stringify(records)}\n`)
+    return true
+  }
 }
 
 function writePrivateFile(file: string, text: string): void {

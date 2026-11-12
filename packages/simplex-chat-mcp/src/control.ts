@@ -2,6 +2,7 @@ import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import * as qrcode from "qrcode"
 import {api, core} from "simplex-chat"
 import {Action, ActionHooks, Actions, ConnectAction, DownloadAction, Standing, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
+import {Secrets, secretName} from "./files"
 import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatNumber, chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import type {OwnerEntry, QrCodeSize} from "./serve"
@@ -11,9 +12,13 @@ const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
   {type: "command", keyword: "list", label: "Chats and approvals"},
   {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
+  {type: "command", keyword: "secrets", label: "Secrets"},
 ]
 
-const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+const fullDelete: T.GroupPreference = {enable: T.GroupFeatureEnabled.On}
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /secret, /unsecret, /secrets. Each card shows its commands."
+const secretsOff = "Secrets are off: the server runs without --secrets-folder."
+const secretUsage = "Usage: /secret NAME VALUE on one line. NAME: capital letters, digits and _, starting with a letter, up to 64 characters. VALUE: 8 characters or more."
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
   connect: "message: too long for its approval card; shorten it.",
@@ -50,6 +55,7 @@ export interface ControlOptions {
   owners?: OwnerEntry[]
   registerHint: string
   qrCode: QrCodeSize
+  secrets?: Secrets
 }
 
 export interface Command {
@@ -68,7 +74,9 @@ type OwnerRequest =
   | {type: "receiveAll"; action: number; chat: string}
   | {type: "approveChat" | "revoke"; chat: string; standing: Standing}
   | {type: "leave" | "deleteFiles"; chat: string}
-  | {type: "pending" | "list"}
+  | {type: "secret"; name: string; value: string}
+  | {type: "unsecret"; name: string}
+  | {type: "pending" | "list" | "secrets"}
 
 interface Shown {
   name: (name: string) => string
@@ -102,8 +110,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   async load(): Promise<void> {
     if (isLost(this.group)) return this.lose()
     const {groupProfile} = this.group
-    if (groupProfile.displayName !== this.options.displayName || JSON.stringify(groupProfile.groupPreferences?.commands) !== JSON.stringify(controlCommands)) {
-      this.group = await this.chat.apiUpdateGroupProfile(this.groupId, {...groupProfile, displayName: this.options.displayName, groupPreferences: {...groupProfile.groupPreferences, commands: controlCommands}})
+    if (groupProfile.displayName !== this.options.displayName || JSON.stringify(groupProfile.groupPreferences?.commands) !== JSON.stringify(controlCommands) || groupProfile.groupPreferences?.fullDelete?.enable !== fullDelete.enable) {
+      this.group = await this.chat.apiUpdateGroupProfile(this.groupId, {...groupProfile, displayName: this.options.displayName, groupPreferences: {...groupProfile.groupPreferences, fullDelete, commands: controlCommands}})
     }
     await this.refreshMembers()
   }
@@ -171,12 +179,15 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   onMessage(ci: T.AChatItem): void {
     const {chatItem} = ci
     if (this.actions.lost || chatItem.chatDir.type !== "groupRcv" || chatItem.content.type !== "rcvMsgContent") return
+    const secret = /^\s*\/secret(\s|$)/i.test(chatItem.content.msgContent.text)
+    if (ci.chatInfo.type === "group" && ci.chatInfo.groupChatScope !== undefined) return secret ? this.queueAfterReplies(() => this.chat.apiDeleteMemberChatItem(this.groupId, [chatItem.meta.itemId])) : undefined
     const command = parseCommand(chatItem.content.msgContent.text)
-    if (command === undefined) return
+    if (command === undefined && !secret) return
     const sender = chatItem.chatDir.groupMember
     this.ownerCommands = this.ownerCommands
-      .then(() => this.ownerCommand(sender, command))
-      .then(reply => (reply === undefined ? undefined : this.chat.apiSendTextReply(ci, reply)))
+      .then(() => (secret ? this.chat.apiDeleteMemberChatItem(this.groupId, [chatItem.meta.itemId]) : undefined))
+      .then(() => (command === undefined ? secretUsage : this.ownerCommand(sender, command)))
+      .then(reply => (reply === undefined ? undefined : secret ? this.post(reply) : this.chat.apiSendTextReply(ci, reply)))
       .catch(error => logError("control chat command", error))
   }
 
@@ -218,6 +229,12 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         return this.leave(sender, request.chat)
       case "deleteFiles":
         return this.deleteFiles(request.chat)
+      case "secret":
+        return this.options.secrets === undefined ? secretsOff : this.setSecret(this.options.secrets, sender, request.name, request.value)
+      case "unsecret":
+        return this.options.secrets === undefined ? secretsOff : this.removeSecret(this.options.secrets, sender, request.name)
+      case "secrets":
+        return this.options.secrets === undefined ? secretsOff : this.secretsText(this.options.secrets)
       case "approve":
       case "reject":
       case "receive":
@@ -323,6 +340,29 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const rest = chats.length - lines.length
     if (rest > 0) lines.push(`${rest} older chat${rest === 1 ? " is" : "s are"} not shown.`)
     return lines.length > 0 ? lines.join("\n") : "No chats."
+  }
+
+  private setSecret(secrets: Secrets, sender: T.GroupMember, name: string, value: string): string {
+    if (!secretName.test(name) || [...value].length < 8) return secretUsage
+    const setBy = sender.memberProfile.displayName
+    secrets.set(name, value, {setBy, setById: sender.groupMemberId, setAt: new Date().toISOString()})
+    log(`Secret ${name} set by ${oneLine(setBy)}.`)
+    return `Secret ${name} is set. /'unsecret ${name}'`
+  }
+
+  private removeSecret(secrets: Secrets, sender: T.GroupMember, name: string): string {
+    if (!secrets.remove(name)) return "No such secret. /secrets lists them."
+    log(`Secret ${name} removed by ${oneLine(sender.memberProfile.displayName)}.`)
+    return `Secret ${name} is removed.`
+  }
+
+  private secretsText(secrets: Secrets): string {
+    const records = secrets.records()
+    const lines = secrets.names().map(name => {
+      const record = records[name]
+      return record === undefined ? name : `${name}  set by ${safeName(record.setBy)}  ${utcMinutes(Date.parse(record.setAt))}`
+    })
+    return lines.length > 0 ? lines.join("\n") : "No secrets."
   }
 
   private async agentChat(chat: string): Promise<T.ChatInfo | undefined> {
@@ -511,7 +551,7 @@ export async function createControlChat(chat: api.ChatApi, userId: number, displ
     displayName,
     fullName: "",
     description: "Supervise your AI agent here: approve or reject its connections and messages with one tap.",
-    groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, commands: controlCommands},
+    groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, fullDelete, commands: controlCommands},
   })
   const customData = controlData(nextAction)
   await chat.apiSetGroupCustomData(group.groupId, customData)
@@ -718,7 +758,9 @@ function ownerRequest({keyword, params}: Command): OwnerRequest | undefined {
   if (keyword === "revoke" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value, standing: "messages"}
   if (keyword === "leave" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value}
   if (keyword === "delete" && chat !== undefined && value === "files") return {type: "deleteFiles", chat}
-  if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
+  if (keyword === "secret") return {type: keyword, name: words[0] ?? "", value: params.replace(/^\S*\s*/, "")}
+  if (keyword === "unsecret" && words.length === 1) return {type: keyword, name: words[0]}
+  if ((keyword === "pending" || keyword === "list" || keyword === "secrets") && words.length === 0) return {type: keyword}
   return undefined
 }
 

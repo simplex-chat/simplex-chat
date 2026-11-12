@@ -6,7 +6,7 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import {api, util} from "simplex-chat"
 import {Action, Actions, Mode} from "./actions"
 import {Control, controlDataOf, createControlChat, findControlGroup, hasOutcomeCard, isControlEvent, resetControlChat} from "./control"
-import {acquireLock, createDataFolder, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "./files"
+import {Secrets, acquireLock, createDataFolder, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "./files"
 import {startHttp, stopHttp} from "./http"
 import {ExitError, log, logError, shellPath} from "./log"
 import {ChatItemsWatch} from "./messages"
@@ -34,6 +34,7 @@ export interface ServeOptions {
   port: number
   qrCode: QrCodeSize
   stopWait: number
+  secrets?: string
 }
 
 export interface RunningServer {
@@ -87,6 +88,7 @@ export async function startServer(options: ServeOptions): Promise<RunningServer>
 
 async function startAgent(chat: api.ChatApi, options: ServeOptions, token: string): Promise<RunningServer> {
   const {name, data, port, approve, expireHours} = options
+  const secrets = options.secrets === undefined ? undefined : new Secrets(options.secrets, join(data, "secrets.json"))
   const created = (await chat.apiGetActiveUser()) ?? (await chat.apiCreateActiveUser({displayName: options.displayName ?? name, fullName: "", peerType: T.ChatPeerType.Agent}))
   const networkConfig = await chat.apiGetNetworkConfig()
   await chat.apiSetNetworkConfig({...networkConfig, smpProxyMode: T.SMPProxyMode.Always, smpProxyFallback: T.SMPProxyFallback.AllowProtected})
@@ -105,8 +107,8 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     perform: (action, signal) => tools.perform(action, signal),
   })
   const watch = new ChatItemsWatch()
-  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data}, approve)
-  const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools)
+  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data, secrets}, approve)
+  const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode, secrets}, actions, tools)
   await control.load()
   const factory = (): McpServer => {
     const mcp = new McpServer({name: "simplex-mcp", version}, {instructions: instructions(displayName)})
@@ -131,7 +133,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     switch (event.type) {
       case "newChatItems":
         for (const ci of event.chatItems) {
-          if (ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === control.groupId && ci.chatInfo.groupChatScope === undefined) control.onMessage(ci)
+          if (ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === control.groupId) control.onMessage(ci)
         }
         tools.onNewItems(event.chatItems)
         watch.deliver(event.chatItems)

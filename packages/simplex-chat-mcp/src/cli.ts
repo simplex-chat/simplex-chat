@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import {homedir} from "os"
-import {join, resolve} from "path"
+import {join, resolve, sep} from "path"
 import {Mode} from "./actions"
 import {ExitError, log, logError} from "./log"
 import {validName} from "./messages"
@@ -29,6 +29,8 @@ serve options:
   --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)
   --qr-code SIZE         QR code of the link: small (default) or large
+  --secrets-folder DIR   folder of the secrets that owners set with /secret,
+                         one file per name; disjoint from the data folder
 
 register options:
   --scope SCOPE          user (default) or local
@@ -97,6 +99,9 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
       case "--qr-code":
         serve.qrCode = qrCodeSize(options.value(option))
         break
+      case "--secrets-folder":
+        serve.secrets = resolve(options.value(option))
+        break
       default:
         throw unknownOption(option)
     }
@@ -104,6 +109,8 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
   if (serve.resetOwners && serve.owners !== undefined && serve.owners.length > 0) {
     throw usageError("--reset-owners takes --owners without a list: member IDs change in a new agent control chat.")
   }
+  const within = (folder: string, path: string): boolean => join(path, sep).startsWith(join(folder, sep))
+  if (serve.secrets !== undefined && (within(serve.data, serve.secrets) || within(serve.secrets, serve.data))) throw usageError(`--secrets-folder: a folder disjoint from the data folder expected, got ${serve.secrets}`)
   return serve
 }
 
