@@ -46,7 +46,7 @@ The codes release:
 - "Buy in browser" opens the site's search for the name where D18 allows; Google Play and iOS outside the US link nowhere to the site.
 - iOS outside the US, while its payment is hidden: a code, with no search before it.
 - Buying and codes start from the address and a channel's info (D14).
-- Every name opens something from the start (D15).
+- A name may open nothing: the ✕ on 2·3's Opens row registers it so, and "SimpleX names" under Advanced settings lists the profile's names and the recovery key, without Register a name, Import and Restore purchases (D15).
 - The 24-word recovery key, the first time only, before the checkout; saving it is optional (D12).
 - Terms: one tick on each order's checkout (D13).
 
@@ -60,7 +60,7 @@ The payments release:
 
 ### Stage 2, v1.1, usable
 
-- "SimpleX names" under Advanced settings: the profile's names, Register a name, Import, Restore purchases, the recovery key.
+- "SimpleX names", stage 1's list under Advanced settings, gains Register a name, Import and Restore purchases.
 - Restore on a new phone from the 24 words: the app asks what each wallet account owns, until 20 unused accounts in a row.
 - A moved-in or restored name attaches to the profile's address or channel, by one link edit SimpleX pays for.
 - Changing what a name opens, to any contact or channel link, also one outside the app (Q27).
@@ -88,7 +88,7 @@ The payments release:
 | AC10 | Stage 2: on a new phone the 24 words bring back every name the wallet's accounts own, found by the scan with its gap of 20, attached to this profile's address or channel by one relayed edit | End to end: the fake chain node, ROWN |
 | AC11 | Stage 2: "Set what it opens" changes a name's records to any contact or channel link within its yearly allowance; a name goes to another profile | End to end: the record edit relay |
 | AC12 | Stage 3: a transfer and a store-paid renewal reach the chain within 6.11's rules; reminders follow 6.11 | End to end; previews; a core test |
-| AC13 | The codes release, in every build: a user finds a name, creates the key the first time, ticks the terms on 2·3 and registers the name with a prepaid code to a key of the device wallet, opening their address or channel | End to end: a CLI user, the fake chain node; the app runners on the names test backend (9.2) |
+| AC13 | The codes release, in every build: a user finds a name, creates the key the first time, ticks the terms on 2·3 and registers the name with a prepaid code to a key of the device wallet, opening their address or channel, or, after the ✕ on 2·3's Opens row, nothing; "SimpleX names" under Advanced settings then lists it | End to end: a CLI user, the fake chain node; the app runners on the names test backend (9.2), a name with the ✕ included |
 
 The codes release meets AC5, AC8 (its store-sheet case with the payments release), AC9 and AC13; the payments release AC1 to AC4, AC6 and AC7.
 
@@ -255,8 +255,8 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 - **D11.** A name code is a wallet, and redeeming one is a transfer. The name code stays on the device and the app sends only that wallet's signatures; a prepaid code is sent as it is. The code's wallet offers the name with `approveWithSig`, and the app's account accepts the terms and takes it with `claimWithSig`: three transactions, each relayed by the service; then the recovery key owns the name. In stage 1 only a name that already opens this profile's address or channel moves.
 - **D12.** The recovery key comes after the search and before the checkout, the first time only. 1·4 creates it; a half-screen sheet over it, 1·4a, offers to save it; saving is optional; the words show only on Show; a quiet reminder until Copy or Show. Restore comes in stage 2, with its scan.
 - **D13.** The app signs each order with the terms the user ticked for it on the checkout: one tick, whose link opens a half-screen sheet with two obligations, a third for a community name, and Agree (the obligations on the checkout itself are Q25's alternative B), one link to one document with a section on community names, opened from the sheet as onboarding's conditions of use; the checkout's buttons stay off until ticked. The obligations' words are placeholders for the terms' own.
-- **D14.** In stage 1 buying and codes start from the address and a channel's info; the hub comes in stage 2, under Advanced settings.
-- **D15.** In stage 1 every name opens something from the start (Q12).
+- **D14.** In stage 1 buying and codes start from the address and a channel's info; the hub, with Register a name, Import and Restore purchases, comes in stage 2, under Advanced settings.
+- **D15.** In stage 1 a name may open nothing: 1·5's ✕ registers it so, and a list of the profile's names under Advanced settings shows it, as it shows a name replaced by a newer one on the same address (Q12).
 - **D16.** A taken name shows "Taken", without pictures, and a separate "What it's used for" button (Q18).
 - **D17.** iOS store payment is built in stage 1 and ships hidden behind a build-time switch until tested.
 - **D18.** Links to the site: always on F-Droid and desktop; on Google Play and iOS only in the US.
@@ -737,7 +737,7 @@ Rules for every screen:
 
 #### Row 1, buy in the app (Google Play; iOS when its payment is on). Stage 1, except 1·4's "I already have a key"
 
-![Lane 1, screens 1·1 to 1·5 and 1·5's alternative B](2026-10-30-names-in-app-purchases/lane1a.png)
+![Lane 1, screens 1·1 to 1·5, 1·5's alternative B and 1·5 · Opens nothing](2026-10-30-names-in-app-purchases/lane1a.png)
 
 ![Lane 1, 1·5's terms sheet and community-name boxes, screens 1·6 to 1·11](2026-10-30-names-in-app-purchases/lane1b.png)
 
@@ -779,7 +779,7 @@ Rules for every screen:
   - Continue → the checkout, or 3·2 before a move. Swiping the sheet away is Continue.
   - Show opens the words in place, the sheet grows, "Hide" takes Show's place, Continue stays. Hide masks the field again.
   - The copy icon puts the 24 words on the clipboard; the field reads "Copied" in place.
-  - Opened later, from the reminder's "Save your key" or 1·11's key row: titled "Your recovery key"; Continue or a swipe returns there.
+  - Opened later, from the reminder's "Save your key", 1·11's key row or, in stage 1, 5·2's: titled "Your recovery key"; Continue or a swipe returns there.
   - **The check:** opened later, Copy and Show ask for the device's own passcode or biometrics, with SimpleX Lock on or off (iOS `systemAuthenticate`, `LocalAuthenticationUtils.swift:60-81`; Android `authenticate` with `LAMode.SYSTEM`, `LocalAuthentication.android.kt:22-29`). Opening the sheet asks nothing. Neither `authenticate` with the lock's mode nor Kotlin's `doWithAuth` is used. 5·3's Reveal and "Look for my names", and each stage-2 act that names this check, take it.
   - Without a device lock (`LAError.passcodeNotSet`, `BIOMETRIC_ERROR_NONE_ENROLLED`), on Android 8 (`LocalAuthentication.android.kt:28`) and on desktop: `LAMode.PASSCODE`, asking for the app's passcode where SimpleX Lock is on with one, else going on. Any other answer leaves the field masked, nothing copied, with its reason.
   - P35a makes the shared functions return the reason: iOS `LAError.Code` (today `.unavailable` holds only text, `LocalAuthenticationUtils.swift:77-80`); Android the `canAuthenticate` result (today all `LAResult.Unavailable()`).
@@ -809,14 +809,14 @@ flowchart TD
   shown -->|"Continue or a swipe"| next
   sheet -->|"Continue or a swipe"| next
   reminder["The reminder on 1·8, 3·3, 1·11: Save your key"] --> later["1·4a Your recovery key"]
-  row["1·11 the key row"] --> later
+  row["1·11 the key row, or 5·2's in stage 1"] --> later
   later -->|"Show or Copy: the check"| shownlater["The words in place, or Copied"]
   later -->|"Continue or a swipe"| back["Back there"]
   shownlater -->|"Continue or a swipe"| back
 ```
 
 - **1·5** Pay (the badge's `payText`) → 1·6; "Use a code" → 2·1, then 2·3, with no step repeated.
-  - Opens: "Replaces alice.simplex on your profile." where the name replaces one. Without an address or channel: "Create an address first", opening the address screen and returning; Pay off until the name opens something. An address or channel without a short link isn't offered: the row says it needs one, with the address screen's upgrade (`webapp/src/names.ts:30-36`).
+  - Opens: "Replaces alice.simplex on your profile." where the name replaces one. Its ✕, the sketch's, registers the name opening nothing (D15): in place of the sketch's alert, the row reads "Nothing", "Undo" in the ✕'s place, and the sketch's "Nobody will find you by it." under the total; 1·8's notice then reads "It opens nothing yet. Find it in SimpleX names, under Advanced settings.", and its Close returns where the order started, whose row shows the order's state until it registers, as 1·9's does. Without an address or channel: "Create an address first", opening the address screen and returning, or the ✕; Pay off until one of them. An address or channel without a short link isn't offered: the row says it needs one, with the address screen's upgrade (`webapp/src/names.ts:30-36`).
   - A kept payment: Total "Covered by your payment", main "Register with your payment"; while the sale is closed, "Waits for the sale to open; open the app then to register it. dynamism.simplex isn't held meanwhile."
   - Loading: the total "…", the button in place, off, "Loading…"; the terms block appears once the button can act.
   - The re-check right before the sheet: the catalog read again, the name looked up again, the button "Loading…", off.
@@ -1018,14 +1018,14 @@ The path: search → key the first time → checkout with the terms tick → the
 - **4·4** as drawn, with "Reference"; more than the price: "More than the price arrived." and 4·3's refund line; main "Open in SimpleX" → 1·7, a link holding no code. On a computer, in the button's place: "Now open SimpleX on the device you ordered from. It carries on by itself."
 - A name paid with ETH through the dApp registers to a wallet the app doesn't know: searched here it reads "Opens your address" once its link is set to this address, and "Show on your profile" confirms it; until then it reads "Taken".
 
-#### Row 5, SimpleX names. Stage 2
+#### Row 5, SimpleX names. Stage 1's list (D15); 5·1a, 5·3, Register a name, Import and Restore purchases in stage 2
 
 ![Lane 5, SimpleX names](2026-10-30-names-in-app-purchases/lane5.png)
 
-- **5·1** the row under Advanced settings, after Network & servers and Notifications → 5·2, or 5·1a without names. A desktop paired to a phone reads "Use SimpleX names on the phone."
+- **5·1** the row under Advanced settings, after Network & servers and Notifications → 5·2, or from stage 2 5·1a without names; in stage 1 it shows once the profile holds a name or an order. A desktop paired to a phone reads "Use SimpleX names on the phone."
 - **5·1a** "Register a name" → 1·2, or 4·1; "Import" → 6·1.
-- **5·2** rows as on 1·9, each with one line and a chip; a name the site still holds reads "On the site"; "Restore purchases" in store builds only (6.5); the key row's "Not saved yet", in orange, from the key's creation until Copy or Show.
-  - Each profile has its own list; started here, the name opens the active profile's address, with no picker, and Close returns here.
+- **5·2** rows as on 1·9, each with one line and a chip; a name that opens nothing reads "Opens nothing", and one replaced by a newer name on the same address "Replaced by dynamism.simplex"; a name the site still holds reads "On the site"; "Restore purchases" in store builds only (6.5); the key row's "Not saved yet", in orange, from the key's creation until Copy or Show; in stage 1 the key row opens 1·4a, "Your recovery key", as 1·11's does.
+  - Each profile has its own list; from stage 2, started here, the name opens the active profile's address, with no picker, and Close returns here.
   - Another key entered on a phone that has one: "This device already has a recovery key, and a device holds one key.", "Show the key" → 5·3; no name named.
 - **5·3** the words as placeholders until Reveal's check; Reveal shows them in place, with 1·4a's protections; "Look for my names" → 6·2a. Both ask for 1·4a's check, without the exception. Reveal sets the record that Copy or Show sets. ‹ → 5·2.
 - **A name's own screen:** 1·11, with "Set what it opens" (6.10).
@@ -1049,7 +1049,7 @@ The path: search → key the first time → checkout with the terms tick → the
 - Start: the address or channel opens the search; the hub comes in stage 2.
 - Search: on today's name screen; "I have a code" under Register, above "Buy in browser".
 - A taken name: "What it's used for" (Q18).
-- Opens: the address or channel it started from (Q12).
+- Opens: the address or channel it started from, or nothing with the sketch's ✕, whose warning shows in place of its alert (Q12).
 - Terms: one tick on the checkout for each order; its link opens a half-screen sheet with two obligations and a third for a community name, and the one document from there, as onboarding's conditions of use.
 - Recovery key: after the search, before the checkout; one screen and a sheet; the device's check when opened later; stage 1's own words.
 - Registering: "Ordered · Waiting (countdown) · Registering"; the site's keep-the-app-open warning until the reveal; Close only leaves; reopening continues without asking.
@@ -1272,7 +1272,7 @@ Devices and keys:
 - Show checks nothing where the device has no lock, on Android 8, and on desktop without an app passcode.
 - SimpleX Lock checks only when the app returns after its delay, 30 seconds by default.
 - Q14's checks cover the console, exports and migration.
-- Someone holding an unlocked phone without a key can, at no cost, on every build but iOS outside the US, create the key, copy its words without a check (Q22) and end the reminder: the phone owner's first order then shows neither 1·4 nor the reminder, and the hub no "Not saved yet".
+- Someone holding an unlocked phone without a key can, at no cost, on every build but iOS outside the US, create the key, copy its words without a check (Q22) and end the reminder: the phone owner's first order then shows neither 1·4 nor the reminder, and SimpleX names no "Not saved yet".
 - The copy controls whatever the key registers, in the app or outside it with ether for gas; signing as the owner, it reads the key's open orders and moves a failed order's payment.
 - Every profile sees whether the device has a recovery key; the key step creates a wallet for anyone who stops at the checkout.
 - Copied words are readable by other apps while they stay on the clipboard (Q17):
@@ -1352,7 +1352,7 @@ flowchart LR
 
 ### The codes release
 
-It starts now, its screens after the lead's feedback on the screens. If Q12 is answered yes, P15 also orders a name without links, and P18 skips its claim.
+It starts now, its screens after the lead's feedback on the screens.
 
 Set up by the user first, as agents here can't:
 
@@ -1400,14 +1400,14 @@ Ordering in the core, each tested in the terminal against the test servers, the 
 
 - P14 `names: the catalog and the terms text`: `/_name catalog`, the clock offset, the terms text checked against its link and hash · medium · high · P13, P22
   - Tested: each catalog and terms-text check of 6.3 refuses its mismatch, a `termsZstd` frame without a declared size included; the catalog, the search and the terms text create no wallet (AC8).
-- P15 `names: order a name with a prepaid code`: the order record and its migration, the secret, the commitment, the signed order, `/_name order` · large · high · P5, P6, P8, P9, P13, P14, P22, P23
-  - Tested: 6.3's `bad_request` rebuild places once; a late `code_reserved` or `code_used` finds the order; each order signed with its name's kind, general or community.
-- P16 `names: follow an order`: the worker in the main app, the poll, the reveal with the acceptance, kept and resent unchanged, progress events, recovery after a restart or a suspension · large · high · P11, P15, P23, P24
-  - Tested: the first end-to-end result; recovery from a restart and from a suspension in each phase; a lapse while the app is away, registered after its return with no Try again; the intent signed with the deadline 6.3 sets; the reveal resent unchanged; progress events free of codes, secrets, `sealed` and receipts; terms or a community listing changed between the commit and the reveal sign nothing before the new tick; taken and a lost answer.
+- P15 `names: order a name with a prepaid code`: the order record and its migration, the secret, the commitment, the signed order, `/_name order`; an order without links (D15), which the service's code order takes today: the order has no link field, and its sealed text and commitment hold no links (`orderWords`, `StoreService/Names/Signatures.hs`; `makeCommitment`, `Names/Registration.hs:113-114`) · large · high · P5, P6, P8, P9, P13, P14, P22, P23
+  - Tested: 6.3's `bad_request` rebuild places once; a late `code_reserved` or `code_used` finds the order; each order signed with its name's kind, general or community; an order without links placed, its sealed text and commitment holding no records.
+- P16 `names: follow an order`: the worker in the main app, the poll, the reveal with the acceptance, kept and resent unchanged, progress events, recovery after a restart or a suspension; a reveal without links sends both link lists empty, which the service reads as none (`committedRegistration`, `StoreService/Names/Reveal.hs`), and the register then carries no records (`recordCalls`, `Names/Registration.hs:229-230`) · large · high · P11, P15, P23, P24
+  - Tested: the first end-to-end result; recovery from a restart and from a suspension in each phase; a lapse while the app is away, registered after its return with no Try again; the intent signed with the deadline 6.3 sets; the reveal resent unchanged; progress events free of codes, secrets, `sealed` and receipts; terms or a community listing changed between the commit and the reveal sign nothing before the new tick; taken and a lost answer; a name ordered without links registered opening nothing.
 - P17 `names: Try again, another name, and the kept code` · medium · high · P16, P24
   - Tested: a timed-out Try again reads the view first; `commit_limit` reads Failed once the bound is raised; `sends_used_up` shows its state; taken, then another name; failed, then Try again.
-- P18 `names: claim a registered name`: the address and the channel claim it once registered · small · low · P16
-  - Tested: an address and a channel each claim a registered name.
+- P18 `names: claim a registered name`: the address and the channel claim it once registered; a name that opens nothing skips the claim · small · low · P16
+  - Tested: an address and a channel each claim a registered name; a name that opens nothing leaves both as they were.
 - P20 `names: import a name code`: the code's wallet; its names read with `find` and the chain; the transfer by `approveWithSig`, the acceptance and `claimWithSig`; only a name that opens this profile's address or channel · large · high · P9, P16, P26
   - Tested: AC5 with a name code made as the site makes one; another address refused; changed terms before a resumed claim; recovery of a move from a restart and a suspension in each phase.
 
@@ -1424,20 +1424,22 @@ The resolver, the site and the docs:
 - P57a `docs: names through the store service`: the registrar in `docs/protocol/names-overview.md`, names data and retention in `PRIVACY.md`, the wallet RFC's hidden-profile line, as properties from section 7 · small · low · P23
   - Tested: read against section 7 in its review.
 
-The screens, after the lead's feedback on them, each tested on snapshots and the runners (9.1); each has a Swift copy, a pull request of its own after it (P39 and P41 to P45, one for each of P30 to P36a), tested on `ios-sim` the same way:
+The screens, after the lead's feedback on them, each tested on snapshots and the runners (9.1); each has a Swift copy, a pull request of its own after it (P39, P41 to P45 and P72, one for each of P30 to P36a and P71), tested on `ios-sim` the same way:
 
 - P30 `ui: search a name`: on today's name screen, the field, the checks while typing, the answer's states, the paired-desktop state, the three controls kept across states, "Register with code" and the codes release's "Buy in browser", every link of 3.4 replaced or gated by storefront; 2·2 with its uncovered-name state; 4·1 on iOS outside the US; Kotlin's `SnapshotTest` extended to render these screens at the largest font scale and to assert equal frames · medium · low · P11, P14, P15, P17, P68
   - Tested: runners: an available, a taken and a reserved name from the local chain; equal frames of the three controls across the states.
 - P35a `ui: the recovery key`: 1·4; 1·4a with Copy, Show and their check; the clipboard marks per platform with the desktop's Win32 binding; 1·11 with its key row and the reminder · medium · high · P30
   - Tested: runners: "Create a new key" creates one key, ‹ creates none, Show and Copy right after creation ask nothing; snapshots of 1·4a's states.
-- P32 `ui: Check your order with the terms tick`: 1·5's card, Opens row, Until row, terms block with its community line and its sheet, and "Use a code"; 2·3; 1·5's Pay is wired to the store in P37 and P46 · medium · low · P30, P35a; follows Q25
-  - Tested: runners: 2·3's button off until ticked, the order signed with the ticked kind; snapshots of a community name and of changed terms.
-- P33 `ui: registering, done, taken and failed`: 1·7 and its states for an order with a code, 2·4, 1·9's row, the reminder on 1·8; P30's snapshot extension asserting 1·7's and 1·8's frames, 1·8's card at 1·7's three-row height · large · low · P16, P17, P18, P32
-  - Tested: runners: AC13 from 1·2 to 1·8 with an issued code; a name a CLI peer registers first ends at 2·4; equal frames of 1·7 and 1·8 across their states.
+- P32 `ui: Check your order with the terms tick`: 1·5's card, Opens row with its ✕, Until row, terms block with its community line and its sheet, and "Use a code"; 2·3; 1·5's Pay is wired to the store in P37 and P46 · medium · low · P30, P35a; follows Q25
+  - Tested: runners: 2·3's button off until ticked, the order signed with the ticked kind, the ✕ ordering a name without links; snapshots of a community name, of changed terms and of the ✕'s state.
+- P33 `ui: registering, done, taken and failed`: 1·7 and its states for an order with a code, 2·4, 1·9's row, the reminder on 1·8, 1·8's notice for a name that opens nothing; P30's snapshot extension asserting 1·7's and 1·8's frames, 1·8's card at 1·7's three-row height · large · low · P16, P17, P18, P32
+  - Tested: runners: AC13 from 1·2 to 1·8 with an issued code, with and without the ✕; a name a CLI peer registers first ends at 2·4; equal frames of 1·7 and 1·8 across their states.
 - P34 `ui: the code sheet, and Bring in a name`: 2·1, opened by P30's "I have a code" and "Register with code"; 3·1; the verified link back `/name/code`, with the website's association files and page, the website's scope added to CI as the CI guide's "Adding CI coverage" asks, with a check that the page clears the code before any script, and the release check of the manifest's hosts; 3·2 and 3·3 with the reminder; every build · large · high · P20, P30, P32, P33, P35a
   - Tested: runners: an issued code on 2·1; the backend's name-code name, its link first set to the app's address (9.2), moved in from 3·1 to 3·3; the routers take the verified link before connection links; the reduced build's website check.
 - P36a `ui: the expiry date` as the footer under the name's row · small · low · P11, P30
   - Tested: runners: a registered name's footer reads its expiry.
+- P71 `ui: SimpleX names, the stage-1 list`: the Advanced settings row, shown once the profile holds a name or an order; 5·2's names from `/_wallet names` (P11), each as 1·9's row, with "Opens nothing" from its order (P15), and "Replaced by …" and "On the site" from the name the profile shows; a name's row opening 1·11, its Opens row "Nothing" for a name that opens nothing, without "Remove name" for a name the profile doesn't show; the key row, opening 1·4a; the paired-desktop state; Register a name, Import, Restore purchases, 5·1a and 5·3 stay for P29 · medium · low · P11, P33, P34, P35a, P36a
+  - Tested: runners: the list's row for each state of a code order; a name registered with 2·3's ✕ and one replaced by a second name on the same address, each listed with its line; snapshots of the list.
 
 By hand, at the codes release's end:
 
@@ -1471,7 +1473,7 @@ The browser path:
 - P62 `names: pay in the browser`: the browser code's info string and the reference, with vectors; `/_name browser` as in 6.8, its record and migration on both backends · medium · high · P7, P15, P16, P22, P58, P59
   - Tested: terminal with the fake chain node and the fake BTCPay: each rule of 6.8's "The code", "Close", "The app notices payment" and "ask until"; the code made on 4·2 with nothing recorded, the same code while the order waits, "Remove order" dropping it; the drafts holding the reference and the second hash, never the code; AC7 with no link back.
 - P61 `ui: pay in the browser, and a paid order's screens`: 1·2's priced states; 4·1 priced from the catalog; 4·2, its waiting state with "Remove order" and its three other states; 1·7's paid states that store payments share, and 1·10; 1·9's rows; 1·11's "Payment" row; the drafts with the reference and the second hash; the verified link back `/name/paid`, routed to the waiting order; its Swift copy P63 · large · low · P30, P32, P33, P34, P35a, P62
-  - Tested: runners (desktop and the F-Droid Android build), the service paying opened codes: 4·1 to 1·8 with no link back; snapshots of every state of 4·2 and of a paid 1·7.
+  - Tested: runners (desktop and the F-Droid Android build), the service paying opened codes: 4·1 to 1·8 with no link back, and with 4·2's ✕; snapshots of every state of 4·2 and of a paid 1·7.
 
 The store path:
 
@@ -1484,7 +1486,7 @@ The store path:
 - P28 `store: the operator command for a store payment`: `//store-payment` as in 6.3 · medium · high · P27a, P27c
   - Tested: service tests: each action of `//store-payment`; a Try again after the operator's revoke answered `code_invalid`.
 - P19 `names: pay with a store receipt, in one request`: the purchase record; the code and token before the sheet; the signed order kept and sent with the receipt; resends after a lost answer; the size check; the answers to a used or revoked receipt · large · high · P7, P16, P17, P27b
-  - Tested: terminal with the fake verifiers: each rule of 6.3's repeats and sizes on the core's side; 6.5's open-purchase, token and hidden-profile rules; recovery of a purchase from a restart and a suspension in each phase; a credited "Not confirmed" purchase shown without a restart.
+  - Tested: terminal with the fake verifiers: each rule of 6.3's repeats and sizes on the core's side; 6.5's open-purchase, token and hidden-profile rules; recovery of a purchase from a restart and a suspension in each phase; a credited "Not confirmed" purchase shown without a restart; a kept order without links.
 - P37 `android: the Play purchase lane`: first the badge lane skips name products; then the product, 1·5's Pay and 1·6, pending purchases, the store-only states of 1·7, the store-account lines, acknowledge and consume; a test switch for products and purchases, false in every shipped build, as `useBadgeTestProducts` (`BadgeStore.kt:102`) · medium · high · P19, P35a, P61
   - Tested: `android-emu` building the Google Play flavor on the test branch: AC1 with a stubbed purchase the mock verifier credits; AC8's store sheet cancelled after 1·4a, the key kept and the next order skipping 1·4; each lane skips the other's products.
 - P46 `ios: the App Store purchase lane`: first the badge lane skips name products, in every build; then the lane behind the build-time switch; a test switch that makes a signed transaction the mock verifier reads, false in every shipped build · medium · high · P19, P35a, P61
@@ -1525,8 +1527,8 @@ P3, P4 and P10 can start at any time; P12 once P19 is in, which its token case n
   - Tested: terminal: a moved-in name that opens something else attaches with one edit; AC10, the names the 24 words find each attached with one edit.
 - P49 `names: give a name to another profile`: the account rebound, the record re-pointed · small · high · P21
   - Tested: terminal: the account rebound, the record re-pointed.
-- P29 `ui: the names hub`: the Advanced settings row; the empty and full hub; its paired-desktop state; a name's own screen; the key row; Restore purchases with the lanes' part; Import with "Bought on the web" · medium · high · P30, P35a, P36a, P37
-  - Tested: runners: the hub's row for each order state; snapshots.
+- P29 `ui: the names hub`: P71's list gains the empty hub, Register a name, Restore purchases with the lanes' part, and Import with "Bought on the web" · medium · high · P30, P35a, P36a, P37, P71
+  - Tested: runners: the empty hub, and Register a name from it; snapshots.
 - P35b `ui: enter the 24 words`: the field, the scan with its progress, found and none found, 5·3 with Reveal and "Look for my names", "Look for your names again" · large · high · P10, P12, P29
   - Tested: runners, once simplex-chat/simplexmq has P4: the 24 words bring back the backend's names; snapshots.
 - P50 `ui: set what it opens`, to any contact or channel link, and giving a name to another profile · medium · low · P21, P29, P49
@@ -1614,11 +1616,11 @@ Besides those 6.5's sandbox run settles, section 7 states, and the questions lea
 
 Each line: the question, then the answer this plan builds on; approving the plan approves building on these answers, and a different answer changes the pull requests that follow it. Options and their costs are on the decision page.
 
-Answer first; the codes release starts without them, Q12's answer changes P15, P18 and the codes screens, Q26's changes P30, and Q24's starts the browser path:
+Answer first; the codes release starts without them, Q12's answer changes P15, P16, P18, P71 and the codes screens, Q26's changes P30, and Q24's starts the browser path:
 
 - **Q26.** In the codes release, "Buy in browser" opens the site's search for the name, with no key step (1·4) or checkout in the app, against the agreed route "1·4 the first time, then 4·2"? → Yes: 4·2 needs the payments release's service and core, and without the site's search F-Droid, desktop, and Google Play and iOS in the US have no way to buy a name until then.
 - **Q24.** Pay in the browser as row 4 draws it? → Yes, as drawn (6.8): the site's ways to pay, a link with only the code's hash, the name straight into the app's wallet, support refunds per Q20 and Q21.
-- **Q12.** Register a name that opens nothing in v1? → The plan builds on no (D15); the recommendation is yes, with a stage-1 list of the profile's names (5·2 without Register, Import and Restore purchases).
+- **Q12.** Register a name that opens nothing in v1? → Yes, with a stage-1 list of the profile's names (D15): 1·5's ✕, and 5·2 without Register a name, Import and Restore purchases (row 5, P71). A "no" removes the ✕ (P32), P15's and P16's order without links, P18's skip, P33's notice and P71, whose list waits for P29 in stage 2.
 
 Decided on 11 Nov 2026:
 
