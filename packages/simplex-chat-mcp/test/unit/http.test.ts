@@ -2,10 +2,11 @@ import {Server, request as httpRequest} from "http"
 import {AddressInfo, connect} from "net"
 import {McpServer} from "@modelcontextprotocol/server"
 import {Actions, Mode} from "../../src/actions"
+import {AudioOptions} from "../../src/audio"
 import {startHttp, stopHttp} from "../../src/http"
 import {ChatItemsWatch} from "../../src/messages"
 import {AgentTools} from "../../src/tools"
-import {FakeChat, actionsWith, contact, data, direct, fakeHooks, user} from "./fixtures"
+import {FakeChat, actionsWith, contact, data, direct, fakeHooks, until, user} from "./fixtures"
 
 const token = "secret-token"
 
@@ -14,12 +15,12 @@ let url: string
 let actions: Actions
 let ready: boolean
 
-async function start(mode: Mode = "requests"): Promise<void> {
+async function start(mode: Mode = "requests", audio?: AudioOptions): Promise<void> {
   ready = true
   const chat = new FakeChat()
   chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory")), items: []})
   actions = actionsWith(mode, fakeHooks())
-  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined, refusedFile: () => undefined, data}, mode)
+  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined, refusedFile: () => undefined, data, audio}, mode)
   const factory = (): McpServer => {
     const mcp = new McpServer({name: "simplex-mcp", version: "0.1.0"}, {instructions: "Use the tools."})
     tools.register(mcp)
@@ -139,6 +140,23 @@ describe("MCP", () => {
     expect(send._meta).toBeUndefined()
   })
 
+  it("adds voice to the input of send only with the audio API", async () => {
+    const sendProperties = async (): Promise<{[name: string]: object}> => (await body(await post(modern("tools/list"), modernHeaders("tools/list")))).result.tools.find(({name}: {name: string}) => name === "send").inputSchema.properties
+    const withoutAudio = ["chat", "text", "file", "as", "reply_to", "mention", "wait", "idle", "limit"]
+    await start()
+    expect(Object.keys(await sendProperties())).toEqual(withoutAudio)
+    await stopHttp(server)
+    await start("requests", {url: "http://127.0.0.1:8080", stt: "stt", tts: "tts"})
+    const properties = await sendProperties()
+    expect(Object.keys(properties)).toEqual([...withoutAudio, "voice"])
+    expect(properties.voice).toEqual({
+      type: "string",
+      minLength: 1,
+      maxLength: 4096,
+      description: "Text that the server speaks with its text-to-speech voice and sends as a voice message; text, when given, is its caption. Send a voice message only when your user asked for a voice reply.",
+    })
+  })
+
   it("asks the host for each action in mode host", async () => {
     await start("host")
     const {result} = await body(await post(modern("tools/list"), modernHeaders("tools/list")))
@@ -182,8 +200,3 @@ describe("MCP", () => {
     await until(() => actions.get(1)!.open === 0)
   })
 })
-
-async function until(condition: () => boolean): Promise<void> {
-  for (let i = 0; i < 200 && !condition(); i++) await new Promise(resolve => setTimeout(resolve, 10))
-  expect(condition()).toBe(true)
-}

@@ -2,6 +2,7 @@ import {existsSync} from "fs"
 import {extname, join} from "path"
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
+import {Transcript, transcriptOf} from "./audio"
 import {fileError} from "./log"
 
 const progressInterval = 60_000
@@ -31,7 +32,7 @@ export type FileType = "image" | "video" | "voice" | "file"
 
 export type FilesRoot = "files" | "forwarded"
 
-export interface MessageFile {
+export interface MessageFile extends Transcript {
   name: string
   size: number
   type: FileType
@@ -199,7 +200,7 @@ function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, r
   const {path, forwarded} = filePaths(data, chat, fileId, name)
   if (rejectedFiles.has(fileId)) return {...file, status: "rejected"}
   if (error !== undefined) return {...file, status: "failed", error}
-  if (fileStatus.type === "rcvComplete" && existsSync(path) && [path, forwarded].includes(fileSource?.filePath ?? "")) return {...file, status: "received", path}
+  if (fileStatus.type === "rcvComplete" && existsSync(path) && [path, forwarded].includes(fileSource?.filePath ?? "")) return {...file, status: "received", path, ...transcriptOf(path)}
   return {...file, status: "offered"}
 }
 
@@ -282,8 +283,9 @@ export async function markRead(chat: api.ChatApi, ref: string, itemIds: number[]
   if (itemIds.length > 0) await chat.apiChatItemsRead(chatType(ref), chatNumber(ref), itemIds)
 }
 
-export async function unreadItems(chat: api.ChatApi, ref: string, {chatInfo, chatStats}: T.AChat, messages: number): Promise<{chatInfo: T.ChatInfo; items: T.ChatItem[]; unreadRest: number}> {
+export async function unreadItems(chat: api.ChatApi, ref: string, {chatInfo, chatStats}: T.AChat, messages: number, isFinal: (item: T.ChatItem) => boolean): Promise<{chatInfo: T.ChatInfo; items: T.ChatItem[]; unreadRest: number}> {
   if (chatStats.unreadCount === 0) return {chatInfo, items: [], unreadRest: 0}
+  const isNewMessage = (item: T.ChatItem): boolean => item.content.type === "rcvMsgContent" && isNew(item) && isFinal(item)
   const items = (await getChat(chat, ref, {type: "around", chatItemId: chatStats.minUnreadItemId, count: 0})).chatItems
   for (let last = items.at(-1); last !== undefined && items.filter(isNewMessage).length < messages;) {
     const page = (await getChat(chat, ref, {type: "after", chatItemId: last.meta.itemId, count: pageSize})).chatItems
@@ -292,10 +294,6 @@ export async function unreadItems(chat: api.ChatApi, ref: string, {chatInfo, cha
   }
   const unread = items.filter(isNew)
   return {chatInfo, items: unread, unreadRest: Math.max(0, chatStats.unreadCount - unread.length)}
-}
-
-function isNewMessage(item: T.ChatItem): boolean {
-  return item.content.type === "rcvMsgContent" && isNew(item) && !isLive(item)
 }
 
 export function reportProgress(call: ToolCall, message: () => string): () => void {
@@ -320,9 +318,9 @@ export function nextChange(changes: Changes, signal: AbortSignal, ms: number): P
   })
 }
 
-export async function awaitResponses(collected: Collected, deadline: number, idle: number, call: ToolCall): Promise<boolean> {
+export async function awaitResponses(collected: Collected, deadline: number, idle: number, call: ToolCall, isFinal: (item: T.ChatItem) => boolean = item => !isLive(item)): Promise<boolean> {
   for (;;) {
-    const live = collected.items.some(({chatItem}) => isLive(chatItem))
+    const live = collected.items.some(({chatItem}) => !isFinal(chatItem))
     const idleEnd = collected.lastAt === undefined || live ? Infinity : collected.lastAt + idle * 1000
     const remaining = Math.min(deadline, idleEnd) - Date.now()
     if (remaining <= 0) return true

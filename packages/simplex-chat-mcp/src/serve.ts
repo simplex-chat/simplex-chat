@@ -5,6 +5,7 @@ import {McpServer, McpServerFactory} from "@modelcontextprotocol/server"
 import {ChatEvent, T} from "@simplex-chat/types"
 import {api, util} from "simplex-chat"
 import {Action, Actions, Mode} from "./actions"
+import {AudioOptions} from "./audio"
 import {Control, controlDataOf, createControlChat, findControlGroup, hasOutcomeCard, isControlEvent, resetControlChat} from "./control"
 import {acquireLock, createDataFolder, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "./files"
 import {startHttp, stopHttp} from "./http"
@@ -34,6 +35,7 @@ export interface ServeOptions {
   port: number
   qrCode: QrCodeSize
   stopWait: number
+  audio?: AudioOptions
 }
 
 export interface RunningServer {
@@ -63,7 +65,7 @@ export async function serve(options: ServeOptions): Promise<void> {
 }
 
 export async function startServer(options: ServeOptions): Promise<RunningServer> {
-  const {name, data} = options
+  const {name, data, audio} = options
   createDataFolder(data)
   acquireLock(data)
   try {
@@ -73,6 +75,7 @@ export async function startServer(options: ServeOptions): Promise<RunningServer>
     log(`SimpleX MCP server ${version}, agent "${name}"`)
     log(`Data folder: ${data}`)
     log(`Approval mode: ${options.approve}`)
+    if (audio !== undefined) log(`Audio: ${audio.url}, speech-to-text ${audio.stt}, text-to-speech ${audio.tts}${audio.voice === undefined ? "" : `, voice ${audio.voice}`}`)
     try {
       return await startAgent(chat, options, token)
     } catch (error) {
@@ -105,7 +108,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     perform: (action, signal) => tools.perform(action, signal),
   })
   const watch = new ChatItemsWatch()
-  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data}, approve)
+  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data, audio: options.audio}, approve)
   const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools)
   await control.load()
   const factory = (): McpServer => {

@@ -7,10 +7,11 @@ import {CallToolResult} from "@modelcontextprotocol/server"
 import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Action, Actions, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
+import {AudioOptions} from "../../src/audio"
 import {cardText} from "../../src/control"
 import {ChatItemsWatch, Collected, awaitResponses, toMessage} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
-import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
+import {AudioServer, FakeChat, actionsWith, audioServer, contact, data, direct, event, fakeHooks, fileItem, formFields, group, groupChat, item, member, settled, signal, until, user} from "./fixtures"
 
 beforeEach(() => {
   jest.spyOn(process.stdout, "write").mockImplementation(() => true)
@@ -94,6 +95,25 @@ describe("message fields", () => {
     expect(toMessage(chatInfo, prohibited, self, noRejections, data).file).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "failed", error: "Large file! The file is above the limit of 1048576 bytes for its sender. Sender's badge expired."})
     expect(toMessage(chatInfo, fileItem(31, {type: "file", text: "report"}, {type: "sndComplete"}, {chatDir: {type: "directSnd"}, fileSource: {filePath: "/home/alice/report.pdf"}}), self, noRejections, data)).not.toHaveProperty("file")
     expect(toMessage(chatInfo, item(32, "no file"), self, noRejections, data)).not.toHaveProperty("file")
+  })
+
+  it("adds the stored transcript or its error to a received voice message", () => {
+    const chatInfo = direct(contact(4, "Ridgeline"))
+    const downloaded = join(data, "files", "contact-4", "7.m4a")
+    mkdirSync(dirname(downloaded), {recursive: true})
+    writeFileSync(downloaded, "audio")
+    const voice = fileItem(30, {type: "voice", text: "", duration: 12}, {type: "rcvComplete"}, {fileSource: {filePath: downloaded}})
+    voice.file!.fileName = "voice.m4a"
+    const fileOf = () => toMessage(chatInfo, voice, self, noRejections, data).file
+    const received = {name: "voice.m4a", size: 2400000, type: "voice", status: "received", path: downloaded}
+    expect(fileOf()).toEqual(received)
+    writeFileSync(`${downloaded}.transcript.json`, JSON.stringify({transcript: "Grüezi."}))
+    expect(fileOf()).toEqual({...received, transcript: "Grüezi."})
+    writeFileSync(`${downloaded}.transcript.json`, JSON.stringify({transcript_error: "Speech-to-text failed: HTTP 500."}))
+    expect(fileOf()).toEqual({...received, transcript_error: "Speech-to-text failed: HTTP 500."})
+    writeFileSync(`${downloaded}.transcript.json`, "{")
+    expect(fileOf()).toEqual(received)
+    rmSync(dirname(downloaded), {recursive: true, force: true})
   })
 })
 
@@ -185,9 +205,9 @@ function textOf(result: CallToolResult | undefined): string {
   return (result!.content[0] as {text: string}).text
 }
 
-function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
+function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined, audio?: AudioOptions): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, actions.mode), watch}
+  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data, audio}, actions.mode), watch}
 }
 
 describe("receive", () => {
@@ -567,12 +587,12 @@ describe("send with a file", () => {
     return path
   }
 
-  function sendTools(): {chat: FakeChat; tools: AgentTools; actions: Actions} {
+  function sendTools(audio?: AudioOptions): {chat: FakeChat; tools: AgentTools; actions: Actions} {
     const chat = new FakeChat()
     chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory", {peerType: "bot"})), items: []})
     const fake = fakeHooks()
     const actions = actionsWith("requests", fake)
-    const {tools} = agentTools(chat, actions)
+    const {tools} = agentTools(chat, actions, undefined, audio)
     fake.hooks.perform = (action, signal) => tools.perform(action, signal)
     return {chat, tools, actions}
   }
@@ -582,8 +602,8 @@ describe("send with a file", () => {
     return actions.get(1)!
   }
 
-  async function sent(args: object): Promise<{chat: FakeChat; tools: AgentTools; action: SendAction; result: object}> {
-    const {chat, tools, actions} = sendTools()
+  async function sent(args: object, audio?: AudioOptions): Promise<{chat: FakeChat; tools: AgentTools; action: SendAction; result: object}> {
+    const {chat, tools, actions} = sendTools(audio)
     const sending = tools.call("send", {chat: "@4", wait: 0, ...args}, signal().call)
     const action = (await created(actions)) as SendAction
     actions.approve(action, "Alice")
@@ -761,6 +781,69 @@ describe("send with a file", () => {
     failing.actions.approve(await created(failing.actions), "Alice")
     expect((await failed)!.structuredContent).toEqual({action: 1, status: "failed", error: "send failed"})
     expect(readdirSync(join(data, "files", "sent"))).toEqual([])
+  })
+
+  describe("as a voice message", () => {
+    let server: AudioServer
+    let audio: AudioOptions
+
+    beforeEach(async () => {
+      server = await audioServer()
+      server.replies.set("/v1/audio/speech", {body: "RIFF"})
+      audio = {url: server.url, stt: "stt", tts: "tts"}
+    })
+
+    afterEach(() => server.close())
+
+    it("speaks the voice text, converts the speech to the apps' format, sends it as a voice message, and deletes its folder when its upload completes", async () => {
+      const commands = commandOutputs(command => Buffer.from(command === "ffprobe" ? "12.4\n" : ""))
+      const {chat, tools, result} = await sent({voice: "Grüezi. The trail is open."}, audio)
+      expect(result).toMatchObject({action: 1, status: "done"})
+      expect(server.requests.map(({path, type, body}) => [path, type, JSON.parse(body.toString())])).toEqual([["/v1/audio/speech", "application/json", {model: "tts", input: "Grüezi. The trail is open.", response_format: "wav"}]])
+      const [message] = chat.sent[0].messages
+      const copy = message.fileSource!.filePath
+      expect([dirname(dirname(copy)), basename(copy), readFileSync(`${copy}.wav`, "utf8")]).toEqual([join(data, "files", "sent"), "voice.m4a", "RIFF"])
+      expect(message).toEqual({fileSource: {filePath: copy}, msgContent: {type: "voice", text: "", duration: 12}, mentions: {}, quotedItemId: undefined})
+      expect(commands.mock.calls.map(([command, args]) => [command, args])).toEqual([
+        ["ffmpeg", ["-nostdin", "-v", "error", "-protocol_whitelist", "file", "-f", "wav", "-i", `${copy}.wav`, "-ac", "1", "-ar", "16000", "-c:a", "aac", "-b:a", "32k", "-f", "ipod", copy]],
+        ["ffprobe", ["-v", "error", "-protocol_whitelist", "file", "-f", "mov", "-show_entries", "format=duration", "-of", "csv=p=0", copy]],
+      ])
+      tools.onSentFile({filePath: copy} as T.FileTransferMeta)
+      expect(existsSync(dirname(copy))).toBe(false)
+    })
+
+    it("sends the text with the mentioned names as the caption of the voice message", async () => {
+      commandOutputs(command => Buffer.from(command === "ffprobe" ? "3\n" : ""))
+      const {chat, tools, actions} = sendTools(audio)
+      chat.chats.set("#15", {chatInfo: groupChat(group(15, "Trail", member(1, "agent"))), items: []})
+      chat.members.set(15, [member(44, "Switchback")])
+      const sending = tools.call("send", {chat: "#15", text: "is the trail open?", voice: "Grüezi.", mention: [44], wait: 0}, signal().call)
+      actions.approve(await created(actions), "Alice")
+      expect((await sending)!.structuredContent).toMatchObject({status: "done"})
+      const [message] = chat.sent[0].messages
+      expect(message).toEqual({fileSource: {filePath: expect.any(String)}, msgContent: {type: "voice", text: "@Switchback is the trail open?", duration: 3}, mentions: {Switchback: 44}, quotedItemId: undefined})
+      tools.onSentFile({filePath: message.fileSource!.filePath} as T.FileTransferMeta)
+    })
+
+    it("fails when the speech or its conversion fails, and keeps no copy", async () => {
+      server.replies.set("/v1/audio/speech", {status: 503})
+      expect((await sent({voice: "Grüezi."}, audio)).result).toEqual({action: 1, status: "failed", error: "Text-to-speech failed: HTTP 503."})
+      expect(readdirSync(join(data, "files", "sent"))).toEqual([])
+      server.replies.set("/v1/audio/speech", {body: "RIFF"})
+      commandOutputs(command => new Error(`spawn ${command} ENOENT`))
+      expect((await sent({voice: "Grüezi."}, audio)).result).toEqual({action: 1, status: "failed", error: "spawn ffmpeg ENOENT"})
+      expect(readdirSync(join(data, "files", "sent"))).toEqual([])
+    })
+
+    it("refuses voice with a file or with as, a send without text, file and voice, and a caption too long for a voice message", async () => {
+      const {tools, actions} = sendTools(audio)
+      const text = async (args: object): Promise<string> => textOf(await tools.call("send", {chat: "@4", ...args}, signal().call))
+      expect(await text({voice: "Grüezi.", file: fileIn("notes.txt")})).toBe("voice: not with file.")
+      expect(await text({voice: "Grüezi.", as: "file"})).toBe("as: applies only with file.")
+      expect(await text({})).toBe("text: required without file or voice.")
+      expect(await text({voice: "Grüezi.", text: "x".repeat(15_000)})).toBe("text: too long for a message with this voice; shorten it.")
+      expect(actions.all()).toEqual([])
+    })
   })
 })
 
@@ -1732,5 +1815,325 @@ describe("list", () => {
     const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: {chat: string}[]}
     expect(chats.map(({chat: ref}) => ref)).toEqual(Array.from({length: 150}, (_, i) => `@${100 + i}`))
     expect(chat.commands.filter(cmd => cmd.startsWith("/_get chats "))).toEqual(['/_get chats 1 count=1000000 {"type":"filters","favorite":false,"unread":false}'])
+  })
+})
+
+describe("voice messages", () => {
+  const switchback = member(44, "Switchback")
+  const trail = groupChat(group(15, "Trail", member(1, "agent")))
+  const folder = join(data, "files", "group-15")
+  const path = join(folder, "7.m4a")
+  const knownServer = "xftp://hash1@xftp1.simplex.im"
+  const unknownServer = "xftp://hash2@xftp.example.com"
+  const offered = {name: "voice_20261112_101500.m4a", size: 20_000, type: "voice", status: "offered"}
+  const received = {...offered, status: "received", path}
+  const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
+  let server: AudioServer
+  let approved: boolean
+
+  beforeEach(async () => {
+    server = await audioServer()
+    server.replies.set("/v1/audio/transcriptions", {body: JSON.stringify({text: " Grüezi. "})})
+    approved = true
+  })
+
+  afterEach(async () => {
+    await server.close()
+    rmSync(folder, {recursive: true, force: true})
+  })
+
+  function voiceItem(itemId = 30, fileId = 7, msgContent: object = {type: "voice", text: "", duration: 12}): T.ChatItem {
+    const voice = fileItem(itemId, msgContent, {type: "rcvInvitation"}, {chatDir: {type: "groupRcv", groupMember: switchback}, fileId})
+    Object.assign(voice.file!, {fileName: "voice_20261112_101500.m4a", fileSize: 20_000})
+    return voice
+  }
+
+  function servedFrom(chat: FakeChat, fileXftpServers: string[], itemId = 30): void {
+    chat.responses.set(`/_get item info #15 ${itemId}`, {type: "chatItemInfo", user, chatItem: event(trail, voiceItem(itemId)), chatItemInfo: {itemVersions: [], fileXftpServers}})
+  }
+
+  function voiceChat(fileXftpServers: string[] = [knownServer]): FakeChat {
+    const chat = new FakeChat()
+    chat.chats.set("#15", {chatInfo: trail, items: []})
+    chat.responses.set(`/freceive 7 ${path}`, {type: "rcvFileAccepted", user, chatItem: event(trail, voiceItem())})
+    chat.responses.set("/_servers 1", {type: "userServers", user, userServers: [{smpServers: [], xftpServers: [{serverId: 1, server: "xftp://hash1:secret@xftp1.simplex.im", preset: false, enabled: true, roles: {}, deleted: false}], chatRelays: []}]})
+    servedFrom(chat, fileXftpServers)
+    return chat
+  }
+
+  function voiceTools(chat: FakeChat, audio = true): {tools: AgentTools; watch: ChatItemsWatch; actions: Actions} {
+    const fake = fakeHooks()
+    const actions = actionsWith("requests", fake)
+    const filesApprover = (_: T.ChatInfo, standing: Standing): string | undefined => (approved && standing === "files" ? "Alice" : undefined)
+    const {tools, watch} = agentTools(chat, actions, filesApprover, audio ? {url: server.url, stt: "stt", tts: "tts"} : undefined)
+    fake.hooks.perform = (action, signal) => tools.perform(action, signal)
+    return {tools, watch, actions}
+  }
+
+  function arrive(chat: FakeChat, tools: AgentTools, watch: ChatItemsWatch, voice: T.ChatItem = voiceItem(), chatInfo: T.ChatInfo = trail): T.ChatItem {
+    chat.chats.get("#15")!.items.push(voice)
+    const arrived = event(chatInfo, structuredClone(voice))
+    tools.onNewItems([arrived])
+    watch.deliver([arrived])
+    return voice
+  }
+
+  function complete(tools: AgentTools, voice: T.ChatItem): void {
+    mkdirSync(folder, {recursive: true})
+    writeFileSync(path, "audio")
+    Object.assign(voice.file!, {fileStatus: {type: "rcvComplete"}, fileSource: {filePath: path}})
+    tools.onFileComplete(event(trail, voice))
+  }
+
+  async function receivedFiles(receiving: Promise<CallToolResult | undefined>): Promise<[number, object][]> {
+    const {messages} = (await receiving)!.structuredContent as {messages: {item: number; file: object}[]}
+    return messages.map(({item, file}): [number, object] => [item, file])
+  }
+
+  it("downloads a voice message from known servers in a chat with the files approval, transcribes it, and returns it received with its transcript", async () => {
+    const chat = voiceChat([])
+    const {tools, watch} = voiceTools(chat)
+    const receiving = tools.call("receive", {chat: "#15", wait: 30}, signal().call)
+    await flushed()
+    const voice = arrive(chat, tools, watch)
+    await flushed()
+    servedFrom(chat, [knownServer])
+    tools.onFileDescription()
+    await until(() => chat.commands.some(cmd => cmd.startsWith("/freceive")))
+    complete(tools, voice)
+    expect(await receivedFiles(receiving)).toEqual([[30, {...received, transcript: "Grüezi."}]])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 ${path}`])
+    expect(await Promise.all(server.requests.map(formFields))).toEqual([{model: "stt", file: {name: "7.m4a", content: "audio"}}])
+    expect(chat.commands.at(-1)).toBe("/_read chat items #15 30")
+  })
+
+  it("leaves a voice message out of the results of receive and send until it is transcribed, unread and counted in more", async () => {
+    const chat = voiceChat([])
+    chat.nextItemId = 20
+    const {tools, watch, actions} = voiceTools(chat)
+    const sending = tools.call("send", {chat: "#15", text: "Any news?", wait: 30, idle: 1}, signal().call)
+    await until(() => actions.get(1) !== undefined)
+    actions.approve(actions.get(1)!, "Alice")
+    await until(() => chat.sent.length === 1)
+    const voice = arrive(chat, tools, watch)
+    await flushed()
+    expect((await tools.call("receive", {chat: "#15"}, signal().call))!.structuredContent).toEqual({chat: "#15", messages: [], more: 1})
+    expect(chat.chats.get("#15")!.items[0].meta.itemStatus).toEqual({type: "rcvNew"})
+    servedFrom(chat, [knownServer])
+    tools.onFileDescription()
+    await until(() => chat.commands.some(cmd => cmd.startsWith("/freceive")))
+    complete(tools, voice)
+    const {status, responses, more} = (await sending)!.structuredContent as {status: string; responses: {item: number; file: object}[]; more: number}
+    expect([status, responses.map(({item, file}) => [item, file]), more]).toEqual(["done", [[30, {...received, transcript: "Grüezi."}]], 0])
+  })
+
+  it("ends the wait of send at wait, not idle seconds after a voice message that is being transcribed, and leaves the message unread", async () => {
+    jest.useFakeTimers()
+    const chat = voiceChat([])
+    chat.nextItemId = 20
+    const {tools, watch, actions} = voiceTools(chat)
+    const sending = tools.call("send", {chat: "#15", text: "Any news?", wait: 5, idle: 1}, signal().call)
+    let finished = false
+    sending.then(() => (finished = true))
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    await jest.advanceTimersByTimeAsync(0)
+    arrive(chat, tools, watch)
+    await jest.advanceTimersByTimeAsync(1_000)
+    expect(finished).toBe(false)
+    await jest.advanceTimersByTimeAsync(4_000)
+    expect((await sending)!.structuredContent).toMatchObject({status: "done", responses: [], more: 1})
+    expect(chat.chats.get("#15")!.items[0].meta.itemStatus).toEqual({type: "rcvNew"})
+  })
+
+  it("reads on past voice messages that are being transcribed, so receive returns the unread message after them", async () => {
+    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+    const chat = voiceChat()
+    const {tools, watch} = voiceTools(chat)
+    for (const itemId of [10, 11]) {
+      servedFrom(chat, [], itemId)
+      arrive(chat, tools, watch, voiceItem(itemId, 100 + itemId))
+    }
+    const {items} = chat.chats.get("#15")!
+    for (let itemId = 12; itemId <= 110; itemId++) items.push(item(itemId, "read", {type: "groupRcv", groupMember: switchback}, {status: "rcvRead"}))
+    items.push(item(111, "final", {type: "groupRcv", groupMember: switchback}))
+    const {messages, more} = (await tools.call("receive", {chat: "#15", limit: 1}, signal().call))!.structuredContent as {messages: {item: number}[]; more: number}
+    expect([messages.map(({item}) => item), more]).toEqual([[111], 2])
+    for (const itemId of [10, 11]) servedFrom(chat, [unknownServer], itemId)
+    tools.onFileDescription()
+    await until(() => errors.mock.calls.length === 2)
+  })
+
+  it("leaves the other voice messages and files to the agent at once, offered", async () => {
+    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+    const offeredAtArrival = async (voice: T.ChatItem, chatInfo: T.ChatInfo = trail, audio = true): Promise<object> => {
+      const chat = voiceChat()
+      const {tools, watch} = voiceTools(chat, audio)
+      arrive(chat, tools, watch, voice, chatInfo)
+      const [[, file]] = await receivedFiles(tools.call("receive", {chat: "#15"}, signal().call))
+      expect(chat.commands).not.toContain("/_get item info #15 30")
+      return file
+    }
+    approved = false
+    expect(await offeredAtArrival(voiceItem())).toEqual(offered)
+    approved = true
+    expect(await offeredAtArrival(voiceItem(30, 7, {type: "voice", text: "", duration: 301}))).toEqual(offered)
+    const large = voiceItem()
+    large.file!.fileSize = 1_500_001
+    expect(await offeredAtArrival(large)).toEqual({...offered, size: 1_500_001})
+    expect(await offeredAtArrival(voiceItem(30, 7, {type: "file", text: ""}))).toEqual({...offered, type: "file"})
+    expect(await offeredAtArrival(voiceItem(), {...trail, groupChatScope: {type: "memberSupport"}} as T.ChatInfo)).toEqual(offered)
+    expect(await offeredAtArrival(voiceItem(), trail, false)).toEqual(offered)
+    const inline = voiceItem()
+    inline.file!.fileStatus = {type: "rcvAccepted"}
+    const inlineChat = voiceChat()
+    const inlineTools = voiceTools(inlineChat)
+    arrive(inlineChat, inlineTools.tools, inlineTools.watch, inline)
+    expect(await receivedFiles(inlineTools.tools.call("receive", {chat: "#15"}, signal().call))).toEqual([[30, offered]])
+    expect(inlineChat.commands).not.toContain("/_get item info #15 30")
+    Object.assign(inline.file!, {fileStatus: {type: "rcvCancelled"}})
+    inlineTools.tools.onFile(event(trail, inline))
+    const chat = voiceChat()
+    const {tools, watch} = voiceTools(chat)
+    for (let itemId = 10; itemId < 30; itemId++) {
+      servedFrom(chat, [], itemId)
+      arrive(chat, tools, watch, voiceItem(itemId, 100 + itemId))
+    }
+    arrive(chat, tools, watch)
+    const {messages, more} = (await tools.call("receive", {chat: "#15"}, signal().call))!.structuredContent as {messages: {item: number; file: object}[]; more: number}
+    expect([messages.map(({item, file}) => [item, file]), more]).toEqual([[[30, offered]], 20])
+    expect(chat.commands).not.toContain("/_get item info #15 30")
+    for (let itemId = 10; itemId < 30; itemId++) servedFrom(chat, [unknownServer], itemId)
+    tools.onFileDescription()
+    await until(() => errors.mock.calls.length === 21)
+    expect(errors.mock.calls[0]).toEqual(["file 7: The file was cancelled.\n"])
+  })
+
+  it("releases a voice message on unknown servers as offered, without downloading it, and logs why", async () => {
+    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+    const chat = voiceChat([unknownServer])
+    const {tools, watch} = voiceTools(chat)
+    const receiving = tools.call("receive", {chat: "#15", wait: 30}, signal().call)
+    await flushed()
+    arrive(chat, tools, watch)
+    expect(await receivedFiles(receiving)).toEqual([[30, offered]])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([])
+    expect(errors.mock.calls.map(([line]) => line)).toEqual(["voice message of file 7: The file is on unknown servers that were not approved.\n"])
+  })
+
+  it("releases a voice message whose upload is not described within 60 seconds as offered, and logs why", async () => {
+    jest.useFakeTimers()
+    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+    const chat = voiceChat([])
+    const {tools, watch} = voiceTools(chat)
+    const receiving = tools.call("receive", {chat: "#15", wait: 120}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    arrive(chat, tools, watch)
+    let finished = false
+    receiving.then(() => (finished = true))
+    await jest.advanceTimersByTimeAsync(59_999)
+    expect(finished).toBe(false)
+    await jest.advanceTimersByTimeAsync(1)
+    expect(await receivedFiles(receiving)).toEqual([[30, offered]])
+    expect(errors.mock.calls.map(([line]) => line)).toEqual(["voice message of file 7: item: the sender has not uploaded the file of item 30 in #15 yet; call download again later.\n"])
+  })
+
+  it("releases a voice message without downloading it when the files approval of its chat is removed before the upload is described", async () => {
+    const chat = voiceChat([])
+    const {tools, watch} = voiceTools(chat)
+    const receiving = tools.call("receive", {chat: "#15", wait: 30}, signal().call)
+    await flushed()
+    arrive(chat, tools, watch)
+    await flushed()
+    approved = false
+    servedFrom(chat, [knownServer])
+    tools.onFileDescription()
+    expect(await receivedFiles(receiving)).toEqual([[30, offered]])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([])
+  })
+
+  it("leaves voice messages offered, without downloading them, once the agent lost its control chat", async () => {
+    const chat = voiceChat([])
+    const {tools, watch, actions} = voiceTools(chat)
+    const receiving = tools.call("receive", {chat: "#15", wait: 30}, signal().call)
+    await flushed()
+    arrive(chat, tools, watch)
+    await flushed()
+    actions.loseControl()
+    servedFrom(chat, [knownServer])
+    tools.onFileDescription()
+    expect(await receivedFiles(receiving)).toEqual([[30, offered]])
+    arrive(chat, tools, watch, voiceItem(31, 8))
+    expect(await receivedFiles(tools.call("receive", {chat: "#15"}, signal().call))).toEqual([[31, offered]])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive") || cmd === "/_get item info #15 31")).toEqual([])
+  })
+
+  it("returns a voice message received with the error of its transcription, logs it, and transcribes it again at a download", async () => {
+    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+    server.replies.set("/v1/audio/transcriptions", {status: 500})
+    const chat = voiceChat()
+    const {tools, watch} = voiceTools(chat)
+    const receiving = tools.call("receive", {chat: "#15", wait: 30}, signal().call)
+    await flushed()
+    const voice = arrive(chat, tools, watch)
+    await until(() => chat.commands.some(cmd => cmd.startsWith("/freceive")))
+    complete(tools, voice)
+    expect(await receivedFiles(receiving)).toEqual([[30, {...received, transcript_error: "Speech-to-text failed: HTTP 500."}]])
+    expect(errors.mock.calls.map(([line]) => line)).toEqual(["transcription of file 7: Speech-to-text failed: HTTP 500.\n"])
+    server.replies.set("/v1/audio/transcriptions", {body: JSON.stringify({text: "Grüezi."})})
+    expect((await tools.call("download", {chat: "#15", item: 30}, signal().call))!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path, transcript: "Grüezi."})
+    expect(server.requests).toHaveLength(2)
+  })
+
+  it("releases a voice message whose download /delete CHAT files ends, and deletes and counts the stored transcripts with the files", async () => {
+    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
+    const stored = JSON.stringify({transcript: "Hoi."})
+    mkdirSync(folder, {recursive: true})
+    writeFileSync(join(folder, "5.m4a"), "audio")
+    writeFileSync(join(folder, "5.m4a.transcript.json"), stored)
+    const chat = voiceChat()
+    chat.responses.set("/fcancel 7", {type: "rcvFileCancelled", user, rcvFileTransfer: {fileId: 7}})
+    const {tools, watch} = voiceTools(chat)
+    const receiving = tools.call("receive", {chat: "#15", wait: 30}, signal().call)
+    await flushed()
+    arrive(chat, tools, watch)
+    await until(() => chat.commands.some(cmd => cmd.startsWith("/freceive")))
+    expect(await tools.deleteChatFiles("#15")).toEqual({count: 2, bytes: 5 + stored.length})
+    expect(await receivedFiles(receiving)).toEqual([[30, offered]])
+    expect([existsSync(folder), server.requests]).toEqual([false, []])
+    expect(errors.mock.calls.map(([line]) => line)).toEqual(["voice message of file 7: Your owner deleted the files of this chat.\n"])
+  })
+
+  it("transcribes a voice message at an approved download in a chat without the files approval, and returns the stored transcript at a later download", async () => {
+    approved = false
+    const chat = voiceChat()
+    const voice = voiceItem()
+    chat.chats.get("#15")!.items.push(voice)
+    const {tools, actions} = voiceTools(chat)
+    const first = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await until(() => actions.get(1)?.state === "pending")
+    actions.approve(actions.get(1)!, "Alice")
+    await until(() => chat.commands.some(cmd => cmd.startsWith("/freceive")))
+    complete(tools, voice)
+    expect((await first)!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path, transcript: "Grüezi."})
+    const second = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await until(() => actions.get(2)?.state === "pending")
+    actions.approve(actions.get(2)!, "Alice")
+    expect((await second)!.structuredContent).toEqual({action: 2, status: "done", chat: "#15", item: 30, path, transcript: "Grüezi."})
+    expect(server.requests).toHaveLength(1)
+  })
+
+  it("shares the download and the transcription of an arriving voice message with a download of the agent", async () => {
+    const chat = voiceChat()
+    const {tools, watch, actions} = voiceTools(chat)
+    const voice = arrive(chat, tools, watch)
+    await until(() => chat.commands.some(cmd => cmd.startsWith("/freceive")))
+    const downloading = tools.call("download", {chat: "#15", item: 30}, signal().call)
+    await until(() => actions.get(1) !== undefined)
+    await flushed()
+    complete(tools, voice)
+    expect((await downloading)!.structuredContent).toEqual({action: 1, status: "done", chat: "#15", item: 30, path, transcript: "Grüezi."})
+    expect(chat.commands.filter(cmd => cmd.startsWith("/freceive"))).toEqual([`/freceive 7 ${path}`])
+    expect(server.requests).toHaveLength(1)
   })
 })

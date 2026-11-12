@@ -2,6 +2,7 @@
 import {homedir} from "os"
 import {join, resolve} from "path"
 import {Mode} from "./actions"
+import {AudioOptions} from "./audio"
 import {ExitError, log, logError} from "./log"
 import {validName} from "./messages"
 import {RegisterOptions, Scope, register} from "./register"
@@ -29,6 +30,10 @@ serve options:
   --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)
   --qr-code SIZE         QR code of the link: small (default) or large
+  --audio URL,STT,TTS[,VOICE]
+                         transcribe voice messages and send voice replies with
+                         the OpenAI-compatible audio API at URL: speech-to-text
+                         model STT, text-to-speech model TTS, its voice VOICE
 
 register options:
   --scope SCOPE          user (default) or local
@@ -97,6 +102,9 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
       case "--qr-code":
         serve.qrCode = qrCodeSize(options.value(option))
         break
+      case "--audio":
+        serve.audio = audioOptions(options.value(option))
+        break
       default:
         throw unknownOption(option)
     }
@@ -164,6 +172,19 @@ function approveMode(value: string): Mode {
 function qrCodeSize(value: string): QrCodeSize {
   if (value !== "small" && value !== "large") throw usageError(`--qr-code: small or large expected, got ${value}`)
   return value
+}
+
+function audioOptions(value: string): AudioOptions {
+  const parts = value.split(",")
+  const [url, stt, tts, voice] = parts
+  if (parts.length < 3 || parts.length > 4 || parts.includes("") || !isHttpUrl(url)) throw usageError(`--audio: URL,STT,TTS or URL,STT,TTS,VOICE with an http or https URL expected, got ${value}`)
+  return {url: url.replace(/\/+$/, ""), stt, tts, voice}
+}
+
+function isHttpUrl(value: string): boolean {
+  if (!URL.canParse(value)) return false
+  const {protocol, username, password} = new URL(value)
+  return (protocol === "http:" || protocol === "https:") && username === "" && password === ""
 }
 
 function scope(value: string): Scope {

@@ -189,6 +189,27 @@ describe("send cards", () => {
       "Approved by Alice.",
     ])
   })
+
+  it("quotes the text of a voice message line by line as code, after the caption", () => {
+    const voice = (text: string | undefined): NewAction => ({...send({mentions: [{name: "Switchback", member: 44}]}), input: {chat: "@4", text, voice: "Grüezi.\nThe trail is open."}}) as NewAction
+    expect(cardText(action(voice(undefined), "pending"), mode).split("\n")).toEqual([
+      "I want to send a message to bot SimpleX Directory (@directory.simplex):",
+      "attaching as a voice message:",
+      "`Grüezi.`",
+      "`The trail is open.`",
+      "mentioning @Switchback",
+      "/'approve @4 1', /'approve @4 all' or /'reject @4 1'",
+    ])
+    expect(cardText(action(voice("trail map"), "done", {decidedBy: "Alice"}), mode).split("\n")).toEqual([
+      "I sent a message to bot SimpleX Directory (@directory.simplex):",
+      "`trail map`",
+      "attaching as a voice message:",
+      "`Grüezi.`",
+      "`The trail is open.`",
+      "mentioning @Switchback",
+      "Approved by Alice.",
+    ])
+  })
 })
 
 describe("leave cards", () => {
