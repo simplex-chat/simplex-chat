@@ -122,6 +122,42 @@ Startup reconciles what downtime missed: acceptances that arrived while the bot
 was stopped, members who left the roster group, and business chats left without
 their roster members.
 
+## Dry run
+
+`--dry-run` opens the database, reports the migrations and what the next start
+would find, and exits. It does not start chat, so nothing is sent to the network.
+
+```bash
+uv run support-bot-light --config config.toml --dry-run
+docker compose run --rm support-bot-light --dry-run
+```
+
+```
+ok    database opened, schema up to date
+ok    active user: 1:Support
+ok    roster group 10: Invite roster
+```
+
+With chat stopped, the core lists groups only as chat previews, so the roster
+group is looked up by `roster.group_name`. A group renamed in a client is
+reported with `?`: the bot finds it by its marker at startup.
+
+Pending migrations and a database migrated by a newer build stop the checks:
+
+```
+FAIL  database: pending 1 migration(s): 20261111_feeds; a real start would apply them, --allow-migrations applies them now
+```
+
+`--allow-migrations` applies pending migrations, and `--allow-down-migrations`
+rolls back migrations that this build does not have, using the down migrations
+the newer build stored in the database; the checks run after them. Both need
+`--dry-run`. The core rolls back only when this build's migrations are a prefix
+of the database's, and otherwise reports a migration state error and changes
+nothing. Stop the bot first and copy the `./state` directory: rolling back
+deletes the data of the removed migrations.
+
+The exit code is 0 when no line is `FAIL`, 1 otherwise.
+
 ## Development
 
 ```bash
