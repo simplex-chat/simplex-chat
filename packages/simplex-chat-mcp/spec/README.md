@@ -26,7 +26,7 @@ A tool call is held open by the server until the owner decides and, for `connect
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
 The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server. The session server forwards tool calls over a local socket to `simplex-mcp service`, one service per data root. Requests on the socket are HTTP/1.1 with a bearer token. The service runs two cores:
-- `Claude` is the profile that peers see. It holds the Main group, one group per session and the chats with peers.
+- `Claude` is the profile that peers see. It holds the Main group, one group per session and the chats with peers. In a session's group it posts the answers and one line for each of Claude Code's own prompts.
 - `User` is a member of every session group. It posts the prompts typed in the terminal.
 
 Each session has the six tools and `reply`, and its group has its own `Actions` and `Control`. A chat belongs to the session that connected it. Admins and owners of the session group move a chat to another session with `/give`.
@@ -234,11 +234,11 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Service start by a client | [`src/client.ts`](../src/client.ts#L35) | `ServiceClient.ensureService` | [35](../src/client.ts#L35) |
 | Service process | [`src/service.ts`](../src/service.ts#L430) | `runService` | [430](../src/service.ts#L430) |
 | Service routes | [`src/service.ts`](../src/service.ts#L137) | `Service.routes` | [137](../src/service.ts#L137) |
-| Hub | [`src/hub.ts`](../src/hub.ts#L367) | `Hub.open` | [367](../src/hub.ts#L367) |
+| Hub | [`src/hub.ts`](../src/hub.ts#L368) | `Hub.open` | [368](../src/hub.ts#L368) |
 | Session and its group | [`src/hub.ts`](../src/hub.ts#L43) | `Session` | [43](../src/hub.ts#L43) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L26) | `MainGroup` | [26](../src/main-group.ts#L26) |
 | Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
-| Hooks | [`src/hook.ts`](../src/hook.ts#L58) | `sessionStart`, `turn` | [58](../src/hook.ts#L58), [91](../src/hook.ts#L91) |
+| Hooks | [`src/hook.ts`](../src/hook.ts#L79) | `sessionStart`, `turn` | [79](../src/hook.ts#L79), [112](../src/hook.ts#L112) |
 | `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts#L22) | `showLink`, `resetOwners` | [22](../src/owner.ts#L22), [28](../src/owner.ts#L28) |
 | SimpleX core | [`src/core.ts`](../src/core.ts#L19) | `openCore` | [19](../src/core.ts#L19) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |
