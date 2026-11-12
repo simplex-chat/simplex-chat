@@ -670,6 +670,15 @@ describe("session channel", () => {
     expect(described().at(-1)).toBe("claude-sonnet-5 · effort max")
   })
 
+  it("keeps the model of a hook that started while a title was held, when the title's model comes later with the older time of its hook", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const described = () => chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile.shortDescr)
+    await session.turn({id: id1, at: 7, answer: "Done.", model: "claude-sonnet-5"})
+    await session.turn({id: id1, at: 5, model: "claude-opus-5"})
+    expect(described()).toEqual(["claude-sonnet-5"])
+  })
+
   it("splits an answer and a terminal prompt where a message reaches the size the core accepts, with the quote in the first part of an answer, for Latin, Cyrillic and CJK texts", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)

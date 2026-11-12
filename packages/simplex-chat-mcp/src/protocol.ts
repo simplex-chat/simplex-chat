@@ -29,6 +29,7 @@ export interface SessionRequest {
 export interface TitleRequest {
   id: string
   pid?: number
+  at?: number
   name?: string
   project: string
   model?: string

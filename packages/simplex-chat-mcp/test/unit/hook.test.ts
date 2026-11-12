@@ -36,12 +36,14 @@ function fakeClient(owner: {owners: string[]; link?: string}, ensureError?: Erro
 }
 
 describe("SessionStart hook", () => {
-  it("starts the session with its title, folder, model and Claude Code process, and stays quiet when the Main group has an owner", async () => {
+  it("starts the session with its title, folder, model, Claude Code process and the time the hook started, and stays quiet when the Main group has an owner", async () => {
     const {client, requests} = fakeClient({owners: ["Alice"]})
     const started = JSON.stringify({...JSON.parse(input), model: "claude-opus-5"})
-    expect(await sessionStart(started, {CLAUDE_PID: "4321"}, {client, nodeVersion: "22.1.0"})).toEqual({})
+    expect(await sessionStart(started, {CLAUDE_PID: "4321"}, {client, nodeVersion: "22.1.0"}, 5)).toEqual({})
+    expect(await sessionStart(started, {}, {client, nodeVersion: "22.1.0"})).toEqual({})
     expect(requests).toEqual([
-      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}},
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, at: 5, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}},
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", at: performance.timeOrigin, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}},
     ])
   })
 

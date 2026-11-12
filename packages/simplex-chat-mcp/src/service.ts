@@ -247,7 +247,7 @@ export class Service {
     if (marked !== undefined && marked > Date.now() - processWait) throw new SocketError("The SessionStart hook of this process marked its run unattended.", unattendedStatus)
   }
 
-  private async applyTitle({id: given, pid, name, project, model, config}: TitleRequest): Promise<void> {
+  private async applyTitle({id: given, pid, at, name, project, model, config}: TitleRequest): Promise<void> {
     const id = await this.resolve(given, pid)
     const title = name?.trim() || undefined
     const entry = this.entry(id, {id, project, name: title, config})
@@ -258,7 +258,7 @@ export class Service {
     const agent = await entry.opening
     await this.hub.configure(config)
     if (title !== undefined) await this.rename(this.folder(id), agent, title)
-    if (model !== undefined) await agent.turn({id, model})
+    if (model !== undefined) await agent.turn({id, at, model})
   }
 
   private canonical(id: string): string {

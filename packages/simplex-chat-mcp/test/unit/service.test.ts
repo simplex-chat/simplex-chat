@@ -788,16 +788,28 @@ describe("service", () => {
     expect(agents).toHaveLength(1)
   })
 
-  it("keeps a title that waits for its session server across a service stop", async () => {
+  it("keeps a title that waits for its session server across a service stop, with the time its hook started", async () => {
     service = await Service.start(deps(root).d, readDefaultConfig)
-    expect(await post("/title", {id: id1, pid: 300, name: "docs", model: "claude-opus-5", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
+    expect(await post("/title", {id: id1, pid: 300, at: 5, name: "docs", model: "claude-opus-5", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
     await service.stop()
+    expect(JSON.parse(readFileSync(join(root, "titles.json"), "utf8"))).toMatchObject([{id: id1, pid: 300, at: 5, model: "claude-opus-5"}])
     const restarted = deps(root)
     service = await Service.start(restarted.d, readDefaultConfig)
     expect(existsSync(join(root, "titles.json"))).toBe(false)
     expect(await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1, displayName: "1 · docs"})
     await turnsUntil(() => restarted.agents[0].turns.length === 1)
-    expect(restarted.agents[0].turns).toEqual([{id: id1, model: "claude-opus-5"}])
+    expect(restarted.agents[0].turns).toEqual([{id: id1, at: 5, model: "claude-opus-5"}])
+  })
+
+  it("passes the model of a held title with the time its hook started, and a turn of a hook that started during the wait with its own later time", async () => {
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    expect(await post("/title", {id: id1, pid: 300, at: 5, name: "docs", model: "claude-opus-5", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
+    await expect(post("/turn", {id: id1, pid: 300, at: 7, model: "claude-sonnet-5"})).rejects.toMatchObject({status: 409})
+    expect(await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1, displayName: "1 · docs"})
+    await turnsUntil(() => agents[0]?.turns.length === 1)
+    await post("/turn", {id: id1, pid: 300, at: 7, model: "claude-sonnet-5"})
+    expect(agents[0].turns).toEqual([{id: id1, at: 5, model: "claude-opus-5"}, {id: id1, pid: 300, at: 7, model: "claude-sonnet-5"}])
   })
 
   it("keeps the fields written to session.json while a title renames the session", async () => {

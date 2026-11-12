@@ -45,7 +45,7 @@ export interface HookDeps {
   nodeVersion: string
 }
 
-export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = process.env, deps?: HookDeps): Promise<HookOutput> {
+export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = process.env, deps?: HookDeps, at = performance.timeOrigin): Promise<HookOutput> {
   if (!interactive(env)) {
     if (interactiveEntrypoint(env)) await markUnattended(stdin, env, deps?.client)
     return {}
@@ -57,7 +57,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
     const config = readConfig(env)
     const client = deps?.client ?? ServiceClient.forRoot(dataRoot(env))
     await client.ensureService(version)
-    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), name: input.session_title, project: input.cwd, model: input.model, config})
+    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), at, name: input.session_title, project: input.cwd, model: input.model, config})
     const {link, owners} = owner
     if (owners.length > 0 || link === undefined) return {}
     return {systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "${mainGroup}":\n${qrCodeText(link, "plain")}\n${link}`}
