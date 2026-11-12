@@ -2,6 +2,7 @@ import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import * as qrcode from "qrcode"
 import {api, core} from "simplex-chat"
 import {Action, ActionHooks, Actions, ConnectAction, DownloadAction, Standing, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
+import {ModelSelection, writeModelFile} from "./files"
 import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatNumber, chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import type {OwnerEntry, QrCodeSize} from "./serve"
@@ -12,8 +13,9 @@ const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "list", label: "Chats and approvals"},
   {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
 ]
+const modelCommand: T.ChatBotCommand = {type: "command", keyword: "model", label: "The agent's model"}
 
-const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /model. Each card shows its commands."
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
   connect: "message: too long for its approval card; shorten it.",
@@ -50,6 +52,7 @@ export interface ControlOptions {
   owners?: OwnerEntry[]
   registerHint: string
   qrCode: QrCodeSize
+  model?: ModelSelection
 }
 
 export interface Command {
@@ -69,6 +72,7 @@ type OwnerRequest =
   | {type: "approveChat" | "revoke"; chat: string; standing: Standing}
   | {type: "leave" | "deleteFiles"; chat: string}
   | {type: "pending" | "list"}
+  | {type: "model"; name?: string}
 
 interface Shown {
   name: (name: string) => string
@@ -102,8 +106,9 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   async load(): Promise<void> {
     if (isLost(this.group)) return this.lose()
     const {groupProfile} = this.group
-    if (groupProfile.displayName !== this.options.displayName || JSON.stringify(groupProfile.groupPreferences?.commands) !== JSON.stringify(controlCommands)) {
-      this.group = await this.chat.apiUpdateGroupProfile(this.groupId, {...groupProfile, displayName: this.options.displayName, groupPreferences: {...groupProfile.groupPreferences, commands: controlCommands}})
+    const commands = this.options.model === undefined ? controlCommands : [...controlCommands, modelCommand]
+    if (groupProfile.displayName !== this.options.displayName || JSON.stringify(groupProfile.groupPreferences?.commands) !== JSON.stringify(commands)) {
+      this.group = await this.chat.apiUpdateGroupProfile(this.groupId, {...groupProfile, displayName: this.options.displayName, groupPreferences: {...groupProfile.groupPreferences, commands}})
     }
     await this.refreshMembers()
   }
@@ -218,6 +223,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         return this.leave(sender, request.chat)
       case "deleteFiles":
         return this.deleteFiles(request.chat)
+      case "model":
+        return this.switchModel(sender, request.name)
       case "approve":
       case "reject":
       case "receive":
@@ -304,6 +311,20 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   private async deleteFiles(chat: string): Promise<string> {
     const {count, bytes} = await this.tools.deleteChatFiles(chat)
     return count === 0 ? `No files from ${chat}.` : `Deleted ${filesText(count)} from ${chat}, ${sizeText(bytes)}.`
+  }
+
+  private switchModel(sender: T.GroupMember, name: string | undefined): string {
+    const {model} = this.options
+    if (model === undefined) return "This server runs without --models."
+    const {models, selected} = model
+    if (name === undefined) return [`The agent's model is ${codeSpan(selected.name)}: ${codeSpan(selected.model)}.`, ...models.filter(entry => entry !== selected).map(entry => `/'model ${entry.name}'`)].join("\n")
+    const requested = models.find(entry => entry.name === name)
+    if (requested === undefined) return "No such model. /model shows the models."
+    if (requested === selected) return `The agent's model is already ${codeSpan(selected.name)}.`
+    writeModelFile(model.file, requested.model)
+    model.selected = requested
+    log(`Model set to ${requested.name} (${requested.model}) by ${oneLine(sender.memberProfile.displayName)}.`)
+    return `The agent's model is ${codeSpan(requested.name)}: ${codeSpan(requested.model)}. The agent restarts with it. /'model ${selected.name}'`
   }
 
   private queueAfterReplies(post: () => Promise<unknown>): void {
@@ -719,6 +740,7 @@ function ownerRequest({keyword, params}: Command): OwnerRequest | undefined {
   if (keyword === "leave" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value}
   if (keyword === "delete" && chat !== undefined && value === "files") return {type: "deleteFiles", chat}
   if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
+  if (keyword === "model" && words.length <= 1) return {type: keyword, name: words.at(0)}
   return undefined
 }
 

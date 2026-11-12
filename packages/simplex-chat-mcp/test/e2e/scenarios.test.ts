@@ -524,14 +524,17 @@ test("a port in use stops the start before server.json is written and before any
   expect(logLines.slice(before).filter(line => line.startsWith("Join the agent control chat") || /^(https:\/\/|simplex:)/.test(line))).toEqual([])
 }, 600_000)
 
-test("--display-name names the profile and the agent control chat", async () => {
+test("--display-name names the profile and the agent control chat, and the start prints the selected model", async () => {
   const alice = await personIn("names", "Alice")
   const agent = await agentIn("names")
-  await agent.start({displayName: "Trail Scout"})
+  const modelFile = join(dir, "names", "model", "model")
+  mkdirSync(dirname(modelFile))
+  await agent.start({displayName: "Trail Scout", model: {models: [{name: "gemma", model: "kodiak/gemma-4-26b"}], file: modelFile}})
   const controlId = await joinAsOwner(alice)
   expect(agent.server.user.profile.displayName).toBe("Trail Scout")
   expect(agent.server.user.profile.peerType).toBe(T.ChatPeerType.Agent)
   expect(logLines).toContain('Agent control chat "Trail Scout" created.')
+  expect(logLines).toContain(`Model: gemma (kodiak/gemma-4-26b), in ${modelFile}`)
   expect((await controlGroupOf(agent.server.chat, agent.server.user.userId)).groupProfile.displayName).toBe("Trail Scout")
   expect((await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === controlId)!.groupProfile.displayName).toBe("Trail Scout")
 

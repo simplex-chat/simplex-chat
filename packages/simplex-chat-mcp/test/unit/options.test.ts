@@ -1,3 +1,4 @@
+import {join} from "path"
 import {helpText, parseCommand, validAgentName} from "../../src/cli"
 import {entryText} from "../../src/control"
 import {ExitError} from "../../src/log"
@@ -38,7 +39,7 @@ describe("serve options", () => {
 
   it("reads every option", () => {
     const {options} = parseCommand(
-      ["serve", "agent-2", "--data", "/tmp/a", "--display-name", "Agent Two", "--approve", "host", "--expire", "1", "--stop-wait", "0", "--port", "5227", "--qr-code", "large", "--new-token", "--reset-owners", "--owners"],
+      ["serve", "agent-2", "--data", "/tmp/a", "--display-name", "Agent Two", "--approve", "host", "--expire", "1", "--stop-wait", "0", "--port", "5227", "--qr-code", "large", "--new-token", "--reset-owners", "--owners", "--models", "gemma=kodiak/gemma-4-26b", "--model-file", "/tmp/model/model"],
       home,
     ) as {options: object}
     expect(options).toEqual({
@@ -54,7 +55,66 @@ describe("serve options", () => {
       newToken: true,
       resetOwners: true,
       owners: [],
+      model: {models: [{name: "gemma", model: "kodiak/gemma-4-26b"}], file: "/tmp/model/model"},
     })
+  })
+
+  it("takes the models with their file, resolved to an absolute path", () => {
+    const models = "gemma=kodiak/gemma-4-26b,glm=privatemode/glm-latest,flash=privatemode/glm-flash-latest"
+    expect(parseCommand(["serve", "agent", "--model-file", "agent-model/model", "--models", models], home)).toMatchObject({
+      options: {
+        model: {
+          models: [
+            {name: "gemma", model: "kodiak/gemma-4-26b"},
+            {name: "glm", model: "privatemode/glm-latest"},
+            {name: "flash", model: "privatemode/glm-flash-latest"},
+          ],
+          file: join(process.cwd(), "agent-model", "model"),
+        },
+      },
+    })
+    const limits = `${"g".repeat(16)}=${"p".repeat(32)}/${"m".repeat(64)},a=p_1.x-y/m.1:2/z+q@r-s_t`
+    expect(parseCommand(["serve", "agent", "--models", limits, "--model-file", "/tmp/model"], home)).toMatchObject({
+      options: {model: {models: [{name: "g".repeat(16), model: `${"p".repeat(32)}/${"m".repeat(64)}`}, {name: "a", model: "p_1.x-y/m.1:2/z+q@r-s_t"}]}},
+    })
+  })
+
+  it("refuses models that are not NAME=PROVIDER/MODEL items with unique names and models", () => {
+    const refused = [
+      "kodiak/gemma-4-26b",
+      "gemma=kodiak",
+      "gemma=-kodiak/gemma-4-26b",
+      "-gemma=kodiak/gemma-4-26b",
+      "Gemma=kodiak/gemma-4-26b",
+      `${"g".repeat(17)}=kodiak/gemma-4-26b`,
+      `gemma=${"p".repeat(33)}/gemma-4-26b`,
+      `gemma=kodiak/${"m".repeat(65)}`,
+      "gemma=kodiak/gemma 4",
+      "gemma=kodiak/`gemma`",
+      "gemma=kodiak/gemma-4-26b,",
+      "gemma=kodiak/gemma-4-26b,,glm=privatemode/glm-latest",
+      "gemma=kodiak/gemma-4-26b,gemma=privatemode/glm-latest",
+      "gemma=kodiak/gemma-4-26b,glm=kodiak/gemma-4-26b",
+      "",
+    ]
+    for (const models of refused) {
+      expect(usage(["serve", "agent", "--models", models, "--model-file", "/tmp/model"])).toBe(`--models: NAME=PROVIDER/MODEL,... expected, got ${models}`)
+    }
+    expect(usage(["serve", "agent", "--models"])).toBe("--models: a value expected.")
+  })
+
+  it("takes --models and --model-file only together", () => {
+    expect(usage(["serve", "agent", "--models", "gemma=kodiak/gemma-4-26b"])).toBe("--models and --model-file: both expected.")
+    expect(usage(["serve", "agent", "--model-file", "/tmp/model"])).toBe("--models and --model-file: both expected.")
+  })
+
+  it("refuses a model file in a folder not disjoint from the data folder", () => {
+    const models = ["--models", "gemma=kodiak/gemma-4-26b"]
+    for (const file of ["/home/alice/.simplex-mcp/agent/model", "/home/alice/.simplex-mcp/agent", "/home/alice/.simplex-mcp/model"]) {
+      expect(usage(["serve", "agent", ...models, "--model-file", file])).toBe(`--model-file: a file in a folder disjoint from the data folder expected, got ${file}`)
+    }
+    expect(usage(["serve", "agent", "--model-file", "/tmp/a/model/model", ...models, "--data", "/tmp/a"])).toBe("--model-file: a file in a folder disjoint from the data folder expected, got /tmp/a/model/model")
+    expect(parseCommand(["serve", "agent", "--data", "/tmp/a", ...models, "--model-file", "/tmp/ab/model"], home)).toMatchObject({options: {model: {file: "/tmp/ab/model"}}})
   })
 
   it("takes the QR code size", () => {
@@ -169,6 +229,8 @@ describe("help", () => {
     expect(parseCommand(["--help"], home)).toEqual({command: "help"})
     expect(helpText).toContain("  --owners [ID:NAME,...] only these owners approve; without a list, the link\n")
     expect(helpText).toContain("  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,\n                         0 to 60 (default: 10)\n")
+    expect(helpText).toContain("  --models MODELS        opencode models NAME=PROVIDER/MODEL, comma-separated;\n                         /model NAME selects one in the agent control chat;\n                         the first is the default; requires --model-file\n")
+    expect(helpText).toContain("  --model-file FILE      file with the selected PROVIDER/MODEL for the script\n                         that runs opencode; in a folder disjoint from the\n                         data folder\n")
     expect(helpText.endsWith("--reset-owners takes --owners without a list.\n")).toBe(true)
   })
 })

@@ -1,5 +1,5 @@
 import {randomBytes} from "crypto"
-import {chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync} from "fs"
+import {chmodSync, existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync} from "fs"
 import {join} from "path"
 import {ExitError} from "./log"
 
@@ -8,6 +8,12 @@ export interface ServerFile {
   port: number
   expireHours: number
 }
+
+export type ModelEntry = {name: string; model: string}
+
+export type ModelOptions = {models: ModelEntry[]; file: string}
+
+export type ModelSelection = ModelOptions & {selected: ModelEntry}
 
 export function createDataFolder(dir: string): void {
   mkdirSync(dir, {recursive: true, mode: 0o700})
@@ -50,6 +56,19 @@ export function writeServerFile(dir: string, server: ServerFile): void {
 export function readServerFile(dir: string): ServerFile | undefined {
   const file = join(dir, "server.json")
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined
+}
+
+export function modelAtStart({models, file}: ModelOptions): ModelSelection {
+  const line = existsSync(file) ? readFileSync(file, "utf8").split("\n")[0] : undefined
+  const selected = models.find(({model}) => model === line) ?? models[0]
+  if (selected.model !== line) writeModelFile(file, selected.model)
+  return {models, file, selected}
+}
+
+export function writeModelFile(file: string, model: string): void {
+  writeFileSync(`${file}.part`, `${model}\n`, {mode: 0o644})
+  if (process.platform !== "win32") chmodSync(`${file}.part`, 0o644)
+  renameSync(`${file}.part`, file)
 }
 
 function writePrivateFile(file: string, text: string): void {

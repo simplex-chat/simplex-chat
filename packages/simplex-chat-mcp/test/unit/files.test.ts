@@ -2,7 +2,7 @@ import {spawnSync} from "child_process"
 import {chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
-import {acquireLock, createDataFolder, readServerFile, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "../../src/files"
+import {ModelEntry, acquireLock, createDataFolder, modelAtStart, readServerFile, releaseLock, serverToken, writeHeadersFile, writeModelFile, writeServerFile} from "../../src/files"
 import {ExitError} from "../../src/log"
 
 let dir: string
@@ -82,5 +82,51 @@ describe("data folder", () => {
     expect(readServerFile(dir)).toBeUndefined()
     writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
     expect(readServerFile(dir)).toEqual({name: "agent", port: 5226, expireHours: 23})
+  })
+})
+
+describe("model file", () => {
+  const models: ModelEntry[] = [
+    {name: "gemma", model: "kodiak/gemma-4-26b"},
+    {name: "glm", model: "privatemode/glm-latest"},
+  ]
+  let file: string
+
+  beforeEach(() => {
+    file = join(dir, "..", "model")
+  })
+
+  it("is written as one line readable by all, through FILE.part, and replaces a private file and a private FILE.part", () => {
+    writeModelFile(file, "kodiak/gemma-4-26b")
+    expect(readFileSync(file, "utf8")).toBe("kodiak/gemma-4-26b\n")
+    expect(statSync(file).mode & 0o777).toBe(0o644)
+    chmodSync(file, 0o600)
+    writeFileSync(`${file}.part`, "x", {mode: 0o600})
+    writeModelFile(file, "privatemode/glm-latest")
+    expect(readFileSync(file, "utf8")).toBe("privatemode/glm-latest\n")
+    expect(statSync(file).mode & 0o777).toBe(0o644)
+    expect(existsSync(`${file}.part`)).toBe(false)
+  })
+
+  it("keeps a listed model at the start and leaves the file unchanged", () => {
+    writeFileSync(file, "privatemode/glm-latest\nchanged by hand\n")
+    const selection = modelAtStart({models, file})
+    expect(selection).toEqual({models, file, selected: models[1]})
+    expect(selection.selected).toBe(models[1])
+    expect(readFileSync(file, "utf8")).toBe("privatemode/glm-latest\nchanged by hand\n")
+  })
+
+  it("writes the first model at the start when the file is missing or its model is not listed", () => {
+    expect(modelAtStart({models, file}).selected).toBe(models[0])
+    expect(readFileSync(file, "utf8")).toBe("kodiak/gemma-4-26b\n")
+    for (const content of ["openai/gpt-5\n", "glm\n", " privatemode/glm-latest\n", ""]) {
+      writeFileSync(file, content)
+      expect(modelAtStart({models, file}).selected).toBe(models[0])
+      expect(readFileSync(file, "utf8")).toBe("kodiak/gemma-4-26b\n")
+    }
+  })
+
+  it("fails at the start when the folder of the file is missing", () => {
+    expect(() => modelAtStart({models, file: join(dir, "..", "missing", "model")})).toThrow(/ENOENT/)
   })
 })
