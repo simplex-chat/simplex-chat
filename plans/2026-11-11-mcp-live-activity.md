@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.3.0: Claude Code activity in the status message
 
-Status: draft for review. Design of 2026-11-11; decisions 6 and 7 by the user; decision 8 of 2026-11-12 at the user's request. Code: branch `ab/mcp-live-activity`, stacked on `ab/mcp-live-typing` at `0fa30e4f34`. Hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11.
+Status: draft for review. Design of 2026-11-11; decisions 6 and 7 by the user; decision 8 of 2026-11-12 at the user's request. Code: stacked on the live status (`plans/2026-11-10-mcp-live-status.md`) at `0fa30e4f34`. Hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11.
 
 Dependencies:
 1. The status message of `plans/2026-11-10-mcp-live-status.md`.
@@ -14,7 +14,7 @@ Dependencies:
 3. Sessions: labels are changed only by events of agent sessions; at most 16 agent sessions are kept.
 4. `register` writes the hooks into the Claude Code settings file of its scope: `CONFIG/settings.json` for `user`, `PROJECT/.claude/settings.local.json` for `local`.
 5. Notes: in the `receive` description, a note is requested in the same response as the tool call of a step that takes minutes.
-6. Scope, decided by the user: notes (option 1) and Claude Code hooks (option 2) in one pull request, stacked on `ab/mcp-live-typing`.
+6. Scope, decided by the user: notes (option 1) and Claude Code hooks (option 2) in one pull request, stacked on the pull request of the live status.
 7. Source budget, decided by the user: about 150 changed lines in `src`, up to 20% above; the user accepted the 267 changed lines after the review rounds.
 8. Arrival, 2026-11-12, at the user's request: after a `receive` with `typing: true` in a chat, the status is started at once at a message received there, as in section Arrival; about 25 changed lines in `src`.
 
@@ -306,5 +306,5 @@ tools.ts       Agent                 activity
 
 ## Pull request
 
-- Branch `ab/mcp-live-activity` of `brenzi-agent/simplex-chat`, stacked on `ab/mcp-live-typing`; one draft pull request into `simplex-chat/simplex-chat` master, linking this file. Its description has a GIF animation of the status message.
+- One draft pull request into `simplex-chat/simplex-chat` master, stacked on the pull request of the live status, with a link to this file. Its description has a GIF animation of the status message.
 - Changed paths: `packages/simplex-chat-mcp/**` and `plans/`; the reduced build runs the `mcp` scope.
