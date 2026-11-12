@@ -82,6 +82,8 @@ compose {
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.icns"))
           appCategory = "public.app-category.social-networking"
           bundleID = "chat.simplex.app"
+          // MACOS_DEPLOYMENT_TARGET of scripts/simplex_build/macos.py, the minimum macOS of the app's libraries
+          minimumSystemVersion = "11.0"
           infoPlist {
             extraKeysRawXml = """
               <key>NSMicrophoneUsageDescription</key>

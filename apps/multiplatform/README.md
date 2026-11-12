@@ -80,7 +80,7 @@ The app calls into a Haskell core library via JNI/FFI:
 ### `local.properties` (create from `local.properties.example`)
 
 ```properties
-compression.level=0          # APK compression (0-9)
+compression.level=0          # not 0: native libraries compressed in the APK and extracted on install
 enable_debuggable=true       # Debug mode
 application_id.suffix=.debug # Multiple app instances on same device
 app.name=SimpleX Debug       # App name for debug builds

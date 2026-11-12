@@ -7,6 +7,8 @@ FROM ubuntu:${TAG}@${HASH} AS build
 
 # Ubuntu archive state that all apt packages are installed from; bump it to pick up package updates
 ARG UBUNTU_SNAPSHOT=20261021T000000Z
+# how often each apt command retries a download that fails: with apt's growing delay, about four minutes
+ARG APT_RETRIES=10
 ARG GHC=9.6.3
 ARG CABAL=3.10.2.0
 ARG GHCUP_VER=0.2.6.2
@@ -28,12 +30,12 @@ ARG USER_NAME=builder
 # apt still verifies every index against the GPG-signed InRelease files.
 RUN sed -i -E "s#http://(archive|security|ports)\.ubuntu\.com/ubuntu(-ports)?/?#https://snapshot.ubuntu.com/ubuntu/${UBUNTU_SNAPSHOT}/#" \
         $(grep -rlsE 'http://(archive|security|ports)\.ubuntu\.com' /etc/apt/sources.list /etc/apt/sources.list.d) && \
-    apt-get -o Acquire::https::Verify-Peer=false update --error-on=any && \
-    apt-get -o Acquire::https::Verify-Peer=false install -y ca-certificates
+    apt-get -o Acquire::Retries=${APT_RETRIES} -o Acquire::https::Verify-Peer=false update --error-on=any && \
+    apt-get -o Acquire::Retries=${APT_RETRIES} -o Acquire::https::Verify-Peer=false install -y ca-certificates
 
 # Install curl, git and and simplex-chat dependencies
-RUN apt-get update --error-on=any && \
-    apt-get install -y curl \
+RUN apt-get -o Acquire::Retries=${APT_RETRIES} update --error-on=any && \
+    apt-get -o Acquire::Retries=${APT_RETRIES} install -y curl \
                        libpq-dev \
                        git \
                        strip-nondeterminism \
@@ -81,7 +83,7 @@ RUN export JAVA_FILENAME='java-corretto.deb' \
          "https://corretto.aws/downloads/resources/${JAVA_VER}/java-${JAVA_VER_MAJOR}-amazon-corretto-jdk_${JAVA_VER_DEB}_${JAVA_ARCH}.deb" \
          -o "${JAVA_FILENAME}" && \
     if echo "${JAVA_HASH}  ${JAVA_FILENAME}" | sha256sum -c -; then \
-        if apt install -y ./"${JAVA_FILENAME}"; then \
+        if apt -o Acquire::Retries=${APT_RETRIES} install -y ./"${JAVA_FILENAME}"; then \
             rm ./"${JAVA_FILENAME}"; \
         else \
             echo "Failed to install Java Corretto" && exit 1; \

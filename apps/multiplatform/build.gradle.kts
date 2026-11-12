@@ -23,7 +23,7 @@ buildscript {
     // Provide, for example, `application_id.suffix=.debug` in local.properties
     // to allow debug & release versions to coexist
     extra.set("application_id.suffix", prop["application_id.suffix"] ?: "")
-    // Compression level for debug AND release apk. 0 = disable compression. Max is 9
+    // Not 0: the apk compresses the native libraries, and Android extracts them on install
     extra.set("compression.level", (prop["compression.level"] as String?)?.toIntOrNull() ?: 0)
     if (prop["simplex.assets.dir"] != null) {
         extra.set("simplex.assets.dir", prop["simplex.assets.dir"])
