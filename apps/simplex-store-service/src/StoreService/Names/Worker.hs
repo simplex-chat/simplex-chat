@@ -441,14 +441,16 @@ retryRegistration oe@OrdersEnv {oeNow} current = do
     _ -> pure $ RTRefused RFNotFailed
 
 -- | An owner who changes their terms acceptance on chain makes every relay and register revert at the service's gas, so each
--- kind of transaction is sent at most this many times for one order, its moves included, as sendsOf counts them.
+-- kind of transaction is sent at most this many times for one order, its moves included.
 maxSendsPerKind :: Int
 maxSendsPerKind = 5
 
 -- | The send while the order has sent fewer than maxSendsPerKind transactions of its kind, else the order fails.
 withinSends :: Worker -> UTCTime -> NameRegistration -> (TxFor -> Bool) -> IO Next -> IO Next
 withinSends w@Worker {wkOrders} now r@NameRegistration {nrId = RegistrationId rid} ofKind send = do
-  sent <- sendsOf wkOrders r ofKind
+  txs <- orderTransactions wkOrders r
+  let minedCommits = [ntNonce | NameTransaction {ntFor = TxCommit _, ntNonce, ntStatus = TSMined} <- txs]
+      sent = sendCount ofKind [tx | tx@NameTransaction {ntNonce} <- txs, ntNonce `notElem` minedCommits]
   if sent < maxSendsPerKind
     then send
     else do
@@ -456,14 +458,14 @@ withinSends w@Worker {wkOrders} now r@NameRegistration {nrId = RegistrationId ri
       save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notRegistered}
 
 sendsUsedUp :: OrdersEnv -> NameRegistration -> IO Bool
-sendsUsedUp oe r = any (>= maxSendsPerKind) <$> mapM (sendsOf oe r) [isCommit, isAccept, isRegister]
+sendsUsedUp oe r = orderTransactions oe r <&> \txs -> any (\ofKind -> sendCount ofKind txs >= maxSendsPerKind) [isCommit, isAccept, isRegister]
 
--- | One per nonce, as a fee replacement is the same send. A commit mined with status 1 is not counted, as the next one waits for its lapse.
-sendsOf :: OrdersEnv -> NameRegistration -> (TxFor -> Bool) -> IO Int
-sendsOf OrdersEnv {oeStore} NameRegistration {nrId} ofKind = do
-  txs <- withTransaction oeStore (`registrationTransactions` nrId)
-  let minedCommits = [ntNonce | NameTransaction {ntFor = TxCommit _, ntNonce, ntStatus = TSMined} <- txs]
-  pure $ length $ nubOrd [ntNonce | NameTransaction {ntFor, ntNonce} <- txs, ofKind ntFor, ntNonce `notElem` minedCommits]
+-- | One per nonce, as a fee replacement is the same send.
+sendCount :: (TxFor -> Bool) -> [NameTransaction] -> Int
+sendCount ofKind = length . nubOrd . map ntNonce . filter (ofKind . ntFor)
+
+orderTransactions :: OrdersEnv -> NameRegistration -> IO [NameTransaction]
+orderTransactions OrdersEnv {oeStore} NameRegistration {nrId} = withTransaction oeStore (`registrationTransactions` nrId)
 
 isCommit, isAccept, isRegister :: TxFor -> Bool
 isCommit = \case TxCommit _ -> True; _ -> False

@@ -1195,7 +1195,9 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
 
 An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the
-service's gas. Past that the order fails, Try again and a move answer `400 bad_request`, and support closes it
+service's gas. The service's own commits after a lapse, which wait for it, count against that only when
+they revert, so a signature kept for its week registers over several commitment windows; Try again and
+a move count every commit. Past that the order fails, Try again and a move answer `400 bad_request`, and support closes it
 with `//close` (see [Closing a failed order](#closing-a-failed-order)).
 The log line is `[WARN …] names worker: registration <id> failed: it sent <n> transactions of one kind`.
 

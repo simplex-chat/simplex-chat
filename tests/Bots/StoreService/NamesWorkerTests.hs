@@ -83,7 +83,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits a second at the lapse second, retries as usual when the dry run still reverts, then commits" testLapseSecond
     it "keeps a requeued order's intent while it commits again after a lapse, and over a third party's commitment" testIntentAcrossCommits
     it "keeps the phase while the latest block needs more than the fee cap, then commits" testFeeAboveCap
-    it "commits again after commits mined with status 1 on every lapse, and fails an order whose commits reverted the most times an order may" testMinedCommitsUncounted
+    it "commits again after commits mined with status 1 on every lapse while Try again counts them, and fails an order whose commits reverted the most times an order may" testMinedCommitsUncounted
   describe "writes" $ do
     it "writes nothing when the registration changed since it was read" testLostRace
     it "writes in the name's turn" testInNameTurn
@@ -488,9 +488,10 @@ sentCommits Ctx {cStore} NameRegistration {nrId} status nonces = withTransaction
   recordTransactionOutcome db h TSPending status (Just 120) `shouldReturn` True
 
 testMinedCommitsUncounted :: IO ()
-testMinedCommitsUncounted = withWorker $ \w@W {wCtx = ctx} -> do
+testMinedCommitsUncounted = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}} -> do
   r <- paidIn ctx aliceOrder id
   sentCommits ctx r TSMined [1 .. fromIntegral maxSendsPerKind]
+  sendsUsedUp cOrders r `shouldReturn` True
   answerCommitment w r 0
   void $ steps w r >>= awaiting
   nrPhase <$> stored ctx r `shouldReturn` PCommitting
