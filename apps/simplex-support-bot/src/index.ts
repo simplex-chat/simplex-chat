@@ -95,7 +95,7 @@ async function main(): Promise<void> {
   log("Initializing main bot...")
   const [chat, mainUser, mainAddress] = await bot.run({
     profile: {displayName: "Ask SimpleX Team", fullName: "", image: supportImage},
-    dbOpts: config.db,
+    dbOpts: {...config.db, queueSize: config.queueSize},
     options: {
       addressSettings: {
         businessAddress: true,

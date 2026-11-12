@@ -56,6 +56,7 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 | `--timezone` | both | no | `UTC` | IANA zone for weekend detection |
 | `--complete-hours` | both | no | `3` | auto-complete chats after N hours idle (`0` disables) |
 | `--card-flush-seconds` | both | no | `300` | debounce card state writes |
+| `--queue-size` | both | no | core default, `1024` | internal queue size of the chat core, as the CLI's `-q`/`--queue-size` |
 | `--context-file` | both | required with a Grok API key | | text file with Grok system context |
 | `--dry-run` | both | no | | check config, database and state, then exit |
 | `--allow-migrations` | both | no | | with `--dry-run`: apply pending migrations instead of reporting them |

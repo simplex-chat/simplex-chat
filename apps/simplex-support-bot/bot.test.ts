@@ -2484,6 +2484,21 @@ describe("parseConfig Validation", () => {
       .toThrow(/--allow-migrations requires --dry-run/)
   })
 
+  test("--queue-size is unset by default, so the core default applies", () => {
+    expect(parseConfig(baseArgs).queueSize).toBeUndefined()
+  })
+
+  test("--queue-size parses a positive integer", () => {
+    expect(parseConfig([...baseArgs, "--queue-size", "65536"]).queueSize).toBe(65536)
+  })
+
+  test("--queue-size 0 or non-numeric → throws, as the core rejects 0", () => {
+    expect(() => parseConfig([...baseArgs, "--queue-size", "0"]))
+      .toThrow(/--queue-size must be a positive integer, got "0"/)
+    expect(() => parseConfig([...baseArgs, "--queue-size", "big"]))
+      .toThrow(/--queue-size must be a positive integer, got "big"/)
+  })
+
   test("--allow-down-migrations defaults to false, parses with --dry-run, throws without it", () => {
     expect(parseConfig(baseArgs).allowDownMigrations).toBe(false)
     expect(parseConfig([...baseArgs, "--dry-run", "--allow-down-migrations"]).allowDownMigrations).toBe(true)
@@ -2503,6 +2518,7 @@ describe("parseConfig Validation", () => {
         `team_group = "SimpleX Support Team"`,
         `auto_add_team_members = ["1:Alice", "2:Bob"]`,
         `complete_hours = 0`,
+        `queue_size = 65536`,
         `db = "postgres"`,
         `pg_conn = "postgres://localhost/db"`,
         `[messages]`,
@@ -2516,6 +2532,7 @@ describe("parseConfig Validation", () => {
       expect(cfg.teamGroup).toEqual({id: 0, name: "SimpleX Support Team"})
       expect(cfg.teamMembers).toEqual([{id: 1, name: "Alice"}, {id: 2, name: "Bob"}])
       expect(cfg.completeHours).toBe(0)
+      expect(cfg.queueSize).toBe(65536)
       expect(cfg.db).toEqual({type: "postgres", connectionString: "postgres://localhost/db"})
       expect(cfg.messages.welcome).toBe("Hello!\n\nAsk anything.")
       expect(cfg.messages.teamAddedGrok).toBe("Grok helps.")

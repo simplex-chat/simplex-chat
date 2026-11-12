@@ -9,6 +9,8 @@ pg_conn = "postgres://simplex@127.0.0.1/simplex_support_bot"
 # Enables Grok replies; GROK_API_KEY takes precedence.
 # grok_api_key = "xai-..."
 timezone = "UTC"
+# Internal queue size of the chat core, as the CLI's --queue-size; default 1024.
+# queue_size = 65536
 
 # A message left out keeps its built-in text.
 # {hours} is 24 on weekdays and 48 at weekends in the timezone above.

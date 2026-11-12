@@ -18,6 +18,7 @@ export interface Config {
   timezone: string
   completeHours: number
   cardFlushSeconds: number
+  queueSize: number | undefined
   contextFile: string | null
   dryRun: boolean
   allowMigrations: boolean
@@ -44,6 +45,16 @@ function parseNonNegativeInt(flag: string) {
   }
 }
 
+function parsePositiveInt(flag: string) {
+  return (raw: string): number => {
+    const n = parseInt(raw, 10)
+    if (!Number.isFinite(n) || n < 1) {
+      throw new Error(`${flag} must be a positive integer, got "${raw}"`)
+    }
+    return n
+  }
+}
+
 function buildCommand(): Command {
   return new Command()
     .name("simplex-chat-support-bot")
@@ -60,6 +71,7 @@ function buildCommand(): Command {
     .option("--timezone <iana>", "IANA timezone for weekend detection", "UTC")
     .option("--complete-hours <n>", "auto-complete chats after N hours idle (0 disables)", parseNonNegativeInt("--complete-hours"), 3)
     .option("--card-flush-seconds <n>", "debounce card state writes", parseNonNegativeInt("--card-flush-seconds"), 300)
+    .option("--queue-size <n>", "internal queue size of the chat core, as the CLI's --queue-size (core default: 1024)", parsePositiveInt("--queue-size"))
     .option("--context-file <path>", "text file with Grok system context (required with a Grok API key)")
     .option("--dry-run", "check config, database and state, then exit without starting chat")
     .option("--allow-migrations", "with --dry-run: apply pending migrations instead of reporting them")
@@ -79,6 +91,7 @@ interface RawOpts {
   timezone: string
   completeHours: number
   cardFlushSeconds: number
+  queueSize?: number
   contextFile?: string
   dryRun?: boolean
   allowMigrations?: boolean
@@ -196,6 +209,7 @@ export function parseConfig(args: string[]): Config {
     timezone: opts.timezone,
     completeHours: opts.completeHours,
     cardFlushSeconds: opts.cardFlushSeconds,
+    queueSize: opts.queueSize,
     contextFile,
     dryRun: opts.dryRun ?? false,
     allowMigrations: opts.allowMigrations ?? false,
