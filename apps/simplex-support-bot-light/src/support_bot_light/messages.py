@@ -45,7 +45,7 @@ FEED_FAILED = "Feed message {item_id} failed: {error}"
 FEED_EMPTY = "Add the message text after /feed."
 FEED_NOT_ALLOWED = (
     "Only broadcasters can use /feed. Your contact id is {contact_id}: "
-    "the operator adds it to --broadcasters."
+    "the operator adds it to roster.broadcasters in config.toml."
 )
 FEED_NO_CONTACT = "Only broadcasters can use /feed, and they need a direct contact: run /dm first."
 

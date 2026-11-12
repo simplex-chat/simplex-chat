@@ -157,6 +157,11 @@ def test_the_bot_opens_a_business_address():
     assert bot._welcome == "hi"
 
 
+def test_the_bot_passes_the_queue_size_to_the_core():
+    assert build_bot(CONFIG)._queue_size is None
+    assert build_bot(dataclasses.replace(CONFIG, queue_size=65536))._queue_size == 65536
+
+
 def test_the_bot_does_not_apply_its_profile_while_starting():
     # The name the core will accept is only knowable from the database, which
     # nothing can read until the client has started. _apply_profile does it.
@@ -329,8 +334,11 @@ async def test_serve_stops_on_a_broadcaster_with_another_name(api):
     assert bot.served == 0
 
 
-def test_broadcasters_are_read_from_the_command_line(tmp_path, monkeypatch):
-    (tmp_path / "config.toml").write_text(VALID, encoding="utf-8")
+def test_broadcasters_and_queue_size_are_read_from_the_config_file(tmp_path, monkeypatch):
+    text = VALID.replace("[roster]", "queue_size = 65536\n\n[roster]")
+    (tmp_path / "config.toml").write_text(
+        text + 'broadcasters = ["7:sh", "9:Alex"]\n', encoding="utf-8"
+    )
     configs: list[Config] = []
 
     async def run(config):
@@ -338,10 +346,18 @@ def test_broadcasters_are_read_from_the_command_line(tmp_path, monkeypatch):
 
     monkeypatch.setattr("support_bot_light.__main__._run", run)
     monkeypatch.setattr("support_bot_light.__main__.os.umask", lambda _mask: 0)
-    argv = ["support-bot-light", "--config", str(tmp_path / "config.toml")]
-    monkeypatch.setattr(sys, "argv", [*argv, "--broadcasters", "7:sh,9:Alex"])
+    monkeypatch.setattr(
+        sys, "argv", ["support-bot-light", "--config", str(tmp_path / "config.toml")]
+    )
     assert main() == 0
     assert configs[0].broadcasters == (IdName(7, "sh"), IdName(9, "Alex"))
+    assert configs[0].queue_size == 65536
+
+
+def test_the_command_line_rejects_broadcasters(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["support-bot-light", "--broadcasters", "7:sh"])
+    with pytest.raises(SystemExit):
+        main()
 
 
 async def test_run_installs_signal_handlers_before_starting(monkeypatch):

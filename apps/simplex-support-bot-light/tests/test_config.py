@@ -1,16 +1,8 @@
-import argparse
 import base64
 
 import pytest
 
-from support_bot_light.config import (
-    Config,
-    ConfigError,
-    Health,
-    IdName,
-    load_config,
-    parse_id_names,
-)
+from support_bot_light.config import Config, ConfigError, Health, IdName, load_config
 
 VALID = """
 [bot]
@@ -280,23 +272,51 @@ def test_invalid_health_settings_are_rejected(tmp_path, section):
         load_config(write(tmp_path, VALID + "\n" + section))
 
 
-def test_broadcasters_are_parsed_as_id_name_pairs():
-    assert parse_id_names("12:Alice,15:Bob") == (IdName(12, "Alice"), IdName(15, "Bob"))
+def with_roster(line):
+    return VALID + line + "\n"
 
 
-def test_a_broadcaster_name_may_contain_a_colon():
-    assert parse_id_names("12:a:b") == (IdName(12, "a:b"),)
+def with_bot(line):
+    return VALID.replace("[roster]", line + "\n\n[roster]")
 
 
-def test_broadcasters_parse_as_the_main_support_bot_parses_them():
-    assert parse_id_names("12:Alice, 15:Bob") == (IdName(12, "Alice"), IdName(15, "Bob"))
-    assert parse_id_names("") == ()
+def test_broadcasters_and_queue_size_default_to_none(tmp_path):
+    cfg = load_config(write(tmp_path, VALID))
+    assert cfg.broadcasters == ()
+    assert cfg.queue_size is None
 
 
-@pytest.mark.parametrize("value", ["Alice", ":Alice", "x:Alice", "12", "12:Alice,"])
-def test_invalid_broadcasters_are_rejected(value):
-    with pytest.raises(argparse.ArgumentTypeError, match="ID:name"):
-        parse_id_names(value)
+def test_broadcasters_are_read_as_id_name_pairs(tmp_path):
+    cfg = load_config(write(tmp_path, with_roster('broadcasters = ["12:Alice", " 15:Bob"]')))
+    assert cfg.broadcasters == (IdName(12, "Alice"), IdName(15, "Bob"))
+
+
+def test_a_broadcaster_name_may_contain_a_colon(tmp_path):
+    cfg = load_config(write(tmp_path, with_roster('broadcasters = ["12:a:b"]')))
+    assert cfg.broadcasters == (IdName(12, "a:b"),)
+
+
+@pytest.mark.parametrize("value", ['"Alice"', '":Alice"', '"x:Alice"', '"12"', "12"])
+def test_invalid_broadcaster_entries_are_rejected(tmp_path, value):
+    with pytest.raises(ConfigError, match='roster.broadcasters entries must be "ID:name"'):
+        load_config(write(tmp_path, with_roster(f"broadcasters = [{value}]")))
+
+
+def test_broadcasters_must_be_a_list(tmp_path):
+    with pytest.raises(
+        ConfigError, match='roster.broadcasters must be a list of "ID:name" strings'
+    ):
+        load_config(write(tmp_path, with_roster('broadcasters = "12:Alice"')))
+
+
+def test_queue_size_is_read(tmp_path):
+    assert load_config(write(tmp_path, with_bot("queue_size = 65536"))).queue_size == 65536
+
+
+@pytest.mark.parametrize("value", ["0", "-1", '"65536"', "true", "1.5"])
+def test_invalid_queue_size_is_rejected(tmp_path, value):
+    with pytest.raises(ConfigError, match="bot.queue_size must be a positive integer"):
+        load_config(write(tmp_path, with_bot(f"queue_size = {value}")))
 
 
 def test_a_missing_config_points_at_the_template(tmp_path):

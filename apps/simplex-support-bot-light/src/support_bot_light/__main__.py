@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import dataclasses
 import logging
 import os
 import stat
@@ -16,7 +15,7 @@ from simplex_chat.core import ChatInitError
 from simplex_chat.types import CEvt
 
 from . import business, commands, handlers, health, setup
-from .config import Config, ConfigError, IdName, load_config, parse_id_names
+from .config import Config, ConfigError, IdName, load_config
 from .context import BotContext
 from .text import safe_name
 
@@ -133,6 +132,7 @@ def build_bot(config: Config) -> Bot:
     return Bot(
         profile=bot_profile(config),
         db=SqliteDb(file_prefix=config.db_prefix),
+        queue_size=config.queue_size,
         welcome=config.welcome,
         business_address=True,
         auto_accept=True,
@@ -204,12 +204,6 @@ async def _serve(config: Config, bot: Bot) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(prog="support-bot-light")
     parser.add_argument("--config", type=Path, default=Path("config.toml"))
-    parser.add_argument(
-        "--broadcasters",
-        type=parse_id_names,
-        default=(),
-        help="comma-separated ID:name pairs of contacts allowed to use /feed in the roster group",
-    )
     args = parser.parse_args()
 
     if not logging.getLogger().handlers:
@@ -222,7 +216,7 @@ def main() -> int:
     os.umask(stat.S_IRWXG | stat.S_IRWXO)
 
     try:
-        config = dataclasses.replace(load_config(args.config), broadcasters=args.broadcasters)
+        config = load_config(args.config)
     except ConfigError as e:
         log.error("%s", e)
         return 2
