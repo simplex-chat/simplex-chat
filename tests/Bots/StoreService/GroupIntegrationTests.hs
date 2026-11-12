@@ -17,7 +17,7 @@ import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), TxRequest (..), newChainClient, signTransaction)
-import StoreService.Names.Store (CodeIssuer (..), NewTransaction (..), PrepaidCode (..), TxFor (..), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
+import StoreService.Names.Store (CodeIssuer (..), NamePhase (PFailed), NameRegistration (nrFailedAt, nrPhase), NewTransaction (..), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice)
@@ -26,12 +26,14 @@ import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
-import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
+import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
+import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
-import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, placePaid, t0, usable)
+import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, placePaid, reg, t0, usable, write)
+import Bots.StoreService.NamesOwnerTests (labelBytes, ownerOfSelector)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -166,6 +168,7 @@ namesBootTests = do
   it "exits before the chat core starts while a pending transaction was signed by another key" testOtherKeyPendingStops
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
   it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
+  it "searches with the configured price floor, answering a price at it and 503 to one cent under it" testNamesBootPriceFloor
 
 testDevKeysWarned :: HasCallStack => TestParams -> IO ()
 testDevKeysWarned _ = do
@@ -364,6 +367,28 @@ testNamesBootCodesOnly ps = do
     (statusCode $ responseStatus badgesShell, responseBody badgesShell) `shouldBe` (200, LB.fromStrict shell)
     poll t >>= (`shouldSatisfy` isNothing)
 
+testNamesBootPriceFloor :: HasCallStack => TestParams -> IO ()
+testNamesBootPriceFloor ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
+  svc <- prepareGroupService ps
+  let controller = address $ encodeUtf8 controllerAddr
+      registrar = address $ encodeUtf8 registrarAddr
+  forM_ [selector "ens()", selector "GRACE_PERIOD()", nameExpiresCall] $ \call -> answerCall node registrar call $ Returns $ uint256 (0 :: Int)
+  answerCall node controller (selector "namePolicy()") $ Returns $ addressWord fakeNamePolicy
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  linkTermsOnNode node
+  answerCall node controller (rentPriceCall 11) $ Returns $ rentPriceAnswer 15000
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> ["min_price_cents_per_year = 7500"] <> withRpcUrl (T.pack fnUrl)} Nothing
+  flip finally (stopGroupService t cc) $ do
+    pollUntilTrue (listening port)
+    mgr <- newManager defaultManagerSettings
+    let searched = do
+          req <- parseRequest $ "http://127.0.0.1:" <> show port <> "/api/name/" <> T.unpack aliceHex <> "?length=11"
+          statusCode . responseStatus <$> httpLbs req mgr
+    searched `shouldReturn` 200
+    answerCall node controller (rentPriceCall 11) $ Returns $ rentPriceAnswer 14999
+    searched `shouldReturn` 503
+    poll t >>= (`shouldSatisfy` isNothing)
+
 -- | [names] with codes_only on, as an investors' launch runs.
 codesOnlyNames :: [Text]
 codesOnlyNames = namesSection <> ["codes_only = on"]
@@ -488,9 +513,56 @@ namesRefundChatTests = describe "StoreService names: operator refund" $ do
   it "refuses an unknown reference, an order without a balance and another amount, and answers the usage to a malformed command" testRefundRefusals
   it "refuses a balance held by an open order, naming it and its expiry, and records it once that order's invoice is cancelled" testRefundOpenHolder
   it "is not a group command" $ \_ -> groupCmdAction GROwner "/refund s 10000" `shouldBe` IgnoreMsg
+  it "closes a failed paid order by its invoice id, recording the refund of its price, and refuses an unknown reference and an order no longer failed" testCloseRecorded
+  it "refuses //close without [names], and answers the usage to a malformed one" testCloseNamesOff
 
 refundRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
 refundRaw cc args = operatorCmd cc ("//refund " <> args)
+
+closeRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
+closeRaw cc args = operatorCmd cc ("//close " <> args)
+
+testCloseRecorded :: HasCallStack => TestParams -> IO ()
+testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
+  svc <- prepareGroupService ps
+  let registrar = address $ encodeUtf8 registrarAddr
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> withRpcUrl (T.pack fnUrl)} Nothing
+  flip finally (stopGroupService t cc) $ do
+    pollUntilTrue (listening port)
+    let st = chatStore cc
+        paidBy = "order f: $100.00 by btc on invoice inv-f"
+    now <- getCurrentTime
+    Balances.placeOrderRow st "f" False 10000 (addUTCTime 3600 now)
+    unpaid <- reg st "f"
+    write st unpaid {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
+    answerCall node registrar (ownerOfSelector <> labelBytes "f") $ Reverts ""
+    closeRaw cc "nothing" `shouldReturn` Left "Nothing recorded: no order has the reference nothing."
+    logs <- capturingStderr $
+      closeRaw cc "inv-f"
+        `shouldReturn` Right
+          ( "Closed order f, failed at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: "
+              <> paidBy
+              <> "."
+          )
+    logs `shouldSatisfy` T.isInfixOf "names: closed order f and recorded a refund of 10000 cents"
+    closeRaw cc "f" `shouldReturn` Left "Nothing recorded: the order of f is not a failed order paid by invoice or balance."
+    Balances.figures st "f" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
+    refundRaw cc "f" `shouldReturn` Right ("Order f: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
+    Balances.placeOrderRow st "g" False 10000 (addUTCTime 3600 now)
+    unpaidG <- reg st "g"
+    write st unpaidG {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
+    answerCall node registrar (ownerOfSelector <> labelBytes "g") $ Returns $ addressWord ownerA
+    answerCall node registrar (selector "nameExpires(uint256)" <> labelBytes "g") $ Returns $ uint256 (2000000000 :: Int)
+    registeredLogs <- capturingStderr $ closeRaw cc "inv-g" `shouldReturn` Left "Nothing refunded: the register of order g went through, so the order is registered now."
+    registeredLogs `shouldSatisfy` T.isInfixOf "names: order g set registered by //close, as its register went through"
+    Balances.figures st "g" t0 `shouldReturn` Nothing
+
+testCloseNamesOff :: HasCallStack => TestParams -> IO ()
+testCloseNamesOff ps = withStoreService ps $ \_ _ cc -> do
+  Balances.source (chatStore cc) "s" 10000
+  closeRaw cc "s" `shouldReturn` Left "Names are not enabled on this service."
+  forM_ ["", "s junk"] $ \args -> (args,) <$> closeRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+  Balances.figures (chatStore cc) "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
 minuteText :: UTCTime -> Text
 minuteText = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M UTC"
