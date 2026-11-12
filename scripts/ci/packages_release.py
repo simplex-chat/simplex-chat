@@ -90,10 +90,12 @@ SCOPE_CHANGES = {
         "packages/simplex-chat-nodejs/**",
         "packages/simplex-chat-client/types/typescript/**",
     ],
+    "support-bot": ["apps/simplex-support-bot/**"],
 }
 CABAL_FILE = "simplex-chat.cabal"
 CABAL_VERSION = re.compile(r"^(version:\s*)(\S+)", re.M)
 TYPES_SOURCES = [f"{TYPES_DIR}/src"]
+TYPES_RELEASE_FIELDS = ["version", "simplexChatCore"]
 TYPES_README = f"{TYPES_DIR}/README.md"
 TYPES_README_CORE = re.compile(r"^SimpleX Chat core: .*$", re.M)
 PYTHON_TYPES_SOURCES = [f"{PYTHON_DIR}/src/simplex_chat/types"]
@@ -710,10 +712,19 @@ def npm_package(directory: str, releases: dict) -> Package:
     )
 
 
+def types_manifest(commit: str) -> dict:
+    """package.json of the types at the commit, without the fields that core-release writes."""
+    types = json.loads(git("show", f"{commit}:{TYPES_DIR}/package.json"))
+    return {key: value for key, value in types.items() if key not in TYPES_RELEASE_FIELDS}
+
+
 def types_changed(releases: dict, branch: str) -> bool:
-    """Whether the types sources differ from those of the previous core release on the branch."""
+    """Whether the types sources or their package.json differ from those of the previous core release on the branch."""
     previous = previous_core_commit(releases, branch)
-    return previous is None or changed_since(fetch_commit(previous), TYPES_SOURCES)
+    if previous is None:
+        return True
+    fetch_commit(previous)
+    return changed_since(previous, TYPES_SOURCES) or types_manifest(previous) != types_manifest("HEAD")
 
 
 def types_problem(version: str, releases: dict, branch: str) -> str | None:
