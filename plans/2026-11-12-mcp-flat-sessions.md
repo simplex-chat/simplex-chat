@@ -1,10 +1,9 @@
 # Flat layout for session groups, with the avatar on the name line
 
-Status: draft for review. Code references: master `9d3241b06`. Claude Code references: the binary of 2.1.322, by byte offset.
+Status: questions answered by the user on 2026-11-12; the exact design of the rows waits for the user's approval before the app code. Code references: master `9d3241b06`.
 
 Outcome:
-- The groups that Claude creates open in the Flat layout in the SimpleX app.
-- The person at the computer chooses Flat or Classic for them in a plugin option; each member can still choose for themselves.
+- The group of each new Claude Code session opens in the Flat layout in the SimpleX app. The Main group and `serve`'s agent control chat keep the members' own layout.
 - In every Flat chat with avatars, the avatar is centred on the line of the sender's name, and messages are laid out in the full width under it.
 
 ## 1. Goal
@@ -15,48 +14,29 @@ The user's words, 2026-11-11:
 > - default sessions to flat layout, with option
 > - improve flat layout to shift avatar a bit higher and avoid left gap by shifting text under avatar in flat layout
 
+The user's answers, 2026-11-12:
+> just default all new plugin session chats to flat layout, but not control chats, no settings are needed. Users will be discovering flat layout this way - that's what it was created for.
+
+> yes, all flat layouts, that's what users want. Need to see exact design before it's implemented.
+
 The target is the README mockup, `packages/simplex-chat-mcp/images/session.png`: the avatar on the name line, the message text under the avatar at the left padding.
 
 One pull request: branch `ep/mcp-flat-sessions`, against master.
 
 ## 2. What users see
 
-### 2.1 In Claude Code
-
-With Q1 A, `/plugin` > Installed > simplex > Configure options shows a fourth option:
-
-```
-key           layout
-title         Chat layout
-description   Layout of the groups Claude creates in the SimpleX app: flat or classic. Each member can choose another one in the group's Chat theme.
-values        flat (default)
-              classic
-```
-
-A value other than `flat` and `classic` is written only by a hand edit of the settings. The session start then shows `SimpleX MCP: Plugin option layout: flat or classic expected, got VALUE. Change it in /plugin > Installed > simplex > Configure options.`, and the session's group is created with the Flat layout (decision 17).
-
-The row of REFERENCE.md, section Options:
-
-```
-option    layout
-default   flat
-values    flat
-          classic
-effect    The chat layout of the groups Claude creates: each new session's group, and the Main group when it is created or
-          replaced. Each member can choose another layout for a group in its Chat theme.
-```
-
-### 2.2 In the SimpleX app: the plugin's groups
+### 2.1 In the SimpleX app: the plugin's groups
 
 ```
 group                                    before                                   after
-group of a new session                   the member's own default layout,          Flat with option flat
-                                         Classic unless they chose Flat           Classic with option classic
-Main group, when created or replaced     the member's own default layout          the layout of the option at that moment
+group of a new session                   the member's own default layout,          Flat
+                                         Classic unless they chose Flat
+Main group                               the member's own default layout          the same
+serve's agent control chat               the member's own default layout          the same
 groups created by 0.3.0                  the member's own default layout          the same
 ```
 
-Group info › `Chat theme` › `Chat layout` of a group created with Flat:
+Group info › `Chat theme` › `Chat layout` of a new session's group:
 
 ```
 entry          before                after
@@ -64,9 +44,9 @@ default        Classic (default)     Flat (chat)
 the other one  Flat                  Classic
 ```
 
-`Classic` there changes the layout for this member's app only. Claude's posts stay as they are.
+`Classic` there changes the layout for this member's app only. Claude Code, the plugin's options and Claude's posts stay as they are.
 
-### 2.3 In the SimpleX app: every Flat chat with avatars
+### 2.2 In the SimpleX app: every Flat chat with avatars
 
 This applies to groups and channels in the Flat layout, also outside the plugin. Direct chats and note folders, drawn without avatars, stay as they are. Values at the default text size: iOS 17 pt body, 23.4 pt name line, 34 pt avatar; Android and desktop 16 sp body, 22 dp name line, 37 dp avatar.
 
@@ -88,9 +68,13 @@ the same, below a date           0                                            th
 separator or the chat banner,
 and for the oldest loaded item
 media and cards                  their widths                                 the same widths, 12 from the screen edge
+time over captionless media      over the media when the media and the        the same rule in the wider row, so the time is
+                                 time are wider than the row                  beside more media
 ```
 
 Each line of text is 46 pt wider on iOS and 49 dp wider on Android and desktop.
+
+The exact design is drawn for both platforms, before and after, and approved by the user before the app code.
 
 ```mermaid
 flowchart TB
@@ -102,16 +86,14 @@ flowchart TB
   end
 ```
 
-### 2.4 Order of events
+### 2.3 Order of events
 
 ```mermaid
 sequenceDiagram
-  participant P as person at the computer
   participant CC as Claude Code
   participant S as service, profile Claude
   participant O as owner's app
-  P->>CC: option layout: flat by default, or classic
-  CC->>S: POST /session {config: {layout}}
+  CC->>S: POST /session
   S->>S: new group "N · NAME", groupProfile.chatLayout terminal
   S->>O: invitation through the Main group, with the group's profile
   O->>O: card "Tap to join"
@@ -124,11 +106,10 @@ sequenceDiagram
 
 ## 3. Questions for the user
 
-Q1. How does a person choose Classic for the plugin's groups? The user's words: "default sessions to flat layout, with option".
-- A, recommended: a plugin option `layout`, `flat` by default or `classic`, set at the computer, for the groups Claude creates afterwards. Members keep their own choice per group in the app. Cost: about 35 source lines in the plugin and a row of REFERENCE.
-- B: only the app's choice per group: Group info › `Chat theme` › `Chat layout`. Nothing to build. A member who prefers Classic switches each new session's group, because each session has its own group until sessions become topics of one group. Owners set a group's own layout only with the core's commands (decision 7), so with B the groups stay Flat for every member who makes no choice.
-
-The work proceeds on A until the answer. With B, the plugin writes `terminal` in both profiles, and decisions 9, 14, 15, 16 and 17 are dropped.
+Answered on 2026-11-12:
+- Q1 (b): the plugin has no option for the layout; new session groups are created Flat.
+- Q2 (a): the new geometry applies to every Flat layout. The exact design is approved before the app code.
+- Q3 (b): the Main group keeps the members' own layout.
 
 ## 4. Decisions
 
@@ -139,29 +120,23 @@ The layout in the core and the apps:
 4. Apps from v7.1.0 read the field: `git tag --contains` lists v7.1.0 for `7810fc475` (Android, desktop) and `c3c733e0d` (iOS). A member joins a session group through the Main group only with chat version 22 (`Protocol.hs:149-150`, `Commands.hs:2885`), which is v7.1.0 or later (0.3.0 plan, line 535).
 5. A member's own choice for a chat comes first, then the group's layout, then the member's profile and app settings (`ChatModel.kt:1871-1887`; `ChatTypes.swift:2455-2477`).
 6. A member makes that choice in Group info › `Chat theme` › `Chat layout` (`GroupChatInfoView.kt:744`; `ChatInfoView.kt:1313-1333`; `GroupChatInfoView.swift:198-201`; `ThemeModeEditor.swift:459-478`). The default entry reads `Flat (chat)` when the group sets Flat (`ChatInfoView.kt:1316-1319`; `ThemeModeEditor.swift:466-473`).
-7. The apps' layout controls write the member's own choice (`ChatInfoView.kt:1382-1384`; `ChatInfoView.swift:984-987`). A group's own layout is written by `/_group`, `/_group_profile` and `/set layout #<group>` (`Commands.hs:3700`, `:7064`).
-8. The apps send a group's stored profile back whole when owners edit it, so its layout stays (`GroupPreferencesView.swift:238-240`; `GroupPreferences.kt:48`, a copy of `GroupProfile`, whose fields include `chatLayout`, `ChatModel.kt:2819-2829`).
+7. The apps send a group's stored profile back whole when owners edit it, so its layout stays (`GroupPreferencesView.swift:238-240`; `GroupPreferences.kt:48`, a copy of `GroupProfile`, whose fields include `chatLayout`, `ChatModel.kt:2819-2829`).
 
 The plugin:
-9. With Q1 A, the option `layout` takes `flat` or `classic`, default `flat`, from `CLAUDE_PLUGIN_OPTION_LAYOUT`, with the error text of the other options (`config.ts:14-20`, `:49-53`, `:62-64`). `flat` is written as `terminal`, `classic` as `classic`.
-10. Claude writes the layout once, in the profile of a new group: a session's group (`createSessionGroup`, `hub.ts:477-489`) and the Main group (`createMainGroup`, `main-group.ts:195-205`). Claude's later profile updates start from the group's current profile, so the layout stays, also after an owner's `/set layout` (`control.ts:632-640`; `main-group.ts:60-63`). This follows decision 103 of the 0.3.0 plan for the Main group's texts.
-11. The Main group gets the layout too. The Flat layout was made for chats with agents and service bots (`7810fc475`: "terminal chat layout for LLM and service bot chats"), and the Main group is Claude's group of invitations and commands. A person sees it first, so both kinds of groups look like the README image.
-12. Groups created by 0.3.0 keep their profiles; a resumed session reuses its group (`hub.ts:414-416`).
-13. `serve`'s agent control chat keeps the profile of 0.2 (premise 4 of the 0.3.0 plan; `control.ts:614-623`).
-14. A session's group is created with the layout of the request that opens the session. The service passes the request's `layout` to `Hub.session`, because the group is created inside it (`service.ts:401`, `hub.ts:415`) before `configure` runs (`service.ts:211-213`, `:258-259`).
-15. The hub keeps the layout of the last request that has one, from `Hub.open` and each `configure`. Claude creates the Main group of `reset-owners`, and the group of a session opened without a request, with that layout (`hub.ts:367-385`, `:396-404`).
-16. A request without `layout` is valid. A client stops a running service only when the service is older (`client.ts:35-40`), so a session of 0.3.0 keeps sending requests without `layout` to a newer service (`validConfig`, `service.ts:487-491`).
-17. Claude Code 2.1.322 fills an unset or invalid option with its default for the MCP server (`ymt` at offset 288929804, used for MCP servers at 297353357), and passes only saved options to hooks (`QH` and `Pt` at 288921330). `readConfig` takes a missing variable as the default (`config.ts:35-38`). So an existing install is given `flat` without a step.
+8. Claude writes `terminal` once, in the profile of a new session group (`createSessionGroup`, `hub.ts:477-489`). Claude's later profile updates start from the group's current profile, so the layout stays, also after an owner's `/set layout` (`control.ts:632-640`). This follows decision 103 of the 0.3.0 plan for the Main group's texts.
+9. The Main group (`createMainGroup`, `main-group.ts:195-205`) and `serve`'s agent control chat (`createControlChat`, `control.ts:614-623`) keep their profiles (Q3 (b); premise 4 of the 0.3.0 plan).
+10. Groups created by 0.3.0 keep their profiles; a resumed session reuses its group (`hub.ts:414-416`).
 
 The Flat layout in the apps:
-18. The new geometry applies to every Flat row with an avatar, in groups and channels, also outside the plugin. The user's words: "improve flat layout ... in flat layout".
-19. The avatar is centred on the name line (mockup source: `.avatar { top: calc(var(--line) / 2 - var(--avatar) / 2) }`).
-20. Messages, events and rows without a name start at the row's start; their text is at the text edge, `CHAT_ITEM_TEXT_PADDING`, 12 (mockup: `.content { padding: 0 var(--pad) }`).
-21. A message starts below the lower of the name line and the avatar. When it starts with a card, the paragraph gap is added below that, as below the name now (`TerminalItemView.kt:431`; `TerminalItemView.swift:404`).
-22. The name stays 12 after the avatar, by the user's rule of one 12 padding (I26: `plans/2026-10-13-flat-chat-layout-ui.md:39`; `apps/ios/spec/client/chat-view.md:360`). The mockup has 8 px there; the README image is drawn again with 12 (section 8).
-23. The gap above a row is at least the avatar's part above the name line. `terminalRowGap` is 0 below a date separator, below the chat banner and for the oldest loaded item (`TerminalItemView.kt:138-139`; `TerminalItemView.swift:130-135`); there the avatar's part sets the gap, so the avatar stays inside its own row.
-24. Media and cards keep their widths. On iOS the gutter is removed from the media limit `listWidth − leading − gutter − 24` (`ChatView.swift:2172`), and the classic `maxWidth` stays (`ChatView.swift:936-944`). On Android and desktop media widths are fixed (`CIImageView.kt:111`).
-25. `gutter` keeps its value on both platforms, the avatar column, and now places only the name (`TerminalItemView.kt:392-394`; `ChatView.swift:2152`). Callers stay as they are.
+11. The new geometry applies to every Flat row with an avatar, in groups and channels, also outside the plugin (Q2 (a)).
+12. The avatar is centred on the name line (mockup source: `.avatar { top: calc(var(--line) / 2 - var(--avatar) / 2) }`).
+13. Messages, events and rows without a name start at the row's start; their text is at the text edge, `CHAT_ITEM_TEXT_PADDING`, 12 (mockup: `.content { padding: 0 var(--pad) }`).
+14. A message starts below the lower of the name line and the avatar. When it starts with a card, the paragraph gap is added below that, as below the name now (`TerminalItemView.kt:431`; `TerminalItemView.swift:404`).
+15. The name stays 12 after the avatar, by the user's rule of one 12 padding (I26: `plans/2026-10-13-flat-chat-layout-ui.md:39`; `apps/ios/spec/client/chat-view.md:360`). The mockup has 8 px there; the README image is drawn again with 12 (section 8).
+16. The gap above a row is at least the avatar's part above the name line. `terminalRowGap` is 0 below a date separator, below the chat banner and for the oldest loaded item (`TerminalItemView.kt:138-139`; `TerminalItemView.swift:130-135`); there the avatar's part sets the gap, so the avatar stays inside its own row.
+17. Media and cards keep their widths. On iOS the gutter is removed from the media limit `listWidth − leading − gutter − 24` (`ChatView.swift:2172`), and the classic `maxWidth` stays (`ChatView.swift:936-944`). On Android and desktop media widths are fixed (`CIImageView.kt:111`).
+18. The time's placement keeps its rules; the row is wider, so the time over captionless media moves beside the media when both fit (`TerminalItemView.kt:294`, `TerminalItemView.swift:330`).
+19. `gutter` keeps its value on both platforms, the avatar column, and now places only the name (`TerminalItemView.kt:392-394`; `ChatView.swift:2152`). Callers stay as they are.
 
 ## 5. Design
 
@@ -169,64 +144,32 @@ Structurally different options, one line each:
 
 ```
 part     option                                            cost
-profile  P1 chatLayout in the profile of a new group       one field in two profiles; apps from v7.1.0 read it; older apps ignore the key;
-                                                           one key in the profile JSON
+profile  P1 chatLayout in the profile of a new group       one field; apps from v7.1.0 read it; older apps ignore the key; one key in the profile JSON
          P2 /set layout after creating the group           one more command per group, one more x.grp.info and a "group profile updated" item
          P3 each member's own choice                       written only by that member's app
-choice   A plugin option layout (Q1)                       about 35 source lines, a row in REFERENCE
-         B the app's choice per group only                 nothing to build; a member's choice repeats for each new session's group
 rows     R1 one geometry for every Flat row with avatar     TerminalChatItemRow on each platform; snapshot references recorded again
          R2 a second Flat geometry for some chats          a flag from the profile or the peer type through ChatView, two geometries,
                                                            twice the tests
          R3 the avatar raised, the message column kept     keeps the left gap the user asked to remove
 ```
 
-Chosen: P1, A (Q1), R1. P2 costs a second command and an item for the same result. P3 requires an action of each member. R2 adds a second geometry beyond the request. With R3 the left gap stays.
+Chosen: P1 and R1. P2 costs a second command and an item for the same result. P3 requires an action of each member. R2 adds a second geometry beyond the request. With R3 the left gap stays.
 
 ### 5.1 Plugin
 
 ```
-config.ts
-  Config.layout          flat | classic
-  defaultConfig.layout   flat
-  configVariables.layout CLAUDE_PLUGIN_OPTION_LAYOUT
-  optionNames.layout     layout
-  readConfig             layout(value("layout")); error "flat or classic"
-  chatLayoutOf(layout)   flat: T.ChatLayout.Terminal
-                         classic: T.ChatLayout.Classic
-.claude-plugin/plugin.json
-  userConfig.layout      type string, title, description, default flat, options flat and classic (section 2.1)
-.mcp.json
-  env                    CLAUDE_PLUGIN_OPTION_LAYOUT: ${user_config.layout}
-service.ts
-  HubLike.session        (id, stored, layout?)
-  Service.openAgent      hub.session(id, stored, request?.config.layout)
-  validConfig            layout absent, flat or classic
 hub.ts
-  Hub.layout             Hub.open: config.layout; configure: config.layout when present
-  Hub.session            (id, stored, layout = Hub.layout); a new group: createSessionGroup(stored, layout)
-  createSessionGroup     profile.chatLayout = chatLayoutOf(layout)
-  Hub.open               createMainGroup(chat, userId, config.mainGroup, config.layout)
-  Hub.resetOwners        main.replace(Hub.layout)
-main-group.ts
-  createMainGroup        (chat, userId, displayName, layout); profile.chatLayout = chatLayoutOf(layout)
-  MainGroup.replace      (layout); createMainGroup(…, layout)
+  createSessionGroup     profile.chatLayout = T.ChatLayout.Terminal
 ```
 
 ```mermaid
 flowchart LR
-  U[option layout] --> E[CLAUDE_PLUGIN_OPTION_LAYOUT]
-  E --> R[readConfig: flat or classic]
-  R --> Q[POST /session, POST /title: config]
-  Q --> O[Service.openAgent: layout of the request]
-  O --> H[Hub.session]
-  H --> G[apiNewGroup: groupProfile.chatLayout]
-  Q --> C[Hub.configure: Hub.layout]
-  C --> M[reset-owners: new Main group]
+  H[Hub.session: new session] --> G[createSessionGroup: groupProfile.chatLayout terminal]
   G --> K[core: group_profiles.chat_layout]
   K --> I[x.grp.inv through the Main group]
   I --> N[member's core]
   N --> A[app: activeChatLayout]
+  A --> T[TerminalChatItemRow]
 ```
 
 ### 5.2 Android and desktop
@@ -284,9 +227,8 @@ apps from v7.1.0 to the release before      Flat session groups, with the avatar
 this change
 apps with this change                       Flat session groups with the new geometry
 apps before v7.1.0                          ignore chatLayout and show bubbles; they join session groups only when a member adds them directly
-Claude Code 2.1.322                         the option row; an unset option reads as flat (decision 17)
-a session of plugin 0.3.0                   its requests are accepted without layout; its new group is created with the hub's layout
-plugin data folders of 0.3.0                Main group and session groups unchanged; session.json unchanged; new session groups get the layout
+Claude Code                                 unchanged
+plugin data folders of 0.3.0                Main group and session groups unchanged; session.json unchanged; new session groups get Flat
 core and protocol                           unchanged; chatLayout is part of the group profile since core 7.1.0.14
 serve                                       unchanged
 ```
@@ -296,14 +238,13 @@ serve                                       unchanged
 Done when:
 ```
 #   criterion                                                                                   checked by
-1   a new session's group and a new Main group have chatLayout terminal; classic with classic   unit tests; e2e test
-2   an owner's copy of the session group and of the Main group has chatLayout terminal          e2e test
-3   the option is read, validated, defaulted and listed in plugin.json and .mcp.json            unit tests
-4   a request without layout is accepted; a session's group gets the layout of its request      unit tests of the service
-5   Flat rows: avatar centred on the name line, messages from the row start below it            desktop test; snapshot references
-6   the name and the gap above it are unchanged where the gap covers the avatar                 desktop test; snapshot references
-7   the apps build and pass their workflows                                                     android-emu, desktop-linux, ios-sim
-8   the session group opens in Flat; Chat theme shows Flat (chat)                               real session (TESTING)
+1   the user approves the exact design of the rows, both platforms, before and after            design images
+2   a new session's group has chatLayout terminal; the Main group has none                      unit tests; e2e test
+3   an owner's copy of the session group has chatLayout terminal                                e2e test
+4   Flat rows: avatar centred on the name line, messages from the row start below it            desktop test; snapshot references
+5   the name and the gap above it are unchanged where the gap covers the avatar                 desktop test; snapshot references
+6   the apps build and pass their workflows                                                     android-emu, desktop-linux, ios-sim
+7   the session group opens in Flat; Chat theme shows Flat (chat)                               real session (TESTING)
 ```
 
 Tests that fail on master and pass after the change:
@@ -311,15 +252,9 @@ Tests that fail on master and pass after the change:
 - `TerminalChatItemRowTest`, `messagesStartAtRowStartBelowAvatar`: with gutter 49 and a 36 px avatar, the message is at x 0 and at the avatar's bottom. On master it is at x 49, at the name's bottom.
 - The snapshot references recorded on the branch: master renders differ, and `snapshots-compare.py` fails.
 
-Unit tests, `packages/simplex-chat-mcp/test/unit`:
-- `sessions.test.ts`: the test above; a session group created after `configure` with `classic` has `classic`; `createMainGroup` writes the layout; `reset-owners` creates the Main group with the hub's layout; a rename keeps an owner's `/set layout`.
-- `config.test.ts`: default `flat`; `classic` read; `wide` refused with `Plugin option layout: flat or classic expected, got wide. Change it in /plugin > Installed > simplex > Configure options.`
-- `plugin.test.ts`: `userConfig` keys `main_group`, `approve`, `expire_hours`, `layout`; default `flat`; `.mcp.json` maps `CLAUDE_PLUGIN_OPTION_LAYOUT`.
-- `service.test.ts`: `/session` without `layout` is accepted; `layout: "wide"` gets 400 `Invalid config.`; the fake hub gets the request's layout in `session`.
+Unit tests, `packages/simplex-chat-mcp/test/unit/sessions.test.ts`: the test above; the Main group of `createMainGroup` and of `reset-owners` has no `chatLayout`; a rename keeps an owner's `/set layout`.
 
-End-to-end tests, `test/e2e/service.test.ts`:
-- "an owner joins the Main group and each session's group, ...": Alice's copies of the Main group and of "1 · one" have `chatLayout` `terminal`.
-- "a member of the Main group joins a session's group by /join ...": after `reset-owners`, the new Main group has `terminal`.
+End-to-end tests, `test/e2e/service.test.ts`, "an owner joins the Main group and each session's group, ...": Alice's copy of "1 · one" has `chatLayout` `terminal`, and her copy of the Main group has none.
 
 Android and desktop, `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/TerminalChatItemRowTest.kt`:
 - `messagesStartAtRowStartBelowAvatar`, above.
@@ -339,13 +274,12 @@ CI on the fork branch: the reduced build with the `kotlin`, `ios` and `mcp` scop
 
 ```
 file                                                  change
-packages/simplex-chat-mcp/REFERENCE.md                Options: a row for layout; The Main group: Claude sets the chat layout at creation;
-                                                      Sessions and their groups: the group's layout and the member's own choice
+packages/simplex-chat-mcp/REFERENCE.md                Sessions and their groups: the group is created Flat; each member can choose another
+                                                      layout in the group's Chat theme
 packages/simplex-chat-mcp/ROADMAP.md                  the line "Sessions open in a flat layout by default, ..." removed
-packages/simplex-chat-mcp/spec/api.md                 4.2 and 4.3: a chat layout row in each group profile table; 4.8: the option row;
-                                                      the variables of .mcp.json
-packages/simplex-chat-mcp/spec/architecture.md        the rows of createSessionGroup, createMainGroup and readConfig
-packages/simplex-chat-mcp/TESTING.md                  automated tests: the layout of the groups; real session: Flat and Flat (chat)
+packages/simplex-chat-mcp/spec/api.md                 4.3: a chat layout row in the session group's profile table
+packages/simplex-chat-mcp/spec/architecture.md        the row of createSessionGroup
+packages/simplex-chat-mcp/TESTING.md                  automated tests: the layout of the session group; real session: Flat and Flat (chat)
 packages/simplex-chat-mcp/images/session.png          drawn again from the mockup source with the name 12 after the avatar
 packages/simplex-chat-mcp/README.md                   unchanged
 apps/multiplatform/spec/client/chat-view.md           section 10, Row Layout, and the rows of terminalGutter and TerminalChatItemRow
@@ -358,19 +292,15 @@ apps/ios/product/views/chat.md                        Terminal Layout: the same
 
 ```
 file                                         this item                                          other items
-packages/simplex-chat-mcp/src/hub.ts         Hub.open, Hub.configure, Hub.resetOwners,           harness-notes: Session.turn, Session.post
-                                             Hub.session, createSessionGroup                    reactions, replies: Hub.onEvent, Session.onMessage, Session.deliver
+packages/simplex-chat-mcp/src/hub.ts         createSessionGroup                                 harness-notes: Session.turn, Session.post
+                                                                                                reactions, replies: Hub.onEvent, Session.onMessage, Session.deliver
                                                                                                 agent-profile: possibly Hub.open; core.ts, user.ts
-packages/simplex-chat-mcp/src/main-group.ts  createMainGroup, MainGroup.replace                 —
-packages/simplex-chat-mcp/src/service.ts     HubLike.session, Service.openAgent, validConfig    —
-config.ts, .claude-plugin/plugin.json,       the option layout                                  any item that adds an option
-.mcp.json
 test/unit/sessions.test.ts                   session groups and Main group tests                every item: new tests in the same describe blocks
-test/e2e/service.test.ts                     two existing tests                                 every item: assertions in the same tests
-REFERENCE.md                                 Options, The Main group, Sessions and their groups  harness-notes, reactions, replies: Prompts and answers
+test/e2e/service.test.ts                     one existing test                                  every item: assertions in the same tests
+REFERENCE.md                                 Sessions and their groups                          harness-notes, reactions, replies: Prompts and answers
 ROADMAP.md                                   line 7                                             agent-profile: line 8, next to it
 TESTING.md                                   the automated tests list                           every item
-spec/api.md                                  4.2, 4.3, 4.8                                      every item
+spec/api.md                                  4.3                                                every item
 apps: TerminalItemView.kt, .swift,           TerminalChatItemRow, terminalItemRow               agent-profile, if it changes the avatar of an agent member:
 ChatView.swift                                                                                  MemberImage, MemberProfileImage, chatItemSender
 snapshot references (PNG)                    30 files                                           agent-profile, if its avatars appear in these scenes: record again after the merge
@@ -381,13 +311,13 @@ package version files                        —                                
 
 ```
 part                                    lines                    work
-plugin source                           35                       config, service, hub, main group, plugin files
-plugin tests                            80                       unit and e2e
+plugin source                           1                        createSessionGroup
+plugin tests                            15                       unit and e2e
 Kotlin                                  15 changed               TerminalChatItemRow
 Kotlin tests                            50                       TerminalChatItemRowTest
 Swift                                   20 changed               TerminalChatItemRow, terminalItemRow
 snapshot references                     30 files                 one record run per platform, one check run
-docs                                    40                       section 8
+docs                                    30                       section 8
 CI                                      reduced build; android-emu 15 min; desktop-linux 12 min; ios-sim 25 min, twice
-total                                   about one working day of an agent, with the CI runs
+total                                   about half a working day of an agent after the design approval, with the CI runs
 ```
