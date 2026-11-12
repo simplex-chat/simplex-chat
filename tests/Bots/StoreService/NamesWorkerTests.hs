@@ -1268,7 +1268,7 @@ figuresOf :: Ctx -> NameRegistration -> IO (Maybe (Int, Int, Int, Maybe BalanceH
 figuresOf Ctx {cStore} NameRegistration {nrId = RegistrationId rid} = figures cStore rid orderTime
 
 refundedWhole :: NameRegistration -> Int -> RefundRecord
-refundedWhole r price = RefundRecord {rdRegistration = nrId r, rdCents = price, rdChain = [BalanceLink {lkRegistration = nrId r, lkPayment = nrPayment r, lkPaid = price, lkFromBalance = 0, lkLateCredits = []}]}
+refundedWhole r price = RefundRecord {rdRegistration = nrId r, rdCents = price, rdChain = [BalanceLink {lkRegistration = nrId r, lkOwner = nrOwner r, lkPayment = nrPayment r, lkProviderRef = Just "pref-1", lkPaid = price, lkFromBalance = 0, lkLateCredits = []}]}
 
 testCloseFailed :: IO ()
 testCloseFailed = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}} -> do
@@ -1313,8 +1313,8 @@ testCloseFromBalance = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
         { rdRegistration = nrId covered,
           rdCents = price,
           rdChain =
-            [ BalanceLink {lkRegistration = nrId covered, lkPayment = RPBalance, lkPaid = 0, lkFromBalance = price, lkLateCredits = []},
-              BalanceLink {lkRegistration = nrId paying, lkPayment = nrPayment paying, lkPaid = oPrice dynamisOrder, lkFromBalance = 0, lkLateCredits = []}
+            [ BalanceLink {lkRegistration = nrId covered, lkOwner = nrOwner covered, lkPayment = RPBalance, lkProviderRef = Nothing, lkPaid = 0, lkFromBalance = price, lkLateCredits = []},
+              BalanceLink {lkRegistration = nrId paying, lkOwner = nrOwner paying, lkPayment = nrPayment paying, lkProviderRef = Just "pref-1", lkPaid = oPrice dynamisOrder, lkFromBalance = 0, lkLateCredits = []}
             ]
         }
   nrPhase <$> stored ctx covered `shouldReturn` PTaken

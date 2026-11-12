@@ -533,7 +533,7 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     let st = chatStore cc
-        paidBy = "order f: $100.00 by btc on invoice inv-f"
+        paidBy = paidByBtc "f"
     now <- getCurrentTime
     Balances.placeOrderRow st "f" False 10000 (addUTCTime 3600 now)
     unpaid <- reg st "f"
