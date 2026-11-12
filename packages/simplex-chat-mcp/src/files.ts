@@ -1,5 +1,5 @@
 import {randomBytes} from "crypto"
-import {chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync} from "fs"
+import {chmodSync, existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync} from "fs"
 import {join} from "path"
 import {ExitError} from "./log"
 
@@ -57,9 +57,23 @@ export function readServerFile(dir: string): ServerFile | undefined {
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined
 }
 
+export function abortCounter(file: string): () => void {
+  const line = existsSync(file) ? readFileSync(file, "utf8").split("\n")[0] : ""
+  let count = 0
+  if (/^\d{1,15}$/.test(line)) count = Number(line)
+  else writeReadableFile(file, "0\n")
+  return () => writeReadableFile(file, `${++count}\n`)
+}
+
 function writePrivateFile(file: string, text: string): void {
   writeFileSync(file, text, {mode: 0o600})
   if (process.platform !== "win32") chmodSync(file, 0o600)
+}
+
+function writeReadableFile(file: string, text: string): void {
+  writeFileSync(`${file}.part`, text, {mode: 0o644})
+  if (process.platform !== "win32") chmodSync(`${file}.part`, 0o644)
+  renameSync(`${file}.part`, file)
 }
 
 function lockedError(dir: string, file: string, pid: number | undefined): ExitError {

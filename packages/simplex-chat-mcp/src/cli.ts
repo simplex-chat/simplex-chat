@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import {homedir} from "os"
-import {join, resolve} from "path"
+import {dirname, join, resolve, sep} from "path"
 import {Mode} from "./actions"
 import {ExitError, log, logError} from "./log"
 import {validName} from "./messages"
@@ -33,6 +33,9 @@ serve options:
                          state and tokens per second shown in status messages;
                          the API key, if any, is read from
                          SIMPLEX_MCP_INFERENCE_KEY; mode requests only
+  --abort-file FILE      show /abort in status messages and count it in FILE
+                         for the script that runs the agent; FILE in a folder
+                         disjoint from the data folder; mode requests only
 
 register options:
   --scope SCOPE          user (default) or local
@@ -104,6 +107,9 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
       case "--inference":
         serve.inference = inferenceUrl(options.value(option))
         break
+      case "--abort-file":
+        serve.abortFile = resolve(options.value(option))
+        break
       default:
         throw unknownOption(option)
     }
@@ -114,6 +120,9 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
   if (serve.inference !== undefined && serve.approve === "host") {
     throw usageError("--inference: status messages are shown only in mode requests.")
   }
+  if (serve.abortFile !== undefined && serve.approve === "host") throw usageError("--abort-file: status messages are shown only in mode requests.")
+  const within = (folder: string, path: string): boolean => join(path, sep).startsWith(join(folder, sep))
+  if (serve.abortFile !== undefined && (within(serve.data, serve.abortFile) || within(dirname(serve.abortFile), serve.data))) throw usageError(`--abort-file: a file in a folder disjoint from the data folder expected, got ${serve.abortFile}`)
   return serve
 }
 

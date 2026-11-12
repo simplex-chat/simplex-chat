@@ -1,3 +1,4 @@
+import {join} from "path"
 import {helpText, parseCommand, validAgentName} from "../../src/cli"
 import {entryText} from "../../src/control"
 import {ExitError} from "../../src/log"
@@ -72,6 +73,20 @@ describe("serve options", () => {
     }
     expect(usage(["serve", "agent", "--inference"])).toBe("--inference: a value expected.")
     expect(usage(["serve", "agent", "--approve", "host", "--inference", "http://127.0.0.1:8080"])).toBe("--inference: status messages are shown only in mode requests.")
+  })
+
+  it("takes the abort file, resolved to an absolute path", () => {
+    expect(parseCommand(["serve", "agent", "--abort-file", "agent-abort/count"], home)).toMatchObject({options: {abortFile: join(process.cwd(), "agent-abort", "count")}})
+    expect(usage(["serve", "agent", "--abort-file"])).toBe("--abort-file: a value expected.")
+  })
+
+  it("refuses an abort file in a folder not disjoint from the data folder, and in mode host", () => {
+    for (const file of ["/home/alice/.simplex-mcp/agent/count", "/home/alice/.simplex-mcp/agent", "/home/alice/.simplex-mcp/count"]) {
+      expect(usage(["serve", "agent", "--abort-file", file])).toBe(`--abort-file: a file in a folder disjoint from the data folder expected, got ${file}`)
+    }
+    expect(usage(["serve", "agent", "--abort-file", "/tmp/a/abort/count", "--data", "/tmp/a"])).toBe("--abort-file: a file in a folder disjoint from the data folder expected, got /tmp/a/abort/count")
+    expect(parseCommand(["serve", "agent", "--data", "/tmp/a", "--abort-file", "/tmp/ab/count"], home)).toMatchObject({options: {abortFile: "/tmp/ab/count"}})
+    expect(usage(["serve", "agent", "--approve", "host", "--abort-file", "/tmp/ab/count"])).toBe("--abort-file: status messages are shown only in mode requests.")
   })
 
   it("takes --owners with and without a list", () => {
@@ -180,6 +195,7 @@ describe("help", () => {
     expect(helpText).toContain("  --owners [ID:NAME,...] only these owners approve; without a list, the link\n")
     expect(helpText).toContain("  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards and status\n                         deletions to be sent, 0 to 60 (default: 10)\n")
     expect(helpText).toContain("  --inference URL        poll llama-swap or llama-server at URL for the model\n                         state and tokens per second shown in status messages;\n                         the API key, if any, is read from\n                         SIMPLEX_MCP_INFERENCE_KEY; mode requests only\n")
+    expect(helpText).toContain("  --abort-file FILE      show /abort in status messages and count it in FILE\n                         for the script that runs the agent; FILE in a folder\n                         disjoint from the data folder; mode requests only\n")
     expect(helpText.endsWith("--reset-owners takes --owners without a list.\n")).toBe(true)
   })
 })

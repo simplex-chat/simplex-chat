@@ -37,7 +37,7 @@ export class Statuses {
   private inferenceFailed = false
   private stopping = false
 
-  constructor(private readonly agent: Pick<Agent, "chat" | "actions" | "inference" | "activity">, private readonly allowed: (chat: string) => Promise<boolean>) {}
+  constructor(private readonly agent: Pick<Agent, "chat" | "actions" | "inference" | "activity" | "abort">, private readonly allowed: (chat: string) => Promise<boolean>) {}
 
   startCall(tool: ToolName): () => void {
     const call = {tool}
@@ -75,14 +75,22 @@ export class Statuses {
     if (kept === undefined) this.schedule(chat, status)
   }
 
-  end(chat: string): Promise<void> {
+  end(chat: string, text = ""): Promise<void> {
     const status = this.statuses.get(chat)
     if (status === undefined) return Promise.resolve()
     this.statuses.delete(chat)
     clearTimeout(status.timer)
-    const ending = status.live.end("")
+    const ending = status.live.end(text)
     this.endings.add(ending)
     return ending.finally(() => this.endings.delete(ending))
+  }
+
+  offersAbort(chat: string): boolean {
+    return this.agent.abort !== undefined && (this.statuses.get(chat)?.renders ?? 0) > 0
+  }
+
+  abort(): void {
+    for (const [chat, {renders}] of [...this.statuses]) this.end(chat, renders > 0 ? "◼ aborted" : "")
   }
 
   async stop(): Promise<number> {
@@ -144,7 +152,7 @@ export class Statuses {
 
   private render(status: Status): void {
     status.renders++
-    status.live.update(statusText(status, Date.now()))
+    status.live.update(statusText(status, Date.now(), this.agent.abort === undefined ? "" : " · /abort"))
   }
 
   private schedule(chat: string, status: Status): void {
@@ -174,10 +182,10 @@ export class Statuses {
   }
 }
 
-function statusText({started, renders, label, note}: Status, now: number): string {
+function statusText({started, renders, label, note}: Status, now: number, offer: string): string {
   const seconds = Math.floor((now - started) / 1000)
   const line = renders < liveRenders ? `${frames[(renders - 1) % frames.length]} ${label} · ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}` : `◌ ${label === waitingLabel ? label : "working"} since ${utcMinutes(started)}`
-  return note === undefined ? line : `${line}\n${note}`
+  return note === undefined ? `${line}${offer}` : `${line}${offer}\n${note}`
 }
 
 function statusLabel(waiting: boolean, state: InferenceState | undefined, tool: ToolName | undefined, activity: ActivityState | undefined): string {

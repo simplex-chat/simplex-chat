@@ -1026,3 +1026,13 @@ describe("inference key at the start", () => {
     }
   })
 })
+
+describe("abort file at the start", () => {
+  it("stops the start before the chat database is created when the folder of --abort-file is missing, and releases the lock", async () => {
+    const folder = join(data, "abort-start")
+    const options: ServeOptions = {name: "agent", data: folder, dataGiven: true, approve: "requests", expireHours: 23, resetOwners: false, newToken: false, port: 5226, qrCode: "small", stopWait: 10, abortFile: join(data, "missing", "abort")}
+    const error = await startServer(options).catch((reason: unknown) => reason)
+    expect((error as NodeJS.ErrnoException).code).toBe("ENOENT")
+    expect(readdirSync(folder).sort()).toEqual(["headers.json", "hook-headers", "token"])
+  })
+})

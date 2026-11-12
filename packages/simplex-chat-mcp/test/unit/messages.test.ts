@@ -188,27 +188,27 @@ function textOf(result: CallToolResult | undefined): string {
   return (result!.content[0] as {text: string}).text
 }
 
-function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
+function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined, abort?: () => void): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  const tools = new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, actions.mode)
+  const tools = new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data, abort}, actions.mode)
   createdTools.push(tools)
   return {tools, watch}
 }
 
-function approvedTools(chat: FakeChat, mode: Mode = "requests"): {tools: AgentTools; watch: ChatItemsWatch; actions: Actions; fake: FakeHooks; approved: Set<string>} {
+function approvedTools(chat: FakeChat, mode: Mode = "requests", abort?: () => void): {tools: AgentTools; watch: ChatItemsWatch; actions: Actions; fake: FakeHooks; approved: Set<string>} {
   const fake = fakeHooks()
   const actions = actionsWith(mode, fake)
   const approved = new Set(["@4"])
-  const {tools, watch} = agentTools(chat, actions, (chatInfo, standing) => (standing === "messages" && approved.has(chatRef(chatInfo) ?? "") ? "Alice" : undefined))
+  const {tools, watch} = agentTools(chat, actions, (chatInfo, standing) => (standing === "messages" && approved.has(chatRef(chatInfo) ?? "") ? "Alice" : undefined), abort)
   fake.hooks.perform = (action, signal) => tools.perform(action, signal)
   return {tools, watch, actions, fake, approved}
 }
 
-async function statusChat(): Promise<ReturnType<typeof approvedTools> & {chat: FakeChat; status: number}> {
+async function statusChat(abort?: () => void): Promise<ReturnType<typeof approvedTools> & {chat: FakeChat; status: number}> {
   jest.useFakeTimers()
   const chat = new FakeChat()
   chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: [item(20, "summarize README.md")]})
-  const agent = approvedTools(chat)
+  const agent = approvedTools(chat, "requests", abort)
   await agent.tools.call("receive", {chat: "@4", typing: true}, signal().call)
   await jest.advanceTimersByTimeAsync(0)
   return {...agent, chat, status: chat.nextItemId - 1}
@@ -838,6 +838,108 @@ describe("send", () => {
     await jest.advanceTimersByTimeAsync(3_500)
     expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
     expect(texts(chat)).toEqual(["◐ thinking · 0:00"])
+  })
+})
+
+describe("abort", () => {
+  it("keeps an /abort in a chat with a shown status from the agent, but not one in its member support chat: marks it read, counts it once, ends every status with ◼ aborted and logs the sender on one line", async () => {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const abort = jest.fn()
+    const {chat, tools, approved, status} = await statusChat(abort)
+    const mallory = member(44, "Mallory\nBob")
+    chat.chats.set("#15", {chatInfo: groupChat(group(15, "Trail", member(1, "agent"))), items: [item(30, "summarize README.md", {type: "groupRcv", groupMember: mallory})]})
+    approved.add("#15")
+    await tools.call("receive", {chat: "#15", typing: true}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    const posted = chat.nextItemId - 1
+    const support = event({...chat.chats.get("#15")!.chatInfo, groupChatScope: {type: "memberSupport"}} as T.ChatInfo, item(34, "/abort", {type: "groupRcv", groupMember: mallory}))
+    const batch = [" /abort\n", "/abort", "and then?"].map((text, i) => chat.addItem("#15", item(31 + i, text, {type: "groupRcv", groupMember: mallory})))
+    expect(tools.onNewItems([support, ...batch])).toEqual([support, ...batch.slice(1)])
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.commands.filter(cmd => cmd.startsWith("/_read"))).toEqual(["/_read chat items @4 20", "/_read chat items #15 30", "/_read chat items #15 31"])
+    expect(abort).toHaveBeenCalledTimes(1)
+    expect(lines).toEqual(["Abort by Mallory Bob in group Trail (#15)."])
+    expect(chat.updates).toEqual([
+      {chatId: 4, itemId: status, text: "◼ aborted"},
+      {chatId: 15, itemId: posted, text: "◼ aborted"},
+    ])
+    expect(chat.deletedItems).toEqual([])
+    const {messages} = (await tools.call("receive", {chat: "#15"}, signal().call))!.structuredContent as {messages: {item: number; text: string}[]}
+    expect(messages.map(({item, text}) => [item, text])).toEqual([[32, "/abort"], [33, "and then?"]])
+  })
+
+  it("returns /abort as a message in a chat without a shown status, and as another text, an image caption, a live or an own message", async () => {
+    const abort = jest.fn()
+    const {chat, tools} = await statusChat(abort)
+    chat.chats.set("@5", {chatInfo: direct(contact(5, "Bob")), items: []})
+    const commands = chat.commands.length
+    const items = [
+      chat.addItem("@5", item(30, "/abort")),
+      ...["/abort now", "/Abort", "abort"].map((text, i) => chat.addItem("@4", item(32 + i, text))),
+      chat.addItem("@4", fileItem(35, {type: "image", text: "/abort", image: ""}, {type: "rcvInvitation"})),
+      chat.addItem("@4", item(36, "/abort", {type: "directRcv"}, {live: true})),
+      chat.addItem("@4", item(37, "/abort", {type: "directSnd"})),
+    ]
+    expect(tools.onNewItems(items)).toEqual(items)
+    await jest.advanceTimersByTimeAsync(0)
+    expect(abort).not.toHaveBeenCalled()
+    expect(chat.commands.slice(commands)).toEqual([])
+    expect([chat.updates, chat.deletedItems]).toEqual([[], []])
+  })
+
+  it("returns /abort as a message in a chat with a shown status without the abort counter", async () => {
+    const {chat, tools} = await statusChat()
+    const items = [chat.addItem("@4", item(21, "/abort"))]
+    expect(tools.onNewItems(items)).toEqual(items)
+    expect(chat.commands.filter(cmd => cmd.startsWith("/_read"))).toEqual(["/_read chat items @4 20"])
+  })
+
+  it("returns no /abort that a concurrent receive read as unread before it was marked read", async () => {
+    const abort = jest.fn()
+    const {chat, tools} = await statusChat(abort)
+    const aborting = chat.addItem("@4", item(21, "/abort"))
+    chat.addItem("@4", item(22, "and then?"))
+    const sendChatCmd = chat.sendChatCmd.bind(chat)
+    chat.sendChatCmd = async cmd => {
+      const response = await sendChatCmd(cmd)
+      if (cmd.includes(" around=")) tools.onNewItems([aborting])
+      return response
+    }
+    expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toMatchObject({messages: [{item: 22, text: "and then?"}], more: 0})
+    expect(abort).toHaveBeenCalledTimes(1)
+    expect(chat.commands.filter(cmd => cmd.startsWith("/_read"))).toEqual(["/_read chat items @4 20", "/_read chat items @4 21", "/_read chat items @4 22"])
+  })
+
+  it("leaves a waiting receive of the chat waiting at an /abort", async () => {
+    const abort = jest.fn()
+    const {chat, tools, watch} = await statusChat(abort)
+    const {controller, call} = signal()
+    const waiting = tools.call("receive", {chat: "@4", wait: 3600}, call)
+    let finished = false
+    waiting.then(() => (finished = true))
+    await jest.advanceTimersByTimeAsync(0)
+    expect((await tools.call("send", {chat: "@4", text: "Checking the tests…", live: true}, signal().call))!.structuredContent).toEqual({status: "live", chat: "@4"})
+    await jest.advanceTimersByTimeAsync(0)
+    watch.deliver(tools.onNewItems([chat.addItem("@4", item(21, "/abort"))]))
+    await jest.advanceTimersByTimeAsync(10_000)
+    expect([finished, abort.mock.calls.length]).toEqual([false, 1])
+    controller.abort()
+    expect(await waiting).toBeUndefined()
+  })
+
+  it("keeps the statuses and logs the failure when the counter is not written", async () => {
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text).trimEnd()), true))
+    const {chat, tools, status} = await statusChat(() => {
+      throw new Error("EACCES: permission denied")
+    })
+    const batch = [chat.addItem("@4", item(21, "/abort")), chat.addItem("@4", item(22, "and then?"))]
+    expect(tools.onNewItems(batch)).toEqual(batch.slice(1))
+    await jest.advanceTimersByTimeAsync(3_500)
+    expect(errors).toEqual(["abort in @4: EACCES: permission denied"])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/_read"))).toEqual(["/_read chat items @4 20", "/_read chat items @4 21"])
+    expect(chat.updates).toEqual([{chatId: 4, itemId: status, text: "◓ thinking · 0:03 · /abort", live: true}])
   })
 })
 

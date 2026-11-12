@@ -2,7 +2,7 @@ import {spawnSync} from "child_process"
 import {chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
-import {acquireLock, createDataFolder, readServerFile, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "../../src/files"
+import {abortCounter, acquireLock, createDataFolder, readServerFile, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "../../src/files"
 import {ExitError} from "../../src/log"
 
 let dir: string
@@ -85,5 +85,51 @@ describe("data folder", () => {
     expect(readServerFile(dir)).toBeUndefined()
     writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
     expect(readServerFile(dir)).toEqual({name: "agent", port: 5226, expireHours: 23})
+  })
+})
+
+describe("abort counter", () => {
+  let file: string
+
+  beforeEach(() => {
+    file = join(dir, "..", "abort")
+  })
+
+  it("writes 0 when the file is missing, then each count, as one line readable by all, through FILE.part, also over a private file and a private FILE.part", () => {
+    const count = abortCounter(file)
+    expect(readFileSync(file, "utf8")).toBe("0\n")
+    expect(statSync(file).mode & 0o777).toBe(0o644)
+    expect(existsSync(`${file}.part`)).toBe(false)
+    count()
+    expect(readFileSync(file, "utf8")).toBe("1\n")
+    chmodSync(file, 0o600)
+    writeFileSync(`${file}.part`, "x", {mode: 0o600})
+    count()
+    expect(readFileSync(file, "utf8")).toBe("2\n")
+    expect(statSync(file).mode & 0o777).toBe(0o644)
+    expect(existsSync(`${file}.part`)).toBe(false)
+  })
+
+  it("keeps a count at the start and continues it", () => {
+    writeFileSync(file, "7\nchanged by hand\n")
+    const count = abortCounter(file)
+    expect(readFileSync(file, "utf8")).toBe("7\nchanged by hand\n")
+    count()
+    expect(readFileSync(file, "utf8")).toBe("8\n")
+    writeFileSync(file, `${"9".repeat(15)}\n`)
+    abortCounter(file)
+    expect(readFileSync(file, "utf8")).toBe(`${"9".repeat(15)}\n`)
+  })
+
+  it("writes 0 at the start over a first line that is not a count of at most 15 digits", () => {
+    for (const content of ["", "x\n", "-1\n", " 7\n", "7 \n", "1e3\n", `${"9".repeat(16)}\n`]) {
+      writeFileSync(file, content)
+      abortCounter(file)
+      expect(readFileSync(file, "utf8")).toBe("0\n")
+    }
+  })
+
+  it("fails at the start when the folder of the file is missing", () => {
+    expect(() => abortCounter(join(dir, "..", "missing", "abort"))).toThrow(/ENOENT/)
   })
 })

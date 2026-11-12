@@ -21,11 +21,11 @@ afterEach(async () => {
   jest.useRealTimers()
 })
 
-function statusesWith(agent: {allowed?: (chat: string) => Promise<boolean>; inference?: () => Promise<InferenceState | undefined>; activity?: Activity} = {}): {chat: FakeChat; statuses: Statuses; pending: {open: number}[]} {
+function statusesWith(agent: {allowed?: (chat: string) => Promise<boolean>; inference?: () => Promise<InferenceState | undefined>; activity?: Activity; abort?: () => void} = {}): {chat: FakeChat; statuses: Statuses; pending: {open: number}[]} {
   const chat = new FakeChat()
   const pending: {open: number}[] = []
   const actions = {pending: () => pending} as unknown as Actions
-  const statuses = new Statuses({chat: chat.api(), actions, inference: agent.inference, activity: agent.activity}, agent.allowed ?? (async () => true))
+  const statuses = new Statuses({chat: chat.api(), actions, inference: agent.inference, activity: agent.activity, abort: agent.abort}, agent.allowed ?? (async () => true))
   created.push(statuses)
   return {chat, statuses, pending}
 }
@@ -457,6 +457,65 @@ describe("status message", () => {
     await jest.advanceTimersByTimeAsync(60_000)
     expect(chat.sent.map(({chat: [, chatId]}) => chatId).sort()).toEqual([4, 5])
     expect(chat.updates).toEqual([])
+  })
+
+  it("offers /abort at the end of the first line with the abort counter, on the waiting, the noted and the frozen line", async () => {
+    const {chat, statuses} = statusesWith({abort: () => undefined})
+    statuses.queue("@4")
+    await jest.advanceTimersByTimeAsync(1_000)
+    statuses.start("@4")
+    statuses.show("@4", "Reading the file…")
+    await jest.advanceTimersByTimeAsync(0)
+    expect(texts(chat)).toEqual(["◐ received, waiting for the agent · 0:00 · /abort", "◑ thinking · 0:01 · /abort\nReading the file…"])
+    await jest.advanceTimersByTimeAsync(600_000)
+    expect(texts(chat).at(-1)).toBe(`${frozen} · /abort\nReading the file…`)
+    expect(statuses.offersAbort("@4")).toBe(true)
+    const without = statusesWith()
+    without.statuses.start("@4")
+    await jest.advanceTimersByTimeAsync(0)
+    expect([texts(without.chat), without.statuses.offersAbort("@4")]).toEqual([["◐ thinking · 0:00"], false])
+  })
+
+  it("ends every status with ◼ aborted, one not yet posted without a message, and leaves no timer", async () => {
+    const reading = deferred<boolean>()
+    const {chat, statuses} = statusesWith({allowed: ref => (ref === "@6" ? reading.promise : Promise.resolve(true)), abort: () => undefined})
+    statuses.start("@4")
+    await jest.advanceTimersByTimeAsync(0)
+    statuses.queue("@5")
+    await jest.advanceTimersByTimeAsync(0)
+    statuses.start("@6")
+    await jest.advanceTimersByTimeAsync(1_500)
+    expect(["@4", "@5", "@6", "@7"].map(ref => statuses.offersAbort(ref))).toEqual([true, true, false, false])
+    statuses.abort()
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.updates).toEqual([
+      {chatId: 4, itemId: 500, text: "◼ aborted"},
+      {chatId: 5, itemId: 501, text: "◼ aborted"},
+    ])
+    expect(chat.deletedItems).toEqual([])
+    expect(jest.getTimerCount()).toBe(0)
+    reading.resolve(true)
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect(chat.sent.map(({chat: [, chatId]}) => chatId)).toEqual([4, 5])
+    expect(statuses.offersAbort("@4")).toBe(false)
+    statuses.start("@4")
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.sent.at(-1)).toEqual(livePost(T.ChatType.Direct, 4, "◐ thinking · 0:00 · /abort"))
+  })
+
+  it("ends a status with 59 renders with ◼ aborted as its 60th message", async () => {
+    const {chat, statuses} = statusesWith({abort: () => undefined})
+    statuses.start("@4")
+    await jest.advanceTimersByTimeAsync(600_000)
+    for (let n = 51; n <= 59; n++) {
+      statuses.show("@4", `Step ${n}`)
+      await jest.advanceTimersByTimeAsync(0)
+    }
+    expect(texts(chat)).toHaveLength(59)
+    statuses.abort()
+    await jest.advanceTimersByTimeAsync(0)
+    expect(texts(chat)).toHaveLength(60)
+    expect(chat.updates.at(-1)).toEqual({chatId: 4, itemId: 500, text: "◼ aborted"})
   })
 
   it("logs the first failed poll after a success only", async () => {
