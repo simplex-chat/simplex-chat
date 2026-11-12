@@ -128,6 +128,7 @@ Answered on 2026-11-12:
 ## 4. Decisions
 
 The layout in the core and the apps:
+
 1. A group's layout is `chatLayout` of its group profile; `terminal` is the layout the apps name Flat (`src/Simplex/Chat/Types.hs:924`; `packages/simplex-chat-client/types/typescript/src/types.ts:1906-1909`, `:3235`; `apps/ios/SimpleXChat/ChatTypes.swift:278`; `ThemeModeEditor.kt:541` with `chat_layout_flat` "Flat" at `moko-resources/base/strings.xml:2316`).
 2. The core stores the field when a group is created and when an invitation arrives, and sends the group's profile in an invitation through a group (`Store/Groups.hs:385`, `:409-413`, `:483`, `:491-492`; `Library/Commands.hs:4402-4413`). A member invited with a Flat profile gets Flat (`tests/ChatTests/Profiles.hs:3862-3871`).
 3. The plugin's core supports it: the field was added in core 7.1.0.14 (`7810fc475`, `simplex-chat.cabal` there), and the plugin runs `core-7.1.3.0` (`packages/simplex-chat-nodejs/src/release.ts:3`; `packages/simplex-chat-mcp/package-lock.json:4321-4322`).
@@ -137,11 +138,13 @@ The layout in the core and the apps:
 7. The apps send a group's stored profile back whole when owners edit it, so its layout stays (`GroupPreferencesView.swift:238-240`; `GroupPreferences.kt:48`, a copy of `GroupProfile`, whose fields include `chatLayout`, `ChatModel.kt:2819-2829`).
 
 The plugin:
+
 8. Claude writes `terminal` once, in the profile of a new session group (`createSessionGroup`, `hub.ts:477-489`). Claude's later profile updates start from the group's current profile, so the layout stays, also after an owner's `/set layout` (`control.ts:632-640`). This follows decision 103 of the 0.3.0 plan for the Main group's texts.
 9. The Main group (`createMainGroup`, `main-group.ts:195-205`) and `serve`'s agent control chat (`createControlChat`, `control.ts:614-623`) keep their profiles (Q3 (b); premise 4 of the 0.3.0 plan).
 10. Groups created by 0.3.0 keep their profiles; a resumed session reuses its group (`hub.ts:414-416`).
 
 The Flat layout in the apps:
+
 11. The new geometry applies to every Flat row with an avatar, in groups and channels, also outside the plugin (Q2 (a)).
 12. The avatar is centred on the name line (mockup source: `.avatar { top: calc(var(--line) / 2 - var(--avatar) / 2) }`).
 13. Messages, events and rows without a name start at the row's start; their text is at the text edge, `CHAT_ITEM_TEXT_PADDING`, 12 (mockup: `.content { padding: 0 var(--pad) }`).
