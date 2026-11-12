@@ -419,7 +419,7 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
 
 namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
-  it "issues a 2-year prepaid code on /issue name, answering the usage to /bulk name and to years" testGroupNameCodes
+  it "issues a prepaid code on /issue name for 2 years by default and for the years given, answering the usage to /bulk name" testGroupNameCodes
   it "issues at most 10 name codes a day in the group, not counting console codes" testGroupNameCodesPerDay
   it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
   it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
@@ -431,9 +431,11 @@ testGroupNameCodes ps = do
     one <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8"
     namePrepaidCodeLength one `shouldBe` 8
     prepaidTerms cc one `shouldReturn` Just (8, 2, CPSFree)
+    five <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 7 years 5"
+    prepaidTerms cc five `shouldReturn` Just (7, 5, CPSFree)
     replyTo cc alice "/bulk name 6 count 3" `shouldReturn` bulkUsage
-    replyTo cc alice "/issue name 8 years 2" `shouldReturn` issueUsage
-    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 1
+    replyTo cc alice "/issue name 8 years 11" `shouldReturn` issueUsage
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 2
 
 testGroupNameCodesPerDay :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesPerDay ps = do
@@ -1795,7 +1797,7 @@ singleRow sql = \case
   _ -> error $ "more than one row from: " <> sql
 
 issueUsage :: Text
-issueUsage = "Usage: /issue <kind> [<length>] [months <M>] [uses <N>]\nname <length>: length 6–63\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 · /issue supporter months 12"
+issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
 
 bulkUsage :: Text
 bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk legend months 3 count 10"
@@ -1803,7 +1805,7 @@ bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, inve
 -- The list is spelled out rather than taken from the service, so a change there fails here.
 expectedCommands :: [ChatBotCommand]
 expectedCommands =
-  [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [months <N>] [uses <N>]"),
+  [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>] [uses <N>]"),
     CBCCommand "bulk" "Generate many codes" (Just "<supporter|legend|investor> [months <N>] count <N>"),
     CBCCommand "revoke" "Revoke a code" (Just "<code>")
   ]

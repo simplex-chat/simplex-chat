@@ -308,8 +308,8 @@ runGroupCmd cc turns namesOn groupId = \case
               >>= mapM_ (\iid -> withDB' "setCodeGroupItem" cc $ \db -> setCodeGroupItem db badgeCodeId iid now)
   GCBulk bt months count -> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
   GCIssueName {} | not namesOn -> reply namesOffText
-  GCIssueName len ->
-    withinNameCodes $ issueNameCode cc IssuedInGroup len groupNameYears CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode . NCPrepaid)
+  GCIssueName len years ->
+    withinNameCodes $ issueNameCode cc IssuedInGroup len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode . NCPrepaid)
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> do
     outcome <- either id id <$> revokeWithTracker cc code
@@ -335,9 +335,6 @@ runGroupCmd cc turns namesOn groupId = \case
 -- | Each registers at the sponsor allowance's and the gas key's cost, so a member's account taken over issues few.
 maxNameCodesPerDay :: Int
 maxNameCodesPerDay = 10
-
-groupNameYears :: Int
-groupNameYears = 2
 
 namesOffText :: Text
 namesOffText = "Names are not enabled on this service, so name codes cannot be issued."
