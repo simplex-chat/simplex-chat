@@ -365,8 +365,8 @@ logNamePolicy NamesConfig {nCommunity} ct =
           True -> logNote $ "names: " <> what <> " " <> link <> ", hash " <> hex tmHash
           False -> logWarn $ "names: the name policy's " <> what <> " are not a link the service takes, so " <> sold <> " cannot be ordered: " <> link
 
--- | The workers resume every registration in their phases, the code sweep runs at the start and then daily, and the
--- terms fetch at the start and then hourly.
+-- | The workers resume every registration in their phases, the code sweep runs at the start and then daily, the
+-- terms fetch at the start and then hourly, and the metrics endpoint with metrics_port.
 namesLanes :: ListenerConfig -> NamesEnv -> IO [IO ()]
 namesLanes lc@ListenerConfig {lMetricsPort} ne@NamesEnv {neStore, neChain, neContracts, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neChain neSender

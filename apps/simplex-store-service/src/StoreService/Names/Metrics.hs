@@ -16,7 +16,7 @@ where
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Logger.Simple (logWarn)
-import Control.Monad (forever)
+import Control.Monad (forever, unless, void)
 import qualified Data.ByteString.Lazy as LB
 import Data.Maybe (fromMaybe)
 import Data.String (fromString)
@@ -63,7 +63,10 @@ readFunds ct v =
       logWarn $ "names metrics: the registrar's funds could not be read: " <> tshow e
 
 runFundsReads :: Contracts -> TVar FundsRead -> IO ()
-runFundsReads ct v = forever $ safely "names metrics: the funds read" (readFunds ct v) >> threadDelay fundsReadInterval
+runFundsReads ct v = forever $ do
+  done <- safely "names metrics: the funds read" (readFunds ct v)
+  unless done $ atomically $ modifyTVar' v $ \fr -> fr {frOk = False}
+  threadDelay fundsReadInterval
 
 metricsText :: NamesCounts -> FundsRead -> Text
 metricsText NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents} FundsRead {frFunds, frOk} =
@@ -103,4 +106,5 @@ metricsApp st v req respond = case pathInfo req of
 runMetrics :: ListenerConfig -> Int -> DBStore -> Contracts -> IO ()
 runMetrics lc port st ct = do
   v <- newTVarIO noFundsRead
-  raceAny_ [runFundsReads ct v, Warp.runSettings (Warp.setPort port . Warp.setHost (fromString metricsHost) $ webSettings lc) (metricsApp st v)]
+  let serve = safely ("names metrics: the endpoint on port " <> tshow port) $ Warp.runSettings (Warp.setPort port . Warp.setHost (fromString metricsHost) $ webSettings lc) (metricsApp st v)
+  raceAny_ [runFundsReads ct v, void serve >> forever (threadDelay maxBound)]

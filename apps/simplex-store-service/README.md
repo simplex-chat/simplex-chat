@@ -646,7 +646,8 @@ With `serve_webapp = on` (all in one), the service listens on both ports, and ea
 own site: every path outside `/api/` and `/webhooks/` is a file of that site, `/` and `/index.html`
 its shell. Both ports answer `/api/` and `/webhooks/`, whatever the `Host`. A reverse proxy sends
 each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. With
-`serve_webapp = off`, the service listens on `badges_port` alone, for the API and the webhooks.
+`serve_webapp = off`, the service listens on `badges_port` alone, for the API and the webhooks. With
+`metrics_port`, it also listens on `127.0.0.1` on that port, for `/metrics` alone.
 
 ### Development with a local chain
 
@@ -822,33 +823,36 @@ metrics_port = 9300
 Each scrape counts the orders, transactions, invoices and balances in the database. The registrar
 key's ETH balance and its sponsor allowance are read from the node at start and then every minute,
 and a scrape answers the last read, so a slow or failing node never delays a scrape. A failed read
-keeps the last values, sets `simplex_store_names_funds_read_ok` to 0 and logs a warning.
+keeps the last values, sets `simplex_store_names_funds_read_ok` to 0 and logs a warning. A port that
+cannot be listened on is logged as an error and leaves the rest of the service running.
 
 | Metric | Value |
 |---|---|
-| `simplex_store_names_orders{phase}` | name orders in the phase: `unpaid`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed` |
+| `simplex_store_names_orders{phase}` | name orders in the phase: `unpaid`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed`; the queue is `queued` to `registering`, while `unpaid` also counts closed orders kept for 30 days and `failed` every failed order not tried again |
 | `simplex_store_names_queue_oldest_change_timestamp_seconds` | the last change, in Unix seconds, of the order unchanged longest among those the service moves on: `queued`, `committing`, `registering`, and `committed` with the page's reveal stored; absent when there is none |
 | `simplex_store_names_transactions_pending` | registrar transactions sent and not settled, one per nonce, so a fee replacement counts once |
 | `simplex_store_names_transactions_oldest_pending_timestamp_seconds` | when the oldest of them was first signed; absent when none is pending |
 | `simplex_store_names_invoices_open` | open invoices of name orders |
-| `simplex_store_names_balances_held` | balances an order holds while its invoice for the difference is open |
+| `simplex_store_names_balances_held` | balances reserved by an order paying the difference, until that order is paid or closed |
 | `simplex_store_names_balances_held_cents` | the cents of those balances |
 | `simplex_store_names_registrar_balance_wei` | the registrar key's ETH balance, as last read |
 | `simplex_store_names_sponsor_allowance_cents` | its allowance left on the sponsor, in cents, rounded down, as last read |
-| `simplex_store_names_funds_read_timestamp_seconds` | when those two were last read |
+| `simplex_store_names_funds_read_timestamp_seconds` | when those two were last read successfully |
 | `simplex_store_names_funds_read_ok` | 1 when the last read succeeded, 0 when it failed or none has finished |
 
 Every metric is a gauge. An order that stops moving, a transaction that is not mined and a node
 that cannot be read show as:
 
 ```
-time() - simplex_store_names_queue_oldest_change_timestamp_seconds > 900
+time() - simplex_store_names_queue_oldest_change_timestamp_seconds > 1200
 time() - simplex_store_names_transactions_oldest_pending_timestamp_seconds > 900
 simplex_store_names_funds_read_ok == 0
 ```
 
 An order moves on within minutes: its commit and register are each mined and confirmed, and the
-register waits about a minute after the commit. Size the alerts on the balance and the allowance to
+register waits about a minute after the commit. An order tried again can wait unchanged up to
+`reveal_margin_seconds` (900 by default) for its old commitment to lapse, so the queue alert's
+threshold is above it. Size the alerts on the balance and the allowance to
 the orders expected before a top-up, with the figures in [Fund the key](#fund-the-key).
 
 Caddy proxies it on the monitoring site of the host, beside node_exporter, inside that site's
