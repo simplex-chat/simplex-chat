@@ -59,11 +59,12 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 | `--context-file` | both | required with `GROK_API_KEY` | | text file with Grok system context |
 | `--dry-run` | both | no | | check config, database and state, then exit |
 | `--allow-migrations` | both | no | | with `--dry-run`: apply pending migrations instead of reporting them |
+| `--allow-down-migrations` | both | no | | with `--dry-run`: roll back migrations that this build does not have |
 | `-h` / `--help` | both | no | | show usage and exit |
 
 ## Config file
 
-`--config config.toml` reads option values and message texts from a TOML file, as [config.toml.example](../../scripts/support-bot/config/config.toml.example) shows. Keys are the command-line options in snake_case (`team_group` for `--team-group`); a list is joined with commas. An option given on the command line takes precedence over the file. `--dry-run` and `--allow-migrations` are command-line only.
+`--config config.toml` reads option values and message texts from a TOML file, as [config.toml.example](../../scripts/support-bot/config/config.toml.example) shows. Keys are the command-line options in snake_case (`team_group` for `--team-group`); a list is joined with commas. An option given on the command line takes precedence over the file. `--dry-run`, `--allow-migrations` and `--allow-down-migrations` are command-line only. The file holds the `pg_conn` password, so keep it readable only by the user that runs the bot.
 
 A message left out of `[messages]` keeps its built-in text. `{hours}` is replaced with 24 on weekdays and 48 at weekends in `timezone`. The welcome message is updated in the bot address on the next start.
 
@@ -105,11 +106,11 @@ A message left out of `[messages]` keeps its built-in text. `{hours}` is replace
 ```bash
 cd scripts/support-bot
 cp config/config.toml.example config/config.toml
-PG_CONN='postgres://simplex@127.0.0.1/simplex_support_bot' docker compose up --build
+docker compose up --build
 LIBS=source docker compose build
 ```
 
-`scripts/support-bot/config` is mounted at `/etc/support-bot` and holds `config.toml` and the Grok context file. `GROK_API_KEY` is read from the environment.
+`scripts/support-bot/config` is mounted at `/etc/support-bot` and holds `config.toml`, with `pg_conn`, and the Grok context file; the bot runs as uid 1000, which must be able to read them. `GROK_API_KEY` is read from the environment. Other arguments are passed after the service name, for example `docker compose run --rm support-bot --config /etc/support-bot/config.toml --dry-run`.
 
 ## Dry run
 
@@ -130,10 +131,18 @@ FAIL  team member 3:alice has display name "bob", the bot would exit
 A pending migration stops the checks:
 
 ```
-FAIL  database: 2 migration(s) pending, a real start would apply them: 20261019_chat_layout, 20261021_badge_subscriptions
+FAIL  database: pending 2 migration(s): 20261019_chat_layout, 20261021_badge_subscriptions; a real start would apply them, --allow-migrations applies them now
 ```
 
 With `--allow-migrations`, the migrations are applied first and the checks run after them. Run it against a restored copy of the database unless the migration is intended, and with the bot stopped.
+
+A database migrated by a newer build also stops the checks, since the bot refuses to start on it:
+
+```
+FAIL  database: database is newer than this build, to roll back 1 migration(s): 20260905_feeds; a real start would refuse, --allow-down-migrations rolls them back
+```
+
+With `--allow-down-migrations`, those migrations are rolled back with the down SQL that the newer build stored in the database, and the checks run after it. The core rolls back only when this build's migrations are a prefix of the database's; a database whose migrations diverge from this build's is reported as a migration state error and is not changed. Rolling back deletes the data of the removed migrations, so take a backup first.
 
 A line is `ok`, `FAIL` or `?`. `?` marks an id absent from the chat previews: with chat stopped, only chats that were used are listed, so the bot verifies such ids at startup.
 

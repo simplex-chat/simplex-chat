@@ -1,7 +1,7 @@
 # network_mode: host makes 127.0.0.1 reach PostgreSQL on the host.
 #
 #   cp config/config.toml.example config/config.toml
-#   PG_CONN='postgres://simplex@127.0.0.1/simplex_support_bot' docker compose up --build
+#   docker compose up --build
 #   LIBS=source docker compose build
 
 services:
@@ -19,11 +19,6 @@ services:
     volumes:
       - support-bot-data:/data
       - ./config:/etc/support-bot:ro
-    command:
-      - "--config"
-      - "/etc/support-bot/config.toml"
-      - "--pg-conn"
-      - "${PG_CONN:?set PG_CONN, e.g. postgres://simplex@127.0.0.1/simplex_support_bot}"
     stop_grace_period: 30s
 
 volumes:

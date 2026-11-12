@@ -5,6 +5,7 @@ auto_add_team_members = ["1:Alice"]
 context_file = "/etc/support-bot/grok-context.yaml"
 state_file = "/data/state.json"
 db = "postgres"
+pg_conn = "postgres://simplex@127.0.0.1/simplex_support_bot"
 timezone = "UTC"
 
 # A message left out keeps its built-in text.

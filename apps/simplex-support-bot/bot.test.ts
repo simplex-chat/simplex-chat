@@ -8,7 +8,7 @@ import {CardManager} from "./src/cards.js"
 import {parseConfig} from "./src/config.js"
 import {GrokApiClient} from "./src/grok.js"
 import {loadGrokContext} from "./src/context.js"
-import {dryRun} from "./src/dryRun.js"
+import {dryRun, migrationPlan} from "./src/dryRun.js"
 import {defaultMessages, queueMessage, teamAddedMessage, noTeamMembersMessage} from "./src/messages.js"
 
 // Silence console output during tests
@@ -2484,6 +2484,13 @@ describe("parseConfig Validation", () => {
       .toThrow(/--allow-migrations requires --dry-run/)
   })
 
+  test("--allow-down-migrations defaults to false, parses with --dry-run, throws without it", () => {
+    expect(parseConfig(baseArgs).allowDownMigrations).toBe(false)
+    expect(parseConfig([...baseArgs, "--dry-run", "--allow-down-migrations"]).allowDownMigrations).toBe(true)
+    expect(() => parseConfig([...baseArgs, "--allow-down-migrations"]))
+      .toThrow(/--allow-down-migrations requires --dry-run/)
+  })
+
   describe("--config TOML file", () => {
     const configFile = (toml: string): string => {
       const path = join(mkdtempSync(join(tmpdir(), "support-bot-config-")), "bot.toml")
@@ -2869,6 +2876,43 @@ describe("Dry Run", () => {
     writeFileSync(path, "- role: user\n  message: [unclosed\n")
     const chat = mkChat([groupChat(1, "Support Team")])
     expect(await dryRun(chat, config({contextFile: path}), {teamGroupId: 1})).toBe(false)
+  })
+
+  describe("migrationPlan", () => {
+    const allow = (allowMigrations: boolean, allowDownMigrations: boolean) => ({allowMigrations, allowDownMigrations})
+    const upgrade = {type: "upgrade" as const, names: ["20261019_chat_layout", "20261021_badge_subscriptions"]}
+    const downgrade = {type: "downgrade" as const, names: ["20260905_feeds"]}
+
+    test("current schema → opens without migrating", () => {
+      expect(migrationPlan({type: "current"}, allow(false, false)))
+        .toEqual({ok: true, confirm: "error", result: "schema up to date"})
+    })
+
+    test("pending up migrations → fail without --allow-migrations, YesUp with it", () => {
+      expect(migrationPlan(upgrade, allow(false, true))).toEqual({
+        ok: false,
+        reason: "pending 2 migration(s): 20261019_chat_layout, 20261021_badge_subscriptions; a real start would apply them, --allow-migrations applies them now",
+      })
+      expect(migrationPlan(upgrade, allow(true, false))).toEqual({
+        ok: true,
+        confirm: "yesUp",
+        result: "applied 2 migration(s): 20261019_chat_layout, 20261021_badge_subscriptions",
+      })
+    })
+
+    test("down migrations → fail without --allow-down-migrations, YesUpDown with it", () => {
+      expect(migrationPlan(downgrade, allow(true, false))).toEqual({
+        ok: false,
+        reason: "database is newer than this build, to roll back 1 migration(s): 20260905_feeds; a real start would refuse, --allow-down-migrations rolls them back",
+      })
+      expect(migrationPlan(downgrade, allow(false, true)))
+        .toEqual({ok: true, confirm: "yesUpDown", result: "rolled back 1 migration(s): 20260905_feeds"})
+    })
+
+    test("probe failure → fails with its text whatever is allowed", () => {
+      expect(migrationPlan({type: "failed", text: "connection refused"}, allow(true, true)))
+        .toEqual({ok: false, reason: "connection refused"})
+    })
   })
 
   test("missing context file → reported, passes", async () => {

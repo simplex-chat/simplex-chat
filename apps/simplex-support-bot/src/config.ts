@@ -21,6 +21,7 @@ export interface Config {
   contextFile: string | null
   dryRun: boolean
   allowMigrations: boolean
+  allowDownMigrations: boolean
   grokApiKey: string | null
   messages: Messages
 }
@@ -62,6 +63,7 @@ function buildCommand(): Command {
     .option("--context-file <path>", "text file with Grok system context (required if GROK_API_KEY set)")
     .option("--dry-run", "check config, database and state, then exit without starting chat")
     .option("--allow-migrations", "with --dry-run: apply pending migrations instead of reporting them")
+    .option("--allow-down-migrations", "with --dry-run: roll back migrations that this build does not have")
     .addHelpText("after", "\nEnvironment:\n  GROK_API_KEY        xAI API key — enables Grok replies\n  SIMPLEX_LIBS_DIR    local libsimplex build for the --db backend\n  SIMPLEX_ADDON_PATH  locally built Node.js add-on\n")
 }
 
@@ -80,6 +82,7 @@ interface RawOpts {
   contextFile?: string
   dryRun?: boolean
   allowMigrations?: boolean
+  allowDownMigrations?: boolean
 }
 
 interface ConfigFile {
@@ -159,6 +162,7 @@ export function parseConfig(args: string[]): Config {
   }
 
   if (opts.allowMigrations && !opts.dryRun) throw new Error("--allow-migrations requires --dry-run")
+  if (opts.allowDownMigrations && !opts.dryRun) throw new Error("--allow-down-migrations requires --dry-run")
 
   const teamGroup: IdName = {id: 0, name: opts.teamGroup}
 
@@ -190,6 +194,7 @@ export function parseConfig(args: string[]): Config {
     contextFile,
     dryRun: opts.dryRun ?? false,
     allowMigrations: opts.allowMigrations ?? false,
+    allowDownMigrations: opts.allowDownMigrations ?? false,
     grokApiKey,
     messages: file.messages,
   }

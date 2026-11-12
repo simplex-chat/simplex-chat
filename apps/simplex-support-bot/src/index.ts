@@ -3,7 +3,7 @@ import {api, bot, core, util} from "simplex-chat"
 import {T} from "@simplex-chat/types"
 import {Config, parseConfig} from "./config.js"
 import {SupportBot} from "./bot.js"
-import {dryRun} from "./dryRun.js"
+import {DbProbe, dryRun, migrationPlan} from "./dryRun.js"
 import {GrokApiClient, GrokMessage} from "./grok.js"
 import {loadGrokContext} from "./context.js"
 import {profileMutex, log, logError, getGroupInfo, getContact} from "./util.js"
@@ -375,37 +375,25 @@ async function main(): Promise<void> {
 }
 
 async function runDryRun(config: Config, state: BotState): Promise<boolean> {
-  const probe = await probeDatabase(config.db)
-  if (probe.type === "failed") {
-    console.log(`FAIL  database: ${probe.text}`)
+  const plan = migrationPlan(await probeDatabase(config.db), config)
+  if (!plan.ok) {
+    console.log(`FAIL  database: ${plan.reason}`)
     return false
   }
-  const pending = probe.type === "pending" ? probe.names : []
-  if (pending.length > 0 && !config.allowMigrations) {
-    console.log(`FAIL  database: ${pending.length} migration(s) pending, a real start would apply them: ${pending.join(", ")}`)
-    return false
-  }
-  const migrating = pending.length > 0
   let chat: api.ChatApi
   try {
-    chat = await api.ChatApi.init(
-      config.db,
-      migrating ? core.MigrationConfirmation.YesUp : core.MigrationConfirmation.Error
-    )
+    chat = await api.ChatApi.init(config.db, plan.confirm)
   } catch (err) {
     console.log(`FAIL  database: ${migrationErrorText(err)}`)
     return false
   }
-  const schemaState = migrating ? `applied ${pending.length} migration(s): ${pending.join(", ")}` : "schema up to date"
-  console.log(`ok    database ${config.db.type} opened, ${schemaState}`)
+  console.log(`ok    database ${config.db.type} opened, ${plan.result}`)
   try {
     return await dryRun(chat, config, state)
   } finally {
     await chat.close()
   }
 }
-
-type DbProbe = {type: "current"} | {type: "pending"; names: string[]} | {type: "failed"; text: string}
 
 async function probeDatabase(db: api.DbConfig): Promise<DbProbe> {
   try {
@@ -414,8 +402,10 @@ async function probeDatabase(db: api.DbConfig): Promise<DbProbe> {
     return {type: "current"}
   } catch (err) {
     const dbErr = (err as core.ChatInitError).dbMigrationError
-    if (dbErr?.type === "errorMigration" && dbErr.migrationError.type === "upgrade") {
-      return {type: "pending", names: dbErr.migrationError.upMigrations.map(m => m.upName)}
+    if (dbErr?.type === "errorMigration") {
+      const me = dbErr.migrationError
+      if (me.type === "upgrade") return {type: "upgrade", names: me.upMigrations.map(m => m.upName)}
+      if (me.type === "downgrade") return {type: "downgrade", names: me.downMigrations}
     }
     return {type: "failed", text: migrationErrorText(err)}
   }

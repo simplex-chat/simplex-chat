@@ -1,4 +1,4 @@
-import {api} from "simplex-chat"
+import {api, core} from "simplex-chat"
 import {T} from "@simplex-chat/types"
 import {Config, IdName} from "./config.js"
 import {loadGrokContext} from "./context.js"
@@ -7,6 +7,37 @@ export interface DryRunState {
   teamGroupId?: number
   grokContactId?: number
   grokUserId?: number
+}
+
+export type DbProbe =
+  | {type: "current"}
+  | {type: "upgrade"; names: string[]}
+  | {type: "downgrade"; names: string[]}
+  | {type: "failed"; text: string}
+
+export type MigrationPlan =
+  | {ok: true; confirm: core.MigrationConfirmation; result: string}
+  | {ok: false; reason: string}
+
+export function migrationPlan(probe: DbProbe, config: Pick<Config, "allowMigrations" | "allowDownMigrations">): MigrationPlan {
+  switch (probe.type) {
+    case "current":
+      return {ok: true, confirm: core.MigrationConfirmation.Error, result: "schema up to date"}
+    case "upgrade": {
+      const list = `${probe.names.length} migration(s): ${probe.names.join(", ")}`
+      return config.allowMigrations
+        ? {ok: true, confirm: core.MigrationConfirmation.YesUp, result: `applied ${list}`}
+        : {ok: false, reason: `pending ${list}; a real start would apply them, --allow-migrations applies them now`}
+    }
+    case "downgrade": {
+      const list = `${probe.names.length} migration(s): ${probe.names.join(", ")}`
+      return config.allowDownMigrations
+        ? {ok: true, confirm: core.MigrationConfirmation.YesUpDown, result: `rolled back ${list}`}
+        : {ok: false, reason: `database is newer than this build, to roll back ${list}; a real start would refuse, --allow-down-migrations rolls them back`}
+    }
+    case "failed":
+      return {ok: false, reason: probe.text}
+  }
 }
 
 const SEARCH_LIMIT = 100
