@@ -470,6 +470,7 @@ executable simplex-store-service
       StoreService.Names.Label
       StoreService.Names.LateCredits
       StoreService.Names.Links
+      StoreService.Names.Metrics
       StoreService.Names.Orders
       StoreService.Names.Phases
       StoreService.Names.Profiles
@@ -809,6 +810,7 @@ test-suite simplex-chat-test
       Bots.StoreService.NamesLabelTests
       Bots.StoreService.NamesLateCreditTests
       Bots.StoreService.NamesLinksTests
+      Bots.StoreService.NamesMetricsTests
       Bots.StoreService.NamesOrdersTests
       Bots.StoreService.NamesOwnerTests
       Bots.StoreService.NamesPhasesTests
@@ -853,6 +855,7 @@ test-suite simplex-chat-test
       StoreService.Names.Label
       StoreService.Names.LateCredits
       StoreService.Names.Links
+      StoreService.Names.Metrics
       StoreService.Names.Orders
       StoreService.Names.Phases
       StoreService.Names.Profiles

@@ -118,7 +118,7 @@ probeLimit = Limit {lmName = "probe", lmPerMinute = 1}
 
 withProbeRouter :: (Client -> IO a) -> IO a
 withProbeRouter action = do
-  http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lBadgesExportDir = Nothing, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing}
+  http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lBadgesExportDir = Nothing, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing, lMetricsPort = Nothing}
   let routes = \case
         ["api", "probe", _] -> Just Route {rMethod = "GET", rLimit = probeLimit, rHandler = \_ respond -> respond (jsonResponse status200 (J.object []))}
         _ -> Nothing

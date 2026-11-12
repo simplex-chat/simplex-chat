@@ -32,7 +32,7 @@ where
 import qualified Control.Exception as E
 import Control.Applicative (many, (<|>))
 import Control.Logger.Simple (LogLevel (..), logNote, logWarn)
-import Control.Monad (forM_, mfilter, unless, when)
+import Control.Monad (forM, forM_, mfilter, unless, when)
 import Data.Attoparsec.Combinator (lookAhead)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
 import Data.Bifunctor (first)
@@ -77,7 +77,8 @@ data ListenerConfig = ListenerConfig
     lNamesStaticDir :: Maybe FilePath,
     lNamesExportDir :: Maybe FilePath,
     -- | @Nothing@ unless the names site is served, which takes @[names]@ and @serve_webapp@ on.
-    lNamesPort :: Maybe Int
+    lNamesPort :: Maybe Int,
+    lMetricsPort :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -334,9 +335,9 @@ retiredListenerKeys =
     ("names_hosts", "listener.names_hosts is replaced by listener.names_port: serve the names site on its own port")
   ]
 
--- | The [listener] keys only the names site reads.
+-- | The [listener] keys only [names] uses.
 namesListenerKeys :: [Text]
-namesListenerKeys = ["names_static_dir", "names_export_dir", "names_port"]
+namesListenerKeys = ["names_static_dir", "names_export_dir", "names_port", "metrics_port"]
 
 serviceKeyBytes :: Int
 serviceKeyBytes = 32
@@ -456,6 +457,9 @@ parseConfig ini = do
   let lBadgesExportDir = T.unpack <$> present "listener" "badges_export_dir"
   lTrustForwardedFor <- bool "listener" "trust_forwarded_for" False
   (lNamesStaticDir, lNamesExportDir, lNamesPort) <- namesSite lServeWebapp lBadgesPort
+  lMetricsPort <- optionalPort "metrics_port"
+  when (any (\p -> p == lBadgesPort || Just p == lNamesPort) lMetricsPort) $
+    Left "listener.metrics_port must differ from listener.badges_port and listener.names_port"
   btc <- btcpaySection
   str <- stripeSection
   iss <- issuerSection
@@ -495,7 +499,7 @@ parseConfig ini = do
     Left "[dev] check_store_during_coverage needs accept_unverified_store_receipts or credit_test_purchases = on, as only a dev deployment may ask a store while coverage runs"
   pure
     ServiceConfig
-      { listener = ListenerConfig {lHost, lBadgesPort, lBadgesStaticDir, lServeWebapp, lBadgesExportDir, lTrustForwardedFor, lNamesStaticDir, lNamesExportDir, lNamesPort},
+      { listener = ListenerConfig {lHost, lBadgesPort, lBadgesStaticDir, lServeWebapp, lBadgesExportDir, lTrustForwardedFor, lNamesStaticDir, lNamesExportDir, lNamesPort, lMetricsPort},
         btcpay = btc,
         stripe = str,
         poll = PollConfig {pWaitingSeconds, pIdleSeconds},
@@ -516,9 +520,9 @@ parseConfig ini = do
     present s k = mfilter (not . T.null) (T.strip <$> look s k)
     required s k = maybe (Left (T.unpack s <> "." <> T.unpack k <> " is required")) Right (present s k)
     optional s k d = Right (fromMaybe d (present s k))
-    listenerPort k d = do
-      p <- num "listener" k d
-      if 1 <= p && p <= 65535 then Right p else Left ("listener." <> T.unpack k <> " must be between 1 and 65535")
+    listenerPort k d = fromMaybe d <$> optionalPort k
+    optionalPort k =
+      optionalNum "listener" k >>= mapM (\p -> if 1 <= p && p <= 65535 then Right p else Left ("listener." <> T.unpack k <> " must be between 1 and 65535"))
     unusedListenerKey k why = Left ("listener." <> T.unpack k <> " is set but " <> why <> ", so nothing would use it")
     namesSite serve badgesPort
       | not (hasSection "names") = case filter (isJust . look "listener") namesListenerKeys of
@@ -530,12 +534,11 @@ parseConfig ini = do
           when (namesPort == Just badgesPort) $ Left "listener.names_port must differ from listener.badges_port"
           let staticDir = maybe defaultNamesStaticDir T.unpack (present "listener" "names_static_dir")
           Right (Just staticDir, T.unpack <$> present "listener" "names_export_dir", namesPort)
+    num s k d = fromMaybe d <$> optionalNum s k
     -- Integer, because readMaybe at Int wraps silently, reading 2^64+4 as 4.
-    num s k d = case look s k of
-      Nothing -> Right d
-      Just v -> case readMaybe (T.unpack (T.strip v)) of
-        Just n | n >= toInteger (minBound :: Int), n <= toInteger (maxBound :: Int) -> Right (fromInteger n)
-        _ -> Left (T.unpack k <> " must be a whole number")
+    optionalNum s k = forM (look s k) $ \v -> case readMaybe (T.unpack (T.strip v)) of
+      Just n | n >= toInteger (minBound :: Int), n <= toInteger (maxBound :: Int) -> Right (fromInteger n)
+      _ -> Left (T.unpack k <> " must be a whole number")
     bool s k d = case fmap (T.toLower . T.strip) (look s k) of
       Nothing -> Right d
       Just "on" -> Right True

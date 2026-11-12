@@ -702,6 +702,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "reads the names keys of [listener], defaulting to the image's build and port 8081" testNamesListenerKeys
   it "refuses the names keys of [listener] without [names]" testNamesSiteOnlyWithNames
   it "refuses a names_port outside 1-65535, on the badges_port, or with serve_webapp off" testNamesPortRules
+  it "reads metrics_port, off when absent, and refuses one outside 1-65535 or on the badges_port or names_port" testMetricsPort
   it "leaves the names side off when [names] is absent" testNamesAbsent
   it "refuses [names] without [chain], and [chain] without [names]" testNamesNeedsChain
   it "refuses years below 2" testNamesYearsBelowTwo
@@ -818,7 +819,7 @@ testNamesListenerKeys = do
 
 testNamesSiteOnlyWithNames :: IO ()
 testNamesSiteOnlyWithNames =
-  forM_ ["names_static_dir = /srv/names", "names_export_dir = /srv/names-out", "names_port = 8081"] $ \key -> do
+  forM_ ["names_static_dir = /srv/names", "names_export_dir = /srv/names-out", "names_port = 8081", "metrics_port = 9300"] $ \key -> do
     r <- parseIni (withListenerKeys [key])
     either id (const "parsed") r `shouldBe` ("listener." <> T.unpack (T.takeWhile (/= ' ') key) <> " is set but [names] is absent, so nothing would use it")
 
@@ -831,6 +832,17 @@ testNamesPortRules = do
   Right moved <- parseIni (namesIniWith ["badges_port = 8081", "names_port = 8080"])
   let ListenerConfig {lBadgesPort, lNamesPort} = listener moved
   (lBadgesPort, lNamesPort) `shouldBe` (8081, Just 8080)
+  where
+    refused ks e = parseIni (namesIniWith ks) >>= (`shouldBe` e) . either id (const "parsed")
+
+testMetricsPort :: IO ()
+testMetricsPort = do
+  Right off <- parseIni (namesIni namesSection chainSection)
+  lMetricsPort (listener off) `shouldBe` Nothing
+  Right on <- parseIni (namesIniWith ["metrics_port = 9300"])
+  lMetricsPort (listener on) `shouldBe` Just 9300
+  forM_ ["0", "65536"] $ \v -> refused ["metrics_port = " <> v] "listener.metrics_port must be between 1 and 65535"
+  forM_ ["8080", "8081"] $ \v -> refused ["metrics_port = " <> v] "listener.metrics_port must differ from listener.badges_port and listener.names_port"
   where
     refused ks e = parseIni (namesIniWith ks) >>= (`shouldBe` e) . either id (const "parsed")
 

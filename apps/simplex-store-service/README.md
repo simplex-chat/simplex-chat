@@ -808,6 +808,61 @@ simplex.domains {
 The service sets each file's type and `Cache-Control` itself: `no-cache`, and a year for
 `/assets/*`, so the names site's fonts and images are revalidated rather than kept for a day.
 
+### Metrics
+
+`[listener] metrics_port` turns on the names store's Prometheus metrics. It is off when the key is
+absent, needs `[names]`, and must differ from `badges_port` and `names_port`. The service answers
+`GET /metrics` on `127.0.0.1:<metrics_port>`, whatever `host` is, so only the machine itself reaches it:
+
+```ini
+[listener]
+metrics_port = 9300
+```
+
+Each scrape counts the orders, transactions, invoices and balances in the database. The registrar
+key's ETH balance and its sponsor allowance are read from the node at start and then every minute,
+and a scrape answers the last read, so a slow or failing node never delays a scrape. A failed read
+keeps the last values, sets `simplex_store_names_funds_read_ok` to 0 and logs a warning.
+
+| Metric | Value |
+|---|---|
+| `simplex_store_names_orders{phase}` | name orders in the phase: `unpaid`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed` |
+| `simplex_store_names_queue_oldest_change_timestamp_seconds` | the last change, in Unix seconds, of the order unchanged longest among those the service moves on: `queued`, `committing`, `registering`, and `committed` with the page's reveal stored; absent when there is none |
+| `simplex_store_names_transactions_pending` | registrar transactions sent and not settled, one per nonce, so a fee replacement counts once |
+| `simplex_store_names_transactions_oldest_pending_timestamp_seconds` | when the oldest of them was first signed; absent when none is pending |
+| `simplex_store_names_invoices_open` | open invoices of name orders |
+| `simplex_store_names_balances_held` | balances an order holds while its invoice for the difference is open |
+| `simplex_store_names_balances_held_cents` | the cents of those balances |
+| `simplex_store_names_registrar_balance_wei` | the registrar key's ETH balance, as last read |
+| `simplex_store_names_sponsor_allowance_cents` | its allowance left on the sponsor, in cents, rounded down, as last read |
+| `simplex_store_names_funds_read_timestamp_seconds` | when those two were last read |
+| `simplex_store_names_funds_read_ok` | 1 when the last read succeeded, 0 when it failed or none has finished |
+
+Every metric is a gauge. An order that stops moving, a transaction that is not mined and a node
+that cannot be read show as:
+
+```
+time() - simplex_store_names_queue_oldest_change_timestamp_seconds > 900
+time() - simplex_store_names_transactions_oldest_pending_timestamp_seconds > 900
+simplex_store_names_funds_read_ok == 0
+```
+
+An order moves on within minutes: its commit and register are each mined and confirmed, and the
+register waits about a minute after the commit. Size the alerts on the balance and the allowance to
+the orders expected before a top-up, with the figures in [Fund the key](#fund-the-key).
+
+Caddy proxies it on the monitoring site of the host, beside node_exporter, inside that site's
+`handle_path /metrics/*` block:
+
+```
+handle_path /store_service* {
+	rewrite * /metrics
+	reverse_proxy http://127.0.0.1:9300
+}
+```
+
+Prometheus then scrapes `/metrics/store_service` on that site.
+
 ### Terms and community names
 
 The controller's name policy (`SimplexNamePolicy`, read from `namePolicy()` once at startup and
@@ -1170,6 +1225,7 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
 
 #### When funds or the allowance run out
 
+With `metrics_port` set, both are exported before they run out (see [Metrics](#metrics)).
 `docker compose logs store-service` shows:
 
 - `[ERROR …] names sender: nonce <n>: not sent: …`, with the node's `insufficient funds` message,

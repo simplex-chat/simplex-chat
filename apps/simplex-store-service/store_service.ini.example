@@ -23,6 +23,8 @@ trust_forwarded_for = on
 ; names_static_dir = ./apps/simplex-domains/webapp/dist
 ; names_export_dir = /srv/names-export
 ; names_port = 8081
+; Prometheus metrics of the names store, with [names] only, on 127.0.0.1 whatever host is
+; metrics_port = 9300
 
 ; omit this whole section to disable Bitcoin and Monero (the browser shows the provider-unavailable screen)
 [btcpay]

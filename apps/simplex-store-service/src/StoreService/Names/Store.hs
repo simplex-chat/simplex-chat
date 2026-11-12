@@ -38,6 +38,7 @@ module StoreService.Names.Store
     EditState (..),
     RecordEdit (..),
     NewRecordEdit (..),
+    NamesCounts (..),
     findLimit,
     orderHash,
     orderLive,
@@ -98,6 +99,7 @@ module StoreService.Names.Store
     relayedEditTimes,
     getTermsText,
     setTermsText,
+    namesCounts,
   )
 where
 
@@ -478,6 +480,17 @@ data NewRecordEdit = NewRecordEdit
     nreChanges :: NonEmpty SignedChange,
     nreBodyHash :: ByteString
   }
+
+data NamesCounts = NamesCounts
+  { ncPhases :: [(NamePhase, Int)],
+    ncQueueOldestChange :: Maybe UTCTime,
+    ncPendingTransactions :: Int,
+    ncOldestPending :: Maybe UTCTime,
+    ncOpenInvoices :: Int,
+    ncHeldBalances :: Int,
+    ncHeldCents :: Int
+  }
+  deriving (Eq, Show)
 
 findLimit :: Int
 findLimit = 50
@@ -1555,6 +1568,26 @@ setTermsText db termsHash text =
       ON CONFLICT (terms_hash) DO UPDATE SET terms_text = excluded.terms_text
     |]
     (Binary termsHash, Binary text)
+
+namesCounts :: DB.Connection -> IO NamesCounts
+namesCounts db = do
+  ncPhases <- DB.query_ db "SELECT phase, COUNT(*) FROM sx_badge_service_name_registrations GROUP BY phase"
+  DB.query
+    db
+    [sql|
+      SELECT
+        (SELECT MIN(updated_at) FROM sx_badge_service_name_registrations WHERE phase IN (?,?,?) OR (phase = ? AND label IS NOT NULL)),
+        (SELECT COUNT(DISTINCT registrar_nonce) FROM sx_badge_service_name_transactions WHERE status = ?),
+        (SELECT MIN(sent_at) FROM sx_badge_service_name_transactions WHERE status = ?),
+        (SELECT COUNT(*) FROM sx_badge_service_name_invoices ni JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id WHERE i.status = ?),
+        (SELECT COUNT(*) FROM sx_badge_service_name_balances WHERE reserved_by IS NOT NULL),
+        (SELECT COALESCE(SUM(amount), 0) FROM sx_badge_service_name_balances WHERE reserved_by IS NOT NULL)
+    |]
+    (PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, invoiceStatusText ISOpen)
+    >>= \case
+      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents)] ->
+        pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents}
+      _ -> E.throwIO $ StoreDecodeError "names counts: not one row"
 
 int64 :: Word64 -> Int64
 int64 = fromIntegral
