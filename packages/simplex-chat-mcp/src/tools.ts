@@ -418,7 +418,7 @@ Send bot commands as text, for example /help. When a message has a file with sta
 
 const receiveDescription = `Returns the new messages of a chat: the unread ones, then those that arrive during the call. With wait, it waits up to wait seconds when no message is new.
 The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.
-With history N, it also returns the last N messages of the chat before the new ones, yours included, not marked read; at the start of a session, call receive with history to recall the conversation.`
+With history N, it also returns the last N messages of the chat before the new ones, yours included, not marked read; at the start of a session, and after your context was compacted, call receive with history to recall the conversation.`
 
 const downloadDescription = `Downloads the file of a received message to this computer and returns its full path.
 It is an action: in approval mode requests the owner approves it in the SimpleX app first, and the call waits for the decision; the owner can approve all files of a chat.
