@@ -15,7 +15,7 @@ What it isn't:
   - a Claude Code plugin or channel;
   - registration in other hosts.
 
-Status: v0.2. [`TESTING.md`](TESTING.md) describes a local build and test. The design, the tools and the scenarios are in [`PLAN.md`](PLAN.md).
+Status: v0.2. [`TESTING.md`](TESTING.md) describes a local build and test. The design, the tools and the scenarios are in the [design record](../../plans/2026-10-19-mcp-server.md).
 
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
@@ -259,7 +259,7 @@ Commands:
 
 After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``. The files forwarded from #9 are deleted when the agent leaves it.
 
-`/pending`, `/list` and `/leave` are in the chat's command menu, and the cards carry the others. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
+`/pending`, `/list` and `/leave` are in the chat's command menu, and the cards carry the others. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in the [design record](../../plans/2026-10-19-mcp-server.md), section "What the owner sees: the agent control chat".
 
 ### Approval of all messages to a chat
 
@@ -315,7 +315,7 @@ An empty file is refused, and so is `as` without `file`. A message holds at most
 
 The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh` and `~/.gnupg`, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files under its data folder and under `~/.simplex-mcp`, except those under `files/` of its own data folder; each folder is taken by its real path too. The card shows the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
 
-Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
+Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in the [design record](../../plans/2026-10-19-mcp-server.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
 ## Waiting for approval in Claude Code
 
