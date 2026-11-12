@@ -1,3 +1,4 @@
+import {open} from "fs/promises"
 import {ServiceClient} from "./client"
 import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
@@ -13,6 +14,10 @@ const unknownSession = 409
 const turnAttempts = 15
 const turnRetryMs = 1_000
 const maxText = 250_000
+const transcriptReads = 20
+const transcriptReadMs = 100
+const transcriptTailBytes = 1_048_576
+const syntheticModel = "<synthetic>"
 
 interface SessionStartInput {
   session_id: string
@@ -23,6 +28,8 @@ interface SessionStartInput {
 
 interface TurnInput {
   session_id: string
+  hook_event_name?: string
+  transcript_path?: string
   prompt?: string
   last_assistant_message?: string
   to_model?: string
@@ -75,7 +82,8 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   if (!interactive(env)) return {}
   try {
     const input = JSON.parse(stdin) as TurnInput
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: cut(input.last_assistant_message), model: input.to_model, effort: input.effort?.level}
+    const model = input.to_model ?? (input.hook_event_name === "Stop" ? await answerModel(input) : undefined)
+    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: cut(input.last_assistant_message), model, effort: input.effort?.level}
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -90,6 +98,58 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
     logError("SimpleX MCP turn", error)
   }
   return {}
+}
+
+async function answerModel({transcript_path: path, last_assistant_message: message}: TurnInput): Promise<string | undefined> {
+  const answer = message?.trim()
+  if (!path || !answer) return undefined
+  const bytes = transcriptTailBytes + 2 * Buffer.byteLength(answer)
+  for (let read = 1; ; read++) {
+    const tail = await readTail(path, bytes).catch(() => undefined)
+    if (tail === undefined) return undefined
+    const last = lastAnswer(tail)
+    if (last?.text === answer) return last.model
+    if (read === transcriptReads) return undefined
+    await new Promise(resolve => setTimeout(resolve, transcriptReadMs))
+  }
+}
+
+async function readTail(path: string, bytes: number): Promise<string> {
+  const file = await open(path, "r")
+  try {
+    const {size} = await file.stat()
+    const length = Math.min(size, bytes)
+    const buffer = Buffer.alloc(length)
+    const {bytesRead} = await file.read(buffer, 0, length, size - length)
+    return buffer.toString("utf8", 0, bytesRead)
+  } finally {
+    await file.close()
+  }
+}
+
+function lastAnswer(tail: string): {text: string; model?: string} | undefined {
+  const lines = tail.split("\n")
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const entry = transcriptEntry(lines[i])
+    if (entry?.type !== "assistant" || entry.isSidechain === true) continue
+    const {model, content} = entry.message ?? {}
+    return {text: textOf(content), model: typeof model === "string" && model !== syntheticModel ? model : undefined}
+  }
+  return undefined
+}
+
+function transcriptEntry(line: string): {type?: unknown; isSidechain?: unknown; message?: {model?: unknown; content?: unknown}} | undefined {
+  if (!line.startsWith("{")) return undefined
+  try {
+    return JSON.parse(line)
+  } catch {
+    return undefined
+  }
+}
+
+function textOf(content: unknown): string {
+  if (!Array.isArray(content)) return ""
+  return content.flatMap((part: {type?: unknown; text?: unknown} | null) => (part?.type === "text" && typeof part.text === "string" ? [part.text] : [])).join("\n").trim()
 }
 
 function cut(text: string | undefined): string | undefined {

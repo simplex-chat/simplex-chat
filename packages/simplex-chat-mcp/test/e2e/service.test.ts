@@ -348,7 +348,7 @@ test("while SimpleX links are off in a session's group, the connect card of a bo
   await sendNotice
 }, 600_000)
 
-test("the hooks post a terminal prompt as User and the answer as Claude in the session's group; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
+test("the hooks post a terminal prompt as User and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -369,8 +369,12 @@ test("the hooks post a terminal prompt as User and the answer as Claude in the s
   expect(await hook({hook_event_name: "UserPromptSubmit", prompt: "Fix the build"})).toEqual({})
   await typed
   const fixed = received(alice.chat, message("Fixed.", "Claude"))
-  await hook({hook_event_name: "Stop", last_assistant_message: "Fixed."})
+  const transcript = join(dir, "mirror", "transcript.jsonl")
+  writeFileSync(transcript, `${JSON.stringify({type: "assistant", message: {model: "claude-opus-5", content: [{type: "text", text: "Fixed."}]}})}\n`)
+  const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupId && toGroup.groupProfile.shortDescr === "claude-opus-5", 60_000)
+  await hook({hook_event_name: "Stop", transcript_path: transcript, last_assistant_message: "Fixed."})
   await fixed
+  expect((await described)?.toGroup.groupProfile.shortDescr).toBe("claude-opus-5")
   const notRunning = received(alice.chat, inGroup(groupId, textStarts("Session 1 is not running.")))
   const [early] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Are you there?")
   expect((await notRunning).chatItem.quotedItem?.itemId).toBe(early.chatItem.meta.itemId)

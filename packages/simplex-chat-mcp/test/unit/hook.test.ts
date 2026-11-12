@@ -1,3 +1,6 @@
+import {appendFileSync, mkdtempSync, rmSync, truncateSync, writeFileSync} from "fs"
+import {tmpdir} from "os"
+import {join} from "path"
 import {ServiceClient} from "../../src/client"
 import {HookDeps, sessionStart, turn} from "../../src/hook"
 import {linkText, resetOwners, resetOwnersText, showLink} from "../../src/owner"
@@ -144,6 +147,41 @@ describe("turn hooks", () => {
     const stopped = {ensureService: async () => Promise.reject(Object.assign(new Error("connect ENOENT"), {code: "ENOENT"}))} as unknown as HookDeps["client"]
     expect(await turn(JSON.stringify({session_id: id, prompt: "x"}), {}, stopped)).toEqual({})
     expect(errors).toEqual(["SimpleX MCP turn: connect ENOENT"])
+  })
+
+  it("pass the model of a Stop hook's answer from Claude's last entry in the tail of the transcript, after that entry is written, and no model for another answer, a synthetic message or a missing transcript", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const entry = (text: string, model: string, extra: object = {}) => `${JSON.stringify({type: "assistant", ...extra, message: {model, content: [{type: "text", text}]}})}\n`
+      writeFileSync(transcript, "")
+      truncateSync(transcript, 3 * 1024 ** 3)
+      appendFileSync(transcript, `\n${JSON.stringify({type: "user", message: {role: "user", content: "fix the build"}})}\n${JSON.stringify({type: "assistant", message: {model: "claude-opus-5", content: [{type: "thinking", thinking: "The build."}]}})}\n${entry("Fixed.", "claude-opus-5")}`)
+      const {client, requests} = turnClient()
+      const stop = (answer: string, extra: object = {}) => turn(JSON.stringify({session_id: id, hook_event_name: "Stop", transcript_path: transcript, last_assistant_message: answer, ...extra}), {}, client, 0, 1)
+      await stop("Fixed.")
+      const later = stop("Tests pass.")
+      const written = new Promise<void>(resolve => setTimeout(() => resolve(appendFileSync(transcript, `${entry("Tests pass.", "claude-sonnet-5")}${entry("Subagent done.", "claude-haiku-5", {isSidechain: true})}`)), 30))
+      await later
+      await written
+      appendFileSync(transcript, entry("No response requested.", "<synthetic>"))
+      await stop("No response requested.")
+      await stop("Never written.")
+      await stop("Lost.", {transcript_path: join(folder, "missing.jsonl")})
+      await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt: "Run the tests"}), {}, client, 0, 1)
+      await turn(JSON.stringify({session_id: id, hook_event_name: "PostModelSwitch", transcript_path: transcript, to_model: "claude-opus-5"}), {}, client, 0, 1)
+      expect(requests).toEqual([
+        {method: "POST", route: "/turn", body: {id, at: 1, answer: "Fixed.", model: "claude-opus-5"}},
+        {method: "POST", route: "/turn", body: {id, at: 1, answer: "Tests pass.", model: "claude-sonnet-5"}},
+        {method: "POST", route: "/turn", body: {id, at: 1, answer: "No response requested."}},
+        {method: "POST", route: "/turn", body: {id, at: 1, answer: "Never written."}},
+        {method: "POST", route: "/turn", body: {id, at: 1, answer: "Lost."}},
+        {method: "POST", route: "/turn", body: {id, at: 1, prompt: "Run the tests"}},
+        {method: "POST", route: "/turn", body: {id, at: 1, model: "claude-opus-5"}},
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
   })
 
   it("cut a prompt or an answer over 250,000 characters, so that the request fits the socket's 1 MiB", async () => {
