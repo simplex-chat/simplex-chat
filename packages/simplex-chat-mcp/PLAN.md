@@ -125,8 +125,8 @@ npm name       @simplex-chat/mcp
 binary         simplex-mcp -> dist/cli.js
 licence        AGPL-3.0
 Node.js        22
-chat library   simplex-chat ^7.1.0-beta.10.2
-types          @simplex-chat/types ^7.1.0-beta.9.1
+chat library   simplex-chat ^7.1.3
+types          @simplex-chat/types ^7.1.3
 MCP SDK        @modelcontextprotocol/server 2.3.1, @modelcontextprotocol/node 2.1.1
 QR code        qrcode ^1.5
 tests          jest with ts-jest, as packages/simplex-chat-nodejs; end to end with a local smp-server (SMP_SERVER), as steward test/e2e, and a local xftp-server (XFTP_SERVER)
