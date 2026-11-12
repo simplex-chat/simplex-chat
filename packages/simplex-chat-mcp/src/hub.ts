@@ -50,6 +50,7 @@ export class Session {
   private readonly pushed: {text: string; item: T.ChatItem; at: number; quoted?: boolean}[] = []
   private readonly receiving = new Map<number, {resolve: () => void; reject: (error: Error) => void}>()
   private description: {model?: string; effort?: string}
+  private readonly describedAt = {model: -Infinity, effort: -Infinity}
   private turns: {at: number; item: T.ChatItem | null}[] = []
   private answeredAt = -Infinity
   private requested?: Mode
@@ -183,9 +184,11 @@ export class Session {
     const matched = prompt === undefined ? [] : this.pushedIn(prompt)
     if (prompt !== undefined && (at ?? Date.now()) >= this.answeredAt) this.turns.push({at: at ?? Date.now(), item: matched[0]?.item ?? null})
     this.pushed.splice(0, this.pushed.length, ...this.pushed.filter(entry => !matched.includes(entry)))
-    const described = (model !== undefined && model !== this.description.model) || (effort !== undefined && effort !== this.description.effort)
+    const newModel = this.newer("model", model, at ?? Date.now())
+    const newEffort = this.newer("effort", effort, at ?? Date.now())
+    const described = (newModel !== undefined && newModel !== this.description.model) || (newEffort !== undefined && newEffort !== this.description.effort)
     if (described) {
-      this.description = {model: model ?? this.description.model, effort: effort ?? this.description.effort}
+      this.description = {model: newModel ?? this.description.model, effort: newEffort ?? this.description.effort}
       this.store(this.description)
     }
     try {
@@ -252,6 +255,12 @@ export class Session {
     await this.hub.chat.apiReceiveFile(fileId, path, true).catch(error => this.fileDone(fileId, errorText(error)))
     await received.finally(() => clearTimeout(timer))
     return path
+  }
+
+  private newer(field: "model" | "effort", value: string | undefined, at: number): string | undefined {
+    if (value === undefined || at < this.describedAt[field]) return undefined
+    this.describedAt[field] = at
+    return value
   }
 
   private turnQuote(at: number): T.ChatItem | undefined {

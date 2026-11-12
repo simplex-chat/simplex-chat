@@ -649,6 +649,27 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "Tests pass.", quotedItemId: 43}], [{text: "é".repeat(7481), quotedItemId: undefined}, {text: "ok", quotedItemId: undefined}]])
   })
 
+  it("keeps the model and the effort of the request whose hook started last, also when an older request arrives later", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const described = () => chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile.shortDescr)
+    await session.turn({id: id1, at: 2, model: "claude-sonnet-5"})
+    await session.turn({id: id1, at: 1, answer: "Done.", model: "claude-opus-5"})
+    expect(described()).toEqual(["claude-sonnet-5"])
+    await session.turn({id: id1, at: 4, answer: "Done.", model: "claude-opus-5"})
+    expect(described()).toEqual(["claude-sonnet-5", "claude-opus-5"])
+    await session.turn({id: id1, at: 3, model: "claude-haiku-5"})
+    expect(described()).toEqual(["claude-sonnet-5", "claude-opus-5"])
+    await session.turn({id: id1, at: 6, prompt: "Think harder", effort: "high"})
+    await session.turn({id: id1, at: 5, answer: "Done.", effort: "low"})
+    expect(described().at(-1)).toBe("claude-opus-5 · effort high")
+    await session.turn({id: id1, at: 8, answer: "Done.", effort: "max"})
+    await session.turn({id: id1, at: 7, model: "claude-opus-5", effort: "low"})
+    expect(described()).toEqual(["claude-sonnet-5", "claude-opus-5", "claude-opus-5 · effort high", "claude-opus-5 · effort max"])
+    await session.turn({id: id1, model: "claude-sonnet-5"})
+    expect(described().at(-1)).toBe("claude-sonnet-5 · effort max")
+  })
+
   it("splits an answer and a terminal prompt where a message reaches the size the core accepts, with the quote in the first part of an answer, for Latin, Cyrillic and CJK texts", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)
