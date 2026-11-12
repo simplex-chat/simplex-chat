@@ -731,7 +731,7 @@ Rules for every screen:
   - Pay, "Register with your payment", "Register with your code", "Pay in browser" and 3·1's "Move into this app" stay off until ticked;
   - on `terms_changed` the tick comes back unticked under "The terms changed. Agree to them again.": on the checkout before paying, in place on 1·7 after.
 - The images show each lane's screens with their numbers and routes; where the words below differ from an image, the words below hold. A state not named here takes a listed state's words.
-- The checkout's alternative B, drawn in lane 1, is Q25.
+- The checkout's alternative B, drawn in lane 1 and noted beside 2·3, 3·1 and 4·2, is Q25.
 - Privacy disclosures stay off the screens: section 7 states each as a property, and P57a and P57b put them in `PRIVACY.md`. The names terms' text (https://github.com/simplex-chat/simplex-chat/pull/8002) is outside this plan.
 - The codes release: 1·1 opens 1·2 in every build, and 4·1's code-only form on iOS outside the US; 1·2 keeps "Register with code" whatever the catalog says, with the codes-only state's line while the catalog reads codes-only and "This version registers names with a code." once it reads open; its "Buy in browser" opens the site's search for the name (`/#/?name=<label>`, 3.2), with no 1·4, where D18 allows and the catalog reads open (Q26). 1·5, 1·6, 1·10, 4·1's priced form and the rest of row 4 come with the payments release.
 
