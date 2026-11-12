@@ -337,6 +337,78 @@ describe("turn hooks", () => {
     }
   })
 
+  it("send a note of a teammate's message with its sender and summary, or the first line without a summary, and none for an idle notification", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const teammate = (attributes: string, body: string) => `Another Claude session sent a message:\n<teammate-message teammate_id="lookalikes-builder" color="green"${attributes}>\n${body}\n</teammate-message>\n\nThis came from another Claude session — not typed by your user.`
+      const prompts: [string, string][] = [
+        ["p1", teammate(' summary="X Ads look-alike seed file &quot;v2&quot; written"', "The seed file is written.\n\nSeeds: 37 handles.")],
+        ["p2", teammate("", "\nThe seed file is written.\n\nSeeds: 37 handles.")],
+        ["p3", teammate("", '{"type":"idle_notification","from":"lookalikes-builder","timestamp":"2026-11-12T19:00:02.715Z"}')],
+      ]
+      writeFileSync(transcript, prompts.map(([promptId, content]) => userEntry(promptId, content)).join(""))
+      const {client, requests} = turnClient()
+      for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
+      expect(kinds(requests)).toEqual([
+        ['👥 Message from lookalikes-builder: X Ads look-alike seed file "v2" written', false, undefined],
+        ["👥 Message from lookalikes-builder: The seed file is written.", false, undefined],
+        [undefined, false, undefined],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("find a prompt of a long turn whose first entry is out of the tail by the turn's tool results, and keep waiting for a prompt with the text of the turn's own prompt while it is queued", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const toolResult = (promptId: string) => userEntry(promptId, [{type: "tool_result", tool_use_id: "toolu_1", content: "ok"}])
+      writeFileSync(transcript, [
+        toolResult("t1"),
+        enqueueEntry("Run the linter"),
+        userEntry("t2", "continue", {origin: {kind: "human"}}),
+        toolResult("t2"),
+        enqueueEntry("continue"),
+      ].join(""))
+      const {client, requests} = turnClient()
+      const submit = (promptId: string, prompt: string, readMs = 1) => turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt}), {}, client, 0, 1, readMs)
+      await submit("t1", "Run the linter")
+      const again = submit("t2", "continue", 10)
+      const queued = new Promise<void>(resolve => setTimeout(() => resolve(appendFileSync(transcript, queuedEntry("continue", {kind: "human"}))), 30))
+      await again
+      await queued
+      expect(kinds(requests)).toEqual([
+        [undefined, true, true],
+        [undefined, true, true],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("send the first line of a task notification without a block, also from a queued command that has only its command mode", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const stopped = '3 background agents were stopped by the user: "Duarte drafts the ad post", "Miller drafts the ad post".'
+      const stoppedAgain = '2 background agents were stopped by the user: "Heath brothers draft the ad post".'
+      writeFileSync(transcript, [
+        userEntry("t1", stopped, {origin: {kind: "task-notification"}}),
+        `${JSON.stringify({type: "attachment", attachment: {type: "queued_command", prompt: stoppedAgain, commandMode: "task-notification"}})}\n`,
+      ].join(""))
+      const {client, requests} = turnClient()
+      for (const prompt of [stopped, stoppedAgain]) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "t1", prompt}), {}, client, 0, 1, 1)
+      expect(kinds(requests)).toEqual([
+        [`🔔 ${stopped}`, false, undefined],
+        [`🔔 ${stoppedAgain}`, false, true],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
   it("take the entry of the prompt ID whose text is the prompt, also when an older prompt has the same text, mark a prompt still queued after the reads as typed and mid-turn, and fall back to the origin of the prompt ID's entry", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
     try {

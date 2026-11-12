@@ -348,7 +348,7 @@ test("while SimpleX links are off in a session's group, the connect card of a bo
   await sendNotice
 }, 600_000)
 
-test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a typed turn as Claude's one-line note, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
+test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -410,7 +410,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   const midTurn = '<task-notification>\n<task-id>b2</task-id>\n<status>failed</status>\n<summary>Background command "Lint" failed with exit code 1</summary>\n</task-notification>'
   const midTurnNoted = received(alice.chat, message('❌ Background command "Lint" failed with exit code 1', "Claude"))
   appendFileSync(transcript, `${JSON.stringify({type: "attachment", attachment: {type: "queued_command", prompt: midTurn, origin: {kind: "task-notification"}, commandMode: "task-notification"}})}\n`)
-  await hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p1", prompt: midTurn})
+  await hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p2", prompt: midTurn})
   await midTurnNoted
   const [lint] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Run the linter")
   await until(() => attached.length === 3)

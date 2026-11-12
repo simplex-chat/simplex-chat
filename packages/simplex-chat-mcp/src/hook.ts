@@ -21,6 +21,7 @@ const transcriptTailBytes = 1_048_576
 const syntheticModel = "<synthetic>"
 const maxNote = 200
 const statusEmoji = new Map([["completed", "✅"], ["failed", "❌"], ["stopped", "⏹️"], ["killed", "⏹️"]])
+const teammateMessage = /^Another Claude session sent a message[^:\n]*:\n<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/
 
 interface SessionStartInput {
   session_id: string
@@ -57,7 +58,7 @@ interface TranscriptEntry {
   turnOrigin?: unknown
   operation?: unknown
   content?: unknown
-  attachment?: {type?: unknown; prompt?: unknown; origin?: Origin | null}
+  attachment?: {type?: unknown; prompt?: unknown; origin?: Origin | null; commandMode?: unknown}
   message?: {model?: unknown; content?: unknown}
 }
 
@@ -184,14 +185,16 @@ function lastAnswer(tail: string): {text: string; model?: string} | undefined {
 
 function promptRecord(tail: string, id: string | undefined, text: string, last: boolean): PromptKind | undefined {
   const entries = tail.split("\n").flatMap(line => transcriptEntry(line) ?? [])
-  const first = id === undefined ? -1 : entries.findIndex(entry => isPrompt(entry) && entry.promptId === id)
+  const first = id === undefined ? -1 : entries.findIndex(entry => entry.type === "user" && entry.isSidechain !== true && entry.promptId === id)
   if (first === -1 && id !== undefined && !last) return undefined
   const after = entries.slice(Math.max(first, 0))
-  const record = after.filter(entry => recordText(entry) === text).at(-1)
-  if (record !== undefined) return recordKind(record, id, text)
-  if (!last || first === -1) return undefined
-  if (after.some(entry => entry.type === "queue-operation" && entry.operation === "enqueue" && textOf(entry.content) === text)) return {typed: true, midTurn: true}
-  return {typed: after.some(entry => isPrompt(entry) && entry.promptId === id && entry.origin?.kind === "human")}
+  const records = after.flatMap((entry, i) => (recordText(entry) === text ? [i] : []))
+  const queuedAfter = (start: number): boolean => after.slice(start).some(entry => entry.type === "queue-operation" && entry.operation === "enqueue" && textOf(entry.content) === text)
+  const record = records.at(-1)
+  if (record !== undefined && !queuedAfter(record + 1)) return recordKind(after[record], id, text)
+  if (!last) return undefined
+  if (queuedAfter(0)) return {typed: true, midTurn: true}
+  return first === -1 ? undefined : {typed: after.some(entry => isPrompt(entry) && entry.promptId === id && entry.origin?.kind === "human")}
 }
 
 function isPrompt(entry: TranscriptEntry): boolean {
@@ -207,7 +210,7 @@ function recordText(entry: TranscriptEntry): string | undefined {
 }
 
 function recordKind(record: TranscriptEntry, id: string | undefined, text: string): PromptKind {
-  const origin = record.type === "attachment" ? record.attachment?.origin : record.origin
+  const origin = record.type === "attachment" ? (record.attachment?.origin ?? (record.attachment?.commandMode === "task-notification" ? {kind: "task-notification"} : undefined)) : record.origin
   const note = noteOf(origin, record.turnOrigin, text)
   const midTurn = record.type !== "user" || (id !== undefined && record.promptId !== id)
   return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: shortened(note)}), ...(midTurn ? {midTurn} : {})}
@@ -227,19 +230,37 @@ function noteOf(origin: Origin | null | undefined, turnOrigin: unknown, text: st
     case "auto-continuation":
       return `🔄 Automatic prompt: ${firstLine(text)}`
     case undefined:
-      return turnOrigin === "scheduled" ? `⏰ Scheduled prompt: ${firstLine(text)}` : undefined
+      return turnOrigin === "scheduled" ? `⏰ Scheduled prompt: ${firstLine(text)}` : teammateNote(text)
     default:
       return typeof origin?.kind === "string" ? `⚙️ Claude Code: ${firstLine(text)}` : undefined
   }
 }
 
 function taskNote(text: string): string {
-  const block = /<task-notification>([\s\S]*?)<\/task-notification>/.exec(text)?.[1] ?? ""
+  const block = /<task-notification>([\s\S]*?)<\/task-notification>/.exec(text)?.[1]
+  if (block === undefined) return `🔔 ${firstLine(text)}`
   const field = (name: string): string => firstLine(decoded(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`).exec(block)?.[1] ?? ""))
   const summary = field("summary") || "Task notification"
   const event = field("event")
   const emoji = statusEmoji.get(field("status")) ?? (event === "" ? "🔔" : "📡")
   return `${emoji} ${summary}${event === "" ? "" : `: ${event}`}`
+}
+
+function teammateNote(text: string): string | undefined {
+  const match = teammateMessage.exec(text)
+  if (match === null) return undefined
+  const [, sender, attributes, body] = match
+  if (idleNotification(body)) return undefined
+  const summary = /\ssummary="([^"]*)"/.exec(attributes)?.[1]
+  return `👥 Message from ${decoded(sender)}: ${firstLine(summary === undefined ? body : decoded(summary))}`
+}
+
+function idleNotification(body: string): boolean {
+  try {
+    return (JSON.parse(body) as {type?: unknown} | null)?.type === "idle_notification"
+  } catch {
+    return false
+  }
 }
 
 function peerName(origin: Origin): string {
@@ -251,7 +272,7 @@ function firstLine(text: string): string {
 }
 
 function decoded(text: string): string {
-  return text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
+  return text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&")
 }
 
 function stringOf(value: unknown): string | undefined {
