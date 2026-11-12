@@ -37,6 +37,8 @@ monitor event            📡 Monitor event: "Exit status of each of the 4 flag-
 other task notification  🔔 Goal check-in: background work still running
 message of a session     ✉️ Message from mcp-impl2: I read the channel-verify evidence, and it confirms your fact. I will record it in TESTING check 6 after round 6, with Claude Code 2.1.319, and I hold code changes until th…
 subagent report          📋 Report from subagent ios-terminal: ## iOS terminal layout: owner decisions and screenshot tests
+teammate's message       👥 Message from lookalikes-builder: X Ads look-alike seed file written
+plain task notification  🔔 3 background agents were stopped by the user: "Duarte drafts the ad post", "Miller drafts the ad post", "Heath brothers draft the ad post".
 scheduled prompt         ⏰ Scheduled prompt: Reply with the single word tick.   (R1)
 automatic prompt         🔄 Automatic prompt: Your claude.ai usage limit has reset. Continue the task you were working on when the limit was reached; do not repeat work that is already complete.
 another kind             ⚙️ Claude Code: FIRST LINE   (no sample in the main transcripts)
@@ -49,8 +51,11 @@ task notification:       EMOJI SUMMARY, and ": EVENT" when the notification has 
   EVENT                  the first non-blank line of <event>, decoded the same way
   EMOJI                  <status> completed ✅, failed ❌, stopped or killed ⏹️;
                          without <status>: 📡 with an event, 🔔 without
+  without a block        🔔 and the first non-blank line of the prompt
 message of a session     ✉️ Message from NAME: the first non-blank line of the message
 subagent report          📋 Report from subagent NAME: the first non-blank line of the report
+teammate's message       👥 Message from NAME: its summary, or the first non-blank line of the message;
+                         nothing for an idle notification
 scheduled prompt         ⏰ Scheduled prompt: the first non-blank line of the prompt
 automatic prompt         🔄 Automatic prompt: the first non-blank line of the prompt
 another kind             ⚙️ Claude Code: the first non-blank line of the prompt
@@ -134,12 +139,13 @@ Facts:
 6. A prompt's record carries its text: the entry with `promptId` for a turn's start, the `queued_command` attachment for a prompt added to a turn, and a later entry with a new `promptId` for a typed prompt that waits for its own turn. In R1, R2 and the channel run recorded for 0.3.0 (TESTING.md, check 6), each hook's `prompt` equals the text of exactly one record, 16 prompts in all. One prompt ID can have several entries: the channel run has a meta `<system-reminder>` entry before the prompt's entry with the same `promptId`.
 7. The origin kinds in 2.1.322 are `human`, `task-notification`, `peer`, `channel`, `auto-continuation`, `coordinator`, `observer`, `observer-activity`, `slack-ping`, `unclassified`, `voice-call` and `plugin` (`RCi` at binary 295246396). A scheduled prompt has no `origin`; its entry has `turnOrigin: "scheduled"`, `scheduledTaskId` and `isMeta: true` (R1; 452 entries in the transcripts).
 8. Task notifications: `<summary>` in 4,318 of 4,318; `<status>` `completed`, `failed`, `stopped` or `killed`; `<event>` in monitor events and artifact watches; one block per prompt. `<summary>` and `<event>` contain only the entities `&amp;`, `&gt;` and `&lt;` (transcripts).
-9. A message of another session has `origin: {kind: "peer", from, name, senderTaskId, body}`, with `body` equal to the text in `<agent-message from="...">` or `<cross-session-message ...>`. A subagent's hand-back adds `handback: true` and, since 2.1.302, `handbackReportText`, the report without its frame. `name` is the agent's name, or its type, such as `general-purpose`, for an unnamed agent (transcripts). Messages have no `summary` attribute: SendMessage's `summary` is not transmitted.
+9. A message of another session has `origin: {kind: "peer", from, name, senderTaskId, body}`, with `body` equal to the text in `<agent-message from="...">` or `<cross-session-message ...>`. A subagent's hand-back adds `handback: true` and, since 2.1.302, `handbackReportText`, the report without its frame. `name` is the agent's name, or its type, such as `general-purpose`, for an unnamed agent (transcripts). `<agent-message>` has no `summary` attribute. A message of a teammate in an agent team has no `origin`: its prompt is `Another Claude session sent a message:` and a `<teammate-message teammate_id="NAME" color="..." summary="...">` tag, with an optional `summary` escaped as XML (binary 292849344). Of 2,096 teammate message tags in the transcripts, 1,762 hold an idle notification, a JSON body with `"type":"idle_notification"`.
 10. `auto-continuation` is the origin of the usage-limit continuation (binary 308243173) and of other automatic prompts, such as "Implement the following plan:" after plan mode (324005632) and a command's next input (324147282).
 11. 0.3.0 finds the entry with `prompt_id` and takes the first one ([hook.ts:172](../packages/simplex-chat-mcp/src/hook.ts#L172)), whatever its text. So a task notification added to a typed turn is marked typed, and `User` posts the block; a prompt typed during a notification or channel turn is not typed, and `User` does not post it.
 12. 0.3.0 adds a turn record with the hook's `at` for every prompt request, and ends open tool-use cards created before it ([hub.ts:181](../packages/simplex-chat-mcp/src/hub.ts#L181), [:185](../packages/simplex-chat-mcp/src/hub.ts#L185)). A record without an item, added during a turn, takes the place of that turn's prompt in its answer's quote ([hub.ts:266-275](../packages/simplex-chat-mcp/src/hub.ts#L266-L275)).
 
 Choices:
+
 13. Claude posts the notes (Q1 A). `User`'s posts keep meaning prompts a person typed (0.3.0 decision 121).
 14. The hook composes the line and sends it as `note` in `POST /turn`; the hub posts it unchanged as one message of Claude, without a quote ([hub.ts:289-295](../packages/simplex-chat-mcp/src/hub.ts#L289-L295)).
 15. The hook finds the prompt's record by its text, so that a prompt added to a running turn gets its own origin. The record is the newest of these whose text is the prompt: the entry with `prompt_id`, and the records after the first entry with `prompt_id`, both user entries and `queued_command` attachments. Until an entry with `prompt_id` is in the tail, the hook waits for it, so that an older prompt with the same text is not taken; at the last read it takes any record of the tail. User entries of subagents and tool results are skipped, as in 0.3.0. Without `prompt_id`, the newest such record at once. The hook reads up to 600 times, 100 ms apart, as in 0.3.0.
@@ -152,6 +158,13 @@ Choices:
 22. A note refused by a group preference is replaced by Claude's post `A note on Claude Code's prompt was not posted: ` and PREF OFF, by the path of 0.3.0 decision 114 ([hub.ts:283-287](../packages/simplex-chat-mcp/src/hub.ts#L283-L287)).
 23. Notes are posted when their request arrives, in the order of the hooks' requests, as answers and `User`'s prompts are. A turn's UserPromptSubmit hook starts before its Stop hook; a mid-turn prompt's hook starts during the turn.
 24. The protocol version stays 1: `note` and `midTurn` are optional, and a service without them posts nothing for them, as 0.3.0.
+
+Decided after review round 1 of `9c78e6276`:
+
+25. A teammate's message gets `👥 Message from NAME: ` and its `summary`, or the first line of the message without one, cut to 200; an idle notification gets no note (fact 9).
+26. The first entry with `prompt_id` is any user entry of the main conversation with that ID, a tool result included: a long turn's first entry can be more than 1 MiB back, and its tool results carry its ID. The `enqueue` fallback of decision 16 also applies when no entry with `prompt_id` is in the tail.
+27. While an `enqueue` entry with the prompt's text follows the found record, the hook waits: the prompt is a later one with the text of the turn's own prompt, still queued. An `enqueue` entry precedes the record of every queued prompt in R2.
+28. A task notification without a `<task-notification>` block, such as `3 background agents were stopped by the user: ...`, gets 🔔 and its first line. A `queued_command` attachment without `origin` and with the `commandMode` `task-notification` is a task notification.
 
 ## 5. Design
 
@@ -241,8 +254,8 @@ flowchart LR
 ## 6. Compatibility
 
 - Older SimpleX apps: notes are text messages with emoji, shown by every version.
-- Older Claude Code: without `origin`, nothing is posted, as in 0.3.0. Without `prompt_id`, the record is the newest one with the prompt's text. Before 2.1.302 a report's note shows the first line of `body`, the frame's first line. Without `queued_command` attachments, the fallback of decision 16 applies.
-- Older plugin data folders: no data changes. A service of this version with an older hook gets no `note` and no `midTurn`, and behaves as 0.3.0. An older service with this hook does not occur: the hook stops an older service first ([client.ts:37-40](../packages/simplex-chat-mcp/src/client.ts#L37-L40)).
+- Older Claude Code: without `origin`, nothing is posted, as in 0.3.0, except a teammate's message, found by its tag. Without `prompt_id`, the record is the newest one with the prompt's text. Before 2.1.302 a report's note shows the first line of `body`, the frame's first line. Without `queued_command` attachments, the fallback of decision 16 applies.
+- Older plugin data folders: no data changes. A service of this version with an older hook gets no `note` and no `midTurn`, and behaves as 0.3.0. The hook stops a service only when its version is older ([client.ts:37-40](../packages/simplex-chat-mcp/src/client.ts#L37-L40)), so an older service with this hook does not occur once the release bumps the version. `package.json` stays at 0.3.0 here; the release pull request bumps it.
 - `serve`: unchanged.
 
 ## 7. Acceptance and tests
