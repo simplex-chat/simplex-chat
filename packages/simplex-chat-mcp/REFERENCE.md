@@ -352,7 +352,7 @@ My Agent: ◑ using download · 0:30
           Reading the file…
 ```
 
-The apps show it under the header `LIVE`. The first line is the status line: a frame, turned at each update, a label, and the time since the start. From the 50th version, about 10 minutes after the start, the line is `◌ working since 2026-11-10 12:00 UTC`, or `◌ received, waiting for the agent since 2026-11-10 12:00 UTC` while the agent has not taken the message. A note is shown under the line until the next note.
+The apps show it under the header `LIVE`. The first line is the status line: a frame, turned at each update, a label, and the time since the start. From the 50th version, about 10 minutes after the start, the line is `◌ working since 2026-11-10 12:00 UTC`, or `◌ received, waiting for the agent since 2026-11-10 12:00 UTC` while the agent has not taken the message. With `--abort-file`, the line ends with ` · /abort` ([/abort](#abort)). A note is shown under the line until the next note.
 
 | Label, the first that applies | When |
 |---|---|
@@ -382,7 +382,7 @@ MODEL, shown as code, is the model that starts, or the one model of all busy slo
 
 The labels of Claude Code's work are computed from the events of the [status hooks](#status-hooks), in all sessions the server follows. FILE is the file's name without its folder; NAME is the tool's name, without `mcp__SERVER__` for a tool of another MCP server; TYPE is the subagent's type. Each is shown as code. When a name is filtered out, the label is `reading a file`, `editing a file`, `using a tool` or `running a subagent`.
 
-The status line is updated 3 seconds apart at first, then at a tenth of its age, at most 20 seconds apart. From the 50th version, the server checks the chat every 5 minutes, without updates. Notes are shown at once up to the 59th version; a later note is refused. With its deletion, at most 60 messages per status message are sent to each recipient.
+The status line is updated 3 seconds apart at first, then at a tenth of its age, at most 20 seconds apart. From the 50th version, the server checks the chat every 5 minutes, without updates. Notes are shown at once up to the 59th version; a later note is refused. With its deletion, or its final text `◼ aborted`, at most 60 messages per status message are sent to each recipient.
 
 The server deletes the status message for everyone:
 - after the agent's next message to that chat without `live` is sent;
@@ -393,6 +393,8 @@ The server deletes the status message for everyone:
 - from the 50th version, 30 minutes after the last start or end of one of the agent's calls, at the next check, while the agent runs no call other than `receive`;
 - at an error of a command for the status message, with `status of CHAT: ERROR` logged;
 - when the server stops.
+
+At an `/abort`, every status message is ended with `◼ aborted` in place of the deletion ([/abort](#abort)).
 
 At the start, before it accepts calls, the server deletes its own live messages younger than 29 hours 50 minutes in the chats where these conditions are met: the status messages left by a crash.
 
@@ -440,6 +442,36 @@ With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-age
 
 - Claude Code runs curl in the background and hides the outcome outside verbose mode (Ctrl+O), so the failures of the posts while the server is stopped are hidden too.
 - The server checks the token, `Host` and `Origin` of a request to `/hook` as for `/mcp`. It answers a `POST` with 204, or with 411 without Content-Length, 413 for a body over 4 MiB and 400 for invalid JSON, and another method with 405.
+
+### /abort
+
+With `--abort-file FILE`, a person in a chat with a status message can stop the agent's work when a script runs the agent: the server counts each `/abort` in FILE, and the script restarts the agent at each change of the count. It applies in mode `requests`.
+
+- FILE is resolved to an absolute path; its folder and the data folder must be disjoint. FILE under the data folder, or the data folder equal to FILE's folder or under it, is refused with `--abort-file: a file in a folder disjoint from the data folder expected, got FILE`, and `--abort-file` with `--approve host` with `--abort-file: status messages are shown only in mode requests.`; both are usage errors, exit code 2.
+- The status line ends with ` · /abort`, for example `◓ thinking · 0:03 · /abort` or `◌ working since 2026-11-12 12:00 UTC · /abort`; a note stays under it.
+- The apps make `/abort` tappable only in a direct chat with a bot and in a group or business chat whose profile lists commands, and send it there at a tap. The agent's profile has peer type agent, so in a direct chat with the agent and in groups without commands, `/abort` is shown as text, and the person types it.
+
+A message is an abort when:
+- it is received in the main conversation of a chat whose status message is shown, outside the support chats of members;
+- it is a text message, not live, whose text without leading and trailing whitespace is `/abort`.
+
+Anyone who can post in that chat may send it: the contact of a direct chat, and every member of a group or business chat. At an abort, the server:
+1. keeps the message from the agent: `receive` and `send` never return it, and it is marked read;
+2. prints, for example, `Abort by Bob in group Team (#15).`, with the names on one line;
+3. adds 1 to the count in FILE;
+4. ends every status message of the server, in all chats: a shown status message is edited to `◼ aborted`, which stays in the chat as an ordinary message, and a status message not yet shown is not posted.
+
+When a write of FILE fails, `abort in #15: ERROR` is printed on stderr, and the status messages are kept; the message is still kept from the agent and marked read. After an abort, `/abort` is an ordinary message until a status message is shown again. When a `receive` of the chat waits, the server deletes the chat's status message first, so an `/abort` sent then is returned by that `receive`.
+
+FILE holds the count in decimal on one line. At the start, a count of 1 to 15 digits in its first line is kept; otherwise, and for a missing FILE, `0` is written. At a missing folder of FILE, or a failed write, the start ends with exit code 1. Each count is written to `FILE.part`, with mode 0644, readable by all users, and FILE is then replaced by `FILE.part` in one rename.
+
+The script that runs the agent:
+- reads FILE's first line when it starts the agent, a missing FILE counting as 0, so that the server's first write of `0` is not taken as an abort;
+- reads it again about every second;
+- at each change of the number, stops the agent's process group and starts the agent again;
+- may continue the agent's session, with one prompt line saying that the owner aborted the last task.
+
+When the script runs in another container than the server, mount FILE's folder there, read-only, and not FILE itself: at each write, FILE is replaced by a new file, and the old file stays visible through a mount of FILE. The data folder stays unmounted there.
 
 ## Waiting for approval in Claude Code
 
@@ -509,6 +541,9 @@ serve options:
                          state and tokens per second shown in status messages;
                          the API key, if any, is read from
                          SIMPLEX_MCP_INFERENCE_KEY; mode requests only
+  --abort-file FILE      show /abort in status messages and count it in FILE
+                         for the script that runs the agent; FILE in a folder
+                         disjoint from the data folder; mode requests only
 
 register options:
   --scope SCOPE          user (default) or local
@@ -561,3 +596,4 @@ One server runs per data folder: a second one exits, because two processes on on
 - The agent has no address, so nobody can contact it first.
 - The agent uses private message routing: the SMP server that holds a contact's queue does not see the agent's IP address.
 - `SIMPLEX_MCP_INFERENCE_KEY` is sent only to the `--inference` URL; set it only for a URL on 127.0.0.1 or with https. The server reads the servers of llama-swap's models only on the URL's host, or on loopback when the URL is loopback, and refuses redirects. It shows a model ID only when the ID consists of 1 to 64 ASCII letters, digits and characters of `_.:/+@-`, and then as code; it folds the endpoint's error texts to one line.
+- With `--abort-file`, anyone who can post in a chat with a status message can stop the agent's work, in all its chats, with `/abort`; the server prints each abort with its sender and chat. FILE holds only the count, readable by all users, in a folder disjoint from the data folder.

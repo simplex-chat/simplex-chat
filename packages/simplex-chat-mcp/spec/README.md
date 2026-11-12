@@ -25,6 +25,8 @@ A tool call is held open by the server until the owner decides and, for `connect
 
 With `typing: true` on `receive`, the server starts a status message in the chat when the call returns messages: one live message, edited while the agent works and deleted after the agent's next message there is sent. Until a `receive` of that chat without `typing`, the server also posts a status message at each message received there while the chat has none, with the label `received, waiting for the agent` until a `receive` with `typing: true` or a `send` returns messages of that chat. Status messages are shown in chats with people, groups and business chats that have a standing approval of messages, in mode `requests`. With `live: true` on `send`, the text is shown at once under the status line, and the result is status `live`, without an action; each such note is printed in the terminal. With `--inference URL`, the server polls llama-swap or llama-server at URL, and the model loading, the prompt tokens read and the tokens per second are shown in the status line.
 
+With `--abort-file FILE`, the status line ends with ` · /abort`. At a message `/abort` from anyone in a chat whose status message is shown, the message is kept from the agent, 1 is added to the count in FILE, and every status message is ended with `◼ aborted`; the script that runs the agent reads FILE and restarts the agent at each change of the count.
+
 `register` also adds status hooks to the Claude Code settings file of its scope. Claude Code then runs curl at each hook event, and curl posts the event to `/hook` of the server with the token. For the sessions that called a tool of this server, the Claude Code tool, permission prompt, subagent or compaction in progress is shown in the status line.
 
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers files for the host and its hooks, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
@@ -102,14 +104,14 @@ graph TD
 | [`cli.ts`](../src/cli.ts) | `simplex-mcp` entry point: commands, options, exit codes |
 | [`serve.ts`](../src/serve.ts) | start sequence, event dispatch, stop sequence |
 | [`http.ts`](../src/http.ts) | HTTP listener, token check, `/mcp` route, SDK handler, `/hook` route |
-| [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send, status message refusals |
-| [`status.ts`](../src/status.ts) | status messages: start, ticks, labels, notes, deletion, leftovers, running calls |
+| [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send, status message refusals, `/abort` |
+| [`status.ts`](../src/status.ts) | status messages: start, ticks, labels, notes, deletion, the end at an `/abort`, leftovers, running calls |
 | [`inference.ts`](../src/inference.ts) | inference endpoint poller: model states, prompt tokens, tokens per second |
 | [`activity.ts`](../src/activity.ts) | Claude Code activity from hook events: agent sessions, running tools, subagents, permission prompts, compaction |
 | [`actions.ts`](../src/actions.ts) | action records, state machine, expiry, stop |
 | [`control.ts`](../src/control.ts) | agent control chat: link, owners, owner commands, cards, counter |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
-| [`files.ts`](../src/files.ts) | data folder, lock, token, `headers.json`, `hook-headers`, `server.json` |
+| [`files.ts`](../src/files.ts) | data folder, lock, token, `headers.json`, `hook-headers`, `server.json`, the abort count of `--abort-file` |
 | [`register.ts`](../src/register.ts) | `register` command: Claude Code entry, status hooks |
 | [`log.ts`](../src/log.ts) | terminal lines, error texts, shell quoting |
 
@@ -129,14 +131,14 @@ graph TD
 
 | Component | File | Key symbol | Line |
 |---|---|---|---|
-| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L214) | `main` | [214](../src/cli.ts#L214) |
-| Argument parser | [`src/cli.ts`](../src/cli.ts#L49) | `parseCommand` | [49](../src/cli.ts#L49) |
-| Server start | [`src/serve.ts`](../src/serve.ts#L68) | `startServer` | [68](../src/serve.ts#L68) |
-| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L93) | `startAgent` | [93](../src/serve.ts#L93) |
+| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L223) | `main` | [223](../src/cli.ts#L223) |
+| Argument parser | [`src/cli.ts`](../src/cli.ts#L52) | `parseCommand` | [52](../src/cli.ts#L52) |
+| Server start | [`src/serve.ts`](../src/serve.ts#L69) | `startServer` | [69](../src/serve.ts#L69) |
+| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L95) | `startAgent` | [95](../src/serve.ts#L95) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L18) | `startHttp` | [18](../src/http.ts#L18) |
 | Hook endpoint | [`src/http.ts`](../src/http.ts#L63) | `receiveHook` | [63](../src/http.ts#L63) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L505) | `AgentTools.register` | [505](../src/tools.ts#L505) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L542) | `AgentTools.downloadFile` | [542](../src/tools.ts#L542) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L507) | `AgentTools.register` | [507](../src/tools.ts#L507) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L544) | `AgentTools.downloadFile` | [544](../src/tools.ts#L544) |
 | Status messages | [`src/status.ts`](../src/status.ts#L32) | `Statuses` | [32](../src/status.ts#L32) |
 | Inference endpoint | [`src/inference.ts`](../src/inference.ts#L31) | `inferencePoller` | [31](../src/inference.ts#L31) |
 | Claude Code activity | [`src/activity.ts`](../src/activity.ts#L24) | `Activity` | [24](../src/activity.ts#L24) |
@@ -147,4 +149,5 @@ graph TD
 | Claude Code entry | [`src/register.ts`](../src/register.ts#L35) | `register` | [35](../src/register.ts#L35) |
 | Status hooks | [`src/register.ts`](../src/register.ts#L63) | `statusHooks` | [63](../src/register.ts#L63) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L12) | `createDataFolder`, `acquireLock` | [12](../src/files.ts#L12) |
+| Abort count | [`src/files.ts`](../src/files.ts#L60) | `abortCounter` | [60](../src/files.ts#L60) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |

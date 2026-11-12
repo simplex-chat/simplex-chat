@@ -113,6 +113,21 @@ Status messages with Claude Code's work, after steps 1 and 2 of "Status messages
 6. `mkdir /tmp/cc`, `echo '[]' > /tmp/cc/settings.json`, then `CLAUDE_CONFIG_DIR=/tmp/cc node dist/cli.js register my-agent`: it prints `Added to Claude Code: scope user, server simplex-my-agent. /tmp/cc/settings.json is not a valid settings file; add these status hooks to it: {"hooks":{...}}` and exits with code 1, and the file still holds `[]`.
 7. In a new folder outside a git repository, for example `/tmp/project`, `node <this folder>/dist/cli.js register my-agent --scope local` prints `Added to Claude Code: scope local, server simplex-my-agent, status hooks in /tmp/project/.claude/settings.local.json.`, and that file has the hooks.
 
+Status messages with /abort, after steps 1 and 2 of "Status messages":
+
+1. `mkdir /tmp/agent-abort`. In another terminal, run a loop that reads the count as the script that runs the agent does, a missing file counting as 0:
+   ```
+   last=$(head -n 1 /tmp/agent-abort/count 2>/dev/null || echo 0); while sleep 1; do n=$(head -n 1 /tmp/agent-abort/count 2>/dev/null || echo 0); [ "$n" = "$last" ] || echo "abort $n"; last=$n; done
+   ```
+2. Restart with `node dist/cli.js serve my-agent --abort-file /tmp/agent-abort/count`. `cat /tmp/agent-abort/count` prints `0`, `stat -c %a /tmp/agent-abort/count` prints `644`, and the loop prints nothing.
+3. Send a prompt from the app. The status line ends with ` · /abort`, for example `◐ received, waiting for the agent · 0:00 · /abort`; in the chat with the agent, `/abort` is shown as text.
+4. Send `/abort` while the status message is shown. The terminal prints `Abort by <your name> in contact <your name> (@N).`, the status message is edited to `◼ aborted`, the loop prints `abort 1`, and the later calls of `receive` in Claude Code return no `/abort`.
+5. Send `/abort` while no status message is shown, for example while Claude Code waits in `receive`: `receive` returns it as a message, and the loop prints nothing.
+6. In the group of step 6 of "Status messages", the second member sends `/abort` while a status message is shown: the terminal prints `Abort by <member name> in group <name> (#N).`, and the loop prints `abort 2`.
+7. `chmod 555 /tmp/agent-abort`, and send `/abort` while a status message is shown: stderr has `abort in @N: EACCES: permission denied, open '/tmp/agent-abort/count.part'`, the status line still ends with ` · /abort`, and the loop prints nothing. Then `chmod 755 /tmp/agent-abort`.
+8. Restart `serve` with the same option: `cat /tmp/agent-abort/count` prints `2`, and the loop prints nothing.
+9. `node dist/cli.js serve my-agent --abort-file ~/.simplex-mcp/my-agent/count` exits with `--abort-file: a file in a folder disjoint from the data folder expected, got <your home folder>/.simplex-mcp/my-agent/count`, and `node dist/cli.js serve my-agent --approve host --abort-file /tmp/agent-abort/count` with `--abort-file: status messages are shown only in mode requests.`; both exit with code 2.
+
 Stop and restart:
 
 - Stop the server while a card waits: the terminal prints `Stopping: sending 1 cancelled card, up to 10 s. Ctrl-C to stop now.`, and the card ends with `Cancelled: the server stopped.` With a status message shown too, the line is `Stopping: sending 1 cancelled card and 1 status deletion, up to 10 s. Ctrl-C to stop now.`, and the status message is deleted. A second Ctrl-C during the wait stops the server at once. With no card waiting and no status message shown, Ctrl-C stops it at once. After a restart, `/approve` of that number replies `Action N is not pending.`, and the next card has the next number.
