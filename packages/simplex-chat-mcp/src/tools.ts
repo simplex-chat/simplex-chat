@@ -780,10 +780,8 @@ export class AgentTools {
     if (input.as !== undefined && input.file === undefined) throw new ToolError("as: applies only with file.")
     const {chatInfo} = await this.knownChat(chat)
     if (!isConnected(chatInfo)) throw new ToolError(`The agent is not connected to ${chat} and can't post; list shows connected: false.`)
-    if (chatInfo.type === "group") {
-      const role = chatInfo.groupInfo.membership.memberRole
-      if (role === T.GroupMemberRole.Observer || role === T.GroupMemberRole.Relay) throw new ToolError(`The agent has role ${role} in ${chat} and can't post.`)
-    }
+    const role = readOnlyRole(chatInfo)
+    if (role !== undefined) throw new ToolError(`The agent has role ${role} in ${chat} and can't post.`)
     const quoted = input.reply_to === undefined ? undefined : await this.quotedItem(chat, input.reply_to)
     const mentions = input.mention === undefined ? [] : await this.mentionedMembers(chatInfo, chat, input.mention)
     const file = input.file === undefined ? undefined : await this.attachment(input.file, input.as, chatInfo, chat)
@@ -1389,6 +1387,11 @@ function isIncognito(chatInfo: T.ChatInfo): boolean {
 export function isConnected(chatInfo: T.ChatInfo): boolean {
   if (chatInfo.type === "direct") return chatInfo.contact.activeConn?.connStatus.type === "ready"
   return chatInfo.type === "group" && isActive(chatInfo.groupInfo.membership)
+}
+
+export function readOnlyRole(chatInfo: T.ChatInfo): T.GroupMemberRole | undefined {
+  const role = chatInfo.type === "group" ? chatInfo.groupInfo.membership.memberRole : undefined
+  return role === T.GroupMemberRole.Observer || role === T.GroupMemberRole.Relay ? role : undefined
 }
 
 export function isActive({memberStatus}: T.GroupMember): boolean {

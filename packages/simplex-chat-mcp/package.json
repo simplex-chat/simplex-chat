@@ -17,7 +17,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "prepack": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
+    "prepack": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc && node -e \"try{require('fs').writeFileSync('dist/commit.txt',require('child_process').execFileSync('git',['rev-parse','--short=10','HEAD'],{stdio:'pipe'}))}catch{}\"",
+    "postpack": "node -e \"require('fs').rmSync('dist/commit.txt',{force:true})\"",
     "test": "jest test/unit",
     "test:e2e": "jest test/e2e"
   },

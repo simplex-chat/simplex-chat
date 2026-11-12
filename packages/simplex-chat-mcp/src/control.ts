@@ -3,9 +3,9 @@ import * as qrcode from "qrcode"
 import {api, core} from "simplex-chat"
 import {Action, ActionHooks, Actions, ConnectAction, DownloadAction, Standing, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
 import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
-import {chatNumber, chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
+import {chatNumber, chatRef, chatType, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, fitsMessage, isActive, isConnected, memberCurrent, refusedFileReason} from "./tools"
+import {AgentTools, chatSubject, fitsMessage, isActive, isConnected, memberCurrent, readOnlyRole, refusedFileReason} from "./tools"
 
 const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
@@ -114,6 +114,14 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (owners === undefined) return this.startOwners()
     if (owners.length === 0) return this.startObserver()
     return this.startListed(owners)
+  }
+
+  async postRestartNotice(text: string): Promise<void> {
+    if (this.actions.lost) return
+    const approved = (await this.tools.agentChats()).filter(({chatInfo}) => this.standingApprover(chatInfo, "messages") !== undefined && isConnected(chatInfo) && readOnlyRole(chatInfo) === undefined && !chatSubject(chatInfo).incognito)
+    for (const chat of [this.chatRef, ...approved.map(({chatInfo}) => chatRef(chatInfo)!)]) {
+      await this.chat.apiSendTextMessage([chatType(chat), chatNumber(chat)], text).catch(error => logError(`restart notice to ${chat}`, error))
+    }
   }
 
   refusal(action: Action): string | undefined {
