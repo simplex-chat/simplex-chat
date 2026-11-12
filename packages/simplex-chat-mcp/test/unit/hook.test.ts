@@ -337,7 +337,7 @@ describe("turn hooks", () => {
     }
   })
 
-  it("take the entry of the prompt ID whose text is the prompt, mark a prompt still queued after the reads as typed and mid-turn, and fall back to the origin of the prompt ID's entry", async () => {
+  it("take the entry of the prompt ID whose text is the prompt, also when an older prompt has the same text, mark a prompt still queued after the reads as typed and mid-turn, and fall back to the origin of the prompt ID's entry", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
     try {
       const transcript = join(folder, "session.jsonl")
@@ -352,9 +352,14 @@ describe("turn hooks", () => {
       await submit("p1", "Fix the build")
       await submit("p2", "Run the linter")
       await submit("p1", "Fix the build, then deploy")
+      const again = submit("p3", "Fix the build")
+      const written = new Promise<void>(resolve => setTimeout(() => resolve(appendFileSync(transcript, userEntry("p3", "Fix the build", {origin: {kind: "human"}}))), 30))
+      await again
+      await written
       expect(kinds(requests)).toEqual([
         [undefined, true, undefined],
         [undefined, true, true],
+        [undefined, true, undefined],
         [undefined, true, undefined],
       ])
     } finally {

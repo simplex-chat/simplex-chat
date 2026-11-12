@@ -185,6 +185,7 @@ function lastAnswer(tail: string): {text: string; model?: string} | undefined {
 function promptRecord(tail: string, id: string | undefined, text: string, last: boolean): PromptKind | undefined {
   const entries = tail.split("\n").flatMap(line => transcriptEntry(line) ?? [])
   const first = id === undefined ? -1 : entries.findIndex(entry => isPrompt(entry) && entry.promptId === id)
+  if (first === -1 && id !== undefined && !last) return undefined
   const after = entries.slice(Math.max(first, 0))
   const record = after.filter(entry => recordText(entry) === text).at(-1)
   if (record !== undefined) return recordKind(record, id, text)
