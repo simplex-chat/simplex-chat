@@ -3,13 +3,13 @@ from simplex_chat import BotCommand
 from support_bot_light.commands import COMMANDS, to_wire
 
 
-def test_declares_four_commands():
-    assert tuple(c.keyword for c in COMMANDS) == ("dm", "list", "leave", "help")
+def test_declares_five_commands():
+    assert tuple(c.keyword for c in COMMANDS) == ("dm", "list", "leave", "help", "feed")
 
 
-def test_no_command_takes_params():
+def test_only_feed_takes_params():
     # Zero-argument commands send on tap instead of pasting a placeholder.
-    assert all(c.params is None for c in COMMANDS)
+    assert [c.keyword for c in COMMANDS if c.params is not None] == ["feed"]
 
 
 def test_to_wire_omits_params_when_none():

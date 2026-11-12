@@ -10,13 +10,14 @@ import stat
 import sys
 from pathlib import Path
 
-from simplex_chat import Bot, BotProfile, ChatError, SqliteDb
+from simplex_chat import Bot, BotProfile, ChatApi, ChatError, SqliteDb
 from simplex_chat.core import ChatInitError
 from simplex_chat.types import CEvt
 
 from . import business, commands, handlers, health, setup
-from .config import Config, ConfigError, load_config
+from .config import Config, ConfigError, IdName, load_config
 from .context import BotContext
+from .text import safe_name
 
 log = logging.getLogger("support_bot_light")
 
@@ -49,6 +50,10 @@ def _register(bot: Bot, ctx: BotContext) -> None:
     async def _help(msg, _cmd):
         await handlers.help_cmd(ctx, msg)
 
+    @bot.on_command(commands.FEED, group_id=group_id)
+    async def _feed(msg, _cmd):
+        await handlers.feed(ctx, msg)
+
     @bot.on_event("acceptingBusinessRequest")
     async def _business(evt: CEvt.AcceptingBusinessRequest):
         await business.on_business_request(ctx, evt)
@@ -68,6 +73,10 @@ def _register(bot: Bot, ctx: BotContext) -> None:
     @bot.on_event("leftMember")
     async def _left_member(evt: CEvt.LeftMember):
         await handlers.member_gone(ctx, evt["groupInfo"]["groupId"], evt["member"])
+
+    @bot.on_event("chatItemsStatusesUpdated")
+    async def _statuses(evt: CEvt.ChatItemsStatusesUpdated):
+        await handlers.feed_status(ctx, evt)
 
 
 def startup_error(e: Exception) -> str:
@@ -89,6 +98,23 @@ def startup_error(e: Exception) -> str:
     return f"{e} {chat_error}" if chat_error else str(e)
 
 
+async def check_broadcasters(api: ChatApi, user_id: int, broadcasters: tuple[IdName, ...]) -> None:
+    if not broadcasters:
+        return
+    contacts = {c["contactId"]: c for c in await api.api_list_contacts(user_id)}
+    for b in broadcasters:
+        contact = contacts.get(b.id)
+        if contact is None:
+            raise ConfigError(f"broadcaster not found: ID={b.id}")
+        name = contact["profile"]["displayName"]
+        if name != b.name:
+            raise ConfigError(
+                f'broadcaster name mismatch: expected "{b.name}", '
+                f'got "{safe_name(name)}" (ID={b.id})'
+            )
+        log.info("broadcaster validated: %d:%s", b.id, safe_name(b.name))
+
+
 def bot_profile(config: Config) -> BotProfile:
     return BotProfile(display_name=config.display_name, image=config.image)
 
@@ -106,6 +132,7 @@ def build_bot(config: Config) -> Bot:
     return Bot(
         profile=bot_profile(config),
         db=SqliteDb(file_prefix=config.db_prefix),
+        queue_size=config.queue_size,
         welcome=config.welcome,
         business_address=True,
         auto_accept=True,
@@ -146,6 +173,7 @@ async def _serve(config: Config, bot: Bot) -> None:
         if user is None:
             raise RuntimeError("no active user after start")
         user_id = user["userId"]
+        await check_broadcasters(bot.api, user_id, config.broadcasters)
         await _apply_profile(bot)
         roster_group_id = await setup.ensure_roster_group(bot.api, user_id, config)
         ctx = BotContext(
@@ -195,8 +223,9 @@ def main() -> int:
     try:
         asyncio.run(_run(config))
     except ConfigError as e:
-        # Raised past load_config only by the health endpoint, which cannot know
-        # its port is taken until it binds.
+        # Raised past load_config by the health endpoint, which cannot know its
+        # port is taken until it binds, and by the broadcaster check, which needs
+        # the database.
         log.error("%s", e)
         return 2
     except STARTUP_ERRORS as e:

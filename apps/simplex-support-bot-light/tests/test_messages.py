@@ -46,7 +46,7 @@ def test_invite_log_reports_failures():
 
 
 def test_help_mentions_every_command():
-    for keyword in ("dm", "list", "leave"):
+    for keyword in ("dm", "list", "leave", "feed"):
         assert f"/{keyword}" in messages.HELP
 
 
@@ -81,5 +81,16 @@ def test_render_roster_bounds_the_whole_reply_in_bytes():
 def test_invite_log_is_bounded_in_bytes():
     names = ["漢" * 50 for _ in range(100)]
     out = messages.invite_log("Alex", names, [])
+    assert len(out.encode()) <= messages.MAX_REPLY_BYTES
+    assert out.endswith(messages.TRUNCATED)
+
+
+def test_feed_failure_quotes_the_error():
+    out = messages.feed_failed(5, {"type": "other", "sndError": "x"})
+    assert out == 'Feed message 5 failed: {"type": "other", "sndError": "x"}'
+
+
+def test_feed_failure_is_bounded_in_bytes():
+    out = messages.feed_failed(5, {"type": "other", "sndError": "e" * 20000})
     assert len(out.encode()) <= messages.MAX_REPLY_BYTES
     assert out.endswith(messages.TRUNCATED)

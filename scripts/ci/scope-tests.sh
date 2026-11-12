@@ -34,8 +34,17 @@ case "${1:-}" in
     npm run build
     npm test
     ;;
+  support-bot-light)
+    cd apps/simplex-support-bot-light
+    python3 -m venv .venv
+    .venv/bin/pip install -e ../../packages/simplex-chat-python -e '.[dev]'
+    .venv/bin/ruff check
+    .venv/bin/ruff format --check src tests
+    .venv/bin/pyright
+    .venv/bin/pytest tests
+    ;;
   *)
-    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot" >&2
+    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot | support-bot-light" >&2
     exit 1
     ;;
 esac
