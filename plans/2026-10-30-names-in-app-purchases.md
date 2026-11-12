@@ -43,8 +43,8 @@ The codes release:
 - Search in the app, over SMP.
 - The app registers a name with a prepaid code.
 - A site-bought name's owner code moves the name into the app only if the name already opens this profile's address or channel; otherwise the name shows on the profile without moving, as today.
-- "Buy in browser" opens the site's search for the name where D18 allows; Google Play and iOS outside the US link nowhere to the site.
-- iOS outside the US, while its payment is hidden: a code, with no search before it.
+- "Buy in browser" opens the site's search for the name where D18 allows; Google Play and iOS App Store builds outside the US link nowhere to the site.
+- iOS App Store builds outside the US: a code, with no search before it.
 - Buying and codes start from the address and a channel's info (D14).
 - A name may open nothing: the ✕ on 2·3's Opens row registers it so, and "SimpleX names" under Advanced settings lists the profile's names and the recovery key, without Register a name, Import and Restore purchases (D15).
 - The 24-word recovery key, the first time only, before the checkout; saving it is optional (D12).
@@ -53,9 +53,9 @@ The codes release:
 The payments release:
 
 - Paying in the app with Google Play and the App Store: one product, $100 for 2 years, for any name.
-- iOS store payment: built in this release, shipped hidden behind a build-time switch until tested (D17).
+- iOS store payment: built in this release, shown only in App Store builds, as the badges decide on the phone (D17).
 - After a store payment, the payment and the sealed order go in one request, answered separately (D3).
-- Builds that can't pay in the app (F-Droid, desktop, iOS while its payment is hidden) take the app's steps, priced from the service's catalog, then pay in the browser for a prepaid code the buyer never sees (row 4, D9).
+- Builds that can't pay in the app (F-Droid, desktop, iOS builds outside the App Store: TestFlight, App Review, Xcode) take the app's steps, priced from the service's catalog, then pay in the browser for a prepaid code the buyer never sees (row 4, D9).
 - "Buy in browser" on Google Play and iOS in the US takes row 4's path, beside the store's payment.
 
 ### Stage 2, v1.1, usable
@@ -79,10 +79,10 @@ The payments release:
 | AC1 | In the Play build, a user with no wallet finds a name, pays once with Play Billing, and the name registers for 2 years to a key of the device wallet, opening their address, shown as verified | End to end: the store service, the fake Play verifier, the fake chain node |
 | AC2 | A payment is credited once and never lost: the same request twice gives one code and one order; a request whose answer was lost, sent again, gets the same answers; a refused order keeps the payment; a name taken before the order or the registration keeps the payment for another name | Service and core tests, one per case |
 | AC3 | The one product pays for any name of 6 to 63 characters for 2 years; the service takes the years from the product, never from the client | Service test: a 6-character and a 63-character name |
-| AC4 | iOS with its payment hidden: the store purchase button is absent; the US storefront pays in the browser (row 4); every storefront takes a code; the purchase lane compiles and runs behind the switch | Previews of both storefronts; an iPhone in the US storefront, by hand; a sandbox run of the lane with the switch on |
+| AC4 | iOS: the store purchase shows only in App Store builds, as the badges decide; a TestFlight build pays in the browser (row 4) in every storefront; every build takes a code | Previews of an App Store build and a TestFlight build; a TestFlight build on an iPhone, by hand; a sandbox run of the lane with the test switch on |
 | AC5 | A site-bought name's owner code, pasted on the code sheet or arriving by link, never scanned, moves the name to the device wallet once the name opens this profile's address or channel; any other name is refused with its next step; a name left on the site shows on the profile as today | End to end: the owner code flow, the fake chain node |
 | AC6 | The app opens the store sheet only after its countdown to the sale ends and while the catalog reads open; a paid receipt is credited in every mode, its order waiting until the sale opens | Previews of the catalog's states; service test: a paid receipt credited under codes-only, its order answered `sale_closed` |
-| AC7 | A build that can't pay searches, creates the key the first time and reaches 4·2, priced from the catalog, where the user ticks the terms; "Pay in browser" opens an invoice the link names only by a prepaid code's hash; once paid, the app sees it through the code check, with or without the link back, and registers the name with that code; "Buy in browser" on 1·2 takes the same path where allowed; Google Play and iOS outside the US link nowhere to the site in the alerts, the name screen and the search | Service test: an invoice for a code's hash, found again by that hash, confirming, paid; end to end from the invoice to the registered name with no link back; previews per build and storefront, the alerts and What's New included |
+| AC7 | A build that can't pay searches, creates the key the first time and reaches 4·2, priced from the catalog, where the user ticks the terms; "Pay in browser" opens an invoice the link names only by a prepaid code's hash; once paid, the app sees it through the code check, with or without the link back, and registers the name with that code; "Buy in browser" on 1·2 takes the same path where allowed; Google Play and iOS App Store builds outside the US link nowhere to the site in the alerts, the name screen and the search | Service test: an invoice for a code's hash, found again by that hash, confirming, paid; end to end from the invoice to the registered name with no link back; previews per build and storefront, the alerts and What's New included |
 | AC8 | Key material appears only on 1·4, after a name is found, before the checkout, the first time; "Create a new key" creates the key; the words show only on Show; opened later, Copy and Show ask for the device's check, straight after creation they don't; the reminder stays until Copy or Show | Core test: search and the terms text create no wallet, ‹ on 1·4 creates none, a store sheet cancelled after 1·4a keeps the key and the next order skips 1·4; previews; the device check, by hand (section 8) |
 | AC9 | The app signs each order with the terms the user ticked for it on its checkout, in its name's kind, general or community | Service and core tests: changed terms; each kind |
 | AC10 | Stage 2: on a new phone the 24 words bring back every name the wallet's accounts own, found by the scan with its gap of 20, attached to this profile's address or channel by one relayed edit | End to end: the fake chain node, ROWN |
@@ -242,7 +242,7 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 
 ## 5. Decisions
 
-- **D1.** One store product, one-time: $100 for 2 years, any name; Apple's non-renewing subscription, Play's one-time product; nothing renews by itself (6.2).
+- **D1.** One store product, one-time: $100 for 2 years, any name; Apple's consumable, as the badges' one-time products, Play's one-time product; nothing renews by itself (6.2).
 - **D2.** The service credits a paid receipt as a prepaid code that the app derives from the wallet's seed, and registers the name as with any prepaid code; it binds the receipt to that code by the token the app sets on the purchase (Q9).
 - **D3.** The payment and the sealed order go in one request, answered separately, the payment saved first; the reveal is a later request.
 - **D4.** The app orders through the store service over SMP. The service holds the registrar key, pays the gas, spends the allowance and sends every transaction; the app signs the order, the registration intent and the terms acceptance with its wallet.
@@ -250,7 +250,7 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 - **D6.** The search answer comes from the resolver: availability, the minimum length, the grace date, the reserved reason, the terms. The catalog answers the sale's state, the product, the term start and the clock. The app compares the catalog's terms hash with the resolver's before it signs.
 - **D7.** One registration encoder: the ABI encoding, the commitment and the `RegisterName` intent move into the chat library.
 - **D8.** The CLI first, then Kotlin, then Swift: each core pull request adds its `/name …` form and a terminal test; one Kotlin pass covers Android and desktop; Swift mirrors it.
-- **D9.** Every build registers a name with a code, pasted on one half-screen sheet, never scanned. Builds that can't pay in the app take the app's steps, then pay in the browser for a prepaid code the buyer never sees (row 4, Q24). iOS outside the US, while its payment is hidden, takes a code with no search. A site-bought name comes in with its name code (D11).
+- **D9.** Every build registers a name with a code, pasted on one half-screen sheet, never scanned. Builds that can't pay in the app take the app's steps, then pay in the browser for a prepaid code the buyer never sees (row 4, Q24). In the codes release, iOS outside the US takes a code with no search. A site-bought name comes in with its name code (D11).
 - **D10.** Signing stays in the core: a library function takes an account index and uses the account key only inside it; named commands build and sign their own messages; no chat command signs text its caller gives.
 - **D11.** A name code is a wallet, and redeeming one is a transfer. The name code stays on the device and the app sends only that wallet's signatures; a prepaid code is sent as it is. The code's wallet offers the name with `approveWithSig`, and the app's account accepts the terms and takes it with `claimWithSig`: three transactions, each relayed by the service; then the recovery key owns the name. In stage 1 only a name that already opens this profile's address or channel moves.
 - **D12.** The recovery key comes after the search and before the checkout, the first time only. 1·4 creates it; a half-screen sheet over it, 1·4a, offers to save it; saving is optional; the words show only on Show; a quiet reminder until Copy or Show. Restore comes in stage 2, with its scan.
@@ -258,12 +258,12 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 - **D14.** In stage 1 buying and codes start from the address and a channel's info; the hub, with Register a name, Import and Restore purchases, comes in stage 2, under Advanced settings.
 - **D15.** In stage 1 a name may open nothing: 1·5's ✕ registers it so, and a list of the profile's names under Advanced settings shows it, as it shows a name replaced by a newer one on the same address (Q12).
 - **D16.** A taken name shows "Taken", without pictures, and a separate "What it's used for" button (Q18).
-- **D17.** iOS store payment is built in stage 1 and ships hidden behind a build-time switch until tested.
-- **D18.** Links to the site: always on F-Droid and desktop; on Google Play and iOS only in the US.
+- **D17.** iOS store payment is built in the payments release and shows only in App Store builds, decided on the phone as the badges decide; TestFlight, App Review and Xcode builds pay in the browser (6.9).
+- **D18.** Links to the site: always on F-Droid, desktop and iOS builds outside the App Store; on Google Play and iOS App Store builds only in the US.
 - **D19.** Yearly allowances per name, defaults the service can change: 3 link edits; 3 moves in or transfers. A failed registration tries another name up to 3 times. Each registration and renewal is paid.
 - **D20.** Renewal is stage 3. The expiry date shows from stage 1. Reminders and `renewWithCredit` with its store products come before the first names expire.
 - **D21.** The main path: search → create key (first time only) → checkout with the terms tick → payment → registering → yours. A change to these steps is an open question in section 11 first. Row 3: the tick on 3·1 → create key (first time only) → moving. The screens use no crypto words, except "public blockchain" on 1·4.
-- **D22.** Stage 1 is built in two releases, each of its own pull requests: codes first, then payments, after which v1 ships to users; stages 2 and 3 follow (section 8).
+- **D22.** Stage 1 is built in two releases, each of its own pull requests: codes first, then payments; stages 2 and 3 follow (section 8).
 - **D23.** Later work: the app checks on the chain that the service sent the commit, and limits how long registering may take before it says the service failed. Commit and reveal stay separate steps of the API (section 7).
 - **D24.** A code is never worth money: redeeming one makes a name cost $0; no screen, page or receipt offers, prices or describes a code as an amount; a browser payment pays for a name.
 
@@ -296,7 +296,7 @@ token   version-4 UUID: bytes 0–5 nonce; byte 6 0x40; byte 8 0x80; bytes 7 and
 
 | | App Store | Google Play |
 |---|---|---|
-| Type | Non-renewing subscription | One-time product, marked as a Tokenized Digital Asset; the Financial features declaration updated for NFT sales |
+| Type | Consumable, as the badges' one-time products (`apps/ios/BadgeTestProducts.storekit`) | One-time product, marked as a Tokenized Digital Asset; the Financial features declaration updated for NFT sales |
 | Identifier | `NAME_2Y_01` | `name_2y_01` |
 | Display | "SimpleX name" | "SimpleX name" |
 | Description | "Registers one name for 2 years." | "Registers one name for 2 years." |
@@ -305,7 +305,7 @@ token   version-4 UUID: bytes 0–5 nonce; byte 6 0x40; byte 8 0x80; bytes 7 and
 - Multi-quantity off. One unused name purchase per store account (Play sells the product again only after consumption).
 - The store's commission: 15% while SimpleX's store earnings stay under $1M a year, once enrolled (Apple's Small Business Program; Google's first $1M, as 10% + 5% billing fee in the US, EEA and UK since 30 June 2026); up to 30% above that.
 - One purchase per name; a code row never expires.
-- The product stays unavailable in each store until codes-only is off; on iOS, unsubmitted until the switch (6.9).
+- The product stays unavailable in each store until codes-only is off; on iOS, submitted with the payments release's version (6.9).
 - Apple allows editing neither a product's ID nor its type, and a deleted ID can't be reused; the type is settled before the product is created (Q8).
 - Review notes: a registered name comes back from the recovery key from stage 2, not with "Restore purchases".
 
@@ -355,7 +355,7 @@ The payment part, in order:
 2. The product, looked up in the names catalog, which maps it to `NameProduct {minLength = 6, years = 2}` (Play: the product id the request names, before any call to Play; Apple: after the signed transaction's offline check). An unknown one is refused. A retired product stays in the catalog.
 3. The store verifies it, with the badge refusals (invalid, pending, test purchase) and a quantity other than 1. A Play read takes a slot of the names' own per-minute bound.
 4. The same receipt with another hash, or a token that doesn't match the hash: `receipt_used`, after the store vouches for it; nothing written.
-5. Play acknowledged; one transaction inserts the payment (unique by store and transaction; keyed for this product by `originalTransactionId`) and the code row, and commits:
+5. Play acknowledged; one transaction inserts the payment (unique by store and transaction; keyed for this product by `transactionId`) and the code row, and commits:
 
 ```
 code_hash
@@ -656,7 +656,7 @@ stateDiagram-v2
 
 ### 6.5 The apps: store lanes and open purchases
 
-Android first; iOS gets the same code behind the build-time switch (6.9). Desktop and F-Droid show no store purchases. The app loads the store product only once the catalog reads open, and shows the store's price in the store's currency.
+Android first; iOS gets the same code, shown only in App Store builds (6.9). Desktop and F-Droid show no store purchases. The app loads the store product only once the catalog reads open, and shows the store's price in the store's currency.
 
 - **Purchase lane, Android:** `launchBillingFlow`; the result goes to the core; acknowledged once the core holds it; consumed when its name registers.
 - **Purchase lane, iOS:** `product.purchase(options: [.appAccountToken(token)])`; finished when its name registers.
@@ -664,7 +664,7 @@ Android first; iOS gets the same code behind the build-time switch (6.9). Deskto
 - The badge lanes skip name products and the name lanes skip badge products, on both platforms.
 - **An open purchase** (paid, name unregistered) is found at start from the store's own list and continues:
   - Play: its purchases query;
-  - Apple: `Transaction.currentEntitlements`, whose latest transaction per product is open when it carries this wallet's token and no local record says it was used (only then does the app ask the service); `Transaction.unfinished` is read too, as a secondary list.
+  - Apple: `Transaction.unfinished`, as for the badges' one-time products (`BadgeStore.swift:373, 385`): a name purchase stays unfinished until its name registers, and is open when it carries this wallet's token and no local record says it was used (only then does the app ask the service).
   - With the chosen name in the database, registration resumes; otherwise the app asks for a name.
 
 ```mermaid
@@ -704,7 +704,7 @@ flowchart TD
   - a reinstall;
   - a second device;
   - an older build on the same Apple Account;
-  - whether a restored non-renewing purchase gets a new `transactionId` and keeps its `originalTransactionId`;
+  - whether another device of the same Apple Account lists an unfinished consumable;
   - whether the token survives a restore;
   - Ask to Buy;
   - an interrupted purchase;
@@ -732,7 +732,7 @@ Rules for every screen:
   - on `terms_changed` the tick comes back unticked under "The terms changed. Agree to them again.": on the checkout before paying, in place on 1·7 after.
 - The images show each lane's screens with their numbers and routes; where the words below differ from an image, the words below hold. A state not named here takes a listed state's words.
 - Alternative B, the obligations under the tick on the checkout itself with no sheet, drawn in lane 1 and noted beside 2·3, 3·1 and 4·2, is Q25.
-- Privacy disclosures stay off the screens: section 7 states each as a property, and P57a and P57b put them in `PRIVACY.md`. The names terms' text (https://github.com/simplex-chat/simplex-chat/pull/8002) is outside this plan.
+- Privacy disclosures stay off the screens: section 7 states each as a property, and P57a, P57b and P57c put them in `PRIVACY.md`, ⚠ each text approved by the lead. The names terms' text (https://github.com/simplex-chat/simplex-chat/pull/8002) is outside this plan.
 - The codes release: 1·1 opens 1·2 in every build, and 4·1's code-only form on iOS outside the US; 1·2 keeps "Register with code" whatever the catalog says, with the codes-only state's line while the catalog reads codes-only and "This version registers names with a code." once it reads open; its "Buy in browser" opens the site's search for the name (`/#/?name=<label>`, 3.2), with no 1·4, where D18 allows and the catalog reads open (Q26). 1·5, 1·6, 1·10, 4·1's priced form and the rest of row 4 come with the payments release.
 
 #### Row 1, buy in the app (Google Play; iOS when its payment is on). Stage 1, except 1·4's "I already have a key"
@@ -998,7 +998,7 @@ The path: search → key the first time → checkout with the terms tick → the
   - A name that already opens this address: 1·2's answer, with "Show on your profile".
   - Offline, the search and 2·1 wait for the connection.
   - In these builds 1·1's "Get SimpleX name" and, from stage 2, the hub's "Register a name" open 4·1.
-- **4·1 on iOS outside the US**, its payment hidden, as drawn: no search; "Show it on your profile" → today's name screen; "I have a code" → 2·1; no site named.
+- **4·1 on iOS outside the US**, in the codes release, as drawn: no search; "Show it on your profile" → today's name screen; "I have a code" → 2·1; no site named.
 - **4·2** 1·5 priced from the catalog, with the terms block.
   - "Pay in browser" → 4·3, and 4·2 then shows its waiting state; "Use a code" → 2·1 then 2·3. "Pay in browser" stays off until the terms are ticked.
   - 1·5's re-check runs before the link opens.
@@ -1066,7 +1066,7 @@ The path: search → key the first time → checkout with the terms tick → the
 
 ### 6.8 The browser path
 
-Row 4: F-Droid and desktop always; iOS in the US while its payment is hidden; "Buy in browser" on Google Play and iOS in the US (`badgeBrowserAllowed`, reused). Built as Q24's recommended answer.
+Row 4: F-Droid, desktop and iOS builds outside the App Store always; "Buy in browser" on Google Play and iOS App Store builds in the US (`badgeBrowserAllowed`, reused). Built as Q24's recommended answer.
 
 ```mermaid
 sequenceDiagram
@@ -1151,16 +1151,16 @@ stateDiagram-v2
 
 ### 6.9 iOS and Apple's test environment
 
-- The same code behind a build-time switch, as the badge buttons are at `names`: off in the payments release, on in the version submitted with the product.
-- While off, iOS is a build that can't pay (row 4): the US storefront pays in the browser; elsewhere the screen offers a code, without a search.
+- The store purchase shows only in App Store builds, decided on the phone as the badges decide on master (`servedByAppStore`); `names` gains the check with its next merge of master.
+- The check: the app's receipt named `receipt` from the first frame, then, on iOS 16 and later, the verified app transaction's environment `production` (`BadgeStore.swift:44, 148, 223-230` at master 225b3eef6).
+- A failed or unverified read of the app transaction keeps the receipt's answer, as for the badges.
+- App Store builds: 1·5's Pay and the store sheet; "Buy in browser" in the US storefront only (D18).
+- TestFlight, App Review and Xcode builds can't pay in the app: row 4 in every storefront, and a code, as the badges show their site button and code there (`BadgesSupportSimplexView.swift:50-74`).
 - App Review's and TestFlight's purchases are test purchases, refused in production.
-- Switching on adds a second, small store-service deployment (P56), recommended in Q5:
-  - set to the `testing` namespace, Apple's sandbox host, crediting test purchases;
-  - the app sends a transaction marked sandbox to that deployment's address;
-  - `credit_test_purchases` there applies to name products only, or the deployment answers badge commands with `unsupported_version`;
-  - it credits test purchases only while the operator has opened it for a build in review, registers a few names a day, and refuses the rest;
-  - the reviewer completes the flow and receives `dynamism.testing`, shown as such.
-- Until iOS sells names, its code path relies on App Review accepting it (3.1.3(b), 3.1.1) (Q5).
+- The name product is submitted with the payments release's version; App Review sees the browser path, as for the badges.
+- A sandbox run (section 8, by hand) uses P46's test switch, which shows the store purchase in a test build, false in every shipped build.
+- Apple doesn't restore a consumable; a registered name comes back from the 24 words from stage 2 (6.2).
+- The badge and name lanes read the same check, so a build sells both or neither.
 
 ### 6.10 Stage 2 mechanics
 
@@ -1220,7 +1220,7 @@ Separate products, sold apart and without a discount; a name unlocks no feature 
   - an invoice for a code, found by its hash (P59);
   - the code's confirming state (P59);
   - a refund record per code row, one per part of a payment (P66).
-- **Older apps** never send the new commands; each lane skips the other's products; iOS reads open purchases from `Transaction.currentEntitlements` first (6.5).
+- **Older apps** never send the new commands; each lane skips the other's products; iOS reads open purchases from `Transaction.unfinished` (6.5).
 
 **Threat model.** The design accepts and states the following (Q6).
 
@@ -1294,7 +1294,7 @@ Payments:
 - An order placed and never revealed holds a cap place across its re-commits, up to its 5 commitment windows; orders revealed late count on their send day, so one batch closes a second day.
 - The operator revokes abusers' codes; prepaid codes and the site stay open.
 - A flood over SMP denies its lane, buyers included, while it lasts, and loses no money; invented Play tokens spend only the names' Play bound.
-- Apple test purchases never register a `.simplex` name; the test deployment credits no badge (6.9).
+- Apple test purchases never register a `.simplex` name: the production service refuses them (`creditTestPurchases` off, 3.3).
 
 Owner codes and the scan:
 
@@ -1352,7 +1352,7 @@ flowchart LR
 
 ### The codes release
 
-It starts now, its screens after the lead's feedback on the screens. It is a step of the work: v1 ships to users after the payments release.
+It starts now, its screens after the lead's feedback on the screens.
 
 The dev setup, first (9.2):
 
@@ -1415,7 +1415,7 @@ The resolver, the site and the docs:
   - Tested: the webapp's end-to-end cases for the "is yours" page, locally against the service, as `scripts/store-service/dev/contract-run.sh` runs them.
 - P69 `names: the site with Open in SimpleX`: `apps/simplex-domains` moved to P47's commit, which the service serves · small · low · P47
   - Tested: the store service's tests in the reduced build; `contract-run.sh` against the moved site, its list of cases gaining P47's.
-- P57a `docs: names through the store service`: the registrar in `docs/protocol/names-overview.md`, names data and retention in `PRIVACY.md`, the wallet RFC's hidden-profile line, as properties from section 7 · small · low · P23
+- P57a `docs: names through the store service`: the registrar in `docs/protocol/names-overview.md`, names data and retention in `PRIVACY.md`, the wallet RFC's hidden-profile line, as properties from section 7; ⚠ the privacy policy's text needs the lead's approval, and its own pull request holds it · small · low · P23
   - Tested: read against section 7 in its review.
 
 The screens, after the lead's feedback on them, each tested on snapshots and the runners (9.1); each has a Swift copy, a pull request of its own after it (P39, P41 to P45 and P72, one for each of P30 to P36a and P71), tested on `ios-sim` the same way:
@@ -1445,7 +1445,7 @@ By hand, for the codes release's work, at the payments release's end:
 
 ### The payments release
 
-It starts once Q24 is answered for the browser path, and once the deferred questions are for the store path: receipt binding (Q9), the daily cap (Q10), the Apple product type (Q8), the release of iOS payment (Q5), the console and export check (Q14). Its runner tests also need three stand-ins, each built in the pull request whose code it stands in for: the mock verifier's name purchases (P27a), opened codes paid in dev mode (P59), and the store stubs of test builds (P37, P46).
+It starts once Q24 is answered for the browser path, and once the store path's questions are: the daily cap (Q10) and the console and export check (Q14). Its runner tests also need three stand-ins, each built in the pull request whose code it stands in for: the mock verifier's name purchases (P27a), opened codes paid in dev mode (P59), and the store stubs of test builds (P37, P46).
 
 - P7 `names: prepaid codes from the wallet`: the code derived from a seed and a nonce or a store reference, under the store's info string, on the existing `NamePrepaidCode`; the token; the wallet RFC's section and the crypto registry's info string · small · high
   - Tested: vectors: a code from a nonce, a code from a reference, the token, with HKDF from node's `crypto.hkdfSync` and the hashes from viem.
@@ -1471,7 +1471,7 @@ The browser path:
 
 The store path:
 
-- P27a `store: a name code bought in a store`: the product; the purchase command with a hash alone; the payment column; the migration; keying by `originalTransactionId`; the token's check; which buyer details Play Console shows; the mock verifier reads the token from a test receipt (Apple: the payload's `appAccountToken`; Play: a test token `test.<token>.<random>`) · medium · high · P7, P13
+- P27a `store: a name code bought in a store`: the product; the purchase command with a hash alone; the payment column; the migration; keying by `transactionId`, as for any Apple product that doesn't renew by itself (`applePayloadRef`); the token's check; which buyer details Play Console shows; the mock verifier reads the token from a test receipt (Apple: the payload's `appAccountToken`; Play: a test token `test.<token>.<random>`) · medium · high · P7, P13
   - Tested: service tests with the fake Play and App Store verifiers: each step of 6.3's payment part and each row of its table; repeats at any age; 6.1's token rules; promo, retired-product, refunded-receipt and test-purchase cases; a 6- and a 63-character name (AC3); the mock's token from both stores.
 - P27b `store: the order in the purchase request`: the order part, its answers, the names' Play bound · medium · high · P23, P27a
   - Tested: service tests: each row of 6.3's order-part table; a refused order keeps the code; codes-only, then open; changed terms before the order and before the reveal; `move_limit` and the 30-day release.
@@ -1483,19 +1483,19 @@ The store path:
   - Tested: terminal with the fake verifiers: each rule of 6.3's repeats and sizes on the core's side; 6.5's open-purchase, token and hidden-profile rules; recovery of a purchase from a restart and a suspension in each phase; a credited "Not confirmed" purchase shown without a restart; a kept order without links.
 - P37 `android: the Play purchase lane`: first the badge lane skips name products; then the product, 1·5's Pay and 1·6, pending purchases, the store-only states of 1·7, the store-account lines, acknowledge and consume; a test switch for products and purchases, false in every shipped build, as `useBadgeTestProducts` (`BadgeStore.kt:102`) · medium · high · P19, P35a, P61
   - Tested: `android-emu` building the Google Play flavor on the test branch: AC1 with a stubbed purchase the mock verifier credits; AC8's store sheet cancelled after 1·4a, the key kept and the next order skipping 1·4; each lane skips the other's products.
-- P46 `ios: the App Store purchase lane`: first the badge lane skips name products, in every build; then the lane behind the build-time switch; a test switch that makes a signed transaction the mock verifier reads, false in every shipped build · medium · high · P19, P35a, P61
-  - Tested: `ios-sim` with the build-time switch and the test switch on: a stubbed purchase from 1·5 to 1·8; AC8's store sheet cancelled after 1·4a, as on Android; each lane skips the other's products.
+- P46 `ios: the App Store purchase lane`: first the badge lane skips name products, in every build; then the lane, shown only in App Store builds by the badges' check (6.9); a test switch that shows it in a test build and makes a signed transaction the mock verifier reads, false in every shipped build · medium · high · P19, P35a, P61
+  - Tested: `ios-sim` with the test switch on: a stubbed purchase from 1·5 to 1·8; AC8's store sheet cancelled after 1·4a, as on Android; each lane skips the other's products; with it off, the simulator build takes row 4.
 - P35c `ui: the chat console, a database export and migration ask with the lock off` (Q14); its Swift copy P64 · small · high · P35a
   - Tested: snapshots of the prompts; on devices by hand (below).
-- P57b `docs: payment linking`: the stores and payment linking in `PRIVACY.md` and `docs/protocol/names-overview.md`, as properties from section 7 · small · low · P27c
+- P57b `docs: payment linking`: the stores and payment linking in `PRIVACY.md` and `docs/protocol/names-overview.md`, as properties from section 7; ⚠ the privacy policy's text needs the lead's approval, and its own pull request holds it · small · low · P27c
   - Tested: read against section 7 in its review.
 
 By hand, also at the payments release's end:
 
 - P37: a Play test purchase by a licence tester, on a build from the internal track.
-- P46: an Apple sandbox run of 6.5's undocumented cases, the switch on, with 6.3's size of a real transaction and the longest short link the app makes.
+- P46: an Apple sandbox run of 6.5's undocumented cases, the test switch on, with 6.3's size of a real transaction and the longest short link the app makes.
 - P59, P60: a card payment in Stripe's test mode and a Bitcoin payment through BTCPay on a test network, through the page.
-- P63: row 4 on an iPhone in the US storefront with iOS payment hidden, on a test build: 1·2's "Buy in browser" and 4·1 reach 4·2 and open its invoice (AC4).
+- P63: row 4 on an iPhone with a TestFlight build, which can't pay in the app: 1·2 and 4·1 reach 4·2 and open its invoice (AC4).
 - P35c: Q14's checks on devices, with the lock off and in passcode mode, desktop's floating console included.
 - P37, P46, by the operator: each store's product as 6.2 sets it.
 - The operator's chain operation M13 (`setPrices`, one base price), before the sale.
@@ -1511,7 +1511,7 @@ P3, P4 and P10 can start at any time; P12 once P19 is in, which its token case n
   - Tested: simplexmq's server, client and agent tests.
 - P10 `wallet: restore from the recovery phrase`: `/_wallet import`, refused where a wallet exists and from a paired device, the counter set past the accounts found, the shown-words record set · medium · high
   - Tested: terminal: each refusal; the counter past the accounts found.
-- P12 `wallet: find the names a phrase owns`: the scan over ROWN with a gap limit, a start index, progress events and a stop; an `ArchiveConfig` field set only by the database import screen, never by device migration, kept in preferences until the next start, so "Look for your names again" asks before registering; section 7's line on the scan in `PRIVACY.md` · large · high · P4, P10, P19
+- P12 `wallet: find the names a phrase owns`: the scan over ROWN with a gap limit, a start index, progress events and a stop; an `ArchiveConfig` field set only by the database import screen, never by device migration, kept in preferences until the next start, so "Look for your names again" asks before registering; the scan's line in `PRIVACY.md` is P57c's · large · high · P4, P10, P19
   - Tested: terminal against the local simplexmq: 6.10's scan rules; a reinstall recovering an open purchase by its token without "Restore purchases".
 - P25 `store: names over SMP — the record edit` · small · high · P22
   - Tested: service tests: the SMP and web forms answer alike.
@@ -1529,10 +1529,10 @@ P3, P4 and P10 can start at any time; P12 once P19 is in, which its token case n
   - Tested: runners: a name set to a link outside the app; snapshots.
 - P38, P51: the screens of P29, P35b and P50 in Swift · as the Kotlin pull requests · low · P29, P35b, P50
   - Tested: `ios-sim`, as the Kotlin pull requests.
-- P56 `store: the test-purchase deployment` (6.9), with the App Store product submitted, when iOS is switched on: after stage 2's restore (Q5) · small · high · P27a, P46
-  - Tested: service tests: the deployment refuses badge commands, or credits name products only.
+- P57c `docs: the scan for a phrase's names`: section 7's line on the scan in `PRIVACY.md`; ⚠ the privacy policy's text needs the lead's approval, and its own pull request holds it · small · low · P12
+  - Tested: read against section 7 in its review.
 
-By hand, at stage 2's end: 1·4a's stage-2 checks on devices (P35b); Restore purchases with real store accounts (P29); App Review with the test deployment (P56).
+By hand, at stage 2's end: 1·4a's stage-2 checks on devices (P35b); Restore purchases with real store accounts (P29).
 
 ### Stage 3
 
@@ -1593,7 +1593,7 @@ flowchart LR
   - a name held by a name code, registered through the site's order API by a script that signs as the site does, with viem from the webapp's dependencies;
   - a command of that script that the test runs before 3·1: with the name code's wallet it signs an edit of the name's link to the address the test passes, and relays it through `POST /api/name/records`;
   - the service's address, the second server's address and the codes, written to the work folder.
-- The test build: the commit on the names test branch sets `storeServiceDev` (P68), the local chain's id, addresses and namespace, and `simplexNameSaleStart` in the past in both apps (`UserAddressView.swift:818`, `SetSimplexNameView.kt:33`), so the countdown has ended and the store sheet, "Buy in browser" and row 4 open before 12 Dec 2026; the test's setup types `/_store service <address>` in the chat console. The payments release adds to that commit the store test switches (P37, P46), iOS's build-time switch, the Google Play flavor for `android-emu`, and the local service's names site as the browser path's site.
+- The test build: the commit on the names test branch sets `storeServiceDev` (P68), the local chain's id, addresses and namespace, and `simplexNameSaleStart` in the past in both apps (`UserAddressView.swift:818`, `SetSimplexNameView.kt:33`), so the countdown has ended and the store sheet, "Buy in browser" and row 4 open before 12 Dec 2026; the test's setup types `/_store service <address>` in the chat console. The payments release adds to that commit the store test switches (P37, P46), the Google Play flavor for `android-emu`, and the local service's names site as the browser path's site.
 - The payments release adds to the backend's service `[dev] accept_unverified_store_receipts = on`, whose mock verifier credits the test builds' purchases (P27a), and `[dev] pay_opened_codes_after_seconds` (P59).
 
 ## 10. Risks
@@ -1625,21 +1625,21 @@ The other questions:
 
 - **Q1.** Keep a recovery key that finds no names on a new phone? → Yes, after a warning (6·3).
 - **Q2.** The word for your own name coming into the app? → "Move"; "transfer" for someone else.
-- **Q3.** Deferred. Does the app say buyers must be 18 or older? → No; the terms say it.
-- **Q4.** Deferred. The app's own purchase terms, besides the names terms? → None at launch; the store's terms apply.
-- **Q5.** Deferred. When iOS store payment is switched on? → Once a sandbox run passes and stage 2's restore has shipped, with the test deployment (6.9).
-- **Q6.** Deferred. Linking a payment to its name? → Register at once; `PRIVACY.md` states it (section 7, P57b), the screens don't.
+- **Q3.** ⚠ Legal. Does the app say buyers must be 18 or older? → No; the terms say it.
+- **Q4.** ⚠ Legal. The app's own purchase terms, besides the names terms? → Yes: a purchase section in the one names terms document, its text approved by the lead.
+- **Q5.** Decided. When iOS store payment is switched on? → In the payments release, shown only in App Store builds, as the badges (6.9).
+- **Q6.** ⚠ Privacy policy. Linking a payment to its name? → Register at once, fine for v1; `PRIVACY.md` states it (section 7, P57b), the screens don't.
 - **Q7.** Detail of Q24. What the invoice's link holds? → The code's hash alone; no order code shows (decided on 11 Nov).
-- **Q8.** Deferred. Apple product type? → Non-renewing subscription.
-- **Q9.** Deferred. Bind a receipt to its wallet with the token? → Yes.
-- **Q10.** Deferred. The daily cap? → Counted when a register is sent; the gate counts orders in flight; the stores' reports watched by hand.
-- **Q14.** Deferred. Once a wallet exists, do the console, a database export and migration ask with SimpleX Lock off? → Yes (P35c): the stop, an export from a stopped chat and migration ask for the device's check, any answer but `SEWalletNotFound` counting as a wallet; the console asks on `/_wallet`, `/sql`, `/db` and `/_db` (`consoleSendMessage`, `sendCommand`), the lock's check with the lock on, the device's with it off.
+- **Q8.** Decided. Apple product type? → Consumable, as the badges' one-time products (6.2).
+- **Q9.** Decided. Bind a receipt to its wallet with the token? → Yes (6.1).
+- **Q10.** Money. The daily cap? → 50 store-paid registrations a day, a setting the operator can raise at any time; counted when a register is sent, the gate counting orders in flight; no refund handling in v1, as for the badges; the stores' reports watched by hand.
+- **Q14.** Once a wallet exists, do the console, a database export and migration ask with SimpleX Lock off? → Yes (P35c): the stop, an export from a stopped chat and migration ask for the device's check, any answer but `SEWalletNotFound` counting as a wallet; the console asks on `/_wallet`, `/sql`, `/db` and `/_db` (`consoleSendMessage`, `sendCommand`), the lock's check with the lock on, the device's with it off.
 - **Q17.** Copy on the key sheet? → Copy and Show on 1·4a, the copy marked as 1·4a says.
-- **Q18.** A taken name's use as text on 1·2? → The plan builds on D16's button; the recommendation is text in the row, "Taken, used by address and channel".
+- **Q18.** Decided. A taken name's use on 1·2? → A separate "What it's used for" button, as asked in review (D16); text in the row, "Taken, used by address and channel", is the alternative.
 - **Q19.** Show a kept payment as a code with Copy? → No, not in v1.
-- **Q20.** Detail of Q24. Browser money that arrives late, short or beyond the price? → Support refunds it through `//name-invoice`, without a revoke or a balance.
-- **Q21.** Detail of Q24. A phone lost after paying in the browser? → A card payment refunded through `//name-invoice` after the 30-day conditions; crypto isn't. A different answer that changes the nonce is due before P62.
-- **Q22.** Deferred. Ask for the device's check on Copy and Show straight after the key is created? → The plan builds on no (1·4a's exception); the recommendation is yes.
+- **Q20.** Money, detail of Q24. Browser money that arrives late, short or beyond the price? → Support refunds it through `//name-invoice`, without a revoke or a balance; fine for v1.
+- **Q21.** Money, detail of Q24. A phone lost after paying in the browser? → A card payment refunded through `//name-invoice` after the 30-day conditions; crypto isn't; fine for v1. A different answer that changes the nonce is due before P62.
+- **Q22.** Ask for the device's check on Copy and Show straight after the key is created? → No: no lock during the purchase (1·4a's exception).
 - **Q25.** The terms on the checkout: one tick line whose link opens a half-screen sheet with the obligations and Agree (A), or the obligations under the tick on the checkout itself (B)? → A, the sheet (6.6's terms block).
 - **Q27.** Stage 2's "Set what it opens" takes "any link": a contact or channel link, also one outside the app, or a web address too? → Contact and channel links: the service's record edit takes a name's contact and channel records only and refuses any other value (`recordKinds`, `EIInvalidLink`, `StoreService/Web/Names/Records.hs:58, 75-76`), so a web address is new work in the service.
 
