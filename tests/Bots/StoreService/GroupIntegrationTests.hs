@@ -12,7 +12,7 @@ module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, name
 
 import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cController, cServiceKey), GroupConfig (..), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, names), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, joinerAcceptance)
-import StoreService.Group.Command (CmdAction (..), groupCmdAction, maxUses)
+import StoreService.Group.Command (maxUses)
 import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -512,12 +512,15 @@ namesRefundChatTests = describe "StoreService names: operator refund" $ do
   it "shows a balance with what paid for it, and records refunds by registration or invoice id, adding them up" testRefundRecorded
   it "refuses an unknown reference, an order without a balance and another amount, and answers the usage to a malformed command" testRefundRefusals
   it "refuses a balance held by an open order, naming it and its expiry, and records it once that order's invoice is cancelled" testRefundOpenHolder
-  it "is not a group command" $ \_ -> groupCmdAction GROwner "/refund s 10000" `shouldBe` IgnoreMsg
+  it "answers an owner's /balance, /record_refund and /close in the group, worded for the group, refusing as the console does" testGroupMoneyCmds
   it "closes a failed paid order by its invoice id, recording the refund of its price, and refuses an unknown reference and an order no longer failed" testCloseRecorded
   it "refuses //close without [names], and answers the usage to a malformed one" testCloseNamesOff
 
-refundRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
-refundRaw cc args = operatorCmd cc ("//refund " <> args)
+balanceRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
+balanceRaw cc args = operatorCmd cc ("//balance " <> args)
+
+recordRefundRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
+recordRefundRaw cc args = operatorCmd cc ("//record_refund " <> args)
 
 closeRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
 closeRaw cc args = operatorCmd cc ("//close " <> args)
@@ -547,7 +550,7 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     logs `shouldSatisfy` T.isInfixOf "names: closed order f and recorded a refund of 10000 cents"
     closeRaw cc "f" `shouldReturn` Left "Nothing recorded: the order of f is not a failed order paid by invoice or balance."
     Balances.figures st "f" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
-    refundRaw cc "f" `shouldReturn` Right ("Order f: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
+    balanceRaw cc "f" `shouldReturn` Right ("Order f: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
     Balances.placeOrderRow st "g" False 10000 (addUTCTime 3600 now)
     unpaidG <- reg st "g"
     write st unpaidG {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
@@ -556,6 +559,27 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     registeredLogs <- capturingStderr $ closeRaw cc "inv-g" `shouldReturn` Left "Nothing refunded: the register of order g went through, so the order is registered now."
     registeredLogs `shouldSatisfy` T.isInfixOf "names: order g set registered by //close, as its register went through"
     Balances.figures st "g" t0 `shouldReturn` Nothing
+
+testGroupMoneyCmds :: HasCallStack => TestParams -> IO ()
+testGroupMoneyCmds ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
+  svc <- prepareGroupService ps
+  let registrar = address $ encodeUtf8 registrarAddr
+  runWithOwner svc {gsIniSections = "" : namesSection <> withRpcUrl (T.pack fnUrl)} $ \cc _ _ alice -> do
+    let st = chatStore cc
+    now <- getCurrentTime
+    Balances.placeOrderRow st "s" False 10000 (addUTCTime 3600 now)
+    unpaid <- reg st "s"
+    write st unpaid {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
+    answerCall node registrar (ownerOfSelector <> labelBytes "s") $ Reverts ""
+    replyTo cc alice "/close nothing" `shouldReturn` "Nothing recorded: no order has the reference nothing."
+    replyTo cc alice "/close inv-s"
+      `shouldReturn` ("Closed order s, failed at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: order s: $100.00 by btc on invoice inv-s.")
+    Balances.credit st "s" 2505
+    replyTo cc alice "/balance s"
+      `shouldReturn` "Order s: balance $25.05 (credited $125.05, refunded $100.00). Paid by: order s: $100.00 by btc on invoice inv-s. To record its refund: /record_refund s 2505"
+    replyTo cc alice "/record_refund inv-s 2500" `shouldReturn` "Nothing recorded: the balance is $25.05 now, not $25.00."
+    replyTo cc alice "/record_refund inv-s 2505" `shouldReturn` "Recorded a refund of $25.05 for order s. Refund it now, by: order s: $100.00 by btc on invoice inv-s."
+    Balances.figures st "s" t0 `shouldReturn` Just (0, 12505, 12505, Nothing)
 
 testCloseNamesOff :: HasCallStack => TestParams -> IO ()
 testCloseNamesOff ps = withStoreService ps $ \_ _ cc -> do
@@ -572,13 +596,13 @@ testRefundRecorded ps = withStoreService ps $ \_ _ cc -> do
   let st = chatStore cc
       paidBy = "order s: $100.00 by btc on invoice inv-s"
   Balances.source st "s" 10000
-  refundRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //refund inv-s 10000")
-  logs <- capturingStderr $ refundRaw cc "inv-s 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidBy <> ".")
+  balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //record_refund inv-s 10000")
+  logs <- capturingStderr $ recordRefundRaw cc "inv-s 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidBy <> ".")
   logs `shouldSatisfy` T.isInfixOf "names: recorded a refund of 10000 cents for order s"
   Balances.figures st "s" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
-  refundRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
+  balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
   Balances.credit st "s" 2505
-  refundRaw cc "s 2505" `shouldReturn` Right ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidBy <> ".")
+  recordRefundRaw cc "s 2505" `shouldReturn` Right ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidBy <> ".")
   Balances.figures st "s" t0 `shouldReturn` Just (0, 12505, 12505, Nothing)
 
 testRefundRefusals :: HasCallStack => TestParams -> IO ()
@@ -586,14 +610,16 @@ testRefundRefusals ps = withStoreService ps $ \_ _ cc -> do
   let st = chatStore cc
   Balances.placeOrderRow st "plain" False 20000 t0
   Balances.source st "s" 10000
-  refundRaw cc "nothing" `shouldReturn` Left "No order has the reference nothing."
-  refundRaw cc "nothing 10000" `shouldReturn` Left "Nothing recorded: no order has the reference nothing."
-  refundRaw cc "inv-plain" `shouldReturn` Left "Order plain has no balance."
-  refundRaw cc "inv-plain 20000" `shouldReturn` Left "Nothing recorded: the order of inv-plain has no balance."
-  refundRaw cc "s 9000" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $90.00."
-  refundRaw cc "s 10001" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $100.01."
-  forM_ ["", "s 0", "s -5", "s 100.00", "s 10000 junk", "s 99999999999999999999"] $ \args ->
-    (args,) <$> refundRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+  balanceRaw cc "nothing" `shouldReturn` Left "No order has the reference nothing."
+  recordRefundRaw cc "nothing 10000" `shouldReturn` Left "Nothing recorded: no order has the reference nothing."
+  balanceRaw cc "inv-plain" `shouldReturn` Left "Order plain has no balance."
+  recordRefundRaw cc "inv-plain 20000" `shouldReturn` Left "Nothing recorded: the order of inv-plain has no balance."
+  recordRefundRaw cc "s 9000" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $90.00."
+  recordRefundRaw cc "s 10001" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $100.01."
+  forM_ ["", "s", "s 0", "s -5", "s 100.00", "s 10000 junk", "s 99999999999999999999"] $ \args ->
+    (args,) <$> recordRefundRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+  forM_ ["", "s 10000"] $ \args -> (args,) <$> balanceRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+  operatorCmd cc "//refund s 10000" `shouldReturn` Left badgeCmdUsage
   Balances.figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
 -- | The source with a balance of $100.00 and the holder holding it, whose invoice expires at the given time.
@@ -604,8 +630,8 @@ heldSource cc src holder expiry = do
 
 heldRefusals :: HasCallStack => ChatController -> Text -> Text -> IO ()
 heldRefusals cc src held = do
-  refundRaw cc src `shouldReturn` Right ("Order " <> src <> ": balance $100.00 (credited $100.00, refunded $0.00). Paid by: order " <> src <> ": $100.00 by btc on invoice inv-" <> src <> ". It cannot be refunded now: " <> held <> ".")
-  refundRaw cc ("inv-" <> src <> " 10000") `shouldReturn` Left ("Nothing recorded: " <> held <> ".")
+  balanceRaw cc src `shouldReturn` Right ("Order " <> src <> ": balance $100.00 (credited $100.00, refunded $0.00). Paid by: order " <> src <> ": $100.00 by btc on invoice inv-" <> src <> ". It cannot be refunded now: " <> held <> ".")
+  recordRefundRaw cc ("inv-" <> src <> " 10000") `shouldReturn` Left ("Nothing recorded: " <> held <> ".")
   Balances.figures (chatStore cc) src t0 >>= (`shouldSatisfy` \case Just (10000, 10000, 0, Just _) -> True; _ -> False)
 
 recordedS :: Either Text Text
@@ -619,7 +645,7 @@ testRefundOpenHolder ps = withStoreService ps $ \_ _ cc -> do
   heldRefusals cc "s" $ "held by order h, its invoice open until " <> minuteText expiry <> "; run the command again then"
   waiters <- newWaiters
   cancelOpenInvoice (chatStore cc) waiters Nothing (InvoiceId "inv-h") now `shouldReturn` True
-  refundRaw cc "s 10000" `shouldReturn` recordedS
+  recordRefundRaw cc "s 10000" `shouldReturn` recordedS
 
 data TurnHolder a = TurnHolder {thAction :: Async a, thRelease :: MVar ()}
 
@@ -1805,7 +1831,10 @@ expectedCommands :: [ChatBotCommand]
 expectedCommands =
   [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [months <N>] [uses <N>]"),
     CBCCommand "bulk" "Generate many codes" (Just "<supporter|legend|investor> [months <N>] count <N>"),
-    CBCCommand "revoke" "Revoke a code" (Just "<code>")
+    CBCCommand "revoke" "Revoke a code" (Just "<code>"),
+    CBCCommand "balance" "Show an order's balance" (Just "<reference>"),
+    CBCCommand "record_refund" "Record a balance refund" (Just "<reference> <cents>"),
+    CBCCommand "close" "Close a failed order" (Just "<reference>")
   ]
 
 advertisedCommands :: HasCallStack => ChatController -> Int64 -> IO (Maybe [ChatBotCommand])

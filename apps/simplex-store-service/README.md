@@ -25,8 +25,8 @@ At this stage the service:
 - listens for service requests (`CEvtServiceRequest`) on that address, rejects a request whose `purchaseKey` is not the key the agent verified the signature against, and answers `redeemBadgeCode`,
 - issues redemption codes, storing only their `SHA-256` in its code table,
 - does not accept contact requests: the address is for RPC only,
-- in service mode with `[group]` in the ini, manages one SimpleX group and serves `/issue`, `/bulk`
-  and `/revoke` in it (see [Issuing codes](#issuing-codes)),
+- in service mode with `[group]` in the ini, manages one SimpleX group and serves `/issue`, `/bulk`,
+  `/revoke`, `/balance`, `/record_refund` and `/close` in it (see [Issuing codes](#issuing-codes)),
 - in service mode with `--service-config`, also serves the built web app (`npm run build` in `web/`) on `badges_port` and, with `[names]`, the names site on `names_port` (see [Two sites](#two-sites)), `POST /api/invoice` and `GET /api/invoice/:id`, the BTCPay and Stripe webhook routes, and a payment poller, seeding its price/offer catalog on every start,
 - owns the `sx_badge_service_`-prefixed tables and its own migrations table (`sx_badge_service_migrations`).
 
@@ -1350,14 +1350,16 @@ were already given out, and the command answers with an error. A multi-use code 
 be revoked, which stops the uses that remain.
 
 Core parses `//...` into `CustomChatCommand` and leaves it to the service's `preCmdHook`, which is
-why issuing codes lives in the service rather than in core. `//refund` and `//close`, the other
-commands of this console, are in [Refunding a name balance](#refunding-a-name-balance) and
+why issuing codes lives in the service rather than in core. `//balance`, `//record_refund` and
+`//close`, the other commands of this console, are in [Refunding a name balance](#refunding-a-name-balance) and
 [Closing a failed order](#closing-a-failed-order).
 
 ### From the group
 
-With `[group]` in `store_service.ini`, the service manages one group and serves three commands in
-it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners. Name codes
+With `[group]` in `store_service.ini`, the service manages one group and serves six commands in
+it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners, and
+`/balance`, `/record_refund` and `/close` for owners (see [Balances and failed orders in the
+group](#balances-and-failed-orders-in-the-group)). Name codes
 need an admin or owner too, as each one registers at the sponsor allowance's and the gas key's cost,
 and the group issues at most 10 of them in 24 hours (`//issue name` in `--run-cli` has no limit, and
 its codes are not counted). The code commands take these forms:
@@ -1376,7 +1378,7 @@ bounds, a length for a badge, an option for a name, or `name` in `/bulk` gets th
 lists the form, each kind's bounds and an example of each. The group's command menu shows the kinds
 of each command in its hint and fills the hint into the message box. Without `[names]`, `/issue name`
 gets a reply that names are not enabled, and issues nothing. `/revoke` takes badge and name codes, so
-a name code issued before names were turned off can still be withdrawn. The group has no `/refund`. A member's role
+a name code issued before names were turned off can still be withdrawn. A member's role
 is checked as the service last saw it, so a command sent by a moderator just demoted or removed can still run if it
 reaches the service first; revoke any code the service posts for them after the change. `uses`
 above 1 makes a multi-use code, tracked by a group message showing its remaining uses and the time
@@ -1466,18 +1468,19 @@ from `/api/invoice/:id`, or from `/api/registration/:id` for a registration id. 
 safe on the reference alone, as Stripe returns it to
 the card that paid; a crypto refund goes to an address the buyer gives, which nothing here ties to
 the order. Support records each refund in `--run-cli` mode with the service stopped, like the other
-`//` commands:
+`//` commands, or in the group while the service runs (see [Balances and failed orders in the
+group](#balances-and-failed-orders-in-the-group)):
 
 ```
-//refund <reference>
-//refund <reference> <cents>
+//balance <reference>
+//record_refund <reference> <cents>
 ```
 
-1. Run `//refund <reference>` with the reference the buyer sent. It records nothing and answers the
-   balance, what paid for it and the command that refunds it:
+1. Run `//balance <reference>` with the reference the buyer sent. It records nothing and answers the
+   balance, what paid for it and the command that records its refund:
 
    ```
-   Order <id>: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order <id>: $100.00 by btc on invoice <invoice id>. To record its refund: //refund <reference> 10000
+   Order <id>: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order <id>: $100.00 by btc on invoice <invoice id>. To record its refund: //record_refund <reference> 10000
    ```
 
    `Paid by` starts at this order and follows every balance the money came through back to the
@@ -1504,12 +1507,14 @@ expiry unless money reached the invoice:
 - `its invoice expired at <time>; start the service so the poller closes that order, 10 minutes
   after the expiry at the earliest, then stop it and run the command again`: the poller runs only in
   service mode. Its first pass from 10 minutes after the expiry closes the order and releases the
-  hold; a card order closes only once Stripe accepts the cancel.
+  hold; a card order closes only once Stripe accepts the cancel. In the group, where the service
+  runs, the answer is `its invoice expired at <time>; the poller closes that order 10 minutes after
+  the expiry at the earliest; run the command again then`.
 - `whose invoice holds money`: a payment reached the invoice, before or after its expiry; the hold
   stays until that payment settles, which spends the balance, or the provider closes the invoice,
   which releases it.
 
-The command also answers when the reference matches no order, when the order has no balance, and
+The commands also answer when the reference matches no order, when the order has no balance, and
 when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in
 Your names; a later late payment credits it again, and a second refund adds to `refunded`.
 
@@ -1517,7 +1522,7 @@ Your names; a later late payment credits it again, and a second refund adds to `
 
 A failed paid order stays live and keeps its money uncredited, so its wallet cannot order the name
 again. When Try again cannot register it, as after 5 sends of a kind or refused links, support closes
-it in `--run-cli` mode with the service stopped:
+it in `--run-cli` mode with the service stopped, or with `/close` in the group while it runs:
 
 ```
 //close <reference>
@@ -1532,11 +1537,11 @@ enabled. It:
    change is logged at note with its registration id;
 2. otherwise, in one transaction, sets the order `taken`, credits its price to its balance, which may
    already hold a move's difference or an overpayment, and records all of that balance as refunded,
-   as `//refund` does.
+   as `//record_refund` does.
 
 The answer, `Closed order <id>, failed at <time>, as taken and recorded a refund of $100.00. Check at
 the provider that it was not refunded by hand before; if not, refund it now, by: …`, lists what paid
-for the order, as the answer of `//refund` does. Before this command existed, support refunded failed
+for the order, as the answer of `//record_refund` does. Before this command existed, support refunded failed
 orders at the provider by hand, so look for a refund of that payment after the failure time first, and
 pay the amount back by those methods only if none is found. The service logs each closed order at
 note with its registration id and the cents.
@@ -1552,12 +1557,36 @@ psql "$BADGE_DB_CONN" -Atc "SELECT r.registration_id, r.phase, r.failed_at, r.re
 ```
 
 A closed order reads `taken` in Your names, with its refund. Try again and a move answer
-`400 bad_request`, `//refund` finds nothing to refund, and the wallet can order the name again.
+`400 bad_request`, `//balance` finds nothing to refund, and the wallet can order the name again.
 
 The command records nothing for an order that is not failed or was paid with a prepaid code, whose
 code is released 30 days after the order failed; for a failed chain read; for a balance an order
-holds, worded as for `//refund`; and for an order or a balance that changed meanwhile. Run the
+holds, worded as for `//record_refund`; and for an order or a balance that changed meanwhile. Run the
 command again after the last three.
+
+## Balances and failed orders in the group
+
+With `[group]`, the group's owners run the same three commands while the service runs, with one
+slash:
+
+```
+/balance <reference>
+/record_refund <reference> <cents>
+/close <reference>
+```
+
+The service answers each in the group with the console's answer, which names `/record_refund` and
+`/close` in place of `//record_refund` and `//close`, and says that the running poller closes an
+overdue holder rather than asking to start the service. A command waits for the same per-name and
+per-balance locks as the service's workers and web routes, so it and they never write the same order
+or balance at once. `/close` reads the chain through the client the console uses, made at
+start with `[names]`, and without `[names]` answers that names are not enabled.
+
+A member below owner gets no reply and nothing runs; a malformed command from an owner gets the usage
+reply. The reference and the answer, with the orders and invoice ids that paid, are read by every
+member and kept in the service's chat database, as codes are, so the group's members must be people
+who may see them. A command the service received but had not run when it stopped is dropped with no
+reply; run it again.
 
 ## Running the webapp's cases against the service
 
