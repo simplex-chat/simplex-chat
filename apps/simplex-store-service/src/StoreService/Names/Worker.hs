@@ -17,15 +17,20 @@ module StoreService.Names.Worker
     Retried (..),
     RetryRefusal (..),
     retryRegistration,
+    Closed (..),
+    CloseRefusal (..),
+    closeRegistration,
     maxSendsPerKind,
     sendsUsedUp,
   )
 where
 
+import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, asyncWithUnmask, cancel, poll)
 import Control.Concurrent.STM
 import Control.Exception (finally, mask_)
+import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM, forM_, forever, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
@@ -39,20 +44,22 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word64)
-import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
+import StoreService.Names.Balances (RefundRecord (..))
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient, ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
-import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy, sponsorNonce)
-import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, unixSeconds, versionWritten)
+import StoreService.Names.Contracts (CommitmentAges (..), Contracts, acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy, sponsorNonce)
+import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, unixSeconds, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
 import StoreService.Names.Store
-import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
+import StoreService.Names.Turns (Turns, withBalanceTurn, withLabelTurn)
 import StoreService.Names.View (lapseMoment, notSignedInTime, registrationAt, registrationVersion)
 import StoreService.Safely (safely, safelyWith)
 
@@ -359,13 +366,18 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
 -- | A paid order keeps its whole price as a balance of its own, credited in the taken write's transaction, registration before balance,
 -- in the balance's turn after the name's; a code order's code is released.
 taken :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
-taken Worker {wkOrders = OrdersEnv {oeStore, oeTurns}} now r@NameRegistration {nrId, nrPayment, nrPrice} = case nrPayment of
+taken Worker {wkOrders = OrdersEnv {oeStore, oeTurns}} now r@NameRegistration {nrId, nrPayment} = case nrPayment of
   RPInvoice {} -> credited
   RPBalance -> credited
-  RPCode codeId -> written r . fmap fst <$> releaseCode oeTurns oeStore codeId nrId write
+  RPCode codeId -> written r . fmap fst <$> releaseCode oeTurns oeStore codeId nrId (takenWrite now r)
   where
-    write db = versionWritten <$> updateRegistration db r {nrPhase = PTaken, nrError = Nothing} now
-    credited = written r <$> withBalanceTurn oeTurns nrId (withTransaction oeStore $ \db -> write db >>= traverse (\v -> v <$ creditBalance db nrId nrPrice now))
+    credited = written r <$> withBalanceTurn oeTurns nrId (withTransaction oeStore $ creditedTaken now r)
+
+takenWrite :: UTCTime -> NameRegistration -> DB.Connection -> IO (Either WriteRefusal Int64)
+takenWrite now r db = versionWritten <$> updateRegistration db r {nrPhase = PTaken, nrError = Nothing} now
+
+creditedTaken :: UTCTime -> NameRegistration -> DB.Connection -> IO (Either WriteRefusal Int64)
+creditedTaken now r@NameRegistration {nrId, nrPrice} db = takenWrite now r db >>= traverse (\v -> v <$ creditBalance db nrId nrPrice now)
 
 -- | A code order keeps its code for Try again.
 failed :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
@@ -499,6 +511,57 @@ servingReveal OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChai
             pure $ case commitmentLapse ages <$> committedAt of
               Just lapse | reusable cfg now lapse && lapse <= toInteger rvDeadline -> Just rv
               _ -> Nothing
+
+data Closed = CLRegistered RegistrationId | CLRefunded (Maybe UTCTime) RefundRecord | CLRefused CloseRefusal
+  deriving (Eq, Show)
+
+data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFUnread | CFChanged | CFWriteRefused OrderRefusal | CFHeld BalanceHold | CFBalanceChanged
+  deriving (Eq, Show)
+
+newtype CloseRefused = CloseRefused CloseRefusal
+  deriving (Show)
+
+instance E.Exception CloseRefused
+
+closeRegistration :: DBStore -> Contracts -> Turns -> IO UTCTime -> Text -> IO Closed
+closeRegistration st ct turns clock ref = do
+  now <- clock
+  withTransaction st (\db -> balanceByReference db ref now $>>= getRegistration db . fst) >>= \case
+    Nothing -> refused CFNoOrder
+    Just NameRegistration {nrId, nrLabelHash} ->
+      withLabelTurn turns nrLabelHash $
+        withTransaction st (`getRegistration` nrId) >>= \case
+          Just current@NameRegistration {nrLabelHash = currentHash} | currentHash == nrLabelHash -> closeFailed now current
+          _ -> refused CFChanged
+  where
+    refused = pure . CLRefused
+    closeFailed now current = case registrationAt now current of
+      NameRegistration {nrPayment = RPCode _} -> refused CFNotFailedPaid
+      r@NameRegistration {nrId, nrPhase = PFailed} ->
+        checkLanded st ct turns clock r >>= \case
+          LRegistered _ -> pure $ CLRegistered nrId
+          LChanged -> refused CFChanged
+          LUnread -> refused CFUnread
+          LNotLanded -> either CLRefused (CLRefunded $ nrFailedAt current <|> lapseMoment current) <$> refundTaken st turns now r
+      _ -> refused CFNotFailedPaid
+
+refundTaken :: DBStore -> Turns -> UTCTime -> NameRegistration -> IO (Either CloseRefusal RefundRecord)
+refundTaken st turns now r@NameRegistration {nrId} =
+  withBalanceTurn turns nrId $ either (\(CloseRefused refusal) -> Left refusal) id <$> E.try (withTransaction st refund)
+  where
+    refund db =
+      getBalance db nrId now >>= \case
+        Just Balance {blHold = Just hold} -> pure $ Left $ CFHeld hold
+        _ ->
+          creditedTaken now r db >>= \case
+            Left WRChanged -> pure $ Left CFChanged
+            Left (WRRefused refusal) -> pure $ Left $ CFWriteRefused refusal
+            Right _ -> Right <$> refundAll db
+    refundAll db = do
+      cents <- maybe 0 blAmount <$> getBalance db nrId now
+      refundBalance db nrId cents now >>= \case
+        True -> RefundRecord nrId cents <$> balanceChain db nrId
+        False -> E.throwIO $ CloseRefused CFBalanceChanged
 
 -- | Each code order failed for failedCodeHold gives its code back, in its name's and its code's turns, unless it was requeued meanwhile.
 sweepFailedCodes :: Worker -> IO ()

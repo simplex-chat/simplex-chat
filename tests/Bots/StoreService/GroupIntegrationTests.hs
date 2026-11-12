@@ -17,7 +17,7 @@ import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), TxRequest (..), newChainClient, signTransaction)
-import StoreService.Names.Store (NewTransaction (..), PrepaidCode (..), TxFor (..), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
+import StoreService.Names.Store (NamePhase (PFailed), NameRegistration (nrFailedAt, nrPhase), NewTransaction (..), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice)
@@ -32,7 +32,8 @@ import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, 
 import Bots.StoreService.WebTests (capturingStderr, digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
-import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, placePaid, t0, usable)
+import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, placePaid, reg, t0, usable, write)
+import Bots.StoreService.NamesOwnerTests (labelBytes, ownerOfSelector)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -507,9 +508,56 @@ namesRefundChatTests = describe "StoreService names: operator refund" $ do
   it "refuses an unknown reference, an order without a balance and another amount, and answers the usage to a malformed command" testRefundRefusals
   it "refuses a balance held by an open order, naming it and its expiry, and records it once that order's invoice is cancelled" testRefundOpenHolder
   it "is not a group command" $ \_ -> groupCmdAction GROwner "/refund s 10000" `shouldBe` IgnoreMsg
+  it "closes a failed paid order by its invoice id, recording the refund of its price, and refuses an unknown reference and an order no longer failed" testCloseRecorded
+  it "refuses //close without [names], and answers the usage to a malformed one" testCloseNamesOff
 
 refundRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
 refundRaw cc args = operatorCmd cc ("//refund " <> args)
+
+closeRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
+closeRaw cc args = operatorCmd cc ("//close " <> args)
+
+testCloseRecorded :: HasCallStack => TestParams -> IO ()
+testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
+  svc <- prepareGroupService ps
+  let registrar = address $ encodeUtf8 registrarAddr
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> withRpcUrl (T.pack fnUrl)} Nothing
+  flip finally (stopGroupService t cc) $ do
+    pollUntilTrue (listening port)
+    let st = chatStore cc
+        paidBy = "order f: $100.00 by btc on invoice inv-f"
+    now <- getCurrentTime
+    Balances.placeOrderRow st "f" False 10000 (addUTCTime 3600 now)
+    unpaid <- reg st "f"
+    write st unpaid {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
+    answerCall node registrar (ownerOfSelector <> labelBytes "f") $ Reverts ""
+    closeRaw cc "nothing" `shouldReturn` Left "Nothing recorded: no order has the reference nothing."
+    logs <- capturingStderr $
+      closeRaw cc "inv-f"
+        `shouldReturn` Right
+          ( "Closed order f, failed at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: "
+              <> paidBy
+              <> "."
+          )
+    logs `shouldSatisfy` T.isInfixOf "names: closed order f and recorded a refund of 10000 cents"
+    closeRaw cc "f" `shouldReturn` Left "Nothing recorded: the order of f is not a failed order paid by invoice or balance."
+    Balances.figures st "f" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
+    refundRaw cc "f" `shouldReturn` Right ("Order f: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
+    Balances.placeOrderRow st "g" False 10000 (addUTCTime 3600 now)
+    unpaidG <- reg st "g"
+    write st unpaidG {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
+    answerCall node registrar (ownerOfSelector <> labelBytes "g") $ Returns $ addressWord ownerA
+    answerCall node registrar (selector "nameExpires(uint256)" <> labelBytes "g") $ Returns $ uint256 (2000000000 :: Int)
+    registeredLogs <- capturingStderr $ closeRaw cc "inv-g" `shouldReturn` Left "Nothing refunded: the register of order g went through, so the order is registered now."
+    registeredLogs `shouldSatisfy` T.isInfixOf "names: order g set registered by //close, as its register went through"
+    Balances.figures st "g" t0 `shouldReturn` Nothing
+
+testCloseNamesOff :: HasCallStack => TestParams -> IO ()
+testCloseNamesOff ps = withStoreService ps $ \_ _ cc -> do
+  Balances.source (chatStore cc) "s" 10000
+  closeRaw cc "s" `shouldReturn` Left "Names are not enabled on this service."
+  forM_ ["", "s junk"] $ \args -> (args,) <$> closeRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+  Balances.figures (chatStore cc) "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
 minuteText :: UTCTime -> Text
 minuteText = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M UTC"
