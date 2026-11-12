@@ -327,6 +327,107 @@ describe("receive", () => {
     const second = (await tools.call("receive", {chat: "@4", limit: 1}, signal().call))!.structuredContent as {messages: {item: number}[]; more: number}
     expect(second).toMatchObject({messages: [{item: 23}], more: 0})
   })
+
+  it("returns as history the last messages before the new ones, oldest first, yours under your name, without live, deleted and other items, and marks only the new ones read", async () => {
+    const chat = new FakeChat()
+    const fromSwitchback: T.CIDirection = {type: "groupRcv", groupMember: member(44, "Switchback")}
+    const read = {status: "rcvRead"}
+    const connected = {...item(12, "connected", fromSwitchback, read), content: {type: "rcvGroupEvent", rcvGroupEvent: {type: "memberConnected"}}} as unknown as T.ChatItem
+    const deleted = item(13, "removed", fromSwitchback, read)
+    deleted.meta.itemDeleted = {type: "deleted", chatType: T.ChatType.Group}
+    const items = [
+      item(9, "hello", fromSwitchback, read),
+      item(10, "trail map?", fromSwitchback, read),
+      item(11, "here it is", {type: "groupSnd"}),
+      connected,
+      deleted,
+      item(14, "Ridge", fromSwitchback, {...read, live: true}),
+      item(15, "anything else?", {type: "groupSnd"}),
+      item(16, "size 44?", fromSwitchback),
+      item(17, "map updated", {type: "groupSnd"}),
+      item(18, "and 45?", fromSwitchback),
+      item(19, "and 46?", fromSwitchback),
+    ]
+    chat.chats.set("#15", {chatInfo: groupChat(group(15, "Trail", member(1, "agent"))), items})
+    const {tools} = agentTools(chat)
+    const result = (await tools.call("receive", {chat: "#15", limit: 2, history: 3}, signal().call))!.structuredContent as {messages: {item: number}[]; more: number; history: object[]}
+    expect(result.messages.map(({item}) => item)).toEqual([16, 18])
+    expect(result.more).toBe(1)
+    const sent = {chat: "#15", from: "agent", from_type: "agent", time: "2026-10-17T10:00:00Z", new: false, mentions_me: false}
+    expect(result.history).toEqual([
+      {chat: "#15", item: 10, from: "Switchback", from_member: 44, time: "2026-10-17T10:00:00Z", text: "trail map?", new: false, mentions_me: false},
+      {...sent, item: 11, text: "here it is"},
+      {...sent, item: 15, text: "anything else?"},
+    ])
+    expect(chat.commands.filter(cmd => cmd.startsWith("/_read"))).toEqual(["/_read chat items #15 16,18"])
+  })
+
+  it("returns as history the latest messages when none is new, and no history without the input", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Switchback")), items: [item(10, "hi", {type: "directRcv"}, {status: "rcvRead"}), item(11, "hello", {type: "directSnd"})]})
+    const {tools} = agentTools(chat)
+    expect((await tools.call("receive", {chat: "@4", history: 50}, signal().call))!.structuredContent).toEqual({
+      chat: "@4",
+      messages: [],
+      more: 0,
+      history: [
+        {chat: "@4", item: 10, from: "Switchback", time: "2026-10-17T10:00:00Z", text: "hi", new: false, mentions_me: false},
+        {chat: "@4", item: 11, from: "agent", from_type: "agent", time: "2026-10-17T10:00:00Z", text: "hello", new: false, mentions_me: false},
+      ],
+    })
+    expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).not.toHaveProperty("history")
+    expect(chat.commands.filter(cmd => cmd.startsWith("/_read"))).toEqual([])
+  })
+
+  it("reads history when the call returns, after the wait", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Switchback")), items: [item(10, "hi", {type: "directRcv"}, {status: "rcvRead"}), item(11, "hello", {type: "directSnd"})]})
+    const {tools, watch} = agentTools(chat)
+    const {call, progress} = signal()
+    const receiving = tools.call("receive", {chat: "@4", wait: 30, history: 2}, call)
+    await settled()
+    expect(progress[0]).toMatch(/^No new messages in @4; waiting until /)
+    watch.deliver([chat.addItem("@4", item(12, "still there?", {type: "directSnd"})), chat.addItem("@4", item(13, "yes", {type: "directRcv"}))])
+    const result = (await receiving)!.structuredContent as {messages: {item: number}[]; history: {item: number}[]}
+    expect(result.messages.map(({item}) => item)).toEqual([13])
+    expect(result.history.map(({item}) => item)).toEqual([11, 12])
+  })
+
+  it("leaves out of history a new message whose event has not arrived, and the next call returns it", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Switchback")), items: [item(10, "hi", {type: "directRcv"}, {status: "rcvRead"}), item(11, "hello", {type: "directSnd"})]})
+    const {tools, watch} = agentTools(chat)
+    const receiving = tools.call("receive", {chat: "@4", wait: 30, history: 5}, signal().call)
+    await settled()
+    chat.addItem("@4", item(12, "still there?", {type: "directRcv"}))
+    watch.deliver([chat.addItem("@4", item(13, "hello?", {type: "directRcv"}))])
+    const result = (await receiving)!.structuredContent as {messages: {item: number}[]; history: {item: number}[]}
+    expect(result.messages.map(({item}) => item)).toEqual([13])
+    expect(result.history.map(({item}) => item)).toEqual([10, 11])
+    const next = (await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent as {messages: {item: number}[]}
+    expect(next.messages.map(({item}) => item)).toEqual([12])
+  })
+
+  it("reads history in pages of 100 items, before the first new message or from the end, until it holds the messages", async () => {
+    const chat = new FakeChat()
+    const undecrypted = Array.from({length: 150}, (_, i) => ({...item(10 + i, "", {type: "directRcv"}, {status: "rcvRead"}), content: {type: "rcvDecryptionError"}}) as unknown as T.ChatItem)
+    const items = [item(1, "hi", {type: "directRcv"}, {status: "rcvRead"}), item(2, "hello", {type: "directSnd"}), ...undecrypted, item(160, "still there?", {type: "directSnd"}), item(161, "yes", {type: "directRcv"})]
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Switchback")), items})
+    const {tools} = agentTools(chat)
+    const first = (await tools.call("receive", {chat: "@4", history: 3}, signal().call))!.structuredContent as {history: {item: number}[]}
+    expect(first.history.map(({item}) => item)).toEqual([1, 2, 160])
+    const second = (await tools.call("receive", {chat: "@4", history: 1}, signal().call))!.structuredContent as {history: {item: number}[]}
+    expect(second.history.map(({item}) => item)).toEqual([161])
+    expect(chat.commands.filter(cmd => /^\/_get chat @4 (count|before)=/.test(cmd))).toEqual(["/_get chat @4 before=161 count=100", "/_get chat @4 before=61 count=100", "/_get chat @4 count=100"])
+  })
+
+  it("returns your messages in history under your incognito name", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("#15", {chatInfo: groupChat(group(15, "Trail", {...member(1, "Quiet Fox"), memberContactProfileId: 99})), items: [item(11, "here it is", {type: "groupSnd"})]})
+    const {tools} = agentTools(chat)
+    const result = (await tools.call("receive", {chat: "#15", history: 1}, signal().call))!.structuredContent as {history: object[]}
+    expect(result.history).toEqual([{chat: "#15", item: 11, from: "Quiet Fox", time: "2026-10-17T10:00:00Z", text: "here it is", new: false, mentions_me: false}])
+  })
 })
 
 describe("send", () => {

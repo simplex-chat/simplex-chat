@@ -26,6 +26,7 @@ import {
   fileOffer,
   filePaths,
   getChat,
+  historyItems,
   isChatRef,
   isLive,
   isMessageItem,
@@ -67,6 +68,7 @@ export interface ReceiveInput {
   chat: string
   wait?: number
   limit?: number
+  history?: number
 }
 
 export interface LeaveInput {
@@ -272,6 +274,7 @@ const receiveSchema: Schema = {
     chat: {type: "string", description: "Chat reference from connect or list: @N or #N."},
     wait: {type: "number", minimum: 0, maximum: 86400, description: "Seconds to wait for a new message when none is unread. Default 0."},
     limit: {type: "integer", minimum: 1, maximum: 100, description: "Most messages returned. Default 50; the rest stay unread."},
+    history: {type: "integer", minimum: 1, maximum: 50, description: "Number of messages returned in history: the last ones before the new messages, yours included."},
   },
   required: ["chat"],
   additionalProperties: false,
@@ -334,6 +337,7 @@ const receiveOutput: Schema = {
     chat: {type: "string", description: "Chat reference."},
     messages: {type: "array", items: messageSchema, description: "New messages: the unread ones, then those that arrived during the call."},
     more: {type: "integer", description: "New messages not returned; call receive again for them."},
+    history: {type: "array", items: messageSchema, description: "With the input history: the last messages of the chat before the new ones, oldest first, yours included; not marked read."},
   },
   required: ["chat", "messages", "more"],
 }
@@ -413,7 +417,8 @@ Result status: done (item is your message; responses are the answers in arrival 
 Send bot commands as text, for example /help. When a message has a file with status offered, call download when your user's task needs it. If the call ends without a result, repeat it with the same arguments: it attaches to the same action and returns its responses.`
 
 const receiveDescription = `Returns the new messages of a chat: the unread ones, then those that arrive during the call. With wait, it waits up to wait seconds when no message is new.
-The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.`
+The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.
+With history N, it also returns the last N messages of the chat before the new ones, yours included, not marked read; at the start of a session, call receive with history to recall the conversation.`
 
 const downloadDescription = `Downloads the file of a received message to this computer and returns its full path.
 It is an action: in approval mode requests the owner approves it in the SimpleX app first, and the call waits for the decision; the owner can approve all files of a chat.
@@ -662,7 +667,7 @@ export class AgentTools {
     const snapshot = chatItems.filter(isMessageItem).map((chatItem): T.AChatItem => action.messages.items.find(copy => copy.chatItem.meta.itemId === chatItem.meta.itemId) ?? {chatInfo, chatItem})
     const later = action.messages.items.filter(({chatItem}) => !chatItems.some(({meta}) => meta.itemId === chatItem.meta.itemId))
     const items = [...snapshot, ...later].filter(({chatItem}) => !isLive(chatItem))
-    const self: Sender = {name: fields.known_as ?? this.selfName(chatInfo), ...defined({type: fields.known_as === undefined ? this.agent.user.profile.peerType : undefined})}
+    const self = this.selfSender(chatInfo, fields)
     if (call.signal.aborted) return undefined
     await markRead(this.agent.chat, chat, items.filter(({chatItem}) => isNew(chatItem)).map(({chatItem}) => chatItem.meta.itemId))
     if (call.signal.aborted) return undefined
@@ -1112,7 +1117,7 @@ export class AgentTools {
   }
 
   private async receive(input: ReceiveInput, call: ToolCall): Promise<object | undefined> {
-    const {chat, wait = 0, limit = defaultLimit} = input
+    const {chat, wait = 0, limit = defaultLimit, history} = input
     if (!isChatRef(chat) || chat === this.agent.controlChat()) throw unknownChat(chat)
     const arrived = new Collected()
     const stop = this.agent.watch.collect(chat, arrived)
@@ -1138,13 +1143,20 @@ export class AgentTools {
         }
       }
       const returned = fresh().slice(0, limit)
+      const recalled = history === undefined ? undefined : await this.historyMessages(chat, chatInfo, returned[0]?.chatItem.meta.itemId, history)
       if (call.signal.aborted) return undefined
       await markRead(this.agent.chat, chat, [...returned.map(({chatItem}) => chatItem.meta.itemId), ...skipped])
       if (call.signal.aborted) return undefined
-      return {chat, messages: returned.map(({chatInfo, chatItem}): Message => toMessage(chatInfo, chatItem, {name: ""}, this.rejectedFiles, this.agent.data)), more: arrived.items.length - returned.length + arrived.overflow.size + unreadRest}
+      return {chat, messages: returned.map(({chatInfo, chatItem}): Message => toMessage(chatInfo, chatItem, {name: ""}, this.rejectedFiles, this.agent.data)), more: arrived.items.length - returned.length + arrived.overflow.size + unreadRest, ...defined({history: recalled})}
     } finally {
       stop()
     }
+  }
+
+  private async historyMessages(chat: string, chatInfo: T.ChatInfo, before: number | undefined, count: number): Promise<Message[]> {
+    const self = this.selfSender(chatInfo, await this.chatFields(chatInfo))
+    const items = await historyItems(this.agent.chat, chat, before, count)
+    return items.map(chatItem => toMessage(chatInfo, chatItem, self, this.rejectedFiles, this.agent.data))
   }
 
   private async listChats(): Promise<object> {
@@ -1237,6 +1249,10 @@ export class AgentTools {
 
   private selfName(chatInfo: T.ChatInfo): string {
     return chatInfo.type === "group" ? chatInfo.groupInfo.membership.memberProfile.displayName : this.agent.user.profile.displayName
+  }
+
+  private selfSender(chatInfo: T.ChatInfo, {known_as}: ChatFields): Sender {
+    return {name: known_as ?? this.selfName(chatInfo), ...defined({type: known_as === undefined ? this.agent.user.profile.peerType : undefined})}
   }
 }
 
