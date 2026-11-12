@@ -59,6 +59,8 @@ Approve the connection in "My Agent", and accept the request in the app if it as
 - Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you write.
 - The agent runs on your computer and has no address in SimpleX Network, so nobody can contact it first.
 
+With `--audio` and an OpenAI-compatible audio API, the agent gets transcripts of voice messages and can reply with voice; voice messages and voice texts are sent to that API. The server transcribes voice messages of up to 5 minutes when the agent downloads them, and at their arrival in a chat where you tapped `/receive CHAT N all`. You approve a voice reply by its text, as any message ([details](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md#voice-messages)).
+
 ## Only Claude Code, for now
 
 The agent is tested with Claude Code. Tell us which other apps and models you want to use in [an issue](https://github.com/simplex-chat/simplex-chat/issues), or contribute.

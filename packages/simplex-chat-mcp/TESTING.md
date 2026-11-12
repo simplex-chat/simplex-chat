@@ -80,6 +80,17 @@ Files, in a group of yours:
 10. With `ffmpeg` installed, `Send /home/alice/ride.mp4 to that group.`: the card and the message show the video's first frame and its duration; without `ffmpeg`, a gray preview and duration 0.
 11. Tap `/leave #N`: after the reply, the agent posts ``Files from group <name> (#N) are kept in `~/.simplex-mcp/my-agent/files/group-N`: K files, SIZE. /delete #N files``. Tap `/delete #N files`: `Deleted K files from #N, SIZE.`; again: `No files from #N.`
 
+Voice messages, in a group of yours joined as in step 1 of Files, with an OpenAI-compatible audio API at `http://127.0.0.1:8080` that serves the models `stt` and `tts` (`REFERENCE.md`, "The audio API"), and with `ffmpeg` installed:
+
+1. Restart with `node dist/cli.js serve my-agent --display-name "My Agent" --audio http://127.0.0.1:8080,stt,tts`: the server prints `Audio: http://127.0.0.1:8080, speech-to-text stt, text-to-speech tts`. Run `/mcp reconnect all`; `/mcp` lists `voice` in the input of `send`.
+2. Record a voice message in the group. `Check for new messages in that group.` In the result, the message's `file` is of `type: voice`, with `status: offered`. `Download it.`, and tap `/receive #N A` on its card: the result is `status: done`, with the path `~/.simplex-mcp/my-agent/files/group-N/<file ID>.m4a` and `transcript` with your words. `<file ID>.m4a.transcript.json` is next to the file, with mode 0600.
+3. Send a document to the group, `Download it.`, and tap `/receive #N A all` on its card. `Wait up to 5 minutes for new messages in that group.`, then record a voice message: it is returned with `status: received`, `path` and `transcript`. No card is posted in the agent control chat, and no `Action` line is printed for it.
+4. Stop the audio API and record a voice message. The result of `Wait up to 2 minutes for new messages in that group.` is the message with `transcript_error: Speech-to-text failed: fetch failed.`, and `transcription of file N: Speech-to-text failed: fetch failed.` is printed to stderr. Start the audio API again; `Download it.`: `transcript` is in the result, and no card is posted.
+5. `Reply to that group with a voice message that says "The trail is open."` Card: `I want to send a message to group <name>:`, `attaching as a voice message:` and `` `The trail is open.` ``. Approve it: the group gets a voice message with its duration, spoken in the voice of the `tts` model.
+6. Stop the audio API and ask for another voice reply. Approve its card: its last line is ``Approved by Alice; failed: `Text-to-speech failed: fetch failed.`.``, and no copy of it is left in `~/.simplex-mcp/my-agent/files/sent/`. Start the audio API again.
+7. Tap `/receive #N off`, then record a voice message: the result of `Check for new messages in that group.` is the message at once, with `status: offered` and no transcript.
+8. Restart without `--audio`: `voice` is absent from the input of `send`, and after `Download the voice message of step 2 again.` and `/receive #N A`, its transcript is in the result.
+
 Incognito, as a second agent, because the first one already knows the directory:
 
 1. `node dist/cli.js serve scout --display-name "Scout" --port 5227`; join its control chat "Scout" with the printed link; `node dist/cli.js register scout`; add `"mcp__simplex-scout"` to `permissions.allow`; `/mcp reconnect all`.

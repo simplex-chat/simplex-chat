@@ -19,11 +19,11 @@
 
 The SimpleX core (libsimplex, release `core-7.1.0.20`) runs inside the same Node.js process, loaded by the `simplex-chat` library 7.1.0-beta.10.2. The core keeps the profile, chats and connections in two SQLite databases of the data folder, and sends and receives files through XFTP servers. The MCP protocol is served by the MCP TypeScript SDK (`@modelcontextprotocol/server` 2.3.1 and `@modelcontextprotocol/node` 2.1.1).
 
-`connect`, `send`, `download` and `leave` are actions. In mode `requests` the server posts each action as a card in the agent control chat, a SimpleX group created and owned by the agent's profile. An owner approves or rejects the card with a command in that chat, and the server performs the action after the approval. An owner can also approve all messages to one chat, or all downloads of files on known servers from one chat, in advance. On a download card, the owner lets the agent receive the file, or has it forwarded only to the owner. In mode `host` the server performs actions at once and marks the four tools for the host's own confirmation.
+`connect`, `send`, `download` and `leave` are actions. In mode `requests` the server posts each action as a card in the agent control chat, a SimpleX group created and owned by the agent's profile. An owner approves or rejects the card with a command in that chat, and the server performs the action after the approval. An owner can also approve all messages to one chat, or all downloads of files on known servers from one chat, in advance. On a download card, the owner lets the agent receive the file, or has it forwarded only to the owner. In mode `host` the server performs actions at once and marks the four tools for the host's own confirmation. With `--audio`, voice messages are transcribed and the voice replies of `send` spoken by an OpenAI-compatible audio API; in a chat with a files approval, the server downloads and transcribes a voice message at its arrival.
 
 A tool call is held open by the server until the owner decides and, for `connect` and `send`, until the replies arrive, and for `download`, until the file is received or `wait` passes. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
 
-The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
+The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat, with the transcripts of voice files beside them.
 
 ---
 
@@ -38,6 +38,7 @@ graph TD
   cli --> messages["messages.ts"]
   cli --> log["log.ts"]
   cli -.-> actions["actions.ts"]
+  cli -.-> audio["audio.ts"]
   serve --> control["control.ts"]
   serve --> tools["tools.ts"]
   serve --> actions
@@ -45,6 +46,7 @@ graph TD
   serve --> files["files.ts"]
   serve --> messages
   serve --> log
+  serve -.-> audio
   control --> tools
   control --> actions
   control --> messages
@@ -53,6 +55,7 @@ graph TD
   tools --> actions
   tools --> messages
   tools --> log
+  tools --> audio
   actions --> messages
   actions --> log
   actions -.-> tools
@@ -61,6 +64,8 @@ graph TD
   files --> log
   http --> log
   messages --> log
+  messages --> audio
+  audio --> log
   serve --> sc["simplex-chat"]
   tools --> sc
   control --> sc
@@ -87,6 +92,7 @@ graph TD
 | [`actions.ts`](../src/actions.ts) | action records, state machine, expiry, stop |
 | [`control.ts`](../src/control.ts) | agent control chat: link, owners, owner commands, cards, counter |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
+| [`audio.ts`](../src/audio.ts) | speech-to-text and text-to-speech requests, the queue of transcriptions, transcript files |
 | [`files.ts`](../src/files.ts) | data folder, lock, token, `headers.json`, `server.json` |
 | [`register.ts`](../src/register.ts) | `register` command: Claude Code entry |
 | [`log.ts`](../src/log.ts) | terminal lines, error texts, shell quoting |
@@ -107,17 +113,19 @@ graph TD
 
 | Component | File | Key symbol | Line |
 |---|---|---|---|
-| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L198) | `main` | [198](../src/cli.ts#L198) |
-| Argument parser | [`src/cli.ts`](../src/cli.ts#L45) | `parseCommand` | [45](../src/cli.ts#L45) |
-| Server start | [`src/serve.ts`](../src/serve.ts#L65) | `startServer` | [65](../src/serve.ts#L65) |
-| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L88) | `startAgent` | [88](../src/serve.ts#L88) |
+| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L219) | `main` | [219](../src/cli.ts#L219) |
+| Argument parser | [`src/cli.ts`](../src/cli.ts#L50) | `parseCommand` | [50](../src/cli.ts#L50) |
+| Server start | [`src/serve.ts`](../src/serve.ts#L67) | `startServer` | [67](../src/serve.ts#L67) |
+| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L91) | `startAgent` | [91](../src/serve.ts#L91) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L488) | `AgentTools.register` | [488](../src/tools.ts#L488) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L522) | `AgentTools.downloadFile` | [522](../src/tools.ts#L522) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L503) | `AgentTools.register` | [503](../src/tools.ts#L503) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L537) | `AgentTools.downloadFile` | [537](../src/tools.ts#L537) |
+| Voice messages at arrival | [`src/tools.ts`](../src/tools.ts#L581) | `AgentTools.transcribeOnArrival` | [581](../src/tools.ts#L581) |
+| Audio API | [`src/audio.ts`](../src/audio.ts#L22) | `transcript`, `speech` | [22](../src/audio.ts#L22) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L124) | `Actions` | [124](../src/actions.ts#L124) |
 | Agent control chat | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
 | Card text | [`src/control.ts`](../src/control.ts#L552) | `cardText` | [552](../src/control.ts#L552) |
-| Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
+| Item watch | [`src/messages.ts`](../src/messages.ts#L87) | `ChatItemsWatch` | [87](../src/messages.ts#L87) |
 | Claude Code entry | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L12) | `createDataFolder`, `acquireLock` | [12](../src/files.ts#L12) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |
