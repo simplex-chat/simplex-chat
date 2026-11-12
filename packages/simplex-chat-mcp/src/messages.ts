@@ -301,7 +301,7 @@ function isNewMessage(item: T.ChatItem): boolean {
 export async function historyItems(chat: api.ChatApi, ref: string, before: number | undefined, count: number): Promise<T.ChatItem[]> {
   const items: T.ChatItem[] = []
   for (let pagination: T.ChatPagination = before === undefined ? {type: "last", count: pageSize} : {type: "before", chatItemId: before, count: pageSize}; ; ) {
-    const page = (await getChat(chat, ref, pagination)).chatItems
+    const page: T.ChatItem[] = (await getChat(chat, ref, pagination)).chatItems
     items.unshift(...page.filter(item => isMessageItem(item) && !isNew(item) && !isLive(item) && item.meta.itemDeleted === undefined))
     if (items.length >= count || page.length < pageSize) return items.slice(-count)
     pagination = {type: "before", chatItemId: page[0].meta.itemId, count: pageSize}
