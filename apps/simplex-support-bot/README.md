@@ -5,7 +5,7 @@ A business-address bot that triages incoming support chats, optionally runs them
 ## Prerequisites
 
 - Node.js v18 or newer (v24 tested)
-- `GROK_API_KEY` env var (xAI) — optional; the bot runs without it
+- an xAI API key in `GROK_API_KEY` or in `grok_api_key` of the config file — optional; the bot runs without it
 - For the PostgreSQL backend: Linux x86_64, `libpq5` installed on the host, and a reachable PostgreSQL server
 
 ## Install & build
@@ -56,7 +56,7 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 | `--timezone` | both | no | `UTC` | IANA zone for weekend detection |
 | `--complete-hours` | both | no | `3` | auto-complete chats after N hours idle (`0` disables) |
 | `--card-flush-seconds` | both | no | `300` | debounce card state writes |
-| `--context-file` | both | required with `GROK_API_KEY` | | text file with Grok system context |
+| `--context-file` | both | required with a Grok API key | | text file with Grok system context |
 | `--dry-run` | both | no | | check config, database and state, then exit |
 | `--allow-migrations` | both | no | | with `--dry-run`: apply pending migrations instead of reporting them |
 | `--allow-down-migrations` | both | no | | with `--dry-run`: roll back migrations that this build does not have |
@@ -64,7 +64,7 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 
 ## Config file
 
-`--config config.toml` reads option values and message texts from a TOML file, as [config.toml.example](../../scripts/support-bot/config/config.toml.example) shows. Keys are the command-line options in snake_case (`team_group` for `--team-group`); a list is joined with commas. An option given on the command line takes precedence over the file. `--dry-run`, `--allow-migrations` and `--allow-down-migrations` are command-line only. The file holds the `pg_conn` password, so keep it readable only by the user that runs the bot.
+`--config config.toml` reads option values and message texts from a TOML file, as [config.toml.example](../../scripts/support-bot/config/config.toml.example) shows. Keys are the command-line options in snake_case (`team_group` for `--team-group`); a list is joined with commas. An option given on the command line takes precedence over the file. `--dry-run`, `--allow-migrations` and `--allow-down-migrations` are command-line only. `grok_api_key` is file-only, so that the key is not visible in the process list; `GROK_API_KEY` takes precedence over it. The file holds the `pg_conn` password and the Grok key, so keep it readable only by the user that runs the bot.
 
 A message left out of `[messages]` keeps its built-in text. `{hours}` is replaced with 24 on weekdays and 48 at weekends in `timezone`. The welcome message is updated in the bot address on the next start.
 
@@ -89,7 +89,7 @@ A message left out of `[messages]` keeps its built-in text. `{hours}` is replace
 
 | Var | Purpose |
 |---|---|
-| `GROK_API_KEY` | xAI API key; enables Grok replies |
+| `GROK_API_KEY` | xAI API key; enables Grok replies; takes precedence over `grok_api_key` of the config file |
 | `SIMPLEX_LIBS_DIR` | directory with a local libsimplex build for the `--db` backend, instead of the downloaded one |
 | `SIMPLEX_ADDON_PATH` | locally built Node.js add-on (`simplex.node`), instead of the downloaded one |
 | `NODE_OPTIONS` | `--max-old-space-size=8192` on a bot with many chats: single API responses outgrow the default heap |
@@ -110,7 +110,7 @@ docker compose up --build
 LIBS=source docker compose build
 ```
 
-`scripts/support-bot/config` is mounted at `/etc/support-bot` and holds `config.toml`, with `pg_conn`, and the Grok context file; the bot runs as uid 1000, which must be able to read them. `GROK_API_KEY` is read from the environment. Other arguments are passed after the service name, for example `docker compose run --rm support-bot --config /etc/support-bot/config.toml --dry-run`.
+`scripts/support-bot/config` is mounted at `/etc/support-bot` and holds `config.toml`, with `pg_conn` and `grok_api_key`, and the Grok context file; the bot runs as uid 1000, which must be able to read them. Other arguments are passed after the service name, for example `docker compose run --rm support-bot --config /etc/support-bot/config.toml --dry-run`.
 
 ## Dry run
 

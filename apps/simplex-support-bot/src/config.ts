@@ -60,11 +60,11 @@ function buildCommand(): Command {
     .option("--timezone <iana>", "IANA timezone for weekend detection", "UTC")
     .option("--complete-hours <n>", "auto-complete chats after N hours idle (0 disables)", parseNonNegativeInt("--complete-hours"), 3)
     .option("--card-flush-seconds <n>", "debounce card state writes", parseNonNegativeInt("--card-flush-seconds"), 300)
-    .option("--context-file <path>", "text file with Grok system context (required if GROK_API_KEY set)")
+    .option("--context-file <path>", "text file with Grok system context (required with a Grok API key)")
     .option("--dry-run", "check config, database and state, then exit without starting chat")
     .option("--allow-migrations", "with --dry-run: apply pending migrations instead of reporting them")
     .option("--allow-down-migrations", "with --dry-run: roll back migrations that this build does not have")
-    .addHelpText("after", "\nEnvironment:\n  GROK_API_KEY        xAI API key — enables Grok replies\n  SIMPLEX_LIBS_DIR    local libsimplex build for the --db backend\n  SIMPLEX_ADDON_PATH  locally built Node.js add-on\n")
+    .addHelpText("after", "\nEnvironment:\n  GROK_API_KEY        xAI API key — enables Grok replies, takes precedence over grok_api_key in --config\n  SIMPLEX_LIBS_DIR    local libsimplex build for the --db backend\n  SIMPLEX_ADDON_PATH  locally built Node.js add-on\n")
 }
 
 interface RawOpts {
@@ -88,6 +88,7 @@ interface RawOpts {
 interface ConfigFile {
   args: string[]
   messages: Messages
+  grokApiKey: string | null
 }
 
 function configFilePath(args: string[]): string | undefined {
@@ -97,10 +98,14 @@ function configFilePath(args: string[]): string | undefined {
 }
 
 function readConfigFile(path: string): ConfigFile {
-  const {messages = {}, ...options} = parseToml(readFileSync(path, "utf-8"))
+  const {messages = {}, grok_api_key = null, ...options} = parseToml(readFileSync(path, "utf-8"))
+  if (grok_api_key !== null && (typeof grok_api_key !== "string" || grok_api_key === "")) {
+    throw new Error(`${path}: grok_api_key must be a non-empty string`)
+  }
   return {
     args: Object.entries(options).map(([key, value]) => configOptionArg(path, key, value)),
     messages: configMessages(path, messages),
+    grokApiKey: grok_api_key,
   }
 }
 
@@ -134,7 +139,7 @@ function configMessages(path: string, table: unknown): Messages {
 export function parseConfig(args: string[]): Config {
   const cmd = buildCommand().exitOverride()
   const configFile = configFilePath(args)
-  const file: ConfigFile = configFile ? readConfigFile(configFile) : {args: [], messages: defaultMessages}
+  const file: ConfigFile = configFile ? readConfigFile(configFile) : {args: [], messages: defaultMessages, grokApiKey: null}
   try {
     cmd.parse([...file.args, ...args], {from: "user"})
   } catch (err) {
@@ -145,7 +150,7 @@ export function parseConfig(args: string[]): Config {
   const opts = cmd.opts<RawOpts>()
   const given = (option: keyof RawOpts) => cmd.getOptionValueSource(option) === "cli"
 
-  const grokApiKey = process.env.GROK_API_KEY || null
+  const grokApiKey = process.env.GROK_API_KEY || file.grokApiKey
 
   let db: api.DbConfig
   if (opts.db === "sqlite") {
@@ -179,7 +184,7 @@ export function parseConfig(args: string[]): Config {
 
   const contextFile = opts.contextFile ?? null
   if (grokApiKey && !contextFile) {
-    throw new Error("GROK_API_KEY is set but --context-file is not provided. Grok requires a context file.")
+    throw new Error("A Grok API key is set but --context-file is not provided. Grok requires a context file.")
   }
 
   return {

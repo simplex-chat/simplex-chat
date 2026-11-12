@@ -152,7 +152,7 @@ export class SupportBot {
   }
 
   private async withGrokProfile<R>(fn: () => Promise<R>): Promise<R> {
-    if (this.grokUserId === null) throw new Error("Grok is disabled (no GROK_API_KEY)")
+    if (this.grokUserId === null) throw new Error("Grok is disabled (no Grok API key)")
     const grokUserId = this.grokUserId
     return profileMutex.runExclusive(async () => {
       await this.chat.apiSetActiveUser(grokUserId)

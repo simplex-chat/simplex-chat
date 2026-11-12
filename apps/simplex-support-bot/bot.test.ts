@@ -1,4 +1,4 @@
-import {describe, test, expect, beforeEach, vi} from "vitest"
+import {describe, test, expect, beforeEach, afterEach, vi} from "vitest"
 import {mkdtempSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
@@ -2557,6 +2557,43 @@ describe("parseConfig Validation", () => {
         .toThrow(/message welcome must be a string/)
       expect(() => parseConfig(["--config", configFile(`team_group = "T"\nmessages = "Hi"`)]))
         .toThrow(/messages must be a table/)
+    })
+
+    describe("grok_api_key", () => {
+      const savedKey = process.env.GROK_API_KEY
+      beforeEach(() => { delete process.env.GROK_API_KEY })
+      afterEach(() => {
+        if (savedKey === undefined) delete process.env.GROK_API_KEY
+        else process.env.GROK_API_KEY = savedKey
+      })
+      const withKey = (extra = "") => configFile(`team_group = "T"\ncontext_file = "ctx.yaml"\ngrok_api_key = "file-key"${extra}`)
+
+      test("is read from the file", () => {
+        expect(parseConfig(["--config", withKey()]).grokApiKey).toBe("file-key")
+      })
+
+      test("GROK_API_KEY takes precedence; an empty GROK_API_KEY does not", () => {
+        process.env.GROK_API_KEY = "env-key"
+        expect(parseConfig(["--config", withKey()]).grokApiKey).toBe("env-key")
+        process.env.GROK_API_KEY = ""
+        expect(parseConfig(["--config", withKey()]).grokApiKey).toBe("file-key")
+      })
+
+      test("requires a context file", () => {
+        expect(() => parseConfig(["--config", configFile(`team_group = "T"\ngrok_api_key = "file-key"`)]))
+          .toThrow(/A Grok API key is set but --context-file is not provided/)
+      })
+
+      test("must be a non-empty string", () => {
+        expect(() => parseConfig(["--config", configFile(`team_group = "T"\ngrok_api_key = ""`)]))
+          .toThrow(/grok_api_key must be a non-empty string/)
+        expect(() => parseConfig(["--config", configFile(`team_group = "T"\ngrok_api_key = 1`)]))
+          .toThrow(/grok_api_key must be a non-empty string/)
+      })
+
+      test("absent from file and environment → Grok disabled", () => {
+        expect(parseConfig(["--config", configFile(`team_group = "T"`)]).grokApiKey).toBeNull()
+      })
     })
 
     test("malformed TOML → throws", () => {

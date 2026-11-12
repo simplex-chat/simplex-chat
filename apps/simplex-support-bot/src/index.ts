@@ -35,7 +35,7 @@ async function main(): Promise<void> {
     completeHours: config.completeHours,
   })
   const grokEnabled = config.grokApiKey !== null
-  if (!grokEnabled) log("No GROK_API_KEY provided, disabling Grok support")
+  if (!grokEnabled) log("No Grok API key in GROK_API_KEY or grok_api_key, disabling Grok support")
 
   const stateFilePath = config.stateFile
   const state = readState(stateFilePath)
