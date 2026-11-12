@@ -231,7 +231,7 @@ sequenceDiagram
 
 Notes:
 
-- Every transaction here is sent through the sender as the commit is, with value 0 and its gas paid by the registrar key; each kind is sent at most 5 times per order, moves included ([`Names/Chain.hs:199-214`](../src/StoreService/Names/Chain.hs#L199-L214), [`Names/Worker.hs:428-449`](../src/StoreService/Names/Worker.hs#L428-L449)). By the code comments and the log line of an `InsufficientAllowance` revert, the rent is spent from the registrar key's allowance on the sponsor ([`Names/Contracts.hs:179-181`](../src/StoreService/Names/Contracts.hs#L179-L181), [`Names/Worker.hs:341`](../src/StoreService/Names/Worker.hs#L341)).
+- Every transaction here is sent through the sender as the commit is, with value 0 and its gas paid by the registrar key; each kind is sent at most 5 times per order, moves included, a commit mined with status 1 not counted, as the next one waits for its lapse ([`Names/Chain.hs:199-214`](../src/StoreService/Names/Chain.hs#L199-L214), [`Names/Worker.hs:443-466`](../src/StoreService/Names/Worker.hs#L443-L466)). By the code comments and the log line of an `InsufficientAllowance` revert, the rent is spent from the registrar key's allowance on the sponsor ([`Names/Contracts.hs:179-181`](../src/StoreService/Names/Contracts.hs#L179-L181), [`Names/Worker.hs:351`](../src/StoreService/Names/Worker.hs#L351)).
 - `RegisterName` is signed in the EIP-712 domain `SimplexSponsor`, the acceptance in `SimplexNamePolicy`, as `AcceptGeneralTerms` or `AcceptCommunityTerms` ([`Names/Registration.hs:80-111`](../src/StoreService/Names/Registration.hs#L80-L111)).
 - The reveal is checked in the contract's order: the label, its hash and length, at most one link per key, the commitment rebuilt from the stored owner, duration and default resolver; the intent's deadline not before `revealBefore`, its signer and the sponsor nonce; the acceptance against the current terms and policy nonce; the links' kinds last ([`Names/Reveal.hs:103-145`](../src/StoreService/Names/Reveal.hs#L103-L145)).
 - A reveal whose link is not a short link of its record's kind is answered `400 invalid_link`, and the order is marked `linksRefused`. The links are part of the commitment, so only a move (3.6) continues the order ([`Web/Names/Registration.hs:95-109`](../src/StoreService/Web/Names/Registration.hs#L95-L109), [`Names/Orders.hs:315-320`](../src/StoreService/Names/Orders.hs#L315-L320)).
@@ -334,7 +334,7 @@ Notes:
 
 ### 3.5 A register transaction that fails
 
-After a register transaction reverts, the order is judged from chain state: its reveal is cleared for the page to sign again, it waits, it is set `taken` with its price kept as a balance, or it is set `failed`.
+After a register transaction reverts, the order is judged from chain state: its reveal is cleared for the page to sign again, it waits, it is committed again with its reveal, it is set `taken` with its price kept as a balance, or it is set `failed`.
 
 ```mermaid
 sequenceDiagram
@@ -349,6 +349,8 @@ sequenceDiagram
     K->>D: reveal cleared, phase stays committed, the page signs again
   else InsufficientAllowance
     K->>K: error logged, retried every 15 s
+  else CommitmentTooOld from the dry run
+    K->>D: phase committing, reveal kept, then committed again and registered with it
   else name taken at the latest block and at the confirmation depth
     K->>D: phase taken, a paid order's price kept as its balance
   else name available
@@ -359,7 +361,8 @@ sequenceDiagram
 Notes:
 
 - Whether the name was registered after all is checked first: on a register mined with status 1, or with the name held by the owner at the confirmation depth, the order is set `registered` ([`Names/Orders.hs:365-400`](../src/StoreService/Names/Orders.hs#L365-L400), [`Names/Worker.hs:329-336`](../src/StoreService/Names/Worker.hs#L329-L336)).
-- An `InsufficientAllowance` revert waits for the registrar key's allowance on the sponsor to be raised outside the service ([`Names/Worker.hs:341`](../src/StoreService/Names/Worker.hs#L341)).
+- An `InsufficientAllowance` revert waits for the registrar key's allowance on the sponsor to be raised outside the service, also past the commitment's lapse, as the sponsor checks the allowance before the commitment. The order fails once its intent's deadline passes ([`Names/Worker.hs:351`](../src/StoreService/Names/Worker.hs#L351), [`Names/Worker.hs:303-318`](../src/StoreService/Names/Worker.hs#L303-L318)).
+- `CommitmentTooOld` is reverted only after the intent's and the allowance's checks. The order is set `committing` with its reveal kept, or, while `revealBefore` has not passed by the service's clock, the dry run is tried again a second later; the commit is sent again, and the register follows once it has aged, with no new signature. The names page signs the intent and the acceptance with a deadline a week ahead, never before `revealBefore` ([`Names/Worker.hs:348-350`](../src/StoreService/Names/Worker.hs#L348-L350), [`Names/Worker.hs:201-212`](../src/StoreService/Names/Worker.hs#L201-L212)).
 - On `CommitmentTooNew` the register is retried 1 s later. While the name is taken only above the confirmation depth, or is reported gone by the dry run while `available(label)` is true, the order is retried every 15 s ([`Names/Worker.hs:340-352`](../src/StoreService/Names/Worker.hs#L340-L352)).
 - A code order set `taken` has its code released instead of a balance credited ([`Names/Worker.hs:361-368`](../src/StoreService/Names/Worker.hs#L361-L368)).
 
@@ -377,7 +380,7 @@ sequenceDiagram
   participant D as PostgreSQL
   alt Try again
     P->>W: POST /api/registration/ID/retry
-    W->>E: registered after all? reveal valid for the nonce and window?
+    W->>E: registered after all? reveal valid for the nonce and deadline?
     W->>D: phase queued, failure cleared, reveal kept or cleared
     W-->>P: 200 the order's view: queued, or registered after all
   else another name
@@ -392,7 +395,7 @@ sequenceDiagram
 
 Notes:
 
-- Try again is sent with the registration id alone. It is refused for an order whose links were refused, one with 5 sends of a kind, and a code order whose code no longer pays. The reveal is kept while the sponsor nonce is unchanged and the commitment has `reveal_margin_seconds` (default 900) left within the intent's deadline ([`Web/Names/Registration.hs:116-140`](../src/StoreService/Web/Names/Registration.hs#L116-L140), [`Names/Worker.hs:411-501`](../src/StoreService/Names/Worker.hs#L411-L501), [`Config.hs:654`](../src/StoreService/Config.hs#L654)). At the next scan a commitment with that margin left is reused; otherwise a new commit is sent, a second past the old commitment's lapse when one is on chain ([`Names/Worker.hs:175-206`](../src/StoreService/Names/Worker.hs#L175-L206)).
+- Try again is sent with the registration id alone. It is refused for an order whose links were refused, one with 5 sends of a kind, and a code order whose code no longer pays. The reveal is kept while the sponsor nonce is unchanged and the intent's deadline is `reveal_margin_seconds` (default 900) or more away ([`Web/Names/Registration.hs:116-140`](../src/StoreService/Web/Names/Registration.hs#L116-L140), [`Names/Worker.hs:424-508`](../src/StoreService/Names/Worker.hs#L424-L508), [`Config.hs:673`](../src/StoreService/Config.hs#L673)). At the next scan a commitment with that margin left is reused; otherwise a new commit is sent, a second past the old commitment's lapse when one is on chain, and a kept reveal registers after it ([`Names/Worker.hs:171-212`](../src/StoreService/Names/Worker.hs#L171-L212)).
 - A move is accepted for a failed order, or for one whose links were refused, up to `max_order_moves` (default 3). For a failed order the service checks first whether its name was registered after all, then refuses a move after 5 sends of a kind ([`Web/Names/Owner.hs:113-126`](../src/StoreService/Web/Names/Owner.hs#L113-L126), [`Config.hs:655`](../src/StoreService/Config.hs#L655)).
 - Both names' locks are taken in hash order, and the first order's hash is kept. A paid order moved to a cheaper name is credited the difference; a code order is moved at price 0, its code reserved again ([`Names/Turns.hs:27-32`](../src/StoreService/Names/Turns.hs#L27-L32), [`Web/Names/Owner.hs:128-135`](../src/StoreService/Web/Names/Owner.hs#L128-L135), [`Names/Orders.hs:340-356`](../src/StoreService/Names/Orders.hs#L340-L356), [`Names/Store.hs:787-813`](../src/StoreService/Names/Store.hs#L787-L813)).
 - A paid order's move reads the new name's price as an order does: a price under `min_price_cents_per_year` times the paid years is answered `503 name_check_unavailable`, and nothing is credited ([`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)).
