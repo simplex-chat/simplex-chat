@@ -346,12 +346,12 @@ testNeverConfirmed = withLate $ \l@Late {lStore = st} -> do
   let seenAt = at (60 * 24 * 5)
       alert = "invoice ref-inv-never: 320000 satoshi received, 0 satoshi confirmed, 0 satoshi credited; refund by hand only a transaction confirmed on chain that BTCPay no longer monitors; one still Processing there waits"
   settleAt l "never" (SigClosed (btcPaid lateUnits 0) PaidInPart) seenAt `shouldReturn` Right ISExpired
-  alertsAt l (Right stubRate) (pastWindow seenAt (-60)) >>= (`shouldNotSatisfy` T.isInfixOf "invoice ref-inv-never")
+  alertsAt l (Right stubRate) (pastWindow seenAt (-60)) >>= (`shouldNotSatisfy` T.isInfixOf "invoice ref-inv-never:")
   lateWaitOf st "never" `shouldReturn` Just LWConfirming
   logs <- alertsAt l (Right stubRate) (pastWindow seenAt 60)
   (count alert logs, logged "ERROR" alert logs) `shouldBe` (1, True)
   lateWaitOf st "never" `shouldReturn` Just LWSupport
-  alertsAt l (Right stubRate) (pastWindow seenAt (24 * 3600 + 60)) >>= (`shouldNotSatisfy` T.isInfixOf "invoice ref-inv-never")
+  alertsAt l (Right stubRate) (pastWindow seenAt (24 * 3600 + 60)) >>= (`shouldNotSatisfy` T.isInfixOf "invoice ref-inv-never:")
   balanceOf st "never" `shouldReturn` Nothing
 
 testPartCreditAlerted :: IO ()
@@ -362,7 +362,7 @@ testPartCreditAlerted = withLate $ \l@Late {lStore = st} -> do
   balanceOf st "part" `shouldReturn` Just (9600, 9600, 0)
   logs <- alertsAt l (Right stubRate) (pastWindow (at 100) 60)
   count "invoice ref-inv-part: 320000 satoshi received, 160000 satoshi confirmed, 160000 satoshi credited; refund by hand only" logs `shouldBe` 1
-  alertsAt l (Right stubRate) (pastWindow (at 100) (24 * 3600 + 60)) >>= (`shouldNotSatisfy` T.isInfixOf "invoice ref-inv-part")
+  alertsAt l (Right stubRate) (pastWindow (at 100) (24 * 3600 + 60)) >>= (`shouldNotSatisfy` T.isInfixOf "invoice ref-inv-part:")
 
 testMoneroZero :: IO ()
 testMoneroZero = withLate $ \l@Late {lStore = st} -> do
@@ -371,7 +371,7 @@ testMoneroZero = withLate $ \l@Late {lStore = st} -> do
   logs `shouldSatisfy` logged "NOTE" "invoice ref-inv-monero holds money of its closed order not yet confirmed"
   withTransaction st (\db -> latePending db (invOf "monero")) `shouldReturn` Just LPConfirming
   now <- getCurrentTime
-  alertsAt l (Right stubRate) (addUTCTime 3600 now) >>= (`shouldNotSatisfy` T.isInfixOf "invoice ref-inv-monero")
+  alertsAt l (Right stubRate) (addUTCTime 3600 now) >>= (`shouldNotSatisfy` T.isInfixOf "invoice ref-inv-monero:")
   balanceOf st "monero" `shouldReturn` Nothing
 
 testRateFails :: IO ()
