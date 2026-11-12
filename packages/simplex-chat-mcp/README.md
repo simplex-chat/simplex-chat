@@ -49,6 +49,8 @@ The agent is tested with Claude Code. Tell us which other apps and models you wa
 
 Settings shared by several machines or containers, and the agent as an MCP server without the channel, by `serve` and `register`, are in [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md), with the plugin's options, recovery and security.
 
+What comes next: [Roadmap](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/ROADMAP.md).
+
 ## Own a part of SimpleX
 
 Business is moving into messages, and AI agents follow: an agent can ask a company's agent in a chat instead of opening the company's website, and buy there too. These chats hold plans, purchases and accounts, so with AI everyone feels the need for private and secure communication.
