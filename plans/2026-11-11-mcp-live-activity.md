@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.3.0: Claude Code activity in the status message
 
-Status: draft for review. Design of 2026-11-11; decisions 6 and 7 by the user. Code: branch `ab/mcp-live-activity`, stacked on `ab/mcp-live-typing` at `0fa30e4f34`. Hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11.
+Status: draft for review. Design of 2026-11-11; decisions 6 and 7 by the user; decision 8 of 2026-11-12 at the user's request. Code: branch `ab/mcp-live-activity`, stacked on `ab/mcp-live-typing` at `0fa30e4f34`. Hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11.
 
 Dependencies:
 1. The status message of `plans/2026-11-10-mcp-live-status.md`.
@@ -16,6 +16,7 @@ Dependencies:
 5. Notes: in the `receive` description, a note is requested in the same response as the tool call of a step that takes minutes.
 6. Scope, decided by the user: notes (option 1) and Claude Code hooks (option 2) in one pull request, stacked on `ab/mcp-live-typing`.
 7. Source budget, decided by the user: about 150 changed lines in `src`, up to 20% above; the user accepted the 267 changed lines after the review rounds.
+8. Arrival, 2026-11-12, at the user's request: after a `receive` with `typing: true` in a chat, the status is started at once at a message received there, as in section Arrival; about 25 changed lines in `src`.
 
 ## Transport
 
@@ -179,6 +180,29 @@ after    For a step that takes minutes, call send with live: true and a short no
 
 - Each tool description is checked against 2048 characters by `http.test.ts`.
 
+## Arrival
+
+```
+item             rule
+typing chats     AgentTools.typingChats, memory: a chat added at a receive with typing true, removed at a receive of
+                 it without typing, before the chat is read
+arrival          AgentTools.onNewItems: a received message (rcvMsgContent), not live, in the main scope (chatRef) of a
+                 typing chat: Statuses.queue(chat)
+queue(chat)      no status of the chat, not stopping: a status created with the label "received, waiting for the agent";
+                 its first tick at once
+start(chat)      queue(chat); a waiting status taken: label "thinking", rendered at once while 0 < renders < 59
+start calls      receive with typing true that returns messages; sendResult with responses in a typing chat, after
+                 markRead and the abort check
+waiting label    kept at the ticks of a waiting status; the label read only for other labels
+frozen line      ◌ received, waiting for the agent since YYYY-MM-DD HH:MM UTC for a waiting status;
+                 ◌ working since YYYY-MM-DD HH:MM UTC otherwise
+lifetime         unchanged: the eligibility read at each tick; the deletion at the answer, at a receive of the chat that
+                 waits, at 23 h, when idle in the frozen phase, and at stop
+```
+
+- At a message received while the chat has a status, the status is kept unchanged.
+- The waiting label consists of letters, a comma and spaces.
+
 ## Threat model
 
 ```
@@ -237,6 +261,12 @@ status.ts      Statuses              agent.activity; its state passed to statusL
                named                 new
                toolLabels            new
                fileVerbs             new
+               waitingLabel          new, decision 8
+               queue                 new, decision 8: the waiting status
+               start                 decision 8: queue, then the take of a waiting status
+               created               decision 8: parameter label, "thinking" by default
+               tick                  decision 8: the label read skipped for a waiting status
+               statusText            decision 8: the frozen line of a waiting status
 inference.ts   sample                the model by textOf
                textOf                new, exported, in place of modelName
                fieldOf               exported
@@ -244,10 +274,15 @@ serve.ts       startAgent            Activity of NAME; Agent.activity; the hook 
                listen                hook
 tools.ts       Agent                 activity
                receiveDescription    the note sentence
+               AgentTools            decision 8: typingChats
+               onNewItems            decision 8: queue at a message received in a typing chat
+               sendResult            decision 8: the abort check after markRead; start at responses in a typing chat
+               receive               decision 8: typingChats updated by typing
 ```
 
 - `actions.ts`, `cli.ts`, `control.ts`, `log.ts` and `messages.ts` are unchanged.
 - Lines in `src`: 239 added, 115 of them in `activity.ts`, and 28 removed. `status.ts` has 211 lines (decision 18 of `plans/2026-11-10-mcp-live-status.md`: 192, up to 20% above).
+- Decision 8: 22 lines added and 6 removed in `src`; `status.ts` has 220 lines.
 
 ## Tests
 
@@ -256,6 +291,9 @@ tools.ts       Agent                 activity
 - `test/unit/http.test.ts`: `/hook`: the parsed body passed on and 204 without a body, also before ready; a 4 MiB body; 413 above it; 411 without Content-Length; 401, 403, 405 with Allow, 400 for invalid JSON, the hook not called; the `receive` description.
 - `test/unit/register.test.ts`: the hook group of every event, with `NUL` on Windows; the user settings file with 2-space indentation, without the token; `CLAUDE_CONFIG_DIR`, and `~/.claude` when it is unset or empty; the local settings file; this agent's handlers replaced, other settings, hooks and groups kept, the same text at a second register; invalid settings files reported after the entry is added, and left unchanged; no status hooks after a failed add; the reply line.
 - `test/unit/files.test.ts`: `DIR/hook-headers`: its line, mode 0600, rewritten at a start, and its mode set again.
+- Decision 8, `test/unit/status.test.ts`: one queued status per chat, the waiting label at its ticks, `thinking` at once at the start, the labels after it; a start before the first post, posted as `thinking` after the eligibility read; the frozen waiting line, and the frozen working line at a later start; no queued status after the stop.
+- Decision 8, `test/unit/messages.test.ts`: one waiting status for several messages received after a `receive` with typing, `thinking` at once when a `receive` returns them; none for a chat without such a `receive` or after one without typing, an own or live message, a member support chat, or a chat without the approval; the waiting status of responses taken by their `send`.
+- Decision 8, `test/e2e/scenarios.test.ts`: in the direct chat and in the group, `receive` with typing before the prompt, the live item `◐ received, waiting for the agent · 0:00`; in the direct chat, its update with `thinking` when `receive` returns the prompt.
 
 ## Docs
 
@@ -264,6 +302,7 @@ tools.ts       Agent                 activity
 - `TESTING.md`: a step with Claude Code.
 - `PLAN.md`: scope; files; the data folder; register; the labels; processing of the Claude Code activity; tests; decisions of 2026-11-11.
 - `spec/`: `api.md`, `architecture.md`, `flows.md` and `README.md`; anchors remapped from `git diff -U0 0fa30e4f34`.
+- Decision 8: `README.md`, one sentence; `REFERENCE.md`, the start of a status and the labels table; `TESTING.md`, a step after `stop`; `PLAN.md`, the status message, `receive`, `send`, processing, tests and decisions of 2026-11-12; `spec/`, the rows of the waiting status, and anchors of `tools.ts` and `status.ts` remapped from `git diff -U0 e831b8e5c9`.
 
 ## Pull request
 

@@ -343,6 +343,7 @@ Incognito: the core creates a random profile for that one chat, so peers of diff
 In mode `requests`, the server shows what the agent does in a live message, the status message, in a chat approved for all messages where the agent can post: a chat with a person, a group or a business chat. Channels and chats with bots and agents are excluded. In a group, every member sees the status message and its notes.
 
 - The server posts the status message when messages are returned by a `receive` with `typing: true`, unless the chat has one.
+- From a `receive` of a chat with `typing: true` until a `receive` of it without `typing`, the server also posts the status message at once when it receives a message there, unless the chat has one, with the label `received, waiting for the agent`: the owner sees at once that the server runs. When messages of that chat are returned by a `receive` with `typing: true` or by a `send`, the label is changed to `thinking` at once.
 - With `live: true`, the text of a `send`, a note, is shown under the status line at once, and a status message is posted when the chat has none. Such a call is not an action: `status: live` is returned at once. A note with `file`, `reply_to` or `mention`, a note above 2000 characters, and a note to another chat are refused. In the description of `receive`, the agent is asked to call `send` with `live: true` and a short note in the same response as the tool call of a step that takes minutes.
 - The agent's next message to that chat without `live` is sent as a new message, and the status message is then deleted for everyone.
 
@@ -351,10 +352,11 @@ My Agent: ◑ using download · 0:30
           Reading the file…
 ```
 
-The apps show it under the header `LIVE`. The first line is the status line: a frame, turned at each update, a label, and the time since the start. From the 50th version, about 10 minutes after the start, the line is `◌ working since 2026-11-10 12:00 UTC`. A note is shown under the line until the next note.
+The apps show it under the header `LIVE`. The first line is the status line: a frame, turned at each update, a label, and the time since the start. From the 50th version, about 10 minutes after the start, the line is `◌ working since 2026-11-10 12:00 UTC`, or `◌ received, waiting for the agent since 2026-11-10 12:00 UTC` while the agent has not taken the message. A note is shown under the line until the next note.
 
 | Label, the first that applies | When |
 |---|---|
+| `received, waiting for the agent` | from a message received in the chat without a status message, after a `receive` there with `typing: true`, until the agent takes the message: messages of the chat are returned by a `receive` with `typing: true` or by a `send` |
 | `loading MODEL` | `--inference`: a model starts, or none is ready while one stops |
 | `reading the prompt with MODEL, N tokens read` | `--inference`: a model reads the prompt |
 | `generating with MODEL, N tokens/s` | `--inference`: a model generates |
@@ -365,7 +367,7 @@ The apps show it under the header `LIVE`. The first line is the status line: a f
 | `running a command`, `reading FILE`, `editing FILE`, `searching files`, `searching the web` or `using NAME` | Claude Code runs a tool; the latest running tool is named, as the next table shows |
 | `running subagent TYPE` | a subagent of Claude Code runs; TYPE is the latest one's type |
 | `working` | `--inference`: the models are idle |
-| `thinking` | otherwise, and in the first version |
+| `thinking` | otherwise, in the first version of other status messages, and at once when the agent takes the message |
 
 MODEL, shown as code, is the model that starts, or the one model of all busy slots of llama-swap. Otherwise, and for a plain llama-server, `with MODEL` is left out, and `loading MODEL` becomes `loading the model`. `, N tokens read` is left out while N is 0, and `, N tokens/s` until two polls during the generation of one task. `waiting for approval` and `using TOOL` are computed from the agent's calls in all its chats.
 
