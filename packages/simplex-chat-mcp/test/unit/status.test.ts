@@ -361,6 +361,43 @@ describe("status message", () => {
     expect(chat.updates.map(({chatId}) => chatId).sort()).toEqual([4, 5])
   })
 
+  it("keeps one queued status per chat, shows it as received, waiting for the agent at its ticks, as thinking at once when it is started, and the labels of the work after it", async () => {
+    const {chat, statuses, pending} = statusesWith()
+    pending.push({open: 1})
+    statuses.queue("@4")
+    statuses.queue("@4")
+    await jest.advanceTimersByTimeAsync(4_000)
+    statuses.start("@4")
+    statuses.queue("@4")
+    await jest.advanceTimersByTimeAsync(2_500)
+    expect(texts(chat)).toEqual(["◐ received, waiting for the agent · 0:00", "◓ received, waiting for the agent · 0:03", "◑ thinking · 0:04", "◒ waiting for approval · 0:06"])
+    expect(chat.sent).toHaveLength(1)
+  })
+
+  it("posts a queued status that is started before its first post as thinking, after the eligibility read", async () => {
+    const read = deferred<boolean>()
+    const {chat, statuses} = statusesWith({allowed: () => read.promise})
+    statuses.queue("@4")
+    statuses.start("@4")
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.sent).toEqual([])
+    read.resolve(true)
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.sent).toEqual([livePost(T.ChatType.Direct, 4, "◐ thinking · 0:00")])
+  })
+
+  it("shows the 50th update of a queued status as received, waiting for the agent since its start time, and working since it when it is started later", async () => {
+    const {chat, statuses} = statusesWith()
+    statuses.queue("@4")
+    await jest.advanceTimersByTimeAsync(600_000)
+    expect(chat.updates).toHaveLength(49)
+    expect(chat.updates[48].text).toBe("◌ received, waiting for the agent since 2026-10-17 10:00 UTC")
+    statuses.start("@4")
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.updates).toHaveLength(50)
+    expect(chat.updates[49].text).toBe(frozen)
+  })
+
   it("sends nothing for a tick that ends after the status was deleted", async () => {
     const reading = deferred<boolean>()
     let read = async (): Promise<boolean> => true
@@ -415,6 +452,7 @@ describe("status message", () => {
     expect(jest.getTimerCount()).toBe(0)
     reading.resolve(true)
     statuses.start("@7")
+    statuses.queue("@8")
     expect(() => statuses.show("@4", "Still reading…")).toThrow(new ToolError(stoppingMessage))
     await jest.advanceTimersByTimeAsync(60_000)
     expect(chat.sent.map(({chat: [, chatId]}) => chatId).sort()).toEqual([4, 5])

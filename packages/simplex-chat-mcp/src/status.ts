@@ -25,6 +25,7 @@ const checkGap = 300_000
 const idleEnd = 30 * 60_000
 const statusLifetime = 23 * 3_600_000
 const deleteWindow = 30 * 3_600_000 - 10 * 60_000
+const waitingLabel = "received, waiting for the agent"
 const toolLabels = new Map<string | undefined, string>(Object.entries({Bash: "running a command", PowerShell: "running a command", Monitor: "running a command", Grep: "searching files", Glob: "searching files", WebSearch: "searching the web", WebFetch: "searching the web"}))
 const fileVerbs = new Map<string | undefined, string>(Object.entries({Read: "reading", Edit: "editing", Write: "editing", MultiEdit: "editing", NotebookEdit: "editing"}))
 
@@ -48,10 +49,18 @@ export class Statuses {
     }
   }
 
-  start(chat: string): void {
+  queue(chat: string): void {
     if (this.stopping || this.statuses.has(chat)) return
-    const status = this.created(chat)
+    const status = this.created(chat, waitingLabel)
     this.tick(chat, status).catch(error => logError(`status of ${chat}`, error))
+  }
+
+  start(chat: string): void {
+    this.queue(chat)
+    const status = this.statuses.get(chat)
+    if (status?.label !== waitingLabel) return
+    status.label = "thinking"
+    if (status.renders > 0 && status.renders < maxRenders) this.render(status)
   }
 
   show(chat: string, note: string): void {
@@ -101,8 +110,8 @@ export class Statuses {
     }
   }
 
-  private created(chat: string): Status {
-    const status: Status = {live: new api.LiveMessage(this.agent.chat, chatType(chat), chatNumber(chat), 0, error => this.failed(chat, status, error)), started: Date.now(), renders: 0, label: "thinking"}
+  private created(chat: string, label = "thinking"): Status {
+    const status: Status = {live: new api.LiveMessage(this.agent.chat, chatType(chat), chatNumber(chat), 0, error => this.failed(chat, status, error)), started: Date.now(), renders: 0, label}
     this.statuses.set(chat, status)
     return status
   }
@@ -124,7 +133,7 @@ export class Statuses {
     if (!this.isCurrent(chat, status)) return
     const idle = status.renders >= liveRenders && !this.calls.some(call => call.tool !== "receive") && Date.now() - this.lastCall >= idleEnd
     if (!shown || Date.now() - status.started >= statusLifetime || idle) return this.end(chat)
-    if (status.renders > 0 && status.renders + 1 < liveRenders) {
+    if (status.label !== waitingLabel && status.renders > 0 && status.renders + 1 < liveRenders) {
       const label = await this.label()
       if (!this.isCurrent(chat, status)) return
       status.label = label
@@ -167,7 +176,7 @@ export class Statuses {
 
 function statusText({started, renders, label, note}: Status, now: number): string {
   const seconds = Math.floor((now - started) / 1000)
-  const line = renders < liveRenders ? `${frames[(renders - 1) % frames.length]} ${label} · ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}` : `◌ working since ${utcMinutes(started)}`
+  const line = renders < liveRenders ? `${frames[(renders - 1) % frames.length]} ${label} · ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}` : `◌ ${label === waitingLabel ? label : "working"} since ${utcMinutes(started)}`
   return note === undefined ? line : `${line}\n${note}`
 }
 

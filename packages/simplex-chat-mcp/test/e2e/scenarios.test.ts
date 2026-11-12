@@ -569,13 +569,15 @@ test("typing: a live status in an approved direct chat, its note, the answer tha
 
   const isStatus: ItemCheck = ci => ci.chatInfo.type === "direct" && ci.chatItem.meta.itemLive === true
   const firstStatus = received(alice.chat, isStatus)
+  expect((await agent.client.tool("receive", {chat, typing: true})).result).toMatchObject({chat, messages: []})
   await prompt("what time is it?")
+  const status = (await firstStatus).chatItem
+  expect(status.meta.itemText).toBe("◐ received, waiting for the agent · 0:00")
+  const ofStatus: ItemCheck = ci => ci.chatItem.meta.itemId === status.meta.itemId && ci.chatItem.meta.itemLive === true
+  const taken = updated(alice.chat, ci => ofStatus(ci) && / thinking · /.test(ci.chatItem.meta.itemText))
   const prompted = await agent.client.tool("receive", {chat, wait: 30, typing: true})
   expect(prompted.result.messages.map(({text}: {text: string}) => text)).toEqual(["what time is it?"])
-  const status = (await firstStatus).chatItem
-  expect(status.meta.itemText).toBe("◐ thinking · 0:00")
-  const ofStatus: ItemCheck = ci => ci.chatItem.meta.itemId === status.meta.itemId && ci.chatItem.meta.itemLive === true
-  expect(await alice.chat.wait("chatItemUpdated", ({chatItem}) => ofStatus(chatItem), 10_000)).toBeDefined()
+  await taken
 
   const noted = updated(alice.chat, ci => ofStatus(ci) && clockNote.test(ci.chatItem.meta.itemText))
   expect((await agent.client.tool("send", {chat, text: "checking the clock", live: true})).result).toEqual({status: "live", chat})
@@ -627,11 +629,12 @@ test("typing in an approved group: a live status, its note, and its deletion aft
 
   const inTrail: ItemCheck = ci => ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === trail.groupId
   const firstStatus = received(alice.chat, ci => inTrail(ci) && ci.chatItem.meta.itemLive === true)
+  expect((await agent.client.tool("receive", {chat: group, typing: true})).result).toMatchObject({chat: group, messages: []})
   await alice.chat.apiSendTextMessage([T.ChatType.Group, trail.groupId], "what time is it?")
+  const status = (await firstStatus).chatItem
+  expect(status.meta.itemText).toBe("◐ received, waiting for the agent · 0:00")
   const prompted = await agent.client.tool("receive", {chat: group, wait: 30, typing: true})
   expect(prompted.result.messages.map(({text}: {text: string}) => text)).toEqual(["what time is it?"])
-  const status = (await firstStatus).chatItem
-  expect(status.meta.itemText).toBe("◐ thinking · 0:00")
 
   const noted = updated(alice.chat, ci => ci.chatItem.meta.itemId === status.meta.itemId && ci.chatItem.meta.itemLive === true && clockNote.test(ci.chatItem.meta.itemText))
   expect((await agent.client.tool("send", {chat: group, text: "checking the clock", live: true})).result).toEqual({status: "live", chat: group})

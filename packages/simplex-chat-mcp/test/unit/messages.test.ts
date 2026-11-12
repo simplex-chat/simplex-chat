@@ -433,6 +433,49 @@ describe("receive", () => {
     controller.abort()
     expect(await waiting).toBeUndefined()
   })
+
+  it("shows one status from the arrival of messages in a chat of a receive with typing, and thinking at once when a receive returns them", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: []})
+    const {tools} = approvedTools(chat)
+    expect((await tools.call("receive", {chat: "@4", typing: true}, signal().call))!.structuredContent).toEqual({chat: "@4", messages: [], more: 0})
+    tools.onNewItems([chat.addItem("@4", item(20, "summarize README.md")), chat.addItem("@4", item(21, "and the tests"))])
+    tools.onNewItems([chat.addItem("@4", item(22, "in one line"))])
+    await jest.advanceTimersByTimeAsync(4_000)
+    expect(texts(chat)).toEqual(["◐ received, waiting for the agent · 0:00", "◓ received, waiting for the agent · 0:03"])
+    expect((await tools.call("receive", {chat: "@4", typing: true}, signal().call))!.structuredContent).toMatchObject({messages: [{item: 20}, {item: 21}, {item: 22}], more: 0})
+    await jest.advanceTimersByTimeAsync(0)
+    expect(texts(chat).slice(2)).toEqual(["◑ thinking · 0:04"])
+  })
+
+  it("shows no status at an arrival in a chat without a receive with typing or after one without typing, for an own or live message, in a member support chat, or without the approval", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    const trail = groupChat(group(15, "Trail", member(1, "agent")))
+    const alice = member(44, "Alice")
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: []})
+    chat.chats.set("@5", {chatInfo: direct(contact(5, "Bob")), items: []})
+    chat.chats.set("@6", {chatInfo: direct(contact(6, "Dana")), items: []})
+    chat.chats.set("#15", {chatInfo: trail, items: []})
+    const {tools, approved} = approvedTools(chat)
+    for (const ref of ["@6", "#15"]) approved.add(ref)
+    for (const ref of ["@4", "@5", "#15"]) await tools.call("receive", {chat: ref, typing: true}, signal().call)
+    await tools.call("receive", {chat: "@4"}, signal().call)
+    tools.onNewItems([
+      chat.addItem("@4", item(20, "hi")),
+      chat.addItem("@5", item(21, "hi")),
+      chat.addItem("@6", item(22, "hi")),
+      chat.addItem("#15", item(23, "hi", {type: "groupSnd"})),
+      chat.addItem("#15", item(24, "h", {type: "groupRcv", groupMember: alice}, {live: true})),
+      event({...trail, groupChatScope: {type: "memberSupport"}} as T.ChatInfo, item(25, "hi", {type: "groupRcv", groupMember: alice})),
+    ])
+    await jest.advanceTimersByTimeAsync(3_000)
+    expect(chat.sent).toEqual([])
+    tools.onNewItems([chat.addItem("#15", item(26, "hi", {type: "groupRcv", groupMember: alice}))])
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.sent).toEqual([livePost(T.ChatType.Group, 15, "◐ received, waiting for the agent · 0:00")])
+  })
 })
 
 describe("send", () => {
@@ -728,7 +771,7 @@ describe("send", () => {
     expect(actions.get(1)).toMatchObject({state: "pending", open: 0})
   })
 
-  it("sends the answer as a new message, then deletes the status, and returns the responses after the answer", async () => {
+  it("sends the answer as a new message, then deletes the status, returns the responses after the answer, and shows thinking at once in the status of their arrival", async () => {
     const {chat, tools, watch, status} = await statusChat()
     const send = chat.apiSendMessages.bind(chat)
     const deletionsAtAnswer: number[] = []
@@ -739,13 +782,15 @@ describe("send", () => {
     const sending = tools.call("send", {chat: "@4", text: "The README describes the server.", wait: 60, idle: 5}, signal().call)
     await jest.advanceTimersByTimeAsync(0)
     const answer = chat.nextItemId - 1
-    watch.deliver([chat.addItem("@4", item(answer + 1, "and the tests?"))])
+    const response = [chat.addItem("@4", item(chat.nextItemId++, "and the tests?"))]
+    tools.onNewItems(response)
+    watch.deliver(response)
     await jest.advanceTimersByTimeAsync(5_000)
     expect((await sending)!.structuredContent).toMatchObject({action: 1, status: "done", item: answer, responses: [{item: answer + 1, text: "and the tests?"}], more: 0})
-    expect(chat.sent.map(({messages: [{msgContent}], live}) => [msgContent.text, live])).toEqual([["◐ thinking · 0:00", true], ["The README describes the server.", undefined]])
+    expect(chat.sent.map(({messages: [{msgContent}], live}) => [msgContent.text, live])).toEqual([["◐ thinking · 0:00", true], ["The README describes the server.", undefined], ["◐ received, waiting for the agent · 0:00", true]])
     expect(deletionsAtAnswer).toEqual([0])
     expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
-    expect(chat.updates).toEqual([])
+    expect(chat.updates.map(({text}) => text)).toEqual(["◓ received, waiting for the agent · 0:03", "◑ thinking · 0:05"])
   })
 
   it("leaves the status at a send to another chat", async () => {

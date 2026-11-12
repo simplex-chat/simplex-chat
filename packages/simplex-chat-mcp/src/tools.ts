@@ -425,7 +425,7 @@ Send bot commands as text, for example /help. When a message has a file with sta
 
 const receiveDescription = `Returns the new messages of a chat: the unread ones, then those that arrive during the call. With wait, it waits up to wait seconds when no message is new.
 The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.
-With typing: true, in a chat with a person, a group or a business chat that has approved: true in list, a live status message is shown there while you work, from the returned messages until your next message there or a receive there that waits. Use it in the chat where you receive prompts: send each answer without live, and call receive again only after it. For a step that takes minutes, call send with live: true and a short note in the same response as the step's tool call; the note is shown in the status message.`
+With typing: true, in a chat with a person, a group or a business chat that has approved: true in list, a live status message is shown there while you work, from the returned messages until your next message there or a receive there that waits. Use it in the chat where you receive prompts: send each answer with wait 0 and without live, so the next prompt stays unread for receive, and call receive again only after it. For a step that takes minutes, call send with live: true and a short note in the same response as the step's tool call; the note is shown in the status message.`
 
 const downloadDescription = `Downloads the file of a received message to this computer and returns its full path.
 It is an action: in approval mode requests the owner approves it in the SimpleX app first, and the call waits for the decision; the owner can approve all files of a chat.
@@ -495,6 +495,7 @@ export class AgentTools {
   private readonly fileDescriptions = new Changes()
   private describedFiles = 0
   private readonly leaving = new Set<string>()
+  private readonly typingChats = new Set<string>()
   readonly statuses: Statuses
 
   constructor(private readonly agent: Agent, private readonly mode: Mode) {
@@ -574,6 +575,8 @@ export class AgentTools {
       if (chat !== undefined && content.type === "rcvMsgContent" && file?.fileStatus.type === "rcvAccepted") {
         this.downloadFile({chat, item: meta.itemId, file: fileOffer(content.msgContent, file)}).catch(error => logError(`file ${file.fileId}`, error))
       }
+      const ref = chatRef(chatInfo)
+      if (ref !== undefined && this.typingChats.has(ref) && content.type === "rcvMsgContent" && !isLive(chatItem)) this.statuses.queue(ref)
     }
   }
 
@@ -851,6 +854,8 @@ export class AgentTools {
       if (!finished || call.signal.aborted) return undefined
       const returned = action.responses.items.filter(({chatItem}) => !isLive(chatItem)).slice(0, limit)
       await markRead(this.agent.chat, action.chat, returned.map(({chatItem}) => chatItem.meta.itemId))
+      if (call.signal.aborted) return undefined
+      if (returned.length > 0 && this.typingChats.has(action.chat)) this.statuses.start(action.chat)
       return {
         chat: action.chat,
         item: action.item,
@@ -1169,6 +1174,8 @@ export class AgentTools {
   private async receive(input: ReceiveInput, call: ToolCall): Promise<object | undefined> {
     const {chat, wait = 0, limit = defaultLimit, typing = false} = input
     if (!isChatRef(chat) || chat === this.agent.controlChat()) throw unknownChat(chat)
+    if (typing) this.typingChats.add(chat)
+    else this.typingChats.delete(chat)
     const arrived = new Collected()
     const stop = this.agent.watch.collect(chat, arrived)
     try {
