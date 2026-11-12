@@ -148,8 +148,11 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 #### support-bot
 
-- Globs: apps/simplex-support-bot/**.
-- CI, in build-linux: `scope-tests.sh support-bot` (step "Test changed scopes"): `npm ci`, `npm run build` and `npm test`, with the published `simplex-chat` and `@simplex-chat/types` of package-lock.json.
+- Globs:
+  - apps/simplex-support-bot/**
+  - packages/simplex-chat-nodejs/**
+  - packages/simplex-chat-client/types/typescript/**
+- CI, in build-linux: `scope-tests.sh support-bot` (step "Test changed scopes"): the types package and the Node.js library built from the branch without the add-on, as the mcp scope builds them; `npm ci`, then both installed into the bot with `npm install --no-save`; `npm run build` and `npm test`.
 - The Docker image (scripts/support-bot/Dockerfile) is not built in CI.
 - Local: `scripts/ci/scope-tests.sh support-bot`.
 

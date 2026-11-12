@@ -26,7 +26,13 @@ case "${1:-}" in
     npm run test:e2e
     ;;
   support-bot)
-    (cd apps/simplex-support-bot && npm ci --no-audit --no-fund && npm run build && npm test)
+    (cd packages/simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
+    (cd packages/simplex-chat-nodejs && npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript && npx tsc && cp src/simplex.* dist)
+    cd apps/simplex-support-bot
+    npm ci --no-audit --no-fund
+    npm install --no-save --no-audit --no-fund ../../packages/simplex-chat-nodejs ../../packages/simplex-chat-client/types/typescript
+    npm run build
+    npm test
     ;;
   *)
     echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot" >&2
