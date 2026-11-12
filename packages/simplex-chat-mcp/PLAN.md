@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.2: plan
 
-Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
+Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`), the agent's model 2026-11-12 (`plans/2026-11-12-mcp-model.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
 
 ## Scope
 
@@ -142,7 +142,7 @@ actions.ts    actions: state machine, expiry, attach rule
 tools.ts      MCP tools, schemas, instructions
 messages.ts   message items, waits, responses
 http.ts       listener, token, /mcp, the SDK handler with its Origin and Host checks
-files.ts      token, headers.json, server.json, lock
+files.ts      token, headers.json, server.json, lock, the model file
 register.ts   register command
 log.ts        stdout log lines, stderr errors
 ```
@@ -189,6 +189,7 @@ open calls    memory
 downloads     memory: one per file ID, until the file is received or fails
 forwarding    memory: the /forward of a file ID until its copy for posting is made
 rejected files memory: file IDs whose download call returned rejected or expired; a done download removes its ID
+selected model FILE of --model-file: PROVIDER/MODEL and a newline, mode 0644, read at start; memory: the selected item
 ```
 
 - Writes of the custom data run one at a time, through one queue in the server, in counter order: the library runs each command in a worker thread (`simplex-chat/cpp/simplex.cc:46-54`), and `APISetGroupCustomData` takes no lock (`Commands.hs:1668-1672`).
@@ -208,6 +209,8 @@ serve NAME:
 --new-token       flag                                 off
 --port            1 to 65535                           5226
 --qr-code         small | large                        small
+--models          NAME=PROVIDER/MODEL[,...]            absent
+--model-file      file                                 absent
 register NAME:
 --scope           user | local                         user
 --data            folder                               ~/.simplex-mcp/NAME
@@ -219,6 +222,8 @@ register NAME:
 - `--port` and `--expire` apply to one run; `server.json` records them at each start for `register`. An agent on another port takes the same `--port` at every start; after a change of `--port` or `--expire`, `register NAME` runs again.
 - `--expire` at most 23: a sent message is editable for 24 hours (`deletable'`, `Messages.hs:537-548`; refused edit, `Commands.hs:845-868`), so the outcome edit of a pending card falls within that window. Standing and host-mode outcomes are posted, not edited.
 - `--stop-wait`: at stop, after the cards of pending and performing actions are edited or posted, the server waits this many seconds before it closes the chat, so that the agent sends those messages; 0 does not wait (section Start and shutdown).
+- `--models` and `--model-file` are given together, for an agent that a script runs in opencode (section Commands, `/model`). Each item of `--models` matches `^([a-z][a-z0-9-]{0,15})=([A-Za-z0-9][\w.-]{0,31}/[\w.:/+@-]{1,64})$`; names are unique, and so are PROVIDER/MODEL values; the first item is the default.
+- `--model-file` is resolved to an absolute path. Its folder is not the data folder, not inside it, and does not contain it.
 
 Rejected arguments, exit code 2:
 
@@ -228,6 +233,11 @@ argument                              message
 --owners entry not ID:NAME            --owners: ID:NAME expected, got <entry>
 NAME not ^[a-z0-9](-?[a-z0-9])*-?$,   NAME: 1 to 32 lowercase letters, digits and single hyphens, starting with a letter or digit.
   or longer than 32
+--models item not matching, or a      --models: NAME=PROVIDER/MODEL,... expected, got <value>
+  repeated name or PROVIDER/MODEL
+--models or --model-file alone        --models and --model-file: both expected.
+--model-file folder not disjoint      --model-file: a file in a folder disjoint from the data folder expected, got <file>
+  from the data folder
 ```
 
 ## What the person sees: CLI
@@ -314,6 +324,8 @@ action decided                  Action 2 rejected by Alice. | Action 2 expired.
 mode host                       Action 2: performed without approval (mode host). | ...; failed: <error>.
 counter or card not written     Action 2: failed: <error>.
 owner's /leave CHAT             Left business Ridgeline (#9), requested by Alice. | Deleted bot SimpleX Directory (@4), requested by Alice.
+start, --models                 Model: gemma (kodiak/gemma-4-26b), in /run/agent-model/model
+owner's /model NAME             Model set to glm (privatemode/glm-latest) by Alice.
 owner added, --owners LIST      Bob (member 7) is now an owner and can't approve actions yet. Restart the server with --owners 3:Alice,7:Bob
 owner gone, --owners LIST       Alice (member 3) is no longer an owner. Restart the server with --owners 7:Bob   (the human owners remaining)
 no human owner remains          Alice (member 3) is no longer an owner. No owners remain: restart the server with --reset-owners --owners
@@ -461,13 +473,14 @@ host, interrupted   the request's lines except the commands line + "Performed wi
 
 ### Commands
 
-The group's command menu has `/pending`, `/list` and `/leave`; the cards carry the others.
+The group's command menu has `/pending`, `/list` and `/leave`, and `/model` with `--models`; the cards show the others.
 
 ```
 menu entry   keyword   label                 params      tapped
 /pending     pending   Pending actions       none        sent
 /list        list      Chats and approvals   none        sent
 /leave       leave     Leave a chat          <chat ID>   "/leave <chat ID>" in the entry field, the cursor at its end
+/model       model     The agent's model     none        sent; the entry only with --models
 ```
 
 - The apps put "/keyword params" into the entry field for a command with params, and send "/keyword" for one without (`CommandsMenuView.kt:154-159`, `CommandsMenuView.swift:118-124`).
@@ -487,6 +500,8 @@ command             result
 /delete CHAT files  the running downloads of CHAT failed and cancelled, also those the core continues after a restart, then the folder of CHAT deleted, for a current or a left chat
 /pending            one line per pending action: "2  send to bot SimpleX Directory  expires 2026-10-18 09:15 UTC"; "No pending actions." when none
 /list               one line per chat of the agent, as list returns them: the 100 most recent chats, each line cut to 100 bytes as encoded in the message, "…" included; then "K older chats are not shown." ("1 older chat is not shown.") when more exist
+/model              the selected model, then one command per other model of --models
+/model NAME         model NAME of --models selected: the model file written, the change logged
 ```
 
 `/list`:
@@ -526,7 +541,14 @@ of the file fails
 /delete CHAT files                          Deleted 3 files from #9, 2.1 MB. ("1 file")
 /delete CHAT files, no files                No files from #9.
 /list, no chats                             No chats.
-other one-line text starting with "/"       Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands.
+/model | /model NAME, no --models           This server runs without --models.
+/model                                      The agent's model is `gemma`: `kodiak/gemma-4-26b`.
+                                            /'model glm'
+                                            /'model flash'
+/model NAME                                 The agent's model is `glm`: `privatemode/glm-latest`. The agent restarts with it. /'model gemma'
+/model NAME, NAME already selected          The agent's model is already `gemma`.
+/model NAME, NAME not in --models           No such model. /model shows the models.
+other one-line text starting with "/"       Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /model. Each card shows its commands.
 ```
 
 After `/leave CHAT`, after its reply, and after the outcome of a leave action in state done, when the folder of CHAT has files:
@@ -542,6 +564,7 @@ Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agen
 - A files approval covers downloads only, and ends as a standing approval does.
 - `/leave CHAT` applies in both modes. Its reply is logged, with names on one line.
 - A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver. It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals, and `/approve CHAT all` stores none.
+- `/model` applies in both modes. NAME is compared with the names of `--models`, so a PROVIDER/MODEL value is refused; NAME is left out of the refusal. The command at the end of a switch reply selects the previous model. After a failed write of the model file, the selection is kept, no reply is sent, and the error is logged as `control chat command: <error>`.
 
 ### Membership messages
 
@@ -878,6 +901,7 @@ Every command acts for the active user, the agent's profile, the only user of th
 serve(NAME, options):
   check options
   create DIR, mode 0700 (set again when DIR exists, except on Windows); DIR/lock created exclusively, or exit 1 when its PID runs; token = DIR/token, created when missing or with --new-token; DIR/headers.json written with the token
+  --models: the item whose PROVIDER/MODEL is the first line of FILE is selected; none: the first item, written to FILE as at /model NAME; an error: DIR/lock removed, exit 1
   chat = ChatApi.init({type: "sqlite", filePrefix: DIR/simplex})
   profile = the user, or created: /_create user {profile: {displayName: <--display-name or NAME>, fullName: "", peerType: agent}, pastTimestamp: false}
   cfg = /network; /_network {cfg with smpProxyMode: always, smpProxyFallback: allowProtected}   # the apps' defaults, SimpleXAPI.kt:5427-5447
@@ -890,7 +914,7 @@ serve(NAME, options):
   --reset-owners: membership current and role below owner: /_leave #group (parser Commands.hs:6424), as only an owner or a former member deletes a group (Commands.hs:1395-1398);
     /_delete #group full notify=on; group = createControlChat(nextAction)
   group.membership not owner, or memberStatus not creator, connected or complete: lost = true; log "The agent lost its control chat. Restart the server with --reset-owners."
-  lost unset, group.groupProfile.displayName differs from the profile's, or its commands from the menu of createControlChat: /_group_profile #group {the group profile with that displayName and menu}   # APIUpdateGroupProfile, parser Commands.hs:6534
+  lost unset, group.groupProfile.displayName differs from the profile's, or its commands from the menu of createControlChat with /model appended under --models: /_group_profile #group {the group profile with that displayName and menu}   # APIUpdateGroupProfile, parser Commands.hs:6534
   members = /_members #group, so approvers are known before the first call
   HTTP listen 127.0.0.1:PORT; port in use: chat.close(); remove DIR/lock; exit 1 "Port PORT is in use. Start with --port N."   # before any link or QR code is printed
     requests to /mcp with the token get 503 with Retry-After: 1 until ownerStart ends
@@ -982,7 +1006,7 @@ newChatItems, groupRcv, main scope       text starts with "/"                   
 
 ```
 command = parseCommand(text)                      # steward src/commands.ts; undefined: ignore
-not one of the commands below: reply "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+not one of the commands below: reply "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /model. Each card shows its commands."
 sender not an approver: reply "Only owners approve actions." (--owners: "Only the owners listed in --owners approve actions.")
 approve | reject | receive | forward [CHAT] N, receive CHAT N all, action N not pending in memory, or its card unset: reply "Action N is not pending."
 the same with CHAT, action N a connect or for another chat: reply "Action N is not for CHAT."
@@ -1008,6 +1032,11 @@ delete CHAT files: each download of CHAT in memory: rejected, "Your owner delete
 pending:          reply with the pending actions
 list:             reply with one line per chat of list(), the 100 most recent: CHAT, the type and name, ", approved for this chat by NAME" and ", files approved by NAME" while each approval applies, ", not connected";
                   each line cut to 100 encoded bytes with "…"; then "K older chats are not shown." when more exist (worst case about 10.3 KB, below the 15602-byte message)
+model [NAME]:     no --models: reply "This server runs without --models."
+                  no NAME: reply "The agent's model is `NAME`: `PROVIDER/MODEL`." of the selected item, then a line /'model NAME' per other item, in the order of --models
+                  NAME not a name of --models: reply "No such model. /model shows the models."; NAME already selected: reply "The agent's model is already `NAME`."
+                  otherwise: write PROVIDER/MODEL and "\n" to FILE.part, mode 0644 (set again except on Windows), rename it to FILE; select NAME; log "Model set to NAME (PROVIDER/MODEL) by SENDER.", SENDER on one line;
+                  reply "The agent's model is `NAME`: `PROVIDER/MODEL`. The agent restarts with it. /'model PREVIOUS'"
 ```
 
 - Owner commands run one at a time, in arrival order: a command awaits the custom data write of the one before it.
@@ -1561,14 +1590,14 @@ Unit:
 
 ```
 test        covers
-options     defaults, ranges, --stop-wait from 0 to 60, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text
-commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /receive CHAT N all and /receive CHAT off beside the approval of messages; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
+options     defaults, ranges, --stop-wait from 0 to 60, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text; --models at the length limits and its refused items, --models and --model-file only together, the model file's folder against the data folder
+commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /receive CHAT N all and /receive CHAT off beside the approval of messages; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview; /model with its replies, the model file and the log line, refused for unlisted names, without --models and for non-approvers, in both modes; the /model menu entry; a start that stops before the chat database when the model file's folder is missing
 actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
 cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes and the servers line; the attaching line of sends
 messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected, a forwarded file offered and then received; download: attach, performing at wait, a received file, a forwarded file kept outside the chat's folder and moved there at the approval, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request
 http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors
 register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors; on Windows, claude through cmd.exe after ENOENT, with cmd.exe quoting
-files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json; file modes set again on existing files
+files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json; file modes set again on existing files; the model file: one line with mode 0644 through FILE.part, kept at start when listed, otherwise the first model written, a missing folder
 log         every SimpleX error shape worded by the apps, in its JSON shape from @simplex-chat/types; the chain for other errors
 ```
 
@@ -1634,3 +1663,10 @@ C6      Claude Code closes the request stream when a call times out or its task 
 ## Decisions of 2026-10-31
 
 - The wait at stop is fixed for now: `--stop-wait` seconds, 10 by default, when cards were edited or posted at the stop; a second signal ends it. It replaces the count of pending deliveries read with `/sql`. A later change can post a final message and wait for its "sent" status for each owner.
+
+## Decisions of 2026-11-12
+
+- `/model NAME` selects the agent's model among the items `NAME=PROVIDER/MODEL` of `--models`; approvers send it, in both modes. The plan: `plans/2026-11-12-mcp-model.md`.
+- The file of `--model-file` is the only store of the selection: read at start, written at each switch.
+- The script that runs opencode restarts the agent at once when the file changes, in a new opencode session.
+- kodiak: `--models gemma=kodiak/gemma-4-26b,glm=privatemode/glm-latest,flash=privatemode/glm-flash-latest`, gemma the default.

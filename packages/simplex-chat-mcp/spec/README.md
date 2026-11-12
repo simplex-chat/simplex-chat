@@ -19,11 +19,11 @@
 
 The SimpleX core (libsimplex, release `core-7.1.0.20`) runs inside the same Node.js process, loaded by the `simplex-chat` library 7.1.0-beta.10.2. The core keeps the profile, chats and connections in two SQLite databases of the data folder, and sends and receives files through XFTP servers. The MCP protocol is served by the MCP TypeScript SDK (`@modelcontextprotocol/server` 2.3.1 and `@modelcontextprotocol/node` 2.1.1).
 
-`connect`, `send`, `download` and `leave` are actions. In mode `requests` the server posts each action as a card in the agent control chat, a SimpleX group created and owned by the agent's profile. An owner approves or rejects the card with a command in that chat, and the server performs the action after the approval. An owner can also approve all messages to one chat, or all downloads of files on known servers from one chat, in advance. On a download card, the owner lets the agent receive the file, or has it forwarded only to the owner. In mode `host` the server performs actions at once and marks the four tools for the host's own confirmation.
+`connect`, `send`, `download` and `leave` are actions. In mode `requests` the server posts each action as a card in the agent control chat, a SimpleX group created and owned by the agent's profile. An owner approves or rejects the card with a command in that chat, and the server performs the action after the approval. An owner can also approve all messages to one chat, or all downloads of files on known servers from one chat, in advance. On a download card, the owner lets the agent receive the file, or has it forwarded only to the owner. In mode `host` the server performs actions at once and marks the four tools for the host's own confirmation. With `--models`, an owner selects the agent's model with `/model`, and the server writes it to a file for the script that runs the agent in opencode.
 
 A tool call is held open by the server until the owner decides and, for `connect` and `send`, until the replies arrive, and for `download`, until the file is received or `wait` passes. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
 
-The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
+The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat. The selected model is stored only in the file of `--model-file`, outside the data folder.
 
 ---
 
@@ -38,6 +38,7 @@ graph TD
   cli --> messages["messages.ts"]
   cli --> log["log.ts"]
   cli -.-> actions["actions.ts"]
+  cli -.-> files["files.ts"]
   serve --> control["control.ts"]
   serve --> tools["tools.ts"]
   serve --> actions
@@ -49,6 +50,7 @@ graph TD
   control --> actions
   control --> messages
   control --> log
+  control --> files
   control -.-> serve
   tools --> actions
   tools --> messages
@@ -87,7 +89,7 @@ graph TD
 | [`actions.ts`](../src/actions.ts) | action records, state machine, expiry, stop |
 | [`control.ts`](../src/control.ts) | agent control chat: link, owners, owner commands, cards, counter |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
-| [`files.ts`](../src/files.ts) | data folder, lock, token, `headers.json`, `server.json` |
+| [`files.ts`](../src/files.ts) | data folder, lock, token, `headers.json`, `server.json`, the model file |
 | [`register.ts`](../src/register.ts) | `register` command: Claude Code entry |
 | [`log.ts`](../src/log.ts) | terminal lines, error texts, shell quoting |
 
@@ -107,17 +109,18 @@ graph TD
 
 | Component | File | Key symbol | Line |
 |---|---|---|---|
-| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L198) | `main` | [198](../src/cli.ts#L198) |
-| Argument parser | [`src/cli.ts`](../src/cli.ts#L45) | `parseCommand` | [45](../src/cli.ts#L45) |
-| Server start | [`src/serve.ts`](../src/serve.ts#L65) | `startServer` | [65](../src/serve.ts#L65) |
-| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L88) | `startAgent` | [88](../src/serve.ts#L88) |
+| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L225) | `main` | [225](../src/cli.ts#L225) |
+| Argument parser | [`src/cli.ts`](../src/cli.ts#L52) | `parseCommand` | [52](../src/cli.ts#L52) |
+| Server start | [`src/serve.ts`](../src/serve.ts#L66) | `startServer` | [66](../src/serve.ts#L66) |
+| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L91) | `startAgent` | [91](../src/serve.ts#L91) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
 | Tool registration | [`src/tools.ts`](../src/tools.ts#L488) | `AgentTools.register` | [488](../src/tools.ts#L488) |
 | Downloads | [`src/tools.ts`](../src/tools.ts#L522) | `AgentTools.downloadFile` | [522](../src/tools.ts#L522) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L124) | `Actions` | [124](../src/actions.ts#L124) |
-| Agent control chat | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
-| Card text | [`src/control.ts`](../src/control.ts#L552) | `cardText` | [552](../src/control.ts#L552) |
+| Agent control chat | [`src/control.ts`](../src/control.ts#L85) | `Control` | [85](../src/control.ts#L85) |
+| Card text | [`src/control.ts`](../src/control.ts#L573) | `cardText` | [573](../src/control.ts#L573) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
-| Data folder files | [`src/files.ts`](../src/files.ts#L12) | `createDataFolder`, `acquireLock` | [12](../src/files.ts#L12) |
+| Data folder files | [`src/files.ts`](../src/files.ts#L18) | `createDataFolder`, `acquireLock` | [18](../src/files.ts#L18) |
+| Model file | [`src/files.ts`](../src/files.ts#L61) | `modelAtStart`, `writeModelFile` | [61](../src/files.ts#L61) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |
