@@ -50,6 +50,7 @@ The directory by its address (`docs/DIRECTORY.md`):
 4. `Check for new messages from the directory, waiting up to 60 seconds.` `receive` with `wait`.
 5. `List your chats and pending actions.` `list`.
 6. Reject one card with its `/reject @N A`: the call returns `status: rejected`; the card ends with `Rejected by Alice.` `/pending` lists the waiting cards.
+7. Start a new Claude Code session and ask: `Recall your conversation with the directory.` `receive` with `history`: the last messages of the chat, oldest first, Claude's own with the agent's name and `from_type: agent`.
 
 Approval of all messages to a chat, and leaving:
 

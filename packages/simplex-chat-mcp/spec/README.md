@@ -86,7 +86,7 @@ graph TD
 | [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send |
 | [`actions.ts`](../src/actions.ts) | action records, state machine, expiry, stop |
 | [`control.ts`](../src/control.ts) | agent control chat: link, owners, owner commands, cards, counter |
-| [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
+| [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread and history paging, display names |
 | [`files.ts`](../src/files.ts) | data folder, lock, token, `headers.json`, `server.json` |
 | [`register.ts`](../src/register.ts) | `register` command: Claude Code entry |
 | [`log.ts`](../src/log.ts) | terminal lines, error texts, shell quoting |
@@ -112,8 +112,8 @@ graph TD
 | Server start | [`src/serve.ts`](../src/serve.ts#L65) | `startServer` | [65](../src/serve.ts#L65) |
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L88) | `startAgent` | [88](../src/serve.ts#L88) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L488) | `AgentTools.register` | [488](../src/tools.ts#L488) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L522) | `AgentTools.downloadFile` | [522](../src/tools.ts#L522) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L493) | `AgentTools.register` | [493](../src/tools.ts#L493) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L527) | `AgentTools.downloadFile` | [527](../src/tools.ts#L527) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L124) | `Actions` | [124](../src/actions.ts#L124) |
 | Agent control chat | [`src/control.ts`](../src/control.ts#L81) | `Control` | [81](../src/control.ts#L81) |
 | Card text | [`src/control.ts`](../src/control.ts#L552) | `cardText` | [552](../src/control.ts#L552) |

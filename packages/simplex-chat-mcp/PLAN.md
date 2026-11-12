@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.2: plan
 
-Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
+Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`), history 2026-11-12 (`plans/2026-11-12-mcp-history.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
 
 ## Scope
 
@@ -705,6 +705,7 @@ input field   type     rule
 chat          string   required; a chat of the agent
 wait          number   optional; seconds to wait when no message is new; 0 to 86400; default 0
 limit         number   optional; 1 to 100; default 50
+history       number   optional; 1 to 50; most message items returned in history
 ```
 
 ```
@@ -712,6 +713,7 @@ result field  type        present
 chat          string      always
 messages      Message[]   always; the new messages, up to limit: the unread ones in chat order, then those that arrive during the call
 more          number      always; new messages not returned
+history       Message[]   with history; up to history message items: the last ones before the first of messages, or the last ones of the chat when messages is empty, in chat order; sent items included; new and live items, and items with itemDeleted (deleted, blocked or moderated), left out
 ```
 
 - New: a received message that is unread when the call reads its page, or that arrives during the call. The returned ones are marked read; another call marking one read after this call collected it does not remove it.
@@ -1360,8 +1362,11 @@ receive(input, ctx):
   none new and wait > 0: wait for newChatItems of chat until one is new | wait | signal
     progress at once and every 60 s: "No new messages in <chat>; waiting until <time>."
   messages: new, up to limit; more = the rest + s.chatStats.unreadCount - the rcvNew items of pages (the unread items not read, at least 0)
+  history given: history pages = /_get chat <chat> before=<the first item ID of messages> count=100, or count=100 when messages is empty,
+    then before=<the first item ID of the last page> count=100, while they hold fewer than history message items that are not rcvNew or live and have no itemDeleted, and the last page holds 100
+    history = the last history of those items, in chat order; the agent's own items named as in connect
   not aborted: /_read chat items <chat> <the IDs of messages and of skipped, joined by ",">, when that list is non-empty
-  result {chat, messages, more}
+  result {chat, messages, more, history when given}
 
 list():
   /_get chats <user> pcc=off count=1000000   # parser Commands.hs:6342; count= is ORDER BY chat_ts DESC LIMIT without a time boundary, Store/Messages.hs:884, :995
@@ -1565,8 +1570,8 @@ options     defaults, ranges, --stop-wait from 0 to 60, NAME, --display-name at 
 commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /receive CHAT N all and /receive CHAT off beside the approval of messages; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
 actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
 cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes and the servers line; the attaching line of sends
-messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected, a forwarded file offered and then received; download: attach, performing at wait, a received file, a forwarded file kept outside the chat's folder and moved there at the approval, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request
-http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors
+messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; receive with history: its items in order before the returned new ones or at the end, read in pages after the wait, the agent's own under its name or incognito name, new, live and deleted items left out, none marked read, absent without the input; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected, a forwarded file offered and then received; download: attach, performing at wait, a received file, a forwarded file kept outside the chat's folder and moved there at the approval, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request
+http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors, receive with history 51 included
 register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors; on Windows, claude through cmd.exe after ENOENT, with cmd.exe quoting
 files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json; file modes set again on existing files
 log         every SimpleX error shape worded by the apps, in its JSON shape from @simplex-chat/types; the chain for other errors
@@ -1634,3 +1639,7 @@ C6      Claude Code closes the request stream when a call times out or its task 
 ## Decisions of 2026-10-31
 
 - The wait at stop is fixed for now: `--stop-wait` seconds, 10 by default, when cards were edited or posted at the stop; a second signal ends it. It replaces the count of pending deliveries read with `/sql`. A later change can post a final message and wait for its "sent" status for each owner.
+
+## Decisions of 2026-11-12
+
+- `receive` takes `history`, 1 to 50: the last message items of the chat before the new ones, the agent's own included and named as in `connect`; new and live items, and items with `itemDeleted`, are left out, and history items are not marked read (`plans/2026-11-12-mcp-history.md`).
