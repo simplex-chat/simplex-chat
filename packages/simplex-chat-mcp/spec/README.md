@@ -1,8 +1,8 @@
 # SimpleX MCP server: specification
 
-> Technical specification of `@simplex-chat/mcp` 0.3.0 in `packages/simplex-chat-mcp`: `simplex-mcp serve` and the Claude Code plugin. Statements are checked against the source of the same commit, and each section links to the code.
+> Technical specification of `@simplex-chat/mcp` 0.3.0 in `packages/simplex-chat-mcp`. It covers `simplex-mcp serve` and the Claude Code plugin. Statements are checked against the source of the same commit, and each section links to the code.
 >
-> Related: [README](../README.md) (the plugin's installation and use) | [REFERENCE](../REFERENCE.md) (`serve` and `register`, shared settings, options, commands, files, recovery) | [PLAN](../PLAN.md) (design record of `serve`) | [TESTING](../TESTING.md) (local build and test)
+> Related: [README](../README.md) (the plugin's installation and use) | [REFERENCE](../REFERENCE.md) (`serve` and `register`, shared settings, options, commands, files, recovery) | [PLAN](../PLAN.md) (design record of `serve`) | [TESTING](../TESTING.md) (local build and test) | [ROADMAP](../ROADMAP.md) (what comes next)
 
 ## Table of contents
 
@@ -25,9 +25,22 @@ A tool call is held open by the server until the owner decides and, for `connect
 
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
-The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server, which forwards tool calls over a local socket to one service per data root, `simplex-mcp service`. The socket carries HTTP/1.1 with a bearer token. The service runs two cores: `Claude`, the profile peers see, which holds the Main group, one group per session and the chats with peers; and `User`, a member of every session group, which posts the prompts typed in the terminal.
+The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server. The session server forwards tool calls over a local socket to `simplex-mcp service`, one service per data root. Requests on the socket are HTTP/1.1 with a bearer token. The service runs two cores:
+- `Claude` is the profile that peers see. It holds the Main group, one group per session and the chats with peers.
+- `User` is a member of every session group. It posts the prompts typed in the terminal.
 
-Each session has the six tools and `reply`, its own `Actions` and `Control` in its group, and its own chats: a chat belongs to the session that connected it, and owners move it with `/give`. Every member of the Main group is trusted with all sessions: owners are invited to each session group through the Main group as owners, and every member joins one through it by `/join N` as an admin. Rights in a session group follow the member's role there, whatever way they joined: admins and owners prompt, approve and send the group's `/` commands; moderators, members and authors prompt, and each of their `/` commands gets one refusal; Claude posts the member's rights at each join and role change, and members with the role admin or owner make others observers by `/observer #G ID`. Claude's files of `reply` reach a session group at once, under the group's preference for files and media, which the core enforces. The session server is also a Claude Code channel: a message of a member other than `User` in the session group, except a one-line `/` text, reaches the running session as a prompt, from which Claude Code runs no command, and Claude Code's permission prompts are posted there as cards. The plugin's hooks post the terminal prompts and the final answer of each turn in the group, and keep the model and effort level in its short description.
+Each session has the six tools and `reply`, and its group has its own `Actions` and `Control`. A chat belongs to the session that connected it. Admins and owners of the session group move a chat to another session with `/give`.
+
+Every member of the Main group is trusted with all sessions. The Main group's owners are invited to each session group as owners. Another member of the Main group joins a session group as an admin with `/join N` there.
+
+Rights in a session group follow the member's role there, however the member joined:
+- Admins and owners send prompts and the group's `/` commands, and approve actions.
+- Moderators, members and authors send prompts. Claude answers each of their `/` commands with one refusal.
+- Admins and owners make other members observers with `/observer #G ID`.
+
+Claude posts a member's rights at each join and each role change. Claude posts the files of `reply` in a session group at once. The core sends them only while files and media are allowed in the group's preferences.
+
+The session server is also a Claude Code channel. The plugin passes each message in the session group to the running session as a prompt, except the messages of `User` and one-line `/` texts. Claude Code runs no command from such a prompt. The plugin posts Claude Code's permission prompts in the group as cards. The plugin's hooks post the terminal prompts and the final answer of each turn in the group. The hooks keep the model and the effort level in the group's short description.
 
 ---
 
@@ -179,7 +192,13 @@ graph TD
 | [`owner.ts`](../src/owner.ts) | plugin: `link` and `reset-owners` |
 | [`config.ts`](../src/config.ts) | plugin: option variables to `Config`, validation |
 
-Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json), [`.mcp.json`](../.mcp.json), [`hooks/hooks.json`](../hooks/hooks.json), [`plugin/allow.js`](../plugin/allow.js), the production packages bundled in the package's `node_modules` ([`package.json`](../package.json#L35)), and the marketplace [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json); see [API 4.8](api.md#48-plugin-options-files-and-hook-output).
+Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plugin-options-files-and-hook-output):
+- [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json)
+- [`.mcp.json`](../.mcp.json)
+- [`hooks/hooks.json`](../hooks/hooks.json)
+- [`plugin/allow.js`](../plugin/allow.js)
+- the production packages bundled in the package's `node_modules` ([`package.json`](../package.json#L35))
+- the marketplace [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json)
 
 ---
 
@@ -187,9 +206,9 @@ Plugin files, run by Claude Code: [`.claude-plugin/plugin.json`](../.claude-plug
 
 | Document | Contents |
 |---|---|
-| [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits; the plugin in section 8 |
-| [Flows](flows.md) | sequence diagrams of the main flows with source locations; the plugin in flows 17-30 |
-| [API](api.md) | the six tools, the control chat commands, replies and cards, the CLI; the plugin's tools, groups, channel, socket protocol, commands and files in section 4 |
+| [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits. Section 8 covers the plugin. |
+| [Flows](flows.md) | sequence diagrams of the main flows with source locations. Flows 17-30 cover the plugin. |
+| [API](api.md) | the six tools, the control chat commands, replies and cards, the CLI. Section 4 covers the plugin's tools, groups, channel, socket protocol, commands and files. |
 
 ---
 
