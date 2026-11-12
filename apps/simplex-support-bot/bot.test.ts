@@ -1,4 +1,4 @@
-import {describe, test, expect, beforeEach, vi} from "vitest"
+import {describe, test, expect, beforeEach, afterEach, vi} from "vitest"
 import {mkdtempSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
@@ -8,8 +8,8 @@ import {CardManager} from "./src/cards.js"
 import {parseConfig} from "./src/config.js"
 import {GrokApiClient} from "./src/grok.js"
 import {loadGrokContext} from "./src/context.js"
-import {dryRun} from "./src/dryRun.js"
-import {welcomeMessage, queueMessage, grokActivatedMessage, teamLockedMessage, teamAlreadyInvitedMessage} from "./src/messages.js"
+import {dryRun, migrationPlan} from "./src/dryRun.js"
+import {defaultMessages, queueMessage, teamAddedMessage, noTeamMembersMessage} from "./src/messages.js"
 
 // Silence console output during tests
 vi.spyOn(console, "log").mockImplementation(() => {})
@@ -158,14 +158,8 @@ class MockChatApi {
   }
 
   rawCmds: string[] = []
-  feedItemIds: number[] = []
   async sendChatCmd(cmd: string) {
     this.rawCmds.push(cmd)
-    if (cmd.startsWith("/feed ")) {
-      const itemId = nextItemId++
-      this.feedItemIds.push(itemId)
-      return {type: "newChatItems", user: makeUser(MAIN_USER_ID), chatItems: [makeFeedAChatItem(itemId, {type: "sndNew"})]}
-    }
     return {type: "cmdOk"}
   }
 
@@ -273,13 +267,13 @@ function makeConfig(overrides: Partial<any> = {}) {
       {id: TEAM_MEMBER_1_ID, name: "Alice"},
       {id: TEAM_MEMBER_2_ID, name: "Bob"},
     ],
-    broadcasters: [{id: TEAM_MEMBER_1_ID, name: "Alice"}],
     groupLinks: "",
     timezone: "UTC",
     completeHours: 3,
     cardFlushSeconds: 300,
     grokApiKey: "test-key",
     grokContactId: GROK_CONTACT_ID as number | null,
+    messages: defaultMessages,
     ...overrides,
   }
 }
@@ -365,13 +359,6 @@ function makeDirectAChatItem(chatItem: any, contactId: number): any {
   return {
     chatInfo: {type: "direct", contact: {contactId, profile: {displayName: "Someone"}}},
     chatItem,
-  }
-}
-
-function makeFeedAChatItem(itemId: number, itemStatus: any): any {
-  return {
-    chatInfo: {type: "feed", feed: {feedId: 1, userId: MAIN_USER_ID}},
-    chatItem: {chatDir: {type: "feedSnd"}, meta: {itemId, itemStatus}, content: {type: "sndMsgContent", msgContent: {type: "text", text: ""}}},
   }
 }
 
@@ -684,7 +671,7 @@ describe("/grok Activation", () => {
     await joinPromise
     await bot.flush()
     expectMemberAdded(CUSTOMER_GROUP_ID, GROK_CONTACT_ID)
-    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.grokActivated)
   })
 
   test("/grok as first message → WELCOME→GROK directly, no queue message", async () => {
@@ -692,7 +679,7 @@ describe("/grok Activation", () => {
     await bot.onNewChatItems(customerMessage("/grok"))
     await joinPromise
     await bot.flush()
-    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.grokActivated)
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     expect(chat.sentTo(TEAM_GROUP_ID).length).toBeGreaterThan(0)
   })
@@ -700,7 +687,7 @@ describe("/grok Activation", () => {
   test("/grok in TEAM → rejected with teamLockedMessage", async () => {
     await reachTeam()
     await bot.onNewChatItems(customerMessage("/grok"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, teamLockedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.teamLocked)
   })
 
   test("/grok when grokContactId is null → grokUnavailableMessage", async () => {
@@ -978,7 +965,7 @@ describe("/team Activation", () => {
     addBotMessage("We will reply within 24 hours.")
     chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
     await bot.onNewChatItems(customerMessage("/team"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, teamAlreadyInvitedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.teamAlreadyInvited)
   })
 
   test("/team with no team members → noTeamMembersMessage", async () => {
@@ -1012,7 +999,7 @@ describe("One-Way Gate", () => {
   test("/grok after gate → teamLockedMessage", async () => {
     await reachTeam()
     await bot.onNewChatItems(customerMessage("/grok"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, teamLockedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.teamLocked)
   })
 
   test("customer text in TEAM → card update scheduled, no bot reply", async () => {
@@ -1375,80 +1362,6 @@ describe("/join Command (Team Group)", () => {
   })
 })
 
-describe("/broadcast Command (Team Group)", () => {
-  beforeEach(() => setup())
-
-  function statusEvent(itemId: number, itemStatus: any): any {
-    return {
-      type: "chatItemsStatusesUpdated" as const,
-      user: makeUser(MAIN_USER_ID),
-      chatItems: [makeFeedAChatItem(itemId, itemStatus)],
-    }
-  }
-
-  test("/broadcast from broadcaster → /feed sent with JSON text, queued reply", async () => {
-    await bot.onNewChatItems(teamGroupMessage("/broadcast hello everyone"))
-    expect(chat.rawCmds).toEqual(['/feed "hello everyone"'])
-    expectSentToGroup(TEAM_GROUP_ID, `Broadcast ${chat.feedItemIds[0]} queued`)
-  })
-
-  test("/broadcast keeps newlines and quotes", async () => {
-    await bot.onNewChatItems(teamGroupMessage('/broadcast line "one"\nline two'))
-    expect(chat.rawCmds).toEqual(['/feed "line \\"one\\"\\nline two"'])
-  })
-
-  test("/broadcast with extra spaces → text has no leading whitespace", async () => {
-    await bot.onNewChatItems(teamGroupMessage("/broadcast   hello"))
-    expect(chat.rawCmds).toEqual(['/feed "hello"'])
-  })
-
-  test("/broadcast on its own line → text starts after the newline", async () => {
-    await bot.onNewChatItems(teamGroupMessage("/broadcast\nline one\nline two"))
-    expect(chat.rawCmds).toEqual(['/feed "line one\\nline two"'])
-  })
-
-  test("/broadcast from a non-broadcaster → error reply, nothing sent", async () => {
-    await bot.onNewChatItems(teamGroupMessage("/broadcast hello", TEAM_MEMBER_2_ID))
-    expect(chat.rawCmds.length).toBe(0)
-    expectSentToGroup(TEAM_GROUP_ID, `Error: contact ${TEAM_MEMBER_2_ID} is not allowed to broadcast`)
-  })
-
-  test("/broadcast without text → error reply, nothing sent", async () => {
-    await bot.onNewChatItems(teamGroupMessage("/broadcast  "))
-    expect(chat.rawCmds.length).toBe(0)
-    expectSentToGroup(TEAM_GROUP_ID, "Error: broadcast text is empty")
-  })
-
-  test("customer sending /broadcast in customer group → treated as normal message", async () => {
-    await bot.onNewChatItems(customerMessage("/broadcast hello"))
-    expect(chat.rawCmds.length).toBe(0)
-    expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
-  })
-
-  test("feed item complete → delivered reply once", async () => {
-    await bot.onNewChatItems(teamGroupMessage("/broadcast hello"))
-    const itemId = chat.feedItemIds[0]
-    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndSent", sndProgress: "partial"}))
-    expectNotSentToGroup(TEAM_GROUP_ID, "delivered")
-    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndSent", sndProgress: "complete"}))
-    expectSentToGroup(TEAM_GROUP_ID, `Broadcast ${itemId} delivered to all chats`)
-    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndSent", sndProgress: "complete"}))
-    expect(chat.sentTo(TEAM_GROUP_ID).filter(m => m.includes("delivered")).length).toBe(1)
-  })
-
-  test("feed item error → failure reply", async () => {
-    await bot.onNewChatItems(teamGroupMessage("/broadcast hello"))
-    const itemId = chat.feedItemIds[0]
-    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndError", agentError: {type: "other", sndError: "boom"}}))
-    expectSentToGroup(TEAM_GROUP_ID, `Broadcast ${itemId} failed`)
-  })
-
-  test("status of an unknown feed item → ignored", async () => {
-    await bot.onChatItemsStatusesUpdated(statusEvent(4242, {type: "sndSent", sndProgress: "complete"}))
-    expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(0)
-  })
-})
-
 describe("DM Handshake", () => {
   beforeEach(() => setup())
 
@@ -1657,7 +1570,7 @@ describe("Error Handling", () => {
     // Only the "Inviting Grok" message is sent — no activated/unavailable result
     expect(chat.sent.length).toBe(sentBefore + 1)
     expectSentToGroup(CUSTOMER_GROUP_ID, "Inviting Grok")
-    expectNotSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
+    expectNotSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.grokActivated)
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "temporarily unavailable")
   })
 
@@ -1847,7 +1760,7 @@ describe("Grok Join Flow", () => {
     await bot.flush()
 
     expect(chat.joined).toContain(GROK_LOCAL_GROUP_ID)
-    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.grokActivated)
   })
 
   test("per-message responses suppressed during activateGrok initial response", async () => {
@@ -1995,7 +1908,7 @@ describe("End-to-End Flows", () => {
     await joinPromise
     await bot.flush()
 
-    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
+    expectSentToGroup(CUSTOMER_GROUP_ID, defaultMessages.grokActivated)
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     expect(chat.sentTo(TEAM_GROUP_ID).length).toBeGreaterThan(0)
   })
@@ -2027,21 +1940,38 @@ describe("End-to-End Flows", () => {
 
 describe("Message Templates", () => {
   test("welcomeMessage is a non-empty string", () => {
-    expect(typeof welcomeMessage).toBe("string")
-    expect(welcomeMessage.length).toBeGreaterThan(0)
+    expect(typeof defaultMessages.welcome).toBe("string")
+    expect(defaultMessages.welcome.length).toBeGreaterThan(0)
   })
 
   test("grokActivatedMessage mentions chatting with Grok", () => {
-    expect(grokActivatedMessage).toContain("chatting with Grok")
+    expect(defaultMessages.grokActivated).toContain("chatting with Grok")
   })
 
   test("teamLockedMessage tells customer the team will handle the conversation", () => {
-    expect(teamLockedMessage).toContain("team")
+    expect(defaultMessages.teamLocked).toContain("team")
   })
 
   test("queueMessage mentions hours", () => {
-    const msg = queueMessage("UTC", true)
+    const msg = queueMessage(defaultMessages, "UTC", true)
     expect(msg).toContain("hours")
+  })
+
+  test("queueMessage replaces every {hours} with 24 or 48 and appends the Grok part only with Grok", () => {
+    const messages = {...defaultMessages, queue: "Reply in {hours}h, not later than {hours}h.", queueGrok: "Try /grok."}
+    expect(queueMessage(messages, "UTC", false)).toMatch(/^Reply in (24|48)h, not later than (24|48)h\.$/)
+    expect(queueMessage(messages, "UTC", true)).toMatch(/^Reply in (24|48)h, not later than (24|48)h\.\n\nTry \/grok\.$/)
+  })
+
+  test("teamAddedMessage appends the Grok line on a new line only when Grok is present", () => {
+    const messages = {...defaultMessages, teamAdded: "Within {hours}h.", teamAddedGrok: "Grok helps."}
+    expect(teamAddedMessage(messages, "UTC", false)).toMatch(/^Within (24|48)h\.$/)
+    expect(teamAddedMessage(messages, "UTC", true)).toMatch(/^Within (24|48)h\.\nGrok helps\.$/)
+  })
+
+  test("noTeamMembersMessage selects the text by Grok availability", () => {
+    expect(noTeamMembersMessage(defaultMessages, true)).toBe(defaultMessages.noTeamMembersGrok)
+    expect(noTeamMembersMessage(defaultMessages, false)).toBe(defaultMessages.noTeamMembers)
   })
 })
 
@@ -2542,19 +2472,158 @@ describe("parseConfig Validation", () => {
   })
 
   test("--dry-run and --allow-migrations default to false and parse when given", () => {
-    const base = ["--team-group", "Team"]
-    expect(parseConfig(base).dryRun).toBe(false)
-    expect(parseConfig(base).allowMigrations).toBe(false)
-    const cfg = parseConfig([...base, "--dry-run", "--allow-migrations"])
+    expect(parseConfig(baseArgs).dryRun).toBe(false)
+    expect(parseConfig(baseArgs).allowMigrations).toBe(false)
+    const cfg = parseConfig([...baseArgs, "--dry-run", "--allow-migrations"])
     expect(cfg.dryRun).toBe(true)
     expect(cfg.allowMigrations).toBe(true)
   })
 
-  test("--broadcasters → parsed as ID:name pairs, empty when absent", () => {
-    expect(parseConfig(baseArgs).broadcasters).toEqual([])
-    const cfg = parseConfig([...baseArgs, "--broadcasters", "3:Carol,4:Dave"])
-    expect(cfg.broadcasters).toEqual([{id: 3, name: "Carol"}, {id: 4, name: "Dave"}])
-    expect(() => parseConfig([...baseArgs, "--broadcasters", "Carol"])).toThrow(/Invalid ID:name format/)
+  test("--allow-migrations without --dry-run → throws", () => {
+    expect(() => parseConfig([...baseArgs, "--allow-migrations"]))
+      .toThrow(/--allow-migrations requires --dry-run/)
+  })
+
+  test("--queue-size is unset by default, so the core default applies", () => {
+    expect(parseConfig(baseArgs).queueSize).toBeUndefined()
+  })
+
+  test("--queue-size parses a positive integer", () => {
+    expect(parseConfig([...baseArgs, "--queue-size", "65536"]).queueSize).toBe(65536)
+  })
+
+  test("--queue-size 0 or non-numeric → throws, as the core rejects 0", () => {
+    expect(() => parseConfig([...baseArgs, "--queue-size", "0"]))
+      .toThrow(/--queue-size must be a positive integer, got "0"/)
+    expect(() => parseConfig([...baseArgs, "--queue-size", "big"]))
+      .toThrow(/--queue-size must be a positive integer, got "big"/)
+  })
+
+  test("--allow-down-migrations defaults to false, parses with --dry-run, throws without it", () => {
+    expect(parseConfig(baseArgs).allowDownMigrations).toBe(false)
+    expect(parseConfig([...baseArgs, "--dry-run", "--allow-down-migrations"]).allowDownMigrations).toBe(true)
+    expect(() => parseConfig([...baseArgs, "--allow-down-migrations"]))
+      .toThrow(/--allow-down-migrations requires --dry-run/)
+  })
+
+  describe("--config TOML file", () => {
+    const configFile = (toml: string): string => {
+      const path = join(mkdtempSync(join(tmpdir(), "support-bot-config-")), "bot.toml")
+      writeFileSync(path, toml)
+      return path
+    }
+
+    test("option values and messages are read; missing messages keep the defaults", () => {
+      const path = configFile([
+        `[bot]`,
+        `team_group = "SimpleX Support Team"`,
+        `auto_add_team_members = ["1:Alice", "2:Bob"]`,
+        `complete_hours = 0`,
+        `queue_size = 65536`,
+        `[database]`,
+        `type = "postgres"`,
+        `pg_conn = "postgres://localhost/db"`,
+        `[messages]`,
+        `welcome = """`,
+        `Hello!`,
+        ``,
+        `Ask anything."""`,
+        `team_added_grok = "Grok helps."`,
+      ].join("\n"))
+      const cfg = parseConfig(["--config", path])
+      expect(cfg.teamGroup).toEqual({id: 0, name: "SimpleX Support Team"})
+      expect(cfg.teamMembers).toEqual([{id: 1, name: "Alice"}, {id: 2, name: "Bob"}])
+      expect(cfg.completeHours).toBe(0)
+      expect(cfg.queueSize).toBe(65536)
+      expect(cfg.db).toEqual({type: "postgres", connectionString: "postgres://localhost/db"})
+      expect(cfg.messages.welcome).toBe("Hello!\n\nAsk anything.")
+      expect(cfg.messages.teamAddedGrok).toBe("Grok helps.")
+      expect(cfg.messages.queue).toBe(defaultMessages.queue)
+    })
+
+    test("command-line options take precedence over the file, given before or after --config", () => {
+      const path = configFile(`[bot]\nteam_group = "From file"\ntimezone = "Europe/London"`)
+      expect(parseConfig(["--team-group", "From CLI", "--config", path]).teamGroup.name).toBe("From CLI")
+      expect(parseConfig([`--config=${path}`, "--team-group", "From CLI"]).timezone).toBe("Europe/London")
+    })
+
+    test("without --config → default messages", () => {
+      expect(parseConfig(baseArgs).messages).toEqual(defaultMessages)
+    })
+
+    test("values are validated as on the command line", () => {
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\ncomplete_hours = -1`)]))
+        .toThrow(/--complete-hours must be a non-negative integer, got "-1"/)
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[database]\ntype = "mysql"`)]))
+        .toThrow(/Allowed choices are sqlite, postgres/)
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[database]\ntype = "sqlite"\npg_conn = "c"`)]))
+        .toThrow(/--pg-conn and --pg-schema require --db postgres/)
+    })
+
+    test("unknown sections and keys, top-level keys and non-scalar values → throw", () => {
+      expect(() => parseConfig(["--config", configFile(`[server]\nport = 1`)]))
+        .toThrow(/unknown section \[server\], known sections: bot, database, grok, messages/)
+      expect(() => parseConfig(["--config", configFile(`team_group = "T"`)]))
+        .toThrow(/unknown section \[team_group\]/)
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_grup = "T"`)]))
+        .toThrow(/unknown key bot.team_grup, known keys: team_group, auto_add_team_members,/)
+      expect(() => parseConfig(["--config", configFile(`[bot]\ndry_run = true`)]))
+        .toThrow(/unknown key bot.dry_run/)
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = true`)]))
+        .toThrow(/bot.team_group must be a string, a number or a list of strings/)
+      expect(() => parseConfig(["--config", configFile(`bot = "T"`)]))
+        .toThrow(/\[bot\] must be a section/)
+    })
+
+    test("unknown or non-string messages → throw", () => {
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[messages]\nteamAdded = "Hi"`)]))
+        .toThrow(/unknown message teamAdded, known messages: welcome, queue, queue_grok, grok_activated, team_added,/)
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[messages]\nwelcome = 1`)]))
+        .toThrow(/message welcome must be a string/)
+      expect(() => parseConfig(["--config", configFile(`messages = "Hi"\n[bot]\nteam_group = "T"`)]))
+        .toThrow(/\[messages\] must be a section/)
+    })
+
+    describe("grok.api_key", () => {
+      const savedKey = process.env.GROK_API_KEY
+      beforeEach(() => { delete process.env.GROK_API_KEY })
+      afterEach(() => {
+        if (savedKey === undefined) delete process.env.GROK_API_KEY
+        else process.env.GROK_API_KEY = savedKey
+      })
+      const withKey = () => configFile(`[bot]\nteam_group = "T"\n[grok]\ncontext_file = "ctx.yaml"\napi_key = "file-key"`)
+
+      test("is read from the file", () => {
+        expect(parseConfig(["--config", withKey()]).grokApiKey).toBe("file-key")
+      })
+
+      test("GROK_API_KEY takes precedence; an empty GROK_API_KEY does not", () => {
+        process.env.GROK_API_KEY = "env-key"
+        expect(parseConfig(["--config", withKey()]).grokApiKey).toBe("env-key")
+        process.env.GROK_API_KEY = ""
+        expect(parseConfig(["--config", withKey()]).grokApiKey).toBe("file-key")
+      })
+
+      test("requires a context file", () => {
+        expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[grok]\napi_key = "file-key"`)]))
+          .toThrow(/A Grok API key is set but --context-file is not provided/)
+      })
+
+      test("must be a non-empty string", () => {
+        expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[grok]\napi_key = ""`)]))
+          .toThrow(/grok.api_key must be a non-empty string/)
+        expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "T"\n[grok]\napi_key = 1`)]))
+          .toThrow(/grok.api_key must be a non-empty string/)
+      })
+
+      test("absent from file and environment → Grok disabled", () => {
+        expect(parseConfig(["--config", configFile(`[bot]\nteam_group = "T"`)]).grokApiKey).toBeNull()
+      })
+    })
+
+    test("malformed TOML → throws", () => {
+      expect(() => parseConfig(["--config", configFile(`[bot]\nteam_group = "unclosed`)])).toThrow()
+    })
   })
 
   test("unknown flag → parseArgs throws", () => {
@@ -2818,37 +2887,34 @@ describe("Dry Run", () => {
     ({
       teamGroup: {id: 0, name: "Support Team"},
       teamMembers: [],
-      broadcasters: [],
       contextFile: null,
       ...over,
     }) as any
 
   test("all ids resolve → passes", async () => {
     const chat = mkChat([groupChat(1, "Support Team"), directChat(3, "alice")])
-    const ok = await dryRun(chat, config({broadcasters: [{id: 3, name: "alice"}]}), {teamGroupId: 1})
+    const ok = await dryRun(chat, config({teamMembers: [{id: 3, name: "alice"}]}), {teamGroupId: 1})
     expect(ok).toBe(true)
   })
 
-  test("missing team group → reports it would be created, still passes", async () => {
+  test("no team group in state → reports it would be created, passes", async () => {
     const chat = mkChat([])
     expect(await dryRun(chat, config(), {})).toBe(true)
   })
 
-  // Absence is unverifiable with the chat stopped: getChatPreviews filters on
-  // contacts.contact_used, so these ids are reported, not failed.
-  test("team group id not in chat previews → reported, still passes", async () => {
+  test("team group id not in chat previews → reported, passes", async () => {
     const chat = mkChat([groupChat(7, "Support Team")])
     expect(await dryRun(chat, config(), {teamGroupId: 1})).toBe(true)
   })
 
-  test("broadcaster id not in chat previews → reported, still passes", async () => {
+  test("team member id not in chat previews → reported, passes", async () => {
     const chat = mkChat([groupChat(1, "Support Team")])
-    expect(await dryRun(chat, config({broadcasters: [{id: 3, name: "alice"}]}), {teamGroupId: 1})).toBe(true)
+    expect(await dryRun(chat, config({teamMembers: [{id: 3, name: "alice"}]}), {teamGroupId: 1})).toBe(true)
   })
 
-  test("broadcaster name mismatch → fails even though the id exists", async () => {
+  test("team member found by id after a rename → fails", async () => {
     const chat = mkChat([groupChat(1, "Support Team"), directChat(3, "alice")])
-    expect(await dryRun(chat, config({broadcasters: [{id: 3, name: "bob"}]}), {teamGroupId: 1})).toBe(false)
+    expect(await dryRun(chat, config({teamMembers: [{id: 3, name: "bob"}]}), {teamGroupId: 1})).toBe(false)
   })
 
   test("persisted Grok user missing → fails", async () => {
@@ -2861,6 +2927,11 @@ describe("Dry Run", () => {
     expect(await dryRun(chat, config(), {teamGroupId: 1, grokUserId: 2})).toBe(true)
   })
 
+  test("no active user → fails", async () => {
+    const chat = {...mkChat([]), apiGetActiveUser: async () => undefined}
+    expect(await dryRun(chat, config(), {})).toBe(false)
+  })
+
   test("malformed context file → fails", async () => {
     const dir = mkdtempSync(join(tmpdir(), "support-bot-dryrun-"))
     const path = join(dir, "ctx.yaml")
@@ -2869,7 +2940,44 @@ describe("Dry Run", () => {
     expect(await dryRun(chat, config({contextFile: path}), {teamGroupId: 1})).toBe(false)
   })
 
-  test("missing context file → warning only, passes", async () => {
+  describe("migrationPlan", () => {
+    const allow = (allowMigrations: boolean, allowDownMigrations: boolean) => ({allowMigrations, allowDownMigrations})
+    const upgrade = {type: "upgrade" as const, names: ["20261019_chat_layout", "20261021_badge_subscriptions"]}
+    const downgrade = {type: "downgrade" as const, names: ["20260905_feeds"]}
+
+    test("current schema → opens without migrating", () => {
+      expect(migrationPlan({type: "current"}, allow(false, false)))
+        .toEqual({ok: true, confirm: "error", result: "schema up to date"})
+    })
+
+    test("pending up migrations → fail without --allow-migrations, YesUp with it", () => {
+      expect(migrationPlan(upgrade, allow(false, true))).toEqual({
+        ok: false,
+        reason: "pending 2 migration(s): 20261019_chat_layout, 20261021_badge_subscriptions; a real start would apply them, --allow-migrations applies them now",
+      })
+      expect(migrationPlan(upgrade, allow(true, false))).toEqual({
+        ok: true,
+        confirm: "yesUp",
+        result: "applied 2 migration(s): 20261019_chat_layout, 20261021_badge_subscriptions",
+      })
+    })
+
+    test("down migrations → fail without --allow-down-migrations, YesUpDown with it", () => {
+      expect(migrationPlan(downgrade, allow(true, false))).toEqual({
+        ok: false,
+        reason: "database is newer than this build, to roll back 1 migration(s): 20260905_feeds; a real start would refuse, --allow-down-migrations rolls them back",
+      })
+      expect(migrationPlan(downgrade, allow(false, true)))
+        .toEqual({ok: true, confirm: "yesUpDown", result: "rolled back 1 migration(s): 20260905_feeds"})
+    })
+
+    test("probe failure → fails with its text whatever is allowed", () => {
+      expect(migrationPlan({type: "failed", text: "connection refused"}, allow(true, true)))
+        .toEqual({ok: false, reason: "connection refused"})
+    })
+  })
+
+  test("missing context file → reported, passes", async () => {
     const chat = mkChat([groupChat(1, "Support Team")])
     const cfg = config({contextFile: join(tmpdir(), "no-such-context.txt")})
     expect(await dryRun(chat, cfg, {teamGroupId: 1})).toBe(true)

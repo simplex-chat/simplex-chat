@@ -1,5 +1,3 @@
-# The build context is the repository root: everything is excluded, then what the
-# image is built from is added back.
 *
 
 !cabal.project
@@ -15,7 +13,6 @@
 !packages/simplex-chat-nodejs
 !apps/simplex-support-bot
 
-# Build output and local state in those directories; the image builds its own.
 **/node_modules
 **/dist
 **/build

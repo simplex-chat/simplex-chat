@@ -295,7 +295,7 @@ fun UserPicker(
           {
             ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
               val search = rememberSaveable { mutableStateOf("") }
-              val profileHidden = rememberSaveable { mutableStateOf(false) }
+              val profileHidden = remember { stateGetOrPut("profileHidden") { false } }
               val authorized = remember { stateGetOrPut("authorized") { false } }
               ModalView(
                 { close() },

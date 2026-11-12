@@ -1,12 +1,11 @@
 import {readFileSync, writeFileSync, existsSync} from "fs"
 import {api, bot, core, util} from "simplex-chat"
 import {T} from "@simplex-chat/types"
-import {Config, IdName, parseConfig} from "./config.js"
+import {Config, parseConfig} from "./config.js"
 import {SupportBot} from "./bot.js"
-import {dryRun} from "./dryRun.js"
+import {DbProbe, dryRun, migrationPlan} from "./dryRun.js"
 import {GrokApiClient, GrokMessage} from "./grok.js"
 import {loadGrokContext} from "./context.js"
-import {welcomeMessage} from "./messages.js"
 import {profileMutex, log, logError, getGroupInfo, getContact} from "./util.js"
 
 interface BotState {
@@ -32,12 +31,11 @@ async function main(): Promise<void> {
     backend: config.db.type,
     teamGroup: config.teamGroup,
     teamMembers: config.teamMembers,
-    broadcasters: config.broadcasters,
     timezone: config.timezone,
     completeHours: config.completeHours,
   })
   const grokEnabled = config.grokApiKey !== null
-  if (!grokEnabled) log("No GROK_API_KEY provided, disabling Grok support")
+  if (!grokEnabled) log("No Grok API key in GROK_API_KEY or grok.api_key, disabling Grok support")
 
   const stateFilePath = config.stateFile
   const state = readState(stateFilePath)
@@ -97,12 +95,12 @@ async function main(): Promise<void> {
   log("Initializing main bot...")
   const [chat, mainUser, mainAddress] = await bot.run({
     profile: {displayName: "Ask SimpleX Team", fullName: "", image: supportImage},
-    dbOpts: config.db,
+    dbOpts: {...config.db, queueSize: config.queueSize},
     options: {
       addressSettings: {
         businessAddress: true,
         autoAccept: true,
-        welcomeMessage,
+        welcomeMessage: config.messages.welcome,
       },
       commands: desiredCommands,
       useBotProfile: true,
@@ -119,7 +117,6 @@ async function main(): Promise<void> {
       newMemberContactReceivedInv: (evt) => supportBot?.onMemberContactReceivedInv(evt),
       contactConnected: (evt) => supportBot?.onContactConnected(evt),
       contactSndReady: (evt) => supportBot?.onContactSndReady(evt),
-      chatItemsStatusesUpdated: (evt) => supportBot?.onChatItemsStatusesUpdated(evt),
     },
   })
   log(`Main bot user: ${mainUser.profile.displayName} (userId=${mainUser.userId})`)
@@ -236,7 +233,6 @@ async function main(): Promise<void> {
     fullDelete: {enable: T.GroupFeatureEnabled.On},
     commands: [
       {type: "command", keyword: "join", label: "Join customer chat", params: "groupId"},
-      {type: "command", keyword: "broadcast", label: "Broadcast to all chats", params: "text"},
     ],
   }
 
@@ -308,24 +304,20 @@ async function main(): Promise<void> {
     inviteLinkTimer.unref()
   }
 
-  // Step 9: Validate team members and broadcasters (lookup by ID, one round-trip per contact)
-  await validateContacts("Team member", config.teamMembers)
-  await validateContacts("Broadcaster", config.broadcasters)
-
-  async function validateContacts(role: string, contacts: IdName[]): Promise<void> {
-    if (contacts.length === 0) return
-    log(`Validating ${role.toLowerCase()}s...`)
-    for (const {id, name} of contacts) {
-      const contact = await getContact(chat, id)
+  // Step 9: Validate team members (lookup by ID, one round-trip per member)
+  if (config.teamMembers.length > 0) {
+    log("Validating team members...")
+    for (const member of config.teamMembers) {
+      const contact = await getContact(chat, member.id)
       if (!contact) {
-        console.error(`${role} not found: ID=${id}`)
+        console.error(`Team member not found: ID=${member.id}`)
         process.exit(1)
       }
-      if (contact.profile.displayName !== name) {
-        console.error(`${role} name mismatch: expected "${name}", got "${contact.profile.displayName}" (ID=${id})`)
+      if (contact.profile.displayName !== member.name) {
+        console.error(`Team member name mismatch: expected "${member.name}", got "${contact.profile.displayName}" (ID=${member.id})`)
         process.exit(1)
       }
-      log(`${role} validated: ${id}:${name}`)
+      log(`Team member validated: ${member.id}:${member.name}`)
     }
   }
 
@@ -382,44 +374,26 @@ async function main(): Promise<void> {
   process.on("SIGTERM", () => shutdown("SIGTERM"))
 }
 
-// Opens the database without starting chat, so nothing reaches the network.
-// MigrationConfirmation.Error makes a pending migration a report instead of an
-// upgrade — a dry run must not change the database it is inspecting.
 async function runDryRun(config: Config, state: BotState): Promise<boolean> {
-  const probe = await probeDatabase(config.db)
-  if (probe.type === "failed") {
-    console.log(`FAIL  database: ${probe.text}`)
+  const plan = migrationPlan(await probeDatabase(config.db), config)
+  if (!plan.ok) {
+    console.log(`FAIL  database: ${plan.reason}`)
     return false
   }
-  const pending = probe.type === "pending" ? probe.names : []
-  if (pending.length > 0 && !config.allowMigrations) {
-    console.log(`FAIL  database: ${pending.length} migration(s) pending, a real start would apply them: ${pending.join(", ")}`)
-    return false
-  }
-  const migrating = pending.length > 0
   let chat: api.ChatApi
   try {
-    chat = await api.ChatApi.init(
-      config.db,
-      migrating ? core.MigrationConfirmation.YesUp : core.MigrationConfirmation.Error
-    )
+    chat = await api.ChatApi.init(config.db, plan.confirm)
   } catch (err) {
     console.log(`FAIL  database: ${migrationErrorText(err)}`)
     return false
   }
-  const schemaState = migrating ? `applied ${pending.length} migration(s): ${pending.join(", ")}` : "schema up to date"
-  console.log(`ok    database ${config.db.type} opened, ${schemaState}`)
+  console.log(`ok    database ${config.db.type} opened, ${plan.result}`)
   try {
     return await dryRun(chat, config, state)
   } finally {
     await chat.close()
   }
 }
-
-// Opening with Error never changes the database, so this reports what a real
-// start would migrate. Anything other than pending up-migrations is fatal: a
-// wrong key, an unreachable server or a newer database cannot be migrated away.
-type DbProbe = {type: "current"} | {type: "pending"; names: string[]} | {type: "failed"; text: string}
 
 async function probeDatabase(db: api.DbConfig): Promise<DbProbe> {
   try {
@@ -428,15 +402,15 @@ async function probeDatabase(db: api.DbConfig): Promise<DbProbe> {
     return {type: "current"}
   } catch (err) {
     const dbErr = (err as core.ChatInitError).dbMigrationError
-    if (dbErr?.type === "errorMigration" && dbErr.migrationError.type === "upgrade") {
-      return {type: "pending", names: dbErr.migrationError.upMigrations.map(m => m.upName)}
+    if (dbErr?.type === "errorMigration") {
+      const me = dbErr.migrationError
+      if (me.type === "upgrade") return {type: "upgrade", names: me.upMigrations.map(m => m.upName)}
+      if (me.type === "downgrade") return {type: "downgrade", names: me.downMigrations}
     }
     return {type: "failed", text: migrationErrorText(err)}
   }
 }
 
-// The library reports a pending migration as one opaque message; the names are
-// in the error payload, and they are what an operator needs before upgrading.
 function migrationErrorText(err: unknown): string {
   const e = err as core.ChatInitError
   const dbErr = e.dbMigrationError

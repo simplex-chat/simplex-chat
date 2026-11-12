@@ -1,35 +1,59 @@
-import {api} from "simplex-chat"
+import {api, core} from "simplex-chat"
 import {T} from "@simplex-chat/types"
 import {Config, IdName} from "./config.js"
 import {loadGrokContext} from "./context.js"
 
-// Ids the bot persists; a miss means it would create the entity again.
 export interface DryRunState {
   teamGroupId?: number
   grokContactId?: number
   grokUserId?: number
 }
 
-// Names are searched rather than listing every chat: a bot with thousands of
-// customer chats would otherwise be paged through to find a handful of ids.
+export type DbProbe =
+  | {type: "current"}
+  | {type: "upgrade"; names: string[]}
+  | {type: "downgrade"; names: string[]}
+  | {type: "failed"; text: string}
+
+export type MigrationPlan =
+  | {ok: true; confirm: core.MigrationConfirmation; result: string}
+  | {ok: false; reason: string}
+
+export function migrationPlan(probe: DbProbe, config: Pick<Config, "allowMigrations" | "allowDownMigrations">): MigrationPlan {
+  switch (probe.type) {
+    case "current":
+      return {ok: true, confirm: core.MigrationConfirmation.Error, result: "schema up to date"}
+    case "upgrade": {
+      const list = `${probe.names.length} migration(s): ${probe.names.join(", ")}`
+      return config.allowMigrations
+        ? {ok: true, confirm: core.MigrationConfirmation.YesUp, result: `applied ${list}`}
+        : {ok: false, reason: `pending ${list}; a real start would apply them, --allow-migrations applies them now`}
+    }
+    case "downgrade": {
+      const list = `${probe.names.length} migration(s): ${probe.names.join(", ")}`
+      return config.allowDownMigrations
+        ? {ok: true, confirm: core.MigrationConfirmation.YesUpDown, result: `rolled back ${list}`}
+        : {ok: false, reason: `database is newer than this build, to roll back ${list}; a real start would refuse, --allow-down-migrations rolls them back`}
+    }
+    case "failed":
+      return {ok: false, reason: probe.text}
+  }
+}
+
 const SEARCH_LIMIT = 100
-
-// Only for the failure path, where the id has to be reported with the name it
-// actually has: a renamed contact does not match the search above.
 const LISTING_LIMIT = 1000
-
 const GROK_PROFILE_NAME = "Grok"
+
+type Check = (ok: boolean, msg: string) => void
+type Unverified = (msg: string) => void
 
 export async function dryRun(chat: api.ChatApi, config: Config, state: DryRunState): Promise<boolean> {
   const results: boolean[] = []
-  const check = (ok: boolean, msg: string): void => {
+  const check: Check = (ok, msg) => {
     results.push(ok)
     console.log(`${ok ? "ok  " : "FAIL"}  ${msg}`)
   }
-  // Absence cannot be proven with the chat stopped: getChatPreviews filters on
-  // contacts.contact_used, so a contact whose direct chat was never used is
-  // invisible here even though the bot finds it at startup.
-  const unverified = (msg: string): void => console.log(`?     ${msg}`)
+  const unverified: Unverified = msg => console.log(`?     ${msg}`)
 
   if (config.contextFile) {
     try {
@@ -55,18 +79,18 @@ export async function dryRun(chat: api.ChatApi, config: Config, state: DryRunSta
     check(!!found, `Grok user ${state.grokUserId}: ${found ? found.user.profile.displayName : "missing, the bot would exit"}`)
   }
 
-  if (state.teamGroupId !== undefined) {
+  if (state.teamGroupId === undefined) {
+    check(true, `no team group in state, "${config.teamGroup.name}" would be created`)
+  } else {
     const group = await findGroup(chat, user.userId, config.teamGroup.name, state.teamGroupId)
     if (!group) {
       unverified(`team group ${state.teamGroupId} not in chat previews, the bot verifies it at startup`)
     } else {
       check(true, `team group ${state.teamGroupId}: ${group.groupProfile.displayName}`)
+      if (group.groupProfile.displayName !== config.teamGroup.name) {
+        check(true, `team group name differs from --team-group, profile would be updated to "${config.teamGroup.name}"`)
+      }
     }
-    if (group && group.groupProfile.displayName !== config.teamGroup.name) {
-      check(true, `team group name differs from --team-group, profile would be updated to "${config.teamGroup.name}"`)
-    }
-  } else {
-    check(true, `no team group in state, "${config.teamGroup.name}" would be created`)
   }
 
   if (state.grokContactId !== undefined) {
@@ -75,27 +99,25 @@ export async function dryRun(chat: api.ChatApi, config: Config, state: DryRunSta
     else unverified(`Grok contact ${state.grokContactId} not in chat previews, the bot verifies it at startup`)
   }
 
-  await checkContacts(chat, user.userId, "team member", config.teamMembers, check, unverified)
-  await checkContacts(chat, user.userId, "broadcaster", config.broadcasters, check, unverified)
+  await checkTeamMembers(chat, user.userId, config.teamMembers, check, unverified)
 
   return results.every(Boolean)
 }
 
-async function checkContacts(
+async function checkTeamMembers(
   chat: api.ChatApi,
   userId: number,
-  role: string,
-  contacts: IdName[],
-  check: (ok: boolean, msg: string) => void,
-  unverified: (msg: string) => void
+  members: IdName[],
+  check: Check,
+  unverified: Unverified
 ): Promise<void> {
-  for (const {id, name} of contacts) {
+  for (const {id, name} of members) {
     const contact = await findContact(chat, userId, name, id)
     if (!contact) {
-      unverified(`${role} ${id}:${name} not in chat previews, the bot verifies it at startup`)
+      unverified(`team member ${id}:${name} not in chat previews, the bot verifies it at startup`)
     } else {
       const match = contact.profile.displayName === name
-      check(match, `${role} ${id}:${name}${match ? "" : ` has display name "${contact.profile.displayName}", the bot would exit`}`)
+      check(match, `team member ${id}:${name}${match ? "" : ` has display name "${contact.profile.displayName}", the bot would exit`}`)
     }
   }
 }

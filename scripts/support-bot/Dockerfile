@@ -1,35 +1,25 @@
 # syntax=docker/dockerfile:1
-#
-# Built from the repository root:
-#
-#   docker compose -f scripts/support-bot/compose.yml build
-#   docker build -f scripts/support-bot/Dockerfile -t simplex-support-bot .
-#
-# libsimplex, the node library and the types all come from this tree. The first
-# stage is a full GHC build of simplexmq and simplex-chat: hours on a cold cache,
-# and it needs ~15 GB.
 
-ARG UBUNTU=24.04
-# A lib built here has to load on a runtime with the same glibc or newer.
+# release: libsimplex, the add-on and the npm packages pinned by package-lock.json
+# source: all of them built from this checkout
+ARG LIBS=release
+ARG BACKEND=postgres
+# The runtime glibc must be the same or newer.
 ARG UBUNTU_LIBS=22.04
 ARG GHC=9.6.3
 ARG CABAL=3.10.2.0
 ARG NODE=24
-# The core, the node library and the bot must agree on it.
-ARG SIMPLEX_BACKEND=postgres
 
 # --------------------------------------------------------------------------- #
-# libsimplex
+# libsimplex from source
 # --------------------------------------------------------------------------- #
-FROM ubuntu:${UBUNTU_LIBS} AS libsimplex
+FROM ubuntu:${UBUNTU_LIBS} AS libsimplex-source
 
 ARG GHC
 ARG CABAL
-ARG SIMPLEX_BACKEND
+ARG BACKEND
 ENV DEBIAN_FRONTEND=noninteractive
 
-# The toolchain the libs job in .github/workflows/build.yml uses, without the
-# Java and Android SDK layers of Dockerfile.build, which the lib does not need.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential ca-certificates curl git libgmp3-dev libnuma-dev \
         libpq-dev libsqlite3-dev libssl-dev llvm patchelf pkg-config zlib1g-dev && \
@@ -47,20 +37,13 @@ ENV CABAL_DIR=/root/.cabal
 WORKDIR /src
 COPY cabal.project simplex-chat.cabal README.md PRIVACY.md ./
 COPY scripts/cabal.project.local.linux ./cabal.project.local
-# libsimplex.dll.def and flake.nix hold the export lists the build script checks.
+# The build script checks the export lists in these.
 COPY libsimplex.dll.def flake.nix ./
 COPY scripts/desktop ./scripts/desktop
 COPY src ./src
 
-# The VLC download the script ends with is for the desktop app, and it would run
-# after the Haskell build.
-RUN sed -i '/prepare-vlc-linux.sh/d' scripts/desktop/build-lib-linux.sh
-
-# Cache mounts, not layers: the cabal store and the build tree survive a source
-# change. build-lib-linux.sh is the command the libs job runs, and the two files
-# copied out are what that job publishes. Build trees of other versions are
-# removed first: the script's unquoted simplex-chat-* glob fails with "cd: too
-# many arguments" when the cache mount holds more than one.
+# Other versions' build trees are removed: the script's simplex-chat-* glob
+# fails with "cd: too many arguments" when the cache holds more than one.
 RUN --mount=type=cache,target=/root/.cabal \
     --mount=type=cache,target=/src/dist-newstyle \
     set -eu; \
@@ -69,14 +52,14 @@ RUN --mount=type=cache,target=/root/.cabal \
     find dist-newstyle/build -maxdepth 3 -type d -name 'simplex-chat-*' \
       ! -path "*/simplex-chat-$ver" -exec rm -rf {} + 2>/dev/null || true; \
     cabal update; \
-    scripts/desktop/build-lib-linux.sh "${SIMPLEX_BACKEND}"; \
+    SKIP_VLC=1 scripts/desktop/build-lib-linux.sh "${BACKEND}"; \
     mkdir -p /libs; \
     cp "$build_dir"/libsimplex.so "$build_dir"/deps/* /libs/
 
 # --------------------------------------------------------------------------- #
-# build
+# libs-source: libsimplex, the add-on and the npm packages from this checkout
 # --------------------------------------------------------------------------- #
-FROM node:${NODE}-bookworm-slim AS build
+FROM node:${NODE}-bookworm-slim AS libs-source
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -84,28 +67,55 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential python3 && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=libsimplex /libs /opt/simplex/libs
+COPY --from=libsimplex-source /libs /opt/simplex/libs
 
 WORKDIR /src
 COPY packages/simplex-chat-client/types/typescript packages/simplex-chat-client/types/typescript
 RUN cd packages/simplex-chat-client/types/typescript && \
     npm install --no-audit --no-fund && \
-    npx tsc
+    npx tsc && \
+    mkdir -p /opt/simplex/packages && \
+    npm pack --pack-destination /opt/simplex/packages
 
 COPY packages/simplex-chat-nodejs packages/simplex-chat-nodejs
 RUN cd packages/simplex-chat-nodejs && \
     npm install --no-audit --no-fund && \
-    npm install --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript && \
+    npm install --no-save --no-audit --no-fund /opt/simplex/packages/*.tgz && \
     npx node-gyp rebuild && \
     npx tsc && \
-    cp src/simplex.* dist/
+    cp src/simplex.* dist/ && \
+    cp build/Release/simplex.node /opt/simplex/simplex.node && \
+    npm pack --pack-destination /opt/simplex/packages
+
+# --------------------------------------------------------------------------- #
+# libs-release: libsimplex and the add-on pinned by the published simplex-chat
+# --------------------------------------------------------------------------- #
+FROM node:${NODE}-bookworm-slim AS libs-release
+
+ARG BACKEND
 
 WORKDIR /src/apps/simplex-support-bot
 COPY apps/simplex-support-bot/package.json apps/simplex-support-bot/package-lock.json ./
-RUN npm ci --no-audit --no-fund
-RUN npm install --no-save --no-audit --no-fund \
-      /src/packages/simplex-chat-nodejs \
-      /src/packages/simplex-chat-client/types/typescript
+RUN npm ci --no-audit --no-fund && \
+    XDG_CACHE_HOME=/tmp/cache npx simplex-chat install --backend "${BACKEND}" && \
+    mkdir -p /opt/simplex/packages && \
+    cp -r "$(dirname "$(find /tmp/cache -name libsimplex.so)")" /opt/simplex/libs && \
+    cp "$(find /tmp/cache -name '*.node')" /opt/simplex/simplex.node
+
+FROM libs-${LIBS} AS libs
+
+# --------------------------------------------------------------------------- #
+# build
+# --------------------------------------------------------------------------- #
+FROM node:${NODE}-bookworm-slim AS build
+
+COPY --from=libs /opt/simplex /opt/simplex
+
+WORKDIR /src/apps/simplex-support-bot
+COPY apps/simplex-support-bot/package.json apps/simplex-support-bot/package-lock.json ./
+RUN npm ci --no-audit --no-fund && \
+    find /opt/simplex/packages -name '*.tgz' -print0 | \
+      xargs -0 -r npm install --no-save --no-audit --no-fund
 
 COPY apps/simplex-support-bot ./
 RUN npm run build && npm test
@@ -118,26 +128,26 @@ FROM node:${NODE}-bookworm-slim AS runtime
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates dumb-init libgmp10 libnuma1 libpq5 && \
+        ca-certificates dumb-init libffi8 libgmp10 libnuma1 libpq5 libssl3 zlib1g && \
     rm -rf /var/lib/apt/lists/*
 
-# A named volume at /data takes this ownership and mode; a bind mount instead
-# keeps the host directory's, which then has to be owned by uid 1000.
+# A named volume takes this ownership; a bind mount must be owned by uid 1000.
 RUN mkdir -p /data && chown node:node /data && chmod 0700 /data
 
-COPY --from=build /opt/simplex/libs /opt/simplex/libs
-COPY --from=build --chown=node:node /src /src
+COPY --from=libs /opt/simplex/libs /opt/simplex/libs
+COPY --from=libs /opt/simplex/simplex.node /opt/simplex/simplex.node
+COPY --from=build --chown=node:node /src/apps/simplex-support-bot /src/apps/simplex-support-bot
+# The library loads these instead of downloading libsimplex and the add-on at startup.
 ENV SIMPLEX_LIBS_DIR=/opt/simplex/libs \
-    SIMPLEX_ADDON_PATH=/src/packages/simplex-chat-nodejs/build/Release/simplex.node
+    SIMPLEX_ADDON_PATH=/opt/simplex/simplex.node
 
 USER node
 WORKDIR /src/apps/simplex-support-bot
 
 ENV NODE_ENV=production
-# Raised: single API responses grow with the number of chats.
+# Single API responses grow with the number of chats.
 ENV NODE_OPTIONS=--max-old-space-size=8192
 
-# Exec form: under `sh -c` the bot would not receive SIGTERM, so it would not
-# delete the team group invite link on shutdown.
+# node as PID 1 ignores SIGTERM, and the bot deletes the team group invite link on SIGTERM.
 ENTRYPOINT ["dumb-init", "--", "node", "dist/index.js"]
-CMD ["--team-group", "Support Team", "--state-file", "/data/state.json"]
+CMD ["--config", "/etc/support-bot/config.toml"]

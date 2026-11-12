@@ -3,11 +3,7 @@ import {T, CEvt} from "@simplex-chat/types"
 import {Config} from "./config.js"
 import {GrokMessage, GrokApiClient} from "./grok.js"
 import {CardManager, ConversationState} from "./cards.js"
-import {
-  queueMessage, grokInvitingMessage, grokActivatedMessage, teamAddedMessage,
-  teamAlreadyInvitedMessage, teamLockedMessage, noTeamMembersMessage,
-  grokUnavailableMessage, grokErrorMessage, grokNoHistoryMessage,
-} from "./messages.js"
+import {queueMessage, teamAddedMessage, noTeamMembersMessage} from "./messages.js"
 import {profileMutex, log, logError, getGroupInfo} from "./util.js"
 
 // Collects the keyword of every "command" entry in the bot's registered
@@ -66,8 +62,6 @@ export class SupportBot {
   private pendingTeamDMs = new Map<number, string>()
   // Contacts that already received the team DM (dedup)
   private sentTeamDMs = new Set<number>()
-
-  private pendingBroadcasts = new Set<number>()
 
   // Tracked fire-and-forget operations (for testing)
   private _pendingOps: Promise<void>[] = []
@@ -158,7 +152,7 @@ export class SupportBot {
   }
 
   private async withGrokProfile<R>(fn: () => Promise<R>): Promise<R> {
-    if (this.grokUserId === null) throw new Error("Grok is disabled (no GROK_API_KEY)")
+    if (this.grokUserId === null) throw new Error("Grok is disabled (no Grok API key)")
     const grokUserId = this.grokUserId
     return profileMutex.runExclusive(async () => {
       await this.chat.apiSetActiveUser(grokUserId)
@@ -313,25 +307,6 @@ export class SupportBot {
   async onContactSndReady(evt: CEvt.ContactSndReady): Promise<void> {
     if (evt.user.userId !== this.mainUserId) return
     await this.deliverPendingDM(evt.contact.contactId)
-  }
-
-  async onChatItemsStatusesUpdated(evt: CEvt.ChatItemsStatusesUpdated): Promise<void> {
-    if (evt.user.userId !== this.mainUserId) return
-    for (const {chatInfo, chatItem} of evt.chatItems) {
-      if (chatInfo.type !== "feed") continue
-      const itemId = chatItem.meta.itemId
-      if (!this.pendingBroadcasts.has(itemId)) continue
-      const status = chatItem.meta.itemStatus
-      let report: string | undefined
-      if (status.type === "sndSent" && status.sndProgress === T.SndCIStatusProgress.Complete) {
-        report = `Broadcast ${itemId} delivered to all chats`
-      } else if (status.type === "sndError") {
-        report = `Broadcast ${itemId} failed: ${JSON.stringify(status.agentError)}`
-      }
-      if (report === undefined) continue
-      this.pendingBroadcasts.delete(itemId)
-      await this.sendToGroup(this.config.teamGroup.id, report)
-    }
   }
 
   private async deliverPendingDM(contactId: number): Promise<void> {
@@ -517,7 +492,7 @@ export class SupportBot {
         // First regular message → QUEUE
         if (text) {
           await this.cards.mergeCustomData(groupId, {state: "QUEUE"})
-          await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
+          await this.sendToGroup(groupId, queueMessage(this.config.messages, this.config.timezone, this.grokEnabled))
           await this.cards.createCard(groupId, groupInfo)
         }
         break
@@ -563,7 +538,7 @@ export class SupportBot {
 
       case "TEAM":
         if (cmd?.keyword === "grok") {
-          await this.sendToGroup(groupId, teamLockedMessage)
+          await this.sendToGroup(groupId, this.config.messages.teamLocked)
         } else if (cmd?.keyword === "team") {
           // Team still present → "already invited"; team all left → silent re-add
           await this.activateTeam(groupId)
@@ -640,7 +615,7 @@ export class SupportBot {
       logError(`Grok per-message error for grokGroup ${grokGroupId}`, err)
       try {
         await this.withGrokProfile(() =>
-          this.chat.apiSendTextMessage([T.ChatType.Group, grokGroupId], grokErrorMessage)
+          this.chat.apiSendTextMessage([T.ChatType.Group, grokGroupId], this.config.messages.grokError)
         )
       } catch {}
     }
@@ -664,8 +639,8 @@ export class SupportBot {
     }
     if (this.config.grokContactId === null) {
       await revertStateOnFail()
-      await this.sendToGroup(groupId, grokUnavailableMessage)
-      if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
+      await this.sendToGroup(groupId, this.config.messages.grokUnavailable)
+      if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.messages, this.config.timezone, this.grokEnabled))
       this.cards.scheduleUpdate(groupId)
       return
     }
@@ -684,7 +659,7 @@ export class SupportBot {
     // any later and onGrokNewChatItems can fire a duplicate per-message reply.
     this.grokInitialResponsePending.add(groupId)
     try {
-      await this.sendToGroup(groupId, grokInvitingMessage)
+      await this.sendToGroup(groupId, this.config.messages.grokInviting)
 
       let member: T.GroupMember
       try {
@@ -700,8 +675,8 @@ export class SupportBot {
         }
         logError(`Failed to invite Grok to group ${groupId}`, err)
         await revertStateOnFail()
-        await this.sendToGroup(groupId, grokUnavailableMessage)
-        if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
+        await this.sendToGroup(groupId, this.config.messages.grokUnavailable)
+        if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.messages, this.config.timezone, this.grokEnabled))
         this.cards.scheduleUpdate(groupId)
         return
       }
@@ -726,19 +701,19 @@ export class SupportBot {
         } catch {}
         this.cleanupGrokMaps(groupId)
         await revertStateOnFail()
-        await this.sendToGroup(groupId, grokUnavailableMessage)
-        if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
+        await this.sendToGroup(groupId, this.config.messages.grokUnavailable)
+        if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.messages, this.config.timezone, this.grokEnabled))
         this.cards.scheduleUpdate(groupId)
         return
       }
 
-      await this.sendToGroup(groupId, grokActivatedMessage)
+      await this.sendToGroup(groupId, this.config.messages.grokActivated)
 
       // Grok joined — send initial response based on customer's accumulated messages
       try {
         const grokLocalGId = this.grokGroupMap.get(groupId)
         if (grokLocalGId === undefined) {
-          await this.sendToGroup(groupId, grokUnavailableMessage)
+          await this.sendToGroup(groupId, this.config.messages.grokUnavailable)
           return
         }
 
@@ -760,7 +735,7 @@ export class SupportBot {
 
         if (customerMessages.length === 0) {
           await this.withGrokProfile(() =>
-            this.chat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], grokNoHistoryMessage)
+            this.chat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], this.config.messages.grokNoHistory)
           )
           return
         }
@@ -776,7 +751,7 @@ export class SupportBot {
         if (response.includes("/team")) await this.activateTeam(groupId)
       } catch (err) {
         logError(`Grok initial response failed for group ${groupId}`, err)
-        await this.sendToGroup(groupId, grokUnavailableMessage)
+        await this.sendToGroup(groupId, this.config.messages.grokUnavailable)
       }
     } finally {
       this.grokInitialResponsePending.delete(groupId)
@@ -787,7 +762,7 @@ export class SupportBot {
 
   private async activateTeam(groupId: number): Promise<void> {
     if (this.config.teamMembers.length === 0) {
-      await this.sendToGroup(groupId, noTeamMembersMessage(this.grokEnabled))
+      await this.sendToGroup(groupId, noTeamMembersMessage(this.config.messages, this.grokEnabled))
       return
     }
 
@@ -796,7 +771,7 @@ export class SupportBot {
     if (alreadyActivated) {
       const {teamMembers} = await this.cards.getGroupComposition(groupId)
       if (teamMembers.length > 0) {
-        await this.sendToGroup(groupId, teamAlreadyInvitedMessage)
+        await this.sendToGroup(groupId, this.config.messages.teamAlreadyInvited)
         return
       }
       // Team previously activated but all team members have since left —
@@ -824,7 +799,7 @@ export class SupportBot {
     }
 
     const {grokMember} = await this.cards.getGroupComposition(groupId)
-    await this.sendToGroup(groupId, teamAddedMessage(this.config.timezone, !!grokMember))
+    await this.sendToGroup(groupId, teamAddedMessage(this.config.messages, this.config.timezone, !!grokMember))
   }
 
   // --- Team group commands ---
@@ -835,44 +810,14 @@ export class SupportBot {
     if (!senderContactId) return
 
     const cmd = util.ciBotCommand(chatItem)
-    switch (cmd?.keyword) {
-      case "join": {
-        const targetGroupId = Number.parseInt(cmd.params, 10)
-        if (Number.isNaN(targetGroupId) || targetGroupId <= 0) {
-          await this.sendToGroup(this.config.teamGroup.id, `Error: invalid group id "${cmd.params}"`)
-          return
-        }
-        await this.handleJoinCommand(targetGroupId, senderContactId)
-        break
-      }
-      case "broadcast":
-        await this.handleBroadcastCommand(chatItem, senderContactId)
-        break
-    }
-  }
+    if (cmd?.keyword !== "join") return
 
-  private async handleBroadcastCommand(chatItem: T.ChatItem, senderContactId: number): Promise<void> {
-    const teamGroupId = this.config.teamGroup.id
-    if (!this.config.broadcasters.some(b => b.id === senderContactId)) {
-      await this.sendToGroup(teamGroupId, `Error: contact ${senderContactId} is not allowed to broadcast`)
+    const targetGroupId = Number.parseInt(cmd.params, 10)
+    if (Number.isNaN(targetGroupId) || targetGroupId <= 0) {
+      await this.sendToGroup(this.config.teamGroup.id, `Error: invalid group id "${cmd.params}"`)
       return
     }
-    const text = (util.ciContentText(chatItem)?.trim() ?? "").replace(/^\/broadcast\s*/, "")
-    if (text === "") {
-      await this.sendToGroup(teamGroupId, "Error: broadcast text is empty")
-      return
-    }
-    try {
-      const r = await this.withMainProfile(() => this.chat.sendChatCmd(`/feed ${JSON.stringify(text)}`))
-      if (r.type !== "newChatItems") throw new Error(`unexpected response ${r.type}`)
-      const itemId = r.chatItems[0]?.chatItem.meta.itemId
-      if (itemId === undefined) throw new Error("no feed item in response")
-      this.pendingBroadcasts.add(itemId)
-      await this.sendToGroup(teamGroupId, `Broadcast ${itemId} queued for delivery to all chats`)
-    } catch (err) {
-      logError("/broadcast failed", err)
-      await this.sendToGroup(teamGroupId, "Error sending broadcast")
-    }
+    await this.handleJoinCommand(targetGroupId, senderContactId)
   }
 
   private async handleJoinCommand(targetGroupId: number, senderContactId: number): Promise<void> {
