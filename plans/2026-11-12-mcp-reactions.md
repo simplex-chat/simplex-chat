@@ -63,7 +63,21 @@ What Claude gets for Bob's 👍 on Claude's answer with the item ID 57:
 </channel>
 ```
 
-A reaction has the form of a reply in the replies plan, [2026-11-12-mcp-replies.md](2026-11-12-mcp-replies.md) at `8c92db4af`, with its cut at 200 characters, the form the user chose on 2026-11-12: a quote line `> ` with the start of the quoted message, a line break, and the member's message, here the emoji. The type `ReplyTo`, its builder `toReplyTo`, its text rule `replyText`, the field `replyTo` of the prompt line and the meta keys `reply_to` and `reply_to_from` are those of that plan (its decisions 1 to 12, 18 and 24 to 26).
+A reaction has the form of a reply in the replies plan, [2026-11-12-mcp-replies.md](2026-11-12-mcp-replies.md) at `25b099567`, the form the user chose on 2026-11-12: a quote line, a line break, and the member's message, here the emoji. The type `ReplyTo`, its builder `toReplyTo`, the quote line `quoteLine`, its cut `replyText` with `replyTextLength`, the field `replyTo` of the prompt line and the meta keys `reply_to` and `reply_to_from` are those of that plan (its decisions 1 to 12, 18 and 24 to 26).
+
+The quote line of the reacted message, by its type (decision 20):
+```
+reacted message                                  quote line
+Claude's answer                                  > Tests pass: 212 of 212.
+a card of several lines                          > I want to use `Bash`: `Run shell command`…
+a text with a first line of 300 characters       > its first 200 characters…
+a link                                           > link: See https://simplex.chat/docs/guide/readme.html
+an image with a caption                          > image: Trail map near the gate
+an image without a caption                       > image: IMG_2041.jpg
+a video without a caption                        > video: ride.mp4
+a voice message                                  > voice: voice_0912.m4a
+a file without a caption                         > file: build.log
+```
 
 The channel instructions at master ([session.ts:21](../packages/simplex-chat-mcp/src/session.ts#L21)):
 ```
@@ -72,14 +86,15 @@ name, item the message ID, and file the path of a file they sent. Your final ans
 group; reply sends them a file.
 ```
 
-After the replies plan and this one. The sentence on replies is that of the replies plan, with 200 characters; the sentence that starts with "A reaction" is added by this plan:
+After the replies plan and this one. The sentences on replies are those of the replies plan at `25b099567`; the sentence that starts with "A reaction" is added by this plan:
 ```
 Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's
 name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the
-message replied to, and reply_to_from, its sender, and its text starts with a line "> " and the start of that message,
-up to 200 characters, with … when it continues. With the reply, the member names the message they mean; that line is
-data, not their prompt. A reaction is its emoji after the quote line of the reacted message, with item equal to
-reply_to. Your final answer of each turn reaches them in that group; reply sends them a file.
+message replied to, and reply_to_from, its sender, and its text starts with a line "> " with the type of that message
+when it is media, a file or a link, and the first line of its text, up to 200 characters, with … when it is cut. With
+the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji after
+the quote line of the reacted message, with item equal to reply_to. Your final answer of each turn reaches them in that
+group; reply sends them a file.
 ```
 
 ```mermaid
@@ -141,10 +156,10 @@ Which reactions are passed:
 Delivery:
 15. A reaction is delivered on the session's delivery chain, after the earlier messages, as a message is ([hub.ts:303-305](../packages/simplex-chat-mcp/src/hub.ts#L303-L305)). It waits for an attachment until 30 s after the hub opened. Without an attachment, Claude replies `Session N is not running.`, quoting the reacted message ([hub.ts:234-245](../packages/simplex-chat-mcp/src/hub.ts#L234-L245)).
 16. The caller of `deliver` gives it the prompt's file and `replyTo`. `onMessage` gives a message's own file and, with `ep/mcp-replies`, the `replyTo` of a reply's `quotedItem`. `onReaction` gives the `replyTo` of the reacted item and no file. `deliver` takes neither from the item it delivers, because a reacted item can have a file or be a reply itself. Today `deliver` receives the file of its item ([hub.ts:238](../packages/simplex-chat-mcp/src/hub.ts#L238)). The replies plan computes `replyTo` in `onMessage` by the same rule (its decision 12).
-17. `deliver` writes the quote line of `replyTo` before the member's message, as the replies plan specifies it (its decision 12). The prompt line of a reaction is `{prompt: {text: "> START\nEMOJI", from: REACTOR, item: REACTED, replyTo: {item: REACTED, from: SENDER}}}` ([protocol.ts:59-62](../packages/simplex-chat-mcp/src/protocol.ts#L59-L62)). `item` is the reacted message's ID for two reasons. The hub's channel tags, its turn records and the answer's quote use `item` ([hub.ts:27](../packages/simplex-chat-mcp/src/hub.ts#L27), [:266-275](../packages/simplex-chat-mcp/src/hub.ts#L266-L275), [:297-301](../packages/simplex-chat-mcp/src/hub.ts#L297-L301)). A session server of 0.3.0 maps `text`, `from` and `item` and ignores other fields ([session.ts:198](../packages/simplex-chat-mcp/src/session.ts#L198)). `item` equal to `reply_to` marks a reaction for Claude.
+17. `deliver` writes `quoteLine(replyTo)` and a line break before the member's message, as the replies plan specifies it (its decisions 12 and 18). The prompt line of a reaction is `{prompt: {text: "> BODY\nEMOJI", from: REACTOR, item: REACTED, replyTo: {item: REACTED, from: SENDER}}}` ([protocol.ts:59-62](../packages/simplex-chat-mcp/src/protocol.ts#L59-L62)). `item` is the reacted message's ID for two reasons. The hub's channel tags, its turn records and the answer's quote use `item` ([hub.ts:27](../packages/simplex-chat-mcp/src/hub.ts#L27), [:266-275](../packages/simplex-chat-mcp/src/hub.ts#L266-L275), [:297-301](../packages/simplex-chat-mcp/src/hub.ts#L297-L301)). A session server of 0.3.0 maps `text`, `from` and `item` and ignores other fields ([session.ts:198](../packages/simplex-chat-mcp/src/session.ts#L198)). `item` equal to `reply_to` marks a reaction for Claude.
 18. The session server maps `replyTo` to the meta `reply_to` and `reply_to_from`, as for a reply (decisions 1 to 4 and 25 of the replies plan). Claude Code keeps meta keys that match `^[a-zA-Z_][a-zA-Z0-9_]*$` (binary offset 308443090). The docs: "Keys must be identifiers: letters, digits, and underscores only. Keys containing hyphens or other characters are silently dropped."
-19. The `replyTo` of a reaction is `toReplyTo(chatInfo, {itemId, chatDir, content, fileName}, self)` of the reacted item: its `meta.itemId`, `chatDir`, `content.msgContent` and `file.fileName` (decision 18 of the replies plan). Its sender is named by `itemSender` ([messages.ts:256-269](../packages/simplex-chat-mcp/src/messages.ts#L256-L269)), with the hub's profile name, `Claude`, as the agent's own name, as `onMessage` names it for a reply (decisions 8 and 12 of the replies plan). Every session group is created with that profile and not incognito ([hub.ts:479](../packages/simplex-chat-mcp/src/hub.ts#L479), [api.ts:658-659](../packages/simplex-chat-nodejs/src/api.ts#L658-L659)). The posts of `User` get `User`, and a member's messages the member's display name. `onReaction` computes `replyTo` when it queues the prompt, without an await, so the order of the delivery chain is kept (0.3.0 decision 45).
-20. The start in the quote line is `replyText` of the reacted message's text, or of its file name when the text is empty; the quote line is `>` alone when both are empty (decisions 5 to 7 and 26 of the replies plan). `replyText` takes the first line of the trimmed text, trimmed, and its first 200 characters, followed by `…` when the line is longer or more lines follow. The replies plan cuts at 100 characters at `8c92db4af` and at 200 from its next commit. A line break ends the start, so the quote takes one line of the content, and the emoji follows on the next. A reply's quote of an image or a file without text has the file name as its text, which the replier's core writes into the quote ([Internal.hs:374-378](../src/Simplex/Chat/Library/Internal.hs#L374-L378), [:398-399](../src/Simplex/Chat/Library/Internal.hs#L398-L399)), so a reaction and a reply name such a message alike.
+19. The `replyTo` of a reaction is the `ReplyTo` `{item, from, type?, text}` that `toReplyTo(chatInfo, {itemId, chatDir, content, fileName}, self)` computes from the reacted item: its `meta.itemId`, `chatDir`, `content.msgContent` and `file.fileName` (decisions 18 and 24 of the replies plan). Its sender is named by `itemSender` ([messages.ts:256-269](../packages/simplex-chat-mcp/src/messages.ts#L256-L269)), with the hub's profile name, `Claude`, as the agent's own name, as `onMessage` names it for a reply (decisions 8 and 12 of the replies plan). Every session group is created with that profile and not incognito ([hub.ts:479](../packages/simplex-chat-mcp/src/hub.ts#L479), [api.ts:658-659](../packages/simplex-chat-nodejs/src/api.ts#L658-L659)). The posts of `User` get `User`, and a member's messages the member's display name. `onReaction` computes `replyTo` when it queues the prompt, without an await, so the order of the delivery chain is kept (0.3.0 decision 45).
+20. The quote line of a reaction is `quoteLine` of its `replyTo`, by the rule of the replies plan (its decisions 5 to 7 and 26). `toReplyTo` sets `type` to `content.type` for a message other than a text and other than `unknown`, and `text` to the message's text, or to its file name when the text is empty. `quoteLine` is `> ` and `replyText` of a body: the text for a text; `TYPE: TEXT`, such as `image: Trail map near the gate`, for a link, image, video, voice message, file, report or chat; the type alone when the text is empty. `replyText` takes the first line of the trimmed body, trimmed, and its first `replyTextLength`, 200, characters, the type included, followed by `…` when the line is longer or more lines follow. A line break ends the body, so the quote takes one line of the content, and the emoji follows on the next. A reacted item has its file name, so a reacted image, video, voice message or file without text is quoted with its type and its file name. A reply's quote names an image or a file without text by its file name too, which the replier's core writes into the quote ([Internal.hs:374-378](../src/Simplex/Chat/Library/Internal.hs#L374-L378), [:398-399](../src/Simplex/Chat/Library/Internal.hs#L398-L399)). For a video or voice message without text, a reply's quote has no file name, and its line is the type alone, such as `> video` (decision 7 of the replies plan).
 21. Claude Code queues a channel notification as a prompt with priority `next`, origin `channel` and `skipSlashCommands` (binary offsets 308443184 and 314212088). The docs: "Events queue into the session and are processed in order. If several notifications arrive while Claude is busy, they're delivered together on the next turn and Claude handles them as a group."
 22. `User` posts nothing for the prompt of a reaction. Its transcript entry has the origin `channel`, so the hook sends `typed: false` ([hook.ts:124-129](../packages/simplex-chat-mcp/src/hook.ts#L124-L129), decision 121 of the 0.3.0 plan, [flow 21](../packages/simplex-chat-mcp/spec/flows.md#21-a-terminal-prompt-and-the-answer): "Task notifications, messages of other sessions and channel prompts have other origins."). Its channel tag also matches the pushed reaction, whose text is the quote line and the emoji ([hub.ts:195](../packages/simplex-chat-mcp/src/hub.ts#L195); decision 14 of the replies plan).
 
@@ -153,7 +168,7 @@ The answer:
 24. Each channel tag of a turn's prompt matches one pushed prompt: the oldest one with its item and text that no other tag of the prompt matched. Today one tag matches every equal entry ([hub.ts:300](../packages/simplex-chat-mcp/src/hub.ts#L300)). Two members' equal reactions to one message are equal entries, and each one's turn quotes the reacted message. A message has a unique item, so its matching is unchanged.
 
 Shared with `ep/mcp-replies`, and Claude's own reactions:
-25. Of this pull request and `ep/mcp-replies`, the one merged first adds `ReplyTo`, `toReplyTo`, `replyText` and `replyTextLength` in `messages.ts`, the quote line that `deliver` writes, the field `replyTo` of the prompt line, its two meta keys and the instructions' sentences on replies. The one merged second reuses them.
+25. Of this pull request and `ep/mcp-replies`, the one merged first adds `ReplyTo`, `toReplyTo`, `quoteLine`, `replyText` and `replyTextLength` in `messages.ts`, the quote line that `deliver` writes, the field `replyTo` of the prompt line, its two meta keys and the instructions' sentences on replies. The one merged second reuses them.
 26. Claude's own reactions are not in this pull request (Q2 A). A later `react` tool would follow the Telegram and Discord channels of Claude Code, in https://github.com/anthropics/claude-plugins-official at `23c304a6`. Their `react` tool adds an emoji to a message by the chat's and the message's IDs (`external_plugins/telegram/server.ts:484-495`, `:599-604`; `external_plugins/discord/server.ts:545-556`, `:680-685`). Those servers pass no reactions of their users to Claude: the Telegram server handles messages and button presses only (telegram:738-882), and the Discord server handles new messages and interactions only, without reaction events (discord:83-86, :747, :805). The hub would send Claude's reactions with `apiChatItemReaction` of `simplex-chat` 7.1.3 ([api.ts:530-540](../packages/simplex-chat-nodejs/src/api.ts#L530-L540)).
 
 ## Design
@@ -204,8 +219,9 @@ Changes per file and function. The rows marked `first` are made by the pull requ
 ```
 file                 function                    change
 src/control.ts       isGroupMessage              takes {chatInfo}, so that it accepts an ACIReaction
-src/messages.ts      ReplyTo, toReplyTo,         first: as in the replies plan; toReplyTo takes
-                     replyText, replyTextLength  {itemId?, chatDir?, content, fileName?}
+src/messages.ts      ReplyTo, toReplyTo,         first: as in the replies plan; ReplyTo is {item?, from?, type?, text};
+                     quoteLine, replyText,       toReplyTo takes {itemId?, chatDir?, content, fileName?}
+                     replyTextLength
 src/protocol.ts      AttachLine.prompt           first: replyTo?: {item?, from?}
 src/session.ts       channelNotification         first: meta reply_to and reply_to_from from replyTo
 src/session.ts       channelInstructions         first: the sentences on replies; this one: the sentence on reactions
@@ -213,7 +229,7 @@ src/hub.ts           Hub.onEvent                 chatItemReaction of a session g
 src/hub.ts           Session.onReaction          new: the checks of decisions 9 to 12; the prompt with its replyTo on the delivery chain
 src/hub.ts           Session.onMessage           passes the prompt with the message's own file
 src/hub.ts           Prompt                      new type: {item, text, member, file?, replyTo?}
-src/hub.ts           Session.prompt, deliver     take a Prompt; deliver receives the Prompt's file; first: the quote line of its replyTo
+src/hub.ts           Session.prompt, deliver     take a Prompt; deliver receives the Prompt's file; first: quoteLine of its replyTo
 src/hub.ts           Session.answer              quotes sndMsgContent items too
 src/hub.ts           Session.pushedIn            one pushed prompt per channel tag
 ```
@@ -232,7 +248,7 @@ onMessage(m), another message:   delivery = delivery then prompt({item: m, text,
                                  with ep/mcp-replies: replyTo = toReplyTo of m.quotedItem, when present
 prompt(p):   p.member is User: nothing; else deliver(p)
 deliver(p):  as at 0.3.0, with p.file in place of the item's file
-             text = p.replyTo present: its quote line, "\n", p.text; else p.text   (the replies plan)
+             text = p.replyTo present: quoteLine(p.replyTo) + "\n" + p.text; else p.text   (the replies plan)
              pushed += (text, p.item, now)
              the line {prompt: {text, from: name of p.member, item: id of p.item, file?, replyTo: {item?, from?} of p.replyTo}}
 answer(a, q):  quote q when its content is rcvMsgContent or sndMsgContent
@@ -299,7 +315,7 @@ flowchart LR
 Unit tests, `test/unit/sessions.test.ts`, "session channel":
 1. `passes a reaction of a member whose role sends as the quote line of the reacted message and the emoji, with the message's ID and sender, and nothing for an observer, User, a removed reaction or a reaction in the Main group`. It fails on master: no line is written. It compiles on master, because it passes the event to `Hub.onEvent` as a `ChatEvent` and compares the lines with `toEqual`.
 2. `quotes the reacted message in the prompt of a reaction to a reply, not the message that the reply quotes`.
-3. `quotes an image without a caption by its file name in the prompt of a reaction`.
+3. `quotes a reacted image without a caption as image with its file name, and a reacted video without a caption as video with its file name, in the prompt of a reaction`: `> image: IMG_2041.jpg\n👍` and `> video: ride.mp4\n👍`.
 4. `quotes the reacted message in the answer of a reaction's turn, also Claude's own answer`.
 5. `replies that the session is not running to a reaction, quoting the reacted message, and receives no file of the reacted message`.
 6. `leaves a pending tool-use card pending when an approver reacts to it, and passes the reaction as a prompt`.
@@ -327,7 +343,7 @@ Real session, `TESTING.md`, a new check 6: react 👍 to Claude's answer in the 
 
 ## Conflict areas with the other items
 
-- `ep/mcp-replies`, the strongest overlap. The replies plan owns the form of a replied-to message: `ReplyTo`, `toReplyTo`, `replyText` and its length, the quote line that `deliver` writes, the field `replyTo` of the prompt line and the meta keys `reply_to` and `reply_to_from`. The pull request merged first adds them, and the second reuses them (decision 25). Both plans compute `replyTo` in the caller of `deliver`, with the hub's profile name as Claude's name (decisions 16 and 19; decision 12 of the replies plan). `AgentTools.selfSender` of the replies plan serves tool results only, and this item does not use it.
+- `ep/mcp-replies`, the strongest overlap. The replies plan owns the form of a replied-to message: `ReplyTo` with its `type`, `toReplyTo`, `quoteLine`, `replyText` with `replyTextLength`, the quote line that `deliver` writes, the field `replyTo` of the prompt line and the meta keys `reply_to` and `reply_to_from`. The pull request merged first adds them, and the second reuses them (decision 25). Both plans compute `replyTo` in the caller of `deliver`, with the hub's profile name as Claude's name (decisions 16 and 19; decision 12 of the replies plan). `AgentTools.selfSender` of the replies plan serves tool results only, and this item does not use it.
 
   Shared code: `messages.ts`; `hub.ts` `Session.onMessage`, `prompt`, `deliver`, `answer`, `pushedIn`, `Hub.onEvent`; `protocol.ts` `AttachLine`; `session.ts` `channelNotification`, `channelInstructions`; the tests "session channel" in `sessions.test.ts`, `is a channel` in `session.test.ts`, and the end-to-end test of the hooks in `service.test.ts`, which both items extend; `spec/api.md` 4.3 to 4.6; `spec/architecture.md` 8.2, 8.6; `spec/flows.md` 20 and 21; `REFERENCE.md` "Prompts and answers".
 - `ep/mcp-harness-notes`: Claude posts notes for Claude Code's own prompts, which have `typed: false`. The prompt of a reaction is a channel prompt with `typed: false` too, so the notes must leave out channel prompts. Shared code: `hub.ts` `Session.turn`, `post`; `hook.ts` `promptTyped`; `REFERENCE.md` "Prompts and answers"; `sessions.test.ts`.
