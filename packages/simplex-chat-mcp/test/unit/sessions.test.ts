@@ -1003,6 +1003,104 @@ describe("session channel", () => {
     ])
   })
 
+  it("sends the turn's text, step and answer as new messages when the update of the opening message fails, as after its deletion", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const update = chat.apiUpdateChatItem.bind(chat)
+    const lost = new Set<number>()
+    chat.apiUpdateChatItem = async (type, chatId, itemId, msgContent, live) => {
+      if (lost.has(itemId)) throw new Error("chat item not found")
+      return update(type, chatId, itemId, msgContent, live)
+    }
+    lost.add(chat.nextItemId)
+    await session.turn({id: id1, at: 1, prompt: "Fix the build", typed: true})
+    await session.turn({id: id1, at: 2, text: {message: "m1", index: 0, final: true, delta: "Fixing it."}})
+    await session.turn({id: id1, at: 3, step: {id: "toolu_1", text: "💻 Run the tests"}})
+    await session.turn({id: id1, at: 4, answer: "Fixing it."})
+    lost.add(chat.nextItemId)
+    await session.turn({id: id1, at: 5, prompt: "Then lint it", typed: true})
+    await session.turn({id: id1, at: 6, answer: "Linted."})
+    await session["finalizing"]
+    expect(shown(chat)).toEqual([
+      {text: "", quotedItemId: undefined},
+      {text: "Fixing it.", quotedItemId: undefined},
+      {text: "💻 Run the tests", quotedItemId: undefined},
+      endedIn("3 ms"),
+      {text: "", quotedItemId: undefined},
+      {text: "Linted.", quotedItemId: undefined},
+      endedIn("1 ms"),
+    ])
+  })
+
+  it("posts the answer at Stop when the text that starts it was never posted", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const send = chat.apiSendMessages.bind(chat)
+    let failed = false
+    chat.apiSendMessages = async (target, messages, live) => {
+      if (!failed && messages[0].msgContent.text === "Fixed.") {
+        failed = true
+        throw new Error("network")
+      }
+      return send(target, messages, live)
+    }
+    await session.turn({id: id1, at: 1, text: {message: "m1", index: 0, final: true, delta: "Fixed."}})
+    await session.turn({id: id1, at: 2, answer: "Fixed."})
+    expect(sentTo(chat, 20)).toEqual(["Fixed.", "!- ✅ Done!"])
+  })
+
+  it("keeps the opening message for the batches that arrive while User posts the prompt, and sends it after User's post", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posted: string[] = []
+    const held: (() => void)[] = []
+    hub.user = {post: (_n: number, parts: string[]) => new Promise<void>(resolve => held.push(() => (posted.push(`User: ${parts.join("")}`), resolve())))} as unknown as User
+    const send = chat.apiSendMessages.bind(chat)
+    chat.apiSendMessages = async (ref, messages, live) => (posted.push(`Claude${live === true ? " live" : ""}: ${messages[0].msgContent.text}`), send(ref, messages, live))
+    const opening = chat.nextItemId
+    const prompted = session.turn({id: id1, at: 1, prompt: "Fix the build", typed: true})
+    await session.turn({id: id1, at: 2, text: {message: "m1", index: 0, final: true, delta: "Fixed."}})
+    await new Promise(resolve => setImmediate(resolve))
+    expect(held).toHaveLength(1)
+    held[0]()
+    await prompted
+    await session["liveOrder"]
+    expect(posted).toEqual(["User: Fix the build", "Claude live: "])
+    expect(chat.updates).toEqual([{chatId: 20, itemId: opening, text: "Fixed."}])
+  })
+
+  it("ends a live text with its text and an empty opening message with ⏹️ Stopped 23 hours after their send by the wall clock, a text in an opening message counted from the opening's send", async () => {
+    jest.useFakeTimers({doNotFake: ["nextTick", "setImmediate", "queueMicrotask"]})
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const line = chat.nextItemId
+    await session.turn({id: id1, at: 1, text: {message: "m1", index: 0, final: false, delta: "Working on it.\n"}})
+    await session["liveOrder"]
+    await jest.advanceTimersByTimeAsync(23 * 3_600_000 - 60_000)
+    expect(chat.updates).toEqual([])
+    await jest.advanceTimersByTimeAsync(60_000)
+    await session["liveOrder"]
+    expect(chat.updates).toEqual([{chatId: 20, itemId: line, text: "Working on it.\n"}])
+    const opening = chat.nextItemId
+    await session.turn({id: id1, at: 2, prompt: "Fix the build", typed: true})
+    await jest.advanceTimersByTimeAsync(3_600_000)
+    await session.turn({id: id1, at: 3, text: {message: "m2", index: 0, final: false, delta: "Fixing it.\n"}})
+    await session["liveOrder"]
+    await jest.advanceTimersByTimeAsync(22 * 3_600_000)
+    await session["liveOrder"]
+    const second = chat.nextItemId
+    await session.turn({id: id1, at: 4, prompt: "Run the tests", typed: true})
+    jest.setSystemTime(Date.now() + 23 * 3_600_000)
+    await jest.advanceTimersByTimeAsync(60_000)
+    await session["finalizing"]
+    expect(chat.updates).toEqual([
+      {chatId: 20, itemId: line, text: "Working on it.\n"},
+      {chatId: 20, itemId: opening, text: "Fixing it.\n", live: true},
+      {chatId: 20, itemId: opening, text: "Fixing it.\n"},
+      {chatId: 20, itemId: second, text: "⏹️ Stopped"},
+    ])
+  })
+
   it("streams each text of Claude into a silent live message from its first line that is not blank, in index order, updated at most every 3 s, and finalized at its final batch", async () => {
     jest.useFakeTimers({doNotFake: ["nextTick", "setImmediate", "queueMicrotask"]})
     const chat = new FakeChat()
@@ -1723,6 +1821,23 @@ describe("session channel", () => {
         {text: `Claude's answer was not posted: ${off("SimpleX links")}`, quotedItemId: undefined},
         endedIn("1 ms"),
       ])
+    })
+
+    it("finalizes the turn's opening message with ⏹️ Stopped when its update with the refusal fails too, and posts the end line", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      refuseInGroup(chat)
+      const update = chat.apiUpdateChatItem.bind(chat)
+      chat.apiUpdateChatItem = async (type, chatId, itemId, msgContent, live) => {
+        if (msgContent.text.startsWith("Claude's answer was not posted")) throw new Error("network")
+        return update(type, chatId, itemId, msgContent, live)
+      }
+      const opening = chat.nextItemId
+      await session.turn({id: id1, at: 1, prompt: "Find the bot", typed: true})
+      await session.turn({id: id1, at: 2, answer: `See ${link}`})
+      await session["finalizing"]
+      expect(chat.updates).toEqual([{chatId: 20, itemId: opening, text: "⏹️ Stopped"}])
+      expect(groupPosts(chat).map(({text}) => text)).toEqual(["", "!- ✅ Done in 1 ms!"])
     })
 
     it("fills the turn's opening message with the refusal of the step that would fill it, and posts nothing at the step's end", async () => {
