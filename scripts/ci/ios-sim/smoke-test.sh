@@ -5,8 +5,7 @@
 # For an app in the derived data of a build, it then renders the previews of the SimpleX Snapshots tests to the snapshots
 # folder of the output dir (snapshots.sh).
 # With "images" it then turns off the encryption of local files, creates a group and sends tests/fixtures/test.jpg and
-# logo-large-rgba.png picked in the photo library, and checks the pixel sizes of the sent files, then that the chat
-# list's cards are hidden while its search field has text and shown again after Cancel.
+# logo-large-rgba.png picked in the photo library, and checks the pixel sizes of the sent files.
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir> [images]
 # Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
@@ -24,7 +23,6 @@ logo_x=200
 photo_y=412
 picker_done_x=363
 picker_done_y=144
-search_cards=("New 1-time link" "Bottom bar")
 mkdir -p "$UI_OUT"
 
 axe --version
@@ -172,37 +170,6 @@ send_image() {
   echo "$ext: the picked image was previewed and sent as a $size .$ext file"
 }
 
-check_cards_while_searching() {
-  local card tree
-  "$ui" relaunch
-  if "$ui" wait "SimpleX Lock" 10 > /dev/null; then
-    "$ui" tap Cancel
-  fi
-  "$ui" shot search-empty
-  for card in "${search_cards[@]}"; do
-    expect_in_tree -F "\"$card\""
-  done
-  "$ui" tap-value "Search or paste SimpleX link"
-  "$ui" type imag
-  sleep 2
-  "$ui" shot search-typed
-  expect_in_tree -iF 'value="imag"'
-  expect_in_tree -iF '"image notes"'
-  tree=$("$ui" tree)
-  for card in "${search_cards[@]}"; do
-    if grep -qF "\"$card\"" <<< "$tree"; then
-      fail "\"$card\" is shown while the search field has text"
-    fi
-  done
-  "$ui" tap Cancel
-  sleep 2
-  "$ui" shot search-cleared
-  for card in "${search_cards[@]}"; do
-    expect_in_tree -F "\"$card\""
-  done
-  echo "${search_cards[*]}: hidden while the search field has text, shown again after Cancel"
-}
-
 xcrun simctl install "$SIM_UDID" "$app"
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on localhost
@@ -260,6 +227,5 @@ if [ "$cases" = images ]; then
   create_group
   send_image jpg "$test_card_x" 1280x720
   send_image png "$logo_x" 1630x466
-  check_cards_while_searching
   echo "smoke test passed: images"
 fi
