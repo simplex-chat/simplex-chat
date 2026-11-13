@@ -385,7 +385,7 @@ Usage:
   simplex-mcp session                  MCP server of one Claude Code session (run by the plugin)
   simplex-mcp service                  the shared SimpleX service of the plugin (started on demand)
   simplex-mcp hook session-start       Claude Code SessionStart hook (run by the plugin)
-  simplex-mcp hook turn                Claude Code hooks of prompts, answers and model changes (run by the plugin)
+  simplex-mcp hook turn                Claude Code hooks of prompts, answers, model changes and tool uses (run by the plugin)
   simplex-mcp link                     show the Main group link, or its owners
   simplex-mcp reset-owners             replace the Main group and its owners
 
@@ -492,10 +492,11 @@ The plugin adds:
 |---|---|
 | MCP server `simplex` | Runs `simplex-mcp session` for each session. It provides the tools, such as `mcp__plugin_simplex_simplex__connect`, and the channel. |
 | SessionStart hook | Checks the Node.js version and starts the service. It opens the session and its group, and shows the Main group link while the Main group has no owner. |
-| PreToolUse hook | Lets the plugin's tools run without a Claude Code prompt, because you approve them in the SimpleX app. |
+| PreToolUse hook of the plugin's tools | Lets the plugin's tools run without a Claude Code prompt, because you approve them in the SimpleX app. |
 | UserPromptSubmit, Stop and PostModelSwitch hooks | Post your terminal prompts and Claude's answers in the session's group, and keep the model and effort in its description. They run in the background. |
+| PreToolUse, PostToolUse and PostToolUseFailure hooks of every tool | Post a line for each step of Claude's work when it starts, and complete it when it ends. They run in the background. |
 
-The server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. The PreToolUse hook runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js` instead. The package, a 4 MB download, bundles its dependencies and has no lockfile, so Claude Code installs nothing after unpacking it. Node.js loads the modules from the plugin's folder, so a project's `node_modules` can't replace them. The first session start downloads the SimpleX core library. Claude Code waits up to 600 seconds for the SessionStart hook.
+The server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. The PreToolUse hook of the plugin's tools runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js` instead. The package, a 4 MB download, bundles its dependencies and has no lockfile, so Claude Code installs nothing after unpacking it. Node.js loads the modules from the plugin's folder, so a project's `node_modules` can't replace them. The first session start downloads the SimpleX core library. Claude Code waits up to 600 seconds for the SessionStart hook.
 
 ### Shared settings
 
@@ -622,6 +623,16 @@ With the channel, a message from a member of a session's group, other than `User
   - another kind: `⚙️ Claude Code: ` and its first line.
 
   A line over 200 characters is cut there and ends with `…`. Prompts typed in the terminal and channel prompts get no line. When one of Claude Code's own prompts starts a turn, Claude's answer to it is posted without a quote.
+- Claude posts one line for each step of its work, a tool use of the main conversation, when the step starts:
+  - Bash: `💻 ` and the command's description, or its first line without one, such as `💻 Run the tests`;
+  - Read, Edit and Write: `📖 Read PATH`, `✏️ Edit PATH` and `📝 Write PATH`, with PATH relative to the session's folder when it is inside it;
+  - Grep and Glob: `🔍 Grep PATTERN in PATH` and `🔍 Glob PATTERN in PATH`, with PATH as for Read, and without ` in PATH` when the search has no path;
+  - WebFetch and WebSearch: `🌐 Fetch URL` and `🔎 Search QUERY`;
+  - Agent: `🤖 Agent: ` and the agent's description;
+  - another tool: `🔧 TOOL`, and `: ` with the first of its description, query, URL, file path, path, pattern and command that is not blank.
+
+  The line is a live message while the step runs. When the step ends, Claude completes it with ✅, with ❌ for a failure or ⏹️ for an interruption, and with the step's duration, such as `💻 Run the tests ✅ 2.0 s`. Claude Code reports the end of a command or an agent run in the background when it is started, so its line is completed with `(in background)`, such as `💻 Run the tests (in background)`; its completion is posted later as the line of its notification. The completed line has no edited mark. A step refused at approval has no end; its line is completed without an outcome when the turn ends, when a prompt starts the next turn, or when the session ends. A line still live 23 hours after its start is completed without an outcome, because SimpleX allows edits of a message for 24 hours; the step's later end is posted as a new line. The text of a step is cut at 200 characters. Tool uses of subagents and of this plugin get no line.
+- Claude marks the lines of steps, the lines of Claude Code's own prompts and the parts of an answer before its last as silent, and the last part of an answer as important. A SimpleX app that supports silent messages shows them without an alert; other apps alert for them as for any message.
 - A text too long for one message is posted as several messages, each as long as a message can be, measured as for `send`. The first part of an answer carries the quote. A part without a quote holds up to 14,962 Latin, 7,481 Cyrillic or 4,987 CJK characters. A prompt or an answer over 250,000 characters is cut there and ends with `…`.
 - The `reply` tool sends a file to the group at once, without approval, with its text as the caption, under the file rules of `send`. It returns the file's message as `item`. A caption too long for a message with the file's preview is refused with `text: too long for a message with this TYPE; shorten it.`
 
@@ -632,7 +643,7 @@ Owners set the group's preferences in the app, and SimpleX enforces them. Claude
 - While "Files and media" is off, `reply` returns `Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` The cards of sends and downloads of images and videos are posted as text, without the preview, and the sends and downloads still work. `/forward` gets `Action N: Files and media are off in the group of this session; its owners can turn them on in the group's preferences.`
 - When another preference refuses one of Claude's posts, Claude posts a text that names it instead:
   - For an answer with a SimpleX link: `Claude's answer was not posted: SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences.`
-  - For the line of one of Claude Code's own prompts: `A note on Claude Code's prompt was not posted: ...`
+  - For the line of one of Claude Code's own prompts or of a step: `Claude's note was not posted: ...`
   - For a terminal prompt: `User's prompt was not posted: SimpleX links are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` This also happens while the preference allows SimpleX links only for roles above `User`'s role, which is member unless the owners change it.
   - For a card that waits for approval, or for `/forward` of a voice message: `Action N: ...`. The action then fails.
   - `reply` returns the same text without the prefix `Claude's answer was not posted: `.

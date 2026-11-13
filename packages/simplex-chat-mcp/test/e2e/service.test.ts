@@ -348,7 +348,7 @@ test("while SimpleX links are off in a session's group, the connect card of a bo
   await sendNotice
 }, 600_000)
 
-test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
+test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it; Claude posts the line of a tool use live at its start and finalizes it at its end, not edited", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -418,6 +418,14 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await hook({hook_event_name: "UserPromptSubmit", prompt: "Run the linter"})
   await hook({hook_event_name: "Stop", last_assistant_message: "Lint passes."})
   await linted
+  const bash = {tool_name: "Bash", tool_input: {command: "npm test", description: "Run the tests"}, tool_use_id: "toolu_1"}
+  const started = received(alice.chat, message("💻 Run the tests", "Claude"))
+  await hook({hook_event_name: "PreToolUse", cwd: "/p", ...bash})
+  expect((await started).chatItem.meta.itemLive).toBe(true)
+  const ended = updated(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "💻 Run the tests ✅ 2.0 s"))
+  await hook({hook_event_name: "PostToolUse", cwd: "/p", ...bash, tool_response: {stdout: "ok"}, duration_ms: 2018})
+  const {meta: finalized} = (await ended).chatItem
+  expect([finalized.itemLive, finalized.itemEdited]).toEqual([false, false])
   const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 50)
   const fromUser = chatItems.filter(({chatDir, content}) => chatDir.type === "groupRcv" && chatDir.groupMember.memberProfile.displayName === "User" && content.type === "rcvMsgContent")
   expect(fromUser.map(({meta}) => meta.itemText)).toEqual(["Fix the build"])

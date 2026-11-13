@@ -82,6 +82,9 @@ function deps(root: string) {
         endPermissions: () => {
           agent.turns.push("ended")
         },
+        endSteps: async () => {
+          agent.turns.push("steps ended")
+        },
         call: async (tool: string, _input: unknown, call: {signal: AbortSignal; progress: (m: string) => void}) => {
           agent.calls.push(tool)
           calling.resolve()
@@ -596,7 +599,7 @@ describe("service", () => {
     expect(await register(id1)).toMatchObject({number: 1, displayName: "1 · auth"})
   })
 
-  it("passes permission requests and turns to the session, and its lines to the attachments while they exist", async () => {
+  it("passes permission requests and turns to the session, and its lines to the attachments while they exist, and ends its permissions and steps at the last detach", async () => {
     const {d, agents} = deps(root)
     service = await Service.start(d, readDefaultConfig)
     await register(id1)
@@ -612,8 +615,8 @@ describe("service", () => {
     expect(lines[1]).toEqual({prompt: {text: "hi", from: "Alice", item: 7}})
     controller.abort()
     await attached
-    await until(() => agents[0].turns.length === 3)
-    expect(agents[0].turns).toEqual([permission, {id: id1, answer: "Done."}, "ended"])
+    await until(() => agents[0].turns.length === 4)
+    expect(agents[0].turns).toEqual([permission, {id: id1, answer: "Done."}, "ended", "steps ended"])
     expect(agents[0].onLine).toBeUndefined()
     await expect(post("/turn", {id: id2, answer: "x"})).rejects.toMatchObject({status: 409})
   })
