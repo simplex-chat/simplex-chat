@@ -85,13 +85,20 @@ struct ContextItemView: View {
             case .voice: return isFileLoaded ? image(Image(systemName: "play.fill")) : Text("")
             case let .chat(_, chatLink, _):
                 let hasText = contextItem.text != chatLink.connLinkStr
-                return image(chatLink.smallIcon) + Text(chatLink.displayName) + Text(verbatim: hasText ? " - " : "")
+                return image(chatLink.smallIcon(agent: textAgentIcon())) + Text(chatLink.displayName) + Text(verbatim: hasText ? " - " : "")
             default: return Text("")
             }
         }
 
         func image(_ i: Image) -> Text {
             Text(i).foregroundColor(Color(uiColor: .tertiaryLabel)) + textSpace
+        }
+
+        func textAgentIcon() -> Image {
+            guard let person = UIImage(systemName: "person", withConfiguration: UIImage.SymbolConfiguration(textStyle: .body)),
+                  let agent = UIImage(named: "agent") else { return Image("agent") }
+            let size = CGSize(width: person.size.height * agent.size.width / agent.size.height, height: person.size.height)
+            return Image(uiImage: UIGraphicsImageRenderer(size: size).image { _ in agent.draw(in: CGRect(origin: .zero, size: size)) }.withRenderingMode(.alwaysTemplate))
         }
     }
 }

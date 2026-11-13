@@ -330,7 +330,7 @@ struct FramedItemView: View {
                 let prefix = NSAttributedString(string: chatLink.displayName + (text != chatLink.connLinkStr ? " - " : ""))
                 ciQuotedMsgView(qi, stripLink: chatLink.connLinkStr, prefix: prefix)
                     .padding(.trailing, 20).frame(minWidth: quoteMinWidth, alignment: .leading)
-                ciQuoteIconView(chatLink.smallIcon)
+                ciQuoteIconView(chatLink.smallIcon())
             default:
                 ciQuotedMsgView(qi)
             }

@@ -76,8 +76,11 @@ struct PeerTypePlaceholders_Previews: PreviewProvider {
             row { MemberProfileImage(member($0), size: 38) }
             row { ChatInfoImage(chat: Chat(chatInfo: .contactRequest(contactRequest: contactRequest($0))), size: 38) }
             row { ProfileImage(icon: contactLink($0).icon, size: 38) }
-            row { contactLink($0).smallIcon.resizable().scaledToFit().frame(width: 38, height: 18) }
+            row { contactLink($0).smallIcon().resizable().scaledToFit().frame(width: 38, height: 18) }
             row { profileMenuItem(Text("alice"), nil, peerType: $0, radius: 50) }
+            ForEach(peerTypes.indices, id: \.self) { i in
+                ContextItemView(chat: Chat.sampleData, contextItems: [linkItem(peerTypes[i])], contextIcon: "arrowshape.turn.up.left", cancelContextItem: {})
+            }
         }
     }
 
@@ -100,6 +103,11 @@ struct PeerTypePlaceholders_Previews: PreviewProvider {
     }
 
     static func contactLink(_ peerType: ChatPeerType?) -> MsgChatLink {
-        .contact(connLink: "", profile: Profile(displayName: "alice", fullName: "", peerType: peerType), business: false)
+        .contact(connLink: "https://simplex.chat/a#alice", profile: Profile(displayName: "alice", fullName: "", peerType: peerType), business: false)
+    }
+
+    static func linkItem(_ peerType: ChatPeerType?) -> ChatItem {
+        let link = contactLink(peerType)
+        return ChatItem(chatDir: .directRcv, meta: CIMeta.getSample(1, previewDate, link.connLinkStr), content: .rcvMsgContent(msgContent: .chat(text: link.connLinkStr, chatLink: link, ownerSig: nil)))
     }
 }
