@@ -306,7 +306,7 @@ fun ProfileIconModifier(size: Dp, blurred: Boolean = false): Modifier {
       m.padding((size - sz) / 2).clip(RoundedCornerShape(size = sz * r / 100))
     }
   }
-  return if (blurred) m1.blur(size * 0.3f) else m1
+  return if (blurred) m1.blur(size / 4) else m1
 }
 
 @Preview
