@@ -1,6 +1,6 @@
 # SimpleX MCP: approve a tool for the rest of a session
 
-Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-allow-tool`, stacked on `ep/mcp-activity`; decisions 29 to 31 were made in the implementation. Code references: master `97bbbd9ac` (MCP 0.3.0 with #8157). Claude Code references: version 2.1.322 and its binary at the offsets given, the documentation pages quoted, and three `claude -p` runs of Claude Code 2.1.323, recorded on 2026-11-13 (R1 to R3). Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
+Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-allow-tool`, stacked on `ep/mcp-activity`; decisions 29 to 32 were made in the implementation. Code references: master `97bbbd9ac` (MCP 0.3.0 with #8157). Claude Code references: version 2.1.322 and its binary at the offsets given, the documentation pages quoted, and three `claude -p` runs of Claude Code 2.1.323, recorded on 2026-11-13 (R1 to R3). Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
 
 The runs used a test MCP server whose tool `pre_tool_use` answers a PreToolUse hook of type `mcp_tool`, with `--setting-sources project --permission-mode default`. A `-p` run refuses a call that would show a prompt, so a refusal there stands for a prompt in an interactive session.
 - R1: the hook answered `allow` for Bash and Write. `echo one > a.txt` with Bash ran, and a Write of `notes.txt` ran. A Write of `.bashrc` was refused: "Claude requested permissions to edit .../.bashrc which is a sensitive file." The server logged three calls, `{"tool":"Bash"}`, `{"tool":"Write"}` and `{"tool":"Write"}`.
@@ -157,6 +157,7 @@ Decided in the implementation:
 29. The log lines name the group, as the other log lines of `Control` do: `TOOL approved for the rest of the session in "N · NAME" by MEMBER.` and `TOOL needs approval again in "N · NAME".` `Control` has the group's name and not the session's number.
 30. After a membership event, the hub sends the approved tools right after `Control` reads the members again, before the rights post. A refused rights post then can't keep a demoted approver's tools in the session server's list.
 31. The session server keeps the list of each attachment apart and answers from the list of the current one. A list is then dropped also when the session server drops its attachment after a failed call, which ends the stream without the end handler of the current attachment.
+32. The docs cite the new code by file and function name, by the user's rule of 2026-11-13 that line numbers create churn. The line citations of other code in `spec/`, which this change shifts in `control.ts`, `hub.ts`, `session.ts`, `service.ts` and `protocol.ts`, are not renumbered; the move of the specs to function names replaces them.
 
 ## 5. Design
 
