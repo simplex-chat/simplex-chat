@@ -716,7 +716,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | send, connect and download card | 15000 bytes JSON-escaped, in its largest form | [control.ts:31](../src/control.ts#L31), [:763-771](../src/control.ts#L763-L771) |
 | error assumed in the largest card | 600 × `€` | [control.ts:35](../src/control.ts#L35) |
 | message as the core sends it | 15602 bytes, counted with 600 bytes of envelope; `send` refuses a longer one, and the post of `/forward` leaves out its quote of the card | [tools.ts:167-168](../src/tools.ts#L167-L168), [:1636-1639](../src/tools.ts#L1636-L1639), [control.ts:315-334](../src/control.ts#L315-L334) |
-| `send.text` | 1 to 12000 characters | [tools.ts:277](../src/tools.ts#L277) |
+| `send.text` | 1 to 12000 characters | [tools.ts:277](../src/tools.ts#L277), [:290](../src/tools.ts#L290) |
 | `connect.message` | 1 to 2000 characters | [tools.ts:265](../src/tools.ts#L265) |
 | `send.mention` | 1 to 3 unique member IDs | [tools.ts:281](../src/tools.ts#L281) |
 | `wait` | 0 to 86400 s | [tools.ts:266](../src/tools.ts#L266), [:282](../src/tools.ts#L282), [:296](../src/tools.ts#L296), [:319](../src/tools.ts#L319) |

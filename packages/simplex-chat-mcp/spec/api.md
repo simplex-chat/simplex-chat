@@ -51,7 +51,7 @@
 | Rule | Code |
 |---|---|
 | Tools are registered on each per-request `McpServer` with description, input schema, output schema and, in mode `host`, `_meta: {"anthropic/requiresUserInteraction": true}` for `connect`, `send`, `download` and `leave` | [tools.ts:499-506](../src/tools.ts#L499-L506), [:512-522](../src/tools.ts#L512-L522), [:555-557](../src/tools.ts#L555-L557) |
-| With `--audio`, `voice` is in the input schema of `send` | [tools.ts:290](../src/tools.ts#L290), [:516](../src/tools.ts#L516), [:556](../src/tools.ts#L556) |
+| With `--audio`, `voice` is in the input schema of `send`, and the description of `text` names `voice` beside `file` | [tools.ts:290](../src/tools.ts#L290), [:516](../src/tools.ts#L516), [:556](../src/tools.ts#L556) |
 | Tool descriptions and server instructions; the instructions name the agent's display name | [tools.ts:428-466](../src/tools.ts#L428-L466), [serve.ts:111](../src/serve.ts#L111) |
 | Arguments are validated by the SDK; a failure is a result with `isError: true` and the text `Input validation error: Invalid arguments for tool NAME: ERRORS` | [mcp-BumlNux0.cjs:1812-1817](../node_modules/@modelcontextprotocol/server/dist/mcp-BumlNux0.cjs#L1812-L1817) |
 | `additionalProperties: false` is set in every input schema | [tools.ts:270](../src/tools.ts#L270), [:287](../src/tools.ts#L287), [:300](../src/tools.ts#L300), [:303](../src/tools.ts#L303), [:311](../src/tools.ts#L311), [:322](../src/tools.ts#L322) |

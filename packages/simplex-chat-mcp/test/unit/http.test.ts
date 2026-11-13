@@ -149,6 +149,7 @@ describe("MCP", () => {
     await start("requests", {url: "http://127.0.0.1:8080", stt: "stt", tts: "tts"})
     const properties = await sendProperties()
     expect(Object.keys(properties)).toEqual([...withoutAudio, "voice"])
+    expect(properties.text).toEqual({type: "string", minLength: 1, maxLength: 12000, description: "Message text, or the caption of file or voice; required without file and voice. A bot command is sent as text, for example /help."})
     expect(properties.voice).toEqual({
       type: "string",
       minLength: 1,

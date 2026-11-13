@@ -287,7 +287,7 @@ const sendSchema: Schema = {
   additionalProperties: false,
 }
 
-const voiceSendSchema: Schema = {...sendSchema, properties: {...(sendSchema.properties as Schema), voice: {type: "string", minLength: 1, maxLength: 4096, description: "Text that the server speaks with its text-to-speech voice and sends as a voice message; text, when given, is its caption. Send a voice message only when your user asked for a voice reply."}}}
+const voiceSendSchema: Schema = {...sendSchema, properties: {...(sendSchema.properties as Schema), text: {type: "string", minLength: 1, maxLength: 12000, description: "Message text, or the caption of file or voice; required without file and voice. A bot command is sent as text, for example /help."}, voice: {type: "string", minLength: 1, maxLength: 4096, description: "Text that the server speaks with its text-to-speech voice and sends as a voice message; text, when given, is its caption. Send a voice message only when your user asked for a voice reply."}}}
 
 const receiveSchema: Schema = {
   type: "object",
