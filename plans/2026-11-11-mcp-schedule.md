@@ -13,6 +13,8 @@ Status: draft for review. Decided on 2026-11-11. Code references: master `2205de
 7. Its own pull request from master, not stacked.
 8. Budget: about 140 changed lines in `src`, at most 20% more; the user accepted the 201 changed lines after the review rounds.
 9. Plugin: the group of each session accepts the same commands for the session's chats, and `receive` of the chat returns its due prompts, as in `serve`. Delivery through the channel is left to a later change.
+10. Plugin, 2026-11-13: at `/give CHAT N`, the schedules of CHAT are moved to the `Schedules` of session N, without their due prompts ([flow 24](../packages/simplex-chat-mcp/spec/flows.md#24-give)). Decision 5 applies there with the member IDs of session N's group.
+11. Plugin, 2026-11-13: the service gets `TZ` from the environment that starts it, so the schedules of session groups are matched in the time zone in which Claude Code runs.
 
 ## Owner commands
 
@@ -81,6 +83,8 @@ control.ts    controlCommands     /schedules "Scheduled prompts"
               isCurrentApprover   new: true for the member ID of a current approver, false while the control chat is lost; used by standingApprover and Schedules
               load                the schedules of the agent's chats, after the members
               constructor         schedules
+              give                the schedules of CHAT moved to the Schedules of session N
+              SessionOptions      ownerOf: the session's ID and Schedules
 schedule.ts   Schedules           new
               cronError           new
               cronMatches         new
@@ -89,11 +93,13 @@ serve.ts      startAgent          one Schedules, passed to AgentTools and Contro
 hub.ts        Session             one Schedules per session, passed to AgentTools and Control
               Hub.session         schedules started after control.load
               Hub.stop            schedules stopped before the actions
+              Hub.numbered        the session of a number, in place of sessionId
 tools.ts      Agent               schedules, optional
               receiveOutput       scheduled
               receiveDescription  the sentence on scheduled
               receive             a due prompt ends the wait; scheduled taken after markRead
               leaveChat           the chat's schedules in memory dropped
+client.ts     serviceVariables    TZ
 ```
 
 ## Storage

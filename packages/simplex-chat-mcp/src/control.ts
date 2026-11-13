@@ -146,7 +146,7 @@ export interface ControlOptions {
 
 export interface SessionOptions {
   approves: (member: T.GroupMember) => boolean
-  ownerOf: (session: number) => string | undefined
+  ownerOf: (session: number) => {id: string; schedules: Schedules} | undefined
   isUser: (member: T.GroupMember) => boolean
 }
 
@@ -496,7 +496,9 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
     const owner = this.options.session?.ownerOf(session)
     if (owner === undefined) return `No session ${session}. /sessions in the Main group lists the sessions.`
-    await this.tools.giveChat(chat, owner)
+    await this.tools.giveChat(chat, owner.id)
+    this.schedules.set(chat, [])
+    owner.schedules.set(chat, schedulesOf(customDataOf(chatInfo)))
     const approver = safeName(sender.memberProfile.displayName)
     for (const action of this.actions.pending()) {
       if (action.chat === chat && action.card !== undefined) this.actions.reject(action, approver)

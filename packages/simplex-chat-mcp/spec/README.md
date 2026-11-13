@@ -31,7 +31,7 @@ The package is also a Claude Code plugin. Each Claude Code session runs `simplex
 - `Claude` is the profile that peers see. It holds the Main group, one group per session and the chats with peers. In a session's group it posts the answers and one line for each of Claude Code's own prompts.
 - `User` is a member of every session group. It posts the prompts typed in the terminal.
 
-Each session has the six tools and `reply`, and its group has its own `Actions` and `Control`. A chat belongs to the session that connected it. Admins and owners of the session group move a chat to another session with `/give`.
+Each session has the six tools and `reply`, and its group has its own `Actions` and `Control`. A chat belongs to the session that connected it. Admins and owners of the session group move a chat, with its schedules, to another session with `/give`.
 
 Every member of the Main group is trusted with all sessions. The Main group's owners are invited to each session group as owners. Another member of the Main group joins a session group as an admin with `/join N` there.
 
@@ -233,7 +233,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Downloads | [`src/tools.ts`](../src/tools.ts#L595) | `AgentTools.downloadFile` | [595](../src/tools.ts#L595) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L147) | `Actions` | [147](../src/actions.ts#L147) |
 | Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L184) | `Control` | [184](../src/control.ts#L184) |
-| Card text | [`src/control.ts`](../src/control.ts#L818) | `cardText` | [818](../src/control.ts#L818) |
+| Card text | [`src/control.ts`](../src/control.ts#L820) | `cardText` | [820](../src/control.ts#L820) |
 | Scheduled prompts | [`src/schedule.ts`](../src/schedule.ts#L12) | `Schedules` | [12](../src/schedule.ts#L12) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
