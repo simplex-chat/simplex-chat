@@ -47,6 +47,7 @@ import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (newContracts)
+import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Records
 import StoreService.Names.Registration (Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, multicallCalldata, nodeBytes, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Sender (Sender, followTransactions, newSender)
@@ -72,7 +73,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "encodes two edits as one multicall as viem does" $ testViemMulticall g
     it "reads a request's formats, then its link, then its signature" testRequestOrder
     it "takes one or two edits of distinct keys with consecutive nonces, and a clear only alone" testRequestEdits
-    it "bounds a link at 4096 bytes and takes only a link of the key's kind" testLinkBound
+    it "bounds a link at 1024 bytes and takes only a link of the key's kind" testLinkBound
   describe "relay" $ do
     it "relays an edit with viem's calldata and answers its hash once mined" $ testRelayMined g
     it "refuses an edit whose deadline is within ten minutes of the latest block, before any row or gas" $ testDeadlineMargin g
@@ -116,7 +117,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
   describe "http" $ do
     it "answers the contract's statuses and bodies" $ testHttp g
     it "answers 504 edit_pending, 503, 429 with the real wait in Retry-After, and 429 edit_limit with nextAt in unix seconds and no Retry-After" testEditResponses
-    it "relays a body of two edits with links of 4096 bytes, above the 8192-byte cap of other endpoints" $ testHttpTwoLongLinks g
+    it "relays a body of two edits with links of the largest size" $ testHttpTwoLongLinks g
 
 data Setup = Setup
   { node :: FakeEthNode,
@@ -333,8 +334,8 @@ testLinkBound = do
   let prefix = "https://smp8.simplex.im/c#"
       linkOf n = prefix <> T.replicate (n - T.length prefix) "a"
       edit key value = editRequest $ requestOf [editFields [("key", J.String key), ("value", J.String value)]]
-  fmap (L.head . L.map scChange . erChanges) (edit channelKey $ linkOf 4096) `shouldBe` Right (channel $ linkOf 4096)
-  edit channelKey (linkOf 4097) `shouldBe` Left EIInvalidLink
+  fmap (L.head . L.map scChange . erChanges) (edit channelKey $ linkOf linkMaxBytes) `shouldBe` Right (channel $ linkOf linkMaxBytes)
+  edit channelKey (linkOf $ linkMaxBytes + 1) `shouldBe` Left EIInvalidLink
   edit contactKey viemChannelLink `shouldBe` Left EIInvalidLink
   edit channelKey "https://smp8.simplex.im/c#Y8m3;https://smp9.simplex.im/c#Z1" `shouldBe` Left EIInvalidLink
 
@@ -920,9 +921,8 @@ responseParts r = do
 
 testHttpTwoLongLinks :: TVar ChaChaDRG -> IO ()
 testHttpTwoLongLinks g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post -> do
-  let longLink prefix = prefix <> T.replicate (4096 - T.length prefix) "a"
+  let longLink prefix = prefix <> T.replicate (linkMaxBytes - T.length prefix) "a"
   body <- J.encode . editJson <$> ownerTwo s 0 (longLink "https://smp8.simplex.im/a#") (longLink "https://smp8.simplex.im/c#")
-  LB.length body `shouldSatisfy` (> 8192)
   answer <- async $ post body
   TxHash h <- mineSent s 1 True
   within (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)

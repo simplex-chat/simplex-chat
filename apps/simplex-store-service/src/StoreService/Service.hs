@@ -47,7 +47,7 @@ where
 
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
-import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
+import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), GroupConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, joinerAcceptance, refreshTracker, revokeWithTracker, runGroupLane)
 import StoreService.Group.Command (MoneyCmd (..), badgeTypeP, balanceArgsP, closeArgsP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, recordRefundArgsP, textTokenP)
 import StoreService.Names.Abi (hex)
@@ -303,7 +303,7 @@ storeService opts serviceCfg baseCfg env = do
       startLanes cc = do
         lanes <- maybe (pure []) (serviceLanes waiters turns cc) serviceCfg
         -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
-        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns namesOn (runMoneyCmd FromGroup turns consoleChain cc) (groupEventQ env) <$> ensureManagedGroup cc gc
+        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns namesOn (gNameCodesPerDay gc) (runMoneyCmd FromGroup turns consoleChain cc) (groupEventQ env) <$> ensureManagedGroup cc gc
         raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
       chatHooks =
         defaultChatHooks
@@ -552,13 +552,13 @@ heldText source BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdu
 chainText :: [BalanceLink] -> T.Text
 chainText chain = T.intercalate "; " $ zipWith linkText chain (map (Just . lkRegistration) (drop 1 chain) <> [Nothing])
   where
-    linkText BalanceLink {lkRegistration = RegistrationId rid, lkPayment, lkPaid, lkFromBalance, lkLateCredits} source_ =
-      "order " <> rid <> ": " <> case paid lkPayment lkPaid lkLateCredits <> fromBalance lkFromBalance source_ of
+    linkText BalanceLink {lkRegistration = RegistrationId rid, lkOwner, lkPayment, lkProviderRef, lkPaid, lkFromBalance, lkLateCredits} source_ =
+      "order " <> rid <> " of " <> addressText lkOwner <> ": " <> case paid lkPayment lkProviderRef lkPaid lkLateCredits <> fromBalance lkFromBalance source_ of
         [] -> "no payment recorded"
         parts -> T.intercalate ", " parts
-    paid payment cents lateCredits = case payment of
+    paid payment providerRef_ cents lateCredits = case payment of
       RPInvoice method (InvoiceId invId) ->
-        let by = " by " <> methodText method <> " on invoice " <> invId
+        let by = " by " <> methodText method <> " on invoice " <> invId <> maybe "" (\ref -> " (provider reference " <> ref <> ")") providerRef_
             late = sum $ map lcCents lateCredits
             -- an order its invoice paid is credited only the extra of an overpayment
             kind = if cents > 0 then " overpaid" else " late"

@@ -319,5 +319,5 @@ testGroupNameCommandsRefused = do
     (args, p ("/bulk " <> args)) `shouldBe` (args, bulkUsage)
 
 issueUsage, bulkUsage :: CmdAction
-issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
-bulkUsage = ReplyText "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk legend months 3 count 10"
+issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+bulkUsage = ReplyText "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–12, count 1–100\ne.g. /bulk legend months 3 count 10"

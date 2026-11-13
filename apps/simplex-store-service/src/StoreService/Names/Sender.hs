@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -21,6 +22,7 @@ module StoreService.Names.Sender
     senderRound,
     replaceAfter,
     minTip,
+    maxTxFeeWei,
   )
 where
 
@@ -186,7 +188,7 @@ submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snS
       logWarn $ "names sender: the latest block needs " <> tshow needed <> " wei per gas, above the fee cap " <> tshow cap <> "; the transaction waits"
       throwError $ SEFeeAboveCap needed
     when (bounded && headroomFee market > cap) $
-      logNote $ "names sender: nonce " <> tshow nonce <> " at max fee " <> tshow cap <> ", capped so that its gas limit " <> tshow gasLimit <> " costs at most 1 ETH"
+      logNote $ "names sender: nonce " <> tshow nonce <> " at max fee " <> tshow cap <> ", capped so that its gas limit " <> tshow gasLimit <> " costs at most " <> maxTxFeeText
     -- both fit Word64: the tip is at most the needed fee, and the max fee at most the cap
     let request = TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gasLimit, trMaxFeePerGas = fromInteger $ min cap $ headroomFee market, trMaxPriorityFeePerGas = fromInteger tip}
     SignedTx {stRaw, stHash} <- withExceptT SESigning $ ExceptT $ signTransaction snRandom c request
@@ -284,7 +286,7 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
               update s nonce $ \t -> t {ifRequest = request, ifRaw = stRaw, ifHashes = stHash <| ifHashes t, ifReplaceAt = later}
               logNote $
                 "names sender: replacing nonce " <> tshow nonce <> " at max fee " <> tshow maxFee'
-                  <> (if bounded && wanted > cap then ", capped so that its gas limit " <> tshow trGasLimit <> " costs at most 1 ETH" else "")
+                  <> (if bounded && wanted > cap then ", capped so that its gas limit " <> tshow trGasLimit <> " costs at most " <> maxTxFeeText else "")
               True <$ broadcast s nonce stRaw
   where
     later = addUTCTime replaceAfter now
@@ -331,10 +333,13 @@ feeCap :: ChainClient -> Word64 -> (Integer, Bool)
 feeCap ChainClient {ccConfig = ChainConfig {cMaxFeePerGas}} gasLimit = (min configured bound, bound < configured)
   where
     configured = toInteger cMaxFeePerGas
-    bound = nodeTxFeeCapWei `div` toInteger (max 1 gasLimit)
+    bound = maxTxFeeWei `div` toInteger (max 1 gasLimit)
 
-nodeTxFeeCapWei :: Integer
-nodeTxFeeCapWei = 1000000000000000000
+maxTxFeeWei :: Integer
+maxTxFeeWei = 10_000_000_000_000_000
+
+maxTxFeeText :: Text
+maxTxFeeText = "0.01 ETH"
 
 saveTransaction :: DBStore -> TxFor -> ByteString -> TxHash -> Word64 -> UTCTime -> IO ()
 saveTransaction st for raw hash nonce now =

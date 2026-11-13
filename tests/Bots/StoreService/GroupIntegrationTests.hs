@@ -19,6 +19,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), TxRequest (..), newChainClient, signTransaction)
 import StoreService.Names.Store (CodeIssuer (..), NamePhase (PFailed), NameRegistration (nrFailedAt, nrPhase), NewTransaction (..), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
+import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice)
 import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, redactPassword, requireDevKeys, storeService, trustDevKeys)
@@ -420,7 +421,7 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
 namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
   it "issues a prepaid code on /issue name for 2 years by default and for the years given, answering the usage to /bulk name" testGroupNameCodes
-  it "issues at most 10 name codes a day in the group, not counting console codes" testGroupNameCodesPerDay
+  it "issues at most name_codes_per_day name codes a day in the group, not counting console codes" testGroupNameCodesPerDay
   it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
   it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
 
@@ -440,12 +441,13 @@ testGroupNameCodes ps = do
 testGroupNameCodesPerDay :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesPerDay ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
+  let capped = svc {gsIniSections = "" : codesOnlyNames <> chainSection}
+  runGroupServiceAs capped (Just testGroupConfig {gNameCodesPerDay = 3}) $ \cc env gid -> withOwnerJoined ps cc env gid $ \alice -> do
     replicateM_ 2 $ issueNameRaw cc "name 6"
-    replicateM_ 10 $ T.isPrefixOf "Code: " <$> replyTo cc alice "/issue name 6" `shouldReturn` True
-    replyTo cc alice "/issue name 6" `shouldReturn` "At most 10 name codes are issued in a day, 10 so far. Issue more with //issue name in --run-cli."
-    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 12
-    countRows cc "sx_badge_service_name_prepaid_codes WHERE issued_in_group = 1" `shouldReturn` 10
+    replicateM_ 3 $ T.isPrefixOf "Code: " <$> replyTo cc alice "/issue name 6" `shouldReturn` True
+    replyTo cc alice "/issue name 6" `shouldReturn` "At most 3 name codes are issued in a day, 3 so far. Issue more with //issue name in --run-cli."
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 5
+    countRows cc "sx_badge_service_name_prepaid_codes WHERE issued_in_group = 1" `shouldReturn` 3
 
 testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
 testOperatorNameCodes ps = do
@@ -535,7 +537,7 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     let st = chatStore cc
-        paidBy = "order f: $100.00 by btc on invoice inv-f"
+        paidBy = paidByBtc "f"
     now <- getCurrentTime
     Balances.placeOrderRow st "f" False 10000 (addUTCTime 3600 now)
     unpaid <- reg st "f"
@@ -575,12 +577,12 @@ testGroupMoneyCmds ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     answerCall node registrar (ownerOfSelector <> labelBytes "s") $ Reverts ""
     replyTo cc alice "/close nothing" `shouldReturn` "Nothing recorded: no order has the reference nothing."
     replyTo cc alice "/close inv-s"
-      `shouldReturn` ("Closed order s, failed at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: order s: $100.00 by btc on invoice inv-s.")
+      `shouldReturn` ("Closed order s, failed at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: " <> paidByBtc "s" <> ".")
     Balances.credit st "s" 2505
     replyTo cc alice "/balance s"
-      `shouldReturn` "Order s: balance $25.05 (credited $125.05, refunded $100.00). Paid by: order s: $100.00 by btc on invoice inv-s. To record its refund: /record_refund s 2505"
+      `shouldReturn` ("Order s: balance $25.05 (credited $125.05, refunded $100.00). Paid by: " <> paidByBtc "s" <> ". To record its refund: /record_refund s 2505")
     replyTo cc alice "/record_refund inv-s 2500" `shouldReturn` "Nothing recorded: the balance is $25.05 now, not $25.00."
-    replyTo cc alice "/record_refund inv-s 2505" `shouldReturn` "Recorded a refund of $25.05 for order s. Refund it now, by: order s: $100.00 by btc on invoice inv-s."
+    replyTo cc alice "/record_refund inv-s 2505" `shouldReturn` ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidByBtc "s" <> ".")
     Balances.figures st "s" t0 `shouldReturn` Just (0, 12505, 12505, Nothing)
 
 testCloseNamesOff :: HasCallStack => TestParams -> IO ()
@@ -596,7 +598,7 @@ minuteText = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M UTC"
 testRefundRecorded :: HasCallStack => TestParams -> IO ()
 testRefundRecorded ps = withStoreService ps $ \_ _ cc -> do
   let st = chatStore cc
-      paidBy = "order s: $100.00 by btc on invoice inv-s"
+      paidBy = paidByBtc "s"
   Balances.source st "s" 10000
   balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //record_refund inv-s 10000")
   logs <- capturingStderr $ recordRefundRaw cc "inv-s 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidBy <> ".")
@@ -632,12 +634,15 @@ heldSource cc src holder expiry = do
 
 heldRefusals :: HasCallStack => ChatController -> Text -> Text -> IO ()
 heldRefusals cc src held = do
-  balanceRaw cc src `shouldReturn` Right ("Order " <> src <> ": balance $100.00 (credited $100.00, refunded $0.00). Paid by: order " <> src <> ": $100.00 by btc on invoice inv-" <> src <> ". It cannot be refunded now: " <> held <> ".")
+  balanceRaw cc src `shouldReturn` Right ("Order " <> src <> ": balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidByBtc src <> ". It cannot be refunded now: " <> held <> ".")
   recordRefundRaw cc ("inv-" <> src <> " 10000") `shouldReturn` Left ("Nothing recorded: " <> held <> ".")
   Balances.figures (chatStore cc) src t0 >>= (`shouldSatisfy` \case Just (10000, 10000, 0, Just _) -> True; _ -> False)
 
 recordedS :: Either Text Text
-recordedS = Right "Recorded a refund of $100.00 for order s. Refund it now, by: order s: $100.00 by btc on invoice inv-s."
+recordedS = Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidByBtc "s" <> ".")
+
+paidByBtc :: Text -> Text
+paidByBtc r = "order " <> r <> " of " <> addressText ownerA <> ": $100.00 by btc on invoice inv-" <> r <> " (provider reference ref-inv-" <> r <> ")"
 
 testRefundOpenHolder :: HasCallStack => TestParams -> IO ()
 testRefundOpenHolder ps = withStoreService ps $ \_ _ cc -> do
@@ -696,7 +701,7 @@ groupDescr :: Text
 groupDescr = "badge ops desk"
 
 testGroupConfig :: GroupConfig
-testGroupConfig = GroupConfig {gDisplayName = T.pack groupName, gDescription = Just groupDescr}
+testGroupConfig = GroupConfig {gDisplayName = T.pack groupName, gDescription = Just groupDescr, gNameCodesPerDay = 10}
 
 revokeReply :: Text -> Text -> Text
 revokeReply code outcome = code <> ": " <> outcome
@@ -803,8 +808,8 @@ groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIn
   Right serviceCfg <- readServiceConfig iniPath
   pure ((mkStoreServiceOpts ps secretKey) {noAddress = True}, serviceCfg, port)
   where
-    groupSection GroupConfig {gDisplayName, gDescription} =
-      ["", "[group]", "display_name = " <> T.unpack gDisplayName]
+    groupSection GroupConfig {gDisplayName, gDescription, gNameCodesPerDay} =
+      ["", "[group]", "display_name = " <> T.unpack gDisplayName, "name_codes_per_day = " <> show gNameCodesPerDay]
         <> maybe [] (\d -> ["description = " <> T.unpack d]) gDescription
 
 withGroupOwner :: HasCallStack => TestParams -> (BadgeIssuerKey -> ChatController -> ServiceState -> TestCC -> IO ()) -> IO ()
@@ -894,7 +899,7 @@ testConfigNotApplied ps = do
   svc <- prepareGroupService ps
   -- Clearing the commands makes the restart rewrite the profile, the only path that could apply the new config.
   runGroupService svc $ \cc _ gid -> clearCommandsSettingFullDelete cc gid
-  runGroupServiceAs svc (Just GroupConfig {gDisplayName = "renamedbadges", gDescription = Just "renamed desk"}) $ \cc env gid -> do
+  runGroupServiceAs svc (Just testGroupConfig {gDisplayName = "renamedbadges", gDescription = Just "renamed desk"}) $ \cc env gid -> do
     waitAdvertisedCommands cc gid
     awaitLane cc env
     groupCount cc `shouldReturn` 1
@@ -1205,10 +1210,10 @@ testBlockedMemberCommandIgnored ps = do
       -- The block and the command travel over different connections, so the block is awaited first.
       send alice ("/block for all #" <> groupName <> " bob")
       waitMemberBlocked cc gid "bob"
-      sendGroupCmd bob "/bulk legend months 255 count 100"
-      (deleted, content) <- waitBlockedItem cc "/bulk legend months 255 count 100"
+      sendGroupCmd bob "/bulk legend months 12 count 100"
+      (deleted, content) <- waitBlockedItem cc "/bulk legend months 12 count 100"
       deleted `shouldBe` blockedByAdminMark
-      content `shouldSatisfy` T.isInfixOf "/bulk legend months 255 count 100"
+      content `shouldSatisfy` T.isInfixOf "/bulk legend months 12 count 100"
       ownerIssuesNext cc alice 1
       awaitOnConsole alice "Code: SB-"
       awaitOnConsole bob "Code: SB-"
@@ -1823,10 +1828,10 @@ singleRow sql = \case
   _ -> error $ "more than one row from: " <> sql
 
 issueUsage :: Text
-issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
 
 bulkUsage :: Text
-bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk legend months 3 count 10"
+bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–12, count 1–100\ne.g. /bulk legend months 3 count 10"
 
 -- The list is spelled out rather than taken from the service, so a change there fails here.
 expectedCommands :: [ChatBotCommand]

@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -20,6 +21,8 @@ module StoreService.Config
     ServiceConfig (..),
     defaultExpiryMinutes,
     defaultSessionMinutes,
+    providerTimeoutMicros,
+    providerCheckoutTimeoutMicros,
     defaultLogLevel,
     minNameYears,
     localChainId,
@@ -102,7 +105,9 @@ data BTCPayConfig = BTCPayConfig
     bWebhookSecret :: Text,
     bExpiryMinutes :: Int,
     bSpeedPolicy :: SpeedPolicy,
-    bPaymentTolerance :: Double
+    bPaymentTolerance :: Double,
+    bTimeoutMicros :: Int,
+    bCheckoutTimeoutMicros :: Int
   }
   deriving (Eq)
 
@@ -115,7 +120,9 @@ data StripeConfig = StripeConfig
     sPublishableKey :: Text,
     sWebhookSecret :: Text,
     sSessionMinutes :: Int,
-    sHost :: Text
+    sHost :: Text,
+    sTimeoutMicros :: Int,
+    sCheckoutTimeoutMicros :: Int
   }
   deriving (Eq)
 
@@ -162,7 +169,8 @@ instance Show BadgeIssuerKey where
 
 data GroupConfig = GroupConfig
   { gDisplayName :: Text,
-    gDescription :: Maybe Text
+    gDescription :: Maybe Text,
+    gNameCodesPerDay :: Int
   }
   deriving (Eq, Show)
 
@@ -234,6 +242,10 @@ defaultStripeHost = "https://api.stripe.com"
 defaultSessionMinutes :: Int
 defaultSessionMinutes = 60
 
+providerTimeoutMicros, providerCheckoutTimeoutMicros :: Int
+providerTimeoutMicros = 10 * 1000000
+providerCheckoutTimeoutMicros = 30 * 1000000
+
 defaultLogLevel :: LogLevel
 defaultLogLevel = LogNote
 
@@ -290,6 +302,9 @@ testPublishableKey = T.isPrefixOf "pk_test_"
 maxCommunityTextLength :: Int
 maxCommunityTextLength = 200
 
+defaultNameCodesPerDay :: Int
+defaultNameCodesPerDay = 10
+
 defaultRecordEditsPerYear, minRecordEditsPerYear, maxRecordEditsPerYear :: Int
 defaultRecordEditsPerYear = 3
 minRecordEditsPerYear = 1
@@ -309,9 +324,9 @@ localChainId = 31337
 sepoliaChainId :: Word64
 sepoliaChainId = 11155111
 
--- | 100 gwei.
+-- | 5 gwei.
 defaultMaxFeePerGas :: Word64
-defaultMaxFeePerGas = 100000000000
+defaultMaxFeePerGas = 5_000_000_000
 
 defaultTermStart :: String
 defaultTermStart = "2027-01-01T00:00:00Z"
@@ -416,7 +431,7 @@ knownSettings =
     ("poll", ["waiting_seconds", "idle_seconds"]),
     ("apple", ["bundle_id", "root_certificates", "api_key_id", "api_issuer_id", "api_private_key_file", "api_host"]),
     ("google", ["package_name", "service_account_file"]),
-    ("group", ["display_name", "description"]),
+    ("group", ["display_name", "description", "name_codes_per_day"]),
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
     ("log", ["level"]),
@@ -583,7 +598,7 @@ parseConfig ini = do
           bExpiryMinutes <- expiryMinutes
           bSpeedPolicy <- speedPolicy
           bPaymentTolerance <- tolerance
-          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance})
+          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros, bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros})
     -- A negative window puts BTCPay's startDate in the future, so every poll comes back empty.
     expiryMinutes = do
       v <- num "btcpay" "expiry_minutes" defaultExpiryMinutes
@@ -608,7 +623,8 @@ parseConfig ini = do
       | not (hasSection "group") = Right Nothing
       | otherwise = do
           gDisplayName <- required "group" "display_name" >>= validGroupName
-          pure (Just GroupConfig {gDisplayName, gDescription = present "group" "description"})
+          gNameCodesPerDay <- atLeast 0 "group" "name_codes_per_day" defaultNameCodesPerDay
+          pure (Just GroupConfig {gDisplayName, gDescription = present "group" "description", gNameCodesPerDay})
     -- The core refuses a group name that mkValidName would change, so it is rejected here.
     validGroupName n =
       let valid = T.pack (mkValidName (T.unpack n))
@@ -633,7 +649,7 @@ parseConfig ini = do
           sWebhookSecret <- required "stripe" "webhook_secret"
           sSessionMinutes <- sessionMinutes
           let sHost = defaultStripeHost
-          pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost})
+          pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost, sTimeoutMicros = providerTimeoutMicros, sCheckoutTimeoutMicros = providerCheckoutTimeoutMicros})
     appleSection
       | not (hasSection "apple") = Right Nothing
       | otherwise = do
