@@ -1,4 +1,5 @@
-import {appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
+import {once} from "events"
+import {appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {dirname, join} from "path"
 import {T} from "@simplex-chat/types"
@@ -8,14 +9,16 @@ import {defaultConfig} from "../../src/config"
 import {hubFolder, readSessionFile, sessionFolder} from "../../src/files"
 import {Hub} from "../../src/hub"
 import {sessionStart, turn} from "../../src/hook"
+import {findMainGroup} from "../../src/main-group"
 import {resetOwners} from "../../src/owner"
 import {AttachLine, OwnerState, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
 import {qrCodeText} from "../../src/qr"
 import {Service, productionDeps} from "../../src/service"
 import {version} from "../../src/version"
+import {descendants} from "../unit/fixtures"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
 import {SmpServer, startSmpServer, startXftpServer} from "./smpServer"
-import {killService, servicePid, spawnSession} from "./stdio"
+import {killService, servicePid, spawnSession, spawnSessionStart} from "./stdio"
 
 const one = "11111111-1111-4111-8111-111111111111"
 const two = "22222222-2222-4222-8222-222222222222"
@@ -595,14 +598,14 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   expect((await described)?.toGroup.groupProfile.groupPreferences?.files?.enable).toBe(T.GroupFeatureEnabled.Off)
 
   const mainDeleted = alice.chat.wait("groupDeleted", ({groupInfo}) => groupInfo.groupId === mainGroupId, 60_000)
-  expect(await resetOwners({SIMPLEX_MCP_HOME: root}, false)).toBe(`"SimpleX MCP" was replaced. Run npx -y @simplex-chat/mcp@${version} link in a terminal to see the link to the new one.`)
+  expect(await resetOwners({SIMPLEX_MCP_HOME: root}, false)).toBe(`"Claude Control" was replaced. Run npx -y @simplex-chat/mcp@${version} link in a terminal to see the link to the new one.`)
   expect(await mainDeleted).toBeDefined()
   const replaced = await client.request<OwnerState>("GET", "/link")
   expect(replaced).toEqual({owners: [], link: expect.any(String)})
   const inTerminal = await resetOwners({SIMPLEX_MCP_HOME: root}, true)
   const {link} = await client.request<OwnerState>("GET", "/link")
   expect(link).not.toBe(replaced.link)
-  expect(inTerminal).toBe(`"SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:\n${qrCodeText(link!, "small")}\n${link}`)
+  expect(inTerminal).toBe(`"Claude Control" was replaced. Join the new one in the SimpleX app. The link works once:\n${qrCodeText(link!, "small")}\n${link}`)
   await alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], "Deploy")
   await bobSends("Tag the release")
   await until(() => attached.some(({prompt}) => prompt?.text === "Deploy" && prompt.from === "Alice") && attached.some(({prompt}) => prompt?.text === "Tag the release" && prompt.from === "Bob"))
@@ -736,4 +739,36 @@ test("stdio session spawns the service and recovers after the service is killed"
   await killService(root)
   await until(async () => (await ServiceClient.forRoot(root).request<StatusReply>("GET", "/status").catch(() => undefined))?.sessions[0]?.attached === 1)
   expect(servicePid(root)).not.toBe(secondService)
+}, 600_000)
+
+test("a session start that Claude Code ends with its descendants, as at its exit, leaves the service starting, and the next session start shows the link of that service", async () => {
+  const root = join(dir, "ended", "root")
+  await prepareRoot(smpServer.address, root)
+  closing.push(() => killService(root))
+  const hook = spawnSessionStart({...process.env, CLAUDE_CODE_ENTRYPOINT: "cli", CLAUDE_CODE_SESSION_ATTENDED: "", SIMPLEX_MCP_HOME: root}, {session_id: five, cwd: "/p/five"})
+  await until(() => existsSync(join(root, "service.lock")))
+  const service = servicePid(root)
+  const ended = once(hook, "exit")
+  for (const pid of [hook.pid!, ...descendants(hook.pid!)]) process.kill(pid, "SIGTERM")
+  await ended
+
+  const client = ServiceClient.forRoot(root)
+  const output = await sessionStart(JSON.stringify({session_id: four, cwd: "/p/four"}), {SIMPLEX_MCP_HOME: root}, {client, nodeVersion: process.versions.node})
+  expect(servicePid(root)).toBe(service)
+  const {link} = await client.request<OwnerState>("GET", "/link")
+  expect(output).toEqual({systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "Claude Control":\n${qrCodeText(link!, "plain")}\n${link}`})
+}, 600_000)
+
+test("the service renames a Main group named SimpleX MCP to Claude Control", async () => {
+  const root = join(dir, "renamed", "root")
+  await prepareRoot(smpServer.address, root)
+  const before = await Service.start({...productionDeps(root), onStopped: () => undefined}, () => ({...defaultConfig, mainGroup: "SimpleX MCP"}))
+  await before.stop()
+  await (await startService(root)).stop()
+
+  const hub = await api.ChatApi.init({type: "sqlite", filePrefix: join(hubFolder(root), "simplex")})
+  closing.push(() => hub.close())
+  const user = (await hub.apiGetActiveUser())!
+  await hub.startChat()
+  expect((await findMainGroup(hub, user.userId))?.groupProfile.displayName).toBe("Claude Control")
 }, 600_000)
