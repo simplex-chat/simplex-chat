@@ -653,7 +653,7 @@ testSpendTurns = withSpend $ \ctx@Ctx {cOrders} -> do
 -- end to end
 
 -- | The real BTCPay adapter against the fake, read by the poller when BTCPay's webhook asks, over the running service's store, so
--- //refund reads what the routes wrote; the clock is the wall clock, which the poller and //refund read.
+-- //balance reads what the routes wrote; the clock is the wall clock, which the poller and //balance read.
 withBTCPaySpend :: TestParams -> (ChatController -> FakeBTCPay -> PollerEnv -> Ctx -> IO ()) -> IO ()
 withBTCPaySpend ps action = withStoreService ps $ \_ _ cc -> withFakeBTCPay $ \fake -> do
   btcpay <- btcpayProvider (fbConfig fake)
@@ -777,7 +777,7 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
   let paidBy =
         "order " <> d <> " of " <> owner <> ": $100.00 by btc on invoice " <> dearerInvText <> " (provider reference " <> dearerRef <> "), $100.00 from the balance of order " <> s
           <> "; order " <> s <> " of " <> owner <> ": $100.00 by btc on invoice " <> srcInvText <> " (provider reference " <> srcRef <> ")"
-  operatorCmd cc ("//refund " <> d)
-    `shouldReturn` Right ("Order " <> d <> ": balance $100.00 (credited $200.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //refund " <> d <> " 10000")
-  operatorCmd cc ("//refund " <> dearerInvText <> " 10000") `shouldReturn` Right ("Recorded a refund of $100.00 for order " <> d <> ". Refund it now, by: " <> paidBy <> ".")
+  operatorCmd cc ("//balance " <> d)
+    `shouldReturn` Right ("Order " <> d <> ": balance $100.00 (credited $200.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //record_refund " <> d <> " 10000")
+  operatorCmd cc ("//record_refund " <> dearerInvText <> " 10000") `shouldReturn` Right ("Recorded a refund of $100.00 for order " <> d <> ". Refund it now, by: " <> paidBy <> ".")
   balanceView ctx dearer `shouldReturn` balanceObject 0 10000

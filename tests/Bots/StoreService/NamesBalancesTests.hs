@@ -38,7 +38,7 @@ import StoreService.Names.Turns (balanceTurnCount, newTurns, turnsCount, withBal
 import StoreService.Names.View (addressText)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupUnpaid, newPollerEnv, unpaidRetention)
-import StoreService.Service (chainText, heldText)
+import StoreService.Service (CmdSource (..), chainText, heldText)
 import StoreService.Providers (Funded (..), PaymentSignal (..))
 import StoreService.Waiters (newWaiters)
 import StoreService.Web.Server (WebEnv (..))
@@ -582,9 +582,11 @@ testRecordRefund = withServiceStore $ \st -> do
 
 testHeldText :: IO ()
 testHeldText = do
-  let held overdue funded = heldText BalanceHold {bhHolder = RegistrationId "h", bhUntil = UTCTime (fromGregorian 2027 1 2) 3600, bhOverdue = overdue, bhFunded = funded}
+  let heldFrom cmdSource overdue funded = heldText cmdSource BalanceHold {bhHolder = RegistrationId "h", bhUntil = UTCTime (fromGregorian 2027 1 2) 3600, bhOverdue = overdue, bhFunded = funded}
+      held = heldFrom FromConsole
   held False False `shouldBe` "held by order h, its invoice open until 2027-01-02 01:00 UTC; run the command again then"
   held True False `shouldBe` "held by order h, its invoice expired at 2027-01-02 01:00 UTC; start the service so the poller closes that order, 10 minutes after the expiry at the earliest, then stop it and run the command again"
+  heldFrom FromGroup True False `shouldBe` "held by order h, its invoice expired at 2027-01-02 01:00 UTC; the poller closes that order 10 minutes after the expiry at the earliest; run the command again then"
   held False True `shouldBe` "held by order h, whose invoice holds money; it holds until that payment settles or the invoice closes; run the command again then"
 
 testChainText :: IO ()

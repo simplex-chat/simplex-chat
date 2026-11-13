@@ -116,6 +116,19 @@ badgeGroupTests = describe "badge group" $ do
     it "runs a name code command for a moderator and above, saying nothing to a member" $ do
       map (`groupCmdAction` "/issue name 6") [GRMember, GRModerator, GRAdmin, GROwner]
         `shouldBe` [IgnoreMsg, RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2)]
+    it "runs /balance, /record_refund and /close only for an owner, saying nothing to others" $ do
+      let roles = [GRMember, GRModerator, GRAdmin, GROwner]
+          ownerOnly cmd = replicate 3 IgnoreMsg <> [RunCmd (GCMoney cmd)]
+      map (`groupCmdAction` "/balance s") roles `shouldBe` ownerOnly (MCBalance "s")
+      map (`groupCmdAction` "/record_refund inv-s 10000") roles `shouldBe` ownerOnly (MCRecordRefund "inv-s" 10000)
+      map (`groupCmdAction` "/close inv-f") roles `shouldBe` ownerOnly (MCClose "inv-f")
+      groupCmdAction GRAdmin "/record_refund s" `shouldBe` IgnoreMsg
+      p "/refund s 10000" `shouldBe` IgnoreMsg
+    it "answers a malformed /balance, /record_refund or /close with its usage" $
+      map p ["/balance", "/balance s junk", "/record_refund s", "/record_refund s 0", "/record_refund s -5", "/record_refund s 100.00", "/record_refund s 99999999999999999999", "/close", "/close s junk"]
+        `shouldBe` replicate 2 (ReplyText "Usage: /balance <reference>")
+          <> replicate 5 (ReplyText "Usage: /record_refund <reference> <cents>")
+          <> replicate 2 (ReplyText "Usage: /close <reference>")
     it "accepts a command padded with whitespace" $ do
       p " /issue supporter " `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
       p "\t/bulk supporter count 1" `shouldBe` RunCmd (GCBulk BTSupporter 1 1)
