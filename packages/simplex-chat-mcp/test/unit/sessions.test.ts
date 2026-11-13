@@ -870,6 +870,48 @@ describe("session channel", () => {
     expect(sentTo(chat, 20).slice(2)).toEqual(["!- ✅ Done in 1 ms!", "Done.", "!- ✅ Done!"])
   })
 
+  it("posts the end line with the turn's usage and the plan's usage of the newest status line report, leaving out a window whose reset time has passed, in small print as important after the silent answer", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const usage = "2 min 13 s · 1.5k output tokens · 535k tokens in context"
+    const later = Date.now() / 1_000 + 3_600
+    await session.turn({id: id1, at: 1, answer: "Fixed.", usage})
+    await session.turn({id: id1, at: 3, effort: "high", limits: {fiveHour: {percent: 34.7, resetsAt: later}, week: {percent: 61, resetsAt: later}}})
+    await session.turn({id: id1, at: 2, limits: {fiveHour: {percent: 99, resetsAt: later}}})
+    await session.turn({id: id1, at: 4, answer: "Tests pass.", usage})
+    await session.turn({id: id1, at: 5, limits: {fiveHour: {percent: 80, resetsAt: Date.now() / 1_000 - 1}, week: {percent: 62, resetsAt: later}}})
+    await session.turn({id: id1, at: 6, answer: "Lint passes."})
+    expect(sentTo(chat, 20)).toEqual(["Fixed.", `!- ✅ Done in ${usage}!`, "Tests pass.", `!- ✅ Done in ${usage} · 5 h: 34% · week: 61%!`, "Lint passes.", "!- ✅ Done · week: 62%!"])
+    expect(priorities(chat)).toEqual([[-1], [1], [-1], [1], [-1], [1]])
+  })
+
+  it("posts a line when the model switches and when a known effort level changes, also from the status line, before the other posts of the request, and none for a first value, a model of an answer or a value older than the one taken last", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    await session.turn({id: id1, at: 1, model: "claude-opus-5[1m]"})
+    await session.turn({id: id1, at: 2, answer: "Done.", effort: "high"})
+    await session.turn({id: id1, at: 3, model: "claude-sonnet-5", switched: true})
+    await session.turn({id: id1, at: 4, answer: "Done.", model: "claude-haiku-5"})
+    await session.turn({id: id1, at: 6, effort: "max"})
+    await session.turn({id: id1, at: 3.5, model: "claude-opus-5", switched: true, effort: "low"})
+    await session.turn({id: id1, at: 7, answer: "Done.", effort: "low"})
+    expect(sentTo(chat, 20)).toEqual(["Done.", "!- ✅ Done!", "!- Model changed to claude-sonnet-5!", "Done.", "!- ✅ Done!", "!- Effort changed to max!", "!- Effort changed to low!", "Done.", "!- ✅ Done!"])
+    expect(priorities(chat)).toEqual([[-1], [1], [-1], [-1], [1], [-1], [-1], [-1], [1]])
+    expect(chat.profiles.filter(({groupId}) => groupId === 20).at(-1)!.groupProfile.shortDescr).toBe("claude-haiku-5 · effort low")
+  })
+
+  it("keeps the shown model with [1m] and its description when an answer's model is that model without [1m]", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const described = () => chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile.shortDescr)
+    await session.turn({id: id1, at: 1, model: "claude-opus-5[1m]"})
+    await session.turn({id: id1, at: 2, answer: "Done.", model: "claude-opus-5"})
+    expect(described()).toEqual(["claude-opus-5[1m]"])
+    expect(readSessionFile(sessionFolder(root, id1))?.model).toBe("claude-opus-5[1m]")
+    await session.turn({id: id1, at: 3, answer: "Done.", model: "claude-sonnet-5"})
+    expect(described()).toEqual(["claude-opus-5[1m]", "claude-sonnet-5"])
+  })
+
   it("updates the line of a step at its end and at the end of the steps also while the send of its start is in flight, and sends the starts in their order", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)

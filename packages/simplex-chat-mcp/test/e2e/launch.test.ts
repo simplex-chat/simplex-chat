@@ -3,6 +3,7 @@ import {cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync} from "
 import {tmpdir} from "os"
 import {basename, join} from "path"
 import {promisify} from "util"
+import {writeStatusLine} from "../../src/files"
 import {LineClient} from "../unit/fixtures"
 
 const run = promisify(execFile)
@@ -68,6 +69,24 @@ test("the unpacked plugin, with nothing installed, runs its hooks and its sessio
   await new Promise(resolve => server.on("close", resolve))
   expect(existsSync(join(dir, "home", "service.lock"))).toBe(false)
 }, 300_000)
+
+test("the status line setting runs the status line command of the unpacked plugin through status-line.js of the data folder, with or without SIMPLEX_MCP_HOME, without an install", async () => {
+  const setting = 'node "${SIMPLEX_MCP_HOME:-$HOME/.simplex-mcp}/status-line.js"'
+  const home = join(dir, "status-home")
+  for (const folder of [join(dir, "status-root"), join(home, ".simplex-mcp")]) {
+    mkdirSync(folder, {recursive: true})
+    writeStatusLine(folder, join(root, "dist", "status-line.js"))
+  }
+  const input = JSON.stringify({session_id: id, model: {display_name: "Opus 5.5"}, effort: {level: "high"}, rate_limits: {five_hour: {used_percentage: 34.7, resets_at: 1}}})
+  for (const env of [{SIMPLEX_MCP_HOME: join(dir, "status-root")}, {HOME: home}]) {
+    const line = spawn("sh", ["-c", setting], {cwd: dir, env: {PATH: process.env.PATH, ...env}, stdio: ["pipe", "pipe", "inherit"]})
+    line.stdin.end(input)
+    let output = ""
+    line.stdout.on("data", chunk => (output += chunk))
+    expect(await new Promise(resolve => line.on("close", resolve))).toBe(0)
+    expect(output).toBe("Opus 5.5 · effort high · 5 h: 34%\n")
+  }
+}, 60_000)
 
 test("the package installs from its one tarball without the registry and runs as a dependency, as npx runs it", async () => {
   const project = join(dir, "project")

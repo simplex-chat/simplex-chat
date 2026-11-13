@@ -35,7 +35,13 @@ You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://si
 
 3. Each Claude Code session gets its own group, such as "1 · my-project". Join it from the invitation in "Claude Control".
 
-4. Send prompts in the session's group, and Claude answers there, live as it writes. Each turn ends with one line in small print that alerts you. Reply to a message to show Claude which one you mean. Prompts you type in the terminal appear there too, and Claude Code's own prompts, such as a finished background task, appear as one line each. Each step of Claude's work, such as running the tests, appears as one line, completed with its outcome when the step ends. Before Claude acts in other chats or uses a tool such as Bash, it asks in the group, and one tap approves.
+4. Send prompts in the session's group, and Claude answers there, live as it writes. Each turn ends with one line in small print that alerts you, with the turn's time and tokens, such as `✅ Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context`. A switch of the model or the effort level appears as one line too. Reply to a message to show Claude which one you mean. Prompts you type in the terminal appear there too, and Claude Code's own prompts, such as a finished background task, appear as one line each. Each step of Claude's work, such as running the tests, appears as one line, completed with its outcome when the step ends. Before Claude acts in other chats or uses a tool such as Bash, it asks in the group, and one tap approves.
+
+5. Optionally, add your plan's 5-hour and weekly usage to that line, and get a status line in the terminal, with this setting in `~/.claude/settings.json`. It replaces a status line of your own. [Read more](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md#status-line).
+
+   ```json
+   "statusLine": {"type": "command", "command": "node \"${SIMPLEX_MCP_HOME:-$HOME/.simplex-mcp}/status-line.js\""}
+   ```
 
 ## Safety
 

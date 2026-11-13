@@ -21,6 +21,7 @@ const answerReads = 20
 const promptReads = 600
 const transcriptReadMs = 100
 const transcriptTailBytes = 1_048_576
+const usageTailBytes = [4, 16, 64].map(mebibytes => mebibytes * 1_048_576)
 const syntheticModel = "<synthetic>"
 const maxNote = 200
 const statusEmoji = new Map([["completed", "✅"], ["failed", "❌"], ["stopped", "⏹️"], ["killed", "⏹️"]])
@@ -68,12 +69,31 @@ interface TranscriptEntry {
   type?: unknown
   isSidechain?: unknown
   promptId?: unknown
+  timestamp?: unknown
   origin?: Origin | null
   turnOrigin?: unknown
   operation?: unknown
   content?: unknown
   attachment?: {type?: unknown; prompt?: unknown; origin?: Origin | null; commandMode?: unknown}
-  message?: {model?: unknown; content?: unknown}
+  message?: {id?: unknown; model?: unknown; content?: unknown; usage?: Usage}
+}
+
+interface Usage {
+  input_tokens?: unknown
+  cache_creation_input_tokens?: unknown
+  cache_read_input_tokens?: unknown
+  output_tokens?: unknown
+}
+
+interface Answer {
+  text: string
+  model?: string
+  entry: TranscriptEntry
+}
+
+interface AnswerUsage {
+  at: number
+  usage: Usage
 }
 
 interface PromptKind {
@@ -131,9 +151,10 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
     const toolUse = toolEvents.includes(input.hook_event_name ?? "")
     const step = toolUse ? stepOf(input) : undefined
     if (toolUse && step === undefined) return {}
-    const model = input.to_model ?? (input.hook_event_name === "Stop" ? await answerModel(input, readMs) : undefined)
+    const answered = input.hook_event_name === "Stop" ? await answerRecord(input, readMs) : {}
     const kind = input.hook_event_name === "UserPromptSubmit" ? await promptKind(input, readMs) : undefined
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), ...kind, answer: cut(input.last_assistant_message), model, effort: input.effort?.level, step}
+    const switched = input.to_model === undefined ? undefined : true
+    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), ...kind, answer: cut(input.last_assistant_message), model: input.to_model ?? answered.model, switched, effort: input.effort?.level, step, usage: answered.usage}
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -150,14 +171,61 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   return {}
 }
 
-async function answerModel({transcript_path: path, last_assistant_message: message}: TurnInput, readMs: number): Promise<string | undefined> {
+async function answerRecord({transcript_path: path, prompt_id: id, last_assistant_message: message}: TurnInput, readMs: number): Promise<{model?: string; usage?: string}> {
   const answer = message?.trim()
-  if (!path || !answer) return undefined
+  if (!path || !answer) return {}
   const last = await findInTranscript(path, answer, answerReads, readMs, tail => {
     const entry = lastAnswer(tail)
-    return entry?.text === answer ? entry : undefined
+    return entry?.text === answer ? {...entry, tail} : undefined
   })
-  return last?.model
+  if (last?.model === undefined) return {}
+  const {usage} = last.entry.message ?? {}
+  const answeredAt = timeOf(last.entry)
+  const measured = id !== undefined && usage !== undefined && !Number.isNaN(answeredAt)
+  return {model: last.model, usage: measured ? await turnUsage(path, id, {at: answeredAt, usage}, last.tail) : undefined}
+}
+
+async function turnUsage(path: string, promptId: string, answer: AnswerUsage, tail: string): Promise<string | undefined> {
+  let usage = usageOf(tail, promptId, answer)
+  for (const bytes of usageTailBytes) {
+    if (usage !== undefined) return usage
+    usage = usageOf(await readTail(path, bytes).catch(() => ""), promptId, answer)
+  }
+  return usage
+}
+
+function usageOf(tail: string, promptId: string, {at, usage}: AnswerUsage): string | undefined {
+  const lines = tail.split("\n")
+  const first = lines.findIndex(line => line.includes(promptId) && startsTurn(transcriptEntry(line), promptId))
+  const ms = first === -1 ? NaN : at - timeOf(transcriptEntry(lines[first]))
+  if (Number.isNaN(ms)) return undefined
+  const output = new Map<unknown, number>()
+  for (const line of lines.slice(first + 1)) {
+    const entry = line.includes('"type":"assistant"') ? transcriptEntry(line) : undefined
+    if (entry?.type === "assistant" && entry.isSidechain !== true && entry.message?.model !== syntheticModel) output.set(entry.message?.id, count(entry.message?.usage?.output_tokens))
+  }
+  const written = [...output.values()].reduce((sum, tokens) => sum + tokens, 0)
+  const context = count(usage.input_tokens) + count(usage.cache_creation_input_tokens) + count(usage.cache_read_input_tokens)
+  return `${duration(ms)} · ${tokenCount(written)} output tokens · ${tokenCount(context)} tokens in context`
+}
+
+function startsTurn(entry: TranscriptEntry | undefined, promptId: string): boolean {
+  return entry !== undefined && isPrompt(entry) && entry.promptId === promptId
+}
+
+function timeOf(entry: TranscriptEntry | undefined): number {
+  return typeof entry?.timestamp === "string" ? Date.parse(entry.timestamp) : NaN
+}
+
+function count(value: unknown): number {
+  return typeof value === "number" ? value : 0
+}
+
+function tokenCount(tokens: number): string {
+  if (tokens < 1_000) return String(tokens)
+  if (tokens < 100_000) return `${(Math.floor(tokens / 100) / 10).toFixed(1)}k`
+  if (tokens < 1_000_000) return `${Math.floor(tokens / 1_000)}k`
+  return `${(Math.floor(tokens / 100_000) / 10).toFixed(1)}M`
 }
 
 async function promptKind({transcript_path: path, prompt_id: id, prompt}: TurnInput, readMs: number): Promise<PromptKind> {
@@ -189,13 +257,13 @@ async function readTail(path: string, bytes: number): Promise<string> {
   }
 }
 
-function lastAnswer(tail: string): {text: string; model?: string} | undefined {
+function lastAnswer(tail: string): Answer | undefined {
   const lines = tail.split("\n")
   for (let i = lines.length - 1; i >= 0; i--) {
     const entry = transcriptEntry(lines[i])
     if (entry?.type !== "assistant" || entry.isSidechain === true) continue
     const {model, content} = entry.message ?? {}
-    return {text: textOf(content), model: typeof model === "string" && model !== syntheticModel ? model : undefined}
+    return {text: textOf(content), model: typeof model === "string" && model !== syntheticModel ? model : undefined, entry}
   }
   return undefined
 }

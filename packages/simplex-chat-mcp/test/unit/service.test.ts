@@ -1,3 +1,4 @@
+import {execFile} from "child_process"
 import {once} from "events"
 import * as fs from "fs"
 import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
@@ -5,6 +6,8 @@ import {Server, request} from "http"
 import {Socket} from "net"
 import {tmpdir} from "os"
 import {join} from "path"
+import {pathToFileURL} from "url"
+import {promisify} from "util"
 import {Mode} from "../../src/actions"
 import {ServiceClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
@@ -238,6 +241,18 @@ describe("service", () => {
     await attached
     await post("/reset-owners")
     expect(expiryChecks()).toBe(5)
+  })
+
+  it("writes status-line.js into the data folder at the start, which runs the status line command of its own build, in place of an older one", async () => {
+    const build = join(root, "_build")
+    mkdirSync(build)
+    writeFileSync(join(build, "status-line.js"), 'exports.runStatusLine = () => process.stdout.write("status line\\n")\n')
+    writeFileSync(join(root, "status-line.js"), "older\n")
+    const {d} = deps(root)
+    service = await Service.start({...d, statusLine: join(build, "status-line.js")}, readDefaultConfig)
+    expect(readFileSync(join(root, "status-line.js"), "utf8")).toBe(`import(${JSON.stringify(pathToFileURL(join(build, "status-line.js")).href)}).then(module => module.runStatusLine())\n`)
+    expect((await promisify(execFile)("node", [join(root, "status-line.js")])).stdout).toBe("status line\n")
+    expect(productionDeps(root).statusLine).toBe(join(__dirname, "../../src/status-line.js"))
   })
 
   it("opens one agent for concurrent registrations", async () => {

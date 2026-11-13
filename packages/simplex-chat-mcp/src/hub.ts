@@ -10,8 +10,9 @@ import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
 import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
-import {AttachLine, OwnerState, PermissionRequest, ResetReply, Step, TextBatch, TurnRequest} from "./protocol"
+import {AttachLine, LimitWindow, Limits, OwnerState, PermissionRequest, ResetReply, Step, TextBatch, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
+import {limitParts} from "./status-line"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
 import {User, userContact} from "./user"
 
@@ -98,6 +99,7 @@ export class Session {
   private readonly receiving = new Map<number, {resolve: () => void; reject: (error: Error) => void}>()
   private description: {model?: string; effort?: string}
   private readonly describedAt = {model: -Infinity, effort: -Infinity}
+  private limits: Limits & {at: number} = {at: -Infinity}
   private turns: {at: number; item: T.ChatItem | null; added?: true}[] = []
   private answeredAt = -Infinity
   private requested?: Mode
@@ -234,7 +236,7 @@ export class Session {
     })
   }
 
-  async turn({at, prompt, typed, note, midTurn, answer, model, effort, step, text}: TurnRequest): Promise<void> {
+  async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits}: TurnRequest): Promise<void> {
     const startsTurn = prompt !== undefined && midTurn !== true
     if (startsTurn || answer !== undefined) {
       this.endPermissions(at)
@@ -248,21 +250,28 @@ export class Session {
     const matched = prompt === undefined ? [] : this.pushedIn(prompt)
     if (prompt !== undefined && (midTurn !== true || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) this.turns.push({at: at ?? Date.now(), item: matched[0]?.item ?? null, ...(startsTurn ? {} : {added: true as const})})
     this.pushed.splice(0, this.pushed.length, ...this.pushed.filter(entry => !matched.includes(entry)))
-    const newModel = this.newer("model", model, at ?? Date.now())
+    const previous = this.description
+    const newModel = this.newer("model", answer !== undefined && previous.model?.replace(/\[1m\]$/i, "") === model ? previous.model : model, at ?? Date.now())
     const newEffort = this.newer("effort", effort, at ?? Date.now())
-    const described = (newModel !== undefined && newModel !== this.description.model) || (newEffort !== undefined && newEffort !== this.description.effort)
+    const switches = [
+      switched === true && newModel !== undefined && newModel !== previous.model ? `Model changed to ${newModel}` : undefined,
+      newEffort !== undefined && previous.effort !== undefined && newEffort !== previous.effort ? `Effort changed to ${newEffort}` : undefined,
+    ].flatMap(line => (line === undefined ? [] : [{text: small(line), priority: -1}]))
+    const described = (newModel !== undefined && newModel !== previous.model) || (newEffort !== undefined && newEffort !== previous.effort)
     if (described) {
-      this.description = {model: newModel ?? this.description.model, effort: newEffort ?? this.description.effort}
+      this.description = {model: newModel ?? previous.model, effort: newEffort ?? previous.effort}
       this.store(this.description)
     }
+    if (limits !== undefined && (at ?? Date.now()) >= this.limits.at) this.limits = {...limits, at: at ?? Date.now()}
     try {
+      if (switches.length > 0) await this.post(switches).catch(error => this.postRefusal(error, noteRefused, featureOff))
       if (text !== undefined) this.text(text, at ?? Date.now())
       if (step !== undefined) await this.step(step, at ?? Date.now())
       if (note !== undefined) await this.post([{text: note, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
       const typedPrompt = prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined
       if (typedPrompt) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser))
       if (startsTurn && (typedPrompt || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) this.openTurn(at ?? Date.now(), matched[0]?.item)
-      if (answer !== undefined) await this.answer(answer, quoted, at ?? Date.now(), (await streamed) === true, started)
+      if (answer !== undefined) await this.answer(answer, quoted, at ?? Date.now(), (await streamed) === true, started, usage)
     } finally {
       const {model: shown, effort: level} = this.description
       if (described) await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
@@ -365,8 +374,8 @@ export class Session {
     return starts.length === 0 ? undefined : Math.max(...starts)
   }
 
-  private async answer(text: string, quoted: T.ChatItem | undefined, at: number, streamed: boolean, started: number | undefined): Promise<void> {
-    const end = endLine(started === undefined ? undefined : at - started)
+  private async answer(text: string, quoted: T.ChatItem | undefined, at: number, streamed: boolean, started: number | undefined, usage: string | undefined): Promise<void> {
+    const end = endLine(usage ?? (started === undefined ? undefined : duration(at - started)), this.limits)
     if (text.trim() === "") {
       const opening = this.takeOpening(at)
       if (opening !== undefined) await this.finalize(opening.item, end, textLines)
@@ -883,8 +892,14 @@ function quoteOf(quoted: T.ChatItem | undefined, text: string): Parameters<typeo
   return quote !== undefined && fitsMessage({type: "text", text: [...text].slice(0, 1).join("")}, undefined, quote) ? quote : undefined
 }
 
-function endLine(ms: number | undefined): string {
-  return `!- ✅ Done${ms === undefined ? "" : ` in ${duration(ms)}`}!`
+function endLine(figures: string | undefined, {fiveHour, week}: Limits): string {
+  const now = Date.now() / 1_000
+  const current = (window: LimitWindow | undefined): LimitWindow | undefined => (window !== undefined && window.resetsAt > now ? window : undefined)
+  return small([`✅ Done${figures === undefined ? "" : ` in ${figures}`}`, ...limitParts({fiveHour: current(fiveHour), week: current(week)})].join(" · "))
+}
+
+function small(text: string): string {
+  return text.includes("!") ? text : `!- ${text}!`
 }
 
 function keepLast(ids: Set<string>, id: string): void {

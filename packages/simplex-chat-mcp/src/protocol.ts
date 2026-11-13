@@ -58,6 +58,19 @@ export interface TurnRequest {
   effort?: string
   step?: Step
   text?: TextBatch
+  usage?: string
+  switched?: boolean
+  limits?: Limits
+}
+
+export interface Limits {
+  fiveHour?: LimitWindow
+  week?: LimitWindow
+}
+
+export interface LimitWindow {
+  percent: number
+  resetsAt: number
 }
 
 export interface Step {

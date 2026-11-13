@@ -1,6 +1,7 @@
 import {randomBytes} from "crypto"
 import {chmodSync, existsSync, fchmodSync, mkdirSync, linkSync, openSync, readFileSync, readdirSync, renameSync, rmSync, statSync, truncateSync, unlinkSync, writeFileSync} from "fs"
 import {join} from "path"
+import {pathToFileURL} from "url"
 import {ExitError, logError} from "./log"
 import {serviceTokenFile} from "./paths"
 
@@ -153,6 +154,12 @@ export function takeHeldTitles(root: string): unknown[] {
   } finally {
     rmSync(file, {force: true})
   }
+}
+
+export function writeStatusLine(root: string, command: string): void {
+  const file = join(root, "status-line.js")
+  writePrivateFile(`${file}.tmp`, `import(${JSON.stringify(pathToFileURL(command).href)}).then(module => module.runStatusLine())\n`)
+  renameSync(`${file}.tmp`, file)
 }
 
 function sessionsFolder(root: string): string {

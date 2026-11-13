@@ -136,7 +136,7 @@ describe("turn hooks", () => {
     return {client, requests, ensured: () => ensured}
   }
 
-  it("pass the prompt, the final answer with the effort, and the new model to the session with the process and the time of the event, and stay quiet without a service", async () => {
+  it("pass the prompt, the final answer with the effort, and the new model as a switch to the session with the process and the time of the event, and stay quiet without a service", async () => {
     const errors = captureStderr()
     const {client, requests, ensured} = turnClient()
     expect(await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", prompt: "fix the build"}), {CLAUDE_PID: "4321"}, client)).toEqual({})
@@ -146,7 +146,7 @@ describe("turn hooks", () => {
     expect(requests).toEqual([
       {method: "POST", route: "/turn", body: {id, pid: 4321, at, prompt: "fix the build", typed: false}},
       {method: "POST", route: "/turn", body: {id, at, answer: "Fixed.", effort: "high"}},
-      {method: "POST", route: "/turn", body: {id, at, model: "claude-sonnet-5"}},
+      {method: "POST", route: "/turn", body: {id, at, model: "claude-sonnet-5", switched: true}},
     ])
     expect(ensured()).toBe(3)
     const stopped = {ensureService: async () => Promise.reject(Object.assign(new Error("connect ENOENT"), {code: "ENOENT"}))} as unknown as HookDeps["client"]
@@ -182,7 +182,54 @@ describe("turn hooks", () => {
         {method: "POST", route: "/turn", body: {id, at: 1, answer: "Never written."}},
         {method: "POST", route: "/turn", body: {id, at: 1, answer: "Lost."}},
         {method: "POST", route: "/turn", body: {id, at: 1, prompt: "fix the build", typed: false}},
-        {method: "POST", route: "/turn", body: {id, at: 1, model: "claude-opus-5"}},
+        {method: "POST", route: "/turn", body: {id, at: 1, model: "claude-opus-5", switched: true}},
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("pass the usage of a Stop hook's turn from its transcript: the time from the turn's prompt entry to the answer, the output tokens of its distinct responses and the context of the answer, also when the prompt entry is more than 1 MiB back, and none past 64 MiB, without a prompt ID or for a synthetic answer", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const line = (entry: object) => `${JSON.stringify(entry)}\n`
+      const time = (seconds: number) => new Date(Date.UTC(2026, 10, 13, 10) + seconds * 1_000).toISOString()
+      const prompt = (promptId: string, seconds: number, extra: object = {}) => line({type: "user", promptId, timestamp: time(seconds), ...extra, message: {role: "user", content: "Fix the build"}})
+      const toolResult = (seconds: number, content = "ok") => line({type: "user", promptId: "p1", timestamp: time(seconds), message: {role: "user", content: [{type: "tool_result", tool_use_id: "t1", content}]}})
+      const response = (messageId: string, seconds: number, output: number, content: object[], extra: object = {}, model = "claude-opus-5") =>
+        line({type: "assistant", timestamp: time(seconds), ...extra, message: {id: messageId, model, content, usage: {input_tokens: 2, cache_creation_input_tokens: 1_099, cache_read_input_tokens: 534_289, output_tokens: output}}})
+      const answer = (model = "claude-opus-5") => response("msg_3", 133.4, 580, [{type: "text", text: "Fixed."}], {}, model)
+      const turnLines = (between = "") =>
+        [
+          prompt("p0", -100),
+          response("msg_0", -90, 999, [{type: "text", text: "Earlier."}]),
+          prompt("p1", 0, {isMeta: true}),
+          prompt("p1", 0.1, {origin: {kind: "human"}}),
+          response("msg_1", 2, 1_000, [{type: "thinking", thinking: "The build."}]),
+          response("msg_1", 2.1, 1_000, [{type: "tool_use", id: "t1", name: "Bash", input: {}}]),
+          toolResult(5),
+          between,
+          response("msg_2", 6, 5_000, [{type: "text", text: "Subagent done."}], {isSidechain: true}),
+        ].join("")
+      const write = (name: string, text: string) => (writeFileSync(join(folder, name), text), join(folder, name))
+      const near = write("near.jsonl", `${turnLines()}${answer()}`)
+      const far = write("far.jsonl", `${turnLines(toolResult(5.5, "x".repeat(1_600_000)))}${answer()}`)
+      const beyond = write("beyond.jsonl", turnLines())
+      truncateSync(beyond, 65 * 1_048_576)
+      appendFileSync(beyond, `\n${answer()}`)
+      const synthetic = write("synthetic.jsonl", `${turnLines()}${answer("<synthetic>")}`)
+      const {client, requests} = turnClient()
+      const stop = (transcript: string, extra: object = {prompt_id: "p1"}) => turn(JSON.stringify({session_id: id, hook_event_name: "Stop", transcript_path: transcript, last_assistant_message: "Fixed.", ...extra}), {}, client, 0, 1, 10)
+      for (const transcript of [near, far, beyond]) await stop(transcript)
+      await stop(near, {})
+      await stop(synthetic)
+      const usage = "2 min 13 s · 1.5k output tokens · 535k tokens in context"
+      expect(requests.map(request => (request as {body: object}).body)).toEqual([
+        {id, at: 1, answer: "Fixed.", model: "claude-opus-5", usage},
+        {id, at: 1, answer: "Fixed.", model: "claude-opus-5", usage},
+        {id, at: 1, answer: "Fixed.", model: "claude-opus-5"},
+        {id, at: 1, answer: "Fixed.", model: "claude-opus-5"},
+        {id, at: 1, answer: "Fixed."},
       ])
     } finally {
       rmSync(folder, {recursive: true, force: true})

@@ -495,7 +495,7 @@ The plugin adds:
 | MCP server `simplex` | Runs `simplex-mcp session` for each session. It provides the tools, such as `mcp__plugin_simplex_simplex__connect`, and the channel. |
 | SessionStart hook | Checks the Node.js version and starts the service. It opens the session and its group, and shows the Main group link while the Main group has no owner. |
 | PreToolUse hook of the plugin's tools | Lets the plugin's tools run without a Claude Code prompt, because you approve them in the SimpleX app. |
-| UserPromptSubmit, Stop and PostModelSwitch hooks | Post your terminal prompts and Claude's answers in the session's group, and keep the model and effort in its description. They run in the background. |
+| UserPromptSubmit, Stop and PostModelSwitch hooks | Post your terminal prompts, Claude's answers and the usage of each turn in the session's group, keep the model and effort in its description, and post their switches. They run in the background. |
 | PreToolUse, PostToolUse and PostToolUseFailure hooks of every tool | Post a line for each step of Claude's work when it starts, and complete it when it ends. They run in the background. |
 
 The server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. The PreToolUse hook of the plugin's tools runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js` instead. The package, a 4 MB download, bundles its dependencies and has no lockfile, so Claude Code installs nothing after unpacking it. Node.js loads the modules from the plugin's folder, so a project's `node_modules` can't replace them. The first session start downloads the SimpleX core library. Claude Code waits up to 600 seconds for the SessionStart hook.
@@ -595,7 +595,7 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`. Th
   `User`'s messages are never prompts, commands or approvals.
 - When someone joins or their role changes, Claude posts their rights. For an admin the post is `Bob is an admin and can send prompts to Claude and the group's commands, and approve tool use. You can change role to observer to stop it: /'observer #G ID'`, with the group's and the member's IDs. For a moderator, member or author it is `NAME is a ROLE and can send prompts to Claude; the group's commands and approvals need the role admin or owner.`, followed by the same command. The posts for an owner and for an observer have no command: `NAME is an owner and can send prompts to Claude and the group's commands, and approve tool use.` and `NAME is an observer and can't send messages.` Claude posts nothing for `User`.
 - `/observer #G ID` makes that member an observer, and Claude replies `NAME is an observer and can't send messages.` Admins and owners can use it on a member whose role isn't above their own. Standing approvals that the observer gave, of all messages to a chat or all files from it, stop counting while they aren't an admin or owner, and count again if they become one. For a member who was invited and hasn't joined yet, Claude replies `No member ID in this group.` That member joins with the role of the invitation, which can be changed after the join.
-- The group's description is `The Claude Code session N. Members send it prompts; admins and owners also send the group's commands and approve tool use.`, set when the group is created. Its short description shows the model and effort, see [Model and effort](#model-and-effort).
+- The group's description is `The Claude Code session N. Members send it prompts; admins and owners also send the group's commands and approve tool use.`, set when the group is created. Its short description shows the model and effort, see [Model, effort and usage](#model-effort-and-usage).
 - The group has the commands of the agent control chat of `serve` (see [What the owner sees](#what-the-owner-sees)), without a session prefix, such as `/approve 7`, `/receive @3 9` and `/leave #2`. It also has `/give CHAT N` and `/observer #G ID`.
 - A chat belongs to the session that connected it, even when the other side accepts after `connect` returned. The tools of other sessions don't show it. Their `connect` to its address returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` For example, `/give @3 2` in the group of the session that owns chat @3 gives it to session 2.
 - `/list` and `/revoke` also work in the group of a closed session. A `/revoke` sent while the service is stopped applies when the service starts again.
@@ -618,7 +618,7 @@ With the channel, a message from a member of a session's group, other than `User
 - When a prompt that a person typed, or a prompt from the group, starts a turn, Claude posts an empty live message at once: the apps show it under the LIVE header, with typing dots. It replies to the prompt when the prompt came from the group. The turn's first post fills it: the first line of Claude's text, a step, or the answer. A prompt that Claude Code adds to the running turn, a `/` command and Claude Code's own prompts get no such message.
 - Claude's text appears live as Claude writes it, also its remarks between steps, which the terminal shows. Each text of Claude, from its first line, is a live message that grows by whole lines, updated at most every 3 seconds, and completed when Claude ends it, without an edited mark. A text longer than one message continues in a new live message.
 - Claude's final answer of a turn is its last text. When Claude Code streams no text, as in versions without the MessageDisplay hook, Claude posts the answer at the end of the turn, in the turn's empty live message when no other post filled it. When the turn's prompt came from the group, the answer replies to it, even when the next prompt arrives while Claude answers. Claude Code can add a prompt that arrives during a turn to that turn. Then an answer posted as a new message replies to the last message from the group added to the turn.
-- After a non-blank answer, Claude posts one line in small print, `✅ Done in DURATION`, with the time from the prompt to the end of the turn, such as `✅ Done in 2 min 14 s`. After a blank answer, the line fills the turn's empty live message instead, without an alert. A turn that ends without an answer, as after an interruption or an error, gets no line: its live texts are completed as they are, and its empty live message gets `⏹️ Stopped` at the end of a later turn, or when the session ends.
+- After a non-blank answer, Claude posts one line in small print with the turn's usage, such as `✅ Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context`, also after the text that replaces a refused answer, see [Model, effort and usage](#model-effort-and-usage). After a blank answer, the line fills the turn's empty live message instead, without an alert. A turn that ends without an answer, as after an interruption or an error, gets no line: its live texts are completed as they are, and its empty live message gets `⏹️ Stopped` at the end of a later turn, or when the session ends.
 - Claude's replies to a prompt, its answer included, are posted without the quote when the prompt was deleted or the quote makes the message too large. An answer is also posted without the quote when the quote leaves no room for its first character.
 - While the plugin is enabled, Claude Code shows Claude's text in the terminal by whole lines, after the plugin's MessageDisplay hook passes each batch of lines to the service, about 0.1 s later.
 - `User` posts only the prompts a person typed, also one typed while Claude works. `User` skips commands such as `/compact`, empty prompts such as one with images only, and prompts made only of the plugin's `<channel source="plugin:simplex:simplex" ...>` tags. `User`'s posts are never commands of the group, even a part that starts with `/`.
@@ -641,7 +641,7 @@ With the channel, a message from a member of a session's group, other than `User
   - another tool: `🔧 TOOL`, and `: ` with the first of its description, query, URL, file path, path, pattern and command that is not blank.
 
   The line is a live message while the step runs. When the step ends, Claude completes it with ✅, with ❌ for a failure or ⏹️ for an interruption, and with the step's duration, such as `💻 Run the tests ✅ 2.0 s`. Claude Code reports the end of a command or an agent run in the background when it is started, so its line is completed with `(in background)`, such as `💻 Run the tests (in background)`; its completion is posted later as the line of its notification. The completed line has no edited mark. A step refused at approval has no end; its line is completed without an outcome when the turn ends, when a prompt starts the next turn, or when the session ends. A line still live 23 hours after its start is completed without an outcome, because SimpleX allows edits of a message for 24 hours; the step's later end is posted as a new line. The text of a step is cut at 200 characters. Tool uses of subagents and of this plugin get no line.
-- Claude marks the turn's empty live message, its texts and answers, the lines of steps and the lines of Claude Code's own prompts as silent, and the line after the answer as important, so a turn alerts once, at its end. A SimpleX app that supports silent messages shows them without an alert; other apps alert for them as for any message.
+- Claude marks the turn's empty live message, its texts and answers, the lines of steps, the lines of Claude Code's own prompts and the lines of model and effort switches as silent, and the line after the answer as important, so a turn alerts once, at its end. A SimpleX app that supports silent messages shows them without an alert; other apps alert for them as for any message.
 - A text too long for one message is posted as several messages, each as long as a message can be, measured as for `send`. The first part of an answer carries the quote. A part without a quote holds up to 14,962 Latin, 7,481 Cyrillic or 4,987 CJK characters. A prompt or an answer over 250,000 characters is cut there and ends with `…`.
 - The `reply` tool sends a file to the group at once, without approval, with its text as the caption, under the file rules of `send`. It returns the file's message as `item`. A caption too long for a message with the file's preview is refused with `text: too long for a message with this TYPE; shorten it.`
 
@@ -674,9 +674,43 @@ Claude: I want to use `Bash`: `List files`
 
 `/approve 5` allows the tool use, and `/reject 5` denies it. The dialog in the terminal stays open, and the first answer, in the terminal or in the group, applies. A card that is still pending gets `Ended.` when its turn ends, when a prompt starts the next turn, or when the session ends. A prompt that Claude Code adds to the running turn leaves the card pending. The preview of the tool's input is shortened to fit the card.
 
-### Model and effort
+### Model, effort and usage
 
-The short description of a session's group shows `MODEL · effort LEVEL`. The model is updated at the session start when Claude Code passes it, at each model change, and at the end of each turn from the model of the answer in the session's transcript. So the model shows from the first answer, also in a resumed session. The effort level is updated at the end of each turn. Changes made in the terminal, or from the Claude app by Remote Control, show the same way.
+The short description of a session's group shows `MODEL · effort LEVEL`. The model is updated at the session start when Claude Code passes it, at each model change, and at the end of each turn from the model of the answer in the session's transcript. So the model shows from the first answer, also in a resumed session. An answer's model that is the shown model without `[1m]` keeps the shown model, because the transcript names the 1M context variant without that suffix. The effort level is updated at the end of each turn, and with the [status line](#status-line) when it changes. Changes made in the terminal, or from the Claude app by Remote Control, show the same way.
+
+When the model switches, Claude posts `Model changed to MODEL` in small print. When a known effort level changes, Claude posts `Effort changed to LEVEL`. The first model and the first effort level of a session get no line. Both lines are silent.
+
+The line after each answer shows the turn's usage, from the session's transcript:
+
+```
+✅ Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context · 5 h: 34% · week: 61%
+```
+
+- The time runs from the turn's first entry in the transcript to the answer.
+- The output tokens are those of the turn's responses, thinking included, without subagents.
+- The tokens in context are the input, cache writes and cache reads of the turn's last response.
+- `5 h` and `week` are the plan's 5-hour and weekly usage, with the [status line](#status-line) only. A window whose reset time has passed is left out.
+- Numbers are rounded down: `861`, `16.0k`, `673k`, `1.2M`.
+- When the transcript has no usage of the turn, as for a turn over 64 MB or a Claude Code version without prompt IDs, the line shows the time from the turn's prompt to its end, such as `✅ Done in 2 min 14 s`, or only `✅ Done` when the start of the turn is not known.
+
+#### Status line
+
+Claude Code passes the plan's usage only to the status line command of your settings, and a plugin can't set that command. To add the plan's usage to the line after each answer, set the plugin's status line command in `~/.claude/settings.json`:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "node \"${SIMPLEX_MCP_HOME:-$HOME/.simplex-mcp}/status-line.js\""
+  }
+}
+```
+
+- The shell expands the command to the plugin's data folder of each machine or container, so one setting serves all of them when they share `~/.claude`.
+- The service writes `status-line.js` there at each start, pointing to its own version, so the setting stays the same across updates.
+- Claude Code shows the status line in the terminal, such as `Opus 5.5 · effort xhigh · 67% context · 5 h: 34% · week: 61%`: the model, the effort level, the share of the context window in use and the plan's usage, each when Claude Code passes it.
+- The command also sends the effort level and the plan's usage to the service, so an effort change shows at once. It waits at most 1 second for the service, and starts none.
+- The setting replaces a status line command of your own. On Windows, it needs Git Bash as the shell of commands.
 
 ### Options
 
@@ -703,6 +737,7 @@ In mode `host`, a session asks in its group to run in that mode: `I want to run 
 | `service.sock` | The service's Unix socket. On Windows it is the named pipe `\\.\pipe\simplex-mcp-<hash>`. For a path over 103 bytes, it is `simplex-mcp-<hash>.sock` in the system temporary folder. |
 | `service.log` | The service's log, emptied when it is over 10 MB, at a service start and every hour. |
 | `titles.json` | The titles of new sessions whose session server had not registered when the service stopped. The next start reads and removes it. |
+| `status-line.js` | The status line command of the running service's version, written at each service start, see [Status line](#status-line). |
 | `_hub/` | The databases of the profile `Claude`: the Main group, the session groups and the chats with peers. |
 | `_user/` | The databases of the profile `User`. |
 | `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, a rejected mode `host`, model, effort level and other session IDs. `files/` holds the files of its chats and of its group. |

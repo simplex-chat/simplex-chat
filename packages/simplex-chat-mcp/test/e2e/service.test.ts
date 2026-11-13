@@ -14,6 +14,7 @@ import {resetOwners} from "../../src/owner"
 import {AttachLine, OwnerState, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
 import {qrCodeText} from "../../src/qr"
 import {Service, productionDeps} from "../../src/service"
+import {statusLine} from "../../src/status-line"
 import {version} from "../../src/version"
 import {descendants} from "../unit/fixtures"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
@@ -351,7 +352,7 @@ test("while SimpleX links are off in a session's group, the connect card of a bo
   await sendNotice
 }, 600_000)
 
-test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, and the answer as Claude in the session's group, in the opening message of its turn, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the opening message of its turn quotes it; an owner's reply to the answer reaches the session after the quote line, with the answer's ID and sender; Claude posts the line of a tool use live at its start and finalizes it at its end, not edited; the display hook streams Claude's text into the opening message, live, finalized not edited, and the turn ends with one line in small print", async () => {
+test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, and the answer as Claude in the session's group, in the opening message of its turn, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the opening message of its turn quotes it; an owner's reply to the answer reaches the session after the quote line, with the answer's ID and sender; Claude posts the line of a tool use live at its start and finalizes it at its end, not edited; the display hook streams Claude's text into the opening message, live, finalized not edited, and the turn ends with one line in small print, with the turn's usage from the transcript and the plan's usage of the status line command", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -369,18 +370,21 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   const hook = (input: object) => turn(JSON.stringify({session_id: five, ...input}), {}, client, undefined, ++hookStart)
 
   const transcript = join(dir, "mirror", "transcript.jsonl")
-  const userEntry = (promptId: string, content: string, kind: string) => `${JSON.stringify({type: "user", promptId, origin: {kind}, message: {role: "user", content}})}\n`
+  const userEntry = (promptId: string, content: string, kind: string, extra: object = {}) => `${JSON.stringify({type: "user", promptId, origin: {kind}, ...extra, message: {role: "user", content}})}\n`
   const typed = received(alice.chat, message("Fix the build", "User"))
   const submitted = hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p1", prompt: "Fix the build"})
   await new Promise(resolve => setTimeout(resolve, 1_000))
-  writeFileSync(transcript, userEntry("p1", "Fix the build", "human"))
+  writeFileSync(transcript, userEntry("p1", "Fix the build", "human", {timestamp: "2026-11-13T10:00:00.000Z"}))
   expect(await submitted).toEqual({})
   await typed
   const fixed = updated(alice.chat, message("Fixed.", "Claude"))
-  appendFileSync(transcript, `${JSON.stringify({type: "assistant", message: {model: "claude-opus-5", content: [{type: "text", text: "Fixed."}]}})}\n`)
+  const fixedEnd = received(alice.chat, message("!- ✅ Done in 2.0 s · 861 output tokens · 35.6k tokens in context!", "Claude"))
+  const usage = {input_tokens: 3, cache_creation_input_tokens: 600, cache_read_input_tokens: 35_000, output_tokens: 861}
+  appendFileSync(transcript, `${JSON.stringify({type: "assistant", timestamp: "2026-11-13T10:00:02.000Z", message: {id: "msg_1", model: "claude-opus-5", content: [{type: "text", text: "Fixed."}], usage}})}\n`)
   const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupId && toGroup.groupProfile.shortDescr === "claude-opus-5", 60_000)
-  await hook({hook_event_name: "Stop", transcript_path: transcript, last_assistant_message: "Fixed."})
+  await hook({hook_event_name: "Stop", transcript_path: transcript, prompt_id: "p1", last_assistant_message: "Fixed."})
   await fixed
+  await fixedEnd
   expect((await described)?.toGroup.groupProfile.shortDescr).toBe("claude-opus-5")
   const notRunning = received(alice.chat, inGroup(groupId, textStarts("Session 1 is not running.")))
   const [early] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Are you there?")
@@ -445,7 +449,9 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   expect(await display(1, true, "All green.")).toBe("{}\n")
   const {meta: summary} = (await summarized).chatItem
   expect([summary.itemLive, summary.itemEdited]).toEqual([false, false])
-  const endLine = received(alice.chat, inGroup(groupId, textStarts("!- ✅ Done in ")))
+  const resetsAt = Date.now() / 1_000 + 3_600
+  await statusLine(JSON.stringify({session_id: five, model: {display_name: "Opus 5"}, rate_limits: {five_hour: {used_percentage: 34.7, resets_at: resetsAt}, seven_day: {used_percentage: 61, resets_at: resetsAt}}}), () => undefined, {SIMPLEX_MCP_HOME: root})
+  const endLine = received(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText.startsWith("!- ✅ Done in ") && chatItem.meta.itemText.endsWith(" · 5 h: 34% · week: 61%!")))
   await turn(JSON.stringify({session_id: five, hook_event_name: "Stop", last_assistant_message: "Summary:\nAll green."}), {}, client, undefined, Date.now())
   await endLine
   const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 50)
