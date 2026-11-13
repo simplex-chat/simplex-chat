@@ -266,7 +266,7 @@ private val fileNameControlChar = Regex("[\\p{Cc}\\u2028-\\u202E\\u2066-\\u2069]
 @Composable
 private fun FileNameText(fileName: String) {
   val shownName = fileName.replace(fileNameControlChar) { unicodeMarker(it.value) }
-  val name = shownName.substringBeforeLast('.')
+  val name = shownName.trimEnd(' ', '.').substringBeforeLast('.')
   val defaultDirection = if (LocalLayoutDirection.current == LayoutDirection.Ltr) Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT else Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT
   val ltr = Bidi(shownName, defaultDirection).baseIsLeftToRight()
   CompositionLocalProvider(
