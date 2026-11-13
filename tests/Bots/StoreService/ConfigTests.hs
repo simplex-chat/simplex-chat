@@ -784,7 +784,7 @@ testNamesDefaults = do
   (cServiceKey == expectedKey) `shouldBe` True
   cConfirmations `shouldBe` 3
   cGasLimitCap `shouldBe` 8000000
-  cMaxFeePerGas `shouldBe` 100000000000
+  cMaxFeePerGas `shouldBe` 5000000000
 
 testNamesWrittenOut :: IO ()
 testNamesWrittenOut = do

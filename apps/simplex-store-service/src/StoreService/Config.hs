@@ -315,9 +315,9 @@ localChainId = 31337
 sepoliaChainId :: Word64
 sepoliaChainId = 11155111
 
--- | 100 gwei.
+-- | 5 gwei.
 defaultMaxFeePerGas :: Word64
-defaultMaxFeePerGas = 100000000000
+defaultMaxFeePerGas = 5000000000
 
 defaultTermStart :: String
 defaultTermStart = "2027-01-01T00:00:00Z"

@@ -1161,39 +1161,42 @@ before the terms became links accepted for every name. The acceptance's figures 
 community names' acceptance then, whose work its two functions repeat; a plain name's register now also
 reads, clears and logs its acceptance, as a community name's did:
 
-| Transaction | Gas limit | Gas used | Limit × 100 gwei |
+| Transaction | Gas limit | Gas used | At most: limit × 5 gwei, within 0.01 ETH |
 |---|---|---|---|
-| `commit` | 58,983 | 53,521 | 0.0059 ETH |
-| `commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`, the acceptance | 95,795 | 94,791 | 0.0096 ETH |
-| `registerWithCredit`, no links | 568,116 | 504,408 | 0.0568 ETH |
-| `registerWithCredit`, one link | 3,673,412 | 3,489,551 | 0.3673 ETH |
-| `registerWithCredit`, two links | 6,791,417 | 6,467,815 | 0.6791 ETH |
-| `setTextWithSig`, a new link | 3,026,449 | 3,026,449 | 0.3026 ETH |
-| `setTextWithSig`, a link replacing one | 462,289 | 462,289 | 0.0462 ETH |
-| `setTextWithSig`, a link removed | 698,644 | 558,916 | 0.0699 ETH |
-| `clearRecordsWithSig` | 80,312 | 80,312 | 0.0080 ETH |
-| `multicall`, two new links | 6,054,042 | 6,008,868 | 0.6054 ETH |
+| `commit` | 58,983 | 53,521 | 0.0003 ETH |
+| `commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`, the acceptance | 95,795 | 94,791 | 0.0005 ETH |
+| `registerWithCredit`, no links | 568,116 | 504,408 | 0.0028 ETH |
+| `registerWithCredit`, one link | 3,673,412 | 3,489,551 | 0.01 ETH |
+| `registerWithCredit`, two links | 6,791,417 | 6,467,815 | 0.01 ETH |
+| `setTextWithSig`, a new link | 3,026,449 | 3,026,449 | 0.01 ETH |
+| `setTextWithSig`, a link replacing one | 462,289 | 462,289 | 0.0023 ETH |
+| `setTextWithSig`, a link removed | 698,644 | 558,916 | 0.0035 ETH |
+| `clearRecordsWithSig` | 80,312 | 80,312 | 0.0004 ETH |
+| `multicall`, two new links | 6,054,042 | 6,008,868 | 0.01 ETH |
 
 - The service sets each transaction's gas limit a fifth above its estimate, within `gas_limit_cap`,
-  and its max fee to at most `max_fee_per_gas` (default 100 gwei). The node accepts a transaction only
-  while the balance covers its limit × max fee, so each needs held about 1.2 × the last column. What
-  it is charged is gas used × the block's base fee plus tip, usually far less.
-- An order is one commit, one acceptance relay and one register: 0.6946 ETH at the cap with two links, 0.0723 ETH with
-  none. The expected orders × 0.6946 ETH, plus 0.6054 ETH per expected Save of both links (0.3026 ETH
-  for one), pays for all of them even at the cap. A name's link edits are at most
-  `record_edits_per_year` (3) a year, see [Link edits](#link-edits). The figures scale with
-  `max_fee_per_gas` until a transaction's gas limit × `max_fee_per_gas` passes 1 ETH; above that its
-  max fee stays capped, as the last point says.
+  and its max fee to at most `max_fee_per_gas` (default 5 gwei) and at most 0.01 ETH divided by its
+  gas limit, so no transaction can cost more than 0.01 ETH. The node accepts a transaction only while
+  the balance covers its limit × max fee, so each needs held about the last column. What it is
+  charged is gas used × the block's base fee plus tip, usually far less: at a base fee of 0.1 gwei, a
+  register with two links costs about 0.00065 ETH and its tip.
+- An order is one commit, one acceptance relay and one register: 0.0108 ETH at the cap with two
+  links, 0.0036 ETH with none. The expected orders × 0.0108 ETH, plus 0.01 ETH per expected Save of
+  one or both links, pays for all of them even at the cap. A name's link edits are at most
+  `record_edits_per_year` (3) a year, see [Link edits](#link-edits). Below 0.01 ETH the figures scale
+  with `max_fee_per_gas`.
 - A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
   transactions with links of 4096 bytes, and 28,082 less with short links.
 - `gas_limit_cap` (default 8,000,000) must be at least 6,791,417: a transaction whose estimate is
   above it is not sent.
-- Each transaction's max fee is also at most 1 ETH divided by its gas limit, since reth and geth
-  refuse a transaction whose gas limit × max fee is above `--rpc.txfeecap`, 1 ETH by default, and
-  every later transaction of the key would wait behind it. The defaults stay under the bound, at
-  0.8 ETH for 8,000,000 gas. A transaction it caps logs `[NOTE …] names sender: nonce <n> at max
-  fee <wei>, capped so that its gas limit <gas> costs at most 1 ETH`, and a replacement it caps logs
-  `[NOTE …] names sender: replacing nonce <n> at max fee <wei>, capped so that …`.
+- The 0.01 ETH bound applies above 2,000,000 gas at 5 gwei: registers and edits with long links. It
+  also keeps every transaction under reth's and geth's `--rpc.txfeecap`, 1 ETH by default, above which
+  the node refuses a transaction and every later one of the key waits behind it. A transaction it
+  caps logs `[NOTE …] names sender: nonce <n> at max fee <wei>, capped so that its gas limit <gas>
+  costs at most 0.01 ETH`, and a replacement it caps logs `[NOTE …] names sender: replacing nonce
+  <n> at max fee <wei>, capped so that …`.
+- When the base fee is above the cap, orders wait until it falls. Mainnet's base fee is rarely above
+  1 gwei, so 5 gwei waits out only a spike.
 
 #### Check the balance and transactions in flight
 
@@ -1238,7 +1241,7 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   once mined, as two registers sent while the allowance covers one can, fails its order with no
   such line; the next order's dry run logs it, and the buyer can Try again.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above the fee cap <cap>;
-  the transaction waits` when fees are above the fee cap, `max_fee_per_gas` or 1 ETH over the gas
+  the transaction waits` when fees are above the fee cap, `max_fee_per_gas` or 0.01 ETH over the gas
   limit. Nothing is signed until they fall.
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over the fee cap
   <cap>` when a transaction stuck in the pool cannot be bumped within the fee cap. A register waiting

@@ -53,7 +53,7 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "logs a send the node keeps refusing once per error, an underfunded key as an error, in anvil's capitalized form too" $ testRefusedSendLogged g
   it "refuses a transaction whose block needs more than the fee cap, saving nothing, and signs at most the cap" $ testFeeCapSubmit g
   it "clamps a replacement at the fee cap, and keeps rebroadcasting once a replacement would pass it" $ testFeeCapReplace g
-  it "caps the max fee of a transaction and of its replacement so that its gas limit costs at most 1 ETH" $ testTxFeeBound g
+  it "caps the max fee of a transaction and of its replacement so that its gas limit costs at most 0.01 ETH" $ testTxFeeBound g
 
 data Setup = Setup
   { node :: FakeEthNode,
@@ -307,22 +307,24 @@ testRefusedSendLogged g = withSetup g $ \s@Setup {node} -> do
   length <$> sentTransactions node `shouldReturn` 1
 
 testFeeCapSubmit :: TVar ChaChaDRG -> IO ()
-testFeeCapSubmit g = withSetup g $ \s@Setup {node, store} -> do
+testFeeCapSubmit g = withCapSetup cap g $ \s@Setup {node, store} -> do
   sender <- start s
-  setFees node fakeTip (fakeMaxFeePerGas - fakeTip + 1)
-  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (fakeMaxFeePerGas + 1)
+  setFees node fakeTip (cap - fakeTip + 1)
+  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (toInteger cap + 1)
   -- twice the base fee is past Word64, which would wrap to a near-zero fee
   let hugeBaseFee = maxBound `div` 2 + 1 :: Word64
   setFees node fakeTip hugeBaseFee
   submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (toInteger hugeBaseFee + fakeTip)
   withTransaction store pendingTransactions `shouldReturn` []
   sentTransactions node `shouldReturn` []
-  let baseFee = fakeMaxFeePerGas `div` 2
+  let baseFee = cap `div` 2
   setFees node fakeTip baseFee
   Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
   ptNonce p `shouldBe` 0
   [raw] <- sentTransactions node
-  (\TxRequest {trMaxPriorityFeePerGas, trMaxFeePerGas} -> (trMaxPriorityFeePerGas, trMaxFeePerGas)) <$> decodeSignedTx raw `shouldBe` Right (fakeTip, fakeMaxFeePerGas)
+  (\TxRequest {trMaxPriorityFeePerGas, trMaxFeePerGas} -> (trMaxPriorityFeePerGas, trMaxFeePerGas)) <$> decodeSignedTx raw `shouldBe` Right (fakeTip, cap)
+  where
+    cap = 20000000000 :: Word64
 
 testFeeCapReplace :: TVar ChaChaDRG -> IO ()
 testFeeCapReplace g = withCapSetup cap g $ \s@Setup {node} -> do
@@ -350,21 +352,23 @@ testFeeCapReplace g = withCapSetup cap g $ \s@Setup {node} -> do
     cap = 2 * fakeBaseFee + fakeTip + 1000000000
 
 testTxFeeBound :: TVar ChaChaDRG -> IO ()
-testTxFeeBound g = withCapSetup 10000000000000 g $ \s@Setup {node} -> do
+testTxFeeBound g = withSetup g $ \s@Setup {node} -> do
   let gasLimit = fakeGas + fakeGas `div` 5 :: Word64
-      bound = fromInteger $ 1000000000000000000 `div` toInteger gasLimit :: Word64
+      bound = fromInteger $ maxTxFeeWei `div` toInteger gasLimit :: Word64
+      firstBaseFee = bound `div` 4
+  bound `shouldSatisfy` (< fakeMaxFeePerGas)
   sender <- start s
-  setFees node fakeTip 5000000000000
-  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (5000000000000 + fakeTip)
-  setFees node fakeTip 1000000000000
+  setFees node fakeTip bound
+  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (toInteger bound + fakeTip)
+  setFees node fakeTip firstBaseFee
   Right _ <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
   [firstRaw] <- sentTransactions node
   Right first <- pure $ decodeSignedTx firstRaw
-  (trGasLimit first, trMaxFeePerGas first) `shouldBe` (gasLimit, 2 * 1000000000000 + fakeTip)
-  setFees node fakeTip 3000000000000
+  (trGasLimit first, trMaxFeePerGas first) `shouldBe` (gasLimit, 2 * firstBaseFee + fakeTip)
+  setFees node fakeTip (3 * firstBaseFee)
   passTime s replaceAfter
   logged <- capturingStderr $ followTransactions sender
-  logged `shouldSatisfy` T.isInfixOf ("names sender: replacing nonce 0 at max fee " <> tshow bound <> ", capped so that its gas limit " <> tshow gasLimit <> " costs at most 1 ETH")
+  logged `shouldSatisfy` T.isInfixOf ("names sender: replacing nonce 0 at max fee " <> tshow bound <> ", capped so that its gas limit " <> tshow gasLimit <> " costs at most 0.01 ETH")
   [_, bumpedRaw] <- sentTransactions node
   decodeSignedTx bumpedRaw `shouldBe` Right first {trMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, trMaxFeePerGas = bound}
   passTime s replaceAfter
@@ -373,7 +377,7 @@ testTxFeeBound g = withCapSetup 10000000000000 g $ \s@Setup {node} -> do
   Right _ <- submitTransaction sender (TxCommit r2) fakeController (commit 2)
   [_, _, cappedRaw] <- sentTransactions node
   (\TxRequest {trGasLimit, trMaxFeePerGas} -> (trGasLimit, trMaxFeePerGas)) <$> decodeSignedTx cappedRaw `shouldBe` Right (gasLimit, bound)
-  toInteger gasLimit * toInteger bound `shouldSatisfy` (<= 1000000000000000000)
+  toInteger gasLimit * toInteger bound `shouldSatisfy` (<= maxTxFeeWei)
 
 -- fixtures
 
