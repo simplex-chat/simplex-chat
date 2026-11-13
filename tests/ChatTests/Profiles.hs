@@ -178,6 +178,7 @@ chatProfileTests = do
     it "should connect via contact address" testShortLinkContactAddress
     it "should share contact address via chat" testShareAddressViaChat
     it "should join group" testShortLinkJoinGroup
+    it "should validate link type" testShortLinkValidateType
   describe "short links with attached data" shortLinkTests
   describe "client services" $ do
     it "should create user as a service, disable and re-enable" testClientService
@@ -4213,6 +4214,29 @@ testShortLinkJoinGroup =
             cc <## "#team: joining the group..."
             cc <## "#team: you joined the group"
         ]
+
+testShortLinkValidateType :: HasCallStack => TestParams -> IO ()
+testShortLinkValidateType =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad"
+    (addressLink, _) <- getContactLinks alice True
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/create link #team"
+    (groupLink, _) <- getGroupLinks alice "team" GRMember True
+    forM_ [setType "/g#" "/a#" groupLink, setType "/a#" "/g#" addressLink, setType "/a#" "/c#" addressLink] $ \link -> do
+      bob ##> ("/_connect plan 1 " <> link)
+      invalidLink bob
+      bob ##> ("/c " <> link)
+      invalidLink bob
+  where
+    setType from to = T.unpack . T.replace from to . T.pack
+    invalidLink cc = do
+      cc <## ""
+      cc <## "Connection link is invalid, possibly it was created in a previous version."
+      cc <## "Please ask your contact to check /version and update if needed."
+      cc <##. "To update run: "
 
 testShortLinkInvitationPrepareContact :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationPrepareContact = testChat2 aliceProfile bobProfile test
