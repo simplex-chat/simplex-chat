@@ -360,7 +360,7 @@ Real session, `TESTING.md`, a new check 6: react 👍 to Claude's answer in the 
 - `ROADMAP.md`: the line `React to a message, and Claude sees your reaction.` is removed.
 - `spec/api.md`: 4.3, the rules of the session group, and the post `Session N is not running.` for a reaction; 4.5, the content and the meta of a reaction and the instructions; 4.6, the prompt line of `/attach` for a reaction.
 - `spec/architecture.md`: 8.2, the rows of `hub.ts`, `session.ts` and `protocol.ts`; 8.3, the pushed prompts with reactions; 8.4, the event dispatch of `chatItemReaction`; 8.6, the prompt line and the mechanics.
-- `spec/flows.md`: a new flow 32, "A reaction in the session group", with the table of contents. Flow 31 is the one of #8157.
+- `spec/flows.md`: a new flow 33, "A reaction in the session group", with the table of contents. Flows 31 and 32 are those of #8157 and #8168.
 - `TESTING.md`: the automated tests and the real-session check 6; later checks are renumbered.
 
 ## Conflict areas with the other items

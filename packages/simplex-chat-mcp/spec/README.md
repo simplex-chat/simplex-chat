@@ -207,7 +207,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Document | Contents |
 |---|---|
 | [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits. Section 8 covers the plugin. |
-| [Flows](flows.md) | sequence diagrams of the main flows with source locations. Flows 17-32 cover the plugin. |
+| [Flows](flows.md) | sequence diagrams of the main flows with source locations. Flows 17-33 cover the plugin. |
 | [API](api.md) | the six tools, the control chat commands, replies and cards, the CLI. Section 4 covers the plugin's tools, groups, channel, socket protocol, commands and files. |
 
 ---
@@ -216,8 +216,8 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 
 | Component | File | Key symbol | Line |
 |---|---|---|---|
-| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L218) | `main` | [218](../src/cli.ts#L218) |
-| Argument parser | [`src/cli.ts`](../src/cli.ts#L63) | `parseCommand` | [63](../src/cli.ts#L63) |
+| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L216) | `main` | [216](../src/cli.ts#L216) |
+| Argument parser | [`src/cli.ts`](../src/cli.ts#L61) | `parseCommand` | [61](../src/cli.ts#L61) |
 | Server start | [`src/serve.ts`](../src/serve.ts#L64) | `startServer` | [64](../src/serve.ts#L64) |
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L87) | `startAgent` | [87](../src/serve.ts#L87) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
@@ -232,13 +232,13 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Session server | [`src/session.ts`](../src/session.ts#L40) | `startSession` | [40](../src/session.ts#L40) |
 | Session to service link | [`src/session.ts`](../src/session.ts#L69) | `ServiceLink` | [69](../src/session.ts#L69) |
 | Service start by a client | [`src/client.ts`](../src/client.ts#L40) | `ServiceClient.ensureService` | [40](../src/client.ts#L40) |
-| Service process | [`src/service.ts`](../src/service.ts#L430) | `runService` | [430](../src/service.ts#L430) |
-| Service routes | [`src/service.ts`](../src/service.ts#L137) | `Service.routes` | [137](../src/service.ts#L137) |
-| Hub | [`src/hub.ts`](../src/hub.ts#L394) | `Hub.open` | [394](../src/hub.ts#L394) |
-| Session and its group | [`src/hub.ts`](../src/hub.ts#L45) | `Session` | [45](../src/hub.ts#L45) |
+| Service process | [`src/service.ts`](../src/service.ts#L432) | `runService` | [432](../src/service.ts#L432) |
+| Service routes | [`src/service.ts`](../src/service.ts#L138) | `Service.routes` | [138](../src/service.ts#L138) |
+| Hub | [`src/hub.ts`](../src/hub.ts#L482) | `Hub.open` | [482](../src/hub.ts#L482) |
+| Session and its group | [`src/hub.ts`](../src/hub.ts#L61) | `Session` | [61](../src/hub.ts#L61) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L26) | `MainGroup` | [26](../src/main-group.ts#L26) |
 | Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
-| Hooks | [`src/hook.ts`](../src/hook.ts#L81) | `sessionStart`, `turn` | [81](../src/hook.ts#L81), [114](../src/hook.ts#L114) |
+| Hooks | [`src/hook.ts`](../src/hook.ts#L92) | `sessionStart`, `turn` | [92](../src/hook.ts#L92), [125](../src/hook.ts#L125) |
 | `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts#L22) | `showLink`, `resetOwners` | [22](../src/owner.ts#L22), [28](../src/owner.ts#L28) |
 | SimpleX core | [`src/core.ts`](../src/core.ts#L19) | `openCore` | [19](../src/core.ts#L19) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |
