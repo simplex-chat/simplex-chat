@@ -14,7 +14,7 @@ module ChatTests.Groups where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKeys)
+import ChatTests.Profiles (addTestBadge, futureDate, invalidLink, issueTestBadge, setLinkType, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -322,6 +322,7 @@ chatGroupTests = do
       it "should keep channel profile from link data when joining" testChannelJoinKeepsLinkProfile
       it "should apply channel profile from link data when joining" testChannelJoinAppliesLinkProfile
       it "should check entity ID of channel link on refresh" testChannelLinkDataOtherChannel
+      it "should validate type of channel link" testChannelLinkAsOtherTypes
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
@@ -10820,6 +10821,21 @@ testChannelLinkDataOtherChannel ps =
         cath <## "Connection link is invalid, possibly it was created in a previous version."
         cath <## "Please ask your contact to check /version and update if needed."
         cath <## "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
+
+testChannelLinkAsOtherTypes :: HasCallStack => TestParams -> IO ()
+testChannelLinkAsOtherTypes ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, _) <- prepareChannel1Relay "team" alice bob
+        cath ##> ("/_connect plan 1 " <> shortLink)
+        cath <## "group link: ok to connect via relays"
+        _ <- getTermLine cath
+        forM_ ["/g#", "/a#"] $ \linkType -> do
+          cath ##> ("/_connect plan 1 " <> setLinkType "/c#" linkType shortLink)
+          invalidLink cath
+        cath ##> ("/relay test " <> setLinkType "/c#" "/r#" shortLink)
+        cath <## "relay test failed at RTSGetLink, error: ChatError {errorType = CEInvalidConnReq}"
 
 testChannelUpdatePrefsSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdatePrefsSigned ps =
