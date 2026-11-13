@@ -1794,10 +1794,10 @@ struct ChatView: View {
                 chatItem.chatDir.sent == prevItem.chatDir.sent
             }
             let largeGap = !sameMemberAndDirection || prevItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
-            let prevIsMessage = prevItem.meta.itemDeleted == nil && !prevItem.isDeletedContent && !isHidden(prevItem)
+            let prevDeletedOrHidden = prevItem.meta.itemDeleted != nil || prevItem.isDeletedContent || isHidden(prevItem)
 
             return ItemSeparation(
-                timestamp: largeGap || !prevIsMessage || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(prevItem.meta.itemTs),
+                timestamp: largeGap || prevDeletedOrHidden || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(prevItem.meta.itemTs),
                 largeGap: largeGap,
                 date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: prevItem.meta.itemTs) ? nil : prevItem.meta.itemTs
             )
