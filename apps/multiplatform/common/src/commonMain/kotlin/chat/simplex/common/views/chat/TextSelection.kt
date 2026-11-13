@@ -42,6 +42,7 @@ import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filter
 
 val SelectionHighlightColor = Color(0x4D0066FF)
 
@@ -332,6 +333,14 @@ fun BoxScope.SelectionHandler(
                     if (idx != null) manager.updateFocusIndex(idx)
                 }
             }
+    }
+
+    LaunchedEffect(manager, linkMode) {
+        snapshotFlow {
+            if (manager.selectionState == SelectionState.Selected) manager.getSelectedCopiedText(mergedItems.value.items, revealedItems.value, linkMode) else ""
+        }
+            .filter { it.isNotEmpty() }
+            .collect { copyToPrimarySelection(it) }
     }
 
     manager.listState = listState
