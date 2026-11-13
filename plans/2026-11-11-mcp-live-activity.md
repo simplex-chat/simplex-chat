@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.3.0: Claude Code activity in the status message
 
-Status: draft for review. Design of 2026-11-11; decisions 6 and 7 by the user; decision 8 of 2026-11-12 and decision 9 of 2026-11-13 at the user's request. Code: stacked on the live status (`plans/2026-11-10-mcp-live-status.md`) at `0fa30e4f34`. Hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11.
+Status: draft for review. Design of 2026-11-11; decisions 6 and 7 by the user; decision 8 of 2026-11-12 and decision 9 of 2026-11-13 at the user's request; decision 10 of 2026-11-13 after an end-to-end test. Code: stacked on the live status (`plans/2026-11-10-mcp-live-status.md`) at `0fa30e4f34`. Hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11.
 
 Dependencies:
 1. The status message of `plans/2026-11-10-mcp-live-status.md`.
@@ -18,6 +18,7 @@ Dependencies:
 7. Source budget, decided by the user: about 150 changed lines in `src`, up to 20% above; the user accepted the 267 changed lines after the review rounds.
 8. Arrival, 2026-11-12, at the user's request: after a `receive` with `typing: true` in a chat, the status is started at once at a message received there, as in section Arrival; about 25 changed lines in `src`.
 9. Every approved chat, 2026-11-13, at the user's request: `typing` is removed from `receive` (decision 23 of `plans/2026-11-10-mcp-live-status.md`); the status is queued at each message received in a chat that meets the conditions of status messages, by the chat of the event, as in section Arrival.
+10. Live arrival, 2026-11-13: a received live message queues the status at the update that completes it, with `itemLive` false and `itemEdited` false; edits queue none, as in section Arrival.
 
 ## Transport
 
@@ -185,8 +186,10 @@ after    For a step that takes minutes, call send with live: true and a short no
 
 ```
 item             rule
-arrival          AgentTools.onNewItems: a received message (rcvMsgContent), not live, in the main scope (chatRef) of a
-                 chat of this session that meets the conditions by the chat of the event: Statuses.queue(chat)
+arrival          AgentTools.onArrival: a received message (rcvMsgContent) in the main scope (chatRef) of a chat of this
+                 session that meets the conditions by the chat of the event: Statuses.queue(chat)
+arrival calls    onNewItems: an item that is not live; onEvent at chatItemUpdated: an item that completes a live message,
+                 itemLive false and itemEdited false (completesLive); an edit sets itemEdited (decision 10)
 queue(chat)      no status of the chat, not stopping: a status created with the label "received, waiting for the agent";
                  its first tick at once
 start(chat)      queue(chat); a waiting status taken: label "thinking", rendered at once while 0 < renders < 59
@@ -201,6 +204,27 @@ lifetime         unchanged: the eligibility read at each tick; the deletion at t
 
 - At a message received while the chat has a status, the status is kept unchanged.
 - The waiting label consists of letters, a comma and spaces.
+
+Live message, decision 10:
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant C as Core
+  participant T as AgentTools
+  participant L as Statuses
+  P->>C: a live message
+  C->>T: newChatItems, itemLive true: no arrival
+  P->>C: its updates
+  C->>T: chatItemUpdated, itemLive true: no arrival
+  P->>C: the message completed
+  C->>T: chatItemUpdated, itemLive false, itemEdited false
+  T->>T: onArrival: main scope, this session, the conditions
+  T->>L: queue(chat)
+  L->>C: apiSendMessages [◐ received, waiting for the agent · 0:00] live
+  P->>C: an edit of a message
+  C->>T: chatItemUpdated, itemEdited true: no arrival
+```
 
 ## Threat model
 
@@ -273,14 +297,18 @@ serve.ts       startAgent            Activity of NAME; Agent.activity; the hook 
                listen                hook
 tools.ts       Agent                 activity
                receiveDescription    the note sentence
-               onNewItems            decisions 8 and 9: queue at a message received in a chat that meets the conditions
+               onNewItems            decisions 8, 9 and 10: onArrival for an item that is not live
+               onArrival             new, decision 10: the queue of decisions 8 and 9
+               onEvent               decision 10: onArrival at the update that completes a live message
                sendResult            decisions 8 and 9: the abort check after markRead; start at responses in a chat
                                      that meets the conditions
+messages.ts    completesLive         new, decision 10: itemLive false and itemEdited false
 ```
 
-- `actions.ts`, `cli.ts`, `control.ts`, `log.ts` and `messages.ts` are unchanged.
+- `actions.ts`, `cli.ts`, `control.ts` and `log.ts` are unchanged; `messages.ts` only by decision 10.
 - Lines in `src`: 239 added, 115 of them in `activity.ts`, and 28 removed. `status.ts` has 211 lines (decision 18 of `plans/2026-11-10-mcp-live-status.md`: 192, up to 20% above).
 - Decision 8: 22 lines added and 6 removed in `src`; `status.ts` has 220 lines.
+- Decision 10: 12 lines added and 2 removed in `src`.
 
 ## Tests
 
@@ -291,6 +319,7 @@ tools.ts       Agent                 activity
 - `test/unit/files.test.ts`: `DIR/hook-headers`: its line, mode 0600, rewritten at a start, and its mode set again.
 - Decision 8, `test/unit/status.test.ts`: one queued status per chat, the waiting label at its ticks, `thinking` at once at the start, the labels after it; a start before the first post, posted as `thinking` after the eligibility read; the frozen waiting line, and the frozen working line at a later start; no queued status after the stop.
 - Decisions 8 and 9, `test/unit/messages.test.ts`: one waiting status for several messages received in an approved chat, `thinking` at once when a `receive` returns them; none, and no chat read, for an own or live message, a member support chat, a chat without the approval, or a chat with a bot; the waiting status of responses taken by their `send`.
+- Decision 10, `test/unit/messages.test.ts`: the waiting status at the update that completes a live message received in an approved chat; none while it is live, at its later edit, or at an edit of an older message. `test/unit/fixtures.ts`: `item` with `edited`.
 - Decisions 8 and 9, `test/e2e/scenarios.test.ts`: in the direct chat and in the group, the live item `◐ received, waiting for the agent · 0:00` at the prompt; in the direct chat, its update with `thinking` when `receive` returns the prompt.
 
 ## Docs
@@ -301,6 +330,7 @@ tools.ts       Agent                 activity
 - `PLAN.md`: scope; files; the data folder; register; the labels; processing of the Claude Code activity; tests; decisions of 2026-11-11.
 - `spec/`: `api.md`, `architecture.md`, `flows.md` and `README.md`; anchors remapped from `git diff -U0 0fa30e4f34`.
 - Decision 8: `README.md`, one sentence; `REFERENCE.md`, the start of a status and the labels table; `TESTING.md`, a step after `stop`; `PLAN.md`, the status message, `receive`, `send`, processing, tests and decisions of 2026-11-12; `spec/`, the rows of the waiting status, and anchors of `tools.ts` and `status.ts` remapped from `git diff -U0 e831b8e5c9`.
+- Decision 10: `REFERENCE.md`, the start of a status; `TESTING.md`, step 8 of the status messages; `plans/2026-10-19-mcp-server.md`, the status message, processing and decisions of 2026-11-13; `spec/`, the arrival rows, and anchors of `tools.ts` and `messages.ts` remapped from `git diff -U0 dc27ee21a`.
 
 ## Pull request
 

@@ -587,7 +587,7 @@ an owner in LIST loses the role or leaves,            Alice (member 3) is no lon
 
 ## What the owner sees: the status message
 
-When `receive` returns messages of a chat approved with `/approve CHAT all`, the server posts a live message in that chat and edits it while the agent works: the status message. The server also posts it at once at each message received in such a chat while the chat has none, as a waiting status, with the label `received, waiting for the agent` until a `receive` or a `send` returns messages of the chat. It is deleted for everyone after the agent's answer is sent. Every member of a group or business chat sees it.
+When `receive` returns messages of a chat approved with `/approve CHAT all`, the server posts a live message in that chat and edits it while the agent works: the status message. The server also posts it at once at each message received in such a chat while the chat has none, a live message when its sender completes it, as a waiting status, with the label `received, waiting for the agent` until a `receive` or a `send` returns messages of the chat. It is deleted for everyone after the agent's answer is sent. Every member of a group or business chat sees it.
 
 ```
 chat                                                          status message
@@ -1625,7 +1625,13 @@ ending    undefined                       its live.end("")
 
 ```
 newChatItems, each item (AgentTools.onNewItems):
-  a received message (rcvMsgContent), not live, in the main scope of a chat of this session, showsStatus by the chat of the event: queue(chat)
+  not live: onArrival(item)
+
+chatItemUpdated (AgentTools.onEvent):
+  itemLive false and itemEdited false, the update that completes a live message: onArrival(item)
+
+onArrival(item):
+  a received message (rcvMsgContent) in the main scope of a chat of this session, showsStatus by the chat of the event: queue(chat)
 
 queue(chat):
   stopping, or a status of chat: return
@@ -2101,3 +2107,4 @@ C6      Claude Code closes the request stream when a call times out or its task 
 ## Decisions of 2026-11-13
 
 - The `typing` input of `receive` is removed: each `receive` that returns messages starts the status message of an eligible chat, and each message received in an eligible chat without a status message starts a waiting status.
+- A live message is received at the update that completes it, and its waiting status starts then; an edit starts none (`plans/2026-11-11-mcp-live-activity.md`, decision 10).

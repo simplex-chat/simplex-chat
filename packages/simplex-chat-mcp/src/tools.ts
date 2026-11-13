@@ -24,6 +24,7 @@ import {
   chatNumber,
   chatRef,
   chatType,
+  completesLive,
   fileContent,
   fileOffer,
   filePaths,
@@ -637,9 +638,13 @@ export class AgentTools {
       if (chat !== undefined && this.owns(chatInfo) && content.type === "rcvMsgContent" && file?.fileStatus.type === "rcvAccepted") {
         this.downloadFile({chat, item: meta.itemId, file: fileOffer(content.msgContent, file)}).catch(error => logError(`file ${file.fileId}`, error))
       }
-      const ref = chatRef(chatInfo)
-      if (ref !== undefined && this.owns(chatInfo) && content.type === "rcvMsgContent" && !isLive(chatItem) && this.showsStatus(ref, chatInfo)) this.statuses.queue(ref)
+      if (!isLive(chatItem)) this.onArrival({chatInfo, chatItem})
     }
+  }
+
+  private onArrival({chatInfo, chatItem: {content}}: T.AChatItem): void {
+    const chat = chatRef(chatInfo)
+    if (chat !== undefined && this.owns(chatInfo) && content.type === "rcvMsgContent" && this.showsStatus(chat, chatInfo)) this.statuses.queue(chat)
   }
 
   onFile({chatInfo, chatItem: {content, file}}: T.AChatItem): void {
@@ -689,6 +694,7 @@ export class AgentTools {
         return watch.deliver(event.chatItems)
       case "chatItemUpdated":
         this.onFile(event.chatItem)
+        if (completesLive(event.chatItem.chatItem)) this.onArrival(event.chatItem)
         return watch.update(event.chatItem)
       case "chatItemsDeleted":
         return watch.remove(event.chatItemDeletions.map(({deletedChatItem}) => deletedChatItem))

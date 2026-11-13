@@ -52,7 +52,7 @@ export function groupChat(g: T.GroupInfo): T.ChatInfo {
   return {type: "group", groupInfo: g}
 }
 
-export function item(itemId: number, text: string, chatDir: T.CIDirection = {type: "directRcv"}, extra: {status?: string; quoted?: number; mention?: boolean; ts?: string; live?: boolean} = {}): T.ChatItem {
+export function item(itemId: number, text: string, chatDir: T.CIDirection = {type: "directRcv"}, extra: {status?: string; quoted?: number; mention?: boolean; ts?: string; live?: boolean; edited?: boolean} = {}): T.ChatItem {
   const received = chatDir.type.endsWith("Rcv")
   return {
     chatDir,
@@ -63,6 +63,7 @@ export function item(itemId: number, text: string, chatDir: T.CIDirection = {typ
       itemStatus: {type: extra.status ?? (received ? "rcvNew" : "sndSent")},
       userMention: extra.mention ?? false,
       ...(extra.live === undefined ? {} : {itemLive: extra.live}),
+      ...(extra.edited === undefined ? {} : {itemEdited: extra.edited}),
     },
     content: {type: received ? "rcvMsgContent" : "sndMsgContent", msgContent: {type: "text", text}},
     mentions: {},

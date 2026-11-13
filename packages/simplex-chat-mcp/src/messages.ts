@@ -171,6 +171,10 @@ export function isLive({meta}: T.ChatItem): boolean {
   return meta.itemLive === true
 }
 
+export function completesLive({meta}: T.ChatItem): boolean {
+  return meta.itemLive === false && !meta.itemEdited
+}
+
 export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, rejectedFiles: ReadonlySet<number>, data: string): Message {
   const chat = chatRef(chatInfo) ?? ""
   const {meta, content, quotedItem} = item

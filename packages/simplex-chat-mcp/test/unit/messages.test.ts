@@ -4,7 +4,7 @@ import {chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync
 import * as os from "os"
 import {basename, dirname, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
-import {T} from "@simplex-chat/types"
+import {ChatEvent, T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Action, Actions, ConnectAction, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
@@ -498,6 +498,27 @@ describe("receive", () => {
     tools.onNewItems([chat.addItem("#15", item(26, "hi", {type: "groupRcv", groupMember: alice}))])
     await jest.advanceTimersByTimeAsync(0)
     expect(chat.sent).toEqual([livePost(T.ChatType.Group, 15, "◐ received, waiting for the agent · 0:00")])
+  })
+
+  it("shows the waiting status at the final update of a live message received in an approved chat, and none while it is live, at its later edit, or at an edit of an older message", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    const chatInfo = direct(contact(4, "Alice"))
+    chat.chats.set("@4", {chatInfo, items: []})
+    const {tools} = approvedTools(chat)
+    const updated = (chatItem: T.ChatItem): ChatEvent => ({type: "chatItemUpdated", user, chatItem: event(chatInfo, chatItem)})
+    tools.onEvent({type: "newChatItems", user, chatItems: [chat.addItem("@4", item(21, "Ridge", {type: "directRcv"}, {live: true}))]})
+    tools.onEvent(updated(item(21, "Ridgecrest", {type: "directRcv"}, {live: true})))
+    tools.onEvent(updated(item(20, "summarize README.md, edited", {type: "directRcv"}, {edited: true})))
+    await jest.advanceTimersByTimeAsync(3_000)
+    expect(chat.sent).toEqual([])
+    tools.onEvent(updated(item(21, "Ridgecrest, $142", {type: "directRcv"}, {live: false})))
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.sent).toEqual([livePost(T.ChatType.Direct, 4, "◐ received, waiting for the agent · 0:00")])
+    await tools.statuses.end("@4")
+    tools.onEvent(updated(item(21, "Ridgecrest, $139", {type: "directRcv"}, {live: false, edited: true})))
+    await jest.advanceTimersByTimeAsync(3_000)
+    expect(chat.sent).toHaveLength(1)
   })
 })
 
