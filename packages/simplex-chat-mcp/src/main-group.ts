@@ -5,18 +5,27 @@ import {chatErrorOf, log, logError, oneLine} from "./log"
 import {resetCommand} from "./owner"
 import {isActive} from "./tools"
 
+// spec: spec/architecture.md#main-group-maincommands
 const mainCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "sessions", label: "Claude Code sessions"},
   {type: "command", keyword: "join", label: "Join the group of a session", params: "<session number>"},
 ]
+// spec: spec/architecture.md#main-group-maincommands
 const mainKey = "simplexMcpMain"
+// spec: spec/architecture.md#main-group-maincommands
 const greeting = "I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N."
+// spec: spec/api.md#main-group
 const unknownCommand = "Unknown command."
+// spec: spec/architecture.md#main-group-maincommands
 const noOwners = "No owners in the Main group."
+// spec: spec/architecture.md#main-group-maincommands
 const welcome = "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."
+// spec: spec/architecture.md#main-group-maincommands
 const joinRights = "They can join the group of any Claude Code session here, prompt Claude and approve its actions."
+// spec: spec/architecture.md#main-group-maincommands
 const shortDescr = "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does."
 
+// spec: spec/architecture.md#main-group-sessiongroups
 export interface SessionGroups {
   sessionsText(): string
   join(member: T.GroupMember, session: number): Promise<string>
@@ -50,10 +59,12 @@ export class MainGroup {
     return this.linkText
   }
 
+  // spec: spec/architecture.md#main-group-maingroup-owners
   owners(): T.GroupMember[] {
     return this.lost ? [] : this.humans().filter(({memberRole}) => memberRole === T.GroupMemberRole.Owner)
   }
 
+  // spec: spec/api.md#main-group-profile
   async load(): Promise<void> {
     if (isLost(this.group)) return this.lose()
     const displayName = this.name
@@ -65,6 +76,7 @@ export class MainGroup {
     await this.refreshMembers()
   }
 
+  // spec: spec/architecture.md#main-group-maingroup-load
   async start(): Promise<void> {
     if (this.lost || this.owners().length > 0) return
     if (this.humans().length > 0) log(noOwners)
@@ -80,6 +92,7 @@ export class MainGroup {
     return this.serialize(() => this.load())
   }
 
+  // spec: spec/architecture.md#main-group-maingroup-onmessage
   onMessage(ci: T.AChatItem): void {
     const {chatItem} = ci
     if (this.lost || chatItem.chatDir.type !== "groupRcv" || chatItem.content.type !== "rcvMsgContent") return
@@ -92,10 +105,12 @@ export class MainGroup {
       .catch(error => logError("Main group command", error))
   }
 
+  // spec: spec/architecture.md#main-group-maingroup-onevent
   onEvent(event: ChatEvent): Promise<void> {
     return this.serialize(() => this.handleEvent(event))
   }
 
+  // spec: spec/architecture.md#main-group-maingroup-replace
   replace(): Promise<string> {
     return this.serialize(async () => {
       this.lost = true
@@ -108,12 +123,14 @@ export class MainGroup {
     })
   }
 
+  // spec: spec/api.md#main-group
   private async command(sender: T.GroupMember, {keyword, params}: Command): Promise<string> {
     if (keyword === "sessions" && params === "") return this.sessions.sessionsText()
     if (keyword === "join" && /^\d+$/.test(params)) return this.sessions.join(sender, Number(params))
     return unknownCommand
   }
 
+  // spec: spec/architecture.md#main-group-maingroup-onevent
   private async handleEvent(event: ChatEvent): Promise<void> {
     if (this.lost) return
     if (losesControl(event)) return this.lose()
@@ -131,6 +148,7 @@ export class MainGroup {
     }
   }
 
+  // spec: spec/architecture.md#main-group-maingroup-onevent
   private async ownerJoined(member: T.GroupMember): Promise<void> {
     await this.deleteLink()
     await this.chat.apiSetMembersRole(this.groupId, [member.groupMemberId], T.GroupMemberRole.Owner)
@@ -139,17 +157,20 @@ export class MainGroup {
     log(`${joinedText(member, oneLine)} and is now an owner. The link is deleted.`)
   }
 
+  // spec: spec/api.md#plugin-commands
   private lose(): void {
     this.lost = true
     log(`The Main group is lost. Run ${resetCommand} in a terminal.`)
   }
 
+  // spec: spec/architecture.md#main-group-maingroup-openlink
   private async openLink(): Promise<void> {
     await this.deleteLink()
     this.linkText = await this.chat.apiCreateGroupLink(this.groupId, T.GroupMemberRole.Member)
     log(`Main group link created. Whoever joins by it first becomes an owner of "${this.name}".`)
   }
 
+  // spec: spec/architecture.md#main-group-maingroup-openlink
   private async deleteLink(): Promise<void> {
     this.linkText = undefined
     try {
@@ -182,6 +203,7 @@ export class MainGroup {
   }
 }
 
+// spec: spec/architecture.md#main-group-findmaingroup
 export async function findMainGroup(chat: api.ChatApi, userId: number): Promise<T.GroupInfo | undefined> {
   const groups = (await chat.apiListGroups(userId)).filter(({customData}) => (customData as {[mainKey]?: boolean} | undefined)?.[mainKey] === true)
   return groups.reduce<T.GroupInfo | undefined>((latest, group) => (latest === undefined || group.groupId > latest.groupId ? group : latest), undefined)
@@ -192,6 +214,7 @@ function isMissingLink(error: unknown): boolean {
   return chatError?.type === "errorStore" && chatError.storeError.type === "groupLinkNotFound"
 }
 
+// spec: spec/api.md#main-group-profile
 export async function createMainGroup(chat: api.ChatApi, userId: number, displayName: string): Promise<T.GroupInfo> {
   const group = await createGroup(chat, userId, {
     displayName,

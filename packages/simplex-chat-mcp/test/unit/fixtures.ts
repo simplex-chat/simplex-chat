@@ -1,3 +1,4 @@
+import {execFileSync} from "child_process"
 import {readFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
@@ -139,6 +140,12 @@ export async function until(condition: () => boolean): Promise<void> {
   expect(condition()).toBe(true)
 }
 
+export function descendants(pid: number): number[] {
+  const parents = execFileSync("ps", ["-A", "-o", "pid=,ppid="], {encoding: "utf8"}).trim().split("\n").map(line => line.trim().split(/\s+/).map(Number))
+  const children = (parent: number): number[] => parents.flatMap(([child, ppid]) => (ppid === parent ? [child, ...children(child)] : []))
+  return children(pid)
+}
+
 interface FakeChatData {
   chatInfo: T.ChatInfo
   items: T.ChatItem[]
@@ -163,8 +170,8 @@ export class FakeChat {
   apiGetChatItemInfo = library.apiGetChatItemInfo
   apiGetUserServers = library.apiGetUserServers
   commands: string[] = []
-  sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]}[] = []
-  updates: {chatId: number; itemId: number; text: string}[] = []
+  sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]; live?: true}[] = []
+  updates: {chatId: number; itemId: number; text: string; live?: true}[] = []
   replies: string[] = []
   deleted: {chatType: T.ChatType; chatId: number; mode?: T.ChatDeleteMode}[] = []
   left: number[] = []
@@ -207,15 +214,15 @@ export class FakeChat {
     return {type: "cmdOk"}
   }
 
-  async apiSendMessages(chat: [T.ChatType, number], messages: T.ComposedMessage[]): Promise<T.AChatItem[]> {
-    this.sent.push({chat, messages})
+  async apiSendMessages(chat: [T.ChatType, number], messages: T.ComposedMessage[], liveMessage?: boolean): Promise<T.AChatItem[]> {
+    this.sent.push({chat, messages, ...(liveMessage === true ? {live: true} : {})})
     const ref = `${chat[0] === T.ChatType.Direct ? "@" : "#"}${chat[1]}`
     const chatInfo = this.chats.get(ref)?.chatInfo ?? groupChat(group(chat[1], "control"))
     return messages.map(({msgContent}) => event(chatInfo, item(this.nextItemId++, msgContent.text, chatInfo.type === "direct" ? {type: "directSnd"} : {type: "groupSnd"})))
   }
 
-  async apiUpdateChatItem(_type: T.ChatType, chatId: number, itemId: number, msgContent: T.MsgContent): Promise<T.ChatItem> {
-    this.updates.push({chatId, itemId, text: msgContent.text})
+  async apiUpdateChatItem(_type: T.ChatType, chatId: number, itemId: number, msgContent: T.MsgContent, liveMessage?: boolean): Promise<T.ChatItem> {
+    this.updates.push({chatId, itemId, text: msgContent.text, ...(liveMessage === true ? {live: true} : {})})
     return item(itemId, msgContent.text, {type: "groupSnd"})
   }
 
@@ -303,6 +310,8 @@ export class FakeChat {
     await new Promise(resolve => setImmediate(resolve))
     return {...group(groupId, groupProfile.displayName), groupProfile, ...(customData === undefined ? {} : {customData})}
   }
+
+  async close(): Promise<void> {}
 
   api(): api.ChatApi {
     return this as unknown as api.ChatApi

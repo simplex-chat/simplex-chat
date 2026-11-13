@@ -1,4 +1,5 @@
-import {appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
+import {once} from "events"
+import {appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {dirname, join} from "path"
 import {T} from "@simplex-chat/types"
@@ -8,14 +9,16 @@ import {defaultConfig} from "../../src/config"
 import {hubFolder, readSessionFile, sessionFolder} from "../../src/files"
 import {Hub} from "../../src/hub"
 import {sessionStart, turn} from "../../src/hook"
+import {findMainGroup} from "../../src/main-group"
 import {resetOwners} from "../../src/owner"
 import {AttachLine, OwnerState, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
 import {qrCodeText} from "../../src/qr"
 import {Service, productionDeps} from "../../src/service"
 import {version} from "../../src/version"
+import {descendants} from "../unit/fixtures"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
 import {SmpServer, startSmpServer, startXftpServer} from "./smpServer"
-import {killService, servicePid, spawnSession} from "./stdio"
+import {killService, servicePid, spawnSession, spawnSessionStart} from "./stdio"
 
 const one = "11111111-1111-4111-8111-111111111111"
 const two = "22222222-2222-4222-8222-222222222222"
@@ -348,7 +351,7 @@ test("while SimpleX links are off in a session's group, the connect card of a bo
   await sendNotice
 }, 600_000)
 
-test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
+test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it; an owner's reply to the answer reaches the session after the quote line, with the answer's ID and sender; an owner's reaction to an answer gets Session 1 is not running., quoting the answer, before the session attaches, and reaches the attached session as its emoji after the answer's quote line, with the answer's ID as item and reply_to, the answer of its turn quotes the reacted answer, and a removed reaction reaches no session; Claude posts the line of a tool use live at its start and finalizes it at its end, not edited", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -388,6 +391,10 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
     longest = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "a".repeat(length)).then(([sent]) => sent, () => undefined)
   }
   await notRunningLong
+  const answered = await fixed
+  const reactionNotRunning = received(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "Session 1 is not running." && chatItem.quotedItem?.itemId === answered.chatItem.meta.itemId))
+  await alice.chat.apiChatItemReaction(T.ChatType.Group, groupId, answered.chatItem.meta.itemId, true, {type: "emoji", emoji: "👍"})
+  await reactionNotRunning
 
   const attached: unknown[] = []
   const controller = new AbortController()
@@ -417,7 +424,31 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   const linted = received(alice.chat, message("Lint passes.", "Claude", lint.chatItem.meta.itemId))
   await hook({hook_event_name: "UserPromptSubmit", prompt: "Run the linter"})
   await hook({hook_event_name: "Stop", last_assistant_message: "Lint passes."})
-  await linted
+  await alice.chat.apiSendTextReply(await linted, "Why so fast?")
+  await until(() => attached.length === 4)
+  expect(attached[3]).toEqual({prompt: {text: "> Lint passes.\nWhy so fast?", from: "Alice", item: expect.any(Number), replyTo: {item: expect.any(Number), from: "Claude"}}})
+  const testsPass = await passed
+  const react = (emoji: string, add = true) => alice.chat.apiChatItemReaction(T.ChatType.Group, groupId, testsPass.chatItem.meta.itemId, add, {type: "emoji", emoji})
+  await react("👍")
+  await until(() => attached.length === 5)
+  const reacted = (attached[4] as {prompt: {item: number}}).prompt.item
+  expect(attached[4]).toEqual({prompt: {text: "> Tests pass.\n👍", from: "Alice", item: reacted, replyTo: {item: reacted, from: "Claude"}}})
+  const thanked = received(alice.chat, message("Thanks.", "Claude", testsPass.chatItem.meta.itemId))
+  await hook({hook_event_name: "UserPromptSubmit", prompt: `<channel source="plugin:simplex:simplex" from="Alice" item="${reacted}" reply_to="${reacted}" reply_to_from="Claude">\n> Tests pass.\n👍\n</channel>`})
+  await hook({hook_event_name: "Stop", last_assistant_message: "Thanks."})
+  await thanked
+  await react("👍", false)
+  await react("🚀")
+  await until(() => attached.length === 6)
+  expect((attached[5] as {prompt: {text: string}}).prompt.text).toBe("> Tests pass.\n🚀")
+  const bash = {tool_name: "Bash", tool_input: {command: "npm test", description: "Run the tests"}, tool_use_id: "toolu_1"}
+  const started = received(alice.chat, message("💻 Run the tests", "Claude"))
+  await hook({hook_event_name: "PreToolUse", cwd: "/p", ...bash})
+  expect((await started).chatItem.meta.itemLive).toBe(true)
+  const ended = updated(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "💻 Run the tests ✅ 2.0 s"))
+  await hook({hook_event_name: "PostToolUse", cwd: "/p", ...bash, tool_response: {stdout: "ok"}, duration_ms: 2018})
+  const {meta: finalized} = (await ended).chatItem
+  expect([finalized.itemLive, finalized.itemEdited]).toEqual([false, false])
   const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 50)
   const fromUser = chatItems.filter(({chatDir, content}) => chatDir.type === "groupRcv" && chatDir.groupMember.memberProfile.displayName === "User" && content.type === "rcvMsgContent")
   expect(fromUser.map(({meta}) => meta.itemText)).toEqual(["Fix the build"])
@@ -495,7 +526,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   expect(chatItems.map(({meta}) => meta.itemText)).not.toContain("Session 1 is not running.")
 }, 600_000)
 
-test("a member of the Main group joins a session's group by /join as admin, prompts and approves there, also after removal from the Main group, and gets Unknown command. for //compact, which reaches no session; a member added to the group by link as member prompts, and the plugin refuses its / commands, /pending and /!ls, with one reply; Claude posts each member's rights at the join and at a role change, after which the member approves; files of reply reach the group at once, the group's preference for files makes the core refuse them, and a change of the model keeps that preference; a reset of the owners while Alice is an owner replaces the Main group at once and shows the new link only in a terminal, and both members keep their roles in the session's group, where they still prompt and approve", async () => {
+test("a member of the Main group joins a session's group by /join as admin, prompts and approves there, also after removal from the Main group, and gets Unknown command. for //compact, which reaches no session; a member added to the group by link as member prompts, and the plugin refuses its / commands, /pending and /!ls, with one reply; Claude posts each member's rights at the join and at a role change, after which the member approves; files of reply reach the group at once, the group's preference for files makes the core refuse them, and a change of the model keeps that preference; a reset of the owners while Alice is an owner replaces the Main group at once and shows the new link only in a terminal, and both members keep their roles in the session's group, where they still prompt and approve; a reaction of Bob reaches the session, and a reaction of Carol as an observer does not", async () => {
   const root = join(dir, "trust", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("trust", "Alice")
@@ -589,23 +620,29 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   await carolObserver
   await until(async () => (await carol.chat.apiListGroups(carol.user.userId)).find(({groupId}) => groupId === carolGroupOne)?.membership.memberRole === T.GroupMemberRole.Observer)
   await expect(carol.chat.apiSendTextMessage([T.ChatType.Group, carolGroupOne], "Delete the docs")).rejects.toThrow()
+  const carolReacted = alice.chat.wait("chatItemReaction", ({added, reaction: {chatReaction}}) => added && chatReaction.chatDir.type === "groupRcv" && chatReaction.chatDir.groupMember.memberProfile.displayName === "Carol", 60_000)
+  await carol.chat.apiChatItemReaction(T.ChatType.Group, carolGroupOne, (await delivered).chatItem.meta.itemId, true, {type: "emoji", emoji: "👎"})
+  expect(await carolReacted).toBeDefined()
+  await bob.chat.apiChatItemReaction(T.ChatType.Group, bobGroupOne, (await toolUse).chatItem.meta.itemId, true, {type: "emoji", emoji: "👍"})
+  await until(() => attached.some(({prompt}) => prompt?.from === "Bob" && prompt.text.endsWith("\n👍")))
   expect((await alice.chat.apiListMembers(groupOne)).find(({memberProfile}) => memberProfile.displayName === "Bob")).toMatchObject({memberStatus: expect.stringMatching(/^(connected|complete)$/)})
   const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupOne && toGroup.groupProfile.shortDescr === "claude-opus-5", 60_000)
   await turn(JSON.stringify({session_id: one, hook_event_name: "PostModelSwitch", to_model: "claude-opus-5"}), {}, client)
   expect((await described)?.toGroup.groupProfile.groupPreferences?.files?.enable).toBe(T.GroupFeatureEnabled.Off)
 
   const mainDeleted = alice.chat.wait("groupDeleted", ({groupInfo}) => groupInfo.groupId === mainGroupId, 60_000)
-  expect(await resetOwners({SIMPLEX_MCP_HOME: root}, false)).toBe(`"SimpleX MCP" was replaced. Run npx -y @simplex-chat/mcp@${version} link in a terminal to see the link to the new one.`)
+  expect(await resetOwners({SIMPLEX_MCP_HOME: root}, false)).toBe(`"Claude Control" was replaced. Run npx -y @simplex-chat/mcp@${version} link in a terminal to see the link to the new one.`)
   expect(await mainDeleted).toBeDefined()
   const replaced = await client.request<OwnerState>("GET", "/link")
   expect(replaced).toEqual({owners: [], link: expect.any(String)})
   const inTerminal = await resetOwners({SIMPLEX_MCP_HOME: root}, true)
   const {link} = await client.request<OwnerState>("GET", "/link")
   expect(link).not.toBe(replaced.link)
-  expect(inTerminal).toBe(`"SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:\n${qrCodeText(link!, "small")}\n${link}`)
+  expect(inTerminal).toBe(`"Claude Control" was replaced. Join the new one in the SimpleX app. The link works once:\n${qrCodeText(link!, "small")}\n${link}`)
   await alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], "Deploy")
   await bobSends("Tag the release")
   await until(() => attached.some(({prompt}) => prompt?.text === "Deploy" && prompt.from === "Alice") && attached.some(({prompt}) => prompt?.text === "Tag the release" && prompt.from === "Bob"))
+  expect(attached.some(({prompt}) => prompt?.from === "Carol" && prompt.text.endsWith("\n👎"))).toBe(false)
   for (const [p, groupId] of [[alice, groupOne], [bob, bobGroupOne]] as const) {
     const pending = received(p.chat, inGroup(groupId, textStarts("No pending actions.")))
     await p.chat.apiSendTextMessage([T.ChatType.Group, groupId], "/pending")
@@ -736,4 +773,36 @@ test("stdio session spawns the service and recovers after the service is killed"
   await killService(root)
   await until(async () => (await ServiceClient.forRoot(root).request<StatusReply>("GET", "/status").catch(() => undefined))?.sessions[0]?.attached === 1)
   expect(servicePid(root)).not.toBe(secondService)
+}, 600_000)
+
+test("a session start that Claude Code ends with its descendants, as at its exit, leaves the service starting, and the next session start shows the link of that service", async () => {
+  const root = join(dir, "ended", "root")
+  await prepareRoot(smpServer.address, root)
+  closing.push(() => killService(root))
+  const hook = spawnSessionStart({...process.env, CLAUDE_CODE_ENTRYPOINT: "cli", CLAUDE_CODE_SESSION_ATTENDED: "", SIMPLEX_MCP_HOME: root}, {session_id: five, cwd: "/p/five"})
+  await until(() => existsSync(join(root, "service.lock")))
+  const service = servicePid(root)
+  const ended = once(hook, "exit")
+  for (const pid of [hook.pid!, ...descendants(hook.pid!)]) process.kill(pid, "SIGTERM")
+  await ended
+
+  const client = ServiceClient.forRoot(root)
+  const output = await sessionStart(JSON.stringify({session_id: four, cwd: "/p/four"}), {SIMPLEX_MCP_HOME: root}, {client, nodeVersion: process.versions.node})
+  expect(servicePid(root)).toBe(service)
+  const {link} = await client.request<OwnerState>("GET", "/link")
+  expect(output).toEqual({systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "Claude Control":\n${qrCodeText(link!, "plain")}\n${link}`})
+}, 600_000)
+
+test("the service renames a Main group named SimpleX MCP to Claude Control", async () => {
+  const root = join(dir, "renamed", "root")
+  await prepareRoot(smpServer.address, root)
+  const before = await Service.start({...productionDeps(root), onStopped: () => undefined}, () => ({...defaultConfig, mainGroup: "SimpleX MCP"}))
+  await before.stop()
+  await (await startService(root)).stop()
+
+  const hub = await api.ChatApi.init({type: "sqlite", filePrefix: join(hubFolder(root), "simplex")})
+  closing.push(() => hub.close())
+  const user = (await hub.apiGetActiveUser())!
+  await hub.startChat()
+  expect((await findMainGroup(hub, user.userId))?.groupProfile.displayName).toBe("Claude Control")
 }, 600_000)

@@ -6,7 +6,7 @@ const env = (values: {mainGroup?: string; approve?: string; expireHours?: string
 describe("plugin config", () => {
   it("has defaults for missing and empty options", () => {
     expect(readConfig({})).toEqual(defaultConfig)
-    expect(readConfig(env({mainGroup: "", approve: "  ", expireHours: ""}))).toEqual({mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23})
+    expect(readConfig(env({mainGroup: "", approve: "  ", expireHours: ""}))).toEqual({mainGroup: "Claude Control", approve: "requests", expireHours: 23})
   })
 
   it("reads every option, and no option for Claude's files", () => {
@@ -28,6 +28,22 @@ describe("plugin config", () => {
     )
     expect(() => readConfig(env({mainGroup: "..."}))).toThrow(
       new ConfigError("Plugin option main_group: a valid SimpleX name expected, got .... Change it in /plugin > Installed > simplex > Configure options."),
+    )
+  })
+
+  it("adds the machine name of SIMPLEX_MCP_MACHINE to the Main group name", () => {
+    expect(readConfig({SIMPLEX_MCP_MACHINE: "laptop"})).toEqual({...defaultConfig, mainGroup: "Claude Control - laptop"})
+    expect(readConfig({...env({mainGroup: "Team"}), SIMPLEX_MCP_MACHINE: " laptop "}).mainGroup).toBe("Team - laptop")
+    expect(readConfig({SIMPLEX_MCP_MACHINE: "  "})).toEqual(defaultConfig)
+  })
+
+  it("refuses a machine name that is not a valid SimpleX name, and a Main group name that it makes invalid", () => {
+    const where = "Change it in the environment of this machine."
+    expect(() => readConfig({SIMPLEX_MCP_MACHINE: "my.laptop"})).toThrow(new ConfigError(`SIMPLEX_MCP_MACHINE: a valid SimpleX name, such as mylaptop expected, got my.laptop. ${where}`))
+    expect(() => readConfig({SIMPLEX_MCP_MACHINE: "..."})).toThrow(new ConfigError(`SIMPLEX_MCP_MACHINE: a valid SimpleX name expected, got .... ${where}`))
+    const long = "m".repeat(40)
+    expect(() => readConfig({SIMPLEX_MCP_MACHINE: long})).toThrow(
+      new ConfigError(`Plugin option main_group with SIMPLEX_MCP_MACHINE: a valid SimpleX name of at most 50 characters expected, got Claude Control - ${long}. Change one of them.`),
     )
   })
 })

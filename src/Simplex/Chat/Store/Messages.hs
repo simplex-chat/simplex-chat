@@ -810,7 +810,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -912,7 +912,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -1023,7 +1023,7 @@ findLocalChatPreviews_ db User {userId} pagination clq =
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),

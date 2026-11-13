@@ -1,9 +1,10 @@
 import {open} from "fs/promises"
+import {isAbsolute, relative} from "path"
 import {ServiceClient} from "./client"
 import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError, oneLine} from "./log"
-import {TitleReply} from "./protocol"
+import {Step, TitleReply} from "./protocol"
 import {qrCodeText} from "./qr"
 import {SocketError, isNotRunning} from "./socket"
 import {version} from "./version"
@@ -13,9 +14,13 @@ const serviceStopped = "The SimpleX service stopped; it starts again with the ne
 const unknownSession = 409
 const turnAttempts = 15
 const turnRetryMs = 1_000
+// spec: spec/api.md#plugin-commands
 const maxText = 250_000
+// spec: spec/api.md#plugin-options
 const answerReads = 20
+// spec: spec/api.md#plugin-options
 const promptReads = 600
+// spec: spec/api.md#plugin-options
 const transcriptReadMs = 100
 const transcriptTailBytes = 1_048_576
 const syntheticModel = "<synthetic>"
@@ -23,7 +28,11 @@ const maxNote = 200
 const statusEmoji = new Map([["completed", "✅"], ["failed", "❌"], ["stopped", "⏹️"], ["killed", "⏹️"]])
 const teammatePrompt = /^Another Claude session sent a message[^:\n]*:\n<teammate-message /
 const teammateMessage = /<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/g
+const pluginTools = "mcp__plugin_simplex_simplex__"
+const toolEvents = ["PreToolUse", "PostToolUse", "PostToolUseFailure"]
+const stepFields = ["description", "query", "url", "file_path", "path", "pattern", "command"]
 
+// spec: spec/api.md#plugin-options
 interface SessionStartInput {
   session_id: string
   session_title?: string
@@ -31,6 +40,7 @@ interface SessionStartInput {
   model?: string
 }
 
+// spec: spec/api.md#plugin-options
 interface TurnInput {
   session_id: string
   hook_event_name?: string
@@ -40,8 +50,16 @@ interface TurnInput {
   last_assistant_message?: string
   to_model?: string
   effort?: {level?: string}
+  cwd?: string
+  agent_id?: string
+  tool_name?: string
+  tool_input?: {[field: string]: unknown}
+  tool_use_id?: string
+  duration_ms?: number
+  is_interrupt?: boolean
 }
 
+// spec: spec/api.md#plugin-options
 interface Origin {
   kind?: unknown
   name?: unknown
@@ -51,6 +69,7 @@ interface Origin {
   handbackReportText?: unknown
 }
 
+// spec: spec/api.md#plugin-options
 interface TranscriptEntry {
   type?: unknown
   isSidechain?: unknown
@@ -78,6 +97,7 @@ export interface HookDeps {
   nodeVersion: string
 }
 
+// spec: spec/architecture.md#hook-sessionstart
 export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = process.env, deps?: HookDeps, at = performance.timeOrigin): Promise<HookOutput> {
   if (!interactive(env)) {
     if (interactiveEntrypoint(env)) await markUnattended(stdin, env, deps?.client)
@@ -99,6 +119,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
   }
 }
 
+// spec: spec/architecture.md#hook-markunattended
 async function markUnattended(stdin: string, env: NodeJS.ProcessEnv, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env))): Promise<void> {
   const pid = claudePid(env)
   if (pid === undefined) return
@@ -111,13 +132,17 @@ async function markUnattended(stdin: string, env: NodeJS.ProcessEnv, client: Hoo
   }
 }
 
+// spec: spec/architecture.md#hook-turn
 export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env)), retryMs = turnRetryMs, at = performance.timeOrigin, readMs = transcriptReadMs): Promise<HookOutput> {
   if (!interactive(env)) return {}
   try {
     const input = JSON.parse(stdin) as TurnInput
+    const toolUse = toolEvents.includes(input.hook_event_name ?? "")
+    const step = toolUse ? stepOf(input) : undefined
+    if (toolUse && step === undefined) return {}
     const model = input.to_model ?? (input.hook_event_name === "Stop" ? await answerModel(input, readMs) : undefined)
     const kind = input.hook_event_name === "UserPromptSubmit" ? await promptKind(input, readMs) : undefined
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), ...kind, answer: cut(input.last_assistant_message), model, effort: input.effort?.level}
+    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), ...kind, answer: cut(input.last_assistant_message), model, effort: input.effort?.level, step}
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -134,6 +159,7 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   return {}
 }
 
+// spec: spec/architecture.md#hook-answermodel
 async function answerModel({transcript_path: path, last_assistant_message: message}: TurnInput, readMs: number): Promise<string | undefined> {
   const answer = message?.trim()
   if (!path || !answer) return undefined
@@ -144,12 +170,14 @@ async function answerModel({transcript_path: path, last_assistant_message: messa
   return last?.model
 }
 
+// spec: spec/architecture.md#hook-answermodel
 async function promptKind({transcript_path: path, prompt_id: id, prompt}: TurnInput, readMs: number): Promise<PromptKind> {
   const text = prompt?.trim()
   if (!path || !text) return {typed: false}
   return (await findInTranscript(path, text, promptReads, readMs, (tail, last) => promptRecord(tail, id, text, last))) ?? {typed: false}
 }
 
+// spec: spec/architecture.md#hook-answermodel
 async function findInTranscript<T>(path: string, text: string, reads: number, readMs: number, find: (tail: string, last: boolean) => T | undefined): Promise<T | undefined> {
   const bytes = transcriptTailBytes + 2 * Buffer.byteLength(text)
   for (let read = 1; ; read++) {
@@ -160,6 +188,7 @@ async function findInTranscript<T>(path: string, text: string, reads: number, re
   }
 }
 
+// spec: spec/architecture.md#hook-answermodel
 async function readTail(path: string, bytes: number): Promise<string> {
   const file = await open(path, "r")
   try {
@@ -173,6 +202,7 @@ async function readTail(path: string, bytes: number): Promise<string> {
   }
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function lastAnswer(tail: string): {text: string; model?: string} | undefined {
   const lines = tail.split("\n")
   for (let i = lines.length - 1; i >= 0; i--) {
@@ -184,6 +214,7 @@ function lastAnswer(tail: string): {text: string; model?: string} | undefined {
   return undefined
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function promptRecord(tail: string, id: string | undefined, text: string, last: boolean): PromptKind | undefined {
   const entries = tail.split("\n").flatMap(line => transcriptEntry(line) ?? [])
   const first = id === undefined ? -1 : entries.findIndex(entry => entry.type === "user" && entry.isSidechain !== true && entry.promptId === id)
@@ -202,18 +233,21 @@ function promptRecord(tail: string, id: string | undefined, text: string, last: 
   return first === -1 ? undefined : {typed: after.some(entry => isPrompt(entry) && entry.promptId === id && entry.origin?.kind === "human")}
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function isPrompt(entry: TranscriptEntry): boolean {
   const content = entry.message?.content
   const toolResult = Array.isArray(content) && content.some((part: {type?: unknown} | null) => part?.type === "tool_result")
   return entry.type === "user" && entry.isSidechain !== true && !toolResult
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function recordText(entry: TranscriptEntry): string | undefined {
   if (isPrompt(entry)) return textOf(entry.message?.content)
   if (entry.type === "attachment" && entry.isSidechain !== true && entry.attachment?.type === "queued_command") return textOf(entry.attachment.prompt)
   return undefined
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function recordKind(record: TranscriptEntry, id: string | undefined, text: string): PromptKind {
   const origin = record.type === "attachment" ? (record.attachment?.origin ?? (record.attachment?.commandMode === "task-notification" ? {kind: "task-notification"} : undefined)) : record.origin
   const note = noteOf(origin, record.turnOrigin, text)
@@ -221,6 +255,7 @@ function recordKind(record: TranscriptEntry, id: string | undefined, text: strin
   return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: shortened(note)}), ...(midTurn ? {midTurn} : {})}
 }
 
+// spec: spec/architecture.md#hook-noteof
 function noteOf(origin: Origin | null | undefined, turnOrigin: unknown, text: string): string | undefined {
   switch (origin?.kind) {
     case "human":
@@ -241,6 +276,7 @@ function noteOf(origin: Origin | null | undefined, turnOrigin: unknown, text: st
   }
 }
 
+// spec: spec/architecture.md#hook-noteof
 function taskNote(text: string): string {
   const block = /<task-notification>([\s\S]*?)<\/task-notification>/.exec(text)?.[1]
   if (block === undefined) return `🔔 ${firstLine(text)}`
@@ -251,6 +287,7 @@ function taskNote(text: string): string {
   return `${emoji} ${summary}${event === "" ? "" : `: ${event}`}`
 }
 
+// spec: spec/architecture.md#hook-noteof
 function teammateNote(text: string): string | undefined {
   if (!teammatePrompt.test(text)) return undefined
   const match = [...text.matchAll(teammateMessage)].find(([, , , body]) => !idleNotification(body))
@@ -260,6 +297,7 @@ function teammateNote(text: string): string | undefined {
   return `✉️ Message from ${oneLine(decoded(sender))}: ${firstLine(summary === undefined ? body : decoded(summary))}`
 }
 
+// spec: spec/architecture.md#hook-noteof
 function idleNotification(body: string): boolean {
   try {
     return (JSON.parse(body) as {type?: unknown} | null)?.type === "idle_notification"
@@ -268,27 +306,92 @@ function idleNotification(body: string): boolean {
   }
 }
 
+// spec: spec/architecture.md#hook-noteof
 function peerName(origin: Origin): string {
   return oneLine(stringOf(origin.name) ?? stringOf(origin.from) ?? "another session")
 }
 
+// spec: spec/architecture.md#hook-stepof
+function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_name: event, tool_input: fields = {}, cwd, is_interrupt: interrupted, duration_ms: ms}: TurnInput): Step | undefined {
+  if (id === undefined || tool === undefined || agent !== undefined || tool.startsWith(pluginTools)) return undefined
+  const text = shortened(stepText(tool, fields, cwd))
+  if (event === "PreToolUse") return {id, text}
+  if (event === "PostToolUse" && fields.run_in_background === true) return {id, text: `${text} (in background)`, end: true}
+  const outcome = event === "PostToolUse" ? "✅" : interrupted === true ? "⏹️" : "❌"
+  return {id, text: `${text} ${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`, end: true}
+}
+
+// spec: spec/architecture.md#hook-stepof
+function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string | undefined): string {
+  const field = (name: string): string => firstLine(stringOf(fields[name]) ?? "")
+  const path = (name: string): string => displayPath(field(name), cwd)
+  switch (tool) {
+    case "Bash":
+      return `💻 ${field("description") || field("command")}`
+    case "Read":
+      return `📖 Read ${path("file_path")}`
+    case "Edit":
+      return `✏️ Edit ${path("file_path")}`
+    case "Write":
+      return `📝 Write ${path("file_path")}`
+    case "Grep":
+    case "Glob": {
+      const where = path("path")
+      return `🔍 ${tool} ${field("pattern")}${where === "" ? "" : ` in ${where}`}`
+    }
+    case "WebFetch":
+      return `🌐 Fetch ${field("url")}`
+    case "WebSearch":
+      return `🔎 Search ${field("query")}`
+    case "Agent":
+      return `🤖 Agent: ${field("description")}`
+    default: {
+      const value = stepFields.map(field).find(text => text !== "")
+      return `🔧 ${oneLine(tool)}${value === undefined ? "" : `: ${value}`}`
+    }
+  }
+}
+
+// spec: spec/architecture.md#hook-stepof
+function displayPath(path: string, cwd: string | undefined): string {
+  if (cwd === undefined || path === "") return path
+  const inside = relative(cwd, path)
+  return isAbsolute(inside) || inside.startsWith("..") ? path : inside
+}
+
+// spec: spec/architecture.md#hook-stepof
+function duration(exact: number): string {
+  const ms = Math.round(exact)
+  const seconds = Math.floor(ms / 1000)
+  if (ms < 1000) return `${ms} ms`
+  if (ms < 10_000) return `${(Math.floor(ms / 100) / 10).toFixed(1)} s`
+  if (seconds < 60) return `${seconds} s`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ${seconds % 60} s`
+  return `${Math.floor(seconds / 3600)} h ${Math.floor(seconds / 60) % 60} min`
+}
+
+// spec: spec/architecture.md#hook-noteof
 function firstLine(text: string): string {
   return text.split("\n").map(line => oneLine(line).trim()).find(line => line !== "") ?? ""
 }
 
+// spec: spec/architecture.md#hook-noteof
 function decoded(text: string): string {
   return text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&")
 }
 
+// spec: spec/architecture.md#hook-noteof
 function stringOf(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined
 }
 
+// spec: spec/architecture.md#hook-noteof
 function shortened(note: string): string {
   const chars = [...note]
   return chars.length <= maxNote ? note : `${chars.slice(0, maxNote - 1).join("")}…`
 }
 
+// spec: spec/api.md#plugin-options
 function transcriptEntry(line: string): TranscriptEntry | undefined {
   if (!line.startsWith("{")) return undefined
   try {
@@ -298,12 +401,14 @@ function transcriptEntry(line: string): TranscriptEntry | undefined {
   }
 }
 
+// spec: spec/api.md#plugin-options
 function textOf(content: unknown): string {
   if (typeof content === "string") return content.trim()
   if (!Array.isArray(content)) return ""
   return content.flatMap((part: {type?: unknown; text?: unknown} | null) => (part?.type === "text" && typeof part.text === "string" ? [part.text] : [])).join("\n").trim()
 }
 
+// spec: spec/api.md#plugin-commands
 function cut(text: string | undefined): string | undefined {
   return text === undefined || text.length <= maxText ? text : `${text.slice(0, maxText).replace(/[\ud800-\udbff]$/, "")}…`
 }
