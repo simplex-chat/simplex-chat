@@ -101,7 +101,7 @@ export class Session {
     this.tools = new AgentTools(agent, () => this.actions.mode, number)
     const session = {
       approves: (member: T.GroupMember) => this.approves(member),
-      ownerOf: (n: number) => hub.sessionId(n),
+      ownerOf: (n: number) => hub.numbered(n),
       isUser: (member: T.GroupMember) => this.isUser(member),
     }
     this.control = new Control(chat, group, {displayName: group.groupProfile.displayName, session, registerHint: "", qrCode: "small"}, this.actions, this.tools, this.schedules)
@@ -429,8 +429,8 @@ export class Hub implements SessionGroups {
     return session
   }
 
-  sessionId(number: number): string | undefined {
-    return this.sessions.get(number)?.id
+  numbered(number: number): Session | undefined {
+    return this.sessions.get(number)
   }
 
   sessionsText(): string {
