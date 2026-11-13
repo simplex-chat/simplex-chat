@@ -1,10 +1,13 @@
 import {open} from "fs/promises"
+import {isAbsolute, relative} from "path"
 import {ServiceClient} from "./client"
 import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError, oneLine} from "./log"
-import {TitleReply} from "./protocol"
+import {duration} from "./messages"
+import {Step, TitleReply} from "./protocol"
 import {qrCodeText} from "./qr"
+import {claudePid} from "./service-request"
 import {SocketError, isNotRunning} from "./socket"
 import {version} from "./version"
 
@@ -23,6 +26,9 @@ const maxNote = 200
 const statusEmoji = new Map([["completed", "✅"], ["failed", "❌"], ["stopped", "⏹️"], ["killed", "⏹️"]])
 const teammatePrompt = /^Another Claude session sent a message[^:\n]*:\n<teammate-message /
 const teammateMessage = /<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/g
+const pluginTools = "mcp__plugin_simplex_simplex__"
+const toolEvents = ["PreToolUse", "PostToolUse", "PostToolUseFailure"]
+const stepFields = ["description", "query", "url", "file_path", "path", "pattern", "command"]
 
 interface SessionStartInput {
   session_id: string
@@ -40,6 +46,13 @@ interface TurnInput {
   last_assistant_message?: string
   to_model?: string
   effort?: {level?: string}
+  cwd?: string
+  agent_id?: string
+  tool_name?: string
+  tool_input?: {[field: string]: unknown}
+  tool_use_id?: string
+  duration_ms?: number
+  is_interrupt?: boolean
 }
 
 interface Origin {
@@ -115,9 +128,12 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   if (!interactive(env)) return {}
   try {
     const input = JSON.parse(stdin) as TurnInput
+    const toolUse = toolEvents.includes(input.hook_event_name ?? "")
+    const step = toolUse ? stepOf(input) : undefined
+    if (toolUse && step === undefined) return {}
     const model = input.to_model ?? (input.hook_event_name === "Stop" ? await answerModel(input, readMs) : undefined)
     const kind = input.hook_event_name === "UserPromptSubmit" ? await promptKind(input, readMs) : undefined
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), ...kind, answer: cut(input.last_assistant_message), model, effort: input.effort?.level}
+    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), ...kind, answer: cut(input.last_assistant_message), model, effort: input.effort?.level, step}
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -272,6 +288,51 @@ function peerName(origin: Origin): string {
   return oneLine(stringOf(origin.name) ?? stringOf(origin.from) ?? "another session")
 }
 
+function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_name: event, tool_input: fields = {}, cwd, is_interrupt: interrupted, duration_ms: ms}: TurnInput): Step | undefined {
+  if (id === undefined || tool === undefined || agent !== undefined || tool.startsWith(pluginTools)) return undefined
+  const text = shortened(stepText(tool, fields, cwd))
+  if (event === "PreToolUse") return {id, text}
+  if (event === "PostToolUse" && fields.run_in_background === true) return {id, text: `${text} (in background)`, end: true}
+  const outcome = event === "PostToolUse" ? "✅" : interrupted === true ? "⏹️" : "❌"
+  return {id, text: `${text} ${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`, end: true}
+}
+
+function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string | undefined): string {
+  const field = (name: string): string => firstLine(stringOf(fields[name]) ?? "")
+  const path = (name: string): string => displayPath(field(name), cwd)
+  switch (tool) {
+    case "Bash":
+      return `💻 ${field("description") || field("command")}`
+    case "Read":
+      return `📖 Read ${path("file_path")}`
+    case "Edit":
+      return `✏️ Edit ${path("file_path")}`
+    case "Write":
+      return `📝 Write ${path("file_path")}`
+    case "Grep":
+    case "Glob": {
+      const where = path("path")
+      return `🔍 ${tool} ${field("pattern")}${where === "" ? "" : ` in ${where}`}`
+    }
+    case "WebFetch":
+      return `🌐 Fetch ${field("url")}`
+    case "WebSearch":
+      return `🔎 Search ${field("query")}`
+    case "Agent":
+      return `🤖 Agent: ${field("description")}`
+    default: {
+      const value = stepFields.map(field).find(text => text !== "")
+      return `🔧 ${oneLine(tool)}${value === undefined ? "" : `: ${value}`}`
+    }
+  }
+}
+
+function displayPath(path: string, cwd: string | undefined): string {
+  if (cwd === undefined || path === "") return path
+  const inside = relative(cwd, path)
+  return isAbsolute(inside) || inside.startsWith("..") ? path : inside
+}
+
 function firstLine(text: string): string {
   return text.split("\n").map(line => oneLine(line).trim()).find(line => line !== "") ?? ""
 }
@@ -306,9 +367,4 @@ function textOf(content: unknown): string {
 
 function cut(text: string | undefined): string | undefined {
   return text === undefined || text.length <= maxText ? text : `${text.slice(0, maxText).replace(/[\ud800-\udbff]$/, "")}…`
-}
-
-function claudePid(env: NodeJS.ProcessEnv): number | undefined {
-  const pid = Number(env.CLAUDE_PID)
-  return Number.isInteger(pid) && pid > 0 ? pid : undefined
 }

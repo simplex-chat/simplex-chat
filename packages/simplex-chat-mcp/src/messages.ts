@@ -9,7 +9,12 @@ const maxTimer = 2_147_483_647
 const pageSize = 100
 const maxCollected = 100
 const prohibitedNameChars = ".,;/\\#@'\"`~"
-const maxNameLength = 50
+export const maxNameLength = 50
+const replyTextLength = 200
+const lineBreak = /\r\n?|[\n\v\f\u0085\p{Zl}\p{Zp}]/u
+const edgeSpace = /^[\s\u0085]+|[\s\u0085]+$/g
+const bidiControls = /[\u{202A}-\u{202E}\u{2066}-\u{2069}]/gu
+const graphemes = new Intl.Segmenter(undefined, {granularity: "grapheme"})
 const receivingStatuses: T.CIFileStatus["type"][] = ["rcvAccepted", "rcvTransfer", "rcvWarning"]
 export const missingFile = "The received file is not in the agent's files folder."
 
@@ -23,8 +28,15 @@ export interface Message {
   text: string
   file?: MessageFile
   new: boolean
-  reply_to?: {chat: string; item: number}
+  reply_to?: {chat: string} & ReplyTo
   mentions_me: boolean
+}
+
+export interface ReplyTo {
+  item?: number
+  from?: string
+  type?: string
+  text: string
 }
 
 export type FileType = "image" | "video" | "voice" | "file"
@@ -176,6 +188,7 @@ export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, 
   const {meta, content, quotedItem} = item
   const text = content.type === "rcvMsgContent" || content.type === "sndMsgContent" ? content.msgContent.text : ""
   const sender = itemSender(chatInfo, item.chatDir, self)
+  const replyTo = quotedItem === undefined ? undefined : toReplyTo(chatInfo, quotedItem, self)
   return {
     chat,
     item: meta.itemId,
@@ -186,9 +199,35 @@ export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, 
     text,
     ...(content.type === "rcvMsgContent" && item.file !== undefined ? {file: messageFile(chat, content.msgContent, item.file, rejectedFiles, data)} : {}),
     new: isNew(item),
-    ...(quotedItem?.itemId === undefined ? {} : {reply_to: {chat, item: quotedItem.itemId}}),
+    ...(replyTo === undefined ? {} : {reply_to: {chat, ...replyTo, text: replyText(replyTo.text)}}),
     mentions_me: meta.userMention,
   }
+}
+
+export function toReplyTo(chatInfo: T.ChatInfo, {itemId, chatDir, content, fileName}: {itemId?: number; chatDir?: T.CIDirection; content: T.MsgContent; fileName?: string}, self: Sender): ReplyTo {
+  const from = chatDir === undefined || chatDir.type === "channelRcv" ? undefined : itemSender(chatInfo, chatDir, self).name
+  const type = content.type === "text" || content.type === "unknown" ? undefined : content.type
+  return {
+    ...(itemId === undefined ? {} : {item: itemId}),
+    ...(from === undefined ? {} : {from}),
+    ...(type === undefined ? {} : {type}),
+    text: content.text === "" ? (fileName ?? "") : content.text,
+  }
+}
+
+export function replyText(text: string): string {
+  const [line, ...rest] = trimmed(text).split(lineBreak)
+  const chars = [...graphemes.segment(trimmed(line))].map(({segment}) => segment)
+  return chars.length > replyTextLength || rest.length > 0 ? `${chars.slice(0, replyTextLength).join("").trimEnd()}…` : chars.join("")
+}
+
+export function quoteLine({type, text}: ReplyTo): string {
+  const body = replyText(type === undefined ? text : trimmed(text) === "" ? type : `${type}: ${trimmed(text)}`)
+  return body === "" ? ">" : `> ${body}`
+}
+
+function trimmed(text: string): string {
+  return text.replace(bidiControls, "").replace(edgeSpace, "")
 }
 
 function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, rejectedFiles: ReadonlySet<number>, data: string): MessageFile {
@@ -336,6 +375,16 @@ export async function awaitResponses(collected: Collected, deadline: number, idl
 
 export function utcMinutes(time: number): string {
   return `${new Date(time).toISOString().slice(0, 16).replace("T", " ")} UTC`
+}
+
+export function duration(exact: number): string {
+  const ms = Math.round(exact)
+  const seconds = Math.floor(ms / 1000)
+  if (ms < 1000) return `${ms} ms`
+  if (ms < 10_000) return `${(Math.floor(ms / 100) / 10).toFixed(1)} s`
+  if (seconds < 60) return `${seconds} s`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ${seconds % 60} s`
+  return `${Math.floor(seconds / 3600)} h ${Math.floor(seconds / 60) % 60} min`
 }
 
 export function validName(name: string): string {

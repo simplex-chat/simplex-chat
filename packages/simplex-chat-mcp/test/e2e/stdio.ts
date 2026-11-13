@@ -1,4 +1,4 @@
-import {spawn} from "child_process"
+import {ChildProcess, spawn} from "child_process"
 import {once} from "events"
 import {existsSync, readFileSync} from "fs"
 import {join} from "path"
@@ -28,6 +28,22 @@ export function spawnSession(env: NodeJS.ProcessEnv): SessionProcess {
       await exited
     },
   }
+}
+
+export function spawnSessionStart(env: NodeJS.ProcessEnv, input: object): ChildProcess {
+  const child = spawn(process.execPath, [cli, "hook", "session-start"], {env, stdio: ["pipe", "ignore", "inherit"]})
+  child.stdin.end(JSON.stringify(input))
+  return child
+}
+
+export async function runDisplay(env: NodeJS.ProcessEnv, input: object): Promise<string> {
+  const child = spawn(process.execPath, [join(__dirname, "../../dist/display.js")], {env, stdio: ["pipe", "pipe", "inherit"]})
+  let stdout = ""
+  child.stdout.setEncoding("utf8")
+  child.stdout.on("data", chunk => (stdout += chunk))
+  child.stdin.end(JSON.stringify(input))
+  await once(child, "close")
+  return stdout
 }
 
 export function servicePid(root: string): number {

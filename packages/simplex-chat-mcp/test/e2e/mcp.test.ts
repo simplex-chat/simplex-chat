@@ -85,6 +85,7 @@ test("agent with an owner, a bot and the tools", async () => {
     expect(sent.result).toMatchObject({action: cardNumber(card2), status: "done", chat, more: 0})
     expect(sent.result.responses.map(({text}: {text: string}) => text)).toEqual(["result 1: trail shoes", "result 2: trail shoes"])
     expect(sent.result.responses.every(({item}: {item: number}) => item > sent.result.item)).toBe(true)
+    expect(sent.result.responses.map(({reply_to}: {reply_to: object}) => reply_to)).toEqual([1, 2].map(() => ({chat, item: sent.result.item, from: "agent", text: "trail shoes"})))
 
     const helpCard = received(alice, textStarts("I want to send a message to bot Directory:"))
     const helping = client.tool("send", {chat, text: "/help", idle: 2, wait: 30})

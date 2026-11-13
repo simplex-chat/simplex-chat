@@ -1,11 +1,12 @@
-import {createHash, randomBytes} from "crypto"
+import {randomBytes} from "crypto"
 import {chmodSync, existsSync, fchmodSync, mkdirSync, linkSync, openSync, readFileSync, readdirSync, renameSync, rmSync, statSync, truncateSync, unlinkSync, writeFileSync} from "fs"
-import {homedir, tmpdir} from "os"
-import {join, resolve} from "path"
+import {join} from "path"
 import {ExitError, logError} from "./log"
+import {serviceTokenFile} from "./paths"
+
+export {dataRoot, socketPath} from "./paths"
 
 const sessionIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const maxSocketPath = 103
 const maxLogBytes = 10 * 1_048_576
 
 export interface SessionFile {
@@ -27,11 +28,6 @@ export interface ServerFile {
 }
 
 export class LockedError extends ExitError {}
-
-export function dataRoot(env: NodeJS.ProcessEnv = process.env, home: string = homedir()): string {
-  const given = env.SIMPLEX_MCP_HOME
-  return given ? resolve(given) : join(home, ".simplex-mcp")
-}
 
 export function hubFolder(root: string): string {
   return join(root, "_hub")
@@ -71,13 +67,6 @@ export function storedSessions(root: string): {id: string; session: SessionFile}
   })
 }
 
-export function socketPath(root: string, platform: NodeJS.Platform = process.platform): string {
-  const hash = createHash("sha256").update(root).digest("hex").slice(0, 16)
-  if (platform === "win32") return `\\\\.\\pipe\\simplex-mcp-${hash}`
-  const path = join(root, "service.sock")
-  return Buffer.byteLength(path) <= maxSocketPath ? path : join(tmpdir(), `simplex-mcp-${hash}.sock`)
-}
-
 export function logFile(root: string): string {
   return join(root, "service.log")
 }
@@ -85,7 +74,7 @@ export function logFile(root: string): string {
 export const serviceLock = "service.lock"
 
 export function serviceToken(root: string): string {
-  return serverToken(root, false, "service.token")
+  return serverToken(root, false, serviceTokenFile)
 }
 
 export function trimLog(root: string): void {

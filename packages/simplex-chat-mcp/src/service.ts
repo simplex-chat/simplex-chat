@@ -45,6 +45,7 @@ export interface SessionLike {
   permission(request: PermissionRequest): void
   turn(request: TurnRequest): Promise<void>
   endPermissions(): void
+  endLive(): Promise<void>
 }
 
 export interface ServiceDeps {
@@ -319,6 +320,7 @@ export class Service {
       entry.seen = Date.now()
       agent.onLine = undefined
       agent.endPermissions()
+      agent.endLive()
       this.scheduleIdle(id, entry)
     })
   }
@@ -499,7 +501,15 @@ export function sessionName(title: string | undefined, project: string): string 
 function readyChannel(env: NodeJS.ProcessEnv): (line: string) => void {
   const fd = Number(env.SIMPLEX_MCP_READY_FD)
   return line => {
-    if (Number.isInteger(fd) && fd >= firstFreeFd) writeSync(fd, `${line}\n`)
+    if (Number.isInteger(fd) && fd >= firstFreeFd) writeReady(fd, `${line}\n`)
     else process.stdout.write(`${line}\n`)
+  }
+}
+
+function writeReady(fd: number, text: string): void {
+  try {
+    writeSync(fd, text)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EPIPE") throw error
   }
 }
