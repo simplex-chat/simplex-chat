@@ -641,7 +641,12 @@ fun displayedUri(uri: String): String {
   return uri.replaceRange(authorityStart, authorityEnd, authority).replace(invisibleChar) { unicodeMarker(it.value) }
 }
 
-fun shortenedUri(uri: String): String = if (uri.count() > 160) uri.substring(0, 159) + "…" else uri
+fun shortenedUri(uri: String): String {
+  val authorityStart = uri.indexOf("://").takeIf { it >= 0 }?.plus(3) ?: 0
+  val authorityEnd = uri.indexOfAny(charArrayOf('/', '?', '#'), authorityStart).takeIf { it >= 0 } ?: uri.length
+  val shownLength = maxOf(159, authorityEnd)
+  return if (uri.length > shownLength + 1) uri.substring(0, shownLength) + "…" else uri
+}
 
 fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(
   save = { it.width to it.height },
