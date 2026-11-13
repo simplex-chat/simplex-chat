@@ -152,6 +152,7 @@ export interface AudioReply {
   headers?: {[name: string]: string}
   body?: string | Buffer
   hold?: Promise<unknown>
+  stall?: Promise<unknown>
 }
 
 export interface AudioServer {
@@ -171,7 +172,7 @@ export async function audioServer(): Promise<AudioServer> {
       const path = req.url ?? ""
       requests.push({path, type: req.headers["content-type"] ?? "", body: Buffer.concat(chunks)})
       const reply: AudioReply = replies.get(path) ?? {}
-      Promise.resolve(reply.hold).then(() => res.writeHead(reply.status ?? 200, reply.headers).end(reply.body ?? ""))
+      Promise.resolve(reply.hold).then(() => res.writeHead(reply.status ?? 200, reply.headers).write(reply.body ?? "")).then(() => reply.stall).then(() => res.end())
     })
   })
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", () => resolve()))

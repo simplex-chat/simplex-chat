@@ -1492,8 +1492,8 @@ Notes:
 
 - Without a files approval, in mode `host`, in a member chat, above 300 s or 1500000 bytes, with 20 voice files in transcription, or with the control chat lost, the message is delivered at once with its file `offered` ([tools.ts:642-644](../src/tools.ts#L642-L644)).
 - No servers 60 s after the arrival, unknown servers, a removed files approval or a failed download: the message is released without a transcript. Each of them but the removed approval is logged as `voice message of file N: ERROR` ([tools.ts:648-655](../src/tools.ts#L648-L655)).
-- A failure of the audio API is written as `transcript_error` and logged as `transcription of file N: ERROR`; the requests of the process are sent one at a time ([audio.ts:22-26](../src/audio.ts#L22-L26), [:33-42](../src/audio.ts#L33-L42)).
+- A failure of the audio API is written as `transcript_error` and logged as `transcription of file N: ERROR`; the requests of the process are sent one at a time ([audio.ts:25-29](../src/audio.ts#L25-L29), [:36-45](../src/audio.ts#L36-L45)).
 - During the run, its download is shared with a `download` of the item, and the run is awaited there, so one transcription request is sent ([tools.ts:622-623](../src/tools.ts#L622-L623), [:1196-1197](../src/tools.ts#L1196-L1197)).
 - The item is held in the responses of `send` in the same way ([tools.ts:971-973](../src/tools.ts#L971-L973)).
 
-Source: [tools.ts:631-659](../src/tools.ts#L631-L659), [:704-705](../src/tools.ts#L704-L705), [:1290-1292](../src/tools.ts#L1290-L1292), [audio.ts:22-74](../src/audio.ts#L22-L74), [messages.ts:203](../src/messages.ts#L203).
+Source: [tools.ts:631-659](../src/tools.ts#L631-L659), [:704-705](../src/tools.ts#L704-L705), [:1290-1292](../src/tools.ts#L1290-L1292), [audio.ts:25-86](../src/audio.ts#L25-L86), [messages.ts:203](../src/messages.ts#L203).

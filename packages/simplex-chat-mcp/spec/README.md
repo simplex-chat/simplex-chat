@@ -230,7 +230,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Tool registration | [`src/tools.ts`](../src/tools.ts#L512) | `registerTools` | [512](../src/tools.ts#L512) |
 | Downloads | [`src/tools.ts`](../src/tools.ts#L602) | `AgentTools.downloadFile` | [602](../src/tools.ts#L602) |
 | Voice messages at arrival | [`src/tools.ts`](../src/tools.ts#L646) | `AgentTools.transcribeOnArrival` | [646](../src/tools.ts#L646) |
-| Audio API | [`src/audio.ts`](../src/audio.ts#L22) | `transcript`, `speech` | [22](../src/audio.ts#L22) |
+| Audio API | [`src/audio.ts`](../src/audio.ts#L25) | `transcript`, `speech` | [25](../src/audio.ts#L25) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L147) | `Actions` | [147](../src/actions.ts#L147) |
 | Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L93) | `Control` | [93](../src/control.ts#L93) |
 | Card text | [`src/control.ts`](../src/control.ts#L679) | `cardText` | [679](../src/control.ts#L679) |

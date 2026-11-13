@@ -398,7 +398,7 @@ A received voice message is transcribed at its arrival under these conditions ([
 |---|---|
 | `--audio` given | [tools.ts:643](../src/tools.ts#L643) |
 | the main conversation of a contact or group | [messages.ts:136-138](../src/messages.ts#L136-L138) |
-| a received message with a file of type `voice`, a duration of at most 300 s and a size of at most 1500000 bytes | [tools.ts:635-636](../src/tools.ts#L635-L636), [:1632-1634](../src/tools.ts#L1632-L1634), [:181](../src/tools.ts#L181), [audio.ts:18](../src/audio.ts#L18) |
+| a received message with a file of type `voice`, a duration of at most 300 s and a size of at most 1500000 bytes | [tools.ts:635-636](../src/tools.ts#L635-L636), [:1632-1634](../src/tools.ts#L1632-L1634), [:181](../src/tools.ts#L181), [audio.ts:21](../src/audio.ts#L21) |
 | file status `rcvInvitation`, protocol XFTP, no file error | [tools.ts:643](../src/tools.ts#L643) |
 | fewer than 20 voice files in transcription; the control chat not lost | [tools.ts:182](../src/tools.ts#L182), [:643](../src/tools.ts#L643) |
 | the chat's files approval by a current approver, in mode `requests` | [control.ts:167-170](../src/control.ts#L167-L170) |
@@ -417,7 +417,7 @@ Steps of the arrival ([`transcribeOnArrival`](../src/tools.ts#L646-L659)):
 
 A message is final when it is not live and its file ID is not in `transcribing` ([`isFinal`](../src/tools.ts#L1290-L1292)). Unread pages are read by `receive` until `limit + 1` final messages, and only final messages are returned; only final responses are returned by `send`, and its wait is ended by `idle` only when every collected response is final ([messages.ts:290-301](../src/messages.ts#L290-L301), [:325-333](../src/messages.ts#L325-L333), [tools.ts:971-973](../src/tools.ts#L971-L973), [:1304](../src/tools.ts#L1304), [:1309](../src/tools.ts#L1309)). A held message is kept unread and counted in `more`. Messages are not held by `connect`.
 
-Speech-to-text ([`transcript`](../src/audio.ts#L22-L26), [`transcribe`](../src/audio.ts#L53-L64), [`post`](../src/audio.ts#L66-L74)):
+Speech-to-text ([`transcript`](../src/audio.ts#L25-L29), [`transcribe`](../src/audio.ts#L56-L67), [`post`](../src/audio.ts#L69-L80), [`send`](../src/audio.ts#L82-L86)):
 
 | Item | Value |
 |---|---|
@@ -425,13 +425,13 @@ Speech-to-text ([`transcript`](../src/audio.ts#L22-L26), [`transcribe`](../src/a
 | order | one request at a time, in the order of the calls |
 | limits | 10 minutes from the request's turn; redirects refused; files over 1500000 bytes not sent |
 | result | the string `text` of the JSON response, trimmed |
-| errors | `Speech-to-text failed: HTTP N.`<br>`Speech-to-text failed: The operation was aborted due to timeout.`<br>`Speech-to-text failed: fetch failed.`<br>`Speech-to-text failed: no text.`<br>`Speech-to-text failed: the file has more than 1500000 bytes.` |
+| errors | `Speech-to-text failed: HTTP N.`, also for a redirect<br>`Speech-to-text failed: The operation was aborted due to timeout.`<br>`Speech-to-text failed: ERROR.` with the system error of a failed connection, such as `connect ECONNREFUSED HOST:PORT`, or only its code when the connection is refused at each address of the host<br>`Speech-to-text failed: no text.`<br>`Speech-to-text failed: the file has more than 1500000 bytes.` |
 
-The transcript file is `PATH.transcript.json` beside the voice file PATH, mode 0600: `{"transcript": TEXT}`, or `{"transcript_error": ERROR}` with the error logged as `transcription of file N: ERROR` ([`writeTranscript`](../src/audio.ts#L33-L42)). Its string fields are read by `transcriptOf`; none are read from a missing or unreadable file ([audio.ts:44-51](../src/audio.ts#L44-L51), [messages.ts:203](../src/messages.ts#L203)).
+The transcript file is `PATH.transcript.json` beside the voice file PATH, mode 0600: `{"transcript": TEXT}`, or `{"transcript_error": ERROR}` with the error logged as `transcription of file N: ERROR` ([`writeTranscript`](../src/audio.ts#L36-L45)). Its string fields are read by `transcriptOf`; none are read from a missing or unreadable file ([audio.ts:47-54](../src/audio.ts#L47-L54), [messages.ts:203](../src/messages.ts#L203)).
 
 `download`, with `--audio`, for a voice file within the limits: after the download, the file's arrival run is awaited, and the file is transcribed when its transcript file lacks `transcript`; the fields of the transcript file are added to the result ([tools.ts:1191-1198](../src/tools.ts#L1191-L1198), [:1184](../src/tools.ts#L1184)).
 
-Voice replies, the perform of a `send` with `voice` ([`spokenFile`](../src/tools.ts#L1067-L1077), [`speech`](../src/audio.ts#L28-L31), [`performSend`](../src/tools.ts#L984-L1009)):
+Voice replies, the perform of a `send` with `voice` ([`spokenFile`](../src/tools.ts#L1067-L1077), [`speech`](../src/audio.ts#L31-L34), [`performSend`](../src/tools.ts#L984-L1009)):
 
 | Step | Value |
 |---|---|
@@ -440,7 +440,7 @@ Voice replies, the perform of a `send` with `voice` ([`spokenFile`](../src/tools
 | conversion | `ffmpeg -nostdin -v error -protocol_whitelist file -f wav -i voice.m4a.wav -ac 1 -ar 16000 -c:a aac -b:a 32k -f ipod voice.m4a`, 30 s ([tools.ts:1071](../src/tools.ts#L1071)) |
 | duration | `ffprobe -f mov`, rounded; 0 when it fails ([tools.ts:1750-1758](../src/tools.ts#L1750-L1758)) |
 | message | the file `voice.m4a`; `{type: "voice", text: the caption with the mentions, duration}` |
-| failure | the folder deleted; `Text-to-speech failed: HTTP N.`, `Text-to-speech failed: The operation was aborted due to timeout.`, `Text-to-speech failed: fetch failed.`, or the error of `ffmpeg` |
+| failure | the folder deleted; `Text-to-speech failed: HTTP N.`, also for a redirect, `Text-to-speech failed: The operation was aborted due to timeout.`, `Text-to-speech failed: ERROR.` with the error of a failed connection, or the error of `ffmpeg` |
 
 The folder of `voice.m4a` is deleted as a resized copy is ([1.3](#13-send)).
 

@@ -318,15 +318,16 @@ Hooks are bound in [`serve.ts:99-105`](../src/serve.ts#L99-L105): `refusal`, `sa
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `AudioOptions` | [6](../src/audio.ts#L6) | `url`, `stt`, `tts`, optional `voice` of `--audio` |
-| `Transcript` | [13](../src/audio.ts#L13) | `transcript`, `transcript_error` |
-| `maxVoiceBytes` | [18](../src/audio.ts#L18) | 1500000 |
-| `transcript` | [22](../src/audio.ts#L22) | the queue of transcriptions: one request at a time, in call order |
-| `speech` | [28](../src/audio.ts#L28) | `POST URL/v1/audio/speech`; the WAV bytes |
-| `writeTranscript` | [33](../src/audio.ts#L33) | `PATH.transcript.json`, mode 0600; failures logged |
-| `transcriptOf` | [44](../src/audio.ts#L44) | the string fields of `PATH.transcript.json`; none when unreadable |
-| `transcribe` | [53](../src/audio.ts#L53) | the size check; `POST URL/v1/audio/transcriptions` with `model` and `file`; the trimmed `text` |
-| `post` | [66](../src/audio.ts#L66) | `fetch` without redirects, 10 minutes; `SERVICE failed: ERROR.` |
+| `AudioOptions` | [9](../src/audio.ts#L9) | `url`, `stt`, `tts`, optional `voice` of `--audio` |
+| `Transcript` | [16](../src/audio.ts#L16) | `transcript`, `transcript_error` |
+| `maxVoiceBytes` | [21](../src/audio.ts#L21) | 1500000 |
+| `transcript` | [25](../src/audio.ts#L25) | the queue of transcriptions: one request at a time, in call order |
+| `speech` | [31](../src/audio.ts#L31) | `POST URL/v1/audio/speech`; the WAV bytes |
+| `writeTranscript` | [36](../src/audio.ts#L36) | `PATH.transcript.json`, mode 0600; failures logged |
+| `transcriptOf` | [47](../src/audio.ts#L47) | the string fields of `PATH.transcript.json`; none when unreadable |
+| `transcribe` | [56](../src/audio.ts#L56) | the size check; `POST URL/v1/audio/transcriptions` with `model` and `file`; the trimmed `text` |
+| `post` | [69](../src/audio.ts#L69) | the request, 10 minutes; a status other than 2xx, a redirect included, is an error; `SERVICE failed: ERROR.`, with the timeout's error after the timeout, and the error code for an error without a message |
+| `send` | [82](../src/audio.ts#L82) | `http.request` or `https.request` with the body and headers of a `Request`, a new connection each, the timeout's signal |
 
 ---
 
@@ -346,7 +347,7 @@ Hooks are bound in [`serve.ts:99-105`](../src/serve.ts#L99-L105): `refusal`, `sa
 | Rejected files | `AgentTools.rejectedFiles` ([tools.ts:544](../src/tools.ts#L544)) | `downloadResult` ([:1186-1187](../src/tools.ts#L1186-L1187)) | the file field; `download`, which then skips the files approval ([:1149](../src/tools.ts#L1149)) |
 | Count of file descriptions | `AgentTools.describedFiles` ([tools.ts:545](../src/tools.ts#L545), [:547](../src/tools.ts#L547)) | `onFileDescription` | `fileServers` |
 | Voice files in transcription at arrival, at most 20 | `AgentTools.transcribing` ([tools.ts:546](../src/tools.ts#L546)) | `onNewItems`, `transcribeOnArrival` ([:638](../src/tools.ts#L638), [:657](../src/tools.ts#L657)) | `isFinal`, `performDownload` ([:1291](../src/tools.ts#L1291), [:1196](../src/tools.ts#L1196)) |
-| Queue of transcriptions | `transcriptions` ([audio.ts:20](../src/audio.ts#L20)) | `transcript` ([:22-26](../src/audio.ts#L22-L26)) | `transcript` |
+| Queue of transcriptions | `transcriptions` ([audio.ts:23](../src/audio.ts#L23)) | `transcript` ([:25-29](../src/audio.ts#L25-L29)) | `transcript` |
 | Members of the control chat | `Control.members` ([control.ts:94](../src/control.ts#L94)) | `refreshMembers` ([:568-570](../src/control.ts#L568-L570)) | approver checks |
 | Mode, expiry, owners list, stop wait | `ServeOptions` of the run. The mode is kept in `Actions.mode` and in each action as well ([actions.ts:42](../src/actions.ts#L42)). | CLI | all modules |
 
@@ -371,7 +372,7 @@ The profile, chats, items, members and file transfers are stored by the core in 
 | `DATA/lock` | PID and a newline | 0600 | start ([files.ts:182-221](../src/files.ts#L182-L221)) | next start |
 | `DATA/tmp/` | the core's temp folder: files in transfer | 0700, set at every start | [core.ts:40](../src/core.ts#L40), [:77-81](../src/core.ts#L77-L81) | the core |
 | `DATA/files/group-N/`, `DATA/files/contact-N/` | downloaded files and files received without a download, named by file ID and extension | folder 0700 | the core at the download path ([tools.ts:1205-1206](../src/tools.ts#L1205-L1206)); moves ([:1712-1722](../src/tools.ts#L1712-L1722)) | `download` results, `/forward`, `/leave`, `/delete CHAT files` |
-| `DATA/files/group-N/PATH.transcript.json` and the same under `contact-N` | the transcript of the voice file PATH: `{"transcript": TEXT}` or `{"transcript_error": ERROR}` | 0600 | [audio.ts:33-42](../src/audio.ts#L33-L42) | messages and `download` results ([audio.ts:44-51](../src/audio.ts#L44-L51), [messages.ts:203](../src/messages.ts#L203), [tools.ts:1184](../src/tools.ts#L1184)); deleted with the folder |
+| `DATA/files/group-N/PATH.transcript.json` and the same under `contact-N` | the transcript of the voice file PATH: `{"transcript": TEXT}` or `{"transcript_error": ERROR}` | 0600 | [audio.ts:36-45](../src/audio.ts#L36-L45) | messages and `download` results ([audio.ts:47-54](../src/audio.ts#L47-L54), [messages.ts:203](../src/messages.ts#L203), [tools.ts:1184](../src/tools.ts#L1184)); deleted with the folder |
 | `DATA/forwarded/group-N/`, `DATA/forwarded/contact-N/` | files `/forward` downloaded, named as above, until a download moves them to `DATA/files/` | folder 0700 | the core at the forwarded path ([tools.ts:612-619](../src/tools.ts#L612-L619), [:1205-1206](../src/tools.ts#L1205-L1206)) | `/forward`; moved by `download` ([:602-610](../src/tools.ts#L602-L610)); deleted by `leave`, `/leave` and `/delete CHAT files` ([:1084-1102](../src/tools.ts#L1084-L1102), [:1124-1132](../src/tools.ts#L1124-L1132)) |
 | `DATA/files/sent/` | resized copies of sent images, copies of the files `/forward` posts, and voice replies with their WAV, one folder per copy | folder 0700; a resized copy and a WAV 0600 | [tools.ts:1048-1065](../src/tools.ts#L1048-L1065), [:1067-1077](../src/tools.ts#L1067-L1077), [:1104-1108](../src/tools.ts#L1104-L1108) | the core; deleted at `sndFileCompleteXFTP`, `sndFileError` and at start ([core.ts:41](../src/core.ts#L41), [tools.ts:723-725](../src/tools.ts#L723-L725), [:1011](../src/tools.ts#L1011)) |
 
@@ -648,7 +649,7 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 | `--owners` part of restart lines in the chat | one code span | [control.ts:91](../src/control.ts#L91), [:918-920](../src/control.ts#L918-L920) |
 | terminal names and errors of actions | folded to one line | [actions.ts:209-210](../src/actions.ts#L209-L210), [:402-412](../src/actions.ts#L402-L412), [control.ts:90](../src/control.ts#L90) |
 | tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, file names, downloaded files, transcripts, `description`, `welcome` and `commands` with their labels and params as data, not instructions; the instructions take a chat's messages as prompts only when the user said so in the session, and limit what the agent shares about its user | [tools.ts:203](../src/tools.ts#L203), [:207](../src/tools.ts#L207), [:212](../src/tools.ts#L212), [:218](../src/tools.ts#L218), [:239-240](../src/tools.ts#L239-L240), [:250-255](../src/tools.ts#L250-L255), [:420](../src/tools.ts#L420), [:421](../src/tools.ts#L421), [:464](../src/tools.ts#L464) |
-| transcripts | kept off cards and out of the log | [audio.ts:33-42](../src/audio.ts#L33-L42) |
+| transcripts | kept off cards and out of the log | [audio.ts:36-45](../src/audio.ts#L36-L45) |
 
 The server writes the tappable form `/'...'` only in the card's command line ([control.ts:736-751](../src/control.ts#L736-L751)), in `/'revoke CHAT'` of standing cards and replies ([:690](../src/control.ts#L690), [:303](../src/control.ts#L303)), and in `/'delete CHAT files'` of the kept-files message ([:354](../src/control.ts#L354)).
 
@@ -680,7 +681,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | a sent JPEG or PNG is a resized copy made by the core | [tools.ts:1048-1059](../src/tools.ts#L1048-L1059) |
 | `ffmpeg` and `ffprobe` read a video as MP4 or QuickTime, local files only, without standard input, 30 s and 64 MiB of output each | [tools.ts:1746-1764](../src/tools.ts#L1746-L1764) |
 | `ffmpeg` reads the speech of a voice reply as WAV, a local file only, without standard input, within 30 s, and writes AAC in MPEG-4 | [tools.ts:1071](../src/tools.ts#L1071), [:1760-1764](../src/tools.ts#L1760-L1764) |
-| with `--audio` and a files approval, a voice message of at most 300 s and 1500000 bytes on known XFTP servers is downloaded at its arrival, without approved relays, and its bytes are sent to the audio API | [tools.ts:642-659](../src/tools.ts#L642-L659), [audio.ts:53-64](../src/audio.ts#L53-L64) |
+| with `--audio` and a files approval, a voice message of at most 300 s and 1500000 bytes on known XFTP servers is downloaded at its arrival, without approved relays, and its bytes are sent to the audio API | [tools.ts:642-659](../src/tools.ts#L642-L659), [audio.ts:56-67](../src/audio.ts#L56-L67) |
 | a download is saved only at `DATA/files/group-N/` or `DATA/files/contact-N/`, or for `/forward` at the same name under `DATA/forwarded/`, named by its file ID and an extension of 1 to 16 ASCII letters and digits | [messages.ts:216-228](../src/messages.ts#L216-L228) |
 | a forwarded file is outside `DATA/files/`, so `send` refuses it; a download moves it into `DATA/files/` after the copy for the post is made | [tools.ts:602-619](../src/tools.ts#L602-L619), [:1034-1039](../src/tools.ts#L1034-L1039) |
 | a file on unknown servers gets a card that names them, also under a files approval; relays are approved only for such a card, and for every other download, and in mode `host`, the core checks the complete description and downloads a file on unknown servers only when the IP address is protected | [tools.ts:1149](../src/tools.ts#L1149), [:625](../src/tools.ts#L625), [:1206](../src/tools.ts#L1206), [control.ts:746-749](../src/control.ts#L746-L749) |
@@ -698,10 +699,10 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | Rule | Code |
 |---|---|
 | URL is set only by `--audio`, `http` or `https` without a user name or password, and logged at start | [cli.ts:197-208](../src/cli.ts#L197-L208), [serve.ts:77](../src/serve.ts#L77) |
-| a transcription request: two fields, `model` and the voice file named `<file ID><extension>` | [audio.ts:56-58](../src/audio.ts#L56-L58) |
-| a speech request: `model`, the voice text as `input`, `response_format` and the optional `voice` | [audio.ts:29](../src/audio.ts#L29) |
-| redirects are refused; each request is aborted after 10 minutes | [audio.ts:19](../src/audio.ts#L19), [:68](../src/audio.ts#L68) |
-| transcription requests are sent one at a time | [audio.ts:20-26](../src/audio.ts#L20-L26) |
+| a transcription request: two fields, `model` and the voice file named `<file ID><extension>` | [audio.ts:59-61](../src/audio.ts#L59-L61) |
+| a speech request: `model`, the voice text as `input`, `response_format` and the optional `voice` | [audio.ts:32](../src/audio.ts#L32) |
+| redirects are refused; each request is aborted after 10 minutes | [audio.ts:22](../src/audio.ts#L22), [:70](../src/audio.ts#L70), [:74](../src/audio.ts#L74), [:85](../src/audio.ts#L85) |
+| transcription requests are sent one at a time | [audio.ts:23-29](../src/audio.ts#L23-L29) |
 
 ---
 
@@ -731,10 +732,10 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | download without progress | 30 min, then cancelled | [tools.ts:162](../src/tools.ts#L162) |
 | `ffmpeg`, `ffprobe` | 30 s, 64 MiB of output | [tools.ts:166](../src/tools.ts#L166), [:170](../src/tools.ts#L170) |
 | `send.voice` | 1 to 4096 characters | [tools.ts:290](../src/tools.ts#L290) |
-| voice file transcribed at arrival or at `download` | 300 s declared, 1500000 bytes | [tools.ts:181](../src/tools.ts#L181), [audio.ts:18](../src/audio.ts#L18), [tools.ts:1632-1634](../src/tools.ts#L1632-L1634) |
+| voice file transcribed at arrival or at `download` | 300 s declared, 1500000 bytes | [tools.ts:181](../src/tools.ts#L181), [audio.ts:21](../src/audio.ts#L21), [tools.ts:1632-1634](../src/tools.ts#L1632-L1634) |
 | voice files in transcription at arrival | 20 | [tools.ts:182](../src/tools.ts#L182) |
 | wait for the upload of a voice file at arrival | 60 s | [tools.ts:649](../src/tools.ts#L649) |
-| audio API request | 10 min; transcriptions one at a time | [audio.ts:19](../src/audio.ts#L19), [:20-26](../src/audio.ts#L20-L26) |
+| audio API request | 10 min; transcriptions one at a time | [audio.ts:22](../src/audio.ts#L22), [:23-29](../src/audio.ts#L23-L29) |
 | stop wait | 0 to 60 s, default 10 | [cli.ts:89](../src/cli.ts#L89), [:110-112](../src/cli.ts#L110-L112) |
 | error details | 500 characters | [log.ts:4](../src/log.ts#L4) |
 | progress interval | 60 s | [messages.ts:8](../src/messages.ts#L8) |

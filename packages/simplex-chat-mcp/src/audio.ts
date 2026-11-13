@@ -1,6 +1,9 @@
 import {readFileSync} from "fs"
 import {readFile, writeFile} from "fs/promises"
+import {IncomingMessage, request as httpRequest} from "http"
+import {request as httpsRequest} from "https"
 import {basename} from "path"
+import {buffer} from "stream/consumers"
 import {errorText, logError} from "./log"
 
 export interface AudioOptions {
@@ -27,7 +30,7 @@ export function transcript(audio: AudioOptions, path: string): Promise<string> {
 
 export function speech(audio: AudioOptions, input: string): Promise<Buffer> {
   const body = JSON.stringify({model: audio.tts, input, response_format: "wav", voice: audio.voice})
-  return post("Text-to-speech", `${audio.url}/v1/audio/speech`, {headers: {"content-type": "application/json"}, body}, async response => Buffer.from(await response.arrayBuffer()))
+  return post("Text-to-speech", `${audio.url}/v1/audio/speech`, {headers: {"content-type": "application/json"}, body}, wav => wav)
 }
 
 export async function writeTranscript(audio: AudioOptions, fileId: number, path: string): Promise<void> {
@@ -56,19 +59,28 @@ async function transcribe(audio: AudioOptions, path: string): Promise<string> {
   const form = new FormData()
   form.append("model", audio.stt)
   form.append("file", new Blob([bytes]), basename(path))
-  return post("Speech-to-text", `${audio.url}/v1/audio/transcriptions`, {body: form}, async response => {
-    const {text} = (await response.json()) as {text?: unknown}
+  return post("Speech-to-text", `${audio.url}/v1/audio/transcriptions`, {body: form}, json => {
+    const {text} = JSON.parse(json.toString()) as {text?: unknown}
     if (typeof text !== "string") throw new Error("no text")
     return text.trim()
   })
 }
 
-async function post<R>(service: string, url: string, init: RequestInit, read: (response: Response) => Promise<R>): Promise<R> {
+async function post<R>(service: string, url: string, init: RequestInit, read: (body: Buffer) => R): Promise<R> {
+  const signal = AbortSignal.timeout(requestTimeout)
   try {
-    const response = await fetch(url, {...init, method: "POST", redirect: "error", signal: AbortSignal.timeout(requestTimeout)})
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    return await read(response)
+    const response = await send(new Request(url, {...init, method: "POST"}), signal)
+    const body = await buffer(response)
+    if (response.statusCode! < 200 || response.statusCode! > 299) throw new Error(`HTTP ${response.statusCode}`)
+    return read(body)
   } catch (error) {
-    throw new Error(`${service} failed: ${(error as Error).message}.`)
+    const cause = (signal.reason ?? error) as NodeJS.ErrnoException
+    throw new Error(`${service} failed: ${cause.message || cause.code}.`)
   }
+}
+
+async function send(request: Request, signal: AbortSignal): Promise<IncomingMessage> {
+  const body = Buffer.from(await request.arrayBuffer())
+  const open = request.url.startsWith("https:") ? httpsRequest : httpRequest
+  return new Promise((resolve, reject) => open(request.url, {agent: false, method: request.method, headers: Object.fromEntries(request.headers), signal}, resolve).on("error", reject).end(body))
 }

@@ -1,3 +1,4 @@
+import * as dns from "dns"
 import {mkdtempSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
@@ -41,7 +42,7 @@ describe("transcript", () => {
     server.replies.set("/v1/audio/transcriptions", {body: JSON.stringify({segments: []})})
     expect(await failure(voiceFile("7.m4a"))).toBe("Speech-to-text failed: no text.")
     server.replies.set("/v1/audio/transcriptions", {status: 307, headers: {location: "/elsewhere"}})
-    expect(await failure(voiceFile("7.m4a"))).toBe("Speech-to-text failed: fetch failed.")
+    expect(await failure(voiceFile("7.m4a"))).toBe("Speech-to-text failed: HTTP 307.")
     expect(server.requests.map(({path}) => path)).not.toContain("/elsewhere")
     const timeout = AbortSignal.timeout
     jest.spyOn(AbortSignal, "timeout").mockImplementation(() => timeout(50))
@@ -50,7 +51,7 @@ describe("transcript", () => {
     const closed = await audioServer()
     await closed.close()
     audio = {...audio, url: closed.url}
-    expect(await failure(voiceFile("7.m4a"))).toBe("Speech-to-text failed: fetch failed.")
+    expect(await failure(voiceFile("7.m4a"))).toBe(`Speech-to-text failed: connect ECONNREFUSED ${new URL(closed.url).host}.`)
   })
 
   it("posts a file of 1 500 000 bytes, and refuses a larger one without a request", async () => {
@@ -92,7 +93,33 @@ describe("speech", () => {
     server.replies.set("/v1/audio/speech", {status: 503})
     await expect(speech(audio, "Grüezi.")).rejects.toThrow(new Error("Text-to-speech failed: HTTP 503."))
     server.replies.set("/v1/audio/speech", {status: 308, headers: {location: "/elsewhere"}})
-    await expect(speech(audio, "Grüezi.")).rejects.toThrow(new Error("Text-to-speech failed: fetch failed."))
+    await expect(speech(audio, "Grüezi.")).rejects.toThrow(new Error("Text-to-speech failed: HTTP 308."))
     expect(server.requests.map(({path}) => path)).not.toContain("/elsewhere")
+  })
+})
+
+describe("requests", () => {
+  it("are aborted only at their own timeout, not at the shorter header and body timeouts of fetch", async () => {
+    const realm = fetch.constructor("return globalThis")()
+    const dispatcher = Symbol.for("undici.globalDispatcher.1")
+    const agent = realm[dispatcher]
+    realm[dispatcher] = new agent.constructor({headersTimeout: 1, bodyTimeout: 1})
+    const timeout = AbortSignal.timeout
+    jest.spyOn(AbortSignal, "timeout").mockImplementation(() => timeout(2000))
+    server.replies.set("/v1/audio/speech", {hold: new Promise(() => undefined)})
+    server.replies.set("/v1/audio/transcriptions", {body: "{", stall: new Promise(() => undefined)})
+    try {
+      const failures = [speech(audio, "Grüezi."), transcript(audio, voiceFile("7.m4a"))].map(request => request.then(() => undefined, (error: Error) => error.message))
+      expect(await Promise.all(failures)).toEqual(["Text-to-speech failed: The operation was aborted due to timeout.", "Speech-to-text failed: The operation was aborted due to timeout."])
+    } finally {
+      realm[dispatcher] = agent
+    }
+  })
+
+  it("fail with the error code when the connection is refused at each address of the host", async () => {
+    const closed = await audioServer()
+    await closed.close()
+    jest.spyOn(dns, "lookup").mockImplementation(((_host: string, _options: object, callback: (error: null, addresses: dns.LookupAddress[]) => void) => callback(null, [{address: "127.0.0.1", family: 4}, {address: "::1", family: 6}])) as never)
+    await expect(speech({...audio, url: `http://localhost:${new URL(closed.url).port}`}, "Grüezi.")).rejects.toThrow(new Error("Text-to-speech failed: ECONNREFUSED."))
   })
 })

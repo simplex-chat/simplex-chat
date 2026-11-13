@@ -417,12 +417,13 @@ Speech-to-text:
 ```
 Speech-to-text failed: HTTP 500.
 Speech-to-text failed: The operation was aborted due to timeout.
-Speech-to-text failed: fetch failed.
+Speech-to-text failed: connect ECONNREFUSED 127.0.0.1:8080.
 Speech-to-text failed: no text.
 Speech-to-text failed: the file has more than 1500000 bytes.
 ```
 
-- `fetch failed` is also the error of a redirect, which the server does not follow.
+- The error of a redirect is its status, such as `HTTP 307`; the server does not follow it.
+- The error of a failed connection is the system error, such as `connect ECONNREFUSED 127.0.0.1:8080`, or only its code, such as `ECONNREFUSED`, when the connection is refused at each address of the host.
 - After a failure, the message is transcribed again at its next `download`; a transcript already written is returned without a request.
 
 Transcripts are kept next to their voice files, in `DATA/files/group-N/` and `DATA/files/contact-N/`, also after a restart. They are deleted and counted by `/delete CHAT files`. After a restart, a voice message whose download was running is shown as `received` without a transcript, and its transcript is added at the `download`.
@@ -459,7 +460,7 @@ After the approval:
 2. `ffmpeg` converts the WAV to AAC in a `.m4a` file, mono, 16 kHz, 32 kbit/s, the apps' recording format; `ffprobe` reads its duration, or 0 when it fails.
 3. The server sends the voice message `voice.m4a` with the caption and its mentions.
 
-After a failed speech request or conversion, the last line of the card is ``Approved by Alice; failed: `Text-to-speech failed: HTTP 503.`.``, and status `failed` with the error is returned to the call. The other errors are `Text-to-speech failed: The operation was aborted due to timeout.`, `Text-to-speech failed: fetch failed.` and those of `ffmpeg`, such as `spawn ffmpeg ENOENT` without it. The speech and the voice file are kept in `DATA/files/sent/` until the end of the upload; they are deleted after a failed send and at start.
+After a failed speech request or conversion, the last line of the card is ``Approved by Alice; failed: `Text-to-speech failed: HTTP 503.`.``, and status `failed` with the error is returned to the call. The other errors are `Text-to-speech failed: The operation was aborted due to timeout.`, the errors of a failed connection or a redirect, such as `Text-to-speech failed: connect ECONNREFUSED 127.0.0.1:8080.`, and those of `ffmpeg`, such as `spawn ffmpeg ENOENT` without it. The speech and the voice file are kept in `DATA/files/sent/` until the end of the upload; they are deleted after a failed send and at start.
 
 ### The audio API
 

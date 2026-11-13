@@ -722,7 +722,7 @@ conversion   ffmpeg -nostdin -v error -protocol_whitelist file -f wav -i voice.m
              AAC in MPEG-4, mono, 16 kHz, 32 kbit/s
 duration     ffprobe of voice.m4a, as for a video; 0 when it fails
 message      fileSource voice.m4a; msgContent {type: "voice", text: the caption with the mentions, duration}
-failure      the folder deleted; the action failed with "Text-to-speech failed: HTTP N.", "Text-to-speech failed: The operation was aborted due to timeout.", "Text-to-speech failed: fetch failed." or the error of ffmpeg, such as "spawn ffmpeg ENOENT"
+failure      the folder deleted; the action failed with "Text-to-speech failed: HTTP N.", also for a redirect, "Text-to-speech failed: The operation was aborted due to timeout.", "Text-to-speech failed: <the system error of a failed connection, or its code without a message>." or the error of ffmpeg, such as "spawn ffmpeg ENOENT"
 ```
 
 - A send with `voice` is measured as a voice message of 300 s with the file name `voice.m4a`.
@@ -849,7 +849,7 @@ file       path.transcript.json, mode 0600: {"transcript": TEXT}, or {"transcrip
 ```
 Speech-to-text failed: HTTP N.
 Speech-to-text failed: The operation was aborted due to timeout.
-Speech-to-text failed: fetch failed.
+Speech-to-text failed: <the system error of a failed connection, or its code without a message>.
 Speech-to-text failed: no text.
 Speech-to-text failed: the file has more than 1500000 bytes.
 Speech-to-text failed: <the parse error of a response that is not JSON>.
