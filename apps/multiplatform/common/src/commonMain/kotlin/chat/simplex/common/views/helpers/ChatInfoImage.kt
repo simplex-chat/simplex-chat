@@ -34,6 +34,7 @@ import chat.simplex.common.model.BadgeType
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.LocalBadge
 import chat.simplex.common.model.localDate
+import chat.simplex.common.model.peerTypeIcon
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.badges.openBadgesView
@@ -50,6 +51,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
       is ChatInfo.Group -> chatInfo.groupInfo.chatIconName
       is ChatInfo.Local -> MR.images.ic_folder_filled
       is ChatInfo.Direct -> chatInfo.contact.chatIconName
+      is ChatInfo.ContactRequest -> peerTypeIcon(chatInfo.contactRequest.profile.peerType)
       else -> MR.images.ic_account_circle_filled
     }
   ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
@@ -309,17 +311,27 @@ fun ProfileIconModifier(size: Dp, padding: Boolean = true, blurred: Boolean = fa
 fun ProfileImageForActiveCall(
   size: Dp,
   image: String? = null,
+  icon: ImageResource = MR.images.ic_account_circle_filled,
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
   ) {
   if (image == null) {
     Box(Modifier.requiredSize(size).clip(CircleShape).then(if (backgroundColor != null) Modifier.background(backgroundColor) else Modifier)) {
-      Icon(
-        AccountCircleFilled,
-        contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
-        tint = color,
-        modifier = Modifier.requiredSize(size + 14.dp)
-      )
+      if (icon == MR.images.ic_account_circle_filled) {
+        Icon(
+          AccountCircleFilled,
+          contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
+          tint = color,
+          modifier = Modifier.requiredSize(size + 14.dp)
+        )
+      } else {
+        Icon(
+          painterResource(icon),
+          contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
+          tint = color,
+          modifier = Modifier.requiredSize(size)
+        )
+      }
     }
   } else {
     val imageBitmap = base64ToBitmap(image)

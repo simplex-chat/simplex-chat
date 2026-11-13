@@ -321,16 +321,16 @@ struct FramedItemView: View {
             case .file:
                 ciQuotedMsgView(qi)
                     .padding(.trailing, 20).frame(minWidth: quoteMinWidth, alignment: .leading)
-                ciQuoteIconView("doc.fill")
+                ciQuoteIconView(Image(systemName: "doc.fill"))
             case .voice:
                 ciQuotedMsgView(qi)
                     .padding(.trailing, 20).frame(minWidth: quoteMinWidth, alignment: .leading)
-                ciQuoteIconView("mic.fill")
+                ciQuoteIconView(Image(systemName: "mic.fill"))
             case let .chat(text, chatLink, _):
                 let prefix = NSAttributedString(string: chatLink.displayName + (text != chatLink.connLinkStr ? " - " : ""))
                 ciQuotedMsgView(qi, stripLink: chatLink.connLinkStr, prefix: prefix)
                     .padding(.trailing, 20).frame(minWidth: quoteMinWidth, alignment: .leading)
-                ciQuoteIconView(chatLink.smallIconName)
+                ciQuoteIconView(chatLink.smallIcon)
             default:
                 ciQuotedMsgView(qi)
             }
@@ -383,8 +383,8 @@ struct FramedItemView: View {
             .padding(.bottom, terminal ? 0 : 6)
     }
 
-    private func ciQuoteIconView(_ image: String) -> some View {
-        Image(systemName: image)
+    private func ciQuoteIconView(_ image: Image) -> some View {
+        image
             .resizable()
             .aspectRatio(contentMode: .fit)
             .foregroundColor(Color(uiColor: .tertiaryLabel))

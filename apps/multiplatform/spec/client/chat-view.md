@@ -372,7 +372,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 | `AddGroupMembersView.kt` | Add members to group |
 | `GroupChatInfoView.kt` | Group info and management |
 | `GroupLinkView.kt` | Group link display and management |
-| `GroupMemberInfoView.kt` | Individual member info |
+| `GroupMemberInfoView.kt` | Individual member info; `MemberProfileImage`, the member's avatar: its image, otherwise the placeholder of its peer type (`peerTypeIcon`: person, agent or cube) |
 | `GroupMembersToolbar.kt` | Members toolbar in group info |
 | `GroupMentions.kt` | @mention autocomplete |
 | `GroupPreferences.kt` | Group feature preferences |

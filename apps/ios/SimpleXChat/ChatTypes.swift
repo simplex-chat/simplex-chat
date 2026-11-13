@@ -310,11 +310,11 @@ extension ChatLayout: Codable {
     }
 }
 
-public func peerTypeIcon(_ peerType: ChatPeerType?) -> Image {
+public func peerTypeIcon(_ peerType: ChatPeerType?, person: Image = Image(systemName: "person.crop.circle.fill")) -> Image {
     switch peerType {
     case .bot: Image(systemName: "cube.fill")
     case .agent: Image("agent")
-    default: Image(systemName: "person.crop.circle.fill")
+    default: person
     }
 }
 
@@ -5716,25 +5716,25 @@ public enum MsgChatLink: Equatable, Hashable {
         }
     }
 
-    public var iconName: String {
+    public var icon: Image {
         switch self {
         case let .group(_, groupProfile):
-            groupProfile.isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill"
-        case let .contact(_, _, business):
-            business ? "briefcase.circle.fill" : "person.crop.circle.fill"
-        case .invitation:
-            "person.crop.circle.fill"
+            Image(systemName: groupProfile.isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill")
+        case let .contact(_, profile, business):
+            business ? Image(systemName: "briefcase.circle.fill") : peerTypeIcon(profile.peerType)
+        case let .invitation(_, profile):
+            peerTypeIcon(profile.peerType)
         }
     }
 
-    public var smallIconName: String {
+    public var smallIcon: Image {
         switch self {
         case let .group(_, groupProfile):
-            groupProfile.isChannel ? "antenna.radiowaves.left.and.right" : "person.2"
-        case let .contact(_, _, business):
-            business ? "briefcase" : "person"
-        case .invitation:
-            "person"
+            Image(systemName: groupProfile.isChannel ? "antenna.radiowaves.left.and.right" : "person.2")
+        case let .contact(_, profile, business):
+            business ? Image(systemName: "briefcase") : peerTypeIcon(profile.peerType, person: Image(systemName: "person"))
+        case let .invitation(_, profile):
+            peerTypeIcon(profile.peerType, person: Image(systemName: "person"))
         }
     }
 
