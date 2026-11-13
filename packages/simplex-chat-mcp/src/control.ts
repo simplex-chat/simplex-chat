@@ -720,7 +720,7 @@ export async function deleteGroup(chat: api.ChatApi, {groupId, membership}: T.Gr
 }
 
 // spec: spec/architecture.md#control-isgroupmessage
-export function isGroupMessage({chatInfo}: T.AChatItem, groupId: number): boolean {
+export function isGroupMessage({chatInfo}: Pick<T.AChatItem, "chatInfo">, groupId: number): boolean {
   return chatInfo.type === "group" && chatInfo.groupInfo.groupId === groupId && chatInfo.groupChatScope === undefined
 }
 

@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-30.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-33.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -58,6 +58,8 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 29. [`reply`](#29-reply)
 30. [A run that is not interactive](#30-a-run-that-is-not-interactive)
 31. [A prompt of Claude Code](#31-a-prompt-of-claude-code)
+32. [The steps of a turn](#32-the-steps-of-a-turn)
+33. [A reaction in the session group](#33-a-reaction-in-the-session-group)
 
 ---
 
@@ -1019,7 +1021,7 @@ Notes:
 - No turn record is made for a prompt request whose hook started before an answer that was already handled. So that prompt is not quoted in a later answer ([`Session.turn`](../src/hub.ts)).
 - The UserPromptSubmit hook runs for every prompt of the session that queries the model, also for Claude Code's own prompts. It marks a prompt as typed only when the prompt's record in the transcript has the origin `human`. Task notifications, messages of other sessions and channel prompts have other origins. The record is the newest one whose text is the prompt: a user entry, or a `queued_command` attachment of a prompt that Claude Code added to a running turn. It is the entry with `prompt_id` as `promptId`, or a record after the first entry with that ID, tool results included, so a long turn whose first entry is out of the tail is found by its tool results. While a `queue-operation` `enqueue` entry with the prompt's text follows the record, the hook waits: the prompt is a later one with that text, still queued. Claude Code writes the entry only after the synchronous UserPromptSubmit hooks end, such as a slow hook in the user's settings, and it creates the transcript file with the session's first entry. So the hook reads the transcript up to 600 times, 100 ms apart, and it treats a missing file as empty. Until the entry with `prompt_id` is in the tail, the hook waits for it; at the last read it takes any record with the prompt's text, and without `prompt_id` it does so at once. Claude Code runs the hook of a person's prompt when it is submitted, and of its own prompts only when they are taken. So at the last read, the hook classifies a record still followed by such an `enqueue` entry by the record, and marks a typed one mid-turn: the queued prompt is the typed prompt itself, or a later prompt with the text of Claude Code's own prompt, as a repeated monitor event. When no record is written within the reads, an `enqueue` entry with the prompt's text after the entry with `prompt_id`, or anywhere without that entry, makes the prompt typed and mid-turn. Otherwise the prompt is typed when an entry with `prompt_id` has the origin `human` ([`promptReads`, `transcriptReadMs`, `turn`, `promptKind`, `findInTranscript`, `promptRecord`, `isPrompt`, `recordText`, `recordKind`](../src/hook.ts)).
 - Claude Code adds a prompt that arrives during a turn to that turn, and gives its hook the running turn's prompt ID. The hook sends `midTurn: true` for a prompt whose record is not the entry with `prompt_id`. A mid-turn prompt ends no tool-use card. A prompt adds a turn record only when its hook started no earlier than the hook of the last answer handled (`answeredAt`), and a mid-turn prompt only when it also matched a pushed prompt. So the answer of the turn quotes the turn's prompt, or an owner's prompt added to the turn ([`Session.turn`](../src/hub.ts)).
-- The hook sends `note`, a line about one of Claude Code's own prompts, and Claude posts it without a quote ([`recordKind`, `noteOf`, `taskNote`, `teammateNote`, `idleNotification`, `peerName`, `firstLine`, `decoded`, `stringOf`, `shortened`](../src/hook.ts), [`Session.turn`](../src/hub.ts)). A typed prompt, a channel prompt and a teammate's prompt of idle notifications only have no note, nor has another record without origin that is not scheduled. The line is cut to 200 characters and ends with `…`. A note that a group preference refuses is replaced by `A note on Claude Code's prompt was not posted: ` and the preference's text.
+- The hook sends `note`, a line about one of Claude Code's own prompts, and Claude posts it without a quote, silent ([`recordKind`, `noteOf`, `taskNote`, `teammateNote`, `idleNotification`, `peerName`, `shortened`](../src/hook.ts), [`Session.turn`](../src/hub.ts)). A typed prompt, a channel prompt and a teammate's prompt of idle notifications only have no note, nor has another record without origin that is not scheduled. The line is cut to 200 characters and ends with `…`. A note that a group preference refuses is replaced by `Claude's note was not posted: ` and the preference's text.
 
   | Kind | Record | Line |
   |---|---|---|
@@ -1189,7 +1191,7 @@ sequenceDiagram
   participant N as Session N
   participant S2 as Session process of a newer plugin
   S->>D: the /attach stream ends with Claude Code
-  D->>N: onLine = undefined, endPermissions
+  D->>N: onLine = undefined, endPermissions, endSteps
   D->>D: idle timer, 10 min
   D->>N: no call, no action in memory: entry closed, open false
   D->>D: no entry: stop timer, 10 min
@@ -1443,4 +1445,102 @@ Notes:
 - A mid-turn prompt ends no tool-use card. A prompt adds a turn record only when its hook started no earlier than the hook of the last answer handled (`answeredAt`), and a mid-turn prompt only when it also matched a pushed prompt, an owner's prompt from the group. So the answer quotes the turn's prompt, or an owner's prompt added to the turn ([`Session.turn`, `turnQuote`](../src/hub.ts)).
 - A person's prompt typed during a turn runs its hook at once. Its record is written later, as a `queued_command` attachment when Claude Code adds it to the running turn, or as the entry of the next turn. `User` posts it as typed and mid-turn ([`promptRecord`](../src/hook.ts)).
 
-Source: [`promptKind`, `promptRecord` to `shortened`](../src/hook.ts), [`Session.turn`](../src/hub.ts).
+Source: [`promptKind`, `promptRecord` to `peerName`, `firstLine` to `shortened`](../src/hook.ts), [`Session.turn`](../src/hub.ts).
+
+---
+
+## 32. The steps of a turn
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant HK as Tool hooks, async
+  participant D as Service
+  participant N as Session N
+  participant C as Core _hub
+  participant O as Owner
+  CC->>HK: PreToolUse {tool_use_id, tool_name: Bash, tool_input: {command, description}, cwd}
+  HK->>D: POST /turn {id, pid, at, effort, step: {id, text: "💻 Run the tests"}}
+  D->>N: turn, the step's id not finished
+  N->>C: apiSendMessages #35;G [{text, priority: -1}], live
+  N->>N: steps += (id, at, text, the promise of the item's ID)
+  C->>O: Claude: 💻 Run the tests, live, silent
+  CC->>HK: PostToolUse {tool_use_id, duration_ms: 2018}
+  HK->>D: POST /turn {step: {id, text: "💻 Run the tests ✅ 2.0 s", end: true}}
+  D->>N: turn, steps -= id
+  N->>C: apiUpdateChatItem #35;G item, the final text, live off
+  C->>O: the line updated, without an edited mark
+  CC->>D: Stop hook: POST /turn {answer}
+  N->>N: endSteps(at), each step started before at and still without an end
+  N->>C: apiUpdateChatItem #35;G item, the step's own text, live off
+  N->>C: apiSendMessages #35;G the answer, its parts with priority -1 and the last with 1
+```
+
+Notes:
+
+- The tool hooks send a step for each tool use of the main conversation, with the text of [API 4.8](api.md#48-plugin-options-files-and-hook-output), and nothing for a tool use of a subagent or of this plugin, or without `tool_use_id` or `tool_name` ([`turn`, `stepOf`, `stepText`, `displayPath`, `duration`](../src/hook.ts)). The hook processes load only the hook's modules: the CLI imports the server, the service and the session server when it runs them ([`main`](../src/cli.ts)).
+- The hooks run in parallel processes, so the end of a step can arrive before its start: in a recorded `claude -p` run, the two hooks of `false` started 58 ms apart. The hub posts an end without a known step as a silent message and keeps its ID among the finished IDs. For the start that arrives later, the hub finds the ID there, removes it and posts nothing ([`Session.step`](../src/hub.ts)).
+- Claude Code runs no end hook for a tool use refused at approval. At an answer or a prompt that is not mid-turn, the hub updates each line still live whose hook started before that request's hook, with its own text and live off, and keeps its ID among the finished IDs; at the last detach and at the hub's stop, it updates every line still live. The hub then posts nothing for the step's later end. A prompt added to the running turn leaves the lines live ([`Session.turn`, `endSteps`, `Hub.stop`](../src/hub.ts), [`Service.onAttach`](../src/service.ts)).
+- The hub keeps the IDs of the last 100 finished steps, the oldest dropped first ([`maxFinished`, `Session.remember`](../src/hub.ts)).
+- SimpleX allows edits of a message for 24 hours, and a step can wait longer, as for an approval. So 23 hours after the send of its start, by the wall clock, the hub updates a line still live with its own text and live off, without keeping its ID among the finished IDs; the step's later end is posted as a new silent line. Timers run on the monotonic clock, which stops while the computer sleeps, so the hub checks the ages every minute while a step is live, and before each step. A computer that sleeps through the whole hour from 23 to 24 hours after a start leaves that line live ([`liveLineMs`, `stepCheckMs`, `Session.step`, `endStep`, `expireSteps`](../src/hub.ts)).
+- A start that a group preference refuses is replaced by `Claude's note was not posted: ` and the preference's text, once, and the hub posts nothing at its end. A start that fails for another reason is logged, and the hub posts nothing at its end. A failed update of a line is logged, and the hub posts nothing more for that step ([`Session.startLine`, `endStep`](../src/hub.ts)).
+- The hub keeps every started update of a line in one promise, so its stop waits for the updates that the end of the steps at the last detach started before the core closes ([`Session.finalizing`, `endSteps`, `endStep`](../src/hub.ts)).
+- The steps and the finished IDs are kept in memory. When the service stops during a step, the hub's stop updates its line with its own text; after a crash, the line stays live. The step's end reaches the next service and is posted as a new silent line ([`Hub.stop`](../src/hub.ts)).
+- The tool hooks send `effort` as the other turn hooks do; the hub takes it by the hook's start time, as in [flow 21](#21-a-terminal-prompt-and-the-answer).
+- A core without message priority ignores `priority`, and an app without silent messages alerts for each line when it is posted. An update of a live message sends no SMP notification.
+
+Source: [`turn`, `stepOf`, `stepText`, `displayPath`, `duration`](../src/hook.ts), [`Session.turn`, `endPermissions`, `endSteps`, `answer`, `step`, `startLine`, `endStep`, `expireSteps`, `remember`](../src/hub.ts), [`Service.onAttach`](../src/service.ts).
+
+---
+
+## 33. A reaction in the session group
+
+```mermaid
+sequenceDiagram
+  participant O as Member
+  participant C as Core _hub
+  participant N as Session N
+  participant D as Service
+  participant S as Session process
+  participant CC as Claude Code
+  O->>C: 👍 to a message in #35;G
+  C->>N: chatItemReaction: Session.onReaction
+  alt removed, from an observer, a relay or User, or to an item that is not a message
+    N->>N: nothing
+  else not one of the apps' eight emoji, replied before for this member and message, or to the reply below
+    N->>N: nothing
+  else not one of the apps' eight emoji
+    N->>N: refusedReactions += (member, message)
+    N->>N: delivery = delivery then the reply, after the earlier messages of the session
+    N->>O: reply to the reacted message: This reaction is not supported.
+  else one of the apps' eight emoji
+    N->>N: replyTo = toReplyTo of the reacted item, with its file name for an empty text
+    N->>N: delivery = delivery then prompt: after the earlier messages of the session
+    opt no attachment, in the first 30 s after the hub opened
+      N->>N: wait for an attachment until then
+    end
+    alt no attachment now
+      N->>O: reply to the reacted message: Session N is not running.
+    else attached
+      N->>N: text = quote line of replyTo, a line break and 👍
+      N->>N: pushed += (text, the reacted item), at most 20
+      N->>D: onLine {prompt: {text, from, item, replyTo: {item, from?}}}, item the reacted message's ID
+      D->>S: the line on /attach
+      S->>CC: notifications/claude/channel {content, meta: {from, item, reply_to, reply_to_from?}}
+    end
+  end
+  CC->>D: Stop hook: POST /turn {answer}
+  N->>O: Claude: the answer, quoting the reacted message
+```
+
+Notes:
+
+- A reaction with one of the apps' eight emoji, of a member whose role sends, other than `User`, is a prompt. The core accepts the reactions of observers, and the hub ignores them. A reaction in the Main group reaches no session ([`Session.onReaction`, `prompt`, `Hub.onEvent`](../src/hub.ts), [`canSend`](../src/control.ts)).
+- A reaction is never a command or an approval. A 👍 to a tool-use card leaves the card pending, and reaches Claude as a prompt.
+- The apps send and show eight emoji: 👍 👎 😀 😂 😢 ❤ 🚀 ✅. Any other reaction, such as `❤️` with U+FE0F, a newer emoji, a text or another type, reaches no session, and Claude replies `This reaction is not supported.` to the reacted message. The reply is posted once for each member and reacted message while the service runs, also when the member removes the reaction and adds it again, and never for a reaction to this reply ([`reactionEmoji`, `unsupportedReaction`, `Session.refusedReactions`, `onReaction`, `refuseReaction`](../src/hub.ts)).
+- The reacted message is quoted by the rule of a reply's quote, with the item's file name for an empty text, such as `> video: ride.mp4`. Its file is not received ([`Session.onReaction`, `deliver`](../src/hub.ts), [`toReplyTo`, `replyText`, `quoteLine`, `trimmed`](../src/messages.ts)).
+- The answer of the turn quotes the reacted message, Claude's own messages included ([`Session.answer`](../src/hub.ts)).
+- Each of this plugin's channel tags in a turn's prompt matches one pushed prompt. So two equal reactions to one message are quoted in their own turns ([`Session.pushedIn`](../src/hub.ts)).
+- Owners turn reactions off with the group's preference "Message reactions", and the core then emits no `chatItemReaction`.
+
+Source: [`Session.onReaction`, `prompt`, `refuseReaction`, `deliver`, `answer`, `Hub.onEvent`](../src/hub.ts), [`channelNotification`](../src/session.ts).

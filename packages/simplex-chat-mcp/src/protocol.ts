@@ -64,6 +64,14 @@ export interface TurnRequest {
   answer?: string
   model?: string
   effort?: string
+  step?: Step
+}
+
+// spec: spec/architecture.md#protocol-step
+export interface Step {
+  id: string
+  text: string
+  end?: boolean
 }
 
 // spec: spec/architecture.md#protocol-attachline
