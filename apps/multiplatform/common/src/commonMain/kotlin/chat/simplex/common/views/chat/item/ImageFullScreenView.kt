@@ -17,8 +17,10 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.helpers.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.URI
 import kotlin.math.absoluteValue
 
@@ -46,7 +48,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
   // Pager doesn't ask previous page at initialization step who knows why. By not doing this, prev page is not checked and can be blank,
   // which makes this blank page visible for a moment. Prevent it by doing the check ourselves
   LaunchedEffect(Unit) {
-    if (provider.getMedia(provider.initialIndex - 1) == null) {
+    if (withContext(Dispatchers.IO) { provider.getMedia(provider.initialIndex - 1) } == null) {
       firstValidPageBeforeScrollingToStart.value = provider.initialIndex
       provider.scrollToStart()
       pagerState.scrollToPage(0)
