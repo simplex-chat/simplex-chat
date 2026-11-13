@@ -8,7 +8,7 @@
   "license": "AGPL-3.0",
   "keywords": ["simplex", "messaging", "privacy", "agents"],
   "userConfig": {
-    "main_group": {"type": "string", "title": "Main group", "description": "Name of the SimpleX group where you join the groups of your sessions.", "default": "SimpleX MCP"},
+    "main_group": {"type": "string", "title": "Main group", "description": "Name of the SimpleX group where you join the groups of your sessions. On a machine with SIMPLEX_MCP_MACHINE set, \" - \" and its value follow.", "default": "Claude Control"},
     "approve": {"type": "string", "title": "Approval", "description": "requests: you approve connections and messages in the SimpleX app. host: Claude Code asks you instead, after an admin or owner approves this in the session's group.", "default": "requests", "options": ["requests", "host"]},
     "expire_hours": {"type": "number", "title": "Expiry in hours", "description": "Actions you have not approved expire after this many hours.", "default": 23, "min": 1, "max": 23}
   }

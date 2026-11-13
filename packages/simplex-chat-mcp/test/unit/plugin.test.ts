@@ -38,12 +38,15 @@ describe("plugin", () => {
     expect(read(".mcp.json").mcpServers.simplex.timeout).toBe((maxExpireHours + responseWaitHours) * 3_600_000 + marginMs)
   })
 
-  it("runs the hooks from the plugin's own build and allows the plugin's tools", () => {
+  it("runs the hooks from the plugin's own build, allows the plugin's tools, and runs the turn hook at the start and the end of every tool use", () => {
     const {hooks} = read("hooks/hooks.json")
     expect(hooks.SessionStart[0].hooks[0]).toEqual({type: "command", command: cli("hook session-start"), timeout: 600})
     expect(hooks.PreToolUse[0].matcher).toBe("mcp__plugin_simplex_simplex__.*")
     expect(hooks.PreToolUse[0].hooks[0]).toEqual({type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/plugin/allow.js"'})
     for (const event of ["UserPromptSubmit", "Stop", "PostModelSwitch"]) expect(hooks[event]).toEqual([{hooks: [{type: "command", command: cli("hook turn"), async: true}]}])
+    const steps = {matcher: "*", hooks: [{type: "command", command: cli("hook turn"), async: true}]}
+    expect(hooks.PreToolUse[1]).toEqual(steps)
+    for (const event of ["PostToolUse", "PostToolUseFailure"]) expect(hooks[event]).toEqual([steps])
   })
 
   it("ships the build, its bundled dependencies and the plugin files in the package, without a lockfile", () => {
