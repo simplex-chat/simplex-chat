@@ -33,7 +33,7 @@ You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://si
 
 3. Each Claude Code session gets its own group, such as "1 · my-project". Join it from the invitation in "SimpleX MCP".
 
-4. Send prompts in the session's group, and Claude answers there. Prompts you type in the terminal appear there too. Before Claude acts in other chats or uses a tool such as Bash, it asks in the group, and one tap approves.
+4. Send prompts in the session's group, and Claude answers there. Prompts you type in the terminal appear there too, and Claude Code's own prompts, such as a finished background task, appear as one line each. Before Claude acts in other chats or uses a tool such as Bash, it asks in the group, and one tap approves.
 
 ## Safety
 
