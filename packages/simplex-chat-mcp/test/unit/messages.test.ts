@@ -8,7 +8,7 @@ import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Action, Actions, ConnectAction, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
-import {Changes, ChatItemsWatch, Collected, awaitResponses, nextChange, toMessage} from "../../src/messages"
+import {Changes, ChatItemsWatch, Collected, awaitResponses, nextChange, quoteLine, toMessage, toReplyTo} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -68,6 +68,22 @@ describe("message fields", () => {
     expect(replyTo({chatDir: fromBob, itemId: 23, content: {type: "file", text: "build.log"}})).toEqual({chat: "#15", item: 23, from: "Bob", type: "file", text: "build.log"})
     expect(replyTo({chatDir: {type: "directRcv"}, itemId: 20, content: text("found 3")}, directory)).toEqual({chat: "@4", item: 20, from: "SimpleX Directory", text: "found 3"})
     expect(replyTo({chatDir: {type: "directSnd"}, itemId: 19, content: text("shoes")}, directory)).toEqual({chat: "@4", item: 19, from: "Scout", text: "shoes"})
+  })
+
+  it("writes the quote line of each type: the text, or the type with the text, or the type alone, cut at 200 characters with the type included, and uses the file name for an empty text when it is given", () => {
+    const trail = groupChat(group(15, "Trail"))
+    const line = (content: object, fileName?: string): string => quoteLine(toReplyTo(trail, {content: content as T.MsgContent, fileName}, {name: "Scout"}))
+    expect(line({type: "text", text: "Fixed: the build passes."})).toBe("> Fixed: the build passes.")
+    expect(line({type: "text", text: "I want to use `Bash`\n`ls`"})).toBe("> I want to use `Bash`…")
+    expect(line({type: "link", text: "See https://simplex.chat", preview: {}})).toBe("> link: See https://simplex.chat")
+    expect(line({type: "image", text: "Trail map", image: ""})).toBe("> image: Trail map")
+    expect(line({type: "video", text: "", image: "", duration: 5})).toBe("> video")
+    expect(line({type: "voice", text: "", duration: 3})).toBe("> voice")
+    expect(line({type: "file", text: "build.log"})).toBe("> file: build.log")
+    expect(line({type: "image", text: "", image: ""}, "IMG_2041.jpg")).toBe("> image: IMG_2041.jpg")
+    expect(line({type: "unknown", tag: "poll", text: "Pick one", json: {}})).toBe("> Pick one")
+    expect(line({type: "file", text: "a".repeat(194)})).toBe(`> file: ${"a".repeat(194)}`)
+    expect(line({type: "file", text: "a".repeat(195)})).toBe(`> file: ${"a".repeat(194)}…`)
   })
 
   it("describes direct, channel and sent messages", () => {
