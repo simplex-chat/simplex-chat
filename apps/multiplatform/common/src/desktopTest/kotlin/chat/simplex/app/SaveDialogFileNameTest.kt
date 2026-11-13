@@ -6,9 +6,10 @@ import kotlin.test.assertEquals
 
 class SaveDialogFileNameTest {
   @Test
-  fun testLeadingDotsRemoved() {
+  fun testLeadingDotsAndLessThanSignsRemoved() {
     assertEquals("bashrc", saveDialogFileName(".bashrc"))
     assertEquals("hidden.txt", saveDialogFileName("..hidden.txt"))
+    assertEquals("notes.txt", saveDialogFileName("<notes.txt"))
   }
 
   @Test
