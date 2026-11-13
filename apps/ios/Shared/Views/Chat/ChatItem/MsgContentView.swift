@@ -221,7 +221,7 @@ struct MsgContentView: View {
     @inline(__always)
     private func reserveSpaceForMeta(_ mt: CIMeta, newLine: Bool = true) -> Text {
         if terminal {
-            let separator = rightToLeft && newLine ? textNewLine : metaCopyJoiner(rightToLeft) + Text(verbatim: "\u{00A0}\u{00A0}\u{00A0}")
+            let separator = rightToLeft && newLine ? textNewLine : Text(verbatim: (rightToLeft ? "\u{200F}" : "\u{200E}") + "   ")
             return separator + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: encrypted, colorMode: .transparent, showStatus: terminalShowsStatus(mt.itemStatus, showTimestamp: showTimestamp), showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, signedFileVerified: signedFileVerified, showSignature: showSignature, showFileEncryption: showFileEncryption, unbreakable: true)
         }
         return (rightToLeft && newLine ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, showSignature: showSignature)

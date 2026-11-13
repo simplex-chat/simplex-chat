@@ -509,7 +509,9 @@ Meta copy, `ciMetaText(unbreakable: true)`:
 separators         no-break spaces
 icons              word joiner after the edit, timer and via-proxy icons
 time               no-break space inside
-prefix             metaCopyJoiner(rightToLeft): U+2060, then U+200E or U+200F; three no-break spaces
+prefix             messages: U+200E or U+200F, then three spaces, where the line breaks when the copy does not fit
+                   beside the last word, so the time alone moves to the next line, as in bubbles; events:
+                   metaCopyJoiner(rightToLeft), U+2060 and the same mark, then two no-break spaces
 content            file encryption and signature included (MsgContentView encrypted, signedFileVerified)
 ```
 
