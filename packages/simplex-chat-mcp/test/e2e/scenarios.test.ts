@@ -547,9 +547,9 @@ test("--display-name names the profile and the agent control chat", async () => 
 
 const clockNote = /^[◐◓◑◒] [a-z ]+ · \d+:\d\d\nchecking the clock$/
 
-test("typing: a live status in an approved direct chat, its note, the answer that deletes it, the stop, and the startup deletion", async () => {
-  const alice = await personIn("typing", "Alice")
-  const agent = await agentIn("typing")
+test("status: a live status in an approved direct chat, its note, the answer that deletes it, the stop, and the startup deletion", async () => {
+  const alice = await personIn("status", "Alice")
+  const agent = await agentIn("status")
   await agent.start()
   const controlId = await joinAsOwner(alice)
 
@@ -569,13 +569,12 @@ test("typing: a live status in an approved direct chat, its note, the answer tha
 
   const isStatus: ItemCheck = ci => ci.chatInfo.type === "direct" && ci.chatItem.meta.itemLive === true
   const firstStatus = received(alice.chat, isStatus)
-  expect((await agent.client.tool("receive", {chat, typing: true})).result).toMatchObject({chat, messages: []})
   await prompt("what time is it?")
   const status = (await firstStatus).chatItem
   expect(status.meta.itemText).toBe("◐ received, waiting for the agent · 0:00")
   const ofStatus: ItemCheck = ci => ci.chatItem.meta.itemId === status.meta.itemId && ci.chatItem.meta.itemLive === true
   const taken = updated(alice.chat, ci => ofStatus(ci) && / thinking · /.test(ci.chatItem.meta.itemText))
-  const prompted = await agent.client.tool("receive", {chat, wait: 30, typing: true})
+  const prompted = await agent.client.tool("receive", {chat, wait: 30})
   expect(prompted.result.messages.map(({text}: {text: string}) => text)).toEqual(["what time is it?"])
   await taken
 
@@ -596,7 +595,7 @@ test("typing: a live status in an approved direct chat, its note, the answer tha
 
   const secondStatus = received(alice.chat, isStatus)
   await prompt("and the date?")
-  await agent.client.tool("receive", {chat, wait: 30, typing: true})
+  await agent.client.tool("receive", {chat, wait: 30})
   const second = (await secondStatus).chatItem.meta.itemId
   const leftover = received(alice.chat, isStatus)
   await agent.server.chat.apiSendMessages([T.ChatType.Direct, Number(chat.slice(1))], [{msgContent: {type: "text", text: "◐ thinking · 0:00"}, mentions: {}}], true)
@@ -611,9 +610,9 @@ test("typing: a live status in an approved direct chat, its note, the answer tha
   await thirdDeleted
 }, 600_000)
 
-test("typing in an approved group: a live status, its note, and its deletion after the answer", async () => {
-  const alice = await personIn("typing-group", "Alice")
-  const agent = await agentIn("typing-group")
+test("status in an approved group: a live status, its note, and its deletion after the answer", async () => {
+  const alice = await personIn("status-group", "Alice")
+  const agent = await agentIn("status-group")
   await agent.start()
   const controlId = await joinAsOwner(alice)
 
@@ -629,11 +628,10 @@ test("typing in an approved group: a live status, its note, and its deletion aft
 
   const inTrail: ItemCheck = ci => ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === trail.groupId
   const firstStatus = received(alice.chat, ci => inTrail(ci) && ci.chatItem.meta.itemLive === true)
-  expect((await agent.client.tool("receive", {chat: group, typing: true})).result).toMatchObject({chat: group, messages: []})
   await alice.chat.apiSendTextMessage([T.ChatType.Group, trail.groupId], "what time is it?")
   const status = (await firstStatus).chatItem
   expect(status.meta.itemText).toBe("◐ received, waiting for the agent · 0:00")
-  const prompted = await agent.client.tool("receive", {chat: group, wait: 30, typing: true})
+  const prompted = await agent.client.tool("receive", {chat: group, wait: 30})
   expect(prompted.result.messages.map(({text}: {text: string}) => text)).toEqual(["what time is it?"])
 
   const noted = updated(alice.chat, ci => ci.chatItem.meta.itemId === status.meta.itemId && ci.chatItem.meta.itemLive === true && clockNote.test(ci.chatItem.meta.itemText))

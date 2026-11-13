@@ -899,7 +899,7 @@ toServerOperator ((operatorId, operatorTag, tradeName, legalName, domains, BI en
     serverRolesXFTP (BI storage, BI proxy) = ServerRoles {storage, proxy, names = False}
 
 getOperatorConditions_ :: DB.Connection -> ServerOperator -> UsageConditions -> Maybe UsageConditions -> UTCTime -> IO ConditionsAcceptance
-getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {conditionsCommit = currentCommit, createdAt, notifiedAt} latestAcceptedConds_ now = do
+getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {conditionsCommit = currentCommit, notifiedAt} latestAcceptedConds_ now = do
   case latestAcceptedConds_ of
     Nothing -> pure $ CARequired Nothing -- no conditions accepted by any operator
     Just UsageConditions {conditionsCommit = latestAcceptedCommit} -> do
@@ -918,7 +918,7 @@ getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {condition
       pure $ case operatorAcceptedConds_ of
         Just (operatorCommit, acceptedAt_, BI autoAccept)
           | operatorCommit /= latestAcceptedCommit -> CARequired Nothing -- TODO should we consider this operator disabled?
-          | currentCommit /= latestAcceptedCommit -> CARequired $ conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
+          | currentCommit /= latestAcceptedCommit -> CARequired $ Just $ conditionsDeadline (fromMaybe now notifiedAt)
           | otherwise -> CAAccepted acceptedAt_ autoAccept
         _ -> CARequired Nothing -- no conditions were accepted for this operator
 

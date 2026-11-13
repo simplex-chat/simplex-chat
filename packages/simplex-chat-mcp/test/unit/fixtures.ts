@@ -1,11 +1,22 @@
+import {readFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
 import {ChatResponse, T} from "@simplex-chat/types"
+import {Server} from "http"
 import {api, core} from "simplex-chat"
-import {Actions, ActionHooks} from "../../src/actions"
+import {Readable, Writable} from "stream"
+import {Action, Actions, ActionHooks, Mode, NewAction} from "../../src/actions"
 import {ToolCall} from "../../src/messages"
 
 export const user = {userId: 1, profile: {displayName: "agent", peerType: "agent", profileId: 1}} as unknown as T.User
+
+const recordedRuns: {[field: string]: string | number | null}[] = readFileSync(join(__dirname, "claude-p-runs.jsonl"), "utf8").trim().split("\n").map(line => JSON.parse(line))
+
+export function recordedRun(entrypoint: string, kind: string): {ppid: number; env: NodeJS.ProcessEnv} {
+  const record = recordedRuns.find(entry => entry.CLAUDE_CODE_ENTRYPOINT === entrypoint && entry.kind === kind)!
+  const env = Object.fromEntries(Object.entries(record).filter((entry): entry is [string, string] => entry[0].startsWith("CLAUDE") && typeof entry[1] === "string"))
+  return {ppid: record.ppid as number, env}
+}
 
 export const data = join(tmpdir(), `simplex-mcp-unit-${process.pid}`)
 
@@ -109,8 +120,23 @@ export function actionsWith(mode: "requests" | "host", fake: FakeHooks, next = 1
   return new Actions(mode, expireHours, next, fake.hooks)
 }
 
+export function createIn(actions: Actions, session: number, mode: Mode, key: string, fields: NewAction, approvedBy?: string): Action {
+  return actions.create(key, fields, approvedBy, session, mode)
+}
+
+export function closeServer(server: Server): Promise<void> {
+  const closed = new Promise<void>(resolve => server.close(() => resolve()))
+  server.closeAllConnections()
+  return closed
+}
+
 export async function settled(): Promise<void> {
   for (let i = 0; i < 10; i++) await Promise.resolve()
+}
+
+export async function until(condition: () => boolean): Promise<void> {
+  for (let i = 0; i < 200 && !condition(); i++) await new Promise(resolve => setTimeout(resolve, 5))
+  expect(condition()).toBe(true)
 }
 
 export function livePost(chatType: T.ChatType, chatId: number, text: string): FakeChat["sent"][number] {
@@ -157,6 +183,12 @@ export class FakeChat {
   left: number[] = []
   customData: {chat: string; customData?: object}[] = []
   profiles: {groupId: number; groupProfile: T.GroupProfile}[] = []
+  roles: {groupId: number; members: number[]; role: T.GroupMemberRole}[] = []
+  links: {groupId: number; role: T.GroupMemberRole}[] = []
+  groupLinks = new Set<number>()
+  newGroups: {userId: number; groupProfile: T.GroupProfile}[] = []
+  invitations: {groupId: number; viaGroupId: number; groupMemberId: number; memberRole: T.GroupMemberRole}[] = []
+  removed: {groupId: number; memberIds: number[]}[] = []
   members = new Map<number, T.GroupMember[]>()
   chats = new Map<string, FakeChatData>()
   responses = new Map<string, object>()
@@ -234,11 +266,60 @@ export class FakeChat {
     this.setCustomData(`#${groupId}`, customData)
   }
 
-  async apiDeleteGroupLink(): Promise<void> {}
+  async apiDeleteGroupLink(groupId: number): Promise<void> {
+    this.groupLinks.delete(groupId)
+  }
+
+  async apiCreateGroupLink(groupId: number, role: T.GroupMemberRole): Promise<string> {
+    this.links.push({groupId, role})
+    this.groupLinks.add(groupId)
+    return "https://simplex.chat/g#link"
+  }
+
+  async apiGetGroupLinkStr(groupId: number): Promise<string> {
+    if (!this.groupLinks.has(groupId)) throw new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "groupLinkNotFound"}} as unknown as T.ChatError)
+    return "https://simplex.chat/g#link"
+  }
+
+  async apiSetMembersRole(groupId: number, members: number[], role: T.GroupMemberRole): Promise<void> {
+    this.roles.push({groupId, members, role})
+    this.members.set(groupId, (this.members.get(groupId) ?? []).map(m => (members.includes(m.groupMemberId) ? {...m, memberRole: role} : m)))
+  }
+
+  async apiNewGroup(userId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {
+    this.newGroups.push({userId, groupProfile})
+    const groupId = 19 + this.newGroups.length
+    const created = {...group(groupId, groupProfile.displayName), groupProfile}
+    this.chats.set(`#${groupId}`, {chatInfo: groupChat(created), items: []})
+    return created
+  }
+
+  async apiAddMemberViaGroup(groupId: number, viaGroupId: number, groupMemberId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    this.invitations.push({groupId, viaGroupId, groupMemberId, memberRole})
+    return member(1000 + groupMemberId, `invited ${groupMemberId}`, memberRole, T.GroupMemberStatus.Invited)
+  }
+
+  async apiListContacts(): Promise<T.Contact[]> {
+    return [...this.chats.values()].flatMap(({chatInfo}) => (chatInfo.type === "direct" ? [chatInfo.contact] : []))
+  }
+
+  async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    this.invitations.push({groupId, viaGroupId: 0, groupMemberId: contactId, memberRole})
+    return member(2000 + contactId, `contact ${contactId}`, memberRole, T.GroupMemberStatus.Invited)
+  }
+
+  async apiRemoveMembers(groupId: number, memberIds: number[]): Promise<T.GroupMember[]> {
+    this.removed.push({groupId, memberIds})
+    return []
+  }
 
   async apiUpdateGroupProfile(groupId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {
     this.profiles.push({groupId, groupProfile})
-    return {...group(groupId, groupProfile.displayName), groupProfile}
+    const stored = (this.chats.get(`#${groupId}`)?.chatInfo as T.ChatInfo.Group | undefined)?.groupInfo
+    if (stored !== undefined) stored.groupProfile = groupProfile
+    const {customData} = stored ?? {}
+    await new Promise(resolve => setImmediate(resolve))
+    return {...group(groupId, groupProfile.displayName), groupProfile, ...(customData === undefined ? {} : {customData})}
   }
 
   api(): api.ChatApi {
@@ -290,4 +371,40 @@ function chatStats(items: T.ChatItem[]): T.ChatStats {
 
 function storeError(ref: string): Error {
   return new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "contactNotFound", contactId: Number(ref.slice(1))}})
+}
+
+export class LineClient {
+  private nextId = 1
+  private buffer = ""
+  private readonly waiting = new Map<number, (message: any) => void>()
+  readonly notifications: any[] = []
+
+  constructor(private readonly input: Writable, output: Readable) {
+    output.on("data", chunk => {
+      this.buffer += chunk
+      for (let i = this.buffer.indexOf("\n"); i >= 0; i = this.buffer.indexOf("\n")) {
+        const message = JSON.parse(this.buffer.slice(0, i))
+        this.buffer = this.buffer.slice(i + 1)
+        if (message.id !== undefined && this.waiting.has(message.id)) this.waiting.get(message.id)!(message)
+        else this.notifications.push(message)
+      }
+    })
+  }
+
+  request(method: string, params: object = {}): Promise<any> {
+    const id = this.nextId++
+    const reply = new Promise<any>(resolve => this.waiting.set(id, resolve))
+    this.input.write(`${JSON.stringify({jsonrpc: "2.0", id, method, params})}\n`)
+    return reply
+  }
+
+  notify(method: string, params: object = {}): void {
+    this.input.write(`${JSON.stringify({jsonrpc: "2.0", method, params})}\n`)
+  }
+
+  async initialize(): Promise<any> {
+    const reply = await this.request("initialize", {protocolVersion: "2025-11-25", capabilities: {}, clientInfo: {name: "test", version: "1"}})
+    this.notify("notifications/initialized")
+    return reply.result
+  }
 }
