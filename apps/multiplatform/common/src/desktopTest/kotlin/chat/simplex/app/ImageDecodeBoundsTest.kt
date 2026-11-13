@@ -1,16 +1,20 @@
 package chat.simplex.app
 
+import androidx.compose.ui.graphics.toAwtImage
+import chat.simplex.common.platform.base64ToBitmap
 import chat.simplex.common.views.helpers.decodeBoundedBufferedImage
 import chat.simplex.common.views.helpers.imageSampleSize
 import chat.simplex.common.views.helpers.sourceDimensionsWithinLimits
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.util.Base64
 import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class ImageDecodeBoundsTest {
@@ -33,7 +37,8 @@ class ImageDecodeBoundsTest {
     // Smaller-side semantics alone would keep these at full resolution (sampleSize 1, since the narrow side is below
     // the target), decoding ~131 MB (thumbnail) / ~566 MB (full-screen) rasters. The decoded-pixel ceiling forces
     // extra subsampling so memory stays bounded, even though the narrow side then drops below the target.
-    assertEquals(2, imageSampleSize(16384, 1999, 1000)) // 16384x1999 (~32.7 MP) -> 8192x999 (~8 MP)
+    assertEquals(4, imageSampleSize(16384, 1999, 1000))
+    assertEquals(4, imageSampleSize(16384, 1139, 1000))
     assertEquals(4, imageSampleSize(16384, 8639, 4320)) // 16384x8639 (~141 MP) -> 4096x2159 (~8.8 MP)
     // A large near-square image is bounded to the ceiling rather than left at the smaller-side target
     assertEquals(4, imageSampleSize(16384, 16384, 4320)) // 8192x8192 (~67 MP) would exceed the ceiling -> 4096x4096
@@ -41,7 +46,9 @@ class ImageDecodeBoundsTest {
 
   @Test
   fun testSourceDimensionsRejectAbsurdSizes() {
-    assertTrue(sourceDimensionsWithinLimits(16384, 16384)) // generous upper bound, downsampled later
+    assertTrue(sourceDimensionsWithinLimits(8192, 8192))
+    assertTrue(sourceDimensionsWithinLimits(16384, 4096))
+    assertFalse(sourceDimensionsWithinLimits(16384, 4097))
     assertFalse(sourceDimensionsWithinLimits(16385, 1))
     assertFalse(sourceDimensionsWithinLimits(0, 1))
   }
@@ -50,6 +57,35 @@ class ImageDecodeBoundsTest {
   fun testDecodeRejectsImageExceedingSourceLimit() {
     // Rejected at the dimension check before any full-size allocation
     assertFailsWith<IOException> { decodeBoundedBufferedImage(encodePng(16385, 1), 4320) }
+  }
+
+  @Test
+  fun testDecodeRejectsProgressiveJpegOverSourcePixelLimit() {
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(progressiveJpegHeaders(8193, 8192), 1000) }
+    assertEquals(16, decodeBoundedBufferedImage(progressiveJpegHeaders(16, 16), 1000).width)
+  }
+
+  @Test
+  fun testDecodeRendersLimitedNumberOfProgressiveJpegScans() {
+    fun pixel(data: ByteArray) = decodeBoundedBufferedImage(data, 1000).raster.getSample(0, 0, 0)
+    val unchanged = pixel(progressiveJpegChangedByLastScan(0, changed = false))
+    assertTrue(pixel(progressiveJpegChangedByLastScan(0)) < unchanged)
+    assertTrue(pixel(progressiveJpegChangedByLastScan(9)) < unchanged)
+    assertEquals(unchanged, pixel(progressiveJpegChangedByLastScan(1000)))
+  }
+
+  @Test
+  fun testBase64ImageRendersLimitedNumberOfProgressiveJpegScans() {
+    fun pixel(data: ByteArray) = base64ToBitmap(Base64.getEncoder().encodeToString(data)).toAwtImage().getRGB(0, 0)
+    val unchanged = pixel(progressiveJpegChangedByLastScan(0, changed = false))
+    assertNotEquals(unchanged, pixel(progressiveJpegChangedByLastScan(9)))
+    assertEquals(unchanged, pixel(progressiveJpegChangedByLastScan(1000)))
+  }
+
+  @Test
+  fun testBase64ImageIsDecodedAtPreviewSize() {
+    assertEquals(500, base64ToBitmap(Base64.getEncoder().encodeToString(encodePng(500, 500))).width)
+    assertEquals(540, base64ToBitmap(Base64.getEncoder().encodeToString(encodePng(4320, 4320))).width)
   }
 
   @Test
@@ -84,6 +120,31 @@ class ImageDecodeBoundsTest {
     }
     assertFailsWith<IOException> { decodeBoundedBufferedImage(bmp, 4320) }
   }
+
+  private fun progressiveJpegHeaders(width: Int, height: Int): ByteArray =
+    jpeg(
+      0xFF, 0xD8,
+      *segment(0xDB, 0, *IntArray(64) { 1 }),
+      *segment(0xC2, 8, height shr 8, height and 0xFF, width shr 8, width and 0xFF, 3, 1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0),
+      *segment(0xC4, 0, 1, *IntArray(16)),
+      *segment(0xDA, 3, 1, 0, 2, 0, 3, 0, 0, 0, 0),
+    )
+
+  private fun progressiveJpegChangedByLastScan(scansBefore: Int, changed: Boolean = true): ByteArray =
+    jpeg(
+      0xFF, 0xD8,
+      *segment(0xDB, 0, *IntArray(64) { 16 }),
+      *segment(0xC2, 8, 0, 8, 0, 8, 1, 1, 0x11, 0),
+      *segment(0xC4, 0, 1, *IntArray(15), 0),
+      *segment(0xC4, 1, 1, *IntArray(15), 4),
+      *IntArray(scansBefore).flatMap { segment(0xDA, 1, 1, 0, 0, 0, 0).asList() }.toIntArray(),
+      *segment(0xDA, 1, 1, if (changed) 0x10 else 0, 0, 0, 0),
+      0xFF, 0xD9,
+    )
+
+  private fun segment(marker: Int, vararg data: Int): IntArray = intArrayOf(0xFF, marker, 0, data.size + 2, *data)
+
+  private fun jpeg(vararg bytes: Int): ByteArray = bytes.map { it.toByte() }.toByteArray()
 
   private fun encodePng(width: Int, height: Int): ByteArray = encodeImage(width, height, "png")
 

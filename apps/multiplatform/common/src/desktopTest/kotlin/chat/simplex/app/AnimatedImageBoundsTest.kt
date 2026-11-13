@@ -1,8 +1,10 @@
 package chat.simplex.app
 
 import chat.simplex.common.platform.MAX_SLOW_FRAME_DEBT
+import chat.simplex.common.platform.encodedFrameCount
 import chat.simplex.common.platform.frameWait
 import chat.simplex.common.platform.fileSizeWithinBounds
+import chat.simplex.common.platform.frameCostWithinBounds
 import chat.simplex.common.platform.frameCountWithinBounds
 import chat.simplex.common.platform.frameDuration
 import chat.simplex.common.platform.looksAnimatable
@@ -126,6 +128,57 @@ class AnimatedImageBoundsTest {
     assertFalse(frameCountWithinBounds(10_001))
   }
 
+  private val gifHeader = "GIF89a".toByteArray() + bytes(2, 0, 2, 0, 0x80, 0, 0) + bytes(0, 0, 0, 0xFF, 0xFF, 0xFF)
+  private val gifFrame = bytes(0x21, 0xF9, 4, 3 shl 2, 10, 0, 0, 0) + bytes(0x2C, 0, 0, 0, 0, 1, 0, 1, 0, 0) + bytes(2, 0)
+  private val gifTrailer = bytes(0x3B)
+  private val loopExtension = bytes(0x21, 0xFF, 11) + "NETSCAPE2.0".toByteArray()
+
+  @Test
+  fun testGifFramesAreCountedBeforeTheCodecReadsThem() {
+    assertEquals(0, encodedFrameCount(gifHeader))
+    assertEquals(3, encodedFrameCount(gifHeader + gifFrame * 3 + gifTrailer))
+    assertEquals(3, encodedFrameCount(gifHeader + loopExtension + bytes(3, 1, 0, 0, 0) + gifFrame * 3 + gifTrailer))
+    assertTrue(frameCountWithinBounds(encodedFrameCount(gifHeader + gifFrame * 10_000 + gifTrailer)))
+    assertFalse(frameCountWithinBounds(encodedFrameCount(gifHeader + gifFrame * 10_001 + gifTrailer)))
+    assertFalse(frameCountWithinBounds(encodedFrameCount(gifHeader + gifFrame * 100_000 + gifTrailer)))
+  }
+
+  @Test
+  fun testGifBlocksAreSteppedOverNotSearched() {
+    val withColorTable = bytes(0x2C, 0, 0, 0, 0, 1, 0, 1, 0, 0x80) + ByteArray(6) { 0x2C } + bytes(2, 3, 0x2C, 0x2C, 0x2C, 0)
+    val comment = bytes(0x21, 0xFE, 3, 0x2C, 0x2C, 0x2C, 0)
+    assertEquals(2, encodedFrameCount(gifHeader + withColorTable + comment + gifFrame + gifTrailer + gifFrame * 5))
+  }
+
+  @Test
+  fun testCutOffGifIsCountedWithoutReadingPastTheEnd() {
+    val gif = gifHeader + gifFrame * 2
+    for (size in 0..gif.size) assertTrue(encodedFrameCount(gif.copyOf(size)) <= 2)
+    assertEquals(3, encodedFrameCount(gif + bytes(0x2C, 0, 0, 0, 0, 1, 0, 1, 0)))
+  }
+
+  @Test
+  fun testGifFramesBehindALoopExtensionAreCounted() {
+    val hidden = gifHeader + loopExtension + bytes(0) + gifTrailer + ByteArray(0x3B) + bytes(0) + gifFrame * 100_000 + gifTrailer
+    assertFalse(frameCountWithinBounds(encodedFrameCount(hidden)))
+    val stepped = gifHeader + loopExtension + bytes(5, 1, 2, 3, 4, 5, 0) + gifFrame * 3 + gifTrailer + gifFrame * 100_000
+    assertEquals(3, encodedFrameCount(stepped))
+  }
+
+  @Test
+  fun testWebpFramesAreCountedBeforeTheCodecReadsThem() {
+    fun chunk(tag: String, data: ByteArray) =
+      tag.toByteArray() + bytes(data.size, data.size shr 8, data.size shr 16, data.size shr 24) + data + ByteArray(data.size and 1)
+    val header = "RIFF????WEBP".toByteArray() + chunk("VP8X", bytes(2, 0, 0, 0, 1, 0, 0, 1, 0, 0)) + chunk("ANIM", ByteArray(6))
+    val frameData = ByteArray(16) + chunk("VP8L", bytes(0x2F, 0, 0, 0, 0))
+    val frame = chunk("ANMF", frameData)
+    assertEquals(0, encodedFrameCount(header))
+    assertEquals(3, encodedFrameCount(header + frame * 3))
+    assertTrue(frameCountWithinBounds(encodedFrameCount(header + frame * 10_000)))
+    assertFalse(frameCountWithinBounds(encodedFrameCount(header + frame * 10_001)))
+    assertFalse(frameCountWithinBounds(encodedFrameCount(header + chunk("ANMF", frameData + frame * 100_000))))
+  }
+
   @Test
   fun testAnimationsThatRebuildNothingAreWithinBounds() {
     // What a real animation looks like: each frame continues the one before it, so nothing is rebuilt
@@ -179,11 +232,17 @@ class AnimatedImageBoundsTest {
   }
 
   @Test
-  fun testAStallIsNotWaitedOut() {
-    // Wall time counts a machine that suspended mid-decode, which the frame never spent
-    assertEquals(1000, frameWait(20, 30_000))
-    assertEquals(1000, frameWait(20, 8L * 60 * 60 * 1000))
-    assertEquals(5000, frameWait(5000, 30_000))
+  fun testAFrameCostingUpToTheBoundIsWaitedOut() {
+    assertTrue(frameCostWithinBounds(0))
+    assertTrue(frameCostWithinBounds(85))
+    assertTrue(frameCostWithinBounds(1000))
+  }
+
+  @Test
+  fun testAFrameCostingMoreThanTheBoundStopsTheAnimation() {
+    assertFalse(frameCostWithinBounds(1001))
+    assertFalse(frameCostWithinBounds(5500))
+    assertFalse(frameCostWithinBounds(8L * 60 * 60 * 1000))
   }
 
   @Test
@@ -249,4 +308,6 @@ class AnimatedImageBoundsTest {
   }
 
   private fun bytes(vararg values: Int): ByteArray = values.map { it.toByte() }.toByteArray()
+
+  private operator fun ByteArray.times(count: Int): ByteArray = ByteArray(size * count) { this[it % size] }
 }

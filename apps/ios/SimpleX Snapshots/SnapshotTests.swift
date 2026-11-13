@@ -169,6 +169,29 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(voiceMessageTime_(nil), "00:00")
         XCTAssertEqual(voiceMessageTime_(TimeInterval(Int.max)), "00:00")
     }
+
+    func testReceivedImagesAreDecodedWithinLimits() throws {
+        XCTAssertEqual(imageFromBase64("data:image/png;base64," + pngData(400, 300).base64EncodedString())?.size, CGSize(width: 400, height: 300))
+        XCTAssertEqual(imageFromBase64("data:image/png;base64," + pngData(600, 600).base64EncodedString())?.size, CGSize(width: 512, height: 512))
+        XCTAssertNil(imageFromBase64("data:image/png;base64," + pngData(4321, 1).base64EncodedString()))
+        XCTAssertEqual(try loadedImage(pngData(1000, 10))?.size, CGSize(width: 1000, height: 10))
+        XCTAssertEqual(try loadedImage(pngData(4400, 10))?.size, CGSize(width: 4320, height: 10))
+        XCTAssertNil(try loadedImage(pngData(16385, 1)))
+    }
+}
+
+private func pngData(_ width: Int, _ height: Int) -> Data {
+    let format = UIGraphicsImageRendererFormat.default()
+    format.scale = 1
+    return UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format).pngData { _ in }
+}
+
+private func loadedImage(_ data: Data) throws -> UIImage? {
+    let fileName = "received-image-test.png"
+    try FileManager.default.createDirectory(at: getAppFilesDirectory(), withIntermediateDirectories: true)
+    try data.write(to: getAppFilePath(fileName))
+    defer { try? FileManager.default.removeItem(at: getAppFilePath(fileName)) }
+    return getLoadedImage(CIFile.getSample(fileName: fileName, filePath: fileName))
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {
