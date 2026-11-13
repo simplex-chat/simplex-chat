@@ -641,6 +641,8 @@ fun displayedUri(uri: String): String {
   return uri.replaceRange(authorityStart, authorityEnd, authority).replace(invisibleChar) { unicodeMarker(it.value) }
 }
 
+fun shortenedUri(uri: String): String = if (uri.count() > 160) uri.substring(0, 159) + "…" else uri
+
 fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(
   save = { it.width to it.height },
   restore = { IntSize(it.first, it.second) }

@@ -684,8 +684,7 @@ fun openBrowserAlert(uri: String, uriHandler: UriHandler) {
   if (res == null) {
     showInvalidLinkAlert(uri, err)
   } else {
-    val shownUri = displayedUri(uri)
-    val message = if (shownUri.count() > 160) shownUri.substring(0, 159) + "…" else shownUri
+    val message = shortenedUri(displayedUri(uri))
     val sanitizedUri = res.second
     if (sanitizedUri == null) {
       AlertManager.shared.showAlertDialog(
