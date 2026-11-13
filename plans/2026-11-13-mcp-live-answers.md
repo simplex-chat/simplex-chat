@@ -4,7 +4,7 @@ Status: Q1 and Q2 answered A on 2026-11-13. The end line and the usage line of `
 
 ## 1. Goal
 
-Roadmap line, `packages/simplex-chat-mcp/ROADMAP.md:12`: "Answers appear live as Claude writes them, from the moment it starts working."
+Roadmap line, `packages/simplex-chat-mcp/ROADMAP.md`: "Answers appear live as Claude writes them, from the moment it starts working."
 
 The user's words, 2026-11-11:
 
@@ -48,7 +48,7 @@ opening message at a blank answer    !- ✅ Done in DURATION!                   
 opening message at a refused post    Claude's text was not posted: ...          no     silent      kept
 ```
 
-- `!- TEXT!` is small text: the apps show TEXT smaller and in the secondary color (fact 11 of `ep/mcp-session-usage`), and a notification shows TEXT without the marks (`Notifications.swift:200-214`, `NtfManager.kt:134-145`).
+- `!- TEXT!` is small text: the apps show TEXT smaller and in the secondary color (fact 11 of `ep/mcp-session-usage`), and a notification shows TEXT without the marks (`hideSecrets` in `Notifications.swift` and in `NtfManager.kt`).
 - DURATION is the time from the prompt's hook to the Stop hook, in the format of the step lines: `41 ms`, `2.0 s`, `42 s`, `4 min 12 s`, `1 h 5 min`.
 - USAGE is the usage text of `ep/mcp-session-usage`, which the Stop hook reads from the transcript: `2 min 51 s · 16.0k output tokens · 673k tokens in context`. Without a usage text, as when the transcript has no entry of the turn yet (fact 9), the line keeps DURATION.
 - LIMITS is the plan's usage of `ep/mcp-session-usage`, from its status line command: ` · 5 h: 34%` and ` · week: 61%`, each when known and not reset. The hub appends it after USAGE, after DURATION, or after `Done`. Without it, LIMITS is empty.
@@ -131,11 +131,11 @@ Facts:
 9. The transcript has a response's text only after the response ends. In a transcript of this machine, the text entry of one response is stamped 2.4 s before its tool_use entry and records `stop_reason: tool_use`, which the API sends at the end of a response. In run L1 the transcript file did not exist at any of the twelve hook events.
 10. A mod's `turn.step` hook gets the model's response as it streams, in Claude Code's own process, and the terminal shows the stream unchanged (mods documentation, "Follow a turn"). A mod can read and write files, start processes and see every prompt and tool call; administrators and the built-in guard can stop user-installed mods.
 11. Claude Code 2.1.322 skips an unknown event of a plugin's `hooks.json` (297743181). MessageDisplay exists in versions 2.1.303, 2.1.316, 2.1.319, 2.1.322 and 2.1.323, with the same flush constants in 2.1.323.
-12. SimpleX live messages: `LiveMessage` of the library updates at most once per 3 s (`packages/simplex-chat-nodejs/src/api.ts:1152`), the iOS app every 3 s (`SendMessageView.swift:12`, `:417-420`), and the Android and desktop apps every 3 s (`SendMsgView.kt:546-549`). The core checks only that a sent content is no report (`Commands.hs:4894-4897`), and the iOS app sends an empty live message when it replies to one (`ComposeView.swift:1310-1319`). The apps show a live item with typing dots after its text while it was updated in the last 10 s (fact 11 of `ep/mcp-activity`). The core refuses the update of an item older than a day (decision 27 of `ep/mcp-activity`).
+12. SimpleX live messages: `LiveMessage` of the library updates at most once per 3 s (`interval` of the `LiveMessage` constructor in `packages/simplex-chat-nodejs/src/api.ts`), the iOS app every 3 s (`liveMsgInterval` and `startLiveMessage` in `SendMessageView.swift`), and the Android and desktop apps every 3 s (`startLiveMessage` in `SendMsgView.kt`). The core checks only that a sent content is no report (`assertAllowedContent` in `Commands.hs`), and the iOS app sends an empty live message when it replies to one (`sendLiveMessage` in `ComposeView.swift`). The apps show a live item with typing dots after its text while it was updated in the last 10 s (fact 11 of `ep/mcp-activity`). The core refuses the update of an item older than a day (decision 27 of `ep/mcp-activity`).
 13. Turns in the main conversations of this machine, 30 days to 2026-11-13, 11,856 turns: the first output came a median 5.9 s after the prompt, 34 s at the 90th percentile; the first text, 20.5 s and 102 s. Of 8,427 turns with tool uses, 49% had remarks, with a 90th percentile of 5 per turn and a median length of 121 characters. Answers had a median of 904 characters and 10 lines, 2,710 and 30 at the 90th percentile. A turn took a median of 40 s.
-14. Today Claude posts only the Stop hook's `last_assistant_message` of a turn (decision 75 of `plans/2026-11-07-mcp-claude-code-channel.md`, `src/hub.ts:197`).
+14. Today Claude posts only the Stop hook's `last_assistant_message` of a turn (decision 75 of `plans/2026-11-07-mcp-claude-code-channel.md`, `Session.answer` in `src/hub.ts`).
 15. A Node script that reads a hook input and posts it to a Unix socket took a median of 112 ms, from 81 to 168 ms, in 20 runs on this machine; `node -e 0` took 67 ms. Loading `dist/hook.js` of master took a median of 261 ms, against 162 ms for the Node modules alone, in 15 runs at a load average of 23. `files.ts` loads `log.ts`, which loads `simplex-chat`.
-16. `POST /turn` answers after `Session.turn` returns (`src/service.ts:148-152`). The service answers 409 for a session it does not know (`src/service.ts:395`).
+16. `POST /turn` answers after `Session.turn` returns (`Service.routes` in `src/service.ts`). The service answers 409 for a session it does not know (`Service.openAgent` in `src/service.ts`).
 
 Choices:
 
@@ -152,12 +152,12 @@ Choices:
 27. `endSteps(before)` becomes `endLive(before)`: it finalizes the steps and texts that started before `before` with their text, and an empty opening message with `⏹️ Stopped`. It runs at a prompt that starts a turn, at the last detach and at the hub's stop. At Stop it runs for steps and texts, after the claim of decision 25.
 28. The hub drops a batch of an ended text, and the first batch of a text whose hook started before the last answer (fact 7). It keeps the last 100 ended message IDs.
 29. The opening message, Claude's texts and an answer posted at Stop are silent; the end line is important. This replaces decision 22 of `ep/mcp-activity`.
-30. The channel instructions and the description of `reply` say that Claude's text of each turn reaches the group as Claude writes it (`src/session.ts:21`, `src/tools.ts:464`).
+30. The channel instructions and the description of `reply` say that Claude's text of each turn reaches the group as Claude writes it (`channelInstructions` in `src/session.ts`, `replyTool` in `src/tools.ts`).
 31. Replaced in section 11, row 13: texts and opening messages end 23 hours after their send by the wall clock, as steps do. A text interrupted with Esc, and an empty opening message, stay live until the next prompt or answer, which can come after the core's limit of a day.
 32. The updates of texts and of the opening message join the session's `finalizing` promise, so the hub's stop waits for them (decision 29 of `ep/mcp-activity`).
 33. `duration` moves from `src/hook.ts` to `src/messages.ts`, for the step lines and the end line.
 34. Texts are posted in the order their first batches arrive, among themselves and with the steps.
-35. When the core refuses a text's send or update with a group preference, as for a SimpleX link while links are off (`Commands.hs:853-854` for an update), the hub posts `Claude's text was not posted: PREF OFF` once for that text. It finalizes the text's message with the text accepted last and drops the text's later batches. An answer posted at Stop keeps the subject `Claude's answer was not posted`.
+35. When the core refuses a text's send or update with a group preference, as for a SimpleX link while links are off (`prohibitedSimplexLinks` in the `APIUpdateChatItem` case of `Commands.hs` for an update), the hub posts `Claude's text was not posted: PREF OFF` once for that text. It finalizes the text's message with the text accepted last and drops the text's later batches. An answer posted at Stop keeps the subject `Claude's answer was not posted`.
 36. The end line and the usage line of `ep/mcp-session-usage` are one message: `!- ✅ Done in FIGURESLIMITS!`, important, the turn's last post after a non-blank answer, with every part of the answer silent. FIGURES is the Stop hook's usage text when it has one, and DURATION of decision 26 otherwise. LIMITS is ` · 5 h: N%` and ` · week: N%` for the windows of the plan's newest usage not reset, which the hub appends after FIGURES, also after DURATION. Without FIGURES, the line is `!- ✅ DoneLIMITS!`. Both items build on `ep/mcp-activity`, and either can merge first. The first one adds the line in this form with its own parts: this item with DURATION, in a send of its own after the claimed or posted answer; `ep/mcp-session-usage` with its usage text and LIMITS, as the last message of the answer's send. The second one adds its parts to that line: this item, the line after a streamed answer and DURATION when the hook sends no usage; `ep/mcp-session-usage`, its usage text in place of DURATION, and LIMITS. So no release posts two lines after an answer. `ep/mcp-session-usage` takes this as its decision 19 (commit `3cc99fad0`).
 37. A text that a group preference refuses counts as the answer at Stop when its trimmed text starts the trimmed answer, so the group gets one refusal post and the answer is not posted again. A refused post that would fill the opening message fills it with its refusal text, `Claude's text was not posted: ...`, `Claude's answer was not posted: ...` or `Claude's note was not posted: ...`, in place of a separate post. A refused text ends at once, also when it outgrows a message, and an update scheduled before its end is skipped. The lead decided this on 2026-11-13.
 
@@ -299,7 +299,7 @@ flowchart LR
 - Older SimpleX apps show live messages and typing dots, as for step lines. Before receivers support priorities, every post alerts, the end line included; with silent messages, only the end line does (decision 29).
 - Claude Code without MessageDisplay runs no display hook. The opening message is then filled by the first step or the answer at Stop, and the end line follows. Version 2.1.322 skips unknown events of `hooks.json` (fact 11).
 - In `claude -p` and Agent SDK runs, the display hook runs once per message, and the service answers 409, because such runs have no session (facts 6 and 16).
-- Older services: the turn hooks of this version stop an older service first (`src/client.ts:37-40`), at the prompt, before any batch.
+- Older services: the turn hooks of this version stop an older service first (`ServiceClient.ensureService` in `src/client.ts`), at the prompt, before any batch.
 - Data folders: the texts and the opening message are kept in the service's memory. After a service restart during a text, that text stays live, and the answer is posted at Stop.
 
 ## 7. Acceptance and tests
@@ -341,6 +341,7 @@ Tests:
   - New, in "while a preference of the session group refuses a post": "posts that Claude's text was not posted, naming the preference, once for a text, and finalizes its message with the text accepted last".
   - New for decision 37, in the same group: "posts one refusal for an answer that the preference refuses, streamed or not, in the turn's opening message when the refused post would fill it, and does not post the answer again"; "fills the turn's opening message with the refusal of the step that would fill it, and posts nothing at the step's end"; "posts one refusal for a text whose final update is refused while its scheduled update waits behind it, and no update after it"; "posts one refusal for a text whose first part is refused when the text outgrows a message, and nothing more of that text".
   - New for the review of `8b0488d57`, in "session channel": "sends the turn's text, step and answer as new messages when the update of the opening message fails, as after its deletion"; "posts the answer at Stop when the text that starts it was never posted"; "keeps the opening message for the batches that arrive while User posts the prompt, and sends it after User's post"; "ends a live text with its text and an empty opening message with ⏹️ Stopped 23 hours after their send by the wall clock, a text in an opening message counted from the opening's send"; in the preference group: "finalizes the turn's opening message with ⏹️ Stopped when its update with the refusal fails too, and posts the end line". For the re-check of `c6796ee4b`: "finalizes the opening message with ⏹️ Stopped after its update fails once, and sends the text as a new message".
+  - Changed at the merge of master `975cc700a`: the two reaction tests of `ep/mcp-reactions` expect the answer in the turn's opening message, which quotes the reacted message, and then the end line.
 - `test/unit/service.test.ts`, changed: "passes text batches to the session and answers before its posts, and ends its live posts at the last detach".
 - `test/unit/hook.test.ts` and `files.test.ts` stay as they are: they test `duration` through the step lines, and `dataRoot` and `socketPath` through the exports of `files.ts`.
 - `test/e2e/service.test.ts`, changed: the mirroring test runs `dist/display.js` with the inputs of run L1 and then the Stop hook. The owner's app receives the opening message, its updates and its finalization, not edited, and `!- ✅ Done in` with the time.
@@ -350,9 +351,9 @@ Tests:
 
 ## 8. Docs to change
 
-- `README.md:36`: Claude's text appears live as Claude writes it, and the turn ends with one line in small print that alerts.
+- `README.md`, step 4: Claude's text appears live as Claude writes it, and the turn ends with one line in small print that alerts.
 - `REFERENCE.md`, "Prompts and answers": the opening message, the texts, the end line, the priorities and the terminal's display by lines.
-- `ROADMAP.md:12`: removed.
+- `ROADMAP.md`: the line removed.
 - `spec/flows.md`: a flow of a turn's texts with the order rules; `spec/api.md`: the MessageDisplay entry, `dist/display.js` and `text` of `POST /turn`, the channel instructions; `spec/architecture.md`: the texts, the opening message, the end line, `paths.ts` and `service-request.ts`.
 - `TESTING.md`: the tests and the measurement.
 
@@ -415,6 +416,9 @@ Changes against sections 4 and 5:
     logged, and postAnswer goes on to the end line.
 15  review: openTurn keeps the opening before User's post and sends it after that post, so batches and steps
     that arrive during User's post wait for it.
+16  merge of master 975cc700a: the opening message of a reaction's turn quotes the reacted message, Claude's own
+    included, and the answer fills it; quoteOf takes Claude's own messages, as master's postAnswer does; the
+    flow of a turn's texts is flow 34, after master's flow 33; code is cited by names with // spec: pointers.
 ```
 
 ```mermaid

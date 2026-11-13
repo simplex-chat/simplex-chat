@@ -559,6 +559,9 @@ describe("session channel", () => {
     session.onMessage(event(sessionGroup, item(n, text, from(invitedAlice))))
     await until(() => session["pushed"].some(({item: pushed}) => pushed.meta.itemId === n))
   }
+  const emoji = (value: string): object => ({type: "emoji", emoji: value})
+  const reaction = (chatInfo: T.ChatInfo, chatItem: T.ChatItem, sender: T.GroupMember, reacted: object, added = true): ChatEvent =>
+    ({type: "chatItemReaction", user, added, reaction: {chatInfo, chatReaction: {chatDir: from(sender), chatItem, sentAt: "", reaction: reacted}}}) as unknown as ChatEvent
 
   async function channel(chat: FakeChat): Promise<{hub: Hub; session: Session; lines: AttachLine[]}> {
     const hub = await hubWith(chat)
@@ -677,6 +680,144 @@ describe("session channel", () => {
     await session.turn({id: id1, answer: "Done."})
     expect(posts).toEqual([])
     expect(shown(chat)).toEqual([{text: "Done.", quotedItemId: 43}, ended])
+  })
+
+  it("passes a reaction of a member whose role sends as the quote line of the reacted message and the emoji, with the message's ID and sender, and nothing, with no reply to an unknown value either, for an observer, User, a removed reaction or a reaction in the Main group", async () => {
+    const chat = new FakeChat()
+    const {hub, lines} = await channel(chat)
+    hub.userContactId = 6
+    const sessionUser = {...member(1006, "User"), memberContactId: 6}
+    const observer = member(11, "Oscar", T.GroupMemberRole.Observer)
+    const answer = item(57, "Tests pass: 212 of 212.", {type: "groupSnd"})
+    const prompt = item(46, "Run the tests", from(bob))
+    for (const reacted of [
+      reaction(sessionGroup, answer, observer, emoji("👍")),
+      reaction(sessionGroup, answer, observer, emoji("🦄")),
+      reaction(sessionGroup, answer, sessionUser, emoji("👍")),
+      reaction(sessionGroup, answer, sessionUser, emoji("🦄")),
+      reaction(sessionGroup, answer, bob, emoji("👍"), false),
+      reaction(sessionGroup, answer, bob, emoji("🦄"), false),
+      reaction(groupChat(hub.main["group"]), answer, bob, emoji("👍")),
+      reaction(groupChat(hub.main["group"]), answer, bob, emoji("🦄")),
+      reaction(sessionGroup, answer, bob, emoji("👍")),
+      reaction(sessionGroup, prompt, invitedAlice, emoji("👎")),
+    ]) await hub["onEvent"](reacted)
+    await until(() => lines.length === 2)
+    expect(lines).toEqual([
+      {prompt: {text: "> Tests pass: 212 of 212.\n👍", from: "Bob", item: 57, replyTo: {item: 57, from: "agent"}}},
+      {prompt: {text: "> Run the tests\n👎", from: "Alice", item: 46, replyTo: {item: 46, from: "Bob"}}},
+    ])
+    expect(answers(chat)).toEqual([])
+  })
+
+  it("passes a reaction with an emoji of the apps, and replies to another reaction that it is not supported, without passing it", async () => {
+    const chat = new FakeChat()
+    const {hub, lines} = await channel(chat)
+    const answer = (n: number) => item(n, "Tests pass.", {type: "groupSnd"})
+    const unknown = [emoji("️"), emoji("❤️"), emoji("🦄"), emoji("Line one\nLine two"), {type: "custom", value: "👍"}, {type: "unknown", tag: "custom", json: {type: "custom", value: "👍"}}]
+    await hub["onEvent"](reaction(sessionGroup, answer(57), bob, emoji("✅")))
+    for (const [i, reacted] of unknown.entries()) await hub["onEvent"](reaction(sessionGroup, answer(60 + i), bob, reacted))
+    await hub["onEvent"](reaction(sessionGroup, answer(57), bob, emoji("❤")))
+    await until(() => lines.length === 2 && answers(chat).length === unknown.length)
+    expect(lines.map(({prompt}) => prompt?.text)).toEqual(["> Tests pass.\n✅", "> Tests pass.\n❤"])
+    expect(answers(chat)).toEqual(unknown.map((_, i) => [{text: "This reaction is not supported.", quotedItemId: 60 + i}]))
+  })
+
+  it("replies that a reaction is not supported once per member and reacted message, also after the reaction is removed and added again, and not to a reaction to that reply", async () => {
+    const chat = new FakeChat()
+    const {hub, lines} = await channel(chat)
+    const answer = item(57, "Tests pass.", {type: "groupSnd"})
+    const lint = item(58, "Lint passes.", {type: "groupSnd"})
+    const refusal = item(70, "This reaction is not supported.", {type: "groupSnd"})
+    for (const reacted of [
+      reaction(sessionGroup, answer, bob, emoji("️")),
+      reaction(sessionGroup, answer, bob, emoji("️"), false),
+      reaction(sessionGroup, answer, bob, emoji("️")),
+      reaction(sessionGroup, answer, bob, emoji("️"), false),
+      reaction(sessionGroup, answer, bob, emoji("🦄")),
+      reaction(sessionGroup, answer, invitedAlice, emoji("🦄")),
+      reaction(sessionGroup, lint, bob, emoji("🦄")),
+      reaction(sessionGroup, refusal, bob, emoji("🦄")),
+      reaction(sessionGroup, refusal, invitedAlice, emoji("️")),
+      reaction(sessionGroup, answer, bob, emoji("✅")),
+    ]) await hub["onEvent"](reacted)
+    await until(() => lines.length === 1)
+    expect(lines.map(({prompt}) => prompt?.text)).toEqual(["> Tests pass.\n✅"])
+    expect(answers(chat)).toEqual([57, 57, 58].map(quotedItemId => [{text: "This reaction is not supported.", quotedItemId}]))
+  })
+
+  it("quotes in the prompt of a reaction to a reply the reacted message, not the message that the reply quotes", async () => {
+    const chat = new FakeChat()
+    const {hub, lines} = await channel(chat)
+    const reply = {...item(60, "Agreed", from(bob)), quotedItem: {chatDir: {type: "groupSnd"}, itemId: 41, sentAt: "", content: {type: "text", text: "Fixed."}}} as unknown as T.ChatItem
+    await hub["onEvent"](reaction(sessionGroup, reply, invitedAlice, emoji("👍")))
+    await until(() => lines.length === 1)
+    expect(lines).toEqual([{prompt: {text: "> Agreed\n👍", from: "Alice", item: 60, replyTo: {item: 60, from: "Bob"}}}])
+  })
+
+  it("quotes a reacted image or video without a caption by its type and file name, and receives no file of the reacted message", async () => {
+    const chat = new FakeChat()
+    const {hub, lines} = await channel(chat)
+    const media = (n: number, msgContent: object, fileName: string): T.ChatItem => {
+      const offered = fileItem(n, msgContent, {type: "rcvInvitation"}, {chatDir: from(bob), fileId: n})
+      return {...offered, file: {...offered.file!, fileName}}
+    }
+    await hub["onEvent"](reaction(sessionGroup, media(61, {type: "image", text: "", image: ""}, "IMG_2041.jpg"), invitedAlice, emoji("❤")))
+    await hub["onEvent"](reaction(sessionGroup, media(62, {type: "video", text: "", image: "", duration: 5}, "ride.mp4"), invitedAlice, emoji("🚀")))
+    await until(() => lines.length === 2)
+    expect(lines).toEqual([
+      {prompt: {text: "> image: IMG_2041.jpg\n❤", from: "Alice", item: 61, replyTo: {item: 61, from: "Bob"}}},
+      {prompt: {text: "> video: ride.mp4\n🚀", from: "Alice", item: 62, replyTo: {item: 62, from: "Bob"}}},
+    ])
+    expect(chat.commands.filter(command => command.startsWith("/freceive"))).toEqual([])
+  })
+
+  it("quotes the reacted message in the opening message of a reaction's turn, which the answer fills, Claude's own answer included", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    await hub["onEvent"](reaction(sessionGroup, item(57, "Tests pass.", {type: "groupSnd"}), bob, emoji("👍")))
+    await until(() => session["pushed"].length === 1)
+    await session.turn({id: id1, prompt: '<channel source="plugin:simplex:simplex" from="Bob" item="57" reply_to="57" reply_to_from="agent">\n> Tests pass.\n👍\n</channel>', typed: false})
+    await session.turn({id: id1, answer: "Thanks."})
+    expect(shown(chat)).toEqual([{text: "Thanks.", quotedItemId: 57}, ended])
+  })
+
+  it("replies that the session is not running to a reaction, quoting the reacted message", async () => {
+    const chat = new FakeChat()
+    const {hub, session, lines} = await channel(chat)
+    session.onLine = undefined
+    await hub["onEvent"](reaction(sessionGroup, item(57, "Tests pass.", {type: "groupSnd"}), bob, emoji("👍")))
+    await until(() => answers(chat).length === 1)
+    expect(answers(chat)).toEqual([[{text: "Session 1 is not running.", quotedItemId: 57}]])
+    expect(lines).toEqual([])
+  })
+
+  it("leaves a pending tool-use card pending when an approver reacts to it, and passes the reaction as a prompt", async () => {
+    const chat = new FakeChat()
+    const {hub, session, lines} = await channel(chat)
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    await until(() => session.actions.pending()[0]?.card !== undefined)
+    const [{card}] = session.actions.pending()
+    await hub["onEvent"](reaction(sessionGroup, item(card!, sentTo(chat, 20)[0], {type: "groupSnd"}), invitedAlice, emoji("👍")))
+    await until(() => lines.length === 1)
+    expect(lines).toEqual([{prompt: {text: "> I want to use `Bash`: `Run shell command`…\n👍", from: "Alice", item: card, replyTo: {item: card, from: "agent"}}}])
+    expect(session.actions.pending().map(({tool, state}) => [tool, state])).toEqual([["permission", "pending"]])
+    expect(chat.updates).toEqual([])
+  })
+
+  it("matches each channel tag of a turn's prompt to one pushed prompt, so two equal reactions to one message are quoted in their own turns", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const answer = item(57, "Tests pass.", {type: "groupSnd"})
+    await hub["onEvent"](reaction(sessionGroup, answer, bob, emoji("👍")))
+    await hub["onEvent"](reaction(sessionGroup, answer, invitedAlice, emoji("👍")))
+    await until(() => session["pushed"].length === 2)
+    const reacted = (name: string): string => `<channel source="plugin:simplex:simplex" from="${name}" item="57" reply_to="57" reply_to_from="agent">\n> Tests pass.\n👍\n</channel>`
+    await session.turn({id: id1, at: 1, prompt: reacted("Bob"), typed: false})
+    await session.turn({id: id1, at: 2, answer: "Thanks, Bob."})
+    await session.turn({id: id1, at: 3, prompt: reacted("Alice"), typed: false})
+    await session.turn({id: id1, at: 4, answer: "Thanks, Alice."})
+    expect(shown(chat)).toEqual([{text: "Thanks, Bob.", quotedItemId: 57}, endedIn("1 ms"), {text: "Thanks, Alice.", quotedItemId: 57}, endedIn("1 ms")])
   })
 
   it("shows the model and effort in the group description, posts terminal prompts as User except pushed ones, raw or in this channel's tag, and prompts made only of this channel's tags, and answers as Claude in the opening message of the turn, quoting the owner's prompt", async () => {

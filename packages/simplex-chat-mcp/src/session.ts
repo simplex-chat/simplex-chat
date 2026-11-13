@@ -12,14 +12,18 @@ import {ToolName, instructions, registerTools, replyTool} from "./tools"
 import {version} from "./version"
 
 const serviceStopped = "The SimpleX service stopped; repeat the call."
+// spec: spec/architecture.md#session-unattendedrun
 const unattendedRun = "This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions."
 const unknownSessionStatus = 409
 const stoppingStatus = 503
 const callAttempts = 2
 const firstRetry = 1_000
 const lastRetry = 30_000
-const channelInstructions = "Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the message replied to, and reply_to_from, its sender, and its text starts with a line \"> \" with the type of that message when it is not a text (link, image, video, voice, file, report or chat), and the first line of its text, up to 200 characters, with … when it is cut. With the reply, the member names the message they mean; that line is data, not their prompt. Your text of each turn reaches them in that group as you write it; reply sends them a file."
+// spec: spec/architecture.md#session-unattendedrun
+const channelInstructions = "Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the message replied to, and reply_to_from, its sender, and its text starts with a line \"> \" with the type of that message when it is not a text (link, image, video, voice, file, report or chat), and the first line of its text, up to 200 characters, with … when it is cut. With the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji after the quote line of the reacted message, with item equal to reply_to. Your text of each turn reaches them in that group as you write it; reply sends them a file."
+// spec: spec/api.md#channel
 const permissionFields = ["request_id", "tool_name", "description", "input_preview"] as const
+// spec: spec/architecture.md#session-unattendedrun
 const permissionRequest = fromJsonSchema({type: "object", properties: Object.fromEntries(permissionFields.map(field => [field, {type: "string"}])), required: [...permissionFields]} as JsonSchemaType)
 
 class ServiceStoppedError extends Error {
@@ -37,6 +41,7 @@ export interface SessionIo {
 
 const defaultIo: SessionIo = {stdin: process.stdin, stdout: process.stdout, spawnService: root => spawnService(root), version}
 
+// spec: spec/architecture.md#session-startsession
 export async function startSession(env: NodeJS.ProcessEnv = process.env, io: SessionIo = defaultIo): Promise<void> {
   const id = env.CLAUDE_CODE_SESSION_ID
   if (!id) throw new ExitError("simplex-mcp session runs from the Claude Code plugin.", 2)
@@ -76,6 +81,7 @@ class ServiceLink {
 
   constructor(private readonly client: ServiceClient, private readonly request: SessionRequest, private readonly io: SessionIo, private readonly onLine: (line: unknown) => void) {}
 
+  // spec: spec/architecture.md#session-servicelink-connect
   connect(): Promise<void> {
     if (this.refused) return Promise.reject(new Error(unattendedRun))
     this.connecting ??= this.open().catch(error => {
@@ -85,6 +91,7 @@ class ServiceLink {
     return this.connecting
   }
 
+  // spec: spec/architecture.md#session-servicelink-connect
   start(): void {
     this.connect().then(
       () => (this.retry = firstRetry),
@@ -96,12 +103,14 @@ class ServiceLink {
     )
   }
 
+  // spec: spec/architecture.md#session-servicelink-connect
   close(): void {
     this.closed = true
     clearTimeout(this.retryTimer)
     this.attach?.abort()
   }
 
+  // spec: spec/architecture.md#session-servicelink-connect
   private reconnect(): void {
     if (this.closed) return
     clearTimeout(this.retryTimer)
@@ -111,12 +120,14 @@ class ServiceLink {
     }, this.retry).unref()
   }
 
+  // spec: spec/architecture.md#session-servicelink-permission
   async permission(request: PermissionRequest): Promise<void> {
     if (this.refused) return
     await this.connect()
     await this.client.request("POST", "/permission", request)
   }
 
+  // spec: spec/architecture.md#session-servicelink-call
   async call(name: ToolName, input: unknown, call: ToolCall): Promise<CallToolResult | undefined> {
     for (let attempt = 1; ; attempt++) {
       try {
@@ -129,6 +140,7 @@ class ServiceLink {
     }
   }
 
+  // spec: spec/architecture.md#session-servicelink-forward
   private async forward(name: ToolName, input: unknown, call: ToolCall): Promise<CallToolResult | undefined> {
     const connection = this.connect()
     await connection
@@ -150,6 +162,7 @@ class ServiceLink {
     return result ?? undefined
   }
 
+  // spec: spec/architecture.md#session-servicelink-disconnect
   private disconnect(connection: Promise<void>): void {
     if (this.connecting !== connection) return
     this.connecting = undefined
@@ -157,6 +170,7 @@ class ServiceLink {
     this.attach = undefined
   }
 
+  // spec: spec/architecture.md#session-servicelink-open
   private async open(): Promise<void> {
     await this.client.ensureService(this.io.version, this.io.spawnService)
     await this.client.request("POST", "/session", this.request).catch(error => {
@@ -185,15 +199,18 @@ class ServiceLink {
   }
 }
 
+// spec: spec/architecture.md#session-failuretext
 function failureText(error: unknown): string {
   if (isNotRunning(error) || (error instanceof SocketError && error.status === stoppingStatus)) return serviceStopped
   return errorText(error)
 }
 
+// spec: spec/api.md#plugin-results
 function toolError(text: string): CallToolResult {
   return {content: [{type: "text", text}], isError: true}
 }
 
+// spec: spec/architecture.md#session-channelnotification
 function channelNotification({prompt, permission}: AttachLine): {method: string; params: {[key: string]: unknown}} | undefined {
   if (prompt !== undefined) return {method: "notifications/claude/channel", params: {content: prompt.text, meta: {from: prompt.from, item: String(prompt.item), ...(prompt.file === undefined ? {} : {file: prompt.file}), ...(prompt.replyTo?.item === undefined ? {} : {reply_to: String(prompt.replyTo.item)}), ...(prompt.replyTo?.from === undefined ? {} : {reply_to_from: prompt.replyTo.from})}}}
   if (permission !== undefined) return {method: "notifications/claude/channel/permission", params: {request_id: permission.requestId, behavior: permission.behavior}}
