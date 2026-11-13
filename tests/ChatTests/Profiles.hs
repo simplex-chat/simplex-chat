@@ -185,6 +185,7 @@ chatProfileTests = do
       it "group link as channel" $ testGroupLinkAsType "/c#"
       it "group link as relay address" testGroupLinkAsRelay
       it "address as group link and channel" testAddressAsGroupLink
+      it "group link as address in contact profile" testGroupLinkInContactProfile
       it "contact data in group link" testContactDataInGroupLink
       it "channel data in invitation" testChannelDataInInvitation
       it "invitation, address and group link with their data" testLinksWithTheirData
@@ -4260,6 +4261,15 @@ testAddressAsGroupLink =
       invalidLink bob
       bob ##> ("/c " <> link)
       invalidLink bob
+
+testGroupLinkInContactProfile :: HasCallStack => TestParams -> IO ()
+testGroupLinkInContactProfile =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- createGroupWithLink alice
+    void $ withCCUser bob $ \user -> withCCTransaction bob $ \db ->
+      runExceptT $ createContact db (storeCxt $ chatController bob) user aliceProfile {contactLink = either error Just $ strDecode $ B.pack link}
+    bob ##> "/_connect contact 1 2"
+    invalidLink bob
 
 testContactDataInGroupLink :: HasCallStack => TestParams -> IO ()
 testContactDataInGroupLink =
