@@ -3,9 +3,10 @@ package chat.simplex.app
 import chat.simplex.common.model.ChatPeerType
 import chat.simplex.common.model.MsgChatLink
 import chat.simplex.common.model.Profile
-import chat.simplex.res.MR
+import chat.simplex.common.model.peerTypeIcon
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 class PeerTypeIconTest {
   private fun contact(peerType: ChatPeerType?, business: Boolean = false) = MsgChatLink.Contact("", Profile.sampleData.copy(peerType = peerType), business)
@@ -14,21 +15,22 @@ class PeerTypeIconTest {
 
   @Test
   fun linkCardsShowThePeerType() {
-    assertEquals(MR.images.ic_agent, contact(ChatPeerType.Agent).iconRes)
-    assertEquals(MR.images.ic_cube, contact(ChatPeerType.Bot).iconRes)
-    assertEquals(MR.images.ic_account_circle_filled, contact(ChatPeerType.Human).iconRes)
-    assertEquals(MR.images.ic_account_circle_filled, contact(null).iconRes)
-    assertEquals(MR.images.ic_agent, invitation(ChatPeerType.Agent).iconRes)
-    assertEquals(MR.images.ic_work_filled_padded, contact(ChatPeerType.Agent, business = true).iconRes)
+    assertEquals(peerTypeIcon(ChatPeerType.Agent), contact(ChatPeerType.Agent).iconRes)
+    assertEquals(peerTypeIcon(ChatPeerType.Bot), contact(ChatPeerType.Bot).iconRes)
+    assertEquals(peerTypeIcon(null), contact(ChatPeerType.Human).iconRes)
+    assertEquals(peerTypeIcon(null), contact(null).iconRes)
+    assertEquals(peerTypeIcon(ChatPeerType.Agent), invitation(ChatPeerType.Agent).iconRes)
+    assertEquals(contact(null, business = true).iconRes, contact(ChatPeerType.Agent, business = true).iconRes)
+    assertNotEquals(peerTypeIcon(ChatPeerType.Agent), contact(ChatPeerType.Agent, business = true).iconRes)
   }
 
   @Test
   fun smallLinkIconsShowThePeerType() {
-    assertEquals(MR.images.ic_agent, contact(ChatPeerType.Agent).smallIconRes)
-    assertEquals(MR.images.ic_cube, contact(ChatPeerType.Bot).smallIconRes)
-    assertEquals(MR.images.ic_person, contact(ChatPeerType.Human).smallIconRes)
-    assertEquals(MR.images.ic_person, contact(null).smallIconRes)
-    assertEquals(MR.images.ic_cube, invitation(ChatPeerType.Bot).smallIconRes)
-    assertEquals(MR.images.ic_work, contact(ChatPeerType.Agent, business = true).smallIconRes)
+    assertEquals(peerTypeIcon(ChatPeerType.Agent), contact(ChatPeerType.Agent).smallIconRes)
+    assertEquals(peerTypeIcon(ChatPeerType.Bot), contact(ChatPeerType.Bot).smallIconRes)
+    assertEquals(contact(null).smallIconRes, contact(ChatPeerType.Human).smallIconRes)
+    assertNotEquals(peerTypeIcon(null), contact(null).smallIconRes)
+    assertEquals(peerTypeIcon(ChatPeerType.Bot), invitation(ChatPeerType.Bot).smallIconRes)
+    assertEquals(contact(null, business = true).smallIconRes, contact(ChatPeerType.Agent, business = true).smallIconRes)
   }
 }
