@@ -20,6 +20,7 @@ import {version} from "./version"
 const idleClose = 10 * 60_000
 const idleStop = 10 * 60_000
 const processWait = 10_000
+const psWait = 2_000
 const logCheck = 3_600_000
 const lockChecks = 150
 const lockCheckWait = 100
@@ -220,7 +221,7 @@ export class Service {
     entry.seen = Date.now()
     if (request.pid !== undefined) this.registered.emit(String(request.pid))
     const agent = await entry.opening
-    if (previous.pid !== undefined && (previous.pid !== request.pid || previous.started !== started)) agent.endToolApprovals()
+    if (previous.pid !== undefined && (previous.pid !== request.pid || started === undefined || previous.started !== started)) agent.endToolApprovals()
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
     agent.requestMode(request.config.approve)
@@ -479,9 +480,10 @@ export function productionDeps(root: string): ServiceDeps {
 }
 
 export async function processStart(pid: number): Promise<string | undefined> {
+  if (!Number.isSafeInteger(pid) || pid <= 0) return undefined
   try {
     if (process.platform === "linux") return (await readFile(`/proc/${pid}/stat`, "utf8")).split(") ").at(-1)?.split(" ")[19]
-    if (process.platform === "darwin") return (await run("ps", ["-o", "lstart=", "-p", String(pid)])).stdout.trim() || undefined
+    if (process.platform === "darwin") return (await run("/bin/ps", ["-o", "lstart=", "-p", String(pid)], {timeout: psWait})).stdout.trim() || undefined
     return undefined
   } catch {
     return undefined

@@ -1,6 +1,6 @@
 # SimpleX MCP: approve a tool for the rest of a session
 
-Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-allow-tool`, stacked on `ep/mcp-activity`; decisions 29 to 32 were made in the implementation, 33 to 35 after review round 1, and 36 and 37 after the re-check of `1d16c6942`. Code references: master `97bbbd9ac` (MCP 0.3.0 with #8157). Claude Code references: version 2.1.322 and its binary at the offsets given, the documentation pages quoted, and three `claude -p` runs of Claude Code 2.1.323, recorded on 2026-11-13 (R1 to R3). Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
+Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-allow-tool`, stacked on `ep/mcp-activity`; decisions 29 to 32 were made in the implementation, 33 to 35 after review round 1, and 36 and 37 after the re-check of `1d16c6942`; decision 36 was amended after the re-check of `b7032308c`. Code references: master `97bbbd9ac` (MCP 0.3.0 with #8157). Claude Code references: version 2.1.322 and its binary at the offsets given, the documentation pages quoted, and three `claude -p` runs of Claude Code 2.1.323, recorded on 2026-11-13 (R1 to R3). Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
 
 The runs used a test MCP server whose tool `pre_tool_use` answers a PreToolUse hook of type `mcp_tool`, with `--setting-sources project --permission-mode default`. A `-p` run refuses a call that would show a prompt, so a refusal there stands for a prompt in an interactive session.
 - R1: the hook answered `allow` for Bash and Write. `echo one > a.txt` with Bash ran, and a Write of `notes.txt` ran. A Write of `.bashrc` was refused: "Claude requested permissions to edit .../.bashrc which is a sensitive file." The server logged three calls, `{"tool":"Bash"}`, `{"tool":"Write"}` and `{"tool":"Write"}`.
@@ -168,7 +168,7 @@ Decided after review round 1 of `c4099e36d`:
 
 Decided after the re-check of `1d16c6942`:
 
-36. A process of a session is its ID and its start time. `processStart` reads the start time: on Linux, field 22 of `/proc/PID/stat`, the start in clock ticks after boot, by one file read; on macOS, the output of `ps -o lstart= -p PID`, the start to the second, by one `ps` run. On other systems, and for a process that does not run, it returns nothing, and the IDs alone are compared. `Service.onSession` reads it before its wait for a title, records it in `Entry.started`, and ends the approvals when a process was recorded and the ID or the start time differs.
+36. A process of a session is its ID and its start time. `processStart` reads the start time: on Linux, field 22 of `/proc/PID/stat`, the start in clock ticks after boot, by one file read; on macOS, the output of `/bin/ps -o lstart= -p PID`, the start to the second, by one `ps` run with a 2 s timeout. It returns nothing on other systems, for a process that does not run, after a failed read, and for an ID that is not a positive integer, which reaches neither the path nor the `ps` arguments. `Service.onSession` reads it before its wait for a title, records it in `Entry.started`, and ends the approvals when a process was recorded and the ID differs, the start time differs, or the start time is unknown. On other systems the approvals then end at each `/session` of the session's process, as after a failed call.
 37. `/attach` has the session server's parent process ID, `pid`. `Service.onAttach` records it with the attachment's writer in `Entry.writers`. The session's line writer passes a `{tools}` line to the writers whose `pid` is the one of the last `/session`, and `{tools: []}` to the others; the other lines reach every writer. No attachment is ended.
 
 ## 5. Design
@@ -220,9 +220,11 @@ src/hub.ts            Session constructor              + toolsChanged: () => thi
                       endToolApprovals                 new: control.endToolApprovals(), then sendTools()
                       Hub.onEvent                      the control events of a session group end with session.sendTools()
 src/service.ts        SessionLike                      + endToolApprovals()
-                      ServiceDeps, processStart        new: the start time of a process (decision 36)
+                      ServiceDeps, processStart        new: the start time of a process, for a positive integer ID; /bin/ps with a
+                                                       timeout (decision 36)
                       Entry                            + started; writers record the pid of their /attach
-                      onSession                        ends the approvals at another process ID or start time (decisions 33, 36)
+                      onSession                        ends the approvals at another process ID, another start time or an
+                                                       unknown one (decisions 33, 36)
                       onAttach                         {tools} to the writers of the last /session's pid, {tools: []} to the
                                                        others (decision 37)
                       scheduleIdle                     ends the approvals at the session's close (decision 33)
@@ -243,7 +245,8 @@ send tools:                          approved tools differ from those last sent:
 on a new attachment:                 last sent = []; send tools
 on a membership event, /observer:    send tools
 on the last detach:                  cards ended (0.3.0); approvals kept; last sent = []
-on /session from another process:    approvals emptied; a process is its ID and start time (decisions 33, 36)
+on /session from another process:    approvals emptied; a process is its ID and start time; an unknown start time
+                                     counts as another process (decisions 33, 36)
 on the session's close:              approvals emptied (decision 33); the close waits while a call runs or an
                                      action other than a mode card, such as a pending card, is in memory
 on the group's loss:                 approvals emptied; send tools; found at an event or a load (decision 35)
@@ -311,7 +314,7 @@ Done when:
 8  hooks.json has the mcp_tool hook; tools/list has pre_tool_use                                unit: plugin, session; e2e launch
 9  real session: an approved Bash runs without a prompt; a write to .bashrc still asks         TESTING check
 10 serve and the other 0.3.0 tests pass unchanged, but for the tool list and the commands line  npm test, e2e
-11 a process is its ID and start time; another start time with the same ID ends the approvals  unit: service
+11 a process is its ID and start time; another or an unknown start time ends the approvals     unit: service
 12 the group's loss ends the approvals; only the last process's attachments get them           unit: sessions, service
 ```
 
@@ -325,7 +328,7 @@ Tests:
   - new, for each loss of decision 35: "ends the tool approvals when the session's group is lost because LOSS, and sends the empty list to the session", and "ends the tool approvals when a load finds the session's group lost, and sends the empty list to the session".
   - changed: the cards test (559-577) and the preview test (589-598) expect the new commands line. The test of 1163-1171 keeps the bare `/revoke` as unknown and drops `/approve N all`.
 - `test/unit/session.test.ts`, "session server": new "answers the PreToolUse hook's call with allow for a tool that the service approved, and with an empty text for other tools, after its /attach ends and in a run that is not interactive". It fails on master: there is no `pre_tool_use`. The tool list of 209 adds `pre_tool_use`.
-- `test/unit/service.test.ts`: the fake session records `endToolApprovals`, and the deps give a start time per PID. New: "keeps the tool approvals of a session when its process attaches again, and ends them when another process registers the session and when the session closes" (decision 33); "ends the tool approvals when a process with the PID of an ended process of the session registers it, by the start time of the process" and "reads the start time of a running process, the same at each read, and nothing for a process that does not run" (decision 36); "sends the approved tools only to the attachments of the process that registered the session last, and an empty list to the others" (decision 37).
+- `test/unit/service.test.ts`: the fake session records `endToolApprovals`, and the deps give a start time per PID. New: "keeps the tool approvals of a session when its process attaches again, and ends them when another process registers the session and when the session closes" (decision 33); "ends the tool approvals when a process with the PID of an ended process of the session registers it, by the start time of the process, and at each registration of a process whose start time is unknown" and "reads the start time of a running process, the same at each read and another for a later process, and nothing for a process that does not run or an ID that is not a positive integer" (decision 36); "sends the approved tools only to the attachments of the process that registered the session last, and an empty list to the others" (decision 37).
 - `test/unit/cards.test.ts`: the permission card with and without `toolApproved`.
 - `test/unit/plugin.test.ts`: the hooks test (41-47) expects the `mcp_tool` entry.
 - `test/e2e/service.test.ts`: the test of 426 adds `/approve N all` from the owner: the stream gets the tools line and `allow`, and the owner gets the reply; its `/attach` has the `pid` of its `/session` (decision 37). The test of 618 adds the tools line `[]` after `/observer` of the admin who approved Bash. The tool list of 714 adds `pre_tool_use`.

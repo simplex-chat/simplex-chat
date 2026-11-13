@@ -1,3 +1,4 @@
+import {spawn} from "child_process"
 import {once} from "events"
 import * as fs from "fs"
 import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
@@ -41,7 +42,7 @@ function deps(root: string) {
   const configs: unknown[] = []
   const busy = new Set<number>()
   const stored: unknown[] = []
-  const starts = new Map<number, string>()
+  const starts = new Map<number, string | undefined>()
   let expiryChecks = 0
   const hubStops: number[] = []
   const gates: {open?: Promise<void>; call?: Promise<void>; hubStop?: Promise<void>} = {}
@@ -121,7 +122,7 @@ function deps(root: string) {
       return hub
     },
     onStopped,
-    processStart: async pid => starts.get(pid),
+    processStart: async pid => (starts.has(pid) ? starts.get(pid) : "100"),
   }
   const gate = (name: keyof typeof gates): (() => void) => {
     const {promise, resolve} = deferred()
@@ -656,7 +657,7 @@ describe("service", () => {
     expect(approvalsEnded()).toBe(2)
   })
 
-  it("ends the tool approvals when a process with the PID of an ended process of the session registers it, by the start time of the process", async () => {
+  it("ends the tool approvals when a process with the PID of an ended process of the session registers it, by the start time of the process, and at each registration of a process whose start time is unknown", async () => {
     storeSession(id1, 1, "app")
     const {d, agents, starts} = deps(root)
     service = await Service.start(d, readDefaultConfig)
@@ -669,6 +670,10 @@ describe("service", () => {
     starts.set(300, "200")
     await registerFrom(300)
     expect(approvalsEnded()).toBe(1)
+    starts.set(300, undefined)
+    await registerFrom(300)
+    await registerFrom(300)
+    expect(approvalsEnded()).toBe(3)
   })
 
   it("sends the approved tools only to the attachments of the process that registered the session last, and an empty list to the others", async () => {
@@ -695,11 +700,19 @@ describe("service", () => {
     await second.attached
   })
 
-  it("reads the start time of a running process, the same at each read, and nothing for a process that does not run", async () => {
+  it("reads the start time of a running process, the same at each read and another for a later process, and nothing for a process that does not run or an ID that is not a positive integer", async () => {
+    const reads = process.platform === "linux" || process.platform === "darwin"
     const start = await processStart(process.pid)
-    expect(start).toEqual(process.platform === "linux" || process.platform === "darwin" ? expect.stringMatching(/\S/) : undefined)
+    expect(start).toEqual(reads ? expect.stringMatching(/\S/) : undefined)
     expect(await processStart(process.pid)).toBe(start)
+    const child = spawn(process.execPath, ["-e", "setInterval(() => undefined, 1000)"], {stdio: "ignore"})
+    const childStart = await processStart(child.pid!)
+    child.kill()
+    await once(child, "exit")
+    expect(childStart).toEqual(reads ? expect.stringMatching(/\S/) : undefined)
+    expect(reads && childStart === start).toBe(false)
     expect(await processStart(2 ** 22 + 1)).toBeUndefined()
+    for (const pid of [0, -1, 1.5, "self"]) expect(await processStart(pid as number)).toBeUndefined()
   })
 
   it("does not delay the idle close of an open session with a title", async () => {
