@@ -418,11 +418,11 @@ testUnavailableBeforeSend g = withSetup g $ \s@Setup {node, records} -> do
   setFault node "eth_call" HttpFailure
   relayEdit records req `shouldReturn` EAUnavailable
   clearFault node "eth_call"
-  setFault node "eth_maxPriorityFeePerGas" HttpFailure
+  setFault node "eth_feeHistory" HttpFailure
   relayEdit records req `shouldReturn` EAUnavailable
   editRows s `shouldReturn` 0
   sentTransactions node `shouldReturn` []
-  clearFault node "eth_maxPriorityFeePerGas"
+  clearFault node "eth_feeHistory"
   r <- relay s req
   h <- mineSent s 1 True
   answerOf r `shouldReturn` EAApplied (Just h)
@@ -840,9 +840,9 @@ testYearFailedRelays g = withSetup g $ \s@Setup {node, records, owner} -> do
   setFault node "eth_estimateGas" $ revertFault $ selector "InvalidSignature()"
   (relayEdit records =<< signEdit s owner (channel "https://smp9.simplex.im/c#dry") 0 deadline) `shouldReturn` EAReverted (Just "InvalidSignature")
   clearFault node "eth_estimateGas"
-  setFault node "eth_maxPriorityFeePerGas" HttpFailure
+  setFault node "eth_feeHistory" HttpFailure
   (relayEdit records =<< signEdit s owner (channel "https://smp9.simplex.im/c#fee") 0 deadline) `shouldReturn` EAUnavailable
-  clearFault node "eth_maxPriorityFeePerGas"
+  clearFault node "eth_feeHistory"
   -- with the reverted one, one mined and one pending use the limit up
   _ <- appliedEditsFrom s 0 1 1
   setNonce s 1

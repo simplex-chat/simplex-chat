@@ -1184,7 +1184,9 @@ reads, clears and logs its acceptance, as a community name's did:
   gas limit, so no transaction can cost more than 0.01 ETH. The node accepts a transaction only while
   the balance covers its limit × max fee, so each needs held about the last column. What it is
   charged is gas used × the block's base fee plus tip, usually far less: at a base fee of 0.1 gwei, a
-  register with two links costs about 0.00065 ETH and its tip.
+  register with two links costs about 0.00065 ETH and its tip. The tip is the median of the last 10
+  blocks' median tips (`eth_feeHistory`), at least 0.05 gwei: reth's and geth's
+  `eth_maxPriorityFeePerGas` sample each block's cheapest transactions and answer near zero.
 - An order is one commit, one acceptance relay and one register: 0.0108 ETH at the cap with two
   links, 0.0036 ETH with none. The expected orders × 0.0108 ETH, plus 0.01 ETH per expected Save of
   one or both links, pays for all of them even at the cap. A name's link edits are at most
