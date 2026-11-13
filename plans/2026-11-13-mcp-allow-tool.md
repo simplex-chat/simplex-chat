@@ -1,6 +1,6 @@
 # SimpleX MCP: approve a tool for the rest of a session
 
-Status: plan for review. Code references: master `97bbbd9ac` (MCP 0.3.0 with #8157). Claude Code references: version 2.1.322 and its binary at the offsets given, the documentation pages quoted, and three `claude -p` runs of Claude Code 2.1.323, recorded on 2026-11-13 (R1 to R3). Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
+Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-allow-tool`, stacked on `ep/mcp-activity`; decisions 29 to 31 were made in the implementation. Code references: master `97bbbd9ac` (MCP 0.3.0 with #8157). Claude Code references: version 2.1.322 and its binary at the offsets given, the documentation pages quoted, and three `claude -p` runs of Claude Code 2.1.323, recorded on 2026-11-13 (R1 to R3). Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
 
 The runs used a test MCP server whose tool `pre_tool_use` answers a PreToolUse hook of type `mcp_tool`, with `--setting-sources project --permission-mode default`. A `-p` run refuses a call that would show a prompt, so a refusal there stands for a prompt in an interactive session.
 - R1: the hook answered `allow` for Bash and Write. `echo one > a.txt` with Bash ran, and a Write of `notes.txt` ran. A Write of `.bashrc` was refused: "Claude requested permissions to edit .../.bashrc which is a sensitive file." The server logged three calls, `{"tool":"Bash"}`, `{"tool":"Write"}` and `{"tool":"Write"}`.
@@ -150,7 +150,13 @@ Choices:
 25. The service sends the approved tools as an `/attach` line `{tools: [{tool, approvedBy}]}`. It sends it to each new attachment, and when the list changes: at an approval, at a revocation, after a membership event and after `/observer`. The session server replaces its list at each such line, and empties it when its attachment ends.
 26. The hook's timeout is 5 s. A hook that times out does not block the call (hooks page: "a timed-out command, http, or mcp_tool hook doesn't block the tool call").
 27. The protocol version stays 1. `tools` is optional; a session server of 0.3.0 ignores the line, because `channelNotification` returns nothing for it ([session.ts:197-201](../packages/simplex-chat-mcp/src/session.ts#L197-L201)).
-28. The service logs `TOOL approved for the rest of session N by NAME.` and `TOOL needs approval again in session N.`
+28. The service logs `TOOL approved for the rest of session N by NAME.` and `TOOL needs approval again in session N.` Replaced by decision 29.
+
+Decided in the implementation:
+
+29. The log lines name the group, as the other log lines of `Control` do: `TOOL approved for the rest of the session in "N · NAME" by MEMBER.` and `TOOL needs approval again in "N · NAME".` `Control` has the group's name and not the session's number.
+30. After a membership event, the hub sends the approved tools right after `Control` reads the members again, before the rights post. A refused rights post then can't keep a demoted approver's tools in the session server's list.
+31. The session server keeps the list of each attachment apart and answers from the list of the current one. A list is then dropped also when the session server drops its attachment after a failed call, which ends the stream without the end handler of the current attachment.
 
 ## 5. Design
 
