@@ -3028,13 +3028,13 @@ testPassReadsWhatItAwaits = bounded "reads what it awaits" $ withStubPoller race
   b <- seedOpenRef (weStore env) 2 "p-2" someExpiry
   c <- seedOpenRef (weStore env) 3 "p-3" someExpiry
   setSignals ref [("p-1", settledSignal), ("p-2", settledSignal), ("p-3", settledSignal)]
-  before <- getCurrentTime
+  passStarted <- getCurrentTime
   runOnePass poller
   stubCalls ref `shouldReturn` [StubRead "p-1", StubRead "p-2", StubRead "p-3", StubListOpen]
   mapM (invoiceStatus (weStore env)) [a, b, c] `shouldReturn` [ISPaid, ISPaid, ISPaid]
   listed <- readTVarIO (peListedOk poller)
   Map.keys listed `shouldBe` ["crypto"]
-  all (>= before) listed `shouldBe` True
+  all (>= passStarted) listed `shouldBe` True
 
 testIdlePassAsksNothing :: IO ()
 testIdlePassAsksNothing = bounded "idle pass" $ withStubPoller raceHold $ \ref poller env _ -> do
