@@ -31,11 +31,12 @@ Bash                 💻 DESCRIPTION, or the command's first line without one  
 Read                 📖 Read PATH                                                   📖 Read src/Simplex/Messaging/Protocol.hs
 Edit                 ✏️ Edit PATH                                                   ✏️ Edit tests/XFTPServerTests.hs
 Write                📝 Write PATH                                                  📝 Write rfcs/2026-09-11-proof-of-work.md
+Grep, Glob           🔍 Grep PATTERN in PATH, without " in PATH" without a path     🔍 Glob **/*.ts in src
 WebFetch             🌐 Fetch URL                                                   🌐 Fetch https://spec.torproject.org/hspow-spec/common-protocol.html
 WebSearch            🔎 Search QUERY                                                🔎 Search "hs_pow.c" tor source "pow_worker" OR "hs_pow_verify" effort estimation "hs_service" pow_state
 Agent                🤖 Agent: DESCRIPTION                                          🤖 Agent: Review pass 6 usage stats
 another tool         🔧 TOOL, and ": VALUE" with the first of description, query,  🔧 ToolSearch: select:Monitor
-                     url, file_path, path, pattern and command that is a string
+                     url, file_path, path, pattern and command that is not blank
 ```
 
 The final line:
@@ -44,7 +45,9 @@ end of the step                                final line
 PostToolUse                                    💻 Run the tests ✅ 2.0 s
 PostToolUseFailure                             💻 Run the tests ❌ 39 ms
 PostToolUseFailure with is_interrupt true      💻 Run the tests ⏹️ 4 min 12 s
+PostToolUse of a launch in the background      💻 Run the tests (in background)
 none: the step was refused                     💻 Run the tests, finalized when the turn ends
+none 23 hours after the start                  💻 Run the tests, finalized; a later end is posted as a new line
 ```
 
 The duration:
@@ -57,10 +60,11 @@ under 1 h      4 min 12 s
 1 h or more    1 h 5 min
 ```
 
-- PATH is relative to the session's folder when it is inside it, and absolute otherwise.
+- PATH is relative to the session's folder, `path.relative(cwd, PATH)`, and absolute when that is absolute or starts with `..`.
+- The duration is rounded to whole milliseconds.
 - The text of a step has at most 200 characters, cut to 199 and `…`, as the notes of `ep/mcp-harness-notes`. The outcome and the duration are appended to it.
 - Claude posts no line for the tools of this plugin, whose cards are in the group already, and for the tool uses of subagents, which are shown by the Agent line and the note of the subagent's report.
-- Claude Code reports the end of a step run in the background, such as a Bash command or an agent with `run_in_background`, when the step is launched (fact 4). Its completion is reported by the note of its task notification.
+- Claude Code reports the end of a step run in the background, such as a Bash command or an agent with `run_in_background`, when the step is launched (fact 4). Its line is completed with `(in background)` and no duration, and its completion is reported by the note of its task notification.
 - A line without an end is finalized with its text unchanged when the turn ends, when a prompt starts the next turn, when Claude Code detaches, or when the service stops.
 
 Priority of Claude's posts:
@@ -144,6 +148,17 @@ Choices:
 25. Tool-use cards, action cards, `User`'s prompts, rights posts and replies are posted with normal priority. Which of them become silent later is decided with the roadmap line `:13`.
 26. The pull request is merged before the release. The plugin is released with this item after the diffs and receivers' support of silent messages (Q3).
 
+Decided after the review of `d2e3c688f`:
+
+27. The core refuses the update of a message older than a day: a sent item is editable within `nominalDay` of its time (`Messages.hs:538-539`, `Commands.hs:859-861`). A step can wait longer, as for an approval, because PreToolUse runs before Claude Code's permission prompt. So the hub finalizes a line still live 23 hours after its start with its own text, by a timer of the step, as the cards are bounded to 23 hours. The expiry keeps no finished ID, so the step's later end is posted as a new silent line. A failed update is logged, and the hub posts nothing more for the step.
+28. A start whose send fails with an error other than a refusal is logged, and its promise gives no ID, so the hub posts nothing at its end.
+29. The hub keeps every started update of a line in one promise of the session. `endSteps` returns it, so `Hub.stop` waits for the updates that the last detach started before the core closes.
+30. The CLI imports `serve.ts`, `session.ts` and `service.ts` only for their commands. A hook process then loads only the hook's modules: `require` of `dist/cli.js` took 65 ms and 0.13 s of CPU, in place of 510 ms and 0.62 s (measured with `node -e` on this machine). The tool hooks keep the matcher `*` and skip this plugin's tools in the hook: Claude Code 2.1.322 tests a matcher as a JavaScript regular expression locally, and with another engine in a cloud session, which refuses some patterns (`uTr`, binary offset 291099155).
+31. Grep and Glob show `🔍 TOOL PATTERN in PATH`, with PATH as for Read, and without ` in PATH` when the search has no path (decided).
+32. At PostToolUse, a tool use with `run_in_background` true ends with `(in background)`, without an outcome or a duration (decided). Its completion is the note of its task notification.
+33. A path is shown relative to `cwd` by `path.relative`, and absolute when the relative path is absolute or starts with `..`. `duration_ms` is rounded to whole milliseconds.
+34. `Session.post` takes parts with their priority, and one function builds the composed message with the extra `priority` for posts and for the live start. The hook sends nothing for a tool event without `tool_use_id` or `tool_name`. Another tool's text takes the first field that is not blank.
+
 ## 5. Design
 
 Options:
@@ -165,30 +180,37 @@ hooks/hooks.json  PreToolUse            second entry: matcher *, node dist/cli.j
                   PostToolUseFailure    new entry: matcher *, the same command, async
 src/protocol.ts   TurnRequest           + step: {id, text, end?}
 src/hook.ts       TurnInput             + cwd, agent_id, tool_name, tool_input, tool_use_id, duration_ms, is_interrupt
-                  turn                  tool events: {id, pid, at, effort, step}; nothing for agent_id or this plugin's tools
-                  stepOf                {id, text} at the start; the text, the outcome and the duration, end: true at the end
+                  turn                  tool events: {id, pid, at, effort, step}; nothing for agent_id, this plugin's tools,
+                                        or without tool_use_id or tool_name
+                  stepOf                {id, text} at the start; the text, the outcome and the duration, or (in background),
+                                        end: true at the end
                   stepText              the text of section 2, cut by shortened in stepOf
-                  displayPath           a path relative to cwd when it is inside it
-                  duration              the format of section 2
+                  displayPath           path.relative(cwd, path), absolute when outside
+                  duration              the format of section 2, from whole milliseconds
 src/hub.ts        Session.turn          step: Session.step; endSteps(at) next to endPermissions(at)
-                  Session.step          new: decisions 15 to 17 and 19
-                  Session.endSteps      new: decision 18
-                  Session.post          + a priority per part; the live line is sent by Session.step
+                  Session.step          new: decisions 15 to 17, 19 and 27
+                  startLine, endStep    new: the live send, its update, the timer and the logs (decisions 27 to 29)
+                  expireStep, remember
+                  Session.endSteps      new: decisions 18 and 29
+                  Session.post, message parts {text, priority?}; message builds the composed message with priority
                   Session.answer        priority per part: -1 for all parts but the last, 1 for the last
                   note posts            priority -1; refusal subject "Claude's note was not posted"
                   Hub.stop              endSteps of every session before the core closes
 src/service.ts    SessionLike           + endSteps
                   onAttach              endSteps at the last detach
+src/cli.ts        main                  serve, session and service imported for their commands only (decision 30)
 ```
 
 State of the hub:
 ```
 field             type                         content
-Session.steps     Map<string, Step>            live steps by tool_use_id
-Step.at           number                       start time of the start's hook process
-Step.text         string                       text of the step
-Step.item         Promise<number | undefined>  ID of the live line; undefined when it was not posted
-Session.finished  Set<string>                  last 100 finished tool_use_ids
+Session.steps       Map<string, LiveStep>        live steps by tool_use_id
+LiveStep.at         number                       start time of the start's hook process
+LiveStep.text       string                       text of the step
+LiveStep.item       Promise<number | undefined>  ID of the live line; undefined when it was not posted
+LiveStep.expiry     timer                        23 hours after the start
+Session.finished    Set<string>                  last 100 finished tool_use_ids
+Session.finalizing  Promise<void>                every update of a line started so far
 ```
 
 ```
@@ -196,24 +218,31 @@ step({id, text, end}, at):
   if finished has id: finished.delete(id); return
   known = steps.get(id)
   if not end:
-    item = post([text], priority -1, live) → item ID, or undefined after a refusal
-    steps.set(id, {at, text, item})
+    item = startLine(text)
+    steps.set(id, {at, text, item, expiry: in 23 hours expireStep(id)})
     await item
   else if known is undefined:
     remember(id)
-    await post([text], priority -1)
+    await post([{text, priority -1}])
   else:
-    steps.delete(id)
-    finalize(await known.item, text)
+    await endStep(id, known, text)
+
+startLine(text):
+  send [message(text, priority -1)] live → item ID
+  refused: the refusal post; another error: logged; → undefined
+
+endStep(id, step, text):
+  clear step.expiry; steps.delete(id)
+  updated = item ID ? apiUpdateChatItem(group, item ID, text, liveMessage false); a failure logged
+  finalizing = finalizing and updated
+
+expireStep(id):
+  step still live: endStep(id, step, step.text), without remember
 
 endSteps(before):
   for each [id, step] of steps with step.at < before:
-    steps.delete(id)
-    remember(id)
-    finalize(await step.item, step.text)
-
-finalize(item, text):
-  if item is not undefined: apiUpdateChatItem(group, item, text, liveMessage false)
+    remember(id); endStep(id, step, step.text)
+  return finalizing
 
 remember(id):
   finished.add(id); drop the oldest beyond 100
@@ -225,6 +254,7 @@ stateDiagram-v2
   [*] --> finished: end first, final line posted
   live --> [*]: end, line updated with the outcome
   live --> finished: endSteps, line finalized with its text
+  live --> [*]: 23 hours, line finalized with its text
   finished --> [*]: the other event, nothing posted
 ```
 
@@ -232,7 +262,7 @@ stateDiagram-v2
 flowchart LR
   P[PreToolUse, async] --> H[hook turn]
   E[PostToolUse or PostToolUseFailure, async] --> H
-  H --> F{agent_id or plugin tool}
+  H --> F{agent_id, plugin tool, or no ID or tool}
   F -- yes --> X[no request]
   F -- no --> T[POST /turn step]
   T --> S[Session.step]
@@ -249,6 +279,7 @@ flowchart LR
 - Older receivers: the owner's app alerts for each line when it is posted, until it has silent messages (Q2). For the end of a line, only the Android and desktop apps alert, and only in another profile (fact 10).
 - An older core in the plugin ignores `priority` (fact 8); with the core release with silent messages, the sends are silent.
 - When Claude Code gives these hook inputs without `tool_use_id` or `tool_name`, the hook sends nothing.
+- The steps and the finished IDs are kept in the service's memory. After a service restart during a step, its line stays live, and its end is posted as a new silent line.
 - Older services: the hook of this version stops an older service first (`src/client.ts:37-40`).
 
 ## 7. Acceptance and tests
@@ -271,11 +302,15 @@ Done when:
 Tests:
 - `test/unit/hook.test.ts`, new, in "turn hooks", with the tool inputs of R3, R4 and the transcripts:
   - "send a step at the start of each tool use of the main conversation, with its text from the tool's input and paths relative to the session's folder". On master the requests have no `step`.
-  - "send a step at the end of each tool use with its outcome and duration, and nothing for a tool use of a subagent or of this plugin". On master the requests have no `step`, and the skipped tool uses are sent.
+  - "send a step at the end of each tool use with its outcome and duration, or in background for a launch, and nothing for a tool use of a subagent or of this plugin, or without its ID or tool". On master the requests have no `step`, and the skipped tool uses are sent.
 - `test/unit/sessions.test.ts`, new, in "session channel":
   - "posts the start of a step as a silent live line and updates it with the step's end, and posts the end that arrives before its start as a silent line, and nothing for that start".
   - "ends the live lines of steps without an end with their text at an answer, at a prompt that starts a turn, at the last detach and at the hub's stop, not at a prompt added to the running turn, and posts nothing for their later ends".
   - "posts the note of Claude Code's prompt and the parts of an answer but the last as silent, and the last part of an answer as important".
+  - "updates the line of a step at its end and at the end of the steps also while the send of its start is in flight". It fails when the step is stored after the send is awaited.
+  - "logs a failed update of a step's line and a failed send of its start, and posts nothing more for them". On `d2e3c688f` the end's request fails.
+  - "ends the live line of a step 23 hours after its start, before the core refuses its update, and posts its later end as a new silent line".
+  - "closes the core at the hub's stop only after the updates of the lines that the end of the steps at the last detach started". It fails when `endSteps` returns only its own updates.
   - "posts that Claude's note was not posted, naming the preference, once for a note and once for a step, and nothing at the step's end", in "while a preference of the session group refuses a post", replacing the test of the old subject.
 - `test/unit/service.test.ts`, changed: "passes permission requests and turns to the session, and its lines to the attachments while they exist, and ends its permissions and steps at the last detach".
 - `test/unit/plugin.test.ts`, changed: "runs the hooks from the plugin's own build, allows the plugin's tools, and runs the turn hook at the start and the end of every tool use".
