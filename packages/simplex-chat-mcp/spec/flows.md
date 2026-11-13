@@ -921,6 +921,7 @@ sequenceDiagram
   else one-line "/" text
     N->>N: Control.onMessage: from User, dropped, else a command of the group, queued
   else another message
+    N->>N: replyTo of a reply = toReplyTo of its quote
     N->>N: delivery = delivery then prompt: after the earlier messages of the session
     alt from User
       N->>N: nothing
@@ -939,10 +940,11 @@ sequenceDiagram
       alt no attachment now
         N->>O: reply: Session N is not running.
       else attached
+        N->>N: text = quote line of replyTo, a line break and the text, for a reply
         N->>N: pushed += (text, item), at most 20
-        N->>D: onLine {prompt: {text, from, item, file?}}
+        N->>D: onLine {prompt: {text, from, item, file?, replyTo?: {item?, from?}}}
         D->>S: the line on /attach
-        S->>CC: notifications/claude/channel {content, meta: {from, item, file?}}
+        S->>CC: notifications/claude/channel {content, meta: {from, item, file?, reply_to?, reply_to_from?}}
       end
     end
   end
@@ -954,6 +956,7 @@ Notes:
 - The session handles messages in arrival order. So a prompt is delivered after the file of an earlier prompt. The reply to a one-line `/` text of a moderator, member or author is posted after the earlier prompts ([`Session.onMessage`, `queue`](../src/hub.ts)).
 - After a service start, a prompt that arrives before its session attaches again is held up to 30 s from the hub's open. So a prompt sent while the service was stopped is still delivered to the session ([`Session.deliver`, `Hub.open`](../src/hub.ts)).
 - In a session started without the channel flag, Claude Code receives the notification and drops it.
+- A reply reaches Claude after a quote line, `> ` and the type of a quoted message other than a text and the first line of its text, up to 200 characters with `…` when it is cut. `reply_to` is the quoted item's ID when the group has it, and `reply_to_from` its sender when the group knows it. The pushed prompt holds the quote line, so the channel tag of the reply matches it ([`Session.onMessage`, `deliver`](../src/hub.ts), [`toReplyTo`, `replyText`, `quoteLine`, `trimmed`](../src/messages.ts), [`channelNotification`](../src/session.ts)).
 
 Source: [`Session.onMessage`, `prompt`, `deliver`, `receive`](../src/hub.ts), [`Service.onAttach`](../src/service.ts), [`startSession`, `channelNotification`](../src/session.ts).
 

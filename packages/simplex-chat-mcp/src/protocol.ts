@@ -68,7 +68,7 @@ export interface TurnRequest {
 
 // spec: spec/architecture.md#protocol-attachline
 export interface AttachLine {
-  prompt?: {text: string; from: string; item: number; file?: string}
+  prompt?: {text: string; from: string; item: number; file?: string; replyTo?: {item?: number; from?: string}}
   permission?: {requestId: string; behavior: "allow" | "deny"}
 }
 

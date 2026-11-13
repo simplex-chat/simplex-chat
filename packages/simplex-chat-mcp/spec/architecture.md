@@ -171,6 +171,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-agenttools-download"></a>`download`, `fileServers`, `unknownServers` | the `download` call before its action |
 | <a id="tools-agenttools-startdownload"></a>`startDownload`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived` | a download's steps |
 | <a id="tools-agenttools-agentchats"></a>`agentChats`, `knownChat` | the agent's chats; a checked chat reference |
+| <a id="tools-agenttools-selfsender"></a>`selfSender`, `toMessages` | the agent's name and peer type in a chat, its incognito name in an incognito chat, or its profile name when the incognito name can't be read; the items of one chat as messages with that name, for the results of `connect`, `send` and `receive` |
 | <a id="tools-classifyplan"></a>`classifyPlan` | `apiConnectPlan` response to a join plan or a known chat |
 | <a id="tools-chatsubject"></a>`chatSubject`, `isConnected`, `isActive`, `memberCurrent`, `memberCurrentOrPending` | chat and member predicates shared with `control.ts` and `hub.ts` |
 | <a id="tools-customdataof"></a>`customDataOf`, `setChatData`, `ownerOf` | a chat's custom data; the plugin's owner key `simplexMcpOwner` |
@@ -261,6 +262,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="messages-chatitemswatch"></a>`ChatItemsWatch` | listeners per chat reference; received message items gathered by `collect` |
 | <a id="messages-chatref"></a>`chatRef`, `anyScopeChatRef`, `isChatRef` | `@N` and `#N` references: of the main conversation, or also of a group's member chat |
 | <a id="messages-tomessage"></a>`toMessage`, `messageFile`, `receivedFileError`, `receivedPath` | chat item to `Message`; where a received file is: its download path or its forwarded path |
+| <a id="messages-toreplyto"></a>`toReplyTo`, `replyText`, `quoteLine` | the quoted message of a reply: its ID, its sender by direction, its type other than text and its text, or its file name for an empty text; the text without bidi controls, cut to its first line, up to 200 characters with `…`; the quote line `> ` of the channel |
 | <a id="messages-filepaths"></a>`filePaths`, `storedName`, `chatFolder` | `DATA/files/group-N`, `DATA/files/contact-N` or the same under `DATA/forwarded`, and the download path and the forwarded path of a received file in them. A stored file is named by its file ID and extension, and so are the files of the plugin's prompts. |
 | <a id="messages-fileoffer"></a>`fileOffer`, `fileContent` | file fields of an item; message content of a file |
 | <a id="messages-getchat"></a>`getChat`, `receivingFiles`, `markRead` | `apiGetChat` and `apiChatItemsRead` by chat reference; the IDs of a chat's files in status `rcvAccepted`, `rcvTransfer` or `rcvWarning`, paged |
@@ -617,6 +619,7 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 | card text lines | one code span per line; backticks become `'`; a leading or trailing space becomes U+00A0; blank lines empty | [`codeLines`, `codeSpan`](../src/control.ts) |
 | file names and paths on cards and posts | folded to one line, one code span | [`requestLines`, `Control.fileNotSent`](../src/control.ts) |
 | reply quote on a send card | whitespace runs to one space, first 100 characters (code points), one code span | [`requestLines`](../src/control.ts) |
+| quote for Claude, in `reply_to` and in the quote line of a reply | the first line, trimmed, without the bidi controls U+202A-U+202E and U+2066-U+2069, up to 200 characters (grapheme clusters, by `Intl.Segmenter`), the type included in the quote line, a space before `…` dropped, and `…` when the line is longer or more lines follow. Every Unicode line break ends a line. An empty quote line is `>` | [`replyText`, `quoteLine`, `trimmed`](../src/messages.ts) |
 | link texts on a connect card, the input preview on a tool-use card of the plugin | code span lines in the bytes that the largest card form leaves; the line that does not fit is cut and ends in `…` inside its code span; later lines left out | [`fittedLines`](../src/control.ts) |
 | mention names | valid name: `@name` or `@'name'`; others a code span | [`mentionText`](../src/control.ts) |
 | errors on cards | folded to one line, one code span | [`cardText`](../src/control.ts) |
@@ -762,9 +765,9 @@ Data flow of a tool call:
 
 Data flow of a prompt from the session group:
 
-1. `Session.onMessage` receives a message of a member in the group of session N ([`Hub.onEvent`](../src/hub.ts)). A one-line `/` command goes to `Control`. Another message is queued after the earlier ones ([`Session.onMessage`](../src/hub.ts)). `Session.prompt` drops a message of `User` and delivers the rest ([`Session.prompt`](../src/hub.ts)).
-2. In the first 30 s after the hub opened, a delivery without an attachment waits for one. With an attachment, the file of the message, if any, is received. Then, if the session is not attached, the hub replies `Session N is not running.` Otherwise the prompt is pushed, and the line `{prompt}` is written to every `/attach` stream of the session ([`Session.deliver`](../src/hub.ts), [`Service.onAttach`](../src/service.ts)).
-3. The session process sends it to Claude Code as `notifications/claude/channel` ([`startSession`, `channelNotification`](../src/session.ts)).
+1. `Session.onMessage` receives a message of a member in the group of session N ([`Hub.onEvent`](../src/hub.ts)). A one-line `/` command goes to `Control`. Another message is queued after the earlier ones, with the `replyTo` of its quote when it is a reply ([`Session.onMessage`](../src/hub.ts), [`toReplyTo`](../src/messages.ts)). `Session.prompt` drops a message of `User` and delivers the rest ([`Session.prompt`](../src/hub.ts)).
+2. In the first 30 s after the hub opened, a delivery without an attachment waits for one. With an attachment, the file of the message, if any, is received. Then, if the session is not attached, the hub replies `Session N is not running.` Otherwise the prompt, after the quote line of a reply, is pushed, and the line `{prompt}` is written to every `/attach` stream of the session ([`Session.deliver`](../src/hub.ts), [`quoteLine`](../src/messages.ts), [`Service.onAttach`](../src/service.ts)).
+3. The session process sends it to Claude Code as `notifications/claude/channel`, with `reply_to` and `reply_to_from` of a reply ([`startSession`, `channelNotification`](../src/session.ts)).
 4. The hooks post the terminal prompts and the final answer of each turn with `POST /turn` ([`turn`](../src/hook.ts), [`Session.turn`](../src/hub.ts)).
 
 ### 8.2 Modules
@@ -782,7 +785,7 @@ Data flow of a prompt from the session group:
 | <a id="session-servicelink-disconnect"></a>`ServiceLink.disconnect` | drops the connection only when it is the current one |
 | <a id="session-servicelink-open"></a>`ServiceLink.open` | `ensureService`, then `/session` with the parent process ID. A 403 of `/session` is recorded as the refusal. `/attach` is awaited until its first line, and each line goes to the channel. When `/attach` ends, `reconnect` is called. |
 | <a id="session-failuretext"></a>`failureText` | not running or status 503: `The SimpleX service stopped; repeat the call.` |
-| <a id="session-channelnotification"></a>`channelNotification` | attach lines to `notifications/claude/channel` and `notifications/claude/channel/permission` |
+| <a id="session-channelnotification"></a>`channelNotification` | attach lines to `notifications/claude/channel`, with `reply_to` and `reply_to_from` from `replyTo`, and `notifications/claude/channel/permission` |
 
 #### [`client.ts`](../src/client.ts)
 
@@ -813,7 +816,7 @@ Data flow of a prompt from the session group:
 | <a id="protocol-owners"></a>`Owners`, `OwnerState` | the owners' names; with the Main group link, for `/title` and `/link` only |
 | <a id="protocol-sessionrequest"></a>`SessionRequest`, `TitleRequest` | `/session`, `/title`, with `unattended` for the mark of a process |
 | <a id="protocol-permissionrequest"></a>`PermissionRequest`, `TurnRequest` | `/permission`, `/turn` |
-| <a id="protocol-attachline"></a>`AttachLine` | `{prompt}` and `{permission}` lines of `/attach` |
+| <a id="protocol-attachline"></a>`AttachLine` | `{prompt}` lines, with the `replyTo` of a reply, and `{permission}` lines of `/attach` |
 | <a id="protocol-titlereply"></a>`TitleReply`, `SessionReply`, `AttachRequest`, `CallRequest`, `CallLine` | replies and `/call` |
 | <a id="protocol-statusreply"></a>`StatusReply`, `ResetReply` | `/status`, `/reset-owners` |
 
@@ -851,14 +854,14 @@ Data flow of a prompt from the session group:
 | <a id="hub-session-busy"></a>`Session.busy` | an action other than a `mode` card in memory |
 | <a id="hub-session-requestmode"></a>`Session.requestMode`, `askMode` | `requests` applies at once. The hub then ends pending `mode` cards and clears `hostDeclined`. `host` is remembered and asked as a `mode` action while an approver is in the group and `hostDeclined` is unset. The request is forgotten after a rejected or expired card, and `hostDeclined` is set after a rejection. |
 | <a id="hub-session-online"></a>`Session.onLine` | the writer of the session's attachments. The held prompts are woken at each change. |
-| <a id="hub-session-onmessage"></a>`Session.onMessage` | The hub answers a `/` command from a member who is not an approver with the one refusal, found by `refusesCommand` and posted on the `delivery` chain. The remaining one-line `/` texts go to `Control`, and other messages go to `prompt` on the `delivery` chain, in arrival order. |
+| <a id="hub-session-onmessage"></a>`Session.onMessage` | The hub answers a `/` command from a member who is not an approver with the one refusal, found by `refusesCommand` and posted on the `delivery` chain. The remaining one-line `/` texts go to `Control`, and other messages go to `prompt` on the `delivery` chain, in arrival order. The `replyTo` of a reply is computed here from its quote, with the hub's profile name as Claude's name, and passed with the message. |
 | <a id="hub-session-claimpending"></a>`Session.claimPending` | When a connection of `connect` recorded in the last day completes, its record is removed and its chat is claimed. |
 | <a id="hub-session-permission"></a>`Session.permission` | a `permission` action in mode `requests`. Its verdict is written to the attachments, and the action is removed when decided. |
 | <a id="hub-session-turn"></a>`Session.turn` | Before any await, at an answer or a prompt that is not mid-turn, the permissions created before its hook started are ended. An answer's quote is chosen, and its hook's start is recorded as the latest answer's hook start. A turn record is added for a prompt whose hook started no earlier than the latest answer's hook, unless the prompt is mid-turn and matched no pushed prompt. The model and the effort level of the request are taken only when its `at` is not older than the `at` of the value taken last, kept apart for each (`newer`). A `/title` passes its model with the `at` of its SessionStart hook. A request without `at` counts as the current time. A changed description is recorded in `session.json`. After these steps, Claude posts the request's `note` without a quote, and `User` posts the terminal prompt unless its `typed` is false, or it is blank, made only of this plugin's channel tags, pushed or a command. A prompt without `typed` is posted as typed. The turn record of a prompt is kept whatever its `typed`. Claude posts the answer unless it is blank. The changed short description is set, even after a failed post. A prompt, a note or an answer that the core refuses for a group preference is replaced by Claude's post with the preference's name. |
 | <a id="hub-session-endpermissions"></a>`Session.endPermissions`, `fileDone` | the end of pending permissions created before a time; the end of a prompt's file |
 | <a id="hub-session-invite"></a>`Session.invite`, `announceRights` | invitation through the Main group. At a member's join or role change, other than `User`'s, the rights of the member's role are posted. The `/observer` command is added only for a role that can send, other than owner. |
 | <a id="hub-session-prompt"></a>`Session.prompt` | a message of `User` dropped; the rest delivered |
-| <a id="hub-session-deliver"></a>`Session.deliver`, `receive`, `turnQuote`, `answer`, `postRefusal`, `post`, `pushedIn` | `deliver` waits for the held prompts, and then receives the file while the session is attached. It writes the prompt line with the file's path. After a failure of the file, the line is written without the path, and a reply is posted. Without an attachment, the reply is `Session N is not running.` `receive` receives the file into the session's folder within 10 minutes. `turnQuote` returns the newest turn record before an answer, or else the oldest pushed prompt not quoted yet, which it marks quoted. `answer` posts the answer in parts, with its quote when the quote fits with the answer's first character. `postRefusal` replaces a post that the core refuses with `feature not allowed NAME` by the subject and the text with the preference's name. The text is made by `featureOff` for an answer, and by `notAllowedForUser` for a prompt of `User`. `post` sends a post to the group, and sends it again without its quote when the core refuses the quote. `pushedIn` returns the pushed prompts contained in a turn's prompt. |
+| <a id="hub-session-deliver"></a>`Session.deliver`, `receive`, `turnQuote`, `answer`, `postRefusal`, `post`, `pushedIn` | `deliver` waits for the held prompts, and then receives the file while the session is attached. It writes the prompt line with the file's path. For a reply, it writes the given `replyTo` as the quote line before the text, in the pushed prompt and in the line's `text`, and its ID and sender as the line's `replyTo`. After a failure of the file, the line is written without the path, and a reply is posted. Without an attachment, the reply is `Session N is not running.` `receive` receives the file into the session's folder within 10 minutes. `turnQuote` returns the newest turn record before an answer, or else the oldest pushed prompt not quoted yet, which it marks quoted. `answer` posts the answer in parts, with its quote when the quote fits with the answer's first character. `postRefusal` replaces a post that the core refuses with `feature not allowed NAME` by the subject and the text with the preference's name. The text is made by `featureOff` for an answer, and by `notAllowedForUser` for a prompt of `User`. `post` sends a post to the group, and sends it again without its quote when the core refuses the quote. `pushedIn` returns the pushed prompts contained in a turn's prompt. |
 | <a id="hub-session-queue"></a>`Session.queue`, `refusesCommand` | the `delivery` chain; a one-line `/` text of a member other than `User` who is not an approver |
 | <a id="hub-session-approves"></a>`Session.approves`, `isUser`, `setMode`, `declineHost`, `store`, `savePending` | approver check: not `User`, the role `admin` or `owner` in the session group; the member of the contact `Hub.userContactId`; the mode and its record in the group's custom data; `hostDeclined` and its record; fields written into `session.json`; a pending connection recorded, those older than a day dropped |
 | `Hub.userContactId` | the hub's contact marked `simplexMcpUser`, read at the start |
@@ -1110,8 +1113,8 @@ stateDiagram-v2
 
 | Direction | Message | Code |
 |---|---|---|
-| service to session | `{prompt: {text, from, item, file?}}`, `{permission: {requestId, behavior}}` on `/attach` | [`AttachLine`](../src/protocol.ts) |
-| session to Claude Code | `notifications/claude/channel` `{content, meta: {from, item, file?}}`; `notifications/claude/channel/permission` `{request_id, behavior}` | [`channelNotification`](../src/session.ts) |
+| service to session | `{prompt: {text, from, item, file?, replyTo?: {item?, from?}}}`, `{permission: {requestId, behavior}}` on `/attach` | [`AttachLine`](../src/protocol.ts) |
+| session to Claude Code | `notifications/claude/channel` `{content, meta: {from, item, file?, reply_to?, reply_to_from?}}`; `notifications/claude/channel/permission` `{request_id, behavior}` | [`channelNotification`](../src/session.ts) |
 | Claude Code to session | `notifications/claude/channel/permission_request` `{request_id, tool_name, description, input_preview}` | the notification handler of [`startSession`](../src/session.ts) |
 | session to service | `POST /permission` | [`ServiceLink.permission`](../src/session.ts) |
 | hooks to service | `POST /turn` `{id, pid?, at?, prompt?, typed?, note?, midTurn?, answer?, model?, effort?}`. `pid` is `CLAUDE_PID`, and `at` is the hook's `performance.timeOrigin`. `prompt` and `answer`, the last answer, are cut to 250,000 characters. `typed` of UserPromptSubmit is true when a person typed the prompt. `note` is the line about one of Claude Code's own prompts. `midTurn` is true for a prompt that Claude Code added to a running turn. `model` is the new model of PostModelSwitch, or the model of Stop's answer in the transcript. `effort` is the effort level. | [`turn`, `answerModel`, `promptKind`, `cut`](../src/hook.ts) |
@@ -1126,7 +1129,8 @@ prompt(m):                         from User: nothing
 deliver(m):                        no attachment: wait for one until 30 s after the hub opened
                                    attached: receive its file within 10 minutes, or reply that it was not received
                                    no attachment now: reply "Session N is not running."
-                                   else: pushed += (m.text, m.item, now), at most 20; push {prompt}
+                                   else: text = quote line of m's replyTo, a line break and m.text, for a reply; m.text otherwise
+                                         pushed += (text, m.item, now), at most 20; push {prompt: {text, ..., replyTo: {item, from}}}
 on /turn at time at, before any await:
   prompt p not midTurn, or answer a:   end pending permissions created before at
   answer a, also empty:            earlier = turns with at below at; quoted = the item of the newest earlier,

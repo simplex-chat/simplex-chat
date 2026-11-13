@@ -9,7 +9,7 @@ import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
-import {Changes, ChatItemsWatch, ToolCall, getChat, nextChange, storedName, validName} from "./messages"
+import {Changes, ChatItemsWatch, ReplyTo, ToolCall, getChat, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
 import {AttachLine, OwnerState, PermissionRequest, ResetReply, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
@@ -159,12 +159,13 @@ export class Session {
 
   // spec: spec/architecture.md#hub-session-onmessage
   onMessage(ci: T.AChatItem): void {
-    const {chatDir, content} = ci.chatItem
+    const {chatDir, content, quotedItem} = ci.chatItem
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
     const {text} = content.msgContent
     if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([commandsApproversOnly], ci.chatItem.meta.itemId))
     if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
-    this.queue(() => this.prompt(ci, text, chatDir.groupMember))
+    const replyTo = quotedItem === undefined ? undefined : toReplyTo(ci.chatInfo, quotedItem, {name: this.hub.profile.profile.displayName})
+    this.queue(() => this.prompt(ci, text, chatDir.groupMember, replyTo))
   }
 
   // spec: spec/architecture.md#hub-session-claimpending
@@ -243,13 +244,13 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-prompt
-  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
+  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember, replyTo?: ReplyTo): Promise<void> {
     if (this.isUser(member)) return
-    await this.deliver(ci, text, member)
+    await this.deliver(ci, text, member, replyTo)
   }
 
   // spec: spec/architecture.md#hub-session-deliver
-  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
+  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember, replyTo?: ReplyTo): Promise<void> {
     const left = this.hub.promptsHeldUntil - Date.now()
     if (this.onLine === undefined && left > 0) await nextChange(this.attaching, new AbortController().signal, left)
     const {chatItem} = ci
@@ -261,8 +262,9 @@ export class Session {
       await this.post([`Session ${this.number} is not running.`], chatItem.meta.itemId)
       return
     }
-    if (this.pushed.push({text, item: chatItem, at: Date.now()}) > maxPushed) this.pushed.shift()
-    this.onLine({prompt: {text, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file})}})
+    const promptText = replyTo === undefined ? text : `${quoteLine(replyTo)}\n${text}`
+    if (this.pushed.push({text: promptText, item: chatItem, at: Date.now()}) > maxPushed) this.pushed.shift()
+    this.onLine({prompt: {text: promptText, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file}), ...(replyTo === undefined ? {} : {replyTo: {item: replyTo.item, from: replyTo.from}})}})
   }
 
   // spec: spec/architecture.md#hub-session-deliver
