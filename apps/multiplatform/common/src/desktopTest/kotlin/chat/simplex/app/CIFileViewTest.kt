@@ -22,7 +22,9 @@ class CIFileViewTest {
   @Test
   fun testLongNameExtensionShown() {
     val name = "a".repeat(200)
-    assertFalse(drawn("$name.txt").contentEquals(drawn("$name.pdf")))
+    listOf("", ".", ". .").forEach { end ->
+      assertFalse(drawn("$name.txt$end").contentEquals(drawn("$name.pdf$end")), end)
+    }
   }
 
   @Test
