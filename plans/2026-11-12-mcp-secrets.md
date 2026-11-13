@@ -1,6 +1,6 @@
 # SimpleX MCP server: agent secrets
 
-Status: implemented, for review. Decisions of 2026-11-12 and 2026-11-13. Code references: master `b7b05a261`; core references: `src/Simplex/Chat` of master; opencode references: opencode 1.19.5, `packages/opencode/src`. Size: 128 changed lines in `src`, 48 lines of the plugin.
+Status: implemented, for review. Decisions of 2026-11-12 and 2026-11-13. Code references: master `b7b05a261`; core references: `src/Simplex/Chat` of master; opencode references: opencode 1.19.5, `packages/opencode/src`. Size: 137 changed lines in `src`, 48 lines of the plugin.
 
 ## Decisions
 
@@ -13,6 +13,7 @@ Status: implemented, for review. Decisions of 2026-11-12 and 2026-11-13. Code re
 7. `send` and `connect` texts are not checked for values; the approval cards are the control.
 8. Budget: about 110 changed lines in `src`, at most 132; the plugin counted separately, 30 to 50 lines.
 9. 2026-11-13: the list of commands and `Unknown command.` are posted without a quote, so a mistyped `/secrt NAME VALUE` or `/secrets NAME VALUE` leaves no copy of the value in the reply once its sender deletes it.
+10. 2026-11-13: an owner's profile update that turns full deletion off gets at once an update that turns it on, queued with the owner commands, so the agent deletes a later `/secret` with full deletion on; every profile update starts from the profile in the chat database, in `serve` too.
 
 ## Option
 
@@ -136,6 +137,8 @@ fullDelete           {enable: "on"} in the group preferences
 createControlChat    groupPreferences: history on, fullDelete, the menu
 createSessionGroup   groupPreferences: history on, direct messages off, fullDelete, the menu
 load                 the profile updated when the display name, the menu or fullDelete.enable differ, in the agent control chat and in session groups
+onGroupUpdated       an owner's profile update: queued after the earlier owner commands; the profile updated when fullDelete.enable is not on
+updateProfile        each update from the profile in the chat database, read in the update
 ```
 
 - The deletion is a moderation: the core replaces the item with a moderated item and deletes its `messages` rows, at the agent (`delGroupChatItems`, `Library/Commands.hs:4294-4297`; `updateGroupChatItemModerated`, `Store/Messages.hs:2857-2875`) and at each member that has the item (`Library/Subscriber.hs:2490-2499`). A member who receives the message after the deletion creates it moderated (`Library/Subscriber.hs:2228-2232`, `:2268-2274`).
@@ -150,6 +153,10 @@ sequenceDiagram
   participant C as Control
   participant A as Agent
   participant T as AgentTools
+  O->>K: full deletion off
+  K->>C: groupUpdated
+  C->>K: queued after the earlier commands: full deletion on
+  K->>O: full deletion on
   O->>K: /secret GITHUB_TOKEN VALUE
   K->>C: newChatItems
   C->>K: apiDeleteMemberChatItem #G [item]
@@ -177,7 +184,9 @@ control.ts  controlCommands     the secrets entry
             ControlOptions      secrets: Secrets, optional
             OwnerRequest        secret, unsecret, secrets
             load                fullDelete in the check and the update
+            updateProfile       the profile in the chat database, in serve too
             onMessage           the deletion of /secret messages, also in member support chats; the replies of a /secret and of a text outside the requests posted
+            onGroupUpdated      new
             ownerCommand        secret, unsecret, secrets; the off reply without the folder
             setSecret           new
             removeSecret        new
@@ -185,7 +194,8 @@ control.ts  controlCommands     the secrets entry
             createControlChat   fullDelete
             ownerRequest        secret, unsecret, secrets
 hub.ts      createSessionGroup  fullDelete
-serve.ts    events              newChatItems of the control group in any scope to onMessage
+            onEvent             groupUpdated of a session group to its onGroupUpdated
+serve.ts    events              newChatItems of the control group in any scope to onMessage; its groupUpdated to onGroupUpdated
 ```
 
 ## list and send
@@ -300,20 +310,20 @@ test/tsconfig.json            include: ../opencode/**/*
 - After the control chat is lost, `/secret` messages are neither deleted nor run.
 - A mistyped `/secret`, such as `/secrt NAME VALUE`, is neither deleted nor run; its reply has no quote.
 - The agent forwards the messages of the control chat to members as an owner (`isUserGrpFwdRelay`, `Library/Subscriber.hs:3793-3796`); the forwarded message is stored with its delivery job in the chat database until the job is done and 7 days old (`Store/Delivery.hs:251-263`, `:400-409`; `Library/Commands.hs:6555-6558`).
-- An owner can turn full deletion off in the app; the server turns it on at its next start.
+- An owner can turn full deletion off in the app; the server turns it on again at once, or at its next start when it was stopped.
 - The hook is experimental in opencode.
 
 ## Tests
 
 - `test/unit/options.test.ts`: `--secrets-folder` resolved; refused when it is the data folder, inside it or contains it, in either order of the options; a sibling whose name starts with the data folder's name accepted; the help lines.
 - `test/unit/files.test.ts`: the folder mode 0700, an existing folder's mode kept; the value file mode 0600, `NAME.part` absent, a second value in place of the first; the index mode 0600 and its records; the names of matching files only, sorted; `remove` of unknown names and `../x` deletes nothing.
-- `test/unit/commands.test.ts`: `/secret` deleted before its reply, stored, the reply posted without a quote, the log line without the value; a member who is not an approver; several lines, `/Secret`, `/SECRET`, invalid names, a value of 7 characters, `/secret` alone; without `--secrets-folder`; `/secrets` with setters, times, a file without a record and `No secrets.`; `/unsecret` of a secret, of an unknown name and of `../x`; other forms of `/unsecret` and `/secrets`; `/secrt` and `/secrets` with a value: the commands reply as a new message, nothing deleted; mode host, with the spaces around the value removed; a member support chat; a failed deletion; the menu and full deletion of a new and of an existing control chat.
+- `test/unit/commands.test.ts`: `/secret` deleted before its reply, stored, the reply posted without a quote, the log line without the value; a member who is not an approver; several lines, `/Secret`, `/SECRET`, invalid names, a value of 7 characters, `/secret` alone; without `--secrets-folder`; `/secrets` with setters, times, a file without a record and `No secrets.`; `/unsecret` of a secret, of an unknown name and of `../x`; other forms of `/unsecret` and `/secrets`; `/secrt` and `/secrets` with a value: the commands reply as a new message, nothing deleted; mode host, with the spaces around the value removed; a member support chat; a failed deletion; the menu and full deletion of a new and of an existing control chat, from its stored profile also when the profile read at the start has full deletion on; full deletion turned on again at an owner's profile update, before a later `/secret` is deleted, and not after the control chat is lost.
 - `test/unit/messages.test.ts`: `list` with the folder and the names, without values, and without the folder; a file of the secrets folder refused, also through a symbolic link.
 - `test/unit/opencode.test.ts`: a value replaced raw, URL-encoded, and in base64 and base64url at each alignment, `Basic` authorization included; a longer value before a value it contains; the names that the server lists, trailing newlines ignored; values of fewer than 8 characters refused; the hook on texts, tool inputs, outputs, errors and metadata, the info kept; values of removed and replaced secrets kept, also in a new server instance; a rejection without the folder and with a missing folder.
 - `test/unit/fixtures.ts`: `FakeChat.apiDeleteMemberChatItem` records each call with the count of messages sent before it.
 - `test/e2e/scenarios.test.ts`: the owner's `/secret`: `chatItemsDeleted` at the owner, the reply without a quote, the value in the file, the agent's control chat items without it, `list` with the folder and the name.
 - `test/unit/plugin.test.ts`, `test/e2e/launch.test.ts`: `opencode` in `files` and in the tarball's top-level entries.
-- `test/unit/sessions.test.ts`: full deletion in the preferences of a new session group; `Unknown command.` posted without a quote.
+- `test/unit/sessions.test.ts`: full deletion in the preferences of a new session group; `Unknown command.` posted without a quote; full deletion turned on again at an owner's profile update, before a `/secret` sent right after is deleted, and left when an owner's update keeps it on.
 - `test/e2e/service.test.ts`: `Unknown command.` for `//compact` without a quote.
 
 ## Docs

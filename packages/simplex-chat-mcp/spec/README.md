@@ -230,7 +230,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Downloads | [`src/tools.ts`](../src/tools.ts#L595) | `AgentTools.downloadFile` | [595](../src/tools.ts#L595) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L147) | `Actions` | [147](../src/actions.ts#L147) |
 | Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L101) | `Control` | [101](../src/control.ts#L101) |
-| Card text | [`src/control.ts`](../src/control.ts#L719) | `cardText` | [719](../src/control.ts#L719) |
+| Card text | [`src/control.ts`](../src/control.ts#L723) | `cardText` | [723](../src/control.ts#L723) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L107) | `createDataFolder`, `acquireLock` | [107](../src/files.ts#L107), [112](../src/files.ts#L112) |

@@ -131,6 +131,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
         if (ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === control.groupId) control.onMessage(ci)
       }
     }
+    if (event.type === "groupUpdated" && event.toGroup.groupId === control.groupId) control.onGroupUpdated()
     tools.onEvent(event)
     if (event.type === "sndFileError") control.fileNotSent(event)
     if (isControlEvent(event, control.groupId)) {

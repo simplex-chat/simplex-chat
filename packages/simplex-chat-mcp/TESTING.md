@@ -27,7 +27,7 @@ Until the package is published, the printed hint `npx -y @simplex-chat/mcp regis
 
 ### The tests of 0.2
 
-`serve` keeps the behaviour of 0.2, except that its list of commands has `/secret`, `/unsecret` and `/secrets` and is posted without a quote, its command menu has `/secrets`, and its agent control chat has full deletion on. The 274 unit tests of 0.2 and its 13 end-to-end tests in `scenarios` and `mcp`, from commit be668564d, pass unchanged on this source, except 5 tests of `commands.test.ts` that check these: "refuses chat references longer than 15 digits, such as an alias of the agent control chat", "answers other commands with the list", "answers /approve CHAT files and /revoke CHAT files with the command list", "is updated at load when it differs" and "answers the /leave template sent unedited with the list of commands". They run in a copy of the package with the `test` folder of 0.2. Run these commands from the repository's root, with `SMP_SERVER` and `XFTP_SERVER` set as above:
+`serve` keeps the behaviour of 0.2, except that its list of commands has `/secret`, `/unsecret` and `/secrets` and is posted without a quote, its command menu has `/secrets`, and its agent control chat has full deletion on, turned on again when an owner turns it off, and is updated from its profile in the chat database. The 274 unit tests of 0.2 and its 13 end-to-end tests in `scenarios` and `mcp`, from commit be668564d, pass unchanged on this source, except 5 tests of `commands.test.ts` that check these: "refuses chat references longer than 15 digits, such as an alias of the agent control chat", "answers other commands with the list", "answers /approve CHAT files and /revoke CHAT files with the command list", "is updated at load when it differs" and "answers the /leave template sent unedited with the list of commands". They run in a copy of the package with the `test` folder of 0.2. Run these commands from the repository's root, with `SMP_SERVER` and `XFTP_SERVER` set as above:
 
 ```
 mkdir -p /tmp/v02
@@ -118,6 +118,7 @@ Stop and restart:
 8. `Send /home/alice/agent-secrets/GITHUB_TOKEN to <a chat>.` The call returns `file: /home/alice/agent-secrets/GITHUB_TOKEN is refused: private keys and the server's own files are not sent.`, and the agent control chat gets the refusal.
 9. Tap `/unsecret GITHUB_TOKEN` in the reply of step 3: `Secret GITHUB_TOKEN is removed.`, and the file is deleted. Again: `No such secret. /secrets lists them.`
 10. Restart without `--secrets-folder`, and send `/secret GITHUB_TOKEN test-token-1234`: moderated, and `Secrets are off: the server runs without --secrets-folder.`
+11. In the preferences of "My Agent", turn off full deletion: the agent turns it on again at once. Stop the server, turn off full deletion, send `/secret GITHUB_TOKEN test-token-1234` at once, and start the server: the agent turns full deletion on, and then the app shows the message as `moderated by My Agent`.
 
 The opencode plugin, with the server of step 2 and a secret set as in step 3:
 

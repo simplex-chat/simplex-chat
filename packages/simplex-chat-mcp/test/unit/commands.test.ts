@@ -769,18 +769,20 @@ describe("command menu", () => {
     {type: "command", keyword: "secrets", label: "Secrets"},
   ]
 
-  it("is updated at load when it or full deletion differs", async () => {
+  it("is updated at load when it or full deletion differs in the stored profile, also when the group read at the start has full deletion on", async () => {
     const chat = agentChats()
     const actions = actionsWith("requests", fakeHooks())
     const old = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: [{type: "command", keyword: "approve", label: "Approve", params: "N"}]}}})
     const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined, refusedFile: () => undefined, data}, "requests")
+    chat.chats.set("#10", {chatInfo: groupChat(old), items: []})
     await new Control(chat.api(), old, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools).load()
     const preferences = {history: {enable: "on"}, fullDelete: {enable: "on"}, commands: menu}
     expect(chat.profiles).toEqual([{groupId: 10, groupProfile: {displayName: "agent", fullName: "", groupPreferences: preferences}}])
     const noFullDelete = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, fullDelete: {enable: "off"}, commands: menu}}})
-    await new Control(chat.api(), noFullDelete, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools).load()
-    expect(chat.profiles.map(({groupProfile}) => groupProfile.groupPreferences)).toEqual([preferences, preferences])
     const current = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: preferences}})
+    chat.chats.set("#10", {chatInfo: groupChat(noFullDelete), items: []})
+    await new Control(chat.api(), current, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools).load()
+    expect(chat.profiles.map(({groupProfile}) => groupProfile.groupPreferences)).toEqual([preferences, preferences])
     await new Control(chat.api(), current, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools).load()
     expect(chat.profiles).toHaveLength(2)
   })
@@ -957,6 +959,31 @@ describe("secrets in the agent control chat", () => {
     expect(errors).toEqual(["control chat command: moderation failed\n"])
     expect([chat.sent, chat.replies]).toEqual([[], []])
     expect(existsSync(join(folder, "secrets", "API_TOKEN"))).toBe(false)
+  })
+
+  it("turns full deletion on again at once when an owner turns it off, before it deletes a later /secret, and not after the agent control chat is lost", async () => {
+    const {chat, control, send} = await secretsSetup()
+    const {groupInfo} = chat.chats.get("#10")!.chatInfo as T.ChatInfo.Group
+    const turnOff = (): void => {
+      groupInfo.groupProfile = {...groupInfo.groupProfile, groupPreferences: {...groupInfo.groupProfile.groupPreferences, fullDelete: {enable: T.GroupFeatureEnabled.Off}}}
+    }
+    const atDeletion: (string | undefined)[] = []
+    const moderate = chat.apiDeleteMemberChatItem.bind(chat)
+    chat.apiDeleteMemberChatItem = async (groupId, itemIds) => {
+      atDeletion.push(groupInfo.groupProfile.groupPreferences?.fullDelete?.enable)
+      return moderate(groupId, itemIds)
+    }
+    turnOff()
+    control.onGroupUpdated()
+    await send(`/secret API_TOKEN ${value}`)
+    await control["ownerCommands"]
+    expect(atDeletion).toEqual(["on"])
+    expect(chat.profiles.map(({groupProfile}) => groupProfile.groupPreferences?.fullDelete)).toEqual([{enable: "on"}, {enable: "on"}])
+    await control.onEvent({type: "deletedMemberUser", user, groupInfo: group(10, "agent"), member: alice, withMessages: false} as unknown as ChatEvent)
+    turnOff()
+    control.onGroupUpdated()
+    await control["ownerCommands"]
+    expect(chat.profiles).toHaveLength(2)
   })
 })
 

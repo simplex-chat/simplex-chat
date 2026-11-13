@@ -1081,6 +1081,27 @@ describe("session channel", () => {
     expect(answers(chat).filter(([{text}]) => text !== unknownCommand)).toEqual([43, 44, 47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]))
   })
 
+  it("turns full deletion on again at once when an owner turns it off, before it deletes a /secret sent right after, and leaves the profile when an owner's update keeps it on", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const {groupInfo} = chat.chats.get("#20")!.chatInfo as T.ChatInfo.Group
+    groupInfo.groupProfile = {...groupInfo.groupProfile, groupPreferences: {...groupInfo.groupProfile.groupPreferences, fullDelete: {enable: T.GroupFeatureEnabled.Off}}}
+    const atDeletion: (string | undefined)[] = []
+    const moderate = chat.apiDeleteMemberChatItem.bind(chat)
+    chat.apiDeleteMemberChatItem = async (groupId, itemIds) => {
+      atDeletion.push(groupInfo.groupProfile.groupPreferences?.fullDelete?.enable)
+      return moderate(groupId, itemIds)
+    }
+    const updated = {type: "groupUpdated", user, fromGroup: groupInfo, toGroup: groupInfo, member_: invitedAlice} as unknown as ChatEvent
+    await hub["onEvent"](updated)
+    await hub["onEvent"]({type: "newChatItems", user, chatItems: [event(sessionGroup, item(60, "/secret API_TOKEN value-1234", from(invitedAlice)))]} as unknown as ChatEvent)
+    await session.control["ownerCommands"]
+    await hub["onEvent"](updated)
+    await session.control["ownerCommands"]
+    expect(atDeletion).toEqual(["on"])
+    expect(chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile.groupPreferences?.fullDelete)).toEqual([{enable: "on"}])
+  })
+
   it("answers nothing and performs nothing for a / command of a member that reaches the commands past the one refusal", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)

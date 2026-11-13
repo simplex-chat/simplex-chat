@@ -402,7 +402,7 @@ Replies to `/secret`, first match:
 
 ### Deletion of `/secret` messages
 
-The server deletes every message whose first word is `/secret`, in any letter case, for all members, before it runs the command: a message of any member, also a refused or invalid one, and also one in a member support chat, which gets no reply. The agent control chat has full deletion on, so the text of the message is deleted in the agent's database and in the members' apps, the sender's included, which show `moderated by My Agent`; a member who receives the message later gets it deleted. At every start, the server turns full deletion on when it is off. The reply to `/secret` is a new message, without a quote of the value.
+The server deletes every message whose first word is `/secret`, in any letter case, for all members, before it runs the command: a message of any member, also a refused or invalid one, and also one in a member support chat, which gets no reply. The agent control chat has full deletion on, so the text of the message is deleted in the agent's database and in the members' apps, the sender's included, which show `moderated by My Agent`; a member who receives the message later gets it deleted. When an owner turns full deletion off, the server turns it on again at once, before it deletes a later `/secret`; at every start, it turns full deletion on when it is off. The reply to `/secret` is a new message, without a quote of the value.
 
 - The owners' apps show the message until the deletion reaches them.
 - While the server is stopped, the message stays until the next start.

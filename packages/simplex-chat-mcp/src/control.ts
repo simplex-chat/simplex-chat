@@ -140,7 +140,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   private updateProfile(change: (profile: T.GroupProfile) => T.GroupProfile | undefined): Promise<void> {
     const update = this.profileUpdates.then(async () => {
-      const group = await (this.options.session === undefined ? changeGroupProfile : updateGroupProfile)(this.chat, this.group, change)
+      const group = await updateGroupProfile(this.chat, this.group, change)
       this.group = {...group, customData: this.group.customData}
     })
     this.profileUpdates = update.catch(() => undefined)
@@ -234,6 +234,10 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       .then(() => (command === undefined ? secretUsage : this.ownerCommand(sender, command)))
       .then((reply): Promise<unknown> | undefined => (reply === undefined ? undefined : secret || reply === commandsReply || reply === unknownCommand ? this.post(reply) : this.chat.apiSendTextReply(ci, reply)))
       .catch(error => logError("control chat command", error))
+  }
+
+  onGroupUpdated(): void {
+    if (!this.actions.lost) this.queueAfterReplies(() => this.updateProfile(profile => (profile.groupPreferences?.fullDelete?.enable === fullDelete.enable ? undefined : {...profile, groupPreferences: {...profile.groupPreferences, fullDelete}})))
   }
 
   async onEvent(event: ChatEvent): Promise<void> {
