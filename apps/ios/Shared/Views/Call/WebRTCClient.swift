@@ -252,7 +252,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                       let pc = pc {
                 if (try? await pc.setRemoteDescription(RTCSessionDescription(type: type.toWebRTCSdpType(), sdp: sdp))) != nil {
                     var currentDirection: RTCRtpTransceiverDirection = .sendOnly
-                    pc.transceivers[2].currentDirection(&currentDirection)
+                    pc.transceivers.first(where: { t in mediaSourceFromTransceiverMid(t.mid) == .screenAudio })?.currentDirection(&currentDirection)
                     await adaptToOldVersion(currentDirection == .sendOnly)
                     addIceCandidates(pc, remoteIceCandidates)
                     resp = .ok
@@ -480,7 +480,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
             }
             if ChatModel.shared.activeCall?.localMediaSources.camera == true && ChatModel.shared.activeCall?.peerMediaSources.camera == false {
                 logger.debug("Stopping video track for the old version")
-                activeCall?.connection.senders[1].track = nil
+                activeCall?.connection.transceivers.first(where: { t in mediaSourceFromTransceiverMid(t.mid) == .camera })?.sender.track = nil
                 ChatModel.shared.activeCall?.localMediaSources.camera = false
                 (activeCall?.localCamera as? RTCCameraVideoCapturer)?.stopCapture()
                 activeCall?.localCamera = nil
