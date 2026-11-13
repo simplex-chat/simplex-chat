@@ -190,7 +190,7 @@ Choices:
 17. OUTPUT is the sum of `output_tokens` over the distinct `message.id` of the assistant entries after the first entry, without `isSidechain` and without `<synthetic>` (fact 6). CONTEXT is `input_tokens + cache_creation_input_tokens + cache_read_input_tokens` of the answer's entry, as Claude Code computes the context in use (`ngt` at 297207048). DURATION is the answer's `timestamp` minus the first entry's (fact 8).
 18. The hook sends no usage when the input has no `prompt_id`, when the answer's entry is not found, is `<synthetic>` or has no `message.usage`, or when the first entry is not within 64 MiB.
 19. The end line is decision 36 of `ep/mcp-live-answers`: `!- ✅ Done in FIGURES!`, priority 1, the turn's last post after a non-blank answer, also after the refusal text of a refused answer, with every part of the answer silent. FIGURES is the hook's usage text, or DURATION of `ep/mcp-live-answers` without it; without both, the line is `✅ Done`. The hub appends ` · 5 h: N%` and ` · week: N%` for the windows of the newest limits whose `resets_at` has not passed. This replaces the silent usage line of the plan's first version: the line is important and starts with `✅ Done in `, and every part of the answer is silent. Whichever of the two items merges first adds the line in this form, with its own figures: this item, as the last message of the answer's send, with the usage text, or `✅ Done` without it. The second adds its part.
-20. The plugin's status line command, `dist/status-line.js`, reads its input, prints the status line of section 2, and then sends `{id: session_id, pid: CLAUDE_PID, at, effort, limits}` with `POST /turn`. `limits` holds `fiveHour` and `week`, each `{percent, resetsAt}`, from `rate_limits`. It waits at most 1 s for the reply, starts no service, makes no retry and prints nothing about failures. It loads only Node modules and `paths.ts` of `ep/mcp-live-answers`, as `display.ts` does there (fact 15). When this item merges first, it adds `paths.ts` as decision 18 of `ep/mcp-live-answers` describes it.
+20. The plugin's status line command, `dist/status-line.js`, reads its input, prints the status line of section 2, and then sends `{id: session_id, pid: CLAUDE_PID, at, effort, limits}` as `POST /turn` with `postToService` of `service-request.ts`. `limits` holds `fiveHour` and `week`, each `{percent, resetsAt}`, from `rate_limits`. It waits at most 1 s for the reply, starts no service, makes no retry and prints nothing about failures. It loads only Node modules, `paths.ts` and `service-request.ts`, the modules of decision 18 of `ep/mcp-live-answers`, which import only Node modules and each other (fact 15). When this item merges first, it adds the two modules as that decision describes them.
 21. An answer's model equal to the shown model without `[1m]` keeps the shown model. So the description and `session.json` keep `claude-opus-5-5[1m]`, and no "updated group profile" follows the first answer (fact 13).
 22. At each start, the service writes `ROOT/status-line.js`, which loads `status-line.js` of the service's own `dist` folder by its absolute path. It writes a temporary file and renames it into place, readable only by the user. A newer plugin's service rewrites it, so the setting of section 2 keeps working across updates (facts 4 and 5).
 23. The hub keeps the limits of the newest request by `at`, in memory, per session. A window whose `resetsAt` has passed is left out of the end line, as Claude Code leaves it out of the status line input (fact 2).
@@ -269,8 +269,8 @@ Status line command:
 on its input {session_id, model, effort, context_window, rate_limits}:
   print: model.display_name, "effort " + effort.level, used_percentage + "% context", "5 h: N%", "week: N%",
          the parts present, joined by " · "
-  then:  POST /turn {id: session_id, pid: CLAUDE_PID, at, effort: effort.level,
-                     limits: {fiveHour, week} from rate_limits}, at most 1 s; no service start, no retry
+  then:  postToService POST /turn {id: session_id, pid: CLAUDE_PID, at, effort: effort.level,
+                                   limits: {fiveHour, week} from rate_limits}, at most 1 s; no service start, no retry
 ```
 
 Hook, at Stop:
@@ -337,8 +337,8 @@ Done when:
 3  no usage without prompt_id, for a synthetic answer, and without the turn's prompt entry          unit: hook
 4  PostModelSwitch sends switched: true                                                            unit: hook
 5  the status line command prints the line of section 2 and sends effort and limits                unit: status-line
-6  the status line command loads only Node modules and paths.ts, and prints its line without       unit: status-line
-   a service
+6  the status line command loads only Node modules, paths.ts and service-request.ts, and prints    unit: status-line
+   its line without a service
 7  the service writes ROOT/status-line.js, which runs its own dist/status-line.js                  unit: service; e2e: launch
 8  the end line has the usage and the windows of the newest limits not reset, small, important    unit: sessions
 9  the switch lines: a switched model, a changed known effort, also from the status line; none     unit: sessions
@@ -352,7 +352,7 @@ Done when:
 Tests:
 - `test/unit/hook.test.ts`, in "turn hooks", new: "pass the usage of a Stop hook's turn from its transcript: the time from the turn's prompt entry to the answer, the output tokens of its distinct responses and the context of the answer, also when the prompt entry is more than 1 MiB back, and none past 64 MiB, without a prompt ID or for a synthetic answer". The transcript has an earlier turn, a meta entry, entries of one response with one usage, a tool result and a subagent's entry. It fails on master, which sends no `usage`.
 - `test/unit/hook.test.ts`, changed: "pass the prompt, the final answer with the effort, and the new model ..." expects `switched: true` for PostModelSwitch.
-- `test/unit/status-line.test.ts`, new: "print the model, effort, context and the plan's usage of a status line input, and send the effort and the limits with the session ID and Claude Code's process", with a status line input built from the fields of fact 2; "print the line without a service and without rate limits"; "load only Node modules and paths.ts".
+- `test/unit/status-line.test.ts`, new: "print the model, effort, context and the plan's usage of a status line input, and send the effort and the limits with the session ID and Claude Code's process", with a status line input built from the fields of fact 2; "print the line without a service and without rate limits"; "load only Node modules, paths.ts and service-request.ts", which reads the imports of `status-line.ts`, as the test of decision 18 of `ep/mcp-live-answers` reads those of its three modules.
 - `test/unit/service.test.ts`, new: "write status-line.js into the data folder at the start, loading the status line command of its own build, in place of an older one".
 - `test/unit/sessions.test.ts`, in "session channel", new:
   - "posts the end line with the turn's usage and the plan's usage of the newest status line report, leaving out a window whose reset time has passed, in small print as important after the silent answer".
@@ -382,7 +382,8 @@ src/hub.ts                    Session.turn, answer, post                     mcp
                                                                              mcp-replies, mcp-reactions
 src/hook.ts                   turn, TurnInput, TranscriptEntry, lastAnswer,  mcp-activity (step text, duration), mcp-live-answers
                               answerModel                                    (duration moved to messages.ts), mcp-context-summary
-src/paths.ts, display.ts      the socket request of a fast process           mcp-live-answers, which adds them
+src/paths.ts,                 dataRoot, socketPath, postToService            mcp-live-answers, which adds them (its decision 18)
+src/service-request.ts
 src/service.ts                runService                                     mcp-fixes (launcher, readyChannel), mcp-activity
 src/protocol.ts               TurnRequest (48-59)                            mcp-activity (step), mcp-live-answers (text),
                                                                              mcp-replies, mcp-context-summary
@@ -395,7 +396,7 @@ ROADMAP.md                    line 21 and its neighbours                     mcp
 the line of a session         usage in the Main group's list                 mcp-session-list: none, by decision 28
 ```
 
-This item uses the priorities of `ep/mcp-activity` and merges after it. It can merge before or after `ep/mcp-live-answers`: the first of the two adds the end line and `paths.ts`, and the second uses them (decisions 19 and 20). `ep/mcp-live-answers` moves `duration` to `src/messages.ts`; this item imports it from there when it merges second, and from `src/hook.ts` otherwise.
+This item uses the priorities of `ep/mcp-activity` and merges after it. It can merge before or after `ep/mcp-live-answers`: the first of the two adds the end line, `paths.ts` and `service-request.ts`, and the second uses them (decisions 19 and 20). `ep/mcp-live-answers` moves `duration` to `src/messages.ts`; this item imports it from there when it merges second, and from `src/hook.ts` otherwise.
 
 ## 10. Estimate
 
