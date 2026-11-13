@@ -371,9 +371,9 @@ updateUserProfile db user p'
           DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
           pure $ Just currentTs
       | otherwise = pure userMemberProfileUpdatedAt
-    userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || desc' /= description || img' /= image
-    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image}, userMemberProfileUpdatedAt} = user
-    Profile {displayName = newName, fullName = fn', shortDescr = d', description = desc', image = img', preferences} = p'
+    userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || desc' /= description || img' /= image || pt' /= peerType
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, peerType}, userMemberProfileUpdatedAt} = user
+    Profile {displayName = newName, fullName = fn', shortDescr = d', description = desc', image = img', peerType = pt', preferences} = p'
     fullPreferences = fullPreferences' preferences
 
 updatedUserProfile :: User -> Profile -> UTCTime -> LocalProfile
