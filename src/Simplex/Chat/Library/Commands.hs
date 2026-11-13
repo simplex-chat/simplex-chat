@@ -2468,9 +2468,11 @@ processChatCommand cxt nm = \case
         Left e -> throwError e
     (g', reason') <- withFastStore $ \db -> do
       g'@GroupInfo {groupProfile = GroupProfile {publicGroup = pg}} <- getGroupInfo db cxt user groupId
-      if pg == publicGroup
-        then (,reason) <$> liftIO (setGroupDomainVerified db user g' verified)
-        else pure (g', Just "the name changed during verification")
+      case pg of
+        Just PublicGroupProfile {groupLink = link', publicGroupAccess = access'}
+          | link' == groupLink && (access' >>= groupDomainClaim) == Just claim ->
+              (,reason) <$> liftIO (setGroupDomainVerified db user g' verified)
+        _ -> pure (g', Just "the name changed during verification")
     pure $ CRGroupDomainVerified user g' reason'
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
     ct@Contact {profile = LocalProfile {contactLink}, groupDirectInv} <- withFastStore $ \db -> getContact db cxt user contactId
