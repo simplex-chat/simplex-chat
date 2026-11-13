@@ -42,8 +42,8 @@ describe("SessionStart hook", () => {
     expect(await sessionStart(started, {CLAUDE_PID: "4321"}, {client, nodeVersion: "22.1.0"}, 5)).toEqual({})
     expect(await sessionStart(started, {}, {client, nodeVersion: "22.1.0"})).toEqual({})
     expect(requests).toEqual([
-      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, at: 5, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}},
-      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", at: performance.timeOrigin, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}},
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, at: 5, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", at: performance.timeOrigin, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
     ])
   })
 
@@ -76,7 +76,7 @@ describe("SessionStart hook", () => {
     const ensured = jest.spyOn(client, "ensureService")
     expect(await sessionStart(input, env, {client, nodeVersion: "22.1.0"})).toEqual({})
     expect(ensured).toHaveBeenCalledTimes(1)
-    expect(requests).toEqual([{method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 1769596, project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}, unattended: true}}])
+    expect(requests).toEqual([{method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 1769596, project: "/p/app", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}, unattended: true}}])
     const {env: turnEnv} = recordedRun("claude-vscode", "UserPromptSubmit")
     expect(await turn(JSON.stringify({session_id: "11111111-1111-4111-8111-111111111111", prompt: "Fix the build"}), turnEnv, client)).toEqual({})
     expect(requests).toHaveLength(1)
@@ -100,6 +100,9 @@ describe("SessionStart hook", () => {
     expect(await sessionStart("not json", {}, {client, nodeVersion: "22.1.0"})).toMatchObject({systemMessage: expect.stringMatching(/^SimpleX MCP: /)})
     expect(await sessionStart(input, {CLAUDE_PLUGIN_OPTION_APPROVE: "x"}, {client, nodeVersion: "22.1.0"})).toEqual({
       systemMessage: "SimpleX MCP: Plugin option approve: requests or host expected, got x. Change it in /plugin > Installed > simplex > Configure options.",
+    })
+    expect(await sessionStart(input, {SIMPLEX_MCP_MACHINE: "my.laptop"}, {client, nodeVersion: "22.1.0"})).toEqual({
+      systemMessage: "SimpleX MCP: SIMPLEX_MCP_MACHINE: a valid SimpleX name, such as mylaptop expected, got my.laptop. Change it in the environment of this machine.",
     })
   })
 
