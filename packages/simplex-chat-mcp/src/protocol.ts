@@ -61,6 +61,7 @@ export interface TurnRequest {
   usage?: string
   switched?: boolean
   limits?: Limits
+  statusLine?: boolean
 }
 
 export interface Limits {

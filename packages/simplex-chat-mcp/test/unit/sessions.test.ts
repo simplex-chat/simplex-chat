@@ -885,7 +885,7 @@ describe("session channel", () => {
     expect(priorities(chat)).toEqual([[-1], [1], [-1], [1], [-1], [1]])
   })
 
-  it("posts a line when the model switches and when a known effort level changes, also from the status line, before the other posts of the request, and none for a first value, a model of an answer or a value older than the one taken last", async () => {
+  it("posts a line when the model switches and when a known effort level changes, before the other posts of the request, and none for a first value, a model of an answer or a value older than the one taken last", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     await session.turn({id: id1, at: 1, model: "claude-opus-5[1m]"})
@@ -898,6 +898,20 @@ describe("session channel", () => {
     expect(sentTo(chat, 20)).toEqual(["Done.", "!- ✅ Done!", "!- Model changed to claude-sonnet-5!", "Done.", "!- ✅ Done!", "!- Effort changed to max!", "!- Effort changed to low!", "Done.", "!- ✅ Done!"])
     expect(priorities(chat)).toEqual([[-1], [1], [-1], [-1], [1], [-1], [-1], [-1], [1]])
     expect(chat.profiles.filter(({groupId}) => groupId === 20).at(-1)!.groupProfile.shortDescr).toBe("claude-haiku-5 · effort low")
+  })
+
+  it("takes the effort level only from the status line once it reports, so the level of one turn in a hook, as after ultrathink, posts no line, and a change in the status line posts one", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    await session.turn({id: id1, at: 1, answer: "Done.", effort: "medium"})
+    await session.turn({id: id1, at: 2, effort: "medium", statusLine: true})
+    await session.turn({id: id1, at: 3, step: {id: "t1", text: "💻 Run the tests"}, effort: "xhigh"})
+    await session.turn({id: id1, at: 4, effort: "medium", statusLine: true})
+    await session.turn({id: id1, at: 5, answer: "Fixed.", effort: "xhigh"})
+    await session.turn({id: id1, at: 6, effort: "high", statusLine: true})
+    await session["finalizing"]
+    expect(sentTo(chat, 20)).toEqual(["Done.", "!- ✅ Done!", "💻 Run the tests", "Fixed.", "!- ✅ Done!", "!- Effort changed to high!"])
+    expect(chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile.shortDescr)).toEqual(["effort medium", "effort high"])
   })
 
   it("keeps the shown model with [1m] and its description when an answer's model is that model without [1m]", async () => {

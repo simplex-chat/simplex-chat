@@ -179,7 +179,7 @@ Facts:
 9. A turn's entries span more than 1 MiB in 1,176 of 8,146 turns of five transcripts of this machine, more than 16 MiB in 24, and at most 48.4 MB.
 10. A change of a group's short description makes an item "updated group profile" for Claude and for every member: [Commands.hs:4242-4244](../src/Simplex/Chat/Library/Commands.hs#L4242-L4244), [Subscriber.hs:3846-3848](../src/Simplex/Chat/Library/Subscriber.hs#L3846-L3848), `sameGroupProfileInfo` compares all fields but the preferences ([Internal.hs:3338-3339](../src/Simplex/Chat/Library/Internal.hs#L3338-L3339)). The item is not counted as unread ([CIContent.hs:242](../src/Simplex/Chat/Messages/CIContent.hs#L242)).
 11. `!- TEXT!` is small text: TEXT starts with a character other than a space or `!`, has no `!` and does not end with a space ([Markdown.hs:435-441](../src/Simplex/Chat/Markdown.hs#L435-L441), [:974](../src/Simplex/Chat/Markdown.hs#L974)). The apps render it since v6.5.0 (#6697); session groups need v7.1.0. Android and desktop draw it at the `body2` size in the secondary color ([ChatModel.kt:5356](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L5356)).
-12. Of the turn hooks, only Stop has `effort`. `Ip` adds it only when it gets the turn's options (296962410). The UserPromptSubmit inputs of R1 have none, and PostModelSwitch builds its input without the options (296934919). Tool hooks have it (R4).
+12. Of the turn hooks, only Stop has `effort`. `Ip` adds it only when it gets the turn's options (296962410). The UserPromptSubmit inputs of R1 have none, and PostModelSwitch builds its input without the options (296934919). Tool hooks have it (R4). A hook's level is `HI(model, MPr(context), jh(permissionLayers))`: the level of the environment, else the turn's level of an effort layer, else the session's level from the live app state (`Ip` at 296962410, `ry` at 287951849, `MPr` at 287963373). `ultrathink` adds the layer `xhigh` (302953179); a skill and a prompt with their own level add theirs (302433434, 324220208). The status line input has `HI(model, effortValue)`, the session's level without the turn's layer (297207490). So a mid-turn `/effort` reaches the next tool hook, and in a turn with a layer the hooks and the status line report different levels.
 13. SessionStart's `model` is the resolved initial model, and PostModelSwitch's `to_model` the resolved model (304240055, 303322971). Resolution keeps `[1m]` for the 1M context variant (`q$` at 286847171, `fY` at 286823298). The transcript's `message.model` has no suffix: on this machine the settings have `opus[1m]` and the transcript `claude-opus-5-5`. So in 0.3.0 the first answer after a start or a switch to `X[1m]` changes the description to `X` ([hub.ts:187-193](../packages/simplex-chat-mcp/src/hub.ts#L187-L193)).
 14. Claude Code's record of a running process, `~/.claude/sessions/PID.json`, which `ep/mcp-session-list` reads, has no usage: its fields are `pid`, `sessionId`, `cwd`, `startedAt`, `version`, `kind`, `entrypoint`, `name`, `status` and their times (the records of this machine).
 15. A Node script that reads a hook input and posts it to a Unix socket takes a median of 112 ms; loading `dist/hook.js` takes 261 ms, because `files.ts` loads `log.ts`, which loads `simplex-chat` (fact 15 of `ep/mcp-live-answers`).
@@ -200,7 +200,8 @@ Choices:
 27. Q3 A: the short description stays `MODEL · effort LEVEL`. The limits never enter it.
 28. The lines of `ep/mcp-session-list` stay without usage, and this item reads nothing from Claude Code's process record (fact 14).
 29. A turn that a blocking Stop hook continues keeps its `prompt_id`, so its second end line counts from the turn's start.
-30. The protocol version stays 1: `usage`, `switched` and `limits` are optional, and a service without them posts no lines for them.
+30. The protocol version stays 1: `usage`, `switched`, `limits` and `statusLine` are optional, and a service without them posts no lines for them.
+31. The status line command sends `statusLine: true`. After the first such request of a session, the hub takes the effort level only from requests with `statusLine`, so the level of one turn posts no line and changes no description (fact 12). Without the setting, the hooks' level shows, the turn's layer included, as in 0.3.0.
 
 ## 5. Design
 
@@ -290,8 +291,10 @@ on PostModelSwitch {to_model}: POST /turn {id, pid, at, model: to_model, switche
 
 Hub:
 ```
-on POST /turn {at, answer, model, switched, effort, usage, limits}:
+on POST /turn {at, answer, model, switched, effort, usage, limits, statusLine}:
   answer given and shown model without [1m] = model:   model = shown model
+  statusLine:                                           statusLineReports = true
+  statusLineReports and not statusLine:                 effort ignored
   newModel, newEffort = the values not older than those taken last, as now
   limits not older than those kept:                     limits kept
   lines += "Model changed to " + newModel      when switched and newModel differs from the shown model
@@ -344,7 +347,7 @@ Done when:
 7  the service writes ROOT/status-line.js, which runs its own dist/status-line.js                  unit: service; e2e: launch
 8  the end line has the usage and the windows of the newest limits not reset, small, important    unit: sessions
 9  the switch lines: a switched model, a changed known effort, also from the status line; none     unit: sessions
-   for first values or older at
+   for first values or older at, and none for a hook's level once the status line reports
 10 an answer's model without [1m] keeps the shown model and the description                        unit: sessions
 11 a group member receives the answer and the end line with the turn's and the plan's usage        e2e
 12 real session with the setting: the status line, the end line with 5 h and week, the effort      TESTING check 8
@@ -359,6 +362,7 @@ Tests:
 - `test/unit/sessions.test.ts`, in "session channel", new:
   - "posts the end line with the turn's usage and the plan's usage of the newest status line report, leaving out a window whose reset time has passed, in small print as important after the silent answer".
   - "posts a line when the model switches and when a known effort level changes, also from the status line, before the other posts of the request, and none for a first value, a model of an answer or a value older than the one taken last". Its effort part compiles on master and fails there.
+  - "takes the effort level only from the status line once it reports, so the level of one turn in a hook, as after ultrathink, posts no line, and a change in the status line posts one". It fails without decision 31.
   - "keeps the shown model with [1m] and its description when an answer's model is that model without [1m]".
 - `test/e2e/service.test.ts`, the mirroring test, changed: the transcript entries get timestamps, message IDs and usage, and Alice receives `!- ✅ Done in 2.0 s · 861 output tokens · 35.6k tokens in context!` after `Fixed.`. After a status line request with limits, the next turn's end line ends with ` · 5 h: 34% · week: 61%`. It fails on master.
 - `test/e2e/launch.test.ts`, changed: `writeStatusLine` writes `status-line.js` for the unpacked package's `dist/status-line.js`, and the setting's command, run by `sh`, prints a status line from it, with `SIMPLEX_MCP_HOME` and with `~/.simplex-mcp`, without an install. The unit test of the service checks that `Service.start` writes the file.

@@ -104,6 +104,7 @@ export class Session {
   private description: {model?: string; effort?: string}
   private readonly describedAt = {model: -Infinity, effort: -Infinity}
   private limits: Limits & {at: number} = {at: -Infinity}
+  private statusLineReports = false
   private turns: {at: number; item: T.ChatItem | null; added?: true}[] = []
   private answeredAt = -Infinity
   private requested?: Mode
@@ -240,7 +241,7 @@ export class Session {
     })
   }
 
-  async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits}: TurnRequest): Promise<void> {
+  async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine}: TurnRequest): Promise<void> {
     const startsTurn = prompt !== undefined && midTurn !== true
     if (startsTurn || answer !== undefined) {
       this.endPermissions(at)
@@ -256,7 +257,8 @@ export class Session {
     this.pushed.splice(0, this.pushed.length, ...this.pushed.filter(entry => !matched.includes(entry)))
     const previous = this.description
     const newModel = this.newer("model", answer !== undefined && previous.model?.replace(/\[1m\]$/i, "") === model ? previous.model : model, at ?? Date.now())
-    const newEffort = this.newer("effort", effort, at ?? Date.now())
+    if (statusLine === true) this.statusLineReports = true
+    const newEffort = this.newer("effort", statusLine === true || !this.statusLineReports ? effort : undefined, at ?? Date.now())
     const switches = [
       switched === true && newModel !== undefined && newModel !== previous.model ? `Model changed to ${newModel}` : undefined,
       newEffort !== undefined && previous.effort !== undefined && newEffort !== previous.effort ? `Effort changed to ${newEffort}` : undefined,

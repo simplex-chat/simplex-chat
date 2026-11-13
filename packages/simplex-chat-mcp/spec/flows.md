@@ -1073,7 +1073,7 @@ Notes:
   - No model and no usage are sent for the model `<synthetic>`, for an answer without text, for an empty `transcript_path` or an unreadable transcript, and when the answer's entry is not written within the reads.
   - The usage runs from the turn's first entry, the first user entry with the hook's `prompt_id` that is not a tool result, to the answer. When the tail of the answer's read lacks that entry, the hook reads the last 4, 16 and 64 MiB, until one has it. It sums the output tokens of the distinct responses of the main conversation after that entry, and takes the context tokens of the answer's response. No usage is sent without `prompt_id`, for an answer without `message.usage` or `timestamp`, and when the entry is not in the last 64 MiB.
 - PostModelSwitch sends `{id, pid, at, model, switched: true}` (`hook.ts`: `turn`). When the model differs from the shown one, Claude posts `!- Model changed to MODEL!`, silent, and the hub writes the model to `session.json` and updates the short description (`hub.ts`: `Session.turn`).
-- A known effort level that changes, from the Stop hook, a tool hook or the status line command, gets `!- Effort changed to LEVEL!`, silent, before the other posts of its request. The first model and the first effort level of a session get no line.
+- A known effort level that changes, from the Stop hook, a tool hook or the status line command, gets `!- Effort changed to LEVEL!`, silent, before the other posts of its request. Once the status line command reports, only its level counts ([flow 34](#34-the-status-line-command)). The first model and the first effort level of a session get no line.
 - An answer's model equal to the shown model without a final `[1m]` keeps the shown model, as the transcript names the 1M context variant without that suffix, so the first answer after a start with `X[1m]` changes no description.
 - The hub takes a model or an effort level only from a request whose `at` is not older than the `at` of the value it took last. It keeps the two times apart, one for the model and one for the effort level. The model of a `/title` comes with the `at` of its SessionStart hook, so a hook that started during the wait of a held title keeps its model ([flow 27](#27-clear---continue-and-resume-in-one-session)). A request without `at` counts as the current time. So when a Stop request that waited for its transcript entry arrives after a later PostModelSwitch request, the model of the switch stays ([hub.ts:297-301](../src/hub.ts#L297-L301)).
 - For a Stop request with a changed model or effort, the hub posts the answer before it updates the short description. So the prompt of a request handled meanwhile is posted after the answer. The description is updated also when a post fails ([hub.ts:218-226](../src/hub.ts#L218-L226)).
@@ -1590,9 +1590,9 @@ sequenceDiagram
   Note over CC: statusLine: node "${SIMPLEX_MCP_HOME:-$HOME/.simplex-mcp}/status-line.js"
   CC->>SL: the input on stdin, after a response, a change of the effort level or the reset of a window
   SL->>CC: Opus 5.5 · effort high · 67% context · 5 h: 34% · week: 61%
-  SL->>S: POST /turn {id, pid, at, effort, limits}, waiting at most 1 s
+  SL->>S: POST /turn {id, pid, at, effort, limits, statusLine: true}, waiting at most 1 s
   S->>N: turn
-  N->>N: limits kept when at is not older than that of the limits kept
+  N->>N: statusLineReports = true, and limits kept when at is not older than that of the limits kept
   opt a known effort level changed
     N->>C: apiSendMessages #35;G [{text: "!- Effort changed to high!", priority: -1}]
     C->>O: the line, silent
@@ -1604,6 +1604,8 @@ Notes:
 
 - Claude Code passes the plan's usage only to the status line command of the person's settings, which a plugin can't set, and it refuses `${CLAUDE_PLUGIN_ROOT}` in a command that belongs to no plugin. The shell expands `${SIMPLEX_MCP_HOME:-$HOME/.simplex-mcp}` to the data folder of the machine or container, and the service of each version writes `status-line.js` there at its start, so one setting serves every container and every version (`files.ts`: `writeStatusLine`; `service.ts`: `Service.start`, `productionDeps`).
 - The command loads only Node modules, `paths.ts` and `service-request.ts`. It prints its line first, sends nothing without an effort level and a window, starts no service and makes no retry (`status-line.ts`: `statusLine`, `runStatusLine`; `service-request.ts`: `postToService`).
-- The hub keeps the limits in memory. A window whose `resetsAt` has passed is left out of the end line, as Claude Code leaves it out of the input. Without the setting, the end line has no plan's usage, and an effort change shows at the end of the next turn (`hub.ts`: `Session.turn`, `endLine`; `status-line.ts`: `limitParts`).
+- The hub keeps the limits in memory. A window whose `resetsAt` has passed is left out of the end line, as Claude Code leaves it out of the input. Without the setting, the end line has no plan's usage, and an effort change shows at the next tool step or the end of the next turn (`hub.ts`: `Session.turn`, `endLine`; `status-line.ts`: `limitParts`).
+- The hooks send the level of the turn, which is `xhigh` after `ultrathink` and can be a skill's or the prompt's own level, while the command sends the session's level. After the first request of the command, the hub takes the effort level only from the command, so the level of one turn posts no line (`hub.ts`: `Session.turn`).
+- Claude Code runs `status-line.js` also when no service could start in the data folder, so that folder must be writable only by the user.
 
 Source: [`statusLine`, `limitParts`](../src/status-line.ts), [`writeStatusLine`](../src/files.ts), [`Session.turn`, `endLine`](../src/hub.ts).

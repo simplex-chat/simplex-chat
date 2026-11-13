@@ -43,8 +43,8 @@ describe("status line command", () => {
     await statusLine(JSON.stringify({...input, rate_limits: {seven_day: sevenDay}, effort: undefined}), line => lines.push(line), env(), 13.5)
     expect(lines).toEqual(["Opus 5.5 · effort xhigh · 67% context · 5 h: 34% · week: 61%", "Opus 5.5 · 67% context · week: 61%"])
     expect(bodies).toEqual([
-      {id: "s1", pid: 77, at: 12.5, effort: "xhigh", limits: {fiveHour: {percent: 34.7, resetsAt: 1_794_600_000}, week: {percent: 61, resetsAt: 1_795_000_000}}},
-      {id: "s1", pid: 77, at: 13.5, limits: {week: {percent: 61, resetsAt: 1_795_000_000}}},
+      {id: "s1", pid: 77, at: 12.5, effort: "xhigh", limits: {fiveHour: {percent: 34.7, resetsAt: 1_794_600_000}, week: {percent: 61, resetsAt: 1_795_000_000}}, statusLine: true},
+      {id: "s1", pid: 77, at: 13.5, limits: {week: {percent: 61, resetsAt: 1_795_000_000}}, statusLine: true},
     ])
   })
 
@@ -59,7 +59,7 @@ describe("status line command", () => {
     await statusLine(JSON.stringify({session_id: "s1", model: {display_name: "Haiku 5.5"}, context_window: {used_percentage: null}}), line => lines.push(line), env())
     await statusLine("not json", line => lines.push(line), env())
     expect(lines).toEqual(["Opus 5.5 · effort xhigh · 67% context", "Opus 5.5 · effort xhigh · 67% context", "Haiku 5.5", ""])
-    expect(bodies).toEqual([{id: "s1", pid: 77, at: 14.5, effort: "xhigh"}])
+    expect(bodies).toEqual([{id: "s1", pid: 77, at: 14.5, effort: "xhigh", statusLine: true}])
   })
 
   it("loads only Node modules, paths.ts and service-request.ts", () => {

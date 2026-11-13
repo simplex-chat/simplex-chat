@@ -677,7 +677,7 @@ Claude: I want to use `Bash`: `List files`
 
 ### Model, effort and usage
 
-The short description of a session's group shows `MODEL · effort LEVEL`. The model is updated at the session start when Claude Code passes it, at each model change, and at the end of each turn from the model of the answer in the session's transcript. So the model shows from the first answer, also in a resumed session. An answer's model that is the shown model without `[1m]` keeps the shown model, because the transcript names the 1M context variant without that suffix. The effort level is updated at the end of each turn, and with the [status line](#status-line) when it changes. Changes made in the terminal, or from the Claude app by Remote Control, show the same way.
+The short description of a session's group shows `MODEL · effort LEVEL`. The model is updated at the session start when Claude Code passes it, at each model change, and at the end of each turn from the model of the answer in the session's transcript. So the model shows from the first answer, also in a resumed session. An answer's model that is the shown model without `[1m]` keeps the shown model, because the transcript names the 1M context variant without that suffix. The effort level is updated at each tool step, at the end of each turn, and with the [status line](#status-line). Without the status line, a turn that runs at its own level, as after `ultrathink` in the prompt, shows that level until a later turn reports another. Once the status line reports in a session, the effort level comes only from the status line, which reports the session's level. Changes made in the terminal, or from the Claude app by Remote Control, show the same way.
 
 When the model switches, Claude posts `Model changed to MODEL` in small print. When a known effort level changes, Claude posts `Effort changed to LEVEL`. The first model and the first effort level of a session get no line. Both lines are silent.
 
@@ -712,6 +712,7 @@ Claude Code passes the plan's usage only to the status line command of your sett
 - Claude Code shows the status line in the terminal, such as `Opus 5.5 · effort xhigh · 67% context · 5 h: 34% · week: 61%`: the model, the effort level, the share of the context window in use and the plan's usage, each when Claude Code passes it.
 - The command also sends the effort level and the plan's usage to the service, so an effort change shows at once. It waits at most 1 second for the service, and starts none.
 - The setting replaces a status line command of your own. On Windows, it needs Git Bash as the shell of commands.
+- Claude Code runs `status-line.js` of the data folder also when no service could start there, so the data folder, `~/.simplex-mcp` or `SIMPLEX_MCP_HOME`, must be writable only by you.
 
 ### Options
 

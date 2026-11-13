@@ -27,7 +27,7 @@ export async function statusLine(stdin: string, write: (line: string) => void, e
   const limits = {fiveHour: limitOf(windows?.five_hour), week: limitOf(windows?.seven_day)}
   const limited = limits.fiveHour !== undefined || limits.week !== undefined
   write([typeof model?.display_name === "string" ? model.display_name : undefined, level === undefined ? undefined : `effort ${level}`, typeof used === "number" ? `${Math.floor(used)}% context` : undefined, ...limitParts(limits)].filter(part => part !== undefined).join(" · "))
-  if (typeof id === "string" && (level !== undefined || limited)) await postToService(dataRoot(env), "/turn", {id, pid: claudePid(env), at, effort: level, limits: limited ? limits : undefined}, requestWaitMs)
+  if (typeof id === "string" && (level !== undefined || limited)) await postToService(dataRoot(env), "/turn", {id, pid: claudePid(env), at, effort: level, limits: limited ? limits : undefined, statusLine: true}, requestWaitMs)
 }
 
 export function limitParts({fiveHour, week}: {fiveHour?: Usage; week?: Usage}): string[] {
