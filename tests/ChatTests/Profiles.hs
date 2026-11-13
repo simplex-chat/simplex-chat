@@ -4300,7 +4300,7 @@ testLinksWithTheirData =
     setTestGroupLinkData alice $ UserLinkData ""
     bob ##> ("/_connect plan 1 " <> link)
     bob <## "group link: ok to connect directly"
-    _ <- getTermLine bob
+    void $ getTermLine bob
 
 createGroupWithLink :: HasCallStack => TestCC -> IO String
 createGroupWithLink cc = do
