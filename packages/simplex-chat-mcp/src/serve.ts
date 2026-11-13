@@ -15,11 +15,13 @@ import {version} from "./version"
 
 export type QrCodeSize = "small" | "large"
 
+// spec: spec/architecture.md#serve-ownerentry
 export interface OwnerEntry {
   memberId: number
   name: string
 }
 
+// spec: spec/architecture.md#serve-serveoptions
 export interface ServeOptions {
   name: string
   data: string
@@ -35,6 +37,7 @@ export interface ServeOptions {
   stopWait: number
 }
 
+// spec: spec/architecture.md#serve-runningserver
 export interface RunningServer {
   token: string
   chat: api.ChatApi
@@ -43,6 +46,7 @@ export interface RunningServer {
   stop(endWait?: AbortSignal): Promise<void>
 }
 
+// spec: spec/architecture.md#serve-serve
 export async function serve(options: ServeOptions): Promise<void> {
   const server = await startServer(options)
   const endWait = new AbortController()
@@ -61,6 +65,7 @@ export async function serve(options: ServeOptions): Promise<void> {
   process.on("SIGTERM", stop)
 }
 
+// spec: spec/architecture.md#serve-startserver
 export async function startServer(options: ServeOptions): Promise<RunningServer> {
   const {name, data} = options
   createDataFolder(data)
@@ -84,6 +89,7 @@ export async function startServer(options: ServeOptions): Promise<RunningServer>
   }
 }
 
+// spec: spec/architecture.md#serve-startagent
 async function startAgent(chat: api.ChatApi, options: ServeOptions, token: string): Promise<RunningServer> {
   const {name, data, port, approve, expireHours} = options
   const created = (await chat.apiGetActiveUser()) ?? (await chat.apiCreateActiveUser({displayName: options.displayName ?? name, fullName: "", peerType: T.ChatPeerType.Agent}))
@@ -154,10 +160,12 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
   }
 }
 
+// spec: spec/architecture.md#serve-registerhint
 export function registerHint({name, data, dataGiven}: ServeOptions): string {
   return `Add the agent to Claude Code:\n  npx -y @simplex-chat/mcp register ${name}${dataGiven ? ` --data ${shellPath(data)}` : ""}`
 }
 
+// spec: spec/architecture.md#serve-waitforcancelledcards
 export async function waitForCancelledCards(stopped: Action[], seconds: number, endWait: AbortSignal): Promise<void> {
   const cards = stopped.filter(hasOutcomeCard).length
   if (cards === 0 || seconds === 0) return
@@ -174,6 +182,7 @@ export async function waitForCancelledCards(stopped: Action[], seconds: number, 
   })
 }
 
+// spec: spec/architecture.md#serve-controlgroup
 async function controlGroup(chat: api.ChatApi, userId: number, displayName: string, resetOwners: boolean): Promise<T.GroupInfo> {
   const group = await findControlGroup(chat, userId)
   if (group === undefined) return createControlChat(chat, userId, displayName, 1)
@@ -181,6 +190,7 @@ async function controlGroup(chat: api.ChatApi, userId: number, displayName: stri
   return resetOwners ? resetControlChat(chat, userId, group, displayName, nextAction) : group
 }
 
+// spec: spec/architecture.md#serve-listen
 async function listen(port: number, token: string, factory: McpServerFactory, ready: () => boolean): Promise<Server> {
   try {
     return await startHttp({port, token, factory, ready})

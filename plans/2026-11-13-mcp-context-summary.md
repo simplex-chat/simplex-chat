@@ -4,7 +4,7 @@ Status: Q1 and Q2 were answered A by the user on 2026-11-13, with ⚙️ for the
 
 ## 1. Goal
 
-Roadmap line, [ROADMAP.md:22](../packages/simplex-chat-mcp/ROADMAP.md): "See when a session's context is summarised."
+Roadmap line, [ROADMAP.md](../packages/simplex-chat-mcp/ROADMAP.md): "See when a session's context is summarised."
 
 Claude Code summarises a session's conversation when its context is full, when the session is idle, and on `/compact`. Claude then works from the summary, so it can lose details of the earlier conversation. The members of the session's group see nothing of it today: Claude stops posting for a median of 90 s, and its later answers may miss what was said before.
 
@@ -87,7 +87,7 @@ Q2. Does Claude also post the summary itself? Answered A by the user on 2026-11-
 ## 4. Decisions
 
 Facts:
-1. Claude Code runs the PostCompact hooks after each compaction, with `{session_id, transcript_path, cwd, prompt_id, hook_event_name: "PostCompact", trigger, compact_summary}`; `trigger` is `manual` or `auto` (2.1.322, binary offset 296928091). Four paths run it: a full compaction (call at 295862014), a partial one from the message selector (295868083), the compaction after a request too large for the context (295550888) and one replaced by a hook (295554444). The hook was added in Claude Code 2.1.76 (changelog), and the plugin needs 2.1.214 or later ([REFERENCE.md:472](../packages/simplex-chat-mcp/REFERENCE.md)).
+1. Claude Code runs the PostCompact hooks after each compaction, with `{session_id, transcript_path, cwd, prompt_id, hook_event_name: "PostCompact", trigger, compact_summary}`; `trigger` is `manual` or `auto` (2.1.322, binary offset 296928091). Four paths run it: a full compaction (call at 295862014), a partial one from the message selector (295868083), the compaction after a request too large for the context (295550888) and one replaced by a hook (295554444). The hook was added in Claude Code 2.1.76 (changelog), and the plugin needs 2.1.214 or later ([REFERENCE.md](../packages/simplex-chat-mcp/REFERENCE.md), "Install").
 2. A subagent's compaction runs the same hooks. The runner skips them only for a delegated observer, `Js(agentContext)` (296927978, `Js` at 287257564). In 2.1.322 the input is built by `Ip(e, Sy())` without the agent, so it has no `agent_id` (296961915). 2.1.323 adds `agent_id` and `agent_type` (312819433, `Hm` at 312853987). On 2026-11-13 the plugin's SessionStart hook ran for the compaction of subagent `ainv-captcha-file`: its transcript has a `hook_success` record `SessionStart:compact` with the plugin's command.
 3. Each compaction creates an entry `{type: "system", subtype: "compact_boundary", content: "Conversation compacted", timestamp, compactMetadata: {trigger, preTokens, postTokens, durationMs, ...}}` (`b5` at 298681900). In each of the four paths the entry is created before the PostCompact hook runs (295550390, 295554177, 295860047, 295867131). A subagent's entry has `isSidechain: true` and is written to the subagent's transcript, `subagents/agent-ID.jsonl`.
 4. Of the 226 compactions of main conversations, 225 are `auto` and 1 is `manual`. For `auto`: `preTokens` has a median of 967,931, `postTokens` a median of 22,484, and `durationMs` a median of 89,849, a 90th percentile of 128,658 and a maximum of 239,168.
@@ -95,8 +95,8 @@ Facts:
 6. Claude Code writes the boundary with the records of the next request after the compaction. In the transcripts, records with later timestamps precede the boundary in the file by up to 4.7 s in 2.1.316 to 2.1.322, and by up to 99.7 s in one session of 2.1.302. The boundary of `/compact` follows the command's records at once (2.1.310).
 7. The records written with a boundary, up to the next `last-prompt` entry, have a median of 197 KB. The largest since 2.1.283 has 1,009,289 bytes; in 2.1.281 and 2.1.282 two have 5.2 and 6.6 MB.
 8. Compactions of one main conversation are at least 4,979 s apart. No subagent's compaction ended within 60 s after a compaction of its main conversation, and 2 of 72 ended within 600 s.
-9. After a compaction, Claude Code runs the SessionStart hooks with `source: "compact"` and `model` of the compacted conversation's context (`Vce(n.session, "compact", {model: n.options.mainLoopModel, ...})` at 295880283). For a subagent, that context is the subagent's. The plugin's SessionStart hook sends `model` in `/title` ([hook.ts:93](../packages/simplex-chat-mcp/src/hook.ts#L93)), and the service shows it in the group's description ([service.ts:261](../packages/simplex-chat-mcp/src/service.ts#L261)).
-10. A plain text message without a SimpleX link, a file, a voice message or a report is never refused by a group preference ([Internal.hs:401-408](../src/Simplex/Chat/Library/Internal.hs#L401-L408), the only refusal of a group message, [Commands.hs:4991](../src/Simplex/Chat/Library/Commands.hs#L4991)). So the refusal text of a note ([hub.ts:195](../packages/simplex-chat-mcp/src/hub.ts#L195)) never applies to the line.
+9. After a compaction, Claude Code runs the SessionStart hooks with `source: "compact"` and `model` of the compacted conversation's context (`Vce(n.session, "compact", {model: n.options.mainLoopModel, ...})` at 295880283). For a subagent, that context is the subagent's. The plugin's SessionStart hook sends `model` in `/title` ([`sessionStart`](../packages/simplex-chat-mcp/src/hook.ts)), and the service shows it in the group's description ([`Service.applyTitle`](../packages/simplex-chat-mcp/src/service.ts)).
+10. A plain text message without a SimpleX link, a file, a voice message or a report is never refused by a group preference ([`prohibitedGroupContent`](../src/Simplex/Chat/Library/Internal.hs), the only refusal of a group message, raised by `throwCmdError` in the send of [`Commands.hs`](../src/Simplex/Chat/Library/Commands.hs)). So the refusal text of a note ([`Session.turn`](../packages/simplex-chat-mcp/src/hub.ts)) never applies to the line.
 11. On this machine, a read of a 4 MiB transcript tail with a scan for boundaries takes 41.6 ms, and of a 1 MiB tail 10.8 ms.
 
 Choices:
@@ -107,7 +107,7 @@ Choices:
 15. Otherwise the hook reads the transcript's tail of 4 MiB, up to 120 times, 1 s apart. The boundary is the last entry of type `system` and subtype `compact_boundary`, without `isSidechain: true`, whose timestamp is no earlier than 60 s before the hook started (`at`) and, after review round 1, no later than 5 s after it: Claude Code creates the boundary before it runs the PostCompact hooks (fact 3), so the hook of a subagent's compaction before 2.1.323 does not take the boundary of a compaction of the session that ends during its reads. A tail is decoded only when its bytes contain `"compact_boundary"`. The tail is four times the largest batch of fact 7 since 2.1.283. The 2 minutes cover the delays of fact 6. A subagent's compaction before 2.1.323 costs at most 120 reads, about 5 s of processor time over the 2 minutes (fact 11).
 16. Without such a boundary after the reads, the hook sends nothing. So before 2.1.323 a subagent's compaction posts nothing (facts 3 and 8).
 17. The line is `⚙️ Context summarised `, then `on request` for `trigger: manual` and `automatically` otherwise, then `: PRE → POST tokens` when `preTokens` and `postTokens` are numbers. The numbers are formatted by `Intl.NumberFormat("en", {notation: "compact"})`: 967,558 is `968K`, 4,595 is `4.6K` and 850 is `850`. ⚙️ is the user's choice (Q1). The note of another kind of Claude Code's prompt also starts with ⚙️, followed by `Claude Code: `, so the words after the emoji tell the two lines apart.
-18. The hook sends `{id, pid, at, note}` in `POST /turn`. The hub posts `note` unchanged as Claude, without a quote, as the notes of Claude Code's prompts ([hub.ts:195](../packages/simplex-chat-mcp/src/hub.ts#L195)). The hub and the protocol do not change, and the protocol version stays 1. With `ep/mcp-activity`, every note is posted silent, this line included.
+18. The hook sends `{id, pid, at, note}` in `POST /turn`. The hub posts `note` unchanged as Claude, without a quote, as the notes of Claude Code's prompts ([`Session.turn`](../packages/simplex-chat-mcp/src/hub.ts)). The hub and the protocol do not change, and the protocol version stays 1. With `ep/mcp-activity`, every note is posted silent, this line included.
 19. The SessionStart hook sends no `model` for `source: "compact"` (fact 9). The Stop hook sends the model of each answer, and PostModelSwitch the new model, so the description stays current.
 
 ## 5. Design
@@ -138,7 +138,8 @@ hooks/hooks.json   PostCompact          new entry: node dist/cli.js hook turn, a
 src/hook.ts        SessionStartInput    + source
                    sessionStart         no model in /title when source is compact
                    TurnInput            + agent_id
-                   turn                 PostCompact: note from compactionNote; nothing is sent without a note
+                   turn, eventFields    one dispatch on the hook's event, fused with the step of ep/mcp-activity;
+                                        PostCompact: note from compactionNote; nothing is sent without a note
                    compactionNote       new: the line of decision 17
                    recentBoundary       new: the boundary of decision 15
                    findInTranscript     takes the tail's size in bytes instead of a text
@@ -164,7 +165,7 @@ on PostCompact {session_id, transcript_path, agent_id}:
   POST /turn {id, pid, at, note}
 ```
 
-The reads use the existing `findInTranscript` and `readTail` ([hook.ts:153-174](../packages/simplex-chat-mcp/src/hook.ts#L153-L174)). The interval is 10 times the `readMs` of `turn`, so 1 s by default and shorter in tests.
+The reads use the existing [`findInTranscript` and `readTail`](../packages/simplex-chat-mcp/src/hook.ts). The interval is 10 times the `readMs` of `turn`, so 1 s by default and shorter in tests.
 
 ```mermaid
 flowchart LR
@@ -184,7 +185,7 @@ flowchart LR
 - Older SimpleX apps: the line is a text message with an emoji.
 - Older Claude Code: every supported version runs PostCompact (fact 1). Before 2.1.323 a subagent's compaction has no `agent_id`, and the hook reads for 2 minutes and posts nothing (decision 16). A boundary without `postTokens` gives the line without the token counts.
 - Older plugin data folders: no data changes.
-- Older services: the hook of this version stops an older service first ([client.ts:37-40](../packages/simplex-chat-mcp/src/client.ts#L37-L40)). A service of this version gets no requests for compactions from an older hook, as in 0.3.0. `package.json` stays at 0.3.0; the release pull request bumps it.
+- Older services: the hook of this version stops an older service first ([`ServiceClient.ensureService`](../packages/simplex-chat-mcp/src/client.ts)). A service of this version gets no requests for compactions from an older hook, as in 0.3.0. `package.json` stays at 0.3.0; the release pull request bumps it.
 
 ## 7. Acceptance and tests
 
@@ -203,22 +204,22 @@ Done when:
 ```
 
 Tests:
-- `test/unit/hook.test.ts`, new, in "turn hooks": "post one line for a compaction of the session's conversation, from its boundary in the transcript after the boundary is written, with its trigger and token counts, and nothing for a subagent's compaction, a boundary of a subagent or a boundary older than 60 s". It fails on master: master sends `{id, at}` without `note` for each PostCompact input.
+- `test/unit/hook.test.ts`, new, in "turn hooks": "post one line for a compaction of the session's conversation, from its boundary in the transcript after the boundary is written, with its trigger and token counts, and nothing for a subagent's compaction, a boundary of a subagent, a boundary older than 60 s or one stamped after the hook started". It fails on master: master sends `{id, at}` without `note` for each PostCompact input.
 - `test/unit/hook.test.ts`, changed, in "SessionStart hook": "starts the session with its title, folder, model, Claude Code process and the time the hook started, without the model after a compaction, and stays quiet when the Main group has an owner". It fails on master, which sends the model of the compaction.
-- `test/unit/plugin.test.ts`, changed: PostCompact joins the events that run `hook turn` with `async: true` ([plugin.test.ts:46](../packages/simplex-chat-mcp/test/unit/plugin.test.ts#L46)). It fails on master, which has no PostCompact entry.
-- `test/e2e/service.test.ts`, changed: the mirroring test ([service.test.ts:351-425](../packages/simplex-chat-mcp/test/e2e/service.test.ts#L351-L425)) appends a boundary to its transcript, runs the PostCompact hook with `trigger: manual`, and expects Claude's line `⚙️ Context summarised on request: 399K → 25K tokens`.
+- `test/unit/plugin.test.ts`, changed: PostCompact joins the events that run `hook turn` with `async: true`, in the test "runs the hooks from the plugin's own build". It fails on master, which has no PostCompact entry.
+- `test/e2e/service.test.ts`, changed: the mirroring test, "the hooks post a prompt typed in the terminal as User", appends a boundary to its transcript, runs the PostCompact hook with `trigger: manual`, and expects Claude's line `⚙️ Context summarised on request: 399K → 25K tokens`.
 - Run: `npm test --prefix packages/simplex-chat-mcp` for unit tests, and the end-to-end tests as TESTING.md states. The reduced build runs them in CI. No app changes, so no app test workflows.
 - TESTING check: in a session with the plugin, run `/compact`; start a subagent from an `--agents` definition with the smallest `autoCompactWindow` Claude Code accepts, and let it compact; look at the session's group and its description.
 
 ## 8. Docs to change
 
-- `README.md:36`: Claude posts a line when Claude Code summarises the session's context.
-- `REFERENCE.md`, "Prompts and answers" (603-624): the lines, the triggers, the token counts, and that a subagent's compaction posts nothing. `REFERENCE.md:496`: PostCompact in the table of hooks.
-- `ROADMAP.md:22`: the line is removed.
-- `spec/flows.md`: flow 21, the hooks of `hook turn`; a new flow, a compaction of the session's context, after flow 31.
-- `spec/api.md:950`, `:1010`: PostCompact in the rows of `hook turn` and `hooks/hooks.json`; the reads of the boundary.
-- `spec/architecture.md:717`, `:940`, `:1116` and 8.2: PostCompact, `compactionNote`, and `note` of a compaction.
-- `TESTING.md:126`, `:156`: the hooks and the new tests; a real-session check, as in section 7.
+- `README.md`, step 4 of the start: Claude posts a line when Claude Code summarises the session's context.
+- `REFERENCE.md`, "Prompts and answers": the lines, the triggers, the token counts, and that a subagent's compaction posts nothing. The table of the plugin's parts: PostCompact.
+- `ROADMAP.md`: the line is removed.
+- `spec/flows.md`: flow 21, the hooks of `hook turn`; a new flow, a compaction of the session's context, after the last flow.
+- `spec/api.md`, 4.7 and 4.8: PostCompact in the rows of `hook turn` and `hooks/hooks.json`; the reads of the boundary.
+- `spec/architecture.md`, the component diagram, the files table, 8.2 and 8.6: PostCompact, `compactionNote`, and `note` of a compaction.
+- `TESTING.md`, "Install the plugin before it is published" and "Automated tests": the hooks and the new tests; a real-session check, as in section 7.
 
 ## 9. Conflict areas with the other items
 
@@ -227,10 +228,10 @@ file                          where                                           it
 src/hook.ts                   turn, TurnInput (agent_id), findInTranscript    mcp-activity (agent_id, the early return in turn), mcp-session-usage
 src/hook.ts                   sessionStart, the model of /title               mcp-session-usage
 hooks/hooks.json              the entries after PreToolUse                    mcp-activity (PostToolUse, PostToolUseFailure)
-src/cli.ts:20                 the hook turn line of helpText                  mcp-activity
+src/cli.ts                    the hook turn line of helpText                  mcp-activity
 test/unit/hook.test.ts        "SessionStart hook", "turn hooks"               mcp-activity, mcp-fixes
-test/unit/plugin.test.ts:46   the events of hook turn                         mcp-activity
-test/e2e/service.test.ts      the mirroring test (351-425)                    mcp-activity, mcp-replies, mcp-reactions, mcp-fixes
+test/unit/plugin.test.ts      the events of hook turn                         mcp-activity
+test/e2e/service.test.ts      the mirroring test                              mcp-activity, mcp-replies, mcp-reactions, mcp-fixes
 REFERENCE.md                  "Prompts and answers", the hooks table          mcp-activity, mcp-replies, mcp-reactions
 spec/flows.md                 flow 21, the number of the new flow             mcp-activity (flow 32)
 spec/api.md, architecture.md  the rows of hook turn and hooks.json, 8.2, 8.6  mcp-activity

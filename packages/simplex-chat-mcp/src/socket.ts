@@ -9,12 +9,14 @@ const keepAliveTimeoutMs = 5_000
 
 export type Handler = (body: unknown, res: ServerResponse, req: IncomingMessage) => Promise<void>
 
+// spec: spec/architecture.md#socket-socketerror
 export class SocketError extends Error {
   constructor(message: string, readonly status: number) {
     super(message)
   }
 }
 
+// spec: spec/architecture.md#socket-listen
 export function listen(path: string, token: string, routes: {[route: string]: Handler}): Promise<Server> {
   const expected = Buffer.from(`Bearer ${token}`)
   const authorized = (header: string | undefined): boolean => {
@@ -47,11 +49,13 @@ export function listen(path: string, token: string, routes: {[route: string]: Ha
   })
 }
 
+// spec: spec/architecture.md#socket-sendjson
 export function sendJson(res: ServerResponse, status: number, value: unknown): void {
   res.writeHead(status, {"content-type": "application/json"})
   res.end(JSON.stringify(value))
 }
 
+// spec: spec/architecture.md#socket-sendjson
 export function startLines(res: ServerResponse): (line: unknown) => void {
   res.writeHead(200, {"content-type": "application/x-ndjson"})
   return line => {
@@ -59,11 +63,13 @@ export function startLines(res: ServerResponse): (line: unknown) => void {
   }
 }
 
+// spec: spec/architecture.md#socket-isnotrunning
 export function isNotRunning(error: unknown): boolean {
   const code = (error as NodeJS.ErrnoException | undefined)?.code
   return code === "ENOENT" || code === "ECONNREFUSED"
 }
 
+// spec: spec/architecture.md#socket-requestjson
 export async function requestJson<T>(path: string, token: string, method: string, route: string, body?: unknown): Promise<T> {
   const res = await send(path, token, method, route, body)
   const text = await readText(res)
@@ -71,6 +77,7 @@ export async function requestJson<T>(path: string, token: string, method: string
   return JSON.parse(text) as T
 }
 
+// spec: spec/architecture.md#socket-requestjson
 export async function streamLines(path: string, token: string, route: string, body: unknown, onLine: (line: unknown) => void, signal?: AbortSignal): Promise<void> {
   const res = await send(path, token, "POST", route, body, signal)
   if (res.statusCode !== 200) throw new SocketError(errorOf(await readText(res)), res.statusCode ?? 0)
@@ -85,6 +92,7 @@ export async function streamLines(path: string, token: string, route: string, bo
   }
 }
 
+// spec: spec/architecture.md#socket-send
 function send(path: string, token: string, method: string, route: string, body: unknown, signal?: AbortSignal): Promise<IncomingMessage> {
   return new Promise((resolve, reject) => {
     const req = request({socketPath: path, agent: false, method, path: route, headers: {authorization: `Bearer ${token}`, "content-type": "application/json"}, signal}, resolve)
