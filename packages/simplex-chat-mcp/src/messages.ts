@@ -9,7 +9,7 @@ const maxTimer = 2_147_483_647
 export const pageSize = 100
 const maxCollected = 100
 const prohibitedNameChars = ".,;/\\#@'\"`~"
-const maxNameLength = 50
+export const maxNameLength = 50
 const receivingStatuses: T.CIFileStatus["type"][] = ["rcvAccepted", "rcvTransfer", "rcvWarning"]
 export const missingFile = "The received file is not in the agent's files folder."
 

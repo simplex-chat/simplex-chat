@@ -1,3 +1,4 @@
+import {execFileSync} from "child_process"
 import {readFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
@@ -149,6 +150,12 @@ export function broadcastDeletion(chatType: T.ChatType, chatId: number, itemId: 
 
 export function texts(chat: FakeChat): string[] {
   return [...chat.sent.map(({messages: [{msgContent}]}) => msgContent.text), ...chat.updates.map(({text}) => text)]
+}
+
+export function descendants(pid: number): number[] {
+  const parents = execFileSync("ps", ["-A", "-o", "pid=,ppid="], {encoding: "utf8"}).trim().split("\n").map(line => line.trim().split(/\s+/).map(Number))
+  const children = (parent: number): number[] => parents.flatMap(([child, ppid]) => (ppid === parent ? [child, ...children(child)] : []))
+  return children(pid)
 }
 
 interface FakeChatData {
