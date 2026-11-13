@@ -3571,6 +3571,16 @@ data class ChatItem (
 
   val isLiveDummy: Boolean get() = meta.itemId == TEMP_LIVE_CHAT_ITEM_ID
 
+  fun autoReceiveFile(): CIFile? {
+    val mc = content.msgContent
+    return if (file != null &&
+      ChatController.appPrefs.privacyAcceptImages.get() &&
+      ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
+          || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
+          || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))
+    ) file else null
+  }
+
   val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
 
   val memberDisplayName: String? get() =
