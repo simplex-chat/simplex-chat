@@ -182,7 +182,7 @@ Message content can be one of four types:
 
 See `/definition/msgContent` in [JTD schema](./simplex-chat.schema.json) for message container format.
 
-Optional `priority` property of the container is an integer set by the sender: -1 or below is silent, 0 or absent is normal. Receiving clients show a silent message and count it as unread, without a notification, a sound or a push. The sending client, and the members and relays that forward the message, send it with the SMP notification flag off. Clients that do not support this property receive the message as normal.
+Optional `priority` property of the container is an integer set by the sender: -1 or below is silent, 0 or absent is normal; 1 or above is reserved for high priority and is received as normal. Receiving clients show a silent message and count it as unread, without a notification, a sound or a push. The sending client, and the members and relays that forward the message, send it with the SMP notification flag off, unless it is sent in one SMP message with a normal message, or as a pending message when a member connects. Clients that do not support this property receive the message as normal.
 
 ### x.msg.update - update of the previously sent message
 

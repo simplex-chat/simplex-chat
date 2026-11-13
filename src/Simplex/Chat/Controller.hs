@@ -1964,7 +1964,7 @@ instance FromJSON ComposedMessage where
     quotedItemId <- v .:? "quotedItemId"
     msgContent <- v .: "msgContent"
     mentions <- fromMaybe M.empty <$> v .:? "mentions"
-    priority <- fmap limitPriority <$> v .:? "priority"
+    priority <- v .:? "priority"
     pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions, priority}
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)

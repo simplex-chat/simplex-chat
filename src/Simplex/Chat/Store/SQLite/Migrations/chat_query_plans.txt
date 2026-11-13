@@ -7624,6 +7624,10 @@ Query: SELECT agent_conn_id FROM connections
 Plan:
 SCAN connections USING COVERING INDEX sqlite_autoindex_connections_1
 
+Query: SELECT agent_conn_id FROM connections WHERE contact_id IS NOT NULL
+Plan:
+SCAN connections
+
 Query: SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1
 Plan:
 SEARCH connections USING INDEX idx_connections_conn_req_inv (user_id=? AND conn_req_inv=?)
@@ -8237,6 +8241,10 @@ Plan:
 SCAN messages
 
 Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '794D423855453661496754424746484F'
+Plan:
+SCAN messages
+
+Query: SELECT msg_body FROM messages WHERE msg_sent = 1 AND chat_msg_event = 'x.msg.new' ORDER BY message_id DESC LIMIT 1
 Plan:
 SCAN messages
 

@@ -121,7 +121,7 @@
         "live": {"type": "boolean"},
         "priority": {
           "type": "integer",
-          "metadata": {"comment": "-1 or below: silent, receiving clients do not alert; 0 or absent: normal"}
+          "metadata": {"comment": "-1 or below: silent, receiving clients do not alert; 0 or absent: normal; 1 or above: reserved for high priority, received as normal"}
         },
         "quote": {
           "properties": {
