@@ -295,6 +295,9 @@ maxListDepth = 7
 maxMarkupTokens :: Int
 maxMarkupTokens = 2000
 
+maxCodeSpanTicks :: Int
+maxCodeSpanTicks = 3
+
 parseMarkdownList :: Text -> MarkdownList
 parseMarkdownList = markdownToList . parseMarkdown
 
@@ -364,13 +367,11 @@ markdownP = joinMarkdown <$> A.many' fragmentP
             | otherwise -> wordP
         Nothing -> fail ""
     formattedP :: Char -> Format -> Parser Markdown
-    formattedP c f = A.char c *> ((md c f . T.concat <$> A.many' pieceP <* A.char c) <|> openedP)
+    formattedP c f = A.char c *> (T.concat <$> A.many' pieceP >>= \s -> (A.char c $> md c f s) <|> openedP s)
       where
-        pieceP = A.takeWhile1 (\x -> x /= c && x /= '`' && x /= '\n') <|> codeTextP <|> delimitersP
+        pieceP = A.takeWhile1 (\x -> x /= c && x /= '`' && x /= '\n') <|> codeTextP (== '\n') <|> delimitersP
         delimitersP = A.takeWhile1 (== c) >>= \r -> r <$ (guard (T.length r > 1) <|> lookAhead (void $ A.satisfy $ notClosingBefore c))
-        openedP = do
-          s <- A.takeTill (\x -> x == c || x == '\n')
-          (markdown f <$> acrossLinesP s) <|> noFormat (c `T.cons` s)
+        openedP s = (markdown f <$> acrossLinesP s) <|> noFormat (c `T.cons` s)
         acrossLinesP s = do
           s' <- ((s <> "\n") <>) <$> (A.char '\n' *> A.takeTill (== c) <* A.char c)
           if T.null s || isSpace (T.head s) || isSpace (T.last s') then fail "not formatted" else pure s'
@@ -381,7 +382,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       | otherwise = markdown f s
     doubleP :: Char -> Format -> Parser Markdown
     doubleP c f = do
-      s <- A.string cc *> (T.concat <$> A.many' (A.takeWhile1 (\x -> x /= c && x /= '`') <|> codeTextP)) <* A.string cc <* notP (A.satisfy $ notClosingBefore c)
+      s <- A.string cc *> (T.concat <$> A.many' (A.takeWhile1 (\x -> x /= c && x /= '`') <|> codeTextP (const False))) <* A.string cc <* notP (A.satisfy $ notClosingBefore c)
       if T.null s || isSpace (T.head s) || isSpace (T.last s)
         then fail "not formatted"
         else pure $ markdown f s
@@ -389,16 +390,16 @@ markdownP = joinMarkdown <$> A.many' fragmentP
         cc = T.pack [c, c]
     notClosingBefore :: Char -> Char -> Bool
     notClosingBefore c x = x == c || (c == '_' && isAlphaNum x)
-    codeTextP :: Parser Text
-    codeTextP = do
+    codeTextP :: (Char -> Bool) -> Parser Text
+    codeTextP stop = do
       ticks <- A.takeWhile1 (== '`')
-      let pieceP = A.takeWhile1 (\x -> x /= '`' && x /= '\n') <|> (A.takeWhile1 (== '`') >>= \r -> r <$ guard (r /= ticks))
-      ((\s -> ticks <> s <> ticks) . T.concat <$> A.many' pieceP <* A.string ticks) <|> pure ticks
+      let pieceP = A.takeWhile1 (\x -> x /= '`' && not (stop x)) <|> (A.takeWhile1 (== '`') >>= \r -> r <$ guard (r /= ticks))
+      (guard (T.length ticks <= maxCodeSpanTicks) *> ((\s -> ticks <> s <> ticks) . T.concat <$> A.many' pieceP <* A.string ticks)) <|> pure ticks
     codeSpanP :: Parser Markdown
     codeSpanP = do
       ticks <- A.takeWhile1 (== '`')
       let pieceP = A.takeWhile1 (/= '`') <|> (A.takeWhile1 (== '`') >>= \r -> r <$ guard (r /= ticks))
-      (markdown Snippet . stripSpaces . T.concat <$> A.many' pieceP <* A.string ticks) <|> pure (unmarked ticks)
+      (guard (T.length ticks <= maxCodeSpanTicks) *> (markdown Snippet . stripSpaces . T.concat <$> A.many' pieceP <* A.string ticks)) <|> pure (unmarked ticks)
       where
         stripSpaces s
           | T.isPrefixOf " " s && T.isSuffixOf " " s && T.any (/= ' ') s = T.drop 1 $ T.dropEnd 1 s
@@ -406,7 +407,8 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     escapeP :: Parser Markdown
     escapeP = do
       c <- A.char '\\' *> A.satisfy (\x -> isAscii x && (isPunctuation x || isSymbol x))
-      pure $ markdown Escape "\\" <> unmarked (T.singleton c)
+      ticks <- if c == '`' then A.takeWhile (== '`') else pure ""
+      pure $ markdown Escape "\\" <> unmarked (c `T.cons` ticks)
     secretP :: Parser Markdown
     secretP = secret <$?> ((,,) <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile1 (== '#'))
     secret :: (Text, Text, Text) -> Either String Markdown
@@ -418,7 +420,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     secretFallback :: Parser Markdown
     secretFallback = unmarked . ('#' `T.cons`) <$> A.takeTill (\c -> c == ' ' || c == '\n')
     nameRefP :: Char -> Parser Markdown
-    nameRefP pfx = nameRef <$?> A.takeTill (\c -> c == ' ' || c == '\n')
+    nameRefP pfx = nameRef <$?> (notP (A.char '\'') *> takeTillEscape (\c -> c == ' ' || c == '\n'))
       where
         nameRef word
           | pfx == '@' && T.all (/= '.') name = Left "not a name"
@@ -449,7 +451,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       pure $ if T.null punct then res else res :|: unmarked punct
     sowLinkP = do
       t <- enclosedP '[' ']' (\c -> c == '[' || c == '\n')
-      l <- enclosedP '(' ')' isSpace
+      l <- A.char '(' *> takeTillEscape (\c -> c == ')' || isSpace c) <* A.char ')'
       let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
       when (hasPunct && t /= l && ("https://" <> t) /= l) $ fail "punctuation in hyperlink text"
       f <- hyperLinkFormat t l
@@ -493,7 +495,9 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     conc4 s1 s2 s3 s4 = s1 <> s2 <> s3 <> s4
     phoneSep = " " <|> "-" <|> "." <|> ""
     wordP :: Parser Markdown
-    wordP = wordMD . T.concat <$> A.many' (A.takeWhile1 (\c -> c /= ' ' && c /= '\n' && c /= '\\') <|> (notP escapeP *> A.string "\\"))
+    wordP = wordMD <$> takeTillEscape (\c -> c == ' ' || c == '\n')
+    takeTillEscape :: (Char -> Bool) -> Parser Text
+    takeTillEscape stop = T.concat <$> A.many' (A.takeWhile1 (\c -> not (stop c) && c /= '\\') <|> (notP escapeP *> A.string "\\"))
     wordMD :: Text -> Markdown
     wordMD s = fromMaybe (unmarked s) $ linkMD s <|> linkAfterParen
       where
@@ -987,7 +991,8 @@ markdownText (FormattedText f_ t) = case f_ of
     where
       around c = c `T.cons` t `T.snoc` c
       codeSpan =
-        let ticks = T.replicate (1 + maximum (0 : map T.length (filter (T.isPrefixOf "`") $ T.group t))) "`"
+        let runs = map T.length $ filter (T.isPrefixOf "`") $ T.group t
+            ticks = T.replicate (until (`notElem` runs) (+ 1) 1) "`"
             pad = T.isPrefixOf "`" t || T.isSuffixOf "`" t || (T.isPrefixOf " " t && T.isSuffixOf " " t && not (T.all (== ' ') t))
             sp = if pad then " " else ""
          in ticks <> sp <> t <> sp <> ticks
