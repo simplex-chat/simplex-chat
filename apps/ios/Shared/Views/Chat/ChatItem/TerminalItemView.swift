@@ -380,6 +380,14 @@ func terminalMediaWidth(_ row: CGFloat) -> CGFloat {
 }
 
 let terminalMemberImageBaseSize: CGFloat = 30
+let terminalAvatarOvershoot: CGFloat = 2
+
+private func flatLetterSideBearing(_ font: UIFont) -> CGFloat {
+    var letter = UniChar(("H" as Unicode.Scalar).value)
+    var glyph = CGGlyph()
+    CTFontGetGlyphsForCharacters(font as CTFont, &letter, &glyph, 1)
+    return CTFontGetBoundingRectsForGlyphs(font as CTFont, .horizontal, &glyph, nil, 1).minX
+}
 
 struct ChatItemSender {
     var name: Text
@@ -404,7 +412,7 @@ struct TerminalChatItemRow<Content: View>: View {
                     if avatarSize > 0 {
                         ZStack(alignment: .topLeading) {
                             Color.clear.frame(width: avatarSize + chatItemTextPadding, height: 0)
-                            sender.image?.padding(.leading, chatItemTextPadding)
+                            sender.image?.padding(.leading, chatItemTextPadding + flatLetterSideBearing(UIFont.preferredFont(forTextStyle: .body)) - terminalAvatarOvershoot)
                         }
                     }
                     senderNameAndRole(sender)

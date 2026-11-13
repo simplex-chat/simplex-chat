@@ -360,8 +360,10 @@ overhang           the avatar's part above and below the name line: (avatarSize 
                    at least 0; 0 in a row without an avatar
 sender row         HStack, centred: the avatar column and the name; as tall as the taller of the two
   avatar column    groups and channels: avatarSize + chatItemTextPadding, with the sender avatar
-                   chatItemTextPadding from the start; other chats: none (avatarSize 0)
-                   one 12pt padding (user, I26): screen edge to the text or the avatar, avatar to the name, time to the screen edge
+                   terminalAvatarOvershoot (2pt) before the ink of flat letters of the message text: chatItemTextPadding
+                   + the side bearing of H in the body font (flatLetterSideBearing) − 2pt, as round glyphs pass flat ones
+                   (user, 2026-11-13); other chats: none (avatarSize 0)
+                   one 12pt padding (user, I26): screen edge to the text, avatar column to the name, time to the screen edge
   avatar           avatarSize: scaledMemberImageSize(font, terminalMemberImageBaseSize), 30pt × chat list profileImageSize ÷ 63
                    (dynamicSize at the text size, at most 75), centred on the name line
                    classic rows: memberImageSize, scaledMemberImageSize(font), 34pt (memberImageBaseSize) × the same ratio
