@@ -66,7 +66,7 @@ export interface Step {
 }
 
 export interface AttachLine {
-  prompt?: {text: string; from: string; item: number; file?: string}
+  prompt?: {text: string; from: string; item: number; file?: string; replyTo?: {item?: number; from?: string}}
   permission?: {requestId: string; behavior: "allow" | "deny"}
 }
 
