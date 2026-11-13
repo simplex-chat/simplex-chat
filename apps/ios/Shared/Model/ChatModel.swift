@@ -1463,9 +1463,13 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     var unreadTag: UnreadTag {
         switch chatInfo.chatSettings?.enableNtfs {
         case .all:
-            if chatStats.unreadChat || chatStats.unreadCount > chatStats.unreadSilent { .unread }
-            else if chatStats.unreadCount > 0 { .silent }
-            else { .read }
+            if chatStats.unreadChat || chatStats.unreadCount > chatStats.unreadSilent {
+                .unread
+            } else if chatStats.unreadCount > 0 {
+                .silent
+            } else {
+                .read
+            }
         case .mentions: chatStats.unreadChat || chatStats.unreadMentions > 0 ? .unread : .read
         default: chatStats.unreadChat ? .unread : .read
         }

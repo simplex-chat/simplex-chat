@@ -348,7 +348,7 @@ function chatTs(chatInfo: T.ChatInfo): string {
 
 function chatStats(items: T.ChatItem[]): T.ChatStats {
   const unread = items.filter(({meta}) => meta.itemStatus.type === "rcvNew")
-  return {unreadCount: unread.length, minUnreadItemId: unread[0]?.meta.itemId ?? 0, unreadMentions: 0, reportsCount: 0, unreadChat: false}
+  return {unreadCount: unread.length, minUnreadItemId: unread[0]?.meta.itemId ?? 0, unreadMentions: 0, unreadSilent: 0, reportsCount: 0, unreadChat: false}
 }
 
 function storeError(ref: string): Error {
