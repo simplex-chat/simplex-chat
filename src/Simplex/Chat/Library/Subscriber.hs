@@ -3851,7 +3851,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               -- other owners receiving the update do not refresh the same link
               ChatConfig {updateGroupLinksFromApp} <- asks config
               unless (useRelays' g'' || updateGroupLinksFromApp) $
-                void $ forkIO $ void $ setGroupLinkData' NRMBackground user (GIK g'' gks)
+                void $ forkIO $ void $ withGroupLock "xGrpInfo" (groupId' g'') $ setGroupLinkData' NRMBackground user (GIK g'' gks)
             Just _ -> updateGroupPrefs_ msgSigned g m $ fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
           -- relay advertises its web capability now that the owner's version is known (bumped by saveGroupRcvMsg)
           when (isRelay (membership g)) $ sendRelayCapIfNeeded user gik

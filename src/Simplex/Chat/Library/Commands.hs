@@ -2389,15 +2389,12 @@ processChatCommand cxt nm = \case
             (_, _, Left ChatErrorAgent {agentError = e}) -> temporaryOrHostError e
             _ -> False
           retryRelayConnectionAsync gInfo' relayLink GroupMember {groupMemberId} = do
-            relayMember@GroupMember {activeConn} <- withFastStore $ \db -> getGroupMember db cxt user groupId groupMemberId
-            forM_ activeConn $ \conn -> do
-              deleteAgentConnectionAsync $ aConnId conn
-              withStore' $ \db -> deleteConnectionRecord db user (dbConnId conn)
-            subMode <- chatReadVar subscriptionMode
-            newConnIds@(cmdId, connId) <- prepareAgentCreation user CFGetRelayDataJoin False SCMInvitation
-            withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
-            relayLink' <- restoreShortLink' relayLink
-            void $ withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (Just connId) relayLink'
+            relayMember_ <- withFastStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupMember db cxt user groupId groupMemberId)
+            forM_ relayMember_ $ \relayMember@GroupMember {activeConn} -> do
+              forM_ activeConn $ \conn -> do
+                deleteAgentConnectionAsync $ aConnId conn
+                withStore' $ \db -> deleteConnectionRecord db user (dbConnId conn)
+              createRelayConnectionAsync user gInfo' relayMember relayLink
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
         hostMember <- withFastStore $ \db -> getHostMember db cxt user groupId
         msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
@@ -2517,9 +2514,8 @@ processChatCommand cxt nm = \case
   CreateMyAddress ratchetKeys_ -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APICreateMyAddress userId Nothing ratchetKeys_
   APIDeleteMyAddress userId -> withUserProfileLock "deleteMyAddress" $ withUserId userId $ \user@User {profile = p} -> do
-    conn@Connection {entityId} <- withFastStore $ \db -> getUserAddressConnection db cxt user
-    maybe id (withUserContactLock "deleteMyAddress") entityId . withChatLock "deleteMyAddress" $
-      withFastStore' (`deleteUserAddress` user)
+    (conn, UserContactLink {userContactLinkId}) <- withFastStore $ \db -> (,) <$> getUserAddressConnection db cxt user <*> getUserAddress db user
+    withUserContactLock "deleteMyAddress" userContactLinkId $ withFastStore' (`deleteUserAddress` user)
     deleteAgentConnectionAsync $ aConnId conn
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing, contactDomain = Nothing}
     r <- updateProfile_ user p' False $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
@@ -2942,7 +2938,7 @@ processChatCommand cxt nm = \case
             e -> eToView e
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Left ct -> throwChatError $ CEContactNotActive ct
-  APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do
+  APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> withGroupLock "acceptMember" groupId $ do
     (g@(GIK gInfo _), m) <- withFastStore $ \db -> (,) <$> getGroupInfoKeys db cxt user groupId <*> getGroupMemberById db cxt user gmId
     -- same rule as role change (moderators grant up to member); pending member's role is a stand-in, so treat it as member
     assertUserGroupRole gInfo $ roleRequiredToChange GRMember role
@@ -3357,7 +3353,7 @@ processChatCommand cxt nm = \case
   ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do
     ct_ <- forM cName_ $ \cName -> withFastStore $ \db -> getContactByName db cxt user cName
     processChatCommand cxt nm $ APIListGroups userId (contactId' <$> ct_) search_
-  APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
+  APIUpdateGroupProfile groupId p' -> withUser $ \user -> withGroupLock "updateGroupProfile" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfoKeys db cxt user groupId
     runUpdateGroupProfile user gInfo p' False
   UpdateGroupNames gName GroupProfile {displayName, fullName, shortDescr} ->
@@ -3368,7 +3364,7 @@ processChatCommand cxt nm = \case
     updateGroupProfileByName gName $ \p -> p {description}
   ShowGroupDescription gName -> withUser $ \user ->
     CRGroupDescription user <$> withFastStore (\db -> getGroupInfoByName db cxt user gName)
-  APISetPublicGroupAccess gId access@PublicGroupAccess {groupDomainClaim = newClaim} -> withUser $ \user -> do
+  APISetPublicGroupAccess gId access@PublicGroupAccess {groupDomainClaim = newClaim} -> withUser $ \user -> withGroupLock "setPublicGroupAccess" gId $ do
     gInfo@(GIK GroupInfo {groupProfile = p@GroupProfile {publicGroup}} _) <- withStore $ \db -> getGroupInfoKeys db cxt user gId
     case publicGroup of
       Just pg@PublicGroupProfile {groupLink, publicGroupAccess = existingAccess} -> do
@@ -3411,7 +3407,7 @@ processChatCommand cxt nm = \case
     gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     gLnk <- withFastStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo gLnk
-  APIAddGroupShortLink groupId -> withUser $ \user -> do
+  APIAddGroupShortLink groupId -> withUser $ \user -> withGroupLock "addGroupShortLink" groupId $ do
     (g@(GIK gInfo _), gLink) <- withFastStore $ \db -> do
       g@(GIK gInfo _) <- getGroupInfoKeys db cxt user groupId
       gLink <- getGroupLink db user gInfo
@@ -4304,14 +4300,15 @@ processChatCommand cxt nm = \case
     updateGroupProfileByName = updateGroupProfileByName_ Nothing
     updateGroupProfileByName_ :: Maybe GroupFeature -> GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse
     updateGroupProfileByName_ feature_ gName update = withUser $ \user -> do
-      gInfo@(GIK g@GroupInfo {groupProfile = p} _) <- withStore $ \db ->
-        getGroupIdByName db user gName >>= getGroupInfoKeys db cxt user
-      forM_ feature_ $ \feature -> do
-        let channel = useRelays' g
-            applicable = if channel then groupFeatureInChannel feature else groupFeatureInRegularGroup feature
-        unless applicable $
-          throwCmdError $ T.unpack (groupFeatureNameText feature) <> " is not available in " <> (if channel then "channels" else "groups")
-      runUpdateGroupProfile user gInfo (update p) False
+      groupId <- withStore $ \db -> getGroupIdByName db user gName
+      withGroupLock "updateGroupProfile" groupId $ do
+        gInfo@(GIK g@GroupInfo {groupProfile = p} _) <- withStore $ \db -> getGroupInfoKeys db cxt user groupId
+        forM_ feature_ $ \feature -> do
+          let channel = useRelays' g
+              applicable = if channel then groupFeatureInChannel feature else groupFeatureInRegularGroup feature
+          unless applicable $
+            throwCmdError $ T.unpack (groupFeatureNameText feature) <> " is not available in " <> (if channel then "channels" else "groups")
+        runUpdateGroupProfile user gInfo (update p) False
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> CM (Maybe Call)) -> CM ChatResponse
     withCurrentCall ctId action = do
       (user, ct) <- withStore $ \db -> do
@@ -6592,7 +6589,7 @@ runRelayGroupLinkChecks user = do
     checkRelayServedGroups = do
       cxt <- chatStoreCxt
       relayGroups <- withStore $ \db -> getRelayServedGroups db cxt user
-      forM_ relayGroups $ \g@(GIK gInfo@GroupInfo {groupProfile = gp} _) -> flip catchAllErrors eToView $ do
+      forM_ relayGroups $ \g@(GIK gInfo@GroupInfo {groupProfile = gp, relayOwnStatus = status_} _) -> flip catchAllErrors eToView $ do
         case publicGroup gp of
           Just PublicGroupProfile {groupLink = sLnk} -> do
             (_, ContactLinkData _ UserContactData {relays = relayLinks}, _) <-
@@ -6604,7 +6601,7 @@ runRelayGroupLinkChecks user = do
                   then do
                     -- TODO [relays] emit event to UI when relay own status promoted to RSActive
                     -- CEvtGroupRelayUpdated requires GroupRelay (owner-side), not available on relay side
-                    void $ withStore' $ \db -> updateRelayOwnStatus_ db gInfo RSActive
+                    forM_ status_ $ \status -> withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo status RSActive
                   else void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSActive RSInactive
               _ -> pure ()
           _ -> pure ()
