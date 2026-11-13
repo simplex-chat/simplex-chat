@@ -204,7 +204,7 @@ describe("service", () => {
     expect(agents).toHaveLength(2)
   })
 
-  it("passes the stored sessions to the hub, and the approval mode of each registration to its session", async () => {
+  it("passes the stored sessions to the hub, and the approval mode and Claude Code's record of each registration to its session", async () => {
     storeSession(id1, 1, "app")
     const {d, agents, stored} = deps(root)
     service = await Service.start(d, readDefaultConfig)
@@ -212,11 +212,14 @@ describe("service", () => {
     const host = {...defaultConfig, approve: "host" as const}
     await streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
     expect(agents[0].modes).toEqual([])
-    await post("/session", {id: id1, project: "/p/app", config: host})
+    expect(agents[0].record).toBeUndefined()
+    await post("/session", {id: id1, project: "/p/app", config: host, record: "/c/sessions/100.json"})
+    expect(agents[0].record).toBe("/c/sessions/100.json")
     await register(id2)
     await title(id2, "docs", host)
     await register(id1)
     expect(agents.map(({modes}) => modes)).toEqual([["host", "requests"], ["requests"]])
+    expect(agents.map(({record}) => record)).toEqual([undefined, undefined])
   })
 
   it("expires due actions at each request that touches sessions", async () => {

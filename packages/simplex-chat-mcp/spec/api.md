@@ -702,8 +702,7 @@ Commands from any member, one line `/KEYWORD PARAMS` as in [2.1](#21-commands-an
 
 | Request | Condition | Reply | Code |
 |---|---|---|---|
-| `/sessions` | no session | `No sessions.` | [hub.ts:521-524](../src/hub.ts#L521-L524) |
-| `/sessions` | otherwise | one line per session of the hub: `N · NAME`, with `, closed` when the service has no entry for it | [hub.ts:521-524](../src/hub.ts#L521-L524) |
+| `/sessions` | | the text of the list of sessions, below, fitted to one message with the quote of the command | [`Hub.sessionsText`](../src/hub.ts) |
 | `/join N` | no session N | `No session N. /sessions lists the sessions.` | [hub.ts:528](../src/hub.ts#L528) |
 | `/join N` | the sender is a member of its group | `You are a member of "N · NAME".` | [hub.ts:529-534](../src/hub.ts#L529-L534) |
 | `/join N` | otherwise: the sender is invited through the Main group, as `owner` when the sender is an owner of the Main group, else as `admin` | `Sent you an invitation to "N · NAME".` | [hub.ts:530](../src/hub.ts#L530), [:252-254](../src/hub.ts#L252-L254) |
@@ -715,6 +714,24 @@ Posts:
 |---|---|---|
 | the first owner joined | `I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.` | [main-group.ts:13](../src/main-group.ts#L13), [:138](../src/main-group.ts#L138) |
 | each `joinedGroupMember` or `connectedToGroupMember` of a human who is found among the members read again. For the first owner, it is posted after the greeting | `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.` | [main-group.ts:17](../src/main-group.ts#L17), [:127-128](../src/main-group.ts#L127-L128) |
+| the first render of the list of sessions while the group has an owner, so after the greeting; a list 23 hours old, or one whose edit the core refuses with `invalidChatItemUpdate` or `chatItemNotFound` | the list of sessions, below, with `priority: -1`. A new list replaces an old one, which is then deleted for everyone; a refused deletion is logged as `old list of sessions: ERROR` | [`MainGroup.showList`](../src/main-group.ts), `replaceList`, `postList` |
+
+The list of sessions ([`Hub.sessionsText`](../src/hub.ts), [`Session.stateLine`](../src/hub.ts), [`Hub.showSessions`](../src/hub.ts)):
+
+| Part | Text | Condition |
+|---|---|---|
+| a running session | `🔵 N · NAME: waiting for you, K approvals`, `1 approval` for one | K pending cards of the session, without those cancelled by a stop. A tool-use card counts while Claude Code's state is `waiting` or unknown |
+| | `🔵 N · NAME: waiting for you in Claude Code` | no card; attached; state `waiting` |
+| | `🟠 N · NAME: working` | no card; attached; state `busy` |
+| | `🟢 N · NAME: idle` | no card; attached; state `idle` or `shell` |
+| | `▶️ N · NAME: running` | no card; attached; no record path, no record file, or another state |
+| the other sessions | `⚪ Not running: N · NAME, N · NAME, K older sessions`, newest first | sessions without a card and without an attachment, or all of them while the service stops |
+| no session | `No sessions.` | |
+
+- A session is attached while its session server is attached and the service does not stop. Its state is the `status` of Claude Code's record of the session server's parent, `CLAUDE_CONFIG_DIR` or `~/.claude`, then `sessions/PID.json`, read every 2 s for each attached session. A record that does not parse keeps the last state read ([`Session.readRecord`](../src/hub.ts)).
+- The lines of running sessions come by number, then the line of the other sessions. Lines are joined by line breaks.
+- The text fits one message, by `fitsMessage`. The lines of running sessions are kept whole. The last line keeps the most names, newest first, for which the text, with `, K older sessions` for the K left out (`1 older session` for one), still fits. When no name fits, it is `⚪ Not running: K older sessions`.
+- Every 2 s, and once at the service's stop before the cores close, the hub renders the text, and Claude edits the list when the text differs from the text last posted or edited. The first render after a start always edits.
 
 The session groups stay as they are when the membership or a role in the Main group is changed, and when the Main group is replaced by a reset of the owners. Members invited through the old Main group keep their roles in the session groups, with the rights of those roles ([main-group.ts:117-132](../src/main-group.ts#L117-L132), [:99-109](../src/main-group.ts#L99-L109), [hub.ts:402-404](../src/hub.ts#L402-L404)).
 
@@ -728,7 +745,7 @@ Group profile ([`createMainGroup`](../src/main-group.ts#L195-L205), [`load`](../
 | history | on |
 | direct messages | on for the role `owner` |
 | command menu | `/sessions` "Claude Code sessions"<br>`/join` "Join the group of a session", params `<session number>` |
-| custom data | `{simplexMcpMain: true}` |
+| custom data | `{simplexMcpMain: true}`, and `simplexMcpList: {item, at}`, the list of sessions and the time it was posted |
 
 Claude updates only the display name and the command menu, starting each time from the group's current profile in the chat database. So the short description, the description and the preferences that owners set stay ([main-group.ts:57-66](../src/main-group.ts#L57-L66), [control.ts:632-640](../src/control.ts#L632-L640)).
 
@@ -907,7 +924,7 @@ The service speaks HTTP/1.1 over `ROOT/service.sock`, the fallback path or the W
 
 | Route | Request | Reply | Code |
 |---|---|---|---|
-| `POST /session` | `{id, pid?, project, name?, config: {mainGroup, approve, expireHours}}`, `pid` the session server's parent process | `{number, displayName, version, protocol, owner: {owners}}`. For a `pid` marked unattended, the reply is status 403, see below. The mark is checked before and after the wait for the title of `pid` | [service.ts:202-217](../src/service.ts#L202-L217), [:246-249](../src/service.ts#L246-L249) |
+| `POST /session` | `{id, pid?, project, name?, config: {mainGroup, approve, expireHours}, record?}`, `pid` the session server's parent process, `record` the path of Claude Code's record of that process, which the session's line in the list of sessions reads | `{number, displayName, version, protocol, owner: {owners}}`. For a `pid` marked unattended, the reply is status 403, see below. The mark is checked before and after the wait for the title of `pid` | [service.ts:202-217](../src/service.ts#L202-L217), [:246-249](../src/service.ts#L246-L249) |
 | `POST /title` | `{id, pid?, at?, name?, project, model?, config, unattended?}`, `pid` from `CLAUDE_PID`, `at` the `performance.timeOrigin` of the SessionStart hook | `{mainGroup, owner: {owners, link?}, version, protocol}`, after the title is applied, or at once for a held title. With `unattended: true`, the reply comes at once, and no session is opened. Marks 10 s old and older are removed, `pid` is marked, and a server's wait for its title ends | [service.ts:219-263](../src/service.ts#L219-L263) |
 | `POST /attach` | `{id}` | a stream held open: the first line `{version, protocol}`, then `{prompt: {text, from, item, file?, replyTo?: {item?, from?}}}` and `{permission}` lines | [service.ts:305-326](../src/service.ts#L305-L326), [protocol.ts:68-71](../src/protocol.ts#L68-L71) |
 | `POST /call` | `{id, tool, input}` | lines `{progress: TEXT}`, then one line `{result: CallToolResult or null}`. The call is aborted when the request is closed | [service.ts:328-347](../src/service.ts#L328-L347) |

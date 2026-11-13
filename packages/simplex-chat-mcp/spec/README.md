@@ -186,7 +186,7 @@ graph TD
 | [`protocol.ts`](../src/protocol.ts) | plugin: request and reply types of the socket routes, protocol version |
 | [`service.ts`](../src/service.ts) | plugin: routes, session registry, session IDs of one Claude Code process, attachments, idle close and stop, ready line |
 | [`hub.ts`](../src/hub.ts) | plugin: the profile `Claude`, the sessions, their groups, prompts, answers and tool-use cards |
-| [`main-group.ts`](../src/main-group.ts) | plugin: the Main group, its owners, `/sessions`, `/join`, owner reset |
+| [`main-group.ts`](../src/main-group.ts) | plugin: the Main group, its owners, the list of sessions, `/sessions`, `/join`, owner reset |
 | [`user.ts`](../src/user.ts) | plugin: the profile `User` |
 | [`hook.ts`](../src/hook.ts) | plugin: `hook session-start` and `hook turn` |
 | [`owner.ts`](../src/owner.ts) | plugin: `link` and `reset-owners` |

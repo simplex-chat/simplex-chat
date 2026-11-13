@@ -74,10 +74,12 @@ async function startService(root: string): Promise<Service> {
   return service
 }
 
-async function openSession(client: ServiceClient, id: string, name: string): Promise<SessionReply> {
+async function openSession(client: ServiceClient, id: string, name: string, record?: string): Promise<SessionReply> {
   await client.request<TitleReply>("POST", "/title", {id, name, config: defaultConfig})
-  return client.request<SessionReply>("POST", "/session", {id, project: "/p", config: defaultConfig})
+  return client.request<SessionReply>("POST", "/session", {id, project: "/p", config: defaultConfig, record})
 }
+
+const sessionsReply = (groupId: number, text: string): ItemCheck => inGroup(groupId, ({chatItem}) => chatItem.quotedItem !== undefined && chatItem.meta.itemText === text)
 
 const inGroup = (groupId: number, check: ItemCheck): ItemCheck => ci => ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === groupId && check(ci)
 
@@ -216,7 +218,7 @@ test("an owner joins the Main group and each session's group, and approves its c
   const mainProfile = async () => (await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === mainGroupId)!.groupProfile
   const edited = {shortDescr: "Sessions of the team", description: "Ask Alice before you approve."}
   await alice.chat.apiUpdateGroupProfile(mainGroupId, {...(await mainProfile()), ...edited})
-  const sessionsListed = received(alice.chat, inGroup(mainGroupId, textStarts("1 · one")))
+  const sessionsListed = received(alice.chat, sessionsReply(mainGroupId, "⚪ Not running: 2 · two, 1 · one"))
   await ownerSends(mainGroupId, "/sessions")
   await sessionsListed
   await service.stop()
@@ -226,11 +228,49 @@ test("an owner joins the Main group and each session's group, and approves its c
   await listedOne
   expect(await openSession(client, two, "two")).toMatchObject({number: 2, displayName: "2 · two", owner: {owners: ["Alice"]}})
   expect((await chatsOf(two)).sort()).toEqual([directoryChat, shopChat].sort())
-  const sessionsListedAgain = received(alice.chat, inGroup(mainGroupId, textStarts("1 · one")))
+  const sessionsListedAgain = received(alice.chat, sessionsReply(mainGroupId, "⚪ Not running: 2 · two, 1 · one"))
   await ownerSends(mainGroupId, "/sessions")
   await sessionsListedAgain
   expect(await mainProfile()).toMatchObject(edited)
 }, 600_000)
+
+test("the Main group shows every session in one list, the running ones with their states from Claude Code's record and the cards, edited in place, and /sessions replies with its text", async () => {
+  const root = join(dir, "list", "root")
+  await prepareRoot(smpServer.address, root)
+  const alice = await personIn("list", "Alice")
+  await startService(root)
+  const client = ServiceClient.forRoot(root)
+  const record = join(dir, "list", "claude.json")
+  writeFileSync(record, JSON.stringify({status: "busy"}))
+  await openSession(client, one, "one", record)
+  await openSession(client, two, "two")
+  const attached: AttachLine[] = []
+  const controller = new AbortController()
+  closing.push(async () => controller.abort())
+  client.stream("/attach", {id: one}, line => attached.push(line as AttachLine), controller.signal).catch(() => undefined)
+  await until(() => attached.length === 1)
+  const owner = await client.request<OwnerState>("GET", "/link")
+  const invitations = joinSessionGroups(alice, ["1 · one", "2 · two"])
+  const working = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "🟠 1 · one: working\n⚪ Not running: 2 · two")
+  const mainGroupId = await joinByLink(alice, owner.link!)
+  const list = await working
+  expect(list.chatInfo).toMatchObject({type: "group", groupInfo: {groupId: mainGroupId}})
+  await invitations
+  const edited = (text: string): Promise<T.AChatItem> => updated(alice.chat, inGroup(mainGroupId, ({chatItem}) => chatItem.meta.itemId === list.chatItem.meta.itemId && chatItem.meta.itemText === text))
+  const waiting = edited("🔵 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
+  writeFileSync(record, JSON.stringify({status: "waiting", waitingFor: "permission prompt"}))
+  await client.request("POST", "/permission", {id: one, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+  await waiting
+  const idle = edited("🟢 1 · one: idle\n⚪ Not running: 2 · two")
+  writeFileSync(record, JSON.stringify({status: "idle"}))
+  await idle
+  const ended = edited("⚪ Not running: 2 · two, 1 · one")
+  controller.abort()
+  await ended
+  const replied = received(alice.chat, sessionsReply(mainGroupId, "⚪ Not running: 2 · two, 1 · one"))
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, mainGroupId], "/sessions")
+  await replied
+}, 300_000)
 
 test("while files and media are off in a session's group, the card of a send of an image is posted as text, the image is sent after the approval, and the card is edited as text", async () => {
   const root = join(dir, "media", "root")
@@ -581,7 +621,7 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   const bobRemoved = bob.chat.wait("deletedMemberUser", ({groupInfo}) => groupInfo.groupId === bobMain, 60_000)
   await alice.chat.apiRemoveMembers(mainGroupId, [bobInAlice.groupMemberId])
   expect(await bobRemoved).toBeDefined()
-  const sessionsListed = received(alice.chat, inGroup(mainGroupId, textStarts("1 · one")))
+  const sessionsListed = received(alice.chat, sessionsReply(mainGroupId, "▶️ 1 · one: running"))
   await alice.chat.apiSendTextMessage([T.ChatType.Group, mainGroupId], "/sessions")
   await sessionsListed
   await bobSends("Run the tests")

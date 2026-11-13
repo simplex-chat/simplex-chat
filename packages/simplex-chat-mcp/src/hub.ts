@@ -1,4 +1,5 @@
 import {mkdirSync, rmSync} from "fs"
+import {readFile} from "fs/promises"
 import {dirname, join} from "path"
 import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
@@ -30,6 +31,14 @@ const noteRefused = "Claude's note was not posted"
 const maxFinished = 100
 const liveLineMs = 23 * 3_600_000
 const stepCheckMs = 60_000
+const listCheckMs = 2_000
+const claudeStates = new Map<string, [string, string]>([
+  ["waiting", ["🔵", "waiting for you in Claude Code"]],
+  ["busy", ["🟠", "working"]],
+  ["idle", ["🟢", "idle"]],
+  ["shell", ["🟢", "idle"]],
+])
+const unknownState: [string, string] = ["▶️", "running"]
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
 
@@ -58,6 +67,7 @@ interface LiveStep {
 
 export class Session {
   open = false
+  record?: string
   readonly actions: Actions
   readonly tools: AgentTools
   readonly control: Control
@@ -78,6 +88,7 @@ export class Session {
   private readonly finished = new Set<string>()
   private finalizing: Promise<void> = Promise.resolve()
   private expiry?: NodeJS.Timeout
+  private claudeStatus?: string
 
   constructor(
     private readonly hub: Hub,
@@ -138,6 +149,32 @@ export class Session {
 
   busy(): boolean {
     return this.actions.all().some(({tool}) => tool !== "mode")
+  }
+
+  async readRecord(): Promise<void> {
+    if (!this.attached || this.record === undefined) {
+      this.claudeStatus = undefined
+      return
+    }
+    try {
+      const {status} = JSON.parse(await readFile(this.record, "utf8")) as {status?: unknown}
+      this.claudeStatus = typeof status === "string" ? status : undefined
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") this.claudeStatus = undefined
+    }
+  }
+
+  stateLine(): string | undefined {
+    const dialog = this.claudeStatus === undefined || this.claudeStatus === "waiting"
+    const cards = this.actions.pending().filter(({tool, interrupted}) => !interrupted && (dialog || tool !== "permission")).length
+    if (cards > 0) return `🔵 ${this.displayName}: waiting for you, ${cards} approval${cards === 1 ? "" : "s"}`
+    if (!this.attached) return undefined
+    const [emoji, state] = claudeStates.get(this.claudeStatus ?? "") ?? unknownState
+    return `${emoji} ${this.displayName}: ${state}`
+  }
+
+  private get attached(): boolean {
+    return this.onLine !== undefined && !this.hub.stopped
   }
 
   call(tool: ToolName, input: unknown, call: ToolCall): ReturnType<AgentTools["call"]> {
@@ -441,8 +478,10 @@ export class Hub implements SessionGroups {
   userContactId?: number
   promptsHeldUntil = 0
   private readonly sessions = new Map<number, Session>()
-  private stopped = false
+  stopped = false
   private controlEvents: Promise<void> = Promise.resolve()
+  private listTimer?: NodeJS.Timeout
+  private listing?: Promise<void>
 
   private constructor(
     readonly chat: api.ChatApi,
@@ -468,6 +507,7 @@ export class Hub implements SessionGroups {
       for (const {id, session} of stored) await hub.session(id, session)
       hub.promptsHeldUntil = Date.now() + attachWait
       await core.events(event => hub.onEvent(event))
+      hub.listTimer = setInterval(() => hub.showSessions(), listCheckMs).unref()
       return hub
     } catch (error) {
       await core.chat.close().catch(() => undefined)
@@ -518,9 +558,31 @@ export class Hub implements SessionGroups {
     return this.sessions.get(number)?.id
   }
 
-  sessionsText(): string {
-    const lines = [...this.sessions.values()].map(session => `${session.displayName}${session.open ? "" : ", closed"}`)
-    return lines.length > 0 ? lines.join("\n") : "No sessions."
+  sessionsText(quote?: T.MsgContent): string {
+    const sessions = [...this.sessions.values()].sort((a, b) => a.number - b.number)
+    if (sessions.length === 0) return "No sessions."
+    const lines = sessions.map(session => session.stateLine())
+    const running = lines.filter(line => line !== undefined)
+    const names = sessions.filter((_, i) => lines[i] === undefined).map(({displayName}) => displayName).reverse()
+    const text = (shown: number): string => [...running, ...(names.length === 0 ? [] : [notRunningLine(names, shown)])].join("\n")
+    const fits = (shown: number): boolean => fitsMessage({type: "text", text: text(shown)}, undefined, quote === undefined ? undefined : {content: quote})
+    if (fits(names.length)) return text(names.length)
+    let low = 0
+    let high = names.length - 1
+    while (low < high) {
+      const middle = Math.ceil((low + high) / 2)
+      if (fits(middle)) low = middle
+      else high = middle - 1
+    }
+    return text(low)
+  }
+
+  showSessions(): Promise<void> {
+    this.listing ??= Promise.all([...this.sessions.values()].map(session => session.readRecord()))
+      .then(() => this.main.showList(this.sessionsText()))
+      .catch(error => logError("list of sessions", error))
+      .finally(() => (this.listing = undefined))
+    return this.listing
   }
 
   async join(member: T.GroupMember, number: number): Promise<string> {
@@ -548,11 +610,14 @@ export class Hub implements SessionGroups {
 
   async stop(): Promise<Action[]> {
     this.stopped = true
+    clearInterval(this.listTimer)
     const sessions = [...this.sessions.values()]
     const stopped = await Promise.all(sessions.map(async ({actions}) => ({lost: actions.lost, cancelled: await actions.stop()})))
     await this.controlEvents
     await waitForCancelledCards(stopped.flatMap(({lost, cancelled}) => (lost ? [] : cancelled)), cardsWait, new AbortController().signal)
     await Promise.all(sessions.map(session => session.endSteps()))
+    await this.listing
+    await this.showSessions()
     for (const {tools} of sessions) tools.close()
     await this.user?.close()
     await this.chat.close()
@@ -618,6 +683,12 @@ function notAllowedForUser(feature: string): string {
 
 function groupName(number: number, name: string): string {
   return validName(`${number} · ${name}`)
+}
+
+function notRunningLine(names: string[], shown: number): string {
+  const rest = names.length - shown
+  const older = rest === 0 ? [] : [`${rest} older session${rest === 1 ? "" : "s"}`]
+  return `⚪ Not running: ${[...names.slice(0, shown), ...older].join(", ")}`
 }
 
 function textParts(text: string, quote?: Parameters<typeof fitsMessage>[2]): string[] {

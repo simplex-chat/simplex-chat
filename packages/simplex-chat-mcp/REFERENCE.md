@@ -568,9 +568,32 @@ Only you see this link: it never enters Claude's context or tool results. Scan t
 - Owners can add people with a group link of their own or by inviting their contacts.
 - Observers can't send messages in the Main group, so they can't use `/join N`.
 - Owners of the Main group are invited to every session's group as owners. They get each invitation in the Main group.
-- `/sessions` lists the sessions and marks the closed ones with `, closed`. `/join N` sends you an invitation to the group of session N, as an admin, or as an owner if you own the Main group.
+- `/sessions` replies with the text of the list of sessions, below. `/join N` sends you an invitation to the group of session N, as an admin, or as an owner if you own the Main group.
 - Leaving the Main group, being removed from it, or getting another role there changes nothing in the session groups.
 - When no owner remains, the service creates a new link. In a terminal, `npx -y @simplex-chat/mcp@VERSION link` prints it with a QR code. While the group has owners, the command names them instead.
+
+After the first owner joins, Claude posts the list of sessions in the Main group, after its greeting:
+
+```
+🟠 3 · simplex-chat: working
+🔵 6 · website: waiting for you, 2 approvals
+🔵 7 · docs: waiting for you in Claude Code
+🟢 8 · app: idle
+⚪ Not running: 5 · bio, 4 · notes, 2 · openclaw, 1 · first
+```
+
+- A session is running while its Claude Code runs, or while cards wait for a decision in its group. Each running session has a line, by number:
+  - `🔵 N · NAME: waiting for you, K approvals`: K cards wait in the session's group. A tool-use card counts only while Claude Code shows its permission dialog, or while Claude Code's state can't be read.
+  - `🔵 N · NAME: waiting for you in Claude Code`: Claude Code waits for an answer in its own window, such as a dialog.
+  - `🟠 N · NAME: working`: Claude Code works on a turn, or a subagent works for it.
+  - `🟢 N · NAME: idle`: Claude Code waits for the next prompt, also while a background command runs.
+  - `▶️ N · NAME: running`: Claude Code's state can't be read.
+- The last line names every other session of the data folder, newest first. Without any session, the list is `No sessions.`
+- The states are Claude Code's own: the plugin reads them from Claude Code's record of its process, `sessions/PID.json` in `CLAUDE_CONFIG_DIR` or `~/.claude`.
+- The list is one message. When it gets too long, the last line keeps the newest names that fit and ends with the count of the others, such as `190 older sessions`. The lines of running sessions are never cut.
+- Claude edits the list within 2 seconds of a change. An edit alerts nobody. The list moves up as messages, such as invitations to new sessions' groups, are posted after it.
+- SimpleX lets Claude edit a message only within 24 hours. When the list is 23 hours old, Claude posts a new list and deletes the old one for everyone.
+- When the service stops, Claude edits the list once more, with every session in the last line.
 
 To replace the owners, run `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal. It replaces the Main group at once, without the owners' approval:
 

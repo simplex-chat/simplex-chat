@@ -1,3 +1,5 @@
+import {homedir} from "os"
+import {join} from "path"
 import {Readable, Writable} from "stream"
 import {CallToolResult, JsonSchemaType, McpServer, fromJsonSchema} from "@modelcontextprotocol/server"
 import {StdioServerTransport} from "@modelcontextprotocol/server/stdio"
@@ -50,7 +52,7 @@ export async function startSession(env: NodeJS.ProcessEnv = process.env, io: Ses
     configError ??= error.message
   }
   const server = new McpServer({name: "simplex-mcp", version: io.version}, {instructions: `${instructions("Claude", "SimpleX service")}\n${channelInstructions}`, capabilities: {experimental: {"claude/channel": {}, "claude/channel/permission": {}}}})
-  const link = new ServiceLink(ServiceClient.forRoot(dataRoot(env)), {id, pid: process.ppid, project: env.CLAUDE_PROJECT_DIR || process.cwd(), config}, io, line => {
+  const link = new ServiceLink(ServiceClient.forRoot(dataRoot(env)), {id, pid: process.ppid, project: env.CLAUDE_PROJECT_DIR || process.cwd(), config, record: join(env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"), "sessions", `${process.ppid}.json`)}, io, line => {
     const notification = channelNotification(line as AttachLine)
     if (notification !== undefined) server.server.notification(notification).catch(error => logError("SimpleX channel", error))
   })

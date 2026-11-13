@@ -24,6 +24,7 @@ export interface SessionRequest {
   project: string
   name?: string
   config: Config
+  record?: string
 }
 
 export interface TitleRequest {

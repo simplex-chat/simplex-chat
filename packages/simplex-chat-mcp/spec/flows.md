@@ -59,6 +59,7 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 30. [A run that is not interactive](#30-a-run-that-is-not-interactive)
 31. [A prompt of Claude Code](#31-a-prompt-of-claude-code)
 32. [The steps of a turn](#32-the-steps-of-a-turn)
+33. [The list of sessions](#33-the-list-of-sessions)
 
 ---
 
@@ -813,6 +814,7 @@ sequenceDiagram
   O->>C: joins #35;G from the invitation in #35;M
   C->>N: joinedGroupMember
   N->>O: Alice is an owner and can send prompts to Claude and the group's commands, and approve tool use.
+  M->>O: within 2 s, the list of sessions, silent, as in flow 33
 ```
 
 Notes:
@@ -1489,3 +1491,53 @@ Notes:
 - A core without message priority ignores `priority`, and an app without silent messages alerts for each line when it is posted. An update of a live message sends no SMP notification.
 
 Source: [hook.ts:125-148](../src/hook.ts#L125-L148), [:289-342](../src/hook.ts#L289-L342), [hub.ts:201-243](../src/hub.ts#L201-L243), [:314-372](../src/hub.ts#L314-L372), [service.ts:316-325](../src/service.ts#L316-L325).
+
+---
+
+## 33. The list of sessions
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant R as Claude Code's record
+  participant S as Session process
+  participant D as Service
+  participant N as Session N
+  participant M as MainGroup
+  participant C as Core _hub
+  participant O as Owner
+  S->>D: POST /session {id, pid, project, config, record: CONFIG/sessions/PID.json}
+  D->>N: record
+  CC->>R: status busy
+  D->>N: every 2 s: readRecord, the session attached
+  N->>R: read status
+  D->>M: showList: 🟠 N · NAME: working, then the not running line
+  M->>C: no list yet, an owner in the group: apiSendMessages #35;M, priority -1
+  M->>C: apiSetGroupCustomData #35;M {simplexMcpMain: true, simplexMcpList: {item, at}}
+  C->>O: the list
+  CC->>R: status waiting, a permission dialog
+  CC->>S: permission_request
+  S->>D: POST /permission
+  D->>M: showList: 🔵 N · NAME: waiting for you, 1 approval
+  M->>C: apiUpdateChatItem #35;M item
+  C->>O: the list edited, no alert
+  CC->>R: status idle
+  D->>M: showList: 🟢 N · NAME: idle
+  M->>C: apiUpdateChatItem #35;M item
+  Note over D,M: the list 23 hours old, or its edit refused
+  M->>C: apiSendMessages #35;M the new list, priority -1, and its item saved
+  M->>C: apiDeleteChatItems #35;M the old item, broadcast
+```
+
+Notes:
+
+- The session process sends the path of Claude Code's record of its parent process, `CLAUDE_CONFIG_DIR` or `~/.claude`, then `sessions/PID.json`, and the service keeps it in the session ([`startSession`](../src/session.ts), [`Service.onSession`](../src/service.ts)).
+- Claude Code writes `status` in its record at each change of its state: `busy` while a query runs or delegated work is active, `waiting` while a dialog or another request waits for the person, `idle` otherwise, and `shell` in place of `idle` while a background Bash task runs. It writes the file in place, so a read can find it half written; the hub then keeps the last status ([`Session.readRecord`](../src/hub.ts)).
+- A tool-use card counts while the status is `waiting` or unknown. When someone answers the dialog in the terminal, the status leaves `waiting`, and the card, which stays until the turn ends, no longer counts ([`Session.stateLine`](../src/hub.ts)).
+- When the session process detaches, the session's permissions end and the session moves into the last line. At the service's stop, the hub renders the list once more, with every session there ([`Hub.stop`](../src/hub.ts)).
+- The text fits one message: the last line keeps the newest names that fit and counts the others ([`Hub.sessionsText`](../src/hub.ts)).
+- The first list waits for an owner, so it follows the greeting. The item and its time are kept in the Main group's custom data, so a new service edits the same list. A reset of the owners creates a new Main group, which gets its own list once an owner joins ([`MainGroup.showList`](../src/main-group.ts), `postList`, `replace`).
+- SimpleX allows edits of a message for 24 hours and deletions for everyone for 30 hours. The hub replaces a list 23 hours old, by the wall clock, at its next render, and deletes the old one; a refused deletion is logged ([`MainGroup.replaceList`](../src/main-group.ts)).
+- An edit sends no SMP notification, and the apps alert for an edit only when it creates the item. The list's posts carry `priority: -1`; an app without silent messages alerts for them.
+
+Source: [`Hub.showSessions`](../src/hub.ts), [`Hub.sessionsText`](../src/hub.ts), [`Session.readRecord`](../src/hub.ts), [`Session.stateLine`](../src/hub.ts), [`MainGroup.showList`](../src/main-group.ts).

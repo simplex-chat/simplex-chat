@@ -47,8 +47,8 @@ afterEach(() => {
   rmSync(root, {recursive: true, force: true})
 })
 
-async function hubWith(chat: FakeChat, mainMembers: T.GroupMember[] = [self, alice, bob]): Promise<Hub> {
-  const main = group(10, "SimpleX MCP", self, {customData: {simplexMcpMain: true}})
+async function hubWith(chat: FakeChat, mainMembers: T.GroupMember[] = [self, alice, bob], mainData: object = {simplexMcpMain: true}): Promise<Hub> {
+  const main = group(10, "SimpleX MCP", self, {customData: mainData})
   chat.chats.set("#10", {chatInfo: groupChat(main), items: []})
   chat.members.set(10, mainMembers)
   const hub = new (Hub as unknown as HubConstructor)(chat.api(), user, root, 23, main, "SimpleX MCP")
@@ -1645,13 +1645,14 @@ describe("Main group", () => {
     const one = await openSession(hub, id1, stored(1, "one"))
     await openSession(hub, id2, stored(2, "two"))
     one.open = true
+    one.onLine = () => undefined
     hub.main.onMessage(mainMessage("/sessions", bob))
     hub.main.onMessage(mainMessage("/join 2", bob))
     hub.main.onMessage(mainMessage("/join 5", bob))
     hub.main.onMessage(mainMessage("/help", bob))
     await until(() => chat.replies.length === 4)
     expect(chat.replies).toEqual([
-      "1 · one\n2 · two, closed",
+      "▶️ 1 · one: running\n⚪ Not running: 2 · two",
       `Sent you an invitation to "2 · two".`,
       "No session 5. /sessions lists the sessions.",
       "Unknown command.",
@@ -1660,6 +1661,169 @@ describe("Main group", () => {
     hub.main.onMessage(mainMessage("/join 2", alice))
     await until(() => chat.replies.length === 5)
     expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 3, memberRole: T.GroupMemberRole.Owner})
+  })
+
+  it("posts the list of every session after the greeting, silent, and edits it as Claude Code's records and the cards change: working, waiting for you, waiting for you in Claude Code, idle, and the ⚪ line after an exit", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat, [self])
+    const one = await openSession(hub, id1, stored(1, "one"))
+    await openSession(hub, id2, stored(2, "two"))
+    await hub.showSessions()
+    expect(sentTo(chat, 10)).toEqual([])
+    const carol = member(5, "Carol", T.GroupMemberRole.Member)
+    chat.members.set(10, [self, carol])
+    await hub.main.onEvent({type: "joinedGroupMember", groupInfo: group(10, "SimpleX MCP", self), member: carol} as unknown as ChatEvent)
+    await hub.showSessions()
+    expect(sentTo(chat, 10).slice(-1)).toEqual(["⚪ Not running: 2 · two, 1 · one"])
+    expect(sentTo(chat, 10)[0]).toMatch(/^I'm Claude\./)
+    expect(chat.sent.at(-1)!.messages[0]).toMatchObject({priority: -1})
+    const list = chat.nextItemId - 1
+    expect(chat.customData.at(-1)).toEqual({chat: "#10", customData: {simplexMcpMain: true, simplexMcpList: {item: list, at: expect.any(Number)}}})
+    await withOwner(chat, one)
+    one.record = join(root, "claude-1.json")
+    one.onLine = () => undefined
+    const shows = async (status: string): Promise<string | undefined> => {
+      writeFileSync(one.record!, JSON.stringify({pid: 100, status}))
+      const edits = chat.updates.length
+      await hub.showSessions()
+      return chat.updates.length === edits ? undefined : chat.updates.at(-1)!.text
+    }
+    expect(await shows("busy")).toBe("🟠 1 · one: working\n⚪ Not running: 2 · two")
+    expect(chat.updates.at(-1)).toMatchObject({chatId: 10, itemId: list})
+    expect(await shows("busy")).toBeUndefined()
+    expect(await shows("waiting")).toBe("🔵 1 · one: waiting for you in Claude Code\n⚪ Not running: 2 · two")
+    one.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    expect(await shows("waiting")).toBe("🔵 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
+    expect(await shows("busy")).toBe("🟠 1 · one: working\n⚪ Not running: 2 · two")
+    expect(await shows("idle")).toBe("🟢 1 · one: idle\n⚪ Not running: 2 · two")
+    expect(await shows("shell")).toBeUndefined()
+    one.endPermissions()
+    one.onLine = undefined
+    expect(await shows("idle")).toBe("⚪ Not running: 2 · two, 1 · one")
+    expect(sentTo(chat, 10).filter(text => text.startsWith("⚪"))).toHaveLength(1)
+  })
+
+  it("counts a tool-use card only while Claude Code shows its dialog or its record is unknown, every other card, and no card cancelled by a stop", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const one = await openSession(hub, id1, stored(1, "one"))
+    const two = await openSession(hub, id2, stored(2, "two"))
+    await withOwner(chat, one)
+    await withOwner(chat, two)
+    one.onLine = () => undefined
+    one.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    two.requestMode("host")
+    expect(hub.sessionsText()).toBe("🔵 1 · one: waiting for you, 1 approval\n🔵 2 · two: waiting for you, 1 approval")
+    one.record = join(root, "claude-1.json")
+    writeFileSync(one.record, JSON.stringify({status: "busy"}))
+    await hub.showSessions()
+    expect(hub.sessionsText()).toBe("🟠 1 · one: working\n🔵 2 · two: waiting for you, 1 approval")
+    one.permission({id: id1, requestId: "fghij", toolName: "Write", description: "Write a file", inputPreview: "a.txt"})
+    writeFileSync(one.record, JSON.stringify({status: "waiting"}))
+    await hub.showSessions()
+    expect(hub.sessionsText()).toBe("🔵 1 · one: waiting for you, 2 approvals\n🔵 2 · two: waiting for you, 1 approval")
+    await hub.stop()
+    expect(hub.sessionsText()).toBe("⚪ Not running: 2 · two, 1 · one")
+    expect(chat.updates.filter(({chatId}) => chatId === 10).at(-1)!.text).toBe("⚪ Not running: 2 · two, 1 · one")
+  })
+
+  it("keeps a session's last state while its record is written, and shows running without a record, without its file or with another status", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const one = await openSession(hub, id1, stored(1, "one"))
+    one.onLine = () => undefined
+    await hub.showSessions()
+    expect(hub.sessionsText()).toBe("▶️ 1 · one: running")
+    one.record = join(root, "claude-1.json")
+    await hub.showSessions()
+    expect(hub.sessionsText()).toBe("▶️ 1 · one: running")
+    writeFileSync(one.record, JSON.stringify({status: "busy"}))
+    await hub.showSessions()
+    expect(hub.sessionsText()).toBe("🟠 1 · one: working")
+    writeFileSync(one.record, '{"pid": 100, "sta')
+    await hub.showSessions()
+    expect(hub.sessionsText()).toBe("🟠 1 · one: working")
+    writeFileSync(one.record, JSON.stringify({status: "compacting"}))
+    await hub.showSessions()
+    expect(hub.sessionsText()).toBe("▶️ 1 · one: running")
+    writeFileSync(one.record, JSON.stringify({status: "idle"}))
+    await hub.showSessions()
+    rmSync(one.record)
+    await hub.showSessions()
+    expect(hub.sessionsText()).toBe("▶️ 1 · one: running")
+  })
+
+  it("fits the list in one message: the ⚪ line keeps the newest names that fit and counts the older ones, only the count when no name fits, and every line of a running session", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const name = "𝐀".repeat(46)
+    const sessions: Session[] = []
+    for (let n = 1; n <= 400; n++) sessions.push(await openSession(hub, `${String(n).padStart(8, "0")}-0000-4000-8000-000000000000`, stored(n, name)))
+    const encoded = (text: string): number => Buffer.byteLength(JSON.stringify(text))
+    const text = hub.sessionsText()
+    expect(text).toMatch(/^⚪ Not running: 400 · 𝐀+, 399 · 𝐀+, [^\n]*, \d+ older sessions$/u)
+    const shown = text.split(", ").length - 1
+    expect(Number(/(\d+) older sessions$/.exec(text)![1])).toBe(400 - shown)
+    expect(tools.fitsMessage({type: "text", text}, undefined, undefined)).toBe(true)
+    expect(tools.fitsMessage({type: "text", text: `${text}, 1 · ${name}`}, undefined, undefined)).toBe(false)
+    const quote: T.MsgContent = {type: "text", text: "/sessions"}
+    const replied = hub.sessionsText(quote)
+    expect(tools.fitsMessage({type: "text", text: replied}, undefined, {content: quote})).toBe(true)
+    expect(encoded(replied)).toBeLessThanOrEqual(encoded(text))
+    let running = 0
+    while (!/^⚪ Not running: \d+ older sessions$/u.test(hub.sessionsText().split("\n").at(-1)!)) sessions[running++].onLine = () => undefined
+    const crowded = hub.sessionsText()
+    expect(running).toBeGreaterThanOrEqual(62)
+    expect(crowded.split("\n")).toEqual([...sessions.slice(0, running).map(({displayName}) => `▶️ ${displayName}: running`), `⚪ Not running: ${400 - running} older sessions`])
+    expect(tools.fitsMessage({type: "text", text: crowded}, undefined, undefined)).toBe(true)
+  })
+
+  it("posts a new list and deletes the old one for everyone when the list is 23 hours old or its edit is refused, logs a refused deletion, and edits the list of the Main group's data after a restart", async () => {
+    const chat = new FakeChat()
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
+    const old = {item: 300, at: Date.now() - 23 * 3_600_000}
+    const hub = await hubWith(chat, [self, alice], {simplexMcpMain: true, simplexMcpList: old})
+    await openSession(hub, id1, stored(1, "one"))
+    await hub.showSessions()
+    expect(sentTo(chat, 10)).toEqual(["⚪ Not running: 1 · one"])
+    expect(chat.deletedItems).toEqual([{chatType: T.ChatType.Group, chatId: 10, itemIds: [300], deleteMode: T.CIDeleteMode.Broadcast}])
+    const posted = chat.nextItemId - 1
+    const saved = chat.customData.at(-1)!.customData!
+    expect(saved).toEqual({simplexMcpMain: true, simplexMcpList: {item: posted, at: expect.any(Number)}})
+    const restarted = await hubWith(chat, [self, alice], saved)
+    const one = await openSession(restarted, id1, stored(1, "one"))
+    one.onLine = () => undefined
+    await restarted.showSessions()
+    expect(chat.updates.at(-1)).toEqual({chatId: 10, itemId: posted, text: "▶️ 1 · one: running"})
+    chat.apiUpdateChatItem = async () => {
+      throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "invalidChatItemUpdate"}} as unknown as T.ChatError)
+    }
+    chat.apiDeleteChatItems = async () => {
+      throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "invalidChatItemDelete"}} as unknown as T.ChatError)
+    }
+    one.onLine = undefined
+    await restarted.showSessions()
+    expect(sentTo(chat, 10)).toEqual(["⚪ Not running: 1 · one", "⚪ Not running: 1 · one"])
+    expect(errors.some(line => line.startsWith("old list of sessions: "))).toBe(true)
+  })
+
+  it("posts no list while the Main group has no owner, and a new one in the new Main group after a reset of the owners once an owner joins", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    await openSession(hub, id1, stored(1, "one"))
+    await hub.showSessions()
+    expect(sentTo(chat, 10)).toEqual(["⚪ Not running: 1 · one"])
+    await hub.resetOwners()
+    chat.members.set(21, [self])
+    await hub.showSessions()
+    expect(sentTo(chat, 21)).toEqual([])
+    const carol = member(5, "Carol", T.GroupMemberRole.Member)
+    chat.members.set(21, [self, carol])
+    await hub.main.onEvent({type: "joinedGroupMember", groupInfo: group(21, "SimpleX MCP", self), member: carol} as unknown as ChatEvent)
+    await hub.showSessions()
+    expect(sentTo(chat, 21).at(-1)).toBe("⚪ Not running: 1 · one")
+    expect(chat.customData.at(-1)).toEqual({chat: "#21", customData: {simplexMcpMain: true, simplexMcpList: {item: chat.nextItemId - 1, at: expect.any(Number)}}})
   })
 
   it("replaces the Main group at once also while owners exist, without a post there, and answers /approve reset and /reject reset as unknown commands", async () => {
