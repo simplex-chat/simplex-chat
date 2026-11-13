@@ -42,7 +42,7 @@ module Bots.StoreService.WebTests
 where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
-import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig, PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultLogLevel, providerTimeoutMicros)
+import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig, PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultLogLevel, providerCheckoutTimeoutMicros, providerTimeoutMicros)
 import StoreService.Orders (cancelOpenInvoice, codeLifetime, expireOverdue, settleOrder)
 import StoreService.Poller
 import StoreService.Providers
@@ -1295,7 +1295,7 @@ testExportWebapp = do
     staticDir <- prepareStaticDir root
     let outDir = root </> "out"
         lc = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = staticDir, lServeWebapp = False, lBadgesExportDir = Just outDir, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing}
-        stripeCfg = Just StripeConfig {sSecretKey = "rk_test_x", sPublishableKey = "pk_test_injected", sWebhookSecret = "whsec_x", sSessionMinutes = 60, sHost = "https://api.stripe.com", sTimeoutMicros = providerTimeoutMicros}
+        stripeCfg = Just StripeConfig {sSecretKey = "rk_test_x", sPublishableKey = "pk_test_injected", sWebhookSecret = "whsec_x", sSessionMinutes = 60, sHost = "https://api.stripe.com", sTimeoutMicros = providerTimeoutMicros, sCheckoutTimeoutMicros = providerCheckoutTimeoutMicros}
     exportWebapp (testServiceConfig staticDir False) {listener = lc, stripe = stripeCfg}
     idx <- LB.readFile (outDir </> "index.html")
     LB.toStrict idx `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
@@ -1658,7 +1658,8 @@ publishTestStripe =
       sWebhookSecret = "whsec_x",
       sSessionMinutes = 60,
       sHost = "https://api.stripe.com",
-      sTimeoutMicros = providerTimeoutMicros
+      sTimeoutMicros = providerTimeoutMicros,
+      sCheckoutTimeoutMicros = providerCheckoutTimeoutMicros
     }
 
 testServesTheBuild :: IO ()
@@ -2116,7 +2117,8 @@ testBTCPayConfig =
       bExpiryMinutes = testExpiryMinutes,
       bSpeedPolicy = MediumSpeed,
       bPaymentTolerance = 0.5,
-      bTimeoutMicros = providerTimeoutMicros
+      bTimeoutMicros = providerTimeoutMicros,
+      bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros
     }
 
 supporterPriceId, legendPriceId, disabledPriceId :: Text
