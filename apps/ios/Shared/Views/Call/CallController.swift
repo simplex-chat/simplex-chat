@@ -268,12 +268,12 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         logger.debug("CallController: report expired pushkit call via CallKit")
         let uuid = UUID()
         provider.reportNewIncomingCall(with: uuid, update: update) { error in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                if error == nil {
+            if error == nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     self.provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
                 }
-                self.suspendOnEndCall()
             }
+            DispatchQueue.main.async { self.suspendOnEndCall() }
             completion()
         }
     }
