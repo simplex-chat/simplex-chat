@@ -1759,6 +1759,7 @@ struct ChatView: View {
         @State private var actionSheet: SomeActionSheet? = nil
         @State private var swipeOffset: CGFloat = 0
         @State private var swipeExclusionFrames: [CGRect] = []
+        @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
         var revealed: Bool { revealedItems.contains(chatItem.id) }
 
@@ -1812,21 +1813,24 @@ struct ChatView: View {
             default: false
             }
             let itemSeparation = getItemSeparation(item, single || revealed ? listItem.prevItem: nil)
+            let hidden = if case .rcvIntegrityError = item.content { !developerTools } else { false }
             return VStack(spacing: 0) {
                 if let last {
                     DateSeparator(date: last.meta.itemTs).padding(8)
                 }
-                chatItemListView(range, showAvatar, item, itemSeparation)
-                    .overlay {
-                        if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
-                            Color.clear
-                                .contentShape(Rectangle())
-                                .simultaneousGesture(TapGesture().onEnded {
-                                    let checked = selected.contains(chatItem.id)
-                                    selectUnselectChatItem(select: !checked, chatItem)
-                                })
+                if !hidden {
+                    chatItemListView(range, showAvatar, item, itemSeparation)
+                        .overlay {
+                            if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .simultaneousGesture(TapGesture().onEnded {
+                                        let checked = selected.contains(chatItem.id)
+                                        selectUnselectChatItem(select: !checked, chatItem)
+                                    })
+                            }
                         }
-                    }
+                }
                 if let date = itemSeparation.date {
                     DateSeparator(date: date).padding(8)
                 }
