@@ -67,7 +67,7 @@ exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
     pure $ fromMaybe [] errs
   where
-    entrySelectorError f = (Z.mkEntrySelector f $> Nothing) `E.catchAny` (pure . Just . show)
+    entrySelectorError f = (Z.mkEntrySelector (archiveFilesFolder </> f) $> Nothing) `E.catchAny` (pure . Just . show)
 
 importArchive :: ArchiveConfig -> CM' [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
