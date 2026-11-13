@@ -38,6 +38,7 @@ export class MainGroup {
   private linkText?: string
   private list?: SessionList
   private shown?: string
+  private tooLarge?: string
 
   constructor(
     private readonly chat: api.ChatApi,
@@ -123,35 +124,53 @@ export class MainGroup {
 
   showList(text: string): Promise<void> {
     return this.serialize(async () => {
-      if (this.lost) return
-      const {list} = this
-      if (list === undefined) {
-        if (this.owners().length > 0) await this.postList(text)
-        return
-      }
-      if (list.at <= Date.now() - listAge) return this.replaceList(list, text)
-      if (text === this.shown) return
-      try {
-        await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, list.item, {type: "text", text})
-        this.shown = text
-      } catch (error) {
-        if (!isRefusedEdit(error)) throw error
-        await this.replaceList(list, text)
-      }
+      if (this.lost || text === this.tooLarge) return
+      await this.renderList(text).catch(error => {
+        if (!isTooLarge(error)) throw error
+        this.tooLarge = text
+        logError("list of sessions", error)
+      })
     })
+  }
+
+  private async renderList(text: string): Promise<void> {
+    const {list} = this
+    if (list === undefined) {
+      if (this.owners().length > 0) await this.postList(text)
+      return
+    }
+    if (list.at <= Date.now() - listAge) return this.replaceList(list, text)
+    if (text === this.shown) return
+    try {
+      await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, list.item, {type: "text", text})
+      this.shown = text
+    } catch (error) {
+      if (!isRefusedEdit(error)) throw error
+      await this.replaceList(list, text)
+    }
   }
 
   private async replaceList(old: SessionList, text: string): Promise<void> {
     await this.postList(text)
-    await this.chat.apiDeleteChatItems(T.ChatType.Group, this.groupId, [old.item], T.CIDeleteMode.Broadcast).catch(error => logError("old list of sessions", error))
+    await this.deleteItem(old.item, "old list of sessions")
   }
 
   private async postList(text: string): Promise<void> {
-    this.list = {item: await this.post(text, -1), at: Date.now()}
+    const list = {item: await this.post(text, -1), at: Date.now()}
+    const customData = {...this.group.customData, [mainKey]: true, [listKey]: list}
+    try {
+      await this.chat.apiSetGroupCustomData(this.groupId, customData)
+    } catch (error) {
+      await this.deleteItem(list.item, "new list of sessions")
+      throw error
+    }
+    this.list = list
     this.shown = text
-    const customData = {...this.group.customData, [mainKey]: true, [listKey]: this.list}
-    await this.chat.apiSetGroupCustomData(this.groupId, customData)
     this.group = {...this.group, customData}
+  }
+
+  private async deleteItem(item: number, subject: string): Promise<void> {
+    await this.chat.apiDeleteChatItems(T.ChatType.Group, this.groupId, [item], T.CIDeleteMode.Broadcast).catch(error => logError(subject, error))
   }
 
   private async command(sender: T.GroupMember, {keyword, params}: Command, quote: T.MsgContent): Promise<string> {
@@ -243,6 +262,11 @@ function isMissingLink(error: unknown): boolean {
 function isRefusedEdit(error: unknown): boolean {
   const chatError = chatErrorOf(error)
   return (chatError?.type === "error" && chatError.errorType.type === "invalidChatItemUpdate") || (chatError?.type === "errorStore" && chatError.storeError.type === "chatItemNotFound")
+}
+
+function isTooLarge(error: unknown): boolean {
+  const chatError = chatErrorOf(error)
+  return chatError?.type === "errorStore" && chatError.storeError.type === "largeMsg"
 }
 
 function listOf(customData: object | undefined): SessionList | undefined {

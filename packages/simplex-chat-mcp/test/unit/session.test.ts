@@ -2,7 +2,7 @@ import {EventEmitter, once} from "events"
 import {mkdtempSync, rmSync} from "fs"
 import {Server, ServerResponse} from "http"
 import {homedir, tmpdir} from "os"
-import {join} from "path"
+import {join, resolve} from "path"
 import {PassThrough} from "stream"
 import {ServiceClient, SpawnService} from "../../src/client"
 import {serviceToken, socketPath} from "../../src/files"
@@ -282,11 +282,11 @@ describe("session server", () => {
     expect(seen).toEqual([registered, "attach", "call list"])
   })
 
-  it("registers with the path of Claude Code's record of its parent process, in CLAUDE_CONFIG_DIR, or in ~/.claude without it", async () => {
+  it.each([["/c/claude", join("/c/claude", "sessions", `${process.ppid}.json`)], ["c/claude", resolve("c/claude", "sessions", `${process.ppid}.json`)]])("registers with the absolute path of Claude Code's record of its parent process, in CLAUDE_CONFIG_DIR %s, or in ~/.claude without it", async (folder, record) => {
     await fakeService(async res => endWithResult(res, listResult))
-    await session({CLAUDE_CONFIG_DIR: "/c/claude"})
+    await session({CLAUDE_CONFIG_DIR: folder})
     await until(() => seen.length === 2)
-    expect(seen).toEqual([registration(join("/c/claude", "sessions", `${process.ppid}.json`)), "attach"])
+    expect(seen).toEqual([registration(record), "attach"])
   })
 
   it("uses the working folder as the project without CLAUDE_PROJECT_DIR", async () => {

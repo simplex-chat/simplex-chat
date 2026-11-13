@@ -1,5 +1,5 @@
-import {mkdirSync, rmSync} from "fs"
-import {readFile} from "fs/promises"
+import {constants, mkdirSync, rmSync} from "fs"
+import {open} from "fs/promises"
 import {dirname, join} from "path"
 import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
@@ -32,6 +32,7 @@ const maxFinished = 100
 const liveLineMs = 23 * 3_600_000
 const stepCheckMs = 60_000
 const listCheckMs = 2_000
+const recordReadMs = 1_000
 const claudeStates = new Map<string, [string, string]>([
   ["waiting", ["🔵", "waiting for you in Claude Code"]],
   ["busy", ["🟠", "working"]],
@@ -89,6 +90,7 @@ export class Session {
   private finalizing: Promise<void> = Promise.resolve()
   private expiry?: NodeJS.Timeout
   private claudeStatus?: string
+  private recordRead?: Promise<void>
 
   constructor(
     private readonly hub: Hub,
@@ -156,21 +158,27 @@ export class Session {
       this.claudeStatus = undefined
       return
     }
-    try {
-      const {status} = JSON.parse(await readFile(this.record, "utf8")) as {status?: unknown}
-      this.claudeStatus = typeof status === "string" ? status : undefined
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") this.claudeStatus = undefined
-    }
+    this.recordRead ??= recordStatus(this.record)
+      .then(
+        status => {
+          this.claudeStatus = status
+        },
+        error => {
+          if ((error as NodeJS.ErrnoException).code === "ENOENT") this.claudeStatus = undefined
+        },
+      )
+      .finally(() => (this.recordRead = undefined))
+    await withinTime(this.recordRead, recordReadMs)
   }
 
   stateLine(): string | undefined {
-    const dialog = this.claudeStatus === undefined || this.claudeStatus === "waiting"
+    const state = claudeStates.get(this.claudeStatus ?? "")
+    const dialog = state === undefined || this.claudeStatus === "waiting"
     const cards = this.actions.pending().filter(({tool, interrupted}) => !interrupted && (dialog || tool !== "permission")).length
     if (cards > 0) return `🔵 ${this.displayName}: waiting for you, ${cards} approval${cards === 1 ? "" : "s"}`
     if (!this.attached) return undefined
-    const [emoji, state] = claudeStates.get(this.claudeStatus ?? "") ?? unknownState
-    return `${emoji} ${this.displayName}: ${state}`
+    const [emoji, text] = state ?? unknownState
+    return `${emoji} ${this.displayName}: ${text}`
   }
 
   private get attached(): boolean {
@@ -614,10 +622,10 @@ export class Hub implements SessionGroups {
     const sessions = [...this.sessions.values()]
     const stopped = await Promise.all(sessions.map(async ({actions}) => ({lost: actions.lost, cancelled: await actions.stop()})))
     await this.controlEvents
-    await waitForCancelledCards(stopped.flatMap(({lost, cancelled}) => (lost ? [] : cancelled)), cardsWait, new AbortController().signal)
-    await Promise.all(sessions.map(session => session.endSteps()))
     await this.listing
     await this.showSessions()
+    await waitForCancelledCards(stopped.flatMap(({lost, cancelled}) => (lost ? [] : cancelled)), cardsWait, new AbortController().signal)
+    await Promise.all(sessions.map(session => session.endSteps()))
     for (const {tools} of sessions) tools.close()
     await this.user?.close()
     await this.chat.close()
@@ -683,6 +691,23 @@ function notAllowedForUser(feature: string): string {
 
 function groupName(number: number, name: string): string {
   return validName(`${number} · ${name}`)
+}
+
+async function recordStatus(path: string): Promise<string | undefined> {
+  const file = await open(path, constants.O_RDONLY | constants.O_NONBLOCK)
+  try {
+    if (!(await file.stat()).isFile()) return undefined
+    const {status} = JSON.parse(await file.readFile("utf8")) as {status?: unknown}
+    return typeof status === "string" ? status : undefined
+  } finally {
+    await file.close()
+  }
+}
+
+async function withinTime(work: Promise<void>, ms: number): Promise<void> {
+  let timer: NodeJS.Timeout | undefined
+  await Promise.race([work, new Promise<void>(resolve => (timer = setTimeout(resolve, ms)))])
+  clearTimeout(timer)
 }
 
 function notRunningLine(names: string[], shown: number): string {

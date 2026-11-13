@@ -1,3 +1,4 @@
+import {execFileSync} from "child_process"
 import {existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
@@ -1703,7 +1704,7 @@ describe("Main group", () => {
     expect(sentTo(chat, 10).filter(text => text.startsWith("⚪"))).toHaveLength(1)
   })
 
-  it("counts a tool-use card only while Claude Code shows its dialog or its record is unknown, every other card, and no card cancelled by a stop", async () => {
+  it("counts a tool-use card only while Claude Code shows its dialog or its state is unknown, every other card, and no card cancelled by a stop, whose list is edited before the wait for the cancelled cards", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const one = await openSession(hub, id1, stored(1, "one"))
@@ -1718,13 +1719,19 @@ describe("Main group", () => {
     writeFileSync(one.record, JSON.stringify({status: "busy"}))
     await hub.showSessions()
     expect(hub.sessionsText()).toBe("🟠 1 · one: working\n🔵 2 · two: waiting for you, 1 approval")
+    writeFileSync(one.record, JSON.stringify({status: "compacting"}))
+    await hub.showSessions()
+    expect(hub.sessionsText()).toBe("🔵 1 · one: waiting for you, 1 approval\n🔵 2 · two: waiting for you, 1 approval")
     one.permission({id: id1, requestId: "fghij", toolName: "Write", description: "Write a file", inputPreview: "a.txt"})
     writeFileSync(one.record, JSON.stringify({status: "waiting"}))
     await hub.showSessions()
     expect(hub.sessionsText()).toBe("🔵 1 · one: waiting for you, 2 approvals\n🔵 2 · two: waiting for you, 1 approval")
-    await hub.stop()
+    let stopped = false
+    const stopping = hub.stop().then(() => (stopped = true))
+    await until(() => chat.updates.filter(({chatId}) => chatId === 10).at(-1)?.text === "⚪ Not running: 2 · two, 1 · one")
+    expect(stopped).toBe(false)
+    await stopping
     expect(hub.sessionsText()).toBe("⚪ Not running: 2 · two, 1 · one")
-    expect(chat.updates.filter(({chatId}) => chatId === 10).at(-1)!.text).toBe("⚪ Not running: 2 · two, 1 · one")
   })
 
   it("keeps a session's last state while its record is written, and shows running without a record, without its file or with another status", async () => {
@@ -1751,6 +1758,60 @@ describe("Main group", () => {
     rmSync(one.record)
     await hub.showSessions()
     expect(hub.sessionsText()).toBe("▶️ 1 · one: running")
+  })
+
+  it("reads a record without blocking: a FIFO shows running, and a read that stalls keeps the last state, ends the render within a second, and is not repeated while it stalls", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const one = await openSession(hub, id1, stored(1, "one"))
+    one.onLine = () => undefined
+    one.record = join(root, "claude-fifo")
+    execFileSync("mkfifo", [one.record])
+    await hub.showSessions()
+    expect(hub.sessionsText()).toBe("▶️ 1 · one: running")
+    one.record = join(root, "claude-1.json")
+    writeFileSync(one.record, JSON.stringify({status: "busy"}))
+    await hub.showSessions()
+    const opened = jest.spyOn(require("fs/promises"), "open").mockImplementation(() => new Promise(() => undefined))
+    const started = Date.now()
+    await hub.showSessions()
+    await hub.showSessions()
+    expect(Date.now() - started).toBeLessThan(3_000)
+    expect(opened).toHaveBeenCalledTimes(1)
+    expect(hub.sessionsText()).toBe("🟠 1 · one: working")
+  })
+
+  it("deletes a new list whose item it could not save and posts it again at the next render, and does not send a text the core refused as too large again until the text changes", async () => {
+    const chat = new FakeChat()
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
+    const hub = await hubWith(chat)
+    const one = await openSession(hub, id1, stored(1, "one"))
+    const save = chat.apiSetGroupCustomData
+    chat.apiSetGroupCustomData = async () => {
+      throw new Error("database busy")
+    }
+    await hub.showSessions()
+    expect(chat.deletedItems).toEqual([{chatType: T.ChatType.Group, chatId: 10, itemIds: [chat.nextItemId - 1], deleteMode: T.CIDeleteMode.Broadcast}])
+    expect(errors.filter(line => line.startsWith("list of sessions: "))).toHaveLength(1)
+    chat.apiSetGroupCustomData = save
+    await hub.showSessions()
+    expect(sentTo(chat, 10)).toEqual(["⚪ Not running: 1 · one", "⚪ Not running: 1 · one"])
+    expect(chat.customData.at(-1)).toEqual({chat: "#10", customData: {simplexMcpMain: true, simplexMcpList: {item: chat.nextItemId - 1, at: expect.any(Number)}}})
+    const tooLarge = jest.fn(async () => {
+      throw new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "largeMsg"}} as unknown as T.ChatError)
+    })
+    chat.apiUpdateChatItem = tooLarge
+    one.onLine = () => undefined
+    await hub.showSessions()
+    await hub.showSessions()
+    expect(tooLarge).toHaveBeenCalledTimes(1)
+    expect(errors.filter(line => line.startsWith("list of sessions: "))).toHaveLength(2)
+    one.onLine = undefined
+    await hub.showSessions()
+    one.onLine = () => undefined
+    await hub.showSessions()
+    expect(tooLarge).toHaveBeenCalledTimes(1)
   })
 
   it("fits the list in one message: the ⚪ line keeps the newest names that fit and counts the older ones, only the count when no name fits, and every line of a running session", async () => {
