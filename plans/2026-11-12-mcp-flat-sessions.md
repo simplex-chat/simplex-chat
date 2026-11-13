@@ -500,3 +500,279 @@ Changes after the user's review of #8169:
 3. Scenes: `ChatView.PreviewGroupChatLayoutTerminalMedia` on Android and desktop, an image followed by a new sender; `TerminalDeleted` on iOS, deleted, moderated and integrity-error items in a group.
 
 Kept as they are, named on the pull request page: tall link previews keep each platform's rule, up to 2.33 W tall on iOS and 0.75 W on Android and desktop; the tests that do not compile on master.
+
+## 12. Avatars and Flat-layout defects (scope added on 2026-11-13)
+
+The user, after reviewing #8169: the Android and desktop placeholder avatars have padding inside their vectors; remove it at the source with every compensation, fix every screen with avatars, and let avatars overshoot the text edge and the name line as round glyphs overshoot flat ones. Also: "I just don't see the point of saying 'it's not our problem', because it kind of is - we are making a better app, holistically", so five Flat-layout defects that master also has are fixed here. Sources: the inventory at `scratchpad/flat-avatar-inventory.md` (review-flat, 2026-11-13), checked against the code below; the call sites in 12.3, read site by site.
+
+### 12.1 Questions for the user
+
+```
+Q1  premise   In the code, placeholders and photos are drawn at the same size: the vector circle is 20/24 of
+              its box, and a photo is padded by size/12 (ProfileIconModifier), also 5/6 of the box. Removing
+              the inset and re-tuning the sizes keeps every screen as it looks now.
+              (a) recommended: same visible sizes on every screen, the inset and its compensations removed
+              (b) avatars grow to their boxes, 1.2 × today, with the gaps around them shrinking by size/12
+Q2  overshoot How far a round avatar passes the text edge, from the fonts (12.4); renders at three amounts:
+              (a) none: the avatar's edge on the ink of flat letters
+              (b) recommended: as Inter's O passes its H, 0.039 of the height
+              (c) as now: the avatar at the text box edge
+Q3  D1        Below the avatar (decision 14): (a) recommended, implemented: the text at the bottom of the name
+              line; (b) half the level step below the avatar, as approved before. Renders A and B.
+Q4  defects   For each defect of 12.5, the recommended fix or its alternative.
+Q5  iOS ports Channel members, channel relays and the badge preview pass the iOS sizes and gaps, so today
+              they draw 31.7 and 106.7 with gaps 13.2 and 22.7. (a) recommended: no call-site change, as iOS;
+              (b) keep today's look
+Q6  blur      Blocked photos: (a) recommended: blur size / 4, as iOS, 17% weaker than today outside Flat rows;
+              (b) size × 0.3, as today
+Q7  banner    The chat banner: (a) recommended: top 20, gap 10, as its comment intends; (b) 21.5 and 11.5, as today
+Q8  settings  (a) recommended: the Appearance profile-images row 70 dp, as the font-scale row below it, and one
+              unread-badge offset on both platforms (the desktop badge moves 0.5 left, 2.5 up); (b) as today
+Q9  share     The share list draws channels and business chats with the group icon, bots and agents with the
+              person icon: (a) recommended: ChatInfoImage draws the right icons; (b) as today
+```
+
+```mermaid
+flowchart TB
+  Q1{Q1 premise} -->|a| S[same visible sizes, inset removed]
+  Q1 -->|b| G[avatars 1.2 x, gaps re-tuned]
+  S --> Q2{Q2 overshoot}
+  G --> Q2
+  Q2 --> Q3{Q3 D1}
+  Q3 --> Q4{Q4 defects}
+  Q4 --> D[Q5-Q9 screen details, each with a recommended option]
+```
+
+### 12.2 Placeholders fill their box
+
+Android and desktop only: iOS draws SF Symbols and photos at the full frame (`ProfileImage.body`, `ProfileImage.swift:22-37`; `clipProfileImage`, `ImageUtils.swift:495-507`).
+
+```
+asset                              avatar uses                          icon uses elsewhere               change
+AccountCircleFilled                ProfileImage, ProfileImageForActive- none                              vector redrawn: circle 0 to 24
+(CustomIcons.kt)                   Call (ChatInfoImage.kt:85, :321)
+SupervisedUserCircleFilled         ProfileImage (ChatInfoImage.kt:86)   none                              vector redrawn: circle 0 to 24
+ic_account_circle_filled.svg,      swapped for the vectors above by     none                              unchanged (never drawn)
+ic_supervised_user_circle_filled   ProfileImage
+ic_folder_filled.svg               ChatInfoImage (notes), share list    none                              viewBox cropped to the circle
+                                   (ShareListNavLinkView.kt:101)
+ic_bigtop_updates_circle_filled    channel avatars (chatIconName,       the active Channels item of the   new asset ic_channel_avatar, the
+                                   AddChannelView, ConnectPlan)         tag menu (presetTagLabel,         viewBox cropped to 85 -875 790 790;
+                                                                        ChatListView.kt:1670, drawn at    the menu keeps the padded icon
+                                                                        :1582-1585)
+ic_work_filled_padded.svg          business avatars (chatIconName,      none                              redrawn as briefcase.circle.fill
+                                   ConnectPlan.kt:719)                                                    of iOS: a filled circle, the
+                                                                                                          briefcase cut out (alternative:
+                                                                                                          scaled 1.2 about the centre, as
+                                                                                                          Flat rows draw it now)
+ic_cube.svg, ic_agent.svg          bot and agent avatars (peerTypeIcon) none                              viewBox cropped to the cube's box,
+                                                                                                          as iOS agent.svg and cube.fill
+                                                                                                          (alternative: scaled 1.2)
+ic_theater_comedy_filled.svg       IncognitoImage (chat toolbar)        7 icons (UserAddressView,         unchanged; IncognitoImage draws it
+                                                                        NewChatView, AddGroupMembers...) at its glyph size without padding
+ic_link.svg, ic_add_link.svg       pending connection avatar            about 20 icons                    new assets ic_link_avatar and
+                                   (ContactConnectionView.kt:26)                                          ic_add_link_avatar: a filled circle
+                                                                                                          with the link cut out, as iOS
+                                                                                                          link.circle.fill
+```
+
+The disc behind a placeholder (`ChatInfoImage.kt:91`, `iconSize * 0.7f`) fills the cut-outs of the person icon; it is redrawn at 0.84 of the box, as it is with `toEdge` now.
+
+### 12.3 Compensations removed, screens re-tuned
+
+```
+compensation                                   now                                    after
+ProfileImage toEdge (ChatInfoImage.kt:78-83)   icon at 1.2 × size, photo unpadded     parameter removed
+ProfileIconModifier(size, padding)             photo padded by size/12               parameter removed; the photo fills the box
+(ChatInfoImage.kt:288-306)
+IncognitoImage (ChatInfoImage.kt:59-67)        icon padded by size/12                 icon at the box
+ProfileImageForActiveCall (:308-336)           icon at size + 14 dp, clipped         function removed; callers use ProfileImage
+Appearance.kt:73, :80                          offset −size/12; spacer less size/12   offset removed; per the call-site table
+ChatView.kt:2350-2352 (ChatBannerView)         top padding DEFAULT_PADDING_HALF      per the call-site table
+ChatPreviewView.kt:407 overlay                 padding(end 6.sp, bottom 6.sp)        per the call-site table
+badges on the avatar box (ChatListView.kt:741,  aligned to the box corner            per the call-site table
+ChatListView.desktop.kt:71-72)
+```
+
+Every call site passes the visible size it has now, 5/6 of today's box, and the space around it grows by size/12 on each side, so each screen keeps its look (Q1 (a)). The per-site changes, by file and function, are in 12.3.1. `TERMINAL_MEMBER_IMAGE_SIZE` stays 27 dp: it is already the visible size.
+
+#### 12.3.1 Call sites
+
+S is today's size argument; the visible circle is S × 5/6, N = round(S × 5/6), p = (S − N) / 2; √f is `fontSizeSqrtMultiplier`. "p X" is a padding on the avatar itself, through a `modifier` parameter added to `ProfileImage`, `ChatInfoImage`, `MemberProfileImage` and `MemberImage`: one value per site, and neighbours, badges and height formulas stay. Where one spacer after the avatar holds the gap, the spacer grows instead. Line numbers at f104950e5.
+
+```
+site                                         now                                       after (keeps the look)
+chat list
+ChatPreviewView.kt:406, ContactRequestView   72√f; overlay padding(end 6.sp, bottom    60√f, p 6√f; overlay padding removed, so it sits
+.kt:24                                       6.sp) at :407                             on the circle's box corner at every scale
+ContactConnectionView.kt:26                  54√f link icon, centred in 72√f           unchanged (link assets unchanged, 12.2)
+ChatListNavLinkView.kt:611 InvalidDataView   72, no √f                                 60√f, p 6√f (√f added, as in ChatPreviewView)
+ChatListView.kt:732 UserProfileButton        37√f                                      31√f, p 3√f; unreadBadge unchanged
+ChatListView.desktop.kt:66                   37√f; badge offset(1, −1)                 31√f, p 3√f
+ChatListView.desktop.kt:128                  ProfileImageForActiveCall(56)            ProfileImage(56); the circle stays 56
+ShareListNavLinkView.kt:101-105              42                                        35, p 3.5
+ContactPreviewView.kt:84                     42                                        35, p 3.5
+user picker and profiles
+UserPicker.kt:491 UserProfileRow             54√f; Row padding :488; name start 10     45√f; Row start 4.5√f, vertical 8 + 4.5√f; name
+                                                                                       start 10 + 4.5√f
+ProfilePreview (SettingsView.kt:368), from   size slot S                               ProfileImage(S − 10.dp), p 5
+UserPicker.kt:213, IncomingCallAlertView
+.kt:62
+UserPicker.desktop.kt:62                     55                                        46, p 4.5; badge unchanged
+UserPicker.android.kt:91                     ProfileImageForActiveCall(44)            ProfileImage(44)
+chat view
+ChatView.kt:1601 incognito in the toolbar    IncognitoImage 36√f                       IncognitoImage(30√f), Spacer 6√f
+ChatView.kt:1603 ChatInfoToolbarTitle        40√f (60√f from AddGroupMembersView       33√f (50√f); Column start :1605 8 → 11.5
+                                             .kt:157)
+MemberSupportChatView.kt:135                 40√f; start :137 8                        33√f; start 11.5
+ChatView.kt:2126, :2202 classic avatars      MEMBER_IMAGE_SIZE 37 (:2878); names at    MEMBER_IMAGE_SIZE 31, p 3√f; :2095, :2150, :2175,
+                                             MEMBER_IMAGE_SIZE√f + 4 (:2095, :2175);   :2231 use (MEMBER_IMAGE_SIZE + 6.dp)√f
+                                             items at 8 + MEMBER_IMAGE_SIZE√f + 4
+                                             (:2150, :2231)
+ChatView.kt:2355 ChatBannerView              alertProfileImageSize 138; top :2352 10   115; top 21.5, 11.5 below the image; the comment
+                                                                                       at :2350-2351 removed
+TerminalItemView.kt:329, :345, :352          27√f with toEdge                          27√f; toEdge removed
+CIGroupInvitationView.kt:59, CIChatLink-     54                                        45, p 4.5 at the start, top and bottom
+Header.kt:31
+ComposeChatLinkView.kt:32                    54; Row padding :29                       45; Row start 12.5, vertical 10.5; Column start
+                                                                                       12.5
+ChatItemView.kt:221 reactions member list    44                                        37, p 3.5 horizontal
+ChatItemInfoView.kt:191                      57                                        48, p 4.5
+ChatItemInfoView.kt:380                      36                                        30; start 3; Spacer :381 4 → 7
+ComposeContextProfilePickerView.kt:147       USER_ROW_AVATAR_SIZE 42 (:28)             35, p 3.5 horizontal; USER_ROW_VERTICAL_PADDING
+                                                                                       11.5; the height formula at :31 uses 46.5
+new chat
+NewChatView.kt:369, :561                     42                                        35, p 3.5 horizontal
+info and member lists
+ChatInfoView.kt:718, GroupChatInfoView.kt    192                                       160, p 16 vertical
+:972, GroupMemberInfoView.kt:756
+GroupChatInfoView.kt:1138 MemberRow,         MEMBER_ROW_AVATAR_SIZE 42 (:57),          35; vertical padding 11.5; Row start 3.5;
+MemberSupportView.kt:230                     vertical padding 8 (:58), Spacer 10       Spacer 13.5; GroupMentions.kt:34 uses 46.5
+ChannelMembersView.kt:136, ChannelRelays-    38; Spacer 2                              32, start 3, Spacer 5 (or as iOS, Q5)
+View.kt:149
+AddGroupMembersView.kt:354                   36                                        30; start +3; Spacer :355 4 → 7
+GroupProfileView.kt:122, UserProfileView     108                                       90, p 9
+.kt:180
+profiles, creation, settings
+WelcomeView.kt:105, AddGroupView.kt:124,     128                                       107, p 10.5
+AddChannelView.kt:280
+AddChannelView.kt:418                        108; padding bottom 8                     90; top 9, bottom 17
+BadgeUserPreview.kt:31                       128; spacedBy 12                          107, spacedBy 22.5, top 10.5 (or as iOS, Q5)
+Appearance.kt:75, :77                        60; offset −size/12 (:73); Spacer :80     50; offset removed; Spacer 15
+alerts
+ConnectPlan.kt:345, :372, :524, :651, :715,  alertProfileImageSize 138                 115; AlertManager.kt:315 top and :324 spacer
+:767                                                                                   10 → 21.5
+calls
+IncomingCallAlertView.kt:78, CallActivity    32; Spacer :79 4                          27, p 2.5; Spacer 6.5
+.kt:380
+CallView.android.kt:398, CallActivity.kt     192                                       160, p 16 vertical
+:384, :386
+preview
+ChatInfoImage.kt:342 PreviewChatInfoImage    56                                        46, or unchanged
+```
+
+Helpers and formulas:
+- `ProfileImage` (`ChatInfoImage.kt:69-126`): `toEdge`, `iconSize` and `requiredSize` removed; the disc behind the placeholder is `size * 0.84f`, as the cut-outs reach 0.72 (person) and 0.80 (group) of the radius.
+- `ProfileIconModifier`: the `padding` parameter removed; the blur of blocked photos becomes size / 4, as on iOS, or size × 0.3 to keep today's look (Q6).
+- `MemberProfileImage` (`GroupMemberInfoView.kt:931-949`) and `MemberImage` (`ChatView.kt:2880-2883`): `toEdge` removed.
+- `userUnreadBadge(hasPadding)` (`UserPicker.kt:663-677`): `hasPadding` removed, the Android offsets on both platforms (Q8).
+- Height formulas: `GroupMentions.kt:33-34`, `ComposeContextProfilePickerView.kt:28-31`.
+- `FlatAvatarTest`: one test, a 27 dp placeholder and a photo over pixel columns 0 to 26.
+- Renders before and after differ only by antialiasing, except where Q5–Q9 change a screen.
+
+Screens that differ from iOS or from each other (Q5–Q9 in 12.1):
+- `ChannelMembersView`, `ChannelRelaysView` and `BadgeUserPreview` pass the iOS sizes and gaps (38 with spacing 8; 128 with spacing 12), so today they draw 31.7 and 106.7 with gaps 13.2 and 22.7; without a call-site change they match iOS.
+- `ChatBannerView`: the comment at `ChatView.kt:2350-2351` intends top 20 and gap 10; today 21.5 and 11.5.
+- Appearance, the profile images row: 70 dp with vertical padding 10, as `FontScaleSection` below it, or 80 dp as now.
+- `ProfileImageForActiveCall` scales the glyph by 58/44 and 70/56, not 1.2; with `ProfileImage` the circles stay 44 and 56 and the glyph shrinks by 9% and 4%.
+- `SharePreviewView` draws channels and business chats with the group icon, and bots and agents with the person icon; `ChatInfoImage` draws the right ones.
+
+### 12.4 Overshoot
+
+Text is placed at the text edge, 12, and its ink starts later by the side bearing: Inter H 0.088 em in Regular (1.41 dp at 16 sp) and 0.072 em in SemiBold (1.15 dp); on iOS the ink of "W" and "T" starts at x 13 and of "I" at 14 (`TerminalSpacing-light-large.png`). An avatar at 12 passes the ink of flat letters by 1.2 to 1.4. Inter's O passes H by 0.039 of the cap height at the left (Regular; 0.032 Medium, 0.025 SemiBold) and by 0.0137 at the top and bottom.
+
+```
+amount   avatar's left edge, Android (27 dp)                  iOS (30 pt)
+(a)      on the ink: 12 + 1.41 = 13.4                         13
+(b)      0.039 × size before the ink: 13.4 − 1.05 = 12.3      13 − 1.17 = 11.8
+(c)      12, as now                                           12
+```
+
+Vertically the avatar is centred on the name line box. The renders also show it centred on the name's capitals, 0.8 dp lower on Android and 1.0 pt lower on iOS (cap centre against line centre), with the 0.0137 overshoot at the top and bottom of its circle.
+
+### 12.5 Flat-layout defects, also on master
+
+```
+#   defect                                  cause                                         fix (recommended)                          alternative
+1   iOS and Android: the time alone on its  a) the message ends with empty lines:         a) in Flat rows, empty lines after the     a) keep: as plain text, the
+    own line after a blank gap below a         BlocksLayout.trailingEmptyLines and            last block are not drawn; the time goes    empty lines typed at the end
+    list (OverviewDirect, 9:27) and under      MarkdownBlocksView.body draw them and then     on the last line when it fits              hold the time
+    a code block (Spacing, npm run publish)    metaLine (MsgContentView.swift:788-843);
+                                               MarkdownBlocks, trailingEmptyLines
+                                               (MarkdownBlocks.kt:62-80, :160)
+                                            b) code cards span the row:                   b) code and table cards are as wide as     b) keep the row width; the time
+                                               CodeBlockCard .frame(maxWidth: .infinity)      their content, at most the row, so the     under the card at the meta gap
+                                               (MsgContentView.swift:1064); CodeBlockCard     time is beside a short card
+                                               fillMaxWidth (MarkdownBlocks.kt:241)
+2   a big emoji shows only ✓                the time is hidden by the minute grouping     the status is drawn only with the time;    the time is drawn with the
+    (Spacing, 👍)                             (getItemSeparation, ChatView.kt:3802-3819;     errors and pending states still show       status on every sent row
+                                               ChatView.swift:1779-1798), the status not
+3   Android and iOS: the message before a   the deleted item is the next newer item of    deleted and marked deleted items do not    keep
+    deleted item shows no time (the second     the sender in the same minute, so the earlier  hide the time of the message before them
+    "alice / hello")                           message hides its time (getItemSeparation);
+                                               the deleted row, a merged row, shows its own
+                                               (rowItemSeparation without prevItem)
+4   an 18 px gap after a reactions row      terminalRowGap gives the paragraph gap when   below a reactions row, the gap the rows    half the level step below a
+    splits one sender's messages               the older item has reactions                   have without reactions: 0 for close        reactions row
+                                               (TerminalItemView.kt:138-139,                  one-line messages of one sender
+                                               TerminalItemView.swift:130-135)
+5   at accessibility sizes the text wraps   the copy of the time starts with a word       in Flat rows the copy starts with a        keep the joiner
+    early to leave room for the time           joiner, so the last word moves with the        breaking space when text precedes it, as
+                                               time (metaReserveCopy, CIMetaView.kt:265;      in bubbles (breakBefore): the time alone
+                                               metaCopyJoiner, TerminalItemView.swift:212;    moves to its own line, only when the
+                                               ciMetaText unbreakable, CIMetaView.swift:122)  last line is full
+```
+
+Also in this scope:
+- D1: A as implemented; B rendered for Q3 (one line on each platform: the message half the level step below the lower of the name line and the avatar).
+- `FlatMediaTest.maxIntrinsicHeightAtUnboundedWidth`: link previews are checked only with a height above 0, and tall media not at all. The test asserts the expected heights of tall and wide images, videos and link previews in both layouts. A flat link preview reports 113 at an unbounded width, while it is drawn 500 wide; the cause (the image's intrinsic height at its own size) is checked and fixed if a layout reads it.
+
+Scenes for the snapshots, on both platforms:
+- defect 1: a message ending with an empty line after a list, and one ending with a short code block (iOS `TerminalOverviewDirect`, `TerminalSpacing`; Android a new `PreviewChatItemViewTerminalEnds`);
+- defect 2: a sent big emoji within a minute of the next message (iOS `TerminalSpacing`; Android the media scene gets one);
+- defect 3: `ChatView.PreviewGroupChatLayoutTerminal` and iOS `TerminalDeleted`;
+- defect 4: iOS `TerminalSpacing`, carol's "ok"; Android a reacted message in the media scene;
+- defect 5: iOS `TerminalSpacing` at the accessibility sizes; Android `PreviewGroupChatLayoutTerminal` at font 150 with a long last line.
+
+### 12.6 Renders
+
+- Decision renders, before the implementation: Q2 at three amounts and Q3 A and B, in the Android group and media scenes and iOS `TerminalOverviewGroup`, each with photos and placeholders.
+- Before and after for every screen with an avatar (12.3.1), from the Kotlin snapshots (`SnapshotTest.previewScenes`) and the iOS snapshots: the scenes without a photo get a second variant with one, and each avatar kind (person, group, channel, business, bot, agent, notes, incognito, pending link) appears in one scene.
+- iOS renders depend on a macOS runner of GitHub; a run waits for one.
+
+### 12.7 Estimate
+
+```
+part                                                hours
+assets: 2 vectors, 4 SVG crops, 4 new avatar assets 3
+compensations and call sites (12.3.1)               8
+overshoot: renders of three amounts, then the       3
+chosen one on both platforms
+defects 1-5 on both platforms                       9
+FlatMediaTest, D1 B render                          1.5
+scenes with photos and placeholders                 3
+tests, references, docs and specs                   4
+CI: one record and one check run per platform       waiting, about 2 hours; iOS runner queue extra
+total                                               about 31 hours of work
+```
+
+```mermaid
+flowchart LR
+  P[plan and questions on the page] --> R[decision renders: Q2, Q3]
+  R --> U[user's answers]
+  U --> A[assets and compensations]
+  A --> O[overshoot]
+  O --> D[defects 1-5]
+  D --> S[scenes, references, docs]
+  S --> C[CI, review, PR update]
+```
