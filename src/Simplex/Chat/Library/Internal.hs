@@ -1696,7 +1696,12 @@ restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . 
 getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
 getShortLinkConnReq' nm user l = do
   l' <- restoreShortLink' l
-  withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  r@(_, _, cReq) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  case (l, cReq) of
+    (CSLContact _ ct _ _, CRContactUri ConnReqUriData {crClientData} _)
+      | isJust (crClientData >>= decodeJSON @CReqClientData) /= (ct == CCTGroup || ct == CCTChannel) -> throwChatError CEInvalidConnReq
+    _ -> pure ()
+  pure r
 
 getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
 getShortLinkConnReq nm user l = do
