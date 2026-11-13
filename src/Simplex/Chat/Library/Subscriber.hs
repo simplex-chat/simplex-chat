@@ -2291,7 +2291,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           file_ <- processFileInv gInfo' m'
           newChatItem gInfo' m' scopeInfo (rcvContent gInfo' m' scopeInfo, ts) (snd <$> file_) (timed_ gInfo') live'
           unless (maybe False memberBlocked m') $ autoAcceptFile file_
-        rcvContent gInfo' m' scopeInfo = CIRcvMsgContent $ maybe content (\m -> redactedGroupContent gInfo' m scopeInfo content) m'
+        rcvContent gInfo' m' scopeInfo = CIRcvMsgContent $ redactedGroupContent gInfo' m' scopeInfo content
         processFileInv gInfo' m' =
           let fileMember_ = if sentAsGroup then Nothing else m'
            in processFileInvitation fInv_ content (rcvGroupFileProhibited gInfo' m' sentAsGroup) $ \db -> createRcvGroupFileTransfer db userId gInfo' fileMember_ FTNormal sharedMsgId_
@@ -2334,20 +2334,19 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     groupMsgToView cInfo ci
                     pure Nothing
                   Nothing -> do
-                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (rcvContent scopeInfo, ts) Nothing timed_ live mentions'
+                    let mc' = redactedGroupContent gInfo' m_ scopeInfo mc
+                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (CIRcvMsgContent mc', ts) Nothing timed_ live mentions'
                     ci' <- withStore' $ \db -> do
-                      createChatItemVersion db (chatItemId' ci) brokerTs mc
-                      updateGroupChatItem db user groupId ci (rcvContent scopeInfo) True live Nothing
+                      createChatItemVersion db (chatItemId' ci) brokerTs mc'
+                      updateGroupChatItem db user groupId ci (CIRcvMsgContent mc') True live Nothing
                     ci'' <- case chatDir of
                       CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
                       CDChannelRcv {} -> pure ci'
                     toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
                     pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
       where
-        content = CIRcvMsgContent mc
         ts@(_, ParsedMarkdown ft_ _) = msgContentTexts mc
         live = fromMaybe False live_
-        rcvContent scopeInfo = maybe content (\m -> CIRcvMsgContent $ redactedGroupContent gInfo m scopeInfo mc) m_
         updateRcvChatItem = do
           (cci, scopeInfo) <- withStore $ \db -> do
             cci <-
@@ -2384,17 +2383,18 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               | otherwise = action
         updateCI :: ShowGroupAsSender -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
         updateCI showGroupAsSender ci scopeInfo oldMC itemLive memberId = do
-          let changed = mc /= oldMC
+          let mc' = redactedGroupContent gInfo m_ scopeInfo mc
+              changed = mc' /= oldMC
           if changed || fromMaybe False itemLive
             then do
               ci' <- withStore' $ \db -> do
                 when changed $
-                  addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
+                  addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc')
                 reactions <- getGroupCIReactions db gInfo memberId sharedMsgId
                 let edited = itemLive /= Just True
                     mentions' = if maybe False memberBlocked m_ then M.empty else mentions
                 ciMentions <- getRcvCIMentions db user gInfo ft_ mentions'
-                ci' <- updateGroupChatItem db user groupId ci {reactions} (rcvContent scopeInfo) edited live $ Just msgId
+                ci' <- updateGroupChatItem db user groupId ci {reactions} (CIRcvMsgContent mc') edited live $ Just msgId
                 updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
                 updateGroupCIMentions db gInfo ci' ciMentions
               ci'' <- maybe (pure ci') (\m -> blockedMemberCI gInfo m ci') m_

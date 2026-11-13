@@ -427,9 +427,9 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
 supportChatAllowed :: GroupInfo -> GroupMember -> Bool
 supportChatAllowed gInfo GroupMember {supportChat} = groupFeatureAllowed SGFSupport gInfo || isJust supportChat
 
-redactedGroupContent :: GroupInfo -> GroupMember -> Maybe GroupChatScopeInfo -> MsgContent -> MsgContent
-redactedGroupContent gInfo m scopeInfo = \case
-  MCLink {text} | isNothing scopeInfo && not (groupFeatureMemberAllowed SGFFiles m gInfo) -> MCText text
+redactedGroupContent :: GroupInfo -> Maybe GroupMember -> Maybe GroupChatScopeInfo -> MsgContent -> MsgContent
+redactedGroupContent gInfo m_ scopeInfo = \case
+  MCLink {text} | Just m <- m_, isNothing scopeInfo && not (groupFeatureMemberAllowed SGFFiles m gInfo) -> MCText text
   mc -> mc
 
 prohibitedSimplexLinks :: GroupInfo -> GroupMember -> MsgContent -> Maybe MarkdownList -> Bool
