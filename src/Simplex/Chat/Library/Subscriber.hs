@@ -1421,8 +1421,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       SREQ invId sigKey_ payload ->
         chatReadVar processServiceRequests >>= \case
           True -> case J.eitherDecodeStrict' payload of
-            Right request -> toView $ CEvtServiceRequest user (AgentInvId invId) sigKey_ request
-            Left _ -> dropSReq
+            Right request | all boundedJSON request -> toView $ CEvtServiceRequest user (AgentInvId invId) sigKey_ request
+            _ -> dropSReq
           False -> dropSReq
         where
           dropSReq = withAgent $ \a -> rejectServiceRequest a NRMBackground (aUserId user) invId Nothing
