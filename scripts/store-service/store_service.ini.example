@@ -83,6 +83,8 @@ private_key = replace-me
 ;[group]
 ;display_name = SimpleX Badges
 ;description = Welcome to the badges group
+; name codes the group issues in 24 hours; each registers at the sponsor allowance's cost, 0 issues none
+;name_codes_per_day = 10
 
 ; the names store: omit [names] and [chain] together to turn it off.
 ;[names]
