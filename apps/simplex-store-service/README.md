@@ -1123,7 +1123,9 @@ reads, clears and logs its acceptance, as a community name's did:
 - The service sets each transaction's gas limit a fifth above its estimate, within `gas_limit_cap`,
   and its max fee to at most `max_fee_per_gas` (default 100 gwei). The node accepts a transaction only
   while the balance covers its limit × max fee, so each needs held about 1.2 × the last column. What
-  it is charged is gas used × the block's base fee plus tip, usually far less.
+  it is charged is gas used × the block's base fee plus tip, usually far less. The tip is the median of
+  the last 10 blocks' median tips (`eth_feeHistory`), at least 0.05 gwei: reth's and geth's
+  `eth_maxPriorityFeePerGas` sample each block's cheapest transactions and answer near zero.
 - An order is one commit, one acceptance relay and one register: 0.6946 ETH at the cap with two links, 0.0723 ETH with
   none. The expected orders × 0.6946 ETH, plus 0.6054 ETH per expected Save of both links (0.3026 ETH
   for one), pays for all of them even at the cap. A name's link edits are at most

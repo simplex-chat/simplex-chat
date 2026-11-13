@@ -41,6 +41,7 @@ namesChainTests = describe "StoreService names: chain" $ do
   describe "reads" $ do
     it "reads a block by its number, and one the node does not have as a failed read" $ testBlockAt g
     it "follows a transaction from sent to mined with its receipt and the nonces" $ testFollowTransaction g
+    it "reads the tip as the median of the last blocks' median tips, refusing a block without one reward" $ testRecentTip g
   describe "transactions" $ do
     it "signs a transaction whose hash is the node's keccak256 of the raw bytes" $ testSignedHash g
     it "refuses a gas estimate above the cap" $ testGasCap g
@@ -150,10 +151,20 @@ testOversized g = withChain g $ \node c -> do
   answerCall node fakeController availableCall $ Returns $ B.replicate (512 * 1024) 0
   ethCallAt c Latest fakeController availableCall `shouldReturn` Left (ChainUnavailable "eth_call: response over 1048576 bytes")
 
+testRecentTip :: TVar ChaChaDRG -> IO ()
+testRecentTip g = withChain g $ \node c -> do
+  let history :: [[T.Text]] -> IO (Either ChainError Word64)
+      history rewards = setFault node "eth_feeHistory" (Answers $ J.object ["reward" J..= rewards]) >> recentTip c
+      malformed reason = Left (ChainUnavailable $ "eth_feeHistory: not a JSON-RPC response: Error in $: " <> reason)
+  history [["0x5"], ["0x1"], ["0x3"]] `shouldReturn` Right 3
+  history [["0x0"], ["0x9"], ["0x2"], ["0x7"]] `shouldReturn` Right 7
+  history [["0x1", "0x2"]] `shouldReturn` malformed "not one reward a block"
+  history [] `shouldReturn` malformed "no rewards"
+
 testLongQuantity :: TVar ChaChaDRG -> IO ()
 testLongQuantity g = withChain g $ \node c -> do
-  let fee digits = setFault node "eth_maxPriorityFeePerGas" (Answers $ J.String $ "0x" <> digits) >> maxPriorityFee c {ccTimeout = 300000}
-      notQuantity = Left (ChainUnavailable "eth_maxPriorityFeePerGas: not a JSON-RPC response: Error in $: not a quantity")
+  let fee digits = setFault node "eth_getTransactionCount" (Answers $ J.String $ "0x" <> digits) >> transactionCount c {ccTimeout = 300000} (ccRegistrar c) Latest
+      notQuantity = Left (ChainUnavailable "eth_getTransactionCount: not a JSON-RPC response: Error in $: not a quantity")
   fee (T.replicate 63 "0" <> "7") `shouldReturn` Right 7
   fee (T.replicate 64 "0" <> "7") `shouldReturn` notQuantity
   start <- getCurrentTime
