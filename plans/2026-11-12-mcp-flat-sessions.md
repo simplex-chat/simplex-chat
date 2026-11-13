@@ -70,14 +70,17 @@ name and role                    58 pt iOS, 61 dp Android and desktop         12
                                                                               51 dp Android and desktop
 message text, horizontal         after the avatar column: 58 pt iOS,          12 from the screen edge
                                  61 dp Android and desktop
-message top                      the bottom of the name line                  half the level step below the avatar: 2.5 pt on iOS,
-                                                                              2.4 dp on Android and desktop
+message top                      the bottom of the name line                  the same; the avatar's part below the name line
+                                                                              overhangs the first line
 rows without a name              58 pt iOS, 61 dp Android and desktop         12 from the screen edge
 events, such as carol connected  58 pt iOS, 61 dp Android and desktop         12 from the screen edge
-gap above a name row             7.8 pt iOS, 7.3 dp Android and desktop       the same
-the same, below a date           0                                            the avatar's part above the name line
+gap above a name row             7.8 pt iOS, 7.3 dp Android and desktop       to the avatar: the same and half the level step,
+                                                                              10.3 pt iOS, 9.7 dp Android and desktop
+the same, below a date           0                                            to the avatar: half the level step
 separator or the chat banner,
 and for the oldest loaded item
+deleted and error cards,         at the start of the message column           12 from the screen edge
+group invitations
 wide image                       iOS: 272 pt in groups, 332 pt in channels,   the row less 12 on each side, at most 500:
                                  after the avatar column; Android and         378 on both platforms
                                  desktop: the row after the column less
@@ -99,11 +102,12 @@ Visible distances at the default text size, measured between shapes and glyphs, 
 distance                                              iOS now   iOS proposed   Android, desktop now   Android, desktop proposed
 screen edge to the avatar                             12        12             15.1                   12
 avatar to the name                                    12        12             15.1                   12
-line above to the avatar: its baseline to the top     12.5      9.2            14.8                   9.2
-avatar to the message: the bottom to the capitals     beside    9.2            beside                 8.3
-name to the message: its baseline to the capitals     11.4      17.2           10.4                   15.2
-gap above a name row: box to box                      7.8       7.8            7.3                    7.3
-message text from the screen edge                     58        12             61                     12
+line above to the avatar: its baseline to the top     12.5      15.0           14.8                   14.1
+avatar to the message: the bottom to the capitals     beside    3.4            beside                 3.5
+avatar to a card at the message's top                 beside    4.5            beside                 4.8
+name to the message: its baseline to the capitals     11.4      11.4           10.4                   10.4
+row above to the avatar: box to the avatar's top      7.8       10.3           10.4                   9.7
+message text and cards from the screen edge           58        12             61                     12
 ```
 
 A photo with the default corner radius, 22.5, is drawn at 0.964 of the circle's size on both platforms, so its gaps are 0.5 larger on each side (`ImageUtils.swift:502`; `ChatInfoImage.kt:298`). The guides of the design images mark these distances on the second name row.
@@ -168,15 +172,15 @@ The Flat layout in the apps:
 11. The new geometry applies to every Flat row with an avatar, in groups and channels, also outside the plugin (Q2 (a)).
 12. The avatar is centred on the name line (mockup source: `.avatar { top: calc(var(--line) / 2 - var(--avatar) / 2) }`).
 13. Messages, events and rows without a name start at the row's start; their text is at the text edge, `CHAT_ITEM_TEXT_PADDING`, 12 (mockup: `.content { padding: 0 var(--pad) }`).
-14. A message starts half the level step below the lower of the name line and the avatar, on both platforms (as implemented, section 11): `terminalHeadingBottomGap`, 2.5 pt (`TerminalItemView.swift:18`), and `TERMINAL_HEADING_BOTTOM_GAP`, 2.4 dp (`TerminalItemView.kt:66`). When it starts with a card, the paragraph gap is added below the lower of the two, as below the name now (`TerminalItemView.kt:431`; `TerminalItemView.swift:404`). The user: "there should be a bit larger gap under name/avatar on ios". Without it, the first line's capitals were 6.7 pt below the avatar on iOS: its line box starts at the avatar's bottom, and SF Pro's capitals sit 6.7 pt into a 23.4 pt line. With it, they are 9.2 pt below, as far as the avatar is from the baseline of the line above, 9.2 pt. On Android and desktop the same constant gives 8.3 dp, because Inter's capitals sit 6 dp into a 22 dp line. Equal numbers would need a value for Android alone, 3.25 dp, or a gap computed from the fonts; the shared constant keeps one rule, with gaps of 0.54 and 0.52 of the body size.
+14. A message starts at the bottom of the name line, as before; the avatar's part below the name line, 3.3 pt and 2.5 dp, overhangs its first line, whose capitals are 3.4 pt and 3.5 dp below the avatar. When it starts with a card, the paragraph gap is added below the name line, as before, 4.5 pt and 4.8 dp below the avatar (as implemented, section 11). The approved design started the message half the level step below the lower of the name line and the avatar, after the user's "there should be a bit larger gap under name/avatar on ios"; with the gap above the avatar at 9.2, the name rows stood as far from the messages above as from their own (the user's review of #8169).
 15. The name stays 12 after the visible avatar, by the user's rule of one 12 padding (I26: `plans/2026-10-13-flat-chat-layout-ui.md:39`; `apps/ios/spec/client/chat-view.md:360`). With the 30 pt avatar the name is at 54 pt, where the README mockup has it; the README image is drawn again with the 30 pt avatar (section 8).
-16. The gap above a row is at least the avatar's part above the name line. `terminalRowGap` is 0 below a date separator, below the chat banner and for the oldest loaded item (`TerminalItemView.kt:138-139`; `TerminalItemView.swift:130-135`); there the avatar's part sets the gap, so the avatar stays inside its own row.
+16. Above a sender row with an avatar, half the level step is added to the row gap: the avatar's top is `topGap` + `TERMINAL_HEADING_BOTTOM_GAP` (`terminalHeadingBottomGap`) below the row above, and the name line is lower by the avatar's part above it. From the baseline of the line above to the avatar this is 14.1 dp, as on master (14.8), and 15.0 pt on iOS, 17/16 of it. `terminalRowGap` is 0 below a date separator, below the chat banner and for the oldest loaded item (`TerminalItemView.kt:138-139`; `TerminalItemView.swift:130-135`); there the avatar is half the level step below, inside its own row.
 17. In the Flat layout both platforms size media by one width, W = min(500, row width − 24), in groups, channels and direct chats (the user, 2026-11-12: "horizontal images ... take full screen width, as on android, and limited on desktop"). A wide image, video or link preview image is W wide; a tall or square one is 0.75 W. Each platform keeps its test of wide: width > height on iOS (`CIImageView.swift:101`, `CIVideoView.swift:204`), width × 0.97 > height on Android and desktop (`CIImageView.kt:111`). Heights keep their rule, at most 2.33 of the width (`ImageUtils.swift:425-427`; `CIImageView.kt:193`).
    - iOS: `terminalItemRow` passes `min(500, listWidth − leading − 24)` in place of `min(maxWidth, listWidth − leading − gutter − 24)` (`ChatView.swift:2172`), so flat rows stop using the classic `maxWidth` with its 0.84 factor and its group and channel widths (`ChatView.swift:936-944`). Images, videos, link previews and chat link cards follow it, as they read `maxWidth` (`ChatItemView.swift:105-121`, `FramedItemView.swift:227-237`). 500 is a new iOS constant, equal to `DEFAULT_MAX_IMAGE_WIDTH` (`Theme.kt:668`).
    - Android and desktop: a wide image already asks for 500 dp inside 12 dp paddings on both sides (`CIImageView.kt:111`, `FramedItemView.kt:57`). A tall or square image, video or link preview in a flat row takes 0.75 of min(500 dp, the width it is given), measured in its layout, in place of 0.75 of min(500 dp, the window less 100 dp) (`CIImageView.kt:111`, `:135`, `:146`, `:189`, `:279-282`; `CIVideoView.kt:46`, `:239`, `:299`, `:424`, `:589`; `LinkPreviews.kt:206`).
    - Message text takes the full row: on iOS its frame is the row (`ChatView.swift:2360`); on Android and desktop the message is measured in the full width by decision 13, in place of the width less the gutter (`TerminalItemView.kt:427`).
 18. The time's placement keeps its rule: over an image without caption only when the image and the time are wider than the row (`TerminalItemView.kt:294`, `TerminalItemView.swift:330`). On a 402 phone, 12 + 378 + about 72 for the time box is more than 402, so the time stays over a wide image; a tall or square one, 283.5, has its time beside it. In a row of about 600 or more, as on desktop and iPad, the time is beside a 500 image.
-19. Flat avatars are 12.5% smaller than the visible classic ones, rounded to whole units (the user: "avatars need to be reduced like 12.5%"): iOS 30 pt, from 34 pt; Android and desktop 27 dp, from the 30.8 dp circle in the 37 dp box. iOS scales it as the classic one, 30 × profileImageSize of the text size ÷ 63, at most 35.7 pt (`ChatView.swift:15-19`, `ChatListNavLink.swift:22-37`); Android and desktop 27 dp × the square root of the font scale (`MEMBER_IMAGE_SIZE` 37 dp × `fontSizeSqrtMultiplier`, `ChatView.kt:2878`, `Utils.kt:674`). Classic keeps 34 pt and 37 dp. The avatar's part above the name line is (30 − 23.375) ÷ 2 = 3.3 pt and (27 − 22) ÷ 2 = 2.5 dp, less than the gap above a name row (7.8 pt, 7.3 dp), so name rows keep their places except where decision 16 applies.
+19. Flat avatars are 12.5% smaller than the visible classic ones, rounded to whole units (the user: "avatars need to be reduced like 12.5%"): iOS 30 pt, from 34 pt; Android and desktop 27 dp, from the 30.8 dp circle in the 37 dp box. iOS scales it as the classic one, 30 × profileImageSize of the text size ÷ 63, at most 35.7 pt (`ChatView.swift:15-19`, `ChatListNavLink.swift:22-37`); Android and desktop 27 dp × the square root of the font scale (`MEMBER_IMAGE_SIZE` 37 dp × `fontSizeSqrtMultiplier`, `ChatView.kt:2878`, `Utils.kt:674`). Classic keeps 34 pt and 37 dp. The avatar's part above the name line is (30 − 23.375) ÷ 2 = 3.3 pt and (27 − 22) ÷ 2 = 2.5 dp; name rows move down by it and by half the level step (decision 16).
 20. `gutter` stays the avatar column, now 30 + 12 = 42 pt and 27 + 12 = 39 dp, and places only the name (`TerminalItemView.kt:392-394`; `ChatView.swift:2152`).
 21. On Android and desktop a flat avatar is drawn to the edge of its box, as on iOS, so the box is the visible avatar and the gaps around it are the 12 dp of the layout. The user: "the padding around the avatar, especially on the right on android is a bit too large". Today both kinds of avatar leave 1/12 of the box on each side: the placeholder icon draws its circle from 2 to 22 of 24 (`CustomIcons.kt:14-19`, filled at the box size, `ChatInfoImage.kt:90-95`), and a photo is padded by size ÷ 12 (`ProfileIconModifier`, `ChatInfoImage.kt:285-301`). In flat rows the placeholder icon is drawn at 1.2 of the box, centred, so its circle fills the box, and a photo uses `ProfileIconModifier(size, padding = false)`, an existing parameter. The channel icon's circle is 0.82 of its 24 units (`ic_bigtop_updates_circle_filled.svg`), so at 1.2 it is 0.3 dp short of the box. The other way, a 32.4 dp box shifted left by its inset, keeps the 1/12 inset in every layout calculation; the drawn-to-edge avatar keeps one geometry on both platforms. iOS draws the placeholder and a round photo to the box edge (`clipProfileImage`, `ImageUtils.swift:495-506`).
 
@@ -228,15 +232,15 @@ flowchart LR
 measure        avatar
                name, in the width less gutter
                message, in the full width
+avatarGap      with an avatar: TERMINAL_HEADING_BOTTOM_GAP; otherwise 0
 avatarOffset   (name height − avatar height) / 2, negative for an avatar taller than the name line
-nameTop        max(topGap, −avatarOffset)
+nameTop        topGap + avatarGap + max(0, −avatarOffset)
 avatarTop      nameTop + avatarOffset
-messageTop     max(nameTop + name height, avatarTop + avatar height), then
-               a card first: + TERMINAL_PARAGRAPH_GAP; otherwise with an avatar: + TERMINAL_HEADING_BOTTOM_GAP
+messageTop     nameTop + name height, then a card first: + TERMINAL_PARAGRAPH_GAP
 avatar at      (CHAT_ITEM_TEXT_PADDING, avatarTop)
 name at        (gutter, nameTop)
 message at     (0, messageTop)
-height         messageTop + message height
+height         the lower of messageTop + message height and avatarTop + avatar height
 modifier       padding(top = topGap) replaced by nameTop in the layout
 ```
 
@@ -297,14 +301,13 @@ body          VStack, leading
                   avatar column: ZStack, avatarSize + chatItemTextPadding wide, the avatar chatItemTextPadding
                   from the start
                   name and role, chatItemTextPadding from the column
-                  below it: terminalParagraphGap when contentStartsWithCard, otherwise terminalHeadingBottomGap
-                  with an avatar
+                  below it: terminalParagraphGap when contentStartsWithCard, otherwise 0; less the overhang
                 content
-top padding   max(0, topGap − overhang)
+top padding   topGap, + terminalHeadingBottomGap with an avatar
 overhang      with an avatar: max(0, (avatarSize − terminalLineHeight(body font)) / 2); otherwise 0
 ```
 
-The sender row is as tall as the taller of the avatar and the name line, so the content starts below both. The top padding less the overhang keeps the name line `topGap` below the row above. The row takes `avatarSize` in place of `gutter`; the callers in `AppearanceSettings.swift:396`, `:399` pass 0.
+The sender row is as tall as the taller of the avatar and the name line. Its bottom padding less the overhang starts the content at the bottom of the name line, and the avatar overhangs the first line. The top padding puts the avatar half the level step below the row gap. The row takes `avatarSize` in place of `gutter`; the callers in `AppearanceSettings.swift:396`, `:399` pass 0.
 
 ```
 TerminalItemView.swift
@@ -366,7 +369,8 @@ Done when:
 
 Tests that fail on master and pass after the change:
 - `test/unit/sessions.test.ts`, "are created at the session start, ...": `chat.newGroups` holds `chatLayout: "terminal"`.
-- `TerminalChatItemRowTest`, `messagesStartAtRowStartBelowAvatar`: with gutter 39 and a 27 px avatar, the message is at x 0 and `TERMINAL_HEADING_BOTTOM_GAP` below the avatar's bottom. On master it is at x 39, at the name's bottom.
+- `TerminalChatItemRowTest`, `messagesStartAtRowStartBelowNameLine`: with gutter 39 and a 27 px avatar, the message is at x 0 and at the bottom of the name line. On master it is at x 39.
+- `FlatPillTest`, `pillsStartAtTextEdge`: the cards of deleted, marked deleted and integrity-error items in a flat row start at x 12. On master they start at x 0.
 - The snapshot references recorded on the branch: master renders differ, and `snapshots-compare.py` fails.
 
 Media widths, unit tests of the new functions:
@@ -379,13 +383,15 @@ Unit tests, `packages/simplex-chat-mcp/test/unit/sessions.test.ts`: the test abo
 End-to-end tests, `test/e2e/service.test.ts`, "an owner joins the Main group and each session's group, ...": Alice's copy of "1 · one" has `chatLayout` `terminal`, and her copy of the Main group has none.
 
 Android and desktop, `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/TerminalChatItemRowTest.kt`:
-- `messagesStartAtRowStartBelowAvatar`, above.
-- `avatarCentredOnNameLine`: the avatar's centre is on the centre of the name line, measured against a row without an avatar.
-- `gapAboveNameCoversAvatar`: with `topGap` 20, the avatar's top is at 20 less its part above the name line; with `topGap` 0, it is at 0.
-- `cardBelowAvatarTakesParagraphGap`: a card starts the paragraph gap below the avatar.
-- `textBelowNameLineTallerThanAvatarTakesHalfStep`: at font scale 2 the name line is taller than the avatar, and the text starts `TERMINAL_HEADING_BOTTOM_GAP` below the name line.
+- `messagesStartAtRowStartBelowNameLine`, above.
+- `avatarCentredOnNameLine`: the avatar's centre is on the centre of the name line above the message, whose height is measured in a row without an avatar.
+- `avatarTopIsHalfStepBelowGapAboveRow`: with `topGap` 20, the avatar's top is at 20 + `TERMINAL_HEADING_BOTTOM_GAP`; with `topGap` 0, at `TERMINAL_HEADING_BOTTOM_GAP`.
+- `cardBelowAvatarTakesParagraphGapBelowNameLine`: a card starts the paragraph gap below the place of text.
+- `textBelowNameLineTallerThanAvatarStartsAtItsBottom`: at font scale 2 the name line is taller than the avatar; the row starts half the level step lower, and the text starts at the bottom of the name line.
 - `textWithoutAvatarTakesNoGap`: a sender row without an avatar, as in a direct chat, keeps the text right below the name, 22 px at density 1.
 - The three existing tests pass unchanged.
+
+Android and desktop, a new `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/FlatPillTest.kt`: `DeletedItemView`, `MarkedDeletedItemView` and `IntegrityErrorItemView` in a flat row; the first column that differs from the white background is 12.
 
 Android and desktop, a new `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/FlatAvatarTest.kt`: a 27 dp placeholder and a round photo drawn to the edge cover pixel columns 0 to 26 of their box across its middle row; drawn as now, they stay within columns 2 to 24. The test sets `profileImageCornerRadius` to 50 while it renders and restores it.
 
@@ -485,4 +491,10 @@ Changes after the independent review of dbb7ca092:
 
 Change after the smoke tests of adf2aaebd: the layout of the image and video box keeps master's limit of its width, at most `fixedMediaWidth`, or `DEFAULT_MAX_IMAGE_WIDTH` in flat rows. Without the limit, a classic image or video box was given an unbounded width by the max intrinsic height query of the item's column, and the app showed "View crashed" when a picture was sent, in the `desktop-linux` run 43431679959 and the `android-emu` run 43431687443. `FlatMediaTest.classicWideImageStaysAt500` and `FlatMediaTest.maxIntrinsicHeightAtUnboundedWidth` fail without the limit with the same exception, the latter for the image and for the video.
 
-Kept as they are, named on the pull request page: tall link previews keep each platform's rule, up to 2.33 W tall on iOS and 0.75 W on Android and desktop; the deleted card in flat group rows starts at x 0; the tests that do not compile on master.
+Changes after the user's review of #8169:
+
+1. Name rows belong to the messages below them (decisions 14 and 16). The avatar's top is half the level step below the row gap, and the message starts at the bottom of the name line. Before, the avatar rose above the row gap by its part above the name line, and the message started half the level step below the avatar, so a name row stood as far from the messages above it as from its own: in the desktop render of `ChatView.PreviewGroupChatLayoutTerminal` at 100%, 10 blank rows from the line above to the avatar and 8 from the avatar to its own text; now 15 and 3; master 14.
+2. The cards of deleted, marked deleted, moderated, blocked, integrity-error and decryption-error items and group invitations start at the text edge, 12, on both platforms (`ItemTextCard`, `DecryptionErrorCard`, `CIGroupInvitationView`; `DeletedItemView`, `MarkedDeletedItemView`, `CIMsgError`, `CIRcvDecryptionError`, `CIGroupInvitationView`). Before, they started at x 0, while the message column of master started after the avatar.
+3. Scenes: `ChatView.PreviewGroupChatLayoutTerminalMedia` on Android and desktop, an image followed by a new sender; `TerminalDeleted` on iOS, deleted, moderated and integrity-error items in a group.
+
+Kept as they are, named on the pull request page: tall link previews keep each platform's rule, up to 2.33 W tall on iOS and 0.75 W on Android and desktop; the tests that do not compile on master.

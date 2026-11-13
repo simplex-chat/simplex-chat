@@ -35,6 +35,7 @@ struct DeletedItemView: View {
             .background(chatItemFrameColor(chatItem, theme))
             .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
             .textSelection(.disabled)
+            .padding(.leading, inlineMeta == nil ? chatItemTextPadding : 0)
         }
     }
 }

@@ -3951,26 +3951,30 @@ fun PreviewChatLayout() = BubblePreview {
 
 @Preview
 @Composable
-fun PreviewGroupChatLayout() = BubblePreview {
+fun PreviewGroupChatLayout() = GroupChatLayoutPreview(
+  listOf(
+    ChatItem.getSampleData(
+      1, CIDirection.GroupSnd(), previewDate, "hello"
+    ),
+    ChatItem.getSampleData(
+      2, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
+    ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
+    ChatItem.getDeletedContentSampleData(3, CIDirection.GroupRcv(GroupMember.sampleData), previewDate),
+    ChatItem.getSampleData(
+      4, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
+    ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
+    ChatItem.getSampleData(
+      5, CIDirection.GroupSnd(), previewDate, "hello"
+    ),
+    ChatItem.getSampleData(
+      6, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
+    ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello")))
+  )
+)
+
+@Composable
+private fun GroupChatLayoutPreview(chatItems: List<ChatItem>) = BubblePreview {
   SimpleXTheme {
-    val chatItems = listOf(
-      ChatItem.getSampleData(
-        1, CIDirection.GroupSnd(), previewDate, "hello"
-      ),
-      ChatItem.getSampleData(
-        2, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
-      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
-      ChatItem.getDeletedContentSampleData(3, CIDirection.GroupRcv(GroupMember.sampleData), previewDate),
-      ChatItem.getSampleData(
-        4, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
-      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
-      ChatItem.getSampleData(
-        5, CIDirection.GroupSnd(), previewDate, "hello"
-      ),
-      ChatItem.getSampleData(
-        6, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
-      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello")))
-    )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
@@ -4036,6 +4040,27 @@ fun PreviewGroupChatLayout() = BubblePreview {
 @Composable
 fun PreviewGroupChatLayoutTerminal() = CompositionLocalProvider(LocalTerminalLayout provides true) {
   PreviewGroupChatLayout()
+}
+
+@Preview
+@Composable
+fun PreviewGroupChatLayoutTerminalMedia() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  GroupChatLayoutPreview(
+    listOf(
+      ChatItem.getSampleData(
+        1, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "a photo"
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("a photo"))),
+      ChatItem.getSampleData(
+        2, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, ""
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCImage("", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAeCAIAAADRv8uKAAAAK0lEQVR42u3NMQ0AAAgDsElDB5oQjQw4mvRvavpExGKxWCwWi8VisVj8N16BwmJsLEkbxwAAAABJRU5ErkJggg=="))),
+      ChatItem.getSampleData(
+        3, CIDirection.GroupSnd(), previewDate, "nice view"
+      ),
+      ChatItem.getSampleData(
+        4, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "thanks"
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("thanks")))
+    )
+  )
 }
 
 enum class ContentFilter(

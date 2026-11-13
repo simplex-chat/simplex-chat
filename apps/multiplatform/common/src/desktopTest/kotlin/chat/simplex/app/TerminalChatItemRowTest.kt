@@ -64,43 +64,43 @@ class TerminalChatItemRowTest {
   }
 
   @Test
-  fun messagesStartAtRowStartBelowAvatar() {
+  fun messagesStartAtRowStartBelowNameLine() {
+    val nameLine = messageTop(alice) { Box(it.fixed(100, 22, 17)) }
     val message = messagePlaced(aliceWithAvatar, gutter = 39.dp) { Box(it.fixed(100, 22, 17)) }
     val avatar = avatar()
     assertEquals(0, message.x)
-    assertEquals(avatar.y + avatar.height + avatarGap, message.y)
+    assertEquals(avatar.y - (nameLine - avatar.height) / 2 + nameLine, message.y)
   }
 
   @Test
   fun avatarCentredOnNameLine() {
     val nameLine = messageTop(alice) { Box(it.fixed(100, 22, 17)) }
-    messagePlaced(aliceWithAvatar, gutter = 39.dp, topGap = 20.dp) { Box(it.fixed(100, 22, 17)) }
+    val message = messagePlaced(aliceWithAvatar, gutter = 39.dp, topGap = 20.dp) { Box(it.fixed(100, 22, 17)) }
     val avatar = avatar()
-    assertTrue(abs(2 * avatar.y + avatar.height - (2 * 20 + nameLine)) <= 1, "avatar at ${avatar.y}, name line of $nameLine at 20")
+    assertTrue(abs(2 * avatar.y + avatar.height - (2 * message.y - nameLine)) <= 1, "avatar at ${avatar.y}, name line of $nameLine above ${message.y}")
   }
 
   @Test
-  fun gapAboveNameCoversAvatar() {
-    val nameLine = messageTop(alice) { Box(it.fixed(100, 22, 17)) }
+  fun avatarTopIsHalfStepBelowGapAboveRow() {
     messagePlaced(aliceWithAvatar, gutter = 39.dp, topGap = 20.dp) { Box(it.fixed(100, 22, 17)) }
-    assertEquals(20 - (27 - nameLine) / 2, avatar().y)
+    assertEquals(with(density) { (20.dp + TERMINAL_HEADING_BOTTOM_GAP.toDp()).roundToPx() }, avatar().y)
     messagePlaced(aliceWithAvatar, gutter = 39.dp, topGap = 0.dp) { Box(it.fixed(100, 22, 17)) }
-    assertEquals(0, avatar().y)
+    assertEquals(avatarGap, avatar().y)
   }
 
   @Test
-  fun cardBelowAvatarTakesParagraphGap() {
-    val card = messagePlaced(aliceWithAvatar, gutter = 39.dp) { Box(it.messageCard().fixed(100, 40, null)) }
-    val avatar = avatar()
-    assertEquals(avatar.y + avatar.height + cardGap, card.y)
+  fun cardBelowAvatarTakesParagraphGapBelowNameLine() {
+    val text = messageTop(aliceWithAvatar) { Box(it.fixed(100, 22, 17)) }
+    val card = messageTop(aliceWithAvatar) { Box(it.messageCard().fixed(100, 40, null)) }
+    assertEquals(text + cardGap, card)
   }
 
   @Test
-  fun textBelowNameLineTallerThanAvatarTakesHalfStep() {
+  fun textBelowNameLineTallerThanAvatarStartsAtItsBottom() {
     val nameLine = messagePlaced(alice, fontScale = 2f) { Box(it.fixed(100, 22, 17)) }.y
     val message = messagePlaced(aliceWithAvatar, gutter = 39.dp, fontScale = 2f) { Box(it.fixed(100, 22, 17)) }
     assertTrue(nameLine > 27, "name line $nameLine")
-    assertEquals(nameLine + with(Density(1f, 2f)) { TERMINAL_HEADING_BOTTOM_GAP.roundToPx() }, message.y)
+    assertEquals(with(Density(1f, 2f)) { TERMINAL_HEADING_BOTTOM_GAP.roundToPx() } + nameLine, message.y)
   }
 
   @Test

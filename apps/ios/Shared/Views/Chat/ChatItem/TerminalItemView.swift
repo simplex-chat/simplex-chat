@@ -410,11 +410,11 @@ struct TerminalChatItemRow<Content: View>: View {
                     senderNameAndRole(sender)
                         .padding(.leading, chatItemTextPadding)
                 }
-                .padding(.bottom, contentStartsWithCard ? terminalParagraphGap : sender.image == nil ? 0 : terminalHeadingBottomGap)
+                .padding(.bottom, (contentStartsWithCard ? terminalParagraphGap : 0) - overhang)
             }
             content()
         }
-        .padding(.top, max(0, topGap - overhang))
+        .padding(.top, topGap + (sender?.image == nil ? 0 : terminalHeadingBottomGap))
     }
 
     private var overhang: CGFloat {

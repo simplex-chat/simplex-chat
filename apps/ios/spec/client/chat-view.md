@@ -355,7 +355,7 @@ unknown values                              skipped
 [`ChatItemWithMenu.terminalItemRow`](../../Shared/Views/Chat/ChatView.swift#L2155) wraps `chatItemWithMenu` in [`TerminalChatItemRow`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L392). Gaps follow the paragraph unit `terminalParagraphGap` (user, terminal spacing mockup):
 
 ```
-row padding        top: topGap less the overhang, at least 0, so the name line is topGap below the row above
+row padding        top: topGap; with an avatar topGap + terminalHeadingBottomGap, so the avatar is that far below the row above
 overhang           the avatar's part above and below the name line: (avatarSize − the body line height) / 2,
                    at least 0; 0 in a row without an avatar
 sender row         HStack, centred: the avatar column and the name; as tall as the taller of the two
@@ -371,8 +371,9 @@ sender row         HStack, centred: the avatar column and the name; as tall as t
                    role label in the body text style, medium, secondary, 15pt after the name; line box of the body font
                    start padding chatItemTextPadding
   below            terminalParagraphGap when the content starts with a card (contentStartsWithCard: terminalItemStartsWithCard),
-                   otherwise terminalHeadingBottomGap with an avatar, 0 without
-content            from the row start, below the sender row
+                   otherwise 0, less the overhang, so the content starts at the bottom of the name line and the avatar
+                   overhangs its first line
+content            from the row start, below the name line
 selection          SelectedChatItem 8pt from the start; row moved by 28pt; selected row tint primary 10%
 media width        terminalMediaWidth(listWidth less the selection offset and a go-to button): that width less two text
                    edges, at most terminalMaxMediaWidth (500); tall or square media 0.75 of it, as computed by ChatItemView
@@ -459,7 +460,7 @@ files                 CIFileView: 0 above, icon without top padding; FramedItemV
 events                terminalEventPadding: chatItemTextPadding at the sides, 0 above and below; line box, line limit removed
                       feature and preference icons without height; merged feature icons one event line high
 cards                 DeletedItemView, MarkedDeletedItemView, CIMsgError, CIRcvDecryptionError, CIGroupInvitationView:
-                      ChatItemClipped(tailVisible: false), time beside the card
+                      ChatItemClipped(tailVisible: false), chatItemTextPadding before the card, time beside the card
 ```
 
 ### Time and Status

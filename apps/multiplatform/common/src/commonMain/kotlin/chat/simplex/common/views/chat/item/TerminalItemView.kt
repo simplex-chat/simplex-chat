@@ -430,11 +430,10 @@ fun TerminalChatItemRow(
     val name = measurables[1].measure(looseConstraints.copy(maxWidth = (constraints.maxWidth - nameStart).coerceAtLeast(0)))
     val message = measurables[2].measure(looseConstraints)
     val avatarOffset = (name.height - avatar.height) / 2
-    val nameTop = max(topGap.roundToPx(), -avatarOffset)
+    val nameTop = (topGap + avatarGap).roundToPx() + max(0, -avatarOffset)
     val avatarTop = nameTop + avatarOffset
-    val gapBelowSender = if (sender != null && message[CardTop] == 0) cardGap else avatarGap
-    val messageTop = max(nameTop + name.height, avatarTop + avatar.height) + gapBelowSender.roundToPx()
-    layout(constraints.maxWidth, messageTop + message.height) {
+    val messageTop = nameTop + name.height + if (sender != null && message[CardTop] == 0) cardGap.roundToPx() else 0
+    layout(constraints.maxWidth, max(messageTop + message.height, avatarTop + avatar.height)) {
       avatar.placeRelative(CHAT_ITEM_TEXT_PADDING.roundToPx(), avatarTop)
       name.placeRelative(nameStart, nameTop)
       message.placeRelative(0, messageTop)

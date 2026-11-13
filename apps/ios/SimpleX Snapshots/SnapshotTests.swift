@@ -326,6 +326,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(SmallLinkPreview_Previews.self),
         SnapshotScene(SupportSimpleXBanner_Previews.self),
         SnapshotScene(TerminalAvatars_Previews.self, allSizes: true),
+        SnapshotScene(TerminalDeleted_Previews.self),
         SnapshotScene(TerminalMedia_Previews.self),
         SnapshotScene(TerminalNames_Previews.self, allSizes: true),
         SnapshotScene(TerminalOverviewChannel_Previews.self),
@@ -442,6 +443,12 @@ struct TerminalQuoteThumbnail_Previews: PreviewProvider {
 struct TerminalMedia_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().media()
+    }
+}
+
+struct TerminalDeleted_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().deleted()
     }
 }
 
@@ -965,6 +972,16 @@ private final class SnapshotFixtures {
                 msg(.channelRcv, "Selected post", -5, content: .image(text: "Selected post", image: landscape), file: imageFile("post.jpg"))
             ], terminal: true, selected: [])
         }
+    }
+
+    func deleted() -> some View {
+        chatRows(teamChat, [
+            msg(.groupRcv(groupMember: alice), "Welcome, carol!", -20),
+            ChatItem(chatDir: .groupRcv(groupMember: bob), meta: CIMeta.getSample(id(), ts(-18), "this item is deleted", .rcvRead), content: .rcvDeleted(deleteMode: .cidmBroadcast)),
+            ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-16), "Thanks!", .rcvRead, itemDeleted: .moderated(deletedTs: ts(-15), byGroupMember: alice)), content: .rcvMsgContent(msgContent: .text("Thanks!"))),
+            ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-14), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 1))),
+            msg(.groupSnd, "ok", -12)
+        ], terminal: true)
     }
 
     func rightToLeft() -> some View {
