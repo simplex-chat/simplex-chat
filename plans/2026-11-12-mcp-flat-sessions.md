@@ -394,7 +394,11 @@ Snapshot references, recorded on the branch from the renders that the compare st
 
 CI on the fork branch: the reduced build with the `kotlin`, `ios` and `mcp` scopes; then `android-emu`, `desktop-linux` and `ios-sim` once each, with the app uploaded (`scripts/ci/README.md`, "Starting a run"). `desktop-linux` and `ios-sim` compare the snapshots.
 
-The tests of the session group's profile and of `messagesStartAtRowStartBelowAvatar` fail on master by construction: master's group profile has no `chatLayout`, and master places the message at x 39 below the name. They were not run on master.
+The Kotlin tests were run on master in the `desktop-linux` run 43425987286, on the fork branch `ep/mcp-flat-sessions-tests`: master `9d3241b06` with `TerminalChatItemRowTest` and `FlatMediaTest` of this branch. Master `8fda06295` has the same app code. Of 264 tests, 8 failed:
+- `TerminalChatItemRowTest`: `messagesStartAtRowStartBelowAvatar`, the message at x 39 in place of 0; `avatarCentredOnNameLine`, the avatar's top at the name's top, 20; `gapAboveNameCoversAvatar`, the avatar's top at 20 in place of 18; `cardBelowAvatarTakesParagraphGap`, the card at 29 in place of 34; `textBelowNameLineTallerThanAvatarTakesHalfStep`, the text at 44 in place of 49.
+- `FlatMediaTest`: `tallImageTakesThreeQuartersWithTimeBesideItOnPhone`, `imagesStopAt500WithTimeBesideThemInWideRows` and `tallLinkPreviewTakesThreeQuarters` stop with `windowState` uninitialized. Master takes the width of tall media from the window, in `imageViewFullWidth`, and the test scene sets no window.
+
+`wideImageTakesRowLessPaddingsWithTimeOverItOnPhone`, `textWithoutAvatarTakesNoGap` and the three existing row tests pass on master. `FlatAvatarTest` and the `flatMediaWidth` test do not compile on master. The test of the session group's profile fails on master by construction: master's group profile has no `chatLayout`.
 
 ## 8. Docs to change
 
@@ -465,7 +469,7 @@ Sections 5 and 7 describe the code as implemented. The changes from the plan app
 4. `PlayerView` takes a modifier in place of a width, so that the player fills the media box in flat rows. Classic video widths stay as on master: the full width is remembered per preview from the window width (`videoViewFullWidth`).
 5. Names: `messageStart` of `TerminalChatItemRow` is `nameStart`, because the gutter places only the name. `ProfileImage` with `toEdge` scales the background disc with the icon, 0.7 of the 1.2 icon, so it still fills the placeholder's cut-outs. iOS `TerminalChatItemRow` takes `avatarSize` in place of `gutter`, and the overhang is computed from it.
 6. Tests: `FlatAvatarTest` measures pixel columns across the middle row, 0 to 26 drawn to the edge and within 2 to 24 as now, with the corner radius set to 50 for the round photo and restored. `textWithoutAvatarTakesNoGap` asserts 22 px. `avatarCentredOnNameLine` allows 1 px of rounding. `FlatMediaTest` and `textBelowNameLineTallerThanAvatarTakesHalfStep` were added after the review.
-7. Docs: the added line of `hub.ts` moves its later lines by one, so 25 links to `hub.ts` in `spec/api.md`, `architecture.md` and `flows.md` were updated. Links of the two app specs were updated where they pointed at master's lines. The README image is drawn from its mockup source, `images/session.html`, added to the package.
+7. Docs: the added line of `hub.ts` moves its later lines by one, so the links to `hub.ts` on 29 lines of `spec/api.md`, `architecture.md` and `flows.md` were updated, counted after the merge of master `8fda06295`. Links of the two app specs were updated where they pointed at master's lines. The README image is drawn from its mockup source, `images/session.html`, added to the package.
 8. The 32 references were recorded from the renders of the `desktop-linux` and `ios-sim` runs on the fork, copying only the renders that the compare step listed. `scripts/ci/snapshots-remote.py` starts runs in the repository of `origin`, simplex-chat/simplex-chat, which the agents' token cannot use, and copies every render.
 
 Changes after the independent review of dbb7ca092:
