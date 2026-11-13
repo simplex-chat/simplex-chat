@@ -56,6 +56,13 @@ export interface TurnRequest {
   answer?: string
   model?: string
   effort?: string
+  step?: Step
+}
+
+export interface Step {
+  id: string
+  text: string
+  end?: boolean
 }
 
 export interface AttachLine {
