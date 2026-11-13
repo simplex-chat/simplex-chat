@@ -20,7 +20,9 @@ import javax.swing.JFileChooser
 import javax.swing.JOptionPane
 import javax.swing.filechooser.FileFilter
 import javax.swing.filechooser.FileNameExtensionFilter
+import javax.swing.filechooser.FileView
 import javax.swing.plaf.basic.BasicFileChooserUI
+import javax.swing.plaf.basic.BasicHTML
 
 @Composable
 actual fun DefaultDialog(
@@ -94,6 +96,7 @@ fun FrameWindowScope.FileDialogChooserMultiple(
       fileChooser.dialogTitle = title
       fileChooser.isMultiSelectionEnabled = allowMultiple && isLoad
       fileChooser.isAcceptAllFileFilterUsed = fileFilter == null
+      installLiteralFileNames(fileChooser)
       // Only install the glob bypass for the real file-save case (filename != null). When filename
       // is null the dialog runs in DIRECTORIES_ONLY mode (e.g. "Save QR code as image"), where the
       // Save button must approve the selected directory — the literal-filename handler would instead
@@ -140,6 +143,15 @@ fun FrameWindowScope.FileDialogChooserMultiple(
     }
     onDispose {
       job.cancel()
+    }
+  }
+}
+
+internal fun installLiteralFileNames(fc: JFileChooser) {
+  fc.fileView = object: FileView() {
+    override fun getName(f: File): String? {
+      val name = fc.fileSystemView.getSystemDisplayName(f)
+      return if (BasicHTML.isHTMLString(name)) "\u00A0$name" else name
     }
   }
 }
