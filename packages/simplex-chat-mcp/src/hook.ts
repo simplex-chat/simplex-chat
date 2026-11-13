@@ -257,7 +257,7 @@ function teammateNote(text: string): string | undefined {
   if (match === undefined) return undefined
   const [, sender, attributes, body] = match
   const summary = /\ssummary="([^"]*)"/.exec(attributes)?.[1]
-  return `✉️ Message from ${decoded(sender)}: ${firstLine(summary === undefined ? body : decoded(summary))}`
+  return `✉️ Message from ${oneLine(decoded(sender))}: ${firstLine(summary === undefined ? body : decoded(summary))}`
 }
 
 function idleNotification(body: string): boolean {
@@ -269,7 +269,7 @@ function idleNotification(body: string): boolean {
 }
 
 function peerName(origin: Origin): string {
-  return stringOf(origin.name) ?? stringOf(origin.from) ?? "another session"
+  return oneLine(stringOf(origin.name) ?? stringOf(origin.from) ?? "another session")
 }
 
 function firstLine(text: string): string {

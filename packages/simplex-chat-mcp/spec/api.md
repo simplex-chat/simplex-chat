@@ -1032,7 +1032,7 @@ The hook's `note` is a line of at most 200 characters; a longer one is cut to 19
 | automatic prompt | origin `auto-continuation` | `🔄 Automatic prompt: ` and the first line of the prompt |
 | another kind | another origin | `⚙️ Claude Code: ` and the first line of the prompt |
 
-A first line is the first line with other than blank characters; control and format characters become spaces.
+A first line is the first line with other than blank characters. In a first line and in NAME, control and format characters become spaces, so a note is one line.
 
 SessionStart output ([hook.ts:81-112](../src/hook.ts#L81-L112)):
 

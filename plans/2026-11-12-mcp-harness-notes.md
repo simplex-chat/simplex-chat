@@ -154,7 +154,7 @@ Choices:
 18. A mid-turn prompt ends no tool-use card, and adds a turn record only when it matched a pushed prompt. So the answer of the turn quotes the turn's prompt, or an owner's prompt added to the turn, as in 0.3.0. It amends 0.3.0 decisions 29 and 39.
 19. The kind comes from the record's `origin.kind`, and from `turnOrigin: "scheduled"` without `origin`. `human` is typed. `channel` gets no note: its messages are in the group, or come from another channel's people, and Claude's answer is posted. A record without `origin` and not scheduled gets no note.
 20. The note of a subagent's report uses `handbackReportText`, and `body` without it.
-21. A line has at most 200 characters, counted in code points; a longer line keeps 199 and ends with `…`. Control and format characters become spaces, as in [log.ts:33-35](../packages/simplex-chat-mcp/src/log.ts#L33-L35). Of 5,127 notes computed from this machine's transcripts, 1,279 are cut.
+21. A line has at most 200 characters, counted in code points; a longer line keeps 199 and ends with `…`. In each first line and in NAME, control and format characters become spaces, as in [log.ts:33-35](../packages/simplex-chat-mcp/src/log.ts#L33-L35), so a note is one line. Of 5,127 notes computed from this machine's transcripts, 1,279 are cut.
 22. A note refused by a group preference is replaced by Claude's post `A note on Claude Code's prompt was not posted: ` and PREF OFF, by the path of 0.3.0 decision 114 ([hub.ts:283-287](../packages/simplex-chat-mcp/src/hub.ts#L283-L287)).
 23. Notes are posted when their request arrives, in the order of the hooks' requests, as answers and `User`'s prompts are. A turn's UserPromptSubmit hook starts before its Stop hook; a mid-turn prompt's hook starts during the turn.
 24. The protocol version stays 1: `note` and `midTurn` are optional, and a service without them posts nothing for them, as 0.3.0.
@@ -169,7 +169,7 @@ Decided after review round 1 of `9c78e6276`:
 Decided after review round 2 of `ef93ce0dd`:
 
 29. At the last read, the hook classifies a record still followed by an `enqueue` entry with its text by the record, and marks a typed record mid-turn. Claude Code runs the hook of its own prompt only when the prompt is taken (fact 5), so at the last read the queued prompt is a later one with the same text, such as a repeated monitor event. Before, the hook marked such a prompt typed, and `User` posted its block. The fallback of decision 16 applies only without a record.
-30. The wait of decision 27 stays. The hook of Claude Code's own prompt added to a turn can read the transcript before the fold's entries are written, and without the wait it would take the record of an earlier prompt with its text. In R2 the hook of the task notification started with a transcript of 292,045 bytes, before the tool result, the `remove` entries and the `queued_command` attachment. So when a later prompt with the text of a turn's own prompt is added to that turn within the reads, the hook of the turn's prompt takes the later record. Its note is the same line, it is mid-turn, and the turn gets no turn record: the answer then quotes the oldest pushed prompt not quoted yet, when there is one ([hub.ts:269-273](../packages/simplex-chat-mcp/src/hub.ts#L269-L273)).
+30. The wait of decision 27 stays. The hook of Claude Code's own prompt added to a turn can read the transcript before the fold's entries are written, and without the wait it would take the record of an earlier prompt with its text. In R2 the hook of the task notification started with a transcript of 292,045 bytes, before the tool result, the `remove` entries and the `queued_command` attachment. So when a later prompt with the text of a turn's own prompt is added to that turn within the reads, the hook of the turn's prompt takes the later record. Its note is the same line, it is mid-turn, and the turn gets no turn record: the answer then quotes the oldest pushed prompt not quoted yet, when there is one ([hub.ts:268-272](../packages/simplex-chat-mcp/src/hub.ts#L268-L272)).
 31. A teammate's prompt can have several `<teammate-message>` tags, separated by blank lines. Of 1,903 teammate prompts in the transcripts, 204 have several tags, and 54 of these have an idle notification first and a message after it; 1,084 have only idle notifications.
 
 ## 5. Design
@@ -284,22 +284,31 @@ Done when:
 11 real session: a background command, a subagent and a scheduled prompt show their lines          TESTING check
 12 the note of Claude Code's prompt is sent while a repeat of its text is queued after the reads  unit: hook
 13 a teammate's message after idle notifications in one prompt gets its note                      unit: hook
+14 a sender's name with a line break or a control character keeps the note on one line            unit: hook
 ```
 
 Tests:
-- `test/unit/hook.test.ts`, new: "sends a one-line note for each kind of Claude Code's prompt, from its transcript record, and none for typed and channel prompts": entries of R1 and of this machine's transcripts, with paths replaced. It fails on master, which sends no `note`.
-- `test/unit/hook.test.ts`, new: "finds a prompt added to a running turn by its queued command after the turn's entry, and marks it mid-turn": the R2 records. With master, the notification in the typed turn is typed and "Say the word charlie." is not, so it fails.
-- `test/unit/hook.test.ts`, new: the meta entry before the prompt's entry, an older prompt with the same text, and the queued typed prompt after the reads.
-- `test/unit/hook.test.ts`, round 2: a monitor event whose repeat is queued after the reads keeps its note, and is typed and mid-turn on `ef93ce0dd`; a teammate's prompt with an idle notification before a message gets the message's note, and no note on `ef93ce0dd`.
+- `test/unit/hook.test.ts`, new, in "turn hooks":
+  - "send a one-line note of each kind of Claude Code's own prompt, from the origin of its transcript entry, and none for a typed or a channel prompt": entries of R1 and of this machine's transcripts, with paths replaced. It fails on master, which sends no `note`.
+  - "find a prompt that reaches a running turn by its queued command or its own later entry after the entry of the turn's prompt ID, and mark it mid-turn": the R2 records. With master, the notification in the typed turn is typed and "Say the word charlie." is not, so it fails.
+  - "take the entry of the prompt ID whose text is the prompt, also when an older prompt has the same text, mark a prompt still queued after the reads as typed and mid-turn, and fall back to the origin of the prompt ID's entry".
+  - "send a note of a teammate's message with its sender and summary, or the first line without a summary, from the first tag that is not an idle notification, and none for idle notifications only". On `ef93ce0dd` the prompt with an idle notification before a message gets no note.
+  - "keep a note on one line when the sender's name has a line break or a control character". On `bbfd9c88d` the notes have the names' line breaks.
+  - "find a prompt of a long turn whose first entry is out of the tail by the turn's tool results, and keep waiting for a prompt with the text of the turn's own prompt while it is queued".
+  - "classify a prompt by its record when a later prompt with its text is still queued after the reads: Claude Code's own prompt by its origin, as a repeated monitor event, and a typed prompt as typed and mid-turn". On `ef93ce0dd` the monitor event is typed and mid-turn.
+  - "send the first line of a task notification without a block, also from a queued command that has only its command mode".
 - The tests build the records of R1 and R2 in their own code, so the test of 0.3.0 decision 121 stays unchanged and no fixture file is added.
-- `test/unit/sessions.test.ts`, new: "posts the note of Claude Code's prompt as Claude without a quote, and the turn's answer without a quote" (fails on master: nothing is posted); "keeps the turn's quote and tool-use cards for a mid-turn prompt" (fails on master: the answer loses the quote and the card ends); "replaces a refused note with the preference's text".
-- `test/e2e/service.test.ts`, changed: the mirroring test adds a summary to its notification, expects Claude's line and no post of `User`, and adds a notification as a queued command of the typed turn `p1`.
+- `test/unit/sessions.test.ts`, new, in "session channel":
+  - "posts the note of Claude Code's own prompt as Claude without a quote, and the answer of the turn it starts without a quote". It fails on master: nothing is posted.
+  - "keeps the turn's quote and its open tool-use cards for a prompt that reaches the running turn, and adds a turn record for an owner's prompt among them". It fails on master: the answer loses the quote and the card ends.
+  - "posts that a note on Claude Code's prompt was not posted, naming the preference", in "while a preference of the session group refuses a post".
+- `test/e2e/service.test.ts`, changed: the mirroring test, now "the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, ...". It adds a summary to its notification, expects Claude's line and no post of `User`, and adds a failed task as a queued command of the running notification turn `p2`.
 - Run: `npm test --prefix packages/simplex-chat-mcp` for unit tests, and the end-to-end tests as TESTING.md states. The reduced build runs them in CI. No app changes, so no app test workflows.
 
 ## 8. Docs to change
 
 - `README.md:36`: Claude Code's own prompts appear as one line each.
-- `REFERENCE.md`, "Prompts and answers" (603-617): the lines, the kinds, the cut, the refusal text; `User` posts typed prompts also when typed during a turn.
+- `REFERENCE.md`, "Prompts and answers" (603-616): the lines, the kinds, the cut, the refusal text; `User` posts typed prompts also when typed during a turn.
 - `ROADMAP.md:18` stays as it is: the line also names the diffs.
 - `spec/flows.md`: flow 21 notes; a new flow, a prompt of Claude Code at a turn's start and during a turn.
 - `spec/api.md`: 4.3 (Claude's posts), 4.6 (`POST /turn` with `note` and `midTurn`), the hook's record rules (1020).
@@ -312,9 +321,9 @@ Tests:
 file                              where                                    items
 src/hub.ts                        Session.turn (180-201)                   mcp-replies (quotes, pushed prompts), mcp-reactions
 src/protocol.ts                   TurnRequest (48-57), AttachLine (59-62)  mcp-replies, mcp-reactions (AttachLine)
-test/unit/sessions.test.ts        turn tests (630-760)                     mcp-replies, mcp-reactions
-test/e2e/service.test.ts          the mirroring test (351-412)             mcp-replies, mcp-reactions
-REFERENCE.md                      "Prompts and answers" (603-617)          mcp-replies, mcp-reactions
+test/unit/sessions.test.ts        turn and answer tests (624-910)          mcp-replies, mcp-reactions
+test/e2e/service.test.ts          the mirroring test (351-417)             mcp-replies, mcp-reactions
+REFERENCE.md                      "Prompts and answers" (603-616)          mcp-replies, mcp-reactions
 spec/flows.md, api.md,            flows 20-21, 4.3, 4.6, 8.6               mcp-replies, mcp-reactions
 architecture.md
 ROADMAP.md                        lines 18-20, adjacent                    mcp-reactions (19), mcp-replies (20)

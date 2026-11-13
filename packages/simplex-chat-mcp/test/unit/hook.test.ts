@@ -366,6 +366,28 @@ describe("turn hooks", () => {
     }
   })
 
+  it("keep a note on one line when the sender's name has a line break or a control character", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const prompts: [string, string, object][] = [
+        ["p1", 'Another Claude session sent a message:\n<agent-message from="a1">\nDone.\n</agent-message>', {origin: {kind: "peer", from: "a1", name: "mcp-impl2\n‮reviewer", body: "Done."}}],
+        ["p2", 'Another Claude session sent a message:\n<agent-message from="a2">\nAll done.\n</agent-message>', {origin: {kind: "peer", from: "a2", name: "ios\r\nterminal", body: "All done.", handback: true, handbackReportText: "All done."}}],
+        ["p3", 'Another Claude session sent a message:\n<teammate-message teammate_id="lookalikes\nbuilder" color="green">\nThe seed file is written.\n</teammate-message>', {}],
+      ]
+      writeFileSync(transcript, prompts.map(([promptId, content, extra]) => userEntry(promptId, content, extra)).join(""))
+      const {client, requests} = turnClient()
+      for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
+      expect(kinds(requests)).toEqual([
+        ["✉️ Message from mcp-impl2 reviewer: Done.", false, undefined],
+        ["📋 Report from subagent ios terminal: All done.", false, undefined],
+        ["✉️ Message from lookalikes builder: The seed file is written.", false, undefined],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
   it("find a prompt of a long turn whose first entry is out of the tail by the turn's tool results, and keep waiting for a prompt with the text of the turn's own prompt while it is queued", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
     try {
