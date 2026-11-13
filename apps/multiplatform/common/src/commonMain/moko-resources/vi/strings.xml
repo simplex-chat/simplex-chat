@@ -977,7 +977,7 @@
     <string name="keep_unused_invitation_question">Giữ lại lời mời chưa sử dụng?</string>
     <string name="invite_friends">Mời bạn bè</string>
     <string name="mark_code_verified">Đánh dấu đã xác thực</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Điều này có thể xảy ra khi:\n1. Tin nhắn hết hạn sau 2 ngày trên máy gửi hoặc sau 30 ngày trên máy chủ.\n2. Quá trình giải mã tin nhắn thất bại do bạn hoặc liên hệ của bạn sử dụng bản sao lưu cơ sở dữ liệu cũ.\n3. Kết nối bị xâm phạm.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Điều này có thể xảy ra khi:\n1. Tin nhắn hết hạn sau 2 ngày trên máy gửi hoặc sau 21 ngày trên máy chủ.\n2. Quá trình giải mã tin nhắn thất bại do bạn hoặc liên hệ của bạn sử dụng bản sao lưu cơ sở dữ liệu cũ.\n3. Kết nối bị xâm phạm.</string>
     <string name="join_group_question">Tham gia nhóm?</string>
     <string name="v5_4_link_mobile_desktop">Liên kết ứng dụng trên điện thoại và máy tính! 🔗</string>
     <string name="profile_update_event_member_name_changed">thành viên %1$s đã đổi thành %2$s</string>

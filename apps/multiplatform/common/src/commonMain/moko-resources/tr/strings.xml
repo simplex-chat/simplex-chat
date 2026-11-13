@@ -1391,7 +1391,7 @@
     <string name="alert_title_skipped_messages">Atlanmış mesajlar</string>
     <string name="alert_text_msg_bad_id">Bir sonraki mesajın kimliği yanlış (bir öncekinden az veya aynı). \nBazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.</string>
     <string name="notification_preview_somebody">Kişi gizlendi:</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Şu durumlarda gerçekleşebilir: \n1. Mesajların süresi, gönderen istemcide 2 gün sonra veya sunucuda 30 gün sonra sona erdi. \n2. Siz veya kişiniz eski veritabanı yedeğini kullandığınız için mesajın şifresini çözme işlemi başarısız oldu. \n3. Bağlantı tehlikeye girdi.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Şu durumlarda gerçekleşebilir: \n1. Mesajların süresi, gönderen istemcide 2 gün sonra veya sunucuda 21 gün sonra sona erdi. \n2. Siz veya kişiniz eski veritabanı yedeğini kullandığınız için mesajın şifresini çözme işlemi başarısız oldu. \n3. Bağlantı tehlikeye girdi.</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion ana bilgisayarları mümkün olduğu zaman kullanılacaktır.</string>
     <string name="switch_verb">Değiştir</string>
     <string name="open_port_in_firewall_title">Güvenlik duvarında port aç</string>

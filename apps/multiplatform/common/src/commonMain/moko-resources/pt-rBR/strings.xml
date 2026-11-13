@@ -727,7 +727,7 @@
     <string name="your_current_profile">Seu perfil atual</string>
     <string name="onboarding_notifications_mode_title">Notificações privadas</string>
     <string name="make_private_connection">Fazer uma conexão privada</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Isso pode acontecer quando:\n1. As mensagens expiraram no remetente após 2 dias ou no servidor após 30 dias.\n2. A descriptografia da mensagem falhou porque você ou seu contato usou um backup antigo do banco de dados.\n3. A conexão foi comprometida.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Isso pode acontecer quando:\n1. As mensagens expiraram no remetente após 2 dias ou no servidor após 21 dias.\n2. A descriptografia da mensagem falhou porque você ou seu contato usou um backup antigo do banco de dados.\n3. A conexão foi comprometida.</string>
     <string name="you_have_to_enter_passphrase_every_time">Você deverá inserir a senha sempre que o aplicativo for iniciado – ela não fica armazenada no dispositivo.</string>
     <string name="save_welcome_message_question">Salvar mensagem de boas-vindas?</string>
     <string name="delete_profile">Apagar perfil</string>

@@ -3350,7 +3350,7 @@ servers warning */
 "It can happen when you or your connection used the old database backup." = "Це може статися, якщо ви або ваше з'єднання використовували стару резервну копію бази даних.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Це може статися, коли:\n1. Термін дії повідомлень закінчився в клієнті-відправнику через 2 дні або на сервері через 30 днів.\n2. Не вдалося розшифрувати повідомлення, тому що ви або ваш контакт використовували стару резервну копію бази даних.\n3. З'єднання було скомпрометовано.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 21 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Це може статися, коли:\n1. Термін дії повідомлень закінчився в клієнті-відправнику через 2 дні або на сервері через 21 день.\n2. Не вдалося розшифрувати повідомлення, тому що ви або ваш контакт використовували стару резервну копію бази даних.\n3. З'єднання було скомпрометовано.";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "Він захищає вашу IP-адресу та з'єднання.";

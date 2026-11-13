@@ -456,7 +456,7 @@
     <string name="icon_descr_video_off">Wideo wyłączone</string>
     <string name="icon_descr_video_on">Wideo włączone</string>
     <string name="integrity_msg_skipped">%1$d pominięta(ych) wiadomość(i)</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Może to nastąpić, gdy: \n1. Wiadomości wygasły w wysyłającym kliencie po 2 dniach lub na serwerze po 30 dniach. \n2. Odszyfrowanie wiadomości nie powiodło się, ponieważ Ty lub Twój kontakt użyliście starej kopii zapasowej bazy danych. \n3. Połączenie zostało skompromitowane.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Może to nastąpić, gdy: \n1. Wiadomości wygasły w wysyłającym kliencie po 2 dniach lub na serwerze po 21 dniach. \n2. Odszyfrowanie wiadomości nie powiodło się, ponieważ Ty lub Twój kontakt użyliście starej kopii zapasowej bazy danych. \n3. Połączenie zostało skompromitowane.</string>
     <string name="privacy_and_security">Prywatność i bezpieczeństwo</string>
     <string name="alert_title_skipped_messages">Pominięte wiadomości</string>
     <string name="your_privacy">Twoja prywatność</string>

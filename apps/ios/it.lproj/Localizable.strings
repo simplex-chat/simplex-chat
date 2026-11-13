@@ -3808,7 +3808,7 @@ servers warning */
 "It can happen when you or your connection used the old database backup." = "Può accadere quando tu o il tuo contatto avete usato il backup del vecchio database.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Può accadere quando:\n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni.\n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del vecchio database.\n3. La connessione è stata compromessa.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 21 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Può accadere quando:\n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 21 giorni.\n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del vecchio database.\n3. La connessione è stata compromessa.";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "Protegge il tuo indirizzo IP e le connessioni.";

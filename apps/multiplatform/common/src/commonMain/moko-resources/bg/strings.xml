@@ -702,7 +702,7 @@
     <string name="image_will_be_received_when_contact_is_online">Изображението ще бъде получено, когато вашият контакт е онлайн, моля, изчакайте или проверете по-късно!</string>
     <string name="message_deletion_prohibited_in_chat">Необратимото изтриване на съобщения е забранено.</string>
     <string name="v4_3_improved_server_configuration">Подобрена конфигурация на сървъра</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Това може да се случи, когато: \n1. Времето за пазене на съобщенията е изтекло - в изпращащия клиент е 2 дена а на сървъра е 30. \n2. Декриптирането на съобщението е неуспешно, защото вие или вашият контакт сте използвали старо копие на базата данни. \n3. Връзката е била компрометирана.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Това може да се случи, когато: \n1. Времето за пазене на съобщенията е изтекло - в изпращащия клиент е 2 дена а на сървъра е 21. \n2. Декриптирането на съобщението е неуспешно, защото вие или вашият контакт сте използвали старо копие на базата данни. \n3. Връзката е била компрометирана.</string>
     <string name="import_database">Импортиране на база данни</string>
     <string name="import_database_confirmation">Импортиране</string>
     <string name="incompatible_database_version">Несъвместима версия на базата данни</string>

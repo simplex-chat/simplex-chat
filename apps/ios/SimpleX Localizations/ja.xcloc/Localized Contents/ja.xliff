@@ -3035,13 +3035,13 @@ server test error</note>
         <target>古いデータベースのバックアップを使用した場合に発生する可能性があります。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 21 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
         <source>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
         <target>次の場合に起こる場合があります：
-1. メッセージの有効期限（送信側のクライアントでは2日後、サーバーでは30日後）が切れた。
+1. メッセージの有効期限（送信側のクライアントでは2日後、サーバーでは21日後）が切れた。
 2. あなたや 連絡相手が古いデータベースのバックアップを使用したため、メッセージの復号化に失敗した。
 3. 接続に問題があった。</target>
         <note>No comment provided by engineer.</note>

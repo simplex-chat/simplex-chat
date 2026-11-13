@@ -988,7 +988,7 @@
     <string name="contact_wants_to_connect_via_call">%1$s хоче підключитися до вас через</string>
     <string name="encrypted_video_call">зашифрований e2e відеовиклик</string>
     <string name="ignore">Ігнорувати</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Це може трапитися, коли: \n1. Повідомлення застаріли відправником через 2 дні або на сервері через 30 днів. \n2. Помилка розшифровки повідомлення, оскільки ви або ваш контакт використовували застарілу резервну копію бази даних. \n3. З\'єднання було компрометоване.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Це може трапитися, коли: \n1. Повідомлення застаріли відправником через 2 дні або на сервері через 21 день. \n2. Помилка розшифровки повідомлення, оскільки ви або ваш контакт використовували застарілу резервну копію бази даних. \n3. З\'єднання було компрометоване.</string>
     <string name="alert_title_skipped_messages">Пропущені повідомлення</string>
     <string name="protect_app_screen">Захист екрану застосунку</string>
     <string name="error_stopping_chat">Помилка при зупинці чату</string>

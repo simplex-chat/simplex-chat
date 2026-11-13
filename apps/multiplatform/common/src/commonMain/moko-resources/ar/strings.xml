@@ -523,7 +523,7 @@
     <string name="thousand_abbreviation">ألف</string>
     <string name="group_invitation_item_description">دعوة للمجموعة %1$s</string>
     <string name="icon_descr_add_members">دعوة الأعضاء</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">يمكن أن يحدث عندما: \n1. انتهت صلاحية الرسائل في العميل المرسل بعد يومين أو على الخادم بعد 30 يومًا. \n2. فشل فك تعمية الرسالة، لأنك أو جهة اتصالك استخدمت نسخة احتياطية قديمة من قاعدة البيانات. \n3. اُخترق الاتصال.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">يمكن أن يحدث عندما: \n1. انتهت صلاحية الرسائل في العميل المرسل بعد يومين أو على الخادم بعد 21 يومًا. \n2. فشل فك تعمية الرسالة، لأنك أو جهة اتصالك استخدمت نسخة احتياطية قديمة من قاعدة البيانات. \n3. اُخترق الاتصال.</string>
     <string name="v5_1_japanese_portuguese_interface">واجهة أستخدام يابانية وبرتغالية</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">يمكن أن يحدث ذلك عندما تستخدم أنت أو اتصالك النُسخة الاحتياطية القديمة لقاعدة البيانات.</string>
     <string name="group_preview_join_as">انضم ك%s</string>

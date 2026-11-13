@@ -868,7 +868,7 @@
     <string name="permissions_camera_and_record_audio">دوربین و میکروفون</string>
     <string name="permissions_grant">اعطای اجازه‌ها برای برقراری تماس‌ها</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>از باتری بیشتر استفاده می‌کند</b>! سرویس پس‌زمینه همیشه در حال اجراست - اعلان‌ها به محض موجود شدن، نمایش داده می‌شوند.]]></string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">وقتی می‌تواند اتفاق بیفتد که: \n۱. پیام‌ها در کلاینت فرستنده بعد از ۲ روز یا روی سرور بعد از ۳۰ روز منقضی شده باشند. \n۲. رمزگشایی پیام ناموفق بود، چون شما یا مخاطبتان از پشتیبان پایگاه داده قدیمی استفاده استفاده کردید. \n۳. اتصال مورد حمله قرار گرفته باشد.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">وقتی می‌تواند اتفاق بیفتد که: \n۱. پیام‌ها در کلاینت فرستنده بعد از ۲ روز یا روی سرور بعد از ۲۱ روز منقضی شده باشند. \n۲. رمزگشایی پیام ناموفق بود، چون شما یا مخاطبتان از پشتیبان پایگاه داده قدیمی استفاده استفاده کردید. \n۳. اتصال مورد حمله قرار گرفته باشد.</string>
     <string name="settings_section_title_profile_images">تصاویر پروفایل</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">چت را متوقف کنید تا بتوانید پایگاه داده چت را اکسپورت، ایمپورت یا حذف کنید. در حالی که چت متوقف است، نمی‌توانید پیام‌ها را ارسال یا دریافت کنید.</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">پایگاه داده چت فعلی شما حذف و توسط پایگاه داده ایمپورت شده جایگزین خواهد شد. \nاین عمل قابل برگشت نیست - پروفایل، مخاطبان، پیام‌ها و فایل‌های شما به صورت غیر قابل بازگشت از بین خواهند رفت.</string>
