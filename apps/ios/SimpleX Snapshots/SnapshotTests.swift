@@ -175,16 +175,12 @@ final class SnapshotTests: XCTestCase {
         }
         XCTAssertEqual(items.map(\.isOneLine), [false, true, true, true, true, true, true, false, true, true, false, true, false, false])
         XCTAssertEqual(rows.map { $0.sender }, [true, true, false, false, true, false, true, false, true, true, true, false, true])
-        XCTAssertEqual(rows.map { $0.gap }, [p, p, 0, p, p, 0, p, p, p, p, p, p, p])
+        XCTAssertEqual(rows.map { $0.gap }, [p, p, 0, 0, p, 0, p, p, p, p, p, p, p])
         XCTAssertEqual(rows.map { $0.card }, [false, false, false, false, false, false, false, false, false, true, true, true, false])
         XCTAssertEqual(items.suffix(2).map(terminalTextTopGap), [p, 0])
         let edges = SnapshotFixtures().spacingEdgeItems()
         XCTAssertEqual(edges.map { terminalItemStartsWithCard($0, revealed: true) }, [true, false, true, true])
         XCTAssertEqual(edges.suffix(3).map(terminalTextTopGap), [0, 0, 0])
-        var unreacted = items[3]
-        unreacted.reactions = []
-        let rowHash = { (older: ChatItem) in ListItem(item: items[4], prevItem: items[5], nextItem: older, unreadBefore: 0).genHash(false, false) }
-        XCTAssertNotEqual(rowHash(items[3]), rowHash(unreacted))
     }
 
     func testTerminalMediaAndAvatarSizes() {

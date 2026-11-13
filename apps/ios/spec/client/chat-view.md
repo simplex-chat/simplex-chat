@@ -391,7 +391,7 @@ bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; o
 | Function | Rule |
 |----------|------|
 | [`terminalItemShowsSender(item, older)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L118) | Item with a sender (`hasTerminalSender`), and the older item is absent, has no sender, has another sender, or is `terminalNameRepeatInterval` (7.5 minutes) or more older. Same sender: channel as sender on both items, or `CIDirection.sameDirection` when neither item has it |
-| [`terminalRowGap(item, older, separated, largeGap, hasSenderRow)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L130) | `terminalParagraphGap` when the older item exists, the rows are not separated, and one holds: large gap (`getItemSeparation`: another sender, or more than 60 seconds apart), sender row, either item not one-line, the older item has reactions. Otherwise 0 |
+| [`terminalRowGap(item, older, separated, largeGap, hasSenderRow)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L130) | `terminalParagraphGap` when the older item exists, the rows are not separated, and one holds: large gap (`getItemSeparation`: another sender, or more than 60 seconds apart), sender row, either item not one-line. Otherwise 0, also below a reactions row |
 | `ChatItem.isOneLine` | Text at the item top (`textAtItemTop`: text content without a quote or header, `hasQuoteOrHeader`), no block markdown, no line break in the text; a large emoji is one-line; reactions do not count. Items without a sender (events) are not one-line |
 | [`terminalItemStartsWithCard(item, revealed)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L137) | The first element of the item is a card: a marked deleted item drawn as a card; a quote without a report, deleted or live header above it (`hasHeaderAboveQuote`). Without a quote or header: content other than a message, except calls (deleted, error and group invitation cards, invalid data); media (`terminalMediaCard`: image, video, voice, file, link preview, chat link); text starting with a code block, table or rule (`MarkdownBlock.isCard`); a large emoji (text content, or `FramedItemView.showsEmoji`) |
 | [`terminalCardTopGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L150) | `terminalParagraphGap` above media, voice, file and emoji when a quote or header is above them (`hasQuoteOrHeader`), otherwise 0 |
@@ -403,7 +403,7 @@ bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; o
 
 `ChatView` passes `olderRow`, the next merged item. `MergedItem.revealed`: true for `.single`, the flag of `.grouped`.
 
-A visible cell is rebuilt when the hash of its merged item changes ([`ListItem.genHash`](../../Shared/Views/Chat/ChatItemsMerger.swift#L284)). The hash of a single item includes whether the older item (`nextItem`) has reactions and whether it is one-line, so the cell is rebuilt, and `terminalRowGap` computed again, when the first reaction is added to the older item, its last reaction is removed, or an edit adds or removes its line break or block markdown. The gap of a grouped row does not depend on the older item's reactions or lines: its newest item is a deleted item or an event (`mergeCategory`), which is not one-line. The hash also includes whether the newer item (`prevItem`) has deleted content, as its `mergeCategory` does for marked deleted items, so the time is shown again when the newer item is deleted (`getItemSeparation`).
+A visible cell is rebuilt when the hash of its merged item changes ([`ListItem.genHash`](../../Shared/Views/Chat/ChatItemsMerger.swift#L284)). The hash of a single item includes whether the older item (`nextItem`) is one-line, so the cell is rebuilt, and `terminalRowGap` computed again, when an edit adds or removes its line break or block markdown. The gap of a grouped row does not depend on the older item's lines: its newest item is a deleted item or an event (`mergeCategory`), which is not one-line. The hash also includes whether the newer item (`prevItem`) has deleted content, as its `mergeCategory` does for marked deleted items, so the time is shown again when the newer item is deleted (`getItemSeparation`).
 
 ### Items
 
@@ -416,7 +416,7 @@ go-to button       search results and marked deleted items: after the item
                    forwarded items: endButton of FramedItemView, placed by ItemWithMeta
 reactions          chatItemTextPadding − 6pt from the start; no spacing above or below, as a line of text
                    (classic: 3pt above, 4pt below); below a card that ends the item: terminalCardBottomGap of the card
-                   the next row: terminalParagraphGap above it (terminalRowGap)
+                   the next row: the gap it has without reactions (terminalRowGap), 0 for close one-line messages of one sender
 ```
 
 Item views start at the text edge `chatItemTextPadding` (12pt):
