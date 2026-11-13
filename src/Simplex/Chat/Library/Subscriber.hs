@@ -616,6 +616,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         RCVD msgMeta msgRcpt ->
           withAckMessage' "contact rcvd" agentConnId msgMeta $
             directMsgReceived ct conn msgMeta msgRcpt
+        MSGERR msgMeta -> checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
         CONF confId pqSupport _ connInfo -> do
           conn' <- processCONFpqSupport conn pqSupport
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn' connInfo
@@ -1184,6 +1185,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       RCVD msgMeta msgRcpt ->
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
+      MSGERR msgMeta -> do
+        (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
+        checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta
       SENT msgId proxy -> do
         continued <- continueSending connEntity conn
         (fileEvent_, acis) <- withStore $ \db -> do
