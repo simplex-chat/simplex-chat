@@ -232,7 +232,7 @@ internal fun imageSampleSize(width: Int, height: Int, maxDimension: Int): Int {
       sampleSize *= 2
     }
   }
-  while ((width / sampleSize) * (height / sampleSize) > MAX_DECODED_PIXELS) {
+  while ((width / sampleSize) * (height / sampleSize) > minOf(MAX_DECODED_PIXELS, 4 * maxDimension * maxDimension)) {
     sampleSize *= 2
   }
   return sampleSize
