@@ -15,6 +15,7 @@ module Simplex.Chat.Store.Connections
     getConnectionEntityKeys,
     getConnectionEntityByConnReq,
     getConnectionEntityViaShortLink,
+    getConnReqContactViaShortLink,
     getContactConnEntityByConnReqHash,
     getContactConnsToSub,
     getUCLConnsToSub,
@@ -236,6 +237,18 @@ getConnectionEntityViaShortLink db cxt user@User {userId} shortLink = fmap eithe
     toConnReqConnId = \case
       (Just cReq, connId) -> Right (cReq, connId)
       _ -> Left $ SEInternalError "no connection request"
+
+getConnReqContactViaShortLink :: DB.Connection -> User -> ShortLinkContact -> IO (Maybe ConnReqContact)
+getConnReqContactViaShortLink db User {userId} shortLink =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT via_contact_uri
+        FROM connections
+        WHERE user_id = ? AND via_short_link_contact = ? AND via_contact_uri IS NOT NULL LIMIT 1
+      |]
+      (userId, shortLink)
 
 -- search connection for connection plan:
 -- multiple connections can have same via_contact_uri_hash if request was repeated;

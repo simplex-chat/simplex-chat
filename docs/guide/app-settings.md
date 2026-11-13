@@ -226,6 +226,17 @@ link preview from the website. The first time you type a link, the app asks
 - Tap on "Your privacy".
 - Toggle on "Send link previews".
 
+#### Directory Search
+
+When it is on, the app can send your search text to SimpleX Directory to [find
+groups and channels](./making-connections.md#find-groups-and-channels). It is
+off by default, and while it is off the app asks **Enable Directory search?**
+before each search.
+
+- [Open the app settings](#opening-the-app-settings).
+- Tap on "Your privacy".
+- Toggle "Directory search".
+
 #### SimpleX Links
 
 This option is in [Developer tools](#developer-tools), in the section

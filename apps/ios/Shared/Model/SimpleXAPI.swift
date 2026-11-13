@@ -1041,6 +1041,24 @@ func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> Pendi
     if let r { throw r.unexpected } else { return nil }
 }
 
+func apiSearchDirectory(_ text: String, cursor: JSONValue?) async -> DirectorySearchResults? {
+    guard let userId = ChatModel.shared.currentUser?.userId else {
+        logger.error("apiSearchDirectory: no current user")
+        return nil
+    }
+    let req = directorySearchRequest(text, cursor)
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(
+        .apiSendServiceRequest(userId: userId, target: DIRECTORY_SERVICE_LINK, timeoutSec: DIRECTORY_SEARCH_TIMEOUT_SEC, request: req)
+    )
+    if case let .result(.serviceResponse(_, responseData)) = r {
+        let results = parseDirectorySearchResponse(responseData)
+        if results == nil { logger.error("apiSearchDirectory: unusable response") }
+        return results
+    }
+    logger.error("apiSearchDirectory error: \(String(describing: r))")
+    return nil
+}
+
 func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>) async -> ConnectionPlanResult? {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnectPlan: no current user")
@@ -1052,7 +1070,7 @@ func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, l
     }
     // a .never (typing) search that matches nothing locally is not an error to surface
     if case .error(.error(.notResolvedLocally)) = r { return nil }
-    if let r { await apiConnectResponseAlert(r) }
+    if inProgress.boxedValue, let r { await apiConnectResponseAlert(r) }
     return nil
 }
 

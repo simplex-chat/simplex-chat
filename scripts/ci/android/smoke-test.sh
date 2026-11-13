@@ -27,6 +27,7 @@ esac
 package=chat.simplex.app
 local_chat="seeded notes"
 search_field="Search or paste SimpleX link"
+no_match_text=zqxvjk
 ui=$(dirname "$0")/ui
 fixtures=$(dirname "$0")/../../../tests/fixtures
 checks=$UI_OUT/checks.txt
@@ -260,6 +261,84 @@ check_layout() {
   fi
 }
 
+not_on_screen() {
+  ! "$ui" find "$1" > /dev/null 2>&1
+}
+
+near() {
+  local a=$1 b=$2 tolerance=$3
+  [ $((a - b)) -le "$tolerance" ] && [ $((b - a)) -le "$tolerance" ]
+}
+
+bottom_of() {
+  local pos
+  pos=$("$ui" find "$1") || return 1
+  cut -d ' ' -f 6 <<< "$pos"
+}
+
+settled_field_y() {
+  local test=$1 limit=$2 deadline=$((SECONDS + 15)) y previous=""
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    y=$(y_of "$search_field") || y=""
+    if [ -n "$y" ] && [ "$y" = "$previous" ] && [ "$y" "$test" "$limit" ]; then
+      echo "$y"
+      return 0
+    fi
+    previous=$y
+    sleep 1
+  done
+  return 1
+}
+
+title_back_at() {
+  local y
+  y=$(bottom_of "$1") || return 1
+  near "$y" "$2" 4
+}
+
+onboarding_cards_keep_size() {
+  local upper="Let someone connect to you" lower="Connect via link or QR code"
+  local field upper_y lower_y field_open upper_open lower_open field_closed
+  field=$(y_of "$search_field") || fail "no search field under the onboarding pages"
+  upper_y=$(bottom_of "$upper") || fail "no \"$upper\" card on the onboarding page"
+  lower_y=$(bottom_of "$lower") || fail "no \"$lower\" card on the onboarding page"
+  "$ui" shot onboarding-keyboard-closed
+  "$ui" click-text "$search_field"
+  field_open=$(settled_field_y -lt $((field - 100))) || field_open=""
+  "$ui" shot onboarding-keyboard-open
+  check "onboarding: the search field moved up above the keyboard, from y $field" [ -n "$field_open" ]
+  [ -n "$field_open" ] || return 0
+  upper_open=$(bottom_of "$upper") || upper_open=""
+  lower_open=$(bottom_of "$lower") || lower_open=""
+  check "onboarding: \"$lower\" on screen with the keyboard open" [ -n "$lower_open" ]
+  if [ -n "$upper_open" ] && [ -n "$lower_open" ]; then
+    check "onboarding: the card titles keep their distance of $((lower_y - upper_y)) px with the keyboard open" \
+      near $((lower_open - upper_open)) $((lower_y - upper_y)) 4
+  elif [ -n "$lower_open" ]; then
+    check "onboarding: \"$lower\" moved up as much as the search field, $((field - field_open)) px" \
+      near $((lower_y - lower_open)) $((field - field_open)) 8
+  fi
+  "$ui" key BACK
+  field_closed=$(settled_field_y -gt $((field - 100))) || field_closed=""
+  "$ui" shot onboarding-keyboard-closed-again
+  check "onboarding: the search field back at y $field once the keyboard closed" near "${field_closed:-0}" "$field" 4
+  check "onboarding: \"$upper\" back at y $upper_y" title_back_at "$upper" "$upper_y"
+  check "onboarding: \"$lower\" back at y $lower_y" title_back_at "$lower" "$lower_y"
+}
+
+no_match_search() {
+  "$ui" click-text "$search_field"
+  "$ui" type "$no_match_text"
+  "$ui" wait "Search in Directory" 15 || true
+  "$ui" shot no-match-typed
+  check "reachable: \"Search in Directory\" offered for \"$no_match_text\"" "$ui" find "Search in Directory"
+  check "reachable: no \"No chats found\" before a directory search" not_on_screen "No chats found"
+  for _ in $(seq ${#no_match_text}); do
+    "$ui" key DEL
+  done
+  "$ui" wait "$search_field" 10 || fail "the search field still has text after deleting \"$no_match_text\""
+}
+
 add_images() {
   adb push "$fixtures/logo-large-rgba.png" /sdcard/Pictures/simplex-logo/simplex-logo.png
   adb push "$fixtures/test.jpg" /sdcard/Pictures/test-card/test-card.jpg
@@ -344,12 +423,14 @@ allow_notifications_and_accept || fail "no chat list 120 s after Your network"
 echo "onboarding reached the chat list $((SECONDS - started)) s after the start"
 
 if [ "$cases" != onboarding ]; then
+  onboarding_cards_keep_size
   if [ "$cases" = backend ]; then
     : "${NAMES_SERVER:?NAMES_SERVER must be the test SMP server address}"
     test_server
   fi
   create_local_chat
   check_layout reachable
+  no_match_search
   "$ui" layout top
   check_layout top
   send_images

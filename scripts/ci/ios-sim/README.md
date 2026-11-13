@@ -11,8 +11,8 @@ Results: the job logs, the Claude job's summary (Claude's usage) and the artifac
 ## How long it takes, what it costs
 
 - `plan` (ubuntu-24.04, 10 s) reads what the run asks for, names the core library and the backend after their sources, `hashFiles` over the Haskell sources, `cabal.project`, `simplex-chat.cabal` and the build script, and reuses an artifact of the same name that an earlier run of the same branch uploaded (30 days). So every run builds the core library, and the backend when asked, from the branch's own Haskell code, and rebuilds only when those sources change.
-- `app` (macOS) first builds what no earlier run built, and uploads it for later runs: `build-core.sh` (30–45 min) builds `lib:simplex-chat` with cabal and the iOS flags, as the Nix iOS build does, into the package `scripts/ios/prepare.sh` expects; `build-backend.sh` (20–45 min, only when asked) builds `simplex-chat`, `simplex-directory-service` and `smp-server`. `prepare-libs.sh` then marks the core library for the simulator (`mac2ios`). The Xcode build takes 8–22 min, the smoke test about 10 min, the snapshots about 18 min more, the backend start about 10 min when asked.
-- `claude` (macOS, only when asked, after `app` passed): a new simulator with the app job's build and the smoke test, about 7 min, then the sessions (the smoke plan's took 2.6 min).
+- `app` (macOS) first builds what no earlier run built, and uploads it for later runs: `build-core.sh` (30–45 min) builds `lib:simplex-chat` with cabal and the iOS flags, as the Nix iOS build does, into the package `scripts/ios/prepare.sh` expects; `build-backend.sh` (20–45 min, only when asked) builds `simplex-chat`, `simplex-directory-service` and `smp-server`. `prepare-libs.sh` then marks the core library for the simulator (`mac2ios`). The Xcode build takes 8–22 min, the smoke test about 10 min (about 20 with the backend's searches), the snapshots about 18 min more, the backend start about 10 min when asked.
+- `claude` (macOS, only when asked, after `app` passed): a new simulator with the app job's build and the smoke test, about 7 min (about 20 with the backend), then the sessions (the smoke plan's took 2.6 min).
 
 A run with reused builds and no extras takes about 25 minutes plus the wait for a macOS runner. Everything but the Claude sessions runs on one macOS runner, so a run waits for one runner, not one per build. Hosted minutes are free for this public repository; the limit is the repository's five concurrent macOS jobs, shared with PR builds (each `build.yml` run takes two), so queue waits can be long. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`: builds are reused only as the artifacts above, and a core or backend rebuild compiles its dependencies too.
 
@@ -20,12 +20,21 @@ The macOS jobs run on `macos-26`, the image with Xcode 26 and the iPhone 17 simu
 
 ## The Claude session
 
-It runs in its own job, `claude`, once the app job has passed: the job installs that job's build (the artifact `ios-sim-app`, kept 14 days) in a new simulator, runs the smoke test to reach the sessions' starting state, adds the plan's images to the photo library (`tests/fixtures/test.jpg`, `tests/fixtures/logo-large-rgba.png`, and a HEIC of the first turned to portrait when `sips` can write HEIC), then one session per layout listed in `claude-scope`, with Claude Code installed from npm at the version the desktop workflow pins too. Only this job references the environment `app-sim-claude`, which holds the secret `CLAUDE_CODE_OAUTH_TOKEN` (a Claude subscription token) and admits the branches its rule allows; one runs per branch at a time. Only the Claude step gets the token, and `claude-test.sh` passes it to the `claude` processes alone. The job checks out without persisting its GitHub token and installs a pinned AXe (`install-axe.sh`), since it holds the Claude token. It starts the test backend when `claude-scope` says `backend: yes`; a run that asks for Claude must then ask for the backend too, or the plan job fails. On master it says `no`, since the smoke plan doesn't use the backend.
+It runs in its own job, `claude`, once the app job has passed:
+
+- The job installs that job's build (the artifact `ios-sim-app`, kept 14 days) in a new simulator, runs the smoke test to reach the sessions' starting state, adds test images to the photo library (`tests/fixtures/test.jpg`, `tests/fixtures/logo-large-rgba.png`, and a HEIC of the first turned to portrait when `sips` can write HEIC), then one session per layout listed in `claude-scope`, with Claude Code installed from npm at the version the desktop workflow pins too.
+- Only this job references the environment `app-sim-claude`, which holds the secret `CLAUDE_CODE_OAUTH_TOKEN` (a Claude subscription token) and admits the branches its rule allows; one runs per branch at a time.
+- Only the Claude step gets the token, and `claude-test.sh` passes it to the `claude` processes alone.
+- The job checks out without persisting its GitHub token and installs a pinned AXe (`install-axe.sh`), since it holds the Claude token.
+- It starts the test backend when `claude-scope` says `backend: yes`, as it does on this branch; a run that asks for Claude must then ask for the backend too, or the plan job fails.
+- The app job built the app pointing at its own backend's directory, which a new backend would not have, so the app job saves that backend's stopped work dir (the artifact `ios-sim-backend-state`, without the binaries) and the Claude job starts it again with `backend.sh resume`: the same servers' keys and databases, so the same addresses.
+- That artifact holds the test backend's databases and server keys, kept a day: throwaway identities made for that run, so the state is stored unencrypted, an accepted risk to the test's integrity only.
+- The session's commands are limited to single `ui` commands with plain arguments (`claude-guard.py`), and `ui` treats every argument as data and unsets the token: a change to either changes how the token is kept from the session.
 
 Each session's final message ends with `CLAUDE-TEST: PASS`, or `CLAUDE-TEST: FAIL` and the failed cases; the step fails unless every session passes.
 
 - `claude-scope`: whether the cases use the test backend, the model, the layouts, the cases per layout, optional entries per layout, `max-turns` and `max-budget-usd` per session.
-- `device-test-plan.md`: the plan (`| ID | Do | Expect |` tables). On master it is a three-case smoke plan; a feature branch replaces it with its own and names its cases in `claude-scope`.
+- `device-test-plan.md`: the plan (`| ID | Do | Expect |` tables): here, online search (SimpleX Directory, the Directory search switch, "Connect to …" next to the results, chat list and New chat), about 50 cases. A feature branch replaces it with its own and names its cases in `claude-scope`.
 - `claude-prompt.md`: what any session needs to know about the app, the `ui` helper and the test backend; `claude-test.sh` adds the `ui` help, the session's cases, layout, start state and limits, the seeded backend and the plan.
 - `claude-guard.py`: a PreToolUse hook that lets through only one plain `ui` command per Bash call, since read-only commands run without asking in every permission mode and Bash inherits the token. Read, Write and Edit are allowed only in the session's own directory, so a session can't change `ui` or the scripts it runs. After each session `claude-test.sh` deletes the session's files, and fails, if the token appears in them or the check for it fails.
 - `claude-usage.sh`: each session's turns, duration, tokens and cost "estimated at API prices" (Claude Code's own estimate, not a bill) to the job summary and `claude-usage.json`, or why they are unknown (a session cut short before its token check is not uploaded).
@@ -38,7 +47,7 @@ Haiku 5.5 drives the app well: the smoke plan takes a few dozen turns and cents;
 
 ## Snapshots: `snapshots.sh`
 
-At the end of the app job's smoke test, `smoke-test.sh` runs `snapshots.sh <derived data> <smoke test dir>/snapshots` when the app it tested lies in the derived data of a build (`…/Build/Products/Debug-iphonesimulator`); the Claude job, which installs the app from a tarball, skips it.
+After the onboarding and layout checks of the app job's smoke test, `smoke-test.sh` runs `snapshots.sh <derived data> <smoke test dir>/snapshots` when the app it tested lies in the derived data of a build (`…/Build/Products/Debug-iphonesimulator`); the Claude job, which installs the app from a tarball, skips it. With the test backend, the smoke test then relaunches the app for its search steps, so the renders are the same with and without the backend.
 
 `snapshots.sh` builds the unit-test target `SimpleX Snapshots` (`apps/ios/SimpleX Snapshots/SnapshotTests.swift`, hosted by the app) with `xcodebuild build-for-testing`, then runs it in the smoke test's simulator three times, after `xcrun simctl ui <udid> content_size` `large`, `extra-extra-extra-large` and `accessibility-medium`, and sets `large` back. The test hosts each preview listed in `previewScenes()` (the `previews` of a `PreviewProvider`, in a `VStack`) in a `UIHostingController` in a window of the screen's width and of the larger of two heights, the preview's ideal height and its height in a frame of the screen's size, in the light and dark themes without a wallpaper, ends text editing and removes the running animations, so a text cursor or a spinner is drawn the same in every run, and draws it with `drawHierarchy` at scale 1, one pixel per point. The previews marked `device`, the screens shown in the user guide, are rendered as on the device instead: in a window of the screen's size with the device's safe areas, and with a status bar drawn over them (9:41, full cellular, Wi-Fi and battery icons), so that `scripts/docs/frame-ios-renders.py` places them in the iPhone bezel unchanged. The chat item previews (`allSizes`) are rendered at the three sizes, the other previews at `large` only.
 
@@ -59,11 +68,33 @@ When `apps/ios/SimpleX Snapshots/References` exists, `snapshots.sh` then runs `s
 - a chat relay for channels, and a SimpleX Directory whose address it writes to `<work dir>/directory-link`;
 - a CLI peer `ci_admin` that creates, registers and gets approved groups and channels with the profile JSON the app sends: `ci_group` and `ci_channel` ("ci seed"), `ci_cards`, six entries with app-size avatars made by `avatar.swift` ("ci avatar"), a long name, markdown in a description, and `cinews`, `cinews_digest`, `cinews_weekly`;
 - a local SMP server with a `[NAMES]` section and `names-resolver.py`, the names `cinews.testing`, `ciboth.testing`, `cialice.testing` and `cibobby.testing` claimed by their owners, and the contacts cialice and Robert, online and accepting connections; its address goes to `<work dir>/names-server`;
-- checks before the app starts: a search sent to the directory as a message must list `ci_group` and `ci_channel`, and `/_connect plan` must resolve each name from a fresh peer.
+- checks before the app starts: a search sent to the directory as a message must list `ci_group` and `ci_channel`, and `/_connect plan` must resolve each name from a fresh peer; then the searches "ci seed" and "ci avatar", sent as the app sends them (`/_service_request`), are followed page by page, recording each page's entries and size in `seed.md`, and must return each expected entry once.
 
-On master's code it starts and passes these checks (the directory answers searches sent as messages); service requests to the directory, which only `f/directory-search` answers, are not checked here.
+With the backend, the workflow points the app at the test directory before building it (`DIRECTORY_SERVICE_LINK` in `apps/ios/Shared/Model/DirectorySearch.swift`, the only change it makes to app sources), and the smoke test goes on to search it, with private routing to unknown servers only (`networkSMPProxyMode`), since the preset servers that would proxy name lookups can't reach the test SMP server on localhost:
 
-It writes what it seeded to `<work dir>/seed.md` (the Claude sessions get it) and logs to `<work dir>/*.log`; `stop`, `directory-stop`, `directory-start` and `listings` are its other commands. The app reaches it through the simulator, which shares the runner's network; pointing the app at the names server is a few steps in Settings, described in `claude-prompt.md`.
+- The first search's "Enable Directory search?" alert, where Cancel shows no results and keeps "Search in Directory", and Enable searches, with no alert on any later search.
+- `#ci_group` and `#ci_channel` with Open and their avatars, with no "Directory" header and no "Search in Directory" next to them.
+- The Search key with `cinews` typed, which shows directory results and keeps "Connect to cinews.testing", with no "Names".
+- The same results in the top layout.
+- Open on `#ci_cards`, which reaches the prepared channel's "Tap Join channel" with no "Open channel" alert on the way and its subscriber count in the toolbar and the banner, then joins it.
+- Once joined, neither row nor note when that channel, listed as a chat, is the page's only result, after a search that ran ("Search in Directory" gone; the step waits out the request, as nothing marks its end).
+- The chat list's cards shown while typing and hidden under the results, in both layouts.
+- For `zqxvjk`, which matches nothing, "Search in Directory" with no "No chats found" until the directory search finds nothing, on the chat list and, as "No filtered contacts" (or "No contacts"), in New chat.
+- `ci_cards` found by `ci cards` (which the local filter doesn't match) shown as its chat row, with no `#ci_cards` or "Open", and opening the channel, on the chat list in both layouts and in New chat, where `ci seed` also shows `#ci_group` with Open.
+- The load row for `ci avatar`, which reads "Load more · N left", is disabled while its page loads with the directory stopped, turns into "Search failed, tap to retry", and loads more entries once the directory is back.
+- Last, as a check that warns rather than fails, a long press on `#ci_group` that shows a menu with Open (screenshot `long-press-menu`).
+
+What these steps rely on:
+
+- Once the directory's link is fetched, a request without a reply fails after 10 s. With the directory stopped, the next page therefore takes 10 s to fail, long enough to see the load row while it loads. A screenshot takes long enough for that request to fail, so the step reads the tree before its shot.
+- With a conversation, the chat list replaces the onboarding pages and has cards around the chats.
+- The first launch with more than two chats shows the SimpleX Lock notice (`laNoticeAlert` in `ContentView.swift`), which `dismiss_simplex_lock_notice` cancels.
+- A result row's texts are stacked beside its avatar and Open is centred on the row, so `open_in_row` accepts an Open from 10 points above to 60 points below the name's top.
+- A result without an avatar shows a placeholder icon labelled with its symbol name, and an avatar image has no label, which is what `expect_avatars` reads.
+- The chat list behind the New chat sheet can be in the tree too, with its own search field and `ci_cards` row. The sheet's field is therefore the topmost one, and its row is the `ci_cards` element the search adds.
+- The long-press check warns because the gesture is new to this harness; the screenshot shows the menu's preview over the flipped list.
+
+It writes what it seeded to `<work dir>/seed.md` (the Claude sessions get it) and logs to `<work dir>/*.log`; `resume` (the same backend again from a stopped work dir, for the Claude job), `stop`, `directory-stop`, `directory-start` and `listings` are its other commands. The app reaches it through the simulator, which shares the runner's network; pointing the app at the names server is a few steps in Settings, described in `claude-prompt.md`.
 
 ## Other files
 

@@ -21,6 +21,9 @@ create your own group, see [Groups](./secret-groups.md).
 Channel — join a channel via its link or its SimpleX name, see
 [Channels](./channels.md).
 
+To find public groups and channels, see [Find groups and
+channels](#find-groups-and-channels).
+
 ## Your SimpleX contact address
 
 You can [create an optional long term
@@ -115,6 +118,30 @@ profile" or "Use new incognito profile".
 To connect via a SimpleX name, type it into the search field of the chat list,
 for example `@name.testing`, and tap the "Connect to …" row, see [Registering a
 SimpleX name](./register-simplex-name.md).
+
+## Find groups and channels
+
+To find public groups and channels in SimpleX Directory:
+
+- Type what you are looking for into the search field of the chat list, or of
+  New chat (tap the pencil button).
+- Tap "Search in Directory", or use the Search key of the keyboard (Enter on
+  desktop).
+- While "Directory search" is off, the app asks "Enable Directory search?". The
+  search text is sent to SimpleX Directory, each search separately and without
+  your profile. Tap "Enable" to search, or "Cancel" to send nothing. You can
+  change it later, see [Directory
+  search](./app-settings.md#directory-search).
+
+The results show after your matching chats. Tap a result or its "Open" to open
+the group or channel, then tap "Join group" or "Join channel". Tap "Load more"
+for the next results. A group or channel you joined by the link SimpleX
+Directory lists shows as your chat. A group you were invited to, or joined by
+another link, can also show as a result, and opening that result can add a
+second copy of the group to your chats.
+
+Results are not saved: they go away when you change the search text or switch
+chat profile.
 
 ## Conversation preferences
 

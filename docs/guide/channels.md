@@ -66,6 +66,9 @@ New channels have **Visible history** on and **Chat with admins** off. See
 
 ## Subscribe to a channel
 
+To find a channel, you can [search SimpleX
+Directory](./making-connections.md#find-groups-and-channels) in the app.
+
 1. Open the channel link: tap it in a chat, paste it into the search field of
    the chat list, or scan its QR code. To use the channel's SimpleX name, type
    it into the search field and tap **Connect to …**. See [Connect via a link or

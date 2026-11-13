@@ -71,12 +71,14 @@ write_prompt() {
     echo "- Entries to use: $entries."
   fi
   if [ -n "$BACKEND_DIR" ]; then
-    echo "- The test directory's address: $(cat "$BACKEND_DIR/directory-link")."
+    echo "- Link to paste (C4, W3): $(cat "$BACKEND_DIR/directory-link") (the test directory's address)."
     echo "- Names server to add in the app: $(cat "$BACKEND_DIR/names-server")."
   else
     echo "- No test backend runs in this session."
   fi
-  if [ -z "$previous" ]; then
+  if [ -z "$previous" ] && [ -n "$BACKEND_DIR" ]; then
+    echo "- At the start: the smoke test onboarded a profile (typed as \"citester\"; the keyboard may have autocorrected the name), enabled Directory search in the first search's alert, searched the directory in both layouts, and opened and joined the channel ci_cards; it is the profile's only conversation."
+  elif [ -z "$previous" ]; then
     echo "- At the start: the smoke test onboarded a profile (typed as \"citester\"; the keyboard may have autocorrected the name) and checked the chat list in both layouts; the profile has no conversations."
   else
     echo "- At the start: an earlier session ran the cases in $(layout_name "$previous") on this app, so the profile may have chats, other profiles may exist and hints may be changed; look at the state first."

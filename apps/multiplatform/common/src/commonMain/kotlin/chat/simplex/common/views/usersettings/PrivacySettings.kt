@@ -70,6 +70,11 @@ fun PrivacySettingsView(
         onChange = { _ -> chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false) } // to avoid showing alert to current users, show alert in v6.5
       )
       SettingsPreferenceItem(
+        painterResource(MR.images.ic_search),
+        stringResource(MR.strings.directory_search),
+        chatModel.controller.appPrefs.privacyDirectorySearch
+      )
+      SettingsPreferenceItem(
         painterResource(MR.images.ic_link),
         stringResource(MR.strings.sanitize_links_toggle),
         chatModel.controller.appPrefs.privacySanitizeLinks

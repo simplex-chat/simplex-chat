@@ -210,7 +210,7 @@ gh workflow run android-emu.yml --ref <branch> -f claude=true
 
 A newer run of a workflow on the same branch cancels the older one.
 
-Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
+Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it. The iOS and desktop apps of a run with `backend` search that run's test directory, so their directory searches fail after the run ends.
 
 ## How long a run takes
 
@@ -218,7 +218,7 @@ Each run uploads the app it built, for manual tests, as an artifact kept 14 days
 |---|---|---|---|
 | Scripted test, builds reused | about 25 min, plus the wait for a macOS runner, which the team's builds share (minutes to an hour) | about 10 min | about 15 min |
 | The core rebuilt, after Haskell changes | 30–45 min more | about 25 min more | about 27 min more |
-| With the test backend | 20–45 min more when it is rebuilt, then about 10 min to start | about 30 min more when it is rebuilt, then a few minutes to start | as desktop, whose backend it shares |
+| With the test backend | 20–45 min more when it is rebuilt, then about 10 min to start; the searches add about 10 min | about 30 min more when it is rebuilt, then a few minutes to start; the searches add about 20 min | as desktop, whose backend it shares, without the searches |
 | With Claude on the smoke plan | 10–15 min more | about 4 min more | about 5 min more |
 
 ## The Claude job

@@ -77,8 +77,9 @@ app settings:
 There are links to join several [user groups](../../README.md#join-user-groups) on our GitHub page - join them to ask any questions and discuss ideas.
 
 You can also find groups and channels in [SimpleX
-Directory](https://simplex.chat/directory/), and some other user-managed groups
-via online search.
+Directory](https://simplex.chat/directory/), online or [from the search field of
+the app](./making-connections.md#find-groups-and-channels), and some other
+user-managed groups via online search.
 
 To join a group via a link:
 

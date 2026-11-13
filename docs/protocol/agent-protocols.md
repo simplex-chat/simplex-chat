@@ -284,7 +284,7 @@ Requirements:
 - The responder's core MUST run with service requests enabled, the option `service_requests=on` of `/_start`. Otherwise the core drops each request, and the requester waits until its timeout.
 - The responder's contact address MUST have ratchet keys. The core adds them to an address created or updated with the option `pq_ratchet=on` or `pq_ratchet=off` (`/_address`, `/_short_link_address`, `/_address_settings`). A request to an address without ratchet keys fails at once.
 - The core accepts a response within 180 seconds of receiving the request. A requester that expects a slow response sets `timeout` accordingly.
-- Before encryption, the agent pads a request or a response, its own framing included, to 11,106 bytes, and a longer one fails. A request and a response SHOULD NOT exceed 10,000 bytes of JSON.
+- Before encryption, the agent pads a request or a response, its own framing included, to 11,106 bytes. The core compresses a body over 10,737 bytes, and returns an error for one still over that bound or over 64 KB uncompressed. A receiving core rejects a body that decompresses past 64 KB and JSON nested deeper than 32 levels: it drops such a request, and such a response fails the command. A core without this support cannot read a compressed body, so a request or a response to such a core SHOULD NOT exceed 10,000 bytes of JSON.
 
 ### Request
 

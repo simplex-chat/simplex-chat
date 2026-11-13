@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Bots.DirectoryTests where
 
@@ -10,33 +11,55 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
-import Control.Concurrent (threadDelay)
+import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Control.Concurrent.Async (async, cancel)
-import Control.Concurrent.STM (atomically, peekTQueue, tryReadTMVar)
-import Control.Exception (finally)
+import Control.Concurrent.STM (atomically, newTVarIO, peekTQueue, readTVar, readTVarIO, retry, tryReadTMVar)
+import Control.Exception (finally, throwIO)
 import Control.Monad (forM_, replicateM, when, void)
+import Control.Monad.Except (runExceptT)
+import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as JM
+import qualified Data.Aeson.Types as JT
+import Data.Bifunctor (first)
+import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Int (Int64)
+import Data.List (sort)
+import Data.Maybe (isJust, isNothing)
+import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime)
 import Directory.Captcha
 import Directory.Listing
 import Directory.Options
+import Directory.Rpc
+import Directory.Search (SearchCursor (..))
 import Directory.Service
 import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
 import Simplex.Chat.Bot.KnownContacts
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (smpAgent))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtCustomChatEvent, CEvtServiceRequest), ChatResponse (..), storeCxt)
+import Simplex.Chat.Core (sendChatCmdStr)
+import Simplex.Chat.Library.Commands (maxProfileImageSize, maxShortDescrLength)
 import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Protocol (memberSupportVoiceVersion)
-import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
+import Simplex.Chat.Protocol (maxDecompressedMsgLength, memberSupportVoiceVersion)
+import qualified Simplex.Chat.Store.Groups as Store
+import Simplex.Chat.Types (AgentInvId (..), ChatPeerType (..), GroupInfo (..), GroupLink, GroupProfile (..), GroupSummary (..), GroupType (..), ImageData (..), Profile (..), safeImageData)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent (disposeAgentClient)
+import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import Simplex.Messaging.Version
 import NameResolver
 import System.FilePath ((</>))
 import System.Timeout (timeout)
 import Test.Hspec hiding (it)
+import Text.Read (readMaybe)
 
 directoryServiceTests :: SpecWith TestParams
 directoryServiceTests = do
@@ -49,6 +72,21 @@ directoryServiceTests = do
   it "should find registered group by link" testSearchByLink
   it "should support group names with spaces" testGroupNameWithSpaces
   it "should return more groups in search, all and recent groups" testSearchGroups
+  it "should page from the sort key, not group ID" testSearchGroupsPaging
+  it "should answer search over service RPC" testDirectorySearchRpc
+  it "should page search over service RPC by the echoed cursor" testDirectorySearchRpcPaging
+  it "should match LIKE wildcards in search text literally" testDirectorySearchRpcLiteral
+  it "should reject service requests over the cap" testDirectorySearchRpcBusy
+  it "should take a new service request once the previous one is answered" testDirectorySearchRpcSlotReleased
+  it "should hold a place under the in-flight cap until the request ends" testServiceRequestSlotHeld
+  it "should omit service request data from the terminal's event and keep other events" testServiceRequestDataOmitted
+  it "should send every entry field the apps render" testDirectorySearchEntryFields
+  it "should send a channel entry with its published link" testDirectorySearchChannelEntry
+  it "should drop an image that is oversize or not JPEG or PNG and keep the entry" testSearchEntryImageBound
+  it "should cut a long short description to the clients' limit" testSearchEntryShortDescrBound
+  it "should page image-bearing entries over the envelope" testDirectorySearchImagePaging
+  it "should join a group found over the service RPC" testDirectorySearchJoinGroup
+  it "should fit the search page to the envelope" testSearchResultsPage
   it "should invite to owners' group if specified" testInviteToOwnersGroup
   it "should re-invite owner who left owners' group" testInviteOwnerAfterLeavingOwnersGroup
   describe "de-listing the group" $ do
@@ -112,6 +150,7 @@ directoryNameTests :: SpecWith TestParams
 directoryNameTests = do
   it "should verify and show a channel's SimpleX name" testDirectoryChannelName
   it "should mark an inconsistent SimpleX name as not verified" testDirectoryChannelNameNotVerified
+  it "should send the verified SimpleX name in a search entry" testDirectorySearchVerifiedName
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -145,6 +184,7 @@ mkDirectoryOpts ps superUsers ownersGroup webFolder =
       clientService = True,
       runCLI = False,
       searchResults = 3,
+      maxServiceRequestsInFlight = 8,
       webFolder,
       linkCheckInterval = 0,
       prohibitedToObserver = False,
@@ -594,6 +634,413 @@ testSearchGroups ps =
       u <#. ("'SimpleX Directory'> " <> groups !! ix)
       u <##. "Link to join the group "
       u <## (show count <> " members")
+
+testSearchGroupsPaging :: HasCallStack => TestParams -> IO ()
+testSearchGroupsPaging ps =
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        cath `connectVia` dsLink
+        forM_ [1 .. 4 :: Int] $ \i -> registerGroupId superUser bob (groups !! (i - 1)) "" i i
+        connectUsers bob cath
+        fullAddMember "groupD" "" bob cath GRMember
+        joinGroup "groupD" cath bob
+        cath <## "#groupD: member 'SimpleX Directory_1' is connected"
+        cath <## "contact and member are merged: 'SimpleX Directory', #groupD 'SimpleX Directory_1'"
+        cath <## "use @'SimpleX Directory' <message> to send messages"
+        cath #> "@'SimpleX Directory' /all"
+        cath <# "'SimpleX Directory'> > /all"
+        cath <## "      4 group(s) listed, sending top 3."
+        receivedGroup cath 3 3
+        receivedGroup cath 0 2
+        receivedGroup cath 1 2
+        cath <# "'SimpleX Directory'> Send /next for 1 more result(s)."
+        cath #> "@'SimpleX Directory' /next"
+        cath <# "'SimpleX Directory'> > /next"
+        cath <## "      Sending 1 more group(s)."
+        receivedGroup cath 2 2
+        cath #> "@'SimpleX Directory' /new"
+        cath <# "'SimpleX Directory'> > /new"
+        cath <## "      4 group(s) listed, sending the most recent 3."
+        receivedGroup cath 3 3
+        receivedGroup cath 2 2
+        receivedGroup cath 1 2
+        cath <# "'SimpleX Directory'> Send /next for 1 more result(s)."
+        cath #> "@'SimpleX Directory' /next"
+        cath <# "'SimpleX Directory'> > /next"
+        cath <## "      Sending 1 more group(s)."
+        receivedGroup cath 0 2
+        cath #> "@'SimpleX Directory' group"
+        cath <# "'SimpleX Directory'> > group"
+        cath <## "      Found 4 group(s), sending top 3."
+        receivedGroup cath 3 3
+        receivedGroup cath 0 2
+        receivedGroup cath 1 2
+        cath <# "'SimpleX Directory'> Send /next for 1 more result(s)."
+        cath #> "@'SimpleX Directory' /next"
+        cath <# "'SimpleX Directory'> > /next"
+        cath <## "      Sending 1 more group(s)."
+        receivedGroup cath 2 2
+  where
+    groups :: [String]
+    groups = ["groupA", "groupB", "groupC", "groupD"]
+    receivedGroup :: TestCC -> Int -> Int -> IO ()
+    receivedGroup u ix count = do
+      u <#. ("'SimpleX Directory'> " <> groups !! ix)
+      u <##. "Link to join the group "
+      u <## (show count <> " members")
+
+testDirectorySearchRpc :: HasCallStack => TestParams -> IO ()
+testDirectorySearchRpc ps =
+  withDirectoryServiceLinks ps $ \superUser (dsShortLink, _) ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsShortLink
+      registerGroupId superUser bob "PrivacyGroup" "" 1 1
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"privacy\"}")
+        resp <- getTermLine cath
+        resp `shouldStartWith` "service response: {\"entries\":[{"
+        resp `shouldNotContain` "searchCursor"
+        cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"nothing matches this\"}")
+        cath <## "service response: {\"entries\":[],\"moreCount\":0,\"type\":\"searchResults\"}"
+        cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"nonsense\"}")
+        cath <## "service response: {\"errorMessage\":\"unsupported request\",\"type\":\"error\"}"
+
+testDirectorySearchRpcPaging :: HasCallStack => TestParams -> IO ()
+testDirectorySearchRpcPaging ps =
+  withDirectoryServiceLinks ps $ \superUser (dsShortLink, _) ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsShortLink
+      forM_ [1 .. 4 :: Int] $ \i -> registerGroupId superUser bob ("group" <> show i) "" i i
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (page1, cursor, moreCount1) <- searchNamesCounts cath dsShortLink "group" Nothing
+        page1 `shouldBe` ["group1", "group2", "group3"]
+        moreCount1 `shouldBe` 1
+        maybe "" (LB.unpack . J.encode) cursor `shouldNotContain` "lastCreatedAt"
+        (page2, cursor', moreCount2) <- searchNamesCounts cath dsShortLink "group" cursor
+        page2 `shouldBe` ["group4"]
+        cursor' `shouldBe` Nothing
+        moreCount2 `shouldBe` 0
+        cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"group\",\"searchCursor\":{\"type\":\"recent\",\"lastCreatedAt\":\"2026-01-01T00:00:00Z\",\"lastGroupId\":1}}")
+        cath <## "service response: {\"errorMessage\":\"search failed\",\"type\":\"error\"}"
+
+testDirectorySearchRpcLiteral :: HasCallStack => TestParams -> IO ()
+testDirectorySearchRpcLiteral ps =
+  withDirectoryServiceLinks ps $ \superUser (dsShortLink, _) ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsShortLink
+      registerGroupId superUser bob "PrivacyGroup" "" 1 1
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (found, _) <- searchNames cath dsShortLink "privacy" Nothing
+        found `shouldBe` ["PrivacyGroup"]
+        (none, _) <- searchNames cath dsShortLink "privacy%group" Nothing
+        none `shouldBe` []
+        (none', _) <- searchNames cath dsShortLink "privacy_roup" Nothing
+        none' `shouldBe` []
+        (none'', _) <- searchNames cath dsShortLink "priv\\acy" Nothing
+        none'' `shouldBe` []
+        cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"" <> replicate 101 'a' <> "\"}")
+        cath <## "service response: {\"errorMessage\":\"search text is too long\",\"type\":\"error\"}"
+
+testDirectorySearchRpcBusy :: HasCallStack => TestParams -> IO ()
+testDirectorySearchRpcBusy ps =
+  withDirectoryServiceOptsLinks ps (\o -> o {maxServiceRequestsInFlight = 0}) $ \_superUser (dsShortLink, _) ->
+    withNewTestChat ps "cath" cathProfile $ \cath -> do
+      cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"privacy\"}")
+      cath <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASERejected {rejectReason = \"service is busy\"}}}"
+
+testDirectorySearchRpcSlotReleased :: HasCallStack => TestParams -> IO ()
+testDirectorySearchRpcSlotReleased ps =
+  withDirectoryServiceOptsLinks ps (\o -> o {maxServiceRequestsInFlight = 1}) $ \_superUser (dsShortLink, _) ->
+    withNewTestChat ps "cath" cathProfile $ \cath -> do
+      let search = cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"nothing matches this\"}")
+          noResults = "service response: {\"entries\":[],\"moreCount\":0,\"type\":\"searchResults\"}"
+      search
+      cath <## noResults
+      search
+      cath <## noResults
+
+testServiceRequestSlotHeld :: HasCallStack => TestParams -> IO ()
+testServiceRequestSlotHeld _ = do
+  inFlight <- newTVarIO 0
+  answer <- newEmptyMVar
+  let placeFreed = timeout 5000000 (atomically $ readTVar inFlight >>= \n -> when (n /= 0) retry) `shouldReturn` Just ()
+  forkWithinCap inFlight 1 (takeMVar answer) `shouldReturn` True
+  forkWithinCap inFlight 1 (pure ()) `shouldReturn` False
+  putMVar answer ()
+  placeFreed
+  forkWithinCap inFlight 1 (throwIO $ userError "request failed") `shouldReturn` True
+  placeFreed
+  forkWithinCap inFlight 1 (pure ()) `shouldReturn` True
+
+testServiceRequestDataOmitted :: HasCallStack => TestParams -> IO ()
+testServiceRequestDataOmitted ps =
+  withNewTestChat ps "bob" bobProfile $ \TestCC {chatController = ChatController {currentUser}} -> do
+    user <- maybe (fail "no current user") pure =<< readTVarIO currentUser
+    let reqId = AgentInvId "request"
+        request = JM.fromList [("searchText", J.String "privacy")]
+    case omitServiceRequestData $ Right $ CEvtServiceRequest user reqId Nothing request of
+      Right (CEvtServiceRequest _ reqId' _ shown) -> do
+        reqId' `shouldBe` reqId
+        shown `shouldBe` JM.empty
+      r -> expectationFailure $ "unexpected event: " <> show r
+    case omitServiceRequestData $ Right $ CEvtCustomChatEvent Nothing "other" of
+      Right (CEvtCustomChatEvent Nothing t) -> t `shouldBe` "other"
+      r -> expectationFailure $ "unexpected event: " <> show r
+
+searchDirectoryCounts :: TestCC -> String -> String -> Maybe J.Value -> IO ([DirectorySearchEntry], Maybe J.Value, Int)
+searchDirectoryCounts TestCC {chatController = cc} dsLink text cursor_ = do
+  let req = J.object $ ["type" .= ("search" :: String), "searchText" .= text] <> maybe [] (\c -> ["searchCursor" .= c]) cursor_
+  r <- sendChatCmdStr cc ("/_service_request 1 " <> dsLink <> " " <> LB.unpack (J.encode req))
+  case r of
+    Right CRServiceResponse {responseData} ->
+      maybe (fail $ "unexpected response: " <> LB.unpack (J.encode responseData)) pure $ JT.parseMaybe searchResults responseData
+    _ -> fail $ "service request failed: " <> show r
+  where
+    searchResults o = (,,) <$> o .: "entries" <*> o .:? "searchCursor" <*> o .: "moreCount"
+
+searchDirectory :: TestCC -> String -> String -> Maybe J.Value -> IO ([DirectorySearchEntry], Maybe J.Value)
+searchDirectory u dsLink text cursor_ = (\(es, c, _) -> (es, c)) <$> searchDirectoryCounts u dsLink text cursor_
+
+searchNames :: HasCallStack => TestCC -> String -> String -> Maybe J.Value -> IO ([Text], Maybe J.Value)
+searchNames u dsLink text cursor_ = first (map entryName) <$> searchDirectory u dsLink text cursor_
+
+searchNamesCounts :: TestCC -> String -> String -> Maybe J.Value -> IO ([Text], Maybe J.Value, Int)
+searchNamesCounts u dsLink text cursor_ = (\(es, c, m) -> (map entryName es, c, m)) <$> searchDirectoryCounts u dsLink text cursor_
+
+entryName :: DirectorySearchEntry -> Text
+entryName DirectorySearchEntry {displayName} = displayName
+
+searchEntryOnly :: HasCallStack => TestCC -> String -> String -> IO DirectorySearchEntry
+searchEntryOnly u dsLink text = do
+  r <- searchDirectory u dsLink text Nothing
+  case r of
+    ([e], Nothing) -> pure e
+    _ -> fail $ "expected one entry and no cursor, got: " <> show (first (map entryName) r)
+
+testDirectorySearchEntryFields :: HasCallStack => TestParams -> IO ()
+testDirectorySearchEntryFields ps =
+  withDirectoryServiceLinks ps $ \superUser (dsShortLink, dsLink) ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      registerGroupWithImage superUser bob "PrivacyGroup" "Private chats" 1
+      groupFound bob "PrivacyGroup"
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        DirectorySearchEntry {displayName, simplexName, groupLink, shortDescr, image, entryType} <-
+          searchEntryOnly cath dsShortLink "privacy"
+        displayName `shouldBe` "PrivacyGroup"
+        shortDescr `shouldBe` Just "Private chats"
+        (\(ImageData t) -> T.null (safeImageData t)) <$> image `shouldBe` Just False
+        simplexName `shouldBe` Nothing
+        let PublicLink {connFullLink, connShortLink} = groupLink
+        isJust connShortLink `shouldBe` True
+        isNothing connFullLink `shouldBe` True
+        let DETGroup {groupType, summary = GroupSummary {currentMembers}} = entryType
+        groupType `shouldBe` Nothing
+        currentMembers `shouldBe` 2
+
+testDirectorySearchChannelEntry :: HasCallStack => TestParams -> IO ()
+testDirectorySearchChannelEntry ps =
+  withDirectoryServiceCfgLinks ps testCfg $ \superUser (dsShortLink, dsLink) ->
+    withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
+      withRelay ps $ \relay -> do
+        bob `connectVia` dsLink
+        (shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
+        registerChannel superUser bob relay Nothing
+        subscribers <- channelFoundSubscribers bob "news"
+        withNewTestChatCfg ps testCfg "cath" cathProfile $ \cath -> do
+          DirectorySearchEntry {displayName, groupLink, entryType} <- searchEntryOnly cath dsShortLink "news"
+          displayName `shouldBe` "news"
+          let DETGroup {groupType, summary = GroupSummary {publicMemberCount}} = entryType
+          groupType `shouldBe` Just GTChannel
+          publicMemberCount `shouldBe` Just subscribers
+          let PublicLink {connFullLink, connShortLink} = groupLink
+          (B.unpack . strEncode <$> connShortLink) `shouldBe` Just shortLink
+          isNothing connFullLink `shouldBe` True
+
+-- Tested directly rather than end to end: the test client cannot create a profile with an oversize image.
+testSearchEntryImageBound :: HasCallStack => TestParams -> IO ()
+testSearchEntryImageBound ps =
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    bob ##> "/g privacy Private chats"
+    bob <## "group #privacy (Private chats) is created"
+    bob <## "to add members use /a privacy <name> or /create link #privacy"
+    bob ##> "/create link #privacy"
+    void $ getGroupLinks bob "privacy" GRMember True
+    (g@GroupInfo {groupProfile = p}, gLink_) <- ownerGroup bob "privacy"
+    now <- getCurrentTime
+    let entryWithImage t = searchEntry now (g {groupProfile = (p :: GroupProfile) {image = Just (ImageData t)}}) gLink_
+        pngHeader = "data:image/png;base64,iVBORw0KGgoA"
+        atBound = pngHeader <> T.replicate (maxProfileImageSize - T.length pngHeader) "a"
+    case entryWithImage atBound of
+      Just DirectorySearchEntry {image} -> image `shouldBe` Just (ImageData atBound)
+      Nothing -> expectationFailure "entry at the image bound was dropped"
+    forM_ [atBound <> "a", "data:image/gif;base64,R0lGODlh"] $ \t -> case entryWithImage t of
+      Just DirectorySearchEntry {image, displayName, shortDescr, groupLink = PublicLink {connShortLink}} -> do
+        image `shouldBe` Nothing
+        displayName `shouldBe` "privacy"
+        shortDescr `shouldBe` Just "Private chats"
+        isJust connShortLink `shouldBe` True
+      Nothing -> expectationFailure "entry was dropped with its image"
+
+testSearchEntryShortDescrBound :: HasCallStack => TestParams -> IO ()
+testSearchEntryShortDescrBound ps =
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    bob ##> "/g privacy Private chats"
+    bob <## "group #privacy (Private chats) is created"
+    bob <## "to add members use /a privacy <name> or /create link #privacy"
+    bob ##> "/create link #privacy"
+    void $ getGroupLinks bob "privacy" GRMember True
+    (g@GroupInfo {groupProfile = p}, gLink_) <- ownerGroup bob "privacy"
+    now <- getCurrentTime
+    let long = T.replicate 70000 "a"
+    case searchEntry now (g {groupProfile = (p :: GroupProfile) {shortDescr = Just long}}) gLink_ of
+      Just DirectorySearchEntry {shortDescr} -> shortDescr `shouldBe` Just (T.take maxShortDescrLength long)
+      Nothing -> expectationFailure "entry with a long short description was dropped"
+
+testDirectorySearchImagePaging :: HasCallStack => TestParams -> IO ()
+testDirectorySearchImagePaging ps =
+  withDirectoryServiceLinks ps $ \superUser (dsShortLink, dsLink) ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      registerGroupWithImage superUser bob "photos1" "Photo group" 1
+      registerGroupWithImage superUser bob "photos2" "Photo group" 2
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (page1, cursor, moreCount1) <- searchNamesCounts cath dsShortLink "photo" Nothing
+        length page1 `shouldBe` 1
+        isJust cursor `shouldBe` True
+        moreCount1 `shouldBe` 1
+        (page2, _) <- searchNames cath dsShortLink "photo" cursor
+        page2 `shouldSatisfy` notElem (head page1)
+        sort (page1 <> page2) `shouldBe` ["photos1", "photos2"]
+
+testDirectorySearchJoinGroup :: HasCallStack => TestParams -> IO ()
+testDirectorySearchJoinGroup ps =
+  withDirectoryServiceLinks ps $ \superUser (dsShortLink, dsLink) ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        DirectorySearchEntry {groupLink = PublicLink {connShortLink}} <- searchEntryOnly cath dsShortLink "privacy"
+        groupLink <- maybe (fail "no short link in the entry") (pure . B.unpack . strEncode) connShortLink
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
+        cath #> ("#privacy (support) " <> captcha)
+        cath <# ("#privacy (support) 'SimpleX Directory'!> > cath " <> captcha)
+        cath <## "      Correct, you joined the group privacy"
+        cath <## "#privacy: you joined the group"
+        cath <## "#privacy: member bob (Bob) is connected"
+        bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
+        bob <## "#privacy: new member cath is connected"
+
+ownerGroup :: TestCC -> String -> IO (GroupInfo, Maybe GroupLink)
+ownerGroup TestCC {chatController = cc@ChatController {chatStore, currentUser}} gName = do
+  u_ <- readTVarIO currentUser
+  user <- maybe (fail "no current user") pure u_
+  withTransaction chatStore $ \db -> do
+    g <- either (fail . show) pure =<< runExceptT (Store.getGroupInfoByName db (storeCxt cc) user (T.pack gName))
+    gLink_ <- eitherToMaybe <$> runExceptT (Store.getGroupLink db user g)
+    pure (g, gLink_)
+
+registerGroupWithImage :: HasCallStack => TestCC -> TestCC -> String -> String -> Int -> IO ()
+registerGroupWithImage su u n descr gId = do
+  u ##> ("/g " <> n <> " " <> descr)
+  u <## ("group #" <> n <> " (" <> descr <> ") is created")
+  u <## ("to add members use /a " <> n <> " <name> or /create link #" <> n)
+  img <- genProfileImg
+  u
+    `send` ( "/_group_profile #" <> show gId <> " {\"displayName\": \"" <> n <> "\", \"fullName\": \"\", \"shortDescr\": \"" <> descr
+               <> "\", \"image\": \"data:image/png;base64,"
+               <> B.unpack img
+               <> "\", \"groupPreferences\": {\"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}}}"
+           )
+  void $ getTermLine u
+  u <## "profile image updated"
+  u ##> ("/a " <> n <> " 'SimpleX Directory' admin")
+  u <## ("invitation to join the group #" <> n <> " sent to 'SimpleX Directory'")
+  groupAccepted u n gId
+  void $ completeRegistrationId su u n descr gId gId
+
+registerChannel :: HasCallStack => TestCC -> TestCC -> TestCC -> Maybe String -> IO ()
+registerChannel su u relay simplexName_ = do
+  uName <- userName u
+  u ##> "/share chat #news @'SimpleX Directory'"
+  u <# "@'SimpleX Directory' link to join channel #news (signed):"
+  _ <- getTermLine u
+  _ <- getTermLine u
+  channelJoinedByDirectory u relay
+  su <# ("'SimpleX Directory'> " <> uName <> " submitted the channel ID 1:")
+  su <## "news"
+  forM_ simplexName_ $ \sn -> su <## ("SimpleX name: " <> sn)
+  su <##. "Link to join channel: "
+  su <## "You need SimpleX Chat app v6.5 to join."
+  su <### [EndsWith "subscribers"]
+  su <## ""
+  su <## "To approve send:"
+  let approve = "/approve 1:news 1"
+  su <# ("'SimpleX Directory'> " <> approve)
+  su #> ("@'SimpleX Directory' " <> approve)
+  su <# ("'SimpleX Directory'> > " <> approve)
+  su <## "      Channel approved!"
+  u <# "'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!"
+  u <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
+
+channelFoundSubscribers :: HasCallStack => TestCC -> String -> IO Int64
+channelFoundSubscribers u name = do
+  u #> ("@'SimpleX Directory' " <> name)
+  u <# ("'SimpleX Directory'> > " <> name)
+  u <## "      Found 1 group(s)."
+  u <#. ("'SimpleX Directory'> " <> name)
+  u <##. "Link to join channel: "
+  u <## "You need SimpleX Chat app v6.5 to join."
+  line <- getTermLine u
+  maybe (fail $ "unexpected subscribers line: " <> line) pure $ readMaybe (takeWhile (/= ' ') line)
+
+testSearchResultsPage :: HasCallStack => TestParams -> IO ()
+testSearchResultsPage _ps = do
+  g <- C.newRandom
+  let incompressibleText n = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes n g)
+      cursor gId = SCMembers {lastMembers = 1, lastGroupId = gId}
+      page matched rows = case searchResultsPage cursor matched rows of
+        DRSearchResults {entries, searchCursor, moreCount} -> (map (\DirectorySearchEntry {displayName} -> displayName) entries, lastGroupId <$> searchCursor, moreCount)
+        DRError e -> error $ T.unpack e
+      entry name descr img =
+        DirectorySearchEntry
+          { entryType = DETGroup {groupType = Nothing, admission = Nothing, summary = GroupSummary {currentMembers = 1, publicMemberCount = Nothing}},
+            displayName = name,
+            simplexName = Nothing,
+            groupLink = PublicLink {connFullLink = Nothing, connShortLink = Nothing},
+            shortDescr = Just descr,
+            image = ImageData <$> img,
+            activeAt = Nothing,
+            createdAt = Nothing
+          }
+      twoFitEnvelope name = entry name <$> incompressibleText 4500 <*> pure Nothing
+  a <- twoFitEnvelope "a"
+  b <- twoFitEnvelope "b"
+  c <- twoFitEnvelope "c"
+  page 3 [(1, Just a), (2, Just b), (3, Just c)] `shouldBe` (["a", "b"], Just 2, 1)
+  page 2 [(1, Just a), (2, Just b)] `shouldBe` (["a", "b"], Nothing, 0)
+  page 5 [(1, Just a), (2, Just b)] `shouldBe` (["a", "b"], Just 2, 3)
+  page 4 [(1, Just a), (2, Nothing)] `shouldBe` (["a"], Just 2, 2)
+  page 2 [(1, Just a), (2, Nothing)] `shouldBe` (["a"], Nothing, 0)
+  big <- incompressibleText 12000
+  let bigImageEntry = entry "d" "" (Just $ "data:image/png;base64,iVBORw0KGgoA" <> big)
+  page 1 [(1, Just bigImageEntry)] `shouldBe` (["d"], Nothing, 0)
+  case searchResultsPage cursor 1 [(1, Just bigImageEntry)] of
+    DRSearchResults {entries = [DirectorySearchEntry {image}]} -> image `shouldBe` Nothing
+    _ -> expectationFailure "expected the entry without its image"
+  page 2 [(1, Just $ entry "e" big Nothing), (2, Just a)] `shouldBe` ([], Just 1, 1)
+  let unreadable = entry "f" (T.replicate (maxDecompressedMsgLength + 1) "a") Nothing
+  page 2 [(1, Just a), (2, Just unreadable)] `shouldBe` (["a"], Just 1, 1)
+  page 2 [(2, Just unreadable), (3, Just b)] `shouldBe` ([], Just 2, 1)
 
 testInviteToOwnersGroup :: HasCallStack => TestParams -> IO ()
 testInviteToOwnersGroup ps =
@@ -1656,18 +2103,21 @@ testVoiceCaptchaOldClient ps@TestParams {tmpPath} = do
       cath <## "#privacy: you joined the group"
 
 withDirectoryServiceOpts :: HasCallStack => TestParams -> (DirectoryOpts -> DirectoryOpts) -> (TestCC -> String -> IO ()) -> IO ()
-withDirectoryServiceOpts ps modOpts test = do
-  dsLink <-
+withDirectoryServiceOpts ps modOpts test = withDirectoryServiceOptsLinks ps modOpts $ \superUser (_, dsLink) -> test superUser dsLink
+
+withDirectoryServiceOptsLinks :: HasCallStack => TestParams -> (DirectoryOpts -> DirectoryOpts) -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withDirectoryServiceOptsLinks ps modOpts test = do
+  dsLinks <-
     withNewTestChatCfg ps testCfg serviceDbPrefix directoryProfile $ \ds ->
       withNewTestChatCfg ps testCfg "super_user" aliceProfile $ \superUser -> do
         connectUsers ds superUser
-        ds ##> "/ad"
-        getContactLink ds True
+        ds ##> "/ad pq_ratchet=on"
+        getContactLinks ds True
   let opts = modOpts $ mkDirectoryOpts ps [KnownContact 2 "alice"] Nothing Nothing
   runDirectory ps testCfg opts $
     withTestChatCfg ps testCfg "super_user" $ \superUser -> do
       superUser <## "subscribed 1 connections on server localhost"
-      test superUser dsLink
+      test superUser dsLinks
 
 withDirectoryServiceVoiceCaptcha :: HasCallStack => TestParams -> FilePath -> (TestCC -> String -> IO ()) -> IO ()
 withDirectoryServiceVoiceCaptcha ps voiceScript test =
@@ -1779,12 +2229,22 @@ addCathAsOwner bob cath = do
 withDirectoryService :: HasCallStack => TestParams -> (TestCC -> String -> IO ()) -> IO ()
 withDirectoryService ps = withDirectoryServiceCfg ps testCfg
 
+withDirectoryServiceLinks :: HasCallStack => TestParams -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withDirectoryServiceLinks ps = withDirectoryServiceCfgLinks ps testCfg
+
 withDirectoryServiceCfg :: HasCallStack => TestParams -> ChatConfig -> (TestCC -> String -> IO ()) -> IO ()
 withDirectoryServiceCfg ps cfg = withDirectoryServiceCfgOwnersGroup ps cfg False Nothing
 
+withDirectoryServiceCfgLinks :: HasCallStack => TestParams -> ChatConfig -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withDirectoryServiceCfgLinks ps cfg = withDirectoryServiceCfgOwnersGroupLinks ps cfg False Nothing
+
 withDirectoryServiceCfgOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> Bool -> Maybe FilePath -> (TestCC -> String -> IO ()) -> IO ()
-withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test = do
-  dsLink <-
+withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test =
+  withDirectoryServiceCfgOwnersGroupLinks ps cfg createOwnersGroup webFolder $ \superUser (_, dsLink) -> test superUser dsLink
+
+withDirectoryServiceCfgOwnersGroupLinks :: HasCallStack => TestParams -> ChatConfig -> Bool -> Maybe FilePath -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withDirectoryServiceCfgOwnersGroupLinks ps cfg createOwnersGroup webFolder test = do
+  dsLinks <-
     withNewTestChatCfg ps cfg serviceDbPrefix directoryProfile $ \ds ->
       withNewTestChatCfg ps cfg "super_user" aliceProfile $ \superUser -> do
         connectUsers ds superUser
@@ -1800,9 +2260,9 @@ withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test = do
           ds ##> "/j owners"
           ds <## "#owners: you joined the group"
           superUser <## "#owners: 'SimpleX Directory' joined the group"
-        ds ##> "/ad"
-        getContactLink ds True
-  withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test
+        ds ##> "/ad pq_ratchet=on"
+        getContactLinks ds True
+  withDirectoryOwnersGroup ps cfg dsLinks createOwnersGroup webFolder test
 
 restoreDirectoryService :: HasCallStack => TestParams -> Int -> (TestCC -> String -> IO ()) -> IO ()
 restoreDirectoryService ps connCount test = do
@@ -1818,7 +2278,7 @@ restoreDirectoryService ps connCount test = do
 withDirectory :: HasCallStack => TestParams -> ChatConfig -> String -> (TestCC -> String -> IO ()) -> IO ()
 withDirectory ps cfg dsLink = withDirectoryOwnersGroup ps cfg dsLink False Nothing
 
-withDirectoryOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> String -> Bool -> Maybe FilePath -> (TestCC -> String -> IO ()) -> IO ()
+withDirectoryOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> link -> Bool -> Maybe FilePath -> (TestCC -> link -> IO ()) -> IO ()
 withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
   let opts = mkDirectoryOpts ps [KnownContact 2 "alice"] (if createOwnersGroup then Just $ KnownGroup 1 "owners" else Nothing) webFolder
   runDirectory ps cfg opts $
@@ -2267,6 +2727,26 @@ testDirectoryChannelName ps = withSmpServerAndNames ps $ \reg ->
         superUser <## ""
         superUser <## "To approve send:"
         superUser <# "'SimpleX Directory'> /approve 1:news 1"
+  where
+    newsName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "news" [])
+
+testDirectorySearchVerifiedName :: HasCallStack => TestParams -> IO ()
+testDirectorySearchVerifiedName ps = withSmpServerAndNames ps $ \reg ->
+  withDirectoryServiceCfgLinks ps testCfg $ \superUser (dsShortLink, dsLink) ->
+    withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
+      withRelay ps $ \relay -> do
+        enableNamesRole bob
+        bob `connectVia` dsLink
+        (shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
+        registerName reg newsName (channelNameRecord "news.simplex" (T.pack shortLink))
+        bob ##> "/public group access #news domain=news.simplex"
+        bob <## "updated public group access: domain=news.simplex"
+        relay <## "bob updated group #news: (signed)"
+        relay <## "updated public group access: domain=news.simplex"
+        registerChannel superUser bob relay (Just "#news")
+        withNewTestChatCfg ps testCfg "cath" cathProfile $ \cath -> do
+          DirectorySearchEntry {simplexName} <- searchEntryOnly cath dsShortLink "news"
+          simplexName `shouldBe` Just "#news"
   where
     newsName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "news" [])
 

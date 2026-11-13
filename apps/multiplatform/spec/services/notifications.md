@@ -212,7 +212,7 @@ A `CoroutineWorker` used in `PERIODIC` notification mode as an alternative to th
 
 ### 5.3 Notification modes
 
-Defined in [`SimpleXAPI.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7739):
+Defined in [`SimpleXAPI.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L8763):
 
 ```kotlin
 enum class NotificationsMode {
@@ -228,7 +228,7 @@ Default is `SERVICE`. The `requiresIgnoringBattery` property is an Android exten
 
 ## 6. Notification Privacy
 
-Defined in [`ChatModel.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L4823):
+Defined in [`ChatModel.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L5966):
 
 ```kotlin
 enum class NotificationPreviewMode {

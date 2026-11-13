@@ -163,18 +163,18 @@ Defined in [`SimpleXAPI.kt`](../../common/src/commonMain/kotlin/chat/simplex/com
 
 | Function | Line | Signature | Description |
 |---|---|---|---|
-| `receiveFiles` | [L1946](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1946) | `(rhId, user, fileIds, userApprovedRelays, auto)` | Receive multiple files. Sends `CC.ReceiveFile` for each ID. Handles relay approval workflow: collects unapproved files, shows alert, re-calls with `userApprovedRelays=true`. Respects `privacyEncryptLocalFiles` preference. |
-| `receiveFile` | [L2062](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2062) | `(rhId, user, fileId, userApprovedRelays, auto)` | Delegates to `receiveFiles` with a single-element list. |
-| `cancelFile` | [L2072](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2072) | `(rh, user, fileId)` | Cancels an in-progress file transfer (send or receive). Cleans up the local file. |
-| `apiCancelFile` | [L2080](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2080) | `(rh, fileId, ctrl?)` | Low-level cancel. Returns `AChatItem?` on success (`SndFileCancelled` or `RcvFileCancelled`). |
-| `uploadStandaloneFile` | [L1916](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1916) | `(user, file, ctrl?)` | Upload a standalone file (for database migration). Returns `FileTransferMeta?` with XFTP link. |
-| `downloadStandaloneFile` | [L1926](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1926) | `(user, url, file, ctrl?)` | Download a standalone file from an XFTP URL. Returns `RcvFileTransfer?`. |
+| `receiveFiles` | [L2295](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2295) | `(rhId, user, fileIds, userApprovedRelays, auto)` | Receive multiple files. Sends `CC.ReceiveFile` for each ID. Handles relay approval workflow: collects unapproved files, shows alert, re-calls with `userApprovedRelays=true`. Respects `privacyEncryptLocalFiles` preference. |
+| `receiveFile` | [L2411](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2411) | `(rhId, user, fileId, userApprovedRelays, auto)` | Delegates to `receiveFiles` with a single-element list. |
+| `cancelFile` | [L2421](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2421) | `(rh, user, fileId)` | Cancels an in-progress file transfer (send or receive). Cleans up the local file. |
+| `apiCancelFile` | [L2429](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2429) | `(rh, fileId, ctrl?)` | Low-level cancel. Returns `AChatItem?` on success (`SndFileCancelled` or `RcvFileCancelled`). |
+| `uploadStandaloneFile` | [L2265](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2265) | `(user, file, ctrl?)` | Upload a standalone file (for database migration). Returns `FileTransferMeta?` with XFTP link. |
+| `downloadStandaloneFile` | [L2275](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2275) | `(user, url, file, ctrl?)` | Download a standalone file from an XFTP URL. Returns `RcvFileTransfer?`. |
 
 ---
 
 ## 6. Auto-Receive Logic
 
-Located in [`SimpleXAPI.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2696) within the `CR.NewChatItems` handler:
+Located in [`SimpleXAPI.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L3098) within the `CR.NewChatItems` handler:
 
 ```kotlin
 if (file != null &&

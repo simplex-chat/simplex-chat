@@ -127,6 +127,7 @@ class AppPreferences {
   val privacyProtectScreen = mkBoolPreference(SHARED_PREFS_PRIVACY_PROTECT_SCREEN, true)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
+  val privacyDirectorySearch = mkBoolPreference(SHARED_PREFS_PRIVACY_DIRECTORY_SEARCH, false)
   val privacyVerifySimplexNames = mkBoolPreference(SHARED_PREFS_PRIVACY_VERIFY_SIMPLEX_NAMES, false)
   val privacyLinkPreviewsShowAlert = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS_SHOW_ALERT, true)
   val privacySanitizeLinks = mkBoolPreference(SHARED_PREFS_PRIVACY_SANITIZE_LINKS, false)
@@ -421,6 +422,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
+    private const val SHARED_PREFS_PRIVACY_DIRECTORY_SEARCH = "PrivacyDirectorySearch"
     private const val SHARED_PREFS_PRIVACY_VERIFY_SIMPLEX_NAMES = "PrivacyVerifySimplexNames"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS_SHOW_ALERT = "PrivacyLinkPreviewsShowAlert"
     private const val SHARED_PREFS_PRIVACY_SANITIZE_LINKS = "PrivacySanitizeLinks"
@@ -1686,6 +1688,19 @@ object ChatController {
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiChangeConnectionUser", generalGetString(MR.strings.error_sending_message), r)
     }
+    return null
+  }
+
+  suspend fun apiSearchDirectory(rh: Long?, text: String, cursor: JsonObject?): DirectorySearchResults? {
+    val userId = kotlin.runCatching { currentUserId("apiSearchDirectory") }.getOrElse { return null }
+    val req = directorySearchRequest(text, cursor)
+    val r = sendCmd(rh, CC.APISendServiceRequest(userId, DIRECTORY_SERVICE_LINK, DIRECTORY_SEARCH_TIMEOUT_SEC, req))
+    if (r is API.Result && r.res is CR.CRServiceResponse) {
+      val results = parseDirectorySearchResponse(r.res.responseData)
+      if (results == null) Log.e(TAG, "apiSearchDirectory: unusable response")
+      return results
+    }
+    Log.e(TAG, "apiSearchDirectory error: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -4125,6 +4140,7 @@ sealed class CC {
   class ApiSetConnectionIncognito(val connId: Long, val incognito: Boolean): CC()
   class ApiChangeConnectionUser(val connId: Long, val userId: Long): CC()
   class APIConnectPlan(val userId: Long, val connLink: String, val resolveMode: PlanResolveMode = PlanResolveMode.PRMUnknown, val linkOwnerSig: LinkOwnerSig? = null): CC()
+  class APISendServiceRequest(val userId: Long, val target: String, val timeoutSec: Double?, val request: JsonObject): CC()
   class APIPrepareContact(val userId: Long, val connLink: CreatedConnLink, val contactShortLinkData: ContactShortLinkData, val verifiedDomain: SimplexDomain? = null): CC()
   class APIPrepareGroup(val userId: Long, val connLink: CreatedConnLink, val directLink: Boolean, val groupShortLinkData: GroupShortLinkData, val verifiedDomain: SimplexDomain? = null): CC()
   class APIChangePreparedContactUser(val contactId: Long, val newUserId: Long): CC()
@@ -4347,6 +4363,10 @@ sealed class CC {
       val sigStr = if (linkOwnerSig != null) " sig=${json.encodeToString(linkOwnerSig)}" else ""
       "/_connect plan $userId $connLink$resolveStr$sigStr"
     }
+    is APISendServiceRequest -> {
+      val timeoutStr = if (timeoutSec != null) " timeout=$timeoutSec" else ""
+      "/_service_request $userId $target$timeoutStr ${json.encodeToString(request)}"
+    }
     is APIPrepareContact -> "/_prepare contact $userId ${connLink.cmdString}${verifiedDomain?.let { " ${it.cmdString}" } ?: ""} ${json.encodeToString(contactShortLinkData)}"
     is APIPrepareGroup -> "/_prepare group $userId ${connLink.cmdString} direct=${onOff(directLink)}${verifiedDomain?.let { " ${it.cmdString}" } ?: ""} ${json.encodeToString(groupShortLinkData)}"
     is APIChangePreparedContactUser -> "/_set contact user @$contactId $newUserId"
@@ -4541,6 +4561,7 @@ sealed class CC {
     is ApiSetConnectionIncognito -> "apiSetConnectionIncognito"
     is ApiChangeConnectionUser -> "apiChangeConnectionUser"
     is APIConnectPlan -> "apiConnectPlan"
+    is APISendServiceRequest -> "apiSendServiceRequest"
     is APIPrepareContact -> "apiPrepareContact"
     is APIPrepareGroup -> "apiPrepareGroup"
     is APIChangePreparedContactUser -> "apiChangePreparedContactUser"
@@ -6868,6 +6889,7 @@ sealed class CR {
   @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionUserChanged") class ConnectionUserChanged(val user: UserRef, val fromConnection: PendingContactConnection, val toConnection: PendingContactConnection, val newUser: UserRef): CR()
   @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink, val planSimplexName: SimplexNameInfo? = null, val otherSimplexName: SimplexNameInfo? = null, val connectionPlan: ConnectionPlan): CR()
+  @Serializable @SerialName("serviceResponse") class CRServiceResponse(val user: UserRef, val responseData: JsonObject): CR()
   @Serializable @SerialName("newPreparedChat") class NewPreparedChat(val user: UserRef, val chat: Chat): CR()
   @Serializable @SerialName("contactUserChanged") class ContactUserChanged(val user: UserRef, val fromContact: Contact, val newUser: UserRef, val toContact: Contact): CR()
   @Serializable @SerialName("groupUserChanged") class GroupUserChanged(val user: UserRef, val fromGroup: GroupInfo, val newUser: UserRef, val toGroup: GroupInfo): CR()
@@ -7074,6 +7096,7 @@ sealed class CR {
     is ConnectionIncognitoUpdated -> "connectionIncognitoUpdated"
     is ConnectionUserChanged -> "ConnectionUserChanged"
     is CRConnectionPlan -> "connectionPlan"
+    is CRServiceResponse -> "serviceResponse"
     is NewPreparedChat -> "newPreparedChat"
     is ContactUserChanged -> "contactUserChanged"
     is GroupUserChanged -> "groupUserChanged"
@@ -7270,6 +7293,7 @@ sealed class CR {
     is ConnectionIncognitoUpdated -> withUser(user, json.encodeToString(toConnection))
     is ConnectionUserChanged -> withUser(user, "fromConnection: ${json.encodeToString(fromConnection)}\ntoConnection: ${json.encodeToString(toConnection)}\nnewUser: ${json.encodeToString(newUser)}" )
     is CRConnectionPlan -> withUser(user, "connLink: ${json.encodeToString(connLink)}\nplanSimplexName: $planSimplexName\notherSimplexName: $otherSimplexName\nconnectionPlan: ${json.encodeToString(connectionPlan)}")
+    is CRServiceResponse -> withUser(user, json.encodeToString(responseData))
     is NewPreparedChat -> withUser(user, json.encodeToString(chat))
     is ContactUserChanged -> withUser(user, "fromContact: ${json.encodeToString(fromContact)}\nnewUserId: ${json.encodeToString(newUser.userId)}\ntoContact: ${json.encodeToString(toContact)}")
     is GroupUserChanged -> withUser(user, "fromGroup: ${json.encodeToString(fromGroup)}\nnewUserId: ${json.encodeToString(newUser.userId)}\ntoGroup: ${json.encodeToString(toGroup)}")

@@ -164,11 +164,15 @@ struct ChatListView: View {
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: Set<String> = []
+    // when the search text is a SimpleX name, the string to connect to (with @/# preserved); nil otherwise
+    @State private var connectNameCandidate: String? = nil
     @State private var scrollToSearchBar = false
     @State private var userPickerShown: Bool = false
     @State private var sheet: SomeSheet<AnyView>? = nil
     @StateObject private var chatTagsModel = ChatTagsModel.shared
+    @StateObject private var onlineSearch = OnlineSearchModel()
     @State private var scrollToItemId: ChatItem.ID? = nil
+    @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
 
     // iOS 15 is required it to show/hide toolbar while chat is hidden/visible
     @State private var viewOnScreen = true
@@ -233,6 +237,12 @@ struct ChatListView: View {
                     userPickerShown = false
                 }
             }
+        }
+        .onChange(of: searchText) { _ in
+            onlineSearch.reset()
+        }
+        .onChange(of: chatModel.currentUser?.userId) { _ in
+            onlineSearch.reset()
         }
         .environmentObject(chatTagsModel)
     }
@@ -454,19 +464,74 @@ struct ChatListView: View {
     @ViewBuilder private var chatList: some View {
         if shouldShowOnboarding {
             VStack(spacing: 0) {
-                ConnectOnboardingView()
-                if chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
-                    GetStakeBanner(showDismiss: false, onTap: openGetStake, onDismiss: {})
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 8)
-                        .onAppear { chatModel.chatListBanner = .getStake }
+                ChatListSearchBar(
+                    searchMode: $searchMode,
+                    searchFocussed: $searchFocussed,
+                    searchText: $searchText,
+                    searchShowingSimplexLink: $searchShowingSimplexLink,
+                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                    connectNameCandidate: $connectNameCandidate,
+                    parentSheet: $sheet,
+                    onlineSearch: onlineSearch
+                )
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .padding(.horizontal)
+                if onlineSearch.showResults {
+                    let rows = onlineSearch.rows(shownChatIds: [])
+                    List {
+                        directoryRows(rows)
+                        if !onlineSearch.loading && rows.isEmpty {
+                            Text("No chats found")
+                                .foregroundColor(theme.colors.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                        }
+                    }
+                    .listStyle(.plain)
+                } else {
+                    VStack(spacing: 0) {
+                        ConnectOnboardingView()
+                        if chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
+                            GetStakeBanner(showDismiss: false, onTap: openGetStake, onDismiss: {})
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
+                                .onAppear { chatModel.chatListBanner = .getStake }
+                        }
+                    }
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                 }
             }
-            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
             .modifier(ThemedBackground())
         } else {
             chatListContent
         }
+    }
+
+    @ViewBuilder private func directoryRows(_ rows: OnlineSearchRows) -> some View {
+        ForEach(rows.yourChats.compactMap { chatModel.getChat($0) }, id: \.viewId) { chat in
+            chatListNavLink(chat)
+        }
+        let imageSize = dynamicSize(userFont).profileImageSize
+        ForEach(rows.results) { result in
+            DirectorySearchRow(entry: result.entry, imageSize: imageSize, state: result.state, showsOpen: chatModel.chatRunning == true)
+                .modifier(DirectoryResultMenu(result: result, imageSize: imageSize, onOpen: { openResult(result) }))
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .listRowBackground(Color.clear)
+                .onTapGesture { openResult(result) }
+                .disabled(chatModel.chatRunning != true)
+        }
+        if let footer = rows.footer {
+            DirectoryFooterRow(footer: footer, onlineSearch: onlineSearch)
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .listRowBackground(Color.clear)
+        }
+    }
+
+    private func openResult(_ result: DirectoryResult) {
+        searchFocussed = false
+        openDirectoryResult(result, theme: theme, dismiss: false, cleanup: { onlineSearch.refreshStates() })
     }
 
     private func openGetStake() {
@@ -476,26 +541,29 @@ struct ChatListView: View {
 
     private var chatListContent: some View {
         let cs = filteredChats()
+        let rows = onlineSearch.rows(shownChatIds: Set(cs.map { $0.id }))
+        let showsCards = !onlineSearch.showResults
+        let showsSearchInDirectory = isDirectorySearchable(searchText, showingLink: searchShowingSimplexLink) && !onlineSearch.showResults
         return ZStack {
             ScrollViewReader { scrollProxy in
                 List {
-                    if !chatModel.chats.isEmpty {
-                        ChatListSearchBar(
-                            searchMode: $searchMode,
-                            searchFocussed: $searchFocussed,
-                            searchText: $searchText,
-                            searchShowingSimplexLink: $searchShowingSimplexLink,
-                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
-                            parentSheet: $sheet
-                        )
-                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, oneHandUI ? 8 : 0)
-                        .id("searchBar")
-                    }
-                    if !oneHandUICardShown {
+                    ChatListSearchBar(
+                        searchMode: $searchMode,
+                        searchFocussed: $searchFocussed,
+                        searchText: $searchText,
+                        searchShowingSimplexLink: $searchShowingSimplexLink,
+                        searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                        connectNameCandidate: $connectNameCandidate,
+                        parentSheet: $sheet,
+                        onlineSearch: onlineSearch
+                    )
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, oneHandUI ? 8 : 0)
+                    .id("searchBar")
+                    if showsCards && !oneHandUICardShown {
                         OneHandUICard()
                             .padding(.vertical, 6)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -503,7 +571,7 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                     }
                     // one slot: an alert about a badge the user paid for outranks the pitch to get one
-                    if let alert = bannerBadgeAlert {
+                    if showsCards, let alert = bannerBadgeAlert {
                         Group {
                             switch alert.kind {
                             case .supportEnded:
@@ -534,7 +602,7 @@ struct ChatListView: View {
                             .onAppear { chatModel.chatListBanner = .badgeAlert }
                     // noShownBadge is false until the badge state loads: the pitch must not lock the slot and then
                     // be hidden by a supporter's badge arriving a moment later, leaving the slot empty for the session
-                    } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge() && chatModel.chats.count > 3 {
+                    } else if showsCards && chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge() && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
                             showDismiss: supporterBannerTapped,
                             onTap: {
@@ -549,7 +617,7 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                             .zIndex(1)
                             .onAppear { chatModel.chatListBanner = .badgePitch }
-                    } else if chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
+                    } else if showsCards && chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
                         GetStakeBanner(
                             showDismiss: getStakeBannerTapped && !chatModel.chats.isEmpty,
                             onTap: openGetStake,
@@ -562,26 +630,9 @@ struct ChatListView: View {
                             .zIndex(1)
                             .onAppear { chatModel.chatListBanner = .getStake }
                     }
-                    if #available(iOS 16.0, *) {
-                        ForEach(cs, id: \.viewId) { chat in
-                            ChatListNavLink(chat: chat, parentSheet: $sheet)
-                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                                .padding(.trailing, -16)
-                                .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
-                                .listRowBackground(Color.clear)
-                        }
-                        .offset(x: -8)
-                    } else {
-                        ForEach(cs, id: \.viewId) { chat in
-                            ChatListNavLink(chat: chat,  parentSheet: $sheet)
-                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets())
-                            .background { theme.colors.background } // Hides default list selection colour
-                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
-                        }
-                    }
-                    if !addressCreationCardShown && hasConversations {
+                    ForEach(cs, id: \.viewId) { chat in chatListNavLink(chat) }
+                    directoryRows(rows)
+                    if showsCards && !addressCreationCardShown && hasConversations {
                         ConnectBannerCard()
                             .padding(.vertical, 6)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -607,11 +658,29 @@ struct ChatListView: View {
                     }
                 }
             }
-            if cs.isEmpty && !chatModel.chats.isEmpty {
+            if cs.isEmpty && (!chatModel.chats.isEmpty || onlineSearch.searched) && !onlineSearch.loading && rows.isEmpty && !showsSearchInDirectory {
                 noChatsView()
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
             }
+        }
+    }
+
+    @ViewBuilder private func chatListNavLink(_ chat: Chat) -> some View {
+        if #available(iOS 16.0, *) {
+            ChatListNavLink(chat: chat, parentSheet: $sheet)
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .padding(.trailing, -16)
+                .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                .listRowBackground(Color.clear)
+                .offset(x: -8)
+        } else {
+            ChatListNavLink(chat: chat,  parentSheet: $sheet)
+            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets())
+            .background { theme.colors.background } // Hides default list selection colour
+            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
         }
     }
     
@@ -781,15 +850,17 @@ struct ChatListSearchBar: View {
     @Binding var searchText: String
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: Set<String>
+    @Binding var connectNameCandidate: String?
     @Binding var parentSheet: SomeSheet<AnyView>?
+    @ObservedObject var onlineSearch: OnlineSearchModel
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @State private var ignoreSearchTextChange = false
-    // when the search text is a SimpleX name, the string to connect to (with @/# preserved); nil otherwise
-    @State private var connectNameCandidate: String? = nil
     @State private var nameSearchTask: Task<Void, Never>? = nil
 
     var body: some View {
         VStack(spacing: 12) {
+            let searchable = isDirectorySearchable(searchText, showingLink: searchShowingSimplexLink)
+            let showsSearchInDirectory = searchable && !onlineSearch.showResults
             // a typed name shows a row to connect to it (as on Android mobile): with the reachable toolbar it
             // replaces the tags above the search field; in top bar mode the tags stay and it moves below (end of VStack)
             if oneHandUI, let candidate = connectNameCandidate {
@@ -800,8 +871,11 @@ struct ChatListSearchBar: View {
                     searchFocussed: $searchFocussed,
                     dismiss: false
                 )
-            } else {
+            } else if !oneHandUI || !searchable {
                 ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
+            }
+            if oneHandUI && showsSearchInDirectory {
+                SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: { onlineSearch.search(searchText) })
             }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
@@ -811,6 +885,10 @@ struct ChatListSearchBar: View {
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .frame(maxWidth: .infinity)
+                        .autocorrectionDisabled(true)
+                        .textInputAutocapitalization(.never)
+                        .submitLabel(.search)
+                        .onSubmit { onlineSearch.search(searchText) }
                     if connectProgressManager.showConnectProgress != nil {
                         ProgressView()
                     }
@@ -845,6 +923,9 @@ struct ChatListSearchBar: View {
                     searchFocussed: $searchFocussed,
                     dismiss: false
                 )
+            }
+            if !oneHandUI && showsSearchInDirectory {
+                SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: { onlineSearch.search(searchText) })
             }
         }
         .onChange(of: searchFocussed) { sf in
