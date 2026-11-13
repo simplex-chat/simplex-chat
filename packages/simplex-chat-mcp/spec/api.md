@@ -421,7 +421,7 @@ requests
   observer #G ID      in a plugin session group only
 ```
 
-The server reads commands from members' messages in the main conversation of the control chat ([serve.ts:131](../src/serve.ts#L131), [control.ts:224-237](../src/control.ts#L224-L237)). It answers a command with a reply that quotes it, one command after another, and it runs the expiry check before each command ([control.ts:235](../src/control.ts#L235), [:258](../src/control.ts#L258)).
+The server reads commands from members' messages in the main conversation of the control chat ([serve.ts:131](../src/serve.ts#L131), [control.ts:224-237](../src/control.ts#L224-L237)). It answers a request with a reply that quotes it, and a text outside the requests with a new message, without a quote, one command after another, and it runs the expiry check before each command ([control.ts:235](../src/control.ts#L235), [:258](../src/control.ts#L258)).
 
 A received message whose first word is `/secret`, in any letter case, from any member, while the control chat is not lost ([control.ts:226-228](../src/control.ts#L226-L228)):
 
@@ -432,7 +432,7 @@ A received message whose first word is `/secret`, in any letter case, from any m
 
 | Request | Condition | Reply | Code |
 |---|---|---|---|
-| one-line `/` text outside the requests | any sender | `Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /secret, /unsecret, /secrets. Each card shows its commands.` The reply in a plugin session group is in [4.3](#43-session-groups) | [control.ts:22-23](../src/control.ts#L22-L23), [:260](../src/control.ts#L260) |
+| one-line `/` text outside the requests | any sender | `Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /secret, /unsecret, /secrets. Each card shows its commands.`, as a new message, without a quote, so a mistyped `/secret`, such as `/secrt NAME VALUE`, which is not deleted, leaves no copy of its value in the reply. The reply in a plugin session group is in [4.3](#43-session-groups) | [control.ts:22-23](../src/control.ts#L22-L23), [:235](../src/control.ts#L235), [:260](../src/control.ts#L260) |
 | any request | sender not an approver, `--owners` absent | `Only owners approve actions.` | [control.ts:261](../src/control.ts#L261) |
 | any request | sender not an approver, `--owners` given | `Only the owners listed in --owners approve actions.` | [control.ts:261](../src/control.ts#L261) |
 | `approve`, `reject`, `receive`, `forward` with N | action N absent, not `pending`, or without a card | `Action N is not pending.` | [control.ts:294](../src/control.ts#L294) |
@@ -766,7 +766,7 @@ Commands and replies are those of [2.1](#21-commands-and-replies), from approver
 | `/observer #G ID` | the sender's role is below admin or below the member's role, as SimpleX requires for a role change | `Your role does not let you change the role of NAME.` | [control.ts:400](../src/control.ts#L400), [:922-924](../src/control.ts#L922-L924) |
 | `/observer #G ID` | accepted: the member's role is set to `observer`, and the members are read again. The standing approvals that this member gave are kept in the chat's custom data, and are ignored until the member is an admin or owner again | `NAME is an observer and can't send messages.` | [control.ts:401-403](../src/control.ts#L401-L403), [:930-933](../src/control.ts#L930-L933), [:175-178](../src/control.ts#L175-L178) |
 | `secret NAME VALUE`, `unsecret NAME`, `secrets` | from an admin or owner: a one-line `/secret` is deleted first, as in [2.1](#21-commands-and-replies). A `/secret` of several lines is passed to Claude as a prompt, and a `/secret` of a moderator, member or author gets the reply of the last row; neither is deleted | `Secrets are off: the server runs without --secrets-folder.` | [control.ts:227-235](../src/control.ts#L227-L235), [:282-287](../src/control.ts#L282-L287), [hub.ts:157-159](../src/hub.ts#L157-L159) |
-| one-line `/` text outside the requests | an admin or owner | `Unknown command.` | [control.ts:23](../src/control.ts#L23), [:260](../src/control.ts#L260) |
+| one-line `/` text outside the requests | an admin or owner | `Unknown command.`, as a new message, without a quote | [control.ts:23](../src/control.ts#L23), [:235](../src/control.ts#L235), [:260](../src/control.ts#L260) |
 | any one-line `/` text | a moderator, member or author. The session replies before `Control`, and the text is passed to neither `Control` nor Claude | `Only admins and owners of this group can send / commands.`, quoting the message | [hub.ts:28](../src/hub.ts#L28), [:157](../src/hub.ts#L157), [:308-310](../src/hub.ts#L308-L310) |
 
 The requests `give CHAT N` and `observer #G ID` of [2.1](#21-commands-and-replies) are parsed only in a plugin session group ([control.ts:897-898](../src/control.ts#L897-L898)). Approvers are the active members of the session group with the role `admin` or `owner`, other than Claude and `User`, however they joined. An observer can't send, because the core refuses an observer's message ([hub.ts:312-318](../src/hub.ts#L312-L318), [control.ts:48](../src/control.ts#L48), [:620-622](../src/control.ts#L620-L622), [:629-638](../src/control.ts#L629-L638)).

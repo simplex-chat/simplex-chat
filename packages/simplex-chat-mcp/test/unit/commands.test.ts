@@ -921,6 +921,15 @@ describe("secrets in the agent control chat", () => {
     for (const text of ["/unsecret", "/unsecret API_TOKEN GIT_TOKEN", "/secrets all"]) expect(await control.ownerCommand(alice, parseCommand(text)!)).toBe(commandsReply)
   })
 
+  it("answers a mistyped /secret with the list of commands as a new message, without a quote of its value, and deletes nothing", async () => {
+    const {chat, send, posts} = await secretsSetup()
+    await send(`/secrt API_TOKEN ${value}`, alice, 1)
+    await send(`/secrets API_TOKEN ${value}`, alice, 2)
+    await send(`/secrt API_TOKEN ${value}`, bob, 3)
+    expect(posts()).toEqual([commandsReply, commandsReply, commandsReply])
+    expect([chat.replies, chat.moderated]).toEqual([[], []])
+  })
+
   it("stores a secret in mode host, without the spaces around its value", async () => {
     const {send} = await secretsSetup("host")
     await send(`/secret API_TOKEN   ${value}  `)

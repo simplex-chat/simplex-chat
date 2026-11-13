@@ -956,7 +956,7 @@ sequenceDiagram
 
 Notes:
 
-- Every message of a member other than `User` is a prompt, however the member joined, except a one-line `/` text. Claude answers a one-line `/` text of a moderator, member or author with `Only admins and owners of this group can send / commands.` From an admin or owner, a one-line `/` text is a command of the group. For one outside the group's requests, such as `/model sonnet`, the reply is `Unknown command.` ([hub.ts:153-160](../src/hub.ts#L153-L160), [:230-233](../src/hub.ts#L230-L233), [:308-314](../src/hub.ts#L308-L314), [control.ts:260](../src/control.ts#L260), [:712-717](../src/control.ts#L712-L717)).
+- Every message of a member other than `User` is a prompt, however the member joined, except a one-line `/` text. Claude answers a one-line `/` text of a moderator, member or author with `Only admins and owners of this group can send / commands.` From an admin or owner, a one-line `/` text is a command of the group. For one outside the group's requests, such as `/model sonnet`, Claude posts `Unknown command.` as a new message, without a quote ([hub.ts:153-160](../src/hub.ts#L153-L160), [:230-233](../src/hub.ts#L230-L233), [:308-314](../src/hub.ts#L308-L314), [control.ts:235](../src/control.ts#L235), [:260](../src/control.ts#L260), [:712-717](../src/control.ts#L712-L717)).
 - The session handles messages in arrival order. So a prompt is delivered after the file of an earlier prompt. The reply to a one-line `/` text of a moderator, member or author is posted after the earlier prompts ([hub.ts:157](../src/hub.ts#L157), [:159](../src/hub.ts#L159), [:304-306](../src/hub.ts#L304-L306)).
 - After a service start, a prompt that arrives before its session attaches again is held up to 30 s from the hub's open. So a prompt sent while the service was stopped is still delivered to the session ([hub.ts:235-237](../src/hub.ts#L235-L237), [:379](../src/hub.ts#L379)).
 - In a session started without the channel flag, Claude Code receives the notification and drops it.
@@ -1473,6 +1473,10 @@ sequenceDiagram
   K->>K: Secrets.set: SECRETS/GITHUB_TOKEN.part written and renamed to SECRETS/GITHUB_TOKEN, the record in DATA/secrets.json
   K->>P: Secret GITHUB_TOKEN set by Alice.
   K->>C: apiSendMessages #35;G [Secret GITHUB_TOKEN is set. /'unsecret GITHUB_TOKEN'], without a quote
+  O->>C: /secrt GITHUB_TOKEN VALUE
+  C->>K: newChatItems
+  K->>C: apiSendMessages #35;G [Commands: ...], without a quote
+  O->>C: the message deleted for everyone
   A->>T: list
   T-->>A: {chats, actions, secrets: {folder: SECRETS, names: [GITHUB_TOKEN]}}
   A->>A: a shell command with "$(cat SECRETS/GITHUB_TOKEN)"
@@ -1484,6 +1488,7 @@ Notes:
 - After a failed deletion the command does not run, and `control chat command: ERROR` is logged ([control.ts:232-236](../src/control.ts#L232-L236)).
 - With full deletion on, the message is replaced by a moderated item in the agent's database and at each member; a member who receives the message after the deletion stores it as moderated ([Commands.hs:4294-4297](../../../src/Simplex/Chat/Library/Commands.hs#L4294-L4297), [Subscriber.hs:2490-2499](../../../src/Simplex/Chat/Library/Subscriber.hs#L2490-L2499), [:2228-2232](../../../src/Simplex/Chat/Library/Subscriber.hs#L2228-L2232), [:2268-2274](../../../src/Simplex/Chat/Library/Subscriber.hs#L2268-L2274)).
 - `/unsecret NAME` and `/secrets` are answered with replies that quote them, as other commands ([control.ts:235](../src/control.ts#L235)).
+- A mistyped `/secret`, such as `/secrt NAME VALUE` or `/secrets NAME VALUE`, is not deleted, and gets the list of commands as a new message, without a quote, so its sender's deletion for everyone leaves no copy of the value in the reply ([control.ts:227](../src/control.ts#L227), [:235](../src/control.ts#L235), [:260](../src/control.ts#L260)).
 - The value is absent from the log line, the reply and the `list` result ([control.ts:429-430](../src/control.ts#L429-L430), [tools.ts:1289-1290](../src/tools.ts#L1289-L1290)).
 
 Source: [control.ts:224-237](../src/control.ts#L224-L237), [:257-287](../src/control.ts#L257-L287), [:425-446](../src/control.ts#L425-L446), [files.ts:157-184](../src/files.ts#L157-L184), [tools.ts:1282-1291](../src/tools.ts#L1282-L1291).

@@ -407,7 +407,7 @@ The server deletes every message whose first word is `/secret`, in any letter ca
 - The owners' apps show the message until the deletion reaches them.
 - While the server is stopped, the message stays until the next start.
 - Only the first text of a message is checked: an edit, and the later text of a live message, are neither deleted nor run. Send `/secret` as a new message, not a live one.
-- A mistyped command, such as `/secrt NAME VALUE`, is an ordinary message and stays in the chat: delete it for everyone in the app.
+- A mistyped command, such as `/secrt NAME VALUE` or `/secrets NAME VALUE`, is not deleted. It gets the list of commands as a new message, without a quote, so the reply keeps no copy of the value: delete your message for everyone in the app.
 - After the agent lost its control chat, `/secret` messages are neither deleted nor run.
 
 ### Use by the agent
@@ -720,7 +720,7 @@ With the channel, a message from a member of a session's group, other than `User
 - A file attached to the message is saved without approval to `_sessions/<session ID>/files/group/` in the data folder, and Claude gets its path. When the file fails or doesn't arrive within 10 minutes, Claude replies `The file of this message was not received: ERROR`, and the session gets the text.
 - Prompts reach the session in the order they were sent. A later prompt waits for the file of an earlier one.
 - Every message from a member who can send is a prompt, including one that starts with `!`. Only one-line messages that start with `/` are not prompts, see below. Claude Code runs no command from a prompt. Claude gets the text, and runs shell commands only as tool use, such as Bash, under Claude Code's permissions, see [Tool use](#tool-use).
-- A one-line message that starts with `/` is a command of the group, such as `/approve 5` or `/list`. From an admin or owner, an unknown command gets `Unknown command.` From a moderator, member or author, any such message gets `Only admins and owners of this group can send / commands.`, and it reaches neither the commands nor Claude.
+- A one-line message that starts with `/` is a command of the group, such as `/approve 5` or `/list`. From an admin or owner, an unknown command gets `Unknown command.`, as a new message without a quote. From a moderator, member or author, any such message gets `Only admins and owners of this group can send / commands.`, and it reaches neither the commands nor Claude.
 - While the service runs and the session's Claude Code doesn't, Claude replies `Session N is not running.` It also replies so when Claude Code ends while a prompt's file arrives. For 30 seconds after the service starts, a prompt waits for its session to attach again, so a prompt sent while the service was stopped still arrives.
 - Claude posts its final answer of each turn in the group. When the turn's prompt came from the group, the answer replies to it, even when the next prompt arrives while Claude answers. Claude Code can add a prompt that arrives during a turn to that turn. Then the answer replies to the turn's prompt, or to the last message from the group added to the turn.
 - Claude's replies to a prompt, its answer included, are posted without the quote when the prompt was deleted or the quote makes the message too large. An answer is also posted without the quote when the quote leaves no room for its first character.

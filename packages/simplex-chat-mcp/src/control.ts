@@ -232,7 +232,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     this.ownerCommands = this.ownerCommands
       .then(() => (secret ? this.chat.apiDeleteMemberChatItem(this.groupId, [chatItem.meta.itemId]) : undefined))
       .then(() => (command === undefined ? secretUsage : this.ownerCommand(sender, command)))
-      .then((reply): Promise<unknown> | undefined => (reply === undefined ? undefined : secret ? this.post(reply) : this.chat.apiSendTextReply(ci, reply)))
+      .then((reply): Promise<unknown> | undefined => (reply === undefined ? undefined : secret || reply === commandsReply || reply === unknownCommand ? this.post(reply) : this.chat.apiSendTextReply(ci, reply)))
       .catch(error => logError("control chat command", error))
   }
 

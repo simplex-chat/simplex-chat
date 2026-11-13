@@ -1076,8 +1076,9 @@ describe("session channel", () => {
       {prompt: {text: "//compact\nthen go on", from: "Dan", item: 53}},
       {prompt: {text: "/!ls\nthen go on", from: "Dan", item: 54}},
     ])
-    expect(chat.replies).toEqual([unknownCommand, unknownCommand, unknownCommand, unknownCommand])
-    expect(answers(chat)).toEqual([43, 44, 47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]))
+    expect(chat.replies).toEqual([])
+    expect(answers(chat).filter(([{text}]) => text === unknownCommand)).toEqual([40, 41, 42, 46].map(() => [{text: unknownCommand, quotedItemId: undefined}]))
+    expect(answers(chat).filter(([{text}]) => text !== unknownCommand)).toEqual([43, 44, 47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]))
   })
 
   it("answers nothing and performs nothing for a / command of a member that reaches the commands past the one refusal", async () => {

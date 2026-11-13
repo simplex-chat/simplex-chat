@@ -233,7 +233,7 @@ Hooks are bound in [`serve.ts:98-104`](../src/serve.ts#L98-L104): `refusal`, `sa
 | `Control.saveCounter`, `Control.saveData` | [180-192](../src/control.ts#L180-L192) | queued writes of the counter and of other keys of the group's custom data |
 | `Control.postCard`, `Control.outcome` | [194-205](../src/control.ts#L194-L205) | card post and card edit; the kept-files message after a done leave |
 | `Control.refusedFile`, `Control.fileNotSent` | [207-222](../src/control.ts#L207-L222) | posts about files |
-| `Control.onMessage` | [224](../src/control.ts#L224) | owner commands, queued one at a time; the deletion of `/secret` messages before their command. In a group of the plugin's session, the session passes it the one-line `/` texts, and the texts of `User` are dropped. |
+| `Control.onMessage` | [224](../src/control.ts#L224) | owner commands, queued one at a time; the deletion of `/secret` messages before their command. The replies to a `/secret` and to a text outside the requests are new messages; the other replies quote their command. In a group of the plugin's session, the session passes it the one-line `/` texts, and the texts of `User` are dropped. |
 | `Control.onEvent` | [239](../src/control.ts#L239) | membership changes and loss of the control chat |
 | `Control.ownerCommand` | [257](../src/control.ts#L257) | command dispatch and replies. A text outside the requests is answered with the command list, or with `Unknown command.` in a group of the plugin's session. |
 | `approveChat`, `revoke`, `forward`, `leave`, `deleteFiles` | [310-377](../src/control.ts#L310-L377) | owner requests |
@@ -669,7 +669,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 |---|---|
 | source: `groupRcv` text items in the main scope of the control group | [serve.ts:131](../src/serve.ts#L131), [control.ts:226](../src/control.ts#L226), [:228](../src/control.ts#L228) |
 | form: one line `/keyword params`, leading spaces allowed | [control.ts:712-717](../src/control.ts#L712-L717) |
-| A text outside the requests from any sender is answered with the help reply of `serve`, or with `Unknown command.` in a plugin session group. Other commands are accepted only from approvers. A command from another sender is answered in `serve`, and left without a reply in a plugin session group. | [control.ts:260-261](../src/control.ts#L260-L261) |
+| A text outside the requests from any sender is answered with the help reply of `serve`, or with `Unknown command.` in a plugin session group, as a new message without a quote. Other commands are accepted only from approvers. A command from another sender is answered in `serve`, and left without a reply in a plugin session group. | [control.ts:235](../src/control.ts#L235), [:260-261](../src/control.ts#L260-L261) |
 | commands run one at a time in arrival order | [control.ts:232-236](../src/control.ts#L232-L236) |
 | `/approve`, `/reject`, `/receive` and `/forward` need a pending action with a card, and the action's chat when CHAT is given; `/receive` and `/forward` take downloads only, `/approve` the other actions only | [control.ts:294-304](../src/control.ts#L294-L304) |
 | a `groupRcv` text item whose first word is `/secret`, in any letter case, of any sender, in the main scope or a member support chat, is deleted for all members before its command runs, and its reply is a new message without a quote | [control.ts:227-235](../src/control.ts#L227-L235) |
@@ -703,6 +703,7 @@ With the secrets, values are protected from accidental exposure to the model pro
 | a value is written only by an approver's `/secret`, to `SECRETS/NAME`, mode 0600 | [control.ts:283](../src/control.ts#L283), [:425-431](../src/control.ts#L425-L431), [files.ts:170-175](../src/files.ts#L170-L175) |
 | a value is absent from the log, from the replies and from tool results: the log line and the replies name the secret, and `list` returns the names and the folder | [control.ts:429-430](../src/control.ts#L429-L430), [tools.ts:1289-1290](../src/tools.ts#L1289-L1290) |
 | a `/secret` message is deleted for all members before its command, in the main conversation and in member support chats; with full deletion, its content is replaced in the agent's database and in the members' apps | [control.ts:227-235](../src/control.ts#L227-L235), [:21](../src/control.ts#L21), [:126-128](../src/control.ts#L126-L128), [Commands.hs:4294-4297](../../../src/Simplex/Chat/Library/Commands.hs#L4294-L4297), [Messages.hs:2857-2874](../../../src/Simplex/Chat/Store/Messages.hs#L2857-L2874) |
+| a mistyped `/secret`, such as `/secrt NAME VALUE` or `/secrets NAME VALUE`, is not deleted; its reply, the list of commands, is a new message without a quote, so its sender's deletion for everyone leaves no copy of the value in the reply | [control.ts:227](../src/control.ts#L227), [:235](../src/control.ts#L235), [:260](../src/control.ts#L260), [:899-901](../src/control.ts#L899-L901) |
 | `send` refuses files under the secrets folder, by its real path | [tools.ts:1007-1008](../src/tools.ts#L1007-L1008) |
 | `/unsecret` deletes only a name among `names()`, so a name with `/` or `..` deletes nothing | [files.ts:177-179](../src/files.ts#L177-L179) |
 | the secrets folder is disjoint from the data folder | [cli.ts:132-133](../src/cli.ts#L132-L133) |
@@ -711,6 +712,7 @@ With the secrets, values are protected from accidental exposure to the model pro
 Limits:
 
 - Owners' apps show a `/secret` message until its deletion reaches them.
+- A mistyped `/secret`, such as `/secrt NAME VALUE`, is neither deleted nor run: its sender deletes it for everyone in the app.
 - A message edited into a `/secret` command, and the later text of a live message, are neither deleted nor run: `onMessage` is called for new items only, not at `chatItemUpdated` ([serve.ts:129-133](../src/serve.ts#L129-L133)).
 - The agent forwards the messages of the control chat to members as an owner; the forwarded messages are stored with their delivery job in `DATA/simplex_chat.db` until the job is done and 7 days old ([Subscriber.hs:1020-1027](../../../src/Simplex/Chat/Library/Subscriber.hs#L1020-L1027), [:3793-3796](../../../src/Simplex/Chat/Library/Subscriber.hs#L3793-L3796), [:4231-4236](../../../src/Simplex/Chat/Library/Subscriber.hs#L4231-L4236), [Delivery.hs:251-263](../../../src/Simplex/Chat/Store/Delivery.hs#L251-L263), [:400-409](../../../src/Simplex/Chat/Store/Delivery.hs#L400-L409), [Commands.hs:6555-6558](../../../src/Simplex/Chat/Library/Commands.hs#L6555-L6558)).
 - Every process of the server's user can read the files; the agent's commands read them.
