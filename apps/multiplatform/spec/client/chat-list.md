@@ -83,7 +83,7 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 
 | State | Type | Purpose |
 |---|---|---|
-| `searchText` | `MutableState<TextFieldValue>` | Search query (saved across recomposition, cleared when the current user changes) |
+| `searchText` | `MutableState<TextFieldValue>` | Search query (saved across recomposition) |
 | `listState` | `LazyListState` | Scroll position (persisted in `lazyListState` var) |
 | `oneHandUI` | `State<Boolean>` | One-hand UI mode toggle |
 
