@@ -74,10 +74,13 @@ fun ProfileImage(
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
   blurred: Boolean = false,
-  async: Boolean = false
+  async: Boolean = false,
+  toEdge: Boolean = false
 ) {
   Box(Modifier.size(size)) {
     if (image == null) {
+      val iconSize = if (toEdge) size * 1.2f else size
+      val iconModifier = if (toEdge) Modifier.requiredSize(iconSize) else Modifier.fillMaxSize()
       val iconToReplace = when (icon) {
         MR.images.ic_account_circle_filled -> AccountCircleFilled
         MR.images.ic_supervised_user_circle_filled -> SupervisedUserCircleFilled
@@ -85,20 +88,20 @@ fun ProfileImage(
       }
       if (iconToReplace != null) {
         if (backgroundColor != null) {
-          Box(Modifier.size(size * 0.7f).align(Alignment.Center).background(backgroundColor, CircleShape))
+          Box(Modifier.size(iconSize * 0.7f).align(Alignment.Center).background(backgroundColor, CircleShape))
         }
         Icon(
           iconToReplace,
           contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
           tint = color,
-          modifier = Modifier.fillMaxSize()
+          modifier = iconModifier
         )
       } else {
         Icon(
           painterResource(icon),
           contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
           tint = color,
-          modifier = Modifier.fillMaxSize()
+          modifier = iconModifier
         )
       }
     } else {
@@ -107,7 +110,7 @@ fun ProfileImage(
           base64ImageString = image,
           contentDescription = stringResource(MR.strings.image_descr_profile_image),
           contentScale = ContentScale.Crop,
-          modifier = ProfileIconModifier(size, blurred = blurred)
+          modifier = ProfileIconModifier(size, padding = !toEdge, blurred = blurred)
         )
       } else {
         val imageBitmap = base64ToBitmap(image)
@@ -115,7 +118,7 @@ fun ProfileImage(
           bitmap = imageBitmap,
           contentDescription = stringResource(MR.strings.image_descr_profile_image),
           contentScale = ContentScale.Crop,
-          modifier = ProfileIconModifier(size, blurred = blurred)
+          modifier = ProfileIconModifier(size, padding = !toEdge, blurred = blurred)
         )
       }
     }

@@ -128,7 +128,7 @@ When `timedMessageAllowed` is true, compose bar includes a timer icon for settin
 
 ### Terminal Layout
 
-On Android and desktop, a chat with the terminal layout shows messages as full-width rows without bubbles, starting at one edge for sent and received messages, with the sender's name above each group of messages, again after a pause of 7.5 minutes, and the time at the end of the last line. The wallpaper is drawn as its colour without the image.
+On Android and desktop, a chat with the terminal layout shows messages as full-width rows without bubbles, starting at one edge for sent and received messages, with the sender's name above each group of messages, again after a pause of 7.5 minutes, and the time at the end of the last line. In groups and channels the sender's avatar is centred on the line of the name, and the messages are below it from the same edge. A wide image or video is as wide as the row, up to 500dp, and a tall or square one is 0.75 of that width. The wallpaper is drawn as its colour without the image.
 
 A chat uses the user's choice for that chat, otherwise the layout set by the group owner or by the address the contact came from, otherwise the user's choice for the profile and then the app setting, otherwise classic.
 

@@ -12,6 +12,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.IntrinsicMeasurable
+import androidx.compose.ui.layout.IntrinsicMeasureScope
+import androidx.compose.ui.layout.LayoutModifier
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.*
@@ -108,7 +114,7 @@ fun CIImageView(
       // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .width(if (imageBitmap.width * 0.97 <= imageBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+        .width(chatMediaWidth(tall = imageBitmap.width * 0.97 <= imageBitmap.height))
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
@@ -132,7 +138,7 @@ fun CIImageView(
         // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
         // if text is short and take all available width if text is long
         modifier = Modifier
-          .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+          .width(chatMediaWidth(tall = painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height))
           .combinedClickable(
             onLongClick = { showMenu.value = true },
             onClick = onClick
@@ -143,7 +149,7 @@ fun CIImageView(
       )
     } else {
       Box(Modifier
-        .width(if (painter.intrinsicSize != Size.Unspecified && painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+        .width(chatMediaWidth(tall = painter.intrinsicSize != Size.Unspecified && painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height))
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = {}
@@ -186,9 +192,10 @@ fun CIImageView(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
       .then(
         if (!smallView) {
-          val w = if (previewBitmap.width * 0.97 <= previewBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
+          val tall = previewBitmap.width * 0.97 <= previewBitmap.height
+          val w = chatMediaWidth(tall)
           // Height follows the measured (clamped) width, not nominal w, else wide images get an empty strip below.
-          Modifier.width(w).layout { measurable, constraints ->
+          Modifier.mediaWidth(tall).layout { measurable, constraints ->
             val width = constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
             val height = (width * (previewBitmap.height.toFloat() / previewBitmap.width.toFloat()).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
             val placeable = measurable.measure(Constraints.fixed(width, height))
@@ -279,6 +286,28 @@ fun CIImageView(
 fun imageViewFullWidth(): Dp {
   val approximatePadding = 100.dp
   return with(LocalDensity.current) { minOf(DEFAULT_MAX_IMAGE_WIDTH, LocalWindowWidth() - approximatePadding) }
+}
+
+@Composable
+fun chatMediaWidth(tall: Boolean): Dp =
+  if (tall && !LocalTerminalLayout.current) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
+
+@Composable
+fun Modifier.mediaWidth(tall: Boolean): Modifier =
+  if (LocalTerminalLayout.current) then(FlatMediaWidth(tall)) else width(chatMediaWidth(tall))
+
+fun flatMediaWidth(given: Dp, tall: Boolean): Dp =
+  minOf(DEFAULT_MAX_IMAGE_WIDTH, given) * (if (tall) 0.75f else 1f)
+
+private data class FlatMediaWidth(val tall: Boolean) : LayoutModifier {
+  override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
+    val width = flatMediaWidth(constraints.maxWidth.toDp(), tall).roundToPx()
+    val placeable = measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
+    return layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+  }
+
+  override fun IntrinsicMeasureScope.maxIntrinsicWidth(measurable: IntrinsicMeasurable, height: Int): Int =
+    DEFAULT_MAX_IMAGE_WIDTH.roundToPx()
 }
 
 private fun showDownloadButton(status: CIFileStatus?): Boolean =

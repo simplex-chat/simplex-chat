@@ -1764,6 +1764,10 @@ struct ChatView: View {
             scaledMemberImageSize(userFont)
         }
 
+        private var terminalImageSize: CGFloat {
+            terminalMemberImageSize(userFont)
+        }
+
         typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
 
         private func reveal(_ yes: Bool) -> Void {
@@ -2149,7 +2153,7 @@ struct ChatView: View {
         private func terminalItemRow(_ range: ClosedRange<Int>?, _ showSender: Bool, _ ci: ChatItem, _ itemSeparation: ItemSeparation) -> some View {
             let selecting = selectedChatItems != nil && ci.canBeDeletedForSelf
             let leading: CGFloat = selecting ? 4 + 24 : 0
-            let gutter = chat.chatInfo.chatType == .group ? memberImageSize + chatItemTextPadding : 0
+            let gutter = chat.chatInfo.chatType == .group ? terminalImageSize + chatItemTextPadding : 0
             let older = merged.oldest().nextItem
             let topGap = terminalRowGap(
                 ci,
@@ -2169,7 +2173,7 @@ struct ChatView: View {
                     topGap: topGap,
                     contentStartsWithCard: terminalItemStartsWithCard(ci, revealed: revealed)
                 ) {
-                    chatItemWithMenu(ci, range, min(maxWidth, listWidth - leading - gutter - 2 * chatItemTextPadding), itemSeparation)
+                    chatItemWithMenu(ci, range, terminalMediaWidth(listWidth - leading), itemSeparation)
                 }
                 .padding(.leading, leading)
             }
@@ -2202,7 +2206,7 @@ struct ChatView: View {
                     role: memCount == 1 ? senderRole(member, groupInfo) : nil,
                     own: false,
                     image: AnyView(
-                        MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
+                        MemberProfileImage(member, size: terminalImageSize, backgroundColor: theme.colors.background)
                             .simultaneousGesture(TapGesture().onEnded {
                                 if let mem = m.getGroupMember(member.groupMemberId) {
                                     selectedMember = mem
@@ -2222,7 +2226,7 @@ struct ChatView: View {
                     badge: membership.nameBadge,
                     role: senderRole(membership, groupInfo),
                     own: true,
-                    image: AnyView(MemberProfileImage(membership, size: memberImageSize, backgroundColor: theme.colors.background))
+                    image: AnyView(MemberProfileImage(membership, size: terminalImageSize, backgroundColor: theme.colors.background))
                 )
             default:
                 return cInfo.incognito
@@ -2233,7 +2237,7 @@ struct ChatView: View {
 
         private func groupSenderImage(_ groupInfo: GroupInfo) -> AnyView {
             AnyView(
-                ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: memberImageSize, backgroundColor: theme.colors.background)
+                ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: terminalImageSize, backgroundColor: theme.colors.background)
                     .simultaneousGesture(TapGesture().onEnded { showChatInfoSheet = true })
             )
         }

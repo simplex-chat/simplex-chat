@@ -373,6 +373,16 @@ struct ChatEventWithMeta<Content: View>: View {
 
 let terminalEventPadding = EdgeInsets(top: 0, leading: chatItemTextPadding, bottom: 0, trailing: chatItemTextPadding)
 
+let terminalMaxMediaWidth: CGFloat = 500
+
+func terminalMediaWidth(_ row: CGFloat) -> CGFloat {
+    min(terminalMaxMediaWidth, row - 2 * chatItemTextPadding)
+}
+
+func terminalMemberImageSize(_ font: DynamicTypeSize) -> CGFloat {
+    30 * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
+}
+
 struct ChatItemSender {
     var name: Text
     var badge: LocalBadge?
@@ -390,23 +400,27 @@ struct TerminalChatItemRow<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            if gutter > 0 {
-                ZStack(alignment: .topLeading) {
-                    Color.clear.frame(width: gutter, height: 0)
-                    sender?.image?.padding(.leading, chatItemTextPadding)
-                }
-            }
-            VStack(alignment: .leading, spacing: 0) {
-                if let sender {
+        VStack(alignment: .leading, spacing: 0) {
+            if let sender {
+                HStack(spacing: 0) {
+                    if gutter > 0 {
+                        ZStack(alignment: .topLeading) {
+                            Color.clear.frame(width: gutter, height: 0)
+                            sender.image?.padding(.leading, chatItemTextPadding)
+                        }
+                    }
                     senderNameAndRole(sender)
                         .padding(.leading, chatItemTextPadding)
-                        .padding(.bottom, contentStartsWithCard ? terminalParagraphGap : 0)
                 }
-                content()
+                .padding(.bottom, contentStartsWithCard ? terminalParagraphGap : sender.image == nil ? 0 : terminalHeadingBottomGap)
             }
+            content()
         }
-        .padding(.top, topGap)
+        .padding(.top, max(0, topGap - overhang))
+    }
+
+    private var overhang: CGFloat {
+        sender?.image == nil ? 0 : max(0, (gutter - chatItemTextPadding - terminalLineHeight(UIFont.preferredFont(forTextStyle: .body), nil, theme)) / 2)
     }
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {

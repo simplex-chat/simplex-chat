@@ -161,6 +161,12 @@ final class SnapshotTests: XCTestCase {
         XCTAssertNotEqual(rowHash(items[3]), rowHash(unreacted))
     }
 
+    func testTerminalMediaAndAvatarSizes() {
+        XCTAssertEqual(terminalMediaWidth(402), 378)
+        XCTAssertEqual(terminalMediaWidth(1000), 500)
+        XCTAssertEqual(terminalMemberImageSize(.large), 30)
+    }
+
     func testVoiceMessageTimeFormatting() {
         XCTAssertEqual(voiceMessageTime(90), "01:30")
         XCTAssertEqual(voiceMessageTime(3600), "01:00:00")

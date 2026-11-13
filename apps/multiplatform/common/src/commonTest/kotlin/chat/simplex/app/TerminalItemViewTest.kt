@@ -1,5 +1,6 @@
 package chat.simplex.app
 
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.views.chat.ListItem
@@ -8,6 +9,7 @@ import chat.simplex.common.views.chat.terminalRowsSeparated
 import chat.simplex.common.views.chat.item.TERMINAL_LEVEL_STEP
 import chat.simplex.common.views.chat.item.TERMINAL_NAME_REPEAT_SECONDS
 import chat.simplex.common.views.chat.item.TERMINAL_PARAGRAPH_GAP
+import chat.simplex.common.views.chat.item.flatMediaWidth
 import chat.simplex.common.views.chat.item.isOneLine
 import chat.simplex.common.views.chat.item.terminalCardTop
 import chat.simplex.common.views.chat.item.terminalItemShowsSender
@@ -324,5 +326,13 @@ class TerminalItemViewTest {
     val base = msg(2, CIDirection.DirectSnd(), 10)
     assertEquals(0.sp, terminalReactionsGap(base))
     assertEquals(TERMINAL_PARAGRAPH_GAP, terminalReactionsGap(base.copy(reactions = thumbsUp)))
+  }
+
+  @Test
+  fun flatMediaTakesRowLessPaddingsUpTo500() {
+    assertEquals(378.dp, flatMediaWidth(402.dp - 24.dp, tall = false))
+    assertEquals(283.5.dp, flatMediaWidth(402.dp - 24.dp, tall = true))
+    assertEquals(500.dp, flatMediaWidth(1000.dp, tall = false))
+    assertEquals(375.dp, flatMediaWidth(1000.dp, tall = true))
   }
 }

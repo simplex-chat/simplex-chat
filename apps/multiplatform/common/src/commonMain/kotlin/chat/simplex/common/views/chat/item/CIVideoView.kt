@@ -43,10 +43,11 @@ fun CIVideoView(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
       .then(
         if (!smallView) {
-          val w = if (preview.width * 0.97 <= preview.height) videoViewFullWidth(LocalWindowWidth()) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
+          val tall = preview.width * 0.97 <= preview.height
+          val w = chatMediaWidth(tall)
           // Size the media box from the preview aspect ratio (as CIImageView does), else the unprepared player surface
           // expands to PriorityLayout's max height and shows as a black strip; height tracks the clamped width (#7223).
-          Modifier.width(w).layout { measurable, constraints ->
+          Modifier.mediaWidth(tall).layout { measurable, constraints ->
             val width = constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
             val height = (width * (preview.height.toFloat() / preview.width.toFloat()).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
             val placeable = measurable.measure(Constraints.fixed(width, height))
@@ -235,8 +236,7 @@ private fun SmallVideoView(
   //  val soundEnabled by rememberSaveable(uri.path) { player.soundEnabled }
   val brokenVideo by rememberSaveable(uri.path) { player.brokenVideo }
   Box {
-    val windowWidth = LocalWindowWidth()
-    val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
+    val width = chatMediaWidth(tall = preview.width * 0.97 <= preview.height)
     PlayerView(
       player,
       width,
@@ -295,8 +295,7 @@ private fun VideoView(
   }
   val onLongClick = { showMenu.value = true }
   Box {
-    val windowWidth = LocalWindowWidth()
-    val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
+    val width = chatMediaWidth(tall = preview.width * 0.97 <= preview.height)
     PlayerView(
       player,
       width,
@@ -420,8 +419,7 @@ fun VideoPreviewImageView(
   onClick: () -> Unit,
   onLongClick: () -> Unit
 ) {
-  val windowWidth = LocalWindowWidth()
-  val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
+  val width = chatMediaWidth(tall = preview.width * 0.97 <= preview.height)
   Image(
     preview,
     contentDescription = stringResource(MR.strings.video_descr),
@@ -582,9 +580,4 @@ private fun receiveFileIfValidSize(file: CIFile, smallView: Boolean, receiveFile
     chatModel.openWhenReceived(file, smallView)
     receiveFile(file.fileId)
   }
-}
-
-private fun videoViewFullWidth(windowWidth: Dp): Dp {
-  val approximatePadding = 100.dp
-  return minOf(DEFAULT_MAX_IMAGE_WIDTH, windowWidth - approximatePadding)
 }

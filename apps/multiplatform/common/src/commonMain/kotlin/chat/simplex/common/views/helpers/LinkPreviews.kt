@@ -22,7 +22,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.chatViewScrollState
 import chat.simplex.common.views.chat.item.CHAT_IMAGE_LAYOUT_ID
-import chat.simplex.common.views.chat.item.imageViewFullWidth
+import chat.simplex.common.views.chat.item.mediaWidth
 import chat.simplex.res.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -203,7 +203,7 @@ fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongC
   Column(
     Modifier
     .layoutId(CHAT_IMAGE_LAYOUT_ID)
-    .width(if (image.width * 0.97 <= image.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+    .mediaWidth(tall = image.width * 0.97 <= image.height)
   ) {
     val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
     Image(

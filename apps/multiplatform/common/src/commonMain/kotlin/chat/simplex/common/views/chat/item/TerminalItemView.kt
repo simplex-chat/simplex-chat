@@ -321,11 +321,12 @@ fun chatItemSender(
   showChatInfo: () -> Unit
 ): ChatItemSender {
   val dir = cItem.chatDir
+  val imageSize = TERMINAL_MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier
   return when {
     cItem.channelIsSender && chatInfo is ChatInfo.Group ->
       ChatItemSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), dir.sent) {
         Box(Modifier.clickable { showChatInfo() }) {
-          ProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, chatInfo.groupInfo.image, chatInfo.groupInfo.chatIconName, backgroundColor = MaterialTheme.colors.background)
+          ProfileImage(imageSize, chatInfo.groupInfo.image, chatInfo.groupInfo.chatIconName, backgroundColor = MaterialTheme.colors.background, toEdge = true)
         }
       }
     dir is CIDirection.DirectRcv ->
@@ -341,14 +342,14 @@ fun chatItemSender(
         false
       ) {
         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
-          MemberImage(member)
+          MemberImage(member, imageSize, toEdge = true)
         }
       }
     }
     dir is CIDirection.GroupSnd && chatInfo is ChatInfo.Group -> {
       val membership = chatInfo.groupInfo.membership
       ChatItemSender(membership.displayName, membership.nameBadge, memberRole(membership, chatInfo.isChannel), true) {
-        MemberImage(membership)
+        MemberImage(membership, imageSize, toEdge = true)
       }
     }
     chatInfo.incognito ->
@@ -389,9 +390,11 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
   }
 }
 
+val TERMINAL_MEMBER_IMAGE_SIZE: Dp = 27.dp
+
 @Composable
 fun terminalGutter(chatInfo: ChatInfo): Dp =
-  if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + CHAT_ITEM_TEXT_PADDING else 0.dp
+  if (chatInfo is ChatInfo.Group) TERMINAL_MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + CHAT_ITEM_TEXT_PADDING else 0.dp
 
 @Composable
 fun TerminalChatItemRow(
@@ -402,6 +405,7 @@ fun TerminalChatItemRow(
   content: @Composable () -> Unit
 ) {
   val cardGap = TERMINAL_PARAGRAPH_GAP.toDp()
+  val avatarGap = if (sender?.image != null) TERMINAL_HEADING_BOTTOM_GAP.toDp() else 0.dp
   Layout(
     content = {
       Box {
@@ -418,21 +422,25 @@ fun TerminalChatItemRow(
         content()
       }
     },
-    modifier
-      .padding(top = topGap)
-      .fillMaxWidth()
+    modifier.fillMaxWidth()
   ) { measurables, constraints ->
-    val messageStart = gutter.roundToPx()
+    val nameStart = gutter.roundToPx()
     val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
-    val messageConstraints = looseConstraints.copy(maxWidth = (constraints.maxWidth - messageStart).coerceAtLeast(0))
     val avatar = measurables[0].measure(looseConstraints)
-    val name = measurables[1].measure(messageConstraints)
-    val message = measurables[2].measure(messageConstraints)
-    val messageTop = name.height + if (sender != null && message[CardTop] == 0) cardGap.roundToPx() else 0
-    layout(constraints.maxWidth, max(messageTop + message.height, avatar.height)) {
-      avatar.placeRelative(CHAT_ITEM_TEXT_PADDING.roundToPx(), 0)
-      name.placeRelative(messageStart, 0)
-      message.placeRelative(messageStart, messageTop)
+    val name = measurables[1].measure(looseConstraints.copy(maxWidth = (constraints.maxWidth - nameStart).coerceAtLeast(0)))
+    val message = measurables[2].measure(looseConstraints)
+    val avatarOffset = (name.height - avatar.height) / 2
+    val nameTop = max(topGap.roundToPx(), -avatarOffset)
+    val avatarTop = nameTop + avatarOffset
+    val nameBottom = nameTop + name.height
+    val avatarBottom = avatarTop + avatar.height
+    val messageTop =
+      if (sender != null && message[CardTop] == 0) max(nameBottom, avatarBottom) + cardGap.roundToPx()
+      else max(nameBottom, avatarBottom + avatarGap.roundToPx())
+    layout(constraints.maxWidth, messageTop + message.height) {
+      avatar.placeRelative(CHAT_ITEM_TEXT_PADDING.roundToPx(), avatarTop)
+      name.placeRelative(nameStart, nameTop)
+      message.placeRelative(0, messageTop)
     }
   }
 }

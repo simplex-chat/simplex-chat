@@ -2878,8 +2878,8 @@ private suspend fun preloadItemsAfter(
 val MEMBER_IMAGE_SIZE: Dp = 37.dp
 
 @Composable
-fun MemberImage(member: GroupMember) {
-  MemberProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member, backgroundColor = MaterialTheme.colors.background)
+fun MemberImage(member: GroupMember, size: Dp = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, toEdge: Boolean = false) {
+  MemberProfileImage(size, member, backgroundColor = MaterialTheme.colors.background, toEdge = toEdge)
 }
 
 @Composable

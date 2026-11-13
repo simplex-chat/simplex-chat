@@ -352,22 +352,30 @@ unknown values                              skipped
 
 ### Rows
 
-[`ChatItemWithMenu.terminalItemRow`](../../Shared/Views/Chat/ChatView.swift#L2149) wraps `chatItemWithMenu` in [`TerminalChatItemRow`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L384). Gaps follow the paragraph unit `terminalParagraphGap` (user, terminal spacing mockup):
+[`ChatItemWithMenu.terminalItemRow`](../../Shared/Views/Chat/ChatView.swift#L2153) wraps `chatItemWithMenu` in [`TerminalChatItemRow`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L394). Gaps follow the paragraph unit `terminalParagraphGap` (user, terminal spacing mockup):
 
 ```
-row padding        top: topGap
-gutter             groups and channels: memberImageSize + chatItemTextPadding, with the sender avatar chatItemTextPadding from the start; other chats: none
-                   one 12pt padding (user, I26): screen edge to the text or the avatar, avatar to the text, time to the screen edge
-avatar             memberImageSize: scaledMemberImageSize, 34pt × chat list profileImageSize ÷ 63 (dynamicSize at the text size, at most 75); classic rows too
-                   top-aligned with the name
+row padding        top: topGap less the overhang, at least 0, so the name line is topGap below the row above
+overhang           the avatar's part above and below the name line: (gutter − chatItemTextPadding − the body line height) / 2,
+                   at least 0; 0 in a row without an avatar
+sender row         HStack, centred: the avatar column and the name; as tall as the taller of the two
+  gutter           groups and channels: terminalMemberImageSize + chatItemTextPadding, with the sender avatar
+                   chatItemTextPadding from the start; other chats: none
+                   one 12pt padding (user, I26): screen edge to the text or the avatar, avatar to the name, time to the screen edge
+  avatar           terminalMemberImageSize: 30pt × chat list profileImageSize ÷ 63 (dynamicSize at the text size, at most 75),
+                   centred on the name line
+                   classic rows: memberImageSize, scaledMemberImageSize, 34pt × the same ratio
                    classic group bubbles: maximum width less the avatar column, scaledMemberImageSize + 8pt
                    classic sender name: memberImageSize + 10pt after the avatar's start, on the bubble edge (user, I23)
-sender row         name and badge in the body text style, semibold (primary for own items, secondary otherwise)
+  name             name and badge in the body text style, semibold (primary for own items, secondary otherwise)
                    role label in the body text style, medium, secondary, 15pt after the name; line box of the body font
-                   start padding chatItemTextPadding; below: terminalParagraphGap when the content starts with a card
-                   (contentStartsWithCard: terminalItemStartsWithCard), otherwise 0
+                   start padding chatItemTextPadding
+  below            terminalParagraphGap when the content starts with a card (contentStartsWithCard: terminalItemStartsWithCard),
+                   otherwise terminalHeadingBottomGap with an avatar, 0 without
+content            from the row start, below the sender row
 selection          SelectedChatItem 8pt from the start; row moved by 28pt; selected row tint primary 10%
-media width        classic maxWidth, at most listWidth less the selection offset, the gutter and two text edges: media end at the time's end padding
+media width        terminalMediaWidth(listWidth less the selection offset): that width less two text edges, at most
+                   terminalMaxMediaWidth (500); tall or square media 0.75 of it, as computed by ChatItemView from maxWidth
 bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; otherwise 0
 ```
 
@@ -380,8 +388,8 @@ bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; o
 | [`terminalCardTopGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L150) | `terminalParagraphGap` above media, voice, file and emoji when a quote or header is above them (`hasQuoteOrHeader`), otherwise 0 |
 | [`terminalCardBottomGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L154) | `terminalParagraphGap` below a card that ends the item when reactions follow, otherwise 0 |
 | [`terminalTextTopGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L158) | Above the text of `FramedItemView`: 0 at the item top; `terminalParagraphGap` below a quote or media, or when the text starts with a code block, table or rule (0 when the text starts with empty lines, which are at least as high: `startsWithEmptyLine`; block markdown: `leadingEmptyLines`; other text: a line break at its start, except in reports, whose reason is drawn first); `terminalLevelStep` below a header when the text starts with a heading; otherwise 0 |
-| [`terminalRowsSeparated(olderRow)`](../../Shared/Views/Chat/ChatView.swift#L2180) | The newest item of the older row is the chat banner, or its `getItemSeparation` has a date (against its newer item only for single and revealed rows) |
-| [`chatItemSender(ci, range)`](../../Shared/Views/Chat/ChatView.swift#L2187) | Channel as sender: group name, role "channel", group image. Received direct: contact name and badge. Group member: `memberNames`, badge and role of a single member, member image (tap: member info). Own group items: membership name, badge, role, image. Other own items: user name and badge, or "Incognito" |
+| [`terminalRowsSeparated(olderRow)`](../../Shared/Views/Chat/ChatView.swift#L2184) | The newest item of the older row is the chat banner, or its `getItemSeparation` has a date (against its newer item only for single and revealed rows) |
+| [`chatItemSender(ci, range)`](../../Shared/Views/Chat/ChatView.swift#L2191) | Images of `terminalMemberImageSize`. Channel as sender: group name, role "channel", group image. Received direct: contact name and badge. Group member: `memberNames`, badge and role of a single member, member image (tap: member info). Own group items: membership name, badge, role, image. Other own items: user name and badge, or "Incognito" |
 | `CIContent.hasTerminalSender` | Sent messages, deleted and moderated items, calls and group invitations; received content with `showMemberName` |
 
 `ChatView` passes `olderRow`, the next merged item. `MergedItem.revealed`: true for `.single`, the flag of `.grouped`.
