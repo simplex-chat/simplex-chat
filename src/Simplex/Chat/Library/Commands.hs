@@ -6601,7 +6601,7 @@ runRelayGroupLinkChecks user = do
     checkRelayServedGroups = do
       cxt <- chatStoreCxt
       relayGroups <- withStore $ \db -> getRelayServedGroups db cxt user
-      forM_ relayGroups $ \g@(GIK gInfo@GroupInfo {groupProfile = gp, relayOwnStatus = status_} _) -> flip catchAllErrors eToView $ do
+      forM_ relayGroups $ \g@(GIK gInfo@GroupInfo {groupId, groupProfile = gp, relayOwnStatus = status_} _) -> flip catchAllErrors eToView $ do
         case publicGroup gp of
           Just PublicGroupProfile {groupLink = sLnk} -> do
             (_, ContactLinkData _ UserContactData {relays = relayLinks}, _) <-
@@ -6617,7 +6617,7 @@ runRelayGroupLinkChecks user = do
                   else void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSActive RSInactive
               _ -> pure ()
           _ -> pure ()
-        sendRelayCapIfNeeded user g
+        withGroupLock "checkRelayServedGroups" groupId $ sendRelayCapIfNeeded user g
     checkRelayInactiveGroups = do
       cxt <- chatStoreCxt
       ttl <- asks (relayInactiveTTL . config)
