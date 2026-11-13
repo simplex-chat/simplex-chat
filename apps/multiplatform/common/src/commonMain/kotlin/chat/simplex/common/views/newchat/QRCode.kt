@@ -77,9 +77,9 @@ fun QRCode(
   val errorLevel = if (small) QrCode.ErrorLevel.M else QrCode.ErrorLevel.L
   val fixedQRCode = LocalFixedQRCode.current
   val qr = remember(connReq, tintColor, withLogo) {
-    (fixedQRCode ?: qrCodeBitmap(connReq, 1024, errorLevel)).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
-      .let { if (withLogo) it.addLogo(logoSize) else it }
-  }
+    (fixedQRCode ?: qrCodeBitmap(connReq, 1024, errorLevel))?.replaceColor(Color.Black.toArgb(), tintColor.toArgb())
+      ?.let { if (withLogo) it.addLogo(logoSize) else it }
+  } ?: return
   Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
     Image(
       bitmap = qr,
@@ -92,8 +92,8 @@ fun QRCode(
         .then(modifier)
         .clickable {
           scope.launch {
-            val image = qrCodeBitmap(connReq, 1024, errorLevel).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
-              .let { if (withLogo) it.addLogo(logoSize) else it }
+            val image = qrCodeBitmap(connReq, 1024, errorLevel)?.replaceColor(Color.Black.toArgb(), tintColor.toArgb())
+              ?.let { if (withLogo) it.addLogo(logoSize) else it } ?: return@launch
             val file = saveTempImageUncompressed(image, true)
             if (file != null) {
               shareFile("", CryptoFile.plain(file.absolutePath))
@@ -105,8 +105,13 @@ fun QRCode(
   }
 }
 
-fun qrCodeBitmap(content: String, size: Int = 1024, errorLevel: QrCode.ErrorLevel): ImageBitmap {
-  val qrCode = QrCodeEncoder().addAutomatic(content).setError(errorLevel).fixate()
+fun qrCodeBitmap(content: String, size: Int = 1024, errorLevel: QrCode.ErrorLevel): ImageBitmap? {
+  val qrCode = try {
+    QrCodeEncoder().addAutomatic(content).setError(errorLevel).fixate()
+  } catch (e: Exception) {
+    Log.e(TAG, "qrCodeBitmap error: ${e.message}")
+    return null
+  }
   /** See [QrCodeGeneratorImage.initialize] and [FiducialImageEngine.configure] for size calculation */
   val numModules = QrCode.totalModules(qrCode.version)
   // Hide border on light themes to make it fit to the same place as camera in QRCodeScanner.
