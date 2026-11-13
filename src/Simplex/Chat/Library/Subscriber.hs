@@ -2357,9 +2357,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   Nothing -> getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId
             (cci,) <$> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
           memberCanSend m_ (toMsgScope gInfo <$> scopeInfo) $ case cci of
-            CChatItem SMDRcv ChatItem {content = CIRcvMsgContent oldMC}
-              | Just f <- prohibitedUpdate scopeInfo oldMC ->
-                  messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText f) $> Nothing
             CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive, msgVerified = itemVerified}, content = CIRcvMsgContent oldMC}
               | isSender m' -> requireVerifiedEdit (CDGroupRcv gInfo scopeInfo m') itemVerified $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
               | otherwise -> messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing
@@ -2369,9 +2366,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             _ -> messageError "x.msg.update: invalid message update" $> Nothing
           where
             isSender m' = maybe False (\m -> sameMemberId (memberId' m) m') m_
-            prohibitedUpdate scopeInfo oldMC
-              | (oldMC :: MsgContent) {text = ""} == (mc :: MsgContent) {text = ""} = Nothing
-              | otherwise = m_ >>= \m -> prohibitedGroupContent gInfo m scopeInfo mc ft_ (Nothing :: Maybe String) False
             -- a verified item requires a verified edit (fail-closed): unsigned is a forgery (bad-signature item); signed-but-no-key is unverifiable (drop with a log)
             requireVerifiedEdit :: ChatDirection 'CTGroup 'MDRcv -> Maybe MsgVerified -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
             requireVerifiedEdit cd itemVerified action
@@ -2385,8 +2379,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         updateCI showGroupAsSender ci scopeInfo oldMC itemLive memberId = do
           let mc' = redactedGroupContent gInfo m_ scopeInfo mc
               changed = mc' /= oldMC
-          if changed || fromMaybe False itemLive
-            then do
+              prohibited_
+                | (oldMC :: MsgContent) {text = ""} == (mc :: MsgContent) {text = ""} = Nothing
+                | otherwise = m_ >>= \m -> prohibitedGroupContent gInfo m scopeInfo mc ft_ (Nothing :: Maybe String) False
+          if
+            | Just f <- prohibited_ ->
+                messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText f) $> Nothing
+            | changed || fromMaybe False itemLive -> do
               ci' <- withStore' $ \db -> do
                 when changed $
                   addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc')
@@ -2401,7 +2400,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci'')
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
               pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
-            else do
+            | otherwise -> do
               toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
               pure Nothing
 
