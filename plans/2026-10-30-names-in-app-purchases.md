@@ -725,14 +725,14 @@ Rules for every screen:
 - Names are counted in characters.
 - Every price is the store's, in its currency; on row 4, the service's, in US dollars.
 - The terms block, on the checkout of every order (1·5, 2·3, 4·2) and on 3·1 for a move, above the main button:
-  - one tick, "I agree to the SimpleX Names Conditions", ticked there or by the sheet's Agree; its link opens a half-screen sheet, 1·5a, as 1·4a is for the key: "SimpleX Names Conditions", "You agree:", "not to use the name for fraud, to impersonate people or organizations, to store links to illegal content, or to knowingly infringe the rights of others, including trademarks."; for a community name, "bakery.simplex is a community name. You agree:", that line and a second, "to use it to benefit its community, not as the brand of one person or business."; then "Read the full conditions" and "Agree", which ticks and closes the sheet; swiped away, the sheet changes nothing;
+  - one tick, "I agree to the SimpleX Names Conditions", ticked there or by the sheet's Agree; its link opens a half-screen sheet, 1·5a, as 1·4a is for the key: "SimpleX Names Conditions", "You agree:", "not to use the name for fraud, to impersonate people or organizations, to store links to illegal content, or to knowingly infringe the rights of others, including trademarks."; for a community name, "lisbon.simplex is a community name. You agree:", that line and a second, "to use it to benefit its community, not as the brand of one person or business."; then "Read the full conditions" and "Agree", which ticks and closes the sheet; swiped away, the sheet changes nothing;
   - the words are the Names Conditions' own (`docs/NAMES-CONDITIONS.md`, "You agree");
   - "Read the full conditions" opens the text as onboarding's conditions of use do: iOS a `.sheet` (`OnboardingConditionsView`, `ChooseServerOperators.swift:107`); Android and desktop `ModalManager.fullscreen.showModal`, a full-screen modal (`ChooseServerOperators.kt:111, 157`). It shows the text whose hash the app signs, by the link of the name's kind; "Loading the conditions…" while it loads; "The conditions can't be shown now. Try again in a moment." with "Try again" when it can't;
   - Pay, "Register with your payment", "Register with your code", "Pay in browser" and 3·1's "Move into this app" stay off until ticked;
   - on `terms_changed` the tick comes back unticked under "The conditions changed. Agree to them again.": on the checkout before paying, in place on 1·7 after.
 - The images show each lane's screens with their numbers and routes; where the words below differ from an image, the words below hold. A state not named here takes a listed state's words.
 - Alternative B, the obligation under the tick on the checkout itself with no sheet, drawn in lane 1 and noted beside 2·3, 3·1 and 4·2, is Q25.
-- Privacy disclosures stay off the screens: section 7 states each as a property, and P57a, P57b and P57c put them in `PRIVACY.md`, ⚠ each text approved by the lead. The Names Conditions' text (`docs/NAMES-CONDITIONS.md`) is outside this plan.
+- Privacy disclosures stay off the screens: section 7 states each as a property, and P57a, P57b and P57c put them in `PRIVACY.md`, ⚠ each text approved by the lead. The Names Conditions' text (`docs/NAMES-CONDITIONS.md`) is the lead's; the plan changes none of it, and Q4 asks whether a purchase section is added.
 - The codes release: 1·1 opens 1·2 in every build, and 4·1's code-only form on iOS outside the US; 1·2 keeps "Register with code" whatever the catalog says, with the codes-only state's line while the catalog reads codes-only and "This version registers names with a code." once it reads open; its "Buy in browser" opens the site's search for the name (`/#/?name=<label>`, 3.2), with no 1·4, where D18 allows and the catalog reads open (Q26). 1·5, 1·6, 1·10, 4·1's priced form and the rest of row 4 come with the payments release.
 
 #### Row 1, buy in the app (Google Play; iOS when its payment is on). Stage 1, except 1·4's "I already have a key"
@@ -903,7 +903,7 @@ stateDiagram-v2
 | "Waiting for the sale" | 1·7 |
 | "Waiting to order" | 1·7 |
 | "Not registered · Try again" | 1·7 |
-| "Terms changed · Agree again" | 1·7 |
+| "Conditions changed · Agree again" | 1·7 |
 | "Taken first · Choose another name" | 1·7 |
 | "Your kept payment · Find a name" | 1·10 |
 | "Your kept code · Find a name" | 2·2 with the code |
@@ -1050,7 +1050,7 @@ The path: search → key the first time → checkout with the terms tick → the
 - Search: on today's name screen; "I have a code" under Register, above "Buy in browser".
 - A taken name: "What it's used for" (Q18).
 - Opens: the address or channel it started from, or nothing with the sketch's ✕, whose warning shows in place of its alert (Q12).
-- Terms: one tick on the checkout for each order; its link opens a half-screen sheet with the Names Conditions' obligation and a second for a community name, and the one document from there, as onboarding's conditions of use.
+- Conditions: one tick on the checkout for each order; its link opens a half-screen sheet with the Names Conditions' obligation and a second for a community name, and the one document from there, as onboarding's conditions of use.
 - Recovery key: after the search, before the checkout; one screen and a sheet; the device's check when opened later; stage 1's own words.
 - Registering: "Ordered · Waiting (countdown) · Registering"; the site's keep-the-app-open warning until the reveal; Close only leaves; reopening continues without asking.
 - Done: a screen; a quiet key reminder; 1·11's key row.
@@ -1189,7 +1189,7 @@ stateDiagram-v2
   - The expiry stays at most one horizon ahead of the block: 1095 days for a paid renewal and a sponsored community name; 4015 days for another sponsored name (`_sponsoredHorizon`).
   - A reserved name is refused (`NameReserved`).
   - `renewWithCredit(label, duration, referrer)` takes no owner signature and spends the allowance: the service checks that the asking wallet holds the name and that the renewal stays within these bounds before crediting; a renewal it can't send is refunded through support.
-  - The renewal screen carries the terms line.
+  - The renewal screen carries the conditions tick: the Names Conditions apply to an extension by the act itself, and the chain records no acceptance for it, as `renewWithCredit` takes no signature.
 - **Reminders:**
   - The row's footer reads "Registered until 31 Dec 2028." from stage 1, from the expiry stored beside each account, refreshed whenever the name is verified.
   - From 30 days before: the footer reads "Expires in 21 days"; a chat-list banner with a dismiss control, dismissible once a week, above promotional banners in the last 7 days; local notifications at 30 and 7 days.
@@ -1498,7 +1498,7 @@ By hand, also at the payments release's end:
 - P63: row 4 on an iPhone with a TestFlight build, which can't pay in the app: 1·2 and 4·1 reach 4·2 and open its invoice (AC4).
 - P35c: Q14's checks on devices, with the lock off and in passcode mode, desktop's floating console included.
 - P37, P46, by the lead, by hand in App Store Connect and the Google Play Console, as soon as P37 and P46 are built, for the testing by hand in the dev environment (Apple's sandbox, Play's licence testers) and the test purchases above: each store's product and price as 6.2 sets them, Play's Tokenized Digital Asset marking and Financial features declaration, and the App Store product submitted with the payments release's version.
-- The operator's chain operation M13 (`setPrices`, one base price), before the sale.
+- The operator's chain operations, before the sale: M13 (`setPrices`, one base price), and both terms links set to the final `docs/NAMES-CONDITIONS.md` (6.3).
 - The codes release's checks above.
 
 ### Stage 2
@@ -1626,7 +1626,7 @@ The other questions:
 - **Q1.** Keep a recovery key that finds no names on a new phone? → Yes, after a warning (6·3).
 - **Q2.** The word for your own name coming into the app? → "Move"; "transfer" for someone else.
 - **Q3.** ⚠ Legal. Must buyers be 18 or older, and does the app say so? → No line in the app: the Names Conditions set no age.
-- **Q4.** ⚠ Legal. The app's own purchase terms, besides the Names Conditions? → Yes: a purchase section in the Names Conditions, which have none today, its text approved by the lead.
+- **Q4.** ⚠ Legal. The app's own purchase terms, besides the Names Conditions? → Yes: a purchase section in the Names Conditions, which have none today, its text approved by the lead; each later change to it is a new version in the registry, so a separate page outside it is the other option.
 - **Q5.** Decided. When iOS store payment is switched on? → In the payments release, shown only in App Store builds, as the badges (6.9).
 - **Q6.** ⚠ Privacy policy. Linking a payment to its name? → Register at once, fine for v1; `PRIVACY.md` states it (section 7, P57b), the screens don't.
 - **Q7.** Detail of Q24. What the invoice's link holds? → The code's hash alone; no order code shows (decided on 11 Nov).
