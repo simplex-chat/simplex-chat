@@ -458,6 +458,9 @@ object ChatModel {
 
     suspend fun addChat(chat: Chat) {
       chats.add(index = 0, chat)
+      if (secondaryContextFilter == null) {
+        addPresetChatTags(chat.chatInfo, chat.chatStats)
+      }
       popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = 0)
     }
 
@@ -519,7 +522,6 @@ object ChatModel {
         updateChatInfo(rhId, cInfo)
       } else if (addMissing) {
         addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf()))
-        addPresetChatTags(cInfo, Chat.ChatStats())
       }
     }
 

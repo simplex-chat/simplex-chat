@@ -960,18 +960,6 @@ public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> 
     )
 }
 
-public func contactUserPreferencesToPreferences(_ contactUserPreferences: ContactUserPreferences) -> Preferences {
-    Preferences(
-        timedMessages: contactUserPreferences.timedMessages.userPreference.preference,
-        fullDelete: contactUserPreferences.fullDelete.userPreference.preference,
-        reactions: contactUserPreferences.reactions.userPreference.preference,
-        voice: contactUserPreferences.voice.userPreference.preference,
-        files: contactUserPreferences.files.userPreference.preference,
-        calls: contactUserPreferences.calls.userPreference.preference,
-        commands: contactUserPreferences.commands
-    )
-}
-
 public protocol Preference: Codable, Equatable, Hashable {
     var allow: FeatureAllowed { get set }
 }

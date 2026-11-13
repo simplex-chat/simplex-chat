@@ -17,6 +17,7 @@ from simplex_chat.types import CEvt
 from . import business, commands, handlers, health, setup
 from .config import Config, ConfigError, load_config
 from .context import BotContext
+from .dry_run import dry_run
 
 log = logging.getLogger("support_bot_light")
 
@@ -176,7 +177,24 @@ async def _serve(config: Config, bot: Bot) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(prog="support-bot-light")
     parser.add_argument("--config", type=Path, default=Path("config.toml"))
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="check config, database and roster group, then exit without starting chat",
+    )
+    parser.add_argument(
+        "--allow-migrations",
+        action="store_true",
+        help="with --dry-run: apply pending migrations instead of reporting them",
+    )
+    parser.add_argument(
+        "--allow-down-migrations",
+        action="store_true",
+        help="with --dry-run: roll back migrations that this build does not have",
+    )
     args = parser.parse_args()
+    if (args.allow_migrations or args.allow_down_migrations) and not args.dry_run:
+        parser.error("--allow-migrations and --allow-down-migrations require --dry-run")
 
     if not logging.getLogger().handlers:
         logging.basicConfig(
@@ -193,6 +211,10 @@ def main() -> int:
         log.error("%s", e)
         return 2
     try:
+        if args.dry_run:
+            report = asyncio.run(dry_run(config, args.allow_migrations, args.allow_down_migrations))
+            print("\n".join(report.lines))
+            return 1 if report.failed else 0
         asyncio.run(_run(config))
     except ConfigError as e:
         # Raised past load_config only by the health endpoint, which cannot know
