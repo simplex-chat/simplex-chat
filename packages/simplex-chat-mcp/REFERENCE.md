@@ -1,21 +1,22 @@
 # SimpleX MCP server: reference
 
-[README](README.md) has the short version.
+[README](README.md) explains how to install and use the plugin.
 
 `@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and files, and receives all the responses, with the files people send it. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends, downloads a file or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust, or all files from it; you also schedule prompts for it there. Six tools cover it: `connect`, `send`, `receive`, `download`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
 
+The package is also a Claude Code plugin, which gives each Claude Code session its own SimpleX group. There you prompt the session, approve its actions and tool use, and read its answers, see [Claude Code plugin](#claude-code-plugin).
+
 What it isn't:
 - **Not a directory or a search service.** The agent reaches chats through links, SimpleX names and the directories it connects to.
-- **Not a push channel into the agent.** An MCP server can't start a turn of the agent, so news reaches it only as results of calls it makes: waits inside `send` and `receive`, or polling.
+- **Not a push channel into an agent of `serve`.** An MCP server can't start a turn of the agent, so news reaches it only as results of calls it makes: waits inside `send` and `receive`, or polling. The plugin's channel passes your prompts to a running Claude Code session.
 - **Not an always-on service.** The agent acts while its session runs; services that must always be up should be bots.
 - **Not hosted.** It runs on your machine, one process per agent.
-- **Not in v0.2:**
+- **Not in v0.3:**
   - an address for the agent: nobody can contact it first;
   - your approval of incoming messages;
-  - a Claude Code plugin or channel;
   - registration in other hosts.
 
-Status: v0.2. [`TESTING.md`](TESTING.md) describes a local build and test. The design, the tools and the scenarios are in [`PLAN.md`](PLAN.md).
+Status: v0.3. [`TESTING.md`](TESTING.md) describes a local build and test. The design, the tools and the scenarios of `serve` are in its [design record](../../plans/2026-10-19-mcp-server.md), and the plugin's design is in its [plan](../../plans/2026-11-07-mcp-claude-code-channel.md).
 
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
@@ -26,12 +27,14 @@ Status: v0.2. [`TESTING.md`](TESTING.md) describes a local build and test. The d
 - [What the owner sees](#what-the-owner-sees)
 - [What the agent sees](#what-the-agent-sees)
 - [Waiting for approval in Claude Code](#waiting-for-approval-in-claude-code)
+- [Prompt the agent from the app](#prompt-the-agent-from-the-app)
 - [Several agents](#several-agents)
 - [Other MCP hosts](#other-mcp-hosts)
 - [Recovery](#recovery)
 - [Command reference](#command-reference)
 - [Data folder](#data-folder)
 - [Security](#security)
+- [Claude Code plugin](#claude-code-plugin)
 
 ## Requirements
 
@@ -54,7 +57,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
    The first start prints, after two lines about downloading the SimpleX core library and the Node.js add-on:
 
    ```
-   SimpleX MCP server 0.2.0, agent "my-agent"
+   SimpleX MCP server 0.3.0, agent "my-agent"
    Data folder: /home/alice/.simplex-mcp/my-agent
    Approval mode: requests
    Agent control chat "My Agent" created.
@@ -66,7 +69,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
    Listening on http://127.0.0.1:5226/mcp
    ```
 
-   `-y` answers npm's prompt to install the package. The server asks no questions: every choice is an option. The QR code of such a link is 37 columns wide and 19 lines high; `--qr-code large` draws it twice as wide and twice as high.
+   `-y` answers npm's prompt to install the package. The server asks no questions: every choice is an option. The QR code of such a link is 37 columns wide and 19 lines high; `--qr-code large` draws it twice as wide and twice as high. Ctrl-C stops the server, see [Expiry](#expiry).
 
 2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "My Agent" appears in the chat list, and the agent writes: `I'm your agent. I ask here before I connect, send, download a file or leave a chat.` The terminal prints:
 
@@ -201,6 +204,8 @@ Actions last only while the server runs. When the server stops, the last line of
 
 ## What the owner sees
 
+<img src="images/approval.png" alt="The agent asks in its control chat before it sends a message; one tap approves it" width="320">
+
 All of it is in the agent control chat, posted by the agent's profile. The chat has the agent's display name; to see it under another name in your chat list, set an alias for the chat in the app. Names that are valid display names are shown plain. All other text written by the agent or by peers, other names included, is shown as code, line by line; names and errors take one line. Commands and SimpleX links inside it cannot be tapped: a valid display name cannot contain `/`, and the app parses each line of a message separately.
 
 ```
@@ -264,7 +269,7 @@ Commands:
 
 After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``. The files forwarded from #9 are deleted when the agent leaves it.
 
-`/pending`, `/list`, `/schedules`, `/leave` and `/help` are in the chat's command menu, and each pending card shows the commands of its action. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
+`/pending`, `/list`, `/schedules`, `/leave` and `/help` are in the chat's command menu, and each pending card shows the commands of its action. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in the [design record](../../plans/2026-10-19-mcp-server.md), section "What the owner sees: the agent control chat".
 
 ### Approval of all messages to a chat
 
@@ -305,7 +310,7 @@ My Agent: Schedule 1 of group Builders (#3): 0 7 * * 1-5, server time UTC+01:00.
 - Server time: the local time of the server, in the system's time zone, or in the one set by the `TZ` environment variable, such as `TZ=Europe/Berlin npx -y @simplex-chat/mcp serve my-agent`. Its current UTC offset is shown in the reply to `/schedule`. At a daylight saving change, a skipped local time is never matched, and a repeated one can be matched twice.
 
 At each minute matched by a schedule, its prompt becomes due:
-- `receive` of the chat returns it once, in `scheduled` ([What the agent sees](#what-the-agent-sees)), and a `receive` waiting in the chat ends at once. A session waiting in `receive` of the chat, as asked by the prompt in the [README](README.md), gets it at that minute.
+- `receive` of the chat returns it once, in `scheduled` ([What the agent sees](#what-the-agent-sees)), and a `receive` waiting in the chat ends at once. A session waiting in `receive` of the chat, as asked by the prompt in [Prompt the agent from the app](#prompt-the-agent-from-the-app), gets it at that minute.
 - Each schedule has at most one due prompt: until `receive` returns it, the later times of that schedule are skipped, and its `at` is the first due minute.
 - Due prompts are kept in memory and lost when the server stops; times while it is stopped are skipped.
 - Prompts become due only while the owner who added the schedule is an approver, and while the agent keeps its control chat.
@@ -389,7 +394,7 @@ An empty file is refused, and so is `as` without `file`. A message holds at most
 
 The server checks the file by its real path, after symbolic links, and refuses files under `~/.ssh` and `~/.gnupg`, files named `id_*`, `*.pem`, `*.key`, `*.p12` and `*.pfx`, and the files under its data folder and under `~/.simplex-mcp`, except those under `files/` of its own data folder; each folder is taken by its real path too. The card shows the real path. A file whose real path, size, inode or change time differs at the send from the request is not sent: the action fails.
 
-Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
+Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in the [design record](../../plans/2026-10-19-mcp-server.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
 ## Waiting for approval in Claude Code
 
@@ -399,6 +404,29 @@ An MCP server cannot start a turn of the agent: what the agent reads from the se
 - To move calls to the background sooner, set `CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS`, for example to `10000`, in the `env` block of `~/.claude/settings.json`. This applies to every MCP server.
 - Calls from subagents, and calls in `claude -p` runs unless `CLAUDE_AUTO_BACKGROUND_TASKS=1`, stay in the foreground: the subagent or the run waits.
 - A background task ends with the session. The action stays in the server while it runs; `list` shows it, and the same call again picks it up.
+
+## Prompt the agent from the app
+
+<img src="images/prompts.png" alt="Prompting the agent from the SimpleX app" width="320">
+
+Give Claude Code your SimpleX address:
+
+```
+Connect to me as yourself at <your SimpleX address>, with the message:
+"I'm your agent, connected as you asked in Claude Code. I'll act on your prompts here, except security-sensitive ones."
+Then take my prompts from that chat and answer there: wait for my messages with receive (wait 3600),
+answer each one in that chat, and call receive again after every answer, until I say stop.
+```
+
+Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
+
+To prompt it on a schedule, send in "My Agent", with your chat's ID from `/list` in place of `@5`:
+
+```
+/schedule @5 0 7 * * 1-5 Search the SimpleX Directory for new security groups.
+```
+
+`0 7 * * 1-5` is cron syntax for 07:00 on weekdays, server time. At that time the agent gets this prompt from its next `receive` in your chat, and answers you there. Send `/schedules` to list the schedules, and `/unschedule @5 1` to remove this one.
 
 ## Several agents
 
@@ -436,6 +464,17 @@ Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorizat
 Usage:
   simplex-mcp serve NAME [options]     run agent NAME
   simplex-mcp register NAME [options]  add agent NAME to Claude Code
+  simplex-mcp session                  MCP server of one Claude Code session (run by the plugin)
+  simplex-mcp service                  the shared SimpleX service of the plugin (started on demand)
+  simplex-mcp hook session-start       Claude Code SessionStart hook (run by the plugin)
+  simplex-mcp hook turn                Claude Code hooks of prompts, answers and model changes (run by the plugin)
+  simplex-mcp link                     show the Main group link, or its owners
+  simplex-mcp reset-owners             replace the Main group and its owners
+
+Claude Code plugin:
+  /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/.claude-plugin/marketplace.json
+  /plugin install simplex@simplex-chat
+  SIMPLEX_MCP_HOME       the plugin's data folder (default: ~/.simplex-mcp)
 
 serve options:
   --data DIR             data folder (default: ~/.simplex-mcp/NAME)
@@ -492,6 +531,8 @@ One server runs per data folder: a second one exits, because two processes on on
 
 ## Security
 
+- In mode `requests`, the agent asks in the agent control chat before it connects, sends a message or a file, downloads a file or leaves, and the owner approves or rejects. On a download card, `/receive` gives the agent the file, and `/forward` sends it to the agent control chat, not to the agent.
+- Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you write, see [Prompt the agent from the app](#prompt-the-agent-from-the-app).
 - The server listens only on 127.0.0.1. Every request needs the token. Requests from web pages on other hosts, and requests with another `Host`, are refused (the SDK's localhost Origin and Host checks).
 - Any process with the token can act as the agent. The token is stored only in the data folder, in `token` and `headers.json`; Claude Code's config and the `claude mcp add-json` command line contain the command that prints `headers.json`, not the token.
 - Names written by peers are folded to one line, with control and format characters replaced by spaces, in the terminal and in the agent control chat; there, a name that is not a valid display name is shown as code.
@@ -504,3 +545,263 @@ One server runs per data folder: a second one exits, because two processes on on
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
 - The agent has no address, so nobody can contact it first.
 - The agent uses private message routing: the SMP server that holds a contact's queue does not see the agent's IP address.
+
+## Claude Code plugin
+
+The plugin gives every Claude Code session its own SimpleX group. In that group you send the session prompts, approve its actions and tool use, and read its answers. One service runs all sessions that share a data folder. Peers see one SimpleX profile, `Claude`. Sessions have the tools of `serve` (`connect`, `send`, `receive`, `download`, `list` and `leave`), and `reply`, which sends files to the session's group.
+
+### Install
+
+The plugin needs Claude Code 2.1.214 or later and Node.js 22 or later. In Claude Code:
+
+```
+/plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/.claude-plugin/marketplace.json
+/plugin install simplex@simplex-chat
+```
+
+Prompts from SimpleX and approvals of tool use in the group need the plugin's channel. Start Claude Code with it:
+
+| When | Command |
+|---|---|
+| Until Anthropic lists the channel | `claude --dangerously-load-development-channels plugin:simplex@simplex-chat` |
+| After the listing | `claude --channels plugin:simplex@simplex-chat` |
+| Team and Enterprise plans | An admin adds `simplex@simplex-chat` to `allowedChannelPlugins`. |
+
+The development flag works only in interactive sessions. Without a channel, the plugin still works, but prompts from SimpleX and approvals of tool use in the group don't. Channels need Anthropic authentication through claude.ai or a Console API key.
+
+The plugin adds:
+
+| Part | What it does |
+|---|---|
+| MCP server `simplex` | Runs `simplex-mcp session` for each session. It provides the tools, such as `mcp__plugin_simplex_simplex__connect`, and the channel. |
+| SessionStart hook | Checks the Node.js version and starts the service. It opens the session and its group, and shows the Main group link while the Main group has no owner. |
+| PreToolUse hook | Lets the plugin's tools run without a Claude Code prompt, because you approve them in the SimpleX app. |
+| UserPromptSubmit, Stop and PostModelSwitch hooks | Post your terminal prompts and Claude's answers in the session's group, and keep the model and effort in its description. They run in the background. |
+
+The server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. The PreToolUse hook runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js` instead. The package, a 4 MB download, bundles its dependencies and has no lockfile, so Claude Code installs nothing after unpacking it. Node.js loads the modules from the plugin's folder, so a project's `node_modules` can't replace them. The first session start downloads the SimpleX core library. Claude Code waits up to 600 seconds for the SessionStart hook.
+
+### Shared settings
+
+Settings shared by several machines or containers can load the plugin from a folder, without `/plugin` commands. This setup was checked with Claude Code 2.1.322.
+
+1. On each machine or container, unpack the package into `plugin/` of a folder at the same path, here `/opt/simplex-plugins`. VERSION is the plugin's version, such as 0.3.0:
+
+   ```
+   mkdir -p /opt/simplex-plugins/.claude-plugin /opt/simplex-plugins/plugin
+   npm pack @simplex-chat/mcp@VERSION
+   tar -xzf simplex-chat-mcp-VERSION.tgz -C /opt/simplex-plugins/plugin --strip-components 1
+   ```
+
+   The dependencies are bundled, so nothing needs installing.
+
+2. Write `/opt/simplex-plugins/.claude-plugin/marketplace.json`:
+
+   ```json
+   {
+     "name": "simplex-local",
+     "owner": {"name": "Alice"},
+     "plugins": [{"name": "simplex", "source": "./plugin"}]
+   }
+   ```
+
+3. Add to the shared settings:
+
+   ```json
+   {
+     "extraKnownMarketplaces": {
+       "simplex-local": {"source": {"source": "directory", "path": "/opt/simplex-plugins"}}
+     },
+     "enabledPlugins": {"simplex@simplex-local": true}
+   }
+   ```
+
+   `path` is the folder's absolute path. Claude Code reads `extraKnownMarketplaces` from user settings (`~/.claude/settings.json`), from a file passed with `--settings`, and from managed settings. It loads the plugin when it starts.
+
+4. Start Claude Code with the channel each time:
+
+   ```
+   claude --dangerously-load-development-channels plugin:simplex@simplex-local
+   ```
+
+   Settings can't replace this flag. An organization's managed settings, `channelsEnabled` and `allowedChannelPlugins`, only allow the channels that a session names with `--channels`. `--channels plugin:simplex@simplex-local` works only when `simplex@simplex-local` is in `allowedChannelPlugins`.
+
+Each machine and each container needs its own data folder, on storage that no other one uses. Use `~/.simplex-mcp` in its own home folder, or set `SIMPLEX_MCP_HOME` in its own environment, not in the `env` of the shared settings. The service matches sessions and checks its lock by process IDs, and process IDs are only meaningful within one machine or container. Each data folder has its own Main group, whose link shows at the first session start there. To tell these groups apart in the app, set `SIMPLEX_MCP_MACHINE` in the environment of each machine or container: `SIMPLEX_MCP_MACHINE=laptop` names its Main group `Claude Control - laptop`.
+
+### The Main group
+
+At the first session start, Claude Code shows:
+
+```
+SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "Claude Control":
+<QR code>
+https://smp4.simplex.im/g#...
+```
+
+The first start downloads the SimpleX core library and creates the group, so the link can take a minute. If Claude Code ends before then, the service keeps starting, and the next session start shows the link.
+
+Only you see this link: it never enters Claude's context or tool results. Scan the QR code, or paste the link into the SimpleX app, 7.1.0 or later, and tap Join. The group "Claude Control" appears, and Claude writes: `I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.`
+
+- The first person who joins by the link becomes an owner, and the link is deleted. Until someone joins, the link stays the same across service restarts.
+- Everyone in the Main group is trusted with all sessions, whatever their role there. They can join any session's group with `/join N`, without approval, as admins. There they can prompt the session and approve its actions.
+- The group's welcome message says so: `Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that.` When someone joins, Claude posts `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.`
+- Claude sets the short description and the welcome message when it creates the group. Later it changes only the group's name and commands, so the texts and preferences that owners set stay.
+- Owners can add people with a group link of their own or by inviting their contacts.
+- Observers can't send messages in the Main group, so they can't use `/join N`.
+- Owners of the Main group are invited to every session's group as owners. They get each invitation in the Main group.
+- `/sessions` lists the sessions and marks the closed ones with `, closed`. `/join N` sends you an invitation to the group of session N, as an admin, or as an owner if you own the Main group.
+- Leaving the Main group, being removed from it, or getting another role there changes nothing in the session groups.
+- When no owner remains, the service creates a new link. In a terminal, `npx -y @simplex-chat/mcp@VERSION link` prints it with a QR code. While the group has owners, the command names them instead.
+
+To replace the owners, run `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal. It replaces the Main group at once, without the owners' approval:
+
+- The old Main group is deleted for all its members, and a new one is created. The session groups don't change: members who joined them from the old Main group keep their roles.
+- In a terminal, the command prints the new link with a QR code. Run without a terminal, for example by Claude's tools, it shows no link and asks you to run `link` in a terminal.
+
+VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`. The plugin's messages print these commands with the right version. The same command with a newer version would replace the plugin's service.
+
+### Sessions and their groups
+
+- Each session has a number, starting at 1, which is kept across service restarts. Its group is named `N · NAME`. NAME is the session's name from `claude -n NAME` or `/rename`, otherwise the project folder's name, otherwise `Claude Code`. A new name shows from the next session start.
+- The group is created at the session start, and the Main group's owners are invited to it as owners. An owner who joins the Main group later is invited to the groups of the open sessions.
+- The group's members are Claude, the Main group's owners, members who joined with `/join`, people whom members added directly, and `User`. People added directly get the role that the adding member set. `User` is a second profile of the service that posts your terminal prompts.
+- Rights follow the member's role in the group, however they joined:
+
+  | Role | Rights |
+  |---|---|
+  | owner, admin | prompts, the group's `/` commands, approvals of actions and tool use |
+  | moderator, member, author | prompts; each of their `/` commands gets `Only admins and owners of this group can send / commands.` |
+  | observer | none: the app can't send their messages |
+
+  `User`'s messages are never prompts, commands or approvals.
+- When someone joins or their role changes, Claude posts their rights. For an admin the post is `Bob is an admin and can send prompts to Claude and the group's commands, and approve tool use. You can change role to observer to stop it: /'observer #G ID'`, with the group's and the member's IDs. For a moderator, member or author it is `NAME is a ROLE and can send prompts to Claude; the group's commands and approvals need the role admin or owner.`, followed by the same command. The posts for an owner and for an observer have no command: `NAME is an owner and can send prompts to Claude and the group's commands, and approve tool use.` and `NAME is an observer and can't send messages.` Claude posts nothing for `User`.
+- `/observer #G ID` makes that member an observer, and Claude replies `NAME is an observer and can't send messages.` Admins and owners can use it on a member whose role isn't above their own. Standing approvals that the observer gave, of all messages to a chat or all files from it, stop counting while they aren't an admin or owner, and count again if they become one. For a member who was invited and hasn't joined yet, Claude replies `No member ID in this group.` That member joins with the role of the invitation, which can be changed after the join.
+- The group's description is `The Claude Code session N. Members send it prompts; admins and owners also send the group's commands and approve tool use.`, set when the group is created. Its short description shows the model and effort, see [Model and effort](#model-and-effort).
+- The group has the commands of the agent control chat of `serve` (see [What the owner sees](#what-the-owner-sees)), without a session prefix, such as `/approve 7`, `/receive @3 9` and `/leave #2`. It also has `/give CHAT N` and `/observer #G ID`.
+- A chat belongs to the session that connected it, even when the other side accepts after `connect` returned. The tools of other sessions don't show it. Their `connect` to its address returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` For example, `/give @3 2` in the group of the session that owns chat @3 gives it to session 2.
+- `/list` and `/revoke` also work in the group of a closed session. A `/revoke` sent while the service is stopped applies when the service starts again.
+- `claude --resume` and `claude --continue` reopen a session with its group and chats. `/clear` keeps the session's group, because the service links the new session IDs of a Claude Code process to that process's session. A fork made with `claude --resume ID --fork-session` continues in the group of the resumed session. After `/resume` of another session inside a running one, prompts and answers go to the running session's group. A later `claude --resume` of that other session reopens its own group and chats.
+- A session closes 10 minutes after its Claude Code session ends, once the expiry times of its actions have passed. The service stops 10 minutes after the last session closes. The next session start or tool call starts it again.
+- A non-interactive run, `claude -p` or the Agent SDK, gets no session and no group. Its hooks post nothing, and its SimpleX tools return `This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions.`
+  - The plugin recognizes such a run by `CLAUDE_CODE_ENTRYPOINT`. Claude Code sets it to `sdk-cli` for `claude -p` and to `sdk-ts` or `sdk-py` for the Agent SDK. It also uses `CLAUDE_CODE_SESSION_ATTENDED`, which Claude Code sets to `0` for the hooks of a run nobody attends.
+  - A `claude -p` run started from a session of the VS Code extension or the desktop app keeps that session's entrypoint, and its MCP server gets that session's attended value. For such a run, the SessionStart hook marks its Claude Code process, and the service refuses that process's session server when it registers within 10 seconds. Its tools then return the same text.
+
+### Prompts and answers
+
+With the channel, a message from a member of a session's group, other than `User`, is a prompt to the running session, like one typed in the terminal.
+
+- A file attached to the message is saved without approval to `_sessions/<session ID>/files/group/` in the data folder, and Claude gets its path. When the file fails or doesn't arrive within 10 minutes, Claude replies `The file of this message was not received: ERROR`, and the session gets the text.
+- Prompts reach the session in the order they were sent. A later prompt waits for the file of an earlier one.
+- Every message from a member who can send is a prompt, including one that starts with `!`. Only one-line messages that start with `/` are not prompts, see below. Claude Code runs no command from a prompt. Claude gets the text, and runs shell commands only as tool use, such as Bash, under Claude Code's permissions, see [Tool use](#tool-use).
+- A one-line message that starts with `/` is a command of the group, such as `/approve 5` or `/list`. From an admin or owner, an unknown command gets `Unknown command.` From a moderator, member or author, any such message gets `Only admins and owners of this group can send / commands.`, and it reaches neither the commands nor Claude.
+- While the service runs and the session's Claude Code doesn't, Claude replies `Session N is not running.` It also replies so when Claude Code ends while a prompt's file arrives. For 30 seconds after the service starts, a prompt waits for its session to attach again, so a prompt sent while the service was stopped still arrives.
+- Claude posts its final answer of each turn in the group. When the turn's prompt came from the group, the answer replies to it, even when the next prompt arrives while Claude answers. Claude Code can add a prompt that arrives during a turn to that turn. Then the answer replies to the turn's prompt, or to the last message from the group added to the turn.
+- Claude's replies to a prompt, its answer included, are posted without the quote when the prompt was deleted or the quote makes the message too large. An answer is also posted without the quote when the quote leaves no room for its first character.
+- `User` posts only the prompts a person typed, also one typed while Claude works. `User` skips commands such as `/compact`, empty prompts such as one with images only, and prompts made only of the plugin's `<channel source="plugin:simplex:simplex" ...>` tags. `User`'s posts are never commands of the group, even a part that starts with `/`.
+- Claude posts one line for each of Claude Code's own prompts, without a quote. The line starts with an emoji for the prompt's kind:
+  - a notification of a background task, a subagent, a workflow or a monitor: its summary, such as `✅ Background command "Build" completed (exit code 0)`, and the first line of its event, when it has one, such as `📡 Monitor event: "Builds": serverpg exit 0`. The emoji is ✅ for a task that completed, ❌ for one that failed and ⏹️ for one that was stopped or killed. A notification without a status gets 📡 when it has an event, as a monitor event or the end of an artifact watch, and 🔔 otherwise. A notification in plain text, such as `3 background agents were stopped by the user: ...`, gets 🔔 and its first line;
+  - a message of another Claude session: `✉️ Message from NAME: ` and its first line;
+  - a message of a teammate in an agent team: `✉️ Message from NAME: ` and its summary, or its first line without one. A prompt with several teammate messages gets the line of the first one that is not an idle notification, and a prompt of idle notifications only gets no line;
+  - the report of a subagent: `📋 Report from subagent NAME: ` and its first line;
+  - a scheduled prompt: `⏰ Scheduled prompt: ` and its first line;
+  - an automatic prompt, such as the one after a usage limit resets: `🔄 Automatic prompt: ` and its first line;
+  - another kind: `⚙️ Claude Code: ` and its first line.
+
+  A line over 200 characters is cut there and ends with `…`. Prompts typed in the terminal and channel prompts get no line. When one of Claude Code's own prompts starts a turn, Claude's answer to it is posted without a quote.
+- A text too long for one message is posted as several messages, each as long as a message can be, measured as for `send`. The first part of an answer carries the quote. A part without a quote holds up to 14,962 Latin, 7,481 Cyrillic or 4,987 CJK characters. A prompt or an answer over 250,000 characters is cut there and ends with `…`.
+- The `reply` tool sends a file to the group at once, without approval, with its text as the caption, under the file rules of `send`. It returns the file's message as `item`. A caption too long for a message with the file's preview is refused with `text: too long for a message with this TYPE; shorten it.`
+
+### Group preferences
+
+Owners set the group's preferences in the app, and SimpleX enforces them. Claude never overwrites them: it changes only the group's name, short description and commands, starting from the profile in the chat database.
+
+- While "Files and media" is off, `reply` returns `Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` The cards of sends and downloads of images and videos are posted as text, without the preview, and the sends and downloads still work. `/forward` gets `Action N: Files and media are off in the group of this session; its owners can turn them on in the group's preferences.`
+- When another preference refuses one of Claude's posts, Claude posts a text that names it instead:
+  - For an answer with a SimpleX link: `Claude's answer was not posted: SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences.`
+  - For the line of one of Claude Code's own prompts: `A note on Claude Code's prompt was not posted: ...`
+  - For a terminal prompt: `User's prompt was not posted: SimpleX links are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` This also happens while the preference allows SimpleX links only for roles above `User`'s role, which is member unless the owners change it.
+  - For a card that waits for approval, or for `/forward` of a voice message: `Action N: ...`. The action then fails.
+  - `reply` returns the same text without the prefix `Claude's answer was not posted: `.
+- After an action is decided, the text names the outcome and the card, and the action stays as it was:
+  - The card of an action performed in mode `host` or under a standing approval is posted after the action. When that post is refused, Claude posts `Action N was performed; its card was not posted: ...` or `Action N failed; its card was not posted: ...`.
+  - When the edit of a card with its outcome is refused, Claude posts `Action N was performed; its card was not updated: ...`, with `failed`, `was rejected`, `expired` or `ended` in place of `was performed`.
+  - A card posted or edited when the service stops gets `Action N: ...`.
+
+### Tool use
+
+With the channel, Claude Code's permission prompts, such as the one before a Bash command, are also posted in the session's group:
+
+```
+Claude: I want to use `Bash`: `List files`
+        `ls -la`
+        /approve 5 or /reject 5
+```
+
+`/approve 5` allows the tool use, and `/reject 5` denies it. The dialog in the terminal stays open, and the first answer, in the terminal or in the group, applies. A card that is still pending gets `Ended.` when its turn ends, when a prompt starts the next turn, or when the session ends. A prompt that Claude Code adds to the running turn leaves the card pending. The preview of the tool's input is shortened to fit the card.
+
+### Model and effort
+
+The short description of a session's group shows `MODEL · effort LEVEL`. The model is updated at the session start when Claude Code passes it, at each model change, and at the end of each turn from the model of the answer in the session's transcript. So the model shows from the first answer, also in a resumed session. The effort level is updated at the end of each turn. Changes made in the terminal, or from the Claude app by Remote Control, show the same way.
+
+### Options
+
+Set in `/plugin` > Installed > simplex > Configure options:
+
+| Option | Default | Values | Effect |
+|---|---|---|---|
+| `main_group` | `Claude Control` | a valid SimpleX display name | The name of the Main group. With `SIMPLEX_MCP_MACHINE` set in the environment, ` - ` and its value follow, up to 50 characters in all. |
+| `approve` | `requests` | `requests`, `host` | The approval mode of the sessions. |
+| `expire_hours` | `23` | 1 to 23 | How long an action waits for a decision, see [Expiry](#expiry). |
+
+A changed option applies from the next session start, and so does a changed `SIMPLEX_MCP_MACHINE`. The service renames the Main group to the new name. An invalid value is shown at the session start, and every tool call of that session returns the same text, for example `Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /plugin > Installed > simplex > Configure options.` or `SIMPLEX_MCP_MACHINE: a valid SimpleX name, such as mylaptop expected, got my.laptop. Change it in the environment of this machine.` A value of `approve` other than `requests` and `host` can come only from a hand edit of the settings. It is shown only at the session start, and the session's tools run in mode `requests`.
+
+In mode `host`, a session asks in its group to run in that mode: `I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.`, with `/approve N or /reject N`. It asks at its start, or when the group gets its first admin or owner other than Claude, by a join or a role change. The session runs in mode `host` after an admin or owner approves, and keeps the mode across restarts, in the custom data of its group in the chat database. After a rejection, it asks again only after a session start with `requests`. A change back to `requests` applies at the next session start without a card, and a pending card then gets `Ended.`
+
+### Plugin data folder
+
+`~/.simplex-mcp`, or the folder in `SIMPLEX_MCP_HOME`:
+
+| Path | Content |
+|---|---|
+| `service.token` | The access token of the service's socket, readable only by the user. |
+| `service.lock` | The PID of the running service. |
+| `service.sock` | The service's Unix socket. On Windows it is the named pipe `\\.\pipe\simplex-mcp-<hash>`. For a path over 103 bytes, it is `simplex-mcp-<hash>.sock` in the system temporary folder. |
+| `service.log` | The service's log, emptied when it is over 10 MB, at a service start and every hour. |
+| `titles.json` | The titles of new sessions whose session server had not registered when the service stopped. The next start reads and removes it. |
+| `_hub/` | The databases of the profile `Claude`: the Main group, the session groups and the chats with peers. |
+| `_user/` | The databases of the profile `User`. |
+| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, a rejected mode `host`, model, effort level and other session IDs. `files/` holds the files of its chats and of its group. |
+
+The folders, and the files the service writes, are readable only by the user, except on Windows. One service runs per data folder. These names contain a dot or start with `_`, which agent names of `serve` can't, so the folders of agents in `~/.simplex-mcp` never collide with them.
+
+### Plugin recovery
+
+| Situation | What happens, what to do |
+|---|---|
+| The session start shows an error | The error follows `SimpleX MCP:`, with details in `service.log`. The session starts without the service, and the next tool call tries again. |
+| Node.js is older than 22 | The session start shows `SimpleX MCP needs Node.js 22 or later; found <version>.` |
+| Claude Code ends before the session start shows the link | The service runs apart from Claude Code and keeps starting. The next session start shows the link. |
+| The service stopped during a call | The call returns `The SimpleX service stopped; repeat the call.`, and the next call starts the service again. The actions of the stopped service are lost, and a repeated call creates a new action. |
+| The service stopped between calls, or its start failed | The session starts it again and attaches after 1 second. While that fails, it retries at intervals that double up to 30 seconds. |
+| A session starts while the service stops | The new service waits up to 15 seconds for the stopping one to release its lock, and then starts. |
+| `service.lock` names a running process that is not the service | After 15 seconds, the session start shows `SimpleX MCP: Another service uses FOLDER (PID N). If no service runs, remove FOLDER/service.lock.` |
+| A newer plugin version starts | It stops the older service and starts its own. When the two versions can't talk to each other, tool calls return `Restart Claude Code to update the SimpleX plugin.` |
+| Sessions of plugin 0.3.0 run after an upgrade | Their session servers connect to the new service with the old default name, `SimpleX MCP`, and the service renames the Main group to it. The group keeps the name of the last session that started or connected, and its members see `group profile updated` at each change. Once those sessions end, the next session start sets `Claude Control`. |
+| A session's group has no admin or owner but Claude | Its actions are refused with `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.` |
+| A session's group was deleted, or Claude lost its owner role there | The session's actions fail with `The group of this session is lost. Start a new Claude Code session.` |
+| The Main group was deleted, or Claude lost its owner role there | The service logs `The Main group is lost. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` |
+| The wrong person joined by the link | Run `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal. |
+| The QR code does not scan | Run `npx -y @simplex-chat/mcp@VERSION link` in a terminal, or paste the link into the app. |
+
+### Plugin security
+
+- The service listens only on its local socket, in a folder only the user can read, and every request needs the token. On Windows the named pipe has no folder permissions, so the token is the only check.
+- The service gets only the environment variables it uses: the paths of the home, temporary and cache folders, the locale, the proxy and certificate settings, `NODE_OPTIONS`, the `SIMPLEX_` variables and the plugin options.
+- Everyone in the Main group is trusted with all sessions. In a session's group, rights follow the member's role, see [Sessions and their groups](#sessions-and-their-groups).
+- Claude Code runs no command from a message of a session's group, even one that starts with `!`. Claude gets the text, and its tool use follows Claude Code's permissions.
+- Only you get the Main group link. The session start shows it, and `link` prints it in a terminal.
+- A session runs in mode `host` only after an admin or owner approves it in the session's group.
+- Claude's files reach the group only while its preference "Files and media" allows them. Owners set it, and SimpleX enforces it. A post that a preference refuses is replaced by Claude's text that names the preference.
+- Any program running as you on this computer can replace the Main group and its owners at once, without their approval, with `reset-owners` or a request to the service.
+- The plugin refuses to send private keys and the files of its data folder, except the files under `files/` of the session's own folder.
+- Peers of a chat see the profile `Claude`, or a random profile in a chat connected incognito.
+- These protections hold against Claude's tools, but not against a shell running as the same user. Such a shell can read the data folder, with the token and the chat databases, and send requests to the service.
