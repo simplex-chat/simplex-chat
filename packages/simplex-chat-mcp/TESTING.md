@@ -207,13 +207,15 @@ The MCP server and the SessionStart, UserPromptSubmit, Stop and PostModelSwitch 
   - An admin from the Main group approves all messages to a chat. After the owner's `/observer` of that admin, `/list` shows the chat without the approval. Claude replies `No member ID in this group.` to `/observer` of a member who has sent `/join 1` but has not joined yet. The member then joins as an admin.
   - A new session has no chats.
   - A stdio session starts the service. It recovers after the service is killed during a call. It starts the service again and attaches without a call.
+  - A SessionStart hook is ended with its descendants while its service starts, as Claude Code ends its hooks when it exits. The service keeps starting, and the next session start shows the link of that service.
+  - A Main group named `SimpleX MCP` is renamed `Claude Control` at the next start of the service with the default options.
 
 ### Checks in a real session
 
 In a session started as in step 2 above:
 
-1. At the session start, Claude Code shows `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "SimpleX MCP":`, a QR code and the link. Ask Claude which link was shown at the session start. Claude doesn't know it. If Claude Code refuses `plugin:simplex@inline` with the development flag, checks 3, 5, 6 and 7 wait for the published plugin and `plugin:simplex@simplex-chat`.
-2. Scan the QR code in the SimpleX app and tap Join. In "SimpleX MCP", tap the invitation to "1 · <folder>" and join it.
+1. At the session start, Claude Code shows `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "Claude Control":`, a QR code and the link. Ask Claude which link was shown at the session start. Claude doesn't know it. If Claude Code refuses `plugin:simplex@inline` with the development flag, checks 3, 5, 6 and 7 wait for the published plugin and `plugin:simplex@simplex-chat`.
+2. Scan the QR code in the SimpleX app and tap Join. In "Claude Control", tap the invitation to "1 · <folder>" and join it.
 3. Send `Reply with the word ready.` in "1 · <folder>". The answer comes from Claude, as a reply to your message.
 4. Type a prompt in the terminal. It appears in the group from `User`, and the answer appears from Claude. Record whether a prompt from the group also appears from `User`, because Claude Code's documentation does not say whether a channel prompt runs the UserPromptSubmit hook. Ask Claude to run `sleep 5` with Bash in the background. When the task ends, its notification does not appear from `User`; Claude posts a line that starts with ✅ instead. Ask Claude to start a background agent that replies with one word, and to schedule a one-time prompt with CronCreate two minutes ahead. Each appears as one line from Claude. While Claude runs a foreground command, type a prompt in the terminal: it appears from `User`.
 5. Send `Count from 1 to 300, one number per line.` in the group, and at once send `Reply with the word two.` The second prompt waits in Claude Code's queue. Claude quotes the first message in the answer with the numbers, and the second message in the answer `two`. Neither prompt appears from `User`. The hub chooses the quote of each answer by the start times of the Stop and UserPromptSubmit hooks, and this check confirms that.
@@ -253,4 +255,5 @@ In a session started as in step 2 above:
     - `/tmp/claude-plugins-test/known_marketplaces.json` listed `simplex-local`.
     - The plugin's folder had no `node_modules/.package-lock.json`.
     - With the same keys in `.claude/settings.json` of the folder, and without `--settings`, the run had no tool of the plugin.
-18. Stop the service: `kill $(cat /tmp/simplex-mcp-test/service.lock)`.
+18. Start Claude Code as in step 2 with an empty data folder and a machine name: `SIMPLEX_MCP_HOME=/tmp/simplex-mcp-fresh SIMPLEX_MCP_MACHINE=laptop claude --plugin-dir /tmp/simplex-plugin --dangerously-load-development-channels plugin:simplex@inline`. Exit it before the QR code shows. Start it again the same way. The QR code shows within seconds, for the group "Claude Control - laptop". Stop that service: `kill $(cat /tmp/simplex-mcp-fresh/service.lock)`.
+19. Stop the service: `kill $(cat /tmp/simplex-mcp-test/service.lock)`.

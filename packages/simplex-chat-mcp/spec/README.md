@@ -238,7 +238,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | opencode plugin | [`opencode/simplex-secrets.ts`](../opencode/simplex-secrets.ts#L12) | default export | [12](../opencode/simplex-secrets.ts#L12) |
 | Session server | [`src/session.ts`](../src/session.ts#L40) | `startSession` | [40](../src/session.ts#L40) |
 | Session to service link | [`src/session.ts`](../src/session.ts#L69) | `ServiceLink` | [69](../src/session.ts#L69) |
-| Service start by a client | [`src/client.ts`](../src/client.ts#L35) | `ServiceClient.ensureService` | [35](../src/client.ts#L35) |
+| Service start by a client | [`src/client.ts`](../src/client.ts#L40) | `ServiceClient.ensureService` | [40](../src/client.ts#L40) |
 | Service process | [`src/service.ts`](../src/service.ts#L430) | `runService` | [430](../src/service.ts#L430) |
 | Service routes | [`src/service.ts`](../src/service.ts#L137) | `Service.routes` | [137](../src/service.ts#L137) |
 | Hub | [`src/hub.ts`](../src/hub.ts#L368) | `Hub.open` | [368](../src/hub.ts#L368) |

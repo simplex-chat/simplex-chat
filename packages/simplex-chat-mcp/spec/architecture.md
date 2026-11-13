@@ -808,7 +808,7 @@ flowchart LR
 Data flow of a tool call:
 
 1. Claude Code calls a tool of the MCP server `simplex` ([session.ts:57](../src/session.ts#L57)). The SDK validates the arguments ([tools.ts:506-516](../src/tools.ts#L506-L516)).
-2. Without a connection, the session process checks the service's status and version, and spawns the service when it is not running. It then sends `POST /session` and holds `POST /attach` open ([session.ts:160-185](../src/session.ts#L160-L185), [client.ts:35-47](../src/client.ts#L35-L47)).
+2. Without a connection, the session process checks the service's status and version, and spawns the service when it is not running. It then sends `POST /session` and holds `POST /attach` open ([session.ts:160-185](../src/session.ts#L160-L185), [client.ts:40-52](../src/client.ts#L40-L52)).
 3. The session process sends `POST /call` with the session ID, the tool and the input. It relays each `{progress}` line as an MCP progress notification, and returns the `{result}` line ([session.ts:132-151](../src/session.ts#L132-L151)).
 4. The service checks the token ([socket.ts:18-48](../src/socket.ts#L18-L48)). It finds or opens the entry of the session or of its alias, and runs the session's `AgentTools.call` with a signal tied to the request ([service.ts:326-345](../src/service.ts#L326-L345)).
 5. `AgentTools` sends chat commands to the core `_hub`. Actions are created in the session's `Actions`, and the session's `Control` posts them as cards in the session's group ([hub.ts:69-103](../src/hub.ts#L69-L103)).
@@ -842,11 +842,11 @@ Data flow of a prompt from the session group:
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `ServiceClient.forRoot` | [22](../src/client.ts#L22) | ROOT created, token, socket path |
-| `ServiceClient.ensureService` | [35](../src/client.ts#L35) | The status is read. A service of a lower version is stopped, and a new one is spawned when none runs. The protocol is checked. |
-| `spawnService` | [71](../src/client.ts#L71) | detached child with stdout and stderr to `service.log`, a ready pipe on fd 3, and the environment variables of `serviceVariables` ([13](../src/client.ts#L13)) |
-| `firstLine` | [94](../src/client.ts#L94) | first line of the ready pipe, a spawn error, or the 5-minute timeout |
-| `compareVersions` | [120](../src/client.ts#L120) | numeric comparison of the first three version parts |
+| `ServiceClient.forRoot` | [27](../src/client.ts#L27) | ROOT created, token, socket path |
+| `ServiceClient.ensureService` | [40](../src/client.ts#L40) | The status is read. A service of a lower version is stopped, and a new one is spawned when none runs. The protocol is checked. |
+| `spawnService` | [76](../src/client.ts#L76) | the detached launcher `node -e` [`launcher`](../src/client.ts#L14-L18) with stdout and stderr to `service.log`, a ready pipe on fd 3, and the environment variables of `serviceVariables` ([13](../src/client.ts#L13)). The launcher spawns the service detached with its fd 1, 2 and 3, writes `error: TEXT` on fd 3 when that spawn fails, and exits at once, so the service is no descendant of the caller. |
+| `firstLine` | [99](../src/client.ts#L99) | first line of the ready pipe, a spawn error, or the 5-minute timeout |
+| `compareVersions` | [125](../src/client.ts#L125) | numeric comparison of the first three version parts |
 
 #### [`socket.ts`](../src/socket.ts)
 
@@ -892,7 +892,7 @@ Data flow of a prompt from the session group:
 | `lockHolder` | [478](../src/service.ts#L478) | up to 150 checks, 100 ms apart. The result is `released` when ROOT/service.lock is gone, and `answers` for any result of a socket request other than ENOENT and ECONNREFUSED. |
 | `sessionName` | [493](../src/service.ts#L493) | session title, else the project folder name, else `Claude Code` |
 | `validConfig` | [487](../src/service.ts#L487) | the check of `config` in `/session` and `/title`: a valid Main group name, the mode, and hours from 1 to 23. Other values are refused with status 400. |
-| `readyChannel` | [499](../src/service.ts#L499) | ready line to fd `SIMPLEX_MCP_READY_FD`, or stdout |
+| `readyChannel`, `writeReady` | [499](../src/service.ts#L499), [507](../src/service.ts#L507) | ready line to fd `SIMPLEX_MCP_READY_FD`, or stdout. A ready line to a reader that is gone, `EPIPE`, is dropped, and the service keeps running. |
 
 #### [`hub.ts`](../src/hub.ts)
 
@@ -976,9 +976,10 @@ Data flow of a prompt from the session group:
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `interactiveEntrypoint`, `interactive` | [config.ts:26-32](../src/config.ts#L26-L32) | `false` for `CLAUDE_CODE_ENTRYPOINT` `sdk-cli`, `sdk-ts` or `sdk-py`. `interactive` is `false` for `CLAUDE_CODE_SESSION_ATTENDED` `0` as well. |
-| `Config`, `defaultConfig`, `configVariables` | [config.ts:4-18](../src/config.ts#L4-L18) | the Main group name, the mode and the expiry hours; their defaults `SimpleX MCP`, `requests` and 23; their variables |
-| `readConfig` | [config.ts:34](../src/config.ts#L34) | `CLAUDE_PLUGIN_OPTION_*` to `Config`, defaults for blank values, `ConfigError` texts |
+| `interactiveEntrypoint`, `interactive` | [config.ts:27-33](../src/config.ts#L27-L33) | `false` for `CLAUDE_CODE_ENTRYPOINT` `sdk-cli`, `sdk-ts` or `sdk-py`. `interactive` is `false` for `CLAUDE_CODE_SESSION_ATTENDED` `0` as well. |
+| `Config`, `defaultConfig`, `configVariables` | [config.ts:4-18](../src/config.ts#L4-L18) | the Main group name, the mode and the expiry hours; their defaults `Claude Control`, `requests` and 23; their variables |
+| `readConfig` | [config.ts:35](../src/config.ts#L35) | `CLAUDE_PLUGIN_OPTION_*` to `Config`, defaults for blank values, `ConfigError` texts |
+| `withMachine` | [config.ts:50](../src/config.ts#L50) | ` - MACHINE` from `SIMPLEX_MCP_MACHINE` after the Main group name, checked by `validName`, with the `ConfigError` texts of the variable |
 | `dataRoot`, `hubFolder`, `sessionFolder` | [files.ts:35-51](../src/files.ts#L35-L51) | ROOT, `ROOT/_hub`, `ROOT/_sessions/<lower-case ID>` |
 | `SessionFile`, `readSessionFile`, `writeSessionFile`, `storedSessions` | [files.ts:11-76](../src/files.ts#L11-L76) | `session.json` with number, name, project, creation time, group, aliases, model, effort and a rejected mode `host`. An unparsable file is skipped with a log line. Each write goes to `session.json.tmp`, which is renamed into place. |
 | `socketPath` | [files.ts:78](../src/files.ts#L78) | `ROOT/service.sock`. A path over 103 bytes is replaced by `TMP/simplex-mcp-HASH.sock`, and Windows uses `\\.\pipe\simplex-mcp-HASH`. |
@@ -1042,12 +1043,12 @@ Files:
 
 | Path | Contents | Written | Read |
 |---|---|---|---|
-| `ROOT/` | data root, mode 0700 | every client and the service ([client.ts:23](../src/client.ts#L23), [service.ts:435](../src/service.ts#L435)) | |
+| `ROOT/` | data root, mode 0700 | every client and the service ([client.ts:28](../src/client.ts#L28), [service.ts:435](../src/service.ts#L435)) | |
 | `ROOT/service.token` | the bearer token, 0600 | the first client or service ([files.ts:91-93](../src/files.ts#L91-L93), [:128-138](../src/files.ts#L128-L138)) | every client, the service |
 | `ROOT/service.lock` | PID of the service, linked from `ROOT/service.lock.PID.HEX.tmp`. A stopped service's lock is claimed through `ROOT/service.lock.PID.claim`, which is removed after the takeover. | `Service.start` ([service.ts:94](../src/service.ts#L94), [files.ts:215-254](../src/files.ts#L215-L254)) | the next service |
 | `ROOT/titles.json` | the `/title` requests held at a stop, each with its `at`, 0600 | `shutdown` ([service.ts:180](../src/service.ts#L180)) | the next `Service.start`, which removes it ([service.ts:106](../src/service.ts#L106)) |
 | `ROOT/service.sock` | the socket | `listen` ([socket.ts:40-43](../src/socket.ts#L40-L43)) | clients |
-| `ROOT/service.log` | the service's stdout and stderr, emptied over 10 MB at a spawn and every hour | `spawnService` ([client.ts:71-79](../src/client.ts#L71-L79)), [`trimLog`](../src/files.ts#L95-L98) | people |
+| `ROOT/service.log` | the service's stdout and stderr, emptied over 10 MB at a spawn and every hour | `spawnService` ([client.ts:76-84](../src/client.ts#L76-L84)), [`trimLog`](../src/files.ts#L95-L98) | people |
 | `ROOT/_hub/`, `ROOT/_user/` | databases and `tmp/` of the profiles `Claude` and `User` | [`openCore`](../src/core.ts#L19-L35) | the cores |
 | `ROOT/_sessions/ID/session.json` | `{number, name, project, created, group?, aliases?, model?, effort?, hostDeclined?}`, 0600, replaced whole through `session.json.tmp` | `openAgent`, `rename`, `alias`, `Hub.session`, `declineHost`, `store` ([service.ts:392-402](../src/service.ts#L392-L402), [:297-302](../src/service.ts#L297-L302), [:290-295](../src/service.ts#L290-L295), [hub.ts:417](../src/hub.ts#L417), [:325-334](../src/hub.ts#L325-L334)) | `Service` constructor, `resolve`, `Hub.session`, `alias`, `store` |
 | `ROOT/_sessions/ID/files/` | downloads of the session's chats as in [3.3](#33-files). The files of the prompts from the group are in `group/`. `sent/` is deleted when the session opens. | the core ([hub.ts:251-259](../src/hub.ts#L251-L259), [:414](../src/hub.ts#L414)) | tools, Claude |
@@ -1222,7 +1223,7 @@ Sources: [hub.ts:153-208](../src/hub.ts#L153-L208), [:230-302](../src/hub.ts#L23
 | The Main group link is shown only in the hook's `systemMessage`, and on a terminal with `link`. In tool results, refusals and other output, the command is named instead. Of the socket's routes, only `/title`, `/link` and `/reset-owners` return a Main group link. `/reset-owners` returns the link of the new group. | [hook.ts:94-96](../src/hook.ts#L94-L96), [owner.ts:7-15](../src/owner.ts#L7-L15), [control.ts:44](../src/control.ts#L44), [service.ts:154-155](../src/service.ts#L154-L155), [:215](../src/service.ts#L215), [:426](../src/service.ts#L426), [hub.ts:403-405](../src/hub.ts#L403-L405) |
 | `reset-owners` shows the new link only on a terminal | [owner.ts:17-20](../src/owner.ts#L17-L20), [:28-33](../src/owner.ts#L28-L33) |
 | The plugin runs its own `dist/cli.js`. Node.js loads its modules, bundled in the package, from the plugin's folder, so they can't be replaced by the `node_modules` of a project. | [.mcp.json:5](../.mcp.json#L5), [hooks.json:3-7](../hooks/hooks.json#L3-L7), [package.json:36](../package.json#L36) |
-| The service gets only the environment variables of `serviceVariables` | [client.ts:13](../src/client.ts#L13), [:78](../src/client.ts#L78) |
+| The service gets only the environment variables of `serviceVariables` | [client.ts:13](../src/client.ts#L13), [:83](../src/client.ts#L83) |
 | `send` and `reply` refuse the files of ROOT except `files/` of the session's own folder | [tools.ts:1004-1009](../src/tools.ts#L1004-L1009), [hub.ts:90-91](../src/hub.ts#L90-L91) |
 | `User`'s messages are neither prompts nor commands. `Session.prompt` and `Control.onMessage` drop the messages of the member of the hub's contact marked `simplexMcpUser`, which is read at the hub's start. `User` joins only the groups to which it is invited by its `Claude` contact. | [hub.ts:231](../src/hub.ts#L231), [:316-318](../src/hub.ts#L316-L318), [:377](../src/hub.ts#L377), [control.ts:231](../src/control.ts#L231), [user.ts:50-57](../src/user.ts#L50-L57), [:60-62](../src/user.ts#L60-L62) |
 | The hub's own groups and the `User` contact have no owner key, so the tools of every session leave them out | [tools.ts:585-587](../src/tools.ts#L585-L587), [:1293-1301](../src/tools.ts#L1293-L1301) |

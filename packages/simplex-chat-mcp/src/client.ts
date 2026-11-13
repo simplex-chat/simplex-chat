@@ -11,6 +11,11 @@ const serviceStartTimeout = 5 * 60_000
 const readyFd = 3
 const errorPrefix = "error: "
 const serviceVariables = /^(PATH|PATHEXT|HOME|USERPROFILE|HOMEDRIVE|HOMEPATH|TMPDIR|TMP|TEMP|XDG_CACHE_HOME|LOCALAPPDATA|APPDATA|SYSTEMROOT|SYSTEMDRIVE|WINDIR|COMSPEC|LANG|LC_\w+|LD_LIBRARY_PATH|DYLD_LIBRARY_PATH|HTTPS?_PROXY|NO_PROXY|NODE_USE_ENV_PROXY|NODE_EXTRA_CA_CERTS|NODE_OPTIONS|SSL_CERT_(FILE|DIR)|SIMPLEX_\w+|CLAUDE_PLUGIN_OPTION_\w+)$/i
+const launcher = [
+  `const service = require("child_process").spawn(process.argv[1], process.argv.slice(2), {detached: true, windowsHide: true, stdio: ["ignore", 1, 2, ${readyFd}]})`,
+  `service.on("error", error => require("fs").writeSync(${readyFd}, "${errorPrefix}" + error.message + "\\n"))`,
+  "service.unref()",
+].join("\n")
 
 export type SpawnService = (root: string) => Promise<void>
 
@@ -71,7 +76,7 @@ export function serviceCommand(): [string, string[]] {
 export async function spawnService(root: string, [command, args]: [string, string[]] = serviceCommand()): Promise<void> {
   const log = openLog(root)
   try {
-    const child = spawn(command, args, {
+    const child = spawn(process.execPath, ["-e", launcher, command, ...args], {
       detached: true,
       windowsHide: true,
       stdio: ["ignore", log, log, "pipe"],
