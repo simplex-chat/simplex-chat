@@ -1,6 +1,6 @@
 # Answers appear live as Claude writes them
 
-Status: Q1 and Q2 answered A on 2026-11-13. The end line and the usage line of `ep/mcp-session-usage` are one message (decision 36). The plan waits for the user's approval before implementation. Code references: master `97bbbd9ac` and `ep/mcp-activity` at `559bac9c0`, on which this item builds. Claude Code references: version 2.1.322, its binary at the offsets given, run L1 of 2026-11-13, the transcripts of one machine, and the hooks reference (code.claude.com/docs/en/hooks.md, read on 2026-11-13).
+Status: Q1 and Q2 answered A on 2026-11-13. The end line and the usage line of `ep/mcp-session-usage` are one message (decision 36). Approved and implemented on 2026-11-13 on `ep/mcp-live-answers`, on top of `ep/mcp-activity` at `be04c735e`; section 11 lists the changes against this plan. Code references: master `97bbbd9ac` and `ep/mcp-activity` at `559bac9c0`, on which this item builds. Claude Code references: version 2.1.322, its binary at the offsets given, run L1 of 2026-11-13, the transcripts of one machine, and the hooks reference (code.claude.com/docs/en/hooks.md, read on 2026-11-13).
 
 ## 1. Goal
 
@@ -375,3 +375,40 @@ REFERENCE.md, spec          "Prompts and answers", the turn flows               
 ## 10. Estimate
 
 About 230 lines of source and 360 of tests, one and a half days after `ep/mcp-activity` merges. A median turn of this machine gets one more message, the end line, and one update of the opening message. Each text adds a send, an update per 3 s while it streams, and its finalization.
+
+## 11. As implemented
+
+Changes against sections 4 and 5:
+```
+#   change
+1   Session.openings: a list of opening messages, each {at, until?, item}. A prompt that starts a turn sets until
+    of the earlier ones to its start. A post fills the last kept opening with at <= its hook start < until.
+    An opening that no post filled gets ⏹️ Stopped at the first answer whose hook start is >= until, or >= at
+    without until, at the last detach and at the hub's stop; the next prompt does not finalize it (decision 27).
+2   step starts are queued in liveOrder with the text work (decision 34).
+3   the claim at Stop takes the newest of the live texts and the last 20 ended texts (recentTexts) whose first
+    batch's hook started after the turn's start and before the Stop hook; Session.lastText is not kept.
+4   turn records of prompts added mid-turn are marked added; DURATION starts at the newest record not marked added.
+5   the rule of decision 28 reads answeredAt when the batch's request arrives.
+6   an answer posted at Stop into the opening message keeps the opening's quote, the turn's first prompt; an answer
+    posted as a new message quotes as in decision 50 of the channel plan.
+7   endLive() ends every step, opening and text; a prompt that starts a turn runs endSteps(at), boundOpenings(at)
+    and endTexts(at).
+8   when the opening message takes an answer's first part and a later part is refused, the opening keeps that part.
+9   names: openings, texts, endedTexts, recentTexts, liveOrder; LiveText.done holds the finished parts and
+    LiveText.part the current one.
+10  e2e: the link tests wait for the answer as an update of the opening message.
+```
+
+```mermaid
+stateDiagram-v2
+  [*] --> open: a prompt that starts a turn, an empty live line
+  open --> bounded: the next prompt that starts a turn, until = its hook start
+  open --> filled: a text, step or answer of a hook that started at or after at
+  bounded --> filled: such a post of a hook that started before until
+  open --> filled: a blank answer, the end line
+  open --> stopped: an answer, the last detach or the stop, ⏹️ Stopped
+  bounded --> stopped: an answer of a hook with start >= until, the last detach or the stop, ⏹️ Stopped
+  filled --> [*]
+  stopped --> [*]
+```
