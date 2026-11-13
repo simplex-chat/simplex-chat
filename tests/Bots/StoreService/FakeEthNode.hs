@@ -471,7 +471,7 @@ answer st method params = do
     ("eth_getTransactionCount", [_, J.String "latest"]) -> pure $ result $ quantity $ toInteger fsUsed
     ("eth_getTransactionCount", [_, J.String "pending"]) ->
       pure $ result $ quantity $ toInteger $ fsUsed + fromIntegral (length $ takeWhile (`M.member` fsPool) [fsUsed ..])
-    ("eth_maxPriorityFeePerGas", _) -> pure $ result $ quantity $ toInteger tip
+    ("eth_feeHistory", _) -> pure $ result $ J.object ["reward" .= replicate 10 [quantity $ toInteger tip]]
     ("eth_chainId", _) -> pure $ result $ quantity $ toInteger fakeChainId
     ("eth_getBlockByNumber", [J.String "latest", _]) -> pure $ result $ blockJson baseFee number time
     -- a block not mined or set here has the time of the last one before it
