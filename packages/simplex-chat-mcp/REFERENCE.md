@@ -544,7 +544,7 @@ One server runs per data folder: a second one exits, because two processes on on
 
 ## Claude Code plugin
 
-The plugin gives every Claude Code session its own SimpleX group. In that group you send the session prompts, approve its actions and tool use, and read its answers. One service runs all sessions that share a data folder. Peers see one SimpleX profile, `Claude`. Sessions have the tools of `serve` (`connect`, `send`, `receive`, `download`, `list` and `leave`), and `reply`, which sends files to the session's group.
+The plugin gives every Claude Code session its own SimpleX group. In that group you send the session prompts, approve its actions and tool use, and read its answers. One service runs all sessions that share a data folder. Peers see one SimpleX profile, `Claude`. Sessions have the tools of `serve` (`connect`, `send`, `receive`, `download`, `list` and `leave`), and `reply`, which sends files to the session's group. In mode `requests`, the service shows the [status messages](#status-while-the-agent-works) of sessions as `serve` does. When the service stops, it deletes them and waits 10 seconds for the deletions and the cancelled cards to be sent; when it starts, it deletes those left by a crash.
 
 ### Install
 

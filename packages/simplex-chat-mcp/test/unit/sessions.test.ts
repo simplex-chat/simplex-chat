@@ -6,6 +6,7 @@ import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
 import {Action} from "../../src/actions"
 import {controlCommands} from "../../src/control"
+import * as coreModule from "../../src/core"
 import {SessionFile, createDataFolder, readSessionFile, sessionFolder, writeSessionFile} from "../../src/files"
 import {Hub, Session} from "../../src/hub"
 import {createMainGroup} from "../../src/main-group"
@@ -14,7 +15,7 @@ import {AttachLine} from "../../src/protocol"
 import * as tools from "../../src/tools"
 import {User} from "../../src/user"
 import {version} from "../../src/version"
-import {FakeChat, contact, direct, event, fileItem, group, groupChat, item, member, signal, until, user} from "./fixtures"
+import {FakeChat, broadcastDeletion, contact, direct, event, fileItem, group, groupChat, item, livePost, member, signal, until, user} from "./fixtures"
 
 const unknownCommand = "Unknown command."
 
@@ -1527,6 +1528,55 @@ describe("Main group", () => {
     expect(chat.removed).toEqual([])
     expect(chat.roles).toEqual([])
     expect(chat.invitations.filter(({groupId}) => groupId === 20)).toHaveLength(3)
+  })
+})
+
+describe("status messages of the sessions", () => {
+  const approvedPerson = (contactId: number, name: string, owner: string): T.ChatInfo =>
+    direct({...contact(contactId, name), customData: {simplexMcpOwner: {session: owner}, simplexMcp: {approvedBy: "Alice", approvedById: 1003, approvedAt: "2026-11-08T10:00:00.000Z"}}} as T.Contact)
+
+  it("are deleted at the service's stop, with a wait of 10 s for the deletions before the core is closed", async () => {
+    jest.useFakeTimers({doNotFake: ["nextTick", "setImmediate", "queueMicrotask"]})
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "auth"))
+    chat.chats.set("@4", {chatInfo: approvedPerson(4, "Bob", id1), items: [item(30, "summarize README.md")]})
+    await withOwner(chat, session)
+    await session.call("receive", {chat: "@4"}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.sent).toEqual([livePost(T.ChatType.Direct, 4, "◐ thinking · 0:00")])
+    const status = chat.nextItemId - 1
+    let stopped = false
+    const stopping = hub.stop().then(() => (stopped = true))
+    await jest.advanceTimersByTimeAsync(9_999)
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
+    expect(lines).toContain("Stopping: sending 1 status deletion, up to 10 s. Ctrl-C to stop now.")
+    expect([stopped, chat.closed]).toEqual([false, false])
+    await jest.advanceTimersByTimeAsync(1)
+    await stopping
+    expect(chat.closed).toBe(true)
+    expect(chat.updates).toEqual([])
+  })
+
+  it("left by an earlier run are deleted at the service's start in the approved chats of each stored session", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("#10", {chatInfo: groupChat(group(10, "SimpleX MCP", self, {customData: {simplexMcpMain: true}})), items: []})
+    chat.members.set(10, [self, alice, bob])
+    const leftover = (itemId: number): T.ChatItem => item(itemId, "◐ thinking · 0:12", {type: "directSnd"}, {live: true, ts: new Date().toISOString()})
+    chat.chats.set("@4", {chatInfo: approvedPerson(4, "Bob", id1), items: [leftover(31)]})
+    chat.chats.set("@5", {chatInfo: approvedPerson(5, "Carol", id2), items: [leftover(32)]})
+    for (const groupId of [20, 21]) chat.members.set(groupId, [self, invitedAlice])
+    const sessions = [{id: id1, session: stored(1, "one")}, {id: id2, session: stored(2, "two")}]
+    for (const {id, session} of sessions) {
+      createDataFolder(sessionFolder(root, id))
+      writeSessionFile(sessionFolder(root, id), session)
+    }
+    jest.spyOn(coreModule, "openCore").mockResolvedValue({chat: chat.api(), user, events: async () => undefined})
+    jest.spyOn(User, "open").mockResolvedValue(undefined as unknown as User)
+    await Hub.open(root, {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}, sessions)
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, 31), broadcastDeletion(T.ChatType.Direct, 5, 32)])
   })
 })
 

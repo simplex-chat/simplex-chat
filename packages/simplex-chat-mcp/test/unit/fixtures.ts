@@ -200,6 +200,7 @@ export class FakeChat {
   chats = new Map<string, FakeChatData>()
   responses = new Map<string, object>()
   nextItemId = 500
+  closed = false
 
   async sendChatCmd(cmd: string): Promise<ChatResponse> {
     this.commands.push(cmd)
@@ -308,6 +309,14 @@ export class FakeChat {
 
   async apiListContacts(): Promise<T.Contact[]> {
     return [...this.chats.values()].flatMap(({chatInfo}) => (chatInfo.type === "direct" ? [chatInfo.contact] : []))
+  }
+
+  async apiListGroups(): Promise<T.GroupInfo[]> {
+    return [...this.chats.values()].flatMap(({chatInfo}) => (chatInfo.type === "group" ? [chatInfo.groupInfo] : []))
+  }
+
+  async close(): Promise<void> {
+    this.closed = true
   }
 
   async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
