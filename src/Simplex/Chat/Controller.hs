@@ -72,13 +72,12 @@ import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
 import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
-import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
+import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo, retryTransaction)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg, Worker)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.AgentStore (isDeadlock, retryOnDeadlock)
-import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction, withTransactionPriority)
+import Simplex.Messaging.Agent.Store.Common (DBStore, IsolationLevel, withTransaction, withTransactionIsolation, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, UpMigration)
 import Simplex.Messaging.Agent.Store.DB (SQLError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -1824,14 +1823,17 @@ withFastStore = withStorePriority True
 withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
 withStorePriority priority action = do
   ChatController {chatStore} <- ask
-  liftIOEither $ retryOnDeadlock 3 (withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action)) `catchOwn'` handleDBErrors
+  liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `catchOwn'` handleDBErrors
+
+withStoreIsolation' :: IsolationLevel -> (DB.Connection -> IO a) -> CM a
+withStoreIsolation' isolation action = do
+  ChatController {chatStore} <- ask
+  liftIOEither $ retryTransaction 3 (withTransactionIsolation chatStore isolation $ fmap Right . action) `catchOwn'` handleDBErrors
 
 withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do
   ChatController {chatStore} <- ask
-  liftIO $ retryOnDeadlock 3 . withTransaction chatStore $ mapM (`catchOwn'` handleBatchErrors) . actions
-  where
-    handleBatchErrors e = if isDeadlock e then E.throwIO e else handleDBErrors e
+  liftIO $ withTransaction chatStore $ mapM (`catchOwn'` handleDBErrors) . actions
 
 handleDBErrors :: E.SomeException -> IO (Either ChatError a)
 handleDBErrors e = pure $ Left $ ChatErrorStore $ case E.fromException e of
