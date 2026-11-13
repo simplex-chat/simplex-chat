@@ -246,6 +246,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(CIMetaView_Previews.self, allSizes: true),
         SnapshotScene(CIVoiceView_Previews.self, allSizes: true),
         SnapshotScene(ClassicAvatars_Previews.self, allSizes: true),
+        SnapshotScene(ClassicDeleted_Previews.self),
         SnapshotScene(ClassicOverviewChannel_Previews.self),
         SnapshotScene(ClassicOverviewDirect_Previews.self),
         SnapshotScene(ClassicOverviewGroup_Previews.self),
@@ -448,7 +449,13 @@ struct TerminalMedia_Previews: PreviewProvider {
 
 struct TerminalDeleted_Previews: PreviewProvider {
     static var previews: some View {
-        SnapshotFixtures().deleted()
+        SnapshotFixtures().deleted(terminal: true)
+    }
+}
+
+struct ClassicDeleted_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().deleted(terminal: false)
     }
 }
 
@@ -974,14 +981,15 @@ private final class SnapshotFixtures {
         }
     }
 
-    func deleted() -> some View {
+    func deleted(terminal: Bool) -> some View {
         chatRows(teamChat, [
             msg(.groupRcv(groupMember: alice), "Welcome, carol!", -20),
             ChatItem(chatDir: .groupRcv(groupMember: bob), meta: CIMeta.getSample(id(), ts(-18), "this item is deleted", .rcvRead), content: .rcvDeleted(deleteMode: .cidmBroadcast)),
             ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-16), "Thanks!", .rcvRead, itemDeleted: .moderated(deletedTs: ts(-15), byGroupMember: alice)), content: .rcvMsgContent(msgContent: .text("Thanks!"))),
             ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-14), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 1))),
+            ChatItem(chatDir: .groupRcv(groupMember: bob), meta: CIMeta.getSample(id(), ts(-13), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 2, toMsgId: 2))),
             msg(.groupSnd, "ok", -12)
-        ], terminal: true)
+        ], terminal: terminal)
     }
 
     func rightToLeft() -> some View {
