@@ -517,6 +517,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   private lose(): void {
     this.actions.loseControl()
+    this.endToolApprovals()
+    this.options.session?.toolsChanged()
     log(this.options.session === undefined ? `The agent lost its control chat. Restart the server with --reset-owners.` : `The group "${this.options.displayName}" is lost.`)
   }
 

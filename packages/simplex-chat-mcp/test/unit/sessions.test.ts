@@ -674,6 +674,25 @@ describe("session channel", () => {
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "list", params: ""})).toBe("No chats.")
   })
 
+  it("ends the approvals of tools when the session's group is lost, as when it is deleted, Claude is removed or Claude is no longer an owner, and sends the empty list to the session", async () => {
+    const losses: {type: string; fields: object}[] = [
+      {type: "groupDeleted", fields: {member: invitedAlice}},
+      {type: "deletedMemberUser", fields: {member: invitedAlice, withMessages: false}},
+      {type: "memberRole", fields: {byMember: invitedAlice, member: {...self, memberRole: T.GroupMemberRole.Admin}, fromRole: T.GroupMemberRole.Owner, toRole: T.GroupMemberRole.Admin}},
+    ]
+    for (const {type, fields} of losses) {
+      const chat = new FakeChat()
+      const {hub, session, lines} = await channel(chat)
+      session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+      await until(() => session.actions.get(1)?.card !== undefined)
+      await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1 all"})
+      await hub["onEvent"]({type, groupInfo: group(20, "1 · auth"), ...fields} as unknown as ChatEvent)
+      await until(() => lines.filter(line => line.tools !== undefined).length === 2)
+      expect(lines.filter(line => line.tools !== undefined)).toEqual([{tools: [{tool: "Bash", approvedBy: "Alice"}]}, {tools: []}])
+      expect(session.control.approvedTools()).toEqual([])
+    }
+  })
+
   it("revokes an approved tool by /revoke TOOL, lists approved tools after the chats in /list, and answers /approve N all of an action that is not a tool use", async () => {
     const chat = new FakeChat()
     const {session, lines} = await channel(chat)
