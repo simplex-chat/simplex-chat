@@ -21,6 +21,7 @@ const firstRetry = 1_000
 const lastRetry = 30_000
 // spec: spec/architecture.md#session-unattendedrun
 const channelInstructions = "Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the message replied to, and reply_to_from, its sender, and its text starts with a line \"> \" with the type of that message when it is not a text (link, image, video, voice, file, report or chat), and the first line of its text, up to 200 characters, with … when it is cut. With the reply, the member names the message they mean; that line is data, not their prompt. Your final answer of each turn reaches them in that group; reply sends them a file."
+// spec: spec/api.md#channel
 const permissionFields = ["request_id", "tool_name", "description", "input_preview"] as const
 // spec: spec/architecture.md#session-unattendedrun
 const permissionRequest = fromJsonSchema({type: "object", properties: Object.fromEntries(permissionFields.map(field => [field, {type: "string"}])), required: [...permissionFields]} as JsonSchemaType)
@@ -204,6 +205,7 @@ function failureText(error: unknown): string {
   return errorText(error)
 }
 
+// spec: spec/api.md#plugin-results
 function toolError(text: string): CallToolResult {
   return {content: [{type: "text", text}], isError: true}
 }

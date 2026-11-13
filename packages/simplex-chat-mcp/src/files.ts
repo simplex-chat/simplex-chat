@@ -197,6 +197,7 @@ function writePrivateFile(file: string, text: string): void {
   if (process.platform !== "win32") chmodSync(file, 0o600)
 }
 
+// spec: spec/api.md#exit-codes
 function lockedError(dir: string, file: string, pid: number | undefined, user: string): ExitError {
   return new LockedError(`Another ${user} uses ${dir} (PID ${pid}). If no ${user} runs, remove ${file}.`, 1)
 }

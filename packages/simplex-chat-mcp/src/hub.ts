@@ -15,16 +15,27 @@ import {waitForCancelledCards} from "./serve"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
 import {User, userContact} from "./user"
 
+// spec: spec/architecture.md#hub-constants
 const profileName = "Claude"
+// spec: spec/architecture.md#hub-constants
 const sessionKey = "simplexMcpSession"
+// spec: spec/architecture.md#hub-constants
 const firstAction = 1
+// spec: spec/architecture.md#hub-constants
 const cardsWait = 10
+// spec: spec/architecture.md#hub-constants
 const promptEcho = 60_000
+// spec: spec/architecture.md#hub-constants
 const maxPushed = 20
+// spec: spec/architecture.md#hub-constants
 const fileWait = 10 * 60_000
+// spec: spec/architecture.md#hub-constants
 const pendingDays = 1
+// spec: spec/architecture.md#hub-constants
 const attachWait = 30_000
+// spec: spec/architecture.md#hub-constants
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
+// spec: spec/api.md#session-groups
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
 
 // spec: spec/architecture.md#hub-hubtexts
@@ -278,6 +289,7 @@ export class Session {
     return path
   }
 
+  // spec: spec/api.md#session-group-profile
   private newer(field: "model" | "effort", value: string | undefined, at: number): string | undefined {
     if (value === undefined || at < this.describedAt[field]) return undefined
     this.describedAt[field] = at
@@ -423,6 +435,7 @@ export class Hub implements SessionGroups {
     return this.main.displayName
   }
 
+  // spec: spec/api.md#socket-protocol
   owner(): OwnerState {
     const {link} = this.main
     return {owners: this.main.owners().map(({memberProfile}) => memberProfile.displayName), ...(link === undefined ? {} : {link})}
@@ -435,7 +448,7 @@ export class Hub implements SessionGroups {
     if (config.mainGroup !== this.main.displayName) await this.main.rename(config.mainGroup)
   }
 
-  // spec: spec/architecture.md#hub-hub-configure
+  // spec: spec/api.md#socket-protocol
   async resetOwners(): Promise<ResetReply> {
     return {link: await this.main.replace()}
   }
@@ -465,13 +478,13 @@ export class Hub implements SessionGroups {
     return this.sessions.get(number)?.id
   }
 
-  // spec: spec/architecture.md#hub-hub-sessionstext
+  // spec: spec/api.md#main-group
   sessionsText(): string {
     const lines = [...this.sessions.values()].map(session => `${session.displayName}${session.open ? "" : ", closed"}`)
     return lines.length > 0 ? lines.join("\n") : "No sessions."
   }
 
-  // spec: spec/architecture.md#hub-hub-sessionstext
+  // spec: spec/api.md#main-group
   async join(member: T.GroupMember, number: number): Promise<string> {
     const session = this.sessions.get(number)
     if (session === undefined) return `No session ${number}. /sessions lists the sessions.`
@@ -517,7 +530,7 @@ export class Hub implements SessionGroups {
     return sessionDataOf(groupInfo?.customData)?.session === number ? groupInfo : undefined
   }
 
-  // spec: spec/architecture.md#hub-hub-storedgroup
+  // spec: spec/api.md#session-group-profile
   private async createSessionGroup({number, name}: SessionFile): Promise<T.GroupInfo> {
     const displayName = groupName(number, name)
     const group = await createGroup(this.chat, this.profile.userId, {

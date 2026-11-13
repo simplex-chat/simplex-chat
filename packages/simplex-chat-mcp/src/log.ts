@@ -72,6 +72,7 @@ function appErrorText(chatError: T.ChatError): string | undefined {
   }
 }
 
+// spec: spec/api.md#tool-download
 function chatErrorTypeText(error: T.ChatErrorType): string | undefined {
   switch (error.type) {
     case "invalidConnReq":
@@ -210,6 +211,7 @@ export function fileError({fileStatus, fileProhibited}: T.CIFile): string | unde
   return `Large file! The file is above the limit of ${maxSize} bytes for its sender.${badgeStatus === undefined ? "" : badgeIssues[badgeStatus]}`
 }
 
+// spec: spec/api.md#file-object
 function fileStatusError(status: T.CIFileStatus): string | undefined {
   switch (status.type) {
     case "rcvCancelled":
@@ -227,6 +229,7 @@ function fileStatusError(status: T.CIFileStatus): string | undefined {
   }
 }
 
+// spec: spec/api.md#file-object
 function fileErrorText(error: T.FileError): string {
   switch (error.type) {
     case "auth":
@@ -242,6 +245,7 @@ function fileErrorText(error: T.FileError): string {
   }
 }
 
+// spec: spec/api.md#file-object
 function srvErrorText(error: T.SrvError): string {
   switch (error.type) {
     case "host":

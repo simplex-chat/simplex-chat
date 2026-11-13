@@ -13,9 +13,13 @@ const serviceStopped = "The SimpleX service stopped; it starts again with the ne
 const unknownSession = 409
 const turnAttempts = 15
 const turnRetryMs = 1_000
+// spec: spec/api.md#plugin-commands
 const maxText = 250_000
+// spec: spec/api.md#plugin-options
 const answerReads = 20
+// spec: spec/api.md#plugin-options
 const promptReads = 600
+// spec: spec/api.md#plugin-options
 const transcriptReadMs = 100
 const transcriptTailBytes = 1_048_576
 const syntheticModel = "<synthetic>"
@@ -24,6 +28,7 @@ const statusEmoji = new Map([["completed", "✅"], ["failed", "❌"], ["stopped"
 const teammatePrompt = /^Another Claude session sent a message[^:\n]*:\n<teammate-message /
 const teammateMessage = /<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/g
 
+// spec: spec/api.md#plugin-options
 interface SessionStartInput {
   session_id: string
   session_title?: string
@@ -31,6 +36,7 @@ interface SessionStartInput {
   model?: string
 }
 
+// spec: spec/api.md#plugin-options
 interface TurnInput {
   session_id: string
   hook_event_name?: string
@@ -42,6 +48,7 @@ interface TurnInput {
   effort?: {level?: string}
 }
 
+// spec: spec/api.md#plugin-options
 interface Origin {
   kind?: unknown
   name?: unknown
@@ -51,6 +58,7 @@ interface Origin {
   handbackReportText?: unknown
 }
 
+// spec: spec/api.md#plugin-options
 interface TranscriptEntry {
   type?: unknown
   isSidechain?: unknown
@@ -310,6 +318,7 @@ function shortened(note: string): string {
   return chars.length <= maxNote ? note : `${chars.slice(0, maxNote - 1).join("")}…`
 }
 
+// spec: spec/api.md#plugin-options
 function transcriptEntry(line: string): TranscriptEntry | undefined {
   if (!line.startsWith("{")) return undefined
   try {
@@ -319,12 +328,14 @@ function transcriptEntry(line: string): TranscriptEntry | undefined {
   }
 }
 
+// spec: spec/api.md#plugin-options
 function textOf(content: unknown): string {
   if (typeof content === "string") return content.trim()
   if (!Array.isArray(content)) return ""
   return content.flatMap((part: {type?: unknown; text?: unknown} | null) => (part?.type === "text" && typeof part.text === "string" ? [part.text] : [])).join("\n").trim()
 }
 
+// spec: spec/api.md#plugin-commands
 function cut(text: string | undefined): string | undefined {
   return text === undefined || text.length <= maxText ? text : `${text.slice(0, maxText).replace(/[\ud800-\udbff]$/, "")}…`
 }

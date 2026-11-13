@@ -139,7 +139,7 @@ export class Service {
     return closed
   }
 
-  // spec: spec/architecture.md#service-service-routes
+  // spec: spec/api.md#socket-protocol
   private routes(): {[route: string]: Handler} {
     return {
       "POST /session": this.expiring(async (body, res) => sendJson(res, 200, await this.onSession(body as SessionRequest))),
@@ -207,7 +207,7 @@ export class Service {
     else reply.once("close", stopped)
   }
 
-  // spec: spec/architecture.md#service-service-onsession
+  // spec: spec/api.md#socket-protocol
   private async onSession(request: SessionRequest): Promise<SessionReply> {
     validConfig(request.config)
     this.refuseUnattended(request.pid)
@@ -225,7 +225,7 @@ export class Service {
     return {number: agent.number, displayName: agent.displayName, version: this.deps.version, protocol: protocolVersion, owner: {owners: this.hub.owner().owners}}
   }
 
-  // spec: spec/architecture.md#service-service-onsession
+  // spec: spec/api.md#socket-protocol
   private async onTitle(request: TitleRequest): Promise<TitleReply> {
     validConfig(request.config)
     const {id, pid} = request
@@ -245,7 +245,7 @@ export class Service {
     return {mainGroup: this.hub.mainGroup, owner: this.hub.owner(), version: this.deps.version, protocol: protocolVersion}
   }
 
-  // spec: spec/architecture.md#service-service-onsession
+  // spec: spec/api.md#socket-protocol
   private markUnattended(pid: number | undefined): void {
     if (pid === undefined) return
     const recent = Date.now() - processWait
@@ -254,13 +254,13 @@ export class Service {
     this.titled.emit(String(pid))
   }
 
-  // spec: spec/architecture.md#service-service-onsession
+  // spec: spec/api.md#socket-protocol
   private refuseUnattended(pid: number | undefined): void {
     const marked = pid === undefined ? undefined : this.unattended.get(pid)
     if (marked !== undefined && marked > Date.now() - processWait) throw new SocketError("The SessionStart hook of this process marked its run unattended.", unattendedStatus)
   }
 
-  // spec: spec/architecture.md#service-service-onsession
+  // spec: spec/api.md#socket-protocol
   private async applyTitle({id: given, pid, at, name, project, model, config}: TitleRequest): Promise<void> {
     const id = await this.resolve(given, pid)
     const title = name?.trim() || undefined
@@ -321,7 +321,7 @@ export class Service {
     writeSessionFile(folder, {...readSessionFile(folder)!, name})
   }
 
-  // spec: spec/architecture.md#service-service-onattach
+  // spec: spec/api.md#socket-protocol
   private async onAttach(request: AttachRequest, res: ServerResponse): Promise<void> {
     const id = this.canonical(request.id)
     const entry = this.entry(id)
@@ -344,7 +344,7 @@ export class Service {
     })
   }
 
-  // spec: spec/architecture.md#service-service-onattach
+  // spec: spec/api.md#socket-protocol
   private async onCall(request: CallRequest, res: ServerResponse): Promise<void> {
     const {tool, input} = request
     const id = this.canonical(request.id)
@@ -450,6 +450,7 @@ export class Service {
     }, idleStop)
   }
 
+  // spec: spec/api.md#socket-protocol
   private status(): StatusReply {
     const sessions = [...this.entries.values()].flatMap(({agent, attached}) => (agent === undefined ? [] : [{number: agent.number, name: agent.displayName, attached}]))
     return {version: this.deps.version, protocol: protocolVersion, mainGroup: this.hub.mainGroup, owner: {owners: this.hub.owner().owners}, sessions}

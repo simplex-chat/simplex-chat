@@ -16,9 +16,10 @@ const edgeSpace = /^[\s\u0085]+|[\s\u0085]+$/g
 const bidiControls = /[\u{202A}-\u{202E}\u{2066}-\u{2069}]/gu
 const graphemes = new Intl.Segmenter(undefined, {granularity: "grapheme"})
 const receivingStatuses: T.CIFileStatus["type"][] = ["rcvAccepted", "rcvTransfer", "rcvWarning"]
+// spec: spec/api.md#tool-download
 export const missingFile = "The received file is not in the agent's files folder."
 
-// spec: spec/architecture.md#messages-message
+// spec: spec/api.md#message-object
 export interface Message {
   chat: string
   item: number
@@ -115,6 +116,7 @@ export class ChatItemsWatch {
     }
   }
 
+  // spec: spec/api.md#message-object
   collect(chat: string, collected: Collected, accepts: (item: T.ChatItem) => boolean = () => true): () => void {
     return this.listen(chat, (item, change) => {
       if (item.chatItem.content.type !== "rcvMsgContent" || !accepts(item.chatItem)) return
@@ -193,7 +195,7 @@ export function isLive({meta}: T.ChatItem): boolean {
   return meta.itemLive === true
 }
 
-// spec: spec/architecture.md#messages-tomessage
+// spec: spec/api.md#message-object
 export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, rejectedFiles: ReadonlySet<number>, data: string): Message {
   const chat = chatRef(chatInfo) ?? ""
   const {meta, content, quotedItem} = item
@@ -215,7 +217,7 @@ export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, 
   }
 }
 
-// spec: spec/architecture.md#messages-toreplyto
+// spec: spec/api.md#quote-object
 export function toReplyTo(chatInfo: T.ChatInfo, {itemId, chatDir, content, fileName}: {itemId?: number; chatDir?: T.CIDirection; content: T.MsgContent; fileName?: string}, self: Sender): ReplyTo {
   const from = chatDir === undefined || chatDir.type === "channelRcv" ? undefined : itemSender(chatInfo, chatDir, self).name
   const type = content.type === "text" || content.type === "unknown" ? undefined : content.type
@@ -227,7 +229,7 @@ export function toReplyTo(chatInfo: T.ChatInfo, {itemId, chatDir, content, fileN
   }
 }
 
-// spec: spec/architecture.md#messages-toreplyto
+// spec: spec/api.md#quote-object
 export function replyText(text: string): string {
   const [line, ...rest] = trimmed(text).split(lineBreak)
   const chars = [...graphemes.segment(trimmed(line))].map(({segment}) => segment)
@@ -240,11 +242,12 @@ export function quoteLine({type, text}: ReplyTo): string {
   return body === "" ? ">" : `> ${body}`
 }
 
+// spec: spec/api.md#quote-object
 function trimmed(text: string): string {
   return text.replace(bidiControls, "").replace(edgeSpace, "")
 }
 
-// spec: spec/architecture.md#messages-tomessage
+// spec: spec/api.md#file-object
 function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, rejectedFiles: ReadonlySet<number>, data: string): MessageFile {
   const {name, size, type} = fileOffer(msgContent, ciFile)
   const file = {name, size, type}
@@ -257,7 +260,7 @@ function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, r
   return {...file, status: "offered"}
 }
 
-// spec: spec/architecture.md#messages-tomessage
+// spec: spec/api.md#file-object
 export function receivedFileError(data: string, chat: string, file: T.CIFile): string | undefined {
   return fileError(file) ?? (file.fileStatus.type === "rcvComplete" && receivedPath(data, chat, file) === undefined ? missingFile : undefined)
 }

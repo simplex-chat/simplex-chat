@@ -189,6 +189,7 @@ export class Actions {
     return this.all().filter(({state}) => state === "pending")
   }
 
+  // spec: spec/api.md#common-rules
   find(key: string): Action | undefined {
     return this.all().find(action => action.key === key)
   }
@@ -284,12 +285,14 @@ export class Actions {
     }
   }
 
+  // spec: spec/api.md#cards
   approve(action: Action, approver: string): void {
     action.decidedBy = approver
     this.decide(action, "performing")
     this.runPerform(action).catch(error => logError(`action ${action.n}`, error))
   }
 
+  // spec: spec/api.md#terminal-lines
   reject(action: Action, approver: string): void {
     action.decidedBy = approver
     this.decide(action, "rejected")
@@ -343,6 +346,7 @@ export class Actions {
     if (isDecided(action.state) && action.open === 0 && action.expires <= Date.now()) this.remove(action)
   }
 
+  // spec: spec/api.md#terminal-lines
   private async post(action: Action): Promise<boolean> {
     try {
       await this.hooks.saveCounter(this.next)
@@ -363,6 +367,7 @@ export class Actions {
     else await this.runPerform(action)
   }
 
+  // spec: spec/api.md#cards
   private async runPerform(action: Action): Promise<void> {
     try {
       await this.hooks.perform(action, this.abortPerforms.signal)
@@ -402,6 +407,7 @@ export function isDecided(state: State): boolean {
   return state === "done" || state === "failed" || state === "rejected" || state === "expired"
 }
 
+// spec: spec/api.md#cards
 export function subjectText({kind, name, simplexName}: Subject, showName: (name: string) => string): string {
   const named = name === undefined ? `an unnamed ${kind}` : `${kind} ${showName(name)}`
   return simplexName === undefined ? named : `${named} (${simplexName})`

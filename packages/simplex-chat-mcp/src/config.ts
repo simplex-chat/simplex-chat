@@ -23,6 +23,7 @@ export const configVariables: {[key in Key]: string} = {
 const optionNames: {[key in Key]: string} = {mainGroup: "main_group", approve: "approve", expireHours: "expire_hours"}
 const configurePath = "/plugin > Installed > simplex > Configure options"
 const machineVariable = "SIMPLEX_MCP_MACHINE"
+// spec: spec/api.md#plugin-tools
 const unattendedEntrypoints = ["sdk-cli", "sdk-ts", "sdk-py"]
 
 export class ConfigError extends Error {}
@@ -46,6 +47,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return {mainGroup: withMachine(mainGroup(value("mainGroup")), env[machineVariable]?.trim() || undefined), approve: approve(value("approve")), expireHours: expireHours(value("expireHours"))}
 }
 
+// spec: spec/api.md#plugin-options
 function mainGroup(value: string | undefined): string {
   if (value === undefined) return defaultConfig.mainGroup
   const valid = validName(value)
@@ -67,12 +69,14 @@ function nameExpected(valid: string): string {
   return valid === "" ? "a valid SimpleX name" : `a valid SimpleX name, such as ${valid}`
 }
 
+// spec: spec/api.md#plugin-options
 function approve(value: string | undefined): Mode {
   if (value === undefined) return defaultConfig.approve
   if (value !== "requests" && value !== "host") throw configError("approve", value, "requests or host")
   return value
 }
 
+// spec: spec/api.md#plugin-options
 function expireHours(value: string | undefined): number {
   if (value === undefined) return defaultConfig.expireHours
   const hours = Number(value)

@@ -47,6 +47,8 @@
 
 ### 1.1 Common rules
 
+<a id="common-rules"></a>
+
 | Rule | Code |
 |---|---|
 | Tools are registered on each per-request `McpServer` with description, input schema, output schema and, in mode `host`, `_meta: {"anthropic/requiresUserInteraction": true}` for `connect`, `send`, `download` and `leave` | [`definitions`, `registerTools`, `AgentTools.register`](../src/tools.ts) |
@@ -341,7 +343,7 @@ Tool errors: `No chat CHAT. list shows the agent's chats.` when no action with t
 | `reply_to` | object | a quoted item | below |
 | `mentions_me` | boolean | always | `meta.userMention` |
 
-Quote, `reply_to` ([`toReplyTo`, `replyText`, `trimmed`](../src/messages.ts)):
+<a id="quote-object"></a>Quote, `reply_to` ([`toReplyTo`, `replyText`, `trimmed`](../src/messages.ts)):
 
 | Field | Presence | Value |
 |---|---|---|
@@ -353,7 +355,7 @@ Quote, `reply_to` ([`toReplyTo`, `replyText`, `trimmed`](../src/messages.ts)):
 
 `connect`, `send` and `receive` name the agent by the chat of the returned items: its profile name, or its incognito name in an incognito chat, as `known_as` ([`AgentTools.selfSender`, `toMessages`](../src/tools.ts)). When the incognito name of a contact can't be read, the profile name is used and the error is logged, so the result keeps the messages that the call marked read.
 
-File ([`messageFile`, `receivedFileError`](../src/messages.ts)):
+<a id="file-object"></a>File ([`messageFile`, `receivedFileError`](../src/messages.ts)):
 
 | Field | Value |
 |---|---|
@@ -399,7 +401,7 @@ The link texts of a `connect` card are its description and welcome lines. These 
 
 ### 2.1 Commands and replies
 
-Accepted text ([`parseCommand`, `ownerRequest`](../src/control.ts)):
+<a id="control-commands"></a>Accepted text ([`parseCommand`, `ownerRequest`](../src/control.ts)):
 
 ```
 message   one line, an optional trailing newline
@@ -462,7 +464,7 @@ A standing approval is stored in the chat's custom data, `simplexMcp` for messag
 
 ### 2.2 Cards
 
-Card text: request lines, then one last line ([`cardText`, `requestLines`](../src/control.ts)).
+<a id="cards"></a>Card text: request lines, then one last line ([`cardText`, `requestLines`](../src/control.ts)).
 
 Request lines:
 
@@ -516,6 +518,8 @@ An action performed without a card, in mode `host` or under a standing approval,
 
 ### 2.3 Other posts
 
+<a id="other-posts"></a>
+
 | Situation | Text | Code |
 |---|---|---|
 | `send` with a refused file; logged too | ``Refused to send `PATH` to KIND NAME (CHAT): private keys and the server's own files are not sent.`` | [`Control.refusedFile`](../src/control.ts) |
@@ -526,7 +530,7 @@ An action performed without a card, in mode `host` or under a standing approval,
 
 ### 2.4 Membership messages
 
-Posted in the chat and logged; in the chat, names are shown by `safeName` and the `--owners ...` part is a code span; in the log, names are folded to one line ([`Control.announce`, `inLog`, `inChat`](../src/control.ts)).
+<a id="membership-messages"></a>Posted in the chat and logged; in the chat, names are shown by `safeName` and the `--owners ...` part is a code span; in the log, names are folded to one line ([`Control.announce`, `inLog`, `inChat`](../src/control.ts)).
 
 | Situation | Text | Code |
 |---|---|---|
@@ -539,6 +543,8 @@ Posted in the chat and logged; in the chat, names are shown by `safeName` and th
 ENTRIES: `ID:NAME` of each human, or of each human owner, joined by commas; an entry with characters other than letters, digits, `_` and `-` is quoted for the shell ([`entryText`, `ownersText`, `restartText`](../src/control.ts)).
 
 ### 2.5 Group profile
+
+<a id="group-profile"></a>
 
 | Field | Value | Code |
 |---|---|---|
@@ -565,6 +571,8 @@ The plugin's commands are in [4.7](#47-plugin-commands).
 NAME: 1 to 32 characters of `[a-z0-9]` and single hyphens, starting with a letter or digit ([`validAgentName`](../src/cli.ts)).
 
 ### 3.1 `serve`
+
+<a id="serve-options"></a>
 
 | Option | Value | Default | Rule | Code |
 |---|---|---|---|---|
@@ -599,6 +607,8 @@ Server name: `simplex-NAME` ([`register`](../src/register.ts)).
 
 ### 3.3 Exit codes and messages
 
+<a id="exit-codes"></a>
+
 | Code | Message | Code location |
 |---|---|---|
 | 0 | `--help` text on stdout; a stop after a signal | [`main`](../src/cli.ts), [`serve`](../src/serve.ts) |
@@ -626,6 +636,8 @@ Server name: `simplex-NAME` ([`register`](../src/register.ts)).
 LOCATION is `"mcpServers"` for scope `user`, and `"projects" > "PROJECT" > "mcpServers"` for scope `local` ([`manualEntryText`](../src/register.ts)).
 
 ### 3.4 Terminal lines
+
+<a id="terminal-lines"></a>
 
 stdout ([`log`](../src/log.ts)):
 
@@ -660,6 +672,8 @@ stderr: `CONTEXT: ERROR` from [`logError`](../src/log.ts), with CONTEXT one of `
 ## 4. Claude Code plugin
 
 ### 4.1 Tools in the plugin
+
+<a id="plugin-tools"></a>
 
 | Rule | Code |
 |---|---|
@@ -698,7 +712,7 @@ Sources: [`AgentTools.reply`, `sendFile`, `refusedFeature`, `featureOff`, `Agent
 
 ### 4.2 Main group
 
-Commands from any member, one line `/KEYWORD PARAMS` as in [2.1](#21-commands-and-replies) ([`MainGroup.command`](../src/main-group.ts)):
+<a id="main-group"></a>Commands from any member, one line `/KEYWORD PARAMS` as in [2.1](#21-commands-and-replies) ([`MainGroup.command`](../src/main-group.ts)):
 
 | Request | Condition | Reply | Code |
 |---|---|---|---|
@@ -718,7 +732,7 @@ Posts:
 
 The session groups stay as they are when the membership or a role in the Main group is changed, and when the Main group is replaced by a reset of the owners. Members invited through the old Main group keep their roles in the session groups, with the rights of those roles ([`MainGroup.handleEvent`, `replace`](../src/main-group.ts), [`Session.approves`](../src/hub.ts)).
 
-Group profile ([`createMainGroup`, `MainGroup.load`](../src/main-group.ts)):
+<a id="main-group-profile"></a>Group profile ([`createMainGroup`, `MainGroup.load`](../src/main-group.ts)):
 
 | Field | Value |
 |---|---|
@@ -735,6 +749,8 @@ Claude updates only the display name and the command menu, starting each time fr
 The hub's profile `Claude` posts in the group, with peer type `agent` ([`profileName`](../src/hub.ts), [`openCore`](../src/core.ts)).
 
 ### 4.3 Session groups
+
+<a id="session-groups"></a>
 
 Commands and replies are those of [2.1](#21-commands-and-replies), from approvers as defined in [architecture 8.5](architecture.md#85-approval-model), with these changes:
 
@@ -827,7 +843,7 @@ on /turn {at, answer}, also an empty answer:
 at = performance.timeOrigin of the hook process; absent: Infinity for an answer's quote, now otherwise
 ```
 
-Group profile ([`Hub.createSessionGroup`](../src/hub.ts), [`Control.load`, `describe`, `updateProfile`](../src/control.ts)):
+<a id="session-group-profile"></a>Group profile ([`Hub.createSessionGroup`](../src/hub.ts), [`Control.load`, `describe`, `updateProfile`](../src/control.ts)):
 
 | Field | Value |
 |---|---|
@@ -844,6 +860,8 @@ Claude makes the profile updates one at a time. It starts each from the group's 
 The hub takes the model and the effort level of a `/turn` only when its `at` is not older than the `at` of the value it took last. It keeps the two times apart, one for the model and one for the effort level. The model of a `/title` comes with the `at` of its SessionStart hook, as described in [4.6](#46-socket-protocol). A request without `at` counts as the current time. So when a Stop request that waited for its transcript entry arrives after a later model switch, the model of the switch stays ([`Session.turn`, `newer`](../src/hub.ts)).
 
 ### 4.4 Tool results in the plugin
+
+<a id="plugin-results"></a>
 
 Refusals of a new action, first match, in place of those of [1.9](#19-action-refusals):
 
@@ -871,7 +889,7 @@ The session server attaches again when its `/attach` ends or its start fails, a 
 
 ### 4.5 Channel
 
-Capabilities of the session server: `experimental: {"claude/channel": {}, "claude/channel/permission": {}}` ([`startSession`](../src/session.ts)).
+<a id="channel"></a>Capabilities of the session server: `experimental: {"claude/channel": {}, "claude/channel/permission": {}}` ([`startSession`](../src/session.ts)).
 
 | Direction | Method | Params | Code |
 |---|---|---|---|
@@ -902,7 +920,7 @@ The prompts of a session, from the members of [4.3](#43-session-groups), are del
 
 ### 4.6 Socket protocol
 
-The service speaks HTTP/1.1 over `ROOT/service.sock`, the fallback path or the Windows pipe, with protocol version `1`. Every request is sent with the header `Authorization: Bearer TOKEN`, and bodies are JSON. Streamed replies are NDJSON, with the content type `application/x-ndjson`. Errors are `{"error": TEXT}` with a status other than 200. Types: [`protocol.ts`](../src/protocol.ts). Routes: [`Service.routes`](../src/service.ts). Only `/title`, `/link` and `/reset-owners` return a Main group link. `/reset-owners` returns the link of the new group.
+<a id="socket-protocol"></a>The service speaks HTTP/1.1 over `ROOT/service.sock`, the fallback path or the Windows pipe, with protocol version `1`. Every request is sent with the header `Authorization: Bearer TOKEN`, and bodies are JSON. Streamed replies are NDJSON, with the content type `application/x-ndjson`. Errors are `{"error": TEXT}` with a status other than 200. Types: [`protocol.ts`](../src/protocol.ts). Routes: [`Service.routes`](../src/service.ts). Only `/title`, `/link` and `/reset-owners` return a Main group link. `/reset-owners` returns the link of the new group.
 
 | Route | Request | Reply | Code |
 |---|---|---|---|
@@ -969,6 +987,8 @@ on the next start:                               each one taken as a new /title
 
 ### 4.7 Plugin commands
 
+<a id="plugin-commands"></a>
+
 | Command | Run by | Output |
 |---|---|---|
 | `simplex-mcp session` | `.mcp.json` | MCP over stdio |
@@ -1021,7 +1041,7 @@ stderr: `CONTEXT: ERROR` from `logError`, with CONTEXT among `Main group command
 
 ### 4.8 Plugin options, files and hook output
 
-`userConfig` of [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json), read by [`readConfig`](../src/config.ts):
+<a id="plugin-options"></a>`userConfig` of [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json), read by [`readConfig`](../src/config.ts):
 
 | Key | Variable | Type | Default | Valid | Error |
 |---|---|---|---|---|---|

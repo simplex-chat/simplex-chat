@@ -160,6 +160,7 @@ class OptionReader {
     return this.args[this.index++]
   }
 
+  // spec: spec/api.md#exit-codes
   value(option: string): string {
     const value = this.optionalValue()
     if (value === undefined) throw usageError(`${option}: a value expected.`)
@@ -178,33 +179,39 @@ export function validAgentName(name: string): boolean {
   return name.length <= 32 && /^[a-z0-9](-?[a-z0-9])*-?$/.test(name)
 }
 
+// spec: spec/api.md#serve-options
 function displayName(value: string): string {
   const valid = validName(value)
   if (valid !== value) throw usageError(`--display-name: not a valid SimpleX name; try ${valid}`)
   return value
 }
 
+// spec: spec/api.md#exit-codes
 function approveMode(value: string): Mode {
   if (value !== "requests" && value !== "host") throw usageError(`--approve: requests or host expected, got ${value}`)
   return value
 }
 
+// spec: spec/api.md#exit-codes
 function qrCodeSize(value: string): QrCodeSize {
   if (value !== "small" && value !== "large") throw usageError(`--qr-code: small or large expected, got ${value}`)
   return value
 }
 
+// spec: spec/api.md#exit-codes
 function scope(value: string): Scope {
   if (value !== "user" && value !== "local") throw usageError(`--scope: user or local expected, got ${value}`)
   return value
 }
 
+// spec: spec/api.md#serve-options
 function ownerEntry(entry: string): OwnerEntry {
   const match = /^([1-9]\d*):(.+)$/.exec(entry)
   if (!match) throw usageError(`--owners: ID:NAME expected, got ${entry}`)
   return {memberId: Number(match[1]), name: match[2]}
 }
 
+// spec: spec/api.md#exit-codes
 function integer(option: string, value: string, min: number, max: number, expected: string): number {
   const n = Number(value)
   if (!/^\d+$/.test(value) || n < min || n > max) throw usageError(`${option}: ${expected} expected, got ${value}`)
@@ -215,6 +222,7 @@ function dataFolder(name: string, home: string): string {
   return join(home, ".simplex-mcp", name)
 }
 
+// spec: spec/api.md#exit-codes
 function unknownOption(option: string): ExitError {
   return usageError(`Unknown option ${option}. Run simplex-mcp --help.`)
 }

@@ -147,7 +147,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-chatfields"></a>`ChatFields` | chat fields of `connect` and `list` results |
 | <a id="tools-agent"></a>`Agent` | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder. The plugin adds the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection. |
 | <a id="tools-joinmethod"></a>`JoinMethod` | `prepared`, `prepareChannel`, `viaAddress`, `prepareContact`, `connect` |
-| schemas, from `messageSchema` to `downloadOutput` | input and output JSON schemas |
+| <a id="tools-schemas"></a>schemas, from `messageSchema` to `downloadOutput` | input and output JSON schemas |
 | <a id="tools-instructions"></a>descriptions, from `connectDescription` to `leaveDescription`, and `instructions` | tool descriptions and server instructions. `instructions` names the host at whose restart actions are cancelled, `server` by default. |
 | <a id="tools-replytool"></a>`replyTool` | the plugin's seventh tool, `reply` |
 | <a id="tools-definitions"></a>`definitions` | name, description, schemas and action flag of the six tools |
@@ -847,7 +847,7 @@ Data flow of a prompt from the session group:
 
 | Symbol | Contents |
 |---|---|
-| constants, from `profileName` to `commandsApproversOnly` | profile name `Claude`, session data key, first action number, 10 s stop wait, 60 s echo of a raw prompt, 20 pushed prompts, 10 minutes for a prompt's file, 1 day for a pending connection, 30 s of held prompts after the hub opens, the channel tags of this plugin, the one reply to the `/` commands of a member who is not an admin or owner |
+| <a id="hub-constants"></a>constants, from `profileName` to `commandsApproversOnly` | profile name `Claude`, session data key, first action number, 10 s stop wait, 60 s echo of a raw prompt, 20 pushed prompts, 10 minutes for a prompt's file, 1 day for a pending connection, 30 s of held prompts after the hub opens, the channel tags of this plugin, the one reply to the `/` commands of a member who is not an admin or owner |
 | <a id="hub-hubtexts"></a>`hubTexts` | refusal texts of a lost session group, of a stop and of the limit of pending actions, which names the approvers |
 | <a id="hub-sessiongroupdata"></a>`SessionGroupData` | session number; pending connections of `connect` with their time; the approved mode |
 | <a id="hub-session"></a>`Session` | one Claude Code session, built from its `session.json` and its group's data. `Actions` get the hub's texts and the mode of the group's data, or `requests` without one. `AgentTools` get the session's ID and folder and the group for `reply`. `Control` of the session group gets the session's approver checks. The stored model and effort are kept as well. |
