@@ -403,13 +403,12 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
   | not supportAllowed = Just GFSupport
   | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) && not hostApprovalVoice = Just GFVoice
   | isNothing scopeInfo && not (isVoice mc) && (isJust file_ || isMedia mc) && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
-  | isNothing scopeInfo && isReport mc && (badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
+  | isReport mc && (isNothing scopeInfo && badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
   | isNothing scopeInfo && prohibitedSimplexLinks gInfo m mc ft = Just GFSimplexLinks
   | otherwise = Nothing
   where
     supportAllowed = case scopeInfo of
-      Just (GCSIMemberSupport scopeMem_) ->
-        groupFeatureAllowed SGFSupport gInfo || isJust (supportChat $ fromMaybe mem scopeMem_)
+      Just (GCSIMemberSupport scopeMem_) -> supportChatAllowed gInfo $ fromMaybe mem scopeMem_
       Nothing -> True
     hostApprovalVoice
       | sent = userRole >= GRAdmin && sendApprovalPhase
@@ -425,14 +424,25 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
       | sent = userRole >= GRModerator
       | otherwise = userRole < GRModerator
 
+supportChatAllowed :: GroupInfo -> GroupMember -> Bool
+supportChatAllowed gInfo GroupMember {supportChat} = groupFeatureAllowed SGFSupport gInfo || isJust supportChat
+
+redactedGroupContent :: GroupInfo -> GroupMember -> Maybe GroupChatScopeInfo -> MsgContent -> MsgContent
+redactedGroupContent gInfo m scopeInfo = \case
+  MCLink {text} | isNothing scopeInfo && not (groupFeatureMemberAllowed SGFFiles m gInfo) -> MCText text
+  mc -> mc
+
 prohibitedSimplexLinks :: GroupInfo -> GroupMember -> MsgContent -> Maybe MarkdownList -> Bool
 prohibitedSimplexLinks gInfo m mc ft =
   not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo)
-    && (isChatLink mc || maybe False (any ftIsSimplexLink) ft || hasObfuscatedSimplexLink (msgContentText mc))
+    && (isChatLink mc || maybe False (any ftIsSimplexLink) ft || any hasObfuscatedSimplexLink (msgContentText mc : previewUri))
   where
     isChatLink = \case
       MCChat {} -> True
       _ -> False
+    previewUri = case mc of
+      MCLink {preview = LinkPreview {uri}} -> [uri]
+      _ -> []
 
 ftIsSimplexLink :: FormattedText -> Bool
 ftIsSimplexLink FormattedText {format} = maybe False isSimplexLink format
@@ -1997,21 +2007,25 @@ mkGetMessageChatScope cxt user gInfo@GroupInfo {membership} m mc msgScope_ =
   mkGroupChatScope gInfo m >>= \case
     groupScope@(_gInfo', _m', Just _scopeInfo) -> pure groupScope
     (_, _, Nothing)
-      | isReport mc -> do
-          -- TODO [knocking] return patched _m'?
-          (_m', scopeInfo) <- mkMemberSupportChatInfo m -- only support scope member can send a report (m is sender)
-          pure (gInfo, m, Just scopeInfo)
+      | isReport mc -> memberSupportScope m -- only support scope member can send a report (m is sender)
       | otherwise -> case msgScope_ of
           Nothing -> pure (gInfo, m, Nothing)
           Just (MSMember mId)
+            | sameMemberId mId membership && not (supportChatAllowed gInfo membership) ->
+                pure (gInfo, m, Just $ GCSIMemberSupport Nothing)
             | sameMemberId mId membership -> do
                 (gInfo', scopeInfo) <- mkGroupSupportChatInfo gInfo
                 pure (gInfo', m, Just scopeInfo)
             | otherwise -> do
                 referredMember <- withStore $ \db -> getGroupMemberByMemberId db cxt user gInfo mId
-                -- TODO [knocking] return patched _referredMember'?
-                (_referredMember', scopeInfo) <- mkMemberSupportChatInfo referredMember
-                pure (gInfo, m, Just scopeInfo)
+                memberSupportScope referredMember
+  where
+    memberSupportScope scopeMember
+      | supportChatAllowed gInfo scopeMember = do
+          -- TODO [knocking] return patched _scopeMember'?
+          (_scopeMember', scopeInfo) <- mkMemberSupportChatInfo scopeMember
+          pure (gInfo, m, Just scopeInfo)
+      | otherwise = pure (gInfo, m, Just $ GCSIMemberSupport $ Just scopeMember)
 
 mkGroupSupportChatInfo :: GroupInfo -> CM (GroupInfo, GroupChatScopeInfo)
 mkGroupSupportChatInfo gInfo@GroupInfo {membership} =

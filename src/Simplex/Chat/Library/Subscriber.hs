@@ -2224,9 +2224,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             messageError "x.msg.new: member is not allowed to send as group" $> Nothing
         | otherwise -> do
             (gInfo', m', scopeInfo) <- mkGetMessageChatScope cxt user gInfo m content msgScope_
-            if blockedByAdmin m'
-              then createBlockedByAdmin gInfo' (Just m') scopeInfo $> Nothing
-              else case prohibitedGroupContent gInfo' m' scopeInfo content ft_ fInv_ False of
+            let prohibited_ = prohibitedGroupContent gInfo' m' scopeInfo content ft_ fInv_ False
+            if
+              | Just GFSupport <- prohibited_ -> messageError ("x.msg.new: feature not allowed " <> groupFeatureNameText GFSupport) $> Nothing
+              | blockedByAdmin m' -> createBlockedByAdmin gInfo' (Just m') scopeInfo $> Nothing
+              | otherwise -> case prohibited_ of
                 Just f -> rejected gInfo' (Just m') scopeInfo f $> Nothing
                 Nothing ->
                   withStore' (\db -> getCIModeration db cxt user gInfo' memberId sharedMsgId_) >>= \case
@@ -2284,11 +2286,12 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         -- m' is Maybe GroupMember
         createNonLive gInfo' m' scopeInfo file_ = do
           let mentions' = if maybe False memberBlocked m' then M.empty else mentions
-          saveRcvCI gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) (timed_ gInfo') False mentions'
+          saveRcvCI gInfo' m' scopeInfo (rcvContent gInfo' m' scopeInfo, ts) (snd <$> file_) (timed_ gInfo') False mentions'
         createContentItem gInfo' m' scopeInfo = do
           file_ <- processFileInv gInfo' m'
-          newChatItem gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) (timed_ gInfo') live'
+          newChatItem gInfo' m' scopeInfo (rcvContent gInfo' m' scopeInfo, ts) (snd <$> file_) (timed_ gInfo') live'
           unless (maybe False memberBlocked m') $ autoAcceptFile file_
+        rcvContent gInfo' m' scopeInfo = CIRcvMsgContent $ maybe content (\m -> redactedGroupContent gInfo' m scopeInfo content) m'
         processFileInv gInfo' m' =
           let fileMember_ = if sentAsGroup then Nothing else m'
            in processFileInvitation fInv_ content (rcvGroupFileProhibited gInfo' m' sentAsGroup) $ \db -> createRcvGroupFileTransfer db userId gInfo' fileMember_ FTNormal sharedMsgId_
@@ -2324,16 +2327,17 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                         pure (gInfo', CDGroupRcv gInfo' scopeInfo m', mentions', scopeInfo)
                       Nothing -> pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
                 case m_ >>= \m -> prohibitedGroupContent gInfo' m scopeInfo mc ft_ (Nothing :: Maybe String) False of
+                  Just GFSupport -> messageError ("x.msg.update: feature not allowed " <> groupFeatureNameText GFSupport) $> Nothing
                   Just f -> do
                     let ciContent = ciContentNoParse $ CIRcvGroupFeatureRejected f
                     (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs ciContent Nothing timed_ False M.empty
                     groupMsgToView cInfo ci
                     pure Nothing
                   Nothing -> do
-                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
+                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (rcvContent scopeInfo, ts) Nothing timed_ live mentions'
                     ci' <- withStore' $ \db -> do
                       createChatItemVersion db (chatItemId' ci) brokerTs mc
-                      updateGroupChatItem db user groupId ci content True live Nothing
+                      updateGroupChatItem db user groupId ci (rcvContent scopeInfo) True live Nothing
                     ci'' <- case chatDir of
                       CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
                       CDChannelRcv {} -> pure ci'
@@ -2343,6 +2347,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         content = CIRcvMsgContent mc
         ts@(_, ParsedMarkdown ft_ _) = msgContentTexts mc
         live = fromMaybe False live_
+        rcvContent scopeInfo = maybe content (\m -> CIRcvMsgContent $ redactedGroupContent gInfo m scopeInfo mc) m_
         updateRcvChatItem = do
           (cci, scopeInfo) <- withStore $ \db -> do
             cci <-
@@ -2352,7 +2357,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   Just m -> getGroupMemberCIBySharedMsgId db user gInfo (memberId' m) sharedMsgId
                   Nothing -> getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId
             (cci,) <$> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
-          case cci of
+          memberCanSend m_ (toMsgScope gInfo <$> scopeInfo) $ case cci of
+            CChatItem SMDRcv ChatItem {content = CIRcvMsgContent oldMC}
+              | Just f <- prohibitedUpdate scopeInfo oldMC ->
+                  messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText f) $> Nothing
             CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive, msgVerified = itemVerified}, content = CIRcvMsgContent oldMC}
               | isSender m' -> requireVerifiedEdit (CDGroupRcv gInfo scopeInfo m') itemVerified $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
               | otherwise -> messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing
@@ -2362,6 +2370,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             _ -> messageError "x.msg.update: invalid message update" $> Nothing
           where
             isSender m' = maybe False (\m -> sameMemberId (memberId' m) m') m_
+            prohibitedUpdate scopeInfo oldMC
+              | (oldMC :: MsgContent) {text = ""} == (mc :: MsgContent) {text = ""} = Nothing
+              | otherwise = m_ >>= \m -> prohibitedGroupContent gInfo m scopeInfo mc ft_ (Nothing :: Maybe String) False
             -- a verified item requires a verified edit (fail-closed): unsigned is a forgery (bad-signature item); signed-but-no-key is unverifiable (drop with a log)
             requireVerifiedEdit :: ChatDirection 'CTGroup 'MDRcv -> Maybe MsgVerified -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
             requireVerifiedEdit cd itemVerified action
@@ -2381,11 +2392,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
                 reactions <- getGroupCIReactions db gInfo memberId sharedMsgId
                 let edited = itemLive /= Just True
-                ciMentions <- getRcvCIMentions db user gInfo ft_ mentions
-                ci' <- updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
+                    mentions' = if maybe False memberBlocked m_ then M.empty else mentions
+                ciMentions <- getRcvCIMentions db user gInfo ft_ mentions'
+                ci' <- updateGroupChatItem db user groupId ci {reactions} (rcvContent scopeInfo) edited live $ Just msgId
                 updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
                 updateGroupCIMentions db gInfo ci' ciMentions
-              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci')
+              ci'' <- maybe (pure ci') (\m -> blockedMemberCI gInfo m ci') m_
+              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci'')
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
               pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
             else do
