@@ -16,7 +16,6 @@ What comes next for Claude Code in SimpleX Chat.
 ## In your sessions
 
 - See what Claude is doing while it works, with its code changes as diffs.
-- React to a message, and Claude sees your reaction.
 - The model, effort and usage of each session show in its description, updated as they change.
 - See when a session's context is summarised.
 - Allow a tool for the rest of a session with one tap.

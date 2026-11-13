@@ -23,6 +23,7 @@ const lockCheckWait = 100
 const firstFreeFd = 3
 const unnamedSession = "Claude Code"
 
+// spec: spec/architecture.md#service-hublike
 export interface HubLike {
   readonly mainGroup: string
   owner(): OwnerState
@@ -33,6 +34,7 @@ export interface HubLike {
   stop(): Promise<Action[]>
 }
 
+// spec: spec/architecture.md#service-hublike
 export interface SessionLike {
   readonly number: number
   readonly displayName: string
@@ -49,6 +51,7 @@ export interface SessionLike {
   endSteps(): Promise<void>
 }
 
+// spec: spec/architecture.md#service-hublike
 export interface ServiceDeps {
   root: string
   token: string
@@ -57,6 +60,7 @@ export interface ServiceDeps {
   onStopped(code: number): void
 }
 
+// spec: spec/architecture.md#service-entry
 interface Entry {
   opening: Promise<SessionLike>
   agent?: SessionLike
@@ -92,6 +96,7 @@ export class Service {
     for (const {id, session} of this.stored) for (const alias of session.aliases ?? []) this.aliases.set(alias, id)
   }
 
+  // spec: spec/architecture.md#service-service-start
   static async start(deps: ServiceDeps, config: () => Config): Promise<Service> {
     acquireLock(deps.root, "service", serviceLock)
     try {
@@ -136,6 +141,7 @@ export class Service {
     return closed
   }
 
+  // spec: spec/api.md#socket-protocol
   private routes(): {[route: string]: Handler} {
     return {
       "POST /session": this.expiring(async (body, res) => sendJson(res, 200, await this.onSession(body as SessionRequest))),
@@ -162,6 +168,7 @@ export class Service {
     }
   }
 
+  // spec: spec/architecture.md#service-service-routes
   private withHub(handler: Handler): Handler {
     return async (body, res, req) => {
       await this.hubReady
@@ -169,6 +176,7 @@ export class Service {
     }
   }
 
+  // spec: spec/architecture.md#service-service-routes
   private expiring(handler: Handler): Handler {
     return this.withHub((body, res, req) => {
       this.hub.expireDue()
@@ -176,6 +184,7 @@ export class Service {
     })
   }
 
+  // spec: spec/architecture.md#service-service-shutdown
   private async shutdown(reply: ServerResponse | undefined): Promise<void> {
     clearTimeout(this.stopTimer)
     clearInterval(this.logTimer)
@@ -200,6 +209,7 @@ export class Service {
     else reply.once("close", stopped)
   }
 
+  // spec: spec/api.md#socket-protocol
   private async onSession(request: SessionRequest): Promise<SessionReply> {
     validConfig(request.config)
     this.refuseUnattended(request.pid)
@@ -218,6 +228,7 @@ export class Service {
     return {number: agent.number, displayName: agent.displayName, version: this.deps.version, protocol: protocolVersion, owner: {owners: this.hub.owner().owners}}
   }
 
+  // spec: spec/api.md#socket-protocol
   private async onTitle(request: TitleRequest): Promise<TitleReply> {
     validConfig(request.config)
     const {id, pid} = request
@@ -237,6 +248,7 @@ export class Service {
     return {mainGroup: this.hub.mainGroup, owner: this.hub.owner(), version: this.deps.version, protocol: protocolVersion}
   }
 
+  // spec: spec/api.md#socket-protocol
   private markUnattended(pid: number | undefined): void {
     if (pid === undefined) return
     const recent = Date.now() - processWait
@@ -245,11 +257,13 @@ export class Service {
     this.titled.emit(String(pid))
   }
 
+  // spec: spec/api.md#socket-protocol
   private refuseUnattended(pid: number | undefined): void {
     const marked = pid === undefined ? undefined : this.unattended.get(pid)
     if (marked !== undefined && marked > Date.now() - processWait) throw new SocketError("The SessionStart hook of this process marked its run unattended.", unattendedStatus)
   }
 
+  // spec: spec/api.md#socket-protocol
   private async applyTitle({id: given, pid, at, name, project, model, config}: TitleRequest): Promise<void> {
     const id = await this.resolve(given, pid)
     const title = name?.trim() || undefined
@@ -264,10 +278,12 @@ export class Service {
     if (model !== undefined) await agent.turn({id, at, model})
   }
 
+  // spec: spec/architecture.md#service-service-canonical
   private canonical(id: string): string {
     return this.aliases.get(id) ?? id
   }
 
+  // spec: spec/architecture.md#service-service-canonical
   private async resolve(id: string, pid: number | undefined, fromServer = false): Promise<string> {
     const alias = this.aliases.get(id)
     if (alias !== undefined) return alias
@@ -279,10 +295,12 @@ export class Service {
     return target
   }
 
+  // spec: spec/architecture.md#service-service-canonical
   private attachedSession(pid: number): string | undefined {
     return [...this.entries].find(([, entry]) => entry.pid === pid && entry.attached > 0)?.[0]
   }
 
+  // spec: spec/architecture.md#service-service-canonical
   private processSession(pid: number): string | undefined {
     const recent = Date.now() - processWait
     const detached = [...this.entries].find(([, entry]) => entry.pid === pid && (entry.seen ?? 0) > recent)?.[0]
@@ -290,6 +308,7 @@ export class Service {
     return this.attachedSession(pid) ?? detached ?? (title !== undefined && title.at > recent ? title.id : undefined)
   }
 
+  // spec: spec/architecture.md#service-service-canonical
   private alias(id: string, target: string): void {
     this.aliases.set(id, target)
     const folder = this.folder(target)
@@ -297,6 +316,7 @@ export class Service {
     if (stored !== undefined && !stored.aliases?.includes(id)) writeSessionFile(folder, {...stored, aliases: [...(stored.aliases ?? []), id]})
   }
 
+  // spec: spec/architecture.md#service-service-rename
   private async rename(folder: string, agent: SessionLike, name: string): Promise<void> {
     const stored = readSessionFile(folder)!
     if (name === stored.name) return
@@ -304,6 +324,7 @@ export class Service {
     writeSessionFile(folder, {...readSessionFile(folder)!, name})
   }
 
+  // spec: spec/api.md#socket-protocol
   private async onAttach(request: AttachRequest, res: ServerResponse): Promise<void> {
     const id = this.canonical(request.id)
     const entry = this.entry(id)
@@ -327,6 +348,7 @@ export class Service {
     })
   }
 
+  // spec: spec/api.md#socket-protocol
   private async onCall(request: CallRequest, res: ServerResponse): Promise<void> {
     const {tool, input} = request
     const id = this.canonical(request.id)
@@ -348,6 +370,7 @@ export class Service {
     }
   }
 
+  // spec: spec/architecture.md#service-service-onattach
   private hold(res: ServerResponse): boolean {
     if (this.stopping !== undefined || res.destroyed) {
       res.destroy()
@@ -358,6 +381,7 @@ export class Service {
     return true
   }
 
+  // spec: spec/architecture.md#service-service-entry
   private entry(id: string, request?: SessionRequest): Entry {
     this.refuseWhenStopping()
     const folder = this.folder(id)
@@ -381,10 +405,12 @@ export class Service {
     return entry
   }
 
+  // spec: spec/architecture.md#service-service-entry
   private refuseWhenStopping(): void {
     if (this.stopping !== undefined) throw new SocketError(hubTexts.stopping, 503)
   }
 
+  // spec: spec/architecture.md#service-service-entry
   private folder(id: string): string {
     try {
       return sessionFolder(this.deps.root, id)
@@ -393,6 +419,7 @@ export class Service {
     }
   }
 
+  // spec: spec/architecture.md#service-service-entry
   private async openAgent(id: string, folder: string, request: SessionRequest | undefined): Promise<SessionLike> {
     let stored = readSessionFile(folder)
     if (stored === undefined) {
@@ -405,6 +432,7 @@ export class Service {
     return this.hub.session(id, stored)
   }
 
+  // spec: spec/architecture.md#service-service-scheduleidle
   private scheduleIdle(id: string, entry: Entry): void {
     clearTimeout(entry.idle)
     if (this.stopping !== undefined) return
@@ -417,6 +445,7 @@ export class Service {
     }, idleClose)
   }
 
+  // spec: spec/architecture.md#service-service-scheduleidle
   private scheduleStop(): void {
     clearTimeout(this.stopTimer)
     if (this.stopping !== undefined) return
@@ -425,12 +454,14 @@ export class Service {
     }, idleStop)
   }
 
+  // spec: spec/api.md#socket-protocol
   private status(): StatusReply {
     const sessions = [...this.entries.values()].flatMap(({agent, attached}) => (agent === undefined ? [] : [{number: agent.number, name: agent.displayName, attached}]))
     return {version: this.deps.version, protocol: protocolVersion, mainGroup: this.hub.mainGroup, owner: {owners: this.hub.owner().owners}, sessions}
   }
 }
 
+// spec: spec/architecture.md#service-runservice
 export async function runService(env: NodeJS.ProcessEnv = process.env, checks = lockChecks): Promise<void> {
   const ready = readyChannel(env)
   const root = dataRoot(env)
@@ -457,6 +488,7 @@ export async function runService(env: NodeJS.ProcessEnv = process.env, checks = 
   process.on("SIGTERM", stop)
 }
 
+// spec: spec/architecture.md#service-productiondeps
 export function productionDeps(root: string): ServiceDeps {
   return {
     root,
@@ -467,6 +499,7 @@ export function productionDeps(root: string): ServiceDeps {
   }
 }
 
+// spec: spec/architecture.md#service-processevent
 function processEvent(events: EventEmitter, pid: number): Promise<void> {
   return new Promise(resolve => {
     const done = (): void => {
@@ -479,6 +512,7 @@ function processEvent(events: EventEmitter, pid: number): Promise<void> {
   })
 }
 
+// spec: spec/architecture.md#service-lockholder
 async function lockHolder(root: string, checks: number): Promise<"answers" | "released" | undefined> {
   for (let check = 0; check < checks; check++) {
     if (!existsSync(join(root, serviceLock))) return "released"
@@ -488,18 +522,21 @@ async function lockHolder(root: string, checks: number): Promise<"answers" | "re
   return undefined
 }
 
+// spec: spec/architecture.md#service-validconfig
 function validConfig(config: Config | undefined): void {
   const {mainGroup, approve, expireHours} = config ?? {}
   const valid = typeof mainGroup === "string" && validName(mainGroup) === mainGroup && (approve === "requests" || approve === "host") && Number.isInteger(expireHours) && expireHours! >= 1 && expireHours! <= 23
   if (!valid) throw new SocketError("Invalid config.", 400)
 }
 
+// spec: spec/architecture.md#service-sessionname
 export function sessionName(title: string | undefined, project: string): string {
   const named = title?.trim()
   if (named) return named
   return basename(project) || unnamedSession
 }
 
+// spec: spec/architecture.md#service-readychannel
 function readyChannel(env: NodeJS.ProcessEnv): (line: string) => void {
   const fd = Number(env.SIMPLEX_MCP_READY_FD)
   return line => {
@@ -508,6 +545,7 @@ function readyChannel(env: NodeJS.ProcessEnv): (line: string) => void {
   }
 }
 
+// spec: spec/architecture.md#service-readychannel
 function writeReady(fd: number, text: string): void {
   try {
     writeSync(fd, text)
