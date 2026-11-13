@@ -39,6 +39,7 @@ badgeConfigTests = describe "store service config" $ do
   it "disables stripe when the section is absent" testStripeAbsent
   it "refuses an incomplete stripe section, naming the key" testStripeIncomplete
   it "takes a publishable key only as pk_live_ or pk_test_ and letters and digits" testStripePublishableKey
+  it "refuses a Stripe secret key and publishable key of different modes" testStripeKeyModes
   it "bounds stripe session_minutes to 1-1440" testStripeSessionMinutesRange
   it "accepts HighSpeed" (testSpeedPolicyAccepted "HighSpeed" HighSpeed)
   it "refuses HighSpeed beside [names], which settles with no confirmation" testHighSpeedWithNames
@@ -201,10 +202,19 @@ fullStripeIni =
 
 testStripePublishableKey :: IO ()
 testStripePublishableKey = do
-  let withKey k = parseIni (T.replace "publishable_key = pk_test_x" ("publishable_key = " <> k) fullStripeIni)
-  forM_ ["pk_test_51Hx", "pk_live_AbC123"] $ \k -> (\r -> (k, isRight r)) <$> withKey k `shouldReturn` (k, True)
+  forM_ [("rk_test_x", "pk_test_51Hx"), ("rk_live_x", "pk_live_AbC123")] $ \(s, k) -> (\r -> (k, isRight r)) <$> withStripeKeys s k `shouldReturn` (k, True)
   forM_ ["pk_test_", "sk_test_x", "pk_test_x\"><script>", "pk_live_a-b"] $ \k ->
-    withKey k `shouldReturn` Left "stripe.publishable_key must be pk_live_ or pk_test_ followed by letters and digits"
+    withStripeKeys "rk_test_x" k `shouldReturn` Left "stripe.publishable_key must be pk_live_ or pk_test_ followed by letters and digits"
+
+withStripeKeys :: T.Text -> T.Text -> IO (Either String ServiceConfig)
+withStripeKeys secret publishable = parseIni (fullIni <> T.unlines (devKeysStripe secret publishable))
+
+testStripeKeyModes :: IO ()
+testStripeKeyModes = do
+  forM_ [("sk_live_x", "pk_live_x"), ("rk_live_x", "pk_live_x"), ("sk_test_x", "pk_test_x"), ("rk_test_x", "pk_test_x")] $ \(s, k) ->
+    (\r -> (s, k, isRight r)) <$> withStripeKeys s k `shouldReturn` (s, k, True)
+  forM_ [("rk_live_x", "pk_test_x"), ("sk_live_x", "pk_test_x"), ("rk_test_x", "pk_live_x"), ("sk_test_x", "pk_live_x"), ("sk_test", "pk_test_x")] $ \(s, k) ->
+    (\r -> (s, k, r)) <$> withStripeKeys s k `shouldReturn` (s, k, Left "stripe.secret_key and stripe.publishable_key must be both live keys or both test keys")
 
 testStripeDefaults :: IO ()
 testStripeDefaults = withIni fullStripeIni $ \p -> do
@@ -704,10 +714,12 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "refuses a [names] or [chain] setting nothing reads, terms_version among them, naming each" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
   it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
+  it "reads min_price_cents_per_year as a known setting, 5000 when absent, and refuses a value below 1" testNamesPriceFloor
   it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
   it "refuses a malformed dev_keys entry or an index named twice, quoting no secret" testDevKeysMalformed
   it "accepts [issuer] dev_keys beside Stripe test keys and a BTCPay on loopback" testDevKeysTestPayments
   it "refuses [issuer] dev_keys beside a live Stripe key or a remote BTCPay, naming which and quoting no key" testDevKeysLivePayments
+  it "accepts Stripe test keys with [names] only on chain 31337 or 11155111, and live keys on any chain" testStripeTestKeysChain
 
 rpcUrl :: T.Text
 rpcUrl = "https://eth.example.org/v2/rpc-token-value"
@@ -946,6 +958,21 @@ testNamesRecordEdits = do
     namesRefusal (namesSection <> ["record_edits_per_year = " <> v]) chainSection `shouldReturn` "names.record_edits_per_year must be between 1 and 100"
   namesRefusal (namesSection <> ["record_edits_per_year = three"]) chainSection `shouldReturn` "record_edits_per_year must be a whole number"
 
+testNamesPriceFloor :: IO ()
+testNamesPriceFloor = do
+  NamesConfig {nMinPriceCentsPerYear = absent} <- parsedNames namesSection chainSection
+  absent `shouldBe` 5000
+  forM_ [1, 7500] $ \n -> do
+    let ns = namesSection <> ["min_price_cents_per_year = " <> T.pack (show n)]
+    withIni (namesIni ns chainSection) $ \p -> do
+      Right ini <- readIniFile p
+      unknownKeys ini `shouldBe` []
+    NamesConfig {nMinPriceCentsPerYear} <- parsedNames ns chainSection
+    (n, nMinPriceCentsPerYear) `shouldBe` (n, n)
+  forM_ ["0", "-5000"] $ \v ->
+    namesRefusal (namesSection <> ["min_price_cents_per_year = " <> v]) chainSection `shouldReturn` "names.min_price_cents_per_year must be at least 1"
+  namesRefusal (namesSection <> ["min_price_cents_per_year = 50.00"]) chainSection `shouldReturn` "min_price_cents_per_year must be a whole number"
+
 -- | Names on the local chain with no payment provider, as a run with dev keys has.
 localNamesIni :: [T.Text] -> T.Text
 localNamesIni cs = T.unlines (["[listener]"] <> namesSection <> cs)
@@ -1016,3 +1043,13 @@ testDevKeysLivePayments = do
   devKeysWith (devKeysBTCPay "https://127.0.0.1" <> devKeysStripe "sk_live_secretvalue" "pk_test_x") `shouldReturn` Left liveSecret
   devKeysWith (devKeysStripe "sk_live_secretvalue" "pk_test_x") >>= either (`shouldNotContain` "secretvalue") (const (expectationFailure "a live key must not boot"))
   parseIni (localNamesIni (chainSection <> devKeysBTCPay "https://btcpay.example.org" <> devKeysStripe "sk_live_x" "pk_live_x")) >>= (`shouldSatisfy` either (const False) (const True))
+
+testStripeTestKeysChain :: IO ()
+testStripeTestKeysChain = do
+  let onChain chainId s k = parseIni (localNamesIni (withChainId chainId <> devKeysStripe s k))
+      refused = "Stripe test keys are accepted with [names] only on a test chain, [chain] chain_id = 31337 or 11155111" :: String
+  forM_ ["31337", "11155111"] $ \chainId ->
+    (\r -> (chainId, isRight r)) <$> onChain chainId "rk_test_x" "pk_test_x" `shouldReturn` (chainId, True)
+  forM_ ["1", "31338", "11155112"] $ \chainId -> do
+    (\r -> (chainId, r)) <$> onChain chainId "sk_test_x" "pk_test_x" `shouldReturn` (chainId, Left refused)
+    (\r -> (chainId, isRight r)) <$> onChain chainId "rk_live_x" "pk_live_x" `shouldReturn` (chainId, True)

@@ -81,7 +81,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers a listed name's price for its community's 2 years, whatever years the configuration gives" $ testCommunityYears g
     it "takes the first 5 short links of a record's kind, splitting on ';', and none from other values" testRecordLinks
     it "answers a registered name's record edits left and when the next one returns, counting the edits of 365 days, reverted too" $ testRecordEdits g
-    it "answers provider_unavailable to any failed chain read, records and price included, and reads no terms link for a registered name" $ testFailedReads g
+    it "answers provider_unavailable to any failed chain read, records and price included, and to a price under the floor, and reads no terms link for a registered name" $ testFailedReads g
     it "fails a search whose reads together pass one deadline, though each read meets it" $ testOneDeadline g
     it "fails a search whose terms text arrives past the deadline, and answers the text that fetch kept to the next search" $ testSlowTerms g
     it "answers bad_request to a hash not in 0x and 64 lowercase hex, before the length" $ testBadHash g
@@ -479,6 +479,8 @@ testFailedReads :: TVar ChaChaDRG -> IO ()
 testFailedReads g = withSearch g id id $ \s@Search {node} -> do
   let unavailable = refused 503 "provider_unavailable"
   available node
+  searchAlice s 12 `shouldReturn` unavailable
+  answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 9999
   searchAlice s 12 `shouldReturn` unavailable
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   searchAlice s 12 `shouldReturn` availableAnswer 10000

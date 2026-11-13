@@ -295,6 +295,7 @@ CREATE TABLE @name_prepaid_codes(
   revoked_at TEXT,
   expires_at TEXT,
   created_at TEXT NOT NULL,
+  issued_in_group INTEGER NOT NULL DEFAULT 0,
   UNIQUE(code_hash)
 ) STRICT;
 
@@ -471,6 +472,11 @@ CREATE INDEX @idx_name_transactions_registration ON @name_transactions(registrat
 CREATE INDEX @idx_name_transactions_edit ON @name_transactions(name_record_edit_id);
 
 CREATE INDEX @idx_name_transactions_status ON @name_transactions(status, registrar_nonce);
+
+CREATE TABLE @name_terms(
+  terms_hash BLOB NOT NULL PRIMARY KEY,
+  terms_text BLOB NOT NULL
+) STRICT;
 |]
 
 -- SQLite refuses to drop a column in a foreign key, and dropping a table deletes its rows first,
@@ -481,6 +487,8 @@ down_m20261013_names =
   withPrefix
     servicePrefix
     [sql|
+DROP TABLE @name_terms;
+
 DROP INDEX @idx_name_transactions_status;
 DROP INDEX @idx_name_transactions_edit;
 DROP INDEX @idx_name_transactions_registration;

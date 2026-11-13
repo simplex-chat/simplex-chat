@@ -20,6 +20,7 @@ module StoreService.Config
     ServiceConfig (..),
     defaultExpiryMinutes,
     defaultSessionMinutes,
+    providerTimeoutMicros,
     defaultLogLevel,
     minNameYears,
     localChainId,
@@ -102,7 +103,8 @@ data BTCPayConfig = BTCPayConfig
     bWebhookSecret :: Text,
     bExpiryMinutes :: Int,
     bSpeedPolicy :: SpeedPolicy,
-    bPaymentTolerance :: Double
+    bPaymentTolerance :: Double,
+    bTimeoutMicros :: Int
   }
   deriving (Eq)
 
@@ -115,7 +117,8 @@ data StripeConfig = StripeConfig
     sPublishableKey :: Text,
     sWebhookSecret :: Text,
     sSessionMinutes :: Int,
-    sHost :: Text
+    sHost :: Text,
+    sTimeoutMicros :: Int
   }
   deriving (Eq)
 
@@ -177,6 +180,7 @@ data NamesConfig = NamesConfig
     nCodesOnly :: Bool,
     -- | The owner record edits relayed for one name in any 365 days, each a transaction whose gas the service pays.
     nRecordEditsPerYear :: Int,
+    nMinPriceCentsPerYear :: Int,
     -- | What each community name is for, keyed by the label hash's bytes, as search receives a name.
     nCommunity :: Map ByteString Text,
     nChain :: ChainConfig
@@ -233,6 +237,9 @@ defaultStripeHost = "https://api.stripe.com"
 defaultSessionMinutes :: Int
 defaultSessionMinutes = 60
 
+providerTimeoutMicros :: Int
+providerTimeoutMicros = 10 * 1000000
+
 defaultLogLevel :: LogLevel
 defaultLogLevel = LogNote
 
@@ -280,6 +287,12 @@ publishableKey k = case T.stripPrefix "pk_live_" k <|> T.stripPrefix "pk_test_" 
   Just rest -> not (T.null rest) && T.all (\c -> isAsciiUpper c || isAsciiLower c || isDigit c) rest
   Nothing -> False
 
+testSecretKey :: Text -> Bool
+testSecretKey k = any (`T.isPrefixOf` k) ["sk_test_", "rk_test_"]
+
+testPublishableKey :: Text -> Bool
+testPublishableKey = T.isPrefixOf "pk_test_"
+
 maxCommunityTextLength :: Int
 maxCommunityTextLength = 200
 
@@ -288,6 +301,9 @@ defaultRecordEditsPerYear = 3
 minRecordEditsPerYear = 1
 maxRecordEditsPerYear = 100
 
+defaultMinPriceCentsPerYear :: Int
+defaultMinPriceCentsPerYear = 5000
+
 -- | The controller refuses a registration under 730 days.
 minNameYears :: Int
 minNameYears = 2
@@ -295,6 +311,9 @@ minNameYears = 2
 -- | anvil's chain id, the only chain [issuer] dev_keys are accepted on.
 localChainId :: Word64
 localChainId = 31337
+
+sepoliaChainId :: Word64
+sepoliaChainId = 11155111
 
 -- | 100 gwei.
 defaultMaxFeePerGas :: Word64
@@ -407,7 +426,7 @@ knownSettings =
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
     ("log", ["level"]),
-    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves", "codes_only", "record_edits_per_year"]),
+    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves", "codes_only", "record_edits_per_year", "min_price_cents_per_year"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
@@ -456,13 +475,18 @@ parseConfig ini = do
     Left ("issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = " <> show localChainId)
   unless (null devKeys) $ do
     forM_ str $ \StripeConfig {sSecretKey, sPublishableKey} -> do
-      unless (any (`T.isPrefixOf` sSecretKey) ["sk_test_", "rk_test_"]) $
+      unless (testSecretKey sSecretKey) $
         Left "issuer.dev_keys is refused with a live Stripe key: stripe.secret_key must be a test key, sk_test_ or rk_test_"
-      unless ("pk_test_" `T.isPrefixOf` sPublishableKey) $
+      unless (testPublishableKey sPublishableKey) $
         Left "issuer.dev_keys is refused with a live Stripe key: stripe.publishable_key must be a test key, pk_test_"
     forM_ btc $ \BTCPayConfig {bHost} ->
       unless (isLoopbackHost (urlHost bHost)) $
         Left "issuer.dev_keys is refused with a remote BTCPay: btcpay.host must be on loopback, 127.0.0.1, ::1 or localhost"
+  forM_ str $ \StripeConfig {sSecretKey, sPublishableKey} -> do
+    when (testSecretKey sSecretKey /= testPublishableKey sPublishableKey) $
+      Left "stripe.secret_key and stripe.publishable_key must be both live keys or both test keys"
+    when (testSecretKey sSecretKey && maybe False (not . onTestChain) nms) $
+      Left ("Stripe test keys are accepted with [names] only on a test chain, [chain] chain_id = " <> show localChainId <> " or " <> show sepoliaChainId)
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
   apple <- appleSection
@@ -554,6 +578,7 @@ parseConfig ini = do
         pure BadgeIssuerKey {keyIdx, secretKey}
       _ -> Left "issuer.dev_keys must be <index>:<secret> entries separated by commas"
     onLocalChain NamesConfig {nChain = ChainConfig {cChainId}} = cChainId == localChainId
+    onTestChain NamesConfig {nChain = ChainConfig {cChainId}} = cChainId `elem` [localChainId, sepoliaChainId]
     btcpaySection
       | not (hasSection "btcpay") = Right Nothing
       | otherwise = do
@@ -564,7 +589,7 @@ parseConfig ini = do
           bExpiryMinutes <- expiryMinutes
           bSpeedPolicy <- speedPolicy
           bPaymentTolerance <- tolerance
-          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance})
+          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros})
     -- A negative window puts BTCPay's startDate in the future, so every poll comes back empty.
     expiryMinutes = do
       v <- num "btcpay" "expiry_minutes" defaultExpiryMinutes
@@ -614,7 +639,7 @@ parseConfig ini = do
           sWebhookSecret <- required "stripe" "webhook_secret"
           sSessionMinutes <- sessionMinutes
           let sHost = defaultStripeHost
-          pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost})
+          pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost, sTimeoutMicros = providerTimeoutMicros})
     appleSection
       | not (hasSection "apple") = Right Nothing
       | otherwise = do
@@ -655,9 +680,10 @@ parseConfig ini = do
           nMaxOrderMoves <- atLeast 0 "names" "max_order_moves" 3
           nCodesOnly <- bool "names" "codes_only" False
           nRecordEditsPerYear <- recordEditsPerYear
+          nMinPriceCentsPerYear <- atLeast 1 "names" "min_price_cents_per_year" defaultMinPriceCentsPerYear
           nCommunity <- communityList nTLD
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nCodesOnly, nRecordEditsPerYear, nCommunity, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nCodesOnly, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex

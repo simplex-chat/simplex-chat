@@ -12,6 +12,7 @@ module StoreService.Names.Sender
     ptHash,
     ptNonce,
     newSender,
+    checkPendingSignatures,
     submitTransaction,
     inFlightTransaction,
     awaitOutcome,
@@ -43,11 +44,12 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
-import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Store (NameTransaction (..), NewTransaction (..), TxFor, TxStatus (..), insertTransaction, pendingTransactions, recordTransactionOutcome)
+import StoreService.Names.View (addressText)
 import StoreService.Safely (safely)
 import StoreService.Store.Invoices (StoreDecodeError (..))
 
@@ -148,6 +150,20 @@ newSender snRandom snChain snStore snNow = do
             }
         )
 
+checkPendingSignatures :: TVar ChaChaDRG -> ChainConfig -> DBStore -> IO (Either String ())
+checkPendingSignatures g ChainConfig {cChainId, cServiceKey} st = do
+  registrar <- addressFromPrivateKey g cServiceKey
+  saved <- withTransaction st pendingTransactions
+  runExceptT $ forM_ saved $ \NameTransaction {ntNonce, ntRaw} -> do
+    (chainId, signer) <- withExceptT ("name_transactions.raw: " <>) $ ExceptT $ transactionSigner ntRaw
+    when (chainId /= cChainId) $ throwError $ refusal ntNonce ("for chain " <> show chainId) ("for chain.chain_id " <> show cChainId)
+    when (signer /= registrar) $ throwError $ refusal ntNonce ("by " <> shownAddress signer) ("by " <> shownAddress registrar <> " of chain.service_key")
+  where
+    shownAddress = T.unpack . addressText
+    refusal nonce signedFor configured =
+      "a pending transaction of nonce " <> show nonce <> " was signed " <> signedFor <> ", not " <> configured
+        <> "; start with the key and chain that signed it until no transaction is pending"
+
 -- | Dry run, the next nonce, the market's fees, the signature, saved, then sent. A failed send is retried by 'followTransactions'.
 submitTransaction :: Sender -> TxFor -> Address -> ByteString -> IO (Either SendError PendingTx)
 submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snStore, snNow, snQueue, snNextNonce, snInFlight} for to calldata =
@@ -159,12 +175,15 @@ submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snS
     nonce <- max used <$> liftIO (readTVarIO snNextNonce)
     market@(tip, baseFee) <- chain $ marketFees c
     let needed = baseFee + tip
-        cap = feeCap c
+        gasLimit = gasWithHeadroom c gas
+        (cap, bounded) = feeCap c gasLimit
     when (needed > cap) $ do
-      logWarn $ "names sender: the latest block needs " <> tshow needed <> " wei per gas, above max_fee_per_gas " <> tshow cap <> "; the transaction waits"
+      logWarn $ "names sender: the latest block needs " <> tshow needed <> " wei per gas, above the fee cap " <> tshow cap <> "; the transaction waits"
       throwError $ SEFeeAboveCap needed
+    when (bounded && headroomFee market > cap) $
+      logNote $ "names sender: nonce " <> tshow nonce <> " at max fee " <> tshow cap <> ", capped so that its gas limit " <> tshow gasLimit <> " costs at most 1 ETH"
     -- both fit Word64: the tip is at most the needed fee, and the max fee at most the cap
-    let request = TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gasWithHeadroom c gas, trMaxFeePerGas = fromInteger $ min cap $ headroomFee market, trMaxPriorityFeePerGas = fromInteger tip}
+    let request = TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gasLimit, trMaxFeePerGas = fromInteger $ min cap $ headroomFee market, trMaxPriorityFeePerGas = fromInteger tip}
     SignedTx {stRaw, stHash} <- withExceptT SESigning $ ExceptT $ signTransaction snRandom c request
     liftIO $ do
       now <- snNow
@@ -239,17 +258,18 @@ resend s@Sender {snChain = c, snNow} nonce tx@InFlight {ifRaw, ifHashes = newest
       Left e -> warnNonce s nonce $ tshow e
 
 replace :: Sender -> Word64 -> InFlight -> UTCTime -> IO Bool
-replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifRequest = old@TxRequest {trMaxFeePerGas, trMaxPriorityFeePerGas}} now =
+replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifRequest = old@TxRequest {trGasLimit, trMaxFeePerGas, trMaxPriorityFeePerGas}} now =
   marketFees c >>= \case
     Left e -> False <$ warnNonce s nonce (tshow e)
     Right market@(tip, _)
       | tip <= oldTip && headroomFee market <= oldMax -> False <$ update s nonce (\t -> t {ifReplaceAt = later})
       | bumped oldMax > cap -> do
           update s nonce $ \t -> t {ifReplaceAt = later}
-          False <$ warnNonce s nonce ("not replaced: a replacement would pay over max_fee_per_gas " <> tshow cap)
+          False <$ warnNonce s nonce ("not replaced: a replacement would pay over the fee cap " <> tshow cap)
       | otherwise -> do
           -- the bumped fees are at most the cap, so the replacement still outbids the old signature
-          let maxFee' = min cap $ max (headroomFee market) (bumped oldMax)
+          let wanted = max (headroomFee market) (bumped oldMax)
+              maxFee' = min cap wanted
               tip' = min maxFee' $ max tip (bumped oldTip)
               request = old {trMaxPriorityFeePerGas = fromInteger tip', trMaxFeePerGas = fromInteger maxFee'}
           signTransaction snRandom c request >>= \case
@@ -257,13 +277,15 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
             Right SignedTx {stRaw, stHash} -> do
               saveTransaction snStore ifFor stRaw stHash nonce now
               update s nonce $ \t -> t {ifRequest = request, ifRaw = stRaw, ifHashes = stHash <| ifHashes t, ifReplaceAt = later}
-              logNote $ "names sender: replacing nonce " <> tshow nonce <> " at max fee " <> tshow maxFee'
+              logNote $
+                "names sender: replacing nonce " <> tshow nonce <> " at max fee " <> tshow maxFee'
+                  <> (if bounded && wanted > cap then ", capped so that its gas limit " <> tshow trGasLimit <> " costs at most 1 ETH" else "")
               True <$ broadcast s nonce stRaw
   where
     later = addUTCTime replaceAfter now
     oldTip = toInteger trMaxPriorityFeePerGas
     oldMax = toInteger trMaxFeePerGas
-    cap = feeCap c
+    (cap, bounded) = feeCap c trGasLimit
 
 -- | The confirmed hash gets its receipt's status; every other hash of the nonce can no longer be mined.
 settle :: Sender -> Word64 -> InFlight -> TxOutcome -> IO ()
@@ -300,8 +322,14 @@ headroomFee (tip, baseFee) = baseFeeHeadroom * baseFee + tip
 gasWithHeadroom :: ChainClient -> Word64 -> Word64
 gasWithHeadroom ChainClient {ccConfig = ChainConfig {cGasLimitCap}} gas = min cGasLimitCap (gas + gas `div` 5)
 
-feeCap :: ChainClient -> Integer
-feeCap ChainClient {ccConfig = ChainConfig {cMaxFeePerGas}} = toInteger cMaxFeePerGas
+feeCap :: ChainClient -> Word64 -> (Integer, Bool)
+feeCap ChainClient {ccConfig = ChainConfig {cMaxFeePerGas}} gasLimit = (min configured bound, bound < configured)
+  where
+    configured = toInteger cMaxFeePerGas
+    bound = nodeTxFeeCapWei `div` toInteger (max 1 gasLimit)
+
+nodeTxFeeCapWei :: Integer
+nodeTxFeeCapWei = 1000000000000000000
 
 saveTransaction :: DBStore -> TxFor -> ByteString -> TxHash -> Word64 -> UTCTime -> IO ()
 saveTransaction st for raw hash nonce now =

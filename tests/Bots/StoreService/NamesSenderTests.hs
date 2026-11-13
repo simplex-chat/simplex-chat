@@ -11,6 +11,7 @@ import Control.Concurrent.Async (concurrently)
 import Control.Concurrent.STM
 import Control.Monad (forM_, replicateM_)
 import Crypto.Random (ChaChaDRG)
+import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -22,6 +23,8 @@ import Data.Word (Word64, Word8)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
+import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Phases (RegistrationId (..))
@@ -29,6 +32,7 @@ import StoreService.Names.Registration (commitCalldata)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender
 import StoreService.Names.Store (NameTransaction (..), TxFor (..), TxStatus (..), pendingTransactions, registrationTransactions)
+import StoreService.Names.View (addressText)
 import System.Timeout (timeout)
 import Test.Hspec
 
@@ -43,11 +47,13 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "keeps a transaction whose send failed, and sends it in the next round" $ testFailedSend g
   it "replaces a stuck transaction once the market's fees pass its own, and settles it under the new hash" $ testFeeBump g
   it "rebroadcasts a saved raw transaction after a restart while the node does not know it" $ testRestartRebroadcast g
+  it "refuses a start on another key or chain while a transaction is pending, naming both, and accepts the new key once none is" $ testRotatedKeyStart g
   it "hands a dropped transaction whose nonce was used, or a mined one whose receipt was pruned, to its owner, who may send again at the next nonce" $ testDroppedNonceUsed g
   it "logs a round that fails on the store, and settles the transaction in the next round" $ testFailedRound g
   it "logs a send the node keeps refusing once per error, an underfunded key as an error, in anvil's capitalized form too" $ testRefusedSendLogged g
   it "refuses a transaction whose block needs more than the fee cap, saving nothing, and signs at most the cap" $ testFeeCapSubmit g
   it "clamps a replacement at the fee cap, and keeps rebroadcasting once a replacement would pass it" $ testFeeCapReplace g
+  it "caps the max fee of a transaction and of its replacement so that its gas limit costs at most 1 ETH" $ testTxFeeBound g
 
 data Setup = Setup
   { node :: FakeEthNode,
@@ -85,6 +91,12 @@ testDecodeSignedTx g = withFakeEthNode $ \node -> do
   decodeSignedTx stRaw `shouldBe` Right request
   decodeSignedTx (B.cons 0x01 $ B.drop 1 stRaw) `shouldBe` Left "transaction: not an EIP-1559 transaction"
   decodeSignedTx (B.take 100 stRaw) `shouldBe` Left "RLP: truncated"
+  transactionSigner (B.take 100 stRaw) `shouldReturn` Left "RLP: truncated"
+  forM_ [0 .. 15] $ \nonce -> do
+    Right SignedTx {stRaw = raw} <- signTransaction g c request {trNonce = nonce}
+    (\signer -> (nonce, signer)) <$> transactionSigner raw `shouldReturn` (nonce, Right (fakeChainId, ccRegistrar c))
+  ccRegistrar c `shouldBe` address "0x9d8A62f656a8d1615C1294fd71e9CFb3E4855A4F"
+  transactionSigner viemTxYParity1ShortS `shouldReturn` Right (fakeChainId, ccRegistrar c)
 
 testConcurrentNonces :: TVar ChaChaDRG -> IO ()
 testConcurrentNonces g = withSetup g $ \s@Setup {node, store} -> do
@@ -210,6 +222,27 @@ testRestartRebroadcast g = withSetup g $ \s@Setup {node, store} -> do
   outcomeOf resumed >>= (`shouldSatisfy` confirmedAs (ptHash p))
   map (\(_, status, _) -> status) <$> statuses store r1 `shouldReturn` [TSMined]
 
+testRotatedKeyStart :: TVar ChaChaDRG -> IO ()
+testRotatedKeyStart g = withSetup g $ \s@Setup {node, store, chain = oldChain} -> do
+  sender <- start s
+  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  let oldConfig = ccConfig oldChain
+      newConfig = oldConfig {cServiceKey = either error id $ mkPrivateKey $ BA.replicate 32 0x47}
+      startOn cfg = checkPendingSignatures g cfg store
+      refusal signedFor configured =
+        Left $ "a pending transaction of nonce 0 was signed " <> signedFor <> ", not " <> configured <> "; start with the key and chain that signed it until no transaction is pending"
+  newRegistrar <- ccRegistrar <$> newChainClient g newConfig
+  startOn oldConfig `shouldReturn` Right ()
+  startOn newConfig `shouldReturn` refusal ("by " <> shown (ccRegistrar oldChain)) ("by " <> shown newRegistrar <> " of chain.service_key")
+  startOn oldConfig {cChainId = 1} `shouldReturn` refusal ("for chain " <> show fakeChainId) "for chain.chain_id 1"
+  mineHash node (ptHash p)
+  _ <- mine node []
+  followTransactions sender
+  outcomeOf p >>= (`shouldSatisfy` confirmedAs (ptHash p))
+  startOn newConfig `shouldReturn` Right ()
+  where
+    shown = T.unpack . addressText
+
 testDroppedNonceUsed :: TVar ChaChaDRG -> IO ()
 testDroppedNonceUsed g =
   forM_ [\node h -> dropTransaction node h >> useNextNonce node, \node h -> mine node [(h, True)] >> pruneReceipt node h] $ \lose ->
@@ -316,6 +349,32 @@ testFeeCapReplace g = withCapSetup cap g $ \s@Setup {node} -> do
     -- above the first max fee and its bump, below the market's headroom fee and a second bump
     cap = 2 * fakeBaseFee + fakeTip + 1000000000
 
+testTxFeeBound :: TVar ChaChaDRG -> IO ()
+testTxFeeBound g = withCapSetup 10000000000000 g $ \s@Setup {node} -> do
+  let gasLimit = fakeGas + fakeGas `div` 5 :: Word64
+      bound = fromInteger $ 1000000000000000000 `div` toInteger gasLimit :: Word64
+  sender <- start s
+  setFees node fakeTip 5000000000000
+  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (5000000000000 + fakeTip)
+  setFees node fakeTip 1000000000000
+  Right _ <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  [firstRaw] <- sentTransactions node
+  Right first <- pure $ decodeSignedTx firstRaw
+  (trGasLimit first, trMaxFeePerGas first) `shouldBe` (gasLimit, 2 * 1000000000000 + fakeTip)
+  setFees node fakeTip 3000000000000
+  passTime s replaceAfter
+  logged <- capturingStderr $ followTransactions sender
+  logged `shouldSatisfy` T.isInfixOf ("names sender: replacing nonce 0 at max fee " <> tshow bound <> ", capped so that its gas limit " <> tshow gasLimit <> " costs at most 1 ETH")
+  [_, bumpedRaw] <- sentTransactions node
+  decodeSignedTx bumpedRaw `shouldBe` Right first {trMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, trMaxFeePerGas = bound}
+  passTime s replaceAfter
+  followTransactions sender
+  length <$> sentTransactions node `shouldReturn` 2
+  Right _ <- submitTransaction sender (TxCommit r2) fakeController (commit 2)
+  [_, _, cappedRaw] <- sentTransactions node
+  (\TxRequest {trGasLimit, trMaxFeePerGas} -> (trGasLimit, trMaxFeePerGas)) <$> decodeSignedTx cappedRaw `shouldBe` Right (gasLimit, bound)
+  toInteger gasLimit * toInteger bound `shouldSatisfy` (<= 1000000000000000000)
+
 -- fixtures
 
 r1, r2 :: RegistrationId
@@ -357,3 +416,6 @@ refusedWith submit expected =
 
 unhex :: ByteString -> ByteString
 unhex = either error id . convertFromBase Base16
+
+viemTxYParity1ShortS :: ByteString
+viemTxYParity1ShortS = unhex "02f86f827a693b843b9aca00850737be76008306ddd0945fbdb2315678afecb367f032d93f642f64180aa38082abcdc001a03e704053d6725b7b06476fca04827611f81b637f38b5ab351d62c236252ac06e9f9738e8cce6189740f438c699b4b77b8f9c4a15376ed3b3ef48fea57c459ed8"
