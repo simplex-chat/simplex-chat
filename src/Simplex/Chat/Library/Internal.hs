@@ -67,6 +67,7 @@ import Simplex.Chat.Operators
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
+import Simplex.Chat.Store.Connections (getChatLockEntity)
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Files
@@ -164,6 +165,11 @@ withFileLock name = withEntityLock name . CLFile
 withUserProfileLock :: Text -> CM a -> CM a
 withUserProfileLock name = withEntityLock name CLUserProfile
 {-# INLINE withUserProfileLock #-}
+
+withConnEntityLock :: Text -> AgentConnId -> CM a -> CM a
+withConnEntityLock name acId action = do
+  entity <- withStore (`getChatLockEntity` acId)
+  withEntityLock name entity action
 
 useServerCfgs :: forall p. UserProtocol p => SProtocolType p -> RandomAgentServers -> [(Text, ServerOperator)] -> [UserServer p] -> NonEmpty (ServerCfg p)
 useServerCfgs p RandomAgentServers {smpServers, xftpServers} opDomains =
@@ -1751,9 +1757,9 @@ deleteGroupLinkIfExists user gInfo = do
   mapM_ (deleteGroupLink_ user gInfo) conn_
 
 deleteGroupLink_ :: User -> GroupInfo -> Connection -> CM ()
-deleteGroupLink_ user gInfo conn = do
+deleteGroupLink_ user gInfo conn@Connection {agentConnId} = do
+  withConnEntityLock "deleteGroupLink" agentConnId $ withStore' $ \db -> deleteGroupLink db user gInfo
   deleteAgentConnectionAsync $ aConnId conn
-  withStore' $ \db -> deleteGroupLink db user gInfo
 
 startProximateTimedItemThread :: User -> (ChatRef, ChatItemId) -> UTCTime -> CM ()
 startProximateTimedItemThread user itemRef deleteAt = do

@@ -4326,7 +4326,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   throwChatError $ CEInternalError "delivery job worker: relay removed job in wrong worker scope"
               | otherwise -> do
                   sendBodyToMembers
-                  deleteGroupConnections user gInfo True
+                  withGroupLock "relayRemoved" groupId $ deleteGroupConnections user gInfo True
                   withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
             MessageDeliveryJob {jobId, jobScope, senderGMIds, body, notification, cursorGMId_ = startingCursor} = job

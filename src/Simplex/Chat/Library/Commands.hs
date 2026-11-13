@@ -1451,8 +1451,9 @@ processChatCommand cxt nm = \case
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       deleteCIFiles user filesInfo
       withFastStore' $ \db -> deleteGroupChatItemsMessages db user gInfo
-      membersToDelete <- withFastStore' $ \db -> getGroupMembersForExpiration db cxt user gInfo
-      forM_ membersToDelete $ \m -> withFastStore' $ \db -> deleteGroupMember db user m
+      withGroupLock "clearChat" chatId $ do
+        membersToDelete <- withFastStore' $ \db -> getGroupMembersForExpiration db cxt user gInfo
+        forM_ membersToDelete $ \m -> withFastStore' $ \db -> deleteGroupMember db user m
       pure $ CRChatCleared user (AChatInfo SCTGroup $ GroupChat gInfo Nothing)
     CTLocal -> do
       nf <- withFastStore $ \db -> getNoteFolder db user chatId
@@ -1765,8 +1766,9 @@ processChatCommand cxt nm = \case
                   dm <- encodeConnInfo $ XGrpRelayTest challenge Nothing
                   void $ withAgent $ \a -> joinConnection a nm (aUserId user) acId True cReq dm PQSupportOff subMode
                   liftIO $ timeout 40000000 $ atomically $ takeTMVar testVar
-                atomically $ TM.delete acId chatRelayTests_
-                withFastStore' $ \db -> deleteConnectionRecord db user testCId
+                withConnectionLock "testChatRelay" testCId $ do
+                  atomically $ TM.delete acId chatRelayTests_
+                  withFastStore' $ \db -> deleteConnectionRecord db user testCId
                 deleteAgentConnectionAsync acId
                 case testResult of
                   Left e -> failWithProfile RTSConnect e
@@ -2164,17 +2166,22 @@ processChatCommand cxt nm = \case
   APISetConnectionIncognito connId incognito -> withUser $ \user@User {userId} -> do
     conn <- withFastStore $ \db -> getPendingContactConnection db userId connId
     let PendingContactConnection {pccConnStatus, customUserProfileId, connLinkInv} = conn
+        updateIfUnchanged update = withConnectionLock "setConnectionIncognito" connId $ do
+          pcc_ <- withFastStore' $ \db -> eitherToMaybe <$> runExceptT (getPendingContactConnection db userId connId)
+          let unchanged PendingContactConnection {pccConnStatus = status', customUserProfileId = pId_} = status' == ConnNew && pId_ == customUserProfileId
+          unless (any unchanged pcc_) $ throwChatError CEConnectionIncognitoChangeProhibited
+          withFastStore' update
     case (pccConnStatus, customUserProfileId, incognito) of
       (ConnNew, Nothing, True) -> do
         incognitoProfile <- liftIO $ generateIncognitoProfile user
         sLnk <- updatePCCShortLinkData conn $ userProfileDirect user (Just incognitoProfile) Nothing True
-        conn' <- withFastStore' $ \db -> do
+        conn' <- updateIfUnchanged $ \db -> do
           pId <- createIncognitoProfile db user incognitoProfile
           updatePCCIncognito db user conn (Just pId) sLnk
         pure $ CRConnectionIncognitoUpdated user conn' (Just incognitoProfile)
       (ConnNew, Just pId, False) -> do
         sLnk <- updatePCCShortLinkData conn =<< presentUserBadge user Nothing (linkPresHeader <$> (connShortLink' =<< connLinkInv)) (userProfileDirect user Nothing Nothing True)
-        conn' <- withFastStore' $ \db -> do
+        conn' <- updateIfUnchanged $ \db -> do
           deletePCCIncognitoProfile db user pId
           updatePCCIncognito db user conn Nothing sLnk
         pure $ CRConnectionIncognitoUpdated user conn' Nothing
@@ -2189,7 +2196,7 @@ processChatCommand cxt nm = \case
         pure $ CRConnectionUserChanged user conn conn' newUser
       _ -> throwChatError CEConnectionUserChangeProhibited
     where
-      recreateConn user conn@PendingContactConnection {customUserProfileId, connLinkInv} newUser = do
+      recreateConn user@User {userId} conn@PendingContactConnection {customUserProfileId, connLinkInv} newUser = do
         subMode <- chatReadVar subscriptionMode
         let short = isJust $ connShortLink' =<< connLinkInv
         (agConnId, ccLink) <-
@@ -2200,13 +2207,20 @@ processChatCommand cxt nm = \case
               withAgent $ \a -> createInvitationForLink a nm (aUserId newUser) True preparedReq preparedParams userLinkData subMode
             else withAgent $ \a -> createConnection a nm (aUserId newUser) True False SCMInvitation Nothing Nothing IKPQOn True subMode
         ccLink' <- shortenCreatedLink ccLink
-        conn' <- withFastStore' $ \db -> do
-          deleteConnectionRecord db user connId
-          forM_ customUserProfileId $ \profileId ->
-            deletePCCIncognitoProfile db user profileId
-          createDirectConnection db newUser agConnId ccLink' Nothing ConnNew Nothing subMode initialChatVersion PQSupportOn
-        deleteAgentConnectionAsync (aConnId' conn)
-        pure conn'
+        conn_ <- withConnectionLock "changeConnectionUser" connId $ do
+          pcc_ <- withFastStore' $ \db -> eitherToMaybe <$> runExceptT (getPendingContactConnection db userId connId)
+          if any (\PendingContactConnection {pccConnStatus} -> pccConnStatus == ConnNew) pcc_
+            then fmap Just . withFastStore' $ \db -> do
+              deleteConnectionRecord db user connId
+              forM_ customUserProfileId $ \profileId ->
+                deletePCCIncognitoProfile db user profileId
+              createDirectConnection db newUser agConnId ccLink' Nothing ConnNew Nothing subMode initialChatVersion PQSupportOn
+            else pure Nothing
+        case conn_ of
+          Just conn' -> conn' <$ deleteAgentConnectionAsync (aConnId' conn)
+          Nothing -> do
+            deleteAgentConnectionAsync agConnId
+            throwChatError CEConnectionUserChangeProhibited
   APIConnectPlan userId (Just ct) resolveMode linkOwnerSig_ -> withUserId userId $ \user -> do
     (ccLink, planSimplexName, otherSimplexName, plan) <- connectPlan user ct resolveMode linkOwnerSig_ Nothing
     pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan
@@ -2377,7 +2391,16 @@ processChatCommand cxt nm = \case
               getGroupInfo db cxt user groupId
             -- Async retry failed relays with temporary errors
             let retryable = [(l, m) | r@(l, m, _) <- failed, isTempErr r]
-            void $ mapConcurrently (uncurry $ retryRelayConnectionAsync gInfo') retryable
+            unless (null retryable) $ do
+              (oldConns, retried) <- withGroupLock "retryRelayConnections" groupId $ do
+                current <- withFastStore' $ \db -> fmap catMaybes . forM retryable $ \(l, m@GroupMember {groupMemberId}) ->
+                  fmap (l, m,) . eitherToMaybe <$> runExceptT (getGroupMember db cxt user groupId groupMemberId)
+                let retrying = [(l, m') | (l, m, m') <- current, sameConnPrepared m m']
+                    oldConns = mapMaybe (\(_, GroupMember {activeConn}) -> activeConn) retrying
+                withFastStore' $ \db -> forM_ oldConns $ \conn -> deleteConnectionRecord db user (dbConnId conn)
+                (oldConns,) <$> tryAllErrors (mapConcurrently_ (uncurry $ retryRelayConnectionAsync gInfo') retrying)
+              deleteAgentConnectionsAsync $ map aConnId oldConns
+              liftEither retried
             let relayResults = [RelayConnectionResult m (leftToMaybe r) | (_, m, r) <- rs]
             pure $ CRStartedConnectionToGroup user gInfo'' incognitoProfile relayResults
         where
@@ -2386,10 +2409,9 @@ processChatCommand cxt nm = \case
           isTempErr = \case
             (_, _, Left ChatErrorAgent {agentError = e}) -> temporaryOrHostError e
             _ -> False
-          retryRelayConnectionAsync gInfo' relayLink relayMember@GroupMember {activeConn} = do
-            forM_ activeConn $ \conn -> do
-              deleteAgentConnectionAsync $ aConnId conn
-              withStore' $ \db -> deleteConnectionRecord db user (dbConnId conn)
+          sameConnPrepared GroupMember {activeConn = c} GroupMember {activeConn = c'} =
+            (dbConnId <$> c) == (dbConnId <$> c') && all (\Connection {connStatus} -> connStatus == ConnPrepared) c'
+          retryRelayConnectionAsync gInfo' relayLink relayMember = do
             subMode <- chatReadVar subscriptionMode
             newConnIds@(cmdId, connId) <- prepareAgentCreation user CFGetRelayDataJoin False SCMInvitation
             withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
@@ -2514,10 +2536,10 @@ processChatCommand cxt nm = \case
   CreateMyAddress ratchetKeys_ -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APICreateMyAddress userId Nothing ratchetKeys_
   APIDeleteMyAddress userId -> withUserProfileLock "deleteMyAddress" $ withUserId userId $ \user@User {profile = p} -> do
-    conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
-    withChatLock "deleteMyAddress" $ do
-      deleteAgentConnectionAsync $ aConnId conn
+    conn@Connection {agentConnId} <- withFastStore $ \db -> getUserAddressConnection db cxt user
+    withConnEntityLock "deleteMyAddress" agentConnId . withChatLock "deleteMyAddress" $
       withFastStore' (`deleteUserAddress` user)
+    deleteAgentConnectionAsync $ aConnId conn
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing, contactDomain = Nothing}
     r <- updateProfile_ user p' False $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
     let user' = case r of
@@ -4729,7 +4751,7 @@ processChatCommand cxt nm = \case
               processChatCommand cxt nm (APIPrepareGroup userId ccl False vName gld) >>= \case
                 CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _)) -> pure gInfo
                 _ -> throwChatError $ CEException "joinChannelViaRelays: unexpected response from APIPrepareGroup"
-            deletePreparedChannel groupId = do
+            deletePreparedChannel groupId = withGroupLock "deletePreparedChannel" groupId $ do
               gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
               deleteGroupConnections user gInfo False
               withFastStore' $ \db -> deleteGroup db user gInfo
@@ -6521,8 +6543,8 @@ cleanupManager = do
     cleanupDeletedContacts user = do
       cxt <- chatStoreCxt
       contacts <- withStore' $ \db -> getDeletedContacts db cxt user
-      forM_ contacts $ \ct ->
-        withStore (\db -> deleteContactWithoutGroups db user ct)
+      forM_ contacts $ \ct@Contact {contactId} ->
+        withContactLock "cleanupDeletedContacts" contactId (withStore $ \db -> deleteContactWithoutGroups db user ct)
           `catchAllErrors` eToView
     cleanupInProgressGroups user = do
       cxt <- chatStoreCxt
@@ -6536,16 +6558,17 @@ cleanupManager = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-300) ts
       staleConns <- withStore' $ \db -> getStaleRelayTestConns db user cutoffTs
-      forM_ staleConns $ \acId -> do
+      forM_ staleConns $ \acId -> flip catchAllErrors eToView $ do
+        withConnEntityLock "cleanupStaleRelayTestConns" (AgentConnId acId) $
+          withStore' $ \db -> deleteConnectionByAgentConnId db user acId
         deleteAgentConnectionAsync acId
-        withStore' $ \db -> deleteConnectionByAgentConnId db user acId
     cleanupRemovedMembers user = do
       cxt <- chatStoreCxt
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-nominalDay) ts
       removedMembers <- withStore' $ \db -> getRemovedMembersToCleanup db cxt user cutoffTs
-      forM_ removedMembers $ \m ->
-        withStore' (\db -> deleteGroupMember db user m) `catchAllErrors` eToView
+      forM_ removedMembers $ \m@GroupMember {groupId} ->
+        withGroupLock "cleanupRemovedMembers" groupId (withStore' $ \db -> deleteGroupMember db user m) `catchAllErrors` eToView
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
@@ -6569,7 +6592,7 @@ cleanupManager = do
       withStore' (`deleteUnfundedStoreReceipts` cutoffTs)
 
 deleteInProgressGroup :: User -> GroupInfo -> CM ()
-deleteInProgressGroup user gInfo = do
+deleteInProgressGroup user gInfo@GroupInfo {groupId} = withGroupLock "deleteInProgressGroup" groupId $ do
   deleteGroupLinkIfExists user gInfo
   deleteGroupConnections user gInfo False
   withFastStore' $ \db -> deleteGroup db user gInfo
@@ -6609,8 +6632,8 @@ runRelayGroupLinkChecks user = do
       cxt <- chatStoreCxt
       ttl <- asks (relayInactiveTTL . config)
       inactiveGroups <- withStore' $ \db -> getRelayInactiveGroups db cxt user ttl
-      forM_ inactiveGroups $ \gInfo -> flip catchAllErrors eToView $
-        deleteGroupConnections user gInfo False
+      forM_ inactiveGroups $ \gInfo@GroupInfo {groupId} -> flip catchAllErrors eToView $
+        withGroupLock "checkRelayInactiveGroups" groupId $ deleteGroupConnections user gInfo False
 
 expireChatItems :: User -> Int64 -> Bool -> CM ()
 expireChatItems user@User {userId} globalTTL sync = do
