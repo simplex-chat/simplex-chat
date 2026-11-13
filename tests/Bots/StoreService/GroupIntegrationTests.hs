@@ -1210,10 +1210,10 @@ testBlockedMemberCommandIgnored ps = do
       -- The block and the command travel over different connections, so the block is awaited first.
       send alice ("/block for all #" <> groupName <> " bob")
       waitMemberBlocked cc gid "bob"
-      sendGroupCmd bob "/bulk legend months 255 count 100"
-      (deleted, content) <- waitBlockedItem cc "/bulk legend months 255 count 100"
+      sendGroupCmd bob "/bulk legend months 12 count 100"
+      (deleted, content) <- waitBlockedItem cc "/bulk legend months 12 count 100"
       deleted `shouldBe` blockedByAdminMark
-      content `shouldSatisfy` T.isInfixOf "/bulk legend months 255 count 100"
+      content `shouldSatisfy` T.isInfixOf "/bulk legend months 12 count 100"
       ownerIssuesNext cc alice 1
       awaitOnConsole alice "Code: SB-"
       awaitOnConsole bob "Code: SB-"
@@ -1828,10 +1828,10 @@ singleRow sql = \case
   _ -> error $ "more than one row from: " <> sql
 
 issueUsage :: Text
-issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
 
 bulkUsage :: Text
-bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk legend months 3 count 10"
+bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–12, count 1–100\ne.g. /bulk legend months 3 count 10"
 
 -- The list is spelled out rather than taken from the service, so a change there fails here.
 expectedCommands :: [ChatBotCommand]
