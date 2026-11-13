@@ -75,9 +75,9 @@ Data flow of a tool call:
 1. Claude Code runs the `headersHelper` command of its entry ([`register.ts:50`](../src/register.ts#L50)) and sends the `Authorization` header it prints ([Reference](../REFERENCE.md#add-the-agent-to-claude-code)).
 2. The server checks Host, Origin, token, path and readiness, then passes the request to the SDK handler ([`http.ts:19-28`](../src/http.ts#L19-L28)).
 3. An `McpServer` is built from the factory for each request, and the arguments are validated against the input schema by the SDK ([`serve.ts:107-111`](../src/serve.ts#L107-L111), [`mcp-BumlNux0.cjs:1812-1817`](../node_modules/@modelcontextprotocol/server/dist/mcp-BumlNux0.cjs#L1812-L1817)).
-4. The handler result is returned by `AgentTools.call` as `structuredContent` and as JSON text ([`tools.ts:544-551`](../src/tools.ts#L551-L558)).
-5. The server calls `ChatApi` methods of the core ([`messages.ts:271-287`](../src/messages.ts#L309-L325)); actions are created in `Actions` and shown to the owner by `Control` ([`actions.ts:180-215`](../src/actions.ts#L180-L215)).
-6. The core emits events. The handler of `serve.ts` passes them to the agent control chat and to `AgentTools.onEvent` ([`serve.ts:125-137`](../src/serve.ts#L125-L137)). `AgentTools.onEvent` then dispatches them to the tools and the item watch ([`tools.ts:665-692`](../src/tools.ts#L672-L699)).
+4. The handler result is returned by `AgentTools.call` as `structuredContent` and as JSON text ([`tools.ts:551-558`](../src/tools.ts#L551-L558)).
+5. The server calls `ChatApi` methods of the core ([`messages.ts:309-325`](../src/messages.ts#L309-L325)); actions are created in `Actions` and shown to the owner by `Control` ([`actions.ts:180-215`](../src/actions.ts#L180-L215)).
+6. The core emits events. The handler of `serve.ts` passes them to the agent control chat and to `AgentTools.onEvent` ([`serve.ts:125-137`](../src/serve.ts#L125-L137)). `AgentTools.onEvent` then dispatches them to the tools and the item watch ([`tools.ts:672-699`](../src/tools.ts#L672-L699)).
 
 ---
 
@@ -262,7 +262,7 @@ Hooks are bound in [`serve.ts:96-102`](../src/serve.ts#L96-L102): `refusal`, `sa
 | `ChatItemsWatch` | [97](../src/messages.ts#L97) | listeners per chat reference; received message items gathered by `collect` |
 | `chatRef`, `anyScopeChatRef`, `isChatRef` | [146-163](../src/messages.ts#L146-L163) | `@N` and `#N` references: of the main conversation, or also of a group's member chat |
 | `toMessage`, `messageFile`, `receivedFileError`, `receivedPath` | [185-251](../src/messages.ts#L185-L251) | chat item to `Message`; where a received file is: its download path or its forwarded path |
-| `toReplyTo`, `replyText`, `quoteLine` | [206-230](../src/messages.ts#L206-L230) | the quoted or reacted message of a reply: its ID, its sender by direction, its type other than text and its text, or its file name for an empty text; the text cut to its first line, up to 200 characters with `…`; the quote line `> ` of the channel |
+| `toReplyTo`, `replyText`, `quoteLine` | [206-230](../src/messages.ts#L206-L230) | the quoted message of a reply: its ID, its sender by direction, its type other than text and its text, or its file name for an empty text; the text cut to its first line, up to 200 characters with `…`; the quote line `> ` of the channel |
 | `filePaths`, `storedName`, `chatFolder` | [253-265](../src/messages.ts#L253-L265) | `DATA/files/group-N`, `DATA/files/contact-N` or the same under `DATA/forwarded`, and the download path and the forwarded path of a received file in them. A stored file is named by its file ID and extension, and so are the files of the plugin's prompts. |
 | `fileOffer`, `fileContent` | [267-292](../src/messages.ts#L267-L292) | file fields of an item; message content of a file |
 | `getChat`, `receivingFiles`, `markRead` | [309-325](../src/messages.ts#L309-L325) | `apiGetChat` and `apiChatItemsRead` by chat reference; the IDs of a chat's files in status `rcvAccepted`, `rcvTransfer` or `rcvWarning`, paged |
