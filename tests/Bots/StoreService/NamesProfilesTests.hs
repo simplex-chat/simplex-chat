@@ -76,6 +76,7 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "bounds the lookups in flight across searches and previews, and a lookup with no slot in time is unavailable" testLookupBound
     H.it "leaves search its lookups while previews hold all of theirs" testPreviewLookupShare
     H.it "remembers a refused host until its time passes, also when its lookup answers after the caller gave up" testRefusedHostCache
+    H.it "shares a host's running lookup among overlapping searches, holding one slot for it, and answers unread at once past its timeout" testSharedHostLookup
 
 namesProfilesChatTests :: SpecWith TestParams
 namesProfilesChatTests =
@@ -524,6 +525,28 @@ testRefusedHostCache = do
   preview fake (addressLinkAt "held.test" 2) `shouldReturn` ProfileUnavailable
   lookups "held.test" `shouldReturn` 1
   fetchCount fake `shouldReturn` 1
+
+testSharedHostLookup :: IO ()
+testSharedHostLookup = do
+  asked <- newTVarIO []
+  gate <- newEmptyTMVarIO
+  let resolver name
+        | name == "slow.test" = do
+            atomically $ modifyTVar' asked (name :)
+            ["1.1.1.1"] <$ uninterruptibleMask_ (atomically $ readTMVar gate)
+        | otherwise = stubResolver asked name
+  fake <- newFake testLimits {hostLookupSlots = 1} answerAll resolver
+  let lookups = length . filter (== "slow.test") <$> readTVarIO asked
+      slow = addressLinkAt "slow.test"
+  replicateConcurrently 4 (search fake (slow 1)) `shouldReturn` replicate 4 ProfileUnread
+  joined <- getCurrentTime
+  search fake (slow 2) `shouldReturn` ProfileUnread
+  (`diffUTCTime` joined) <$> getCurrentTime >>= (`shouldSatisfy` (< 0.2))
+  lookups `shouldReturn` 1
+  search fake (addressLink 1) `shouldReturn` ProfileUnavailable
+  atomically $ putTMVar gate ()
+  search fake (addressLink 2) `shouldReturn` ProfileOk (profileFor (addressLink 2))
+  search fake (slow 3) `shouldReturn` ProfileOk (profileFor (slow 3))
 
 -- Through the chat core
 

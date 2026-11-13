@@ -160,7 +160,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http cfg providers wai
               registration_ <- withTransaction oeStore (`getRegistration` rid)
               response <- case (row_, registration_) of
                 (Just row, Just r) -> invoiceViewResponse env cfg r row
-                _ -> internalError <$ logError (what <> ": order " <> invText invId <> " is not readable after its commit")
+                _ -> internalError <$ logError (what <> ": the order of invoice " <> piProviderRef <> " is not readable after its commit")
               pure Answer {aResponse = response, aAfter = announceClosed env providers waiters closed}
   where
     -- An invoice created at the provider for an order that was not written would stay payable with nothing watching it.
@@ -326,9 +326,6 @@ cancelAtProvider Provider {pCancelInvoice} ref =
   pCancelInvoice ref >>= \case
     Left (ProviderError e) -> logWarn ("names: cancelling invoice " <> ref <> " at the provider failed: " <> e)
     Right () -> pure ()
-
-invText :: InvoiceId -> Text
-invText (InvoiceId t) = t
 
 firstRefusal :: [IO (Either OrderRefusal ())] -> IO (Maybe OrderRefusal)
 firstRefusal = \case

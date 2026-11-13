@@ -14,6 +14,7 @@ module Bots.StoreService.WebTests
     runMigrations,
     digestFixture,
     capturingStderr,
+    overdueOf,
     StubState (..),
     StubCall (..),
     newStubState,
@@ -322,6 +323,11 @@ badgeWebTests = do
     it "expires an invoice past the settle window once its cancel has failed for an hour, and reports it" testSweepGivesUpPastTheWindow
     it "cancels overdue invoices oldest first, keeping the failures of those left for later" testSweepKeepsFailuresBeyondTheCap
     it "expires an old invoice whose provider is gone, without a call" testSweepExpiresWithoutItsProvider
+    it "reads a self-expiring invoice past the settle window before it expires it, keeping it open while the read fails" testSweepReadsPastTheWindow
+    it "reads no invoice past the settle window of a provider whose read failed in the pass" testSweepSkipsPastTheWindowWhileReadsFail
+    it "reads the invoices past the settle window that never failed first, and expires one unreadable for a day while its provider answers" testSweepGivesUpAnUnreadableInvoice
+    it "gives up no invoice while every read fails, and counts no failure from a pass in which its provider answered nothing" testSweepCountsAnsweredFailures
+    it "reads the invoice whose last failure is oldest first, so one unreadable invoice delays the others by one pass" testSweepReadsOldestFailureFirst
     it "sweeps around an overdue invoice whose provider this build does not know, leaving it open" testSweepSkipsAnUnknownProvider
     it "warns once per order while a cancel keeps failing" testSweepWarnsOncePerOrder
     it "cancels at most a pass-sized batch, leaving the rest for the next pass" testSweepCapsCancelsPerPass
@@ -644,7 +650,13 @@ expireAllOverdue :: DBStore -> UTCTime -> IO [InvoiceId]
 expireAllOverdue st now = overdueInvoices st now >>= expireNamed st now . map oiInvoiceId
 
 expireNamed :: DBStore -> UTCTime -> [InvoiceId] -> IO [InvoiceId]
-expireNamed st now invIds = newWaiters >>= \waiters -> expireOverdue st waiters Nothing now now invIds
+expireNamed st now invIds = newWaiters >>= \waiters -> mapM (overdueOf st) invIds >>= expireOverdue st waiters Nothing now now
+
+overdueOf :: DBStore -> InvoiceId -> IO OverdueInvoice
+overdueOf st invId =
+  getInvoice st invId >>= \case
+    Just InvoiceRow {irInvoiceId, irProvider, irProviderRef, irCreatedAt} -> pure OverdueInvoice {oiInvoiceId = irInvoiceId, oiProvider = irProvider, oiProviderRef = irProviderRef, oiCreatedAt = irCreatedAt}
+    Nothing -> fail $ "no invoice " <> show invId
 
 testRevokeAndRedeemExcludeEachOther :: IO ()
 testRevokeAndRedeemExcludeEachOther = withServiceStore $ \st -> do
@@ -3350,6 +3362,87 @@ testSweepExpiresWithoutItsProvider = bounded "sweep without provider" $ withStub
   loggedError "no provider is configured for it" logged `shouldBe` True
   stubCalls ref `shouldReturn` []
 
+testSweepReadsPastTheWindow :: IO ()
+testSweepReadsPastTheWindow = bounded "sweep reads past the window" $ withStubPoller raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  paid <- seedPastWindow (weStore env) 1 "p-old-paid" PPCrypto
+  unpaid <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
+  setSignals ref [("p-old-paid", settledSignal)]
+  failRead ref (Just (ProviderError "read refused"))
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) [paid, unpaid] `shouldReturn` [ISOpen, ISOpen]
+  failRead ref Nothing
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) [paid, unpaid] `shouldReturn` [ISPaid, ISExpired]
+  stubCalls ref `shouldReturn` [StubRead "p-old-paid", StubRead "p-old", StubRead "p-old-paid"]
+
+testSweepSkipsPastTheWindowWhileReadsFail :: IO ()
+testSweepSkipsPastTheWindowWhileReadsFail = bounded "sweep skips past the window" $ withStubPoller raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  _ <- seedOpenRef (weStore env) 1 "p-now" (addUTCTime 3600 now)
+  old <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
+  failRead ref (Just (ProviderError "read refused"))
+  runOnePass poller
+  invoiceStatus (weStore env) old `shouldReturn` ISOpen
+  stubCalls ref `shouldReturn` [StubRead "p-now"]
+
+testSweepGivesUpAnUnreadableInvoice :: IO ()
+testSweepGivesUpAnUnreadableInvoice = bounded "sweep gives up an unreadable invoice" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  bad <- seedPastWindow (weStore env) 1 "p-bad" PPCrypto
+  old <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) [bad, old] `shouldReturn` [ISOpen, ISOpen]
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) [bad, old] `shouldReturn` [ISOpen, ISExpired]
+  newer <- seedPastWindow (weStore env) 3 "p-new" PPCrypto
+  dayAgo <- addUTCTime (negate readGiveUpDelay) <$> getCurrentTime
+  readFailedAt poller "p-bad" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
+  logged <- capturingStderr (runOnePass poller)
+  mapM (invoiceStatus (weStore env)) [bad, newer] `shouldReturn` [ISExpired, ISExpired]
+  loggedError "invoice p-bad could not be read for 24 hours while its provider answered" logged `shouldBe` True
+  Map.member "p-bad" <$> readTVarIO (peReadFailed poller) `shouldReturn` False
+
+testSweepCountsAnsweredFailures :: IO ()
+testSweepCountsAnsweredFailures = bounded "sweep counts answered failures" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  longAgo <- addUTCTime (negate $ readGiveUpDelay + 3600) <$> getCurrentTime
+  bad <- seedPastWindow (weStore env) 1 "p-bad" PPCrypto
+  readFailedAt poller "p-bad" ReadFailure {rfLast = longAgo, rfAnswered = Just longAgo}
+  runOnePass poller
+  invoiceStatus (weStore env) bad `shouldReturn` ISOpen
+  old <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
+  readFailedAt poller "p-bad" ReadFailure {rfLast = longAgo, rfAnswered = Nothing}
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) [bad, old] `shouldReturn` [ISOpen, ISExpired]
+  isJust . (rfAnswered =<<) . Map.lookup "p-bad" <$> readTVarIO (peReadFailed poller) `shouldReturn` True
+
+testSweepReadsOldestFailureFirst :: IO ()
+testSweepReadsOldestFailureFirst = bounded "sweep reads the oldest failure first" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  now <- getCurrentTime
+  invoices <- mapM (\(i, providerRef) -> seedPastWindow (weStore env) i providerRef PPCrypto) [(1, "p-bad"), (2, "p-x"), (3, "p-y")]
+  forM_ [("p-bad", 7200), ("p-x", 3600), ("p-y", 1800)] $ \(providerRef, ago) ->
+    readFailedAt poller providerRef ReadFailure {rfLast = addUTCTime (negate ago) now, rfAnswered = Nothing}
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) invoices `shouldReturn` [ISOpen, ISOpen, ISOpen]
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) invoices `shouldReturn` [ISOpen, ISExpired, ISExpired]
+
+unreadableBad :: IORef StubState -> Provider
+unreadableBad ref = stub {pReadInvoice = \r -> if r == "p-bad" then pure (Left (ProviderError "gone")) else pReadInvoice stub r}
+  where
+    stub = stubProvider ref
+
+readFailedAt :: PollerEnv -> Text -> ReadFailure -> IO ()
+readFailedAt PollerEnv {peReadFailed} providerRef failure = atomically $ modifyTVar' peReadFailed (Map.insert providerRef failure)
+
 testSweepSkipsAnUnknownProvider :: IO ()
 testSweepSkipsAnUnknownProvider = bounded "sweep around an unknown provider" $ withStubPoller raceHold $ \_ poller env _ -> do
   now <- getCurrentTime
@@ -3361,7 +3454,7 @@ testSweepSkipsAnUnknownProvider = bounded "sweep around an unknown provider" $ w
   logged <- capturingStderr (runOnePass poller)
   invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
   independentStatus (weStore env) unknown `shouldReturn` Just "open"
-  logged `shouldSatisfy` loggedError ("store: overdue invoice " <> unknownId <> " names provider nonsense")
+  logged `shouldSatisfy` loggedError "store: overdue invoice p-unknown names provider nonsense"
 
 testSweepKeepsFailuresBeyondTheCap :: IO ()
 testSweepKeepsFailuresBeyondTheCap = bounded "sweep keeps failures past the cap" $ withPayableStubPoller raceHold $ \ref poller env _ -> do

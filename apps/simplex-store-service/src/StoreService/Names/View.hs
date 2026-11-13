@@ -17,11 +17,12 @@ module StoreService.Names.View
   )
 where
 
+import Control.Concurrent.Async (concurrently)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import Data.Functor ((<&>))
+import Data.Either (isLeft)
 import Data.Int (Int64)
-import Data.Maybe (isJust)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
@@ -31,13 +32,14 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Community (AcceptanceAsked (..), agreedTermsHash, communityJSON, currentAcceptance)
-import StoreService.Names.Contracts (Contracts, sponsorNonce)
+import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), getBalance, getRegistration, heldBy, lateWait)
 
 -- | The view's chain reads; a field whose read failed is null and named in vrUnread.
@@ -63,17 +65,19 @@ registrationView st cfg ct now r = do
 readViewChain :: Contracts -> NameRegistration -> IO ViewReads
 readViewChain ct NameRegistration {nrPhase, nrOwner, nrLabelHash, nrReveal} = case nrPhase of
   PCommitted -> do
-    vr <- sponsorNonce ct nrOwner >>= \case
-      Right nonce -> pure none {vrIntentNonce = Just nonce}
-      Left _ -> pure none {vrUnread = ["intentNonce"]}
-    if isJust nrReveal
-      then pure vr
-      else currentAcceptance ct nrLabelHash nrOwner <&> \case
-        Right acceptance -> vr {vrAcceptance = Just acceptance}
-        Left _ -> vr {vrUnread = vrUnread vr <> ["acceptance"]}
+    deadline <- deadlineIn $ ctDeadline ct
+    fromMaybe unread <$> withSlot deadline (ctViewSlots ct) (uncurry readsOf <$> concurrently (sponsorNonce ct nrOwner) acceptanceRead)
   _ -> pure none
   where
     none = ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
+    acceptanceRead = if isJust nrReveal then pure Nothing else Just <$> currentAcceptance ct nrLabelHash nrOwner
+    readsOf nonce acceptance_ =
+      ViewReads
+        { vrIntentNonce = eitherToMaybe nonce,
+          vrUnread = ["intentNonce" | isLeft nonce] <> ["acceptance" | maybe False isLeft acceptance_],
+          vrAcceptance = eitherToMaybe =<< acceptance_
+        }
+    unread = none {vrUnread = "intentNonce" : ["acceptance" | isNothing nrReveal]}
 
 viewJSON :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> ViewReads -> J.Value
 viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrUnread, vrAcceptance} =

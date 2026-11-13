@@ -19,6 +19,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), TxRequest (..), newChainClient, signTransaction)
 import StoreService.Names.Store (CodeIssuer (..), NamePhase (PFailed), NameRegistration (nrFailedAt, nrPhase), NewTransaction (..), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
+import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice)
 import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, redactPassword, requireDevKeys, storeService, trustDevKeys)
@@ -535,7 +536,7 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     let st = chatStore cc
-        paidBy = "order f: $100.00 by btc on invoice inv-f"
+        paidBy = paidByBtc "f"
     now <- getCurrentTime
     Balances.placeOrderRow st "f" False 10000 (addUTCTime 3600 now)
     unpaid <- reg st "f"
@@ -575,12 +576,12 @@ testGroupMoneyCmds ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     answerCall node registrar (ownerOfSelector <> labelBytes "s") $ Reverts ""
     replyTo cc alice "/close nothing" `shouldReturn` "Nothing recorded: no order has the reference nothing."
     replyTo cc alice "/close inv-s"
-      `shouldReturn` ("Closed order s, failed at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: order s: $100.00 by btc on invoice inv-s.")
+      `shouldReturn` ("Closed order s, failed at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: " <> paidByBtc "s" <> ".")
     Balances.credit st "s" 2505
     replyTo cc alice "/balance s"
-      `shouldReturn` "Order s: balance $25.05 (credited $125.05, refunded $100.00). Paid by: order s: $100.00 by btc on invoice inv-s. To record its refund: /record_refund s 2505"
+      `shouldReturn` ("Order s: balance $25.05 (credited $125.05, refunded $100.00). Paid by: " <> paidByBtc "s" <> ". To record its refund: /record_refund s 2505")
     replyTo cc alice "/record_refund inv-s 2500" `shouldReturn` "Nothing recorded: the balance is $25.05 now, not $25.00."
-    replyTo cc alice "/record_refund inv-s 2505" `shouldReturn` "Recorded a refund of $25.05 for order s. Refund it now, by: order s: $100.00 by btc on invoice inv-s."
+    replyTo cc alice "/record_refund inv-s 2505" `shouldReturn` ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidByBtc "s" <> ".")
     Balances.figures st "s" t0 `shouldReturn` Just (0, 12505, 12505, Nothing)
 
 testCloseNamesOff :: HasCallStack => TestParams -> IO ()
@@ -596,7 +597,7 @@ minuteText = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M UTC"
 testRefundRecorded :: HasCallStack => TestParams -> IO ()
 testRefundRecorded ps = withStoreService ps $ \_ _ cc -> do
   let st = chatStore cc
-      paidBy = "order s: $100.00 by btc on invoice inv-s"
+      paidBy = paidByBtc "s"
   Balances.source st "s" 10000
   balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //record_refund inv-s 10000")
   logs <- capturingStderr $ recordRefundRaw cc "inv-s 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidBy <> ".")
@@ -632,12 +633,15 @@ heldSource cc src holder expiry = do
 
 heldRefusals :: HasCallStack => ChatController -> Text -> Text -> IO ()
 heldRefusals cc src held = do
-  balanceRaw cc src `shouldReturn` Right ("Order " <> src <> ": balance $100.00 (credited $100.00, refunded $0.00). Paid by: order " <> src <> ": $100.00 by btc on invoice inv-" <> src <> ". It cannot be refunded now: " <> held <> ".")
+  balanceRaw cc src `shouldReturn` Right ("Order " <> src <> ": balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidByBtc src <> ". It cannot be refunded now: " <> held <> ".")
   recordRefundRaw cc ("inv-" <> src <> " 10000") `shouldReturn` Left ("Nothing recorded: " <> held <> ".")
   Balances.figures (chatStore cc) src t0 >>= (`shouldSatisfy` \case Just (10000, 10000, 0, Just _) -> True; _ -> False)
 
 recordedS :: Either Text Text
-recordedS = Right "Recorded a refund of $100.00 for order s. Refund it now, by: order s: $100.00 by btc on invoice inv-s."
+recordedS = Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidByBtc "s" <> ".")
+
+paidByBtc :: Text -> Text
+paidByBtc r = "order " <> r <> " of " <> addressText ownerA <> ": $100.00 by btc on invoice inv-" <> r <> " (provider reference ref-inv-" <> r <> ")"
 
 testRefundOpenHolder :: HasCallStack => TestParams -> IO ()
 testRefundOpenHolder ps = withStoreService ps $ \_ _ cc -> do

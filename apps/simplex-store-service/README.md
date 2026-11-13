@@ -185,6 +185,8 @@ difference to pay, each a provider invoice or card PaymentIntent) are also cappe
 all clients together.
 Searches read the chain at most 16 at a time and long polls hold at most 500 at a time, for all clients
 together; past that they answer `429 rate_limited` with a short `Retry-After` at once.
+Registration views of committed orders read the chain at most 16 at a time as well, each with its
+wait for a slot and all its reads within 10 seconds; past that it names its chain fields in `unread`.
 
 The BTCPay API key needs four permissions, each scoped to the one store:
 `cancreateinvoice` and `canviewinvoices` for checkout and the poller,
@@ -192,6 +194,11 @@ The BTCPay API key needs four permissions, each scoped to the one store:
 rates for late crypto credits, and
 `canmodifyinvoices` so `POST /api/invoice/:id/cancel` can invalidate an invoice at BTCPay
 rather than only in this store.
+
+**Keep the right to modify the store's invoices to the store's owners and this API key.** BTCPay
+lets whoever has it mark an invoice settled by hand, and the service takes a `Settled` invoice as
+paid, so they get the badge code or the name without paying. The service logs `btcpay: invoice <ref>
+additionalStatus Marked` at note only when it reads that invoice on its own, not from BTCPay's list.
 
 **`speed_policy = HighSpeed` is refused beside `[names]`**: under it BTCPay marks a payment `Settled`
 with no confirmation, which a double spend would turn into a free name, and crypto reaching a name
@@ -208,13 +215,16 @@ money goes to support for good.
 
 **Overpayment.** Crypto above what an invoice asks is credited to the order's balance in the same
 way, once confirmed, also on an invoice paid in time: the extra's share of the price, at the lower
-rate. The service logs it at note as `names: invoice <id> was overpaid; credited <cents> cents of the
-extra to the balance of registration <id>`, and an extra it cannot credit is alerted as late money is.
+rate. The service logs it at note as `names: invoice <provider reference> was overpaid; credited
+<cents> cents of the extra to its order's balance`, and an extra it cannot credit is alerted as late
+money is.
 An extra still unconfirmed when BTCPay settles the invoice is never credited, as its transaction can
 still be replaced: it is alerted, and support refunds it by hand once it confirms.
 Crypto sent to a name invoice after the service recorded it paid is not credited either: the poller
 logs an error naming the invoice, at most once an hour while it still lists it, and support refunds it
-once its transaction is confirmed on chain.
+once its transaction is confirmed on chain. The poller lists the invoices created in the last 72
+hours and the invoice expiry minutes, and a webhook can name an older one; past that nothing reports
+such crypto. Crypto sent to a badge invoice after it was paid is reported by nothing.
 
 BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
 The invoice view reports `paidInFull` on such an invoice only once BTCPay reads it `PaidLate` or
@@ -231,6 +241,14 @@ keeps the threshold it was made with, so raising it later credits nothing alread
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did
 not create and cannot read is reported in a warning once an hour until it falls out of that window.
+A BTCPay invoice older than that window, still open here past its expiry, as after an outage of BTCPay
+or of the service, is read once more before the service expires it, at most 25 in a pass, and stays
+open while that read fails. Those whose read never failed are read first, then the others by their
+last failed read, oldest first. A pass reads none of them when its reads of recent invoices all
+failed, and no more of them once one fails before any read succeeds, as while BTCPay is down. A
+failed read counts only in a pass where other reads succeed, and one that fails so for 24 hours is
+expired here, with an error naming it. Without a `[btcpay]` section, such invoices are expired
+without a read.
 
 ### Card payments (Stripe)
 
@@ -318,8 +336,11 @@ The invoice id is the only credential for reading or cancelling an order: it is 
 it travels in the path, and anything that logs request paths logs it. It is also what the buyer
 is shown as their reference and asked to quote, so support sees it: losing it lets someone cancel
 an invoice, which is why the code, which lets them take the badge, is never printed until the
-service says the invoice is paid. The service keeps it out of its own logs, which name the
-provider's reference instead.
+service says the invoice is paid. The service keeps it out of its own logs: a line about an invoice
+names the provider's reference (the BTCPay invoice id or the Stripe PaymentIntent id), which opens
+nothing in this service's API. A line about a name order without its invoice, from the worker or
+`//record_refund`, names the registration id, which reads the order and asks Try again, so keep the logs to
+the service's operators.
 
 | Route | Answers |
 |---|---|
@@ -556,6 +577,36 @@ releases it when that connection ends, as on a PostgreSQL restart. The service c
 every 30 seconds and exits when it fails, with `Error: the instance lock's database connection
 failed: …`. Compose's `restart: unless-stopped` then starts it again, and each start takes the lock
 or exits while another process holds it.
+
+### Restoring the database
+
+A database restored from a copy loses every row written after the copy, and the service re-derives
+none of them. The service's tables are in the chat's schema, so the chat agent's state goes back to
+the copy too, and SimpleX warns that an older copy of a chat database may stop receiving messages
+from some contacts. Before the service starts on it:
+
+1. Wait until the gas key has nothing in the node's pool: `cast nonce $REGISTRAR --block latest`
+   equals `cast nonce $REGISTRAR --block pending` (see
+   [Check the balance and transactions in flight](#check-the-balance-and-transactions-in-flight)). The
+   service numbers a new transaction after the key's mined transactions and the ones the copy saved,
+   so a transaction in the pool that the copy does not hold can have the same nonce.
+2. Record again, with `//record_refund` in `--run-cli` or `/record_refund` in the group, each refund recorded after the copy: the copy holds
+   those balances unrefunded, so their buyers could spend them. The service logged each as
+   `names: recorded a refund of <cents> cents for order <registration id>`.
+3. Revoke with `//revoke` each code spent or revoked after the copy, which the copy holds unspent, and
+   issue again each code issued after it, which the copy does not hold, so it answers `code_invalid`.
+   The service logs no code: a code issued in the group is in the group's history on the members'
+   devices, and one issued with `//issue` only where it was copied when printed.
+4. List at BTCPay and in the Stripe Dashboard the invoices and payments created after the copy's
+   time. The service holds no row for them, so it records no payment to them: its poller's list
+   skips them without a line, and a webhook naming one is logged at note with
+   `no invoice holds provider_ref <ref>`. Support settles each paid one by hand.
+
+After the start, a contact or a group member whose messages no longer arrive is resynchronised in
+`--run-cli` with `/sync @<contact>` or `/sync #<group> @<member>`. The orders the copy holds resume
+from the chain: the worker reads each commitment before it commits, and judges a register that does
+not go through with `confirmLanded` (see
+[When funds or the allowance run out](#when-funds-or-the-allowance-run-out)).
 
 ### Upgrading from the badge service
 
@@ -1187,7 +1238,10 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   the transaction waits` when fees are above the fee cap, `max_fee_per_gas` or 1 ETH over the gas
   limit. Nothing is signed until they fall.
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over the fee cap
-  <cap>` when a transaction stuck in the pool cannot be bumped within the fee cap.
+  <cap>` when a transaction stuck in the pool cannot be bumped within the fee cap. A register waiting
+  there shows its name to anyone who reads the pool, who can register the name first with a commitment
+  of their own once it is old enough. The order then ends `taken`: a paid order keeps its price as a
+  balance, and a code order keeps its code.
 
 An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the
@@ -1462,10 +1516,12 @@ after the invoice closed, and when its invoice was paid more crypto than it aske
 buyer spends a balance on another name from Your names, or asks for it back: the page tells them to
 write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
 id for an order without an invoice. Nothing is refunded automatically, and the service never learns
-where to send money. A reference is not proof of who paid: it is in the service's logs, the
-provider's Dashboard and its emails, and anyone holding it reads the balance and the order's name
-from `/api/invoice/:id`, or from `/api/registration/:id` for a registration id. Only a card refund is
-safe on the reference alone, as Stripe returns it to
+where to send money. A reference is not proof of who paid: a registration id is in the service's
+logs, and anyone holding a reference reads the balance and the order's name from `/api/invoice/:id`,
+or from `/api/registration/:id` for a registration id. Neither provider holds a name order's
+reference: its Stripe payment carries `name:0x<order hash>`, and its BTCPay invoice nothing of the
+order, while a badge order's Stripe payment carries its invoice id. Only a card refund
+is safe on the reference alone, as Stripe returns it to
 the card that paid; a crypto refund goes to an address the buyer gives, which nothing here ties to
 the order. Support records each refund in `--run-cli` mode with the service stopped, like the other
 `//` commands, or in the group while the service runs (see [Balances and failed orders in the
@@ -1480,14 +1536,16 @@ group](#balances-and-failed-orders-in-the-group)):
    balance, what paid for it and the command that records its refund:
 
    ```
-   Order <id>: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order <id>: $100.00 by btc on invoice <invoice id>. To record its refund: //record_refund <reference> 10000
+   Order <id>: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order <id> of <owner>: $100.00 by btc on invoice <invoice id> (provider reference <provider reference>). To record its refund: //record_refund <reference> 10000
    ```
 
    `Paid by` starts at this order and follows every balance the money came through back to the
-   first order: each order with what its invoice paid and by which method (`card`, `btc` or
-   `xmr`), the part paid from the balance of the next order listed, and money credited from its
-   invoice later: marked `late` when it arrived after the invoice closed, and `overpaid` when it is
-   the extra of an invoice that paid the order.
+   first order: each order with its owner, the address that signed it, what its invoice paid and by
+   which method (`card`, `btc` or `xmr`), the part paid from the balance of the next order listed,
+   and money credited from its invoice later: marked `late` when it arrived after the invoice
+   closed, and `overpaid` when it is the extra of an invoice that paid the order. The provider
+   reference is the BTCPay invoice id or the Stripe PaymentIntent id, which finds the payment in the
+   provider's Dashboard.
 2. Run the command the answer ends with. The cents must equal the whole balance: a refund zeroes it,
    and part of a balance is never refunded. Other cents record nothing, and the answer gives the
    balance.

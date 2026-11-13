@@ -48,7 +48,7 @@ import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..), phasesWaiting)
 import StoreService.Names.Signatures (OrderFields (..), personalDigest, spendMessage)
 import StoreService.Names.Store
-import StoreService.Names.View (balanceJSON)
+import StoreService.Names.View (addressText, balanceJSON)
 import StoreService.Orders (cancelOpenInvoice)
 import StoreService.Poller (PollerEnv, creditPass, drainHints, forgetRates, newPollerEnv)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..))
@@ -771,7 +771,12 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
   takenNow ctx dearer
   covering <- registrationAnswer . snd <$> spend ctx dearer (timedAt now $ (covered 20000) {sbOrder = aliceOrder {oCommitment = commitmentOf 4}})
   (\r -> (nrPhase r, nrBalanceSource r, nrBalanceUsed r)) <$> registrationById ctx covering `shouldReturn` (PQueued, Just dearer, 10000)
-  let paidBy = "order " <> d <> ": $100.00 by btc on invoice " <> dearerInvText <> ", $100.00 from the balance of order " <> s <> "; order " <> s <> ": $100.00 by btc on invoice " <> srcInvText
+  dearerRef <- providerRef ctx dearerInv
+  srcRef <- providerRef ctx srcInv
+  owner <- addressText . nrOwner <$> registrationById ctx dearer
+  let paidBy =
+        "order " <> d <> " of " <> owner <> ": $100.00 by btc on invoice " <> dearerInvText <> " (provider reference " <> dearerRef <> "), $100.00 from the balance of order " <> s
+          <> "; order " <> s <> " of " <> owner <> ": $100.00 by btc on invoice " <> srcInvText <> " (provider reference " <> srcRef <> ")"
   operatorCmd cc ("//balance " <> d)
     `shouldReturn` Right ("Order " <> d <> ": balance $100.00 (credited $200.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //record_refund " <> d <> " 10000")
   operatorCmd cc ("//record_refund " <> dearerInvText <> " 10000") `shouldReturn` Right ("Recorded a refund of $100.00 for order " <> d <> ". Refund it now, by: " <> paidBy <> ".")
