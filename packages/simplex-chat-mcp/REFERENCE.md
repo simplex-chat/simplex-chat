@@ -387,7 +387,7 @@ Usage:
   simplex-mcp session                  MCP server of one Claude Code session (run by the plugin)
   simplex-mcp service                  the shared SimpleX service of the plugin (started on demand)
   simplex-mcp hook session-start       Claude Code SessionStart hook (run by the plugin)
-  simplex-mcp hook turn                Claude Code hooks of prompts, answers and model changes (run by the plugin)
+  simplex-mcp hook turn                Claude Code hooks of prompts, answers, model changes and compactions (run by the plugin)
   simplex-mcp link                     show the Main group link, or its owners
   simplex-mcp reset-owners             replace the Main group and its owners
 
@@ -495,7 +495,7 @@ The plugin adds:
 | MCP server `simplex` | Runs `simplex-mcp session` for each session. It provides the tools, such as `mcp__plugin_simplex_simplex__connect`, and the channel. |
 | SessionStart hook | Checks the Node.js version and starts the service. It opens the session and its group, and shows the Main group link while the Main group has no owner. |
 | PreToolUse hook | Lets the plugin's tools run without a Claude Code prompt, because you approve them in the SimpleX app. |
-| UserPromptSubmit, Stop and PostModelSwitch hooks | Post your terminal prompts and Claude's answers in the session's group, and keep the model and effort in its description. They run in the background. |
+| UserPromptSubmit, Stop, PostModelSwitch and PostCompact hooks | Post your terminal prompts, Claude's answers and a line for each summary of the session's context in the session's group, and keep the model and effort in its description. They run in the background. |
 
 The server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. The PreToolUse hook runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js` instead. The package, a 4 MB download, bundles its dependencies and has no lockfile, so Claude Code installs nothing after unpacking it. Node.js loads the modules from the plugin's folder, so a project's `node_modules` can't replace them. The first session start downloads the SimpleX core library. Claude Code waits up to 600 seconds for the SessionStart hook.
 
@@ -627,6 +627,7 @@ With the channel, a message from a member of a session's group, other than `User
   - another kind: `⚙️ Claude Code: ` and its first line.
 
   A line over 200 characters is cut there and ends with `…`. Prompts typed in the terminal and channel prompts get no line. When one of Claude Code's own prompts starts a turn, Claude's answer to it is posted without a quote.
+- When Claude Code summarises the session's conversation, Claude posts one line without a quote, once the summary has replaced the conversation. A summary made by Claude Code at the context limit or in an idle session gets `⚙️ Context summarised automatically: 968K → 35K tokens`, and one after `/compact` or "Summarize from here" gets `⚙️ Context summarised on request: 399K → 25K tokens`. The numbers are the size of the context before and after the summary. The summary of a subagent's conversation posts nothing. Claude Code writes the summary to the transcript with its next request, so the line can follow the summary by a few seconds.
 - A text too long for one message is posted as several messages, each as long as a message can be, measured as for `send`. The first part of an answer carries the quote. A part without a quote holds up to 14,962 Latin, 7,481 Cyrillic or 4,987 CJK characters. A prompt or an answer over 250,000 characters is cut there and ends with `…`.
 - The `reply` tool sends a file to the group at once, without approval, with its text as the caption, under the file rules of `send`. It returns the file's message as `item`. A caption too long for a message with the file's preview is refused with `text: too long for a message with this TYPE; shorten it.`
 

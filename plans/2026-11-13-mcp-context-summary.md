@@ -1,6 +1,6 @@
 # SimpleX MCP: a line when a session's context is summarised
 
-Status: Q1 and Q2 were answered A by the user on 2026-11-13, with ⚙️ for the line; the plan waits for approval. Code references: master `97bbbd9ac` (MCP 0.3.0 with the notes of Claude Code's own prompts). Claude Code references: the binaries of 2.1.322 and 2.1.323 at the offsets given, the changelog of 2.1.322, and the transcripts of one machine, Claude Code 2.1.251 to 2.1.322, with 298 compactions: 226 of main conversations and 72 of subagents. Decisions of the notes plan, [2026-11-12-mcp-harness-notes.md](2026-11-12-mcp-harness-notes.md), are cited as "notes decision N".
+Status: Q1 and Q2 were answered A by the user on 2026-11-13, with ⚙️ for the line; the plan was approved on 2026-11-13 and is implemented on `ep/mcp-context-summary`. Code references: master `97bbbd9ac` (MCP 0.3.0 with the notes of Claude Code's own prompts). Claude Code references: the binaries of 2.1.322 and 2.1.323 at the offsets given, the changelog of 2.1.322, and the transcripts of one machine, Claude Code 2.1.251 to 2.1.322, with 298 compactions: 226 of main conversations and 72 of subagents. Decisions of the notes plan, [2026-11-12-mcp-harness-notes.md](2026-11-12-mcp-harness-notes.md), are cited as "notes decision N".
 
 ## 1. Goal
 
@@ -139,7 +139,8 @@ src/hook.ts        SessionStartInput    + source
                    sessionStart         no model in /title when source is compact
                    TurnInput            + agent_id
                    turn                 PostCompact: note from compactionNote; nothing is sent without a note
-                   compactionNote       new: the boundary of decision 15 and the line of decision 17
+                   compactionNote       new: the line of decision 17
+                   recentBoundary       new: the boundary of decision 15
                    findInTranscript     takes the tail's size in bytes instead of a text
                    answerModel,         pass 1 MiB plus twice the text's bytes, as before
                    promptKind

@@ -16,8 +16,13 @@ const turnRetryMs = 1_000
 const maxText = 250_000
 const answerReads = 20
 const promptReads = 600
+const compactionReads = 120
+const compactionReadFactor = 10
+const compactionAge = 60_000
 const transcriptReadMs = 100
 const transcriptTailBytes = 1_048_576
+const compactionTailBytes = 4 * transcriptTailBytes
+const tokenCount = new Intl.NumberFormat("en", {notation: "compact"})
 const syntheticModel = "<synthetic>"
 const maxNote = 200
 const statusEmoji = new Map([["completed", "✅"], ["failed", "❌"], ["stopped", "⏹️"], ["killed", "⏹️"]])
@@ -29,6 +34,7 @@ interface SessionStartInput {
   session_title?: string
   cwd: string
   model?: string
+  source?: string
 }
 
 interface TurnInput {
@@ -40,6 +46,7 @@ interface TurnInput {
   last_assistant_message?: string
   to_model?: string
   effort?: {level?: string}
+  agent_id?: string
 }
 
 interface Origin {
@@ -53,6 +60,9 @@ interface Origin {
 
 interface TranscriptEntry {
   type?: unknown
+  subtype?: unknown
+  timestamp?: unknown
+  compactMetadata?: {trigger?: unknown; preTokens?: unknown; postTokens?: unknown}
   isSidechain?: unknown
   promptId?: unknown
   origin?: Origin | null
@@ -90,7 +100,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
     const config = readConfig(env)
     const client = deps?.client ?? ServiceClient.forRoot(dataRoot(env))
     await client.ensureService(version)
-    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), at, name: input.session_title, project: input.cwd, model: input.model, config})
+    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), at, name: input.session_title, project: input.cwd, model: input.source === "compact" ? undefined : input.model, config})
     const {link, owners} = owner
     if (owners.length > 0 || link === undefined) return {}
     return {systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "${mainGroup}":\n${qrCodeText(link, "plain")}\n${link}`}
@@ -115,9 +125,12 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   if (!interactive(env)) return {}
   try {
     const input = JSON.parse(stdin) as TurnInput
+    const compaction = input.hook_event_name === "PostCompact"
+    const note = compaction ? await compactionNote(input, at, readMs) : undefined
+    if (compaction && note === undefined) return {}
     const model = input.to_model ?? (input.hook_event_name === "Stop" ? await answerModel(input, readMs) : undefined)
     const kind = input.hook_event_name === "UserPromptSubmit" ? await promptKind(input, readMs) : undefined
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), ...kind, answer: cut(input.last_assistant_message), model, effort: input.effort?.level}
+    const request = {id: input.session_id, pid: claudePid(env), at, note, prompt: cut(input.prompt), ...kind, answer: cut(input.last_assistant_message), model, effort: input.effort?.level}
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -137,7 +150,7 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
 async function answerModel({transcript_path: path, last_assistant_message: message}: TurnInput, readMs: number): Promise<string | undefined> {
   const answer = message?.trim()
   if (!path || !answer) return undefined
-  const last = await findInTranscript(path, answer, answerReads, readMs, tail => {
+  const last = await findInTranscript(path, transcriptTailBytes + 2 * Buffer.byteLength(answer), answerReads, readMs, tail => {
     const entry = lastAnswer(tail)
     return entry?.text === answer ? entry : undefined
   })
@@ -147,11 +160,24 @@ async function answerModel({transcript_path: path, last_assistant_message: messa
 async function promptKind({transcript_path: path, prompt_id: id, prompt}: TurnInput, readMs: number): Promise<PromptKind> {
   const text = prompt?.trim()
   if (!path || !text) return {typed: false}
-  return (await findInTranscript(path, text, promptReads, readMs, (tail, last) => promptRecord(tail, id, text, last))) ?? {typed: false}
+  return (await findInTranscript(path, transcriptTailBytes + 2 * Buffer.byteLength(text), promptReads, readMs, (tail, last) => promptRecord(tail, id, text, last))) ?? {typed: false}
 }
 
-async function findInTranscript<T>(path: string, text: string, reads: number, readMs: number, find: (tail: string, last: boolean) => T | undefined): Promise<T | undefined> {
-  const bytes = transcriptTailBytes + 2 * Buffer.byteLength(text)
+async function compactionNote({transcript_path: path, agent_id: agent}: TurnInput, at: number, readMs: number): Promise<string | undefined> {
+  if (!path || agent !== undefined) return undefined
+  const boundary = await findInTranscript(path, compactionTailBytes, compactionReads, compactionReadFactor * readMs, tail => recentBoundary(tail, at - compactionAge))
+  if (boundary === undefined) return undefined
+  const {trigger, preTokens, postTokens} = boundary.compactMetadata ?? {}
+  const counts = typeof preTokens === "number" && typeof postTokens === "number" ? `: ${tokenCount.format(preTokens)} → ${tokenCount.format(postTokens)} tokens` : ""
+  return `⚙️ Context summarised ${trigger === "manual" ? "on request" : "automatically"}${counts}`
+}
+
+function recentBoundary(tail: string, since: number): TranscriptEntry | undefined {
+  const boundaries = tail.split("\n").flatMap(line => (line.includes('"compact_boundary"') ? (transcriptEntry(line) ?? []) : []))
+  return boundaries.filter(entry => entry.type === "system" && entry.subtype === "compact_boundary" && entry.isSidechain !== true && Date.parse(String(entry.timestamp)) >= since).at(-1)
+}
+
+async function findInTranscript<T>(path: string, bytes: number, reads: number, readMs: number, find: (tail: string, last: boolean) => T | undefined): Promise<T | undefined> {
   for (let read = 1; ; read++) {
     const tail = await readTail(path, bytes).catch(() => "")
     const found = find(tail, read === reads)

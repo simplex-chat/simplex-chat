@@ -36,14 +36,17 @@ function fakeClient(owner: {owners: string[]; link?: string}, ensureError?: Erro
 }
 
 describe("SessionStart hook", () => {
-  it("starts the session with its title, folder, model, Claude Code process and the time the hook started, and stays quiet when the Main group has an owner", async () => {
+  it("starts the session with its title, folder, model, Claude Code process and the time the hook started, without the model after a compaction, and stays quiet when the Main group has an owner", async () => {
     const {client, requests} = fakeClient({owners: ["Alice"]})
     const started = JSON.stringify({...JSON.parse(input), model: "claude-opus-5"})
+    const compacted = JSON.stringify({...JSON.parse(input), source: "compact", model: "claude-haiku-5"})
     expect(await sessionStart(started, {CLAUDE_PID: "4321"}, {client, nodeVersion: "22.1.0"}, 5)).toEqual({})
     expect(await sessionStart(started, {}, {client, nodeVersion: "22.1.0"})).toEqual({})
+    expect(await sessionStart(compacted, {CLAUDE_PID: "4321"}, {client, nodeVersion: "22.1.0"}, 6)).toEqual({})
     expect(requests).toEqual([
       {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, at: 5, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
       {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", at: performance.timeOrigin, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, at: 6, name: "auth", project: "/p/app", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
     ])
   })
 
@@ -489,6 +492,36 @@ describe("turn hooks", () => {
         [undefined, true, true],
         [undefined, true, undefined],
         [undefined, true, undefined],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("post one line for a compaction of the session's conversation, from its boundary in the transcript after the boundary is written, with its trigger and token counts, and nothing for a subagent's compaction, a boundary of a subagent or a boundary older than 60 s", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const at = Date.now()
+      const boundary = (age: number, compactMetadata: object, extra: object = {}) => `${JSON.stringify({type: "system", subtype: "compact_boundary", content: "Conversation compacted", ...extra, timestamp: new Date(at - age).toISOString(), compactMetadata})}\n`
+      writeFileSync(transcript, `${boundary(61_000, {trigger: "auto", preTokens: 967_931, postTokens: 22_484})}${boundary(1_000, {trigger: "auto", preTokens: 972_401, postTokens: 9_145}, {isSidechain: true})}`)
+      const {client, requests} = turnClient()
+      const compact = (extra: object = {}) => turn(JSON.stringify({session_id: id, hook_event_name: "PostCompact", transcript_path: transcript, trigger: "auto", compact_summary: "Summary.", ...extra}), {}, client, 0, at, 1)
+      expect(await compact()).toEqual({})
+      expect(await compact({agent_id: "a1"})).toEqual({})
+      expect(requests).toEqual([])
+      const automatic = compact()
+      const written = new Promise<void>(resolve => setTimeout(() => resolve(appendFileSync(transcript, boundary(500, {trigger: "auto", preTokens: 967_558, postTokens: 34_754}))), 300))
+      await automatic
+      await written
+      appendFileSync(transcript, boundary(200, {trigger: "manual", preTokens: 398_983, postTokens: 25_399}))
+      await compact({trigger: "manual"})
+      appendFileSync(transcript, boundary(100, {trigger: "auto"}))
+      await compact()
+      expect(requests).toEqual([
+        {method: "POST", route: "/turn", body: {id, at, note: "⚙️ Context summarised automatically: 968K → 35K tokens"}},
+        {method: "POST", route: "/turn", body: {id, at, note: "⚙️ Context summarised on request: 399K → 25K tokens"}},
+        {method: "POST", route: "/turn", body: {id, at, note: "⚙️ Context summarised automatically"}},
       ])
     } finally {
       rmSync(folder, {recursive: true, force: true})

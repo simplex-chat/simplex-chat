@@ -351,7 +351,7 @@ test("while SimpleX links are off in a session's group, the connect card of a bo
   await sendNotice
 }, 600_000)
 
-test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it; an owner's reply to the answer reaches the session after the quote line, with the answer's ID and sender", async () => {
+test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, a compaction of the session as Claude's line, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it; an owner's reply to the answer reaches the session after the quote line, with the answer's ID and sender", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -415,6 +415,10 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   appendFileSync(transcript, `${JSON.stringify({type: "attachment", attachment: {type: "queued_command", prompt: midTurn, origin: {kind: "task-notification"}, commandMode: "task-notification"}})}\n`)
   await hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p2", prompt: midTurn})
   await midTurnNoted
+  const compacted = received(alice.chat, message("⚙️ Context summarised on request: 399K → 25K tokens", "Claude"))
+  appendFileSync(transcript, `${JSON.stringify({type: "system", subtype: "compact_boundary", content: "Conversation compacted", timestamp: new Date().toISOString(), compactMetadata: {trigger: "manual", preTokens: 398_983, postTokens: 25_399}})}\n`)
+  await hook({hook_event_name: "PostCompact", transcript_path: transcript, trigger: "manual", compact_summary: "Summary."})
+  await compacted
   const [lint] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Run the linter")
   await until(() => attached.length === 3)
   const linted = received(alice.chat, message("Lint passes.", "Claude", lint.chatItem.meta.itemId))
