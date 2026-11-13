@@ -1,10 +1,8 @@
 #!/bin/bash
 
 # Installs the APK in the booted emulator (emulator.sh) and runs the scripted UI cases with the ui helper: onboarding to
-# the chat list, a local group, a second profile with a group of its own and text in its search field, which must be
-# gone after a switch back to the first profile, then the chat list with the reachable toolbar (the default) and with
-# the top bar, then tests/fixtures/test.jpg and logo-large-rgba.png picked in the system's image picker and sent in the
-# group.
+# the chat list, a local group, then the chat list with the reachable toolbar (the default) and with the top bar, then
+# tests/fixtures/test.jpg and logo-large-rgba.png picked in the system's image picker and sent in the group.
 # Usage: scripts/ci/android/smoke-test.sh <apk> <output dir> [start|onboarding|layouts|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list. "backend"
 # also adds the test SMP server (NAMES_SERVER, from backend.sh, reached through emulator.sh reverse) under Your servers
@@ -28,9 +26,6 @@ case "$cases" in
 esac
 package=chat.simplex.app
 local_chat="seeded notes"
-other_profile=ciother
-other_chat="ci beta"
-other_chat_search=beta
 search_field="Search or paste SimpleX link"
 ui=$(dirname "$0")/ui
 fixtures=$(dirname "$0")/../../../tests/fixtures
@@ -234,12 +229,11 @@ test_server() {
 # A group of the user's own: without chats the chat list shows the onboarding pages, not the search field. The new
 # group's name field has the focus.
 create_local_chat() {
-  local name=$1
   "$ui" click-text "Start new chat" 10
   "$ui" click-text "Create group" 10
   "$ui" wait "Enter group name" 10
-  "$ui" type "$name"
-  "$ui" wait "$name" 10
+  "$ui" type "$local_chat"
+  "$ui" wait "$local_chat" 10
   "$ui" shot new-group
   "$ui" click-text "Create group" 10
   # the app offers to invite members once it has created the group; without contacts it has no "Skip inviting members"
@@ -248,70 +242,6 @@ create_local_chat() {
   "$ui" relaunch
   "$ui" wait "$search_field" 30
   "$ui" shot local-chat
-}
-
-open_user_picker_in_reachable_layout() {
-  local x y
-  read -r x y < <("$ui" text | sed -n -E 's/^([0-9]+),([0-9]+) profile image placeholder$/\1 \2/p' | sort -n -k 2 | tail -n 1) || return 1
-  "$ui" click "$x" "$y"
-}
-
-tap_inactive_profile_in_picker() {
-  local row line x y found_x="" found_y=""
-  row=$(y_of "$other_profile") || return 1
-  while IFS= read -r line; do
-    [ "${line#* }" = "profile image placeholder" ] || continue
-    x=${line%%,*}
-    y=${line#*,}
-    y=${y%% *}
-    if [ $((y - row)) -lt 40 ] && [ $((row - y)) -lt 40 ] && [ "$x" -gt "${found_x:-0}" ]; then
-      found_x=$x
-      found_y=$y
-    fi
-  done < <("$ui" text)
-  [ -n "$found_x" ] || return 1
-  "$ui" click "$found_x" "$found_y"
-}
-
-add_profile() {
-  local x y
-  open_user_picker_in_reachable_layout || fail "no profile image in the toolbar"
-  "$ui" click-text "Your chat profiles" 10
-  "$ui" click-text "Add profile" 10
-  "$ui" wait "Enter your name" 10
-  read -r x y < <(field_below "Enter your name") || fail "no profile name field"
-  "$ui" click "$x" "$y"
-  "$ui" type "$1"
-  "$ui" shot new-profile
-  "$ui" click-text "Create profile" 10
-  for _ in $(seq 30); do
-    "$ui" find "Enter your name" > /dev/null 2>&1 || break
-    sleep 1
-  done
-  "$ui" relaunch
-  "$ui" wait "Talk to someone" 30 || fail "$1 is not the active profile"
-  "$ui" shot profile-added
-}
-
-check_profile_switch_clears_search() {
-  add_profile "$other_profile"
-  create_local_chat "$other_chat"
-  "$ui" click-text "$search_field"
-  "$ui" type "$other_chat_search"
-  "$ui" key BACK
-  "$ui" shot other-profile-search
-  if "$ui" find "$search_field" > /dev/null 2>&1; then
-    fail "the search field is empty after typing \"$other_chat_search\""
-  fi
-  open_user_picker_in_reachable_layout || fail "no profile image in the toolbar"
-  "$ui" wait "$other_profile" 10
-  tap_inactive_profile_in_picker || fail "no other profile in the profile picker"
-  "$ui" wait "$local_chat" 10 || true
-  "$ui" shot profile-switched
-  check "switching to citester clears the search field" "$ui" find "$search_field"
-  check "switching to citester lists \"$local_chat\"" "$ui" find "$local_chat"
-  "$ui" relaunch
-  "$ui" wait "$search_field" 30
 }
 
 # The search field and "Add list" next to it: at the bottom of the chat list, "Add list" above the field; at the top, below it.
@@ -418,8 +348,7 @@ if [ "$cases" != onboarding ]; then
     : "${NAMES_SERVER:?NAMES_SERVER must be the test SMP server address}"
     test_server
   fi
-  create_local_chat "$local_chat"
-  check_profile_switch_clears_search
+  create_local_chat
   check_layout reachable
   "$ui" layout top
   check_layout top

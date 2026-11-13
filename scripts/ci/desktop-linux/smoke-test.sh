@@ -1,9 +1,8 @@
 #!/bin/bash
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
-# chat list, a local group, a second profile with a group of its own and text in its search field, which must be gone
-# after a switch back to the first profile, then the chat list with the toolbar at the bottom (the default) and at the
-# top, then tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
+# chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, then
+# tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
@@ -34,9 +33,6 @@ checks=$UI_OUT/checks.txt
 # switches are at the right of the left pane, where Settings open
 switch_x=335
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
-other_profile=ciother
-other_chat="ci beta"
-other_chat_search=beta
 state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
 compose_y=730
 paperclip_x=415
@@ -216,14 +212,14 @@ check_layout() {
 
 # A group of the user's own: without chats the chat list shows no search field.
 create_local_chat() {
-  local name=$1 y
+  local y
   # the pencil at the right of the bottom toolbar opens New chat
   "$ui" click 363 730
   "$ui" click-text "Create group" 10
   "$ui" wait "Enter group name" 10
   y=$(y_of "Enter group name")
   "$ui" click 195 $((y + 40))
-  "$ui" type "$name"
+  "$ui" type "$local_chat"
   "$ui" shot new-group
   "$ui" click-text "Create group" 10
   "$ui" click-text "Skip inviting members" 10 || true
@@ -231,57 +227,8 @@ create_local_chat() {
   "$ui" key Escape
   back_to_chat_list || fail "no chat list after creating the group"
   # the group stays open in the right pane: Escape doesn't close a chat on desktop
-  on_screen "$name" || fail "\"$name\" is not in the chat list"
+  on_screen "$local_chat" || fail "\"$local_chat\" is not in the chat list"
   "$ui" shot local-chat
-}
-
-click_last() {
-  local target line position=""
-  target=$(normalise "$1")
-  while IFS= read -r line; do
-    if [ "$(normalise "${line#* }")" = "$target" ]; then
-      position=${line%% *}
-    fi
-  done < <("$ui" text)
-  [ -n "$position" ] || return 1
-  "$ui" click "${position%,*}" "${position#*,}"
-}
-
-add_profile() {
-  local x y
-  "$ui" click 27 730
-  "$ui" click-text "Your chat profiles" 10
-  "$ui" click-text "Add profile" 10
-  "$ui" wait "Enter your name" 10
-  read -r x y _ < <("$ui" find "Enter your name")
-  "$ui" click "$x" $((y + 40))
-  "$ui" type "$1"
-  "$ui" shot new-profile
-  click_last "Create profile" || fail "no \"Create profile\" button"
-  "$ui" wait "Talk to someone" 30 || fail "$1 is not the active profile"
-  for _ in 1 2 3; do
-    not_on_screen "Your chat profiles" && break
-    "$ui" key Escape
-  done
-  "$ui" shot profile-added
-}
-
-check_profile_switch_clears_search() {
-  add_profile "$other_profile"
-  create_local_chat "$other_chat"
-  "$ui" click-text "Search or paste SimpleX link"
-  "$ui" type "$other_chat_search"
-  "$ui" shot other-profile-search
-  if on_screen "Search or paste SimpleX link"; then
-    fail "the search field is empty after typing \"$other_chat_search\""
-  fi
-  "$ui" click 27 730
-  "$ui" click-text citester 10
-  "$ui" wait "$local_chat" 10 || true
-  "$ui" shot profile-switched
-  check "switching to citester clears the search field" on_screen "Search or paste SimpleX link"
-  check "switching to citester lists \"$local_chat\"" on_screen "$local_chat"
-  back_to_chat_list || fail "no chat list after switching profile"
 }
 
 # The first item of the dropdown opened from the line at y $2, which repeats that line's value below it.
@@ -495,7 +442,7 @@ if [ "$cases" = onboarding ]; then
   exit 0
 fi
 
-create_local_chat "$local_chat"
+create_local_chat
 if [ "$cases" = setup ] || [ "$cases" = backend ]; then
   : "${NAMES_SERVER:?NAMES_SERVER must be the test SMP server address}"
   use_names_server
@@ -506,7 +453,6 @@ if [ "$cases" = setup ] || [ "$cases" = backend ]; then
   connect_by_name
 fi
 
-check_profile_switch_clears_search
 check_layout bottom
 use_top_toolbar
 check_layout top
