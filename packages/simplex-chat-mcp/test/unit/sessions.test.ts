@@ -1135,7 +1135,7 @@ describe("session channel", () => {
       "/'help COMMAND' shows how to use COMMAND, such as /'help schedule'.",
     ])
     expect(await help("give")).toEqual([
-      "/'give CHAT N' gives the agent's chat CHAT to session N, so that only session N and the commands of its group can use CHAT; the pending actions of CHAT here are rejected.",
+      "/'give CHAT N' gives the agent's chat CHAT to session N, so that only session N and the commands of its group can use CHAT; the pending actions of CHAT here are rejected, and its schedules move to session N without their due prompts.",
       "CHAT: a chat ID from /list. N: a session number from /sessions in the Main group.",
       "Example: `/give @3 2`. Related: /list.",
     ])

@@ -95,7 +95,7 @@ The agent's \`receive\` of CHAT returns a due prompt once; until then, the later
 An owner who approves actions adds a schedule, and its prompts become due only while that owner approves actions.
 /'unschedule CHAT N' removes schedule N of CHAT and renumbers the later ones. /schedules lists up to ${listedSchedules} schedules of all chats.
 Example: \`/schedule #3 0 7 * * 1-5 Post the trail report.\`, at 07:00 on weekdays.`
-const giveHelp = `/'give CHAT N' gives the agent's chat CHAT to session N, so that only session N and the commands of its group can use CHAT; the pending actions of CHAT here are rejected.
+const giveHelp = `/'give CHAT N' gives the agent's chat CHAT to session N, so that only session N and the commands of its group can use CHAT; the pending actions of CHAT here are rejected, and its schedules move to session N without their due prompts.
 CHAT: a chat ID from /list. N: a session number from /sessions in the Main group.
 Example: \`/give @3 2\`. Related: /list.`
 const observerHelp = `/'observer #G ID' makes member ID of this group, #G, an observer, who can't send messages. The approvals of all sends or files that the member gave, and the member's schedules, stop applying until the member is an admin or owner again.
