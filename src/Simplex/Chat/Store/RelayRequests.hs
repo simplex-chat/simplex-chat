@@ -60,7 +60,7 @@ getNextPendingRelayRequest db =
       maybeFirstRow fromOnly $
         DB.query
           db
-          [sql|
+          ( [sql|
             SELECT group_id
             FROM groups
             WHERE relay_own_status = ?
@@ -69,6 +69,10 @@ getNextPendingRelayRequest db =
             ORDER BY relay_request_execute_at ASC
             LIMIT 1
           |]
+#if defined(dbPostgres)
+              <> " FOR UPDATE"
+#endif
+          )
           (Only RSInvited)
     getRelayRequestData :: GroupId -> IO (Either StoreError (GroupId, RelayRequestData))
     getRelayRequestData groupId =

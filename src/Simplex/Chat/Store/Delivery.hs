@@ -122,7 +122,7 @@ getNextDeliveryTask db deliveryKey = do
       maybeFirstRow fromOnly $
         DB.query
           db
-          [sql|
+          ( [sql|
             SELECT delivery_task_id
             FROM delivery_tasks
             WHERE group_id = ? AND worker_scope = ?
@@ -130,6 +130,10 @@ getNextDeliveryTask db deliveryKey = do
             ORDER BY delivery_task_id ASC
             LIMIT 1
           |]
+#if defined(dbPostgres)
+              <> " FOR UPDATE"
+#endif
+          )
           (groupId, workerScope, DTSNew)
 
 type MessageDeliveryTaskRow = (Only Int64) :. DeliveryJobScopeRow :. (GroupMemberId, MemberId, ContactName, UTCTime, Binary ByteString, Maybe ChatBinding, Maybe (Binary ByteString), BoolInt)
@@ -187,7 +191,7 @@ getNextDeliveryTasks db gInfo task =
           map fromOnly
             <$> DB.query
               db
-              [sql|
+              ( [sql|
                 SELECT delivery_task_id
                 FROM delivery_tasks
                 WHERE group_id = ?
@@ -199,6 +203,10 @@ getNextDeliveryTasks db gInfo task =
                   AND task_status = ?
                 ORDER BY delivery_task_id ASC
               |]
+#if defined(dbPostgres)
+                  <> " FOR UPDATE"
+#endif
+              )
               ((Only groupId) :. jobScopeRow_ jobScope :. (Only DTSNew))
       | otherwise =
           -- For fully connected groups we guarantee a singleSenderGMId for a delivery job by additionally filtering
@@ -208,7 +216,7 @@ getNextDeliveryTasks db gInfo task =
           map fromOnly
             <$> DB.query
               db
-              [sql|
+              ( [sql|
                 SELECT delivery_task_id
                 FROM delivery_tasks
                 WHERE group_id = ?
@@ -221,6 +229,10 @@ getNextDeliveryTasks db gInfo task =
                   AND task_status = ?
                 ORDER BY delivery_task_id ASC
               |]
+#if defined(dbPostgres)
+                  <> " FOR UPDATE"
+#endif
+              )
               ((Only groupId) :. jobScopeRow_ jobScope :. (senderGMId, DTSNew))
 
 updateDeliveryTaskStatus :: DB.Connection -> Int64 -> DeliveryTaskStatus -> IO ()
@@ -292,7 +304,7 @@ getNextDeliveryJob db deliveryKey = do
       maybeFirstRow fromOnly $
         DB.query
           db
-          [sql|
+          ( [sql|
             SELECT delivery_job_id
             FROM delivery_jobs
             WHERE group_id = ? AND worker_scope = ?
@@ -300,6 +312,10 @@ getNextDeliveryJob db deliveryKey = do
             ORDER BY delivery_job_id ASC
             LIMIT 1
           |]
+#if defined(dbPostgres)
+              <> " FOR UPDATE"
+#endif
+          )
           (groupId, workerScope, DJSPending)
     getJob :: Int64 -> IO (Either StoreError MessageDeliveryJob)
     getJob jobId =
