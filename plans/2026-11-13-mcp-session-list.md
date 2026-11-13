@@ -1,6 +1,6 @@
 # SimpleX MCP: the list of sessions in the Main group
 
-Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-session-list`, on top of `ep/mcp-activity`. The user answered Q1 A and Q2 B on 2026-11-13; decisions 16 and 17 apply Q2 B. Code references: master `97bbbd9ac`. Claude Code references: version 2.1.322 and its binary at the byte offsets given, and the 27 session records of Claude Code 2.1.260 to 2.1.322 on this machine, read on 2026-11-13. Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
+Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-session-list`, merged with master `975cc700a`, which includes `ep/mcp-activity` (#8168). The user answered Q1 A and Q2 B on 2026-11-13; decisions 16 and 17 apply Q2 B. Code references: master `97bbbd9ac`. Claude Code references: version 2.1.322 and its binary at the byte offsets given, and the 27 session records of Claude Code 2.1.260 to 2.1.322 on this machine, read on 2026-11-13. Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
 
 ## 1. Goal
 
