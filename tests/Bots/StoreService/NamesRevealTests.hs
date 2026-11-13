@@ -50,7 +50,7 @@ import StoreService.Names.Registration (Registration (..), TermsAcceptance (..),
 import StoreService.Names.Reveal (RevealFields (..), parseRevealFields)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), NameReveal (..), getRegistration)
 import StoreService.Names.Turns (labelTurnCount)
-import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, nameBodyBytes, readLimit)
+import StoreService.Web.Http (createLimit, holdMicros, nameBodyBytes, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Owner (retargetHandler)
 import StoreService.Web.Names.Registration (registrationHandler, revealHandler)
@@ -64,7 +64,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "accepts a reveal with links, setting the label at a new version and waking a held poll" testWithLinks
     it "accepts a reveal without links" testWithoutLinks
     it "accepts the reveal the page signs, as viem signs it" testViemReveal
-    it "accepts a reveal with two records at the link bound, over the 8192-byte cap" testRecordsAtBound
+    it "accepts a reveal with two records at the link bound, within the names body cap" testRecordsAtBound
     it "answers an identical repeat in a later phase, and refuses a different one" testRepeats
     it "answers after the name's turn, so a slow reader of one answer holds no other reveal" testAnswersAfterTurn
   describe "refused" $ do
@@ -383,7 +383,7 @@ testRecordsAtBound = withReveals $ \Fx {fCtx = ctx} -> do
   let longest = alice {rContactLink = Just $ padded "a" linkMaxBytes, rChannelLink = Just $ padded "c" linkMaxBytes}
   rid <- committed ctx (orderOf longest)
   body <- J.encode <$> ownerBody ctx longest
-  LB.length body `shouldSatisfy` (\n -> n > fromIntegral maxBodyBytes && n <= fromIntegral nameBodyBytes)
+  LB.length body `shouldSatisfy` (<= fromIntegral nameBodyBytes)
   post ctx (revealPath rid) body `shouldReturn` accepted
 
 testRepeats :: IO ()

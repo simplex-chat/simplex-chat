@@ -1156,8 +1156,9 @@ cast send $REGISTRAR --value 1ether --interactive
 ```
 
 The gas below was measured on a local anvil deployment of the contracts (the names webapp's
-`dev/deploy.ts`), with a 63-letter label and links of 4096 bytes, the most the service accepts,
-before the terms became links accepted for every name. The acceptance's figures are those of the
+`dev/deploy.ts`), with a 63-letter label and links of 4096 bytes, before the terms became links
+accepted for every name. The service now accepts links of at most 1024 bytes, so the rows with links
+are upper bounds: each byte of a link costs about 730 gas. The acceptance's figures are those of the
 community names' acceptance then, whose work its two functions repeat; a plain name's register now also
 reads, clears and logs its acceptance, as a community name's did:
 
