@@ -160,7 +160,10 @@ export function abortCounter(file: string): () => void {
   let count = 0
   if (/^\d{1,15}$/.test(line)) count = Number(line)
   else writeReadableFile(file, "0\n")
-  return () => writeReadableFile(file, `${++count}\n`)
+  return () => {
+    writeReadableFile(file, `${count + 1}\n`)
+    count++
+  }
 }
 
 export function saveHeldTitles(root: string, titles: object[]): void {

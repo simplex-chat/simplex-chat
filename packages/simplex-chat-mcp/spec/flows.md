@@ -1608,7 +1608,7 @@ sequenceDiagram
   T->>T: abortItems + 41
   T->>C: apiChatItemsRead #9 [41]
   T->>P: Abort by Mallory in group Team (#9).
-  T->>T: count 1: FILE.part written with mode 0644, renamed to FILE
+  T->>T: 1 written to FILE.part with mode 0644, renamed to FILE; then the count 1
   T->>L: abort()
   L->>C: apiUpdateChatItem #9 S [◼ aborted], not live
   T-->>W: delivered: item 42, item 41 left out
@@ -1621,8 +1621,8 @@ Notes:
 - An item is an `/abort` when it is received, not live, in the main conversation, a text message whose trimmed text is `/abort`, and the chat's status has 1 or more renders while `--abort-file` is set; the sender is any contact or member ([tools.ts:643-645](../src/tools.ts#L643-L645), [status.ts:88-90](../src/status.ts#L88-L90)).
 - Every status of the server is ended: one with 1 or more renders by a final update to `◼ aborted`, not live; one with 0 renders without a message ([status.ts:92-94](../src/status.ts#L92-L94), [:78-86](../src/status.ts#L78-L86), [api.ts:1199-1213](../../simplex-chat-nodejs/src/api.ts#L1199-L1213)).
 - The other items of the event are delivered to the item watch; item 41 is also left out of the unread items of `receive` ([tools.ts:648](../src/tools.ts#L648), [:712](../src/tools.ts#L712), [:1329](../src/tools.ts#L1329)).
-- A failed write of FILE is logged as `abort in #9: ERROR`; the statuses are kept, and item 41 stays withheld and marked read ([tools.ts:656-661](../src/tools.ts#L656-L661)).
+- A failed write of FILE is logged as `abort in #9: ERROR`; the count and the statuses are kept, and item 41 stays withheld and marked read ([tools.ts:656-661](../src/tools.ts#L656-L661), [files.ts:163-166](../src/files.ts#L163-L166)).
 - After the abort, `/abort` is an ordinary message until a status is rendered again ([status.ts:88-90](../src/status.ts#L88-L90)).
 - The script's reads of FILE are described in [Reference](../REFERENCE.md#abort).
 
-Source: [serve.ts:76](../src/serve.ts#L76), [:141](../src/serve.ts#L141), [tools.ts:636-662](../src/tools.ts#L636-L662), [:712](../src/tools.ts#L712), [:1329](../src/tools.ts#L1329), [status.ts:78-94](../src/status.ts#L78-L94), [:153-156](../src/status.ts#L153-L156), [:185-189](../src/status.ts#L185-L189), [files.ts:158-164](../src/files.ts#L158-L164), [:191-195](../src/files.ts#L191-L195).
+Source: [serve.ts:76](../src/serve.ts#L76), [:141](../src/serve.ts#L141), [tools.ts:636-662](../src/tools.ts#L636-L662), [:712](../src/tools.ts#L712), [:1329](../src/tools.ts#L1329), [status.ts:78-94](../src/status.ts#L78-L94), [:153-156](../src/status.ts#L153-L156), [:185-189](../src/status.ts#L185-L189), [files.ts:158-167](../src/files.ts#L158-L167), [:194-198](../src/files.ts#L194-L198).

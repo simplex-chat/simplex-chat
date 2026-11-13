@@ -139,8 +139,8 @@ Status messages with /abort, after steps 1 and 2 of "Status messages":
 4. Send `/abort` while the status message is shown. The terminal prints `Abort by <your name> in contact <your name> (@N).`, the status message is edited to `◼ aborted`, the loop prints `abort 1`, and the later calls of `receive` in Claude Code return no `/abort`.
 5. Send `/abort` while no status message is shown, for example while Claude Code waits in `receive`: `receive` returns it as a message, and the loop prints nothing.
 6. In the group of step 6 of "Status messages", the second member sends `/abort` while a status message is shown: the terminal prints `Abort by <member name> in group <name> (#N).`, and the loop prints `abort 2`.
-7. `chmod 555 /tmp/agent-abort`, and send `/abort` while a status message is shown: stderr has `abort in @N: EACCES: permission denied, open '/tmp/agent-abort/count.part'`, the status line still ends with ` · /abort`, and the loop prints nothing. Then `chmod 755 /tmp/agent-abort`.
-8. Restart `serve` with the same option: `cat /tmp/agent-abort/count` prints `2`, and the loop prints nothing.
+7. `chmod 555 /tmp/agent-abort`, and send `/abort` while a status message is shown: stderr has `abort in @N: EACCES: permission denied, open '/tmp/agent-abort/count.part'`, the status line still ends with ` · /abort`, and the loop prints nothing. Then `chmod 755 /tmp/agent-abort`, and send `/abort` again while the status message is shown: the loop prints `abort 3`.
+8. Restart `serve` with the same option: `cat /tmp/agent-abort/count` prints `3`, and the loop prints nothing.
 9. `node dist/cli.js serve my-agent --abort-file ~/.simplex-mcp/my-agent/count` exits with `--abort-file: a file in a folder disjoint from the data folder expected, got <your home folder>/.simplex-mcp/my-agent/count`, and `node dist/cli.js serve my-agent --approve host --abort-file /tmp/agent-abort/count` with `--abort-file: status messages are shown only in mode requests.`; both exit with code 2.
 
 Stop and restart:

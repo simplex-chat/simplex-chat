@@ -238,6 +238,16 @@ describe("abort counter", () => {
     expect(existsSync(`${file}.part`)).toBe(false)
   })
 
+  it("adds 1 to the written count after a failed write", () => {
+    const count = abortCounter(file)
+    mkdirSync(`${file}.part`)
+    expect(count).toThrow(/EISDIR/)
+    expect(readFileSync(file, "utf8")).toBe("0\n")
+    rmSync(`${file}.part`, {recursive: true})
+    count()
+    expect(readFileSync(file, "utf8")).toBe("1\n")
+  })
+
   it("keeps a count at the start and continues it", () => {
     writeFileSync(file, "7\nchanged by hand\n")
     const count = abortCounter(file)

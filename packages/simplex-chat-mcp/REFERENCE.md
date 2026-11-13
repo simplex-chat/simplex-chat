@@ -466,7 +466,7 @@ Anyone who can post in that chat may send it: the contact of a direct chat, and 
 3. adds 1 to the count in FILE;
 4. ends every status message of the server, in all chats: a shown status message is edited to `◼ aborted`, which stays in the chat as an ordinary message, and a status message not yet shown is not posted.
 
-When a write of FILE fails, `abort in #15: ERROR` is printed on stderr, and the status messages are kept; the message is still kept from the agent and marked read. After an abort, `/abort` is an ordinary message until a status message is shown again. When a `receive` of the chat waits, the server deletes the chat's status message first, so an `/abort` sent then is returned by that `receive`.
+When a write of FILE fails, `abort in #15: ERROR` is printed on stderr, and the status messages and the count are kept; the message is still kept from the agent and marked read. After an abort, `/abort` is an ordinary message until a status message is shown again. When a `receive` of the chat waits, the server deletes the chat's status message first, so an `/abort` sent then is returned by that `receive`.
 
 FILE holds the count in decimal on one line. At the start, a count of 1 to 15 digits in its first line is kept; otherwise, and for a missing FILE, `0` is written. At a missing folder of FILE, or a failed write, the start ends with exit code 1. Each count is written to `FILE.part`, with mode 0644, readable by all users, and FILE is then replaced by `FILE.part` in one rename.
 

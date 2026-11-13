@@ -307,13 +307,13 @@ Hooks are bound in [`serve.ts:103-109`](../src/serve.ts#L103-L109): `refusal`, `
 | `createDataFolder` | [103](../src/files.ts#L103) | `mkdir -p` mode 0700; `chmod 0700` except on Windows |
 | `acquireLock`, `releaseLock` | [108-122](../src/files.ts#L108-L122) | `DATA/lock`, or the file of the given name, with the PID. The holder is named in the error by the `user` argument, `server` or `service`. |
 | `serverToken` | [124](../src/files.ts#L124) | `DATA/token`, or the file of the given name. An existing file is read, and is made private when the user owns it. A new token is 32 random bytes in base64url, and its file is created as the lock is. |
-| `saveHeldTitles`, `takeHeldTitles` | [166-180](../src/files.ts#L166-L180) | `ROOT/titles.json`, written at a service stop, and read and removed at the next start. An unparsable file is skipped with a log line. |
-| `createLock`, `createExclusive` | [201-223](../src/files.ts#L201-L223) | A private temporary file with the text is linked into place, so that the file appears once and complete. Where the file system refuses the link, the file is written exclusively. |
-| `takeOver` | [225](../src/files.ts#L225) | The lock of a stopped process is claimed first, so that only one starter takes it over. The claim is a link of the lock to `lock.PID.claim`, or an exclusive write of `lock.PID.claim` where links fail. When that PID is still in the lock, the lock is removed and created again. The claim is then removed. |
+| `saveHeldTitles`, `takeHeldTitles` | [169-183](../src/files.ts#L169-L183) | `ROOT/titles.json`, written at a service stop, and read and removed at the next start. An unparsable file is skipped with a log line. |
+| `createLock`, `createExclusive` | [204-226](../src/files.ts#L204-L226) | A private temporary file with the text is linked into place, so that the file appears once and complete. Where the file system refuses the link, the file is written exclusively. |
+| `takeOver` | [228](../src/files.ts#L228) | The lock of a stopped process is claimed first, so that only one starter takes it over. The claim is a link of the lock to `lock.PID.claim`, or an exclusive write of `lock.PID.claim` where links fail. When that PID is still in the lock, the lock is removed and created again. The claim is then removed. |
 | `headersFile`, `hookHeadersFile` | [136-142](../src/files.ts#L136-L142) | the paths `DATA/headers.json` and `DATA/hook-headers` |
 | `writeHeadersFile` | [144](../src/files.ts#L144) | `DATA/headers.json` and `DATA/hook-headers` |
 | `writeServerFile`, `readServerFile` | [149-156](../src/files.ts#L149-L156) | `DATA/server.json` |
-| `abortCounter` | [158](../src/files.ts#L158) | FILE of `--abort-file`: the count from its first line, or `0` written; the returned function adds 1 and writes the count, to `FILE.part` with mode 0644, then renamed to FILE |
+| `abortCounter` | [158](../src/files.ts#L158) | FILE of `--abort-file`: the count from its first line, or `0` written; the returned function writes the count plus 1, to `FILE.part` with mode 0644, then renamed to FILE, and adds 1 to the count after the write |
 
 ### [2.9 `register.ts`](../src/register.ts)
 
@@ -488,7 +488,7 @@ Claude Code activity from the events of the status hooks, created in `startAgent
 | Count of file descriptions | `AgentTools.describedFiles` ([tools.ts:543-544](../src/tools.ts#L543-L544)) | `onFileDescription` | `fileServers` |
 | Chats being left | `AgentTools.leaving` ([tools.ts:545](../src/tools.ts#L545)) | `leaveChat` ([:1143](../src/tools.ts#L1143), [:1153](../src/tools.ts#L1153)) | `statusRefusal` ([:980](../src/tools.ts#L980)) |
 | `/abort` items | `AgentTools.abortItems`, for the run ([tools.ts:546](../src/tools.ts#L546)) | `abortAgent` ([:652](../src/tools.ts#L652)) | `onNewItems`, `receive` ([:648](../src/tools.ts#L648), [:1329](../src/tools.ts#L1329)) |
-| Abort count | the count of the function returned by `abortCounter` ([files.ts:160](../src/files.ts#L160)) | `abortCounter`, each `/abort` ([:161](../src/files.ts#L161), [:163](../src/files.ts#L163)) | the next write of FILE |
+| Abort count | the count of the function returned by `abortCounter` ([files.ts:160](../src/files.ts#L160)) | `abortCounter`, each `/abort` after its write of FILE ([:161](../src/files.ts#L161), [:164-165](../src/files.ts#L164-L165)) | the next write of FILE |
 | Status messages | `Statuses.statuses`, one per chat ([status.ts:33](../src/status.ts#L33)) | `queue`, `start`, `show`, `end` | ticks, `queue`, `start`, `show`, `stop` |
 | Running calls | `Statuses.calls` and `Statuses.lastCall` ([status.ts:34-35](../src/status.ts#L34-L35)) | `startCall`, from `AgentTools.call` ([tools.ts:562](../src/tools.ts#L562), [:569](../src/tools.ts#L569)) | labels, the idle check of ticks |
 | Deletions in progress | `Statuses.endings` ([status.ts:36](../src/status.ts#L36)) | `end` | `stop` |
@@ -518,13 +518,13 @@ The profile, chats, items, members and file transfers are stored by the core in 
 | `DATA/headers.json` | `{"Authorization":"Bearer <token>"}` | 0600, set again at every write except on Windows | every start ([:144-147](../src/files.ts#L144-L147)) | Claude Code `headersHelper` |
 | `DATA/hook-headers` | `Authorization: Bearer <token>` and a newline | 0600, set again at every write except on Windows | every start ([:144-147](../src/files.ts#L144-L147)) | curl of the status hooks, `-H @DATA/hook-headers` |
 | `DATA/server.json` | `{name, port, expireHours}` | 0600, set again at every write except on Windows | every start, after the HTTP listener is bound ([serve.ts:123](../src/serve.ts#L123)) | `register` |
-| `DATA/lock` | PID and a newline | 0600 | start ([files.ts:201-240](../src/files.ts#L201-L240)) | next start |
+| `DATA/lock` | PID and a newline | 0600 | start ([files.ts:204-243](../src/files.ts#L204-L243)) | next start |
 | `DATA/tmp/` | the core's temp folder: files in transfer | 0700, set at every start | [core.ts:40](../src/core.ts#L40), [:77-81](../src/core.ts#L77-L81) | the core |
 | `DATA/files/group-N/`, `DATA/files/contact-N/` | downloaded files and files received without a download, named by file ID and extension | folder 0700 | the core at the download path ([tools.ts:1226-1227](../src/tools.ts#L1226-L1227)); moves ([:1743-1753](../src/tools.ts#L1743-L1753)) | `download` results, `/forward`, `/leave`, `/delete CHAT files` |
 | `DATA/forwarded/group-N/`, `DATA/forwarded/contact-N/` | files `/forward` downloaded, named as above, until a download moves them to `DATA/files/` | folder 0700 | the core at the forwarded path ([tools.ts:617-624](../src/tools.ts#L617-L624), [:1226-1227](../src/tools.ts#L1226-L1227)) | `/forward`; moved by `download` ([:607-615](../src/tools.ts#L607-L615)); deleted by `leave`, `/leave` and `/delete CHAT files` ([:1102-1120](../src/tools.ts#L1102-L1120), [:1142-1156](../src/tools.ts#L1142-L1156)) |
 | `DATA/files/sent/` | resized copies of sent images, and copies of the files `/forward` posts, one folder per copy | folder 0700; a resized copy 0600 | [tools.ts:1078-1095](../src/tools.ts#L1078-L1095), [:1122-1126](../src/tools.ts#L1122-L1126) | the core; deleted at `sndFileCompleteXFTP`, `sndFileError` and at start ([core.ts:41](../src/core.ts#L41), [tools.ts:731-733](../src/tools.ts#L731-L733), [:1041](../src/tools.ts#L1041)) |
 | `CONFIG/settings.json` (scope `user`), `PROJECT/.claude/settings.local.json` (scope `local`) | Claude Code settings, the status hooks included ([API 3.2](api.md#32-register)) | the mode of an existing file kept; a new file 0666 and new folders 0777, less the umask | `register` ([register.ts:46-50](../src/register.ts#L46-L50)) | Claude Code |
-| FILE of `--abort-file`, in a folder disjoint from the data folder | the abort count in decimal and a newline | 0644, set again at every write except on Windows | at the start when its first line holds no count, and at each `/abort`; written to `FILE.part`, then renamed ([files.ts:158-164](../src/files.ts#L158-L164), [:191-195](../src/files.ts#L191-L195)) | the script that runs the agent ([Reference](../REFERENCE.md#abort)) |
+| FILE of `--abort-file`, in a folder disjoint from the data folder | the abort count in decimal and a newline | 0644, set again at every write except on Windows | at the start when its first line holds no count, and at each `/abort`; written to `FILE.part`, then renamed ([files.ts:158-167](../src/files.ts#L158-L167), [:194-198](../src/files.ts#L194-L198)) | the script that runs the agent ([Reference](../REFERENCE.md#abort)) |
 
 The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the Node.js add-on into `CACHE/nodejs-addon-cce06d8/`, each with a `Downloading ...` line on stderr. CACHE is `$XDG_CACHE_HOME/simplex-chat` or `~/.cache/simplex-chat`; on macOS `~/Library/Caches/simplex-chat`; on Windows `%LOCALAPPDATA%\simplex-chat` ([libs.ts:41-48](../../simplex-chat-nodejs/src/libs.ts#L41-L48), [:89](../../simplex-chat-nodejs/src/libs.ts#L89), [:109](../../simplex-chat-nodejs/src/libs.ts#L109), [:116](../../simplex-chat-nodejs/src/libs.ts#L116), [:129](../../simplex-chat-nodejs/src/libs.ts#L129)).
 
@@ -534,7 +534,7 @@ The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the No
 
 ### 4.1 Start
 
-1. With `--inference`, `SIMPLEX_MCP_INFERENCE_KEY` is checked and the poller is created; then the data folder, lock, token and headers files are prepared ([serve.ts:70-75](../src/serve.ts#L70-L75), [:189-193](../src/serve.ts#L189-L193)); with `--abort-file`, the abort counter is created ([serve.ts:76](../src/serve.ts#L76), [files.ts:158-164](../src/files.ts#L158-L164)).
+1. With `--inference`, `SIMPLEX_MCP_INFERENCE_KEY` is checked and the poller is created; then the data folder, lock, token and headers files are prepared ([serve.ts:70-75](../src/serve.ts#L70-L75), [:189-193](../src/serve.ts#L189-L193)); with `--abort-file`, the abort counter is created ([serve.ts:76](../src/serve.ts#L76), [files.ts:158-167](../src/files.ts#L158-L167)).
 2. libsimplex for SQLite is loaded by `ChatApi.init`, and the databases are migrated with confirmation `yesUp` ([serve.ts:77](../src/serve.ts#L77), [api.ts:117-126](../../simplex-chat-nodejs/src/api.ts#L117-L126)).
 3. Three log lines: version and NAME, data folder, mode; with `--inference`, a fourth: `Inference endpoint: URL` ([serve.ts:78-81](../src/serve.ts#L78-L81)).
 4. The active user is read, or created with display name `--display-name` or NAME, empty full name and peer type `agent` ([serve.ts:96](../src/serve.ts#L96)).
@@ -606,7 +606,7 @@ acquireLock(DATA, USER = server):                    files.ts:90
 releaseLock(DATA): remove DATA/lock                  :99-105
 ```
 
-`isRunning`: `true` when `kill(pid, 0)` succeeds or fails with `EPERM` ([files.ts:247-254](../src/files.ts#L247-L254)).
+`isRunning`: `true` when `kill(pid, 0)` succeeds or fails with `EPERM` ([files.ts:250-257](../src/files.ts#L250-L257)).
 
 ---
 
@@ -789,7 +789,7 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 - The Claude Code entry gets the command `cat <DATA>/headers.json`, or `type "<DATA>\headers.json"` on Windows, with the path quoted for the shell ([register.ts:58](../src/register.ts#L58), [log.ts:24-31](../src/log.ts#L24-L31)). Only this command is written to the entry and to the `claude mcp add-json` arguments ([register.test.ts:71-82](../test/unit/register.test.ts#L71-L82)).
 - `-H @DATA/hook-headers` is passed to curl by the status hooks, so the settings file holds the path of `DATA/hook-headers` and not the token ([register.ts:64](../src/register.ts#L64), [register.test.ts:84-92](../test/unit/register.test.ts#L84-L92)).
 - curl of the status hooks runs without a shell, with `-q` first, so no curlrc file is read, and with `--noproxy *`, so the proxy variables of its environment are ignored; the token is sent to `127.0.0.1:PORT` only ([register.ts:64](../src/register.ts#L64), [Claude Code hooks: exec form](https://code.claude.com/docs/en/hooks#exec-form-and-shell-form)).
-- `token`, `headers.json`, `hook-headers` and `server.json` are set to mode 0600 at every write, and the data folder to 0700 at every start, except on Windows ([files.ts:103-106](../src/files.ts#L103-L106), [:186-189](../src/files.ts#L186-L189)).
+- `token`, `headers.json`, `hook-headers` and `server.json` are set to mode 0600 at every write, and the data folder to 0700 at every start, except on Windows ([files.ts:103-106](../src/files.ts#L103-L106), [:189-192](../src/files.ts#L189-L192)).
 
 ### 6.3 Peer-written text
 
@@ -859,7 +859,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | a status message gets at most 59 renders and one deletion, or the final text `◼ aborted` | [status.ts:20-21](../src/status.ts#L20-L21), [:63](../src/status.ts#L63), [:71](../src/status.ts#L71), [:149](../src/status.ts#L149), [:93](../src/status.ts#L93) |
 | with `--abort-file`, anyone who can post in a chat whose status message has a render stops the agent's work in all chats with `/abort`: the count in FILE is incremented, and every status message of the server is ended; each abort is logged with its sender, folded to one line, and its chat ([API 1.11](api.md#111-abort)) | [tools.ts:643-646](../src/tools.ts#L643-L646), [:651-662](../src/tools.ts#L651-L662), [status.ts:88-94](../src/status.ts#L88-L94) |
 | an `/abort` is kept from the agent: it is left out of the items of the item watch and of the unread items of `receive`, and it is marked read; an `/abort` in a member chat of a group, or sent by the agent, is never recognized | [tools.ts:644](../src/tools.ts#L644), [:648](../src/tools.ts#L648), [:712](../src/tools.ts#L712), [:653](../src/tools.ts#L653), [:1329](../src/tools.ts#L1329) |
-| FILE lies in a folder disjoint from the data folder and holds only the count, with mode 0644 | [cli.ts:144-145](../src/cli.ts#L144-L145), [files.ts:191-195](../src/files.ts#L191-L195) |
+| FILE lies in a folder disjoint from the data folder and holds only the count, with mode 0644 | [cli.ts:144-145](../src/cli.ts#L144-L145), [files.ts:194-198](../src/files.ts#L194-L198) |
 | model IDs are kept only when they match `^[\w.:/+@-]{1,64}$`, and they are shown in a code span; counts are kept only as non-negative safe integers | [inference.ts:27](../src/inference.ts#L27), [:55](../src/inference.ts#L55), [:150-153](../src/inference.ts#L150-L153), [:163-165](../src/inference.ts#L163-L165), [status.ts:194](../src/status.ts#L194), [:207](../src/status.ts#L207), [:227](../src/status.ts#L227) |
 | Claude Code activity is taken only from agent sessions, the sessions that called a tool of this server; the fields of [API 5.2](api.md#52-events) are read, and the rest of each body is discarded | [activity.ts:34-43](../src/activity.ts#L34-L43) |
 | tool names and subagent types are kept only when they match `^[\w-]{1,64}$`, and file names only as base names that match `^[\w.+@-]{1,64}$`; each is shown in a code span, and a backtick matches neither pattern; the other Claude Code labels are fixed texts | [activity.ts:21-22](../src/activity.ts#L21-L22), [:36](../src/activity.ts#L36), [:64](../src/activity.ts#L64), [:103-106](../src/activity.ts#L103-L106), [status.ts:29-30](../src/status.ts#L29-L30), [:210-228](../src/status.ts#L210-L228) |
@@ -1220,7 +1220,7 @@ Files:
 |---|---|---|---|
 | `ROOT/` | data root, mode 0700 | every client and the service ([client.ts:28](../src/client.ts#L28), [service.ts:435](../src/service.ts#L435)) | |
 | `ROOT/service.token` | the bearer token, 0600 | the first client or service ([files.ts:87-89](../src/files.ts#L87-L89), [:124-134](../src/files.ts#L124-L134)) | every client, the service |
-| `ROOT/service.lock` | PID of the service, linked from `ROOT/service.lock.PID.HEX.tmp`. A stopped service's lock is claimed through `ROOT/service.lock.PID.claim`, which is removed after the takeover. | `Service.start` ([service.ts:94](../src/service.ts#L94), [files.ts:201-240](../src/files.ts#L201-L240)) | the next service |
+| `ROOT/service.lock` | PID of the service, linked from `ROOT/service.lock.PID.HEX.tmp`. A stopped service's lock is claimed through `ROOT/service.lock.PID.claim`, which is removed after the takeover. | `Service.start` ([service.ts:94](../src/service.ts#L94), [files.ts:204-243](../src/files.ts#L204-L243)) | the next service |
 | `ROOT/titles.json` | the `/title` requests held at a stop, each with its `at`, 0600 | `shutdown` ([service.ts:180](../src/service.ts#L180)) | the next `Service.start`, which removes it ([service.ts:106](../src/service.ts#L106)) |
 | `ROOT/service.sock` | the socket | `listen` ([socket.ts:40-43](../src/socket.ts#L40-L43)) | clients |
 | `ROOT/service.log` | the service's stdout and stderr, emptied over 10 MB at a spawn and every hour | `spawnService` ([client.ts:76-84](../src/client.ts#L76-L84)), [`trimLog`](../src/files.ts#L91-L94) | people |
