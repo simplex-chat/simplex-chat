@@ -1417,9 +1417,10 @@ With `[group]` in `store_service.ini`, the service manages one group and serves 
 it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners, and
 `/balance`, `/record_refund` and `/close` for owners (see [Balances and failed orders in the
 group](#balances-and-failed-orders-in-the-group)). Each name code
-registers at the sponsor allowance's and the gas key's cost, so the group issues at most 10 of them
-in 24 hours (`//issue name` in `--run-cli` has no limit, and
-its codes are not counted). The code commands take these forms:
+registers at the sponsor allowance's and the gas key's cost, so the group issues at most
+`[group] name_codes_per_day` of them in 24 hours, 10 by default and 0 for none (`//issue name` in
+`--run-cli` has no limit, and its codes are not counted). Raise it for a planned batch, restart the
+service, and lower it again after; the allowance has to cover the names the codes will register. The code commands take these forms:
 
 ```
 /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]

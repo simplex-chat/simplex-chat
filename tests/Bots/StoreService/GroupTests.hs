@@ -143,7 +143,7 @@ badgeGroupTests = describe "badge group" $ do
       map (`groupCmdAction` ("/revoke " <> badgeCodeText code)) [GRMember, GRModerator]
         `shouldBe` replicate 2 (ReplyText "Only admins can revoke codes. This code is now visible to all members.")
   describe "configured group name and description" $ do
-    let cfg name descr = GroupConfig {gDisplayName = name, gDescription = descr}
+    let cfg name descr = GroupConfig {gDisplayName = name, gDescription = descr, gNameCodesPerDay = 10}
         profile name descr =
           GroupProfile
             { displayName = name,

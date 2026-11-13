@@ -651,6 +651,15 @@ groupConfigTests = describe "group config" $ do
   it "suggests no name when no character of display_name is valid" testGroupNoValidName
   it "requires display_name when the section is present" testGroupMissingName
   it "leaves group Nothing when the section is absent" testGroupAbsent
+  it "reads name_codes_per_day, 10 by default, 0 to stop name codes in the group, and refuses a negative one" testGroupNameCodesPerDay
+
+testGroupNameCodesPerDay :: IO ()
+testGroupNameCodesPerDay = do
+  let perDay body = fmap (fmap gNameCodesPerDay . group) <$> groupIni ("display_name = X\n" <> body)
+  perDay "" `shouldReturn` Right (Just 10)
+  perDay "name_codes_per_day = 200\n" `shouldReturn` Right (Just 200)
+  perDay "name_codes_per_day = 0\n" `shouldReturn` Right (Just 0)
+  perDay "name_codes_per_day = -1\n" `shouldReturn` Left "group.name_codes_per_day must be at least 0"
 
 listenerIni :: T.Text
 listenerIni = "[listener]\nbadges_static_dir = /srv/web\n"
@@ -661,17 +670,17 @@ groupIni body = parseIni (listenerIni <> "[group]\n" <> body)
 testGroupNameAndDescription :: IO ()
 testGroupNameAndDescription = do
   r <- groupIni "display_name = SimpleX Badges\ndescription = Welcome\n"
-  fmap group r `shouldBe` Right (Just GroupConfig {gDisplayName = "SimpleX Badges", gDescription = Just "Welcome"})
+  fmap group r `shouldBe` Right (Just GroupConfig {gDisplayName = "SimpleX Badges", gDescription = Just "Welcome", gNameCodesPerDay = 10})
 
 testGroupNoDescription :: IO ()
 testGroupNoDescription = do
   r <- groupIni "display_name = X\n"
-  fmap group r `shouldBe` Right (Just GroupConfig {gDisplayName = "X", gDescription = Nothing})
+  fmap group r `shouldBe` Right (Just GroupConfig {gDisplayName = "X", gDescription = Nothing, gNameCodesPerDay = 10})
 
 testGroupBlankDescription :: IO ()
 testGroupBlankDescription = do
   r <- groupIni "display_name = X\ndescription =    \n"
-  fmap group r `shouldBe` Right (Just GroupConfig {gDisplayName = "X", gDescription = Nothing})
+  fmap group r `shouldBe` Right (Just GroupConfig {gDisplayName = "X", gDescription = Nothing, gNameCodesPerDay = 10})
 
 testGroupInvalidName :: IO ()
 testGroupInvalidName = do
