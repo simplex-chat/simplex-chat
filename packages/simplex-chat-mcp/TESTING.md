@@ -177,7 +177,7 @@ The MCP server and the SessionStart, UserPromptSubmit, Stop and PostModelSwitch 
 - `npm test` runs the unit tests of the plugin's parts:
   - the session server and its channel;
   - the service;
-  - the hub with its Main group, the sessions' groups and the tool-use cards;
+  - the hub with its Main group, the sessions' groups, the tool-use cards, and the sessions' status messages at the service's stop and start;
   - the hooks;
   - the plugin files.
 

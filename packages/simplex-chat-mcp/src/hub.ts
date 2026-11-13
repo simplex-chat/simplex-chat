@@ -18,7 +18,7 @@ import {User, userContact} from "./user"
 const profileName = "Claude"
 const sessionKey = "simplexMcpSession"
 const firstAction = 1
-const cardsWait = 10
+const stopWait = 10
 const promptEcho = 60_000
 const maxPushed = 20
 const fileWait = 10 * 60_000
@@ -376,6 +376,7 @@ export class Hub implements SessionGroups {
       hub.user = await User.open(root, chat, user).catch(error => (logError("User", error), undefined))
       hub.userContactId = (await userContact(chat, user.userId))?.contactId
       for (const {id, session} of stored) await hub.session(id, session)
+      for (const {number, tools} of hub.sessions.values()) await tools.deleteLeftoverStatuses().catch(error => logError(`status messages of session ${number}`, error))
       hub.promptsHeldUntil = Date.now() + attachWait
       await core.events(event => hub.onEvent(event))
       return hub
@@ -459,9 +460,9 @@ export class Hub implements SessionGroups {
   async stop(): Promise<Action[]> {
     this.stopped = true
     const sessions = [...this.sessions.values()]
-    const stopped = await Promise.all(sessions.map(async ({actions}) => ({lost: actions.lost, cancelled: await actions.stop()})))
+    const stopped = await Promise.all(sessions.map(async ({actions, tools}) => ({lost: actions.lost, cancelled: await actions.stop(), deletions: await tools.statuses.stop()})))
     await this.controlEvents
-    await waitForStopMessages(stopped.flatMap(({lost, cancelled}) => (lost ? [] : cancelled)), cardsWait, new AbortController().signal)
+    await waitForStopMessages(stopped.flatMap(({lost, cancelled}) => (lost ? [] : cancelled)), stopWait, new AbortController().signal, stopped.reduce((sum, {deletions}) => sum + deletions, 0))
     for (const {tools} of sessions) tools.close()
     await this.user?.close()
     await this.chat.close()

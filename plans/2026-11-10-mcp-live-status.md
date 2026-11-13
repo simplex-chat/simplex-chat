@@ -31,6 +31,7 @@ Dependencies:
 21. Q21: `--inference` with `--approve host` is a usage error.
 22. Q22: a failed command of a status is logged, and the status is deleted; at a later note, a new status is started.
 23. Q23, decided 2026-11-13: the `typing` input of `receive` is removed. Each `receive` that returns messages starts the status when the chat read of the call meets the conditions.
+24. 2026-11-13: the plugin's service deletes the status messages of its sessions at its stop, and waits 10 s for these deletions with the cancelled cards; at its start, it deletes their leftovers, as `serve` does.
 
 ## Status message
 
@@ -245,7 +246,7 @@ none ready and none stopping, or no allowed proxy            undefined
 
 ## Start and stop
 
-Start, in `startAgent` after `control.load()`: `tools.deleteLeftoverStatuses()`, before HTTP listens.
+Start, in `startAgent` after `control.load()`: `tools.deleteLeftoverStatuses()`, before HTTP listens. In the plugin's service, it is run in `Hub.open` for each stored session after the sessions open; a failed chat list is logged as `status messages of session N: ERROR`.
 
 Stop:
 1. events ignored;
@@ -254,6 +255,27 @@ Stop:
 4. `tools.statuses.stop()`: each status deleted, the deletions awaited; M = statuses with renders > 0;
 5. `waitForStopMessages(cards, --stop-wait, endWait, M)`: `Stopping: sending N cancelled cards and M status deletions, up to S s. Ctrl-C to stop now.`, each part when above 0;
 6. `chat.close()`.
+
+In the plugin's service, `tools.statuses.stop()` of each session is run in `Hub.stop` after its `actions.stop()`, and the sum of M is passed to `waitForStopMessages` with the wait of 10 s.
+
+```mermaid
+sequenceDiagram
+  participant V as Service
+  participant H as Hub
+  participant S as Session N
+  participant C as Core _hub
+  Note over V,C: start
+  V->>H: Hub.open
+  H->>S: Hub.session, each stored session
+  H->>S: tools.deleteLeftoverStatuses(), each session
+  S->>C: /_delete item CHAT IDS broadcast, each eligible chat with leftovers
+  Note over V,C: stop
+  V->>H: Hub.stop
+  H->>S: actions.stop(), then tools.statuses.stop(), each session
+  S->>C: /_delete item CHAT ID broadcast, each status
+  H->>H: waitForStopMessages(cards, 10 s, sum of M)
+  H->>C: close
+```
 
 ## Limits
 
@@ -300,6 +322,9 @@ serve.ts       ServeOptions               inference
                startAgent                 Agent.inference; deleteLeftoverStatuses after control.load(); statuses stopped before the wait
                waitForStopMessages        renamed from waitForCancelledCards; parameter deletions, default 0
                inferenceKey               new
+hub.ts         stopWait                   renamed from cardsWait
+               Hub.open                   deleteLeftoverStatuses of each stored session after the sessions open
+               Hub.stop                   statuses stopped after the actions of each session; their count passed to waitForStopMessages
 cli.ts         helpText                   --stop-wait for status deletions; --inference
                serveOptions               --inference; refused with --approve host
                inferenceUrl               new
@@ -311,21 +336,21 @@ package.json   version                    0.3.0, with package-lock.json
 
 ## Tests
 
-- `test/unit/fixtures.ts`: `apiSendMessages` and `apiUpdateChatItem` record `live: true` when set; `apiDeleteChatItems` records `deletedItems`.
+- `test/unit/fixtures.ts`: `apiSendMessages` and `apiUpdateChatItem` record `live: true` when set; `apiDeleteChatItems` records `deletedItems`; `apiListGroups` and `close`, for `Hub.open` and `Hub.stop`.
 - `test/unit/status.test.ts` (new): the schedule; frames and elapsed time; the frozen line and 5-minute checks; label ranks; model and counts in labels; deletion when the conditions are unmet, at a failed read, at 23 h, and in the frozen phase 30 min after the last call; notes under the line, refused at render 59; a status 23 h old replaced at a note; no tick render after a label read during which notes reached render 50; one status per chat; a tick after the deletion; failed commands; stop; poll failure logging; leftovers page by page.
 - `test/unit/inference.test.ts` (new), a local HTTP server: loading; proxies, at most 4, without the key; tokens/s between polls, summed; tokens read; idle; fractional and negative counts; 64 slots; the model of one busy model; a sleeping server; 503; a plain llama-server with the key; allowed proxies; one poll per 3 s; one 1 s deadline per poll; failure texts, folded; a failing proxy; model ID filter; GET of the three paths only.
 - `test/unit/messages.test.ts`: `receive` in approved direct chats, groups and business chats, and in each refused case; deletion when a receive of the chat waits, after the answer, before leave, after `/revoke`, after the control chat is lost; the status kept when the answer fails; `send` with `live`: the note, its log line, an aborted call, the refusals, a pending send with the same text; a call counted as running until it ends; leftovers read only in eligible chats.
 - `test/unit/commands.test.ts`: `waitForStopMessages` with status deletions; the key refused with exit code 2 before the data folder exists.
+- `test/unit/sessions.test.ts`: at the service's stop, the status messages of the sessions are deleted, and the core is closed after the 10 s wait; at its start, the leftovers in the approved chats of each stored session are deleted.
 - `test/unit/http.test.ts`: the `live` schema, the `receive` input fields and the descriptions; status `live`; each description, and `instructions` for a 15-character name, within 2048 characters.
 - `test/unit/options.test.ts`: `--inference` forms, usage errors, help lines.
 - `test/e2e/scenarios.test.ts`: a direct chat: status, note, answer, deletion, one outcome post, stop with the deletion, the leftover deleted at the next start; a group: status, note, deletion after the answer.
 
 ## Docs
 
-- `README.md`: the stop line with status deletions; in the prompt, the chat where the agent takes prompts, a direct chat or a group, with `receive` (`wait 3600`) and answers with `send` (`wait 0`); a paragraph on the status message, "Delete for everyone", the active chat profile and `--inference`; a safety item on notes.
-- `REFERENCE.md`: section "Status while the agent works"; the tool rows of `send` and `receive`; the stop line; the command help; notes on stdout; the key in Security; v0.3.
+- `REFERENCE.md`: section "Status while the agent works"; the tool rows of `send` and `receive`; the stop line with status deletions; in the prompt, the chat where the agent takes prompts, a direct chat or a group, with `receive` (`wait 3600`) and answers with `send` (`wait 0`); a paragraph on the status message, "Delete for everyone", the active chat profile and `--inference`; the command help; notes on stdout; a safety item on notes; the key in Security; v0.3.
 - `TESTING.md`: v0.3; the stop line; status steps without and with llama-swap.
-- `PLAN.md`: version; the status message and the inference endpoint; the `send` and `receive` tables; processing; tests; decisions of 2026-11-11.
+- `plans/2026-10-19-mcp-server.md`: version; the status message and the inference endpoint; the `send` and `receive` tables; processing; tests; decisions of 2026-11-11 and 2026-11-13.
 - `spec/`: version 0.3.0; `status.ts` and `inference.ts`; the anchors of `tools.ts`, `serve.ts` and `cli.ts` rewritten (decision 16).
 
 ## Pull request
