@@ -609,9 +609,19 @@ With the channel, a message from a member of a session's group, other than `User
 - Every message from a member who can send is a prompt, including one that starts with `!`. Only one-line messages that start with `/` are not prompts, see below. Claude Code runs no command from a prompt. Claude gets the text, and runs shell commands only as tool use, such as Bash, under Claude Code's permissions, see [Tool use](#tool-use).
 - A one-line message that starts with `/` is a command of the group, such as `/approve 5` or `/list`. From an admin or owner, an unknown command gets `Unknown command.` From a moderator, member or author, any such message gets `Only admins and owners of this group can send / commands.`, and it reaches neither the commands nor Claude.
 - While the service runs and the session's Claude Code doesn't, Claude replies `Session N is not running.` It also replies so when Claude Code ends while a prompt's file arrives. For 30 seconds after the service starts, a prompt waits for its session to attach again, so a prompt sent while the service was stopped still arrives.
-- Claude posts its final answer of each turn in the group. When the turn's prompt came from the group, the answer replies to it, even when the next prompt arrives while Claude answers.
+- Claude posts its final answer of each turn in the group. When the turn's prompt came from the group, the answer replies to it, even when the next prompt arrives while Claude answers. Claude Code can add a prompt that arrives during a turn to that turn. Then the answer replies to the turn's prompt, or to the last message from the group added to the turn.
 - Claude's replies to a prompt, its answer included, are posted without the quote when the prompt was deleted or the quote makes the message too large. An answer is also posted without the quote when the quote leaves no room for its first character.
-- `User` posts only the prompts a person typed. Claude Code's own prompts, such as notifications of background tasks, are not posted. `User` also skips commands such as `/compact`, empty prompts such as one with images only, and prompts made only of the plugin's `<channel source="plugin:simplex:simplex" ...>` tags. `User`'s posts are never commands of the group, even a part that starts with `/`.
+- `User` posts only the prompts a person typed, also one typed while Claude works. `User` skips commands such as `/compact`, empty prompts such as one with images only, and prompts made only of the plugin's `<channel source="plugin:simplex:simplex" ...>` tags. `User`'s posts are never commands of the group, even a part that starts with `/`.
+- Claude posts one line for each of Claude Code's own prompts, without a quote. The line starts with an emoji for the prompt's kind:
+  - a notification of a background task, a subagent, a workflow or a monitor: its summary, such as `✅ Background command "Build" completed (exit code 0)`, and the first line of its event, when it has one, such as `📡 Monitor event: "Builds": serverpg exit 0`. The emoji is ✅ for a task that completed, ❌ for one that failed and ⏹️ for one that was stopped or killed. A notification without a status gets 📡 when it has an event, as a monitor event or the end of an artifact watch, and 🔔 otherwise. A notification in plain text, such as `3 background agents were stopped by the user: ...`, gets 🔔 and its first line;
+  - a message of another Claude session: `✉️ Message from NAME: ` and its first line;
+  - a message of a teammate in an agent team: `✉️ Message from NAME: ` and its summary, or its first line without one. A prompt with several teammate messages gets the line of the first one that is not an idle notification, and a prompt of idle notifications only gets no line;
+  - the report of a subagent: `📋 Report from subagent NAME: ` and its first line;
+  - a scheduled prompt: `⏰ Scheduled prompt: ` and its first line;
+  - an automatic prompt, such as the one after a usage limit resets: `🔄 Automatic prompt: ` and its first line;
+  - another kind: `⚙️ Claude Code: ` and its first line.
+
+  A line over 200 characters is cut there and ends with `…`. Prompts typed in the terminal and channel prompts get no line. When one of Claude Code's own prompts starts a turn, Claude's answer to it is posted without a quote.
 - A text too long for one message is posted as several messages, each as long as a message can be, measured as for `send`. The first part of an answer carries the quote. A part without a quote holds up to 14,962 Latin, 7,481 Cyrillic or 4,987 CJK characters. A prompt or an answer over 250,000 characters is cut there and ends with `…`.
 - The `reply` tool sends a file to the group at once, without approval, with its text as the caption, under the file rules of `send`. It returns the file's message as `item`. A caption too long for a message with the file's preview is refused with `text: too long for a message with this TYPE; shorten it.`
 
@@ -622,6 +632,7 @@ Owners set the group's preferences in the app, and SimpleX enforces them. Claude
 - While "Files and media" is off, `reply` returns `Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` The cards of sends and downloads of images and videos are posted as text, without the preview, and the sends and downloads still work. `/forward` gets `Action N: Files and media are off in the group of this session; its owners can turn them on in the group's preferences.`
 - When another preference refuses one of Claude's posts, Claude posts a text that names it instead:
   - For an answer with a SimpleX link: `Claude's answer was not posted: SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences.`
+  - For the line of one of Claude Code's own prompts: `A note on Claude Code's prompt was not posted: ...`
   - For a terminal prompt: `User's prompt was not posted: SimpleX links are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` This also happens while the preference allows SimpleX links only for roles above `User`'s role, which is member unless the owners change it.
   - For a card that waits for approval, or for `/forward` of a voice message: `Action N: ...`. The action then fails.
   - `reply` returns the same text without the prefix `Claude's answer was not posted: `.
@@ -640,7 +651,7 @@ Claude: I want to use `Bash`: `List files`
         /approve 5 or /reject 5
 ```
 
-`/approve 5` allows the tool use, and `/reject 5` denies it. The dialog in the terminal stays open, and the first answer, in the terminal or in the group, applies. A card that is still pending when its turn ends, when the next prompt arrives or when the session ends gets `Ended.` The preview of the tool's input is shortened to fit the card.
+`/approve 5` allows the tool use, and `/reject 5` denies it. The dialog in the terminal stays open, and the first answer, in the terminal or in the group, applies. A card that is still pending gets `Ended.` when its turn ends, when a prompt starts the next turn, or when the session ends. A prompt that Claude Code adds to the running turn leaves the card pending. The preview of the tool's input is shortened to fit the card.
 
 ### Model and effort
 

@@ -658,8 +658,8 @@ stderr: `CONTEXT: ERROR` from `logError` ([log.ts:41-43](../src/log.ts#L41-L43))
 | At `connect`, a known chat without an owner becomes the session's chat. `connect` to a chat of another session returns the tool error `The chat of TARGET belongs to another session; an admin or owner of that session's group can give it to this session with /give.` | [tools.ts:750-755](../src/tools.ts#L750-L755) |
 | Actions are numbered from 1 in each session group. The session number is part of the action key, see [1.1](#11-common-rules) | [hub.ts:75](../src/hub.ts#L75), [tools.ts:1705-1707](../src/tools.ts#L1705-L1707) |
 | Downloads are saved under `ROOT/_sessions/ID/files/` | [hub.ts:90](../src/hub.ts#L90), [messages.ts:225-227](../src/messages.ts#L225-L227) |
-| A run is not interactive when `CLAUDE_CODE_SESSION_ATTENDED` is `0`, which Claude Code sets for the hooks of a run nobody attends, or when `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli`, which Claude Code sets for `claude -p`, or `sdk-ts` or `sdk-py`, for the Agent SDK. Such a run has no session. Its session process does not connect to the service, and every tool returns `This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions.`, even when an option is invalid. Its hooks return `{}`, and the turn hooks send no request | [config.ts:22-32](../src/config.ts#L22-L32), [session.ts:15](../src/session.ts#L15), [:45-51](../src/session.ts#L45-L51), [:66](../src/session.ts#L66), [hook.ts:59-62](../src/hook.ts#L59-L62), [:92](../src/hook.ts#L92) |
-| A run with `CLAUDE_CODE_SESSION_ATTENDED` `0` and an entrypoint other than those three is, for example, a `claude -p` run started by a command of a VS Code or desktop-app session. Its SessionStart hook starts the service and sends `/title` with `unattended` for its `CLAUDE_PID`. The session server of that run gets the values of the attended session, `1` and its entrypoint. The service refuses it with status 403 when it registers from that process within 10 s of the mark. The refused server then answers every call with the same text, relays no permission request and registers no more | [hook.ts:79-89](../src/hook.ts#L79-L89), [service.ts:237-248](../src/service.ts#L237-L248), [session.ts:79-80](../src/session.ts#L79-L80), [:92](../src/session.ts#L92), [:115](../src/session.ts#L115), [:127](../src/session.ts#L127), [:162-165](../src/session.ts#L162-L165) |
+| A run is not interactive when `CLAUDE_CODE_SESSION_ATTENDED` is `0`, which Claude Code sets for the hooks of a run nobody attends, or when `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli`, which Claude Code sets for `claude -p`, or `sdk-ts` or `sdk-py`, for the Agent SDK. Such a run has no session. Its session process does not connect to the service, and every tool returns `This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions.`, even when an option is invalid. Its hooks return `{}`, and the turn hooks send no request | [config.ts:22-32](../src/config.ts#L22-L32), [session.ts:15](../src/session.ts#L15), [:45-51](../src/session.ts#L45-L51), [:66](../src/session.ts#L66), [hook.ts:82-85](../src/hook.ts#L82-L85), [:115](../src/hook.ts#L115) |
+| A run with `CLAUDE_CODE_SESSION_ATTENDED` `0` and an entrypoint other than those three is, for example, a `claude -p` run started by a command of a VS Code or desktop-app session. Its SessionStart hook starts the service and sends `/title` with `unattended` for its `CLAUDE_PID`. The session server of that run gets the values of the attended session, `1` and its entrypoint. The service refuses it with status 403 when it registers from that process within 10 s of the mark. The refused server then answers every call with the same text, relays no permission request and registers no more | [hook.ts:102-112](../src/hook.ts#L102-L112), [service.ts:237-248](../src/service.ts#L237-L248), [session.ts:79-80](../src/session.ts#L79-L80), [:92](../src/session.ts#L92), [:115](../src/session.ts#L115), [:127](../src/session.ts#L127), [:162-165](../src/session.ts#L162-L165) |
 
 `reply` ([`replyTool`](../src/tools.ts#L462-L483), [`AgentTools.reply`](../src/tools.ts#L713-L730)):
 
@@ -690,11 +690,11 @@ Commands from any member, one line `/KEYWORD PARAMS` as in [2.1](#21-commands-an
 
 | Request | Condition | Reply | Code |
 |---|---|---|---|
-| `/sessions` | no session | `No sessions.` | [hub.ts:430-433](../src/hub.ts#L430-L433) |
-| `/sessions` | otherwise | one line per session of the hub: `N · NAME`, with `, closed` when the service has no entry for it | [hub.ts:430-433](../src/hub.ts#L430-L433) |
-| `/join N` | no session N | `No session N. /sessions lists the sessions.` | [hub.ts:437](../src/hub.ts#L437) |
-| `/join N` | the sender is a member of its group | `You are a member of "N · NAME".` | [hub.ts:438-443](../src/hub.ts#L438-L443) |
-| `/join N` | otherwise: the sender is invited through the Main group, as `owner` when the sender is an owner of the Main group, else as `admin` | `Sent you an invitation to "N · NAME".` | [hub.ts:439](../src/hub.ts#L439), [:216-218](../src/hub.ts#L216-L218) |
+| `/sessions` | no session | `No sessions.` | [hub.ts:431-434](../src/hub.ts#L431-L434) |
+| `/sessions` | otherwise | one line per session of the hub: `N · NAME`, with `, closed` when the service has no entry for it | [hub.ts:431-434](../src/hub.ts#L431-L434) |
+| `/join N` | no session N | `No session N. /sessions lists the sessions.` | [hub.ts:438](../src/hub.ts#L438) |
+| `/join N` | the sender is a member of its group | `You are a member of "N · NAME".` | [hub.ts:439-444](../src/hub.ts#L439-L444) |
+| `/join N` | otherwise: the sender is invited through the Main group, as `owner` when the sender is an owner of the Main group, else as `admin` | `Sent you an invitation to "N · NAME".` | [hub.ts:440](../src/hub.ts#L440), [:217-219](../src/hub.ts#L217-L219) |
 | other one-line `/` text | | `Unknown command.` | [main-group.ts:14](../src/main-group.ts#L14), [:114](../src/main-group.ts#L114) |
 
 Posts:
@@ -704,7 +704,7 @@ Posts:
 | the first owner joined | `I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.` | [main-group.ts:13](../src/main-group.ts#L13), [:138](../src/main-group.ts#L138) |
 | each `joinedGroupMember` or `connectedToGroupMember` of a human who is found among the members read again. For the first owner, it is posted after the greeting | `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.` | [main-group.ts:17](../src/main-group.ts#L17), [:127-128](../src/main-group.ts#L127-L128) |
 
-The session groups stay as they are when the membership or a role in the Main group is changed, and when the Main group is replaced by a reset of the owners. Members invited through the old Main group keep their roles in the session groups, with the rights of those roles ([main-group.ts:117-132](../src/main-group.ts#L117-L132), [:99-109](../src/main-group.ts#L99-L109), [hub.ts:311-313](../src/hub.ts#L311-L313)).
+The session groups stay as they are when the membership or a role in the Main group is changed, and when the Main group is replaced by a reset of the owners. Members invited through the old Main group keep their roles in the session groups, with the rights of those roles ([main-group.ts:117-132](../src/main-group.ts#L117-L132), [:99-109](../src/main-group.ts#L99-L109), [hub.ts:312-314](../src/hub.ts#L312-L314)).
 
 Group profile ([`createMainGroup`](../src/main-group.ts#L195-L205), [`load`](../src/main-group.ts#L57-L66)):
 
@@ -740,11 +740,11 @@ Commands and replies are those of [2.1](#21-commands-and-replies), from approver
 | `/observer #G ID` | the sender's role is below admin or below the member's role, as SimpleX requires for a role change | `Your role does not let you change the role of NAME.` | [control.ts:383](../src/control.ts#L383), [:880-882](../src/control.ts#L880-L882) |
 | `/observer #G ID` | accepted: the member's role is set to `observer`, and the members are read again. The standing approvals that this member gave are kept in the chat's custom data, and are ignored until the member is an admin or owner again | `NAME is an observer and can't send messages.` | [control.ts:384-386](../src/control.ts#L384-L386), [:888-891](../src/control.ts#L888-L891), [:167-170](../src/control.ts#L167-L170) |
 | one-line `/` text outside the requests | an admin or owner | `Unknown command.` | [control.ts:20](../src/control.ts#L20), [:249](../src/control.ts#L249) |
-| any one-line `/` text | a moderator, member or author. The session replies before `Control`, and the text is passed to neither `Control` nor Claude | `Only admins and owners of this group can send / commands.`, quoting the message | [hub.ts:28](../src/hub.ts#L28), [:157](../src/hub.ts#L157), [:307-309](../src/hub.ts#L307-L309) |
+| any one-line `/` text | a moderator, member or author. The session replies before `Control`, and the text is passed to neither `Control` nor Claude | `Only admins and owners of this group can send / commands.`, quoting the message | [hub.ts:28](../src/hub.ts#L28), [:157](../src/hub.ts#L157), [:308-310](../src/hub.ts#L308-L310) |
 
-The requests `give CHAT N` and `observer #G ID` of [2.1](#21-commands-and-replies) are parsed only in a plugin session group ([control.ts:857-858](../src/control.ts#L857-L858)). Approvers are the active members of the session group with the role `admin` or `owner`, other than Claude and `User`, however they joined. An observer can't send, because the core refuses an observer's message ([hub.ts:311-317](../src/hub.ts#L311-L317), [control.ts:43](../src/control.ts#L43), [:580-582](../src/control.ts#L580-L582), [:589-598](../src/control.ts#L589-L598)).
+The requests `give CHAT N` and `observer #G ID` of [2.1](#21-commands-and-replies) are parsed only in a plugin session group ([control.ts:857-858](../src/control.ts#L857-L858)). Approvers are the active members of the session group with the role `admin` or `owner`, other than Claude and `User`, however they joined. An observer can't send, because the core refuses an observer's message ([hub.ts:312-318](../src/hub.ts#L312-L318), [control.ts:43](../src/control.ts#L43), [:580-582](../src/control.ts#L580-L582), [:589-598](../src/control.ts#L589-L598)).
 
-The hub handles other messages by these rules, in arrival order, one at a time ([hub.ts:153-160](../src/hub.ts#L153-L160), [:229-232](../src/hub.ts#L229-L232), [:303-313](../src/hub.ts#L303-L313), [control.ts:219-221](../src/control.ts#L219-L221)):
+The hub handles other messages by these rules, in arrival order, one at a time ([hub.ts:153-160](../src/hub.ts#L153-L160), [:230-233](../src/hub.ts#L230-L233), [:304-314](../src/hub.ts#L304-L314), [control.ts:219-221](../src/control.ts#L219-L221)):
 
 ```
 on a received message in the session group, by its text:
@@ -765,20 +765,21 @@ The cards are those of [2.2](#22-cards), and two more:
 | `mode` | `I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.`<br>done: `I run in mode host: ...` | `/'approve N' or /'reject N'` |
 | `permission` | ``I want to use `TOOL`: `DESCRIPTION` ``, then the input preview, one code span per line, cut to fit the card ([1.9](#19-action-refusals)) | `/'approve N' or /'reject N'` |
 
-`mode` and `permission` are exempt from the card size check ([control.ts:155](../src/control.ts#L155), [:700-706](../src/control.ts#L700-L706), [:735-740](../src/control.ts#L735-L740)). In `/pending`, their WHAT is `run in mode MODE` and `use TOOL` ([actions.ts:383-384](../src/actions.ts#L383-L384)). The last line of a `mode` or `permission` card is `Ended.` when the hub ends the card at a turn, a detach or the option `requests`, and `Expired.` when it expires ([actions.ts:237-241](../src/actions.ts#L237-L241), [control.ts:695-696](../src/control.ts#L695-L696)).
+`mode` and `permission` are exempt from the card size check ([control.ts:155](../src/control.ts#L155), [:700-706](../src/control.ts#L700-L706), [:735-740](../src/control.ts#L735-L740)). In `/pending`, their WHAT is `run in mode MODE` and `use TOOL` ([actions.ts:383-384](../src/actions.ts#L383-L384)). The last line of a `mode` or `permission` card is `Ended.` when the hub ends the card, and `Expired.` when it expires. The hub ends a `permission` card at an answer, or at a prompt that is not mid-turn, whose hook started after the card was created, and at the last detach; it ends a `mode` card at the option `requests` ([hub.ts:135](../src/hub.ts#L135), [:181](../src/hub.ts#L181), [:204-208](../src/hub.ts#L204-L208), [service.ts:321](../src/service.ts#L321), [actions.ts:237-241](../src/actions.ts#L237-L241), [control.ts:695-696](../src/control.ts#L695-L696)).
 
 Posts:
 
 | Poster | Text | Code |
 |---|---|---|
-| Claude | the final answer of each turn, in parts. The turn's prompt from the group, chosen by the hub from the turn records below, is quoted in the first part when the quote fits with the answer's first character. A changed short description is set after the answer | [hub.ts:180-201](../src/hub.ts#L180-L201), [:266-295](../src/hub.ts#L266-L295) |
-| Claude | `Session N is not running.`, as a reply to a prompt when the session is not attached at the prompt's delivery. The hub delivers the prompt after the earlier prompts and after the prompt's own file. In the first 30 s after the service's start, the reply is posted only when the session does not attach by their end | [hub.ts:153-160](../src/hub.ts#L153-L160), [:234-248](../src/hub.ts#L234-L248), [:378](../src/hub.ts#L378) |
-| Claude | `The file of this message was not received: ERROR`, as a reply to a prompt whose file was not received, see [4.5](#45-channel) | [hub.ts:234-258](../src/hub.ts#L234-L258) |
+| Claude | the final answer of each turn, in parts. The turn's prompt from the group, chosen by the hub from the turn records below, is quoted in the first part when the quote fits with the answer's first character. A changed short description is set after the answer | [hub.ts:180-202](../src/hub.ts#L180-L202), [:267-296](../src/hub.ts#L267-L296) |
+| Claude | `Session N is not running.`, as a reply to a prompt when the session is not attached at the prompt's delivery. The hub delivers the prompt after the earlier prompts and after the prompt's own file. In the first 30 s after the service's start, the reply is posted only when the session does not attach by their end | [hub.ts:153-160](../src/hub.ts#L153-L160), [:235-249](../src/hub.ts#L235-L249), [:379](../src/hub.ts#L379) |
+| Claude | `The file of this message was not received: ERROR`, as a reply to a prompt whose file was not received, see [4.5](#45-channel) | [hub.ts:235-259](../src/hub.ts#L235-L259) |
 | Claude | the reply to the one-line `/` texts of the rules above, quoting the message | [hub.ts:28](../src/hub.ts#L28), [:157](../src/hub.ts#L157) |
-| `User` | each prompt typed in the terminal, in parts. A prompt with `typed: false` is left out, such as a notification of a background task. A request without `typed`, from an older plugin, is posted as typed. Blank prompts, prompts made only of this server's channel tags, the prompts pushed from the group and one-line `/` commands are left out too. `User` posts in the group that is marked with the session's number | [hub.ts:184-195](../src/hub.ts#L184-L195), [user.ts:29-32](../src/user.ts#L29-L32) |
-| Claude | a text in place of an answer or a terminal prompt that the core refuses with `feature not allowed NAME`, as `SimpleX links` for a SimpleX link. The text for an answer is `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would. A terminal prompt is replaced by `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`, even while NAME is on only for roles above that of `User`. Claude is an owner of the group, so only the first text applies to its answers. The turn goes on | [hub.ts:195](../src/hub.ts#L195), [:277-287](../src/hub.ts#L277-L287), [:523-525](../src/hub.ts#L523-L525), [tools.ts:1607-1614](../src/tools.ts#L1607-L1614) |
+| Claude | `note` of a `/turn` request, a line about one of Claude Code's own prompts, without a quote, before the other posts of the request. See the hook's notes below | [hub.ts:195](../src/hub.ts#L195), [hook.ts:217-290](../src/hook.ts#L217-L290) |
+| `User` | each prompt typed in the terminal, also one typed during a turn, in parts. A prompt with `typed: false` is left out, such as a notification of a background task. A request without `typed`, from an older plugin, is posted as typed. Blank prompts, prompts made only of this server's channel tags, the prompts pushed from the group and one-line `/` commands are left out too. `User` posts in the group that is marked with the session's number | [hub.ts:184-196](../src/hub.ts#L184-L196), [user.ts:29-32](../src/user.ts#L29-L32) |
+| Claude | a text in place of an answer, a note or a terminal prompt that the core refuses with `feature not allowed NAME`, as `SimpleX links` for a SimpleX link. The text for an answer is `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would. A note is replaced by `A note on Claude Code's prompt was not posted: ` and the same preference text. A terminal prompt is replaced by `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`, even while NAME is on only for roles above that of `User`. Claude is an owner of the group, so its answers and notes get only the texts with `are off`. The turn goes on | [hub.ts:195-196](../src/hub.ts#L195-L196), [:278-288](../src/hub.ts#L278-L288), [:524-526](../src/hub.ts#L524-L526), [tools.ts:1607-1614](../src/tools.ts#L1607-L1614) |
 | Claude | files sent by `reply`, at once | [tools.ts:713-730](../src/tools.ts#L713-L730), [hub.ts:93](../src/hub.ts#L93) |
-| Claude | the rights of the member's role, below. They are posted once for each join and each role change of a member other than `User`, at its `joinedGroupMember`, `connectedToGroupMember` or `memberRole` | [hub.ts:220-227](../src/hub.ts#L220-L227), [:518](../src/hub.ts#L518), [control.ts:40-43](../src/control.ts#L40-L43), [:884-891](../src/control.ts#L884-L891) |
+| Claude | the rights of the member's role, below. They are posted once for each join and each role change of a member other than `User`, at its `joinedGroupMember`, `connectedToGroupMember` or `memberRole` | [hub.ts:221-228](../src/hub.ts#L221-L228), [:519](../src/hub.ts#L519), [control.ts:40-43](../src/control.ts#L40-L43), [:884-891](../src/control.ts#L884-L891) |
 
 Rights posts, by the member's role in the session group:
 
@@ -791,17 +792,18 @@ Rights posts, by the member's role in the session group:
 
 #G is the session group, and ID is the member. The core raises no `memberRole` event for a role change that Claude makes itself, with `/observer`. The reply to `/observer` is the observer's post instead.
 
-Parts ([hub.ts:531-548](../src/hub.ts#L531-L548), [tools.ts:1575-1578](../src/tools.ts#L1575-L1578)): the hub cuts the text into the longest runs of whole characters that `fitsMessage` accepts as one message. `fitsMessage` is the measure of `send` in [1.3](#13-send), in UTF-8 bytes. The first part is measured with its quote. The hub puts up to 14962 bytes of text into a part without a quote: 14962 Latin, 7481 Cyrillic or 4987 CJK characters, fewer for characters escaped in JSON.
+Parts ([hub.ts:532-549](../src/hub.ts#L532-L549), [tools.ts:1575-1578](../src/tools.ts#L1575-L1578)): the hub cuts the text into the longest runs of whole characters that `fitsMessage` accepts as one message. `fitsMessage` is the measure of `send` in [1.3](#13-send), in UTF-8 bytes. The first part is measured with its quote. The hub puts up to 14962 bytes of text into a part without a quote: 14962 Latin, 7481 Cyrillic or 4987 CJK characters, fewer for characters escaped in JSON.
 
-Claude can quote a message in its answer and its replies. When the core refuses such a post with `errorStore` `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or with `largeMsg`, as for a reply that quotes a message near the size limit, the post is sent again without the quote ([hub.ts:289-295](../src/hub.ts#L289-L295), [:550-553](../src/hub.ts#L550-L553)).
+Claude can quote a message in its answer and its replies. When the core refuses such a post with `errorStore` `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or with `largeMsg`, as for a reply that quotes a message near the size limit, the post is sent again without the quote ([hub.ts:290-296](../src/hub.ts#L290-L296), [:551-554](../src/hub.ts#L551-L554)).
 
-Turn records, one per `/turn` with `prompt`, are read and changed before the first await of each `/turn` ([hub.ts:54](../src/hub.ts#L54), [:180-186](../src/hub.ts#L180-L186), [:266-275](../src/hub.ts#L266-L275)):
+Turn records, added at a `/turn` with `prompt`, are read and changed before the first await of each `/turn` ([hub.ts:54](../src/hub.ts#L54), [:180-186](../src/hub.ts#L180-L186), [:267-276](../src/hub.ts#L267-L276)):
 
 ```
-on /turn {at, prompt}:
+on /turn {at, prompt, midTurn}:
   item = oldest pushed prompt that prompt contains in a channel tag of this server,
          or that equals prompt and was pushed in the last 60 s; else null
-  turns += {at, item}, unless at is below answeredAt; the matched pushed prompts are removed
+  turns += {at, item}, unless at is below answeredAt, or midTurn is true and nothing matched
+  the matched pushed prompts are removed
 on /turn {at, answer}, also an empty answer:
   earlier = turns with at below the answer's at
   earlier not empty:
@@ -813,7 +815,7 @@ on /turn {at, answer}, also an empty answer:
 at = performance.timeOrigin of the hook process; absent: Infinity for an answer's quote, now otherwise
 ```
 
-Group profile ([`createSessionGroup`](../src/hub.ts#L477-L489), [`Control.load`](../src/control.ts#L115-L122), [`describe`](../src/control.ts#L129-L131), [`updateProfile`](../src/control.ts#L133-L140)):
+Group profile ([`createSessionGroup`](../src/hub.ts#L478-L490), [`Control.load`](../src/control.ts#L115-L122), [`describe`](../src/control.ts#L129-L131), [`updateProfile`](../src/control.ts#L133-L140)):
 
 | Field | Value |
 |---|---|
@@ -827,7 +829,7 @@ Group profile ([`createSessionGroup`](../src/hub.ts#L477-L489), [`Control.load`]
 
 Claude makes the profile updates one at a time. It starts each from the group's current profile in the chat database and changes only the display name, the short description or the command menu. So a rename and a model change that overlap both stay.
 
-The hub takes the model and the effort level of a `/turn` only when its `at` is not older than the `at` of the value it took last. It keeps the two times apart, one for the model and one for the effort level. The model of a `/title` comes with the `at` of its SessionStart hook, as described in [4.6](#46-socket-protocol). A request without `at` counts as the current time. So when a Stop request that waited for its transcript entry arrives after a later model switch, the model of the switch stays ([hub.ts:187-193](../src/hub.ts#L187-L193), [:260-264](../src/hub.ts#L260-L264)).
+The hub takes the model and the effort level of a `/turn` only when its `at` is not older than the `at` of the value it took last. It keeps the two times apart, one for the model and one for the effort level. The model of a `/title` comes with the `at` of its SessionStart hook, as described in [4.6](#46-socket-protocol). A request without `at` counts as the current time. So when a Stop request that waited for its transcript entry arrives after a later model switch, the model of the switch stays ([hub.ts:187-193](../src/hub.ts#L187-L193), [:261-265](../src/hub.ts#L261-L265)).
 
 ### 4.4 Tool results in the plugin
 
@@ -869,7 +871,7 @@ Channel instructions: `Messages in the simplex channel are prompts of the member
 
 The session server negotiates the protocol revision 2025-11-25 and answers `server/discover` with `Method not found`, as `McpServer` of the SDK 2.3.1 does by default. Claude Code 2.1.319 registers no channel for a server that negotiates the modern revision 2026-07-28. A unit test of the session server checks both answers ([session.test.ts](../test/unit/session.test.ts)).
 
-The prompts of a session, from the members of [4.3](#43-session-groups), are delivered one at a time, in arrival order ([hub.ts:159](../src/hub.ts#L159), [:303-305](../src/hub.ts#L303-L305), [:234-248](../src/hub.ts#L234-L248)). While a session is attached, a prompt's file is received without a card, with relays approved, into `ROOT/_sessions/ID/files/group/<file ID><extension>`. The prompt is pushed after `rcvFileComplete`. After `rcvFileError`, a failed receive or 10 minutes, it is pushed without `file`. The next prompt waits until then ([hub.ts:234-258](../src/hub.ts#L234-L258), [:209-214](../src/hub.ts#L209-L214)). Pushed prompts are kept until they are matched by a turn's `prompt`, at most 20 ([hub.ts:23](../src/hub.ts#L23), [:186](../src/hub.ts#L186), [:246](../src/hub.ts#L246), [:268-272](../src/hub.ts#L268-L272)).
+The prompts of a session, from the members of [4.3](#43-session-groups), are delivered one at a time, in arrival order ([hub.ts:159](../src/hub.ts#L159), [:304-306](../src/hub.ts#L304-L306), [:235-249](../src/hub.ts#L235-L249)). While a session is attached, a prompt's file is received without a card, with relays approved, into `ROOT/_sessions/ID/files/group/<file ID><extension>`. The prompt is pushed after `rcvFileComplete`. After `rcvFileError`, a failed receive or 10 minutes, it is pushed without `file`. The next prompt waits until then ([hub.ts:235-259](../src/hub.ts#L235-L259), [:210-215](../src/hub.ts#L210-L215)). Pushed prompts are kept until they are matched by a turn's `prompt`, at most 20 ([hub.ts:23](../src/hub.ts#L23), [:186](../src/hub.ts#L186), [:247](../src/hub.ts#L247), [:269-273](../src/hub.ts#L269-L273)).
 
 ### 4.6 Socket protocol
 
@@ -882,10 +884,10 @@ The service speaks HTTP/1.1 over `ROOT/service.sock`, the fallback path or the W
 | `POST /attach` | `{id}` | a stream held open: the first line `{version, protocol}`, then `{prompt}` and `{permission}` lines | [service.ts:304-324](../src/service.ts#L304-L324) |
 | `POST /call` | `{id, tool, input}` | lines `{progress: TEXT}`, then one line `{result: CallToolResult or null}`. The call is aborted when the request is closed | [service.ts:326-345](../src/service.ts#L326-L345) |
 | `POST /permission` | `{id, requestId, toolName, description, inputPreview}` | `{}` after the card's action is created | [service.ts:143-147](../src/service.ts#L143-L147) |
-| `POST /turn` | `{id, pid?, at?, prompt?, typed?, answer?, model?, effort?}`, `at` the time the hook started, `typed` whether a person typed the prompt | `{}` after the posts | [service.ts:148-152](../src/service.ts#L148-L152) |
+| `POST /turn` | `{id, pid?, at?, prompt?, typed?, note?, midTurn?, answer?, model?, effort?}`, `at` the time the hook started, `typed` whether a person typed the prompt, `note` the line Claude posts about one of Claude Code's own prompts, `midTurn` whether Claude Code added the prompt to a running turn | `{}` after the posts | [service.ts:148-152](../src/service.ts#L148-L152) |
 | `GET /status` | none | `{version, protocol, mainGroup, owner: {owners}, sessions: [{number, name, attached}]}`, with the open sessions | [service.ts:424-427](../src/service.ts#L424-L427) |
-| `GET /link` | none | `{owners, link?}`, the link while the Main group has no owner | [service.ts:154](../src/service.ts#L154), [hub.ts:391-394](../src/hub.ts#L391-L394) |
-| `POST /reset-owners` | none | `{link}`, the link of the new Main group. The group is replaced at once, even while owners exist | [service.ts:155](../src/service.ts#L155), [hub.ts:402-404](../src/hub.ts#L402-L404) |
+| `GET /link` | none | `{owners, link?}`, the link while the Main group has no owner | [service.ts:154](../src/service.ts#L154), [hub.ts:392-395](../src/hub.ts#L392-L395) |
+| `POST /reset-owners` | none | `{link}`, the link of the new Main group. The group is replaced at once, even while owners exist | [service.ts:155](../src/service.ts#L155), [hub.ts:403-405](../src/hub.ts#L403-L405) |
 | `POST /stop` | none | `{}` after the stop sequence. The process exits after the reply | [service.ts:156-159](../src/service.ts#L156-L159) |
 
 | Status | Error | Condition |
@@ -926,11 +928,11 @@ on a service stop:                               the held title requests, with t
 on the next start:                               each one taken as a new /title
 ```
 
-`/session` and `/title` without `unattended` apply `config` to the hub ([hub.ts:396-400](../src/hub.ts#L396-L400), [service.ts:213](../src/service.ts#L213), [:221](../src/service.ts#L221), [:232](../src/service.ts#L232), [:259](../src/service.ts#L259)):
+`/session` and `/title` without `unattended` apply `config` to the hub ([hub.ts:397-401](../src/hub.ts#L397-L401), [service.ts:213](../src/service.ts#L213), [:221](../src/service.ts#L221), [:232](../src/service.ts#L232), [:259](../src/service.ts#L259)):
 - The hub sets the expiry of all sessions from `expireHours`.
 - The hub renames the Main group when `mainGroup` differs.
 
-`/session` requests the session's mode ([hub.ts:132-151](../src/hub.ts#L132-L151), [:319-322](../src/hub.ts#L319-L322), [:324-327](../src/hub.ts#L324-L327), [:75](../src/hub.ts#L75), [:518](../src/hub.ts#L518)):
+`/session` requests the session's mode ([hub.ts:132-151](../src/hub.ts#L132-L151), [:320-323](../src/hub.ts#L320-L323), [:325-328](../src/hub.ts#L325-L328), [:75](../src/hub.ts#L75), [:519](../src/hub.ts#L519)):
 - `requests` applies at once. The hub ends a pending mode card and clears `hostDeclined`.
 - For `host`, the hub posts the mode card when the group has an approver and `hostDeclined` is unset. It posts the card at once, or after the next membership event of the group.
 - When the mode card is rejected, the hub sets `hostDeclined` in session.json.
@@ -945,7 +947,7 @@ on the next start:                               each one taken as a new /title
 | `simplex-mcp session` | `.mcp.json` | MCP over stdio |
 | `simplex-mcp service` | `spawnService` | the ready line `ready`, `running` or `error: TEXT` on fd `SIMPLEX_MCP_READY_FD`, or on stdout when it is unset. If another running process holds ROOT/service.lock, the service checks the lock and the socket up to 150 times, 100 ms apart. It starts again once the lock is released, and its ready line is `running` once the socket answers. The log is written to stdout and stderr |
 | `simplex-mcp hook session-start` | SessionStart hook | one JSON line, see [4.8](#48-plugin-options-files-and-hook-output) |
-| `simplex-mcp hook turn` | UserPromptSubmit, Stop and PostModelSwitch hooks | `{}`. A prompt or an answer over 250,000 characters is cut there and ends with `…` ([hook.ts:16](../src/hook.ts#L16), [:190-192](../src/hook.ts#L190-L192)). The Stop hook sends the model of its answer, read from the transcript ([hook.ts:95](../src/hook.ts#L95), [:114-188](../src/hook.ts#L114-L188)). The UserPromptSubmit hook sends `typed`, read from the prompt's entry in the transcript ([:96](../src/hook.ts#L96), [:124-129](../src/hook.ts#L124-L129)) |
+| `simplex-mcp hook turn` | UserPromptSubmit, Stop and PostModelSwitch hooks | `{}`. A prompt or an answer over 250,000 characters is cut there and ends with `…` ([hook.ts:16](../src/hook.ts#L16), [:307-309](../src/hook.ts#L307-L309)). The Stop hook sends the model of its answer, read from the transcript ([hook.ts:118](../src/hook.ts#L118), [:137-145](../src/hook.ts#L137-L145), [:153-185](../src/hook.ts#L153-L185)). The UserPromptSubmit hook sends `typed`, `note` and `midTurn`, read from the prompt's record in the transcript ([:119](../src/hook.ts#L119), [:147-151](../src/hook.ts#L147-L151)) |
 | `simplex-mcp link` | people | with owners, `Owners of "MAIN": A, B. To replace them, run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` When the service reports neither owners nor a link, `The Main group has no link. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` Otherwise, on a terminal, `Join "MAIN" in the SimpleX app. The link works once:`, a QR code and the link, and elsewhere `Run npx -y @simplex-chat/mcp@VERSION link in a terminal to see the link to "MAIN".` |
 | `simplex-mcp reset-owners` | people | after `POST /reset-owners` of [4.6](#46-socket-protocol), on a terminal, `"MAIN" was replaced. Join the new one in the SimpleX app. The link works once:`, a QR code and the link, and elsewhere `"MAIN" was replaced. Run npx -y @simplex-chat/mcp@VERSION link in a terminal to see the link to the new one.` |
 
@@ -963,7 +965,7 @@ The service is spawned with the variables of the spawning process whose names ma
 
 | Code | Message | Code location |
 |---|---|---|
-| 0 | the hooks, even after errors, `link` and `reset-owners`, and the service after a stop or with `running` | [hook.ts:74-76](../src/hook.ts#L74-L76), [:108-111](../src/hook.ts#L108-L111), [service.ts:440](../src/service.ts#L440) |
+| 0 | the hooks, even after errors, `link` and `reset-owners`, and the service after a stop or with `running` | [hook.ts:97-99](../src/hook.ts#L97-L99), [:131-134](../src/hook.ts#L131-L134), [service.ts:440](../src/service.ts#L440) |
 | 2 | `simplex-mcp session runs from the Claude Code plugin.` | [session.ts:42](../src/session.ts#L42) |
 | 2 | `Not a Claude Code session ID: ID` | [session.ts:43](../src/session.ts#L43) |
 | 1 | `Restart Claude Code to update the SimpleX plugin.`, or a spawn error, from `link` and `reset-owners` | [client.ts:45](../src/client.ts#L45), [:84](../src/client.ts#L84), [:111](../src/client.ts#L111) |
@@ -980,12 +982,12 @@ The service's stdout and stderr are written to `service.log` ([client.ts:77](../
 | no owners, members present | `No owners in the Main group.` | [main-group.ts:15](../src/main-group.ts#L15), [:70](../src/main-group.ts#L70), [:124](../src/main-group.ts#L124) |
 | owner joined | `NAME joined (member ID) and is now an owner. The link is deleted.` | [main-group.ts:139](../src/main-group.ts#L139) |
 | Main group lost | `The Main group is lost. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` | [main-group.ts:144](../src/main-group.ts#L144) |
-| session group created | `Group "N · NAME" of session N created.` | [hub.ts:487](../src/hub.ts#L487) |
+| session group created | `Group "N · NAME" of session N created.` | [hub.ts:488](../src/hub.ts#L488) |
 | session group lost | `The group "N · NAME" is lost.` | [control.ts:483](../src/control.ts#L483) |
 | actions | as in [3.4](#34-terminal-lines), with ` of session N` after `Action N`, and `allowed.` for a tool use | [actions.ts:210](../src/actions.ts#L210), [:410](../src/actions.ts#L410) |
 | stop | `Cancelled K action(s).`, `Stopping: sending K cancelled card(s), up to 10 s. Ctrl-C to stop now.`, `Stopped.` | [service.ts:189](../src/service.ts#L189), [serve.ts:164](../src/serve.ts#L164), [service.ts:192](../src/service.ts#L192) |
 
-stderr: `CONTEXT: ERROR` from `logError`, with CONTEXT among `Main group command`, `EVENT in the Main group`, `EVENT in the group of session N`, `prompt of session N`, `invitation to session N`, `User`, `User in session N`, `group of session N`, `session N`, `owner of CHAT`, `mode host of session N`, `title`, `ROOT/_sessions/ID/session.json`, `ROOT/titles.json`, `ROOT/service.log`, `METHOD PATH` and those of [3.4](#34-terminal-lines). Session processes and hooks write to their own stderr ([session.ts:55](../src/session.ts#L55), [:61](../src/session.ts#L61), [:93](../src/session.ts#L93), [hook.ts:87](../src/hook.ts#L87), [:109](../src/hook.ts#L109)):
+stderr: `CONTEXT: ERROR` from `logError`, with CONTEXT among `Main group command`, `EVENT in the Main group`, `EVENT in the group of session N`, `prompt of session N`, `invitation to session N`, `User`, `User in session N`, `group of session N`, `session N`, `owner of CHAT`, `mode host of session N`, `title`, `ROOT/_sessions/ID/session.json`, `ROOT/titles.json`, `ROOT/service.log`, `METHOD PATH` and those of [3.4](#34-terminal-lines). Session processes and hooks write to their own stderr ([session.ts:55](../src/session.ts#L55), [:61](../src/session.ts#L61), [:93](../src/session.ts#L93), [hook.ts:110](../src/hook.ts#L110), [:132](../src/hook.ts#L132)):
 - A session process writes `SimpleX service: ERROR`, `SimpleX channel: ERROR` and `permission relay: ERROR`.
 - The SessionStart hook of an unattended run writes `SimpleX MCP session start: ERROR`, and the turn hook `SimpleX MCP turn: ERROR`.
 
@@ -1011,15 +1013,29 @@ The default is used for a missing or blank variable ([config.ts:35-38](../src/co
 | [`plugin/allow.js`](../plugin/allow.js) | prints `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}` |
 | [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json) | marketplace `simplex-chat`, plugin `simplex`, source `{"source": "npm", "package": "@simplex-chat/mcp"}` |
 
-Hook input fields used ([hook.ts:23-47](../src/hook.ts#L23-L47)):
+Hook input fields used ([hook.ts:27-70](../src/hook.ts#L27-L70)):
 - SessionStart: `session_id`, `session_title`, `cwd` and `model`.
 - The other hooks: `session_id`, `hook_event_name`, `transcript_path`, `prompt_id`, `prompt`, `last_assistant_message`, `to_model` and `effort.level`.
 
-The Stop hook reads `type`, `isSidechain`, `message.model` and the `text` parts of `message.content` from the last entries of the transcript ([hook.ts:154-188](../src/hook.ts#L154-L188)). It reads the transcript up to 20 times, 100 ms apart, until Claude's last entry is the answer. A missing transcript is read again, as a transcript without that entry is ([hook.ts:17](../src/hook.ts#L17), [:114-122](../src/hook.ts#L114-L122), [:131-139](../src/hook.ts#L131-L139)).
+The Stop hook reads `type`, `isSidechain`, `message.model` and the `text` parts of `message.content` from the last entries of the transcript ([hook.ts:176-185](../src/hook.ts#L176-L185), [:292-305](../src/hook.ts#L292-L305)). It reads the transcript up to 20 times, 100 ms apart, until Claude's last entry is the answer. A missing transcript is read again, as a transcript without that entry is ([hook.ts:17](../src/hook.ts#L17), [:137-145](../src/hook.ts#L137-L145), [:153-161](../src/hook.ts#L153-L161)).
 
-The UserPromptSubmit hook finds the prompt's entry among the last user entries of the transcript. Entries of subagents and tool results are skipped. The entry's `promptId` equals the hook's `prompt_id`. Without `prompt_id`, as in older Claude Code, the hook takes the last entry whose text equals the prompt. `typed` is true when the entry's `origin.kind` is `human`. A task notification, a message of another session and a channel prompt have other kinds. Claude Code writes the entry only after the synchronous UserPromptSubmit hooks end, and it creates the transcript file with the session's first entry. So the hook reads the transcript up to 600 times, 100 ms apart. A missing transcript is read again, as a transcript without the entry is. When the entry is not found within these reads, `typed` is false ([hook.ts:18-19](../src/hook.ts#L18-L19), [:124-139](../src/hook.ts#L124-L139), [:165-173](../src/hook.ts#L165-L173)).
+The UserPromptSubmit hook finds the prompt's record among the last entries of the transcript. A record is a user entry, without subagent entries and tool results, or a `queued_command` attachment, the record of a prompt that Claude Code added to a running turn. The record is the newest one whose text equals the prompt: the entry whose `promptId` equals the hook's `prompt_id`, or a record after the first entry with that ID. Claude Code gives the hook of a prompt added to a running turn that turn's prompt ID, and the turn's tool results carry it too, so the first entry with that ID is found also when the turn's first entry is out of the tail. Until an entry with `prompt_id` is in the tail, the hook waits for it, and at the last read it takes any record with the prompt's text. While a `queue-operation` `enqueue` entry with the prompt's text follows the record, the hook waits too: the prompt is a later one with the same text, still queued. Without `prompt_id`, as in older Claude Code, it takes any record at once. `typed` is true when the record's `origin.kind` is `human`, and `midTurn` is true when the record is not the entry with `prompt_id`. Claude Code writes the entry only after the synchronous UserPromptSubmit hooks end, and it creates the transcript file with the session's first entry. So the hook reads the transcript up to 600 times, 100 ms apart. A missing transcript is read again, as a transcript without the entry is. Claude Code runs the hook of a person's prompt when it is submitted, and of its own prompts only when they are taken. So at the last read, the hook classifies a record still followed by such an `enqueue` entry by the record, and marks a typed one mid-turn: the queued prompt is the typed prompt itself, or a later prompt with the text of Claude Code's own prompt. When no record is found within these reads, an `enqueue` entry with the prompt's text after the entry with `prompt_id`, or anywhere without that entry, makes the prompt typed and mid-turn. Otherwise `typed` is true when an entry with `prompt_id` has the origin `human` ([hook.ts:18-19](../src/hook.ts#L18-L19), [:147-161](../src/hook.ts#L147-L161), [:187-222](../src/hook.ts#L187-L222)).
 
-SessionStart output ([hook.ts:58-89](../src/hook.ts#L58-L89)):
+The hook's `note` is a line of at most 200 characters; a longer one is cut to 199 and ends with `…`. A typed prompt, a channel prompt, a teammate's prompt of idle notifications only and another record without origin that is not scheduled have no note ([hook.ts:217-290](../src/hook.ts#L217-L290)):
+
+| Kind | Record | Line |
+|---|---|---|
+| task notification | origin `task-notification`, or a `queued_command` attachment without origin whose `commandMode` is `task-notification` | an emoji, the first line of `<summary>` or `Task notification`, and `: ` with the first line of `<event>` when there is one. Entities are decoded. The emoji is ✅ for `<status>` completed, ❌ for failed, ⏹️ for stopped or killed; without a status, 📡 with an event and 🔔 without. A prompt without a `<task-notification>` block gets 🔔 and its first line |
+| message of another session | origin `peer` | `✉️ Message from NAME: ` and the first line of `body`. NAME is `name`, or `from` |
+| message of a teammate | no origin; the prompt starts with `Another Claude session sent a message` and a `<teammate-message teammate_id="NAME" ...>` tag | `✉️ Message from NAME: ` and the tag's `summary`, or the first line of the message without one, from the first tag whose message is not an idle notification, a JSON `type` of `idle_notification`. A prompt with idle notifications only has no note |
+| subagent report | origin `peer` with `handback` | `📋 Report from subagent NAME: ` and the first line of `handbackReportText`, or of `body` |
+| scheduled prompt | no origin, `turnOrigin` `scheduled` | `⏰ Scheduled prompt: ` and the first line of the prompt |
+| automatic prompt | origin `auto-continuation` | `🔄 Automatic prompt: ` and the first line of the prompt |
+| another kind | another origin | `⚙️ Claude Code: ` and the first line of the prompt |
+
+A first line is the first line with other than blank characters. In a first line and in NAME, control and format characters become spaces, so a note is one line.
+
+SessionStart output ([hook.ts:81-112](../src/hook.ts#L81-L112)):
 
 | Case | Output |
 |---|---|

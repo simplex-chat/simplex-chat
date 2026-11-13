@@ -697,6 +697,48 @@ describe("session channel", () => {
     expect(session["turns"]).toEqual([{at: 7, item: null}])
   })
 
+  it("posts the note of Claude Code's own prompt as Claude without a quote, and the answer of the turn it starts without a quote", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posts: string[] = []
+    hub.user = {post: async (_n: number, parts: string[]) => void posts.push(parts.join(""))} as unknown as User
+    const note = '✅ Background command "Build" completed (exit code 0)'
+    await ownerPrompt(session, 42, "Fix the build")
+    await session.turn({id: id1, at: 1, prompt: tag(42, "Fix the build"), typed: false})
+    await session.turn({id: id1, at: 2, answer: "Fixed."})
+    await session.turn({id: id1, at: 3, prompt: "<task-notification>\n<task-id>b1</task-id>\n</task-notification>", typed: false, note})
+    await session.turn({id: id1, at: 4, answer: "The build passed."})
+    expect(posts).toEqual([])
+    expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: note, quotedItemId: undefined}], [{text: "The build passed.", quotedItemId: undefined}]])
+  })
+
+  it("keeps the turn's quote and its open tool-use cards for a prompt that reaches the running turn, and adds a turn record for an owner's prompt among them", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posts: string[] = []
+    hub.user = {post: async (_n: number, parts: string[]) => void posts.push(parts.join(""))} as unknown as User
+    const note = '✅ Background command "Tests" completed (exit code 0)'
+    await ownerPrompt(session, 42, "Fix the build")
+    await session.turn({id: id1, at: 1, prompt: tag(42, "Fix the build"), typed: false})
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    await until(() => sentTo(chat, 20).length === 1)
+    const later = Date.now() + 1_000
+    await session.turn({id: id1, at: later, prompt: "<task-notification>\n<task-id>b2</task-id>\n</task-notification>", typed: false, note, midTurn: true})
+    await session.turn({id: id1, at: later + 1, prompt: "Also run the linter", typed: true, midTurn: true})
+    expect(session.actions.pending().map(({tool}) => tool)).toEqual(["permission"])
+    expect(chat.updates).toEqual([])
+    await session.turn({id: id1, at: later + 2, answer: "Fixed, and the linter passes."})
+    expect(posts).toEqual(["Also run the linter"])
+    expect(answers(chat).slice(1)).toEqual([[{text: note, quotedItemId: undefined}], [{text: "Fixed, and the linter passes.", quotedItemId: 42}]])
+    await until(() => chat.updates.length === 1)
+    await ownerPrompt(session, 43, "Deploy")
+    await session.turn({id: id1, at: later + 3, prompt: tag(43, "Deploy"), typed: false})
+    await ownerPrompt(session, 44, "and tag it")
+    await session.turn({id: id1, at: later + 4, prompt: tag(44, "and tag it"), typed: false, midTurn: true})
+    await session.turn({id: id1, at: later + 5, answer: "Deployed and tagged."})
+    expect(answers(chat).at(-1)).toEqual([{text: "Deployed and tagged.", quotedItemId: 44}])
+  })
+
   it("splits an answer and a terminal prompt where a message reaches the size the core accepts, with the quote in the first part of an answer, for Latin, Cyrillic and CJK texts", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)
@@ -1239,6 +1281,14 @@ describe("session channel", () => {
       refuseInGroup(chat)
       await session.turn({id: id1, answer: `The bot's address is ${link}`})
       expect(groupPosts(chat)).toEqual([{type: "text", text: `Claude's answer was not posted: ${off("SimpleX links")}`}])
+    })
+
+    it("posts that a note on Claude Code's prompt was not posted, naming the preference", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      refuseInGroup(chat)
+      await session.turn({id: id1, prompt: "Another Claude session sent a message: ...", typed: false, note: `✉️ Message from reviewer: Join ${link}`})
+      expect(groupPosts(chat)).toEqual([{type: "text", text: `A note on Claude Code's prompt was not posted: ${off("SimpleX links")}`}])
     })
 
     it("posts that User's prompt was not posted, naming the preference, and posts the answer", async () => {
