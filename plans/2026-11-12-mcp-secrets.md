@@ -9,7 +9,7 @@ Status: implemented, for review. Decisions of 2026-11-12. Code references: maste
 3. Revocation: none. A secret stays until `/unsecret NAME`, also when its setter is no longer an approver.
 4. Values: one line, as owner commands are parsed; 8 characters or more.
 5. Redaction: an opencode plugin in the package, `opencode/simplex-secrets.ts`, with its install step in the docs. Claude Code: no redaction; the docs state it.
-6. Discovery: `list` returns the names and the folder, never the values; its description and the instructions state the use in commands, as `"$(cat FOLDER/NAME)"`.
+6. Discovery: `list` returns the names and the folder, never the values; its description states the use in commands, as `"$(cat FOLDER/NAME)"`.
 7. `send` and `connect` texts are not checked for values; the approval cards are the control.
 8. Budget: about 110 changed lines in `src`, at most 132; the plugin counted separately, 30 to 50 lines.
 
@@ -132,7 +132,8 @@ Full deletion:
 item                 value
 fullDelete           {enable: "on"} in the group preferences
 createControlChat    groupPreferences: history on, fullDelete, the menu
-load                 the profile updated when the display name, the menu or fullDelete.enable differ
+createSessionGroup   groupPreferences: history on, direct messages off, fullDelete, the menu
+load                 the profile updated when the display name, the menu or fullDelete.enable differ, in the agent control chat and in session groups
 ```
 
 - The deletion is a moderation: the core replaces the item with a moderated item and deletes its `messages` rows, at the agent (`delGroupChatItems`, `Library/Commands.hs:4294-4297`; `updateGroupChatItemModerated`, `Store/Messages.hs:2857-2875`) and at each member that has the item (`Library/Subscriber.hs:2490-2499`). A member who receives the message after the deletion creates it moderated (`Library/Subscriber.hs:2228-2232`, `:2268-2274`).
@@ -177,6 +178,7 @@ control.ts  controlCommands     the secrets entry
             secretsText         new
             createControlChat   fullDelete
             ownerRequest        secret, unsecret, secrets
+hub.ts      createSessionGroup  fullDelete
 serve.ts    events              newChatItems of the control group in any scope to onMessage
 ```
 
@@ -190,8 +192,7 @@ secrets.folder   SECRETS, the server's path
 secrets.names    the names of the secrets
 ```
 
-- The `list` description adds: `secrets, when present, has the folder and the names of the secrets your owners set; use a secret in a command as "$(cat FOLDER/NAME)", never by its value.`
-- The instructions add, before the line of chat references: `When list returns secrets, use a secret only inside a shell command, as "$(cat FOLDER/NAME)" with its folder and name; never print, read or send its value.`
+- The `list` description adds: `secrets, when present, has the folder and the names of the secrets your owners set; use a secret only inside a shell command, as "$(cat FOLDER/NAME)" with its folder and name; never print, read or send its value.`
 - `send` refuses a file under SECRETS, by the real path of the folder, with the reason of private keys.
 - A sandbox of the agent mounts SECRETS at the server's path and runs with the server's user ID.
 
@@ -202,7 +203,6 @@ file       function          change
 tools.ts   Agent             secrets: Secrets, optional
            listOutput        secrets
            listDescription   the secrets line
-           instructions      the secrets line
            isRefused         SECRETS
            listChats         secrets
 ```
@@ -212,7 +212,7 @@ tools.ts   Agent             secrets: Secrets, optional
 ```
 item           value
 file           opencode/simplex-secrets.ts, TypeScript source
-package.json   files: dist, README.md, opencode
+package.json   files: dist, README.md, .claude-plugin, .mcp.json, hooks, plugin, opencode
 test config    test/tsconfig.json includes ../opencode
 folder         SIMPLEX_MCP_SECRETS of the opencode process
 ```
@@ -305,11 +305,13 @@ test/tsconfig.json            include: ../opencode/**/*
 - `test/unit/opencode.test.ts`: a value replaced raw, URL-encoded, and in base64 and base64url at each alignment, `Basic` authorization included; a longer value before a value it contains; the names that the server lists, trailing newlines ignored; values of fewer than 8 characters refused; the hook on texts, tool inputs, outputs, errors and metadata, the info kept; values of removed and replaced secrets kept, also in a new server instance; a rejection without the folder and with a missing folder.
 - `test/unit/fixtures.ts`: `FakeChat.apiDeleteMemberChatItem` records each call with the count of messages sent before it.
 - `test/e2e/scenarios.test.ts`: the owner's `/secret`: `chatItemsDeleted` at the owner, the reply without a quote, the value in the file, the agent's control chat items without it, `list` with the folder and the name.
+- `test/unit/plugin.test.ts`, `test/e2e/launch.test.ts`: `opencode` in `files` and in the tarball's top-level entries.
+- `test/unit/sessions.test.ts`: full deletion in the preferences of a new session group.
 
 ## Docs
 
 - `README.md`: a paragraph on secrets.
 - `REFERENCE.md`: section Secrets; the commands, the help text, the data folder, security.
 - `TESTING.md`: section Secrets, with the opencode plugin.
-- `PLAN.md`: the option, the storage, the commands and replies, section Secrets, `list`, the refused paths, tests, decisions of 2026-11-12.
+- `plans/2026-10-19-mcp-server.md`: the option, the storage, the commands and replies, section Secrets, `list`, the refused paths, tests, decisions of 2026-11-12.
 - `spec/`: the anchors into the changed files remapped; the secret commands, `list`, the option, the plugin and section 6.8 Secrets of the architecture.
