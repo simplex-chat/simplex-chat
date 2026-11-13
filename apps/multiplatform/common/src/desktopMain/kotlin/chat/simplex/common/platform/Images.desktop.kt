@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.IntSize
 import boofcv.io.image.ConvertBufferedImage
 import boofcv.struct.image.GrayU8
 import chat.simplex.common.views.helpers.decodeBoundedBufferedImage
+import chat.simplex.common.views.helpers.imageSampleSize
 import chat.simplex.res.*
 import org.jetbrains.skia.Image
 import java.awt.RenderingHints
@@ -27,6 +28,7 @@ private val base64BitmapCache = Collections.synchronizedMap(object : LinkedHashM
 })
 
 private const val MAX_IMAGE_DIMENSION = 4320
+private const val MAX_PREVIEW_DIMENSION = 512
 private const val MAX_PROGRESSIVE_PASSES = 16
 
 private val receivedImageFormats = setOf("png", "jpeg", "gif")
@@ -57,7 +59,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
       reader.dispose()
       return errorBitmap()
     }
-    val image = reader.read(0, receivedImageReadParam(reader, 1))
+    val image = reader.read(0, receivedImageReadParam(reader, imageSampleSize(width, height, MAX_PREVIEW_DIMENSION)))
     reader.dispose()
     image.toComposeImageBitmap().also {
       base64BitmapCache[base64ImageString] = it
