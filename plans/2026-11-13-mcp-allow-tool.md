@@ -9,7 +9,7 @@ The runs used a test MCP server whose tool `pre_tool_use` answers a PreToolUse h
 
 ## 1. Goal
 
-Roadmap line, [ROADMAP.md:23](../packages/simplex-chat-mcp/ROADMAP.md): "Allow a tool for the rest of a session with one tap." The user's feature list of 2026-11-11 has no other words on it.
+Roadmap line of [ROADMAP.md](../packages/simplex-chat-mcp/ROADMAP.md): "Allow a tool for the rest of a session with one tap." The user's feature list of 2026-11-11 has no other words on it.
 
 Outcome:
 - A tool-use card has a third command, `/approve N all`. One tap allows this use and every later use of its tool in the session.
@@ -126,13 +126,13 @@ Facts:
 3. A PermissionRequest hook gets `tool_name`, `tool_input` and `permission_suggestions`, without `tool_use_id` (binary 296949420). The hooks page: "PermissionRequest hooks receive tool_name and tool_input fields like PreToolUse hooks, but without tool_use_id." The request ID of the channel is five random letters (`adi`, 313061500). Nothing links a PermissionRequest hook to a card.
 4. When a PermissionRequest hook answers `allow` with `updatedInput` and Claude Code asks again, it removes the channel's handler of that prompt before it shows the prompt again (`"reprompted"in q`, 320831909). The card of that prompt can then no longer answer it.
 5. A PreToolUse hook's `allow` skips the prompt only where Claude Code's rules allow it. Claude Code re-checks the call: a deny rule refuses it, and an ask rule, a safety check, such as a write to a protected path, or plan mode sends it through the full permission flow (binary 297460810: "but an ask rule, a safety check, a ToolHost's person-only ask or plan mode requires the full permission pipeline"; the check `zx` at 296504842 returns any safety-check ask, `il` at 296516350). The hooks page: `"allow"` "skips the permission prompt, except for actions no mode auto-approves ... Deny and ask rules are still evaluated regardless of what the hook returns". The permission modes page: "permissions.allow rules in settings files do not pre-approve protected-path writes." In auto mode the classifier decides the call (297461722). The full permission flow relays the prompt to the channel. R1: under the hook's `allow`, the Write of `.bashrc` was refused.
-6. A hook of type `mcp_tool` calls a tool of an MCP server with `tools/call`, without a look-up in the server's tool list (binary 296921422), and reads its text as the output of a command hook. `${tool_name}` in its input is replaced from the hook's input (R1). A plugin names its own server `plugin:PLUGIN:SERVER` (hooks page; R3). An empty text is no decision (R2). Claude Code has had `mcp_tool` hooks since 2.1.118 (CHANGELOG: "Hooks can now invoke MCP tools directly via `type: "mcp_tool"`"), and the plugin needs 2.1.214 or later ([REFERENCE.md:472](../packages/simplex-chat-mcp/REFERENCE.md)).
-7. The plugin's server is `plugin:simplex:simplex`: it is the `source` of its channel tags ([hub.ts:27](../packages/simplex-chat-mcp/src/hub.ts#L27)).
+6. A hook of type `mcp_tool` calls a tool of an MCP server with `tools/call`, without a look-up in the server's tool list (binary 296921422), and reads its text as the output of a command hook. `${tool_name}` in its input is replaced from the hook's input (R1). A plugin names its own server `plugin:PLUGIN:SERVER` (hooks page; R3). An empty text is no decision (R2). Claude Code has had `mcp_tool` hooks since 2.1.118 (CHANGELOG: "Hooks can now invoke MCP tools directly via `type: "mcp_tool"`"), and the plugin needs 2.1.214 or later ([REFERENCE.md, "Install"](../packages/simplex-chat-mcp/REFERENCE.md#install)).
+7. The plugin's server is `plugin:simplex:simplex`: it is the `source` of its channel tags ([`channelPrompt`](../packages/simplex-chat-mcp/src/hub.ts)).
 8. The MCP SDK 2.3.1 lists every registered and enabled tool and answers `tools/call` only for them (`node_modules/@modelcontextprotocol/server/dist/mcp-BumlNux0.cjs:1763-1780`). A second handler of `tools/call` is refused (`assertCanSetRequestHandler`, `src-BhnGYybN.cjs:6902-6904`). So the tool that the hook calls is listed to Claude.
 9. Tool names match `^[a-zA-Z0-9_-]{1,128}$` (Messages API, the `name` of a tool).
-10. In 0.3.0, `/approve N all` and `/revoke TOOL` get `Unknown command.` in a session group ([control.ts:846-861](../packages/simplex-chat-mcp/src/control.ts#L846-L861), [sessions.test.ts:1163-1171](../packages/simplex-chat-mcp/test/unit/sessions.test.ts#L1163-L1171)).
-11. A standing approval of a chat counts only while its approver is an approver ([control.ts:167-170](../packages/simplex-chat-mcp/src/control.ts#L167-L170)); after `/observer`, the members are read again ([control.ts:384-385](../packages/simplex-chat-mcp/src/control.ts#L384-L385)).
-12. Tool-use cards end at the last detach ([service.ts:315-323](../packages/simplex-chat-mcp/src/service.ts#L315-L323), [hub.ts:204-208](../packages/simplex-chat-mcp/src/hub.ts#L204-L208)).
+10. In 0.3.0, `/approve N all` and `/revoke TOOL` get `Unknown command.` in a session group ([`ownerRequest`](../packages/simplex-chat-mcp/src/control.ts); the test "has no commands for files of reply: /approve N all and a bare /revoke are unknown in a session group" of [sessions.test.ts](../packages/simplex-chat-mcp/test/unit/sessions.test.ts)).
+11. A standing approval of a chat counts only while its approver is an approver ([`Control.standingApprover`](../packages/simplex-chat-mcp/src/control.ts)); after `/observer`, the members are read again ([`Control.setObserver`](../packages/simplex-chat-mcp/src/control.ts)).
+12. Tool-use cards end at the last detach ([`Service.onAttach`](../packages/simplex-chat-mcp/src/service.ts), [`Session.endPermissions`](../packages/simplex-chat-mcp/src/hub.ts)).
 13. `ep/mcp-activity` posts a step line for each tool use of the main conversation (its plan, section 2).
 14. With Claude Code before 2.1.299, a PreToolUse `allow` ran writes in plan mode (CHANGELOG 2.1.299: "Fixed plan mode running a write ... that a `PreToolUse` hook ... allowed"). The re-check of fact 5 is in the binaries of 2.1.303 to 2.1.323 on this machine.
 
@@ -150,7 +150,7 @@ Choices:
 24. Its description, which Claude sees: `Answers the plugin's PreToolUse hook before each tool use: allow for a tool that an admin or owner of the SimpleX group of this session approved for the rest of the session, and nothing otherwise. You never need to call it.`
 25. The service sends the approved tools as an `/attach` line `{tools: [{tool, approvedBy}]}`. It sends it to each new attachment, and when the list changes: at an approval, at a revocation, after a membership event and after `/observer`. The session server replaces its list at each such line, and empties it when its attachment ends.
 26. The hook's timeout is 5 s. A hook that times out does not block the call (hooks page: "a timed-out command, http, or mcp_tool hook doesn't block the tool call").
-27. The protocol version stays 1. `tools` is optional; a session server of 0.3.0 ignores the line, because `channelNotification` returns nothing for it ([session.ts:197-201](../packages/simplex-chat-mcp/src/session.ts#L197-L201)).
+27. The protocol version stays 1. `tools` is optional; a session server of 0.3.0 ignores the line, because `channelNotification` returns nothing for it ([`channelNotification`](../packages/simplex-chat-mcp/src/session.ts)).
 28. The service logs `TOOL approved for the rest of session N by NAME.` and `TOOL needs approval again in session N.` Replaced by decision 29.
 
 Decided in the implementation:
@@ -296,8 +296,8 @@ stateDiagram-v2
 
 - Older SimpleX apps: text messages with command links, as in 0.3.0.
 - Older Claude Code: `mcp_tool` hooks exist in every version the plugin supports (fact 6). With Claude Code before 2.1.299, an approved tool also runs writes in plan mode (fact 14); REFERENCE says so.
-- Older plugin data folders: nothing is stored. A session server of 0.3.0 with this service ignores the tools line (decision 27). A service of 0.3.0 with this session server sends no tools line, so the hook gets no decision. The plugin stops an older service when it starts one of its own ([client.ts:37-40](../packages/simplex-chat-mcp/src/client.ts#L37-L40)), so such a pair runs only until then. `package.json` stays at 0.3.0; the release bumps it.
-- `serve`: unchanged. Its control chat parses neither request ([control.ts:857-858](../packages/simplex-chat-mcp/src/control.ts#L857-L858)), and it has no hooks.
+- Older plugin data folders: nothing is stored. A session server of 0.3.0 with this service ignores the tools line (decision 27). A service of 0.3.0 with this session server sends no tools line, so the hook gets no decision. The plugin stops an older service when it starts one of its own ([`ServiceClient.ensureService`](../packages/simplex-chat-mcp/src/client.ts)), so such a pair runs only until then. `package.json` stays at 0.3.0; the release bumps it.
+- `serve`: unchanged. Its control chat parses neither request ([`ownerRequest`](../packages/simplex-chat-mcp/src/control.ts)), and it has no hooks.
 
 ## 7. Acceptance and tests
 
@@ -343,7 +343,7 @@ Tests:
 - `ROADMAP.md:23`: the line is removed.
 - `spec/api.md`: 4.1 (the tool `pre_tool_use`), 4.3 (the requests, the replies and the permission card), 4.6 (the tools line of `/attach`), 4.8 (the hook in `hooks.json`).
 - `spec/architecture.md`: 8.2 (`session.ts`, `hub.ts`, `control.ts`), 8.3 (the approvals in memory), 8.5 (the rule and the state machine of section 5).
-- `spec/flows.md`: flow 22 notes; a new flow 32, a tool approved for the rest of a session, with both diagrams of section 2.
+- `spec/flows.md`: flow 22 notes; a new flow 34, a tool approved for the rest of a session, with both diagrams of section 2.
 - `TESTING.md`: the automated tests summary (147-190) and check 7.
 
 ## 9. Conflict areas with the other items

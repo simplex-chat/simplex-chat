@@ -17,8 +17,6 @@ What comes next for Claude Code in SimpleX Chat.
 
 - One list in the Main group shows every session and its state: working, waiting for you or idle.
 - See what Claude is doing while it works, with its code changes as diffs.
-- React to a message, and Claude sees your reaction.
-- Reply to a message, and Claude knows which one you mean.
 - The model, effort and usage of each session show in its description, updated as they change.
 - See when a session's context is summarised.
 - Each session is a topic inside one group, not a group of its own.
