@@ -803,7 +803,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 
 | Rule | Code |
 |---|---|
-| `^[@#][1-9]\d{0,14}$`: 1 to 15 digits; the core reads `#(2^64 + N)` as `#N` | [messages.ts:150-152](../src/messages.ts#L150-L152), [scenarios.test.ts:493-505](../test/e2e/scenarios.test.ts#L493-L505) |
+| `^[@#][1-9]\d{0,14}$`: 1 to 15 digits; the core reads `#(2^64 + N)` as `#N` | [messages.ts:150-152](../src/messages.ts#L150-L152), [scenarios.test.ts:502-514](../test/e2e/scenarios.test.ts#L502-L514) |
 | the control chat is refused by `send`, `receive`, `download`, `leave` and the owner commands with CHAT, and left out of `list` and `/list` | [tools.ts:1302](../src/tools.ts#L1302), [:1349-1368](../src/tools.ts#L1349-L1368), [control.ts:408-415](../src/control.ts#L408-L415) |
 | a store error of the chat read is reported as `No chat CHAT.` | [tools.ts:1307](../src/tools.ts#L1307), [:1366](../src/tools.ts#L1366) |
 | the agent's own links are refused by `connect` (`ownLink` plans) | [tools.ts:1470](../src/tools.ts#L1470), [:1488](../src/tools.ts#L1488), [:1510](../src/tools.ts#L1510) |
