@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-34.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-35.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -60,7 +60,8 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 31. [A prompt of Claude Code](#31-a-prompt-of-claude-code)
 32. [The steps of a turn](#32-the-steps-of-a-turn)
 33. [A reaction in the session group](#33-a-reaction-in-the-session-group)
-34. [The texts of a turn](#34-the-texts-of-a-turn)
+34. [A tool approved for the rest of a session](#34-a-tool-approved-for-the-rest-of-a-session)
+35. [The texts of a turn](#35-the-texts-of-a-turn)
 
 ---
 
@@ -1004,7 +1005,7 @@ sequenceDiagram
   N->>N: end pending permissions created before at
   N->>N: quote = the newest turn record before at#59; it and the older ones leave turns
   N->>N: a changed model or effort, when at is not older than that of the value taken last: description, session.json
-  N->>N: claim: no text of Claude streamed the answer, as without the display hook (flow 34)
+  N->>N: claim: no text of Claude streamed the answer, as without the display hook (flow 35)
   alt the opening message of the turn was posted
     N->>C: apiUpdateChatItem #35;G the opening message, the answer's first part, live off
     N->>C: apiSendMessages #35;G the other parts, priority -1
@@ -1087,7 +1088,7 @@ sequenceDiagram
   CC->>CC: the terminal dialog stays open
   S->>D: POST /permission {id, requestId, toolName, description, inputPreview}
   D->>N: permission
-  N->>O: card in #35;G: I want to use `Bash`: `DESCRIPTION`, preview, /'approve N' or /'reject N'
+  N->>O: card in #35;G: I want to use `Bash`: `DESCRIPTION`, preview, /'approve N', /'approve N all' or /'reject N'
   O->>N: /approve N
   N->>N: performing
   N->>D: onLine {permission: {requestId, behavior: allow}}
@@ -1103,6 +1104,7 @@ Notes:
 - The first answer, in the terminal or in the group, applies. The last line of a card that is still pending becomes `Ended.` at an answer, or at a prompt that is not mid-turn, whose hook started after the card was created, and when the last attachment of the session ends. A prompt that Claude Code adds to the running turn ends no card ([`Session.turn`, `endPermissions`](../src/hub.ts), [`Service.onAttach`](../src/service.ts), [`cardText`](../src/control.ts)).
 - The input preview is cut to fit the card ([`Control.refusal`, `fittedLines`](../src/control.ts)).
 - The card is posted in mode `requests` also for a session in mode `host` ([`Session.permission`](../src/hub.ts)).
+- `/approve N all` also approves the tool for the rest of the session, see [flow 34](#34-a-tool-approved-for-the-rest-of-a-session).
 
 Source: the notification handler of [`startSession`](../src/session.ts), [`ServiceLink.permission`](../src/session.ts), the `POST /permission` route of [`Service.routes`](../src/service.ts), [`Session.permission`](../src/hub.ts), [`requestLines`](../src/control.ts).
 
@@ -1488,7 +1490,7 @@ sequenceDiagram
   CC->>D: Stop hook: POST /turn {answer}
   N->>N: endSteps(at), each step started before at and still without an end
   N->>C: apiUpdateChatItem #35;G item, the step's own text, live off
-  N->>C: apiSendMessages #35;G the answer, its parts with priority -1, unless a text of Claude streamed it (flow 34)
+  N->>C: apiSendMessages #35;G the answer, its parts with priority -1, unless a text of Claude streamed it (flow 35)
   N->>C: apiSendMessages #35;G [{text: "!- ✅ Done in DURATION!", priority: 1}]
 ```
 
@@ -1504,7 +1506,7 @@ Notes:
 - The steps and the finished IDs are kept in memory. When the service stops during a step, the hub's stop updates its line with its own text; after a crash, the line stays live. The step's end reaches the next service and is posted as a new silent line ([`Hub.stop`](../src/hub.ts)).
 - The tool hooks send `effort` as the other turn hooks do; the hub takes it by the hook's start time, as in [flow 21](#21-a-terminal-prompt-and-the-answer).
 - A core without message priority ignores `priority`, and an app without silent messages alerts for each line when it is posted. An update of a live message sends no SMP notification.
-- The hub sends a step's line after the text work queued before the step's request, so the line follows the texts whose batches arrived first. A step's line that is the turn's first post fills the turn's opening message ([flow 34](#34-the-texts-of-a-turn)).
+- The hub sends a step's line after the text work queued before the step's request, so the line follows the texts whose batches arrived first. A step's line that is the turn's first post fills the turn's opening message ([flow 35](#35-the-texts-of-a-turn)).
 
 Source: [`turn`, `stepOf`, `stepText`, `displayPath`](../src/hook.ts), [`duration`](../src/messages.ts), [`Session.turn`, `endPermissions`, `endSteps`, `answer`, `step`, `startLine`, `endStep`, `expireLive`, `remember`](../src/hub.ts), [`Service.onAttach`](../src/service.ts).
 
@@ -1566,7 +1568,67 @@ Source: [`Session.onReaction`, `prompt`, `refuseReaction`, `deliver`, `openTurn`
 
 ---
 
-## 34. The texts of a turn
+## 34. A tool approved for the rest of a session
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant S as Session process
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  CC->>S: notifications/claude/channel/permission_request {request_id, tool_name: Bash, description, input_preview}
+  S->>D: POST /permission
+  D->>N: permission, Bash not approved
+  N->>O: card: I want to use Bash, /'approve 5', /'approve 5 all' or /'reject 5'
+  O->>N: /approve 5 all
+  N->>N: toolApprovals: Bash by Alice, logged
+  N->>D: onLine {tools: [{tool: Bash, approvedBy: Alice}]}
+  D->>S: the line on /attach, kept as the list of that attachment
+  N->>D: onLine {permission: {requestId, behavior: allow}}
+  D->>S: the line on /attach
+  S->>CC: notifications/claude/channel/permission allow
+  N->>O: card edited: Approved by Alice.
+  N->>O: reply: Approved Bash for the rest of this session by Alice. /'revoke Bash'
+  CC->>S: PreToolUse hook of type mcp_tool: tools/call pre_tool_use {tool: Bash}
+  S-->>CC: allow
+  CC->>CC: the next Bash use runs without a prompt, unless Claude Code's own rules ask
+```
+
+A use that Claude Code asks for by its own rules:
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant S as Session process
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  CC->>S: PreToolUse hook: tools/call pre_tool_use {tool: Bash}
+  S-->>CC: allow
+  CC->>CC: the command writes to .bashrc, a protected path: the permission flow
+  CC->>S: notifications/claude/channel/permission_request {request_id, tool_name: Bash, ...}
+  S->>D: POST /permission
+  D->>N: permission, Bash approved
+  N->>O: card with the line: Bash is approved for this session, and Claude Code still asks for this use. /'approve 6' or /'reject 6'
+```
+
+Notes:
+
+- Claude Code re-checks a call that a PreToolUse hook allows. A deny rule refuses it, and an ask rule, a safety check such as a write to a protected path, plan mode or the auto mode classifier sends it through the permission flow, which relays the prompt as a card. With Claude Code before 2.1.299, a hook's `allow` also ran writes in plan mode.
+- One tap approves its own card only. Other pending cards of the tool stay pending.
+- An approval counts while its approver is an admin or owner of the group. After a membership event, the hub sends the approved tools before the rights post; after `/observer`, `Control` sends them after it reads the members again.
+- `/revoke TOOL` removes an approval, and the session gets the new list. `/list` shows the approved tools after the chats.
+- The approvals belong to the Claude Code process of the session. A session server answers from the list of its current attachment only. When it drops the attachment after a failed call and attaches again, the hub sends it the approved tools, which it keeps. The approvals are dropped when `/session` comes from another process and when the session closes. The service tells processes apart by their ID and their start time, read on Linux and macOS; a `/session` whose start time is unknown counts as another process. While two processes have the session attached, only the attachments of the process of the last `/session` get the approved tools; the others get `{tools: []}`. The approvals also end when the session's group is lost, found at an event or at a load, and the session server gets `{tools: []}`.
+- The approvals are kept in memory, so a service restart drops them.
+- The terminal shows nothing at the approval, and Claude Code's `/permissions` doesn't list it.
+- While the plugin's MCP server is not connected, Claude Code reports `MCP server 'plugin:simplex:simplex' not connected` as a non-blocking PreToolUse hook error at each tool use, and the tool use goes on.
+
+Source: [`Control.ownerCommand`, `approveTool`, `revokeTool`, `approvedTools`, `endToolApprovals`, `load`, `lose`, `requestLines`, `commandsLine`, `ownerRequest`](../src/control.ts), [`Session.permission`, `onLine`, `sendTools`, `endToolApprovals`, `Hub.onEvent`](../src/hub.ts), [`Service.onSession`, `onAttach`, `scheduleIdle`, `processStart`](../src/service.ts), [`startSession`, `ServiceLink.open`, `ServiceLink.approvedBy`, `hookOutput`](../src/session.ts), [`hooks/hooks.json`](../hooks/hooks.json).
+
+---
+
+## 35. The texts of a turn
 
 ```mermaid
 sequenceDiagram

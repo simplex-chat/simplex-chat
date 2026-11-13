@@ -418,7 +418,8 @@ Changes against sections 4 and 5:
     that arrive during User's post wait for it.
 16  merge of master 975cc700a: the opening message of a reaction's turn quotes the reacted message, Claude's own
     included, and the answer fills it; quoteOf takes Claude's own messages, as master's postAnswer does; the
-    flow of a turn's texts is flow 34, after master's flow 33; code is cited by names with // spec: pointers.
+    flow of a turn's texts is flow 35, after master's flows 33 and 34 (b4b14c8a1); code is cited by names with
+    // spec: pointers.
 ```
 
 ```mermaid

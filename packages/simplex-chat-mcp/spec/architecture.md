@@ -215,7 +215,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="control-standings"></a>`standings` | custom data key and reply words of the approvals of messages and files |
 | <a id="control-controldata"></a>`ControlData` | `{control: true, nextAction}` |
 | <a id="control-chatapproval"></a>`ChatApproval` | `{approvedBy, approvedById, approvedAt}` |
-| <a id="control-controloptions"></a>`ControlOptions`, `SessionOptions` | display name, `--owners`, register hint and QR code size. For a group of the plugin's session, its approver check, the session IDs by number and the check of `User` are added. |
+| <a id="control-controloptions"></a>`ControlOptions`, `SessionOptions` | display name, `--owners`, register hint and QR code size. For a group of the plugin's session, its approver check, the session IDs by number, the check of `User` and `toolsChanged`, which sends the approved tools to the session, are added. |
 | <a id="control-ownerrequest-type"></a>`OwnerRequest` | parsed owner command |
 | <a id="control-control-load"></a>`Control.load` | lost check, group profile and menu through `updateProfile`, and member list |
 | <a id="control-control-rename"></a>`Control.rename`, `Control.describe`, `updateProfile` | the plugin's group name, and its short description. `updateProfile` makes one profile update at a time, and keeps the custom data in memory. A session group is updated from its current profile in the chat database. The agent control chat of `serve` is updated from the profile held in memory since the start, by `changeGroupProfile`. |
@@ -227,9 +227,10 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="control-control-postcard"></a>`Control.postCard`, `Control.outcome` | card post and card edit; the kept-files message after a done leave |
 | <a id="control-control-refusedfile"></a>`Control.refusedFile`, `Control.fileNotSent` | posts about files |
 | <a id="control-control-onmessage"></a>`Control.onMessage` | owner commands, queued one at a time. In a group of the plugin's session, the session passes it the one-line `/` texts, and the texts of `User` are dropped. |
-| <a id="control-control-onevent"></a>`Control.onEvent` | membership changes and loss of the control chat |
+| <a id="control-control-onevent"></a>`Control.onEvent` | membership changes and loss of the control chat. `lose`, at a loss of the group and at `load` of a lost group, ends the tool approvals and calls `toolsChanged`. |
 | <a id="control-control-ownercommand"></a>`Control.ownerCommand` | command dispatch and replies. A text outside the requests is answered with the command list, or with `Unknown command.` in a group of the plugin's session. |
 | <a id="control-control-approvechat"></a>`approveChat`, `revoke`, `forward`, `leave`, `deleteFiles` | owner requests |
+| <a id="control-control-approvedtools"></a>`approvedTools`, `endToolApprovals`, `approveTool`, `revokeTool` | the approvals of tools of a group of the plugin's session, in memory, by tool name, with the approver's name and member ID. `approvedTools` returns those whose approver is an approver now. `approveTool` records the tool of a pending `permission` action, logs, calls `toolsChanged`, approves the action and replies with `/'revoke TOOL'`. `revokeTool` deletes one, logs and calls `toolsChanged`. `endToolApprovals` drops all; it also runs when the session's group is lost. `chatsText` lists the approved tools after the chats, and `setObserver` calls `toolsChanged` after it reads the members again. |
 | <a id="control-control-give"></a>`give`, `setObserver` | `/give CHAT N` and `/observer #G ID` in a group of the plugin's session. `setObserver` replies `NAME's role can't be changed.` for a member with status `pending_approval` or `pending_review`. For a member who is neither current nor pending, such as an invited member who has not joined, the reply is `No member ID in this group.` ([`memberCurrentOrPending`](../src/tools.ts)). Only a current member's role is set to `observer`, when the sender's role is admin or owner and not below the member's role. The members are then read again, and the observer's rights are the reply. |
 | <a id="control-control-isapprover"></a>`isApprover` | the session's check in a group of the plugin's session; otherwise role `owner`, and the `--owners` list when given |
 | <a id="control-roleorder"></a>`roleOrder`, `roleRank`, `canSend` | the roles of SimpleX from `relay` to `owner`, in the order of the core; a role above `observer` |
@@ -241,12 +242,12 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="control-isgroupmessage"></a>`isGroupMessage` | an item of one group's main scope |
 | <a id="control-iscontrolevent"></a>`isControlEvent` | membership events of the control group |
 | <a id="control-parsecommand"></a>`parseCommand` | one-line `/keyword params` |
-| <a id="control-cardtext"></a>`cardText`, `requestLines`, `commandsLine` | card text per tool, state and mode |
+| <a id="control-cardtext"></a>`cardText`, `requestLines`, `commandsLine` | card text per tool, state and mode. A `permission` card offers `/'approve N all'`, or, for a tool approved at its creation, has the line that Claude Code still asks for this use. |
 | <a id="control-largestcard"></a>`largestCard`, `encodedLength` | card size check |
 | <a id="control-truncatedline"></a>`truncatedLine`, `fittedLines` | a line cut with `…`; the code lines that fit a byte budget, the last one cut |
 | <a id="control-serversline"></a>`serversLine`, `sizeText` | servers line and sizes of download cards |
 | <a id="control-codespan"></a>`codeSpan`, `safeName`, `mentionText` | quoting of peer text |
-| <a id="control-ownerrequest"></a>`ownerRequest` | command words to an `OwnerRequest`, with `observer #G ID` only for a group of the plugin's session |
+| <a id="control-ownerrequest"></a>`ownerRequest` | command words to an `OwnerRequest`, with `give CHAT N`, `observer #G ID`, `approve N all` and `revoke TOOL` only for a group of the plugin's session |
 | <a id="control-losescontrol"></a>`losesControl`, `isLost` | loss of the control chat or of a plugin group |
 | <a id="control-joinedtext"></a>`joinedText` | `NAME joined (member N)`, shared with the Main group |
 | <a id="control-entrytext"></a>`entryText`, `restartText` | `--owners` entries in restart lines |
@@ -771,7 +772,7 @@ Data flow of a prompt from the session group:
 1. `Session.onMessage` receives a message of a member in the group of session N ([`Hub.onEvent`](../src/hub.ts)). A one-line `/` command goes to `Control`. Another message is queued after the earlier ones, with the `replyTo` of its quote when it is a reply ([`Session.onMessage`](../src/hub.ts), [`toReplyTo`](../src/messages.ts)). `Session.prompt` drops a message of `User` and delivers the rest ([`Session.prompt`](../src/hub.ts)). `Session.onReaction` receives a reaction in that group ([`Hub.onEvent`](../src/hub.ts)). An added reaction of a member whose role sends, other than `User`, to a message, is queued after the earlier messages. One of the apps' eight emoji is queued as the prompt EMOJI, with the `replyTo` of the reacted message and without its file. Any other reaction is queued as the reply `This reaction is not supported.`, once for each member and reacted message ([`Session.onReaction`, `refuseReaction`](../src/hub.ts)).
 2. In the first 30 s after the hub opened, a delivery without an attachment waits for one. With an attachment, the file of the message, if any, is received. Then, if the session is not attached, the hub replies `Session N is not running.` Otherwise the prompt, after the quote line of a reply or a reaction, is pushed, and the line `{prompt}` is written to every `/attach` stream of the session ([`Session.deliver`](../src/hub.ts), [`quoteLine`](../src/messages.ts), [`Service.onAttach`](../src/service.ts)).
 3. The session process sends it to Claude Code as `notifications/claude/channel`, with `reply_to` and `reply_to_from` of a reply or a reaction ([`startSession`, `channelNotification`](../src/session.ts)).
-4. The turn hooks post the terminal prompts and the final answer of each turn with `POST /turn`, and the display hook posts Claude's text in batches as Claude writes it ([`turn`](../src/hook.ts), [`display`](../src/display.ts), [`Session.turn`](../src/hub.ts)). Claude posts an opening message at a prompt that starts a turn, a live message for each text, and the end line after the answer ([flow 34](flows.md#34-the-texts-of-a-turn)).
+4. The turn hooks post the terminal prompts and the final answer of each turn with `POST /turn`, and the display hook posts Claude's text in batches as Claude writes it ([`turn`](../src/hook.ts), [`display`](../src/display.ts), [`Session.turn`](../src/hub.ts)). Claude posts an opening message at a prompt that starts a turn, a live message for each text, and the end line after the answer ([flow 35](flows.md#35-the-texts-of-a-turn)).
 
 ### 8.2 Modules
 
@@ -780,15 +781,16 @@ Data flow of a prompt from the session group:
 | Symbol | Contents |
 |---|---|
 | <a id="session-unattendedrun"></a>`unattendedRun`, `channelInstructions`, `permissionRequest` | the text of a run that is not interactive; instructions of the channel; schema of a permission request |
-| <a id="session-startsession"></a>`startSession` | The session ID and the options are checked. Every call is answered with a text when the run is not interactive or the options are invalid. The `McpServer` gets the instructions, the capabilities `claude/channel` and `claude/channel/permission`, the tools with `reply`, the permission request handler and a stdio transport. Without such a text, the session process connects to the service in the background. |
+| <a id="session-startsession"></a>`startSession` | The session ID and the options are checked. Every call is answered with a text when the run is not interactive or the options are invalid. The `McpServer` gets the instructions, the capabilities `claude/channel` and `claude/channel/permission`, the tools with `reply`, `pre_tool_use`, the permission request handler and a stdio transport. `pre_tool_use`, with the description and schema of `hookTool`, answers with `hookOutput` of `ServiceLink.approvedBy`, also when the run is not interactive or the options are invalid ([API 4.1](api.md#41-tools-in-the-plugin)). Without such a text, the session process connects to the service in the background. |
+| <a id="session-servicelink-approvedby"></a>`ServiceLink.approvedBy` | the approver of a tool in the approved tools of the current attachment, or none without an attachment |
 | <a id="session-servicelink-connect"></a>`ServiceLink.connect`, `start`, `close`, `reconnect` | one shared connect promise, refused at once after a 403 of `/session`. After that refusal, and after `close`, `start` neither logs nor reconnects. Otherwise `start` logs a failure on stderr, and connects again later unless the failure is a `ProtocolError`. `close` ends the attachment and the retries. `reconnect` sets one timer that starts the connection again after the delay. The delay is 1 s at first, and doubles each time the timer fires, up to 30 s. |
 | <a id="session-servicelink-permission"></a>`ServiceLink.permission` | `POST /permission` after the connect, and nothing after the refusal |
 | <a id="session-servicelink-call"></a>`ServiceLink.call` | `forward`, repeated once after status 409. The service returns 409 for an unknown session before it runs the call. Failures are returned as tool errors, with the text of a run that is not interactive after the refusal. |
 | <a id="session-servicelink-forward"></a>`ServiceLink.forward` | the `/call` stream of progress lines and the result line. The connection is dropped when the stream breaks. |
 | <a id="session-servicelink-disconnect"></a>`ServiceLink.disconnect` | drops the connection only when it is the current one |
-| <a id="session-servicelink-open"></a>`ServiceLink.open` | `ensureService`, then `/session` with the parent process ID. A 403 of `/session` is recorded as the refusal. `/attach` is awaited until its first line, and each line goes to the channel. When `/attach` ends, `reconnect` is called. |
+| <a id="session-servicelink-open"></a>`ServiceLink.open` | `ensureService`, then `/session` with the parent process ID. A 403 of `/session` is recorded as the refusal. `/attach` with the parent process ID is awaited until its first line, and each line goes to the channel. A `{tools}` line is kept as the approved tools of its attachment. When `/attach` ends, `reconnect` is called. |
 | <a id="session-failuretext"></a>`failureText` | not running or status 503: `The SimpleX service stopped; repeat the call.` |
-| <a id="session-channelnotification"></a>`channelNotification` | attach lines to `notifications/claude/channel`, with `reply_to` and `reply_to_from` from `replyTo`, and `notifications/claude/channel/permission` |
+| <a id="session-channelnotification"></a>`channelNotification` | attach lines to `notifications/claude/channel`, with `reply_to` and `reply_to_from` from `replyTo`, and `notifications/claude/channel/permission`; nothing for a `{tools}` line |
 
 #### [`client.ts`](../src/client.ts)
 
@@ -821,27 +823,28 @@ Data flow of a prompt from the session group:
 | <a id="protocol-permissionrequest"></a>`PermissionRequest`, `TurnRequest` | `/permission`, `/turn` |
 | <a id="protocol-step"></a>`Step` | `step` of `/turn`: the tool use's ID, the line's text, and `end` at the tool use's end |
 | <a id="protocol-textbatch"></a>`TextBatch` | `text` of `/turn`: the `message_id` of Claude's text, the batch's index, `final` at the text's last batch, and the batch's text |
-| <a id="protocol-attachline"></a>`AttachLine` | `{prompt}` lines, with the `replyTo` of a reply or a reaction, and `{permission}` lines of `/attach` |
-| <a id="protocol-titlereply"></a>`TitleReply`, `SessionReply`, `AttachRequest`, `CallRequest`, `CallLine` | replies and `/call` |
+| <a id="protocol-attachline"></a>`AttachLine`, `ApprovedTool` | `{prompt}` lines, with the `replyTo` of a reply or a reaction, `{permission}` and `{tools}` lines of `/attach`; an approved tool with its approver's name |
+| <a id="protocol-titlereply"></a>`TitleReply`, `SessionReply`, `AttachRequest`, `CallRequest`, `CallLine` | replies, `/attach` with the session server's parent process ID, and `/call` |
 | <a id="protocol-statusreply"></a>`StatusReply`, `ResetReply` | `/status`, `/reset-owners` |
 
 #### [`service.ts`](../src/service.ts)
 
 | Symbol | Contents |
 |---|---|
-| <a id="service-hublike"></a>`HubLike`, `SessionLike`, `ServiceDeps` | interfaces that the service uses, so that tests can replace the hub |
-| <a id="service-entry"></a>`Entry` | opening promise, session, open attachments, their writers, running calls, idle timer, the session server's parent process ID and the time it was last seen |
+| <a id="service-hublike"></a>`HubLike`, `SessionLike`, `ServiceDeps` | interfaces that the service uses, so that tests can replace the hub and the start time of a process |
+| <a id="service-entry"></a>`Entry` | opening promise, session, open attachments, their writers with the process ID of each attachment, running calls, idle timer, the session server's parent process ID with its start time, and the time it was last seen |
 | <a id="service-service-start"></a>`Service.start` | The lock is taken, and the stored sessions are read with their aliases and the next number. The listener starts before the hub opens, so that a starter that lost the lock race gets an answer to `/status` right after `running`. After the hub opens, the stop timer starts, the titles held at the last stop are taken as new `/title` requests, and the hourly log trim starts. |
 | <a id="service-service-routes"></a>`Service.routes`, `withHub`, `expiring` | the ten routes. Requests wait for the hub, and due actions expire first. |
 | <a id="service-service-shutdown"></a>`Service.shutdown` | stop sequence; the held titles saved |
-| <a id="service-service-onsession"></a>`onSession`, `onTitle`, `markUnattended`, `refuseUnattended`, `applyTitle` | The options are checked. For a title with `unattended`, the service removes the marks of 10 s ago and older, marks the title's process, and ends a server's wait for the title of that process. It opens no session for such a title. The service refuses a registration from a process marked in the last 10 s with 403, before and after its wait. At a registration, the service records the parent process ID, names the session by a held title of its ID, and signals the registration. The service holds a title of a new ID that comes from a process without a known session, or from a process whose title is held. The title is held until the server of that process registers, 10 s at most, and is applied only while the service runs. When a title is applied, the service opens or creates the session, sets its name, passes its model with the title's `at`, and records the process of the title. |
+| <a id="service-service-onsession"></a>`onSession`, `onTitle`, `markUnattended`, `refuseUnattended`, `applyTitle` | The options are checked. For a title with `unattended`, the service removes the marks of 10 s ago and older, marks the title's process, and ends a server's wait for the title of that process. It opens no session for such a title. The service refuses a registration from a process marked in the last 10 s with 403, before and after its wait. At a registration, the service records the parent process ID with its start time, ends the session's approvals of tools when either differs from the recorded one or the start time is unknown, names the session by a held title of its ID, and signals the registration. The service holds a title of a new ID that comes from a process without a known session, or from a process whose title is held. The title is held until the server of that process registers, 10 s at most, and is applied only while the service runs. When a title is applied, the service opens or creates the session, sets its name, passes its model with the title's `at`, and records the process of the title. |
 | <a id="service-service-canonical"></a>`canonical`, `resolve`, `attachedSession`, `processSession`, `alias` | An alias is resolved to its session. With `session.json`, an ID is resolved to itself, or, for a hook, to the session attached by its Claude Code process, without an alias. For any other ID, a session server first waits for the title of its process. The ID is then resolved to the session of the same Claude Code process, when the process has one, and recorded as its alias in `session.json`. |
 | <a id="service-service-rename"></a>`rename` | A new name of the session is written into `session.json`, as read after the group's rename. |
-| <a id="service-service-onattach"></a>`onAttach`, `onCall`, `hold` | attachment with the session's line writer; call stream; streams refused while stopping |
+| <a id="service-service-onattach"></a>`onAttach`, `onCall`, `hold` | attachment with the session's line writer, and at the last detach the end of the session's permissions, and of its steps, opening messages and texts by `endLive`; a `{tools}` line reaches only the attachments of the recorded process, and the others get `{tools: []}`; call stream; streams refused while stopping |
 | <a id="service-service-entry"></a>`entry`, `refuseWhenStopping`, `folder`, `openAgent` | the session registry. The status is 503 while the service stops, and 400 for an ID that is not a session ID. The status is 409 for an unknown session on the routes other than `/session` and `/title`. A new session is given a new number and name, and the aliases that already point to it. |
-| <a id="service-service-scheduleidle"></a>`scheduleIdle`, `scheduleStop` | idle close of a session, idle stop of the service |
+| <a id="service-service-scheduleidle"></a>`scheduleIdle`, `scheduleStop` | idle close of a session, which ends its approvals of tools; idle stop of the service. `onSession` also ends them when the session is registered from a process other than the one recorded. |
 | <a id="service-runservice"></a>`runService` | the process entry: ROOT, start, ready line and signal handlers. For a held lock, the start runs again once the lock is released, and the ready line is `running` when its holder answers. |
-| <a id="service-productiondeps"></a>`productionDeps` | token, `Hub.open` |
+| <a id="service-productiondeps"></a>`productionDeps` | token, `Hub.open`, `processStart` |
+| <a id="service-processstart"></a>`processStart` | the start time of a process: field 22 of `/proc/PID/stat` on Linux, `/bin/ps -o lstart= -p PID` with a 2 s timeout on macOS; none on other systems, for a process that does not run, and for an ID that is not a positive integer |
 | <a id="service-processevent"></a>`processEvent` | the next event of a PID on `titled` or `registered`, 10 s at most |
 | <a id="service-lockholder"></a>`lockHolder` | up to 150 checks, 100 ms apart. The result is `released` when ROOT/service.lock is gone, and `answers` for any result of a socket request other than ENOENT and ECONNREFUSED. |
 | <a id="service-sessionname"></a>`sessionName` | session title, else the project folder name, else `Claude Code` |
@@ -858,13 +861,14 @@ Data flow of a prompt from the session group:
 | <a id="hub-session"></a>`Session` | one Claude Code session, built from its `session.json` and its group's data. `Actions` get the hub's texts and the mode of the group's data, or `requests` without one. `AgentTools` get the session's ID and folder and the group for `reply`. `Control` of the session group gets the session's approver checks. The stored model and effort are kept as well. |
 | <a id="hub-session-busy"></a>`Session.busy` | an action other than a `mode` card in memory |
 | <a id="hub-session-requestmode"></a>`Session.requestMode`, `askMode` | `requests` applies at once. The hub then ends pending `mode` cards and clears `hostDeclined`. `host` is remembered and asked as a `mode` action while an approver is in the group and `hostDeclined` is unset. The request is forgotten after a rejected or expired card, and `hostDeclined` is set after a rejection. |
-| <a id="hub-session-online"></a>`Session.onLine` | the writer of the session's attachments. The held prompts are woken at each change. |
+| <a id="hub-session-online"></a>`Session.onLine` | the writer of the session's attachments. The approved tools are sent to a new writer, and the held prompts are woken at each change. |
 | <a id="hub-session-onmessage"></a>`Session.onMessage` | The hub answers a `/` command from a member who is not an approver with the one refusal, found by `refusesCommand` and posted on the `delivery` chain. The remaining one-line `/` texts go to `Control`, and other messages go to `prompt` on the `delivery` chain, in arrival order. The `replyTo` of a reply is computed here from its quote, with the hub's profile name as Claude's name, and passed with the message and its file. |
 | <a id="hub-session-onreaction"></a>`Session.onReaction` | An added reaction of a member whose role sends, other than `User`, to a received or sent message, is handled on the `delivery` chain. One of the apps' eight emoji goes to `prompt` as the text EMOJI. Any other reaction goes to `refuseReaction`. The `replyTo` of an emoji is computed from the reacted item, with the item's file name for an empty text and the hub's profile name as Claude's name. The item's file is not passed. |
 | <a id="hub-session-claimpending"></a>`Session.claimPending` | When a connection of `connect` recorded in the last day completes, its record is removed and its chat is claimed. |
-| <a id="hub-session-permission"></a>`Session.permission` | a `permission` action in mode `requests`. Its verdict is written to the attachments, and the action is removed when decided. |
+| <a id="hub-session-permission"></a>`Session.permission` | a `permission` action in mode `requests`, marked `toolApproved` when its tool is approved for the session. Its verdict is written to the attachments, and the action is removed when decided. |
 | <a id="hub-session-turn"></a>`Session.turn` | Before any await, at an answer or a prompt that is not mid-turn, the permissions created before its hook started are ended, and so are the steps. At a prompt that is not mid-turn, each opening message without an end gets the hook's start as its end. At an answer, the turn's start is the newest turn record not marked as added whose hook started no later than the answer's hook. At both, `endTexts` is queued with the hook's start, and with the answer and the turn's start for an answer. An answer's quote is chosen, and its hook's start is recorded as the latest answer's hook start. A turn record is added for a prompt whose hook started no earlier than the latest answer's hook, unless the prompt is mid-turn and matched no pushed prompt. The record of a mid-turn prompt is marked as added. The model and the effort level of the request are taken only when its `at` is not older than the `at` of the value taken last, kept apart for each (`newer`). A `/title` passes its model with the `at` of its SessionStart hook. A request without `at` counts as the current time. A changed description is recorded in `session.json`. After these steps, the request's `text` goes to `text`, its `step` to `step`, Claude posts the request's `note` without a quote, silent, and `User` posts the terminal prompt unless its `typed` is false, or it is blank, made only of this plugin's channel tags, pushed or a command. A prompt without `typed` is posted as typed. The turn record of a prompt is kept whatever its `typed`. A prompt that is not mid-turn, that `User` posts or that matched a pushed prompt, and whose hook started no earlier than the latest answer's hook, gets the opening message from `openTurn`, kept before `User`'s post and sent after it. An answer goes to `answer`, with the result of the claim of `endTexts`. The changed short description is set, even after a failed post. A prompt, a note, a step's line, a text or an answer that the core refuses for a group preference is replaced by Claude's post with the preference's name. |
 | <a id="hub-session-endpermissions"></a>`Session.endPermissions`, `endSteps`, `endLive`, `fileDone` | the end of pending permissions created before a time; the end of the steps started before a time, each removed by `endStep`, its ID kept as finished and its line updated with its own text, live off; it returns the promise of all updates started so far. `endLive` ends every step, closes every opening message, queues the end of every text, and returns the promise of all updates started once that end has run. The end of a prompt's file |
+| <a id="hub-session-endtoolapprovals"></a>`Session.endToolApprovals`, `sendTools` | the approvals of tools dropped when the session closes or another process registers it, a process with another ID, another start time or an unknown one; the approved tools of `Control` written to the attachments as a `{tools}` line when they differ from the list sent last, which a new writer resets to empty |
 | <a id="hub-session-invite"></a>`Session.invite`, `announceRights` | invitation through the Main group. At a member's join or role change, other than `User`'s, the rights of the member's role are posted. The `/observer` command is added only for a role that can send, other than owner. |
 | <a id="hub-session-prompt"></a>`Session.prompt` | a message of `User` dropped; the rest delivered. `User`'s reactions are dropped before, by `onReaction`. |
 | <a id="hub-session-refusereaction"></a>`Session.refuseReaction` | The reply `This reaction is not supported.`, quoting the reacted message, posted on the `delivery` chain once for each member and reacted message, recorded in `refusedReactions`. A reaction to a sent message with that text gets no reply. |
@@ -881,7 +885,7 @@ Data flow of a prompt from the session group:
 | <a id="hub-hub-sessionstext"></a>`Hub.sessionsText`, `join`, `inviteOwner` | `SessionGroups` of the Main group |
 | <a id="hub-hub-stop"></a>`Hub.stop` | actions stopped, events awaited, cancelled cards awaited up to 10 s, steps, opening messages and texts ended by `endLive` with their updates awaited, cores closed |
 | <a id="hub-hub-storedgroup"></a>`storedGroup`, `createSessionGroup` | the group of `session.json` with a matching session number; a new group with `User` added |
-| <a id="hub-hub-onevent"></a>`Hub.onEvent` | event dispatch. Pending connections are claimed at `contactConnected` and `userJoinedGroup`. A session group's membership events go to its `Control`, `announceRights` and `askMode`, one at a time. |
+| <a id="hub-hub-onevent"></a>`Hub.onEvent` | event dispatch. Pending connections are claimed at `contactConnected` and `userJoinedGroup`. A session group's membership events go to its `Control`, `sendTools`, `announceRights` and `askMode`, one at a time. |
 | <a id="hub-notallowedforuser"></a>`notAllowedForUser` | `NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` It is posted for a prompt of `User` refused by a group preference, including one that is on only for roles above that of `User`. |
 | <a id="hub-textparts"></a>`textParts` | the longest runs of whole characters that each fit in one message by `fitsMessage`, the first with the given quote. Each part is found by a binary search among the next `maxMessageLength` characters. |
 | <a id="hub-quoteof"></a>`quoteOf`, `endLine`, `keepLast` | the quote of a received or sent message, when it fits with the first character of a text; `!- ✅ Done in DURATION!` by `duration`, or `!- ✅ Done!` without a time; a set of IDs that keeps its last 100 |
@@ -956,7 +960,7 @@ Data flow of a prompt from the session group:
 |---|---|
 | [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json) | plugin `simplex`, version, description, `userConfig` |
 | [`.mcp.json`](../.mcp.json) | server `simplex`: `node dist/cli.js session` in the plugin's folder, tool call timeout, options as environment variables |
-| [`hooks/hooks.json`](../hooks/hooks.json) | SessionStart: `dist/cli.js hook session-start`; PreToolUse: `allow.js`; UserPromptSubmit, Stop, PostModelSwitch: `dist/cli.js hook turn`, in the background; MessageDisplay: `dist/display.js`, with a 2 s timeout, which Claude Code waits for |
+| [`hooks/hooks.json`](../hooks/hooks.json) | SessionStart: `dist/cli.js hook session-start`; PreToolUse: `allow.js` for the plugin's tools, and for every tool `dist/cli.js hook turn` in the background and the `mcp_tool` hook that calls `pre_tool_use` of the server `plugin:simplex:simplex`; UserPromptSubmit, Stop, PostModelSwitch, PostToolUse, PostToolUseFailure: `dist/cli.js hook turn`, in the background; MessageDisplay: `dist/display.js`, with a 2 s timeout, which Claude Code waits for |
 | [`package.json`](../package.json) | `bundleDependencies: true`. The production packages are bundled in the package's `node_modules`, without a lockfile, so Claude Code installs nothing in the plugin's folder. [`package-lock.json`](../package-lock.json), the tree of `npm ci`, is not packed. |
 | [`plugin/allow.js`](../plugin/allow.js) | PreToolUse allow decision |
 | [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json) | marketplace `simplex-chat`, plugin source npm `@simplex-chat/mcp` |
@@ -968,14 +972,14 @@ Memory of the service:
 | Item | Holder | Written by | Read by |
 |---|---|---|---|
 | Entries of open sessions | [`Service.entries`](../src/service.ts) | `entry`, idle close, stop | routes, `status` |
-| Line writers of the attachments | [`Entry.writers`](../src/service.ts) | `onAttach` | `Session.onLine` |
+| Line writers of the attachments | [`Entry.writers`](../src/service.ts), each with the process ID of its `/attach` | `onAttach` | `Session.onLine` |
 | Stored sessions, next number | [`Service.stored`, `nextNumber`](../src/service.ts) | `Service` constructor, `openAgent` | `openHub`, `openAgent` |
 | Aliases of sessions | [`Service.aliases`](../src/service.ts), ID to session ID | `Service` constructor, `alias` | `canonical`, `resolve` |
 | Titles by process | [`Service.titles`](../src/service.ts), PID to session ID, time and the name of a held title, and the `titled` signal | `onTitle`, `applyTitle` | `processSession`, the wait of `resolve`, `onSession` |
 | Registrations by process | [`Service.registered`](../src/service.ts), the signal of a `/session` with that PID | `onSession` | the wait of a held title |
 | Held titles | [`Service.held`](../src/service.ts), PID to its last held `/title` request | `onTitle`, the end of its wait | `onTitle`, `shutdown` |
 | Processes of unattended runs | [`Service.unattended`](../src/service.ts), PID to the time of its mark | `onTitle` with `unattended` | `onSession` |
-| Process of a session server | [`Entry.pid`, `Entry.seen`](../src/service.ts) | `onSession`, the end of the last attachment | `processSession` |
+| Process of a session server | [`Entry.pid`, `Entry.started`, `Entry.seen`](../src/service.ts) | `onSession`, the end of the last attachment | `processSession`, `onSession`, the line writer of `onAttach` |
 | Sessions | [`Hub.sessions`](../src/hub.ts), by number | `Hub.session` | events, Main group commands |
 | End of the held prompts | [`Hub.promptsHeldUntil`](../src/hub.ts), 30 s after the stored sessions opened | `Hub.open` | `Session.deliver` |
 | Prompts in delivery | [`Session.delivery`](../src/hub.ts), a promise chain in arrival order | `onMessage`, `onReaction` | `deliver` |
@@ -994,10 +998,12 @@ Memory of the service:
 | Model and effort | [`Session.description`](../src/hub.ts), also in `session.json` | constructor, `turn` | `turn` |
 | Turn records | [`Session.turns`](../src/hub.ts), the start time of each prompt hook that started no earlier than the latest answer's hook, except a mid-turn prompt that matched no pushed prompt, with its pushed prompt, or `null` for a terminal prompt or a command. The record of a mid-turn prompt is marked as added. | `turn`. At an answer, the records that started before its hook are removed. | `turnQuote`, `turnStart` |
 | A rejected mode `host` | [`Session.hostDeclined`](../src/hub.ts), also in `session.json` | constructor, `declineHost` | `askMode`, `requestMode` |
+| Approvals of tools | [`Control.toolApprovals`](../src/control.ts), by tool name: the approver's name and member ID and the time | `/approve N all`, `/revoke TOOL`, `endToolApprovals` when the session closes, another process registers it or its group is lost | `approvedTools`: `Session.sendTools`, `Session.permission`, `/list` |
+| Approved tools sent | [`Session.sentTools`](../src/hub.ts), the list last written to the attachments, empty for a new writer | `sendTools`, `onLine` | `sendTools` |
 | The requested mode | [`Session.requested`](../src/hub.ts) | `requestMode`, a rejected or expired `mode` card | `askMode` |
 | Members of the Main group, its link | [`MainGroup.members`, `linkText`](../src/main-group.ts) | `refreshMembers`, `openLink` | owner checks, the statement of trust at a join, `/status`, `/title`, `/link` |
 
-A session process keeps one connection promise, one attachment, the refusal of the service, and the retry delay with its timer in memory (the fields of [`ServiceLink`](../src/session.ts)).
+A session process keeps one connection promise, one attachment, the refusal of the service, and the retry delay with its timer in memory (the fields of [`ServiceLink`](../src/session.ts)). It also keeps the approved tools of each attachment, and answers the PreToolUse hook from those of the current one (`ServiceLink.approvedTools`).
 
 Chat database custom data is in the core `_hub` unless noted:
 
@@ -1116,6 +1122,7 @@ Tool-use state machine, one action of tool `permission` per request:
 |---|---|---|---|
 | `permission_request` | | `pending`, card posted | [`Session.permission`](../src/hub.ts) |
 | `/approve N` | `pending` | `performing`, `allow` pushed, then `done` | [`Session.permission`](../src/hub.ts), [`AgentTools.perform`](../src/tools.ts) |
+| `/approve N all` | `pending` | as `/approve N`, after the tool is approved for the session and the approved tools are pushed | [`Control.approveTool`](../src/control.ts) |
 | `/reject N` | `pending` | `rejected`, `deny` pushed | [`Session.permission`](../src/hub.ts) |
 | an answer, or a prompt that is not mid-turn, of a hook that started after the card's creation; end of the last attachment | `pending` | `expired`, card edited to `Ended.` | [`Session.turn`, `endPermissions`](../src/hub.ts), [`Service.onAttach`](../src/service.ts), [`Actions.end`](../src/actions.ts) |
 | expiry | `pending` | `expired`, card edited to `Expired.` | [`Actions.expire`](../src/actions.ts) |
@@ -1125,6 +1132,7 @@ Tool-use state machine, one action of tool `permission` per request:
 stateDiagram-v2
   [*] --> pending: permission_request
   pending --> performing: /approve N, allow pushed
+  pending --> performing: /approve N all, tools pushed, then allow pushed
   performing --> done
   pending --> rejected: /reject N, deny pushed
   pending --> expired: later answer or prompt that is not mid-turn, last detach, card Ended.
@@ -1132,6 +1140,29 @@ stateDiagram-v2
   done --> [*]: removed
   rejected --> [*]: removed
   expired --> [*]: removed
+```
+
+Approval of a tool for the rest of a session, kept in `Control` by tool name. The session server answers the PreToolUse hook with `allow` for an approved tool, and Claude Code then runs the tool without a prompt, unless a deny or ask rule, a safety check such as a write to a protected path, plan mode or the auto mode classifier requires its permission flow. A prompt of that flow is relayed as a card, with the line that the tool is approved and Claude Code still asks.
+
+| Event | From | To | Code |
+|---|---|---|---|
+| `/approve N all` of a pending `permission` card | | approved by the sender | [`Control.approveTool`](../src/control.ts) |
+| the approver is no longer an admin or owner, after a membership event or `/observer` | approved | inactive: not among the approved tools | [`Control.approvedTools`](../src/control.ts), [`Hub.onEvent`](../src/hub.ts) |
+| the approver is an admin or owner again | inactive | approved | the same |
+| `/approve N all` by another approver | inactive | approved by that approver | [`Control.approveTool`](../src/control.ts) |
+| `/revoke TOOL`; the session closes; `/session` from another process, by its ID or start time, or with an unknown start time | approved, inactive | removed | [`Control.revokeTool`, `endToolApprovals`](../src/control.ts), [`Service.onSession`, `scheduleIdle`, `processStart`](../src/service.ts) |
+| the session's group is lost: deleted, Claude removed, or Claude no longer its owner, at an event or at a load | approved, inactive | removed, and `{tools: []}` sent | [`Control.onEvent`, `load`, `lose`](../src/control.ts) |
+| the session's process attaches again, as after a failed call | approved, inactive | unchanged | [`Service.onAttach`](../src/service.ts) |
+| an attachment of a process other than the one of the last `/session` | approved, inactive | `{tools: []}` sent to that attachment in place of each `{tools}` line | [`Service.onAttach`](../src/service.ts) |
+
+```mermaid
+stateDiagram-v2
+  [*] --> approved: /approve N all
+  approved --> inactive: its approver is no longer an admin or owner
+  inactive --> approved: its approver is an admin or owner again
+  inactive --> approved: /approve N all by another approver, who is recorded
+  approved --> [*]: /revoke TOOL, the session closes, another process registers it, or the group is lost
+  inactive --> [*]: /revoke TOOL, the session closes, another process registers it, or the group is lost
 ```
 
 ### 8.6 Channel and mirroring
