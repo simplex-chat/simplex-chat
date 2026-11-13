@@ -22,11 +22,12 @@ import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVa
 import Control.Monad (forM_, void, when)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
+import Data.Aeson ((.:), (.:?))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy as LB
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Int (Int64)
@@ -34,13 +35,13 @@ import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage, CEvtNewChatItems), ChatHooks (..), ChatLogLevel (..), ChatResponse (CRApiChat), defaultChatHooks, withAgent)
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
+import Simplex.Chat.Messages (AChat (..), AChatItem (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, priority), Chat (Chat, chatItems), ChatItem (ChatItem, content, meta), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
-import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
+import Simplex.Chat.Messages.CIContent (MsgDirection (MDRcv), ciMsgContent, publicGroupNoE2EText, toMsgDirection)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
 import Simplex.Chat.Types
@@ -6155,25 +6156,29 @@ testGroupMsgForwardNotification =
       lastJobNotification alice `shouldReturn` False
 
 testGroupMsgForwardSilent :: HasCallStack => TestParams -> IO ()
-testGroupMsgForwardSilent =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-      setupGroupForwarding alice bob cath
-      cath ##> "/set receipts all off"
-      cath <## "ok"
-      aliceConnId <- relayConnIdToMember bob "alice"
-      cathConnId <- relayConnIdToMember alice "cath"
+testGroupMsgForwardSilent ps = do
+  (rcvItems, cfg) <- rcvItemPrioritiesCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        setupGroupForwarding alice bob cath
+        cath ##> "/set receipts all off"
+        cath <## "ok"
+        aliceConnId <- relayConnIdToMember bob "alice"
+        cathConnId <- relayConnIdToMember alice "cath"
 
-      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi there\"}, \"priority\": -1}]"
-      bob <# "#team hi there"
-      alice <# "#team bob> hi there"
-      cath <# "#team bob> hi there [>>]"
-      lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["F"]
-      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
-      lastJobNotification alice `shouldReturn` False
-      forM_ [alice, bob, cath] $ \cc ->
-        silentItem cc "/_get chat #1 count=1" `shouldReturn` True
+        bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi there\"}, \"priority\": -1}]"
+        bob <# "#team hi there"
+        alice <# "#team bob> hi there"
+        cath <# "#team bob> hi there [>>]"
+        lastSndMsgPriority bob `shouldReturn` Just (-1)
+        lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["F"]
+        lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
+        lastJobNotification alice `shouldReturn` False
+        forM_ [alice, bob, cath] $ \cc ->
+          itemPriority cc "/_get chat #1 count=1" `shouldReturn` Just (-1)
+        readTVarIO rcvItems `shouldReturn` [("hi there", Just (-1))]
 
 testGroupMsgForwardReaction :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReaction =
@@ -6454,32 +6459,35 @@ testGroupHistory =
       [alice, bob] *<# "#team cath> 3"
 
 testGroupHistorySilent :: HasCallStack => TestParams -> IO ()
-testGroupHistorySilent =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup2 "team" alice bob
+testGroupHistorySilent ps = do
+  (rcvItems, cfg) <- rcvItemPrioritiesCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        createGroup2 "team" alice bob
 
-      threadDelay 1000000
+        threadDelay 1000000
 
-      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hey!\"}, \"priority\": -1}]"
-      bob <# "#team hey!"
-      alice <# "#team bob> hey!"
+        bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hey!\"}, \"priority\": -1}]"
+        bob <# "#team hey!"
+        alice <# "#team bob> hey!"
 
-      connectUsers alice cath
-      addMember "team" alice cath GRAdmin
-      cath ##> "/j team"
-      concurrentlyN_
-        [ alice <## "#team: cath joined the group",
-          cath
-            <### [ "#team: you joined the group",
-                   WithTime "#team bob> hey! [>>]",
-                   "#team: member bob (Bob) is connected"
-                 ],
-          do
-            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
-            bob <## "#team: new member cath is connected"
-        ]
-      silentItem cath "/_get chat #1 count=1 search=hey!" `shouldReturn` True
+        connectUsers alice cath
+        addMember "team" alice cath GRAdmin
+        cath ##> "/j team"
+        concurrentlyN_
+          [ alice <## "#team: cath joined the group",
+            cath
+              <### [ "#team: you joined the group",
+                     WithTime "#team bob> hey! [>>]",
+                     "#team: member bob (Bob) is connected"
+                   ],
+            do
+              bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+              bob <## "#team: new member cath is connected"
+          ]
+        itemPriority cath "/_get chat #1 count=1 search=hey!" `shouldReturn` Just (-1)
+        readTVarIO rcvItems `shouldReturn` [("hey!", Just (-1))]
 
 testGroupHistoryGroupLink :: HasCallStack => TestParams -> IO ()
 testGroupHistoryGroupLink =
@@ -9858,10 +9866,11 @@ testChannels1RelayDeliverNotification ps =
             lastJobNotification bob `shouldReturn` False
 
 testChannels1RelayDeliverSilent :: HasCallStack => TestParams -> IO ()
-testChannels1RelayDeliverSilent ps =
+testChannels1RelayDeliverSilent ps = do
+  (rcvItems, cfg) <- rcvItemPrioritiesCfg
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
-      withNewTestChat ps "cath" cathProfile $ \cath -> do
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
         memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
         cath ##> "/set receipts all off"
@@ -9873,11 +9882,13 @@ testChannels1RelayDeliverSilent ps =
         alice <# "#team hi"
         bob <# "#team> hi"
         cath <# "#team> hi [>>]"
+        lastSndMsgPriority alice `shouldReturn` Just (-1)
         lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["F"]
         lastSndMsgFlags bob cathConnId 1 `shouldReturn` ["F"]
         lastJobNotification bob `shouldReturn` False
         forM_ [alice, bob, cath] $ \cc ->
-          silentItem cc "/_get chat #1 count=1" `shouldReturn` True
+          itemPriority cc "/_get chat #1 count=1" `shouldReturn` Just (-1)
+        readTVarIO rcvItems `shouldReturn` [("hi", Just (-1))]
 
 testChannelDuplicateEvent :: HasCallStack => TestParams -> IO ()
 testChannelDuplicateEvent ps = do
@@ -13810,9 +13821,30 @@ lastSndMsgFlags cc connId n = do
       (connId, Binary ("M" :: ByteString), n)
   pure $ reverse $ map fromOnly rows
 
-silentItem :: TestCC -> String -> IO Bool
-silentItem TestCC {chatController = cc} getChatCmd =
-  sendChatCmdStr cc getChatCmd >>= either (fail . show) (pure . B.isInfixOf "\"priority\":-1" . LB.toStrict . J.encode)
+itemPriority :: TestCC -> String -> IO (Maybe Int)
+itemPriority TestCC {chatController = cc} getChatCmd = do
+  r <- sendChatCmdStr cc getChatCmd
+  case r of
+    Right (CRApiChat _ (AChat _ Chat {chatItems = [CChatItem _ ChatItem {meta = CIMeta {priority}}]}) _) -> pure priority
+    _ -> fail $ show r
+
+lastSndMsgPriority :: TestCC -> IO (Maybe Int)
+lastSndMsgPriority cc = do
+  [Only body] <- withCCTransaction cc $ \db ->
+    DB.query_ db "SELECT msg_body FROM messages WHERE msg_sent = 1 AND chat_msg_event = 'x.msg.new' ORDER BY message_id DESC LIMIT 1"
+  maybe (fail $ "bad message body: " <> B.unpack body) pure $
+    JT.parseMaybe (\o -> o .: "params" >>= (.:? "priority")) =<< J.decodeStrict body
+
+rcvItemPrioritiesCfg :: IO (TVar [(T.Text, Maybe Int)], ChatConfig)
+rcvItemPrioritiesCfg = do
+  rcvItems <- newTVarIO []
+  let hook _ evt = do
+        case evt of
+          Right (CEvtNewChatItems _ cis) ->
+            atomically $ modifyTVar' rcvItems (<> [(msgContentText mc, priority) | AChatItem _ d _ ChatItem {content, meta = CIMeta {priority}} <- cis, toMsgDirection d == MDRcv, Just mc <- [ciMsgContent content]])
+          _ -> pure ()
+        pure evt
+  pure (rcvItems, testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
 
 lastJobNotification :: TestCC -> IO Bool
 lastJobNotification cc = do

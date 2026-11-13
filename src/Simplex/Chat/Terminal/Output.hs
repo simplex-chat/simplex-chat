@@ -176,7 +176,7 @@ chatEventNotification :: ChatTerminal -> ChatController -> ChatEvent -> IO ()
 chatEventNotification t@ChatTerminal {sendNotification} cc = \case
   -- At the moment of writing received items are created one at a time
   CEvtNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText, meta = CIMeta {priority}}) : _) ->
-    when (chatDirNtf u cInfo chatDir (isUserMention ci) && priority /= Just (-1)) $ do
+    when (chatDirNtf u cInfo chatDir (isUserMention ci) && all (>= 0) priority) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
         (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
@@ -185,8 +185,8 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
         _ -> pure ()
     where
       text = msgText mc formattedText
-  CEvtChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _}) ->
-    whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ setActiveChat t cInfo
+  CEvtChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _, meta = CIMeta {priority}}) ->
+    whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir (isUserMention ci) && all (>= 0) priority) $ setActiveChat t cInfo
   CEvtContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct
     sendNtf (viewContactName ct <> "> ", "connected")

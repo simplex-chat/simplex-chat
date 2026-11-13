@@ -23,7 +23,7 @@
 module Simplex.Chat.Protocol where
 
 import Control.Applicative ((<|>))
-import Control.Monad (when, (<=<))
+import Control.Monad (mfilter, when, (<=<))
 import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -639,12 +639,18 @@ cmToQuotedMsg = \case
   _ -> Nothing
 
 limitPriority :: Int -> Int
-limitPriority = max (-1) . min 1
+limitPriority = max (-1) . min 0
+
+sndPriority :: Maybe Int -> Maybe Int
+sndPriority = mfilter (/= 0) . fmap limitPriority
+
+msgPriority :: ChatMsgEvent e -> Int
+msgPriority = \case
+  XMsgNew MsgContainer {priority = Just p} -> limitPriority p
+  _ -> 0
 
 cmPriority :: AChatMsgEvent -> Int
-cmPriority = \case
-  ACME _ (XMsgNew MsgContainer {priority = Just p}) -> limitPriority p
-  _ -> 0
+cmPriority (ACME _ ev) = msgPriority ev
 
 data MsgContentTag
   = MCText_
@@ -1358,9 +1364,7 @@ hasNotification = \case
   _ -> False
 
 eventHasNotification :: ChatMsgEvent e -> Bool
-eventHasNotification = \case
-  XMsgNew MsgContainer {priority = Just p} | p < 0 -> False
-  ev -> hasNotification $ toCMEventTag ev
+eventHasNotification ev = msgPriority ev >= 0 && hasNotification (toCMEventTag ev)
 
 msgHasNotification :: VerifiedMsg e -> Bool
 msgHasNotification verifiedMsg = eventHasNotification chatMsgEvent

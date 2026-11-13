@@ -4955,7 +4955,7 @@ processChatCommand cxt nm = \case
                         quotedItem = mkCIQuote qd (Just qiId) itemSharedMsgId itemTs qmc
                     pure (mcQuote QuotedMsg {msgRef, content = qmc} mc, Just quotedItem)
                   (Just _, Just _) -> throwError SEInvalidQuote
-                pure (mc' {file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, priority}, quotedItem_)
+                pure (mc' {file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, priority = sndPriority priority}, quotedItem_)
               where
                 quoteData :: ChatItem c d -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTDirect, Bool)
                 quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwError SEInvalidQuote
@@ -5034,7 +5034,7 @@ processChatCommand cxt nm = \case
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc, priority}, itemForwarded, _, ciMentions), fInv_) ->
                 let msgScope = toMsgScope gInfo <$> chatScopeInfo
                     mentions = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                 in prepareGroupMsg db user gInfo msgScope showGroupAsSender mc mentions quotedItemId itemForwarded fInv_ timed_ live priority
+                 in prepareGroupMsg db user gInfo msgScope showGroupAsSender mc mentions quotedItemId itemForwarded fInv_ timed_ live (sndPriority priority)
             createMemberSndStatuses ::
               [Either ChatError (ChatItem 'CTGroup 'MDSnd)] ->
               NonEmpty (Either ChatError SndMessage) ->
@@ -5103,7 +5103,7 @@ processChatCommand cxt nm = \case
       [Either ChatError (NewSndChatItemData c)]
     prepareSndItemsData =
       zipWith4 $ \(ComposedMessage {msgContent, priority}, itemForwarded, ts, mm) f q -> \case
-        Right msg -> Right $ NewSndChatItemData msg (CISndMsgContent msgContent) ts mm f q itemForwarded (fromMaybe 0 priority)
+        Right msg -> Right $ NewSndChatItemData msg (CISndMsgContent msgContent) ts mm f q itemForwarded (fromMaybe 0 $ sndPriority priority)
         Left e -> Left e -- step over original error
     processSendErrs :: ([ChatError], [ChatItem c d]) -> CM ()
     processSendErrs = \case

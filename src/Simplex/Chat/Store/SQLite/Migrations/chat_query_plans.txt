@@ -8495,6 +8495,10 @@ Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id)
 Plan:
 SCAN messages
 
+Query: SELECT msg_body FROM messages WHERE msg_sent = 1 AND chat_msg_event = 'x.msg.new' ORDER BY message_id DESC LIMIT 1
+Plan:
+SCAN messages
+
 Query: SELECT next_wake_at FROM badge_purchases
 Plan:
 SCAN badge_purchases

@@ -31,6 +31,7 @@ public enum NSENotificationData {
     case messageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem)
     case callInvitation(_ invitation: RcvCallInvitation)
     case msgInfo(NtfMsgAckInfo)
+    case silentMsg
     case noNtf
 
     @inline(__always)
@@ -49,6 +50,7 @@ public enum NSENotificationData {
         case let .messageReceived(user, cInfo, cItem): createMessageReceivedNtf(user, cInfo, cItem, badgeCount)
         case let .callInvitation(invitation): createCallInvitationNtf(invitation, badgeCount)
         case .msgInfo: UNMutableNotificationContent()
+        case .silentMsg: UNMutableNotificationContent()
         case .noNtf: UNMutableNotificationContent()
         }
     }
@@ -62,6 +64,7 @@ public enum NSENotificationData {
         case .messageReceived: self
         case .callInvitation: self
         case .msgInfo: nil
+        case .silentMsg: nil
         case .noNtf: nil
         }
     }
@@ -572,6 +575,10 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unknown message, let other instance to process it")
                 return true
             }
+        } else if case .silentMsg = ntf {
+            logger.debug("NotificationService processNtf: silent message, get next message without using an attempt")
+            notificationEntities[id]?.allowedGetNextAttempts += 1
+            return false
         } else if ntfEntity.ntfConn.user.showNotifications {
             // This is the notification event for the user with enabled notifications.
             logger.debug("NotificationService processNtf: setting best attempt")
@@ -1031,7 +1038,13 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
             if let file = cItem.autoReceiveFile() {
                 cItem = autoReceiveFile(file) ?? cItem
             }
-            let ntf: NSENotificationData = (cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification) ? .messageReceived(user, cInfo, cItem) : .noNtf
+            let ntf: NSENotificationData = if cItem.meta.silent {
+                .silentMsg
+            } else if cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification {
+                .messageReceived(user, cInfo, cItem)
+            } else {
+                .noNtf
+            }
             let chatIdOrMemberId = if case let .group(groupInfo, _) = cInfo, let memberId = cItem.meta.forwardedByMember ?? cItem.chatDir.groupMemberId {
                 groupMemberEntityId(groupInfo.groupId, memberId)
             } else {
