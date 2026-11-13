@@ -11,6 +11,9 @@ const maxCollected = 100
 const prohibitedNameChars = ".,;/\\#@'\"`~"
 const maxNameLength = 50
 const replyTextLength = 200
+const lineBreak = /\r\n?|[\n\v\f\u0085\p{Zl}\p{Zp}]/u
+const edgeSpace = /^[\s\u0085]+|[\s\u0085]+$/g
+const graphemes = new Intl.Segmenter(undefined, {granularity: "grapheme"})
 const receivingStatuses: T.CIFileStatus["type"][] = ["rcvAccepted", "rcvTransfer", "rcvWarning"]
 export const missingFile = "The received file is not in the agent's files folder."
 
@@ -212,13 +215,18 @@ export function toReplyTo(chatInfo: T.ChatInfo, {itemId, chatDir, content, fileN
 }
 
 export function replyText(text: string): string {
-  const [line, ...rest] = text.trim().split("\n")
-  const chars = [...line.trim()]
-  return chars.length > replyTextLength || rest.length > 0 ? `${chars.slice(0, replyTextLength).join("")}…` : chars.join("")
+  const [line, ...rest] = trimmed(text).split(lineBreak)
+  const chars = [...graphemes.segment(trimmed(line))].map(({segment}) => segment)
+  return chars.length > replyTextLength || rest.length > 0 ? `${chars.slice(0, replyTextLength).join("").trimEnd()}…` : chars.join("")
 }
 
 export function quoteLine({type, text}: ReplyTo): string {
-  return `> ${replyText(type === undefined ? text : text === "" ? type : `${type}: ${text}`)}`
+  const body = replyText(type === undefined ? text : trimmed(text) === "" ? type : `${type}: ${trimmed(text)}`)
+  return body === "" ? ">" : `> ${body}`
+}
+
+function trimmed(text: string): string {
+  return text.replace(edgeSpace, "")
 }
 
 function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, rejectedFiles: ReadonlySet<number>, data: string): MessageFile {

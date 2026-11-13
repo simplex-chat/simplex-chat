@@ -1372,7 +1372,7 @@ export class AgentTools {
   }
 
   private async selfSender(chatInfo: T.ChatInfo): Promise<Sender> {
-    const knownAs = !isIncognito(chatInfo) ? undefined : chatInfo.type === "direct" ? await this.incognitoName(chatInfo.contact.contactId) : this.selfName(chatInfo)
+    const knownAs = !isIncognito(chatInfo) ? undefined : chatInfo.type === "direct" ? await this.incognitoName(chatInfo.contact.contactId).catch(error => (logError(`incognito name in @${chatInfo.contact.contactId}`, error), undefined)) : this.selfName(chatInfo)
     return {name: knownAs ?? this.selfName(chatInfo), ...defined({type: knownAs === undefined ? this.agent.user.profile.peerType : undefined})}
   }
 

@@ -76,7 +76,7 @@ Data flow of a tool call:
 2. The server checks Host, Origin, token, path and readiness, then passes the request to the SDK handler ([`http.ts:19-28`](../src/http.ts#L19-L28)).
 3. An `McpServer` is built from the factory for each request, and the arguments are validated against the input schema by the SDK ([`serve.ts:107-111`](../src/serve.ts#L107-L111), [`mcp-BumlNux0.cjs:1812-1817`](../node_modules/@modelcontextprotocol/server/dist/mcp-BumlNux0.cjs#L1812-L1817)).
 4. The handler result is returned by `AgentTools.call` as `structuredContent` and as JSON text ([`tools.ts:544-551`](../src/tools.ts#L551-L558)).
-5. The server calls `ChatApi` methods of the core ([`messages.ts:271-287`](../src/messages.ts#L301-L317)); actions are created in `Actions` and shown to the owner by `Control` ([`actions.ts:180-215`](../src/actions.ts#L180-L215)).
+5. The server calls `ChatApi` methods of the core ([`messages.ts:271-287`](../src/messages.ts#L309-L325)); actions are created in `Actions` and shown to the owner by `Control` ([`actions.ts:180-215`](../src/actions.ts#L180-L215)).
 6. The core emits events. The handler of `serve.ts` passes them to the agent control chat and to `AgentTools.onEvent` ([`serve.ts:125-137`](../src/serve.ts#L125-L137)). `AgentTools.onEvent` then dispatches them to the tools and the item watch ([`tools.ts:665-692`](../src/tools.ts#L672-L699)).
 
 ---
@@ -171,7 +171,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | `download`, `fileServers`, `unknownServers` | [1090-1135](../src/tools.ts#L1090-L1135) | the `download` call before its action |
 | `startDownload`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived` | [1153-1220](../src/tools.ts#L1153-L1220) | a download's steps |
 | `agentChats`, `knownChat` | [1290-1309](../src/tools.ts#L1290-L1309) | the agent's chats; a checked chat reference |
-| `selfSender`, `toMessages` | [1374-1383](../src/tools.ts#L1374-L1383) | the agent's name and peer type in a chat, its incognito name in an incognito chat; the items of one chat as messages with that name, for the results of `connect`, `send` and `receive` |
+| `selfSender`, `toMessages` | [1374-1383](../src/tools.ts#L1374-L1383) | the agent's name and peer type in a chat, its incognito name in an incognito chat, or its profile name when the incognito name can't be read; the items of one chat as messages with that name, for the results of `connect`, `send` and `receive` |
 | `classifyPlan` | [1403](../src/tools.ts#L1403) | `apiConnectPlan` response to a join plan or a known chat |
 | `chatSubject`, `isConnected`, `isActive`, `memberCurrent`, `memberCurrentOrPending` | [1499-1568](../src/tools.ts#L1499-L1568) | chat and member predicates shared with `control.ts` and `hub.ts` |
 | `customDataOf`, `setChatData`, `ownerOf` | [1532-1547](../src/tools.ts#L1532-L1547) | a chat's custom data; the plugin's owner key `simplexMcpOwner` |
@@ -255,20 +255,20 @@ Hooks are bound in [`serve.ts:96-102`](../src/serve.ts#L96-L102): `refusal`, `sa
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `Message`, `MessageFile`, `FileOffer` | [17-58](../src/messages.ts#L17-L58) | message item of tool results; its file; the file of a download |
-| `ToolCall` | [65](../src/messages.ts#L65) | abort signal and progress callback of one call |
-| `Collected` | [70](../src/messages.ts#L70) | collected items, change signal, IDs of the items over the first 100, time of the last change |
-| `Changes` | [77](../src/messages.ts#L77) | set of wake callbacks |
-| `ChatItemsWatch` | [94](../src/messages.ts#L94) | listeners per chat reference; received message items gathered by `collect` |
-| `chatRef`, `anyScopeChatRef`, `isChatRef` | [143-160](../src/messages.ts#L143-L160) | `@N` and `#N` references: of the main conversation, or also of a group's member chat |
-| `toMessage`, `messageFile`, `receivedFileError`, `receivedPath` | [182-243](../src/messages.ts#L182-L243) | chat item to `Message`; where a received file is: its download path or its forwarded path |
-| `toReplyTo`, `replyText`, `quoteLine` | [203-222](../src/messages.ts#L203-L222) | the quoted or reacted message of a reply: its ID, its sender by direction, its type other than text and its text, or its file name for an empty text; the text cut to its first line, up to 200 characters with `…`; the quote line `> ` of the channel |
-| `filePaths`, `storedName`, `chatFolder` | [245-257](../src/messages.ts#L245-L257) | `DATA/files/group-N`, `DATA/files/contact-N` or the same under `DATA/forwarded`, and the download path and the forwarded path of a received file in them. A stored file is named by its file ID and extension, and so are the files of the plugin's prompts. |
-| `fileOffer`, `fileContent` | [259-284](../src/messages.ts#L259-L284) | file fields of an item; message content of a file |
-| `getChat`, `receivingFiles`, `markRead` | [301-317](../src/messages.ts#L301-L317) | `apiGetChat` and `apiChatItemsRead` by chat reference; the IDs of a chat's files in status `rcvAccepted`, `rcvTransfer` or `rcvWarning`, paged |
-| `unreadItems` | [319](../src/messages.ts#L319) | unread items of a chat after its `initial` read, paged |
-| `reportProgress`, `nextChange`, `awaitResponses` | [335-365](../src/messages.ts#L335-L365) | waits |
-| `validName`, `viewName` | [371-397](../src/messages.ts#L371-L397) | display name rules and `@name` form |
+| `Message`, `MessageFile`, `FileOffer` | [20-61](../src/messages.ts#L20-L61) | message item of tool results; its file; the file of a download |
+| `ToolCall` | [68](../src/messages.ts#L68) | abort signal and progress callback of one call |
+| `Collected` | [73](../src/messages.ts#L73) | collected items, change signal, IDs of the items over the first 100, time of the last change |
+| `Changes` | [80](../src/messages.ts#L80) | set of wake callbacks |
+| `ChatItemsWatch` | [97](../src/messages.ts#L97) | listeners per chat reference; received message items gathered by `collect` |
+| `chatRef`, `anyScopeChatRef`, `isChatRef` | [146-163](../src/messages.ts#L146-L163) | `@N` and `#N` references: of the main conversation, or also of a group's member chat |
+| `toMessage`, `messageFile`, `receivedFileError`, `receivedPath` | [185-251](../src/messages.ts#L185-L251) | chat item to `Message`; where a received file is: its download path or its forwarded path |
+| `toReplyTo`, `replyText`, `quoteLine` | [206-230](../src/messages.ts#L206-L230) | the quoted or reacted message of a reply: its ID, its sender by direction, its type other than text and its text, or its file name for an empty text; the text cut to its first line, up to 200 characters with `…`; the quote line `> ` of the channel |
+| `filePaths`, `storedName`, `chatFolder` | [253-265](../src/messages.ts#L253-L265) | `DATA/files/group-N`, `DATA/files/contact-N` or the same under `DATA/forwarded`, and the download path and the forwarded path of a received file in them. A stored file is named by its file ID and extension, and so are the files of the plugin's prompts. |
+| `fileOffer`, `fileContent` | [267-292](../src/messages.ts#L267-L292) | file fields of an item; message content of a file |
+| `getChat`, `receivingFiles`, `markRead` | [309-325](../src/messages.ts#L309-L325) | `apiGetChat` and `apiChatItemsRead` by chat reference; the IDs of a chat's files in status `rcvAccepted`, `rcvTransfer` or `rcvWarning`, paged |
+| `unreadItems` | [327](../src/messages.ts#L327) | unread items of a chat after its `initial` read, paged |
+| `reportProgress`, `nextChange`, `awaitResponses` | [343-373](../src/messages.ts#L343-L373) | waits |
+| `validName`, `viewName` | [379-405](../src/messages.ts#L379-L405) | display name rules and `@name` form |
 
 ### [2.8 `files.ts`](../src/files.ts)
 
@@ -320,7 +320,7 @@ Hooks are bound in [`serve.ts:96-102`](../src/serve.ts#L96-L102): `refusal`, `sa
 | Expiry timers | `Actions.expiries`, one per action ([actions.ts:152](../src/actions.ts#L152)) | `scheduleExpiry`, `expire`, `remove` | |
 | Open calls of an action | `ActionRecord.open` ([:51](../src/actions.ts#L51)) | `openCall` and `closeCall` from `actionResult` ([tools.ts:769](../src/tools.ts#L769), [:778](../src/tools.ts#L778)) | `list`, `forgetExpired` |
 | Collected replies | `ConnectAction.messages`, `SendAction.responses` ([:64](../src/actions.ts#L64), [:95](../src/actions.ts#L95)) | `ChatItemsWatch.collect` | `connect`, `send` results |
-| Item listeners | `ChatItemsWatch.listeners` ([messages.ts:95](../src/messages.ts#L95)) | `collect` | event dispatch |
+| Item listeners | `ChatItemsWatch.listeners` ([messages.ts:98](../src/messages.ts#L98)) | `collect` | event dispatch |
 | Downloads | `AgentTools.downloads`, one per file ID ([tools.ts:535](../src/tools.ts#L535)) | `downloadTo` | file events, checks, `/delete CHAT files` |
 | Forwards | `AgentTools.forwarding`, the copy for the post per file ID ([tools.ts:536](../src/tools.ts#L536)) | `forwardFile` | `downloadFile`, before it moves a forwarded file |
 | Rejected files | `AgentTools.rejectedFiles` ([tools.ts:537](../src/tools.ts#L537)) | `downloadResult` ([:1142-1143](../src/tools.ts#L1142-L1143)) | the file field; `download`, which then skips the files approval ([:1105](../src/tools.ts#L1105)) |
@@ -386,9 +386,9 @@ Each `onAny` receiver is awaited by the library before the next event is read ([
 | Event | Condition | Handler |
 |---|---|---|
 | `newChatItems` | item of the control group, main scope | [`Control.onMessage`](../src/control.ts#L216) |
-| `newChatItems` | every item | [`AgentTools.onNewItems`](../src/tools.ts#L623), then [`ChatItemsWatch.deliver`](../src/messages.ts#L124) |
-| `chatItemUpdated` | | [`AgentTools.onFile`](../src/tools.ts#L633), then [`ChatItemsWatch.update`](../src/messages.ts#L128) |
-| `chatItemsDeleted` | | [`ChatItemsWatch.remove`](../src/messages.ts#L132) of each `deletedChatItem` |
+| `newChatItems` | every item | [`AgentTools.onNewItems`](../src/tools.ts#L623), then [`ChatItemsWatch.deliver`](../src/messages.ts#L127) |
+| `chatItemUpdated` | | [`AgentTools.onFile`](../src/tools.ts#L633), then [`ChatItemsWatch.update`](../src/messages.ts#L131) |
+| `chatItemsDeleted` | | [`ChatItemsWatch.remove`](../src/messages.ts#L135) of each `deletedChatItem` |
 | `contactConnected` | | [`AgentTools.onContactConnected`](../src/tools.ts#L662) |
 | `userJoinedGroup` | | [`AgentTools.onUserJoinedGroup`](../src/tools.ts#L667) |
 | `rcvFileComplete` | | [`AgentTools.onFileComplete`](../src/tools.ts#L638) |
@@ -619,7 +619,7 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 | card text lines | one code span per line; backticks become `'`; a leading or trailing space becomes U+00A0; blank lines empty | [`codeLines`, `codeSpan`](../src/control.ts#L819-L825) |
 | file names and paths on cards and posts | folded to one line, one code span | [control.ts:717](../src/control.ts#L717), [:702](../src/control.ts#L702), [:730](../src/control.ts#L730), [:211-213](../src/control.ts#L211-L213) |
 | reply quote on a send card | whitespace runs to one space, first 100 characters (code points), one code span | [control.ts:718](../src/control.ts#L718) |
-| quote for Claude, in `reply_to` and in the quote line of a reply | the first line, trimmed, up to 200 characters (code points), the type included in the quote line, and `…` when the line is longer or more lines follow | [messages.ts:214-222](../src/messages.ts#L214-L222) |
+| quote for Claude, in `reply_to` and in the quote line of a reply | the first line, trimmed, up to 200 characters (grapheme clusters, by `Intl.Segmenter`), the type included in the quote line, a space before `…` dropped, and `…` when the line is longer or more lines follow. Every Unicode line break ends a line. An empty quote line is `>` | [messages.ts:217-230](../src/messages.ts#L217-L230) |
 | link texts on a connect card, the input preview on a tool-use card of the plugin | code span lines in the bytes that the largest card form leaves; the line that does not fit is cut and ends in `…` inside its code span; later lines left out | [control.ts:784-798](../src/control.ts#L784-L798) |
 | mention names | valid name: `@name` or `@'name'`; others a code span | [`mentionText`](../src/control.ts#L832-L835) |
 | errors on cards | folded to one line, one code span | [control.ts:692](../src/control.ts#L692) |
@@ -633,7 +633,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 
 | Rule | Code |
 |---|---|
-| `^[@#][1-9]\d{0,14}$`: 1 to 15 digits; the core reads `#(2^64 + N)` as `#N` | [messages.ts:158-160](../src/messages.ts#L158-L160), [scenarios.test.ts:491-503](../test/e2e/scenarios.test.ts#L491-L503) |
+| `^[@#][1-9]\d{0,14}$`: 1 to 15 digits; the core reads `#(2^64 + N)` as `#N` | [messages.ts:161-163](../src/messages.ts#L161-L163), [scenarios.test.ts:491-503](../test/e2e/scenarios.test.ts#L491-L503) |
 | the control chat is refused by `send`, `receive`, `download`, `leave` and the owner commands with CHAT, and left out of `list` and `/list` | [tools.ts:1245](../src/tools.ts#L1245), [:1290-1309](../src/tools.ts#L1290-L1309), [control.ts:408-415](../src/control.ts#L408-L415) |
 | a store error of the chat read is reported as `No chat CHAT.` | [tools.ts:1250](../src/tools.ts#L1250), [:1307](../src/tools.ts#L1307) |
 | the agent's own links are refused by `connect` (`ownLink` plans) | [tools.ts:1422](../src/tools.ts#L1422), [:1440](../src/tools.ts#L1440), [:1462](../src/tools.ts#L1462) |
@@ -656,7 +656,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | the file of a `send` is sent only when its real path, size, inode and change time at the perform are those of the request | [tools.ts:1009-1014](../src/tools.ts#L1009-L1014) |
 | a sent JPEG or PNG is a resized copy made by the core | [tools.ts:1016-1027](../src/tools.ts#L1016-L1027) |
 | `ffmpeg` and `ffprobe` read a video as MP4 or QuickTime, local files only, without standard input, 30 s and 64 MiB of output each | [tools.ts:1702-1720](../src/tools.ts#L1702-L1720) |
-| a download is saved only at `DATA/files/group-N/` or `DATA/files/contact-N/`, or for `/forward` at the same name under `DATA/forwarded/`, named by its file ID and an extension of 1 to 16 ASCII letters and digits | [messages.ts:245-257](../src/messages.ts#L245-L257) |
+| a download is saved only at `DATA/files/group-N/` or `DATA/files/contact-N/`, or for `/forward` at the same name under `DATA/forwarded/`, named by its file ID and an extension of 1 to 16 ASCII letters and digits | [messages.ts:253-265](../src/messages.ts#L253-L265) |
 | a forwarded file is outside `DATA/files/`, so `send` refuses it; a download moves it into `DATA/files/` after the copy for the post is made | [tools.ts:594-611](../src/tools.ts#L594-L611), [:1002-1007](../src/tools.ts#L1002-L1007) |
 | a file on unknown servers gets a card that names them, also under a files approval; relays are approved only for such a card, and for every other download, and in mode `host`, the core checks the complete description and downloads a file on unknown servers only when the IP address is protected | [tools.ts:1105](../src/tools.ts#L1105), [:617](../src/tools.ts#L617), [:1159](../src/tools.ts#L1159), [control.ts:745-748](../src/control.ts#L745-L748) |
 | an accepted file that the core returns to `rcvInvitation` fails its download at the next check | [tools.ts:1172](../src/tools.ts#L1172) |
@@ -688,7 +688,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | `idle` | 1 to 300 s, default 30 | [tools.ts:264](../src/tools.ts#L264), [:280](../src/tools.ts#L280), [:159](../src/tools.ts#L159) |
 | `limit` | 1 to 100, default 50 | [tools.ts:281](../src/tools.ts#L281), [:292](../src/tools.ts#L292), [:160](../src/tools.ts#L160) |
 | `connect` snapshot | last 50 items | [tools.ts:161](../src/tools.ts#L161) |
-| collected items per action or call | 100, then their IDs kept as overflow until deleted | [messages.ts:10](../src/messages.ts#L10), [:117-118](../src/messages.ts#L117-L118) |
+| collected items per action or call | 100, then their IDs kept as overflow until deleted | [messages.ts:10](../src/messages.ts#L10), [:120-121](../src/messages.ts#L120-L121) |
 | unread page | 100 items | [messages.ts:9](../src/messages.ts#L9) |
 | chat list read | one read of 1000000 chats | [tools.ts:152](../src/tools.ts#L152) |
 | `download` wait, default | 60 s | [tools.ts:156](../src/tools.ts#L156) |
@@ -702,7 +702,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 | HTTP body | 4 MiB | [server index.cjs:254](../node_modules/@modelcontextprotocol/server/dist/index.cjs#L254) |
 | SSE keep-alive | 15 s | [mcp-BumlNux0.cjs:64](../node_modules/@modelcontextprotocol/server/dist/mcp-BumlNux0.cjs#L64) |
 | agent NAME | 1 to 32 characters | [cli.ts:170](../src/cli.ts#L170) |
-| display name | 50 characters, `mkValidName` rules | [messages.ts:11-12](../src/messages.ts#L11-L12), [:371-393](../src/messages.ts#L371-L393) |
+| display name | 50 characters, `mkValidName` rules | [messages.ts:11-12](../src/messages.ts#L11-L12), [:379-401](../src/messages.ts#L379-L401) |
 | port | 1 to 65535, default 5226 | [cli.ts:82](../src/cli.ts#L82), [:114-116](../src/cli.ts#L114-L116) |
 
 ---
@@ -765,8 +765,8 @@ Data flow of a tool call:
 
 Data flow of a prompt from the session group:
 
-1. `Session.onMessage` receives a message of a member in the group of session N ([hub.ts:498-503](../src/hub.ts#L498-L503)). A one-line `/` command goes to `Control`. Another message is queued after the earlier ones, with the `replyTo` of its quote when it is a reply ([:153-161](../src/hub.ts#L153-L161), [messages.ts:203-212](../src/messages.ts#L203-L212)). `Session.prompt` drops a message of `User` and delivers the rest ([:231-234](../src/hub.ts#L231-L234)).
-2. In the first 30 s after the hub opened, a delivery without an attachment waits for one. With an attachment, the file of the message, if any, is received. Then, if the session is not attached, the hub replies `Session N is not running.` Otherwise the prompt, after the quote line of a reply, is pushed, and the line `{prompt}` is written to every `/attach` stream of the session ([hub.ts:236-251](../src/hub.ts#L236-L251), [messages.ts:220-222](../src/messages.ts#L220-L222), [service.ts:314](../src/service.ts#L314)).
+1. `Session.onMessage` receives a message of a member in the group of session N ([hub.ts:498-503](../src/hub.ts#L498-L503)). A one-line `/` command goes to `Control`. Another message is queued after the earlier ones, with the `replyTo` of its quote when it is a reply ([:153-161](../src/hub.ts#L153-L161), [messages.ts:206-215](../src/messages.ts#L206-L215)). `Session.prompt` drops a message of `User` and delivers the rest ([:231-234](../src/hub.ts#L231-L234)).
+2. In the first 30 s after the hub opened, a delivery without an attachment waits for one. With an attachment, the file of the message, if any, is received. Then, if the session is not attached, the hub replies `Session N is not running.` Otherwise the prompt, after the quote line of a reply, is pushed, and the line `{prompt}` is written to every `/attach` stream of the session ([hub.ts:236-251](../src/hub.ts#L236-L251), [messages.ts:223-230](../src/messages.ts#L223-L230), [service.ts:314](../src/service.ts#L314)).
 3. The session process sends it to Claude Code as `notifications/claude/channel`, with `reply_to` and `reply_to_from` of a reply ([session.ts:53-56](../src/session.ts#L53-L56), [:197-201](../src/session.ts#L197-L201)).
 4. The hooks post the terminal prompts and the final answer of each turn with `POST /turn` ([hook.ts:114-135](../src/hook.ts#L114-L135), [hub.ts:181-203](../src/hub.ts#L181-L203)).
 

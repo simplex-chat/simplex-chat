@@ -8,7 +8,7 @@ import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Action, Actions, ConnectAction, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
-import {Changes, ChatItemsWatch, Collected, awaitResponses, nextChange, quoteLine, toMessage, toReplyTo} from "../../src/messages"
+import {Changes, ChatItemsWatch, Collected, awaitResponses, nextChange, quoteLine, replyText, toMessage, toReplyTo} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -84,6 +84,22 @@ describe("message fields", () => {
     expect(line({type: "unknown", tag: "poll", text: "Pick one", json: {}})).toBe("> Pick one")
     expect(line({type: "file", text: "a".repeat(194)})).toBe(`> file: ${"a".repeat(194)}`)
     expect(line({type: "file", text: "a".repeat(195)})).toBe(`> file: ${"a".repeat(194)}…`)
+  })
+
+  it("ends the quote at every line break, keeps a caption after a blank first line, cuts between grapheme clusters without a space before …, and writes > alone for an empty quote", () => {
+    const trail = groupChat(group(15, "Trail"))
+    const line = (content: object): string => quoteLine(toReplyTo(trail, {content: content as T.MsgContent}, {name: "Scout"}))
+    for (const lineBreak of ["\n", "\r\n", ...[0x0d, 0x0b, 0x0c, 0x85, 0x2028, 0x2029].map(code => String.fromCharCode(code))]) {
+      expect(line({type: "text", text: `Fixed.${lineBreak}Tests pass.`})).toBe("> Fixed.…")
+      expect(replyText(`Fixed.${lineBreak}Tests pass.`)).toBe("Fixed.…")
+    }
+    expect(line({type: "image", text: "\nTrail map", image: ""})).toBe("> image: Trail map")
+    expect(line({type: "image", text: `${String.fromCharCode(0x2028)}Trail map`, image: ""})).toBe("> image: Trail map")
+    const family = String.fromCodePoint(0x1f468, 0x200d, 0x1f469, 0x200d, 0x1f467)
+    expect(replyText(`${"a".repeat(199)}${family}b`)).toBe(`${"a".repeat(199)}${family}…`)
+    expect(replyText(`${"a".repeat(198)}${family}`)).toBe(`${"a".repeat(198)}${family}`)
+    expect(replyText(`${"a".repeat(199)} bcd`)).toBe(`${"a".repeat(199)}…`)
+    expect(line({type: "unknown", tag: "poll", text: "", json: {}})).toBe(">")
   })
 
   it("describes direct, channel and sent messages", () => {
@@ -410,6 +426,20 @@ describe("receive", () => {
     expect(await replyTo("@4")).toEqual({chat: "@4", item: 20, from: "Quiet Fox", text: "Which trail is shorter?"})
     expect(await replyTo("@5")).toEqual({chat: "@5", item: 30, from: "agent", text: "Any news?"})
     expect(await replyTo("#15")).toEqual({chat: "#15", item: 40, from: "Quiet Fox", text: "Meet at 9?"})
+  })
+
+  it("names the agent by its profile name, logs the error and returns the messages it marked read, when the incognito name can't be read", async () => {
+    const chat = new FakeChat()
+    const incognito = {...contact(6, "Ridgeline"), activeConn: {connId: 206, connStatus: {type: "ready"}, customUserProfileId: 78}} as unknown as T.Contact
+    const reply = {...item(21, "The ridge one", {type: "directRcv"}), quotedItem: {chatDir: {type: "directSnd"}, itemId: 20, sentAt: "", content: {type: "text", text: "Which trail?"}}} as unknown as T.ChatItem
+    chat.chats.set("@6", {chatInfo: direct(incognito), items: [reply]})
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
+    const {tools} = agentTools(chat)
+    const result = (await tools.call("receive", {chat: "@6"}, signal().call))!.structuredContent as {messages: {item: number; reply_to?: object}[]}
+    expect(result.messages).toMatchObject([{item: 21, reply_to: {chat: "@6", item: 20, from: "agent", text: "Which trail?"}}])
+    expect(chat.commands).toContain("/_read chat items @6 21")
+    expect(errors).toEqual([expect.stringMatching(/^incognito name in @6: /)])
   })
 })
 

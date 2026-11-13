@@ -226,7 +226,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Action store | [`src/actions.ts`](../src/actions.ts#L147) | `Actions` | [147](../src/actions.ts#L147) |
 | Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L93) | `Control` | [93](../src/control.ts#L93) |
 | Card text | [`src/control.ts`](../src/control.ts#L679) | `cardText` | [679](../src/control.ts#L679) |
-| Item watch | [`src/messages.ts`](../src/messages.ts#L94) | `ChatItemsWatch` | [94](../src/messages.ts#L94) |
+| Item watch | [`src/messages.ts`](../src/messages.ts#L97) | `ChatItemsWatch` | [97](../src/messages.ts#L97) |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
 | Data folder files | [`src/files.ts`](../src/files.ts#L103) | `createDataFolder`, `acquireLock` | [103](../src/files.ts#L103), [108](../src/files.ts#L108) |
 | Session server | [`src/session.ts`](../src/session.ts#L40) | `startSession` | [40](../src/session.ts#L40) |
