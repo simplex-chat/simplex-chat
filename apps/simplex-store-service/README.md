@@ -909,7 +909,24 @@ service running.
 | `simplex_store_names_chain_read_timestamp_seconds` | when every part of the read last succeeded |
 | `simplex_store_names_chain_read_ok` | 1 when the last read succeeded in every part, 0 when a part failed or none has finished |
 
-Every metric is a gauge. A stuck order, transaction or record edit, a node that cannot be read or
+With `[names]`, the service also counts every name on chain, however it was registered, at start and
+then every 5 minutes, under the metric names of the former `simplex-names-exporter`. At the latest
+block it reads the base registrar's names (`totalSupply`, `tokenByIndex`), keeps those whose
+`nameExpires` is after the block's time, takes each label from `labelOf`, then walks the subname
+registrar (`subnameHook()`) level by level with `getChildren`, keeping subnames whose `ownerOf` is
+not zero. For each name it reads `resolver(node)` on the registry and, on the configured resolver,
+its `simplex.contact` and `simplex.channel` texts. The reads run 16 at a time at that one block. A
+failed census keeps the last one and is counted.
+
+| Metric | Value |
+|---|---|
+| `simplex_names{level,records}` | live names at `level` 2 (`alice.simplex`), 3 (`shop.alice.simplex`) and below, by `records`: `none`, `contact`, `channel`, `both`, or `other_resolver` for a name whose resolver is not the configured one, whose records are not read; names in the 90-day grace period are not counted |
+| `simplex_name_length` | histogram of label lengths in characters, by `level`, a bucket for each length 1 to 63 |
+| `simplex_names_block` | the block the census read |
+| `simplex_names_refresh_timestamp_seconds` | when the census last succeeded |
+| `simplex_names_refresh_failures_total` | counter of failed censuses since the service started |
+
+Every metric is a gauge, but for the census's histogram and counter. A stuck order, transaction or record edit, a node that cannot be read or
 has stopped following the chain, terms that cannot be shown and a payment provider that cannot be
 read show as:
 

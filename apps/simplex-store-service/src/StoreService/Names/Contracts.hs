@@ -41,6 +41,7 @@ module StoreService.Names.Contracts
     commitmentAges,
     together,
     concurrent,
+    callAt,
   )
 where
 

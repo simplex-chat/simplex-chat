@@ -6,11 +6,15 @@ module StoreService.Metrics
     NamesSource (..),
     ChainRead (..),
     ProviderTimes (..),
+    CensusRead (..),
     noChainRead,
+    noCensusRead,
     readChain,
     runChainReads,
+    readCensus,
     serviceText,
     namesText,
+    censusText,
     metricsApp,
     runMetrics,
   )
@@ -22,6 +26,7 @@ import Control.Logger.Simple (logWarn)
 import Control.Monad (forever, unless, void)
 import qualified Data.ByteString.Lazy as LB
 import Data.Either (isRight)
+import Data.List (nub, sort)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
@@ -34,10 +39,12 @@ import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Network.HTTP.Types (hContentType, status200)
 import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
+import Simplex.Chat.Badges.Code (maxNameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (raceAny_, tshow)
 import StoreService.Config (ListenerConfig)
+import StoreService.Names.Census (Census (..), CensusName (..), nameCensus, recordsLabel)
 import StoreService.Names.Chain (Block (..), ChainClient, latestBlock)
 import StoreService.Names.Contracts (Contracts, RegistrarFunds (..), registrarFunds, termsHeld)
 import StoreService.Names.Store (NamesCounts (..), namesCounts)
@@ -108,6 +115,32 @@ runChainReads ns v = forever $ do
   unless done $ atomically $ modifyTVar' v $ \cr -> cr {crOk = False}
   threadDelay chainReadInterval
 
+-- | A failed census keeps the last one and is counted.
+data CensusRead = CensusRead {crCensus :: Maybe (Census, UTCTime), crFailures :: Int}
+
+noCensusRead :: CensusRead
+noCensusRead = CensusRead {crCensus = Nothing, crFailures = 0}
+
+censusInterval :: Int
+censusInterval = 300 * 1000000
+
+readCensus :: NamesSource -> TVar CensusRead -> IO ()
+readCensus NamesSource {nsChain, nsContracts} v = do
+  counted <- nameCensus nsChain nsContracts
+  case counted of
+    Right census -> do
+      now <- getCurrentTime
+      atomically $ modifyTVar' v $ \cr -> cr {crCensus = Just (census, now)}
+    Left e -> do
+      atomically $ modifyTVar' v $ \cr -> cr {crFailures = crFailures cr + 1}
+      logWarn $ "store metrics: the names census failed: " <> tshow e
+
+runCensus :: NamesSource -> TVar CensusRead -> IO ()
+runCensus ns v = forever $ do
+  done <- safely "store metrics: the names census" (readCensus ns v)
+  unless done $ atomically $ modifyTVar' v $ \cr -> cr {crFailures = crFailures cr + 1}
+  threadDelay censusInterval
+
 -- | Open invoices come as (provider, open, overdue).
 serviceText :: [(Text, Int, Int)] -> BadgeCounts -> ProviderTimes -> Text
 serviceText invoices BadgeCounts {bcPurchases, bcSubscriptions, bcOpenCodes} ProviderTimes {ptListedOk, ptWebhookAt} =
@@ -150,31 +183,72 @@ timestamp :: UTCTime -> (Text, Text)
 timestamp t = value (floor $ utcTimeToPOSIXSeconds t :: Integer)
 
 labelled :: Text -> Text -> (Text, Text) -> (Text, Text)
-labelled name v (_, sample) = ("{" <> name <> "=\"" <> escape v <> "\"}", sample)
+labelled name v = withLabels [(name, v)]
+
+withLabels :: [(Text, Text)] -> (Text, Text) -> (Text, Text)
+withLabels ls (_, sample) = (labelSet ls, sample)
+
+labelSet :: [(Text, Text)] -> Text
+labelSet ls = "{" <> T.intercalate "," [name <> "=\"" <> escape v <> "\"" | (name, v) <- ls] <> "}"
   where
     escape = T.replace "\n" "\\n" . T.replace "\"" "\\\"" . T.replace "\\" "\\\\"
 
 gauge :: Foldable f => Text -> Text -> f (Text, Text) -> Text
-gauge name help samples
+gauge = family "gauge"
+
+family :: Foldable f => Text -> Text -> Text -> f (Text, Text) -> Text
+family kind name help samples
   | null samples = ""
-  | otherwise = "# HELP " <> name <> " " <> help <> "\n# TYPE " <> name <> " gauge\n" <> foldMap sample samples <> "\n"
+  | otherwise = "# HELP " <> name <> " " <> help <> "\n# TYPE " <> name <> " " <> kind <> "\n" <> foldMap sample samples <> "\n"
   where
     sample (labels, v) = name <> labels <> " " <> v <> "\n"
 
-metricsApp :: MetricsEnv -> TVar ChainRead -> Application
-metricsApp MetricsEnv {meStore, meListedOk, meWebhookAt, meNames} v req respond = case pathInfo req of
+-- | The census of #8114's exporter, under its metric names: names and subnames by level and records set, and their
+-- label lengths. Before the first census only the failures are answered.
+censusText :: CensusRead -> Text
+censusText CensusRead {crCensus, crFailures} =
+  family "counter" "simplex_names_refresh_failures_total" "Refreshes that failed" (Just $ value crFailures)
+    <> foldMap counted crCensus
+  where
+    counted (Census {cBlock, cNames}, refreshedAt) =
+      T.concat
+        [ gauge "simplex_names" "Registered names by level, and by simplex.contact and simplex.channel set" [withLabels [("level", tshow l), ("records", recordsLabel r)] (value $ count l r) | l <- levelsSeen, r <- [minBound .. maxBound]],
+          lengthHistogram,
+          gauge "simplex_names_block" "Block the names were read at" (Just $ value cBlock),
+          gauge "simplex_names_refresh_timestamp_seconds" "Time of the last refresh" (Just $ timestamp refreshedAt)
+        ]
+      where
+        levelsSeen = sort $ nub $ 2 : map cnLevel cNames
+        count l r = length [() | CensusName {cnLevel, cnRecords} <- cNames, cnLevel == l, cnRecords == r]
+        lengthHistogram =
+          "# HELP simplex_name_length Label lengths in characters, by level\n# TYPE simplex_name_length histogram\n"
+            <> foldMap lengthsAt levelsSeen
+            <> "\n"
+        lengthsAt l =
+          let lengths = [cnLength | CensusName {cnLevel, cnLength} <- cNames, cnLevel == l]
+              level = [("level", tshow l)]
+              line suffix ls n = "simplex_name_length" <> suffix <> labelSet ls <> " " <> tshow n <> "\n"
+           in foldMap (\b -> line "_bucket" (level <> [("le", tshow b <> ".0")]) (length $ filter (<= b) lengths)) [1 .. maxNameLength]
+                <> line "_bucket" (level <> [("le", "+Inf")]) (length lengths)
+                <> line "_sum" level (sum lengths)
+                <> line "_count" level (length lengths)
+
+metricsApp :: MetricsEnv -> TVar ChainRead -> TVar CensusRead -> Application
+metricsApp MetricsEnv {meStore, meListedOk, meWebhookAt, meNames} v census req respond = case pathInfo req of
   ["metrics"] -> only "GET" req respond $ do
     now <- getCurrentTime
     (invoices, badges, names) <- withTransaction meStore $ \db ->
       (,,) <$> openInvoiceCounts db (addUTCTime (negate expiryGrace) now) <*> badgeCounts db now <*> mapM (const $ namesCounts db) meNames
     times <- ProviderTimes <$> readTVarIO meListedOk <*> readTVarIO meWebhookAt
     chain <- readTVarIO v
-    let text = serviceText invoices badges times <> foldMap (`namesText` chain) names
+    counted <- readTVarIO census
+    let text = serviceText invoices badges times <> foldMap (\n -> namesText n chain <> censusText counted) names
     respond $ responseLBS status200 [(hContentType, "text/plain; version=0.0.4; charset=utf-8")] $ LB.fromStrict $ encodeUtf8 text
   _ -> respond notFound
 
 runMetrics :: ListenerConfig -> Int -> MetricsEnv -> IO ()
 runMetrics lc port env@MetricsEnv {meNames} = do
   v <- newTVarIO noChainRead
-  let serve = safely ("store metrics: the endpoint on port " <> tshow port) $ Warp.runSettings (Warp.setPort port . Warp.setHost (fromString metricsHost) $ webSettings lc) (metricsApp env v)
-  raceAny_ $ (void serve >> forever (threadDelay maxBound)) : [runChainReads ns v | Just ns <- [meNames]]
+  census <- newTVarIO noCensusRead
+  let serve = safely ("store metrics: the endpoint on port " <> tshow port) $ Warp.runSettings (Warp.setPort port . Warp.setHost (fromString metricsHost) $ webSettings lc) (metricsApp env v census)
+  raceAny_ $ (void serve >> forever (threadDelay maxBound)) : concat [[runChainReads ns v, runCensus ns census] | Just ns <- [meNames]]

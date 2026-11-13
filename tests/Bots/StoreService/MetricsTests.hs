@@ -13,28 +13,32 @@ import Control.Exception (finally)
 import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
-import Data.Word (Word8)
+import Data.Word (Word64, Word8)
 import Network.HTTP.Client (Response, responseBody, responseHeaders)
 import Network.HTTP.Types (hContentType)
 import Simplex.Chat.Badges.Types (SubscriptionState (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Crypto (keccak256)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (textEncode)
-import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
+import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Metrics
-import StoreService.Names.Abi (addressWord, selector, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressFromBytes, addressWord, selector, uint256)
+import StoreService.Names.Census (Census (..))
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Contracts (newContracts, termsOf, termsText)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -51,6 +55,99 @@ storeMetricsTests = describe "StoreService: metrics" $ do
   it "counts name orders by phase, the oldest change among the orders the service moves on, pending transactions by nonce, open name invoices, held balances and pending record edits" testNamesCounts
   it "reads the registrar's funds, the latest block and which terms texts are held, and keeps each part while a read fails" $ testChainRead g
   it "answers GET /metrics with the service metrics alone without names, and with the names metrics while the node holds the chain read" $ testScrape g
+  it "counts live names and owned subnames by level and records, with their label lengths, and keeps the last census while one fails" $ testCensus g
+
+testCensus :: TVar ChaChaDRG -> IO ()
+testCensus g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  c <- fakeChainClient g node
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear c
+  let ns = NamesSource {nsChain = c, nsContracts = ct}
+      answer to signature args = answerCall node to (selector signature <> args) . Returns
+      str t = abiTuple [Dynamic (abiBytes $ encodeUtf8 t)]
+      texts n (contact, channel) =
+        forM_ [("simplex.contact", contact), ("simplex.channel", channel)] $ \(key, text) ->
+          answer fakeResolver "text(bytes32,string)" (abiTuple [Static n, Dynamic (abiBytes key)]) (str text)
+      live = genesisTime + 1000
+      names :: [(Text, Word64, Maybe (Text, Text))]
+      names =
+        [ ("alicebakery", live, Just ("", "")),
+          ("bobsbakery", live, Just ("https://smp8.simplex.im/a#bob", "")),
+          ("carolshop", live, Nothing),
+          ("expiredname", genesisTime, Nothing)
+        ]
+      aliceNode = keccak256 (censusBase <> keccak256 "alicebakery")
+      shopNode = keccak256 (aliceNode <> keccak256 "shop")
+      oldNode = keccak256 (aliceNode <> keccak256 "old")
+  answer fakeBaseRegistrar "ens()" "" $ addressWord censusRegistry
+  answer fakeBaseRegistrar "subnameHook()" "" $ addressWord censusSubnames
+  answer fakeBaseRegistrar "baseNode()" "" censusBase
+  answer fakeBaseRegistrar "totalSupply()" "" $ uint256 (length names)
+  forM_ (zip [0 :: Int ..] names) $ \(i, (label, expiry, records)) -> do
+    let labelHash = keccak256 (encodeUtf8 label)
+        n = keccak256 (censusBase <> labelHash)
+    answer fakeBaseRegistrar "tokenByIndex(uint256)" (uint256 i) labelHash
+    answer fakeBaseRegistrar "nameExpires(uint256)" labelHash (uint256 expiry)
+    answer fakeBaseRegistrar "labelOf(uint256)" labelHash (str label)
+    answer censusRegistry "resolver(bytes32)" n $ addressWord (maybe censusOtherResolver (const fakeResolver) records)
+    mapM_ (texts n) records
+    answer censusSubnames "childrenLength(bytes32)" n $ uint256 (if n == aliceNode then 2 else 0 :: Int)
+  answer censusSubnames "getChildren(bytes32,uint256,uint256)" (aliceNode <> uint256 (0 :: Int) <> uint256 (100 :: Int)) $
+    abiTuple [Dynamic (uint256 (2 :: Int) <> keccak256 "shop" <> keccak256 "old"), Dynamic (abiArray [abiBytes "shop", abiBytes "old"])]
+  answer censusSubnames "ownerOf(uint256)" shopNode $ addressWord censusOwner
+  answer censusSubnames "ownerOf(uint256)" oldNode $ B.replicate 32 0
+  answer censusRegistry "resolver(bytes32)" shopNode $ addressWord fakeResolver
+  texts shopNode ("https://smp8.simplex.im/a#shop", "https://smp8.simplex.im/c#shop")
+  answer censusSubnames "childrenLength(bytes32)" shopNode $ uint256 (0 :: Int)
+  v <- newTVarIO noCensusRead
+  readCensus ns v
+  fmap (cBlock . fst) . crCensus <$> readTVarIO v `shouldReturn` Just 1
+  let counted =
+        [ "simplex_names{level=\"2\",records=\"none\"} 1",
+          "simplex_names{level=\"2\",records=\"contact\"} 1",
+          "simplex_names{level=\"2\",records=\"channel\"} 0",
+          "simplex_names{level=\"2\",records=\"both\"} 0",
+          "simplex_names{level=\"2\",records=\"other_resolver\"} 1",
+          "simplex_names{level=\"3\",records=\"none\"} 0",
+          "simplex_names{level=\"3\",records=\"contact\"} 0",
+          "simplex_names{level=\"3\",records=\"channel\"} 0",
+          "simplex_names{level=\"3\",records=\"both\"} 1",
+          "simplex_names{level=\"3\",records=\"other_resolver\"} 0"
+        ]
+      lengths =
+        [ "simplex_name_length_bucket{level=\"2\",le=\"8.0\"} 0",
+          "simplex_name_length_bucket{level=\"2\",le=\"9.0\"} 1",
+          "simplex_name_length_bucket{level=\"2\",le=\"10.0\"} 2",
+          "simplex_name_length_bucket{level=\"2\",le=\"11.0\"} 3",
+          "simplex_name_length_bucket{level=\"2\",le=\"63.0\"} 3",
+          "simplex_name_length_bucket{level=\"2\",le=\"+Inf\"} 3",
+          "simplex_name_length_sum{level=\"2\"} 30",
+          "simplex_name_length_count{level=\"2\"} 3",
+          "simplex_name_length_bucket{level=\"3\",le=\"3.0\"} 0",
+          "simplex_name_length_bucket{level=\"3\",le=\"4.0\"} 1",
+          "simplex_name_length_sum{level=\"3\"} 4",
+          "simplex_name_length_count{level=\"3\"} 1",
+          "simplex_names_block 1",
+          "simplex_names_refresh_failures_total 0"
+        ]
+      censusLines = T.lines . censusText <$> readTVarIO v
+  filter ("simplex_names{" `T.isPrefixOf`) <$> censusLines `shouldReturn` counted
+  censusLines >>= \ls -> forM_ lengths $ \l -> (l, l `elem` ls) `shouldBe` (l, True)
+  setFault node "eth_getBlockByNumber" HttpFailure
+  readCensus ns v
+  crFailures <$> readTVarIO v `shouldReturn` 1
+  filter ("simplex_names{" `T.isPrefixOf`) <$> censusLines `shouldReturn` counted
+
+censusRegistry, censusSubnames, censusOtherResolver, censusOwner :: Address
+censusRegistry = censusAddress 0x21
+censusSubnames = censusAddress 0x22
+censusOtherResolver = censusAddress 0x23
+censusOwner = censusAddress 0x24
+
+censusAddress :: Word8 -> Address
+censusAddress = fromJust . addressFromBytes . B.replicate 20
+
+censusBase :: ByteString
+censusBase = B.replicate 32 0x11
 
 testServiceCounts :: IO ()
 testServiceCounts = withServiceStore $ \st -> do
@@ -196,22 +293,24 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   listedOk <- newTVarIO M.empty
   webhookAt <- newTVarIO M.empty
   v <- newTVarIO noChainRead
+  census <- newTVarIO noCensusRead
   let badgesOnly = MetricsEnv {meStore = st, meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing}
       ns = NamesSource {nsChain = c, nsContracts = ct}
-  withApp (metricsApp badgesOnly v) $ \client -> do
+  withApp (metricsApp badgesOnly v census) $ \client -> do
     r <- webGet client "/metrics"
     (statusOf r, lookup hContentType (responseHeaders r)) `shouldBe` (200, Just "text/plain; version=0.0.4; charset=utf-8")
     let samples = typedSamples $ bodyText r
     samples `shouldContain` ["simplex_store_badges_codes_open 0"]
-    filter ("simplex_store_names_" `T.isPrefixOf`) samples `shouldBe` []
+    filter (\l -> any (`T.isPrefixOf` l) ["simplex_store_names_", "simplex_names", "simplex_name_"]) samples `shouldBe` []
     statusOf <$> webGet client "/" `shouldReturn` 404
     statusOf <$> webRequestBody client "POST" "/metrics" [] "" `shouldReturn` 405
   (reads', _) <- pausedAt node "eth_getBalance" (runChainReads ns v)
-  (`finally` cancel reads') $ withApp (metricsApp badgesOnly {meNames = Just ns} v) $ \client -> do
+  (`finally` cancel reads') $ withApp (metricsApp badgesOnly {meNames = Just ns} v census) $ \client -> do
     r <- timeout scrapeMicros (webGet client "/metrics") >>= maybe (fail "the scrape waited for the node") pure
     let samples = typedSamples $ bodyText r
-    samples `shouldContain` ["simplex_store_badges_codes_open 0", "simplex_store_names_orders{phase=\"unpaid\"} 0"]
+    samples `shouldContain` ["simplex_store_badges_codes_open 0", "simplex_store_names_orders{phase=\"unpaid\"} 0", "simplex_names_refresh_failures_total 0"]
     filter ("simplex_store_names_chain_" `T.isPrefixOf`) samples `shouldBe` ["simplex_store_names_chain_read_ok 0"]
+    filter ("simplex_names{" `T.isPrefixOf`) samples `shouldBe` []
 
 scrapeMicros :: Int
 scrapeMicros = 2000000
@@ -223,7 +322,7 @@ typedSamples :: Text -> [Text]
 typedSamples text = [l | l <- ls, not (T.null l || "#" `T.isPrefixOf` l), described (T.takeWhile (`notElem` [' ', '{']) l)]
   where
     ls = T.lines text
-    described name = ("# TYPE " <> name <> " gauge") `elem` ls && any (("# HELP " <> name <> " ") `T.isPrefixOf`) ls
+    described name = any (("# TYPE " <> name <> " ") `T.isPrefixOf`) ls && any (("# HELP " <> name <> " ") `T.isPrefixOf`) ls
 
 chainSamples :: ChainRead -> [Text]
 chainSamples = filter (\l -> any (`T.isPrefixOf` l) ["simplex_store_names_registrar_", "simplex_store_names_sponsor_", "simplex_store_names_chain_", "simplex_store_names_terms_"]) . typedSamples . namesText noCounts
