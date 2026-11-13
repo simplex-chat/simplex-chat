@@ -520,7 +520,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
           void $ saveConnInfo conn connInfo
-        MSG meta _msgFlags _msgBody ->
+        MSG meta (Just _) ->
           -- We are not saving message (saveDirectRcvMSG) as contact hasn't been created yet,
           -- chat item is also not created here
           withAckMessage' "new contact msg" agentConnId meta $ pure ()
@@ -558,7 +558,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         RJCT reason -> do
           ct' <- withStore' $ \db -> updateContactStatus db user ct CSRejected
           toView $ CEvtContactRequestRejected user ct' (either (const Nothing) Just $ strDecode reason)
-        MSG msgMeta _msgFlags msgBody -> do
+        MSG msgMeta (Just (_msgFlags, msgBody)) -> do
           tags <- newTVarIO []
           withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
             let MsgMeta {pqEncryption} = msgMeta
@@ -613,10 +613,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               where
                 aChatMsgHasReceipt (APMsg _ (ParsedMsg _ _ ChatMessage {chatMsgEvent})) =
                   hasDeliveryReceipt (toCMEventTag chatMsgEvent)
+        MSG msgMeta Nothing -> checkIntegrityCreateItem (CDDirectRcv ct) msgMeta `catchAllErrors` \_ -> pure ()
         RCVD msgMeta msgRcpt ->
           withAckMessage' "contact rcvd" agentConnId msgMeta $
             directMsgReceived ct conn msgMeta msgRcpt
-        MSGERR msgMeta -> checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
         CONF confId pqSupport _ connInfo -> do
           conn' <- processCONFpqSupport conn pqSupport
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn' connInfo
@@ -1012,7 +1012,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             memberStatus m `elem` ([GSMemRejected, GSMemLeft, GSMemRemoved, GSMemGroupDeleted] :: [GroupMemberStatus])
               || memberStatus membership == GSMemRejected
               || not (relayServesGroup gInfo)
-      MSG msgMeta _msgFlags msgBody -> do
+      MSG msgMeta (Just (_msgFlags, msgBody)) -> do
         tags <- newTVarIO []
         withAckMessage "group msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
           -- possible improvement is to choose scope based on event (some events specify scope)
@@ -1182,12 +1182,12 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   addWorkerScope workerScope acc
                     | workerScope `elem` acc = acc
                     | otherwise = workerScope : acc
+      MSG msgMeta Nothing -> do
+        (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
+        checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
       RCVD msgMeta msgRcpt ->
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
-      MSGERR msgMeta -> do
-        (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-        checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta
       SENT msgId proxy -> do
         continued <- continueSending connEntity conn
         (fileEvent_, acis) <- withStore $ \db -> do
