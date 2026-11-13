@@ -77,6 +77,7 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Store.AgentStore (isDeadlock, retryOnDeadlock)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, UpMigration)
 import Simplex.Messaging.Agent.Store.DB (SQLError)
@@ -1823,12 +1824,14 @@ withFastStore = withStorePriority True
 withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
 withStorePriority priority action = do
   ChatController {chatStore} <- ask
-  liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `catchOwn'` handleDBErrors
+  liftIOEither $ retryOnDeadlock 3 (withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action)) `catchOwn'` handleDBErrors
 
 withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do
   ChatController {chatStore} <- ask
-  liftIO $ withTransaction chatStore $ mapM (`catchOwn'` handleDBErrors) . actions
+  liftIO $ retryOnDeadlock 3 . withTransaction chatStore $ mapM (`catchOwn'` handleBatchErrors) . actions
+  where
+    handleBatchErrors e = if isDeadlock e then E.throwIO e else handleDBErrors e
 
 handleDBErrors :: E.SomeException -> IO (Either ChatError a)
 handleDBErrors e = pure $ Left $ ChatErrorStore $ case E.fromException e of
