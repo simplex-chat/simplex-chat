@@ -28,6 +28,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -1696,12 +1697,26 @@ restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . 
 getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
 getShortLinkConnReq' nm user l = do
   l' <- restoreShortLink' l
-  r@(_, _, cReq) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
-  case (l, cReq) of
-    (CSLContact _ ct _ _, CRContactUri ConnReqUriData {crClientData} _)
-      | isJust (crClientData >>= decodeJSON @CReqClientData) /= (ct == CCTGroup || ct == CCTChannel) -> throwChatError CEInvalidConnReq
-    _ -> pure ()
+  r@(_, cData, _) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  linkData <- liftIO $ decodeLinkUserData cData
+  unless (linkTypeMatchesData l linkData) $ throwChatError CEInvalidConnReq
   pure r
+
+linkTypeMatchesData :: ConnShortLink m -> Maybe J.Value -> Bool
+linkTypeMatchesData l linkData = case l of
+  CSLInvitation {} -> not channel
+  CSLContact _ ct _ _ -> case ct of
+    CCTContact -> isNothing groupData
+    CCTGroup -> not channel && isNothing contactData
+    CCTChannel -> isJust publicGroup_
+    CCTRelay -> isNothing groupData
+  where
+    groupData = parseLinkData =<< linkData
+    contactData = parseLinkData @ContactShortLinkData =<< linkData
+    publicGroup_ = groupData >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} -> publicGroup
+    channel = any (\PublicGroupProfile {groupType} -> groupType == GTChannel) publicGroup_
+    parseLinkData :: J.FromJSON a => J.Value -> Maybe a
+    parseLinkData = JT.parseMaybe J.parseJSON
 
 getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
 getShortLinkConnReq nm user l = do
