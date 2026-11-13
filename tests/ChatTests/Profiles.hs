@@ -187,7 +187,7 @@ chatProfileTests = do
       it "address as group link and channel" testAddressAsGroupLink
       it "contact data in group link" testContactDataInGroupLink
       it "channel data in invitation" testChannelDataInInvitation
-      it "address and group link with their data" testLinksWithTheirData
+      it "invitation, address and group link with their data" testLinksWithTheirData
   describe "short links with attached data" shortLinkTests
   describe "client services" $ do
     it "should create user as a service, disable and re-enable" testClientService
@@ -4274,10 +4274,6 @@ testChannelDataInInvitation =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     alice ##> "/_connect 1"
     (link, _) <- getInvitations alice
-    setTestInvLinkData alice $ GroupShortLinkData testGroupProfile Nothing
-    bob ##> ("/_connect plan 1 " <> link)
-    bob <## "invitation link: ok to connect"
-    _ <- getTermLine bob
     setTestInvLinkData alice $ GroupShortLinkData testGroupProfile {publicGroup = Just channel} Nothing
     bob ##> ("/_connect plan 1 " <> link)
     invalidLink bob
@@ -4288,6 +4284,12 @@ testChannelDataInInvitation =
 testLinksWithTheirData :: HasCallStack => TestParams -> IO ()
 testLinksWithTheirData =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/_connect 1"
+    (invitation, _) <- getInvitations alice
+    setTestInvLinkData alice $ GroupShortLinkData testGroupProfile Nothing
+    bob ##> ("/_connect plan 1 " <> invitation)
+    bob <## "invitation link: ok to connect"
+    _ <- getTermLine bob
     alice ##> "/ad"
     (address, _) <- getContactLinks alice True
     bob ##> ("/_connect plan 1 " <> address)
