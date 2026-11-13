@@ -838,7 +838,7 @@ Group profile ([`createSessionGroup`](../src/hub.ts#L480-L492), [`Control.load`]
 | direct messages | off |
 | command menu | as in [2.5](#25-group-profile) |
 | members | `Claude`, the members invited through the Main group, the members others added directly, `User` |
-| peer types | `Claude` `agent`; `User` `human`, set at each service start ([user.ts:17](../src/user.ts#L17), [core.ts:54-59](../src/core.ts#L54-L59)). A member who joined while `User` had `agent`, as in 0.3.0, keeps `agent` for `User`: the core sends a member's profile to a group only after a change of its name, full name, short description, description or image |
+| peer types | `Claude` `agent`; `User` `human`, set at each service start ([user.ts:17](../src/user.ts#L17), [core.ts:54-59](../src/core.ts#L54-L59)). A member who joined while `User` had `agent`, as in 0.3.0, gets `human` with `User`'s next post in the group, with the event `updated profile`: the core sends a member's profile to a group before the next message after a change of its name, full name, short description, description, image or peer type |
 
 Claude makes the profile updates one at a time. It starts each from the group's current profile in the chat database and changes only the display name, the short description or the command menu. So a rename and a model change that overlap both stay.
 

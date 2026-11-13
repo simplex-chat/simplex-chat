@@ -583,7 +583,7 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`. Th
 - Each session has a number, starting at 1, which is kept across service restarts. Its group is named `N · NAME`. NAME is the session's name from `claude -n NAME` or `/rename`, otherwise the project folder's name, otherwise `Claude Code`. A new name shows from the next session start.
 - The group is created at the session start, and the Main group's owners are invited to it as owners. An owner who joins the Main group later is invited to the groups of the open sessions.
 - The group's members are Claude, the Main group's owners, members who joined with `/join`, people whom members added directly, and `User`. People added directly get the role that the adding member set. `User` is a second profile of the service that posts your terminal prompts.
-- Claude's profile has the peer type `agent`, so the app shows Claude with the agent placeholder. `User`'s profile has the peer type `human`, which the service sets at each start. In a session group that you joined while `User` had the peer type `agent`, as in 0.3.0, the app keeps showing `User` with the agent placeholder: a change of the peer type alone is not sent to the members of a group.
+- Claude's profile has the peer type `agent`, so the app shows Claude with the agent placeholder. `User`'s profile has the peer type `human`, which the service sets at each start. In a session group that you joined while `User` had the peer type `agent`, as in 0.3.0, the new peer type reaches your app with `User`'s next post there, and the app shows `updated profile` from `User` once.
 - Rights follow the member's role in the group, however they joined:
 
   | Role | Rights |
