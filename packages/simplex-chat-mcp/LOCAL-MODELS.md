@@ -1,6 +1,6 @@
 # SimpleX MCP server: local models
 
-The agent is run here with opencode as the MCP host and a llama.cpp model served by llama-swap. The general setup of other hosts is in [REFERENCE.md](REFERENCE.md#other-mcp-hosts). Statements about opencode were checked against its source, version 1.19.5.
+An agent of [`serve`](REFERENCE.md#quick-start) is run here with opencode as the MCP host and a llama.cpp model served by llama-swap. The general setup of other hosts is in [REFERENCE.md](REFERENCE.md#other-mcp-hosts). Statements about opencode were checked against its source, version 1.19.5.
 
 ## opencode as host
 
