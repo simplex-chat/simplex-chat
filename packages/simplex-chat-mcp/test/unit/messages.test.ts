@@ -975,6 +975,37 @@ describe("abort", () => {
     expect(chat.commands.filter(cmd => cmd.startsWith("/_read"))).toEqual(["/_read chat items @4 20", "/_read chat items @4 21", "/_read chat items @4 22"])
   })
 
+  it("keeps an /abort that a receive reads before its arrival is handled from that receive and from the item watch, and counts it once", async () => {
+    const abort = jest.fn()
+    const {chat, tools} = await statusChat(abort)
+    const aborting = chat.addItem("@4", item(21, "/abort"))
+    chat.addItem("@4", item(22, "and then?"))
+    expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toMatchObject({messages: [{item: 22, text: "and then?"}], more: 0})
+    expect(tools.onNewItems([aborting])).toEqual([])
+    expect(abort).toHaveBeenCalledTimes(1)
+    expect(chat.commands.filter(cmd => cmd.startsWith("/_read"))).toEqual(["/_read chat items @4 20", "/_read chat items @4 21", "/_read chat items @4 22"])
+  })
+
+  it("returns an /abort that arrives or is read first while no status is shown, also when a status is shown at its later read or arrival, and an unread message edited to /abort", async () => {
+    const abort = jest.fn()
+    const {chat, tools} = await statusChat(abort)
+    await tools.statuses.end("@4")
+    const arrived = [chat.addItem("@4", item(21, "/abort"))]
+    expect(tools.onNewItems(arrived)).toEqual(arrived)
+    await jest.advanceTimersByTimeAsync(0)
+    expect(tools.statuses.offersAbort("@4")).toBe(true)
+    expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toMatchObject({messages: [{item: 21, text: "/abort"}], more: 0})
+    await tools.statuses.end("@4")
+    const read = [chat.addItem("@4", item(22, "/abort"))]
+    expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toMatchObject({messages: [{item: 22, text: "/abort"}], more: 0})
+    await jest.advanceTimersByTimeAsync(0)
+    expect(tools.statuses.offersAbort("@4")).toBe(true)
+    expect(tools.onNewItems(read)).toEqual(read)
+    chat.addItem("@4", item(23, "/abort", {type: "directRcv"}, {edited: true}))
+    expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toMatchObject({messages: [{item: 23, text: "/abort"}], more: 0})
+    expect(abort).not.toHaveBeenCalled()
+  })
+
   it("leaves a waiting receive of the chat waiting at an /abort", async () => {
     const abort = jest.fn()
     const {chat, tools, watch} = await statusChat(abort)

@@ -458,7 +458,9 @@ With `--abort-file FILE`, a person in a chat with a status message can stop the 
 
 A message is an abort when:
 - it is received in the main conversation of a chat whose status message is shown, outside the support chats of members;
-- it is a text message, not live, whose text without leading and trailing whitespace is `/abort`.
+- it is a text message, neither sent as a live message nor edited, whose text without leading and trailing whitespace is `/abort`.
+
+The server decides this once for each message, from the status message shown when it first handles the message: at its arrival, or at a `receive` that reads it before its arrival is handled.
 
 Anyone who can post in that chat may send it: the contact of a direct chat, and every member of a group or business chat. At an abort, the server:
 1. keeps the message from the agent: `receive` and `send` never return it, and it is marked read;

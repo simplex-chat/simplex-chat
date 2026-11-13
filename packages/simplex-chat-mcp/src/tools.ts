@@ -543,7 +543,7 @@ export class AgentTools {
   private readonly fileDescriptions = new Changes()
   private describedFiles = 0
   private readonly leaving = new Set<string>()
-  private readonly abortItems = new Set<number>()
+  private readonly abortItems = new Map<number, boolean>()
   readonly statuses: Statuses
 
   constructor(private readonly agent: Agent, private readonly approval: Mode | (() => Mode), readonly session?: number) {
@@ -642,15 +642,19 @@ export class AgentTools {
       }
       const ref = chatRef(chatInfo)
       if (ref === undefined || !this.owns(chatInfo) || content.type !== "rcvMsgContent" || isLive(chatItem)) continue
-      if (this.statuses.offersAbort(ref) && content.msgContent.type === "text" && content.msgContent.text.trim() === "/abort") this.abortAgent(ref, chatInfo, chatItem)
-      else this.onArrival({chatInfo, chatItem})
+      this.decideAbort(ref, chatInfo, chatItem)
+      if (!this.abortItems.get(meta.itemId)) this.onArrival({chatInfo, chatItem})
     }
-    return items.filter(({chatItem}) => !this.abortItems.has(chatItem.meta.itemId))
+    return items.filter(({chatItem}) => !this.abortItems.get(chatItem.meta.itemId))
   }
 
-  private abortAgent(chat: string, chatInfo: T.ChatInfo, chatItem: T.ChatItem): void {
-    this.abortItems.add(chatItem.meta.itemId)
-    markRead(this.agent.chat, chat, [chatItem.meta.itemId]).catch(error => logError(`abort in ${chat}`, error))
+  private decideAbort(chat: string, chatInfo: T.ChatInfo, chatItem: T.ChatItem): void {
+    const {content, meta} = chatItem
+    if (this.abortItems.has(meta.itemId) || meta.itemLive !== undefined || meta.itemEdited || content.type !== "rcvMsgContent" || content.msgContent.type !== "text" || content.msgContent.text.trim() !== "/abort") return
+    const aborts = this.statuses.offersAbort(chat)
+    this.abortItems.set(meta.itemId, aborts)
+    if (!aborts) return
+    markRead(this.agent.chat, chat, [meta.itemId]).catch(error => logError(`abort in ${chat}`, error))
     const {from} = toMessage(chatInfo, chatItem, {name: ""}, this.rejectedFiles, this.agent.data)
     log(`Abort by ${oneLine(from)} in ${subjectText({...chatSubject(chatInfo), simplexName: undefined}, oneLine)} (${chat}).`)
     try {
@@ -1326,7 +1330,8 @@ export class AgentTools {
       })
       if (!this.owns(initial.chatInfo)) throw unknownChat(chat)
       const {chatInfo, items, unreadRest} = await unreadItems(this.agent.chat, chat, initial, limit + 1)
-      const unread = items.filter(({content, meta}) => content.type === "rcvMsgContent" && !this.abortItems.has(meta.itemId)).map(chatItem => arrived.items.find(copy => copy.chatItem.meta.itemId === chatItem.meta.itemId) ?? {chatInfo, chatItem})
+      for (const chatItem of items) this.decideAbort(chat, chatInfo, chatItem)
+      const unread = items.filter(({content, meta}) => content.type === "rcvMsgContent" && !this.abortItems.get(meta.itemId)).map(chatItem => arrived.items.find(copy => copy.chatItem.meta.itemId === chatItem.meta.itemId) ?? {chatInfo, chatItem})
       const skipped = items.filter(({content}) => content.type !== "rcvMsgContent").map(({meta}) => meta.itemId)
       const later = arrived.items.filter(a => !unread.some(u => u.chatItem.meta.itemId === a.chatItem.meta.itemId))
       arrived.items.splice(0, arrived.items.length, ...unread, ...later)
