@@ -209,10 +209,7 @@ internal fun decodeBoundedBufferedImage(data: ByteArray, maxDimension: Int): Buf
       val width = reader.getWidth(0)
       val height = reader.getHeight(0)
       if (!sourceDimensionsWithinLimits(width, height)) throw IOException("Image dimensions exceed limit")
-      val sampleSize = imageSampleSize(width, height, maxDimension)
-      val param = reader.defaultReadParam.apply {
-        if (sampleSize > 1) setSourceSubsampling(sampleSize, sampleSize, 0, 0)
-      }
+      val param = receivedImageReadParam(reader, imageSampleSize(width, height, maxDimension))
       return reader.read(0, param) ?: throw IOException("Unable to decode image")
     } finally {
       reader.dispose()

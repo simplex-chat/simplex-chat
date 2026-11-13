@@ -27,12 +27,19 @@ private val base64BitmapCache = Collections.synchronizedMap(object : LinkedHashM
 })
 
 private const val MAX_IMAGE_DIMENSION = 4320
+private const val MAX_PROGRESSIVE_PASSES = 16
 
 private val receivedImageFormats = setOf("png", "jpeg", "gif")
 
 internal fun receivedImageReader(stream: ImageInputStream): ImageReader =
   ImageIO.getImageReaders(stream).asSequence().firstOrNull { it.formatName.lowercase() in receivedImageFormats }
     ?: throw IOException("Unsupported image format")
+
+internal fun receivedImageReadParam(reader: ImageReader, sampleSize: Int): ImageReadParam =
+  reader.defaultReadParam.apply {
+    setSourceProgressivePasses(0, MAX_PROGRESSIVE_PASSES)
+    if (sampleSize > 1) setSourceSubsampling(sampleSize, sampleSize, 0, 0)
+  }
 
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   base64BitmapCache[base64ImageString]?.let { return it }
@@ -50,7 +57,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
       reader.dispose()
       return errorBitmap()
     }
-    val image = reader.read(0)
+    val image = reader.read(0, receivedImageReadParam(reader, 1))
     reader.dispose()
     image.toComposeImageBitmap().also {
       base64BitmapCache[base64ImageString] = it
