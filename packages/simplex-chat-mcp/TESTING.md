@@ -27,7 +27,7 @@ Until the package is published, the printed hint `npx -y @simplex-chat/mcp regis
 
 ### The tests of 0.2
 
-`serve` keeps the behaviour of 0.2. The 274 unit tests of 0.2 and its 13 end-to-end tests in `scenarios` and `mcp`, from commit be668564d, pass unchanged on this source. They run in a copy of the package with the `test` folder of 0.2. Run these commands from the repository's root, with `SMP_SERVER` and `XFTP_SERVER` set as above:
+`serve` keeps the behaviour of 0.2, except that its list of commands has `/copies`, and the card of a send under the approval of all messages to its chat ends with `or /'copies CHAT off'`. The 274 unit tests of 0.2 and its 13 end-to-end tests in `scenarios` and `mcp`, from commit be668564d, pass unchanged on this source, except 6 tests that check these: in `commands.test.ts`, "refuses chat references longer than 15 digits, such as an alias of the agent control chat", "answers other commands with the list", "answers /approve CHAT files and /revoke CHAT files with the command list", "answers the /leave template sent unedited with the list of commands" and "performs the send at once, without a card, and posts the outcome card"; in `cards.test.ts`, "shows a send under the standing approval of its chat". They run in a copy of the package with the `test` folder of 0.2. Run these commands from the repository's root, with `SMP_SERVER` and `XFTP_SERVER` set as above:
 
 ```
 mkdir -p /tmp/v02
