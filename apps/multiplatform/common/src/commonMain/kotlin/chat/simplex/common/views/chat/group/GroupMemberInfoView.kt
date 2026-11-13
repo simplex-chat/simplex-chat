@@ -753,7 +753,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     Modifier.padding(horizontal = 16.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    MemberProfileImage(size = 192.dp, member, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    MemberProfileImage(size = 160.dp, member, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight, modifier = Modifier.centeredIn(192.dp))
     val displayName = member.displayName.trim() // alias if set
     val badge = member.nameBadge
     val text = buildAnnotatedString {
@@ -935,7 +935,7 @@ fun MemberProfileImage(
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
   async: Boolean = false,
-  toEdge: Boolean = false
+  modifier: Modifier = Modifier
 ) {
   ProfileImage(
     size = size,
@@ -944,7 +944,7 @@ fun MemberProfileImage(
     backgroundColor = backgroundColor,
     blurred = mem.blocked,
     async = async,
-    toEdge = toEdge
+    modifier = modifier
   )
 }
 

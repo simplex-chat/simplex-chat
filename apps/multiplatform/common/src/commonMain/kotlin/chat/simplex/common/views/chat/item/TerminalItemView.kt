@@ -326,7 +326,7 @@ fun chatItemSender(
     cItem.channelIsSender && chatInfo is ChatInfo.Group ->
       ChatItemSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), dir.sent) {
         Box(Modifier.clickable { showChatInfo() }) {
-          ProfileImage(imageSize, chatInfo.groupInfo.image, chatInfo.groupInfo.chatIconName, backgroundColor = MaterialTheme.colors.background, toEdge = true)
+          ProfileImage(imageSize, chatInfo.groupInfo.image, chatInfo.groupInfo.chatIconName, backgroundColor = MaterialTheme.colors.background)
         }
       }
     dir is CIDirection.DirectRcv ->
@@ -342,14 +342,14 @@ fun chatItemSender(
         false
       ) {
         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
-          MemberImage(member, imageSize, toEdge = true)
+          MemberImage(member, imageSize)
         }
       }
     }
     dir is CIDirection.GroupSnd && chatInfo is ChatInfo.Group -> {
       val membership = chatInfo.groupInfo.membership
       ChatItemSender(membership.displayName, membership.nameBadge, memberRole(membership, chatInfo.isChannel), true) {
-        MemberImage(membership, imageSize, toEdge = true)
+        MemberImage(membership, imageSize)
       }
     }
     chatInfo.incognito ->

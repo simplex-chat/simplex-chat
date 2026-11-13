@@ -56,7 +56,7 @@ fun CIGroupInvitationView(
     Row(
       Modifier.defaultMinSize(minWidth = 220.dp)
     ) {
-      ProfileImage(size = 54.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = iconColor)
+      ProfileImage(size = 45.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = iconColor, modifier = Modifier.centeredIn(54.dp))
       Spacer(Modifier.width(8.dp))
       Column(
         Modifier.defaultMinSize(minHeight = 54.dp),

@@ -98,11 +98,11 @@ private fun SharePreviewView(chat: Chat, disabled: Boolean) {
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       if (chat.chatInfo is ChatInfo.Local) {
-        ProfileImage(size = 42.dp, null, icon = MR.images.ic_folder_filled, color = NoteFolderIconColor)
+        ProfileImage(size = 35.dp, null, icon = MR.images.ic_folder_filled, color = NoteFolderIconColor, modifier = Modifier.centeredIn(42.dp))
       } else if (chat.chatInfo is ChatInfo.Group) {
-        ProfileImage(size = 42.dp, chat.chatInfo.image, icon = MR.images.ic_supervised_user_circle_filled)
+        ProfileImage(size = 35.dp, chat.chatInfo.image, icon = MR.images.ic_supervised_user_circle_filled, modifier = Modifier.centeredIn(42.dp))
       } else {
-        ProfileImage(size = 42.dp, chat.chatInfo.image)
+        ProfileImage(size = 35.dp, chat.chatInfo.image, modifier = Modifier.centeredIn(42.dp))
       }
       NameWithBadge(
         chat.chatInfo.chatViewName, chat.chatInfo.nameBadge, maxLines = 1, overflow = TextOverflow.Ellipsis,

@@ -3,13 +3,14 @@ package chat.simplex.common.views.helpers
 import androidx.compose.material.icons.materialIcon
 import androidx.compose.material.icons.materialPath
 import androidx.compose.ui.graphics.vector.*
+import androidx.compose.ui.unit.dp
 
 val AccountCircleFilled: ImageVector
   get() {
     if (_accountCircleFilled != null) {
       return _accountCircleFilled!!
     }
-    _accountCircleFilled = materialIcon(name = "Filled.AccountCircle") {
+    _accountCircleFilled = circleIcon("Filled.AccountCircle", 2.0f) {
       materialPath {
         moveTo(12.0f, 2.0f)
         curveTo(6.48f, 2.0f, 2.0f, 6.48f, 2.0f, 12.0f)
@@ -41,7 +42,7 @@ val SupervisedUserCircleFilled: ImageVector
     if (_supervisedUserCircleFilled != null) {
       return _supervisedUserCircleFilled!!
     }
-    _supervisedUserCircleFilled = materialIcon(name = "Filled.SupervisedUserCircle") {
+    _supervisedUserCircleFilled = circleIcon("Filled.SupervisedUserCircle", 1.99f) {
       materialPath {
         moveTo(11.99f, 2.0f)
         curveToRelative(-5.52f, 0.0f, -10.0f, 4.48f, -10.0f, 10.0f)
@@ -81,6 +82,11 @@ val SupervisedUserCircleFilled: ImageVector
   }
 
 private var _supervisedUserCircleFilled: ImageVector? = null
+
+private fun circleIcon(name: String, left: Float, paths: ImageVector.Builder.() -> Unit): ImageVector =
+  ImageVector.Builder(name = name, defaultWidth = 20.dp, defaultHeight = 20.dp, viewportWidth = 20f, viewportHeight = 20f)
+    .apply { group(translationX = -left, translationY = -2f) { paths() } }
+    .build()
 
 val BoltFilled: ImageVector
   get() {

@@ -1592,15 +1592,15 @@ fun ownersContributorsCountStr(count: Int, withContributors: Boolean): String =
   else String.format(generalGetString(MR.strings.channel_owner_count_plural), count)
 
 @Composable
-fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
+fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 33.dp, imageBox: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
   Row(
     horizontalArrangement = Arrangement.Center,
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (cInfo.incognito) {
-      IncognitoImage(size = 36.dp * fontSizeSqrtMultiplier, Indigo)
+      IncognitoImage(size = 30.dp * fontSizeSqrtMultiplier, Indigo, Modifier.centeredIn(36.dp * fontSizeSqrtMultiplier))
     }
-    ChatInfoImage(cInfo, size = imageSize * fontSizeSqrtMultiplier, iconColor)
+    ChatInfoImage(cInfo, size = imageSize * fontSizeSqrtMultiplier, iconColor, modifier = Modifier.centeredIn(imageBox * fontSizeSqrtMultiplier))
     Column(
       Modifier.padding(start = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
@@ -2123,7 +2123,7 @@ fun BoxScope.ChatItemsList(
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         val member = cItem.chatDir.groupMember
                         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
-                          MemberImage(member)
+                          MemberImage(member, 31.dp * fontSizeSqrtMultiplier, Modifier.centeredIn(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier))
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
                           ChatItemViewShortHand(cItem, itemSeparation, range, false, dismissState.offset.value)
@@ -2200,10 +2200,11 @@ fun BoxScope.ChatItemsList(
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         Box(Modifier.clickable { showChatInfo() }) {
                           ProfileImage(
-                            MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier,
+                            31.dp * fontSizeSqrtMultiplier,
                             chatInfo.groupInfo.image,
                             chatInfo.groupInfo.chatIconName,
-                            backgroundColor = MaterialTheme.colors.background
+                            backgroundColor = MaterialTheme.colors.background,
+                            modifier = Modifier.centeredIn(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier)
                           )
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
@@ -2347,12 +2348,10 @@ fun BoxScope.ChatItemsList(
         modifier = bannerModifier
           .padding(horizontal = DEFAULT_PADDING)
           .padding(bottom = DEFAULT_PADDING)
-          // ChatInfoImage has its own padding somewhere,
-          // also not doing verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF) because of it
           .padding(top = DEFAULT_PADDING_HALF)
           .background(MaterialTheme.appColors.receivedMessage)
       ) {
-        ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f))
+        ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f), modifier = Modifier.centeredIn(138.dp))
         val bannerBadge = chatInfo.nameBadge
         val uriHandler = LocalUriHandler.current
         Text(
@@ -2878,8 +2877,8 @@ private suspend fun preloadItemsAfter(
 val MEMBER_IMAGE_SIZE: Dp = 37.dp
 
 @Composable
-fun MemberImage(member: GroupMember, size: Dp = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, toEdge: Boolean = false) {
-  MemberProfileImage(size, member, backgroundColor = MaterialTheme.colors.background, toEdge = toEdge)
+fun MemberImage(member: GroupMember, size: Dp, modifier: Modifier = Modifier) {
+  MemberProfileImage(size, member, backgroundColor = MaterialTheme.colors.background, modifier = modifier)
 }
 
 @Composable

@@ -44,7 +44,7 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 @Composable
-fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false, modifier: Modifier = Modifier) {
   val icon =
     when (chatInfo) {
       is ChatInfo.Group -> chatInfo.groupInfo.chatIconName
@@ -52,18 +52,16 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
       is ChatInfo.Direct -> chatInfo.contact.chatIconName
       else -> MR.images.ic_account_circle_filled
     }
-  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
+  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor, modifier = modifier)
 }
 
 @Composable
-fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
-  Box(Modifier.size(size)) {
-    Icon(
-      painterResource(MR.images.ic_theater_comedy_filled), stringResource(MR.strings.incognito),
-      modifier = Modifier.size(size).padding(size / 12),
-      iconColor
-    )
-  }
+fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, modifier: Modifier = Modifier) {
+  Icon(
+    painterResource(MR.images.ic_theater_comedy_filled), stringResource(MR.strings.incognito),
+    modifier = modifier.size(size),
+    iconColor
+  )
 }
 
 @Composable
@@ -75,12 +73,10 @@ fun ProfileImage(
   backgroundColor: Color? = null,
   blurred: Boolean = false,
   async: Boolean = false,
-  toEdge: Boolean = false
+  modifier: Modifier = Modifier
 ) {
-  Box(Modifier.size(size)) {
+  Box(modifier.size(size)) {
     if (image == null) {
-      val iconSize = if (toEdge) size * 1.2f else size
-      val iconModifier = if (toEdge) Modifier.requiredSize(iconSize) else Modifier.fillMaxSize()
       val iconToReplace = when (icon) {
         MR.images.ic_account_circle_filled -> AccountCircleFilled
         MR.images.ic_supervised_user_circle_filled -> SupervisedUserCircleFilled
@@ -88,20 +84,20 @@ fun ProfileImage(
       }
       if (iconToReplace != null) {
         if (backgroundColor != null) {
-          Box(Modifier.size(iconSize * 0.7f).align(Alignment.Center).background(backgroundColor, CircleShape))
+          Box(Modifier.size(size * 0.84f).align(Alignment.Center).background(backgroundColor, CircleShape))
         }
         Icon(
           iconToReplace,
           contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
           tint = color,
-          modifier = iconModifier
+          modifier = Modifier.fillMaxSize()
         )
       } else {
         Icon(
-          painterResource(icon),
+          painterResource(avatarIcon(icon)),
           contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
           tint = color,
-          modifier = iconModifier
+          modifier = Modifier.fillMaxSize()
         )
       }
     } else {
@@ -110,7 +106,7 @@ fun ProfileImage(
           base64ImageString = image,
           contentDescription = stringResource(MR.strings.image_descr_profile_image),
           contentScale = ContentScale.Crop,
-          modifier = ProfileIconModifier(size, padding = !toEdge, blurred = blurred)
+          modifier = ProfileIconModifier(size, blurred = blurred)
         )
       } else {
         val imageBitmap = base64ToBitmap(image)
@@ -118,11 +114,20 @@ fun ProfileImage(
           bitmap = imageBitmap,
           contentDescription = stringResource(MR.strings.image_descr_profile_image),
           contentScale = ContentScale.Crop,
-          modifier = ProfileIconModifier(size, padding = !toEdge, blurred = blurred)
+          modifier = ProfileIconModifier(size, blurred = blurred)
         )
       }
     }
   }
+}
+
+private fun avatarIcon(icon: ImageResource): ImageResource = when (icon) {
+  MR.images.ic_folder_filled -> MR.images.ic_avatar_folder
+  MR.images.ic_bigtop_updates_circle_filled -> MR.images.ic_avatar_channel
+  MR.images.ic_work_filled_padded -> MR.images.ic_avatar_business
+  MR.images.ic_cube -> MR.images.ic_avatar_bot
+  MR.images.ic_agent -> MR.images.ic_avatar_agent
+  else -> icon
 }
 
 // badge height in em: calibrated visually so the badge top matches capital letters and digits
@@ -285,54 +290,23 @@ private const val squareToCircleRatio = 0.935f
 private const val radiusFactor = (1 - squareToCircleRatio) / 50
 
 @Composable
-fun ProfileIconModifier(size: Dp, padding: Boolean = true, blurred: Boolean = false): Modifier {
+fun ProfileIconModifier(size: Dp, blurred: Boolean = false): Modifier {
   val percent = remember { appPreferences.profileImageCornerRadius.state }
   val r = max(0f, percent.value)
-  val pad = if (padding) size / 12 else 0.dp
   val m = Modifier.size(size)
   val m1 = when {
     r >= 50 ->
-      m.padding(pad).clip(CircleShape)
+      m.clip(CircleShape)
     r <= 0 -> {
-      val sz = (size - 2 * pad) * squareToCircleRatio
+      val sz = size * squareToCircleRatio
       m.padding((size - sz) / 2)
     }
     else -> {
-      val sz = (size - 2 * pad) * (squareToCircleRatio + r * radiusFactor)
+      val sz = size * (squareToCircleRatio + r * radiusFactor)
       m.padding((size - sz) / 2).clip(RoundedCornerShape(size = sz * r / 100))
     }
   }
-  return if (blurred) m1.blur(size / 4) else m1
-}
-
-/** [AccountCircleFilled] has its inner padding which leads to visible border if there is background underneath.
- * This is workaround
- * */
-@Composable
-fun ProfileImageForActiveCall(
-  size: Dp,
-  image: String? = null,
-  color: Color = MaterialTheme.colors.secondaryVariant,
-  backgroundColor: Color? = null,
-  ) {
-  if (image == null) {
-    Box(Modifier.requiredSize(size).clip(CircleShape).then(if (backgroundColor != null) Modifier.background(backgroundColor) else Modifier)) {
-      Icon(
-        AccountCircleFilled,
-        contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
-        tint = color,
-        modifier = Modifier.requiredSize(size + 14.dp)
-      )
-    }
-  } else {
-    val imageBitmap = base64ToBitmap(image)
-    Image(
-      imageBitmap,
-      stringResource(MR.strings.image_descr_profile_image),
-      contentScale = ContentScale.Crop,
-      modifier = ProfileIconModifier(size, padding = false)
-    )
-  }
+  return if (blurred) m1.blur(size * 0.3f) else m1
 }
 
 @Preview
@@ -341,7 +315,8 @@ fun PreviewChatInfoImage() {
   SimpleXTheme {
     ChatInfoImage(
       chatInfo = ChatInfo.Direct.sampleData,
-      size = 55.dp
+      size = 46.dp,
+      modifier = Modifier.centeredIn(55.dp)
     )
   }
 }

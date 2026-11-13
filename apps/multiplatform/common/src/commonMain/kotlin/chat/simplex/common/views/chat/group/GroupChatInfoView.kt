@@ -969,7 +969,7 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
     Modifier.padding(horizontal = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    ChatInfoImage(cInfo, size = 160.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight, modifier = Modifier.centeredIn(192.dp))
     val clipboard = LocalClipboardManager.current
     val copyNameToClipboard = fun(name: String) {
       clipboard.setText(AnnotatedString(name))
@@ -1135,7 +1135,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      MemberProfileImage(size = MEMBER_ROW_AVATAR_SIZE, member, async = true)
+      MemberProfileImage(size = 35.dp, member, async = true, modifier = Modifier.centeredIn(MEMBER_ROW_AVATAR_SIZE))
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Column {
         Row(verticalAlignment = Alignment.CenterVertically) {

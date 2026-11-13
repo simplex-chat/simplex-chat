@@ -102,7 +102,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
           ) {
             Box(contentAlignment = Alignment.TopEnd) {
               Box(contentAlignment = Alignment.Center) {
-                ProfileImage(128.dp, image = profileImage.value)
+                ProfileImage(107.dp, image = profileImage.value, modifier = Modifier.centeredIn(128.dp))
                 EditImageButton { scope.launch { bottomSheetModalState.show() } }
               }
               if (profileImage.value != null) {

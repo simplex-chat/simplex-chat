@@ -510,7 +510,7 @@ fun openChat_(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, chat: Cha
   }
 }
 
-val alertProfileImageSize = 138.dp
+val alertProfileImageSize = 115.dp
 
 // For alerts that show the name inline (not as a profile with an avatar): "Alice" -> "Alice (@alice.testing)".
 private fun nameWithDomain(name: String, planSimplexName: SimplexNameInfo?): String =

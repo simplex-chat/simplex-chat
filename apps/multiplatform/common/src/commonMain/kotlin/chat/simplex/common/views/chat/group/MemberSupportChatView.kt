@@ -127,12 +127,12 @@ fun MemberSupportChatAppBar(
 }
 
 @Composable
-fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
+fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 33.dp, imageBox: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
   Row(
     horizontalArrangement = Arrangement.Center,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    MemberProfileImage(size = imageSize * fontSizeSqrtMultiplier, member, iconColor)
+    MemberProfileImage(size = imageSize * fontSizeSqrtMultiplier, member, iconColor, modifier = Modifier.centeredIn(imageBox * fontSizeSqrtMultiplier))
     Column(
       Modifier.padding(start = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally

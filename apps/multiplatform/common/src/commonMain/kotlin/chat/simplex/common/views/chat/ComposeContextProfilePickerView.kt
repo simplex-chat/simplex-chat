@@ -144,7 +144,7 @@ fun ComposeContextProfilePickerView(
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically
     ) {
-      ProfileImage(size = USER_ROW_AVATAR_SIZE, image = user.image)
+      ProfileImage(size = 35.dp, image = user.image, modifier = Modifier.centeredIn(USER_ROW_AVATAR_SIZE))
       TextIconSpaced(false)
       NameWithBadge(
         user.chatViewName,
