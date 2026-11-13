@@ -300,7 +300,7 @@ Six tools:
 |---|---|
 | `connect` | Joins a contact, bot, business, group or channel by a link or a SimpleX name, as the agent's profile or incognito. Returns the chat, its profile, welcome message, the commands a bot advertises, and the messages so far. |
 | `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. With `live: true`, it shows a note in the chat's status message at once, without an action. |
-| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. With `typing: true`, it starts the chat's status message when it returns messages. |
+| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. When it returns messages, it starts the chat's status message. |
 | `download` | Downloads the file of a received message to the data folder and returns its full path. |
 | `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
 | `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
@@ -327,7 +327,7 @@ Incognito: the core creates a random profile for that one chat, so peers of diff
 
 In mode `requests`, the server shows what the agent does in a live message, the status message, in a chat approved for all messages where the agent can post: a chat with a person, a group or a business chat. Channels and chats with bots and agents are excluded. In a group, every member sees the status message and its notes.
 
-- The server posts the status message when messages are returned by a `receive` with `typing: true`, unless the chat has one.
+- The server posts the status message when messages are returned by a `receive`, unless the chat has one.
 - With `live: true`, the text of a `send`, a note, is shown under the status line at once, and a status message is posted when the chat has none. Such a call is not an action: `status: live` is returned at once. A note with `file`, `reply_to` or `mention`, a note above 2000 characters, and a note to another chat are refused.
 - The agent's next message to that chat without `live` is sent as a new message, and the status message is then deleted for everyone.
 
@@ -403,7 +403,7 @@ Give Claude Code your SimpleX address:
 ```
 Connect to me as yourself at <your SimpleX address>, with the message:
 "I'm your agent, connected as you asked in Claude Code. I'll act on your prompts here, except security-sensitive ones."
-Then take my prompts from that chat and answer there: wait for my messages with receive (wait 3600, typing true),
+Then take my prompts from that chat and answer there: wait for my messages with receive (wait 3600),
 answer each one in that chat with send (wait 0), and call receive again after every answer, until I say stop.
 ```
 
@@ -411,7 +411,7 @@ Or give it the link of a group of yours, where every member prompts it:
 
 ```
 Connect as yourself to my group at <your group link>.
-Then take the prompts of its members from that group and answer there: wait for their messages with receive (wait 3600, typing true),
+Then take the prompts of its members from that group and answer there: wait for their messages with receive (wait 3600),
 answer each one in that group with send (wait 0), and call receive again after every answer, until I say stop.
 ```
 

@@ -144,11 +144,8 @@ describe("MCP", () => {
     expect(send._meta).toBeUndefined()
     expect(send.description.split("\n")).toContain("With live: true, in a chat with a person, a group or a business chat that has approved: true in list, text is shown at once in the chat's live status message, and status live is returned without an action. Your next message there without live is sent as a new message, and the status message is then deleted.")
     const receive = result.tools.find(({name}: {name: string}) => name === "receive")
-    expect(receive.inputSchema.properties.typing).toEqual({
-      type: "boolean",
-      description: "true: when messages are returned, a live status message is shown in this chat while you work: whether you think, use a tool or wait for approval. It is deleted at your next message there without live, or when a receive of this chat waits. Applies in chats with people, groups and business chats that have approved: true in list. Default false.",
-    })
-    expect(receive.description.split("\n").at(-1)).toBe("With typing: true, in a chat with a person, a group or a business chat that has approved: true in list, a live status message is shown there while you work, from the returned messages until your next message there or a receive there that waits. Use it in the chat where you receive prompts: send each answer without live, and call receive again only after it. For steps that take minutes, send a short note with live: true; it is shown in the status message.")
+    expect(Object.keys(receive.inputSchema.properties)).toEqual(["chat", "wait", "limit"])
+    expect(receive.description.split("\n").at(-1)).toBe("In a chat with a person, a group or a business chat that has approved: true in list, a live status message is shown there while you work, from the returned messages until your next message there or a receive there that waits. In the chat where you receive prompts, send each answer without live, and call receive again only after it. For steps that take minutes, send a short note with live: true; it is shown in the status message.")
   })
 
   it("keeps each tool description, and the instructions for a 15-character name, within Claude Code's 2048 characters", async () => {

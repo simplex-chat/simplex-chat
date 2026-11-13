@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.3.0: live status message and inference speed
 
-Status: draft for review. Design of 2026-11-10; Q8 (groups) and Q18 (size budgets) decided on 2026-11-11; the other questions as recommended. Code references: master `f8776692df`; library references: `packages/simplex-chat-nodejs/src/api.ts` at `f8776692df`, published as `simplex-chat` 7.1.0-beta.10.2.
+Status: draft for review. Design of 2026-11-10; Q8 (groups) and Q18 (size budgets) decided on 2026-11-11; Q23 (the start without `typing`) on 2026-11-13; the other questions as recommended. Code references: master `f8776692df`; library references: `packages/simplex-chat-nodejs/src/api.ts` at `f8776692df`, published as `simplex-chat` 7.1.0-beta.10.2.
 
 Dependencies:
 1. `LiveMessage` of `simplex-chat` 7.1.0-beta.10.2 (`api.ts:1134-1214`), used unchanged, with interval 0.
@@ -15,8 +15,8 @@ Dependencies:
 5. Q5: gaps of a tenth of the age, from 3 s to 20 s; 50 renders, about 10 minutes; 59 with notes; 23 hours.
 6. Q6: in the frozen phase, the status is deleted 30 minutes after the last start or end of a call; running `receive` calls are left out.
 7. Q7: leftovers of a crash are deleted at start in eligible chats when younger than 30 h − 10 min; a chat that lost its approval keeps its leftover.
-8. Q8, decided 2026-11-11 in place of the recommendation: direct chats with people, groups and business chats are eligible; channels and direct chats with bots and agents are excluded. The status is started at each `receive` with `typing` that returns messages, from any sender. Every member sees the status, its labels and its notes.
-9. Q9: `typing` is an input of `receive` only; in the README prompt, each answer is sent with `wait 0`.
+8. Q8, decided 2026-11-11 in place of the recommendation: direct chats with people, groups and business chats are eligible; channels and direct chats with bots and agents are excluded. The status is started at each `receive` that returns messages, from any sender (Q23). Every member sees the status, its labels and its notes.
+9. Q9: in the README prompt, each answer is sent with `wait 0`.
 10. Q10: notes are shown only in the status message of their chat; each note is printed in the terminal.
 11. Q11: the key is read from `SIMPLEX_MCP_INFERENCE_KEY`, visible ASCII only, and sent to URL only.
 12. Q12: `/props` and `/slots` are read at proxies on the URL's host, and at loopback proxies of a loopback URL.
@@ -27,9 +27,10 @@ Dependencies:
 17. Q17: version 0.3.0; pull request title `mcp server: live status while the agent works`.
 18. Q18, decided 2026-11-11: `status.ts` 192 lines, `inference.ts` 164 lines; up to 20% above them is allowed.
 19. Q19: `instructions()` stays unchanged; its length for display names over 15 characters is a separate change.
-20. Q20: the agent starts a status with `typing` or a note; the owner ends the statuses of a chat with `/revoke CHAT`, together with the approval of answers. An owner command for statuses alone is a later change, if wanted.
+20. Q20: a status is started by a `receive` that returns messages, or by a note; the owner ends the statuses of a chat with `/revoke CHAT`, together with the approval of answers. An owner command for statuses alone is a later change, if wanted.
 21. Q21: `--inference` with `--approve host` is a usage error.
 22. Q22: a failed command of a status is logged, and the status is deleted; at a later note, a new status is started.
+23. Q23, decided 2026-11-13: the `typing` input of `receive` is removed. Each `receive` that returns messages starts the status when the chat read of the call meets the conditions.
 
 ## Status message
 
@@ -130,7 +131,7 @@ ending    undefined                       its live.end("")
 
 ```
 event                                  condition                                   effect                                         state
-receive returns messages, typing true  no status, not stopping                     created; tick at once                          active
+receive returns messages               conditions met, no status, not stopping     created; tick at once                          active
 first tick                             conditions unmet, or their read fails       end, before any post                           ending
 send live: true, accepted              no status, or one 23 h old, ended first     created; note rendered; tick in 3 s            active
 send live: true, accepted              renders < 59                                note rendered                                  active | frozen
@@ -191,10 +192,10 @@ live: the update limit of the status message of CHAT is reached; send your answe
 - Result: `{status: "live", chat}`. `sendOutput.required` is `["status"]`.
 - Log line, stdout: `Note to SUBJECT (CHAT): TEXT`, the subject without its SimpleX name, names and text folded by `oneLine`.
 
-## receive with typing
+## receive
 
-- With `wait` above 0 and nothing new, the status of the chat is deleted before the wait, with or without `typing`.
-- After `/_read chat items` and the abort check, the status of the chat is started when `typing` is true and messages are returned.
+- With `wait` above 0 and nothing new, the status of the chat is deleted before the wait.
+- After `/_read chat items` and the abort check, the status of the chat is started when messages are returned and the chat read of the call meets the conditions (`showsStatus`).
 
 ## Inference endpoint
 
@@ -275,11 +276,9 @@ error texts                   folded by oneLine; "invalid JSON" in place of the 
 file           function or item           change
 tools.ts       SendInput                  live
                sendSchema                 live
-               ReceiveInput               typing
-               receiveSchema              typing
                sendOutput                 status live; required ["status"]
                sendDescription            the live line; result status live
-               receiveDescription         the typing line
+               receiveDescription         the status line
                Agent                      inference
                ToolName                   exported
                AgentTools                 statuses: Statuses, with allowed = showsStatus of knownChat; leaving: chats being left
@@ -291,7 +290,7 @@ tools.ts       SendInput                  live
                performSend                statuses.end(chat) after apiSendMessages returns
                leaveChat                  leaving; statuses.end(chat), awaited, before the deletion
                deleteLeftoverStatuses     new
-               receive                    typing; statuses.end(chat) before a wait; statuses.start(chat) after markRead
+               receive                    statuses.end(chat) before a wait; statuses.start(chat) after markRead, when showsStatus
                postingRefusal             new: extracted from send
 status.ts      Statuses, statusText,      new, 192 lines
                statusLabel
@@ -315,15 +314,15 @@ package.json   version                    0.3.0, with package-lock.json
 - `test/unit/fixtures.ts`: `apiSendMessages` and `apiUpdateChatItem` record `live: true` when set; `apiDeleteChatItems` records `deletedItems`.
 - `test/unit/status.test.ts` (new): the schedule; frames and elapsed time; the frozen line and 5-minute checks; label ranks; model and counts in labels; deletion when the conditions are unmet, at a failed read, at 23 h, and in the frozen phase 30 min after the last call; notes under the line, refused at render 59; a status 23 h old replaced at a note; no tick render after a label read during which notes reached render 50; one status per chat; a tick after the deletion; failed commands; stop; poll failure logging; leftovers page by page.
 - `test/unit/inference.test.ts` (new), a local HTTP server: loading; proxies, at most 4, without the key; tokens/s between polls, summed; tokens read; idle; fractional and negative counts; 64 slots; the model of one busy model; a sleeping server; 503; a plain llama-server with the key; allowed proxies; one poll per 3 s; one 1 s deadline per poll; failure texts, folded; a failing proxy; model ID filter; GET of the three paths only.
-- `test/unit/messages.test.ts`: `receive` with `typing` in approved direct chats, groups and business chats, and in each refused case; deletion when a receive of the chat waits, after the answer, before leave, after `/revoke`, after the control chat is lost; the status kept when the answer fails; `send` with `live`: the note, its log line, an aborted call, the refusals, a pending send with the same text; a call counted as running until it ends; leftovers read only in eligible chats.
+- `test/unit/messages.test.ts`: `receive` in approved direct chats, groups and business chats, and in each refused case; deletion when a receive of the chat waits, after the answer, before leave, after `/revoke`, after the control chat is lost; the status kept when the answer fails; `send` with `live`: the note, its log line, an aborted call, the refusals, a pending send with the same text; a call counted as running until it ends; leftovers read only in eligible chats.
 - `test/unit/commands.test.ts`: `waitForStopMessages` with status deletions; the key refused with exit code 2 before the data folder exists.
-- `test/unit/http.test.ts`: the `live` and `typing` schemas and descriptions; status `live`; each description, and `instructions` for a 15-character name, within 2048 characters.
+- `test/unit/http.test.ts`: the `live` schema, the `receive` input fields and the descriptions; status `live`; each description, and `instructions` for a 15-character name, within 2048 characters.
 - `test/unit/options.test.ts`: `--inference` forms, usage errors, help lines.
 - `test/e2e/scenarios.test.ts`: a direct chat: status, note, answer, deletion, one outcome post, stop with the deletion, the leftover deleted at the next start; a group: status, note, deletion after the answer.
 
 ## Docs
 
-- `README.md`: the stop line with status deletions; in the prompt, the chat where the agent takes prompts, a direct chat or a group, with `receive` (`wait 3600`, `typing true`) and answers with `send` (`wait 0`); a paragraph on the status message, "Delete for everyone", the active chat profile and `--inference`; a safety item on notes.
+- `README.md`: the stop line with status deletions; in the prompt, the chat where the agent takes prompts, a direct chat or a group, with `receive` (`wait 3600`) and answers with `send` (`wait 0`); a paragraph on the status message, "Delete for everyone", the active chat profile and `--inference`; a safety item on notes.
 - `REFERENCE.md`: section "Status while the agent works"; the tool rows of `send` and `receive`; the stop line; the command help; notes on stdout; the key in Security; v0.3.
 - `TESTING.md`: v0.3; the stop line; status steps without and with llama-swap.
 - `PLAN.md`: version; the status message and the inference endpoint; the `send` and `receive` tables; processing; tests; decisions of 2026-11-11.

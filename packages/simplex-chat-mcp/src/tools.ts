@@ -70,7 +70,6 @@ export interface ReceiveInput {
   chat: string
   wait?: number
   limit?: number
-  typing?: boolean
 }
 
 export interface LeaveInput {
@@ -290,7 +289,6 @@ const receiveSchema: Schema = {
     chat: {type: "string", description: "Chat reference from connect or list: @N or #N."},
     wait: {type: "number", minimum: 0, maximum: 86400, description: "Seconds to wait for a new message when none is unread. Default 0."},
     limit: {type: "integer", minimum: 1, maximum: 100, description: "Most messages returned. Default 50; the rest stay unread."},
-    typing: {type: "boolean", description: "true: when messages are returned, a live status message is shown in this chat while you work: whether you think, use a tool or wait for approval. It is deleted at your next message there without live, or when a receive of this chat waits. Applies in chats with people, groups and business chats that have approved: true in list. Default false."},
   },
   required: ["chat"],
   additionalProperties: false,
@@ -434,7 +432,7 @@ Send bot commands as text, for example /help. When a message has a file with sta
 
 const receiveDescription = `Returns the new messages of a chat: the unread ones, then those that arrive during the call. With wait, it waits up to wait seconds when no message is new.
 The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.
-With typing: true, in a chat with a person, a group or a business chat that has approved: true in list, a live status message is shown there while you work, from the returned messages until your next message there or a receive there that waits. Use it in the chat where you receive prompts: send each answer without live, and call receive again only after it. For steps that take minutes, send a short note with live: true; it is shown in the status message.`
+In a chat with a person, a group or a business chat that has approved: true in list, a live status message is shown there while you work, from the returned messages until your next message there or a receive there that waits. In the chat where you receive prompts, send each answer without live, and call receive again only after it. For steps that take minutes, send a short note with live: true; it is shown in the status message.`
 
 const downloadDescription = `Downloads the file of a received message to this computer and returns its full path.
 It is an action: in approval mode requests the owner approves it in the SimpleX app first, and the call waits for the decision; the owner can approve all files of a chat.
@@ -1288,7 +1286,7 @@ export class AgentTools {
   }
 
   private async receive(input: ReceiveInput, call: ToolCall): Promise<object | undefined> {
-    const {chat, wait = 0, limit = defaultLimit, typing = false} = input
+    const {chat, wait = 0, limit = defaultLimit} = input
     if (!isChatRef(chat) || chat === this.agent.controlChat()) throw unknownChat(chat)
     const arrived = new Collected()
     const stop = this.agent.watch.collect(chat, arrived)
@@ -1319,7 +1317,7 @@ export class AgentTools {
       if (call.signal.aborted) return undefined
       await markRead(this.agent.chat, chat, [...returned.map(({chatItem}) => chatItem.meta.itemId), ...skipped])
       if (call.signal.aborted) return undefined
-      if (typing && returned.length > 0) this.statuses.start(chat)
+      if (returned.length > 0 && this.showsStatus(chat, chatInfo)) this.statuses.start(chat)
       return {chat, messages: returned.map(({chatInfo, chatItem}): Message => toMessage(chatInfo, chatItem, {name: ""}, this.rejectedFiles, this.agent.data)), more: arrived.items.length - returned.length + arrived.overflow.size + unreadRest}
     } finally {
       stop()

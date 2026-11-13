@@ -23,7 +23,7 @@ The SimpleX core (libsimplex, release `core-7.1.3.0`) runs inside the same Node.
 
 A tool call is held open by the server until the owner decides and, for `connect` and `send`, until the replies arrive, and for `download`, until the file is received or `wait` passes. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
 
-With `typing: true` on `receive`, the server starts a status message in the chat when the call returns messages: one live message, edited while the agent works and deleted after the agent's next message there is sent. Status messages are shown in chats with people, groups and business chats that have a standing approval of messages, in mode `requests`. With `live: true` on `send`, the text is shown at once under the status line, and the result is status `live`, without an action; each such note is printed in the terminal. With `--inference URL`, the server polls llama-swap or llama-server at URL, and the model loading, the prompt tokens read and the tokens per second are shown in the status line.
+When `receive` returns messages, the server starts a status message in the chat: one live message, edited while the agent works and deleted after the agent's next message there is sent. Status messages are shown in chats with people, groups and business chats that have a standing approval of messages, in mode `requests`. With `live: true` on `send`, the text is shown at once under the status line, and the result is status `live`, without an action; each such note is printed in the terminal. With `--inference URL`, the server polls llama-swap or llama-server at URL, and the model loading, the prompt tokens read and the tokens per second are shown in the status line.
 
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
@@ -235,8 +235,8 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Server start | [`src/serve.ts`](../src/serve.ts#L66) | `startServer` | [66](../src/serve.ts#L66) |
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L91) | `startAgent` | [91](../src/serve.ts#L91) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L508) | `registerTools` | [508](../src/tools.ts#L508) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L604) | `AgentTools.downloadFile` | [604](../src/tools.ts#L604) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L506) | `registerTools` | [506](../src/tools.ts#L506) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L602) | `AgentTools.downloadFile` | [602](../src/tools.ts#L602) |
 | Status messages | [`src/status.ts`](../src/status.ts#L28) | `Statuses` | [28](../src/status.ts#L28) |
 | Inference endpoint | [`src/inference.ts`](../src/inference.ts#L31) | `inferencePoller` | [31](../src/inference.ts#L31) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L147) | `Actions` | [147](../src/actions.ts#L147) |

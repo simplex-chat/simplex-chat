@@ -82,9 +82,9 @@ Data flow of a tool call:
 1. Claude Code runs the `headersHelper` command of its entry ([`register.ts:50`](../src/register.ts#L50)) and sends the `Authorization` header it prints ([Reference](../REFERENCE.md#add-the-agent-to-claude-code)).
 2. The server checks Host, Origin, token, path and readiness, then passes the request to the SDK handler ([`http.ts:19-28`](../src/http.ts#L19-L28)).
 3. An `McpServer` is built from the factory for each request, and the arguments are validated against the input schema by the SDK ([`serve.ts:112-116`](../src/serve.ts#L112-L116), [`mcp-BumlNux0.cjs:1812-1817`](../node_modules/@modelcontextprotocol/server/dist/mcp-BumlNux0.cjs#L1812-L1817)).
-4. The handler result is returned by `AgentTools.call` as `structuredContent` and as JSON text ([`tools.ts:558-568`](../src/tools.ts#L558-L568)).
+4. The handler result is returned by `AgentTools.call` as `structuredContent` and as JSON text ([`tools.ts:556-566`](../src/tools.ts#L556-L566)).
 5. The server calls `ChatApi` methods of the core ([`messages.ts:271-287`](../src/messages.ts#L271-L287)); actions are created in `Actions` and shown to the owner by `Control` ([`actions.ts:180-215`](../src/actions.ts#L180-L215)).
-6. The core emits events. The handler of `serve.ts` passes them to the agent control chat and to `AgentTools.onEvent` ([`serve.ts:130-142`](../src/serve.ts#L130-L142)). `AgentTools.onEvent` then dispatches them to the tools and the item watch ([`tools.ts:682-709`](../src/tools.ts#L682-L709)).
+6. The core emits events. The handler of `serve.ts` passes them to the agent control chat and to `AgentTools.onEvent` ([`serve.ts:130-142`](../src/serve.ts#L130-L142)). `AgentTools.onEvent` then dispatches them to the tools and the item watch ([`tools.ts:680-707`](../src/tools.ts#L680-L707)).
 
 ---
 
@@ -151,46 +151,46 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `ConnectInput`, `SendInput`, `ReceiveInput`, `LeaveInput`, `DownloadInput` | [48-84](../src/tools.ts#L48-L84) | tool inputs |
-| `PlanSummary` | [95](../src/tools.ts#L95) | card kind, chat type, name, SimpleX name, peer type, description, welcome, commands, `takesMessage` |
-| `ChatFields` | [107](../src/tools.ts#L107) | chat fields of `connect` and `list` results |
-| `Agent` | [121](../src/tools.ts#L121) | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder, inference poller. The plugin adds the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection. |
-| `JoinMethod` | [138](../src/tools.ts#L138) | `prepared`, `prepareChannel`, `viaAddress`, `prepareContact`, `connect` |
-| schemas | [195-420](../src/tools.ts#L195-L420) | input and output JSON schemas |
-| descriptions, `instructions` | [422-462](../src/tools.ts#L422-L462) | tool descriptions and server instructions. `instructions` names the host at whose restart actions are cancelled, `server` by default. |
-| `replyTool` | [472](../src/tools.ts#L472) | the plugin's seventh tool, `reply` |
-| `definitions` | [495](../src/tools.ts#L495) | name, description, schemas and action flag of the six tools |
-| `registerTools` | [508](../src/tools.ts#L508) | `registerTool` for each definition and each extra one, with `_meta` on action tools in mode `host` |
-| `Download` | [520](../src/tools.ts#L520) | one download: its promise, chat, item, file ID, size, path, the last fileSource seen, received bytes and their time, check timer |
-| `AgentTools` | [537](../src/tools.ts#L537) | constructor with the `Agent`, the mode or a function that returns it, and the session number of the plugin. The mode is read at each use of `mode`. |
-| `AgentTools.leaving`, `AgentTools.statuses` | [543-548](../src/tools.ts#L543-L548) | the chats being left; the `Statuses`, with the eligibility read `showsStatus` after `knownChat` |
-| `AgentTools.register` | [554](../src/tools.ts#L554) | `registerTools` with `AgentTools.call` |
-| `AgentTools.call` | [558](../src/tools.ts#L558) | the call registered as running in `Statuses` until it ends; handler result to `CallToolResult`; errors to `isError` |
-| `AgentTools.perform` | [570](../src/tools.ts#L570) | perform step of an approved action, which is the mode setter for a `mode` action |
-| `giveChat`, `owns`, `claim` | [585-603](../src/tools.ts#L585-L603) | the plugin's chat owners. A chat is the session's when no session ID is set or the chat's owner is that ID. `claim` sets the owner of a chat without one. It is called at a connection, and when `connect` names a known chat ([`ownChat`](../src/tools.ts#L767-L772)). The hub calls it when a pending connection completes. |
-| `onEvent` | [682](../src/tools.ts#L682) | events to the file handlers, connect completions and the item watch, for `serve` and the plugin's sessions |
-| `reply`, `sendFile` | [730-747](../src/tools.ts#L730-L747) | `reply` sends a file to the group of the plugin's session at once, without an action, under the file rules of `send`. Its message with the caption and the preview is checked by `fitsMessage`. The core's refusal `feature not allowed NAME` is answered with the text with the preference's name. `sendFile` posts the file. |
-| `refusedFeature`, `featureOff` | [1671-1678](../src/tools.ts#L1671-L1678) | the preference NAME of a command error `feature not allowed NAME`, and the text `NAME are off in the group of this session; its owners can turn them on in the group's preferences.` The text is used for `reply`, the cards, `/forward` and the answers of a session group. |
-| `downloadFile`, `forwardFile`, `downloadTo` | [604-631](../src/tools.ts#L604-L631) | one download per file ID, shared by `download` and `/forward`; a forwarded file moved to the download path for `download` |
-| file events | [633-670](../src/tools.ts#L633-L670) | `onNewItems`, `onFile`, `onFileComplete`, `onFileError`, `onFileCancelled`, `onFileDescription` |
-| `onContactConnected`, `onUserJoinedGroup` | [672-680](../src/tools.ts#L672-L680) | completion of connect actions by events |
-| `actionResult` | [778](../src/tools.ts#L778) | wait for the decision, result fields, removal |
-| `showNote`, `statusRefusal`, `showsStatus` | [944-964](../src/tools.ts#L944-L964) | the note of a `send` with `live: true` and its log line; the first refusal of a status message in a chat; eligibility: `postingRefusal` and `statusRefusal` both without a refusal |
-| `attachment`, `isRefused`, `fileToSend`, `resizedCopy` | [1025-1061](../src/tools.ts#L1025-L1061) | the file of a `send` |
-| `copyForSending`, `chatFiles`, `deleteChatFiles` | [1063-1092](../src/tools.ts#L1063-L1092) | `/forward` copies; the files of a chat, forwarded ones included; its downloads cancelled, also those the core continues after a restart |
-| `leaveChat` | [1114](../src/tools.ts#L1114) | perform step of `leave` and `/leave`: the chat marked as being left, its status message deleted, then the chat; the chat's forwarded files deleted |
-| `download`, `fileServers`, `unknownServers` | [1130-1175](../src/tools.ts#L1130-L1175) | the `download` call before its action |
-| `startDownload`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived` | [1193-1260](../src/tools.ts#L1193-L1260) | a download's steps |
-| `deleteLeftoverStatuses` | [1283](../src/tools.ts#L1283) | at start, the leftover status messages of each eligible chat deleted |
-| `agentChats`, `knownChat` | [1339-1358](../src/tools.ts#L1339-L1358) | the agent's chats; a checked chat reference |
-| `classifyPlan` | [1441](../src/tools.ts#L1441) | `apiConnectPlan` response to a join plan or a known chat |
-| `chatSubject`, `isConnected`, `isActive`, `memberCurrent`, `memberCurrentOrPending` | [1537-1615](../src/tools.ts#L1537-L1615) | chat and member predicates shared with `control.ts` and `hub.ts` |
-| `postingRefusal` | [1587](../src/tools.ts#L1587) | a chat that is not connected, or a group where the agent's role is `observer` or `relay`; used by `send` and by `showsStatus` |
-| `customDataOf`, `setChatData`, `ownerOf` | [1570-1585](../src/tools.ts#L1570-L1585) | a chat's custom data; the plugin's owner key `simplexMcpOwner` |
-| `tooLongText`, `fitsMessage`, `quoteContent` | [1635-1655](../src/tools.ts#L1635-L1655) | the refusal text of `send` and `reply` for a message that is too long. `fitsMessage` checks that the message as the core sends it, with its quote, is within `maxMessageLength`, 15602 bytes ([168](../src/tools.ts#L168)). The check is used for `send`, `reply`, the post of `/forward`, and the parts and quotes of the plugin's posts. |
-| `realFile` | [1680](../src/tools.ts#L1680) | real path, size, inode and change time of a file |
-| `attachmentMedia`, `videoFrame`, `videoDuration` | [1727-1761](../src/tools.ts#L1727-L1761) | previews and durations |
-| `toolCall` | [1777](../src/tools.ts#L1777) | `ServerContext` to `ToolCall`: abort signal and progress notifications |
+| `ConnectInput`, `SendInput`, `ReceiveInput`, `LeaveInput`, `DownloadInput` | [48-83](../src/tools.ts#L48-L83) | tool inputs |
+| `PlanSummary` | [94](../src/tools.ts#L94) | card kind, chat type, name, SimpleX name, peer type, description, welcome, commands, `takesMessage` |
+| `ChatFields` | [106](../src/tools.ts#L106) | chat fields of `connect` and `list` results |
+| `Agent` | [120](../src/tools.ts#L120) | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder, inference poller. The plugin adds the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection. |
+| `JoinMethod` | [137](../src/tools.ts#L137) | `prepared`, `prepareChannel`, `viaAddress`, `prepareContact`, `connect` |
+| schemas | [194-418](../src/tools.ts#L194-L418) | input and output JSON schemas |
+| descriptions, `instructions` | [420-460](../src/tools.ts#L420-L460) | tool descriptions and server instructions. `instructions` names the host at whose restart actions are cancelled, `server` by default. |
+| `replyTool` | [470](../src/tools.ts#L470) | the plugin's seventh tool, `reply` |
+| `definitions` | [493](../src/tools.ts#L493) | name, description, schemas and action flag of the six tools |
+| `registerTools` | [506](../src/tools.ts#L506) | `registerTool` for each definition and each extra one, with `_meta` on action tools in mode `host` |
+| `Download` | [518](../src/tools.ts#L518) | one download: its promise, chat, item, file ID, size, path, the last fileSource seen, received bytes and their time, check timer |
+| `AgentTools` | [535](../src/tools.ts#L535) | constructor with the `Agent`, the mode or a function that returns it, and the session number of the plugin. The mode is read at each use of `mode`. |
+| `AgentTools.leaving`, `AgentTools.statuses` | [541-546](../src/tools.ts#L541-L546) | the chats being left; the `Statuses`, with the eligibility read `showsStatus` after `knownChat` |
+| `AgentTools.register` | [552](../src/tools.ts#L552) | `registerTools` with `AgentTools.call` |
+| `AgentTools.call` | [556](../src/tools.ts#L556) | the call registered as running in `Statuses` until it ends; handler result to `CallToolResult`; errors to `isError` |
+| `AgentTools.perform` | [568](../src/tools.ts#L568) | perform step of an approved action, which is the mode setter for a `mode` action |
+| `giveChat`, `owns`, `claim` | [583-601](../src/tools.ts#L583-L601) | the plugin's chat owners. A chat is the session's when no session ID is set or the chat's owner is that ID. `claim` sets the owner of a chat without one. It is called at a connection, and when `connect` names a known chat ([`ownChat`](../src/tools.ts#L765-L770)). The hub calls it when a pending connection completes. |
+| `onEvent` | [680](../src/tools.ts#L680) | events to the file handlers, connect completions and the item watch, for `serve` and the plugin's sessions |
+| `reply`, `sendFile` | [728-745](../src/tools.ts#L728-L745) | `reply` sends a file to the group of the plugin's session at once, without an action, under the file rules of `send`. Its message with the caption and the preview is checked by `fitsMessage`. The core's refusal `feature not allowed NAME` is answered with the text with the preference's name. `sendFile` posts the file. |
+| `refusedFeature`, `featureOff` | [1669-1676](../src/tools.ts#L1669-L1676) | the preference NAME of a command error `feature not allowed NAME`, and the text `NAME are off in the group of this session; its owners can turn them on in the group's preferences.` The text is used for `reply`, the cards, `/forward` and the answers of a session group. |
+| `downloadFile`, `forwardFile`, `downloadTo` | [602-629](../src/tools.ts#L602-L629) | one download per file ID, shared by `download` and `/forward`; a forwarded file moved to the download path for `download` |
+| file events | [631-668](../src/tools.ts#L631-L668) | `onNewItems`, `onFile`, `onFileComplete`, `onFileError`, `onFileCancelled`, `onFileDescription` |
+| `onContactConnected`, `onUserJoinedGroup` | [670-678](../src/tools.ts#L670-L678) | completion of connect actions by events |
+| `actionResult` | [776](../src/tools.ts#L776) | wait for the decision, result fields, removal |
+| `showNote`, `statusRefusal`, `showsStatus` | [942-962](../src/tools.ts#L942-L962) | the note of a `send` with `live: true` and its log line; the first refusal of a status message in a chat; eligibility: `postingRefusal` and `statusRefusal` both without a refusal |
+| `attachment`, `isRefused`, `fileToSend`, `resizedCopy` | [1023-1059](../src/tools.ts#L1023-L1059) | the file of a `send` |
+| `copyForSending`, `chatFiles`, `deleteChatFiles` | [1061-1090](../src/tools.ts#L1061-L1090) | `/forward` copies; the files of a chat, forwarded ones included; its downloads cancelled, also those the core continues after a restart |
+| `leaveChat` | [1112](../src/tools.ts#L1112) | perform step of `leave` and `/leave`: the chat marked as being left, its status message deleted, then the chat; the chat's forwarded files deleted |
+| `download`, `fileServers`, `unknownServers` | [1128-1173](../src/tools.ts#L1128-L1173) | the `download` call before its action |
+| `startDownload`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived` | [1191-1258](../src/tools.ts#L1191-L1258) | a download's steps |
+| `deleteLeftoverStatuses` | [1281](../src/tools.ts#L1281) | at start, the leftover status messages of each eligible chat deleted |
+| `agentChats`, `knownChat` | [1337-1356](../src/tools.ts#L1337-L1356) | the agent's chats; a checked chat reference |
+| `classifyPlan` | [1439](../src/tools.ts#L1439) | `apiConnectPlan` response to a join plan or a known chat |
+| `chatSubject`, `isConnected`, `isActive`, `memberCurrent`, `memberCurrentOrPending` | [1535-1613](../src/tools.ts#L1535-L1613) | chat and member predicates shared with `control.ts` and `hub.ts` |
+| `postingRefusal` | [1585](../src/tools.ts#L1585) | a chat that is not connected, or a group where the agent's role is `observer` or `relay`; used by `send` and by `showsStatus` |
+| `customDataOf`, `setChatData`, `ownerOf` | [1568-1583](../src/tools.ts#L1568-L1583) | a chat's custom data; the plugin's owner key `simplexMcpOwner` |
+| `tooLongText`, `fitsMessage`, `quoteContent` | [1633-1653](../src/tools.ts#L1633-L1653) | the refusal text of `send` and `reply` for a message that is too long. `fitsMessage` checks that the message as the core sends it, with its quote, is within `maxMessageLength`, 15602 bytes ([167](../src/tools.ts#L167)). The check is used for `send`, `reply`, the post of `/forward`, and the parts and quotes of the plugin's posts. |
+| `realFile` | [1678](../src/tools.ts#L1678) | real path, size, inode and change time of a file |
+| `attachmentMedia`, `videoFrame`, `videoDuration` | [1725-1759](../src/tools.ts#L1725-L1759) | previews and durations |
+| `toolCall` | [1775](../src/tools.ts#L1775) | `ServerContext` to `ToolCall`: abort signal and progress notifications |
 
 ### [2.5 `actions.ts`](../src/actions.ts)
 
@@ -242,7 +242,7 @@ Hooks are bound in [`serve.ts:100-106`](../src/serve.ts#L100-L106): `refusal`, `
 | `Control.onEvent` | [228](../src/control.ts#L228) | membership changes and loss of the control chat |
 | `Control.ownerCommand` | [246](../src/control.ts#L246) | command dispatch and replies. A text outside the requests is answered with the command list, or with `Unknown command.` in a group of the plugin's session. |
 | `approveChat`, `revoke`, `forward`, `leave`, `deleteFiles` | [293-360](../src/control.ts#L293-L360) | owner requests |
-| `give`, `setObserver` | [362-387](../src/control.ts#L362-L387) | `/give CHAT N` and `/observer #G ID` in a group of the plugin's session. `setObserver` replies `NAME's role can't be changed.` for a member with status `pending_approval` or `pending_review` ([381-382](../src/control.ts#L381-L382)). For a member who is neither current nor pending, such as an invited member who has not joined, the reply is `No member ID in this group.` ([379](../src/control.ts#L379), [`memberCurrentOrPending`](../src/tools.ts#L1613-L1615)). Only a current member's role is set to `observer`, when the sender's role is admin or owner and not below the member's role. The members are then read again, and the observer's rights are the reply. |
+| `give`, `setObserver` | [362-387](../src/control.ts#L362-L387) | `/give CHAT N` and `/observer #G ID` in a group of the plugin's session. `setObserver` replies `NAME's role can't be changed.` for a member with status `pending_approval` or `pending_review` ([381-382](../src/control.ts#L381-L382)). For a member who is neither current nor pending, such as an invited member who has not joined, the reply is `No member ID in this group.` ([379](../src/control.ts#L379), [`memberCurrentOrPending`](../src/tools.ts#L1611-L1613)). Only a current member's role is set to `observer`, when the sender's role is admin or owner and not below the member's role. The members are then read again, and the observer's rights are the reply. |
 | `isApprover` | [593-598](../src/control.ts#L593-L598) | the session's check in a group of the plugin's session; otherwise role `owner`, and the `--owners` list when given |
 | `roleOrder`, `roleRank`, `canSend` | [44](../src/control.ts#L44), [880-886](../src/control.ts#L880-L886) | the roles of SimpleX from `relay` to `owner`, in the order of the core; a role above `observer` |
 | `sessionApproverRoles`, `rightsText` | [40-43](../src/control.ts#L40-L43), [888-891](../src/control.ts#L888-L891) | `admin` and `owner`, the approvers of a session group. `rightsText` is `NAME is a ROLE and RIGHTS.`, with the rights of the approvers, of the other roles that send, or of an observer. |
@@ -321,7 +321,7 @@ Hooks are bound in [`serve.ts:100-106`](../src/serve.ts#L100-L106): `refusal`, `
 
 ### [2.11 `status.ts`](../src/status.ts)
 
-Status messages: one per chat, owned by `AgentTools` ([tools.ts:544-548](../src/tools.ts#L544-L548)). Texts, labels and events are listed in [API 1.10](api.md#110-status-message).
+Status messages: one per chat, owned by `AgentTools` ([tools.ts:542-546](../src/tools.ts#L542-L546)). Texts, labels and events are listed in [API 1.10](api.md#110-status-message).
 
 | Symbol | Line | Contents |
 |---|---|---|
@@ -433,16 +433,16 @@ rateOf(decoding, previous):                                    :101
 |---|---|---|---|
 | Actions | `Actions.actions` map ([actions.ts:151](../src/actions.ts#L151)) | `create`, `remove`, `forgetExpired` | tools, `Control` |
 | Expiry timers | `Actions.expiries`, one per action ([actions.ts:152](../src/actions.ts#L152)) | `scheduleExpiry`, `expire`, `remove` | |
-| Open calls of an action | `ActionRecord.open` ([:51](../src/actions.ts#L51)) | `openCall` and `closeCall` from `actionResult` ([tools.ts:779](../src/tools.ts#L779), [:788](../src/tools.ts#L788)) | `list`, `forgetExpired` |
+| Open calls of an action | `ActionRecord.open` ([:51](../src/actions.ts#L51)) | `openCall` and `closeCall` from `actionResult` ([tools.ts:777](../src/tools.ts#L777), [:786](../src/tools.ts#L786)) | `list`, `forgetExpired` |
 | Collected replies | `ConnectAction.messages`, `SendAction.responses` ([:64](../src/actions.ts#L64), [:95](../src/actions.ts#L95)) | `ChatItemsWatch.collect` | `connect`, `send` results |
 | Item listeners | `ChatItemsWatch.listeners` ([messages.ts:87](../src/messages.ts#L87)) | `collect` | event dispatch |
-| Downloads | `AgentTools.downloads`, one per file ID ([tools.ts:538](../src/tools.ts#L538)) | `downloadTo` | file events, checks, `/delete CHAT files` |
-| Forwards | `AgentTools.forwarding`, the copy for the post per file ID ([tools.ts:539](../src/tools.ts#L539)) | `forwardFile` | `downloadFile`, before it moves a forwarded file |
-| Rejected files | `AgentTools.rejectedFiles` ([tools.ts:540](../src/tools.ts#L540)) | `downloadResult` ([:1182-1183](../src/tools.ts#L1182-L1183)) | the file field; `download`, which then skips the files approval ([:1145](../src/tools.ts#L1145)) |
-| Count of file descriptions | `AgentTools.describedFiles` ([tools.ts:541-542](../src/tools.ts#L541-L542)) | `onFileDescription` | `fileServers` |
-| Chats being left | `AgentTools.leaving` ([tools.ts:543](../src/tools.ts#L543)) | `leaveChat` ([:1115](../src/tools.ts#L1115), [:1125](../src/tools.ts#L1125)) | `statusRefusal` ([:954](../src/tools.ts#L954)) |
+| Downloads | `AgentTools.downloads`, one per file ID ([tools.ts:536](../src/tools.ts#L536)) | `downloadTo` | file events, checks, `/delete CHAT files` |
+| Forwards | `AgentTools.forwarding`, the copy for the post per file ID ([tools.ts:537](../src/tools.ts#L537)) | `forwardFile` | `downloadFile`, before it moves a forwarded file |
+| Rejected files | `AgentTools.rejectedFiles` ([tools.ts:538](../src/tools.ts#L538)) | `downloadResult` ([:1180-1181](../src/tools.ts#L1180-L1181)) | the file field; `download`, which then skips the files approval ([:1143](../src/tools.ts#L1143)) |
+| Count of file descriptions | `AgentTools.describedFiles` ([tools.ts:539-540](../src/tools.ts#L539-L540)) | `onFileDescription` | `fileServers` |
+| Chats being left | `AgentTools.leaving` ([tools.ts:541](../src/tools.ts#L541)) | `leaveChat` ([:1113](../src/tools.ts#L1113), [:1123](../src/tools.ts#L1123)) | `statusRefusal` ([:952](../src/tools.ts#L952)) |
 | Status messages | `Statuses.statuses`, one per chat ([status.ts:29](../src/status.ts#L29)) | `start`, `show`, `end` | ticks, `show`, `stop` |
-| Running calls | `Statuses.calls` and `Statuses.lastCall` ([status.ts:30-31](../src/status.ts#L30-L31)) | `startCall`, from `AgentTools.call` ([tools.ts:559](../src/tools.ts#L559), [:566](../src/tools.ts#L566)) | labels, the idle check of ticks |
+| Running calls | `Statuses.calls` and `Statuses.lastCall` ([status.ts:30-31](../src/status.ts#L30-L31)) | `startCall`, from `AgentTools.call` ([tools.ts:557](../src/tools.ts#L557), [:564](../src/tools.ts#L564)) | labels, the idle check of ticks |
 | Deletions in progress | `Statuses.endings` ([status.ts:32](../src/status.ts#L32)) | `end` | `stop` |
 | Failed-poll flag | `Statuses.inferenceFailed` ([status.ts:33](../src/status.ts#L33)) | `inferred` | `inferred` |
 | Last poll and previous slots | `latest` and `previous` of the poller ([inference.ts:32-33](../src/inference.ts#L32-L33)) | each poll | calls within 3 s; the rate of the next poll |
@@ -469,9 +469,9 @@ The profile, chats, items, members and file transfers are stored by the core in 
 | `DATA/server.json` | `{name, port, expireHours}` | 0600, set again at every write except on Windows | every start, after the HTTP listener is bound ([serve.ts:119](../src/serve.ts#L119)) | `register` |
 | `DATA/lock` | PID and a newline | 0600 | start ([files.ts:182-221](../src/files.ts#L182-L221)) | next start |
 | `DATA/tmp/` | the core's temp folder: files in transfer | 0700, set at every start | [core.ts:40](../src/core.ts#L40), [:77-81](../src/core.ts#L77-L81) | the core |
-| `DATA/files/group-N/`, `DATA/files/contact-N/` | downloaded files and files received without a download, named by file ID and extension | folder 0700 | the core at the download path ([tools.ts:1198-1199](../src/tools.ts#L1198-L1199)); moves ([:1715-1725](../src/tools.ts#L1715-L1725)) | `download` results, `/forward`, `/leave`, `/delete CHAT files` |
-| `DATA/forwarded/group-N/`, `DATA/forwarded/contact-N/` | files `/forward` downloaded, named as above, until a download moves them to `DATA/files/` | folder 0700 | the core at the forwarded path ([tools.ts:614-621](../src/tools.ts#L614-L621), [:1198-1199](../src/tools.ts#L1198-L1199)) | `/forward`; moved by `download` ([:604-612](../src/tools.ts#L604-L612)); deleted by `leave`, `/leave` and `/delete CHAT files` ([:1074-1092](../src/tools.ts#L1074-L1092), [:1114-1128](../src/tools.ts#L1114-L1128)) |
-| `DATA/files/sent/` | resized copies of sent images, and copies of the files `/forward` posts, one folder per copy | folder 0700; a resized copy 0600 | [tools.ts:1050-1067](../src/tools.ts#L1050-L1067), [:1094-1098](../src/tools.ts#L1094-L1098) | the core; deleted at `sndFileCompleteXFTP`, `sndFileError` and at start ([core.ts:41](../src/core.ts#L41), [tools.ts:705-707](../src/tools.ts#L705-L707), [:1013](../src/tools.ts#L1013)) |
+| `DATA/files/group-N/`, `DATA/files/contact-N/` | downloaded files and files received without a download, named by file ID and extension | folder 0700 | the core at the download path ([tools.ts:1196-1197](../src/tools.ts#L1196-L1197)); moves ([:1713-1723](../src/tools.ts#L1713-L1723)) | `download` results, `/forward`, `/leave`, `/delete CHAT files` |
+| `DATA/forwarded/group-N/`, `DATA/forwarded/contact-N/` | files `/forward` downloaded, named as above, until a download moves them to `DATA/files/` | folder 0700 | the core at the forwarded path ([tools.ts:612-619](../src/tools.ts#L612-L619), [:1196-1197](../src/tools.ts#L1196-L1197)) | `/forward`; moved by `download` ([:602-610](../src/tools.ts#L602-L610)); deleted by `leave`, `/leave` and `/delete CHAT files` ([:1072-1090](../src/tools.ts#L1072-L1090), [:1112-1126](../src/tools.ts#L1112-L1126)) |
+| `DATA/files/sent/` | resized copies of sent images, and copies of the files `/forward` posts, one folder per copy | folder 0700; a resized copy 0600 | [tools.ts:1048-1065](../src/tools.ts#L1048-L1065), [:1092-1096](../src/tools.ts#L1092-L1096) | the core; deleted at `sndFileCompleteXFTP`, `sndFileError` and at start ([core.ts:41](../src/core.ts#L41), [tools.ts:703-705](../src/tools.ts#L703-L705), [:1011](../src/tools.ts#L1011)) |
 
 The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the Node.js add-on into `CACHE/nodejs-addon-cce06d8/`, each with a `Downloading ...` line on stderr. CACHE is `$XDG_CACHE_HOME/simplex-chat` or `~/.cache/simplex-chat`; on macOS `~/Library/Caches/simplex-chat`; on Windows `%LOCALAPPDATA%\simplex-chat` ([libs.ts:41-48](../../simplex-chat-nodejs/src/libs.ts#L41-L48), [:89](../../simplex-chat-nodejs/src/libs.ts#L89), [:109](../../simplex-chat-nodejs/src/libs.ts#L109), [:116](../../simplex-chat-nodejs/src/libs.ts#L116), [:129](../../simplex-chat-nodejs/src/libs.ts#L129)).
 
@@ -490,9 +490,9 @@ The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the No
 7. Events are buffered, and the chat is started ([serve.ts:95-96](../src/serve.ts#L95-L96)).
 8. A `--display-name` different from the profile, or a peer type other than `agent`, is applied with one `apiUpdateProfile` ([serve.ts:97](../src/serve.ts#L97), [core.ts:54-59](../src/core.ts#L54-L59)).
 9. The agent control chat is found by its marker, created with counter 1, or reset with `--reset-owners` ([:99](../src/serve.ts#L99), [:191-196](../src/serve.ts#L191-L196)).
-10. `Actions`, `ChatItemsWatch`, `AgentTools` with the poller and its `Statuses`, and `Control` are created; the counter is taken from the marker ([:100-109](../src/serve.ts#L100-L109), [tools.ts:546-548](../src/tools.ts#L546-L548)).
+10. `Actions`, `ChatItemsWatch`, `AgentTools` with the poller and its `Statuses`, and `Control` are created; the counter is taken from the marker ([:100-109](../src/serve.ts#L100-L109), [tools.ts:544-546](../src/tools.ts#L544-L546)).
 11. `Control.load` sets `Actions.lost` for a lost control chat. Otherwise it updates the group name and command menu when they differ in the control chat's profile read at the start, as in 0.2, and reads the members ([control.ts:115-122](../src/control.ts#L115-L122), [:133-140](../src/control.ts#L133-L140), [:637-640](../src/control.ts#L637-L640)).
-12. Status messages left by an earlier run are deleted in each eligible chat; after the control chat is lost, every chat is ineligible. A failed chat list is logged as `status messages: ERROR`, and the start continues ([serve.ts:111](../src/serve.ts#L111), [tools.ts:1283-1288](../src/tools.ts#L1283-L1288), [:957](../src/tools.ts#L957), [status.ts:84-99](../src/status.ts#L84-L99)).
+12. Status messages left by an earlier run are deleted in each eligible chat; after the control chat is lost, every chat is ineligible. A failed chat list is logged as `status messages: ERROR`, and the start continues ([serve.ts:111](../src/serve.ts#L111), [tools.ts:1281-1286](../src/tools.ts#L1281-L1286), [:955](../src/tools.ts#L955), [status.ts:84-99](../src/status.ts#L84-L99)).
 13. The HTTP server listens; with the port in use, the process exits with code 1 ([serve.ts:118](../src/serve.ts#L118), [:198-205](../src/serve.ts#L198-L205)). Until step 15 ends, requests to `/mcp` that pass the token check get 503 with `Retry-After: 1` ([http.ts:23](../src/http.ts#L23), [serve.ts:117-118](../src/serve.ts#L117-L118), [:126](../src/serve.ts#L126)).
 14. `server.json` is written ([serve.ts:119](../src/serve.ts#L119)).
 15. The server runs the owner setup, `Control.start`; after an error, HTTP is closed and the error is rethrown ([serve.ts:120-125](../src/serve.ts#L120-L125)).
@@ -503,22 +503,22 @@ After an error inside `startAgent` (steps 4-17) the chat is closed; after any er
 
 ### 4.2 Event dispatch
 
-Each `onAny` receiver is awaited by the library before the next event is read ([api.ts:195-202](../../simplex-chat-nodejs/src/api.ts#L195-L202)). The dispatcher in [`serve.ts:130-142`](../src/serve.ts#L130-L142) passes items of the control group to `Control` first. Every event then goes to [`AgentTools.onEvent`](../src/tools.ts#L682-L709), which runs the `AgentTools` and `ChatItemsWatch` handlers below. Finally, `Control` receives file errors and membership events:
+Each `onAny` receiver is awaited by the library before the next event is read ([api.ts:195-202](../../simplex-chat-nodejs/src/api.ts#L195-L202)). The dispatcher in [`serve.ts:130-142`](../src/serve.ts#L130-L142) passes items of the control group to `Control` first. Every event then goes to [`AgentTools.onEvent`](../src/tools.ts#L680-L707), which runs the `AgentTools` and `ChatItemsWatch` handlers below. Finally, `Control` receives file errors and membership events:
 
 | Event | Condition | Handler |
 |---|---|---|
 | `newChatItems` | item of the control group, main scope | [`Control.onMessage`](../src/control.ts#L216) |
-| `newChatItems` | every item | [`AgentTools.onNewItems`](../src/tools.ts#L633), then [`ChatItemsWatch.deliver`](../src/messages.ts#L116) |
-| `chatItemUpdated` | | [`AgentTools.onFile`](../src/tools.ts#L626), then [`ChatItemsWatch.update`](../src/messages.ts#L120) |
+| `newChatItems` | every item | [`AgentTools.onNewItems`](../src/tools.ts#L631), then [`ChatItemsWatch.deliver`](../src/messages.ts#L116) |
+| `chatItemUpdated` | | [`AgentTools.onFile`](../src/tools.ts#L641), then [`ChatItemsWatch.update`](../src/messages.ts#L120) |
 | `chatItemsDeleted` | | [`ChatItemsWatch.remove`](../src/messages.ts#L124) of each `deletedChatItem` |
-| `contactConnected` | | [`AgentTools.onContactConnected`](../src/tools.ts#L655) |
-| `userJoinedGroup` | | [`AgentTools.onUserJoinedGroup`](../src/tools.ts#L660) |
-| `rcvFileComplete` | | [`AgentTools.onFileComplete`](../src/tools.ts#L631) |
-| `rcvFileSndCancelled` | | [`AgentTools.onFileCancelled`](../src/tools.ts#L643) |
-| `rcvFileError` | | [`AgentTools.onFileError`](../src/tools.ts#L638) |
-| `rcvFileDescrReady` | | [`AgentTools.onFileDescription`](../src/tools.ts#L650) |
-| `sndFileCompleteXFTP` | | [`AgentTools.onSentFile`](../src/tools.ts#L973) |
-| `sndFileError` | | [`AgentTools.onSentFile`](../src/tools.ts#L973), then [`Control.fileNotSent`](../src/control.ts#L205) |
+| `contactConnected` | | [`AgentTools.onContactConnected`](../src/tools.ts#L670) |
+| `userJoinedGroup` | | [`AgentTools.onUserJoinedGroup`](../src/tools.ts#L675) |
+| `rcvFileComplete` | | [`AgentTools.onFileComplete`](../src/tools.ts#L646) |
+| `rcvFileSndCancelled` | | [`AgentTools.onFileCancelled`](../src/tools.ts#L658) |
+| `rcvFileError` | | [`AgentTools.onFileError`](../src/tools.ts#L653) |
+| `rcvFileDescrReady` | | [`AgentTools.onFileDescription`](../src/tools.ts#L665) |
+| `sndFileCompleteXFTP` | | [`AgentTools.onSentFile`](../src/tools.ts#L1011) |
+| `sndFileError` | | [`AgentTools.onSentFile`](../src/tools.ts#L1011), then [`Control.fileNotSent`](../src/control.ts#L205) |
 | `joinedGroupMember`<br>`joinedGroupMemberConnecting`<br>`connectedToGroupMember`<br>`memberRole`<br>`leftMember`<br>`deletedMember`<br>`deletedMemberUser`<br>`groupDeleted` | event of the control group | [`Control.onEvent`](../src/control.ts#L228), queued one at a time |
 | any event | after `stop()` started | ignored |
 
@@ -526,16 +526,16 @@ Owner commands are queued in a second chain, independent of the membership chain
 
 ### 4.3 Stop
 
-On `SIGINT` or `SIGTERM` the server runs one stop; a later signal ends its wait for cancelled cards and status deletions ([serve.ts:49-65](../src/serve.ts#L49-L65)). `RunningServer.stop` ([serve.ts:176-187](../src/serve.ts#L176-L187)):
+On `SIGINT` or `SIGTERM` the server runs one stop; a later signal ends its wait for cancelled cards and status deletions ([serve.ts:48-64](../src/serve.ts#L48-L64)). `RunningServer.stop` ([serve.ts:148-159](../src/serve.ts#L148-L159)):
 
 1. Events are ignored from now on.
 2. `Actions.stop` starts: new actions are refused with `The server is stopping.`; the expiry timers are cleared; cards being posted are awaited; pending and performing actions are marked interrupted; the stop signal of the performs is aborted, which ends the wait of a `connect` for its connection; their cards are edited, or posted when they have no card; outcome edits already in progress are awaited ([actions.ts:284-316](../src/actions.ts#L284-L316)).
 3. In parallel with step 2, the HTTP server is closed with all connections, and open calls are aborted ([http.ts:48-52](../src/http.ts#L48-L52)).
-4. `Cancelled K action(s).` when K > 0 ([serve.ts:181](../src/serve.ts#L181)).
-5. `Statuses.stop`: later starts are ignored and notes refused; each status message is ended, and the deletion commands are awaited; the status messages with a render are counted ([serve.ts:182](../src/serve.ts#L182), [status.ts:76-82](../src/status.ts#L76-L82)).
-6. When cards were edited or posted at the stop and the control chat is not lost, or status messages had a render, the server waits `--stop-wait` seconds, 10 by default, for them to be sent; a second signal ends the wait ([serve.ts:183](../src/serve.ts#L183), [:195-211](../src/serve.ts#L195-L211)).
+4. `Cancelled K action(s).` when K > 0 ([serve.ts:153](../src/serve.ts#L153)).
+5. `Statuses.stop`: later starts are ignored and notes refused; each status message is ended, and the deletion commands are awaited; the status messages with a render are counted ([serve.ts:154](../src/serve.ts#L154), [status.ts:76-82](../src/status.ts#L76-L82)).
+6. When cards were edited or posted at the stop and the control chat is not lost, or status messages had a render, the server waits `--stop-wait` seconds, 10 by default, for them to be sent; a second signal ends the wait ([serve.ts:155](../src/serve.ts#L155), [:167-183](../src/serve.ts#L167-L183)).
 7. `chat.close()`: the chat is stopped, then the store is closed ([api.ts:165-170](../../simplex-chat-nodejs/src/api.ts#L165-L170)).
-8. The lock is removed, `Stopped.` is logged, and the process exits with code 0, or 1 after an error ([serve.ts:185-186](../src/serve.ts#L185-L186), [:55-61](../src/serve.ts#L55-L61)).
+8. The lock is removed, `Stopped.` is logged, and the process exits with code 0, or 1 after an error ([serve.ts:157-158](../src/serve.ts#L157-L158), [:54-60](../src/serve.ts#L54-L60)).
 
 Performs in progress are not awaited; when one ends, its card stays as edited at the stop and no line is logged, because the action is interrupted ([actions.ts:346](../src/actions.ts#L346)).
 
@@ -561,7 +561,7 @@ releaseLock(DATA): remove DATA/lock                  :99-105
 
 ### 5.1 Modes
 
-The mode is set by `--approve` for one run ([cli.ts:96-98](../src/cli.ts#L96-L98)).
+The mode is set by `--approve` for one run ([cli.ts:100-102](../src/cli.ts#L100-L102)).
 
 | Mode | State of a new action | Card | `_meta` of `connect`, `send`, `download`, `leave` |
 |---|---|---|---|
@@ -570,13 +570,13 @@ The mode is set by `--approve` for one run ([cli.ts:96-98](../src/cli.ts#L96-L98
 
 The mode in which an action is created is kept in `ActionRecord.mode`. The action's card and log line are written for that mode ([actions.ts:180](../src/actions.ts#L180), [:193](../src/actions.ts#L193), [control.ts:151](../src/control.ts#L151)).
 
-Sources: [actions.ts:193](../src/actions.ts#L193), [tools.ts:504](../src/tools.ts#L504), [control.ts:190-197](../src/control.ts#L190-L197), [:601-603](../src/control.ts#L601-L603). In both modes a new action is refused unless the control chat has an approver ([control.ts:156-160](../src/control.ts#L156-L160)).
+Sources: [actions.ts:193](../src/actions.ts#L193), [tools.ts:512](../src/tools.ts#L512), [control.ts:190-197](../src/control.ts#L190-L197), [:601-603](../src/control.ts#L601-L603). In both modes a new action is refused unless the control chat has an approver ([control.ts:156-160](../src/control.ts#L156-L160)).
 
 ### 5.2 Owners and approvers
 
 | Term | Rule | Code |
 |---|---|---|
-| human | member other than the agent's membership, status `connected` or `complete` | [control.ts:589-591](../src/control.ts#L589-L591), [tools.ts:1532-1534](../src/tools.ts#L1532-L1534) |
+| human | member other than the agent's membership, status `connected` or `complete` | [control.ts:589-591](../src/control.ts#L589-L591), [tools.ts:1594-1596](../src/tools.ts#L1594-L1596) |
 | human owner | human with role `owner` | [control.ts:576-578](../src/control.ts#L576-L578) |
 | approver, `--owners` absent | member with role `owner` | [control.ts:593-598](../src/control.ts#L593-L598) |
 | approver, `--owners` without a list | none | [control.ts:597](../src/control.ts#L597) |
@@ -659,7 +659,7 @@ stateDiagram-v2
   performing --> pending: stop during the counter write
 ```
 
-An action is removed from memory when its result is returned to a call ([tools.ts:768](../src/tools.ts#L768)). An action that is decided, without open calls and past its expiry time, is removed as well. This is checked at each decision, at the close of each call and at the action's expiry timer ([actions.ts:314-316](../src/actions.ts#L314-L316), [:232-235](../src/actions.ts#L232-L235), [:351-355](../src/actions.ts#L351-L355)). `serve` has one session, `undefined`, so all its actions are counted against the limits of 20. A pending action of `serve` that expires is kept longer, see [5.6](#56-expiry). A repeated call before its removal is therefore answered with `expired`, as in 0.2 ([actions.ts:307-309](../src/actions.ts#L307-L309), [:243-247](../src/actions.ts#L243-L247), [control.ts:247](../src/control.ts#L247)). A `download` still performing at the end of `wait` is returned as `performing` and kept ([tools.ts:765](../src/tools.ts#L765)).
+An action is removed from memory when its result is returned to a call ([tools.ts:783](../src/tools.ts#L783)). An action that is decided, without open calls and past its expiry time, is removed as well. This is checked at each decision, at the close of each call and at the action's expiry timer ([actions.ts:314-316](../src/actions.ts#L314-L316), [:232-235](../src/actions.ts#L232-L235), [:351-355](../src/actions.ts#L351-L355)). `serve` has one session, `undefined`, so all its actions are counted against the limits of 20. A pending action of `serve` that expires is kept longer, see [5.6](#56-expiry). A repeated call before its removal is therefore answered with `expired`, as in 0.2 ([actions.ts:307-309](../src/actions.ts#L307-L309), [:243-247](../src/actions.ts#L243-L247), [control.ts:247](../src/control.ts#L247)). A `download` still performing at the end of `wait` is returned as `performing` and kept ([tools.ts:780](../src/tools.ts#L780)).
 
 ### 5.4 Cards
 
@@ -675,9 +675,9 @@ Outcomes are posted after `done` and `failed` ([actions.ts:348](../src/actions.t
 | mode `host` | nothing stored; reply `Approvals apply in mode requests; this server runs in mode host.` | downloads get no card, so the command has none to act on | [control.ts:259](../src/control.ts#L259) |
 | removal | `/revoke CHAT`: the `simplexMcp` key is removed, other keys kept | `/receive CHAT off`: the `simplexMcpFiles` key is removed | [control.ts:306-313](../src/control.ts#L306-L313) |
 | use | mode `requests`, and `approvedById` equal to the `groupMemberId` of a current approver | the same | [control.ts:167-170](../src/control.ts#L167-L170) |
-| scope | `send`; status messages and notes in the chat ([API 1.10](api.md#110-status-message)), so after `/revoke` the chat's status message is deleted at its next tick | `download` of a file whose servers are all known | [tools.ts:813](../src/tools.ts#L813), [:833](../src/tools.ts#L833), [:1021](../src/tools.ts#L1021), [status.ts:123](../src/status.ts#L123) |
+| scope | `send`; status messages and notes in the chat ([API 1.10](api.md#110-status-message)), so after `/revoke` the chat's status message is deleted at its next tick | `download` of a file whose servers are all known | [tools.ts:937](../src/tools.ts#L937), [:956](../src/tools.ts#L956), [:1143](../src/tools.ts#L1143), [status.ts:123](../src/status.ts#L123) |
 | decider shown | `safeName(approvedBy)` | the same | [control.ts:169](../src/control.ts#L169) |
-| storage | the chat's custom data; removed with the chat by `leave` | the same | [tools.ts:1074-1082](../src/tools.ts#L1074-L1082) |
+| storage | the chat's custom data; removed with the chat by `leave` | the same | [tools.ts:1112-1126](../src/tools.ts#L1112-L1126) |
 
 Files of `reply` in a session group are sent without approval, and no standing approval applies to them. They are allowed or refused by the group's preference for files and media ([8.5](#85-approval-model)).
 
@@ -685,11 +685,11 @@ Files of `reply` in a session group are sent without approval, and no standing a
 
 | Rule | Code |
 |---|---|
-| `expires = created + expireHours × 3600000`, `expireHours` 1 to 23, default 23 | [actions.ts:190](../src/actions.ts#L190), [cli.ts:79](../src/cli.ts#L79), [:102-104](../src/cli.ts#L102-L104) |
+| `expires = created + expireHours × 3600000`, `expireHours` 1 to 23, default 23 | [actions.ts:190](../src/actions.ts#L190), [cli.ts:83](../src/cli.ts#L83), [:106-108](../src/cli.ts#L106-L108) |
 | one unreferenced timer per action, set at its creation for `expires - now`, at most 60 s, and set again until the expiry time. Before each owner command, all actions past `expires` are expired. | [actions.ts:11](../src/actions.ts#L11), [:297-300](../src/actions.ts#L297-L300), [control.ts:247](../src/control.ts#L247) |
 | pending and due: `expired`, log `Action N expired.`, card edited to `Expired.` | [actions.ts:302-312](../src/actions.ts#L302-L312) |
 | decided, no open call, due: removed from memory. A pending action of `serve` that expires stays until the next owner command or its check 60 s later, as in 0.2. | [actions.ts:314-316](../src/actions.ts#L314-L316), [:307-309](../src/actions.ts#L307-L309), [:243-247](../src/actions.ts#L243-L247) |
-| connect wait for the other side: at most until `created + 24 h - 10 min` | [tools.ts:153](../src/tools.ts#L153), [:814](../src/tools.ts#L814) |
+| connect wait for the other side: at most until `created + 24 h - 10 min` | [tools.ts:157](../src/tools.ts#L157), [:829](../src/tools.ts#L829) |
 
 A timer runs on the monotonic clock, while `expires` is a time on the wall clock. A timer that fires before `expires` is set again. So an action whose expiry time passes while the computer sleeps expires within 60 s after the computer wakes ([actions.ts:305](../src/actions.ts#L305)).
 
@@ -697,11 +697,11 @@ A timer runs on the monotonic clock, while `expires` is a time on the wall clock
 
 | Rule | Code |
 |---|---|
-| initial value: `nextAction` of the control marker, or 1 | [serve.ts:96](../src/serve.ts#L96) |
+| initial value: `nextAction` of the control marker, or 1 | [serve.ts:100](../src/serve.ts#L100) |
 | a new action takes `next`, then `next` grows by 1 | [actions.ts:181](../src/actions.ts#L181), [:206](../src/actions.ts#L206) |
 | the new `next` is written before the card is posted | [actions.ts:320-321](../src/actions.ts#L320-L321) |
 | one write at a time, also after a failed write | [control.ts:172-184](../src/control.ts#L172-L184) |
-| `--reset-owners` copies the value into the new control chat | [serve.ts:180-181](../src/serve.ts#L180-L181), [control.ts:642-645](../src/control.ts#L642-L645) |
+| `--reset-owners` copies the value into the new control chat | [serve.ts:194-195](../src/serve.ts#L194-L195), [control.ts:642-645](../src/control.ts#L642-L645) |
 | a refused call leaves the counter unchanged | [actions.ts:205](../src/actions.ts#L205) |
 
 ---
@@ -747,7 +747,7 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 | errors on cards | folded to one line, one code span | [control.ts:692](../src/control.ts#L692) |
 | `--owners` part of restart lines in the chat | one code span | [control.ts:91](../src/control.ts#L91), [:917-919](../src/control.ts#L917-L919) |
 | terminal names and errors of actions | folded to one line | [actions.ts:209-210](../src/actions.ts#L209-L210), [:402-412](../src/actions.ts#L402-L412), [control.ts:90](../src/control.ts#L90) |
-| tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, file names, downloaded files, `description`, `welcome` and `commands` with their labels and params as data, not instructions; the instructions take a chat's messages as prompts only when the user said so in the session, and limit what the agent shares about its user | [tools.ts:195](../src/tools.ts#L195), [:199](../src/tools.ts#L199), [:204](../src/tools.ts#L204), [:229-230](../src/tools.ts#L229-L230), [:240-245](../src/tools.ts#L240-L245), [:408](../src/tools.ts#L408), [:450](../src/tools.ts#L450) |
+| tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, file names, downloaded files, `description`, `welcome` and `commands` with their labels and params as data, not instructions; the instructions take a chat's messages as prompts only when the user said so in the session, and limit what the agent shares about its user | [tools.ts:200](../src/tools.ts#L200), [:204](../src/tools.ts#L204), [:209](../src/tools.ts#L209), [:234-235](../src/tools.ts#L234-L235), [:245-250](../src/tools.ts#L245-L250), [:414](../src/tools.ts#L414), [:458](../src/tools.ts#L458) |
 
 The server writes the tappable form `/'...'` only in the card's command line ([control.ts:735-750](../src/control.ts#L735-L750)), in `/'revoke CHAT'` of standing cards and replies ([:690](../src/control.ts#L690), [:303](../src/control.ts#L303)), and in `/'delete CHAT files'` of the kept-files message ([:354](../src/control.ts#L354)).
 
@@ -755,16 +755,16 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 
 | Rule | Code |
 |---|---|
-| `^[@#][1-9]\d{0,14}$`: 1 to 15 digits; the core reads `#(2^64 + N)` as `#N` | [messages.ts:150-152](../src/messages.ts#L150-L152), [scenarios.test.ts:491-503](../test/e2e/scenarios.test.ts#L491-L503) |
-| the control chat is refused by `send`, `receive`, `download`, `leave` and the owner commands with CHAT, and left out of `list` and `/list` | [tools.ts:1239](../src/tools.ts#L1239), [:1284-1303](../src/tools.ts#L1284-L1303), [control.ts:408-415](../src/control.ts#L408-L415) |
-| a store error of the chat read is reported as `No chat CHAT.` | [tools.ts:1244](../src/tools.ts#L1244), [:1301](../src/tools.ts#L1301) |
-| the agent's own links are refused by `connect` (`ownLink` plans) | [tools.ts:1405](../src/tools.ts#L1405), [:1423](../src/tools.ts#L1423), [:1445](../src/tools.ts#L1445) |
+| `^[@#][1-9]\d{0,14}$`: 1 to 15 digits; the core reads `#(2^64 + N)` as `#N` | [messages.ts:150-152](../src/messages.ts#L150-L152), [scenarios.test.ts:493-505](../test/e2e/scenarios.test.ts#L493-L505) |
+| the control chat is refused by `send`, `receive`, `download`, `leave` and the owner commands with CHAT, and left out of `list` and `/list` | [tools.ts:1290](../src/tools.ts#L1290), [:1337-1356](../src/tools.ts#L1337-L1356), [control.ts:408-415](../src/control.ts#L408-L415) |
+| a store error of the chat read is reported as `No chat CHAT.` | [tools.ts:1295](../src/tools.ts#L1295), [:1354](../src/tools.ts#L1354) |
+| the agent's own links are refused by `connect` (`ownLink` plans) | [tools.ts:1458](../src/tools.ts#L1458), [:1476](../src/tools.ts#L1476), [:1498](../src/tools.ts#L1498) |
 
 ### 6.5 Owner commands
 
 | Rule | Code |
 |---|---|
-| source: `groupRcv` text items in the main scope of the control group | [serve.ts:129](../src/serve.ts#L129), [control.ts:218](../src/control.ts#L218), [:652-654](../src/control.ts#L652-L654) |
+| source: `groupRcv` text items in the main scope of the control group | [serve.ts:134](../src/serve.ts#L134), [control.ts:218](../src/control.ts#L218), [:652-654](../src/control.ts#L652-L654) |
 | form: one line `/keyword params`, leading spaces allowed | [control.ts:672-677](../src/control.ts#L672-L677) |
 | A text outside the requests from any sender is answered with the help reply of `serve`, or with `Unknown command.` in a plugin session group. Other commands are accepted only from approvers. A command from another sender is answered in `serve`, and left without a reply in a plugin session group. | [control.ts:249-250](../src/control.ts#L249-L250) |
 | commands run one at a time in arrival order | [control.ts:222-225](../src/control.ts#L222-L225) |
@@ -774,35 +774,35 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 
 | Rule | Code |
 |---|---|
-| `send` refuses files named `id_*`, `*.pem`, `*.key`, `*.p12` or `*.pfx`, and files under `~/.ssh`, `~/.gnupg`, the data folder and `~/.simplex-mcp` except the agent's own `DATA/files/`, each by its real path; the refusal is posted to the control chat and logged | [tools.ts:987-1001](../src/tools.ts#L987-L1001), [:1616-1635](../src/tools.ts#L1616-L1635), [control.ts:199-203](../src/control.ts#L199-L203) |
-| the file of a `send` is sent only when its real path, size, inode and change time at the perform are those of the request | [tools.ts:1003-1008](../src/tools.ts#L1003-L1008) |
-| a sent JPEG or PNG is a resized copy made by the core | [tools.ts:1010-1021](../src/tools.ts#L1010-L1021) |
-| `ffmpeg` and `ffprobe` read a video as MP4 or QuickTime, local files only, without standard input, 30 s and 64 MiB of output each | [tools.ts:1685-1703](../src/tools.ts#L1685-L1703) |
+| `send` refuses files named `id_*`, `*.pem`, `*.key`, `*.p12` or `*.pfx`, and files under `~/.ssh`, `~/.gnupg`, the data folder and `~/.simplex-mcp` except the agent's own `DATA/files/`, each by its real path; the refusal is posted to the control chat and logged | [tools.ts:1025-1039](../src/tools.ts#L1025-L1039), [:1678-1697](../src/tools.ts#L1678-L1697), [control.ts:199-203](../src/control.ts#L199-L203) |
+| the file of a `send` is sent only when its real path, size, inode and change time at the perform are those of the request | [tools.ts:1041-1046](../src/tools.ts#L1041-L1046) |
+| a sent JPEG or PNG is a resized copy made by the core | [tools.ts:1048-1059](../src/tools.ts#L1048-L1059) |
+| `ffmpeg` and `ffprobe` read a video as MP4 or QuickTime, local files only, without standard input, 30 s and 64 MiB of output each | [tools.ts:1747-1765](../src/tools.ts#L1747-L1765) |
 | a download is saved only at `DATA/files/group-N/` or `DATA/files/contact-N/`, or for `/forward` at the same name under `DATA/forwarded/`, named by its file ID and an extension of 1 to 16 ASCII letters and digits | [messages.ts:215-227](../src/messages.ts#L215-L227) |
-| a forwarded file is outside `DATA/files/`, so `send` refuses it; a download moves it into `DATA/files/` after the copy for the post is made | [tools.ts:587-604](../src/tools.ts#L587-L604), [:996-1001](../src/tools.ts#L996-L1001) |
-| a file on unknown servers gets a card that names them, also under a files approval; relays are approved only for such a card, and for every other download, and in mode `host`, the core checks the complete description and downloads a file on unknown servers only when the IP address is protected | [tools.ts:1099](../src/tools.ts#L1099), [:610](../src/tools.ts#L610), [:1153](../src/tools.ts#L1153), [control.ts:745-748](../src/control.ts#L745-L748) |
-| an accepted file that the core returns to `rcvInvitation` fails its download at the next check | [tools.ts:1166](../src/tools.ts#L1166) |
-| a received file is moved into the chat's folder at its completion, unless it is at the forwarded path, also from a member chat of a group, which has a download in memory as the main conversation does; a file without a download in memory, such as one whose transfer started before a restart, only when it has its full size; a partial file is deleted only for a download in memory, when it is no larger than the file | [tools.ts:1205-1214](../src/tools.ts#L1205-L1214), [:1637-1643](../src/tools.ts#L1637-L1643) |
+| a forwarded file is outside `DATA/files/`, so `send` refuses it; a download moves it into `DATA/files/` after the copy for the post is made | [tools.ts:602-619](../src/tools.ts#L602-L619), [:1034-1039](../src/tools.ts#L1034-L1039) |
+| a file on unknown servers gets a card that names them, also under a files approval; relays are approved only for such a card, and for every other download, and in mode `host`, the core checks the complete description and downloads a file on unknown servers only when the IP address is protected | [tools.ts:1143](../src/tools.ts#L1143), [:625](../src/tools.ts#L625), [:1197](../src/tools.ts#L1197), [control.ts:745-748](../src/control.ts#L745-L748) |
+| an accepted file that the core returns to `rcvInvitation` fails its download at the next check | [tools.ts:1210](../src/tools.ts#L1210) |
+| a received file is moved into the chat's folder at its completion, unless it is at the forwarded path, also from a member chat of a group, which has a download in memory as the main conversation does; a file without a download in memory, such as one whose transfer started before a restart, only when it has its full size; a partial file is deleted only for a download in memory, when it is no larger than the file | [tools.ts:1249-1258](../src/tools.ts#L1249-L1258), [:1699-1705](../src/tools.ts#L1699-L1705) |
 
 ### 6.7 Link and network
 
 - The join link is a group link of the control chat with role `member`, or `observer` with `--owners`; it is printed with a QR code on stdout and deleted at the first join event ([control.ts:486-496](../src/control.ts#L486-L496), [:452](../src/control.ts#L452), [:461](../src/control.ts#L461)).
 - At every start the server sets private message routing: `smpProxyMode` `always`, `smpProxyFallback` `allowProtected` ([core.ts:38-39](../src/core.ts#L38-L39)).
-- With `incognito: true` the join methods connect incognito ([tools.ts:848](../src/tools.ts#L848)); the core then uses a random profile for that chat ([PLAN, Participants](../../../plans/2026-10-19-mcp-server.md#participants)).
+- With `incognito: true` the join methods connect incognito ([tools.ts:863](../src/tools.ts#L863)); the core then uses a random profile for that chat ([PLAN, Participants](../../../plans/2026-10-19-mcp-server.md#participants)).
 
 ### 6.8 Status message and inference endpoint
 
 | Rule | Code |
 |---|---|
-| status messages and notes are sent only in eligible chats: the agent can post there; a chat with a person, a group or a business chat; mode `requests`; the control chat not lost; a standing approval of messages by a current approver ([API 1.10](api.md#110-status-message)) | [tools.ts:828-839](../src/tools.ts#L828-L839), [:1449-1456](../src/tools.ts#L1449-L1456) |
+| status messages and notes are sent only in eligible chats: the agent can post there; a chat with a person, a group or a business chat; mode `requests`; the control chat not lost; a standing approval of messages by a current approver ([API 1.10](api.md#110-status-message)) | [tools.ts:951-962](../src/tools.ts#L951-L962), [:1585-1592](../src/tools.ts#L1585-L1592) |
 | eligibility is read at each tick, so after `/revoke`, a lost approver, a lost control chat, a lost connection or an `observer` or `relay` role the status message is deleted within one gap: at most 20 s, or 5 min from 50 renders | [status.ts:116-123](../src/status.ts#L116-L123), [:138-142](../src/status.ts#L138-L142) |
-| in a group, the status message, its labels and its notes are sent to the group; a status is started for any message returned by `receive` with `typing: true`, whatever its sender | [tools.ts:1198](../src/tools.ts#L1198) |
+| in a group, the status message, its labels and its notes are sent to the group; a status is started for any message returned by `receive`, whatever its sender | [tools.ts:1320](../src/tools.ts#L1320) |
 | labels are the same for every chat: running calls, waits for approval and the inference state of other chats are shown in each status message | [status.ts:144-149](../src/status.ts#L144-L149) |
-| a note is sent without an action, so without a card or an outcome in the control chat; it is text only, at most 2000 characters, and each note is printed in the terminal | [tools.ts:798-799](../src/tools.ts#L798-L799), [:819-826](../src/tools.ts#L819-L826) |
+| a note is sent without an action, so without a card or an outcome in the control chat; it is text only, at most 2000 characters, and each note is printed in the terminal | [tools.ts:924-925](../src/tools.ts#L924-L925), [:942-949](../src/tools.ts#L942-L949) |
 | a status message gets at most 59 renders and one deletion | [status.ts:19-20](../src/status.ts#L19-L20), [:59](../src/status.ts#L59), [:129](../src/status.ts#L129) |
 | model IDs are kept only when they match `^[\w.:/+@-]{1,64}$`, and they are shown in a code span; counts are kept only as non-negative safe integers | [inference.ts:27](../src/inference.ts#L27), [:150-152](../src/inference.ts#L150-L152), [:162-164](../src/inference.ts#L162-L164), [status.ts:174](../src/status.ts#L174), [:187](../src/status.ts#L187) |
 | poll error texts are folded to one line; the parser's text is replaced by `invalid JSON` | [inference.ts:116](../src/inference.ts#L116), [:129-133](../src/inference.ts#L129-L133) |
-| URL is `http` or `https` without user name and password; the key is read from the environment, accepted with visible ASCII characters only, and sent to URL only | [cli.ts:184-188](../src/cli.ts#L184-L188), [serve.ts:213-217](../src/serve.ts#L213-L217), [inference.ts:111](../src/inference.ts#L111) |
+| URL is `http` or `https` without user name and password; the key is read from the environment, accepted with visible ASCII characters only, and sent to URL only | [cli.ts:204-208](../src/cli.ts#L204-L208), [serve.ts:185-189](../src/serve.ts#L185-L189), [inference.ts:111](../src/inference.ts#L111) |
 | a proxy of `/running` is polled at its origin, without the key, only when its host name equals URL's, or when both are `localhost`, `127.0.0.1` or `[::1]`; at most 4 distinct proxies per poll | [inference.ts:60-66](../src/inference.ts#L60-L66), [:143-148](../src/inference.ts#L143-L148) |
 | requests are GET of `/running`, `/props` and `/slots` only; redirects are refused; one 1 s deadline is set for a whole poll; a body over 1 MiB, by `Content-Length` or by the bytes read, is refused; at most 64 slots of a server are read | [inference.ts:37](../src/inference.ts#L37), [:53](../src/inference.ts#L53), [:78-84](../src/inference.ts#L78-L84), [:109-134](../src/inference.ts#L109-L134) |
 | `/slots` is skipped when `is_sleeping` of `/props` is true | [inference.ts:80](../src/inference.ts#L80) |
@@ -816,35 +816,35 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 |---|---|---|
 | pending actions | 20 | [actions.ts:9](../src/actions.ts#L9) |
 | actions being performed | 20 | [actions.ts:10](../src/actions.ts#L10) |
-| expiry | 1 to 23 h, default 23 | [cli.ts:79](../src/cli.ts#L79), [:102-104](../src/cli.ts#L102-L104) |
-| connect wait for the other side | `created + 23 h 50 min` | [tools.ts:153](../src/tools.ts#L153) |
+| expiry | 1 to 23 h, default 23 | [cli.ts:83](../src/cli.ts#L83), [:106-108](../src/cli.ts#L106-L108) |
+| connect wait for the other side | `created + 23 h 50 min` | [tools.ts:157](../src/tools.ts#L157) |
 | send, connect and download card | 15000 bytes JSON-escaped, in its largest form | [control.ts:31](../src/control.ts#L31), [:762-770](../src/control.ts#L762-L770) |
 | error assumed in the largest card | 600 × `€` | [control.ts:35](../src/control.ts#L35) |
-| message as the core sends it | 15602 bytes, counted with 600 bytes of envelope; `send` refuses a longer one, and the post of `/forward` leaves out its quote of the card | [tools.ts:163-164](../src/tools.ts#L163-L164), [:1575-1578](../src/tools.ts#L1575-L1578), [control.ts:315-334](../src/control.ts#L315-L334) |
-| `send.text` | 1 to 12000 characters | [tools.ts:267](../src/tools.ts#L267) |
-| `send.text` with `live` | at most 2000 characters (code points) | [tools.ts:160](../src/tools.ts#L160), [:799](../src/tools.ts#L799) |
-| `connect.message` | 1 to 2000 characters | [tools.ts:255](../src/tools.ts#L255) |
-| `send.mention` | 1 to 3 unique member IDs | [tools.ts:271](../src/tools.ts#L271) |
-| `wait` | 0 to 86400 s | [tools.ts:256](../src/tools.ts#L256), [:272](../src/tools.ts#L272), [:284](../src/tools.ts#L284), [:307](../src/tools.ts#L307) |
-| `idle` | 1 to 300 s, default 30 | [tools.ts:257](../src/tools.ts#L257), [:273](../src/tools.ts#L273), [:159](../src/tools.ts#L159) |
-| `limit` | 1 to 100, default 50 | [tools.ts:274](../src/tools.ts#L274), [:285](../src/tools.ts#L285), [:160](../src/tools.ts#L160) |
-| `connect` snapshot | last 50 items | [tools.ts:161](../src/tools.ts#L161) |
+| message as the core sends it | 15602 bytes, counted with 600 bytes of envelope; `send` refuses a longer one, and the post of `/forward` leaves out its quote of the card | [tools.ts:167-168](../src/tools.ts#L167-L168), [:1637-1640](../src/tools.ts#L1637-L1640), [control.ts:315-334](../src/control.ts#L315-L334) |
+| `send.text` | 1 to 12000 characters | [tools.ts:272](../src/tools.ts#L272) |
+| `send.text` with `live` | at most 2000 characters (code points) | [tools.ts:169](../src/tools.ts#L169), [:925](../src/tools.ts#L925) |
+| `connect.message` | 1 to 2000 characters | [tools.ts:260](../src/tools.ts#L260) |
+| `send.mention` | 1 to 3 unique member IDs | [tools.ts:276](../src/tools.ts#L276) |
+| `wait` | 0 to 86400 s | [tools.ts:261](../src/tools.ts#L261), [:277](../src/tools.ts#L277), [:290](../src/tools.ts#L290), [:313](../src/tools.ts#L313) |
+| `idle` | 1 to 300 s, default 30 | [tools.ts:262](../src/tools.ts#L262), [:278](../src/tools.ts#L278), [:163](../src/tools.ts#L163) |
+| `limit` | 1 to 100, default 50 | [tools.ts:279](../src/tools.ts#L279), [:291](../src/tools.ts#L291), [:164](../src/tools.ts#L164) |
+| `connect` snapshot | last 50 items | [tools.ts:165](../src/tools.ts#L165) |
 | collected items per action or call | 100, then their IDs kept as overflow until deleted | [messages.ts:10](../src/messages.ts#L10), [:109-110](../src/messages.ts#L109-L110) |
 | unread page, leftover status page | 100 items | [messages.ts:9](../src/messages.ts#L9), [status.ts:89-93](../src/status.ts#L89-L93) |
-| chat list read | one read of 1000000 chats | [tools.ts:152](../src/tools.ts#L152) |
-| `download` wait, default | 60 s | [tools.ts:156](../src/tools.ts#L156) |
-| download check | every 60 s | [tools.ts:157](../src/tools.ts#L157) |
-| download without progress | 30 min, then cancelled | [tools.ts:158](../src/tools.ts#L158) |
-| `ffmpeg`, `ffprobe` | 30 s, 64 MiB of output | [tools.ts:162](../src/tools.ts#L162), [:166](../src/tools.ts#L166) |
-| stop wait | 0 to 60 s, default 10 | [cli.ts:84](../src/cli.ts#L84), [:105-107](../src/cli.ts#L105-L107) |
+| chat list read | one read of 1000000 chats | [tools.ts:156](../src/tools.ts#L156) |
+| `download` wait, default | 60 s | [tools.ts:160](../src/tools.ts#L160) |
+| download check | every 60 s | [tools.ts:161](../src/tools.ts#L161) |
+| download without progress | 30 min, then cancelled | [tools.ts:162](../src/tools.ts#L162) |
+| `ffmpeg`, `ffprobe` | 30 s, 64 MiB of output | [tools.ts:166](../src/tools.ts#L166), [:171](../src/tools.ts#L171) |
+| stop wait | 0 to 60 s, default 10 | [cli.ts:88](../src/cli.ts#L88), [:109-111](../src/cli.ts#L109-L111) |
 | error details | 500 characters | [log.ts:4](../src/log.ts#L4) |
 | progress interval | 60 s | [messages.ts:7](../src/messages.ts#L7) |
 | expiry timer | at most 60 s, set again until the expiry time | [actions.ts:11](../src/actions.ts#L11), [:298](../src/actions.ts#L298) |
 | HTTP body | 4 MiB | [server index.cjs:254](../node_modules/@modelcontextprotocol/server/dist/index.cjs#L254) |
 | SSE keep-alive | 15 s | [mcp-BumlNux0.cjs:64](../node_modules/@modelcontextprotocol/server/dist/mcp-BumlNux0.cjs#L64) |
-| agent NAME | 1 to 32 characters | [cli.ts:170](../src/cli.ts#L170) |
+| agent NAME | 1 to 32 characters | [cli.ts:180](../src/cli.ts#L180) |
 | display name | 50 characters, `mkValidName` rules | [messages.ts:11-12](../src/messages.ts#L11-L12), [:341-363](../src/messages.ts#L341-L363) |
-| port | 1 to 65535, default 5226 | [cli.ts:82](../src/cli.ts#L82), [:114-116](../src/cli.ts#L114-L116) |
+| port | 1 to 65535, default 5226 | [cli.ts:86](../src/cli.ts#L86), [:118-120](../src/cli.ts#L118-L120) |
 | status renders by ticks | 50; the 50th shows the frozen line | [status.ts:19](../src/status.ts#L19), [:167](../src/status.ts#L167) |
 | status renders in all, with notes | 59 | [status.ts:20](../src/status.ts#L20), [:59](../src/status.ts#L59) |
 | status tick gap | a tenth of the age, 3 s to 20 s; 5 min from 50 renders | [status.ts:21-23](../src/status.ts#L21-L23), [:140](../src/status.ts#L140) |
@@ -909,7 +909,7 @@ flowchart LR
 
 Data flow of a tool call:
 
-1. Claude Code calls a tool of the MCP server `simplex` ([session.ts:57](../src/session.ts#L57)). The SDK validates the arguments ([tools.ts:498-508](../src/tools.ts#L498-L508)).
+1. Claude Code calls a tool of the MCP server `simplex` ([session.ts:57](../src/session.ts#L57)). The SDK validates the arguments ([tools.ts:506-516](../src/tools.ts#L506-L516)).
 2. Without a connection, the session process checks the service's status and version, and spawns the service when it is not running. It then sends `POST /session` and holds `POST /attach` open ([session.ts:160-185](../src/session.ts#L160-L185), [client.ts:35-47](../src/client.ts#L35-L47)).
 3. The session process sends `POST /call` with the session ID, the tool and the input. It relays each `{progress}` line as an MCP progress notification, and returns the `{result}` line ([session.ts:132-151](../src/session.ts#L132-L151)).
 4. The service checks the token ([socket.ts:18-48](../src/socket.ts#L18-L48)). It finds or opens the entry of the session or of its alias, and runs the session's `AgentTools.call` with a signal tied to the request ([service.ts:326-345](../src/service.ts#L326-L345)).
@@ -1134,7 +1134,7 @@ Chat database custom data is in the core `_hub` unless noted:
 | Main group marker | Main group | `{simplexMcpMain: true}` | [`createMainGroup`](../src/main-group.ts#L195-L205) | [`findMainGroup`](../src/main-group.ts#L185-L188) |
 | Session group | group of session N | `{simplexMcpSession: {session: N, pending?: [{connId, at}], mode?}}`, where `mode` is the approved mode | [`createSessionGroup`](../src/hub.ts#L478-L490), [`setMode`](../src/hub.ts#L320-L323), [`savePending`](../src/hub.ts#L336-L340), [`claimPending`](../src/hub.ts#L162-L167) | [`storedGroup`](../src/hub.ts#L471-L476), [`Session` constructor](../src/hub.ts#L75), [`claimPending`](../src/hub.ts#L162-L167) |
 | Action counter | group of session N | `{simplexMcp: {control: true, nextAction}}`, merged with the other keys | [`saveCounter`, `saveData`](../src/control.ts#L172-L184) | [`Session` constructor](../src/hub.ts#L75) |
-| Chat owner | contact or group of a peer | `{...other keys, simplexMcpOwner: {session: ID}}` | [`claim`](../src/tools.ts#L581-L585), [`giveChat`](../src/tools.ts#L568-L571) | [`owns`](../src/tools.ts#L577-L579) |
+| Chat owner | contact or group of a peer | `{...other keys, simplexMcpOwner: {session: ID}}` | [`claim`](../src/tools.ts#L596-L600), [`giveChat`](../src/tools.ts#L583-L586) | [`owns`](../src/tools.ts#L592-L594) |
 | Standing approvals | contact or group of a peer | as in [3.2](#32-chat-database-custom-data) | `Control` of the owning session's group | the same |
 | User contact | the hub's contact of `User` | `{simplexMcpUser: true}` | [`User.connect`](../src/user.ts#L38-L48) | [`userContact`](../src/user.ts#L60-L62) |
 | Claude contact | in `_user`: the contact of `Claude` | `{simplexMcpClaude: true}` | [`User.onEvent`](../src/user.ts#L51) | [`User.onEvent`](../src/user.ts#L52) |
@@ -1201,7 +1201,7 @@ After a stop, `Hub.onEvent` ignores events ([hub.ts:492-522](../src/hub.ts#L492-
 | `newChatItems` | item of a session group | [`Session.onMessage`](../src/hub.ts#L153) |
 | `rcvFileComplete`, `rcvFileError` | | [`Session.fileDone`](../src/hub.ts#L210) of every session |
 | `contactConnected`, `userJoinedGroup` | a connection ID | [`Session.claimPending`](../src/hub.ts#L162) of every session |
-| any event | | [`AgentTools.onEvent`](../src/tools.ts#L665) of every session |
+| any event | | [`AgentTools.onEvent`](../src/tools.ts#L680) of every session |
 | `sndFileError` | a chat of the session, or its group | [`Control.fileNotSent`](../src/control.ts#L205) |
 | membership events | of the Main group | [`MainGroup.onEvent`](../src/main-group.ts#L95), queued in the Main group and not awaited by the event loop. It posts the statement of trust at a join ([flow 28](flows.md#28-a-member-joins-the-main-group-and-a-sessions-group-and-a-person-is-added-to-it)). |
 | membership events | of a session group | [`Control.onEvent`](../src/control.ts#L228), then [`Session.announceRights`](../src/hub.ts#L221) and [`Session.askMode`](../src/hub.ts#L140), queued |
@@ -1227,22 +1227,22 @@ On `SIGINT`, `SIGTERM`, `POST /stop` or the stop timer ([service.ts:177-199](../
 | Rights in a session group are set by the member's role there, however the member joined. An approver is an active member other than Claude and `User`, with the role `admin` or `owner`. Approvals and tool-use decisions are accepted only from approvers. | [hub.ts:312-318](../src/hub.ts#L312-L318), [control.ts:43](../src/control.ts#L43), [:580-582](../src/control.ts#L580-L582), [:589-598](../src/control.ts#L589-L598) |
 | Prompts are accepted from every member except `User`, and the group's `/` commands only from approvers. The other members get one reply to each one-line `/` text. | [hub.ts:153-160](../src/hub.ts#L153-L160), [:230-233](../src/hub.ts#L230-L233), [:308-314](../src/hub.ts#L308-L314) |
 | With `/join N`, a member of the Main group is invited as `admin`, and an owner of the Main group as `owner`. Owners invited at a session start or at an owner's join get the role `owner`. | [hub.ts:440](../src/hub.ts#L440), [:422](../src/hub.ts#L422), [:451](../src/hub.ts#L451) |
-| With `/observer #G ID`, the sender sets the role `observer` of a current member. The sender's role must be admin or owner, and not below the member's role, as SimpleX requires. For a member with status `pending_approval` or `pending_review`, Claude replies `NAME's role can't be changed.` For a member who is neither current nor pending, such as an invited member who has not joined, the reply is `No member ID in this group.` An observer neither prompts nor approves. From the reply on, the standing approvals that the observer gave are not used while that member is not an admin or owner. | [control.ts:375-387](../src/control.ts#L375-L387), [:880-882](../src/control.ts#L880-L882), [:167-170](../src/control.ts#L167-L170), [tools.ts:1549-1551](../src/tools.ts#L1549-L1551) |
+| With `/observer #G ID`, the sender sets the role `observer` of a current member. The sender's role must be admin or owner, and not below the member's role, as SimpleX requires. For a member with status `pending_approval` or `pending_review`, Claude replies `NAME's role can't be changed.` For a member who is neither current nor pending, such as an invited member who has not joined, the reply is `No member ID in this group.` An observer neither prompts nor approves. From the reply on, the standing approvals that the observer gave are not used while that member is not an admin or owner. | [control.ts:375-387](../src/control.ts#L375-L387), [:880-882](../src/control.ts#L880-L882), [:167-170](../src/control.ts#L167-L170), [tools.ts:1611-1613](../src/tools.ts#L1611-L1613) |
 | A new action of a session is refused while its group has no approver | [control.ts:156-157](../src/control.ts#L156-L157) |
 | Changes of membership or role in the Main group, and its replacement by a reset of the owners, leave the session groups as they are | [main-group.ts:117-132](../src/main-group.ts#L117-L132), [:99-109](../src/main-group.ts#L99-L109) |
 | Everyone in the Main group is trusted with all sessions. This is stated in the group's short description and welcome message, set when the group is created, and in Claude's post at each join. In a session group, Claude posts the member's rights at each join and each role change, with the `/observer` command only for a role that can send, other than owner. The observer's rights are stated in Claude's reply to `/observer`. | [main-group.ts:16-18](../src/main-group.ts#L16-L18), [:195-205](../src/main-group.ts#L195-L205), [:127-128](../src/main-group.ts#L127-L128), [hub.ts:221-228](../src/hub.ts#L221-L228), [control.ts:386](../src/control.ts#L386), [:888-891](../src/control.ts#L888-L891) |
-| A file of `reply` is sent at once, in both modes. It can be refused by the group's preference for files and media, which owners set and the core enforces. A post of Claude or `User` in a session group, when refused by a group preference, is replaced by Claude's post with the preference's name, and is never dropped without one ([tools.ts:1607-1614](../src/tools.ts#L1607-L1614)). Claude updates a group's profile from its current profile in the chat database, and changes only its own fields, so the owners' preferences are kept. | [tools.ts:713-730](../src/tools.ts#L713-L730), [hub.ts:93](../src/hub.ts#L93), [control.ts:115-140](../src/control.ts#L115-L140), [:632-640](../src/control.ts#L632-L640), [main-group.ts:57-66](../src/main-group.ts#L57-L66) |
+| A file of `reply` is sent at once, in both modes. It can be refused by the group's preference for files and media, which owners set and the core enforces. A post of Claude or `User` in a session group, when refused by a group preference, is replaced by Claude's post with the preference's name, and is never dropped without one ([tools.ts:1669-1676](../src/tools.ts#L1669-L1676)). Claude updates a group's profile from its current profile in the chat database, and changes only its own fields, so the owners' preferences are kept. | [tools.ts:728-745](../src/tools.ts#L728-L745), [hub.ts:93](../src/hub.ts#L93), [control.ts:115-140](../src/control.ts#L115-L140), [:632-640](../src/control.ts#L632-L640), [main-group.ts:57-66](../src/main-group.ts#L57-L66) |
 | The first human who joins the Main group while it has no owner becomes an owner, and the link is deleted | [main-group.ts:122](../src/main-group.ts#L122), [:134-140](../src/main-group.ts#L134-L140) |
-| A session runs in mode `host` after an approver approves its `mode` card. The card is posted once an approver is in the group. After a rejection, the card is posted again only after `requests`. `requests` applies at once, and the hub ends a pending `mode` card. The mode is kept in the session group's custom data. | [hub.ts:132-151](../src/hub.ts#L132-L151), [:325-328](../src/hub.ts#L325-L328), [:519](../src/hub.ts#L519), [tools.ts:563-564](../src/tools.ts#L563-L564) |
+| A session runs in mode `host` after an approver approves its `mode` card. The card is posted once an approver is in the group. After a rejection, the card is posted again only after `requests`. `requests` applies at once, and the hub ends a pending `mode` card. The mode is kept in the session group's custom data. | [hub.ts:132-151](../src/hub.ts#L132-L151), [:325-328](../src/hub.ts#L325-L328), [:519](../src/hub.ts#L519), [tools.ts:578-579](../src/tools.ts#L578-L579) |
 | At a reset of the owners from the computer that runs Claude Code, the service replaces the Main group at once, even while owners exist. No owner's approval is needed for `reset-owners` and `POST /reset-owners`. | [hub.ts:403-405](../src/hub.ts#L403-L405), [owner.ts:28-33](../src/owner.ts#L28-L33), [main-group.ts:99-109](../src/main-group.ts#L99-L109) |
-| A chat without an owner is given to the session that connects it. The owner is set at one of four points: the perform, the connection event of its action, the completion of a pending connection that the session recorded, or a `connect` to the chat as a known chat. The tools of other sessions don't show the chat. With `/give CHAT N`, an approver moves the chat to session N. | [tools.ts:577-585](../src/tools.ts#L577-L585), [:750-755](../src/tools.ts#L750-L755), [:826](../src/tools.ts#L826), [:835](../src/tools.ts#L835), [:893](../src/tools.ts#L893), [hub.ts:162-167](../src/hub.ts#L162-L167), [:505-506](../src/hub.ts#L505-L506), [control.ts:362-373](../src/control.ts#L362-L373) |
+| A chat without an owner is given to the session that connects it. The owner is set at one of four points: the perform, the connection event of its action, the completion of a pending connection that the session recorded, or a `connect` to the chat as a known chat. The tools of other sessions don't show the chat. With `/give CHAT N`, an approver moves the chat to session N. | [tools.ts:592-600](../src/tools.ts#L592-L600), [:765-770](../src/tools.ts#L765-L770), [:841](../src/tools.ts#L841), [:850](../src/tools.ts#L850), [:908](../src/tools.ts#L908), [hub.ts:162-167](../src/hub.ts#L162-L167), [:505-506](../src/hub.ts#L505-L506), [control.ts:362-373](../src/control.ts#L362-L373) |
 
 Tool-use state machine, one action of tool `permission` per request:
 
 | Event | From | To | Code |
 |---|---|---|---|
 | `permission_request` | | `pending`, card posted | [hub.ts:169-170](../src/hub.ts#L169-L170) |
-| `/approve N` | `pending` | `performing`, `allow` pushed, then `done` | [hub.ts:172-173](../src/hub.ts#L172-L173), [tools.ts:553-566](../src/tools.ts#L553-L566) |
+| `/approve N` | `pending` | `performing`, `allow` pushed, then `done` | [hub.ts:172-173](../src/hub.ts#L172-L173), [tools.ts:568-581](../src/tools.ts#L568-L581) |
 | `/reject N` | `pending` | `rejected`, `deny` pushed | [hub.ts:172-173](../src/hub.ts#L172-L173) |
 | an answer, or a prompt that is not mid-turn, of a hook that started after the card's creation; end of the last attachment | `pending` | `expired`, card edited to `Ended.` | [hub.ts:181](../src/hub.ts#L181), [:204-208](../src/hub.ts#L204-L208), [service.ts:321](../src/service.ts#L321), [actions.ts:237-241](../src/actions.ts#L237-L241) |
 | expiry | `pending` | `expired`, card edited to `Expired.` | [actions.ts:302-312](../src/actions.ts#L302-L312) |
@@ -1325,9 +1325,9 @@ Sources: [hub.ts:153-208](../src/hub.ts#L153-L208), [:230-302](../src/hub.ts#L23
 | `reset-owners` shows the new link only on a terminal | [owner.ts:17-20](../src/owner.ts#L17-L20), [:28-33](../src/owner.ts#L28-L33) |
 | The plugin runs its own `dist/cli.js`. Node.js loads its modules, bundled in the package, from the plugin's folder, so they can't be replaced by the `node_modules` of a project. | [.mcp.json:5](../.mcp.json#L5), [hooks.json:3-7](../hooks/hooks.json#L3-L7), [package.json:35](../package.json#L35) |
 | The service gets only the environment variables of `serviceVariables` | [client.ts:13](../src/client.ts#L13), [:78](../src/client.ts#L78) |
-| `send` and `reply` refuse the files of ROOT except `files/` of the session's own folder | [tools.ts:996-1001](../src/tools.ts#L996-L1001), [hub.ts:90-91](../src/hub.ts#L90-L91) |
+| `send` and `reply` refuse the files of ROOT except `files/` of the session's own folder | [tools.ts:1034-1039](../src/tools.ts#L1034-L1039), [hub.ts:90-91](../src/hub.ts#L90-L91) |
 | `User`'s messages are neither prompts nor commands. `Session.prompt` and `Control.onMessage` drop the messages of the member of the hub's contact marked `simplexMcpUser`, which is read at the hub's start. `User` joins only the groups to which it is invited by its `Claude` contact. | [hub.ts:231](../src/hub.ts#L231), [:316-318](../src/hub.ts#L316-L318), [:377](../src/hub.ts#L377), [control.ts:221](../src/control.ts#L221), [user.ts:50-57](../src/user.ts#L50-L57), [:60-62](../src/user.ts#L60-L62) |
-| The hub's own groups and the `User` contact have no owner key, so the tools of every session leave them out | [tools.ts:577-579](../src/tools.ts#L577-L579), [:1284-1292](../src/tools.ts#L1284-L1292) |
+| The hub's own groups and the `User` contact have no owner key, so the tools of every session leave them out | [tools.ts:592-594](../src/tools.ts#L592-L594), [:1337-1345](../src/tools.ts#L1337-L1345) |
 | The approved mode is kept in the chat database, not in a file of ROOT | [hub.ts:75](../src/hub.ts#L75), [:320-323](../src/hub.ts#L320-L323), [files.ts:11-21](../src/files.ts#L11-L21) |
 | These rules hold against Claude's tools, but not against a shell running as the same user. Such a shell can read ROOT, with the token and the chat databases, and send requests to the service. | |
 
@@ -1349,7 +1349,7 @@ Sources: [hub.ts:153-208](../src/hub.ts#L153-L208), [:230-302](../src/hub.ts#L23
 | reads of the transcript for the model of Stop's answer and the origin of a prompt | 20 for the answer and 600 for the prompt, 100 ms apart, each of the last 1 MiB and twice the bytes of the answer or the prompt | [hook.ts:17-20](../src/hook.ts#L17-L20), [:153-174](../src/hook.ts#L153-L174) |
 | length of a note of Claude Code's own prompt | 200 characters, the last one `…` when cut | [hook.ts:22](../src/hook.ts#L22), [:287-290](../src/hook.ts#L287-L290) |
 | attachment retries of a session server | 1 s, doubled up to 30 s | [session.ts:19-20](../src/session.ts#L19-L20) |
-| part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [hub.ts:532-549](../src/hub.ts#L532-L549), [tools.ts:163-164](../src/tools.ts#L163-L164), [:1575-1578](../src/tools.ts#L1575-L1578) |
+| part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [hub.ts:532-549](../src/hub.ts#L532-L549), [tools.ts:167-168](../src/tools.ts#L167-L168), [:1637-1640](../src/tools.ts#L1637-L1640) |
 | cancelled cards wait at stop | 10 s | [hub.ts:21](../src/hub.ts#L21) |
 | `service.log` | emptied over 10 MB, at a spawn and every hour | [files.ts:9](../src/files.ts#L9), [:91-94](../src/files.ts#L91-L94), [service.ts:20](../src/service.ts#L20) |
 | socket path | 103 bytes: `sun_path` of `sockaddr_un` holds 104 bytes on macOS and 108 on Linux, with the terminating NUL | [files.ts:8](../src/files.ts#L8) |
