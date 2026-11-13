@@ -40,9 +40,34 @@ describe("message fields", () => {
       time: "2026-10-17T11:00:00Z",
       text: "Ridgecrest, $142",
       new: true,
-      reply_to: {chat: "#15", item: 30},
+      reply_to: {chat: "#15", item: 30, text: ""},
       mentions_me: true,
     })
+  })
+
+  it("describes the message a reply quotes: its ID when the chat has it, its sender by the direction of the quote, its type when it is not a text, and the first line of its text, cut at 200 characters", () => {
+    const bob = member(44, "Bob")
+    const trail = groupChat(group(15, "Trail", member(1, "Scout")))
+    const directory = direct(contact(4, "SimpleX Directory"))
+    const replyTo = (quotedItem: object, chatInfo: T.ChatInfo = trail) => {
+      const chatDir: T.CIDirection = chatInfo.type === "direct" ? {type: "directRcv"} : {type: "groupRcv", groupMember: bob}
+      return toMessage(chatInfo, {...item(31, "ok", chatDir), quotedItem: {sentAt: "", ...quotedItem}} as unknown as T.ChatItem, {name: "Scout"}, noRejections, data).reply_to
+    }
+    const fromBob = {type: "groupRcv", groupMember: bob}
+    const text = (value: string): object => ({type: "text", text: value})
+    expect(replyTo({chatDir: fromBob, itemId: 30, content: text("Which trail is shorter?")})).toEqual({chat: "#15", item: 30, from: "Bob", text: "Which trail is shorter?"})
+    expect(replyTo({chatDir: {type: "groupSnd"}, itemId: 29, content: text("Ridge or valley?\nPick one.")})).toEqual({chat: "#15", item: 29, from: "Scout", text: "Ridge or valley?…"})
+    expect(replyTo({chatDir: fromBob, content: text(`  ${"a".repeat(200)}  `)})).toEqual({chat: "#15", from: "Bob", text: "a".repeat(200)})
+    expect(replyTo({chatDir: fromBob, content: text("a".repeat(201))})).toEqual({chat: "#15", from: "Bob", text: `${"a".repeat(200)}…`})
+    expect(replyTo({chatDir: {type: "channelRcv"}, content: text("Meet at 9")})).toEqual({chat: "#15", text: "Meet at 9"})
+    expect(replyTo({chatDir: fromBob, itemId: 28, content: {type: "link", text: "See https://simplex.chat", preview: {uri: "https://simplex.chat", title: "SimpleX", description: "", image: ""}}})).toEqual({chat: "#15", item: 28, from: "Bob", type: "link", text: "See https://simplex.chat"})
+    expect(replyTo({chatDir: fromBob, itemId: 27, content: {type: "image", text: "Trail map\nnear the gate", image: ""}})).toEqual({chat: "#15", item: 27, from: "Bob", type: "image", text: "Trail map…"})
+    expect(replyTo({chatDir: fromBob, itemId: 26, content: {type: "image", text: "IMG_2041.jpg", image: ""}})).toEqual({chat: "#15", item: 26, from: "Bob", type: "image", text: "IMG_2041.jpg"})
+    expect(replyTo({chatDir: fromBob, itemId: 25, content: {type: "video", text: "", image: "", duration: 5}})).toEqual({chat: "#15", item: 25, from: "Bob", type: "video", text: ""})
+    expect(replyTo({chatDir: fromBob, itemId: 24, content: {type: "voice", text: "", duration: 3}})).toEqual({chat: "#15", item: 24, from: "Bob", type: "voice", text: ""})
+    expect(replyTo({chatDir: fromBob, itemId: 23, content: {type: "file", text: "build.log"}})).toEqual({chat: "#15", item: 23, from: "Bob", type: "file", text: "build.log"})
+    expect(replyTo({chatDir: {type: "directRcv"}, itemId: 20, content: text("found 3")}, directory)).toEqual({chat: "@4", item: 20, from: "SimpleX Directory", text: "found 3"})
+    expect(replyTo({chatDir: {type: "directSnd"}, itemId: 19, content: text("shoes")}, directory)).toEqual({chat: "@4", item: 19, from: "Scout", text: "shoes"})
   })
 
   it("describes direct, channel and sent messages", () => {
@@ -353,6 +378,22 @@ describe("receive", () => {
     expect(chat.commands.at(-1)).toBe("/_read chat items @4 21,20,22,24")
     const second = (await tools.call("receive", {chat: "@4", limit: 1}, signal().call))!.structuredContent as {messages: {item: number}[]; more: number}
     expect(second).toMatchObject({messages: [{item: 23}], more: 0})
+  })
+
+  it("names the agent in a quote of its own message by its name in the chat, the incognito name included", async () => {
+    const chat = new FakeChat()
+    const incognito = {...contact(4, "Ridgeline"), activeConn: {connId: 204, connStatus: {type: "ready"}, customUserProfileId: 77}} as unknown as T.Contact
+    const quoting = (itemId: number, chatDir: T.CIDirection, quotedDir: object, quotedText: string): T.ChatItem =>
+      ({...item(itemId, "The ridge one", chatDir), quotedItem: {chatDir: quotedDir, itemId: itemId - 1, sentAt: "", content: {type: "text", text: quotedText}}}) as unknown as T.ChatItem
+    chat.chats.set("@4", {chatInfo: direct(incognito), items: [quoting(21, {type: "directRcv"}, {type: "directSnd"}, "Which trail is shorter?")]})
+    chat.chats.set("@5", {chatInfo: direct(contact(5, "Switchback")), items: [quoting(31, {type: "directRcv"}, {type: "directSnd"}, "Any news?")]})
+    chat.chats.set("#15", {chatInfo: groupChat(group(15, "Trail", member(1, "Quiet Fox", T.GroupMemberRole.Member))), items: [quoting(41, {type: "groupRcv", groupMember: member(44, "Bob")}, {type: "groupSnd"}, "Meet at 9?")]})
+    chat.responses.set("/_info @4", {type: "contactInfo", user, contact: incognito, customUserProfile: {displayName: "Quiet Fox"}})
+    const {tools} = agentTools(chat)
+    const replyTo = async (ref: string): Promise<unknown> => ((await tools.call("receive", {chat: ref}, signal().call))!.structuredContent as {messages: {reply_to?: object}[]}).messages[0].reply_to
+    expect(await replyTo("@4")).toEqual({chat: "@4", item: 20, from: "Quiet Fox", text: "Which trail is shorter?"})
+    expect(await replyTo("@5")).toEqual({chat: "@5", item: 30, from: "agent", text: "Any news?"})
+    expect(await replyTo("#15")).toEqual({chat: "#15", item: 40, from: "Quiet Fox", text: "Meet at 9?"})
   })
 })
 
