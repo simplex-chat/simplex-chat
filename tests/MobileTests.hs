@@ -354,9 +354,9 @@ testChatParseUri _ = do
   "https://example.com/page?name=abc&ref=123" `sanitizedAs` Just "https://example.com/page?name=abc"
   "https://example.com/page?ref=123#section" `sanitizedAs` Just "https://example.com/page#section"
   "https://user:pass@example.com:8080/page?ref=123" `sanitizedAs` Just "https://user:pass@example.com:8080/page"
-  "https://%65%78%61%6D%70%6C%65%2E%6E%65%74%2F@example.com/page?ref=123" `sanitizedAs` Just "https://%65%78%61%6D%70%6C%65%2E%6E%65%74%2F@example.com/page"
-  "https://example.com%40example.net/page?ref=123" `sanitizedAs` Just "https://example.com%40example.net/page"
-  "https://example.net%2F.example.com/page?ref=123" `sanitizedAs` Just "https://example.net%2F.example.com/page"
+  "https://user%40name@example.com/page?ref=123" `sanitizedAs` Just "https://user%40name@example.com/page"
+  "https://ex%61mple.com/page?ref=123" `sanitizedAs` Just "https://ex%61mple.com/page"
+  "https://[::ffff:1.2.3.4]/page?ref=123" `sanitizedAs` Just "https://[::ffff:1.2.3.4]/page"
   "https://example.com/a%2Fb?ref=123" `sanitizedAs` Just "https://example.com/a%2Fb"
   where
     s `sanitizedAs` res = mapM_ (\safe -> parsedSanitized (chatParseUri safe s) `shouldBe` Just res) [False, True]
