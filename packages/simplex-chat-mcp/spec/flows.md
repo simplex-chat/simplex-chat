@@ -59,6 +59,7 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 30. [A run that is not interactive](#30-a-run-that-is-not-interactive)
 31. [A prompt of Claude Code](#31-a-prompt-of-claude-code)
 32. [The steps of a turn](#32-the-steps-of-a-turn)
+33. [A tool approved for the rest of a session](#33-a-tool-approved-for-the-rest-of-a-session)
 
 ---
 
@@ -1069,7 +1070,7 @@ sequenceDiagram
   CC->>CC: the terminal dialog stays open
   S->>D: POST /permission {id, requestId, toolName, description, inputPreview}
   D->>N: permission
-  N->>O: card in #35;G: I want to use `Bash`: `DESCRIPTION`, preview, /'approve N' or /'reject N'
+  N->>O: card in #35;G: I want to use `Bash`: `DESCRIPTION`, preview, /'approve N', /'approve N all' or /'reject N'
   O->>N: /approve N
   N->>N: performing
   N->>D: onLine {permission: {requestId, behavior: allow}}
@@ -1085,6 +1086,7 @@ Notes:
 - The first answer, in the terminal or in the group, applies. The last line of a card that is still pending becomes `Ended.` at an answer, or at a prompt that is not mid-turn, whose hook started after the card was created, and when the last attachment of the session ends. A prompt that Claude Code adds to the running turn ends no card ([hub.ts:199](../src/hub.ts#L199), [:226-240](../src/hub.ts#L226-L240), [service.ts:322](../src/service.ts#L322), [control.ts:695-696](../src/control.ts#L695-L696)).
 - The input preview is cut to fit the card ([control.ts:154](../src/control.ts#L154), [:784-798](../src/control.ts#L784-L798)).
 - The card is posted in mode `requests` also for a session in mode `host` ([hub.ts:188](../src/hub.ts#L188)).
+- `/approve N all` also approves the tool for the rest of the session, see [flow 33](#33-a-tool-approved-for-the-rest-of-a-session).
 
 Source: [session.ts:58-62](../src/session.ts#L58-L62), [:114-118](../src/session.ts#L114-L118), [service.ts:144-148](../src/service.ts#L144-L148), [hub.ts:187-195](../src/hub.ts#L187-L195), [control.ts:703-706](../src/control.ts#L703-L706).
 
@@ -1486,3 +1488,62 @@ Notes:
 - A core without message priority ignores `priority`, and an app without silent messages alerts for each line when it is posted. An update of a live message sends no SMP notification.
 
 Source: [hook.ts:125-148](../src/hook.ts#L125-L148), [:289-342](../src/hook.ts#L289-L342), [hub.ts:198-240](../src/hub.ts#L198-L240), [:310-361](../src/hub.ts#L310-L361), [service.ts:316-325](../src/service.ts#L316-L325).
+
+---
+
+## 33. A tool approved for the rest of a session
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant S as Session process
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  CC->>S: notifications/claude/channel/permission_request {request_id, tool_name: Bash, description, input_preview}
+  S->>D: POST /permission
+  D->>N: permission, Bash not approved
+  N->>O: card: I want to use Bash, /'approve 5', /'approve 5 all' or /'reject 5'
+  O->>N: /approve 5 all
+  N->>N: toolApprovals: Bash by Alice, logged
+  N->>D: onLine {tools: [{tool: Bash, approvedBy: Alice}]}
+  D->>S: the line on /attach, kept as the list of that attachment
+  N->>D: onLine {permission: {requestId, behavior: allow}}
+  D->>S: the line on /attach
+  S->>CC: notifications/claude/channel/permission allow
+  N->>O: card edited: Approved by Alice.
+  N->>O: reply: Approved Bash for the rest of this session by Alice. /'revoke Bash'
+  CC->>S: PreToolUse hook of type mcp_tool: tools/call pre_tool_use {tool: Bash}
+  S-->>CC: allow
+  CC->>CC: the next Bash use runs without a prompt, unless Claude Code's own rules ask
+```
+
+A use that Claude Code asks for by its own rules:
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant S as Session process
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  CC->>S: PreToolUse hook: tools/call pre_tool_use {tool: Bash}
+  S-->>CC: allow
+  CC->>CC: the command writes to .bashrc, a protected path: the permission flow
+  CC->>S: notifications/claude/channel/permission_request {request_id, tool_name: Bash, ...}
+  S->>D: POST /permission
+  D->>N: permission, Bash approved
+  N->>O: card with the line: Bash is approved for this session, and Claude Code still asks for this use. /'approve 6' or /'reject 6'
+```
+
+Notes:
+
+- Claude Code re-checks a call that a PreToolUse hook allows. A deny rule refuses it, and an ask rule, a safety check such as a write to a protected path, plan mode or the auto mode classifier sends it through the permission flow, which relays the prompt as a card. With Claude Code before 2.1.299, a hook's `allow` also ran writes in plan mode.
+- One tap approves its own card only. Other pending cards of the tool stay pending.
+- An approval counts while its approver is an admin or owner of the group. After a membership event, the hub sends the approved tools before the rights post; after `/observer`, `Control` sends them after it reads the members again.
+- `/revoke TOOL` removes an approval, and the session gets the new list. `/list` shows the approved tools after the chats.
+- At the last detach the approvals are dropped. A session server answers from the list of its current attachment only, so its list is dropped also when it drops the attachment after a failed call, and a new attachment gets the current list from the hub.
+- The approvals are kept in memory, so a service restart drops them.
+- The terminal shows nothing at the approval, and Claude Code's `/permissions` doesn't list it.
+
+Source: `control.ts`: `Control.ownerCommand`, `Control.approveTool`, `Control.revokeTool`, `Control.approvedTools`, `Control.endToolApprovals`, `requestLines`, `commandsLine`, `ownerRequest`; `hub.ts`: `Session.permission`, `Session.onLine`, `Session.sendTools`, `Session.endToolApprovals`, `Hub.onEvent`; `service.ts`: `Service.onAttach`; `session.ts`: `startSession`, `ServiceLink.open`, `ServiceLink.approvedBy`, `hookOutput`; `hooks/hooks.json`.
