@@ -38,6 +38,7 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
       ReadableText(MR.strings.why_built_p6, padding = paraPadding)
       ReadableText(MR.strings.why_built_p7, padding = paraPadding)
       ReadableText(MR.strings.why_built_tagline, padding = paraPadding)
+      if (onboardingStage == null && appPrefs.oneHandUI.state.value) Spacer(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
     }
     if (onboardingStage != null) {
       Column(
@@ -52,7 +53,6 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
       // Android also gets nav-bar inset so content doesn't run under the gesture bar.
       Spacer(Modifier.height(DEFAULT_PADDING))
       if (appPlatform.isAndroid) Spacer(Modifier.navigationBarsPadding())
-      if (appPrefs.oneHandUI.state.value) Spacer(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
     }
   }
 }
