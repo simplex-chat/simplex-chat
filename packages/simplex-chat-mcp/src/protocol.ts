@@ -89,6 +89,7 @@ export interface SessionReply extends ServiceInfo {
 
 export interface AttachRequest {
   id: string
+  pid?: number
 }
 
 export interface CallRequest {

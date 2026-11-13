@@ -693,6 +693,19 @@ describe("session channel", () => {
     })
   }
 
+  it("ends the tool approvals when a load finds the session's group lost, and sends the empty list to the session", async () => {
+    const chat = new FakeChat()
+    const {session, lines} = await channel(chat)
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    await until(() => session.actions.get(1)?.card !== undefined)
+    await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1 all"})
+    const lost = session.control["group"]
+    session.control["group"] = {...lost, membership: {...lost.membership, memberRole: T.GroupMemberRole.Admin}}
+    await session.control.load()
+    expect(lines.filter(line => line.tools !== undefined)).toEqual([{tools: [{tool: "Bash", approvedBy: "Alice"}]}, {tools: []}])
+    expect(session.control.approvedTools()).toEqual([])
+  })
+
   it("revokes an approved tool by /revoke TOOL, lists approved tools after the chats in /list, and answers /approve N all of an action that is not a tool use", async () => {
     const chat = new FakeChat()
     const {session, lines} = await channel(chat)

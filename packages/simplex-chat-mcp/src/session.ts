@@ -179,7 +179,7 @@ class ServiceLink {
     this.attach = controller
     await new Promise<void>((resolve, reject) => {
       this.client
-        .stream("/attach", {id: this.request.id}, line => {
+        .stream("/attach", {id: this.request.id, pid: this.request.pid}, line => {
           resolve()
           const {tools} = line as AttachLine
           if (tools !== undefined) this.approvedTools.set(controller, new Map(tools.map(({tool, approvedBy}) => [tool, approvedBy])))

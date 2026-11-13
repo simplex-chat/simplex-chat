@@ -10,7 +10,7 @@ import {ServiceClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
 import {LockedError, createDataFolder, readSessionFile, serviceToken, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
 import {protocolVersion} from "../../src/protocol"
-import {HubLike, Service, ServiceDeps, SessionLike, productionDeps, runService} from "../../src/service"
+import {HubLike, Service, ServiceDeps, SessionLike, processStart, productionDeps, runService} from "../../src/service"
 import * as socket from "../../src/socket"
 import {requestJson, streamLines} from "../../src/socket"
 import {closeServer, recordedRun, until} from "./fixtures"
@@ -41,6 +41,7 @@ function deps(root: string) {
   const configs: unknown[] = []
   const busy = new Set<number>()
   const stored: unknown[] = []
+  const starts = new Map<number, string>()
   let expiryChecks = 0
   const hubStops: number[] = []
   const gates: {open?: Promise<void>; call?: Promise<void>; hubStop?: Promise<void>} = {}
@@ -120,13 +121,14 @@ function deps(root: string) {
       return hub
     },
     onStopped,
+    processStart: async pid => starts.get(pid),
   }
   const gate = (name: keyof typeof gates): (() => void) => {
     const {promise, resolve} = deferred()
     gates[name] = promise
     return resolve
   }
-  return {d, agents, configs, busy, stored, expiryChecks: () => expiryChecks, hubStops, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
+  return {d, agents, configs, busy, stored, starts, expiryChecks: () => expiryChecks, hubStops, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
 }
 
 let root: string
@@ -159,10 +161,10 @@ const titleReply = {mainGroup: "SimpleX MCP", owner: {owners: [], link: "https:/
 const sessionsFolder = () => join(root, "_sessions")
 const lockFile = () => join(root, "service.lock")
 
-function attach(id: string, signal: AbortSignal) {
+function attach(id: string, signal: AbortSignal, pid?: number) {
   const first = deferred()
   const lines: unknown[] = []
-  const attached = streamLines(socketPath(root), token, "/attach", {id}, line => (lines.push(line), first.resolve()), signal).catch(() => undefined)
+  const attached = streamLines(socketPath(root), token, "/attach", {id, pid}, line => (lines.push(line), first.resolve()), signal).catch(() => undefined)
   return {attached, firstLine: first.promise, lines}
 }
 
@@ -652,6 +654,52 @@ describe("service", () => {
     await jest.advanceTimersByTimeAsync(10 * minutes)
     expect(agents[0].open).toBe(false)
     expect(approvalsEnded()).toBe(2)
+  })
+
+  it("ends the tool approvals when a process with the PID of an ended process of the session registers it, by the start time of the process", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents, starts} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    const approvalsEnded = () => agents[0].turns.filter(turn => turn === "tool approvals ended").length
+    starts.set(300, "100")
+    await registerFrom(300)
+    await registerFrom(300)
+    expect(approvalsEnded()).toBe(0)
+    starts.set(300, "200")
+    await registerFrom(300)
+    expect(approvalsEnded()).toBe(1)
+  })
+
+  it("sends the approved tools only to the attachments of the process that registered the session last, and an empty list to the others", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    const controller = new AbortController()
+    await registerFrom(300)
+    const first = attach(id1, controller.signal, 300)
+    await first.firstLine
+    await registerFrom(301)
+    const second = attach(id1, controller.signal, 301)
+    await second.firstLine
+    const tools = {tools: [{tool: "Bash", approvedBy: "Alice"}]}
+    const prompt = {prompt: {text: "hi", from: "Alice", item: 7}}
+    agents[0].onLine!(tools)
+    agents[0].onLine!(prompt)
+    await until(() => first.lines.length === 3 && second.lines.length === 3)
+    expect(first.lines.slice(1)).toEqual([{tools: []}, prompt])
+    expect(second.lines.slice(1)).toEqual([tools, prompt])
+    controller.abort()
+    await first.attached
+    await second.attached
+  })
+
+  it("reads the start time of a running process, the same at each read, and nothing for a process that does not run", async () => {
+    const start = await processStart(process.pid)
+    expect(start).toEqual(process.platform === "linux" || process.platform === "darwin" ? expect.stringMatching(/\S/) : undefined)
+    expect(await processStart(process.pid)).toBe(start)
+    expect(await processStart(2 ** 22 + 1)).toBeUndefined()
   })
 
   it("does not delay the idle close of an open session with a title", async () => {

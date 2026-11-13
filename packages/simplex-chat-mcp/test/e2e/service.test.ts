@@ -448,7 +448,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   const attached: AttachLine[] = []
   const controller = new AbortController()
   closing.push(async () => controller.abort())
-  client.stream("/attach", {id: one}, line => attached.push(line as AttachLine), controller.signal).catch(() => undefined)
+  client.stream("/attach", {id: one, pid}, line => attached.push(line as AttachLine), controller.signal).catch(() => undefined)
   await until(() => attached.length === 1)
   const owner = await client.request<OwnerState>("GET", "/link")
   const invitations = joinSessionGroups(alice, ["1 · one"])
