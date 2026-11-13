@@ -353,7 +353,7 @@ unknown values                              skipped
 
 ### Rows
 
-[`ChatItemWithMenu.terminalItemRow`](../../Shared/Views/Chat/ChatView.swift#L2155) wraps `chatItemWithMenu` in [`TerminalChatItemRow`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L392). Gaps follow the paragraph unit `terminalParagraphGap` (user, terminal spacing mockup):
+[`ChatItemWithMenu.terminalItemRow`](../../Shared/Views/Chat/ChatView.swift#L2155) wraps `chatItemWithMenu` in [`TerminalChatItemRow`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L408). Gaps follow the paragraph unit `terminalParagraphGap` (user, terminal spacing mockup):
 
 ```
 row padding        top: topGap; with an avatar topGap + terminalHeadingBottomGap, so the avatar is that far below the row above
@@ -473,7 +473,7 @@ cards                 DeletedItemView, MarkedDeletedItemView, CIMsgError, CIRcvD
 
 ### Time and Status
 
-[`ItemWithMeta(showMeta, metaReserved, overlayMeta, endButton, lastBlockGap, meta, content)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L216):
+[`ItemWithMeta(showMeta, metaReserved, overlayMeta, endButton, lastBlockGap, meta, content)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L223):
 
 ```
 classic            content(meta()): the meta drawn inside the item, as before
@@ -482,7 +482,7 @@ iOS 16             TerminalMetaLayout
 iOS 15             HStack(alignment: .lastTextBaseline): content, end button, meta; lastBlockGap not applied
 ```
 
-[`TerminalMetaLayout`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L273):
+[`TerminalMetaLayout`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L280):
 
 ```
 content width      row width less the wider of: the end button; the meta, without metaReserved and overlayMeta
@@ -501,7 +501,7 @@ row height         at least the meta height
 
 Status: [`terminalShowsStatus(status, showTimestamp)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L216) draws the sent and delivered marks of a completed delivery (`sndSent` and `sndRcvd(.ok)`, both `.complete`) only with the time; pending, partial, error and unread states always. `CIMetaView` and the copies in `MsgContentView` and `CIFileView` apply it in Flat rows; bubbles draw the status in each bubble.
 
-[`ChatEventWithMeta(chatItem) { ts in }`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L351) passes the end of the event text, placed after the classic separator: classic `chatItem.timestampText`; terminal `metaCopyJoiner`, two no-break spaces and the transparent unbreakable time in regular weight.
+[`ChatEventWithMeta(chatItem) { ts in }`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L358) passes the end of the event text, placed after the classic separator: classic `chatItem.timestampText`; terminal `metaCopyJoiner`, two no-break spaces and the transparent unbreakable time in regular weight.
 
 Meta copy, `ciMetaText(unbreakable: true)`:
 
