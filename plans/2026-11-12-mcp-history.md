@@ -1,4 +1,4 @@
-# SimpleX MCP server 0.2.0: receive with history
+# SimpleX MCP server, the next version: receive with history
 
 Status: draft for review. Decided on 2026-11-12: history in `receive`, at most 50 messages. Code references: master `c6e7549b12`.
 
@@ -64,13 +64,12 @@ test/unit/http.test.ts       history 51 refused by the schema
 
 Docs:
 ```
-file                   change
-README.md              the agent recalls the conversation in a new session
-REFERENCE.md           receive with history; a recovery row for a lost session
-TESTING.md             a step: history in a new session
-PLAN.md                receive input and result; receive steps; tests; decisions of 2026-11-12
-spec/api.md            1.4: history input and output; 1.8: from, from_type and sent items; anchors remapped
-spec/architecture.md   historyItems; limits; anchors remapped
-spec/flows.md          5: history in the diagram and the notes; anchors remapped
-spec/README.md         the role of messages.ts; anchors remapped
+file                             change
+REFERENCE.md                     receive with history; the agent recalls the conversation in a new session; a recovery row for a lost session
+TESTING.md                       a step: history in a new session
+plans/2026-10-19-mcp-server.md   receive input and result; receive steps; tests; decisions of 2026-11-12
+spec/api.md                      1.4: history input and output; 1.8: from, from_type and sent items; anchors remapped
+spec/architecture.md             historyItems; limits; anchors remapped
+spec/flows.md                    5: history in the diagram and the notes; anchors remapped
+spec/README.md                   the role of messages.ts; anchors remapped
 ```

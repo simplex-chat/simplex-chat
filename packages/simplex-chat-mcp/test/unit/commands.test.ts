@@ -111,6 +111,13 @@ describe("owner commands", () => {
     expect(connect.state).toBe("performing")
   })
 
+  it("answers /give CHAT N with the list of commands, from an owner, an unlisted owner and a member, as 0.2", async () => {
+    for (const owners of [undefined, [{memberId: 3, name: "Alice"}]]) {
+      const {control} = await setup(owners)
+      for (const sender of [alice, member(8, "Carol", T.GroupMemberRole.Owner), bob]) expect(await control.ownerCommand(sender, {keyword: "give", params: "@4 2"})).toBe(commandsReply)
+    }
+  })
+
   it("expires due actions before a command", async () => {
     const {control, action} = await setup()
     jest.spyOn(Date, "now").mockReturnValue(action.expires)
@@ -409,6 +416,19 @@ describe("downloads in the agent control chat", () => {
     const text = await downloadSetup({type: "image", preview})
     expect(text.cards[0].msgContent.type).toBe("text")
     expect(errors).toHaveBeenCalledWith("action 1 card image: image cannot be decoded or does not fit maxSize\n")
+  })
+
+  it("fails a download whose image card the core refuses under the control chat's preference for files and media, with the core's text", async () => {
+    const fake = fakeHooks()
+    const actions: Actions = new Actions("requests", 23, 1, {...fake.hooks, refusal: action => control.refusal(action), postCard: action => control.postCard(action), outcome: action => control.outcome(action)})
+    const chat = agentChats()
+    const {control} = await controlWith(chat, actions)
+    chat.apiSendMessages = async () => {
+      throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "commandError", message: "feature not allowed Files and media"}} as unknown as T.ChatError)
+    }
+    const action = actions.create("d", downloadFields("#2", {type: "image", preview: "data:image/jpg;base64,/9j/small"}))
+    await flushed()
+    expect(action).toMatchObject({state: "failed", error: 'SimpleX error: error: commandError: {"message":"feature not allowed Files and media"}'})
   })
 
   it("posts no card for a download in mode host or under the files approval", async () => {

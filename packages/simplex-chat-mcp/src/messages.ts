@@ -213,9 +213,13 @@ export function receivedPath(data: string, chat: string, {fileId, fileName}: T.C
 }
 
 export function filePaths(data: string, chat: string, fileId: number, name: string): {path: string; forwarded: string} {
-  const extension = extname(name)
-  const file = `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`
+  const file = storedName(fileId, name)
   return {path: join(chatFolder(data, chat), file), forwarded: join(chatFolder(data, chat, "forwarded"), file)}
+}
+
+export function storedName(fileId: number, name: string): string {
+  const extension = extname(name)
+  return `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`
 }
 
 export function chatFolder(data: string, chat: string, root: FilesRoot = "files"): string {
@@ -314,7 +318,7 @@ export function reportProgress(call: ToolCall, message: () => string): () => voi
   return () => clearInterval(timer)
 }
 
-export function nextChange(changes: Changes, signal: AbortSignal, ms: number): Promise<boolean> {
+export function nextChange(changes: Changes, signal: AbortSignal, ms?: number): Promise<boolean> {
   return new Promise(resolve => {
     if (signal.aborted) return resolve(false)
     const finish = (changed: boolean): void => {
@@ -324,7 +328,7 @@ export function nextChange(changes: Changes, signal: AbortSignal, ms: number): P
       resolve(changed)
     }
     const aborted = (): void => finish(false)
-    const timer = setTimeout(() => finish(true), Math.max(0, Math.min(ms, maxTimer)))
+    const timer = ms === undefined ? undefined : setTimeout(() => finish(true), Math.max(0, Math.min(ms, maxTimer)))
     const unsubscribe = changes.subscribe(() => finish(true))
     signal.addEventListener("abort", aborted, {once: true})
   })

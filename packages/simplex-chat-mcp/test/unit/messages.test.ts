@@ -6,9 +6,9 @@ import {basename, dirname, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
-import {Action, Actions, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
+import {Action, Actions, ConnectAction, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
-import {ChatItemsWatch, Collected, awaitResponses, toMessage} from "../../src/messages"
+import {Changes, ChatItemsWatch, Collected, awaitResponses, nextChange, toMessage} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -94,6 +94,33 @@ describe("message fields", () => {
     expect(toMessage(chatInfo, prohibited, self, noRejections, data).file).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "failed", error: "Large file! The file is above the limit of 1048576 bytes for its sender. Sender's badge expired."})
     expect(toMessage(chatInfo, fileItem(31, {type: "file", text: "report"}, {type: "sndComplete"}, {chatDir: {type: "directSnd"}, fileSource: {filePath: "/home/alice/report.pdf"}}), self, noRejections, data)).not.toHaveProperty("file")
     expect(toMessage(chatInfo, item(32, "no file"), self, noRejections, data)).not.toHaveProperty("file")
+  })
+})
+
+describe("next change", () => {
+  it("waits with no timer for a change or the signal when no time limit is given", async () => {
+    jest.useFakeTimers()
+    const changes = new Changes()
+    const changed = nextChange(changes, signal().call.signal)
+    expect(jest.getTimerCount()).toBe(0)
+    changes.notify()
+    expect(await changed).toBe(true)
+    const {controller, call} = signal()
+    const aborted = nextChange(changes, call.signal)
+    expect(jest.getTimerCount()).toBe(0)
+    controller.abort()
+    expect(await aborted).toBe(false)
+  })
+
+  it("ends at the time limit when one is given", async () => {
+    jest.useFakeTimers()
+    let finished = false
+    const waiting = nextChange(new Changes(), signal().call.signal, 1_000).then(result => (finished = result))
+    await jest.advanceTimersByTimeAsync(999)
+    expect(finished).toBe(false)
+    await jest.advanceTimersByTimeAsync(1)
+    expect(await waiting).toBe(true)
+    expect(jest.getTimerCount()).toBe(0)
   })
 })
 
@@ -185,9 +212,9 @@ function textOf(result: CallToolResult | undefined): string {
   return (result!.content[0] as {text: string}).text
 }
 
-function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
+function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined, session?: number): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, actions.mode), watch}
+  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, actions.mode, session), watch}
 }
 
 describe("receive", () => {
@@ -548,6 +575,26 @@ describe("send", () => {
     expect(finished).toBe(false)
     await jest.advanceTimersByTimeAsync(1)
     expect((await sending)!.structuredContent).toMatchObject({status: "done", responses: [], more: 0})
+  })
+
+  it("keeps actions of two sessions apart", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Bob")), items: []})
+    const actions = actionsWith("requests", fakeHooks())
+    const first = agentTools(chat, actions, undefined, 1).tools
+    const second = agentTools(chat, actions, undefined, 2).tools
+    const calls = [signal(), signal()]
+    const sending = [first, second].map((tools, i) => tools.call("send", {chat: "@4", text: "hello"}, calls[i].call))
+    await settled()
+    expect(actions.all().map(({session}) => session)).toEqual([1, 2])
+    for (const tools of [first, second]) {
+      const {actions: listed} = (await tools.call("list", {}, signal().call))!.structuredContent as {actions: {action: number}[]}
+      expect(listed.length).toBe(1)
+    }
+    const {actions: listedFirst} = (await first.call("list", {}, signal().call))!.structuredContent as {actions: {action: number}[]}
+    expect(listedFirst.map(({action}) => action)).toEqual([actions.all()[0].n])
+    calls.forEach(({controller}) => controller.abort())
+    await Promise.all(sending)
   })
 
   it("creates no action for a call aborted before it", async () => {
@@ -1018,6 +1065,50 @@ describe("connect", () => {
     expect(action).toMatchObject({state: "done", chat: "@12", connected: true})
     tools.onContactConnected({type: "contactConnected", user, contact: {...contact(13, "Other"), activeConn: {connId: 300, connStatus: {type: "ready"}}} as unknown as T.Contact})
     expect(action.chat).toBe("@12")
+  })
+
+  it("completes on a connection event only the connect of the session whose core sent it, when contact IDs are equal", async () => {
+    jest.useFakeTimers()
+    const linkData = {profile: {displayName: "Ridgeline", fullName: ""}, business: false}
+    const started = {...contact(8, "Ridgeline"), activeConn: {connId: 208, connStatus: {type: "joined"}}} as unknown as T.Contact
+    const connected = {...contact(8, "Ridgeline"), activeConn: {connId: 208, connStatus: {type: "ready"}}} as unknown as T.Contact
+    const sessionChat = (): FakeChat => {
+      const chat = new FakeChat()
+      chat.chats.set("@8", {chatInfo: direct(started), items: []})
+      chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok", contactSLinkData_: linkData}}))
+      chat.responses.set(`/_prepare contact 1 ${link} ${JSON.stringify(linkData)}`, {type: "newPreparedChat", chat: {chatInfo: direct(started), chatItems: []}})
+      chat.responses.set(`/_connect contact @8 json {"type":"text","text":"hello"}`, {type: "startedConnectionToContact", contact: started})
+      return chat
+    }
+    const fake = fakeHooks()
+    const actions = actionsWith("requests", fake)
+    const first = agentTools(sessionChat(), actions, undefined, 1)
+    const chat2 = sessionChat()
+    const second = agentTools(chat2, actions, undefined, 2)
+    fake.hooks.perform = (action, signal) => (action.session === 1 ? first : second).tools.perform(action, signal)
+    const calls = [signal(), signal()]
+    const input = {target: link, message: "hello"}
+    const connecting = [first.tools.call("connect", input, calls[0].call), second.tools.call("connect", input, calls[1].call)]
+    await jest.advanceTimersByTimeAsync(0)
+    const [action1, action2] = [actions.get(1) as ConnectAction, actions.get(2) as ConnectAction]
+    expect([action1.session, action2.session]).toEqual([1, 2])
+    actions.approve(action1, "Alice")
+    actions.approve(action2, "Alice")
+    await jest.advanceTimersByTimeAsync(0)
+    expect([action1, action2]).toMatchObject([{state: "performing", conn: {contact: 8}}, {state: "performing", conn: {contact: 8}}])
+    chat2.chats.set("@8", {chatInfo: direct(connected), items: []})
+    second.tools.onContactConnected({type: "contactConnected", user, contact: connected})
+    second.watch.deliver([chat2.addItem("@8", item(41, "Session 2 only."))])
+    await jest.advanceTimersByTimeAsync(0)
+    expect(action2).toMatchObject({connected: true, chat: "@8"})
+    expect(action2.messages.items.map(({chatItem}) => chatItem.meta.itemId)).toEqual([41])
+    expect(action1).toMatchObject({state: "performing", chat: "@8"})
+    expect(action1.connected).toBeUndefined()
+    expect(action1.stopCollecting).toBeUndefined()
+    expect(action1.messages.items).toEqual([])
+    for (const {controller} of calls) controller.abort()
+    expect(await Promise.all(connecting)).toEqual([undefined, undefined])
+    await actions.stop()
   })
 
   it("returns at the end of wait, counted from the approval, when no reply to message arrives", async () => {
