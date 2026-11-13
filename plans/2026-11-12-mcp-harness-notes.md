@@ -25,7 +25,7 @@ Outcome:
 
 Claude posts one line in the session's group for each prompt of Claude Code itself. The line has no quote. When the prompt starts a turn, Claude's answer follows as before, without a quote.
 
-Lines, each from a real prompt of Claude Code 2.1.295 to 2.1.322 in the transcripts or in R1:
+Lines, each from a real prompt of Claude Code 2.1.281 to 2.1.322 in the transcripts or in R1:
 
 ```
 kind                     line
