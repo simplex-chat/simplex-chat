@@ -348,10 +348,9 @@ package.json   version                    0.3.0, with package-lock.json
 
 ## Docs
 
-- `README.md`: the stop line with status deletions; in the prompt, the chat where the agent takes prompts, a direct chat or a group, with `receive` (`wait 3600`) and answers with `send` (`wait 0`); a paragraph on the status message, "Delete for everyone", the active chat profile and `--inference`; a safety item on notes.
-- `REFERENCE.md`: section "Status while the agent works"; the tool rows of `send` and `receive`; the stop line; the command help; notes on stdout; the key in Security; v0.3.
+- `REFERENCE.md`: section "Status while the agent works"; the tool rows of `send` and `receive`; the stop line with status deletions; in the prompt, the chat where the agent takes prompts, a direct chat or a group, with `receive` (`wait 3600`) and answers with `send` (`wait 0`); a paragraph on the status message, "Delete for everyone", the active chat profile and `--inference`; the command help; notes on stdout; a safety item on notes; the key in Security; v0.3.
 - `TESTING.md`: v0.3; the stop line; status steps without and with llama-swap.
-- `PLAN.md`: version; the status message and the inference endpoint; the `send` and `receive` tables; processing; tests; decisions of 2026-11-11.
+- `plans/2026-10-19-mcp-server.md`: version; the status message and the inference endpoint; the `send` and `receive` tables; processing; tests; decisions of 2026-11-11 and 2026-11-13.
 - `spec/`: version 0.3.0; `status.ts` and `inference.ts`; the anchors of `tools.ts`, `serve.ts` and `cli.ts` rewritten (decision 16).
 
 ## Pull request

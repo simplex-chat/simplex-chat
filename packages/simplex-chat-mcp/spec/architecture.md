@@ -351,7 +351,7 @@ States of one chat:
 
 ```
 tick(chat, status):                                           status.ts:116
-  shown = allowed(chat): knownChat, then showsStatus           :117, tools.ts:499
+  shown = allowed(chat): knownChat, then showsStatus           :117, tools.ts:545
     a failure: shown false; logged while the status is current :117-120
   the status ended or replaced meanwhile: return               :121
   idle = renders ≥ 50, no running call other than receive,     :122
