@@ -28,7 +28,7 @@ struct CIChatLinkHeader: View {
                         .lineLimit(2)
                         .padding(.bottom, 2)
                 }
-                Text(chatLink.infoLine(signed: ownerSig != nil))
+                Text(chatLink.infoLine(signed: chatItem.chatDir.sent && ownerSig != nil))
                     .font(.footnote)
                     .foregroundColor(theme.colors.secondary)
                     .padding(.bottom, 2)
