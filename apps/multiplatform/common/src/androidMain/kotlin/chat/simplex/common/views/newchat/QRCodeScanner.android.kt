@@ -49,7 +49,6 @@ actual fun QRCodeScanner(
   val preview = remember { mutableStateOf<Preview?>(null) }
   val contactLink = remember { mutableStateOf("") }
   val checkingLink = remember { mutableStateOf(false) }
-  val disposed = remember(lifecycleOwner) { mutableStateOf(false) }
 
   val cameraProviderFuture by produceState<ListenableFuture<ProcessCameraProvider>?>(initialValue = null) {
     value = ProcessCameraProvider.getInstance(context)
@@ -57,7 +56,6 @@ actual fun QRCodeScanner(
 
   DisposableEffect(lifecycleOwner) {
     onDispose {
-      disposed.value = true
       cameraProviderFuture?.addListener({
         try {
           cameraProviderFuture?.get()?.unbindAll()
@@ -95,7 +93,6 @@ actual fun QRCodeScanner(
           .build()
         val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
         cameraProviderFuture?.addListener({
-          if (disposed.value) return@addListener
           preview.value = Preview.Builder().build().also {
             it.setSurfaceProvider(previewView.surfaceProvider)
           }
