@@ -1,6 +1,6 @@
 # SimpleX MCP: approve a tool for the rest of a session
 
-Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-allow-tool`, stacked on `ep/mcp-activity`; decisions 29 to 32 were made in the implementation. Code references: master `97bbbd9ac` (MCP 0.3.0 with #8157). Claude Code references: version 2.1.322 and its binary at the offsets given, the documentation pages quoted, and three `claude -p` runs of Claude Code 2.1.323, recorded on 2026-11-13 (R1 to R3). Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
+Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-allow-tool`, stacked on `ep/mcp-activity`; decisions 29 to 32 were made in the implementation, and 33 and 34 after review round 1. Code references: master `97bbbd9ac` (MCP 0.3.0 with #8157). Claude Code references: version 2.1.322 and its binary at the offsets given, the documentation pages quoted, and three `claude -p` runs of Claude Code 2.1.323, recorded on 2026-11-13 (R1 to R3). Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
 
 The runs used a test MCP server whose tool `pre_tool_use` answers a PreToolUse hook of type `mcp_tool`, with `--setting-sources project --permission-mode default`. A `-p` run refuses a call that would show a prompt, so a refusal there stands for a prompt in an interactive session.
 - R1: the hook answered `allow` for Bash and Write. `echo one > a.txt` with Bash ran, and a Write of `notes.txt` ran. A Write of `.bashrc` was refused: "Claude requested permissions to edit .../.bashrc which is a sensitive file." The server logged three calls, `{"tool":"Bash"}`, `{"tool":"Write"}` and `{"tool":"Write"}`.
@@ -72,7 +72,7 @@ the session ends                         cards end                            ca
 Rules:
 - An approval covers every later use of its tool in the Claude Code session, by subagents too.
 - It counts while its approver is an admin or owner of the group, as a standing approval of a chat does (0.3.0 decision 93).
-- It is dropped when the session's last attachment to the service closes, as when Claude Code exits or the service restarts.
+- It is dropped when the session's Claude Code process ends: when another process opens the session, when the session closes, or when the service restarts (decision 33).
 - One tap approves its own card only. The other pending cards of the same tool stay pending.
 - The terminal shows nothing at the approval. Claude Code's `/permissions` does not list it, because the plugin keeps it.
 - With `ep/mcp-activity`, each use that runs has its step line in the group.
@@ -140,7 +140,7 @@ Choices:
 15. `/approve N all` on a pending tool-use card approves its use and records the approval of its tool. It follows `/approve CHAT all` and `/receive CHAT N all`, where `all` adds the later ones.
 16. A PreToolUse hook of type `mcp_tool` applies the approval (section 5). Claude Code's own rules keep asking (fact 5).
 17. Admins and owners approve and revoke, as for every approval (0.3.0 trust model, rule 3). An approval counts while its approver is an admin or owner of the group, and counts again when that member becomes one again (fact 11).
-18. The approvals are kept in memory and dropped at the last detach, when the cards are ended (fact 12). They are not stored: a stored approval would outlive the Claude Code process that it was given for.
+18. The approvals are kept in memory and dropped at the last detach, when the cards are ended (fact 12); replaced by decision 33. They are not stored: a stored approval would outlive the Claude Code process that it was given for.
 19. `/approve N all` approves card N only. Other pending cards of the tool stay pending: Claude Code may ask for them by its own rules (fact 5).
 20. A card of an approved tool has the line of section 2 before its commands, and no `all` command. The line is fixed when the card is created.
 21. The texts are those of section 2. `/revoke TOOL` accepts a name of letters, digits, `_` and `-` (fact 9), so it never matches a chat reference. `/list` puts the tool lines after the chat lines; `No chats.` stays only when both are empty.
@@ -158,6 +158,11 @@ Decided in the implementation:
 30. After a membership event, the hub sends the approved tools right after `Control` reads the members again, before the rights post. A refused rights post then can't keep a demoted approver's tools in the session server's list.
 31. The session server keeps the list of each attachment apart and answers from the list of the current one. A list is then dropped also when the session server drops its attachment after a failed call, which ends the stream without the end handler of the current attachment.
 32. The docs cite the new code by file and function name, by the user's rule of 2026-11-13 that line numbers create churn. The line citations of other code in `spec/`, which this change shifts in `control.ts`, `hub.ts`, `session.ts`, `service.ts` and `protocol.ts`, are not renumbered; the move of the specs to function names replaces them.
+
+Decided after review round 1 of `c4099e36d`:
+
+33. The approvals belong to the Claude Code process of the session, as the approved lifetime "the rest of a session" requires. Before, the last detach ended them, so a session server that dropped its attachment after a failed call and attached again lost them without a post. Now `Service.onAttach` keeps them; `Service.onSession` ends them when the session is registered from a process ID other than the recorded one, and `Service.scheduleIdle` ends them when the session closes, 10 minutes after Claude Code ends. It replaces the drop at the last detach of decision 18. Between the end of Claude Code and the session's close, `/list` still shows them; no process can use them, because another process's registration ends them first.
+34. While the plugin's MCP server is not connected, Claude Code 2.1.322 reports a non-blocking PreToolUse hook error at each tool use: `Ayr` returns `MCP server 'plugin:simplex:simplex' not connected`, and the hook runner yields `hook_non_blocking_error` (binary 296919792, 297052400 to 297052700). REFERENCE says so; the hook stays of type `mcp_tool`.
 
 ## 5. Design
 
@@ -220,7 +225,9 @@ approved tools:                      the approvals whose member is an admin or o
 send tools:                          approved tools differ from those last sent: line {tools} to the attachments
 on a new attachment:                 last sent = []; send tools
 on a membership event, /observer:    send tools
-on the last detach:                  cards ended (0.3.0); approvals emptied; last sent = []
+on the last detach:                  cards ended (0.3.0); approvals kept; last sent = []
+on /session from another process ID: approvals emptied (decision 33)
+on the session's close:              approvals emptied (decision 33)
 on permission_request of TOOL:       card, as in 0.3.0; TOOL among the approved tools: the line of section 2 and no all command
 ```
 
@@ -242,7 +249,7 @@ flowchart LR
   E[membership event, /observer] --> H
   A[new attachment] --> H
   H -- line tools on /attach --> L[session server: list]
-  X[last detach] --> Z[approvals emptied]
+  X[another process registers, or the session closes] --> Z[approvals emptied]
   Z --> H
   P[Claude Code: PreToolUse] -- tools/call pre_tool_use --> L
   L -- allow or nothing --> P
@@ -257,8 +264,8 @@ stateDiagram-v2
   approved --> inactive: its approver is no longer an admin or owner
   inactive --> approved: its approver is an admin or owner again
   inactive --> approved: /approve N all by another approver, who is recorded
-  approved --> [*]: /revoke TOOL, or the last detach
-  inactive --> [*]: /revoke TOOL, or the last detach
+  approved --> [*]: /revoke TOOL, the session closes, or another process registers it
+  inactive --> [*]: /revoke TOOL, the session closes, or another process registers it
 ```
 
 ## 6. Compatibility
