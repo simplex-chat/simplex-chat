@@ -45,6 +45,7 @@ end line, start of the turn unknown  !- ✅ DoneLIMITS!                         
 opening message at the end of a      ⏹️ Stopped                                 no     silent      kept
 turn without Stop
 opening message at a blank answer    !- ✅ Done in DURATION!                    no     silent      kept
+opening message at a refused post    Claude's text was not posted: ...          no     silent      kept
 ```
 
 - `!- TEXT!` is small text: the apps show TEXT smaller and in the secondary color (fact 11 of `ep/mcp-session-usage`), and a notification shows TEXT without the marks (`Notifications.swift:200-214`, `NtfManager.kt:134-145`).
@@ -56,7 +57,7 @@ opening message at a blank answer    !- ✅ Done in DURATION!                   
 - A text longer than one message is finalized at the part that fits, measured as for answers, and continues in a new live message.
 - A turn that ends without Stop, after an interruption or an API error, gets no end line. Its live texts are finalized with their text, as steps are, and an empty opening message gets `⏹️ Stopped`.
 - The opening message is not posted for a prompt added to the running turn, for a `/` command, or for Claude Code's own prompts, whose note line starts their turn.
-- When a group preference refuses a text, as a SimpleX link while links are off, its message keeps the text accepted last, and Claude posts `Claude's text was not posted: SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences.`
+- When a group preference refuses a text, as a SimpleX link while links are off, its message keeps the text accepted last, and Claude posts `Claude's text was not posted: SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences.` A refused answer is not posted again at Stop. When the refused post would fill the opening message, the refusal text fills it (decision 37).
 
 Priority of Claude's posts:
 ```
@@ -158,6 +159,7 @@ Choices:
 34. Texts are posted in the order their first batches arrive, among themselves and with the steps.
 35. When the core refuses a text's send or update with a group preference, as for a SimpleX link while links are off (`Commands.hs:853-854` for an update), the hub posts `Claude's text was not posted: PREF OFF` once for that text. It finalizes the text's message with the text accepted last and drops the text's later batches. An answer posted at Stop keeps the subject `Claude's answer was not posted`.
 36. The end line and the usage line of `ep/mcp-session-usage` are one message: `!- ✅ Done in FIGURESLIMITS!`, important, the turn's last post after a non-blank answer, with every part of the answer silent. FIGURES is the Stop hook's usage text when it has one, and DURATION of decision 26 otherwise. LIMITS is ` · 5 h: N%` and ` · week: N%` for the windows of the plan's newest usage not reset, which the hub appends after FIGURES, also after DURATION. Without FIGURES, the line is `!- ✅ DoneLIMITS!`. Both items build on `ep/mcp-activity`, and either can merge first. The first one adds the line in this form with its own parts: this item with DURATION, in a send of its own after the claimed or posted answer; `ep/mcp-session-usage` with its usage text and LIMITS, as the last message of the answer's send. The second one adds its parts to that line: this item, the line after a streamed answer and DURATION when the hook sends no usage; `ep/mcp-session-usage`, its usage text in place of DURATION, and LIMITS. So no release posts two lines after an answer. `ep/mcp-session-usage` takes this as its decision 19 (commit `3cc99fad0`).
+37. A text that a group preference refuses counts as the answer at Stop when its trimmed text starts the trimmed answer, so the group gets one refusal post and the answer is not posted again. A refused post that would fill the opening message fills it with its refusal text, `Claude's text was not posted: ...`, `Claude's answer was not posted: ...` or `Claude's note was not posted: ...`, in place of a separate post. A refused text ends at once, also when it outgrows a message, and an update scheduled before its end is skipped. The lead decided this on 2026-11-13.
 
 ## 5. Design
 
@@ -337,6 +339,7 @@ Tests:
   - "finalizes live texts with their text and an empty opening message with ⏹️ Stopped at a prompt that starts a turn, at the last detach and at the hub's stop, which waits for their updates".
   - Changed: "posts the note of Claude Code's prompt and every part of an answer as silent, and the end line as important".
   - New, in "while a preference of the session group refuses a post": "posts that Claude's text was not posted, naming the preference, once for a text, and finalizes its message with the text accepted last".
+  - New for decision 37, in the same group: "posts one refusal for an answer that the preference refuses, streamed or not, in the turn's opening message when the refused post would fill it, and does not post the answer again"; "fills the turn's opening message with the refusal of the step that would fill it, and posts nothing at the step's end"; "posts one refusal for a text whose final update is refused while its scheduled update waits behind it, and no update after it"; "posts one refusal for a text whose first part is refused when the text outgrows a message, and nothing more of that text".
 - `test/unit/service.test.ts`, changed: "passes text batches to the session and answers before its posts, and ends its live posts at the last detach".
 - `test/unit/hook.test.ts` and `files.test.ts` stay as they are: they test `duration` through the step lines, and `dataRoot` and `socketPath` through the exports of `files.ts`.
 - `test/e2e/service.test.ts`, changed: the mirroring test runs `dist/display.js` with the inputs of run L1 and then the Stop hook. The owner's app receives the opening message, its updates and its finalization, not edited, and `!- ✅ Done in` with the time.
@@ -398,6 +401,8 @@ Changes against sections 4 and 5:
 9   names: openings, texts, endedTexts, recentTexts, liveOrder; LiveText.done holds the finished parts and
     LiveText.part the current one.
 10  e2e: the link tests wait for the answer as an update of the opening message.
+11  decision 37: refused texts are kept in recentTexts with refused set, and the claim takes them without a post;
+    postRefusal updates a given item, the opening message, in place of a post.
 ```
 
 ```mermaid
@@ -406,6 +411,7 @@ stateDiagram-v2
   open --> bounded: the next prompt that starts a turn, until = its hook start
   open --> filled: a text, step or answer of a hook that started at or after at
   bounded --> filled: such a post of a hook that started before until
+  open --> filled: such a post refused, its refusal text
   open --> filled: a blank answer, the end line
   open --> stopped: an answer, the last detach or the stop, ⏹️ Stopped
   bounded --> stopped: an answer of a hook with start >= until, the last detach or the stop, ⏹️ Stopped

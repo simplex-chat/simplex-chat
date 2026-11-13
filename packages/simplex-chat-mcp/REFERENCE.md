@@ -653,7 +653,8 @@ Owners set the group's preferences in the app, and SimpleX enforces them. Claude
 - When another preference refuses one of Claude's posts, Claude posts a text that names it instead:
   - For an answer with a SimpleX link: `Claude's answer was not posted: SimpleX links are off in the group of this session; its owners can turn them on in the group's preferences.`
   - For the line of one of Claude Code's own prompts or of a step: `Claude's note was not posted: ...`
-  - For a text of Claude: `Claude's text was not posted: ...`, once for the text. Its live message keeps the text posted last.
+  - For a text of Claude: `Claude's text was not posted: ...`, once for the text. Its live message keeps the text posted last. When the text is the answer, the answer is not posted again.
+  - When the refused post would fill the turn's empty live message, the text that names the preference fills it.
   - For a terminal prompt: `User's prompt was not posted: SimpleX links are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` This also happens while the preference allows SimpleX links only for roles above `User`'s role, which is member unless the owners change it.
   - For a card that waits for approval, or for `/forward` of a voice message: `Action N: ...`. The action then fails.
   - `reply` returns the same text without the prefix `Claude's answer was not posted: `.

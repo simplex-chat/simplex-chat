@@ -1691,6 +1691,87 @@ describe("session channel", () => {
       expect(groupPosts(chat)).toEqual([{type: "text", text: `Claude's answer was not posted: ${off("SimpleX links")}`}, {type: "text", text: "!- ✅ Done!"}])
     })
 
+    it("posts one refusal for an answer that the preference refuses, streamed or not, in the turn's opening message when the refused post would fill it, and does not post the answer again", async () => {
+      jest.useFakeTimers({doNotFake: ["nextTick", "setImmediate", "queueMicrotask"]})
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      refuseInGroup(chat)
+      const text = async (at: number, message: string, index: number, delta: string, final = false): Promise<void> => {
+        await session.turn({id: id1, at, text: {message, index, final, delta}})
+        await session["liveOrder"]
+      }
+      await session.turn({id: id1, at: 1, prompt: "Find the bot", typed: true})
+      await text(2, "m1", 0, `The bot's address is ${link}\n`)
+      await text(2, "m1", 1, "", true)
+      await session.turn({id: id1, at: 3, answer: `The bot's address is ${link}`})
+      await session.turn({id: id1, at: 4, prompt: "And the group?", typed: true})
+      await text(5, "m2", 0, "Here is the group.\n")
+      await text(5, "m2", 1, `Its address is ${link}\n`)
+      await jest.advanceTimersByTimeAsync(3_000)
+      await session["liveOrder"]
+      await text(5, "m2", 2, "", true)
+      await session.turn({id: id1, at: 7, answer: `Here is the group.\nIts address is ${link}`})
+      await session.turn({id: id1, at: 8, prompt: "Post it", typed: true})
+      await session.turn({id: id1, at: 9, answer: `See ${link}`})
+      await session["finalizing"]
+      expect(shown(chat)).toEqual([
+        {text: `Claude's text was not posted: ${off("SimpleX links")}`, quotedItemId: undefined},
+        endedIn("2 ms"),
+        {text: "Here is the group.\n", quotedItemId: undefined},
+        {text: `Claude's text was not posted: ${off("SimpleX links")}`, quotedItemId: undefined},
+        endedIn("3 ms"),
+        {text: `Claude's answer was not posted: ${off("SimpleX links")}`, quotedItemId: undefined},
+        endedIn("1 ms"),
+      ])
+    })
+
+    it("fills the turn's opening message with the refusal of the step that would fill it, and posts nothing at the step's end", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      refuseInGroup(chat)
+      await session.turn({id: id1, at: 1, prompt: "Fetch the page", typed: true})
+      await session.turn({id: id1, at: 2, step: {id: "toolu_1", text: `🌐 Fetch ${link}`}})
+      await session.turn({id: id1, at: 3, step: {id: "toolu_1", text: `🌐 Fetch ${link} ✅ 41 ms`, end: true}})
+      await session["finalizing"]
+      expect(shown(chat)).toEqual([{text: `Claude's note was not posted: ${off("SimpleX links")}`, quotedItemId: undefined}])
+    })
+
+    it("posts one refusal for a text whose final update is refused while its scheduled update waits behind it, and no update after it", async () => {
+      jest.useFakeTimers({doNotFake: ["nextTick", "setImmediate", "queueMicrotask"]})
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      refuseInGroup(chat)
+      const send = chat.apiSendMessages.bind(chat)
+      const held: (() => void)[] = []
+      chat.apiSendMessages = (target, messages, live) => (messages[0].msgContent.text.startsWith("💻") ? new Promise(resolve => held.push(() => resolve(send(target, messages, live)))) : send(target, messages, live))
+      const line = chat.nextItemId
+      const text = (index: number, delta: string, final = false) => session.turn({id: id1, at: 1, text: {message: "m1", index, final, delta}})
+      await text(0, "Checking the bot.\n")
+      await session["liveOrder"]
+      await text(1, `Its address is ${link}\n`)
+      await session["liveOrder"]
+      const step = session.turn({id: id1, at: 2, step: {id: "toolu_1", text: "💻 Run the tests"}})
+      await text(2, "", true)
+      await jest.advanceTimersByTimeAsync(3_000)
+      expect(held).toHaveLength(1)
+      held[0]()
+      await step
+      await session["liveOrder"]
+      expect(groupPosts(chat).map(({text}) => text)).toEqual(["Checking the bot.\n", "💻 Run the tests", `Claude's text was not posted: ${off("SimpleX links")}`])
+      expect(chat.updates).toEqual([{chatId: 20, itemId: line, text: "Checking the bot.\n"}])
+    })
+
+    it("posts one refusal for a text whose first part is refused when the text outgrows a message, and nothing more of that text", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      refuseInGroup(chat)
+      await session.turn({id: id1, at: 1, text: {message: "m1", index: 0, final: false, delta: `${link} ${"a".repeat(15000)}\n`}})
+      await session.turn({id: id1, at: 1, text: {message: "m1", index: 1, final: true, delta: "Done."}})
+      await session["liveOrder"]
+      expect(groupPosts(chat).map(({text}) => text)).toEqual([`Claude's text was not posted: ${off("SimpleX links")}`])
+      expect(chat.updates).toEqual([])
+    })
+
     it("keeps the first part of a long answer in the opening message when the preference refuses a later part", async () => {
       const chat = new FakeChat()
       const {session} = await channel(chat)

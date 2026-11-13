@@ -270,7 +270,7 @@ test("while files and media are off in a session's group, the card of a send of 
   expect((await edited).chatItem.content).toMatchObject({type: "rcvMsgContent", msgContent: {type: "text", text: expect.stringMatching(/\nApproved by Alice\.$/)}})
 }, 600_000)
 
-test("while SimpleX links are off in a session's group, a send card with the local server's SimpleX link, which has a query, at the end of its code span is posted, and Claude posts that a terminal prompt and an answer with a SimpleX link were not posted, naming the preference", async () => {
+test("while SimpleX links are off in a session's group, a send card with the local server's SimpleX link, which has a query, at the end of its code span is posted, and Claude posts that a terminal prompt and an answer with a SimpleX link were not posted, naming the preference, the answer's refusal in the turn's opening message", async () => {
   const root = join(dir, "links", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("links", "Alice")
@@ -298,9 +298,10 @@ test("while SimpleX links are off in a session's group, a send card with the loc
   await ownerSends(`/reject ${directoryChat} ${cardNumber(await sendCard)}`)
   expect((await sending).result).toMatchObject({status: "rejected"})
 
-  const notices = [`User's prompt was not posted: ${linksNotForUser}`, `Claude's answer was not posted: ${linksOff}`].map(text => received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText === text)))
+  const notice = received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText === `User's prompt was not posted: ${linksNotForUser}`))
+  const opening = updated(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText === `Claude's answer was not posted: ${linksOff}`))
   await client.request("POST", "/turn", {id: one, prompt: `Open ${directory.link}`, answer: `The bot's address is ${directory.link}`})
-  await Promise.all(notices)
+  await Promise.all([notice, opening])
 }, 600_000)
 
 test("while SimpleX links are off in a session's group, a send with a preset server's SimpleX link under a standing approval is sent and stays done, and Claude posts that it was performed and its card was not posted", async () => {

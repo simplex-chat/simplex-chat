@@ -27,6 +27,7 @@ const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
 const noteRefused = "Claude's note was not posted"
+const answerRefused = "Claude's answer was not posted"
 const maxFinished = 100
 const liveLineMs = 23 * 3_600_000
 const stepCheckMs = 60_000
@@ -71,6 +72,7 @@ interface LiveText {
   sent: string
   sentAt: number
   timer?: NodeJS.Timeout
+  refused?: true
 }
 
 interface Opening {
@@ -385,11 +387,11 @@ export class Session {
     const posted = opened === undefined ? this.post(parts, quote === undefined ? undefined : quoted?.meta.itemId) : this.updateItem(opened, parts[0].text, false).then(
       () => (parts.length > 1 ? this.post(parts.slice(1)) : undefined),
       error => {
-        this.putBack(opening)
-        throw error
+        if (refusedFeature(error) === undefined) this.putBack(opening)
+        return this.postRefusal(error, answerRefused, featureOff, undefined, opened)
       },
     )
-    await posted.catch(error => this.postRefusal(error, "Claude's answer was not posted", featureOff, quoted?.meta.itemId))
+    await posted.catch(error => this.postRefusal(error, answerRefused, featureOff, quoted?.meta.itemId))
   }
 
   private async step({id, text, end}: Step, at: number): Promise<void> {
@@ -409,32 +411,35 @@ export class Session {
     }
   }
 
-  private async startLine(text: string, at: number, kind: LineKind, live = true): Promise<number | undefined> {
+  private async startLine(text: string, at: number, kind: LineKind, live = true, onRefused?: () => void): Promise<number | undefined> {
     const opening = this.takeOpening(at)
     const opened = await opening?.item
-    if (opened === undefined) return this.sendLine(text, kind, live)
+    if (opened === undefined) return this.sendLine(text, kind, live, undefined, onRefused)
     try {
       await this.updateItem(opened, text, live)
       return opened
     } catch (error) {
-      this.putBack(opening)
-      await this.refused(error, kind)
+      if (refusedFeature(error) === undefined) this.putBack(opening)
+      if (await this.refused(error, kind, opened)) onRefused?.()
       return undefined
     }
   }
 
-  private async sendLine(text: string, kind: LineKind, live: boolean, quotedItemId?: number): Promise<number | undefined> {
+  private async sendLine(text: string, kind: LineKind, live: boolean, quotedItemId?: number, onRefused?: () => void): Promise<number | undefined> {
     try {
       const [sent] = await this.post([{text, priority: -1}], quotedItemId, live)
       return sent?.chatItem.meta.itemId
     } catch (error) {
-      await this.refused(error, kind)
+      if (await this.refused(error, kind)) onRefused?.()
       return undefined
     }
   }
 
-  private refused(error: unknown, {refused, log}: LineKind): Promise<void> {
-    return this.postRefusal(error, refused, featureOff).catch(failure => logError(`${log} of session ${this.number}`, failure))
+  private refused(error: unknown, {refused, log}: LineKind, itemId?: number): Promise<boolean> {
+    return this.postRefusal(error, refused, featureOff, undefined, itemId).then(
+      () => true,
+      failure => (logError(`${log} of session ${this.number}`, failure), false),
+    )
   }
 
   private openTurn(at: number, quoted: T.ChatItem | undefined): void {
@@ -496,9 +501,10 @@ export class Session {
       await this.endPart(text, parts)
       text.done += parts.join("")
       text.item = undefined
+      if (!this.texts.has(text.id)) return
     }
     if (text.item === undefined && text.part.trim() !== "") {
-      text.item = this.startLine(text.part, text.at, textLines)
+      text.item = this.startLine(text.part, text.at, textLines, true, () => this.refuseText(text))
       text.sent = text.part
       text.sentAt = Date.now()
       if ((await text.item) === undefined) this.dropText(text)
@@ -509,6 +515,7 @@ export class Session {
 
   private async updateText(text: LiveText, value: string, live: boolean): Promise<boolean> {
     text.timer = undefined
+    if (live && this.texts.get(text.id) !== text) return false
     const itemId = await text.item
     if (itemId === undefined) return false
     if (live && value === text.sent) return true
@@ -522,7 +529,7 @@ export class Session {
         logError(`texts of session ${this.number}`, error)
         return false
       }
-      this.dropText(text)
+      this.refuseText(text)
       await this.refused(error, textLines)
       await this.updateItem(itemId, text.sent, false).catch(failure => logError(`texts of session ${this.number}`, failure))
       return false
@@ -532,20 +539,34 @@ export class Session {
   private async endPart(text: LiveText, [first, ...rest]: string[]): Promise<void> {
     clearTimeout(text.timer)
     const shown = text.item === undefined ? await this.postPart(text, first) : await this.updateText(text, first, false)
-    if (shown && rest.length > 0) await this.post(rest.map(part => ({text: part, priority: -1}))).catch(error => this.refused(error, textLines))
+    if (shown && rest.length > 0) {
+      await this.post(rest.map(part => ({text: part, priority: -1}))).catch(async error => {
+        if (await this.refused(error, textLines)) this.refuseText(text)
+      })
+    }
   }
 
   private async postPart(text: LiveText, value: string): Promise<boolean> {
     if (value.trim() === "") return false
-    text.item = this.startLine(value, text.at, textLines, false)
+    text.item = this.startLine(value, text.at, textLines, false, () => this.refuseText(text))
     return (await text.item) !== undefined
   }
 
   private async endText(text: LiveText, value: string): Promise<void> {
     this.dropText(text)
-    if (this.recentTexts.push(text) > maxRecentTexts) this.recentTexts.shift()
+    this.keepRecent(text)
     text.part = value
     await this.endPart(text, textParts(value))
+  }
+
+  private refuseText(text: LiveText): void {
+    this.dropText(text)
+    if (!this.recentTexts.includes(text)) this.keepRecent(text)
+    text.refused = true
+  }
+
+  private keepRecent(text: LiveText): void {
+    if (this.recentTexts.push(text) > maxRecentTexts) this.recentTexts.shift()
   }
 
   private dropText(text: LiveText): void {
@@ -568,6 +589,7 @@ export class Session {
     const newest = texts.reduce<LiveText | undefined>((found, text) => (found === undefined || text.at > found.at ? text : found), undefined)
     const full = newest === undefined ? "" : (newest.done + newest.part).trim()
     if (newest === undefined || full === "" || !answer.trim().startsWith(full)) return false
+    if (newest.refused) return true
     const rest = answer.trim().slice(newest.done.trimStart().length)
     if (this.texts.has(newest.id)) await this.endText(newest, rest)
     else if (rest !== newest.part.trim()) await this.endPart(newest, textParts(rest))
@@ -606,10 +628,11 @@ export class Session {
     keepLast(this.finished, id)
   }
 
-  private async postRefusal(error: unknown, subject: string, refusal: (feature: string) => string, quotedItemId?: number): Promise<void> {
+  private async postRefusal(error: unknown, subject: string, refusal: (feature: string) => string, quotedItemId?: number, itemId?: number): Promise<void> {
     const feature = refusedFeature(error)
     if (feature === undefined) throw error
-    await this.post([{text: `${subject}: ${refusal(feature)}`}], quotedItemId)
+    const text = `${subject}: ${refusal(feature)}`
+    await (itemId === undefined ? this.post([{text}], quotedItemId) : this.updateItem(itemId, text, false))
   }
 
   private post(parts: Part[], quotedItemId?: number, live = false): Promise<T.AChatItem[]> {
