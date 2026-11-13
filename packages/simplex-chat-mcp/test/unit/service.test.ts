@@ -603,7 +603,7 @@ describe("service", () => {
     expect(await register(id1)).toMatchObject({number: 1, displayName: "1 · auth"})
   })
 
-  it("passes permission requests and turns to the session, and its lines to the attachments while they exist, and ends its permissions, steps and tool approvals at the last detach", async () => {
+  it("passes permission requests and turns to the session, and its lines to the attachments while they exist, and ends its permissions and steps at the last detach", async () => {
     const {d, agents} = deps(root)
     service = await Service.start(d, readDefaultConfig)
     await register(id1)
@@ -619,10 +619,39 @@ describe("service", () => {
     expect(lines[1]).toEqual({prompt: {text: "hi", from: "Alice", item: 7}})
     controller.abort()
     await attached
-    await until(() => agents[0].turns.length === 5)
-    expect(agents[0].turns).toEqual([permission, {id: id1, answer: "Done."}, "ended", "steps ended", "tool approvals ended"])
+    await until(() => agents[0].turns.length === 4)
+    expect(agents[0].turns).toEqual([permission, {id: id1, answer: "Done."}, "ended", "steps ended"])
     expect(agents[0].onLine).toBeUndefined()
     await expect(post("/turn", {id: id2, answer: "x"})).rejects.toMatchObject({status: 409})
+  })
+
+  it("keeps the tool approvals of a session when its process attaches again, and ends them when another process registers the session and when the session closes", async () => {
+    jest.useFakeTimers(fakeTimers)
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    const approvalsEnded = () => agents[0].turns.filter(turn => turn === "tool approvals ended").length
+    await registerFrom(300)
+    const first = new AbortController()
+    const {attached, firstLine} = attach(id1, first.signal)
+    await firstLine
+    first.abort()
+    await attached
+    await turnsUntil(() => agents[0].turns.includes("steps ended"))
+    await registerFrom(300)
+    const second = new AbortController()
+    const again = attach(id1, second.signal)
+    await again.firstLine
+    expect(approvalsEnded()).toBe(0)
+    await registerFrom(301)
+    expect(approvalsEnded()).toBe(1)
+    second.abort()
+    await again.attached
+    await turnsUntil(() => agents[0].turns.filter(turn => turn === "steps ended").length === 2)
+    await jest.advanceTimersByTimeAsync(10 * minutes)
+    expect(agents[0].open).toBe(false)
+    expect(approvalsEnded()).toBe(2)
   })
 
   it("does not delay the idle close of an open session with a title", async () => {

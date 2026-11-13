@@ -642,6 +642,38 @@ describe("session channel", () => {
     expect(lines.filter(line => line.tools !== undefined)).toEqual([bash, {tools: []}, bash, {tools: []}])
   })
 
+  it("counts the approved tools of an approver no more when the approver leaves or is removed, and sends the new list to the session", async () => {
+    const chat = new FakeChat()
+    const {hub, session, lines} = await channel(chat)
+    const dan = member(12, "Dan", T.GroupMemberRole.Admin)
+    const mia = member(13, "Mia", T.GroupMemberRole.Admin)
+    const danLeft = {...dan, memberStatus: T.GroupMemberStatus.Left}
+    chat.members.set(20, [self, invitedAlice, dan, mia])
+    await session.control.load()
+    const groupEvent = (type: string, fields: object) => hub["onEvent"]({type, groupInfo: group(20, "1 · auth"), ...fields} as unknown as ChatEvent)
+    const approveAll = async (approver: T.GroupMember, requestId: string, toolName: string, n: number) => {
+      session.permission({id: id1, requestId, toolName, description: "Run shell command", inputPreview: "ls"})
+      await until(() => session.actions.get(n)?.card !== undefined)
+      await session.control.ownerCommand(approver, {keyword: "approve", params: `${n} all`})
+    }
+    const toolLines = () => lines.filter(line => line.tools !== undefined)
+    await approveAll(dan, "abcde", "Bash", 1)
+    await approveAll(mia, "fghij", "Edit", 2)
+    chat.members.set(20, [self, invitedAlice, danLeft, mia])
+    await groupEvent("leftMember", {member: danLeft})
+    await until(() => toolLines().length === 3)
+    chat.members.set(20, [self, invitedAlice, danLeft])
+    await groupEvent("deletedMember", {byMember: invitedAlice, deletedMember: mia, withMessages: false})
+    await until(() => toolLines().length === 4)
+    expect(toolLines()).toEqual([
+      {tools: [{tool: "Bash", approvedBy: "Dan"}]},
+      {tools: [{tool: "Bash", approvedBy: "Dan"}, {tool: "Edit", approvedBy: "Mia"}]},
+      {tools: [{tool: "Edit", approvedBy: "Mia"}]},
+      {tools: []},
+    ])
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "list", params: ""})).toBe("No chats.")
+  })
+
   it("revokes an approved tool by /revoke TOOL, lists approved tools after the chats in /list, and answers /approve N all of an action that is not a tool use", async () => {
     const chat = new FakeChat()
     const {session, lines} = await channel(chat)
@@ -661,7 +693,7 @@ describe("session channel", () => {
     expect(lines.filter(line => line.tools !== undefined)).toEqual([{tools: [{tool: "mcp__github__create_issue", approvedBy: "Alice"}]}, {tools: []}])
   })
 
-  it("ends the approvals of tools at the last detach, and sends the approved tools to each new attachment", async () => {
+  it("keeps the approvals of tools across a detach, sends them to each new attachment, and ends them at endToolApprovals", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
@@ -671,10 +703,13 @@ describe("session channel", () => {
     session.onLine = line => second.push(line)
     expect(second).toEqual([{tools: [{tool: "Bash", approvedBy: "Alice"}]}])
     session.onLine = undefined
-    session.endToolApprovals()
     const third: AttachLine[] = []
     session.onLine = line => third.push(line)
-    expect(third).toEqual([])
+    expect(third).toEqual([{tools: [{tool: "Bash", approvedBy: "Alice"}]}])
+    session.endToolApprovals()
+    expect(third).toEqual([{tools: [{tool: "Bash", approvedBy: "Alice"}]}, {tools: []}])
+    session.onLine = line => third.push(line)
+    expect(third).toHaveLength(2)
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "list", params: ""})).toBe("No chats.")
     session.permission({id: id1, requestId: "fghij", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
     await until(() => sentTo(chat, 20).length === 2)

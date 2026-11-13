@@ -1542,8 +1542,9 @@ Notes:
 - One tap approves its own card only. Other pending cards of the tool stay pending.
 - An approval counts while its approver is an admin or owner of the group. After a membership event, the hub sends the approved tools before the rights post; after `/observer`, `Control` sends them after it reads the members again.
 - `/revoke TOOL` removes an approval, and the session gets the new list. `/list` shows the approved tools after the chats.
-- At the last detach the approvals are dropped. A session server answers from the list of its current attachment only, so its list is dropped also when it drops the attachment after a failed call, and a new attachment gets the current list from the hub.
+- The approvals belong to the Claude Code process of the session. A session server answers from the list of its current attachment only. When it drops the attachment after a failed call and attaches again, the hub sends it the approved tools, which it keeps. The approvals are dropped when `/session` comes from another process ID and when the session closes.
 - The approvals are kept in memory, so a service restart drops them.
 - The terminal shows nothing at the approval, and Claude Code's `/permissions` doesn't list it.
+- While the plugin's MCP server is not connected, Claude Code reports `MCP server 'plugin:simplex:simplex' not connected` as a non-blocking PreToolUse hook error at each tool use, and the tool use goes on.
 
-Source: `control.ts`: `Control.ownerCommand`, `Control.approveTool`, `Control.revokeTool`, `Control.approvedTools`, `Control.endToolApprovals`, `requestLines`, `commandsLine`, `ownerRequest`; `hub.ts`: `Session.permission`, `Session.onLine`, `Session.sendTools`, `Session.endToolApprovals`, `Hub.onEvent`; `service.ts`: `Service.onAttach`; `session.ts`: `startSession`, `ServiceLink.open`, `ServiceLink.approvedBy`, `hookOutput`; `hooks/hooks.json`.
+Source: `control.ts`: `Control.ownerCommand`, `Control.approveTool`, `Control.revokeTool`, `Control.approvedTools`, `Control.endToolApprovals`, `requestLines`, `commandsLine`, `ownerRequest`; `hub.ts`: `Session.permission`, `Session.onLine`, `Session.sendTools`, `Session.endToolApprovals`, `Hub.onEvent`; `service.ts`: `Service.onSession`, `Service.scheduleIdle`; `session.ts`: `startSession`, `ServiceLink.open`, `ServiceLink.approvedBy`, `hookOutput`; `hooks/hooks.json`.

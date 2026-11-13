@@ -207,10 +207,12 @@ export class Service {
     this.refuseUnattended(request.pid)
     const title = request.pid === undefined ? undefined : this.titles.get(request.pid)
     const entry = this.entry(id, {...request, id, name: request.name ?? (title?.id === id ? title.name : undefined)})
+    const previous = entry.pid
     entry.pid = request.pid
     entry.seen = Date.now()
     if (request.pid !== undefined) this.registered.emit(String(request.pid))
     const agent = await entry.opening
+    if (previous !== undefined && previous !== request.pid) agent.endToolApprovals()
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
     agent.requestMode(request.config.approve)
@@ -322,7 +324,6 @@ export class Service {
       agent.onLine = undefined
       agent.endPermissions()
       agent.endSteps()
-      agent.endToolApprovals()
       this.scheduleIdle(id, entry)
     })
   }
@@ -413,6 +414,7 @@ export class Service {
       if (agent === undefined || entry.calls > 0 || agent.busy()) return this.scheduleIdle(id, entry)
       this.entries.delete(id)
       agent.open = false
+      agent.endToolApprovals()
       if (this.entries.size === 0) this.scheduleStop()
     }, idleClose)
   }
