@@ -432,11 +432,8 @@ fun TerminalChatItemRow(
     val avatarOffset = (name.height - avatar.height) / 2
     val nameTop = max(topGap.roundToPx(), -avatarOffset)
     val avatarTop = nameTop + avatarOffset
-    val nameBottom = nameTop + name.height
-    val avatarBottom = avatarTop + avatar.height
-    val messageTop =
-      if (sender != null && message[CardTop] == 0) max(nameBottom, avatarBottom) + cardGap.roundToPx()
-      else max(nameBottom, avatarBottom + avatarGap.roundToPx())
+    val gapBelowSender = if (sender != null && message[CardTop] == 0) cardGap else avatarGap
+    val messageTop = max(nameTop + name.height, avatarTop + avatar.height) + gapBelowSender.roundToPx()
     layout(constraints.maxWidth, messageTop + message.height) {
       avatar.placeRelative(CHAT_ITEM_TEXT_PADDING.roundToPx(), avatarTop)
       name.placeRelative(nameStart, nameTop)

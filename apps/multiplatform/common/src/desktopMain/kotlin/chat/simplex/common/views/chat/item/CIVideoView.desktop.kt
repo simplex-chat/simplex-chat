@@ -13,13 +13,12 @@ import chat.simplex.common.simplexWindowState
 import java.awt.Window
 
 @Composable
-actual fun PlayerView(player: VideoPlayer, width: Dp, onClick: () -> Unit, onLongClick: () -> Unit, stop: () -> Unit) {
+actual fun PlayerView(player: VideoPlayer, modifier: Modifier, onClick: () -> Unit, onLongClick: () -> Unit, stop: () -> Unit) {
   Box {
     // The preview this replaces while playing is drawn with FillWidth, so a video smaller than the
     // item width has to grow the same way here - Fit would leave it at its own size in the middle
     SurfaceFromPlayer(player,
-      Modifier
-        .width(width)
+      modifier
         .combinedClickable(
           onLongClick = onLongClick,
           onClick = { if (player.player.isPlaying) stop() else onClick() }

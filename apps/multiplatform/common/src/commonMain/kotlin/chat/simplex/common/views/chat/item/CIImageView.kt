@@ -114,7 +114,7 @@ fun CIImageView(
       // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .width(chatMediaWidth(tall = imageBitmap.width * 0.97 <= imageBitmap.height))
+        .mediaContentWidth(fixedMediaWidth(tall = isTallMedia(imageBitmap.width, imageBitmap.height)))
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
@@ -138,7 +138,7 @@ fun CIImageView(
         // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
         // if text is short and take all available width if text is long
         modifier = Modifier
-          .width(chatMediaWidth(tall = painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height))
+          .mediaContentWidth(fixedMediaWidth(tall = isTallMedia(painter.intrinsicSize.width, painter.intrinsicSize.height)))
           .combinedClickable(
             onLongClick = { showMenu.value = true },
             onClick = onClick
@@ -149,7 +149,7 @@ fun CIImageView(
       )
     } else {
       Box(Modifier
-        .width(chatMediaWidth(tall = painter.intrinsicSize != Size.Unspecified && painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height))
+        .mediaContentWidth(fixedMediaWidth(tall = painter.intrinsicSize != Size.Unspecified && isTallMedia(painter.intrinsicSize.width, painter.intrinsicSize.height)))
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = {}
@@ -192,11 +192,10 @@ fun CIImageView(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
       .then(
         if (!smallView) {
-          val tall = previewBitmap.width * 0.97 <= previewBitmap.height
-          val w = chatMediaWidth(tall)
-          // Height follows the measured (clamped) width, not nominal w, else wide images get an empty strip below.
-          Modifier.mediaWidth(tall).layout { measurable, constraints ->
-            val width = constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
+          val tall = isTallMedia(previewBitmap.width, previewBitmap.height)
+          // Height follows the measured (clamped) width, not the nominal width, else wide images get an empty strip below.
+          Modifier.mediaWidth(fixedMediaWidth(tall), tall).layout { measurable, constraints ->
+            val width = constraints.maxWidth
             val height = (width * (previewBitmap.height.toFloat() / previewBitmap.width.toFloat()).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
             val placeable = measurable.measure(Constraints.fixed(width, height))
             layout(width, height) { placeable.place(0, 0) }
@@ -288,13 +287,18 @@ fun imageViewFullWidth(): Dp {
   return with(LocalDensity.current) { minOf(DEFAULT_MAX_IMAGE_WIDTH, LocalWindowWidth() - approximatePadding) }
 }
 
-@Composable
-fun chatMediaWidth(tall: Boolean): Dp =
-  if (tall && !LocalTerminalLayout.current) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
+fun isTallMedia(width: Number, height: Number): Boolean =
+  width.toDouble() * 0.97 <= height.toDouble()
 
 @Composable
-fun Modifier.mediaWidth(tall: Boolean): Modifier =
-  if (LocalTerminalLayout.current) then(FlatMediaWidth(tall)) else width(chatMediaWidth(tall))
+fun fixedMediaWidth(tall: Boolean, fullWidth: Dp? = null): Dp? =
+  if (LocalTerminalLayout.current) null else if (tall) (fullWidth ?: imageViewFullWidth()) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
+
+fun Modifier.mediaWidth(fixed: Dp?, tall: Boolean): Modifier =
+  if (fixed == null) then(FlatMediaWidth(tall)) else width(fixed)
+
+fun Modifier.mediaContentWidth(fixed: Dp?): Modifier =
+  if (fixed == null) fillMaxWidth() else width(fixed)
 
 fun flatMediaWidth(given: Dp, tall: Boolean): Dp =
   minOf(DEFAULT_MAX_IMAGE_WIDTH, given) * (if (tall) 0.75f else 1f)

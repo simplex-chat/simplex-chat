@@ -379,9 +379,7 @@ func terminalMediaWidth(_ row: CGFloat) -> CGFloat {
     min(terminalMaxMediaWidth, row - 2 * chatItemTextPadding)
 }
 
-func terminalMemberImageSize(_ font: DynamicTypeSize) -> CGFloat {
-    30 * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
-}
+let terminalMemberImageBaseSize: CGFloat = 30
 
 struct ChatItemSender {
     var name: Text
@@ -394,7 +392,7 @@ struct ChatItemSender {
 struct TerminalChatItemRow<Content: View>: View {
     @EnvironmentObject private var theme: AppTheme
     var sender: ChatItemSender?
-    var gutter: CGFloat
+    var avatarSize: CGFloat
     var topGap: CGFloat
     var contentStartsWithCard: Bool
     @ViewBuilder var content: () -> Content
@@ -403,9 +401,9 @@ struct TerminalChatItemRow<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             if let sender {
                 HStack(spacing: 0) {
-                    if gutter > 0 {
+                    if avatarSize > 0 {
                         ZStack(alignment: .topLeading) {
-                            Color.clear.frame(width: gutter, height: 0)
+                            Color.clear.frame(width: avatarSize + chatItemTextPadding, height: 0)
                             sender.image?.padding(.leading, chatItemTextPadding)
                         }
                     }
@@ -420,7 +418,7 @@ struct TerminalChatItemRow<Content: View>: View {
     }
 
     private var overhang: CGFloat {
-        sender?.image == nil ? 0 : max(0, (gutter - chatItemTextPadding - terminalLineHeight(UIFont.preferredFont(forTextStyle: .body), nil, theme)) / 2)
+        sender?.image == nil ? 0 : max(0, (avatarSize - terminalLineHeight(UIFont.preferredFont(forTextStyle: .body), nil, theme)) / 2)
     }
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {

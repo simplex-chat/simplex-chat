@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -24,9 +25,9 @@ class TerminalChatItemRowTest {
   private val placed = mutableMapOf<String, Placed>()
   private val aliceWithAvatar = ChatItemSender("alice", null, null, own = false) { Box(Modifier.size(27.dp).record(placed, "avatar")) }
 
-  private fun messagePlaced(sender: ChatItemSender?, gutter: Dp = 0.dp, topGap: Dp = 0.dp, message: @Composable (Modifier) -> Unit): Placed {
+  private fun messagePlaced(sender: ChatItemSender?, gutter: Dp = 0.dp, topGap: Dp = 0.dp, fontScale: Float = 1f, message: @Composable (Modifier) -> Unit): Placed {
     renderScene {
-      CompositionLocalProvider(LocalTerminalLayout provides true) {
+      CompositionLocalProvider(LocalTerminalLayout provides true, LocalDensity provides Density(1f, fontScale)) {
         Box(Modifier.width(300.dp).record(placed, "row")) {
           TerminalChatItemRow(sender, gutter, topGap) { message(Modifier.record(placed, "message")) }
         }
@@ -92,6 +93,14 @@ class TerminalChatItemRowTest {
     val card = messagePlaced(aliceWithAvatar, gutter = 39.dp) { Box(it.messageCard().fixed(100, 40, null)) }
     val avatar = avatar()
     assertEquals(avatar.y + avatar.height + cardGap, card.y)
+  }
+
+  @Test
+  fun textBelowNameLineTallerThanAvatarTakesHalfStep() {
+    val nameLine = messagePlaced(alice, fontScale = 2f) { Box(it.fixed(100, 22, 17)) }.y
+    val message = messagePlaced(aliceWithAvatar, gutter = 39.dp, fontScale = 2f) { Box(it.fixed(100, 22, 17)) }
+    assertTrue(nameLine > 27, "name line $nameLine")
+    assertEquals(nameLine + with(Density(1f, 2f)) { TERMINAL_HEADING_BOTTOM_GAP.roundToPx() }, message.y)
   }
 
   @Test

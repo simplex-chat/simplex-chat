@@ -12,10 +12,12 @@ import SimpleXChat
 import SwiftyGif
 import Combine
 
-private let memberImageBaseSize: CGFloat = 34
+let memberImageBaseSize: CGFloat = 34
+private let goToItemIconSize: CGFloat = 13
+private let goToItemIconGap: CGFloat = 10
 
-func scaledMemberImageSize(_ font: DynamicTypeSize) -> CGFloat {
-    memberImageBaseSize * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
+func scaledMemberImageSize(_ font: DynamicTypeSize, _ baseSize: CGFloat = memberImageBaseSize) -> CGFloat {
+    baseSize * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
 }
 
 private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
@@ -1765,7 +1767,7 @@ struct ChatView: View {
         }
 
         private var terminalImageSize: CGFloat {
-            terminalMemberImageSize(userFont)
+            scaledMemberImageSize(userFont, terminalMemberImageBaseSize)
         }
 
         typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
@@ -2153,7 +2155,7 @@ struct ChatView: View {
         private func terminalItemRow(_ range: ClosedRange<Int>?, _ showSender: Bool, _ ci: ChatItem, _ itemSeparation: ItemSeparation) -> some View {
             let selecting = selectedChatItems != nil && ci.canBeDeletedForSelf
             let leading: CGFloat = selecting ? 4 + 24 : 0
-            let gutter = chat.chatInfo.chatType == .group ? terminalImageSize + chatItemTextPadding : 0
+            let goToButton: CGFloat = searchIsNotBlank || ci.meta.itemForwarded?.chatTypeApiIdMsgId != nil ? goToItemIconSize + goToItemIconGap + chatItemTextPadding : 0
             let older = merged.oldest().nextItem
             let topGap = terminalRowGap(
                 ci,
@@ -2169,11 +2171,11 @@ struct ChatView: View {
                 }
                 TerminalChatItemRow(
                     sender: showSender ? chatItemSender(ci, range) : nil,
-                    gutter: gutter,
+                    avatarSize: chat.chatInfo.chatType == .group ? terminalImageSize : 0,
                     topGap: topGap,
                     contentStartsWithCard: terminalItemStartsWithCard(ci, revealed: revealed)
                 ) {
-                    chatItemWithMenu(ci, range, terminalMediaWidth(listWidth - leading), itemSeparation)
+                    chatItemWithMenu(ci, range, terminalMediaWidth(listWidth - leading - goToButton), itemSeparation)
                 }
                 .padding(.leading, leading)
             }
@@ -2999,8 +3001,8 @@ struct ChatView: View {
         func goToItemInnerButton(_ alignStart: Bool, _ image: String, touchInProgress: Bool, _ onClick: @escaping () -> Void) -> some View {
             Image(systemName: image)
                 .resizable()
-                .frame(width: 13, height: 13)
-                .padding([alignStart ? .trailing : .leading], 10)
+                .frame(width: goToItemIconSize, height: goToItemIconSize)
+                .padding([alignStart ? .trailing : .leading], goToItemIconGap)
                 .tint(theme.colors.secondary.opacity(touchInProgress ? 1.0 : 0.4))
                 .simultaneousGesture(TapGesture().onEnded(onClick))
         }

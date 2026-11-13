@@ -22,6 +22,8 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.chatViewScrollState
 import chat.simplex.common.views.chat.item.CHAT_IMAGE_LAYOUT_ID
+import chat.simplex.common.views.chat.item.fixedMediaWidth
+import chat.simplex.common.views.chat.item.isTallMedia
 import chat.simplex.common.views.chat.item.mediaWidth
 import chat.simplex.res.*
 import kotlinx.coroutines.Dispatchers
@@ -200,10 +202,11 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
 @Composable
 fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongClick: () -> Unit) {
   val image = remember(linkPreview.image) { base64ToBitmap(linkPreview.image) }
+  val tall = isTallMedia(image.width, image.height)
   Column(
     Modifier
     .layoutId(CHAT_IMAGE_LAYOUT_ID)
-    .mediaWidth(tall = image.width * 0.97 <= image.height)
+    .mediaWidth(fixedMediaWidth(tall), tall)
   ) {
     val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
     Image(

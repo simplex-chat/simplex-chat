@@ -164,7 +164,7 @@ final class SnapshotTests: XCTestCase {
     func testTerminalMediaAndAvatarSizes() {
         XCTAssertEqual(terminalMediaWidth(402), 378)
         XCTAssertEqual(terminalMediaWidth(1000), 500)
-        XCTAssertEqual(terminalMemberImageSize(.large), 30)
+        XCTAssertEqual(scaledMemberImageSize(.large, terminalMemberImageBaseSize), 30)
     }
 
     func testVoiceMessageTimeFormatting() {
