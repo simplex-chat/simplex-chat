@@ -1737,7 +1737,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
               toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
         dropRequest :: InvitationId -> CM ()
-        dropRequest invId = withAgent (\a -> rejectContact a NRMBackground (aUserId user) invId Nothing) `catchAllErrors` eToView
+        dropRequest invId = withAgent (`deleteRequestInvitation` invId) `catchAllErrors` eToView
 
     muteEventInChannel :: GroupInfo -> GroupMember -> Bool
     muteEventInChannel gInfo@GroupInfo {membership} m =
