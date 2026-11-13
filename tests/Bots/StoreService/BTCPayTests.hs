@@ -39,7 +39,7 @@ import Data.Scientific (Scientific, scientific)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Network.HTTP.Types.Header (Header, hAuthorization)
 import Simplex.Chat.PaymentService.Types
@@ -116,11 +116,13 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "names a status the provider invented" testFakeUnknownStatus
     it "reads paymentMethodPaid over the wire, never totalPaid" testFakePaymentMethodPaid
     it "makes a 500 at checkout a ProviderError" testFakeCreate500
-    it "abandons an invoice it created but could not learn the address of" testFakeCreatePostFailure
+    it "cancels an invoice it created but could not learn the address of, naming it" testFakeCreatePostFailure
+    it "names an invoice it created, could not learn the address of and could not cancel" testFakeCreatePostFailureUncancelled
     it "names the payment method a created invoice does not offer" testFakeCreateWrongMethod
     it "names a payment method with no destination, and writes nothing" testFakeCreateNoDestination
     it "names a payment method with no amount, and writes nothing" testFakeCreateNoAmount
     it "refuses an answer past the size it will hold, and reads again after" testFakeOversizeAnswer
+    it "ends a call whose answer stalls in its body after the configured timeout, a create after the longer checkout one, and reads again after" testFakeStalledAnswer
     it "makes a 500 on a read a ProviderError the next read recovers from" testFakeRead500
     it "verifies a webhook with the secret it was configured with" testFakeWebhookSecretWiring
     it "keeps totalPaid distinguishable in every fixture an amount is asserted from" testFixturesGuardTotalPaid
@@ -818,9 +820,17 @@ testFakeCreatePostFailure = withProvider $ \fake p -> do
   failAfterCalls 1 fake 1 500
   r <- pCreateInvoice p (SPMCrypto CCBtc) fiftyFourDollars
   r `shouldSatisfy` namesInError "500"
-  ids <- fakeInvoiceIds fake
-  length ids `shouldBe` 1
-  r `shouldSatisfy` \case Right _ -> False; Left _ -> True
+  [created] <- fakeInvoiceIds fake
+  r `shouldSatisfy` namesInError ("; invoice " <> created <> " is cancelled")
+  map frBody <$> apiRequests fake "POST" ["invoices", created, "status"] `shouldReturn` [J.encode (J.object ["status" .= ("Invalid" :: Text)])]
+
+testFakeCreatePostFailureUncancelled :: IO ()
+testFakeCreatePostFailureUncancelled = withProvider $ \fake p -> do
+  failAfterCalls 1 fake 2 500
+  r <- pCreateInvoice p (SPMCrypto CCBtc) fiftyFourDollars
+  [created] <- fakeInvoiceIds fake
+  r `shouldSatisfy` namesInError ("; invoice " <> created <> " is left open, as its cancel failed: cancel invoice failed: HTTP 500")
+  length <$> apiRequests fake "POST" ["invoices", created, "status"] `shouldReturn` 1
 
 testFakeCreateWrongMethod :: IO ()
 testFakeCreateWrongMethod = withProvider $ \fake p -> do
@@ -847,6 +857,23 @@ testFakeOversizeAnswer = withProvider $ \fake p -> do
   answerOversize fake True
   pReadInvoice p invRef >>= (`shouldSatisfy` namesInError "over 10485760 bytes")
   answerOversize fake False
+  pReadInvoice p invRef >>= \case
+    Right _ -> pure ()
+    Left e -> expectationFailure ("the next read must recover, and got " <> show e)
+
+testFakeStalledAnswer :: IO ()
+testFakeStalledAnswer = withProviderConfigured (\cfg -> cfg {bTimeoutMicros = 300000, bCheckoutTimeoutMicros = 900000}) $ \fake p -> do
+  ProviderInvoice {piProviderRef = invRef} <- createdInvoice p (SPMCrypto CCBtc)
+  answerStalled fake True
+  start <- getCurrentTime
+  pReadInvoice p invRef >>= (`shouldSatisfy` namesInError "read invoice failed: timed out")
+  readEnd <- getCurrentTime
+  pCreateInvoice p (SPMCrypto CCBtc) fiftyFourDollars >>= (`shouldSatisfy` namesInError "create invoice failed: timed out")
+  createEnd <- getCurrentTime
+  diffUTCTime readEnd start `shouldSatisfy` (< 0.9)
+  diffUTCTime createEnd readEnd `shouldSatisfy` (>= 0.9)
+  diffUTCTime createEnd start `shouldSatisfy` (< 3)
+  answerStalled fake False
   pReadInvoice p invRef >>= \case
     Right _ -> pure ()
     Left e -> expectationFailure ("the next read must recover, and got " <> show e)

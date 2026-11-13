@@ -7,6 +7,7 @@
 
 module StoreService.Group
   ( ensureManagedGroup,
+    joinerAcceptance,
     runGroupLane,
     inertGroupConfig,
     GroupEvent (..),
@@ -27,13 +28,13 @@ where
 
 import StoreService.Codes (issueFailedText, issueOneCode, revokeBadgeCode, singleUse)
 import StoreService.Config (GroupConfig (..))
-import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction, groupCommands)
+import StoreService.Group.Command (CmdAction (..), GroupCmd (..), MoneyCmd, groupCmdAction, groupCommands)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Store (nameCodesIssuedSince)
+import StoreService.Names.Store (CodeIssuer (..), groupNameCodesIssuedSince)
 import StoreService.Names.Turns (Turns)
 import StoreService.Store (CodeTracker (..), ManagedGroup (..), RevokeResult (..), clearCodeGroupItems, getCodeTracker, getEditableTrackers, getManagedGroup, insertManagedGroup, markOwnerBootstrapped, setCodeGroupItem)
 import StoreService.Store.Invoices (truncateToSecond)
-import Control.Concurrent.STM (TQueue, atomically, flushTQueue, readTQueue, readTVarIO, writeTQueue)
+import Control.Concurrent.STM (TMVar, TQueue, atomically, flushTQueue, readTMVar, readTQueue, readTVarIO, writeTQueue)
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM_, forever, mfilter, replicateM, unless, void)
 import Control.Monad.Except (runExceptT)
@@ -60,10 +61,11 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent (..), ciContentToText)
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store.Messages (getGroupChatItem)
+import Simplex.Chat.Store.Profiles (GroupLinkInfo (..))
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Types
-import Simplex.Chat.Types.Preferences (GroupPreferences (..), commands_, emptyGroupPrefs)
-import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Chat.Types.Preferences (GroupPreferences (..), emptyGroupPrefs)
+import Simplex.Chat.Types.Shared (GroupAcceptance (..), GroupMemberRole (..))
 import Simplex.Chat.View (simplexChatContact)
 import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), UserId)
 import Simplex.Messaging.Encoding.String (StrEncoding, strEncode)
@@ -91,12 +93,12 @@ ensureManagedGroup cc gc =
     -- The service stops instead, so a restart retries rather than leaving the group unserved.
     Left _ -> logError "badge group lookup failed, stopping" >> exitFailure
     -- The join link is a bearer secret, so it is never logged.
-    Right (Just ManagedGroup {mgGroupId}) ->
+    Right (Just ManagedGroup {mgGroupId, mgOwnerBootstrapped}) ->
       sendChatCmd cc (APIGroupInfo mgGroupId) >>= \case
         Right CRGroupInfo {groupInfo = GroupInfo {membership, groupProfile = p}}
           | memberCurrent membership -> do
               forM_ (inertGroupConfig gc p) logWarn
-              unless (commandsCurrent p) $ advertiseCommands cc mgGroupId p
+              syncServiceProfile cc mgGroupId mgOwnerBootstrapped p
               logNote "badge group ready"
               pure (Just mgGroupId)
           | otherwise -> groupGone
@@ -134,17 +136,43 @@ orphanHint :: GroupName -> Text
 orphanHint gName = "delete this orphan group with /d #" <> viewName gName <> " in --run-cli mode"
 
 -- An existing group gets the current commands, so an upgrade that changes them reaches its members.
-commandsCurrent :: GroupProfile -> Bool
-commandsCurrent groupProfile = (groupPreferences groupProfile >>= commands_) == Just groupCommands
-
-advertiseCommands :: ChatController -> GroupId -> GroupProfile -> IO ()
-advertiseCommands cc groupId groupProfile =
-  sendChatCmd cc (APIUpdateGroupProfile groupId p') >>= \case
-    Right CRGroupUpdated {} -> logNote "badge group commands advertised"
-    r -> logError ("badge group profile update failed: " <> tshow r)
+syncServiceProfile :: ChatController -> GroupId -> Bool -> GroupProfile -> IO ()
+syncServiceProfile cc groupId ownerSetUp groupProfile =
+  unless (p' == groupProfile) $
+    sendChatCmd cc (APIUpdateGroupProfile groupId p') >>= \case
+      Right CRGroupUpdated {} -> logNote "badge group profile updated"
+      r -> logError ("badge group profile update failed: " <> tshow r)
   where
-    prefs = fromMaybe emptyGroupPrefs (groupPreferences groupProfile)
-    p' = groupProfile {groupPreferences = Just (prefs {commands = Just groupCommands} :: GroupPreferences)}
+    p' = serviceProfile ownerSetUp groupProfile
+
+restoreServiceProfile :: ChatController -> GroupId -> IO ()
+restoreServiceProfile cc groupId =
+  withDB' "getManagedGroup" cc getManagedGroup >>= \case
+    Right (Just ManagedGroup {mgOwnerBootstrapped}) ->
+      sendChatCmd cc (APIGroupInfo groupId) >>= \case
+        Right CRGroupInfo {groupInfo = GroupInfo {groupProfile}} -> syncServiceProfile cc groupId mgOwnerBootstrapped groupProfile
+        r -> logError ("badge group info failed: " <> tshow r)
+    _ -> pure ()
+
+serviceProfile :: Bool -> GroupProfile -> GroupProfile
+serviceProfile ownerSetUp p@GroupProfile {groupPreferences, memberAdmission} =
+  p {groupPreferences = Just (prefs {commands = Just groupCommands} :: GroupPreferences), memberAdmission = admission}
+  where
+    prefs = fromMaybe emptyGroupPrefs groupPreferences
+    admission
+      | ownerSetUp = Just (fromMaybe emptyGroupMemberAdmission memberAdmission) {review = Just MCAll}
+      | otherwise = memberAdmission
+
+-- The first joiner is not held for review, as nobody could approve them before the group has an owner.
+joinerAcceptance :: TMVar ChatController -> GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
+joinerAcceptance startedCC GroupInfo {groupId} GroupLinkInfo {memberRole} _ = do
+  cc <- atomically $ readTMVar startedCC
+  withDB' "getManagedGroup" cc getManagedGroup <&> \managed -> Right (acceptance managed, memberRole)
+  where
+    acceptance = \case
+      Right (Just ManagedGroup {mgGroupId, mgOwnerBootstrapped}) | mgGroupId == groupId && mgOwnerBootstrapped -> GAPendingReview
+      Right _ -> GAAccepted
+      Left _ -> GAPendingReview
 
 -- Config is applied only at creation, since a group rename is broadcast to every member.
 inertGroupConfig :: GroupConfig -> GroupProfile -> Maybe Text
@@ -174,6 +202,7 @@ data GroupEvent
 
 data GroupAction
   = GAJoined
+  | GAProfileUpdated
   | GACommand GroupMemberRole Text
   deriving (Eq, Show)
 
@@ -182,6 +211,7 @@ data GroupAction
 groupEvent :: ChatEvent -> Maybe GroupEvent
 groupEvent = \case
   CEvtJoinedGroupMember {groupInfo = GroupInfo {groupId}} -> Just $ GEInGroup groupId GAJoined
+  CEvtGroupUpdated {toGroup = GroupInfo {groupId}} -> Just $ GEInGroup groupId GAProfileUpdated
   CEvtNewChatItems {chatItems = AChatItem _ _ (GroupChat GroupInfo {groupId} scope) ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent (MCText t), meta = CIMeta {itemDeleted, itemLive}} : _}
     | isNothing scope && isNothing itemDeleted && itemLive /= Just True -> Just $ GEInGroup groupId (GACommand (memberRole' m) t)
   _ -> Nothing
@@ -199,41 +229,43 @@ coalesceTrackerRefreshes = snd . foldr keepLast (S.empty, [])
 logUncaught :: HasCallStack => IO () -> IO ()
 logUncaught a = a `catchOwn'` withFrozenCallStack (logError . tshow)
 
-handleGroupEvent :: ChatController -> Turns -> Bool -> GroupId -> GroupEvent -> IO ()
-handleGroupEvent cc turns namesOn groupId ev = logUncaught (handle ev)
+handleGroupEvent :: ChatController -> Turns -> Bool -> Int -> (MoneyCmd -> IO (Either Text Text)) -> GroupId -> GroupEvent -> IO ()
+handleGroupEvent cc turns namesOn nameCodesPerDay runMoney groupId ev = logUncaught (handle ev)
   where
     handle = \case
       GEInGroup gid action
         | gid /= groupId -> pure ()
         | otherwise -> case action of
             GAJoined -> promoteOwner cc groupId
+            GAProfileUpdated -> restoreServiceProfile cc groupId
             GACommand role t -> case groupCmdAction role t of
-              RunCmd cmd -> runGroupCmd cc turns namesOn groupId cmd
+              RunCmd cmd -> runGroupCmd cc turns namesOn nameCodesPerDay runMoney groupId cmd
               ReplyText txt -> void $ sendGroupText cc groupId "command reply" txt
               IgnoreMsg -> pure ()
       GETracker badgeCodeId code -> updateTracker cc groupId badgeCodeId code
 
 promoteFirstOwner :: ChatController -> GroupInfo -> GroupMember -> IO ()
-promoteFirstOwner cc g@GroupInfo {groupId} member =
+promoteFirstOwner cc g@GroupInfo {groupId, groupProfile} member =
   -- The flag is set before promoting, so a retry cannot promote a second owner.
   withDB' "markOwnerBootstrapped" cc (`markOwnerBootstrapped` groupId) >>= \case
-    Right True ->
+    Right True -> do
       sendChatCmd cc (APIMembersRole groupId (groupMemberId' member :| []) GROwner) >>= \case
         -- The core returns no members when every store update failed.
         Right CRMembersRoleUser {members = _ : _} -> logNote $ "badge group owner promoted: member " <> tshow (groupMemberId' member)
         r -> logError $ "badge group owner promotion failed: " <> tshow r <> " - " <> noOwnerHint (groupName' g)
+      syncServiceProfile cc groupId True groupProfile
     _ -> pure ()
 
 -- Nothing is a group that is not served, so its events are drained.
-runGroupLane :: ChatController -> Turns -> Bool -> TQueue GroupEvent -> Maybe GroupId -> IO ()
-runGroupLane cc turns namesOn q groupId_ = case groupId_ of
+runGroupLane :: ChatController -> Turns -> Bool -> Int -> (MoneyCmd -> IO (Either Text Text)) -> TQueue GroupEvent -> Maybe GroupId -> IO ()
+runGroupLane cc turns namesOn nameCodesPerDay runMoney q groupId_ = case groupId_ of
   Just groupId -> do
     promoteOwner cc groupId
     -- Reconciling precedes the first batch, so queued events write after the correction.
     reconcileTrackers cc groupId
     forever $ do
       evs <- atomically $ (:) <$> readTQueue q <*> flushTQueue q
-      mapM_ (handleGroupEvent cc turns namesOn groupId) (coalesceTrackerRefreshes evs)
+      mapM_ (handleGroupEvent cc turns namesOn nameCodesPerDay runMoney groupId) (coalesceTrackerRefreshes evs)
   Nothing -> forever $ void $ atomically (readTQueue q)
 
 -- The earliest joined member is promoted, not the one who just joined, so a join the lane never handled
@@ -243,10 +275,11 @@ promoteOwner cc groupId =
   withDB' "getManagedGroup" cc getManagedGroup >>= \case
     Right (Just ManagedGroup {mgOwnerBootstrapped}) ->
       sendChatCmd cc (APIListMembers groupId) >>= \case
-        Right CRGroupMembers {group = Group {groupInfo, members}}
+        Right CRGroupMembers {group = Group {groupInfo = groupInfo@GroupInfo {groupProfile}, members}}
           -- An owner made by hand only needs the flag set, or promoting would add a second owner.
-          | any (\m -> memberRole' m == GROwner && memberCurrent m) members ->
+          | any (\m -> memberRole' m == GROwner && memberCurrent m) members -> do
               unless mgOwnerBootstrapped $ void $ withDB' "markOwnerBootstrapped" cc (`markOwnerBootstrapped` groupId)
+              syncServiceProfile cc groupId True groupProfile
           -- A crash between setting the flag and promoting leaves no owner, and only the operator may retry.
           | mgOwnerBootstrapped -> logError $ noOwnerHint (groupName' groupInfo)
           | otherwise -> mapM_ (promoteFirstOwner cc groupInfo) $ listToMaybe $ sortOn groupMemberId' $ filter joined members
@@ -258,10 +291,12 @@ promoteOwner cc groupId =
 
 -- The live local name, quoted as --run-cli parses it, can differ from the configured one after a name clash or a rename.
 noOwnerHint :: GroupName -> Text
-noOwnerHint gName = "the badge group has no member owner, make one with /mr #" <> viewName gName <> " <member> owner in --run-cli mode"
+noOwnerHint gName =
+  "the badge group has no member owner, make one with /mr #" <> viewName gName <> " <member> owner in --run-cli mode"
+    <> ", or a member pending review with /accept member #" <> viewName gName <> " @<member> owner in --run-cli mode"
 
-runGroupCmd :: ChatController -> Turns -> Bool -> GroupId -> GroupCmd -> IO ()
-runGroupCmd cc turns namesOn groupId = \case
+runGroupCmd :: ChatController -> Turns -> Bool -> Int -> (MoneyCmd -> IO (Either Text Text)) -> GroupId -> GroupCmd -> IO ()
+runGroupCmd cc turns namesOn nameCodesPerDay runMoney groupId = \case
   GCIssue bt months uses ->
     issueOneCode cc bt months CPSFree uses >>= \case
       Left _ -> reply issueFailedText
@@ -273,10 +308,8 @@ runGroupCmd cc turns namesOn groupId = \case
               >>= mapM_ (\iid -> withDB' "setCodeGroupItem" cc $ \db -> setCodeGroupItem db badgeCodeId iid now)
   GCBulk bt months count -> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
   GCIssueName {} | not namesOn -> reply namesOffText
-  GCBulkName {} | not namesOn -> reply namesOffText
   GCIssueName len years ->
-    withinNameCodes 1 $ issueNameCode cc len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode . NCPrepaid)
-  GCBulkName len years count -> withinNameCodes count $ issueMany count (fmap (formatNameCode . NCPrepaid) <$> issueNameCode cc len years CPSFree)
+    withinNameCodes $ issueNameCode cc IssuedInGroup len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode . NCPrepaid)
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> do
     outcome <- either id id <$> revokeWithTracker cc code
@@ -284,24 +317,21 @@ runGroupCmd cc turns namesOn groupId = \case
   GCRevokeName code -> do
     outcome <- either id id <$> revokeNameCode turns cc code
     reply (formatNameCode (NCPrepaid code) <> ": " <> outcome)
+  GCMoney cmd -> runMoney cmd >>= void . sendGroupText cc groupId "money reply, /balance shows what was recorded" . either id id
   where
     reply = void . sendGroupText cc groupId "reply, any codes in it are lost"
-    withinNameCodes n issue = do
+    withinNameCodes issue = do
       since <- addUTCTime (negate nominalDay) <$> getCurrentTime
-      withDB' "nameCodesIssuedSince" cc (`nameCodesIssuedSince` since) >>= \case
+      withDB' "groupNameCodesIssuedSince" cc (`groupNameCodesIssuedSince` since) >>= \case
         Right issued
-          | issued + n <= maxNameCodesPerDay -> issue
-          | otherwise -> reply $ "At most " <> tshow maxNameCodesPerDay <> " name codes are issued in a day, " <> tshow issued <> " so far. Issue more with //issue name in --run-cli."
+          | issued < nameCodesPerDay -> issue
+          | otherwise -> reply $ "At most " <> tshow nameCodesPerDay <> " name codes are issued in a day, " <> tshow issued <> " so far. Issue more with //issue name in --run-cli."
         Left _ -> reply issueFailedText
     issueMany count issueOne = do
       (errs, issued) <- partitionEithers <$> replicateM count issueOne
       reply . T.intercalate "\n" $ case errs of
         [] -> issued
         _ : _ -> issued <> ["Issued " <> tshow (length issued) <> " of " <> tshow count <> " codes. The remaining codes could not be issued."]
-
--- | Each registers at the sponsor allowance's and the gas key's cost, so a member's account taken over issues few.
-maxNameCodesPerDay :: Int
-maxNameCodesPerDay = 100
 
 namesOffText :: Text
 namesOffText = "Names are not enabled on this service, so name codes cannot be issued."

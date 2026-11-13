@@ -30,7 +30,7 @@ import Data.Word (Word32)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Network.HTTP.Types (hAuthorization, parseSimpleQuery)
 import Text.Read (readMaybe)
@@ -63,6 +63,7 @@ badgeStripeTests = describe "badge stripe adapter" $ do
     it "cancels an intent waiting for a card after three declines in a row, and keeps one with fewer" testDeclinesCancel
     it "makes a 500 at checkout a ProviderError, creating nothing" testFakeCreate500
     it "makes a 500 on a read a ProviderError the next read recovers from" testFakeRead500
+    it "ends a call whose answer stalls in its body after the configured timeout, a create after the longer checkout one, and reads again after" testFakeStalledAnswer
     it "refuses a crypto method, since Stripe offers none" testRefusesCrypto
     it "makes an unknown intent status a ProviderError, not a silent no-signal" testFakeReadUnknownStatus
     it "settles a succeeded intent with no charge at read time" testSettledNoChargeReadTime
@@ -117,7 +118,10 @@ failWith :: HasCallStack => String -> IO a
 failWith msg = expectationFailure msg >> error msg
 
 withProvider :: HasCallStack => (FakeStripe -> Provider -> IO a) -> IO a
-withProvider action = bounded $ withFakeStripe $ \fake -> stripeProvider (fsConfig fake) >>= action fake
+withProvider = withProviderConfigured id
+
+withProviderConfigured :: HasCallStack => (StripeConfig -> StripeConfig) -> (FakeStripe -> Provider -> IO a) -> IO a
+withProviderConfigured configure action = bounded $ withFakeStripe $ \fake -> stripeProvider (configure (fsConfig fake)) >>= action fake
   where
     bounded act = timeout exampleCeiling act >>= maybe (failWith "the fake stripe did not answer within 20s") pure
 
@@ -285,6 +289,21 @@ testFakeRead500 = withProvider $ \fake p -> do
   r <- pReadInvoice p pid
   r `shouldSatisfy` namesInError "500"
   pReadInvoice p pid `shouldReturn` Right (Just (SigSettled fiftyFourDollarsReceived fixtureChargeAt))
+
+testFakeStalledAnswer :: IO ()
+testFakeStalledAnswer = withProviderConfigured (\cfg -> cfg {sTimeoutMicros = 300000, sCheckoutTimeoutMicros = 900000}) $ \fake p -> do
+  ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
+  answerStalled fake True
+  start <- getCurrentTime
+  pReadInvoice p pid >>= (`shouldSatisfy` namesInError ("read intent " <> pid <> " failed: timed out"))
+  readEnd <- getCurrentTime
+  pCreateInvoice p (SPMCard CPStripe) fiftyFourDollars >>= (`shouldSatisfy` namesInError "create intent failed: timed out")
+  createEnd <- getCurrentTime
+  diffUTCTime readEnd start `shouldSatisfy` (< 0.9)
+  diffUTCTime createEnd readEnd `shouldSatisfy` (>= 0.9)
+  diffUTCTime createEnd start `shouldSatisfy` (< 3)
+  answerStalled fake False
+  pReadInvoice p pid `shouldReturn` Right Nothing
 
 testRefusesCrypto :: IO ()
 testRefusesCrypto = withProvider $ \_ p ->

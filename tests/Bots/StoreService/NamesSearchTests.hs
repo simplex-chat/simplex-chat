@@ -59,7 +59,7 @@ import StoreService.Config (ListenerConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Links (LinkKind (..))
+import StoreService.Names.Links (LinkKind (..), linkMaxBytes)
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
 import StoreService.Names.Store (EditState (..), NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
 import StoreService.Web.Http (HttpEnv (..), maxSearches, newHttpEnv, notFound, previewLimit, searchLimit)
@@ -88,7 +88,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers invalid_name to a length not a decimal integer in 6-63" $ testBadLength g
   describe "link preview" $ do
     it "answers each kind of chat as an entity without its links" $ testPreviewKinds g
-    it "answers invalid_link to anything but one short link within 4096 bytes" $ testPreviewInvalid g
+    it "answers invalid_link to anything but one short link within the link bound" $ testPreviewInvalid g
     it "answers bad_request to a body that is not a JSON object or is over its cap" $ testPreviewBadBody g
   describe "terms" $ do
     it "answers either current terms' link and text by its hash, not_found to another hash, an unset or untaken link, terms_unavailable with Retry-After to a text not fetched now, provider_unavailable when unread and bad_request to a malformed hash" $ testTerms g
@@ -563,12 +563,12 @@ testPreviewInvalid g = withSearch g id id $ \s -> do
   let base = bakeryLink <> "?x="
       padded n = base <> T.replicate (n - T.length base) "a"
       invalid = refused 400 "invalid_link"
-  forM_ ["hello", "", fullLink, bakeryLink <> ";" <> bakeryLink, " " <> bakeryLink, taggedLink "smp8.simplex.im" 'g' "Y8m3", padded 4097] $ \l ->
+  forM_ ["hello", "", fullLink, bakeryLink <> ";" <> bakeryLink, " " <> bakeryLink, taggedLink "smp8.simplex.im" 'g' "Y8m3", padded (linkMaxBytes + 1)] $ \l ->
     previewOf s l >>= \a -> (l, a) `shouldBe` (l, invalid)
   answerOf <$> postPreview s "{}" `shouldReturn` invalid
   answerOf <$> postPreview s "{\"link\": 5}" `shouldReturn` invalid
   fetchedLinks s `shouldReturn` []
-  fst <$> previewOf s (padded 4096) `shouldReturn` 200
+  fst <$> previewOf s (padded linkMaxBytes) `shouldReturn` 200
 
 testPreviewBadBody :: TVar ChaChaDRG -> IO ()
 testPreviewBadBody g = withSearch g id id $ \s -> do

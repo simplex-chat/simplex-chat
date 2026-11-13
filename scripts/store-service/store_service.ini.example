@@ -83,6 +83,8 @@ private_key = replace-me
 ;[group]
 ;display_name = SimpleX Badges
 ;description = Welcome to the badges group
+; name codes the group issues in 24 hours; each registers at the sponsor allowance's cost, 0 issues none
+;name_codes_per_day = 10
 
 ; the names store: omit [names] and [chain] together to turn it off.
 ;[names]
@@ -135,8 +137,9 @@ private_key = replace-me
 ;confirmations = 3
 ; the most gas any one transaction may use
 ;gas_limit_cap = 8000000
-; the most wei per gas any transaction may pay (100 gwei); a transaction that needs more waits
-;max_fee_per_gas = 100000000000
+; the most wei per gas any transaction may pay (5 gwei), and never more than 0.01 ETH in all; a
+; transaction that needs more waits
+;max_fee_per_gas = 5000000000
 
 ; the lowest level of the lines printed: trace, debug, info, note, warn or error. The service's
 ; routine lines are note, so warn and error hide them, the group's join link included. The level

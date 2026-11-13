@@ -5,6 +5,7 @@
 
 module StoreService.Group.Command
   ( GroupCmd (..),
+    MoneyCmd (..),
     CmdAction (..),
     groupCmdAction,
     groupCommands,
@@ -12,6 +13,9 @@ module StoreService.Group.Command
     badgeTypeP,
     nameCodeP,
     prepaidCodeP,
+    balanceArgsP,
+    recordRefundArgsP,
+    closeArgsP,
     textTokenP,
     maxMonths,
     maxUses,
@@ -38,16 +42,19 @@ import StoreService.Config (minNameYears)
 maxBulk, maxUses, maxMonths, maxNameYears :: Int
 maxBulk = 100
 maxUses = 1000
-maxMonths = 255
+maxMonths = 12
 maxNameYears = 10
 
 data GroupCmd
   = GCIssue BadgeType Int Int
   | GCBulk BadgeType Int Int
   | GCIssueName Int Int
-  | GCBulkName Int Int Int
   | GCRevoke BadgeCode
   | GCRevokeName NamePrepaidCode
+  | GCMoney MoneyCmd
+  deriving (Eq, Show)
+
+data MoneyCmd = MCBalance Text | MCRecordRefund Text Int | MCClose Text
   deriving (Eq, Show)
 
 data CmdAction
@@ -59,18 +66,9 @@ data CmdAction
 groupCmdAction :: GroupMemberRole -> Text -> CmdAction
 groupCmdAction role t = case A.parseOnly cmdActionP (encodeUtf8 (T.strip t)) of
   Right (tag, r)
-    | role >= cmdMinRole tag -> either ReplyText runFor r
+    | role >= cmdMinRole tag -> either ReplyText RunCmd r
     | Right _ <- r, Just refusal <- cmdRefusal tag -> ReplyText refusal
   _ -> IgnoreMsg
-  where
-    -- a name code spends the sponsor allowance and the gas key's ETH when it registers, so only admins issue them
-    runFor cmd
-      | nameCode cmd && role < GRAdmin = ReplyText "Only admins can issue name codes."
-      | otherwise = RunCmd cmd
-    nameCode = \case
-      GCIssueName {} -> True
-      GCBulkName {} -> True
-      _ -> False
 
 -- | Left is the usage reply for an advertised command whose arguments do not parse.
 cmdActionP :: A.Parser (CmdTag, Either Text GroupCmd)
@@ -84,20 +82,24 @@ cmdActionP = A.choice (map cmdP [minBound .. maxBound])
 cmdArgsP :: CmdTag -> A.Parser GroupCmd
 cmdArgsP = \case
   CTIssue -> uncurry GCIssueName <$> nameCodeP <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> optP usesOpt
-  CTBulk -> uncurry GCBulkName <$> nameCodeP <*> countP <|> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
+  CTBulk -> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
   CTRevoke -> GCRevoke <$> codeP <|> GCRevokeName <$> prepaidCodeP
+  CTBalance -> GCMoney <$> balanceArgsP
+  CTRecordRefund -> GCMoney <$> recordRefundArgsP
+  CTClose -> GCMoney <$> closeArgsP
   where
     countP = A.space *> optValueP countOpt
 
 -- | An option's keyword, its placeholder in the usage reply and its bounds; an omitted option takes the lowest value.
 data CmdOpt = CmdOpt {optKey :: Text, optVar :: Text, optMin :: Int, optMax :: Int}
 
-lengthOpt, yearsOpt, monthsOpt, usesOpt, countOpt :: CmdOpt
+lengthOpt, yearsOpt, monthsOpt, usesOpt, countOpt, centsOpt :: CmdOpt
 lengthOpt = CmdOpt "length" "<length>" minNameLength maxNameLength
 yearsOpt = CmdOpt "years" "<Y>" minNameYears maxNameYears
 monthsOpt = CmdOpt "months" "<M>" 1 maxMonths
 usesOpt = CmdOpt "uses" "<N>" 1 maxUses
 countOpt = CmdOpt "count" "<N>" 1 maxBulk
+centsOpt = CmdOpt "cents" "<cents>" 1 maxBound
 
 optP :: CmdOpt -> A.Parser Int
 optP opt = fromMaybe (optMin opt) <$> optional (A.space *> optValueP opt)
@@ -130,6 +132,14 @@ prepaidCodeP =
     Just (NCPrepaid code) -> pure code
     _ -> fail "not a prepaid name code"
 
+balanceArgsP, recordRefundArgsP, closeArgsP :: A.Parser MoneyCmd
+balanceArgsP = MCBalance <$> referenceP
+recordRefundArgsP = MCRecordRefund <$> referenceP <* A.space <*> boundedInt centsOpt
+closeArgsP = MCClose <$> referenceP
+
+referenceP :: A.Parser Text
+referenceP = safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace)
+
 -- attoparsec's decimal wraps silently at Int, so the bound is checked on the wider Integer.
 boundedInt :: CmdOpt -> A.Parser Int
 boundedInt CmdOpt {optKey, optMin, optMax} = do
@@ -157,7 +167,7 @@ textTokenP = do
   maybe (fail "invalid value") pure $ textDecode $ safeDecodeUtf8 t
 
 -- The advertised menu lists the commands in this order.
-data CmdTag = CTIssue | CTBulk | CTRevoke
+data CmdTag = CTIssue | CTBulk | CTRevoke | CTBalance | CTRecordRefund | CTClose
   deriving (Bounded, Enum)
 
 cmdName :: CmdTag -> Text
@@ -165,38 +175,55 @@ cmdName = \case
   CTIssue -> "issue"
   CTBulk -> "bulk"
   CTRevoke -> "revoke"
+  CTBalance -> "balance"
+  CTRecordRefund -> "record_refund"
+  CTClose -> "close"
 
 cmdLabel :: CmdTag -> Text
 cmdLabel = \case
   CTIssue -> "Generate a code"
   CTBulk -> "Generate many codes"
   CTRevoke -> "Revoke a code"
+  CTBalance -> "Show an order's balance"
+  CTRecordRefund -> "Record a balance refund"
+  CTClose -> "Close a failed order"
 
 -- The menu hints and the usage replies are built from the same kinds, options and bounds, so they cannot drift apart.
 cmdParams :: CmdTag -> Text
 cmdParams = \case
-  CTIssue -> kindParams <> " [" <> optArg usesOpt <> "]"
-  CTBulk -> kindParams <> " " <> optArg countOpt
+  CTIssue -> kindParams (nameArg : badgeKinds) [yearsOpt, monthsOpt] <> " [" <> optArg usesOpt <> "]"
+  CTBulk -> kindParams badgeKinds [monthsOpt] <> " " <> optArg countOpt
   CTRevoke -> "<code>"
+  CTBalance -> referenceArg
+  CTRecordRefund -> referenceArg <> " " <> optVar centsOpt
+  CTClose -> referenceArg
   where
-    kindParams = "<" <> T.intercalate "|" (nameArg : badgeKinds) <> "> [" <> optKey yearsOpt <> "|" <> optKey monthsOpt <> " <N>]"
+    referenceArg = "<reference>"
+    kindParams kinds opts = "<" <> T.intercalate "|" kinds <> "> [" <> T.intercalate "|" (map optKey opts) <> " <N>]"
 
 cmdUsage :: CmdTag -> Text
 cmdUsage = \case
-  CTIssue -> kindUsage CTIssue ("[" <> optArg usesOpt <> "]") [] [usesOpt] ["name 6 years 5", "supporter months 12"]
-  CTBulk -> kindUsage CTBulk (optArg countOpt) [countOpt] [countOpt] ["name 6 count 100", "legend months 3 count 10"]
-  CTRevoke -> "Usage: " <> cmdText CTRevoke (cmdParams CTRevoke)
+  CTIssue ->
+    kindUsage
+      CTIssue
+      ("[" <> optVar lengthOpt <> "] [" <> optArg yearsOpt <> " | " <> optArg monthsOpt <> "] [" <> optArg usesOpt <> "]")
+      [(nameArg, [lengthOpt, yearsOpt]), (badgeKindsText, [monthsOpt, usesOpt])]
+      ["name 6 years 5", "supporter months 12"]
+  CTBulk -> kindUsage CTBulk ("[" <> optArg monthsOpt <> "] " <> optArg countOpt) [(badgeKindsText, [monthsOpt, countOpt])] ["legend months 3 count 10"]
+  CTRevoke -> plainUsage CTRevoke
+  CTBalance -> plainUsage CTBalance
+  CTRecordRefund -> plainUsage CTRecordRefund
+  CTClose -> plainUsage CTClose
+  where
+    plainUsage tag = "Usage: " <> cmdText tag (cmdParams tag)
+    badgeKindsText = T.intercalate ", " badgeKinds
 
--- | nameOpts and badgeOpts are the command's own options that apply to each kind.
-kindUsage :: CmdTag -> Text -> [CmdOpt] -> [CmdOpt] -> [Text] -> Text
-kindUsage tag cmdOptArg nameOpts badgeOpts examples =
-  T.intercalate
-    "\n"
-    [ "Usage: " <> cmdText tag ("<kind> [" <> optVar lengthOpt <> "] [" <> optArg yearsOpt <> " | " <> optArg monthsOpt <> "] " <> cmdOptArg),
-      nameArg <> ": " <> bounds (lengthOpt : yearsOpt : nameOpts),
-      T.intercalate ", " badgeKinds <> ": " <> bounds (monthsOpt : badgeOpts),
-      "e.g. " <> T.intercalate " · " (map (cmdText tag) examples)
-    ]
+kindUsage :: CmdTag -> Text -> [(Text, [CmdOpt])] -> [Text] -> Text
+kindUsage tag kindArgs kinds examples =
+  T.intercalate "\n" $
+    ["Usage: " <> cmdText tag ("<kind> " <> kindArgs)]
+      <> map (\(kind, opts) -> kind <> ": " <> bounds opts) kinds
+      <> ["e.g. " <> T.intercalate " · " (map (cmdText tag) examples)]
   where
     bounds = T.intercalate ", " . map optBounds
     optBounds CmdOpt {optKey, optMin, optMax} = optKey <> " " <> tshow optMin <> "–" <> tshow optMax
@@ -218,6 +245,9 @@ cmdMinRole = \case
   CTIssue -> GRModerator
   CTBulk -> GRModerator
   CTRevoke -> GRAdmin
+  CTBalance -> GROwner
+  CTRecordRefund -> GROwner
+  CTClose -> GROwner
 
 -- | This is the reply to a well-formed command from a sender who may not run it; Nothing means silence.
 cmdRefusal :: CmdTag -> Maybe Text
@@ -226,3 +256,6 @@ cmdRefusal = \case
   CTBulk -> Nothing
   -- The sender has just published a code that stays redeemable, so they must learn it was not revoked.
   CTRevoke -> Just "Only admins can revoke codes. This code is now visible to all members."
+  CTBalance -> Nothing
+  CTRecordRefund -> Nothing
+  CTClose -> Nothing

@@ -28,6 +28,7 @@ module StoreService.Names.Store
     CleanupKept (..),
     PrepaidCode (..),
     NewPrepaidCode (..),
+    CodeIssuer (..),
     CodeHashTaken (..),
     TxFor (..),
     TxStatus (..),
@@ -78,7 +79,7 @@ module StoreService.Names.Store
     lateWait,
     insertPrepaidCode,
     getPrepaidCode,
-    nameCodesIssuedSince,
+    groupNameCodesIssuedSince,
     getPrepaidCodeById,
     reservePrepaidCode,
     releasePrepaidCode,
@@ -287,7 +288,9 @@ data BalanceHold = BalanceHold
 -- since closing an unpaid one released its source's balance.
 data BalanceLink = BalanceLink
   { lkRegistration :: RegistrationId,
+    lkOwner :: Address,
     lkPayment :: RegistrationPayment,
+    lkProviderRef :: Maybe Text,
     lkPaid :: Int,
     lkFromBalance :: Int,
     lkLateCredits :: [LateCredit]
@@ -370,6 +373,7 @@ instance ToField LateSupport where toField = toField . textEncode
 -- | A closed order's pending money to alert on, with the received figure the alert names and the one the last alert named.
 data LateAlert = LateAlert
   { laState :: LateCreditState,
+    laProviderRef :: Text,
     laPending :: LatePending,
     laReceived :: Maybe Int64,
     laAlertedAt :: Maybe UTCTime,
@@ -401,8 +405,12 @@ data NewPrepaidCode = NewPrepaidCode
     npcMinLength :: Int,
     npcYears :: Int,
     npcPaymentStatus :: BadgeCodePaymentStatus,
-    npcExpiresAt :: Maybe UTCTime
+    npcExpiresAt :: Maybe UTCTime,
+    npcIssuer :: CodeIssuer
   }
+
+data CodeIssuer = IssuedInGroup | IssuedInConsole
+  deriving (Eq, Show)
 
 data CodeHashTaken = CodeHashTaken
   deriving (Eq, Show)
@@ -855,13 +863,13 @@ activeRegistrations db =
       (PQueued, PCommitting, PCommitted, PRegistering)
 
 -- | Unpaid orders whose invoice expired before the cutoff, without a recorded payment.
-unpaidCleanupCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, InvoiceId)]
+unpaidCleanupCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, InvoiceId, Text)]
 unpaidCleanupCandidates db expiredBefore =
-  map (\(rid, invId) -> (RegistrationId rid, InvoiceId invId))
+  map (\(rid, invId, ref) -> (RegistrationId rid, InvoiceId invId, ref))
     <$> DB.query
       db
       [sql|
-        SELECT r.registration_id, ni.invoice_id
+        SELECT r.registration_id, ni.invoice_id, ni.provider_ref
         FROM sx_badge_service_name_registrations r
         JOIN sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id
         JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id
@@ -971,16 +979,20 @@ balanceChain :: DB.Connection -> RegistrationId -> IO [BalanceLink]
 balanceChain db rid =
   getRegistration db rid >>= \case
     Nothing -> pure []
-    Just NameRegistration {nrPhase, nrPayment, nrBalanceSource, nrBalanceUsed} -> do
+    Just NameRegistration {nrPhase, nrOwner, nrPayment, nrBalanceSource, nrBalanceUsed} -> do
       let pastUnpaid = nrPhase /= PUnpaid
       lkPaid <- case nrPayment of
         RPInvoice _ (InvoiceId invId) | pastUnpaid -> maybe 0 fromOnly . listToMaybe <$> (DB.query db "SELECT amount FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invId) :: IO [Only Int])
         _ -> pure 0
-      lkLateCredits <- case nrPayment of
-        RPInvoice _ invId -> lateCredits db invId
-        _ -> pure []
-      let link = BalanceLink {lkRegistration = rid, lkPayment = nrPayment, lkPaid, lkFromBalance = if pastUnpaid then nrBalanceUsed else 0, lkLateCredits}
+      (lkProviderRef, lkLateCredits) <- case nrPayment of
+        RPInvoice _ invId -> (,) <$> providerRef db invId <*> lateCredits db invId
+        _ -> pure (Nothing, [])
+      let link = BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPayment = nrPayment, lkProviderRef, lkPaid, lkFromBalance = if pastUnpaid then nrBalanceUsed else 0, lkLateCredits}
       (link :) <$> maybe (pure []) (balanceChain db) (if pastUnpaid then nrBalanceSource else Nothing)
+
+providerRef :: DB.Connection -> InvoiceId -> IO (Maybe Text)
+providerRef db (InvoiceId invId) =
+  maybeFirstRow fromOnly $ DB.query db "SELECT provider_ref FROM sx_badge_service_name_invoices WHERE invoice_id = ?" (Only invId)
 
 lateCredits :: DB.Connection -> InvoiceId -> IO [LateCredit]
 lateCredits db (InvoiceId invId) =
@@ -1201,14 +1213,14 @@ lateWait db (InvoiceId invId) =
 
 -- | Closed orders' invoices with confirmed money not all credited, then overpaid invoices with confirmed extra not all credited, for the
 -- poller's credit pass; none a rate below the floor sent to support.
-uncreditedLateInvoices :: DB.Connection -> IO [InvoiceId]
+uncreditedLateInvoices :: DB.Connection -> IO [(InvoiceId, Text)]
 uncreditedLateInvoices db = (<>) <$> uncredited closedUnpaid uncreditedMoney <*> uncredited overpaidOrder uncreditedExtra
   where
     uncredited order money =
-      map (InvoiceId . fromOnly)
+      map (\(invId, ref) -> (InvoiceId invId, ref))
         <$> DB.query
           db
-          ("SELECT ni.invoice_id" <> lateFrom <> " WHERE" <> order <> " AND" <> money <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
+          ("SELECT ni.invoice_id, ni.provider_ref" <> lateFrom <> " WHERE" <> order <> " AND" <> money <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
           (PUnpaid, LSRateFloor)
 
 -- | Pending money of closed orders, then of overpaid invoices, whose payment row was created before the cutoff, never alerted, or alerted
@@ -1224,7 +1236,7 @@ lateAlertDue db cutoff = (<>) <$> alertsDue closedUnpaid pendingCase <*> alertsD
             <> pending
             <> ","
             <> receivedFigure
-            <> ", ni.late_alerted_at, ni.late_alerted_units"
+            <> ", ni.late_alerted_at, ni.late_alerted_units, ni.provider_ref"
             <> lateFrom
             <> " WHERE"
             <> order
@@ -1236,9 +1248,9 @@ lateAlertDue db cutoff = (<>) <$> alertsDue closedUnpaid pendingCase <*> alertsD
         )
         (PUnpaid, truncateToSecond cutoff)
         >>= decodeAll toAlert
-    toAlert :: LateRow :. (Maybe LatePending, Maybe Int64, Maybe UTCTime, Maybe Int64) -> Either Text LateAlert
-    toAlert (row :. (pending_, laReceived, laAlertedAt, laAlertedReceived)) = case pending_ of
-      Just laPending -> (\laState -> LateAlert {laState, laPending, laReceived, laAlertedAt, laAlertedReceived}) <$> toLateState row
+    toAlert :: LateRow :. (Maybe LatePending, Maybe Int64, Maybe UTCTime, Maybe Int64, Text) -> Either Text LateAlert
+    toAlert (row :. (pending_, laReceived, laAlertedAt, laAlertedReceived, laProviderRef)) = case pending_ of
+      Just laPending -> (\laState -> LateAlert {laState, laProviderRef, laPending, laReceived, laAlertedAt, laAlertedReceived}) <$> toLateState row
       Nothing -> Left "name invoice alert without pending money"
 
 -- | Marks the alert sent, with the support reason it gives unless one is set, unless another instance marked it since it was read;
@@ -1263,16 +1275,16 @@ setLateSupport db (InvoiceId invId) support =
   DB.execute db "UPDATE sx_badge_service_name_invoices SET late_support = COALESCE(late_support, ?) WHERE invoice_id = ?" (support, invId)
 
 insertPrepaidCode :: DB.Connection -> NewPrepaidCode -> UTCTime -> IO (Either CodeHashTaken Int64)
-insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, npcExpiresAt} now = do
+insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, npcExpiresAt, npcIssuer} now = do
   inserted <-
     executeChanging
       db
       [sql|
-        INSERT INTO sx_badge_service_name_prepaid_codes (code_hash, min_length, years, code_payment_status, expires_at, created_at)
-        VALUES (?,?,?,?,?,?)
+        INSERT INTO sx_badge_service_name_prepaid_codes (code_hash, min_length, years, code_payment_status, expires_at, created_at, issued_in_group)
+        VALUES (?,?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
       |]
-      (Binary npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, truncateToSecond <$> npcExpiresAt, truncateToSecond now)
+      (Binary npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, truncateToSecond <$> npcExpiresAt, truncateToSecond now, BI (npcIssuer == IssuedInGroup))
   if inserted > 0 then Right <$> insertedRowId db else pure $ Left CodeHashTaken
 
 prepaidCodeColumns :: Query
@@ -1288,8 +1300,8 @@ toPrepaidCode :: PrepaidCodeRow -> PrepaidCode
 toPrepaidCode ((pcId, Binary pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt) :. Only pcCreatedAt) =
   PrepaidCode {pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, pcReservedBy = RegistrationId <$> reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt, pcCreatedAt}
 
-nameCodesIssuedSince :: DB.Connection -> UTCTime -> IO Int
-nameCodesIssuedSince db since = maybe 0 fromOnly <$> maybeFirstRow id (DB.query db "SELECT COUNT(*) FROM sx_badge_service_name_prepaid_codes WHERE created_at >= ?" (Only since))
+groupNameCodesIssuedSince :: DB.Connection -> UTCTime -> IO Int
+groupNameCodesIssuedSince db since = maybe 0 fromOnly <$> maybeFirstRow id (DB.query db "SELECT COUNT(*) FROM sx_badge_service_name_prepaid_codes WHERE created_at >= ? AND issued_in_group = 1" (Only since))
 
 getPrepaidCode :: DB.Connection -> ByteString -> IO (Maybe PrepaidCode)
 getPrepaidCode db codeHash =

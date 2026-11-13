@@ -11,14 +11,15 @@
 module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests, namesRefundChatTests, namesWorkerBootTests) where
 
 import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cController, cServiceKey), GroupConfig (..), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, names), readServiceConfig)
-import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
-import StoreService.Group.Command (CmdAction (..), groupCmdAction, maxUses)
+import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, joinerAcceptance)
+import StoreService.Group.Command (maxUses)
 import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), TxRequest (..), newChainClient, signTransaction)
-import StoreService.Names.Store (NamePhase (PFailed), NameRegistration (nrFailedAt, nrPhase), NewTransaction (..), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
+import StoreService.Names.Store (CodeIssuer (..), NamePhase (PFailed), NameRegistration (nrFailedAt, nrPhase), NewTransaction (..), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
+import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice)
 import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, redactPassword, requireDevKeys, storeService, trustDevKeys)
@@ -40,7 +41,7 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.Async (Async, async, cancel, poll, wait, waitCatchSTM)
-import Control.Concurrent.STM (TQueue, atomically, newTQueueIO, orElse, readTMVar, readTQueue, readTVarIO, tryReadTMVar, writeTQueue)
+import Control.Concurrent.STM (TQueue, atomically, newTMVarIO, newTQueueIO, orElse, readTMVar, readTQueue, readTVarIO, tryReadTMVar, writeTQueue)
 import Control.Exception (IOException, bracket, catch, finally, throwIO, try)
 import Control.Monad (forM_, guard, mfilter, replicateM_, unless, void, when)
 import qualified Data.Aeson as J
@@ -68,14 +69,15 @@ import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Code (NameCode (..), NamePrepaidCode, formatBadgeCode, formatNameCode, namePrepaidCodeHash, namePrepaidCodeLength, parseBadgeCode, parseNameCode, randomBadgeCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.StoreService
-import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem), ChatConfig (..), ChatController (..), ChatResponse (CRChatItemsDeleted, CRCustomChatResponse))
+import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem, APIGroupInfo), ChatConfig (..), ChatController (..), ChatResponse (CRChatItemsDeleted, CRCustomChatResponse, CRGroupCreated, CRGroupInfo))
 import Simplex.Chat.Core (sendChatCmd, sendChatCmdStr)
 import Simplex.Chat.Messages (ChatRef (ChatRef), ChatType (CTGroup))
 import Simplex.Chat.Messages.CIContent (CIDeleteMode (CIDMInternal))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..))
-import Simplex.Chat.Types (AgentInvId (..))
+import Simplex.Chat.Store.Profiles (GroupLinkInfo (..))
+import Simplex.Chat.Types (AgentInvId (..), GroupInfo, GroupMemberAdmission (..), MemberCriteria (..))
 import Simplex.Chat.Types.Preferences (ChatBotCommand (..), FullDeleteGroupPreference (..), GroupFeatureEnabled (..), GroupFeatureI (..), GroupPreferences (..), HistoryGroupPreference (..), SGroupFeature (..), commands_, emptyGroupPrefs, getGroupPreference)
-import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Chat.Types.Shared (GroupAcceptance (..), GroupMemberRole (..))
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), ConnShortLink (..), ContactConnType (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -102,7 +104,13 @@ badgeGroupIntegrationTests = do
   it "creates the group and a join link on first start; on restart reuses it, re-advertises commands and keeps other preferences" testGroupCreateReuse
   it "keeps the group's name and description when the configured ones change" testConfigNotApplied
   it "promotes the first joiner to owner and leaves a later joiner a member" testFirstJoinerPromoted
-  it "promotes nobody after the first promotion failed" testFailedPromotionNotRetried
+  it "requires member review once the group has an owner, again on start after it was cleared" testMemberReviewRequired
+  it "holds a removed member who rejoins through the link for review" testRejoinerReviewed
+  it "holds a joiner of the managed group for review once the owner was set up, whatever its profile says, and on a lookup failure, not one of another group" testJoinerAcceptance
+  it "requires member review again when an owner turns it off" testReviewRestored
+  it "requires member review again at the next join when the profile lost it" testReviewRepairedOnJoin
+  it "keeps a code from a member pending review, who a moderator accepts" testModeratorAdmitsPendingMember
+  it "promotes nobody after the first promotion failed, holding a later joiner for review" testFailedPromotionNotRetried
   it "promotes the earliest member on start when their join was never handled" testMissedOwnerPromotedOnStart
   it "promotes the earliest member, not a later joiner, when no owner was set up" testEarliestPromotedOnLaterJoin
   it "skips a member still joining when promoting on start" testJoiningMemberSkippedOnStart
@@ -139,7 +147,7 @@ badgeGroupIntegrationTests = do
   it "publishes nothing when a code whose tracker was deleted is used up" testDeletedTrackerUsedUp
   it "revokes a code whose tracker an owner deleted for everyone without reposting it" testModeratedTrackerNotRepostedOnRevoke
   it "revokes a code on /revoke, answers a repeat as already revoked and an unknown code as no such code" testGroupRevoke
-  it "refuses /issue name and /bulk name while names are off, still revoking name codes" testGroupNameCodesNamesOff
+  it "refuses /issue name while names are off, still revoking name codes" testGroupNameCodesNamesOff
   it "retires the tracker message when a multi-use code is revoked" testRevokeRetiresTracker
   it "retires the tracker message when the service command revokes the code" testServiceRevokeRetiresTracker
   it "retires a tracker left behind when the code is revoked again" testGroupRevokeRepairsTracker
@@ -412,8 +420,8 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
 
 namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
-  it "issues prepaid codes on /issue name and /bulk name, answering the usage to years below 2" testGroupNameCodes
-  it "issues at most 100 name codes a day in the group" testGroupNameCodesPerDay
+  it "issues a prepaid code on /issue name for 2 years by default and for the years given, answering the usage to /bulk name" testGroupNameCodes
+  it "issues at most name_codes_per_day name codes a day in the group, not counting console codes" testGroupNameCodesPerDay
   it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
   it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
 
@@ -421,24 +429,25 @@ testGroupNameCodes :: HasCallStack => TestParams -> IO ()
 testGroupNameCodes ps = do
   svc <- prepareGroupService ps
   runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
-    one <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8 years 5"
+    one <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8"
     namePrepaidCodeLength one `shouldBe` 8
-    prepaidTerms cc one `shouldReturn` Just (8, 5, CPSFree)
-    bulk <- mapM (prepaidIn . Just) . T.lines =<< replyTo cc alice "/bulk name 6 count 3"
-    length bulk `shouldBe` 3
-    forM_ bulk $ \code -> (namePrepaidCodeLength code,) <$> prepaidTerms cc code `shouldReturn` (6, Just (6, 2, CPSFree))
-    replyTo cc alice "/issue name 8 years 1" `shouldReturn` issueUsage
-    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 4
+    prepaidTerms cc one `shouldReturn` Just (8, 2, CPSFree)
+    five <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 7 years 5"
+    prepaidTerms cc five `shouldReturn` Just (7, 5, CPSFree)
+    replyTo cc alice "/bulk name 6 count 3" `shouldReturn` bulkUsage
+    replyTo cc alice "/issue name 8 years 11" `shouldReturn` issueUsage
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 2
 
 testGroupNameCodesPerDay :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesPerDay ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
-    length . T.lines <$> replyTo cc alice "/bulk name 6 count 99" `shouldReturn` 99
-    replyTo cc alice "/bulk name 6 count 2" `shouldReturn` "At most 100 name codes are issued in a day, 99 so far. Issue more with //issue name in --run-cli."
-    T.isPrefixOf "Code: " <$> replyTo cc alice "/issue name 6" `shouldReturn` True
-    replyTo cc alice "/issue name 6" `shouldReturn` "At most 100 name codes are issued in a day, 100 so far. Issue more with //issue name in --run-cli."
-    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 100
+  let capped = svc {gsIniSections = "" : codesOnlyNames <> chainSection}
+  runGroupServiceAs capped (Just testGroupConfig {gNameCodesPerDay = 3}) $ \cc env gid -> withOwnerJoined ps cc env gid $ \alice -> do
+    replicateM_ 2 $ issueNameRaw cc "name 6"
+    replicateM_ 3 $ T.isPrefixOf "Code: " <$> replyTo cc alice "/issue name 6" `shouldReturn` True
+    replyTo cc alice "/issue name 6" `shouldReturn` "At most 3 name codes are issued in a day, 3 so far. Issue more with //issue name in --run-cli."
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 5
+    countRows cc "sx_badge_service_name_prepaid_codes WHERE issued_in_group = 1" `shouldReturn` 3
 
 testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
 testOperatorNameCodes ps = do
@@ -449,7 +458,7 @@ testOperatorNameCodes ps = do
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis", "name 6 unpaid"] $ \args ->
       (args,) <$> issueRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
     forM_ [(5, 2), (64, 2), (7, 1), (7, 11)] $ \(len, years) ->
-      ((len, years),) . isLeft <$> issueNameCode cc len years CPSFree `shouldReturn` ((len, years), True)
+      ((len, years),) . isLeft <$> issueNameCode cc IssuedInConsole len years CPSFree `shouldReturn` ((len, years), True)
     countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 0
     paid <- issueNameRaw cc "name 7 years 3 paid"
     prepaidTerms cc paid `shouldReturn` Just (7, 3, CPSPaid)
@@ -507,12 +516,15 @@ namesRefundChatTests = describe "StoreService names: operator refund" $ do
   it "shows a balance with what paid for it, and records refunds by registration or invoice id, adding them up" testRefundRecorded
   it "refuses an unknown reference, an order without a balance and another amount, and answers the usage to a malformed command" testRefundRefusals
   it "refuses a balance held by an open order, naming it and its expiry, and records it once that order's invoice is cancelled" testRefundOpenHolder
-  it "is not a group command" $ \_ -> groupCmdAction GROwner "/refund s 10000" `shouldBe` IgnoreMsg
+  it "answers an owner's /balance, /record_refund and /close in the group, worded for the group, refusing as the console does" testGroupMoneyCmds
   it "closes a failed paid order by its invoice id, recording the refund of its price, and refuses an unknown reference and an order no longer failed" testCloseRecorded
   it "refuses //close without [names], and answers the usage to a malformed one" testCloseNamesOff
 
-refundRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
-refundRaw cc args = operatorCmd cc ("//refund " <> args)
+balanceRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
+balanceRaw cc args = operatorCmd cc ("//balance " <> args)
+
+recordRefundRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
+recordRefundRaw cc args = operatorCmd cc ("//record_refund " <> args)
 
 closeRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
 closeRaw cc args = operatorCmd cc ("//close " <> args)
@@ -525,7 +537,7 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     let st = chatStore cc
-        paidBy = "order f: $100.00 by btc on invoice inv-f"
+        paidBy = paidByBtc "f"
     now <- getCurrentTime
     Balances.placeOrderRow st "f" False 10000 (addUTCTime 3600 now)
     unpaid <- reg st "f"
@@ -542,7 +554,7 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     logs `shouldSatisfy` T.isInfixOf "names: closed order f and recorded a refund of 10000 cents"
     closeRaw cc "f" `shouldReturn` Left "Nothing recorded: the order of f is not a failed order paid by invoice or balance."
     Balances.figures st "f" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
-    refundRaw cc "f" `shouldReturn` Right ("Order f: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
+    balanceRaw cc "f" `shouldReturn` Right ("Order f: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
     Balances.placeOrderRow st "g" False 10000 (addUTCTime 3600 now)
     unpaidG <- reg st "g"
     write st unpaidG {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
@@ -551,6 +563,27 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     registeredLogs <- capturingStderr $ closeRaw cc "inv-g" `shouldReturn` Left "Nothing refunded: the register of order g went through, so the order is registered now."
     registeredLogs `shouldSatisfy` T.isInfixOf "names: order g set registered by //close, as its register went through"
     Balances.figures st "g" t0 `shouldReturn` Nothing
+
+testGroupMoneyCmds :: HasCallStack => TestParams -> IO ()
+testGroupMoneyCmds ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
+  svc <- prepareGroupService ps
+  let registrar = address $ encodeUtf8 registrarAddr
+  runWithOwner svc {gsIniSections = "" : namesSection <> withRpcUrl (T.pack fnUrl)} $ \cc _ _ alice -> do
+    let st = chatStore cc
+    now <- getCurrentTime
+    Balances.placeOrderRow st "s" False 10000 (addUTCTime 3600 now)
+    unpaid <- reg st "s"
+    write st unpaid {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
+    answerCall node registrar (ownerOfSelector <> labelBytes "s") $ Reverts ""
+    replyTo cc alice "/close nothing" `shouldReturn` "Nothing recorded: no order has the reference nothing."
+    replyTo cc alice "/close inv-s"
+      `shouldReturn` ("Closed order s, failed at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: " <> paidByBtc "s" <> ".")
+    Balances.credit st "s" 2505
+    replyTo cc alice "/balance s"
+      `shouldReturn` ("Order s: balance $25.05 (credited $125.05, refunded $100.00). Paid by: " <> paidByBtc "s" <> ". To record its refund: /record_refund s 2505")
+    replyTo cc alice "/record_refund inv-s 2500" `shouldReturn` "Nothing recorded: the balance is $25.05 now, not $25.00."
+    replyTo cc alice "/record_refund inv-s 2505" `shouldReturn` ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidByBtc "s" <> ".")
+    Balances.figures st "s" t0 `shouldReturn` Just (0, 12505, 12505, Nothing)
 
 testCloseNamesOff :: HasCallStack => TestParams -> IO ()
 testCloseNamesOff ps = withStoreService ps $ \_ _ cc -> do
@@ -565,15 +598,15 @@ minuteText = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M UTC"
 testRefundRecorded :: HasCallStack => TestParams -> IO ()
 testRefundRecorded ps = withStoreService ps $ \_ _ cc -> do
   let st = chatStore cc
-      paidBy = "order s: $100.00 by btc on invoice inv-s"
+      paidBy = paidByBtc "s"
   Balances.source st "s" 10000
-  refundRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //refund inv-s 10000")
-  logs <- capturingStderr $ refundRaw cc "inv-s 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidBy <> ".")
+  balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //record_refund inv-s 10000")
+  logs <- capturingStderr $ recordRefundRaw cc "inv-s 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidBy <> ".")
   logs `shouldSatisfy` T.isInfixOf "names: recorded a refund of 10000 cents for order s"
   Balances.figures st "s" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
-  refundRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
+  balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
   Balances.credit st "s" 2505
-  refundRaw cc "s 2505" `shouldReturn` Right ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidBy <> ".")
+  recordRefundRaw cc "s 2505" `shouldReturn` Right ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidBy <> ".")
   Balances.figures st "s" t0 `shouldReturn` Just (0, 12505, 12505, Nothing)
 
 testRefundRefusals :: HasCallStack => TestParams -> IO ()
@@ -581,14 +614,16 @@ testRefundRefusals ps = withStoreService ps $ \_ _ cc -> do
   let st = chatStore cc
   Balances.placeOrderRow st "plain" False 20000 t0
   Balances.source st "s" 10000
-  refundRaw cc "nothing" `shouldReturn` Left "No order has the reference nothing."
-  refundRaw cc "nothing 10000" `shouldReturn` Left "Nothing recorded: no order has the reference nothing."
-  refundRaw cc "inv-plain" `shouldReturn` Left "Order plain has no balance."
-  refundRaw cc "inv-plain 20000" `shouldReturn` Left "Nothing recorded: the order of inv-plain has no balance."
-  refundRaw cc "s 9000" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $90.00."
-  refundRaw cc "s 10001" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $100.01."
-  forM_ ["", "s 0", "s -5", "s 100.00", "s 10000 junk", "s 99999999999999999999"] $ \args ->
-    (args,) <$> refundRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+  balanceRaw cc "nothing" `shouldReturn` Left "No order has the reference nothing."
+  recordRefundRaw cc "nothing 10000" `shouldReturn` Left "Nothing recorded: no order has the reference nothing."
+  balanceRaw cc "inv-plain" `shouldReturn` Left "Order plain has no balance."
+  recordRefundRaw cc "inv-plain 20000" `shouldReturn` Left "Nothing recorded: the order of inv-plain has no balance."
+  recordRefundRaw cc "s 9000" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $90.00."
+  recordRefundRaw cc "s 10001" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $100.01."
+  forM_ ["", "s", "s 0", "s -5", "s 100.00", "s 10000 junk", "s 99999999999999999999"] $ \args ->
+    (args,) <$> recordRefundRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+  forM_ ["", "s 10000"] $ \args -> (args,) <$> balanceRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+  operatorCmd cc "//refund s 10000" `shouldReturn` Left badgeCmdUsage
   Balances.figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
 -- | The source with a balance of $100.00 and the holder holding it, whose invoice expires at the given time.
@@ -599,12 +634,15 @@ heldSource cc src holder expiry = do
 
 heldRefusals :: HasCallStack => ChatController -> Text -> Text -> IO ()
 heldRefusals cc src held = do
-  refundRaw cc src `shouldReturn` Right ("Order " <> src <> ": balance $100.00 (credited $100.00, refunded $0.00). Paid by: order " <> src <> ": $100.00 by btc on invoice inv-" <> src <> ". It cannot be refunded now: " <> held <> ".")
-  refundRaw cc ("inv-" <> src <> " 10000") `shouldReturn` Left ("Nothing recorded: " <> held <> ".")
+  balanceRaw cc src `shouldReturn` Right ("Order " <> src <> ": balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidByBtc src <> ". It cannot be refunded now: " <> held <> ".")
+  recordRefundRaw cc ("inv-" <> src <> " 10000") `shouldReturn` Left ("Nothing recorded: " <> held <> ".")
   Balances.figures (chatStore cc) src t0 >>= (`shouldSatisfy` \case Just (10000, 10000, 0, Just _) -> True; _ -> False)
 
 recordedS :: Either Text Text
-recordedS = Right "Recorded a refund of $100.00 for order s. Refund it now, by: order s: $100.00 by btc on invoice inv-s."
+recordedS = Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidByBtc "s" <> ".")
+
+paidByBtc :: Text -> Text
+paidByBtc r = "order " <> r <> " of " <> addressText ownerA <> ": $100.00 by btc on invoice inv-" <> r <> " (provider reference ref-inv-" <> r <> ")"
 
 testRefundOpenHolder :: HasCallStack => TestParams -> IO ()
 testRefundOpenHolder ps = withStoreService ps $ \_ _ cc -> do
@@ -614,7 +652,7 @@ testRefundOpenHolder ps = withStoreService ps $ \_ _ cc -> do
   heldRefusals cc "s" $ "held by order h, its invoice open until " <> minuteText expiry <> "; run the command again then"
   waiters <- newWaiters
   cancelOpenInvoice (chatStore cc) waiters Nothing (InvoiceId "inv-h") now `shouldReturn` True
-  refundRaw cc "s 10000" `shouldReturn` recordedS
+  recordRefundRaw cc "s 10000" `shouldReturn` recordedS
 
 data TurnHolder a = TurnHolder {thAction :: Async a, thRelease :: MVar ()}
 
@@ -663,7 +701,7 @@ groupDescr :: Text
 groupDescr = "badge ops desk"
 
 testGroupConfig :: GroupConfig
-testGroupConfig = GroupConfig {gDisplayName = T.pack groupName, gDescription = Just groupDescr}
+testGroupConfig = GroupConfig {gDisplayName = T.pack groupName, gDescription = Just groupDescr, gNameCodesPerDay = 10}
 
 revokeReply :: Text -> Text -> Text
 revokeReply code outcome = code <> ": " <> outcome
@@ -770,8 +808,8 @@ groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIn
   Right serviceCfg <- readServiceConfig iniPath
   pure ((mkStoreServiceOpts ps secretKey) {noAddress = True}, serviceCfg, port)
   where
-    groupSection GroupConfig {gDisplayName, gDescription} =
-      ["", "[group]", "display_name = " <> T.unpack gDisplayName]
+    groupSection GroupConfig {gDisplayName, gDescription, gNameCodesPerDay} =
+      ["", "[group]", "display_name = " <> T.unpack gDisplayName, "name_codes_per_day = " <> show gNameCodesPerDay]
         <> maybe [] (\d -> ["description = " <> T.unpack d]) gDescription
 
 withGroupOwner :: HasCallStack => TestParams -> (BadgeIssuerKey -> ChatController -> ServiceState -> TestCC -> IO ()) -> IO ()
@@ -787,7 +825,7 @@ withOwnerJoined ps cc env gid action =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     joinGroup cc alice
     waitMemberRole cc gid "alice" "owner"
-    drainUntil alice ["#" <> groupName <> ": " <> botName <> " changed your role from member to owner"]
+    drainUntil alice ["#" <> groupName <> ": " <> botName <> " changed your role from member to owner", "changed member admission rules"]
     joined <- lastMessageId cc
     r <- action alice
     settleServingLane cc env gid
@@ -796,11 +834,12 @@ withOwnerJoined ps cc env gid action =
     pure r
 
 -- Bob joins after the first member and is connected to her.
-withMemberJoined :: HasCallStack => TestParams -> ChatController -> ServiceState -> Int64 -> TestCC -> (TestCC -> IO a) -> IO a
-withMemberJoined ps cc env gid alice action =
+withMemberJoined :: HasCallStack => TestParams -> ChatController -> ServiceState -> Int64 -> TestCC -> IO () -> (TestCC -> IO a) -> IO a
+withMemberJoined ps cc env gid alice admit action =
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     joinGroup cc bob
     drainUntil alice ["#" <> groupName <> ": new member bob is connected"]
+    admit
     joined <- lastMessageId cc
     r <- action bob
     settleServingLane cc env gid
@@ -810,6 +849,13 @@ withMemberJoined ps cc env gid alice action =
 
 joinGroup :: HasCallStack => ChatController -> TestCC -> IO ()
 joinGroup cc member = groupLink cc >>= send member . ("/c " <>)
+
+admitMember :: HasCallStack => ChatController -> Int64 -> TestCC -> Text -> IO ()
+admitMember cc gid moderator name = do
+  memberStatus cc gid name `shouldReturn` Just "pending_review"
+  send moderator ("/accept member #" <> groupName <> " " <> T.unpack name)
+  drainUntil moderator ["#" <> groupName <> ": " <> T.unpack name <> " accepted"]
+  pollUntilTrue $ (`elem` [Just "connected", Just "complete"]) <$> memberStatus cc gid name
 
 sendGroupCmd :: TestCC -> String -> IO ()
 sendGroupCmd member cmd = send member ("#" <> groupName <> " " <> cmd)
@@ -843,15 +889,17 @@ testGroupCreateReuse ps = do
     profileFullNameShortDescr cc gid `shouldReturn` ("", Nothing)
     groupFeaturePreference cc gid SGFFullDelete `shouldReturn` FullDeleteGroupPreference {enable = FEOn, role = Nothing}
     profileUpdatedAt cc gid
-  -- The lane drains only after the group is resolved, so the promotion proves the start-up sync has run.
-  runWithOwner svc $ \cc _ gid _ -> profileUpdatedAt cc gid `shouldReturn` advertisedAt
+  -- The lane drains only after the group is resolved, so a handled command proves the start-up sync has run.
+  runGroupService svc $ \cc env gid -> do
+    awaitLane cc env
+    profileUpdatedAt cc gid `shouldReturn` advertisedAt
 
 testConfigNotApplied :: HasCallStack => TestParams -> IO ()
 testConfigNotApplied ps = do
   svc <- prepareGroupService ps
   -- Clearing the commands makes the restart rewrite the profile, the only path that could apply the new config.
   runGroupService svc $ \cc _ gid -> clearCommandsSettingFullDelete cc gid
-  runGroupServiceAs svc (Just GroupConfig {gDisplayName = "renamedbadges", gDescription = Just "renamed desk"}) $ \cc env gid -> do
+  runGroupServiceAs svc (Just testGroupConfig {gDisplayName = "renamedbadges", gDescription = Just "renamed desk"}) $ \cc env gid -> do
     waitAdvertisedCommands cc gid
     awaitLane cc env
     groupCount cc `shouldReturn` 1
@@ -874,10 +922,12 @@ testEarliestPromotedOnLaterJoin ps = do
   runWithOwner svc $ \cc env gid alice -> do
     setMemberRole cc gid "alice" "member"
     executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 0"
-    withMemberJoined ps cc env gid alice $ \bob -> do
+    clearMemberAdmission cc gid
+    withMemberJoined ps cc env gid alice (pure ()) $ \bob -> do
       waitMemberRole cc gid "alice" "owner"
       awaitLaneOnConsoles cc env [alice, bob]
       memberRoles cc gid `shouldReturn` [("alice", "owner"), ("bob", "member")]
+      profileMemberAdmission cc gid `shouldReturn` Just reviewAll
 
 testJoiningMemberSkippedOnStart :: HasCallStack => TestParams -> IO ()
 testJoiningMemberSkippedOnStart ps = do
@@ -989,7 +1039,7 @@ memberStatus cc gid name =
 withTwoMembersOwnerUnset :: HasCallStack => GroupSvc -> (ChatController -> Int64 -> TestCC -> TestCC -> IO ()) -> IO ()
 withTwoMembersOwnerUnset svc@GroupSvc {gsPs = ps} action =
   runWithOwner svc $ \cc env gid alice ->
-    withMemberJoined ps cc env gid alice $ \bob -> do
+    withMemberJoined ps cc env gid alice (admitMember cc gid alice "bob") $ \bob -> do
       -- The lane must handle bob's join before the flag is cleared, or it would act on the cleared flag in this run.
       awaitLaneOnConsoles cc env [alice, bob]
       action cc gid alice bob
@@ -999,7 +1049,7 @@ testFirstJoinerPromoted :: HasCallStack => TestParams -> IO ()
 testFirstJoinerPromoted ps = do
   svc <- prepareGroupService ps
   runWithOwner svc $ \cc env gid alice ->
-    withMemberJoined ps cc env gid alice $ \bob -> do
+    withMemberJoined ps cc env gid alice (admitMember cc gid alice "bob") $ \bob -> do
       waitMemberRole cc gid "bob" "member"
       -- The bot queues bob's join before it introduces him, so alice's code proves the join was handled.
       sendGroupCmd alice "/issue supporter"
@@ -1008,6 +1058,87 @@ testFirstJoinerPromoted ps = do
       let codeReply = "#" <> groupName <> " " <> botName <> "> Code: SB-"
       drainUntil alice [codeReply]
       drainUntil bob [codeReply, "#" <> groupName <> ": member alice"]
+
+testMemberReviewRequired :: HasCallStack => TestParams -> IO ()
+testMemberReviewRequired ps = do
+  svc <- prepareGroupService ps
+  runGroupService svc $ \cc env gid -> do
+    awaitLane cc env
+    profileMemberAdmission cc gid `shouldReturn` Nothing
+  runWithOwner svc $ \cc _ gid _ -> do
+    profileMemberAdmission cc gid `shouldReturn` Just reviewAll
+    clearMemberAdmission cc gid
+  runGroupService svc $ \cc _ gid -> pollUntilTrue $ (== Just reviewAll) <$> profileMemberAdmission cc gid
+
+testRejoinerReviewed :: HasCallStack => TestParams -> IO ()
+testRejoinerReviewed ps = do
+  svc <- prepareGroupService ps
+  runWithOwner svc $ \cc env gid alice ->
+    withMemberJoined ps cc env gid alice (admitMember cc gid alice "bob") $ \bob -> do
+      send alice ("/rm #" <> groupName <> " bob")
+      drainUntil bob ["#" <> groupName <> ": alice removed you from the group"]
+      pollUntilTrue $ (== Just "removed") <$> memberStatus cc gid "bob"
+      joinGroup cc bob
+      drainUntil bob ["connecting to group moderators for admission to group", "(Alice) is connected"]
+      drainUntil alice ["is connected and pending review"]
+      memberStatus cc gid "bob_1" `shouldReturn` Just "pending_review"
+
+testJoinerAcceptance :: HasCallStack => TestParams -> IO ()
+testJoinerAcceptance ps = do
+  svc <- prepareGroupService ps
+  runGroupService svc $ \cc _ gid -> do
+    startedCC <- newTMVarIO cc
+    managed <- groupInfoOf cc gid
+    other <-
+      sendChatCmdStr cc "/g othergroup" >>= \case
+        Right (CRGroupCreated _ g) -> pure g
+        r -> error $ "group not created: " <> show r
+    let acceptance g = joinerAcceptance startedCC g GroupLinkInfo {groupId = gid, memberRole = GRMember} bobProfile
+        accepted = Right (GAAccepted, GRMember)
+        held = Right (GAPendingReview, GRMember)
+    mapM acceptance [managed, other] `shouldReturn` [accepted, accepted]
+    executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 1"
+    profileMemberAdmission cc gid `shouldReturn` Nothing
+    mapM acceptance [managed, other] `shouldReturn` [held, accepted]
+    executeSql cc "ALTER TABLE sx_badge_service_group RENAME TO sx_badge_service_group_hidden"
+    (acceptance other `shouldReturn` held) `finally` executeSql cc "ALTER TABLE sx_badge_service_group_hidden RENAME TO sx_badge_service_group"
+
+testReviewRestored :: HasCallStack => TestParams -> IO ()
+testReviewRestored ps = do
+  svc <- prepareGroupService ps
+  runWithOwner svc $ \cc _ gid alice -> do
+    send alice ("/set admission review #" <> groupName <> " off")
+    drainUntil alice [botName <> " updated group #" <> groupName]
+    profileMemberAdmission cc gid `shouldReturn` Just reviewAll
+
+testReviewRepairedOnJoin :: HasCallStack => TestParams -> IO ()
+testReviewRepairedOnJoin ps = do
+  svc <- prepareGroupService ps
+  runWithOwner svc $ \cc env gid alice -> do
+    clearMemberAdmission cc gid
+    withMemberJoined ps cc env gid alice (admitMember cc gid alice "bob") $ \_ ->
+      pollUntilTrue $ (== Just reviewAll) <$> profileMemberAdmission cc gid
+
+testModeratorAdmitsPendingMember :: HasCallStack => TestParams -> IO ()
+testModeratorAdmitsPendingMember ps = do
+  svc <- prepareGroupService ps
+  runWithOwner svc $ \cc env gid alice ->
+    withMemberJoined ps cc env gid alice (admitMember cc gid alice "bob") $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        send alice ("/mr #" <> groupName <> " bob moderator")
+        waitMemberRole cc gid "bob" "moderator"
+        drainUntil bob ["#" <> groupName <> ": alice changed your role from member to moderator"]
+        joinGroup cc cath
+        drainUntil bob ["#" <> groupName <> ": new member cath is connected and pending review"]
+        code <- extractCode <$> replyTo cc alice "/issue supporter"
+        awaitOnConsole bob ("Code: " <> code)
+        receivedItemsWithCode cath code `shouldReturn` 0
+        admitMember cc gid bob "cath"
+        pollUntilTrue $ (`elem` [Just "connected", Just ("complete" :: Text)]) <$> queryFirst (chatController cath) "SELECT member_status FROM group_members WHERE member_category = 'user'"
+        receivedItemsWithCode cath code `shouldReturn` 0
+        drainConsole cath
+  where
+    receivedItemsWithCode member code = countRows (chatController member) ("chat_items WHERE item_sent = 0 AND item_text LIKE '%" <> T.unpack code <> "%'")
 
 testFailedPromotionNotRetried :: HasCallStack => TestParams -> IO ()
 testFailedPromotionNotRetried ps = do
@@ -1020,7 +1151,13 @@ testFailedPromotionNotRetried ps = do
       pollUntilTrue $ mgOwnerBootstrapped <$> storedGroup cc
       awaitLaneOnConsoles cc env [alice]
       setBotRole cc "owner"
-      withMemberJoined ps cc env gid alice $ \bob -> awaitLaneOnConsoles cc env [alice, bob]
+      withNewTestChat ps "bob" bobProfile $ \bob -> do
+        joinGroup cc bob
+        drainUntil bob ["connecting to group moderators for admission to group"]
+        pollUntilTrue $ (== Just (1 :: Int)) <$> queryFirst cc ("SELECT members_require_attention FROM groups WHERE group_id = " <> show gid)
+        memberStatus cc gid "bob" `shouldReturn` Just "pending_review"
+        awaitLaneOnConsoles cc env [alice]
+        drainConsole bob
       memberRoles cc gid `shouldReturn` [("alice", "member"), ("bob", "member")]
       drainConsole alice
 
@@ -1030,16 +1167,15 @@ testRoleGatedIssue ps = do
   runWithOwner svc $ \cc _ gid alice ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
-        let announced name = "#" <> groupName <> ": " <> botName <> " added " <> name
-            preMember name = "#" <> groupName <> ": member " <> name
+        let preMember name = "#" <> groupName <> ": member " <> name
             newMember name = "#" <> groupName <> ": new member " <> name <> " is connected"
             usageReply = "#" <> groupName <> " " <> botName <> "> Usage:"
         joinGroup cc bob
-        waitMemberRole cc gid "bob" "member"
-        -- cath joins only after alice sees bob announced, or cath's console shows a different line.
-        drainUntil alice [announced "bob"]
+        drainUntil alice [newMember "bob"]
+        admitMember cc gid alice "bob"
         joinGroup cc cath
-        waitMemberRole cc gid "cath" "member"
+        drainUntil alice [newMember "cath"]
+        admitMember cc gid alice "cath"
         drainUntil cath [preMember "alice", preMember "bob"]
         drainConsole cath
         sendGroupCmd alice "/issue supporter"
@@ -1056,7 +1192,7 @@ testRoleGatedIssue ps = do
         sendGroupCmd alice "/issue supporter uses 0"
         waitStoredItem cc issueUsage
         codeCount cc `shouldReturn` 2
-        drainUntil alice [usageReply, newMember "bob", newMember "cath"]
+        drainUntil alice [usageReply]
         drainUntil bob [usageReply, preMember "alice", newMember "cath"]
         drainUntil cath [usageReply]
         drainConsole bob
@@ -1066,7 +1202,7 @@ testBlockedMemberCommandIgnored :: HasCallStack => TestParams -> IO ()
 testBlockedMemberCommandIgnored ps = do
   svc <- prepareGroupService ps
   runWithOwner svc $ \cc env gid alice ->
-    withMemberJoined ps cc env gid alice $ \bob -> do
+    withMemberJoined ps cc env gid alice (admitMember cc gid alice "bob") $ \bob -> do
       waitMemberRole cc gid "bob" "member"
       -- bob is made moderator so that only the block can refuse his command.
       send alice ("/mr #" <> groupName <> " bob moderator")
@@ -1074,10 +1210,10 @@ testBlockedMemberCommandIgnored ps = do
       -- The block and the command travel over different connections, so the block is awaited first.
       send alice ("/block for all #" <> groupName <> " bob")
       waitMemberBlocked cc gid "bob"
-      sendGroupCmd bob "/bulk legend months 255 count 100"
-      (deleted, content) <- waitBlockedItem cc "/bulk legend months 255 count 100"
+      sendGroupCmd bob "/bulk legend months 12 count 100"
+      (deleted, content) <- waitBlockedItem cc "/bulk legend months 12 count 100"
       deleted `shouldBe` blockedByAdminMark
-      content `shouldSatisfy` T.isInfixOf "/bulk legend months 255 count 100"
+      content `shouldSatisfy` T.isInfixOf "/bulk legend months 12 count 100"
       ownerIssuesNext cc alice 1
       awaitOnConsole alice "Code: SB-"
       awaitOnConsole bob "Code: SB-"
@@ -1396,7 +1532,6 @@ testGroupNameCodesNamesOff :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesNamesOff ps =
   withGroupOwner ps $ \_ cc _ alice -> do
     replyTo cc alice "/issue name 8" `shouldReturn` namesOffReply
-    replyTo cc alice "/bulk name 6 count 2" `shouldReturn` namesOffReply
     countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 0
     unissued <- formatNameCode . NCPrepaid <$> randomNamePrepaidCode (random cc) 8
     revokeInGroup cc alice unissued "No such code."
@@ -1693,14 +1828,20 @@ singleRow sql = \case
   _ -> error $ "more than one row from: " <> sql
 
 issueUsage :: Text
-issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+
+bulkUsage :: Text
+bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–12, count 1–100\ne.g. /bulk legend months 3 count 10"
 
 -- The list is spelled out rather than taken from the service, so a change there fails here.
 expectedCommands :: [ChatBotCommand]
 expectedCommands =
   [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>] [uses <N>]"),
-    CBCCommand "bulk" "Generate many codes" (Just "<name <length>|supporter|legend|investor> [years|months <N>] count <N>"),
-    CBCCommand "revoke" "Revoke a code" (Just "<code>")
+    CBCCommand "bulk" "Generate many codes" (Just "<supporter|legend|investor> [months <N>] count <N>"),
+    CBCCommand "revoke" "Revoke a code" (Just "<code>"),
+    CBCCommand "balance" "Show an order's balance" (Just "<reference>"),
+    CBCCommand "record_refund" "Record a balance refund" (Just "<reference> <cents>"),
+    CBCCommand "close" "Close a failed order" (Just "<reference>")
   ]
 
 advertisedCommands :: HasCallStack => ChatController -> Int64 -> IO (Maybe [ChatBotCommand])
@@ -1724,6 +1865,24 @@ profileDescription cc gid = queryOne cc "no group profile to read a description 
 profileUpdatedAt :: HasCallStack => ChatController -> Int64 -> IO UTCTime
 profileUpdatedAt cc gid =
   queryOne cc "no group profile to read an update time from" (groupProfileSql "p.updated_at" gid)
+
+profileMemberAdmission :: HasCallStack => ChatController -> Int64 -> IO (Maybe GroupMemberAdmission)
+profileMemberAdmission cc gid =
+  queryOne cc "no group profile to read member admission from" (groupProfileSql "p.member_admission" gid)
+
+groupInfoOf :: HasCallStack => ChatController -> Int64 -> IO GroupInfo
+groupInfoOf cc gid =
+  sendChatCmd cc (APIGroupInfo gid) >>= \case
+    Right (CRGroupInfo _ g) -> pure g
+    r -> error $ "group info failed: " <> show r
+
+reviewAll :: GroupMemberAdmission
+reviewAll = GroupMemberAdmission {review = Just MCAll}
+
+clearMemberAdmission :: ChatController -> Int64 -> IO ()
+clearMemberAdmission cc gid =
+  withTransaction (chatStore cc) $ \db ->
+    DB.execute db "UPDATE group_profiles SET member_admission = NULL WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE group_id = ?)" (Only gid)
 
 groupFeaturePreference :: HasCallStack => ChatController -> Int64 -> SGroupFeature f -> IO (GroupFeaturePreference f)
 groupFeaturePreference cc gid feature =

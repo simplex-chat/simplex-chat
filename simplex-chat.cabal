@@ -795,6 +795,7 @@ test-suite simplex-chat-test
       Bots.StoreService.FakeAppStore
       Bots.StoreService.FakeBTCPay
       Bots.StoreService.FakeEthNode
+      Bots.StoreService.FakeHttp
       Bots.StoreService.FakePlay
       Bots.StoreService.FakeStore
       Bots.StoreService.FakeStripe
