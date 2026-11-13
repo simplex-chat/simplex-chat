@@ -4062,6 +4062,32 @@ fun PreviewGroupChatLayoutTerminalMedia() = CompositionLocalProvider(LocalTermin
   )
 }
 
+@Preview
+@Composable
+fun PreviewGroupChatLayoutHiddenItems() = GroupChatLayoutPreview(hiddenItemsPreview())
+
+@Preview
+@Composable
+fun PreviewGroupChatLayoutTerminalHiddenItems() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  GroupChatLayoutPreview(hiddenItemsPreview())
+}
+
+private fun hiddenItemsPreview(): List<ChatItem> {
+  fun member(id: Long, name: String) =
+    GroupMember.sampleData.copy(groupMemberId = id, memberId = name, localDisplayName = name, memberProfile = LocalProfile.sampleData.copy(profileId = id, displayName = name, fullName = ""))
+  fun rcv(id: Long, member: GroupMember, minutes: Int, content: CIContent) =
+    ChatItem.getSampleData(id, CIDirection.GroupRcv(member), previewDate.plus(minutes, DateTimeUnit.MINUTE), content.text).copy(content = content)
+  val bob = member(2, "bob")
+  val carol = member(3, "carol")
+  return listOf(
+    rcv(1, GroupMember.sampleData, 0, CIContent.RcvMsgContent(MsgContent.MCText("Welcome, carol!"))),
+    rcv(2, carol, 2, CIContent.RcvMsgContent(MsgContent.MCText("Thanks!"))),
+    rcv(3, carol, 4, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(1, 1))),
+    rcv(4, bob, 5, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(2, 2))),
+    ChatItem.getSampleData(5, CIDirection.GroupSnd(), previewDate.plus(6, DateTimeUnit.MINUTE), "ok")
+  )
+}
+
 enum class ContentFilter(
   val contentTag: MsgContentTag,
   val label: StringResource,

@@ -64,6 +64,8 @@ private val previewScenes = listOf(
   SnapshotScene("ChatView.PreviewGroupChatLayout") { PreviewGroupChatLayout() },
   SnapshotScene("ChatView.PreviewGroupChatLayoutTerminal", chatItemFontScales) { PreviewGroupChatLayoutTerminal() },
   SnapshotScene("ChatView.PreviewGroupChatLayoutTerminalMedia", chatItemFontScales) { PreviewGroupChatLayoutTerminalMedia() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutHiddenItems") { PreviewGroupChatLayoutHiddenItems() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutTerminalHiddenItems") { PreviewGroupChatLayoutTerminalHiddenItems() },
   SnapshotScene("ComposeFileView.PreviewComposeFileView") { PreviewComposeFileView() },
   SnapshotScene("ComposeVoiceView.PreviewComposeAudioView") { PreviewComposeAudioView() },
   SnapshotScene("ContextItemView.PreviewContextItemView") { PreviewContextItemView() },
