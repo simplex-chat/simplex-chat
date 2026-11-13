@@ -121,9 +121,9 @@ followInterval = 4000000
 baseFeeHeadroom :: Integer
 baseFeeHeadroom = 2
 
--- | 0.05 gwei, so quiet blocks whose median tip is near zero do not leave a transaction under every other.
+-- | 0.01 gwei, so quiet blocks whose median tip is near zero do not leave a transaction under every other.
 minTip :: Word64
-minTip = 50_000_000
+minTip = 10_000_000
 
 -- | Nodes accept a replacement only with both fees at least 10% higher.
 bumped :: Integer -> Integer
