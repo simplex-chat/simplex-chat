@@ -10,6 +10,7 @@
 2. [Dependency graph](#dependency-graph)
 3. [Specification documents](#specification-documents)
 4. [Source entry points](#source-entry-points)
+5. [Code references](#code-references)
 
 ---
 
@@ -197,7 +198,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 - [`.mcp.json`](../.mcp.json)
 - [`hooks/hooks.json`](../hooks/hooks.json)
 - [`plugin/allow.js`](../plugin/allow.js)
-- the production packages bundled in the package's `node_modules` ([`package.json`](../package.json#L35))
+- the production packages bundled in the package's `node_modules` ([`bundleDependencies`](../package.json))
 - the marketplace [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json)
 
 ---
@@ -214,31 +215,37 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 
 ## Source entry points
 
-| Component | File | Key symbol | Line |
-|---|---|---|---|
-| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L218) | `main` | [218](../src/cli.ts#L218) |
-| Argument parser | [`src/cli.ts`](../src/cli.ts#L63) | `parseCommand` | [63](../src/cli.ts#L63) |
-| Server start | [`src/serve.ts`](../src/serve.ts#L64) | `startServer` | [64](../src/serve.ts#L64) |
-| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L87) | `startAgent` | [87](../src/serve.ts#L87) |
-| HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L498) | `registerTools` | [498](../src/tools.ts#L498) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L587) | `AgentTools.downloadFile` | [587](../src/tools.ts#L587) |
-| Action store | [`src/actions.ts`](../src/actions.ts#L147) | `Actions` | [147](../src/actions.ts#L147) |
-| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L93) | `Control` | [93](../src/control.ts#L93) |
-| Card text | [`src/control.ts`](../src/control.ts#L679) | `cardText` | [679](../src/control.ts#L679) |
-| Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
-| Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |
-| Data folder files | [`src/files.ts`](../src/files.ts#L103) | `createDataFolder`, `acquireLock` | [103](../src/files.ts#L103), [108](../src/files.ts#L108) |
-| Session server | [`src/session.ts`](../src/session.ts#L40) | `startSession` | [40](../src/session.ts#L40) |
-| Session to service link | [`src/session.ts`](../src/session.ts#L69) | `ServiceLink` | [69](../src/session.ts#L69) |
-| Service start by a client | [`src/client.ts`](../src/client.ts#L40) | `ServiceClient.ensureService` | [40](../src/client.ts#L40) |
-| Service process | [`src/service.ts`](../src/service.ts#L430) | `runService` | [430](../src/service.ts#L430) |
-| Service routes | [`src/service.ts`](../src/service.ts#L137) | `Service.routes` | [137](../src/service.ts#L137) |
-| Hub | [`src/hub.ts`](../src/hub.ts#L368) | `Hub.open` | [368](../src/hub.ts#L368) |
-| Session and its group | [`src/hub.ts`](../src/hub.ts#L43) | `Session` | [43](../src/hub.ts#L43) |
-| Main group | [`src/main-group.ts`](../src/main-group.ts#L26) | `MainGroup` | [26](../src/main-group.ts#L26) |
-| Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
-| Hooks | [`src/hook.ts`](../src/hook.ts#L81) | `sessionStart`, `turn` | [81](../src/hook.ts#L81), [114](../src/hook.ts#L114) |
-| `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts#L22) | `showLink`, `resetOwners` | [22](../src/owner.ts#L22), [28](../src/owner.ts#L28) |
-| SimpleX core | [`src/core.ts`](../src/core.ts#L19) | `openCore` | [19](../src/core.ts#L19) |
-| Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |
+| Component | File | Key symbol |
+|---|---|---|
+| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts) | `main` |
+| Argument parser | [`src/cli.ts`](../src/cli.ts) | `parseCommand` |
+| Server start | [`src/serve.ts`](../src/serve.ts) | `startServer` |
+| Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts) | `startAgent` |
+| HTTP listener | [`src/http.ts`](../src/http.ts) | `startHttp` |
+| Tool registration | [`src/tools.ts`](../src/tools.ts) | `registerTools` |
+| Downloads | [`src/tools.ts`](../src/tools.ts) | `AgentTools.downloadFile` |
+| Action store | [`src/actions.ts`](../src/actions.ts) | `Actions` |
+| Agent control chat and session groups | [`src/control.ts`](../src/control.ts) | `Control` |
+| Card text | [`src/control.ts`](../src/control.ts) | `cardText` |
+| Item watch | [`src/messages.ts`](../src/messages.ts) | `ChatItemsWatch` |
+| Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts) | `register` |
+| Data folder files | [`src/files.ts`](../src/files.ts) | `createDataFolder`, `acquireLock` |
+| Session server | [`src/session.ts`](../src/session.ts) | `startSession` |
+| Session to service link | [`src/session.ts`](../src/session.ts) | `ServiceLink` |
+| Service start by a client | [`src/client.ts`](../src/client.ts) | `ServiceClient.ensureService` |
+| Service process | [`src/service.ts`](../src/service.ts) | `runService` |
+| Service routes | [`src/service.ts`](../src/service.ts) | `Service.routes` |
+| Hub | [`src/hub.ts`](../src/hub.ts) | `Hub.open` |
+| Session and its group | [`src/hub.ts`](../src/hub.ts) | `Session` |
+| Main group | [`src/main-group.ts`](../src/main-group.ts) | `MainGroup` |
+| Profile `User` | [`src/user.ts`](../src/user.ts) | `User` |
+| Hooks | [`src/hook.ts`](../src/hook.ts) | `sessionStart`, `turn` |
+| `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts) | `showLink`, `resetOwners` |
+| SimpleX core | [`src/core.ts`](../src/core.ts) | `openCore` |
+| Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` |
+
+---
+
+## Code references
+
+Functions, types and constants are named in the specs, and their files are linked without line numbers. A comment `// spec: spec/FILE.md#ANCHOR` is placed above each declaration listed in a module table of [Architecture](architecture.md), where ANCHOR is the `<a id>` of its row. A declaration listed in no module table and named in the first line of an [API](api.md) section is given the anchor of that section. Line-number links in the package's documents, anchors defined twice, and `// spec:` comments with a missing anchor or not directly above code are reported by the unit test [`spec.test.ts`](../test/unit/spec.test.ts).
