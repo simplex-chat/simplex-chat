@@ -1,19 +1,18 @@
-import {mkdirSync, rmSync} from "fs"
 import {Server} from "http"
 import {join} from "path"
 import {McpServer, McpServerFactory} from "@modelcontextprotocol/server"
-import {ChatEvent, T} from "@simplex-chat/types"
-import {api, util} from "simplex-chat"
+import {T} from "@simplex-chat/types"
+import {api} from "simplex-chat"
 import {Action, Actions, Mode} from "./actions"
-import {Control, controlDataOf, createControlChat, findControlGroup, hasOutcomeCard, isControlEvent, resetControlChat} from "./control"
+import {Control, controlDataOf, createControlChat, findControlGroup, hasOutcomeCard, isControlEvent, isGroupMessage, resetControlChat} from "./control"
+import {bufferEvents, prepareCore, updatedUser} from "./core"
 import {acquireLock, createDataFolder, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "./files"
 import {startHttp, stopHttp} from "./http"
 import {ExitError, log, logError, shellPath} from "./log"
 import {ChatItemsWatch} from "./messages"
 import {Schedules} from "./schedule"
 import {AgentTools, instructions} from "./tools"
-
-export const version: string = require("../package.json").version
+import {version} from "./version"
 
 export type QrCodeSize = "small" | "large"
 
@@ -89,13 +88,10 @@ export async function startServer(options: ServeOptions): Promise<RunningServer>
 async function startAgent(chat: api.ChatApi, options: ServeOptions, token: string): Promise<RunningServer> {
   const {name, data, port, approve, expireHours} = options
   const created = (await chat.apiGetActiveUser()) ?? (await chat.apiCreateActiveUser({displayName: options.displayName ?? name, fullName: "", peerType: T.ChatPeerType.Agent}))
-  const networkConfig = await chat.apiGetNetworkConfig()
-  await chat.apiSetNetworkConfig({...networkConfig, smpProxyMode: T.SMPProxyMode.Always, smpProxyFallback: T.SMPProxyFallback.AllowProtected})
-  await setTempFolder(chat, join(data, "tmp"))
-  rmSync(join(data, "files", "sent"), {recursive: true, force: true})
+  await prepareCore(chat, data)
   const events = bufferEvents(chat)
   await chat.startChat()
-  const user = await updatedUser(chat, created, options.displayName)
+  const user = await updatedUser(chat, created, options.displayName ?? created.profile.displayName)
   const displayName = user.profile.displayName
   const group = await controlGroup(chat, user.userId, displayName, options.resetOwners)
   const actions: Actions = new Actions(approve, expireHours, controlDataOf(group.customData)?.nextAction ?? 1, {
@@ -106,7 +102,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     perform: (action, signal) => tools.perform(action, signal),
   })
   const watch = new ChatItemsWatch()
-  const schedules = new Schedules(memberId => control.hasApprover(memberId))
+  const schedules = new Schedules(memberId => control.isCurrentApprover(memberId))
   const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data, schedules}, approve)
   const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools, schedules)
   await control.load()
@@ -131,37 +127,13 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
   let stopped = false
   await events(async event => {
     if (stopped) return
-    switch (event.type) {
-      case "newChatItems":
-        for (const ci of event.chatItems) {
-          if (ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === control.groupId && ci.chatInfo.groupChatScope === undefined) control.onMessage(ci)
-        }
-        tools.onNewItems(event.chatItems)
-        watch.deliver(event.chatItems)
-        return
-      case "chatItemUpdated":
-        tools.onFile(event.chatItem)
-        return watch.update(event.chatItem)
-      case "chatItemsDeleted":
-        return watch.remove(event.chatItemDeletions.map(({deletedChatItem}) => deletedChatItem))
-      case "contactConnected":
-        return tools.onContactConnected(event)
-      case "userJoinedGroup":
-        return tools.onUserJoinedGroup(event)
-      case "rcvFileComplete":
-        return tools.onFileComplete(event.chatItem)
-      case "rcvFileSndCancelled":
-        return tools.onFileCancelled(event)
-      case "rcvFileError":
-        return tools.onFileError(event)
-      case "rcvFileDescrReady":
-        return tools.onFileDescription()
-      case "sndFileCompleteXFTP":
-        return tools.onSentFile(event.fileTransferMeta)
-      case "sndFileError":
-        tools.onSentFile(event.fileTransferMeta)
-        return control.fileNotSent(event)
+    if (event.type === "newChatItems") {
+      for (const ci of event.chatItems) {
+        if (isGroupMessage(ci, control.groupId)) control.onMessage(ci)
+      }
     }
+    tools.onEvent(event)
+    if (event.type === "sndFileError") control.fileNotSent(event)
     if (isControlEvent(event, control.groupId)) {
       controlEvents = controlEvents.then(() => control.onEvent(event)).catch(error => logError(`${event.type} in the agent control chat`, error))
     }
@@ -206,19 +178,6 @@ export async function waitForCancelledCards(stopped: Action[], seconds: number, 
   })
 }
 
-async function setTempFolder(chat: api.ChatApi, folder: string): Promise<void> {
-  mkdirSync(folder, {recursive: true, mode: 0o700})
-  const r = await chat.sendChatCmd(`/_temp_folder ${folder}`)
-  if (r.type !== "cmdOk") throw new api.ChatCommandError("error setting the temp folder", r)
-}
-
-async function updatedUser(chat: api.ChatApi, user: T.User, displayName: string | undefined): Promise<T.User> {
-  const {profile} = user
-  if ((displayName === undefined || displayName === profile.displayName) && profile.peerType === T.ChatPeerType.Agent) return user
-  await chat.apiUpdateProfile(user.userId, {...util.fromLocalProfile(profile), displayName: displayName ?? profile.displayName, peerType: T.ChatPeerType.Agent})
-  return (await chat.apiGetActiveUser())!
-}
-
 async function controlGroup(chat: api.ChatApi, userId: number, displayName: string, resetOwners: boolean): Promise<T.GroupInfo> {
   const group = await findControlGroup(chat, userId)
   if (group === undefined) return createControlChat(chat, userId, displayName, 1)
@@ -232,21 +191,5 @@ async function listen(port: number, token: string, factory: McpServerFactory, re
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "EADDRINUSE") throw new ExitError(`Port ${port} is in use. Start with --port N.`, 1)
     throw error
-  }
-}
-
-function bufferEvents(chat: api.ChatApi): (handler: (event: ChatEvent) => Promise<void>) => Promise<void> {
-  const buffered: ChatEvent[] = []
-  let eventHandler: ((event: ChatEvent) => Promise<void>) | undefined
-  chat.onAny(async event => {
-    if (eventHandler) await eventHandler(event)
-    else buffered.push(event)
-  })
-  return async handler => {
-    for (let event = buffered.shift(); event !== undefined; event = buffered.shift()) {
-      const {type} = event
-      await handler(event).catch(error => logError(`${type} event`, error))
-    }
-    eventHandler = handler
   }
 }

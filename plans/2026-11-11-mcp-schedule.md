@@ -12,6 +12,7 @@ Status: draft for review. Decided on 2026-11-11. Code references: master `2205de
 6. One due prompt per schedule, kept in memory; the minutes while the server is stopped are skipped.
 7. Its own pull request from master, not stacked.
 8. Budget: about 140 changed lines in `src`, at most 20% more; the user accepted the 201 changed lines after the review rounds.
+9. Plugin: the group of each session accepts the same commands for the session's chats, and `receive` of the chat returns its due prompts, as in `serve`. Delivery through the channel is left to a later change.
 
 ## Owner commands
 
@@ -77,7 +78,7 @@ control.ts    controlCommands     /schedules "Scheduled prompts"
               schedulesText       new: the /schedules reply
               schedulesOf         new: the valid entries of simplexMcpSchedules
               utcOffset           new: UTC±HH:MM of the process's time zone
-              hasApprover         new: true for the member ID of a current approver, false while the control chat is lost; used by standingApprover and Schedules
+              isCurrentApprover   new: true for the member ID of a current approver, false while the control chat is lost; used by standingApprover and Schedules
               load                the schedules of the agent's chats, after the members
               constructor         schedules
 schedule.ts   Schedules           new
@@ -85,6 +86,9 @@ schedule.ts   Schedules           new
               cronMatches         new
               fieldValues         new
 serve.ts      startAgent          one Schedules, passed to AgentTools and Control; started after control.start; stopped at the stop, before the actions
+hub.ts        Session             one Schedules per session, passed to AgentTools and Control
+              Hub.session         schedules started after control.load
+              Hub.stop            schedules stopped before the actions
 tools.ts      Agent               schedules, optional
               receiveOutput       scheduled
               receiveDescription  the sentence on scheduled
@@ -149,7 +153,7 @@ pending(chat)        the count of due prompts of chat
 At minute boundary B:
 ```
 each chat, each entry N of it:
-  entry without a due prompt, member byId an approver (Control.hasApprover), cron matched by the local time of B:
+  entry without a due prompt, member byId an approver (Control.isCurrentApprover), cron matched by the local time of B:
     due = {prompt, at: B as YYYY-MM-DD HH:MM UTC}
     log "Scheduled prompt N of CHAT is due."
     wake the listeners of CHAT
@@ -157,7 +161,8 @@ the next timer: the first minute boundary after max(now, B)
 ```
 - When a timer fires late, the schedules are matched at B, the minute it was set for; the minutes until the next boundary after the firing are skipped. After a timer that fires early, the next one is set after B, so each minute is matched once.
 - Due prompts are kept in memory: they are dropped at a restart.
-- `serve.ts`: one `Schedules`, with `control.hasApprover` as its approver check; passed to `AgentTools` (`schedules`) and `Control`; started after `control.start()`, when HTTP answers calls; stopped at the stop, before the actions.
+- `serve.ts`: one `Schedules`, with `control.isCurrentApprover` as its approver check; passed to `AgentTools` (`schedules`) and `Control`; started after `control.start()`, when HTTP answers calls; stopped at the stop, before the actions.
+- `hub.ts`: one `Schedules` per session, with the session's `control.isCurrentApprover`; passed to its `AgentTools` and `Control`; started after `control.load()` in `Hub.session`; stopped at `Hub.stop`, before the actions.
 
 ```mermaid
 sequenceDiagram
@@ -251,13 +256,13 @@ peer of CHAT                   messages in CHAT, unchanged                    th
 
 ## Docs
 
-- `README.md`: a short paragraph with an example.
 - `REFERENCE.md`:
   - the schedule commands
   - the receive field `scheduled`
   - the log lines
   - the time zone
+  - a short paragraph with an example, in section "Prompt the agent from the app"
 - `TESTING.md`: a step with `* * * * *`.
-- `PLAN.md`: sections Schedules and Scheduled prompt; the schedule rows and lines of the other sections; decisions.
+- `plans/2026-10-19-mcp-server.md`: sections Schedules and Scheduled prompt; the schedule rows and lines of the other sections; decisions.
 - `spec/`: api, architecture, flows and README, with line anchors remapped from `git diff -U0 2205de390f`.
 - `package.json`: version unchanged.

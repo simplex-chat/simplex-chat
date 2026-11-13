@@ -47,7 +47,7 @@ function agentChats(): FakeChat {
 }
 
 async function controlWith(chat: FakeChat, actions: Actions, owners?: OwnerEntry[], mode: Mode = "requests"): Promise<{control: Control; tools: AgentTools; schedules: Schedules}> {
-  const schedules = new Schedules(memberId => control.hasApprover(memberId))
+  const schedules = new Schedules(memberId => control.isCurrentApprover(memberId))
   const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data, schedules}, mode)
   const control: Control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint", qrCode: "small"}, actions, tools, schedules)
   await control.load()
@@ -111,6 +111,13 @@ describe("owner commands", () => {
     expect(action).toMatchObject({state: "performing", decidedBy: "Alice"})
     expect(await control.ownerCommand(alice, {keyword: "approve", params: "6"})).toBeUndefined()
     expect(connect.state).toBe("performing")
+  })
+
+  it("answers /give CHAT N with the list of commands, from an owner, an unlisted owner and a member, as 0.2", async () => {
+    for (const owners of [undefined, [{memberId: 3, name: "Alice"}]]) {
+      const {control} = await setup(owners)
+      for (const sender of [alice, member(8, "Carol", T.GroupMemberRole.Owner), bob]) expect(await control.ownerCommand(sender, {keyword: "give", params: "@4 2"})).toBe(commandsReply)
+    }
   })
 
   it("expires due actions before a command", async () => {
@@ -412,6 +419,19 @@ describe("downloads in the agent control chat", () => {
     const text = await downloadSetup({type: "image", preview})
     expect(text.cards[0].msgContent.type).toBe("text")
     expect(errors).toHaveBeenCalledWith("action 1 card image: image cannot be decoded or does not fit maxSize\n")
+  })
+
+  it("fails a download whose image card the core refuses under the control chat's preference for files and media, with the core's text", async () => {
+    const fake = fakeHooks()
+    const actions: Actions = new Actions("requests", 23, 1, {...fake.hooks, refusal: action => control.refusal(action), postCard: action => control.postCard(action), outcome: action => control.outcome(action)})
+    const chat = agentChats()
+    const {control} = await controlWith(chat, actions)
+    chat.apiSendMessages = async () => {
+      throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "commandError", message: "feature not allowed Files and media"}} as unknown as T.ChatError)
+    }
+    const action = actions.create("d", downloadFields("#2", {type: "image", preview: "data:image/jpg;base64,/9j/small"}))
+    await flushed()
+    expect(action).toMatchObject({state: "failed", error: 'SimpleX error: error: commandError: {"message":"feature not allowed Files and media"}'})
   })
 
   it("posts no card for a download in mode host or under the files approval", async () => {
@@ -797,7 +817,7 @@ describe("scheduled prompts", () => {
   })
 
   it("drops the pending prompt of a removed schedule, and makes due only the others", async () => {
-    jest.useFakeTimers({now: clockStart})
+    jest.useFakeTimers({now: clockStart, doNotFake: ["setImmediate"]})
     const {schedules, send} = await scheduling()
     for (const prompt of ["first", "second", "third"]) {
       await send(alice, `/schedule #2 * * * * * ${prompt}`)
@@ -848,7 +868,7 @@ describe("scheduled prompts", () => {
   })
 
   it("loads the valid schedules of the agent's chats at the start, and makes due only those of current approvers", async () => {
-    jest.useFakeTimers({now: clockStart})
+    jest.useFakeTimers({now: clockStart, doNotFake: ["setImmediate"]})
     const chat = agentChats()
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     directory.customData = {
@@ -870,7 +890,7 @@ describe("scheduled prompts", () => {
   })
 
   it("makes no prompt due after the agent loses its control chat", async () => {
-    jest.useFakeTimers({now: clockStart})
+    jest.useFakeTimers({now: clockStart, doNotFake: ["setImmediate"]})
     const {control, schedules, send} = await scheduling()
     await send(alice, "/schedule #2 * * * * * Post the trail report.")
     schedules.start()
@@ -883,7 +903,7 @@ describe("scheduled prompts", () => {
   })
 
   it("drops the schedules of a chat that an owner's /leave leaves", async () => {
-    jest.useFakeTimers({now: clockStart})
+    jest.useFakeTimers({now: clockStart, doNotFake: ["setImmediate"]})
     const {schedules, send} = await scheduling()
     await send(alice, "/schedule #2 * * * * * Post the trail report.")
     schedules.start()
