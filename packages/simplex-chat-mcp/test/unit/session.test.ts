@@ -1,8 +1,8 @@
 import {EventEmitter, once} from "events"
 import {mkdtempSync, rmSync} from "fs"
 import {Server, ServerResponse} from "http"
-import {tmpdir} from "os"
-import {join} from "path"
+import {homedir, tmpdir} from "os"
+import {join, resolve} from "path"
 import {PassThrough} from "stream"
 import {ServiceClient, SpawnService} from "../../src/client"
 import {serviceToken, socketPath} from "../../src/files"
@@ -95,7 +95,8 @@ function listCall(client: LineClient): Promise<any> {
 
 const listed = {chats: [], actions: []}
 const listResult = {content: [{type: "text", text: JSON.stringify(listed)}], structuredContent: listed}
-const registered = `session ${JSON.stringify({id, pid: process.ppid, project: "/p/app", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}})}`
+const registration = (record: string): string => `session ${JSON.stringify({id, pid: process.ppid, project: "/p/app", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}, record})}`
+const registered = registration(join(homedir(), ".claude", "sessions", `${process.ppid}.json`))
 const stdins: PassThrough[] = []
 
 beforeEach(() => {
@@ -302,6 +303,13 @@ describe("session server", () => {
       expect.objectContaining({method: "notifications/progress", params: expect.objectContaining({progressToken: 7, message: "Action 1 waits for an approver until 10:00 UTC."})}),
     )
     expect(seen).toEqual([registered, "attach", "call list"])
+  })
+
+  it.each([["/c/claude", join("/c/claude", "sessions", `${process.ppid}.json`)], ["c/claude", resolve("c/claude", "sessions", `${process.ppid}.json`)]])("registers with the absolute path of Claude Code's record of its parent process, in CLAUDE_CONFIG_DIR %s, or in ~/.claude without it", async (folder, record) => {
+    await fakeService(async res => endWithResult(res, listResult))
+    await session({CLAUDE_CONFIG_DIR: folder})
+    await until(() => seen.length === 2)
+    expect(seen).toEqual([registration(record), "attach"])
   })
 
   it("uses the working folder as the project without CLAUDE_PROJECT_DIR", async () => {
