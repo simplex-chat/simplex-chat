@@ -340,7 +340,7 @@ Tests:
   - Changed: "posts the note of Claude Code's prompt and every part of an answer as silent, and the end line as important".
   - New, in "while a preference of the session group refuses a post": "posts that Claude's text was not posted, naming the preference, once for a text, and finalizes its message with the text accepted last".
   - New for decision 37, in the same group: "posts one refusal for an answer that the preference refuses, streamed or not, in the turn's opening message when the refused post would fill it, and does not post the answer again"; "fills the turn's opening message with the refusal of the step that would fill it, and posts nothing at the step's end"; "posts one refusal for a text whose final update is refused while its scheduled update waits behind it, and no update after it"; "posts one refusal for a text whose first part is refused when the text outgrows a message, and nothing more of that text".
-  - New for the review of `8b0488d57`, in "session channel": "sends the turn's text, step and answer as new messages when the update of the opening message fails, as after its deletion"; "posts the answer at Stop when the text that starts it was never posted"; "keeps the opening message for the batches that arrive while User posts the prompt, and sends it after User's post"; "ends a live text with its text and an empty opening message with ⏹️ Stopped 23 hours after their send by the wall clock, a text in an opening message counted from the opening's send"; in the preference group: "finalizes the turn's opening message with ⏹️ Stopped when its update with the refusal fails too, and posts the end line".
+  - New for the review of `8b0488d57`, in "session channel": "sends the turn's text, step and answer as new messages when the update of the opening message fails, as after its deletion"; "posts the answer at Stop when the text that starts it was never posted"; "keeps the opening message for the batches that arrive while User posts the prompt, and sends it after User's post"; "ends a live text with its text and an empty opening message with ⏹️ Stopped 23 hours after their send by the wall clock, a text in an opening message counted from the opening's send"; in the preference group: "finalizes the turn's opening message with ⏹️ Stopped when its update with the refusal fails too, and posts the end line". For the re-check of `c6796ee4b`: "finalizes the opening message with ⏹️ Stopped after its update fails once, and sends the text as a new message".
 - `test/unit/service.test.ts`, changed: "passes text batches to the session and answers before its posts, and ends its live posts at the last detach".
 - `test/unit/hook.test.ts` and `files.test.ts` stay as they are: they test `duration` through the step lines, and `dataRoot` and `socketPath` through the exports of `files.ts`.
 - `test/e2e/service.test.ts`, changed: the mirroring test runs `dist/display.js` with the inputs of run L1 and then the Stop hook. The owner's app receives the opening message, its updates and its finalization, not edited, and `!- ✅ Done in` with the time.
@@ -404,8 +404,8 @@ Changes against sections 4 and 5:
 10  e2e: the link tests wait for the answer as an update of the opening message.
 11  decision 37: refused texts are kept in recentTexts with refused set, and the claim takes them without a post;
     postRefusal updates a given item, the opening message, in place of a post.
-12  review of 8b0488d57: an update of the opening message that fails without a refusal drops it, logged, and the
-    post is sent as a new message (startLine, postAnswer through fill); endText keeps a text in recentTexts only
+12  review of 8b0488d57: an update of the opening message that fails without a refusal drops it, logged and
+    finalized with ⏹️ Stopped, and the post is sent as a new message (startLine, postAnswer through fill); endText keeps a text in recentTexts only
     when it has a message, and refuseText keeps a refused one.
 13  review: expireSteps becomes expireLive. Each minute while a step, an opening or a text is live (watchLive),
     and before each step, it ends steps, openings and texts sent 23 hours ago by the wall clock: steps and texts
@@ -425,7 +425,7 @@ stateDiagram-v2
   bounded --> filled: such a post of a hook that started before until
   open --> filled: such a post refused, its refusal text, or ⏹️ Stopped when that update fails
   open --> filled: a blank answer, the end line
-  open --> dropped: its update failed otherwise, the post sent as a new message
+  open --> dropped: its update failed otherwise, ⏹️ Stopped, the post sent as a new message
   open --> stopped: an answer, the last detach or the stop, ⏹️ Stopped
   open --> stopped: 23 hours after its send by the wall clock, ⏹️ Stopped
   bounded --> stopped: an answer of a hook with start >= until, the last detach or the stop, ⏹️ Stopped

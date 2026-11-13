@@ -425,6 +425,7 @@ export class Session {
     } catch (error) {
       if (refusedFeature(error) === undefined) {
         logError(`${kind.log} of session ${this.number}`, error)
+        void this.finalize(Promise.resolve(itemId), stoppedLine, kind)
         return "failed"
       }
       if (await this.refused(error, kind, itemId)) onRefused?.()

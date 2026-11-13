@@ -1032,6 +1032,27 @@ describe("session channel", () => {
     ])
   })
 
+  it("finalizes the opening message with ⏹️ Stopped after its update fails once, and sends the text as a new message", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const update = chat.apiUpdateChatItem.bind(chat)
+    const opening = chat.nextItemId
+    let failed = false
+    chat.apiUpdateChatItem = async (type, chatId, itemId, msgContent, live) => {
+      if (!failed && itemId === opening) {
+        failed = true
+        throw new Error("network")
+      }
+      return update(type, chatId, itemId, msgContent, live)
+    }
+    await session.turn({id: id1, at: 1, prompt: "Fix the build", typed: true})
+    await session.turn({id: id1, at: 2, text: {message: "m1", index: 0, final: true, delta: "Fixed."}})
+    await session["liveOrder"]
+    await session["finalizing"]
+    expect(chat.updates).toEqual([{chatId: 20, itemId: opening, text: "⏹️ Stopped"}])
+    expect(shown(chat)).toEqual([{text: "⏹️ Stopped", quotedItemId: undefined}, {text: "Fixed.", quotedItemId: undefined}])
+  })
+
   it("posts the answer at Stop when the text that starts it was never posted", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
