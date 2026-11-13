@@ -1,12 +1,12 @@
 # Claude as an agent, User as a person
 
-Status: approved by the user on 2026-11-13 at `7c0da7fef`, with the answers Q1 (b) and Q2 (b); implemented on `ep/mcp-agent-profile` after the merge of master `97bbbd9ac`. Code references: master `9d3241b06`.
+Status: approved by the user on 2026-11-13 at `7c0da7fef`, with the answers Q1 (b) and Q2 (b); implemented on `ep/mcp-agent-profile` after the merge of master `97bbbd9ac`. On 2026-11-13 the user changed the answer to Q1 to (a), as Q3 A of the plans page: the core sends a change of the peer type alone to groups. Code references: master `9d3241b06`.
 
 Outcome:
 - The apps choose the placeholder of another person's profile by its peer type: in groups, in contact lists, in reactions, in calls, for contact requests and on link cards. Claude gets the agent placeholder in its session groups and in the Main group.
 - `User`, the profile that posts the prompts typed in the terminal, is given the peer type `human` and keeps the person placeholder.
 - In a data folder of 0.3.0, `User` is changed at the service start, without user action.
-- The core is unchanged (Q1 (b)). Owners who joined a session group before the upgrade keep seeing `User` with the agent placeholder there.
+- The core sends a change of the peer type alone to groups, before the next message there (Q1 (a)). Owners who joined a session group before the upgrade see `User` as a person after its next post there, once the plugin bundles a core with this change.
 
 ## 1. Goal
 
@@ -29,6 +29,8 @@ Done when:
 5  after a service start on a data folder of 0.3.0, User has peer type human             the same e2e test: prepareRoot makes User agent
 6  an owner who joins a session group sees Claude as agent and User as human             the same e2e test
 7  docs state the peer types; the roadmap line is removed                                review
+8  a change of the peer type alone is sent to each group before the next message there,  core test, fails on master
+   and members see `updated profile` once
 ```
 
 ## 2. What users see
@@ -40,7 +42,7 @@ Claude, in its session groups and the Main group   person     agent
 an agent of serve, in its agent control chat       person     agent
 User, in session groups created or joined after    person     person
   the upgrade
-User, in session groups joined before the upgrade  person     agent (Q1 (b))
+User, in session groups joined before the upgrade  person     agent until User's next post there, then person (Q1 (a))
 a profile with peer type agent                     person     agent, in every place below
 a profile with peer type bot                       person     cube, in every place below
 a profile of another peer type, or of none         person     person
@@ -84,7 +86,7 @@ apps without this change                                       person in every p
 
 Agent placeholder: `ic_agent.svg` on Android and desktop, `agent` of `SharedAssets.xcassets` on iOS, three dots. Cube: `ic_cube` and `cube.fill`. The person keeps its form in each place: the filled circle for avatars, `person.crop.circle` in iOS reaction menus, `ic_person` and `person` for small link icons. The placeholder keeps its description `profile image placeholder` on Android and desktop.
 
-No text changes. With Q1 (a), owners who joined a session group before the upgrade would see the group event `updated profile` from `User` once, above `User`'s next post there (`src/Simplex/Chat/Messages/CIContent.hs:374`).
+The only text is a group event of the core, `updated profile` (`src/Simplex/Chat/Messages/CIContent.hs:374`). Owners who joined a session group before the upgrade see it from `User` once, above `User`'s next post there (Q1 (a)).
 
 ```mermaid
 sequenceDiagram
@@ -102,14 +104,15 @@ sequenceDiagram
   O->>O: Claude with the agent placeholder, User with the person placeholder
   Note over O: a session group the owner joined before the upgrade
   D->>U: a prompt typed in the terminal
-  U->>O: the prompt, without a profile update (Q1 (b))
-  O->>O: User with the agent placeholder, as stored since 0.3.0
+  U->>O: x.info with human, then the prompt (Q1 (a))
+  O->>O: event "updated profile" from User, then the prompt, with the person placeholder
 ```
 
 ## 3. Questions for the user
 
-Q1. A peer type change in existing groups. Answered on 2026-11-12: (b).
-- (b), the answer: no core change. In session groups joined before the upgrade, updated apps show `User` with the agent placeholder. New groups and later joiners see a person.
+Q1. A peer type change in existing groups. Answered on 2026-11-12: (b); changed on 2026-11-13 to (a), as Q3 A of the plans page.
+- (a), the answer: the core counts a peer type change as a change of the member profile, 3 changed lines at `src/Simplex/Chat/Store/Profiles.hs:374-376`, with the test of [Acceptance](#7-acceptance-and-tests). The profile is sent to each group before the next message there, as after a name change. Owners see `updated profile` from `User` once, above `User`'s next terminal prompt, and then the person placeholder. Every client gets the change: a bot or an agent that changes its peer type sends it to its groups. The plugin gets it with the core release that follows, when `release.ts` pins it and the plugin's lock is updated (decision 16).
+- (b), the first answer: no core change. In session groups joined before the upgrade, updated apps show `User` with the agent placeholder. New groups and later joiners see a person.
 - The user's note: "I don't understand why core has to change - if our plugin correctly updates profile, the update will be sent on the next message."
 - The answer. The plugin updates the profile correctly: at each start, `updatedUser` calls `apiUpdateProfile` with the peer type `human` (decision 14). The core then sends the profile by three routes:
   ```
@@ -121,8 +124,7 @@ Q1. A peer type change in existing groups. Answered on 2026-11-12: (b).
   there                                          change of the name, full name, short             Store/Profiles.hs:369-376
                                                  description, description or image
   ```
-  So the update is not sent with the next message: before a message, the core sends the profile to a group only when `user_member_profile_updated_at` is later than the group's last send, and a change of the peer type alone leaves that time as it is. The plugin can reach the members already in a group only by changing one of those fields, as G2 of [Design](#5-design) does with two visible changes.
-- (a), the alternative: the core counts a peer type change as a change of the member profile, 3 changed lines at `src/Simplex/Chat/Store/Profiles.hs:374-376`, with the test of [Acceptance](#7-acceptance-and-tests). The profile is sent to each group before the next message there, as after a name change. Owners see `updated profile` from `User` once, above `User`'s next terminal prompt, and then the person placeholder. Every client gets the change: a bot or an agent that changes its peer type sends it to its groups. The plugin gets it with the core release that follows, when `release.ts` pins it and the plugin's lock is updated (decision 16).
+  So on master the update is not sent with the next message: before a message, the core sends the profile to a group only when `user_member_profile_updated_at` is later than the group's last send, and a change of the peer type alone leaves that time as it is. With (a), that time is updated for the peer type too, so the update is sent with the next message, as the user expected.
 
 Q2. Placeholders of contacts on other screens. Answered on 2026-11-12: (b).
 - (b), the answer: every placeholder of another person's profile is chosen by its peer type: the 18 sites of the first draft and 6 more found in the search for every site (decision 20).
@@ -169,7 +171,7 @@ Changes:
 12. Claude and the agents of `serve` keep `agent`.
 13. `openCore` and `updatedUser` take the peer type. The hub and `serve` pass `agent`; `User.open` passes `human`.
 14. A data folder is upgraded by `updatedUser` at each start: it compares the display name and the peer type with the stored profile and updates them when either differs (`src/core.ts:56-57`). In a data folder of 0.3.0, `User` is changed at the first start of the new version. No marker file is written.
-15. Q1 (b): the core is unchanged.
+15. Q1 (a): `userMemberProfileChanged` also compares the peer type (`src/Simplex/Chat/Store/Profiles.hs:374-376`). Contacts get a peer type change at once already (decision 3). A business chat gets the profile of its business or customer member by the same group path; a change of that member's peer type updates no field of the chat's group profile, which has no peer type (`src/Simplex/Chat/Store/Groups.hs:2823-2829`).
 16. The plugin bundles `simplex-chat` 7.1.3 (`packages/simplex-chat-mcp/package-lock.json:4321-4322`), which loads the libraries of `core-7.1.3.0` (`packages/simplex-chat-nodejs/src/release.ts:3`). A core change would reach the plugin only through a core release, its pin in `release.ts` and an update of the plugin's lock.
 17. Nothing is posted in any group for the update of `User`. The hub's contact of `User` gets no chat item (decision 3), and the plugin's event handlers ignore `contactUpdated` and `groupMemberUpdated` (`src/tools.ts:665-691`, `src/control.ts:656-670`, `src/user.ts:50-57`).
 18. Session groups are never listed by Claude's tools, so the `from_type` of `User`'s messages appears in no tool result (`src/tools.ts:578`, `:1523`).
@@ -246,7 +248,7 @@ G2 the plugin changes a visible field    two profile updates at each such    two
    and restores it                       start, a workaround
 G3 nothing                               none                                User stays agent          the same        none
 ```
-G3 is Q1 (b), the answer; G1 is Q1 (a). G2 is a workaround with two visible changes for a field that the core skips.
+G1 is Q1 (a), the answer; G3 is Q1 (b). G2 is a workaround with two visible changes for a field that the core skips.
 
 Options for the upgrade:
 ```
@@ -255,6 +257,13 @@ D1 updatedUser at each start             2 changed lines; runs at every start, a
 D2 a one-time migration with a marker    a marker file, its read, and its write
 ```
 D1 is chosen.
+
+Changes per file, the core (Q1 (a)):
+```
+file                                                   change
+src/Simplex/Chat/Store/Profiles.hs                     updateUserProfile: userMemberProfileChanged also compares peerType
+tests/ChatTests/Groups.hs                              "change of peer type alone is sent on next message", in "membership profile updates"
+```
 
 Changes per file, Android and desktop (`apps/multiplatform/common/src`):
 ```
@@ -344,11 +353,13 @@ case                                         result
 apps without this change                      the person placeholder in every place of decisions 8 and 20, as now
 apps with this change                         every place by peer type; people keep the icon of each place
 older plugin data folders (0.3.0)             User is changed from agent to human at the first start; Claude unchanged
-session groups joined before the upgrade      owners' apps with this change show User with the agent placeholder (Q1 (b))
+session groups joined before the upgrade      User's profile is sent with User's next post there, shown as `updated profile` once, when the
+                                              plugin bundles a core with Q1 (a); with core-7.1.3.0, User stays agent there
 a later downgrade of the plugin               0.3.0's updatedUser sets User back to agent at its start (core.ts:56-57 of 0.3.0)
 agents of serve                               unchanged: agent at creation and at each start
 older Claude Code versions                    unaffected: the change touches no hook, tool or channel
-other clients                                 unaffected: the core and the protocol are unchanged
+other clients                                 a peer type change of a user is sent to its groups before its next message there; members
+                                              see `updated profile` once; the protocol is unchanged
 ```
 
 ## 7. Acceptance and tests
@@ -356,6 +367,8 @@ other clients                                 unaffected: the core and the proto
 The criteria are those of [Goal](#1-goal). Tests:
 ```
 test                                                          kind     fails on master
+tests/ChatTests/Groups.hs, "membership profile updates",       core     yes: the member record keeps no peer type
+  "change of peer type alone is sent on next message"
 packages/simplex-chat-mcp/test/unit/core.test.ts:              unit     does not compile on master: updatedUser takes 3 arguments
   "updates a profile whose peer type differs"
   "keeps a profile with its name and peer type"
@@ -396,7 +409,7 @@ CI:
 
 Not covered by tests: the creation of `User` with `human` in a new data folder, because every e2e test prepares the root with the test servers. The code of that path is one argument of `apiCreateActiveUser`.
 
-With Q1 (a), the core test would be "peer type change alone is sent on next message" in "membership profile updates" (`tests/ChatTests/Groups.hs:233-241`). After `createGroup2 "team" alice bob` and the deletion of their contact, as in `testMembershipProfileUpdateContactDeletedPeerType` (`:7564-7582`), alice sends `/_profile 1 {"displayName": "alice", "fullName": "", "shortDescr": "Alice", "peerType": "agent"}` and `#team hello`. Then `memberAddressPeerType bob "alice"` is `[(Nothing, Just CPTAgent)]`, and `[(Nothing, Nothing)]` on master.
+The core test is "change of peer type alone is sent on next message" in "membership profile updates" (`tests/ChatTests/Groups.hs`). After `createGroup2 "team" alice bob` and the deletion of their contact, as in `testMembershipProfileUpdateContactDeletedPeerType`, alice sends `/_profile 1 {"displayName": "alice", "fullName": "", "shortDescr": "Alice", "peerType": "agent"}`, `#team hello` and `#team hello again`. Then `memberAddressPeerType bob "alice"` is `[(Nothing, Just CPTAgent)]`, `[(Nothing, Nothing)]` on master, and bob's group has one `updated profile (signed)` item. The plugin's e2e tests load the pinned `core-7.1.3.0`, so the members already in a group are covered by the core test only.
 
 ## 8. Docs to change
 
