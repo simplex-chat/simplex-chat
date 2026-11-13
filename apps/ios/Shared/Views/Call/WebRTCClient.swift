@@ -1166,7 +1166,7 @@ extension RTCIceCandidate {
     func toWebRTCCandidate() -> WebRTC.RTCIceCandidate {
         WebRTC.RTCIceCandidate(
             sdp: candidate,
-            sdpMLineIndex: Int32(sdpMLineIndex ?? 0),
+            sdpMLineIndex: sdpMLineIndex ?? 0,
             sdpMid: sdpMid
         )
     }
@@ -1178,7 +1178,7 @@ extension WebRTC.RTCIceCandidate {
             candidateType: candidateType,
             protocol: `protocol`,
             sdpMid: sdpMid,
-            sdpMLineIndex: Int(sdpMLineIndex),
+            sdpMLineIndex: sdpMLineIndex,
             candidate: sdp
         )
     }
