@@ -490,11 +490,12 @@ The plugin adds:
 
 | Part | What it does |
 |---|---|
-| MCP server `simplex` | Runs `simplex-mcp session` for each session. It provides the tools, such as `mcp__plugin_simplex_simplex__connect`, and the channel. |
+| MCP server `simplex` | Runs `simplex-mcp session` for each session. It provides the tools, such as `mcp__plugin_simplex_simplex__connect`, and the channel. Its tool `pre_tool_use` answers the PreToolUse hook of every tool, and Claude never needs to call it. |
 | SessionStart hook | Checks the Node.js version and starts the service. It opens the session and its group, and shows the Main group link while the Main group has no owner. |
 | PreToolUse hook of the plugin's tools | Lets the plugin's tools run without a Claude Code prompt, because you approve them in the SimpleX app. |
 | UserPromptSubmit, Stop and PostModelSwitch hooks | Post your terminal prompts and Claude's answers in the session's group, and keep the model and effort in its description. They run in the background. |
 | PreToolUse, PostToolUse and PostToolUseFailure hooks of every tool | Post a line for each step of Claude's work when it starts, and complete it when it ends. They run in the background. |
+| PreToolUse hook of every tool, of type `mcp_tool` | Calls the tool `pre_tool_use` of the session's MCP server, which allows a tool approved for the rest of the session, see [Tool use](#tool-use). It waits up to 5 seconds. |
 
 The server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. The PreToolUse hook of the plugin's tools runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js` instead. The package, a 4 MB download, bundles its dependencies and has no lockfile, so Claude Code installs nothing after unpacking it. Node.js loads the modules from the plugin's folder, so a project's `node_modules` can't replace them. The first session start downloads the SimpleX core library. Claude Code waits up to 600 seconds for the SessionStart hook.
 
@@ -592,7 +593,7 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`. Th
 - When someone joins or their role changes, Claude posts their rights. For an admin the post is `Bob is an admin and can send prompts to Claude and the group's commands, and approve tool use. You can change role to observer to stop it: /'observer #G ID'`, with the group's and the member's IDs. For a moderator, member or author it is `NAME is a ROLE and can send prompts to Claude; the group's commands and approvals need the role admin or owner.`, followed by the same command. The posts for an owner and for an observer have no command: `NAME is an owner and can send prompts to Claude and the group's commands, and approve tool use.` and `NAME is an observer and can't send messages.` Claude posts nothing for `User`.
 - `/observer #G ID` makes that member an observer, and Claude replies `NAME is an observer and can't send messages.` Admins and owners can use it on a member whose role isn't above their own. Standing approvals that the observer gave, of all messages to a chat or all files from it, stop counting while they aren't an admin or owner, and count again if they become one. For a member who was invited and hasn't joined yet, Claude replies `No member ID in this group.` That member joins with the role of the invitation, which can be changed after the join.
 - The group's description is `The Claude Code session N. Members send it prompts; admins and owners also send the group's commands and approve tool use.`, set when the group is created. Its short description shows the model and effort, see [Model and effort](#model-and-effort).
-- The group has the commands of the agent control chat of `serve` (see [What the owner sees](#what-the-owner-sees)), without a session prefix, such as `/approve 7`, `/receive @3 9` and `/leave #2`. It also has `/give CHAT N` and `/observer #G ID`.
+- The group has the commands of the agent control chat of `serve` (see [What the owner sees](#what-the-owner-sees)), without a session prefix, such as `/approve 7`, `/receive @3 9` and `/leave #2`. It also has `/give CHAT N`, `/observer #G ID`, and `/approve N all` and `/revoke TOOL` for tools, see [Tool use](#tool-use).
 - A chat belongs to the session that connected it, even when the other side accepts after `connect` returned. The tools of other sessions don't show it. Their `connect` to its address returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` For example, `/give @3 2` in the group of the session that owns chat @3 gives it to session 2.
 - `/list` and `/revoke` also work in the group of a closed session. A `/revoke` sent while the service is stopped applies when the service starts again.
 - `claude --resume` and `claude --continue` reopen a session with its group and chats. `/clear` keeps the session's group, because the service links the new session IDs of a Claude Code process to that process's session. A fork made with `claude --resume ID --fork-session` continues in the group of the resumed session. After `/resume` of another session inside a running one, prompts and answers go to the running session's group. A later `claude --resume` of that other session reopens its own group and chats.
@@ -659,10 +660,20 @@ With the channel, Claude Code's permission prompts, such as the one before a Bas
 ```
 Claude: I want to use `Bash`: `List files`
         `ls -la`
-        /approve 5 or /reject 5
+        /approve 5, /approve 5 all or /reject 5
 ```
 
 `/approve 5` allows the tool use, and `/reject 5` denies it. The dialog in the terminal stays open, and the first answer, in the terminal or in the group, applies. A card that is still pending gets `Ended.` when its turn ends, when a prompt starts the next turn, or when the session ends. A prompt that Claude Code adds to the running turn leaves the card pending. The preview of the tool's input is shortened to fit the card.
+
+`/approve 5 all` allows the tool use and approves its tool for the rest of the session. Claude replies `` Approved `Bash` for the rest of this session by Alice. /revoke Bash ``.
+
+- Later uses of the tool run without a card and without the dialog in the terminal. Each use in the main conversation still has its line in the group.
+- Claude Code still asks where its own rules require it: for a matching ask rule, a write to a protected path such as `.git`, `.claude` or `.bashrc`, in plan mode, and when the classifier of auto mode asks. Such a use gets a card with the line `` `Bash` is approved for this session, and Claude Code still asks for this use. ``, and no `all` command. With Claude Code before 2.1.299, an approved tool also runs writes in plan mode.
+- The approval covers the uses of subagents too. Other pending cards of the tool stay pending.
+- It counts while the member who gave it is an admin or owner of the group, and counts again if they become one again.
+- `/list` shows it after the chats, as `` `Bash`  approved for this session by Alice ``. `/revoke Bash` ends it with `` Uses of `Bash` need approval again. ``
+- It is dropped when the session ends or the service restarts. The terminal shows nothing at the approval, and Claude Code's `/permissions` doesn't list it, because the plugin keeps it.
+- `/approve N all` of another kind of action gets `Action N is not a tool use.`
 
 ### Model and effort
 
@@ -724,6 +735,7 @@ The folders, and the files the service writes, are readable only by the user, ex
 - Claude Code runs no command from a message of a session's group, even one that starts with `!`. Claude gets the text, and its tool use follows Claude Code's permissions.
 - Only you get the Main group link. The session start shows it, and `link` prints it in a terminal.
 - A session runs in mode `host` only after an admin or owner approves it in the session's group.
+- A tool approved in the session's group runs without the terminal's dialog, and Claude Code's own rules still apply to it. Only an admin or owner approves it, for the rest of the session.
 - Claude's files reach the group only while its preference "Files and media" allows them. Owners set it, and SimpleX enforces it. A post that a preference refuses is replaced by Claude's text that names the preference.
 - Any program running as you on this computer can replace the Main group and its owners at once, without their approval, with `reset-owners` or a request to the service.
 - The plugin refuses to send private keys and the files of its data folder, except the files under `files/` of the session's own folder.

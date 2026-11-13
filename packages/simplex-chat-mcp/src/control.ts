@@ -1,9 +1,10 @@
 import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
-import {Action, ActionHooks, Actions, DownloadAction, Standing, State, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
+import {Action, ActionHooks, Actions, DownloadAction, PermissionAction, Standing, State, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
 import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import {linkCommand} from "./owner"
+import type {ApprovedTool} from "./protocol"
 import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
 import {AgentTools, chatSubject, customDataOf, featureOff, fitsMessage, isActive, isConnected, memberCurrent, memberCurrentOrPending, refusedFeature, refusedFileReason, setChatData} from "./tools"
@@ -60,6 +61,7 @@ export interface SessionOptions {
   approves: (member: T.GroupMember) => boolean
   ownerOf: (session: number) => string | undefined
   isUser: (member: T.GroupMember) => boolean
+  toolsChanged: () => void
 }
 
 export interface Command {
@@ -76,6 +78,8 @@ interface ChatApproval {
 type OwnerRequest =
   | {type: "approve" | "reject" | "receive" | "forward"; action: number; chat?: string}
   | {type: "receiveAll"; action: number; chat: string}
+  | {type: "approveTool"; action: number}
+  | {type: "revokeTool"; tool: string}
   | {type: "approveChat" | "revoke"; chat: string; standing: Standing}
   | {type: "leave" | "deleteFiles"; chat: string}
   | {type: "give"; chat: string; session: number}
@@ -92,6 +96,7 @@ const inChat: Shown = {name: safeName, command: codeSpan}
 
 export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "postCard" | "outcome"> {
   private members: T.GroupMember[] = []
+  private readonly toolApprovals = new Map<string, ChatApproval>()
   private writes: Promise<unknown> = Promise.resolve()
   private profileUpdates: Promise<unknown> = Promise.resolve()
   private ownerCommands: Promise<unknown> = Promise.resolve()
@@ -260,6 +265,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         return this.approveChat(sender, request.chat, request.standing)
       case "revoke":
         return this.revoke(request.chat, request.standing)
+      case "revokeTool":
+        return this.revokeTool(request.tool)
       case "leave":
         return this.leave(sender, request.chat)
       case "deleteFiles":
@@ -272,9 +279,11 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       case "reject":
       case "receive":
       case "forward":
-      case "receiveAll": {
+      case "receiveAll":
+      case "approveTool": {
         const action = this.actions.get(request.action)
         if (action === undefined || action.state !== "pending" || action.card === undefined) return `Action ${request.action} is not pending.`
+        if (request.type === "approveTool") return action.tool === "permission" ? this.approveTool(sender, action) : `Action ${request.action} is not a tool use.`
         if (request.chat !== undefined && (action.tool === "connect" || action.chat !== request.chat)) return `Action ${request.action} is not for ${request.chat}.`
         const approver = safeName(sender.memberProfile.displayName)
         if (request.type === "reject") this.actions.reject(action, approver)
@@ -310,6 +319,32 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const {[key]: _, ...customData} = customDataOf(chatInfo) as {[key: string]: unknown}
     await this.setCustomData(chat, customData)
     return `${scope} ${chatName(chatSubject(chatInfo))} (${chat}) need approval again.`
+  }
+
+  approvedTools(): ApprovedTool[] {
+    return [...this.toolApprovals].filter(([, {approvedById}]) => this.approvers().some(({groupMemberId}) => groupMemberId === approvedById)).map(([tool, {approvedBy}]) => ({tool, approvedBy}))
+  }
+
+  endToolApprovals(): void {
+    this.toolApprovals.clear()
+  }
+
+  private approveTool(sender: T.GroupMember, action: PermissionAction): string {
+    const {toolName} = action.input
+    const approvedBy = sender.memberProfile.displayName
+    this.toolApprovals.set(toolName, {approvedBy, approvedById: sender.groupMemberId, approvedAt: new Date().toISOString()})
+    log(`${oneLine(toolName)} approved for the rest of the session in "${this.options.displayName}" by ${oneLine(approvedBy)}.`)
+    this.options.session?.toolsChanged()
+    const approver = safeName(approvedBy)
+    this.actions.approve(action, approver)
+    return `Approved ${codeSpan(oneLine(toolName))} for the rest of this session by ${approver}. /'revoke ${toolName}'`
+  }
+
+  private revokeTool(tool: string): string {
+    if (!this.toolApprovals.delete(tool)) return `Uses of ${codeSpan(tool)} have no standing approval.`
+    log(`${tool} needs approval again in "${this.options.displayName}".`)
+    this.options.session?.toolsChanged()
+    return `Uses of ${codeSpan(tool)} need approval again.`
   }
 
   private forward(action: DownloadAction): void {
@@ -383,6 +418,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (roleRank(sender.memberRole) < Math.max(roleRank(T.GroupMemberRole.Admin), roleRank(target.memberRole))) return `Your role does not let you change the role of ${name}.`
     await this.chat.apiSetMembersRole(this.groupId, [groupMemberId], T.GroupMemberRole.Observer)
     await this.refreshMembers()
+    this.options.session?.toolsChanged()
     return rightsText(name, T.GroupMemberRole.Observer)
   }
 
@@ -402,6 +438,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     })
     const rest = chats.length - lines.length
     if (rest > 0) lines.push(`${rest} older chat${rest === 1 ? " is" : "s are"} not shown.`)
+    lines.push(...this.approvedTools().map(({tool, approvedBy}) => `${codeSpan(oneLine(tool))}  approved for this session by ${safeName(approvedBy)}`))
     return lines.length > 0 ? lines.join("\n") : "No chats."
   }
 
@@ -702,7 +739,8 @@ function requestLines(action: Action): string[] {
   if (action.tool === "mode") return [`${done ? "I run" : "I want to run"} in mode ${action.input.mode}: Claude Code asks you before each of my actions, and they are performed without approval here.`]
   if (action.tool === "permission") {
     const {toolName, description, inputPreview} = action.input
-    return [`I want to use ${codeSpan(oneLine(toolName))}: ${codeSpan(oneLine(description))}`, ...fittedLines(codeLines(inputPreview), action.previewBytes)]
+    const approved = action.toolApproved ? [`${codeSpan(oneLine(toolName))} is approved for this session, and Claude Code still asks for this use.`] : []
+    return [`I want to use ${codeSpan(oneLine(toolName))}: ${codeSpan(oneLine(description))}`, ...fittedLines(codeLines(inputPreview), action.previewBytes), ...approved]
   }
   const subject = subjectText(action.subject, safeName)
   switch (action.tool) {
@@ -736,8 +774,9 @@ function commandsLine(action: Action): string {
   switch (action.tool) {
     case "connect":
     case "mode":
-    case "permission":
       return `/'approve ${action.n}' or /'reject ${action.n}'`
+    case "permission":
+      return action.toolApproved ? `/'approve ${action.n}' or /'reject ${action.n}'` : `/'approve ${action.n}', /'approve ${action.n} all' or /'reject ${action.n}'`
     case "send":
       return `/'approve ${action.chat} ${action.n}', /'approve ${action.chat} all' or /'reject ${action.chat} ${action.n}'`
     case "leave":
@@ -856,6 +895,8 @@ function ownerRequest({keyword, params}: Command, session: boolean): OwnerReques
   if (keyword === "delete" && chat !== undefined && value === "files") return {type: "deleteFiles", chat}
   if (session && keyword === "give" && chat !== undefined && value !== undefined && /^\d+$/.test(value)) return {type: keyword, chat, session: Number(value)}
   if (session && keyword === "observer" && chat?.startsWith("#") && value !== undefined && /^\d+$/.test(value)) return {type: "observer", group: chat, member: Number(value)}
+  if (session && keyword === "approve" && words.length === 2 && /^\d+$/.test(words[0]) && words[1] === "all") return {type: "approveTool", action: Number(words[0])}
+  if (session && keyword === "revoke" && chat === undefined && value !== undefined && /^[\w-]+$/.test(value)) return {type: "revokeTool", tool: value}
   if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
   return undefined
 }

@@ -562,7 +562,7 @@ describe("session channel", () => {
     for (const requestId of ["abcde", "fghij", "kmnop"]) session.permission({id: id1, requestId, toolName: "Bash", description: "Run shell command", inputPreview: "rm -rf build"})
     await until(() => sentTo(chat, 20).length === 3)
     const card = "I want to use `Bash`: `Run shell command`\n`rm -rf build`"
-    expect(sentTo(chat, 20)).toEqual([1, 2, 3].map(n => `${card}\n/'approve ${n}' or /'reject ${n}'`))
+    expect(sentTo(chat, 20)).toEqual([1, 2, 3].map(n => `${card}\n/'approve ${n}', /'approve ${n} all' or /'reject ${n}'`))
     expect(await session.control.ownerCommand(mallory, {keyword: "approve", params: "1"})).toBeUndefined()
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "2"})).toBeUndefined()
     await until(() => chat.updates.length === 2)
@@ -594,7 +594,91 @@ describe("session channel", () => {
     await until(() => sentTo(chat, 20).length === 1)
     const [card] = sentTo(chat, 20)
     expect(Buffer.byteLength(JSON.stringify(card))).toBeLessThanOrEqual(15_000)
-    expect(card.split("\n")).toEqual(["I want to use `Edit`: `Edit a file`", `\`${first}\``, expect.stringMatching(/^`"new_string": "字+…`$/), "/'approve 1' or /'reject 1'"])
+    expect(card.split("\n")).toEqual(["I want to use `Edit`: `Edit a file`", `\`${first}\``, expect.stringMatching(/^`"new_string": "字+…`$/), "/'approve 1', /'approve 1 all' or /'reject 1'"])
+  })
+
+  it("approves a tool for the rest of the session by /approve N all: the use runs, the reply names the tool and /revoke, the session gets the approved tools, and a later card of the tool says that Claude Code still asks for it", async () => {
+    const chat = new FakeChat()
+    const {session, lines} = await channel(chat)
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    await until(() => sentTo(chat, 20).length === 1)
+    expect(sentTo(chat, 20)).toEqual(["I want to use `Bash`: `Run shell command`\n`ls`\n/'approve 1', /'approve 1 all' or /'reject 1'"])
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1 all"})).toBe("Approved `Bash` for the rest of this session by Alice. /'revoke Bash'")
+    expect(lines).toEqual([{tools: [{tool: "Bash", approvedBy: "Alice"}]}, {permission: {requestId: "abcde", behavior: "allow"}}])
+    await until(() => chat.updates.length === 1)
+    expect(chat.updates[0].text).toBe("I want to use `Bash`: `Run shell command`\n`ls`\nApproved by Alice.")
+    session.permission({id: id1, requestId: "fghij", toolName: "Bash", description: "Run shell command", inputPreview: "echo x >> .bashrc"})
+    session.permission({id: id1, requestId: "kmnop", toolName: "Edit", description: "Edit a file", inputPreview: "a.txt"})
+    await until(() => sentTo(chat, 20).length === 3)
+    expect(sentTo(chat, 20).slice(1)).toEqual([
+      "I want to use `Bash`: `Run shell command`\n`echo x >> .bashrc`\n`Bash` is approved for this session, and Claude Code still asks for this use.\n/'approve 2' or /'reject 2'",
+      "I want to use `Edit`: `Edit a file`\n`a.txt`\n/'approve 3', /'approve 3 all' or /'reject 3'",
+    ])
+    expect(lines).toHaveLength(2)
+  })
+
+  it("counts an approved tool only while its approver is an admin or owner, after a role change and after /observer, and sends each change to the session", async () => {
+    const chat = new FakeChat()
+    const {hub, session, lines} = await channel(chat)
+    const dan = member(12, "Dan", T.GroupMemberRole.Admin)
+    chat.members.set(20, [self, invitedAlice, dan])
+    await session.control.load()
+    const roleChange = (role: T.GroupMemberRole, fromRole: T.GroupMemberRole) => {
+      chat.members.set(20, [self, invitedAlice, {...dan, memberRole: role}])
+      return hub["onEvent"]({type: "memberRole", groupInfo: group(20, "1 · auth"), byMember: invitedAlice, member: {...dan, memberRole: role}, fromRole, toRole: role} as unknown as ChatEvent)
+    }
+    const list = () => session.control.ownerCommand(invitedAlice, {keyword: "list", params: ""})
+    const bash = {tools: [{tool: "Bash", approvedBy: "Dan"}]}
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    await until(() => session.actions.get(1)?.card !== undefined)
+    expect(await session.control.ownerCommand(dan, {keyword: "approve", params: "1 all"})).toBe("Approved `Bash` for the rest of this session by Dan. /'revoke Bash'")
+    expect(await list()).toBe("`Bash`  approved for this session by Dan")
+    await roleChange(T.GroupMemberRole.Member, T.GroupMemberRole.Admin)
+    await until(() => lines.length === 3)
+    expect(await list()).toBe("No chats.")
+    await roleChange(T.GroupMemberRole.Admin, T.GroupMemberRole.Member)
+    await until(() => lines.length === 4)
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "observer", params: "#20 12"})).toBe("Dan is an observer and can't send messages.")
+    expect(lines.filter(line => line.tools !== undefined)).toEqual([bash, {tools: []}, bash, {tools: []}])
+  })
+
+  it("revokes an approved tool by /revoke TOOL, lists approved tools after the chats in /list, and answers /approve N all of an action that is not a tool use", async () => {
+    const chat = new FakeChat()
+    const {session, lines} = await channel(chat)
+    chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1), items: []})
+    const command = (keyword: string, params: string) => session.control.ownerCommand(invitedAlice, {keyword, params})
+    session.permission({id: id1, requestId: "abcde", toolName: "mcp__github__create_issue", description: "Create an issue", inputPreview: "{}"})
+    session.requestMode("host")
+    await until(() => sentTo(chat, 20).length === 2)
+    expect(await command("approve", "2 all")).toBe("Action 2 is not a tool use.")
+    expect(await command("approve", "9 all")).toBe("Action 9 is not pending.")
+    expect(await command("approve", "1 all")).toBe("Approved `mcp__github__create_issue` for the rest of this session by Alice. /'revoke mcp__github__create_issue'")
+    expect(await command("list", "")).toBe("@4  bot SimpleX Directory\n`mcp__github__create_issue`  approved for this session by Alice")
+    expect(await command("revoke", "mcp__github__create_issue")).toBe("Uses of `mcp__github__create_issue` need approval again.")
+    expect(await command("revoke", "mcp__github__create_issue")).toBe("Uses of `mcp__github__create_issue` have no standing approval.")
+    expect(await command("list", "")).toBe("@4  bot SimpleX Directory")
+    expect(session.actions.get(2)?.state).toBe("pending")
+    expect(lines.filter(line => line.tools !== undefined)).toEqual([{tools: [{tool: "mcp__github__create_issue", approvedBy: "Alice"}]}, {tools: []}])
+  })
+
+  it("ends the approvals of tools at the last detach, and sends the approved tools to each new attachment", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    await until(() => session.actions.get(1)?.card !== undefined)
+    await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1 all"})
+    const second: AttachLine[] = []
+    session.onLine = line => second.push(line)
+    expect(second).toEqual([{tools: [{tool: "Bash", approvedBy: "Alice"}]}])
+    session.onLine = undefined
+    session.endToolApprovals()
+    const third: AttachLine[] = []
+    session.onLine = line => third.push(line)
+    expect(third).toEqual([])
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "list", params: ""})).toBe("No chats.")
+    session.permission({id: id1, requestId: "fghij", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    await until(() => sentTo(chat, 20).length === 2)
+    expect(sentTo(chat, 20)[1]).toBe("I want to use `Bash`: `Run shell command`\n`ls`\n/'approve 2', /'approve 2 all' or /'reject 2'")
   })
 
   it("passes the messages of owners to the session as prompts, with their files, and not their commands", async () => {
@@ -1284,12 +1368,11 @@ describe("session channel", () => {
     expect(chat.sent).toEqual([])
   })
 
-  it("has no commands for files of reply: /approve N all and a bare /revoke are unknown in a session group", async () => {
+  it("has no command for files of reply: a bare /revoke is unknown in a session group", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
     await until(() => session.actions.get(1)?.card !== undefined)
-    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1 all"})).toBe(unknownCommand)
     expect(await session.control.ownerCommand(invitedAlice, {keyword: "revoke", params: ""})).toBe(unknownCommand)
     expect(session.actions.get(1)?.state).toBe("pending")
   })

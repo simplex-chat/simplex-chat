@@ -68,6 +68,12 @@ export interface Step {
 export interface AttachLine {
   prompt?: {text: string; from: string; item: number; file?: string}
   permission?: {requestId: string; behavior: "allow" | "deny"}
+  tools?: ApprovedTool[]
+}
+
+export interface ApprovedTool {
+  tool: string
+  approvedBy: string
 }
 
 export interface TitleReply extends ServiceInfo {

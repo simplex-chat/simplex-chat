@@ -431,7 +431,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   expect(fromUser.map(({meta}) => meta.itemText)).toEqual(["Fix the build"])
 }, 600_000)
 
-test("a session keeps its group for hooks with a new ID from its process, relays tool use to its owners, owns a contact and a group that accept after connect returned, asks for mode host, and gets a prompt sent before it attached again after a service start", async () => {
+test("a session keeps its group for hooks with a new ID from its process, relays tool use to its owners, who approve Bash for the rest of the session, owns a contact and a group that accept after connect returned, asks for mode host, and gets a prompt sent before it attached again after a service start", async () => {
   const root = join(dir, "channel", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("channel", "Alice")
@@ -465,6 +465,13 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   await ownerSends(`/approve ${cardNumber(await toolUse)}`)
   await until(() => attached.some(({permission}) => permission !== undefined))
   expect(attached.filter(({permission}) => permission !== undefined)).toEqual([{permission: {requestId: "abcde", behavior: "allow"}}])
+  const toolUseAll = card("I want to use `Bash`: `Run shell command`")
+  const approvedAll = card("Approved `Bash` for the rest of this session by Alice. /'revoke Bash'")
+  await client.request("POST", "/permission", {id: one, requestId: "fghij", toolName: "Bash", description: "Run shell command", inputPreview: "pwd"})
+  await ownerSends(`/approve ${cardNumber(await toolUseAll)} all`)
+  await approvedAll
+  await until(() => attached.some(({permission}) => permission?.requestId === "fghij"))
+  expect(attached.filter(({tools}) => tools !== undefined)).toEqual([{tools: [{tool: "Bash", approvedBy: "Alice"}]}])
 
   const address = await bob.chat.apiCreateUserAddress(bob.user.userId)
   const requested = bob.chat.wait("receivedContactRequest", 60_000)
@@ -623,7 +630,7 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   expect((await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === groupOne)?.membership.memberRole).toBe(T.GroupMemberRole.Owner)
 }, 600_000)
 
-test("/observer ends the standing approvals of the member it makes an observer, and answers that a member who has not joined yet is no member", async () => {
+test("/observer ends the standing approvals of the member it makes an observer, of a chat and of a tool, and answers that a member who has not joined yet is no member", async () => {
   const root = join(dir, "observer", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("observer", "Alice")
@@ -633,6 +640,11 @@ test("/observer ends the standing approvals of the member it makes an observer, 
   const service = await startService(root)
   const client = ServiceClient.forRoot(root)
   await openSession(client, one, "one")
+  const attached: AttachLine[] = []
+  const controller = new AbortController()
+  closing.push(async () => controller.abort())
+  client.stream("/attach", {id: one}, line => attached.push(line as AttachLine), controller.signal).catch(() => undefined)
+  await until(() => attached.length === 1)
   const owner = await client.request<OwnerState>("GET", "/link")
   const aliceInvited = joinSessionGroups(alice, ["1 · one"])
   const mainGroupId = await joinByLink(alice, owner.link!)
@@ -662,12 +674,18 @@ test("/observer ends the standing approvals of the member it makes an observer, 
     await aliceSends("/list")
     return (await shown).chatItem.meta.itemText
   }
-  expect(await listed()).toBe(`${chat}  bot Directory, approved for this chat by Bob`)
+  const toolUse = received(bob.chat, inGroup(bobGroupOne, textStarts("I want to use `Bash`")))
+  await client.request("POST", "/permission", {id: one, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+  const bashApproved = received(bob.chat, inGroup(bobGroupOne, textStarts("Approved `Bash` for the rest of this session by Bob.")))
+  await bob.chat.apiSendTextMessage([T.ChatType.Group, bobGroupOne], `/approve ${cardNumber(await toolUse)} all`)
+  await bashApproved
+  expect(await listed()).toBe(`${chat}  bot Directory, approved for this chat by Bob\n\`Bash\`  approved for this session by Bob`)
 
   const bobObserver = aliceSees("Bob is an observer and can't send messages.")
   await aliceSends(`/${makeBobObserver}`)
   await bobObserver
   expect(await listed()).toBe(`${chat}  bot Directory`)
+  expect(attached.filter(({tools}) => tools !== undefined)).toEqual([{tools: [{tool: "Bash", approvedBy: "Bob"}]}, {tools: []}])
 
   const daveConnected = dave.chat.wait("connectedToGroupMember", ({member}) => member.memberProfile.displayName === "Claude", 60_000)
   const daveMain = await joinByLink(dave, mainLink)
@@ -719,7 +737,7 @@ test("stdio session spawns the service and recovers after the service is killed"
 
   expect(await session.client.initialize()).toMatchObject({serverInfo: {name: "simplex-mcp"}})
   const {result} = await session.client.request("tools/list")
-  expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave", "reply"])
+  expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave", "reply", "pre_tool_use"])
   const listed = await session.call("list", {})
   expect(listed.isError).toBeUndefined()
   expect(listed.structuredContent.actions).toEqual([])

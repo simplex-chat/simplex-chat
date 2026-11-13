@@ -129,6 +129,7 @@ export interface PermissionAction extends ActionRecord {
   readonly input: {requestId: string; toolName: string; description: string; inputPreview: string}
   readonly subject?: undefined
   readonly chat?: undefined
+  readonly toolApproved: boolean
   previewBytes?: number
 }
 

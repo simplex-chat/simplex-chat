@@ -20,7 +20,6 @@ What comes next for Claude Code in SimpleX Chat.
 - Reply to a message, and Claude knows which one you mean.
 - The model, effort and usage of each session show in its description, updated as they change.
 - See when a session's context is summarised.
-- Allow a tool for the rest of a session with one tap.
 - Each session is a topic inside one group, not a group of its own.
 - Claude can offer choices and other small interactive widgets in the chat.
 - Start a new session from the desktop app, in a folder you choose.

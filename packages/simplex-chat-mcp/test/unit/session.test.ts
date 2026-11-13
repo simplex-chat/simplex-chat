@@ -206,7 +206,29 @@ describe("session server", () => {
     const {client} = await session({}, () => (spawned(), pending))
     await spawning
     const {result} = await client.request("tools/list")
-    expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave", "reply"])
+    expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave", "reply", "pre_tool_use"])
+  })
+
+  it("answers the PreToolUse hook's call with allow for a tool that the service approved, and with an empty text for other tools, after its /attach ends and in a run that is not interactive", async () => {
+    let attaches = 0
+    await fakeService(async res => endWithResult(res, listResult), res => {
+      attachLine(res)
+      if (++attaches === 1) res.write(`${JSON.stringify({tools: [{tool: "Bash", approvedBy: "Alice"}]})}\n${JSON.stringify({prompt: {text: "Fix the build", from: "Alice", item: 41}})}\n`)
+    })
+    const attached = next("attach")
+    const {client} = await session()
+    const [res] = await attached
+    await until(() => client.notifications.some(({method}) => method === "notifications/claude/channel"))
+    const hook = async (to: LineClient, tool: string) => (await to.request("tools/call", {name: "pre_tool_use", arguments: {tool}})).result.content
+    const allow = [{type: "text", text: JSON.stringify({hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "allow", permissionDecisionReason: "Approved for this session by Alice in the session's SimpleX group."}})}]
+    const none = [{type: "text", text: ""}]
+    expect(await hook(client, "Bash")).toEqual(allow)
+    expect(await hook(client, "Edit")).toEqual(none)
+    const again = next("attach")
+    res.destroy()
+    await again
+    expect(await hook(client, "Bash")).toEqual(none)
+    for (const env of [{CLAUDE_CODE_ENTRYPOINT: "sdk-cli"}, {CLAUDE_PLUGIN_OPTION_APPROVE: "x"}]) expect(await hook((await session(env)).client, "Bash")).toEqual(none)
   })
 
   it("is a channel: it passes prompts and verdicts of the service to Claude Code, and permission requests to the service", async () => {

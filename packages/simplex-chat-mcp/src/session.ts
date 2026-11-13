@@ -21,6 +21,10 @@ const lastRetry = 30_000
 const channelInstructions = "Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, item the message ID, and file the path of a file they sent. Your final answer of each turn reaches them in that group; reply sends them a file."
 const permissionFields = ["request_id", "tool_name", "description", "input_preview"] as const
 const permissionRequest = fromJsonSchema({type: "object", properties: Object.fromEntries(permissionFields.map(field => [field, {type: "string"}])), required: [...permissionFields]} as JsonSchemaType)
+const hookTool = {
+  description: "Answers the plugin's PreToolUse hook before each tool use: allow for a tool that an admin or owner of the SimpleX group of this session approved for the rest of the session, and nothing otherwise. You never need to call it.",
+  inputSchema: fromJsonSchema({type: "object", properties: {tool: {type: "string", description: "Name of the tool, from the hook's input."}}, required: ["tool"]} as JsonSchemaType),
+}
 
 class ServiceStoppedError extends Error {
   constructor() {
@@ -55,6 +59,7 @@ export async function startSession(env: NodeJS.ProcessEnv = process.env, io: Ses
     if (notification !== undefined) server.server.notification(notification).catch(error => logError("SimpleX channel", error))
   })
   registerTools(server, config.approve, async (name, input, call) => (configError === undefined ? link.call(name, input, call) : toolError(configError)), [replyTool])
+  server.registerTool("pre_tool_use", hookTool, async input => ({content: [{type: "text", text: hookOutput(link.approvedBy((input as {tool: string}).tool))}]}))
   server.server.setNotificationHandler("notifications/claude/channel/permission_request", {params: permissionRequest}, params => {
     if (configError !== undefined) return
     const {request_id, tool_name, description, input_preview} = params as {[field in (typeof permissionFields)[number]]: string}
@@ -73,8 +78,13 @@ class ServiceLink {
   private refused = false
   private retry = firstRetry
   private retryTimer?: NodeJS.Timeout
+  private readonly approvedTools = new WeakMap<AbortController, Map<string, string>>()
 
   constructor(private readonly client: ServiceClient, private readonly request: SessionRequest, private readonly io: SessionIo, private readonly onLine: (line: unknown) => void) {}
+
+  approvedBy(tool: string): string | undefined {
+    return this.attach === undefined ? undefined : this.approvedTools.get(this.attach)?.get(tool)
+  }
 
   connect(): Promise<void> {
     if (this.refused) return Promise.reject(new Error(unattendedRun))
@@ -171,6 +181,8 @@ class ServiceLink {
       this.client
         .stream("/attach", {id: this.request.id}, line => {
           resolve()
+          const {tools} = line as AttachLine
+          if (tools !== undefined) this.approvedTools.set(controller, new Map(tools.map(({tool, approvedBy}) => [tool, approvedBy])))
           this.onLine(line)
         }, controller.signal)
         .then(() => reject(new ServiceStoppedError()), reject)
@@ -192,6 +204,10 @@ function failureText(error: unknown): string {
 
 function toolError(text: string): CallToolResult {
   return {content: [{type: "text", text}], isError: true}
+}
+
+function hookOutput(approvedBy: string | undefined): string {
+  return approvedBy === undefined ? "" : JSON.stringify({hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "allow", permissionDecisionReason: `Approved for this session by ${approvedBy} in the session's SimpleX group.`}})
 }
 
 function channelNotification({prompt, permission}: AttachLine): {method: string; params: {[key: string]: unknown}} | undefined {

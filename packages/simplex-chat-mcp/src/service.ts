@@ -46,6 +46,7 @@ export interface SessionLike {
   turn(request: TurnRequest): Promise<void>
   endPermissions(): void
   endSteps(): Promise<void>
+  endToolApprovals(): void
 }
 
 export interface ServiceDeps {
@@ -321,6 +322,7 @@ export class Service {
       agent.onLine = undefined
       agent.endPermissions()
       agent.endSteps()
+      agent.endToolApprovals()
       this.scheduleIdle(id, entry)
     })
   }
