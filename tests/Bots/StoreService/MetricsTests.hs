@@ -308,7 +308,8 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   (`finally` cancel reads') $ withApp (metricsApp badgesOnly {meNames = Just ns} v census) $ \client -> do
     r <- timeout scrapeMicros (webGet client "/metrics") >>= maybe (fail "the scrape waited for the node") pure
     let samples = typedSamples $ bodyText r
-    samples `shouldContain` ["simplex_store_badges_codes_open 0", "simplex_store_names_orders{phase=\"unpaid\"} 0", "simplex_names_refresh_failures_total 0"]
+    forM_ ["simplex_store_badges_codes_open 0", "simplex_store_names_orders{phase=\"unpaid\"} 0", "simplex_names_refresh_failures_total 0"] $ \s ->
+      samples `shouldContain` [s]
     filter ("simplex_store_names_chain_" `T.isPrefixOf`) samples `shouldBe` ["simplex_store_names_chain_read_ok 0"]
     filter ("simplex_names{" `T.isPrefixOf`) samples `shouldBe` []
 
