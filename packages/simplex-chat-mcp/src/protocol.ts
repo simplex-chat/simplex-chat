@@ -51,6 +51,8 @@ export interface TurnRequest {
   at?: number
   prompt?: string
   typed?: boolean
+  note?: string
+  midTurn?: boolean
   answer?: string
   model?: string
   effort?: string
