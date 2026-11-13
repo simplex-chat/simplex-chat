@@ -1657,7 +1657,7 @@ processChatCommand cxt nm = \case
       gInfo <- getGroupInfo db cxt user gId
       liftIO $ updateGroupAlias db userId gInfo localAlias
     pure $ CRGroupAliasUpdated user gInfo'
-  APISetConnectionAlias connId localAlias -> withUser $ \user@User {userId} -> do
+  APISetConnectionAlias connId localAlias -> withUser $ \user@User {userId} -> withConnectionLock "setConnectionAlias" connId $ do
     conn' <- withFastStore $ \db -> do
       conn <- getPendingContactConnection db userId connId
       liftIO $ updateContactConnectionAlias db userId conn localAlias
