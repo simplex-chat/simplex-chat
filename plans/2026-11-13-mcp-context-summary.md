@@ -1,6 +1,6 @@
 # SimpleX MCP: a line when a session's context is summarised
 
-Status: plan, for approval. Code references: master `97bbbd9ac` (MCP 0.3.0 with the notes of Claude Code's own prompts). Claude Code references: the binaries of 2.1.322 and 2.1.323 at the offsets given, the changelog of 2.1.322, and the transcripts of one machine, Claude Code 2.1.251 to 2.1.322, with 298 compactions: 226 of main conversations and 72 of subagents. Decisions of the notes plan, [2026-11-12-mcp-harness-notes.md](2026-11-12-mcp-harness-notes.md), are cited as "notes decision N".
+Status: Q1 and Q2 were answered A by the user on 2026-11-13, with ⚙️ for the line; the plan waits for approval. Code references: master `97bbbd9ac` (MCP 0.3.0 with the notes of Claude Code's own prompts). Claude Code references: the binaries of 2.1.322 and 2.1.323 at the offsets given, the changelog of 2.1.322, and the transcripts of one machine, Claude Code 2.1.251 to 2.1.322, with 298 compactions: 226 of main conversations and 72 of subagents. Decisions of the notes plan, [2026-11-12-mcp-harness-notes.md](2026-11-12-mcp-harness-notes.md), are cited as "notes decision N".
 
 ## 1. Goal
 
@@ -19,10 +19,10 @@ Claude posts one line, without a quote, when the summary has replaced the conver
 
 ```
 compaction                                  line
-at the context limit, during a turn         🗜️ Context summarised automatically: 968K → 35K tokens
-in an idle session                          🗜️ Context summarised automatically: 546K → 11K tokens
-/compact, or "Summarize from here"          🗜️ Context summarised on request: 399K → 25K tokens
-without token counts in its record          🗜️ Context summarised automatically
+at the context limit, during a turn         ⚙️ Context summarised automatically: 968K → 35K tokens
+in an idle session                          ⚙️ Context summarised automatically: 546K → 11K tokens
+/compact, or "Summarize from here"          ⚙️ Context summarised on request: 399K → 25K tokens
+without token counts in its record          ⚙️ Context summarised automatically
 a subagent's compaction                     nothing
 ```
 
@@ -50,7 +50,7 @@ sequenceDiagram
   CC->>T: compact_boundary, with the next request's records
   HK->>HK: the boundary of the main conversation, at most 60 s old
   HK->>D: POST /turn {note}
-  D->>O: Claude: 🗜️ Context summarised automatically: 968K → 35K tokens
+  D->>O: Claude: ⚙️ Context summarised automatically: 968K → 35K tokens
   CC->>CC: the turn goes on from the summary
 ```
 
@@ -72,11 +72,15 @@ sequenceDiagram
 
 ## 3. Questions for the user
 
-Q1. When does the line appear?
-- A, recommended: once, when the summary is in place, with the token counts. The line is exact in every version of Claude Code. Members see the pause of the compaction only afterwards: its median is 90 s, and the longest on this machine took 4 minutes. Cost: about 40 source lines.
-- B: a live line from the start, `🗜️ Summarising the context`, finalized at the end, as the step lines of `ep/mcp-activity`. Members see the compaction while it runs. Claude Code before 2.1.323 gives no `agent_id` at the start of a subagent's compaction, so there a subagent's compaction also shows a live line in the session's group. A failed compaction leaves the line without an outcome until the turn ends. Cost: a PreCompact hook entry and about 40 more source lines, built on `ep/mcp-activity` after it merges.
+Q1. When does the line appear? Answered A by the user on 2026-11-13, with a note on the emoji:
 
-Q2. Does Claude also post the summary itself?
+> don't like the icon, just use gearwheel or something
+
+So the line starts with ⚙️.
+- A, recommended: once, when the summary is in place, with the token counts. The line is exact in every version of Claude Code. Members see the pause of the compaction only afterwards: its median is 90 s, and the longest on this machine took 4 minutes. Cost: about 40 source lines.
+- B: a live line from the start, `⚙️ Summarising the context`, finalized at the end, as the step lines of `ep/mcp-activity`. Members see the compaction while it runs. Claude Code before 2.1.323 gives no `agent_id` at the start of a subagent's compaction, so there a subagent's compaction also shows a live line in the session's group. A failed compaction leaves the line without an outcome until the turn ends. Cost: a PreCompact hook entry and about 40 more source lines, built on `ep/mcp-activity` after it merges.
+
+Q2. Does Claude also post the summary itself? Answered A by the user on 2026-11-13.
 - A, recommended: no. The line is the only post.
 - B: yes, as Claude's message after the line. Members read what Claude kept. The summary restates tool results that members do not see today, such as the contents of files and the output of commands. A summary has a median of 21,400 characters and at most 39,157 on this machine, so it is posted as two or three messages after each compaction.
 
@@ -97,12 +101,12 @@ Facts:
 
 Choices:
 
-12. One line, when the summary is in place (Q1 A). The summary is not posted (Q2 A).
+12. One line, when the summary is in place (Q1 A, answered by the user). The summary is not posted (Q2 A, answered by the user).
 13. `hooks/hooks.json` gets a PostCompact entry without a matcher: `node "${CLAUDE_PLUGIN_ROOT}/dist/cli.js" hook turn`, with `async: true`, as the other turn hooks.
 14. For an input with `agent_id`, the hook sends nothing.
 15. Otherwise the hook reads the transcript's tail of 4 MiB, up to 120 times, 1 s apart. The boundary is the last entry of type `system` and subtype `compact_boundary`, without `isSidechain: true`, whose timestamp is no earlier than 60 s before the hook started (`at`). The tail is four times the largest batch of fact 7 since 2.1.283. The 2 minutes cover the delays of fact 6. A subagent's compaction before 2.1.323 costs at most 120 reads, about 5 s of processor time over the 2 minutes (fact 11).
 16. Without such a boundary after the reads, the hook sends nothing. So before 2.1.323 a subagent's compaction posts nothing (facts 3 and 8).
-17. The line is `🗜️ Context summarised `, then `on request` for `trigger: manual` and `automatically` otherwise, then `: PRE → POST tokens` when `preTokens` and `postTokens` are numbers. The numbers are formatted by `Intl.NumberFormat("en", {notation: "compact"})`: 967,558 is `968K`, 4,595 is `4.6K` and 850 is `850`. 🗜️ is the emoji of compression; it differs from the emojis of the notes.
+17. The line is `⚙️ Context summarised `, then `on request` for `trigger: manual` and `automatically` otherwise, then `: PRE → POST tokens` when `preTokens` and `postTokens` are numbers. The numbers are formatted by `Intl.NumberFormat("en", {notation: "compact"})`: 967,558 is `968K`, 4,595 is `4.6K` and 850 is `850`. ⚙️ is the user's choice (Q1). The note of another kind of Claude Code's prompt also starts with ⚙️, followed by `Claude Code: `, so the words after the emoji tell the two lines apart.
 18. The hook sends `{id, pid, at, note}` in `POST /turn`. The hub posts `note` unchanged as Claude, without a quote, as the notes of Claude Code's prompts ([hub.ts:195](../packages/simplex-chat-mcp/src/hub.ts#L195)). The hub and the protocol do not change, and the protocol version stays 1. With `ep/mcp-activity`, every note is posted silent, this line included.
 19. The SessionStart hook sends no `model` for `source: "compact"` (fact 9). The Stop hook sends the model of each answer, and PostModelSwitch the new model, so the description stays current.
 
@@ -154,7 +158,7 @@ on PostCompact {session_id, transcript_path, agent_id}:
                without isSidechain, with timestamp >= at - 60 s
     found: stop
   none: nothing
-  note = "🗜️ Context summarised " + (trigger = manual ? "on request" : "automatically")
+  note = "⚙️ Context summarised " + (trigger = manual ? "on request" : "automatically")
          + (preTokens and postTokens are numbers ? ": " + compact(preTokens) + " → " + compact(postTokens) + " tokens" : "")
   POST /turn {id, pid, at, note}
 ```
@@ -200,7 +204,7 @@ Tests:
 - `test/unit/hook.test.ts`, new, in "turn hooks": "post one line for a compaction of the session's conversation, from its boundary in the transcript after the boundary is written, with its trigger and token counts, and nothing for a subagent's compaction, a boundary of a subagent or a boundary older than 60 s". It fails on master: master sends `{id, at}` without `note` for each PostCompact input.
 - `test/unit/hook.test.ts`, changed, in "SessionStart hook": "starts the session with its title, folder, model, Claude Code process and the time the hook started, without the model after a compaction, and stays quiet when the Main group has an owner". It fails on master, which sends the model of the compaction.
 - `test/unit/plugin.test.ts`, changed: PostCompact joins the events that run `hook turn` with `async: true` ([plugin.test.ts:46](../packages/simplex-chat-mcp/test/unit/plugin.test.ts#L46)). It fails on master, which has no PostCompact entry.
-- `test/e2e/service.test.ts`, changed: the mirroring test ([service.test.ts:351-425](../packages/simplex-chat-mcp/test/e2e/service.test.ts#L351-L425)) appends a boundary to its transcript, runs the PostCompact hook with `trigger: manual`, and expects Claude's line `🗜️ Context summarised on request: 399K → 25K tokens`.
+- `test/e2e/service.test.ts`, changed: the mirroring test ([service.test.ts:351-425](../packages/simplex-chat-mcp/test/e2e/service.test.ts#L351-L425)) appends a boundary to its transcript, runs the PostCompact hook with `trigger: manual`, and expects Claude's line `⚙️ Context summarised on request: 399K → 25K tokens`.
 - Run: `npm test --prefix packages/simplex-chat-mcp` for unit tests, and the end-to-end tests as TESTING.md states. The reduced build runs them in CI. No app changes, so no app test workflows.
 - TESTING check: in a session with the plugin, run `/compact`; start a subagent from an `--agents` definition with the smallest `autoCompactWindow` Claude Code accepts, and let it compact; look at the session's group and its description.
 
