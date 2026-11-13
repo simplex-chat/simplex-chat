@@ -19,12 +19,18 @@ public func getLoadedFileSource(_ file: CIFile?) -> CryptoFile? {
     return nil
 }
 
+private let MAX_IMAGE_DIMENSION = 4320
+private let MAX_PREVIEW_DIMENSION = 512
+private let MAX_SOURCE_IMAGE_DIMENSION = 16384
+private let MAX_SOURCE_IMAGE_PIXELS = 8192 * 8192
+
 public func getLoadedImage(_ file: CIFile?) -> UIImage? {
     if let fileSource = getLoadedFileSource(file) {
         let filePath = getAppFilePath(fileSource.filePath)
         do {
             let data = try getFileData(filePath, fileSource.cryptoArgs)
-            guard isImageFile(data) else { return nil }
+            guard isImageFile(data), let side = imageSide(data, maxSide: MAX_SOURCE_IMAGE_DIMENSION, maxPixels: MAX_SOURCE_IMAGE_PIXELS) else { return nil }
+            if side > MAX_IMAGE_DIMENSION { return downsampledImage(data, to: MAX_IMAGE_DIMENSION) }
             let img = UIImage(data: data)
             do {
                 try img?.setGifFromData(data, levelOfIntegrity: 1.0)
@@ -212,6 +218,31 @@ public func downsampleImage(at url: URL, to size: Int64) -> UIImage? {
             .map { UIImage(cgImage: $0) }
         } else { nil }
     }
+}
+
+private func imageSide(_ data: Data, maxSide: Int, maxPixels: Int) -> Int? {
+    guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+          let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+          let width = properties[kCGImagePropertyPixelWidth] as? Int,
+          let height = properties[kCGImagePropertyPixelHeight] as? Int,
+          (1...maxSide).contains(width), (1...maxSide).contains(height), width * height <= maxPixels
+    else { return nil }
+    return max(width, height)
+}
+
+private func downsampledImage(_ data: Data, to size: Int) -> UIImage? {
+    guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+    return CGImageSourceCreateThumbnailAtIndex(
+        source,
+        0,
+        [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: size
+        ] as CFDictionary
+    )
+    .map { UIImage(cgImage: $0) }
 }
 
 public func saveFileFromURL(_ url: URL) -> CryptoFile? {
@@ -431,7 +462,8 @@ public func imageFromBase64(_ base64Encoded: String?) -> UIImage? {
         if let img = imageCache.object(forKey: base64Encoded as NSString) {
             return img
         } else if let data = Data(base64Encoded: dropImagePrefix(base64Encoded)),
-            let img = UIImage(data: data) {
+            let side = imageSide(data, maxSide: MAX_IMAGE_DIMENSION, maxPixels: MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION),
+            let img = side > MAX_PREVIEW_DIMENSION ? downsampledImage(data, to: MAX_PREVIEW_DIMENSION) : UIImage(data: data) {
             imageCacheQueue.async {
                 imageCache.setObject(img, forKey: base64Encoded as NSString)
             }
