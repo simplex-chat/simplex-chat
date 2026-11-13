@@ -1142,6 +1142,16 @@ Plan:
 SEARCH display_names USING COVERING INDEX sqlite_autoindex_display_names_2 (user_id=? AND ldn_base=?)
 
 Query: 
+            SELECT p.display_name, m.member_status
+            FROM group_members m
+            JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+            WHERE m.member_category = 'user'
+          
+Plan:
+SCAN m
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
             SELECT s.contact_id, g.group_id, s.group_member_id
             FROM sent_probes s
             LEFT JOIN contacts c ON s.contact_id = c.contact_id AND c.deleted = 0
@@ -2323,7 +2333,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2364,7 +2374,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2398,7 +2408,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2431,7 +2441,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2464,7 +2474,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2497,7 +2507,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2530,7 +2540,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2563,7 +2573,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2596,7 +2606,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2626,7 +2636,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2656,7 +2666,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2686,7 +2696,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2739,7 +2749,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2785,7 +2795,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2830,7 +2840,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2875,7 +2885,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2920,7 +2930,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -2965,7 +2975,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3010,7 +3020,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3055,7 +3065,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3097,7 +3107,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3139,7 +3149,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3181,7 +3191,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3216,7 +3226,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3250,7 +3260,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3284,7 +3294,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3318,7 +3328,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3352,7 +3362,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3386,7 +3396,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3420,7 +3430,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3451,7 +3461,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3482,7 +3492,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3934,8 +3944,8 @@ SEARCH f USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
 Query: 
         SELECT f.file_id FROM files f
         JOIN rcv_files r ON r.file_id = f.file_id
-        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ? AND f.file_type = ?
-       AND r.group_member_id = ?
+        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ? AND f.file_type = ? AND r.group_member_id = ?
+      
 Plan:
 SEARCH f USING INDEX idx_files_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
 SEARCH r USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=? AND rowid=?)
@@ -7565,6 +7575,11 @@ Query: SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'
 Plan:
 SCAN commands
 
+Query: SELECT COUNT(1) FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ? AND c.conn_status != 'deleted'
+Plan:
+SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name
+SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?)
+
 Query: SELECT COUNT(1) FROM contacts WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -7782,10 +7797,6 @@ Query: SELECT contact_id FROM contacts WHERE user_id = ? AND (chat_item_ttl > 0 
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
 
-Query: SELECT contact_id FROM contacts WHERE user_id = ? AND (chat_item_ttl > 0)
-Plan:
-SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
-
 Query: SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -7901,10 +7912,6 @@ Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
 Query: SELECT group_id FROM groups WHERE user_id = ? AND (chat_item_ttl > 0 OR chat_item_ttl IS NULL)
-Plan:
-SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
-
-Query: SELECT group_id FROM groups WHERE user_id = ? AND (chat_item_ttl > 0)
 Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
@@ -8040,203 +8047,7 @@ Query: SELECT member_xcontact_id, member_welcome_shared_msg_id FROM group_member
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '32316A574B414A435165634A50792F53'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '34777371515341626273746F6A725531'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '364C745457626A726943454F5139666D'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '365431694F536951395477767543584B'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '392F42343435485A4D6C4A4A42784179'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '417A30336574747049655266542B536C'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '433045507738554A4F7579523533326F'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '44797166387A61574D33377351566A70'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '47416E6C397937475639655A4F6A4872'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '47662F48747469674A782F4B6C485865'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '486F6247596E317158426C6857656B58'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4B474E46695541693956467863556162'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4B66326D76554F74434C3653464A6934'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4B6A54346C556543442B70736A657343'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4C41445631472B445858565442547459'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4C424D4D41583853784C6A6769634C7A'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4E3530694B50794D6C6A386764364D36'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4F682F542F664E73554974746A646457'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4F6B396E4E486B7A4E7A2F505461306D'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4F6C47567330784972386E4B72496661'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '51504E3266467468397A5A6A555A5A59'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '516E6B70364443765466557A74576F51'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '52346F3844796156594651305A6E6A4E'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '525038584D53442F6863586C54706D70'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '52567950695555535955742B7A6B432B'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '53526370717345687454376566784A52'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '55455056465233397446394D36417837'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '55566967354649644E5644704E4E4578'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '562B3130557347544E67734559524C35'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '57344B6B584E514C4B30727A6A56394B'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '57625336465661464B567538756A6C56'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '57786C587171347577326B6E4B343430'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '58326263487A776B576F5A322B452F56'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '584F5873316B49463861366249744146'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '614C4637486D4C3141774D42754E6958'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '6164576959516B7051312F635174612F'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '62454B4B3074475654356464626C4331'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '684D6135384C78366B2B435771687870'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '68565070767234594F4F4F3777783743'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '6976634F5868363358575167476C5731'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '6D72486D5153563130647836586A784A'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '6F512B70507A763170634B2F77414D45'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '7138444F774A364F492B6D4B56712F53'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '71684C516E6E423172626C595546536D'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '72395A612F30424B732B41375061344D'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '7351307538344376486B4A79664E687A'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '7435356241497658594F334A42374767'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '75413371367563467650575265516A6A'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '79326A546878645A336346444D506B56'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '794D423855453661496754424746484F'
+Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = ?
 Plan:
 SCAN messages
 
@@ -8348,6 +8159,10 @@ SCAN chat_items
 Query: SELECT short_descr FROM contact_profiles WHERE display_name = ? LIMIT 1
 Plan:
 SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
+
+Query: SELECT short_descr FROM group_profiles
+Plan:
+SCAN group_profiles
 
 Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
 Plan:
@@ -8775,7 +8590,21 @@ Query: UPDATE group_profiles SET description = ? WHERE display_name = ?
 Plan:
 SCAN group_profiles
 
+Query: UPDATE group_profiles SET group_link = (SELECT group_link FROM group_profiles WHERE display_name = 'news') WHERE display_name = 'team'
+Plan:
+SCAN group_profiles
+SCALAR SUBQUERY 1
+SCAN group_profiles
+
 Query: UPDATE group_profiles SET public_group_id = ?
+Plan:
+SCAN group_profiles
+
+Query: UPDATE group_profiles SET short_descr = 'earlier copy'
+Plan:
+SCAN group_profiles
+
+Query: UPDATE group_profiles SET short_descr = 'relay copy'
 Plan:
 SCAN group_profiles
 

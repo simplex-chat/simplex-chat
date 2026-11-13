@@ -1,4 +1,5 @@
-import {appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
+import {once} from "events"
+import {appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {dirname, join} from "path"
 import {T} from "@simplex-chat/types"
@@ -8,14 +9,16 @@ import {defaultConfig} from "../../src/config"
 import {hubFolder, readSessionFile, sessionFolder} from "../../src/files"
 import {Hub} from "../../src/hub"
 import {sessionStart, turn} from "../../src/hook"
+import {findMainGroup} from "../../src/main-group"
 import {resetOwners} from "../../src/owner"
 import {AttachLine, OwnerState, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
 import {qrCodeText} from "../../src/qr"
 import {Service, productionDeps} from "../../src/service"
 import {version} from "../../src/version"
+import {descendants} from "../unit/fixtures"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
 import {SmpServer, startSmpServer, startXftpServer} from "./smpServer"
-import {killService, servicePid, spawnSession} from "./stdio"
+import {killService, servicePid, spawnSession, spawnSessionStart} from "./stdio"
 
 const one = "11111111-1111-4111-8111-111111111111"
 const two = "22222222-2222-4222-8222-222222222222"
@@ -348,7 +351,7 @@ test("while SimpleX links are off in a session's group, the connect card of a bo
   await sendNotice
 }, 600_000)
 
-test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, and not a task notification, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it", async () => {
+test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it; an owner's reply to the answer reaches the session after the quote line, with the answer's ID and sender", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -402,15 +405,24 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await hook({hook_event_name: "UserPromptSubmit", prompt: `<channel source="plugin:simplex:simplex" from="Alice" item="${item}">\nRun the tests\n</channel>`})
   await hook({hook_event_name: "Stop", last_assistant_message: "Tests pass."})
   await passed
-  const notification = "<task-notification>\n<task-id>b1</task-id>\n<status>completed</status>\n</task-notification>"
+  const notification = '<task-notification>\n<task-id>b1</task-id>\n<status>completed</status>\n<summary>Background command "Build" completed (exit code 0)</summary>\n</task-notification>'
+  const noted = received(alice.chat, message('✅ Background command "Build" completed (exit code 0)', "Claude"))
   appendFileSync(transcript, userEntry("p2", notification, "task-notification"))
   await hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p2", prompt: notification})
+  await noted
+  const midTurn = '<task-notification>\n<task-id>b2</task-id>\n<status>failed</status>\n<summary>Background command "Lint" failed with exit code 1</summary>\n</task-notification>'
+  const midTurnNoted = received(alice.chat, message('❌ Background command "Lint" failed with exit code 1', "Claude"))
+  appendFileSync(transcript, `${JSON.stringify({type: "attachment", attachment: {type: "queued_command", prompt: midTurn, origin: {kind: "task-notification"}, commandMode: "task-notification"}})}\n`)
+  await hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p2", prompt: midTurn})
+  await midTurnNoted
   const [lint] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Run the linter")
   await until(() => attached.length === 3)
   const linted = received(alice.chat, message("Lint passes.", "Claude", lint.chatItem.meta.itemId))
   await hook({hook_event_name: "UserPromptSubmit", prompt: "Run the linter"})
   await hook({hook_event_name: "Stop", last_assistant_message: "Lint passes."})
-  await linted
+  await alice.chat.apiSendTextReply(await linted, "Why so fast?")
+  await until(() => attached.length === 4)
+  expect(attached[3]).toEqual({prompt: {text: "> Lint passes.\nWhy so fast?", from: "Alice", item: expect.any(Number), replyTo: {item: expect.any(Number), from: "Claude"}}})
   const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 50)
   const fromUser = chatItems.filter(({chatDir, content}) => chatDir.type === "groupRcv" && chatDir.groupMember.memberProfile.displayName === "User" && content.type === "rcvMsgContent")
   expect(fromUser.map(({meta}) => meta.itemText)).toEqual(["Fix the build"])
@@ -588,14 +600,14 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   expect((await described)?.toGroup.groupProfile.groupPreferences?.files?.enable).toBe(T.GroupFeatureEnabled.Off)
 
   const mainDeleted = alice.chat.wait("groupDeleted", ({groupInfo}) => groupInfo.groupId === mainGroupId, 60_000)
-  expect(await resetOwners({SIMPLEX_MCP_HOME: root}, false)).toBe(`"SimpleX MCP" was replaced. Run npx -y @simplex-chat/mcp@${version} link in a terminal to see the link to the new one.`)
+  expect(await resetOwners({SIMPLEX_MCP_HOME: root}, false)).toBe(`"Claude Control" was replaced. Run npx -y @simplex-chat/mcp@${version} link in a terminal to see the link to the new one.`)
   expect(await mainDeleted).toBeDefined()
   const replaced = await client.request<OwnerState>("GET", "/link")
   expect(replaced).toEqual({owners: [], link: expect.any(String)})
   const inTerminal = await resetOwners({SIMPLEX_MCP_HOME: root}, true)
   const {link} = await client.request<OwnerState>("GET", "/link")
   expect(link).not.toBe(replaced.link)
-  expect(inTerminal).toBe(`"SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:\n${qrCodeText(link!, "small")}\n${link}`)
+  expect(inTerminal).toBe(`"Claude Control" was replaced. Join the new one in the SimpleX app. The link works once:\n${qrCodeText(link!, "small")}\n${link}`)
   await alice.chat.apiSendTextMessage([T.ChatType.Group, groupOne], "Deploy")
   await bobSends("Tag the release")
   await until(() => attached.some(({prompt}) => prompt?.text === "Deploy" && prompt.from === "Alice") && attached.some(({prompt}) => prompt?.text === "Tag the release" && prompt.from === "Bob"))
@@ -729,4 +741,36 @@ test("stdio session spawns the service and recovers after the service is killed"
   await killService(root)
   await until(async () => (await ServiceClient.forRoot(root).request<StatusReply>("GET", "/status").catch(() => undefined))?.sessions[0]?.attached === 1)
   expect(servicePid(root)).not.toBe(secondService)
+}, 600_000)
+
+test("a session start that Claude Code ends with its descendants, as at its exit, leaves the service starting, and the next session start shows the link of that service", async () => {
+  const root = join(dir, "ended", "root")
+  await prepareRoot(smpServer.address, root)
+  closing.push(() => killService(root))
+  const hook = spawnSessionStart({...process.env, CLAUDE_CODE_ENTRYPOINT: "cli", CLAUDE_CODE_SESSION_ATTENDED: "", SIMPLEX_MCP_HOME: root}, {session_id: five, cwd: "/p/five"})
+  await until(() => existsSync(join(root, "service.lock")))
+  const service = servicePid(root)
+  const ended = once(hook, "exit")
+  for (const pid of [hook.pid!, ...descendants(hook.pid!)]) process.kill(pid, "SIGTERM")
+  await ended
+
+  const client = ServiceClient.forRoot(root)
+  const output = await sessionStart(JSON.stringify({session_id: four, cwd: "/p/four"}), {SIMPLEX_MCP_HOME: root}, {client, nodeVersion: process.versions.node})
+  expect(servicePid(root)).toBe(service)
+  const {link} = await client.request<OwnerState>("GET", "/link")
+  expect(output).toEqual({systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "Claude Control":\n${qrCodeText(link!, "plain")}\n${link}`})
+}, 600_000)
+
+test("the service renames a Main group named SimpleX MCP to Claude Control", async () => {
+  const root = join(dir, "renamed", "root")
+  await prepareRoot(smpServer.address, root)
+  const before = await Service.start({...productionDeps(root), onStopped: () => undefined}, () => ({...defaultConfig, mainGroup: "SimpleX MCP"}))
+  await before.stop()
+  await (await startService(root)).stop()
+
+  const hub = await api.ChatApi.init({type: "sqlite", filePrefix: join(hubFolder(root), "simplex")})
+  closing.push(() => hub.close())
+  const user = (await hub.apiGetActiveUser())!
+  await hub.startChat()
+  expect((await findMainGroup(hub, user.userId))?.groupProfile.displayName).toBe("Claude Control")
 }, 600_000)
