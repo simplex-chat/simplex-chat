@@ -268,6 +268,7 @@ struct NotificationEntity {
     var expectedMsg: NtfMsgInfo?
     var allowedGetNextAttempts: Int = 3
     var msgBestAttemptNtf: NSENotificationData
+    var silentMsgReceived: Bool = false
 
     // startedProcessingNewMsgs determines that the entity stared processing events once it processed dropped notifications.
     // It remains true when shouldProcessNtf is set to false, to prevent NSE from being chosen as the next for the entity.
@@ -549,6 +550,9 @@ class NotificationService: UNNotificationServiceExtension {
             if info.msgId == expectedMsg.msgId {
                 // The message for this instance is processed, no more expected, deliver.
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): expected")
+                if let entity = notificationEntities[id], entity.silentMsgReceived, case .connectionEvent = entity.msgBestAttemptNtf {
+                    notificationEntities[id]?.msgBestAttemptNtf = .noNtf
+                }
                 return true
             } else if let msgTs = info.msgTs_, msgTs > expectedMsg.msgTs {
                 // Otherwise check timestamp - if it is after the currently expected timestamp, preserve .msgInfo marker for the next instance.
@@ -578,6 +582,7 @@ class NotificationService: UNNotificationServiceExtension {
         } else if case .silentMsg = ntf {
             logger.debug("NotificationService processNtf: silent message, get next message without using an attempt")
             notificationEntities[id]?.allowedGetNextAttempts += 1
+            notificationEntities[id]?.silentMsgReceived = true
             return false
         } else if ntfEntity.ntfConn.user.showNotifications {
             // This is the notification event for the user with enabled notifications.
