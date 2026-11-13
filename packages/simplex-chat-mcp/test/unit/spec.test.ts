@@ -1,5 +1,6 @@
 import {readFileSync, readdirSync} from "fs"
 import {join} from "path"
+import * as ts from "typescript"
 
 const root = join(__dirname, "../..")
 const read = (file: string): string => readFileSync(join(root, file), "utf8")
@@ -18,20 +19,30 @@ describe("spec", () => {
     expect(repeated).toEqual([])
   })
 
-  it("places each spec comment above code and points it to an anchor", () => {
+  it("places each spec comment directly above a declaration and points it to an anchor", () => {
     const pointers = filesIn("src", ".ts").flatMap(file => {
-      const lines = read(file).split("\n")
-      return lines.flatMap((line, i) => {
-        const target = /^[ \t]*\/\/ spec: (\S+)$/.exec(line)?.[1]
-        return target === undefined ? [] : [{at: `${file}:${i + 1}`, target, next: (lines[i + 1] ?? "").trim()}]
-      })
+      const text = read(file)
+      const declared = declarationLines(ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true))
+      return text.split("\n").flatMap((line, i) => (/\/\/\s*spec\b/i.test(line) ? [{at: `${file}:${i + 1}`, target: /^[ \t]*\/\/ spec: (spec\/[\w-]+\.md#[a-z0-9-]+)$/.exec(line)?.[1], declaration: declared.has(i + 1)}] : []))
     })
     expect(pointers.length).toBeGreaterThan(0)
+    expect(pointers.filter(({target}) => target === undefined).map(({at}) => at)).toEqual([])
+    expect(pointers.filter(({declaration}) => !declaration).map(({at}) => at)).toEqual([])
     const broken = pointers.filter(({target}) => {
-      const [doc, id] = target.split("#")
+      const [doc, id] = (target ?? "").split("#")
       return !docs.includes(doc) || !anchors(doc).includes(id)
     })
     expect(broken.map(({at, target}) => `${at} ${target}`)).toEqual([])
-    expect(pointers.filter(({next}) => next === "" || next.startsWith("//")).map(({at}) => at)).toEqual([])
   })
 })
+
+function declarationLines(source: ts.SourceFile): Set<number> {
+  const lines = new Set<number>()
+  const visit = (node: ts.Node): void => {
+    const declaration = ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node) || ts.isEnumDeclaration(node) || ts.isMethodDeclaration(node) || ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node) || ts.isConstructorDeclaration(node) || (ts.isVariableStatement(node) && ts.isSourceFile(node.parent))
+    if (declaration) lines.add(source.getLineAndCharacterOfPosition(node.getStart(source)).line)
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return lines
+}
