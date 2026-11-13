@@ -594,19 +594,21 @@ Settings shared by several machines or containers can load the plugin from a fol
 
    Settings can't replace this flag. An organization's managed settings, `channelsEnabled` and `allowedChannelPlugins`, only allow the channels that a session names with `--channels`. `--channels plugin:simplex@simplex-local` works only when `simplex@simplex-local` is in `allowedChannelPlugins`.
 
-Each machine and each container needs its own data folder, on storage that no other one uses. Use `~/.simplex-mcp` in its own home folder, or set `SIMPLEX_MCP_HOME` in its own environment, not in the `env` of the shared settings. The service matches sessions and checks its lock by process IDs, and process IDs are only meaningful within one machine or container. Each data folder has its own Main group, whose link shows at the first session start there.
+Each machine and each container needs its own data folder, on storage that no other one uses. Use `~/.simplex-mcp` in its own home folder, or set `SIMPLEX_MCP_HOME` in its own environment, not in the `env` of the shared settings. The service matches sessions and checks its lock by process IDs, and process IDs are only meaningful within one machine or container. Each data folder has its own Main group, whose link shows at the first session start there. To tell these groups apart in the app, set `SIMPLEX_MCP_MACHINE` in the environment of each machine or container: `SIMPLEX_MCP_MACHINE=laptop` names its Main group `Claude Control - laptop`.
 
 ### The Main group
 
 At the first session start, Claude Code shows:
 
 ```
-SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "SimpleX MCP":
+SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "Claude Control":
 <QR code>
 https://smp4.simplex.im/g#...
 ```
 
-Only you see this link: it never enters Claude's context or tool results. Scan the QR code, or paste the link into the SimpleX app, 7.1.0 or later, and tap Join. The group "SimpleX MCP" appears, and Claude writes: `I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.`
+The first start downloads the SimpleX core library and creates the group, so the link can take a minute. If Claude Code ends before then, the service keeps starting, and the next session start shows the link.
+
+Only you see this link: it never enters Claude's context or tool results. Scan the QR code, or paste the link into the SimpleX app, 7.1.0 or later, and tap Join. The group "Claude Control" appears, and Claude writes: `I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.`
 
 - The first person who joins by the link becomes an owner, and the link is deleted. Until someone joins, the link stays the same across service restarts.
 - Everyone in the Main group is trusted with all sessions, whatever their role there. They can join any session's group with `/join N`, without approval, as admins. There they can prompt the session and approve its actions.
@@ -715,11 +717,11 @@ Set in `/plugin` > Installed > simplex > Configure options:
 
 | Option | Default | Values | Effect |
 |---|---|---|---|
-| `main_group` | `SimpleX MCP` | a valid SimpleX display name | The name of the Main group. |
+| `main_group` | `Claude Control` | a valid SimpleX display name | The name of the Main group. With `SIMPLEX_MCP_MACHINE` set in the environment, ` - ` and its value follow, up to 50 characters in all. |
 | `approve` | `requests` | `requests`, `host` | The approval mode of the sessions. |
 | `expire_hours` | `23` | 1 to 23 | How long an action waits for a decision, see [Expiry](#expiry). |
 
-A changed option applies from the next session start. An invalid value is shown at the session start, and every tool call of that session returns the same text, for example `Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /plugin > Installed > simplex > Configure options.` A value of `approve` other than `requests` and `host` can come only from a hand edit of the settings. It is shown only at the session start, and the session's tools run in mode `requests`.
+A changed option applies from the next session start, and so does a changed `SIMPLEX_MCP_MACHINE`. The service renames the Main group to the new name. An invalid value is shown at the session start, and every tool call of that session returns the same text, for example `Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /plugin > Installed > simplex > Configure options.` or `SIMPLEX_MCP_MACHINE: a valid SimpleX name, such as mylaptop expected, got my.laptop. Change it in the environment of this machine.` A value of `approve` other than `requests` and `host` can come only from a hand edit of the settings. It is shown only at the session start, and the session's tools run in mode `requests`.
 
 In mode `host`, a session asks in its group to run in that mode: `I want to run in mode host: Claude Code asks you before each of my actions, and they are performed without approval here.`, with `/approve N or /reject N`. It asks at its start, or when the group gets its first admin or owner other than Claude, by a join or a role change. The session runs in mode `host` after an admin or owner approves, and keeps the mode across restarts, in the custom data of its group in the chat database. After a rejection, it asks again only after a session start with `requests`. A change back to `requests` applies at the next session start without a card, and a pending card then gets `Ended.`
 
@@ -746,11 +748,13 @@ The folders, and the files the service writes, are readable only by the user, ex
 |---|---|
 | The session start shows an error | The error follows `SimpleX MCP:`, with details in `service.log`. The session starts without the service, and the next tool call tries again. |
 | Node.js is older than 22 | The session start shows `SimpleX MCP needs Node.js 22 or later; found <version>.` |
+| Claude Code ends before the session start shows the link | The service runs apart from Claude Code and keeps starting. The next session start shows the link. |
 | The service stopped during a call | The call returns `The SimpleX service stopped; repeat the call.`, and the next call starts the service again. The actions of the stopped service are lost, and a repeated call creates a new action. |
 | The service stopped between calls, or its start failed | The session starts it again and attaches after 1 second. While that fails, it retries at intervals that double up to 30 seconds. |
 | A session starts while the service stops | The new service waits up to 15 seconds for the stopping one to release its lock, and then starts. |
 | `service.lock` names a running process that is not the service | After 15 seconds, the session start shows `SimpleX MCP: Another service uses FOLDER (PID N). If no service runs, remove FOLDER/service.lock.` |
 | A newer plugin version starts | It stops the older service and starts its own. When the two versions can't talk to each other, tool calls return `Restart Claude Code to update the SimpleX plugin.` |
+| Sessions of plugin 0.3.0 run after an upgrade | Their session servers connect to the new service with the old default name, `SimpleX MCP`, and the service renames the Main group to it. The group keeps the name of the last session that started or connected, and its members see `group profile updated` at each change. Once those sessions end, the next session start sets `Claude Control`. |
 | A session's group has no admin or owner but Claude | Its actions are refused with `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run npx -y @simplex-chat/mcp@VERSION link in a terminal.` |
 | A session's group was deleted, or Claude lost its owner role there | The session's actions fail with `The group of this session is lost. Start a new Claude Code session.` |
 | The Main group was deleted, or Claude lost its owner role there | The service logs `The Main group is lost. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` |
