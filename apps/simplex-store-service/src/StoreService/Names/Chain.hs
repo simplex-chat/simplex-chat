@@ -24,7 +24,7 @@ module StoreService.Names.Chain
     transactionCount,
     registrarBalance,
     estimateGas,
-    maxPriorityFee,
+    recentTip,
     signTransaction,
     decodeSignedTx,
     transactionSigner,
@@ -50,7 +50,7 @@ import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (isDigit)
 import Data.Functor ((<&>))
-import Data.List (foldl')
+import Data.List (foldl', sort)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -199,8 +199,19 @@ estimateGas c@ChainClient {ccRegistrar, ccConfig = ChainConfig {cGasLimitCap}} t
       | gas > cGasLimitCap = Left $ ChainGasAboveCap gas
       | otherwise = Right gas
 
-maxPriorityFee :: ChainClient -> IO (Either ChainError Word64)
-maxPriorityFee c = rpc c "eth_maxPriorityFeePerGas" [] quantity
+-- | The median of the last blocks' median tips: eth_maxPriorityFeePerGas samples each block's cheapest transactions,
+-- which reth answers near zero.
+recentTip :: ChainClient -> IO (Either ChainError Word64)
+recentTip c = rpc c "eth_feeHistory" [J.String tipBlocks, J.String "latest", J.toJSON [50 :: Int]] medianTip
+  where
+    tipBlocks = "0xa"
+    medianTip = J.withObject "fee history" $ \o -> o .: "reward" >>= mapM blockTip >>= median . sort
+    blockTip = \case
+      [tip] -> quantity tip
+      _ -> fail "not one reward a block"
+    median = \case
+      [] -> fail "no rewards"
+      tips -> pure $ tips !! (length tips `div` 2)
 
 signTransaction :: TVar ChaChaDRG -> ChainClient -> TxRequest -> IO (Either String SignedTx)
 signTransaction g ChainClient {ccConfig = ChainConfig {cChainId, cServiceKey}} TxRequest {trTo, trData, trNonce, trGasLimit, trMaxFeePerGas, trMaxPriorityFeePerGas} =

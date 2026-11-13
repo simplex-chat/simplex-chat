@@ -43,6 +43,7 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "reads a signed transaction's request back from its raw bytes" $ testDecodeSignedTx g
   it "gives concurrent transactions their own nonces, each saved before it is sent" $ testConcurrentNonces g
   it "saves nothing and takes no nonce when the dry run reverts or the chain does not answer" $ testNothingSaved g
+  it "tips at least minTip when the recent blocks' median tip is lower" $ testTipFloor g
   it "refuses a second transaction for work with one in flight" $ testOneInFlight g
   it "settles a receipt only once it is confirmations deep, with its status" $ testConfirmationDepth g
   it "keeps a transaction whose send failed, and sends it in the next round" $ testFailedSend g
@@ -118,15 +119,24 @@ testConcurrentNonces g = withSetup g $ \s@Setup {node, store} -> do
   Right c <- submitTransaction sender (TxRegister r1) fakeSponsor $ commit 3
   ptNonce c `shouldBe` 2
 
+testTipFloor :: TVar ChaChaDRG -> IO ()
+testTipFloor g = withSetup g $ \s@Setup {node} -> do
+  sender <- start s
+  setFees node 0 fakeBaseFee
+  Right _ <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  [raw] <- sentTransactions node
+  ((\TxRequest {trMaxPriorityFeePerGas, trMaxFeePerGas} -> (trMaxPriorityFeePerGas, trMaxFeePerGas)) <$> decodeSignedTx raw)
+    `shouldBe` Right (minTip, 2 * fakeBaseFee + minTip)
+
 testNothingSaved :: TVar ChaChaDRG -> IO ()
 testNothingSaved g = withSetup g $ \s@Setup {node, store} -> do
   sender <- start s
   setFault node "eth_estimateGas" $ revertFault insufficientAllowance
   submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEChain (ChainReverted $ Just RNInsufficientAllowance)
   clearFault node "eth_estimateGas"
-  setFault node "eth_maxPriorityFeePerGas" HttpFailure
-  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEChain (ChainUnavailable "eth_maxPriorityFeePerGas: HTTP 502")
-  clearFault node "eth_maxPriorityFeePerGas"
+  setFault node "eth_feeHistory" HttpFailure
+  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEChain (ChainUnavailable "eth_feeHistory: HTTP 502")
+  clearFault node "eth_feeHistory"
   withTransaction store pendingTransactions `shouldReturn` []
   sentTransactions node `shouldReturn` []
   Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)

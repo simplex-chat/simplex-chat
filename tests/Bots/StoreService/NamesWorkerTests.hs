@@ -12,7 +12,7 @@ import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, ownerA, paidOrder, reveal)
-import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, stubCalls, webGet, withApp)
+import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, stubCalls, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -31,7 +31,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
-import Data.Word (Word64)
+import Data.Word (Word8, Word64)
 import Network.HTTP.Client (responseBody)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -81,8 +81,9 @@ workerTests = describe "StoreService names: worker" $ do
     it "goes to committed when the commit reverts UnexpiredCommitmentExists, in its dry run or mined, with the commitment's times" testUnexpiredCommitment
     it "sends a commit mined out of gas again" testCommitOutOfGas
     it "waits a second at the lapse second, retries as usual when the dry run still reverts, then commits" testLapseSecond
-    it "clears a requeued order's stale intent before committing again after a lapse, and a third party's commitment's" testStaleIntent
+    it "keeps a requeued order's intent while it commits again after a lapse, and over a third party's commitment" testIntentAcrossCommits
     it "keeps the phase while the latest block needs more than the fee cap, then commits" testFeeAboveCap
+    it "commits again after commits mined with status 1 on every lapse while Try again counts them, and fails an order whose commits reverted the most times an order may" testMinedCommitsUncounted
   describe "writes" $ do
     it "writes nothing when the registration changed since it was read" testLostRace
     it "writes in the name's turn" testInNameTurn
@@ -93,6 +94,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "ends failed on a revert while the name is available, keeping a code" testRevertFailed
     it "keeps an order committed while the sponsor allowance is used up, and registers it after a top-up" testAllowanceUsedUp
+    it "keeps an order waiting on the allowance past its commitment's lapse, sending nothing, then commits again and registers with its stored intent" testAllowanceAcrossLapse
     it "fails an order that sent the most registers an order may, sending nothing, refuses its Try again and a move, and registers it on a move once its owner holds the name" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, ending failed" testExpiredIntent
@@ -128,10 +130,11 @@ workerTests = describe "StoreService names: worker" $ do
     it "answers a released code's error while it cannot pay again, before any read for the intent, and reserves it again while unused" testRetryReleasedCode
     it "requeues clearing failed_at, error and the register's hashes, waking a held poll" testRetryRequeue
     it "keeps the intent while our commitment is live with revealMargin left, going straight to committed" testRetryLiveCommitment
-    it "clears an intent whose deadline ends before our live commitment lapses" testRetryShortDeadline
+    it "clears an intent with less than revealMargin left before its deadline, while our live commitment has more" testRetryShortDeadline
+    it "keeps an intent within its deadline after our commitment lapsed, committing again with it" testRetryLapsedIntent
     it "clears the label and intent when the sponsor nonce moved, our live commit keeping its hashes" testRetryNonceMoved
     it "clears the label and an intent the worker would refuse, while our commitment is live with revealMargin left" testRetryRefusedIntent
-    it "clears the intent of a third party's live re-commit, and the worker the commit's hashes" testRetryThirdParty
+    it "clears an intent past its deadline at a third party's live re-commit, and the worker the commit's hashes" testRetryThirdParty
     it "clears the intent with less than revealMargin left, committing again a second after revealBefore" testRetryMargin
     it "requeues a lapsed committed order, which reads failed, answering an old version at once after it" testRetryLapsed
     it "answers registration_changed with the current view when the order changed during its checks, writing nothing" testRetryLostRace
@@ -449,21 +452,21 @@ testLapseSecond = withWorker $ \w@W {wCtx = ctx} -> do
   nrPhase <$> stored ctx r `shouldReturn` PCommitting
   length <$> sent w `shouldReturn` 1
 
-testStaleIntent :: IO ()
-testStaleIntent = withWorker $ \w@W {wCtx = ctx} -> do
+testIntentAcrossCommits :: IO ()
+testIntentAcrossCommits = withWorker $ \w@W {wCtx = ctx} -> do
   -- requeued by Try again with its intent, its commitment lapsed
   r <- paidIn ctx aliceOrder $ \o -> (openPhase o) {nrPhase = PQueued, nrReveal = Just reveal}
   answerCommitment w r (orderSeconds - maxAge - 1)
   void $ steps w r >>= awaiting
   x <- stored ctx r
   commitTx <- newestHash w
-  (nrPhase x, nrReveal x, nrRevealAfter x, nrRevealBefore x, nrCommitTx x, nrVersion x) `shouldBe` (PCommitting, Nothing, Nothing, Nothing, Just commitTx, nrVersion r + 2)
-  -- requeued with its intent while a third party's commit of the commitment is live: not ours, so the intent goes
+  (nrPhase x, nrReveal x, nrRevealAfter x, nrRevealBefore x, nrCommitTx x, nrVersion x) `shouldBe` (PCommitting, Just reveal, Nothing, Nothing, Just commitTx, nrVersion r + 2)
+  -- requeued with its intent while a third party's commit of the commitment is live: not ours, so only our commit goes
   r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} $ \o -> (openPhase o) {nrPhase = PQueued, nrReveal = Just reveal}
-  answerCommitment w r2 (orderSeconds - 60)
-  steps w r2 >>= waitingUntil >>= (`shouldBe` at (orderSeconds - 60 + maxAge + 1))
+  answerCommitment w r2 (orderSeconds - 30)
+  steps w r2 >>= waitingUntil >>= (`shouldBe` at (orderSeconds - 30 + minAge))
   x2 <- stored ctx r2
-  (nrPhase x2, nrReveal x2, nrCommitTx x2, nrRevealBefore x2) `shouldBe` (PCommitted, Nothing, Nothing, Just (orderSeconds - 60 + maxAge))
+  (nrPhase x2, nrReveal x2, nrCommitTx x2, nrRevealBefore x2) `shouldBe` (PCommitted, Just reveal, Nothing, Just (orderSeconds - 30 + maxAge))
   length <$> sent w `shouldReturn` 1
 
 testFeeAboveCap :: IO ()
@@ -477,6 +480,28 @@ testFeeAboveCap = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   setFees cNode fakeTip fakeBaseFee
   void $ steps w r >>= awaiting
   nrPhase <$> stored ctx r `shouldReturn` PCommitting
+
+sentCommits :: Ctx -> NameRegistration -> TxStatus -> [Word8] -> IO ()
+sentCommits Ctx {cStore} NameRegistration {nrId} status nonces = withTransaction cStore $ \db -> forM_ nonces $ \n -> do
+  let h = TxHash $ digestFixture n
+  void $ insertTransaction db (TxCommit nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
+  recordTransactionOutcome db h TSPending status (Just 120) `shouldReturn` True
+
+testMinedCommitsUncounted :: IO ()
+testMinedCommitsUncounted = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}} -> do
+  r <- paidIn ctx aliceOrder id
+  sentCommits ctx r TSMined [1 .. fromIntegral maxSendsPerKind]
+  sendsUsedUp cOrders r `shouldReturn` True
+  answerCommitment w r 0
+  void $ steps w r >>= awaiting
+  nrPhase <$> stored ctx r `shouldReturn` PCommitting
+  r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} id
+  sentCommits ctx r2 TSReverted [11 .. 10 + fromIntegral maxSendsPerKind]
+  answerCommitment w r2 0
+  steps w r2 >>= done
+  x2 <- stored ctx r2
+  (nrPhase x2, nrError x2) `shouldBe` (PFailed, Just "The name could not be registered")
+  length <$> sent w `shouldReturn` 1
 
 testLostRace :: IO ()
 testLostRace = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
@@ -677,6 +702,33 @@ testAllowanceUsedUp = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   dryRunsPass w
   void $ steps w r >>= awaiting
   length <$> sent w `shouldReturn` 1
+
+testAllowanceAcrossLapse :: IO ()
+testAllowanceAcrossLapse = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}} -> do
+  let lapse = orderSeconds + 10
+  r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealBefore = Just lapse}) >>= revealed ctx keyA "alicebakery"
+  rv <- maybe (fail "no reveal") pure $ nrReveal r
+  let registerCall = registerWithCreditCalldata $ intentOf (oeConfig cOrders) r rv
+  answerAvailable w True
+  answerCommitment w r (lapse - maxAge)
+  revertDryRun cNode registerCall $ Just $ selector "InsufficientAllowance(uint256,uint256)"
+  void $ steps w r >>= stalled
+  advance ctx 11
+  void $ steps w r >>= stalled
+  stored ctx r `shouldReturn` r
+  revertDryRun cNode registerCall $ Just $ selector "CommitmentTooOld(bytes32,uint256,uint256)"
+  void $ steps w r >>= awaiting
+  committing <- stored ctx r
+  (nrPhase committing, nrReveal committing, nrRevealBefore committing) `shouldBe` (PCommitting, Just rv, Nothing)
+  t <- mineNewest w True >>= blockTime w
+  answerCommitment w r t
+  revertDryRun cNode registerCall Nothing
+  steps w r >>= waitingUntil >>= (`shouldBe` at (t + minAge))
+  advance ctx $ fromIntegral (t + minAge - lapse - 1)
+  void $ steps w r >>= awaiting
+  x <- stored ctx r
+  (nrPhase x, nrReveal x, nrRevealBefore x) `shouldBe` (PRegistering, Just rv, Just (t + maxAge))
+  length <$> sent w `shouldReturn` 2
 
 testSendsCapped :: IO ()
 testSendsCapped = withWorker $ \w@W {wCtx = ctx} -> do
@@ -1068,17 +1120,15 @@ testRetryLanded = withWorker $ \W {wCtx = ctx} -> do
   (field "phase" v', field "registerTx" v', field "expiresAt" v') `shouldBe` (Just "registered", Just J.Null, Just (J.toJSON expiry))
 
 testRetryUnread :: IO ()
-testRetryUnread = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+testRetryUnread = withWorker $ \W {wCtx = ctx@Ctx {cNode}} -> do
   r <- paidIn ctx aliceOrder failedPhase
   -- a revert with data is a failed read, not an unowned name
   answerCall cNode (registrarOf cNode) (ownerOfSelector <> labelBytes "alicebakery") $ Reverts $ unhex "37ed32e8"
   retryOf ctx r `shouldReturn` refusedWith 503 "provider_unavailable"
   stored ctx r `shouldReturn` r
-  -- with an intent stored, the sponsor nonce and then the commitment unanswered
+  -- with an intent stored, the sponsor nonce unanswered
   p <- paidIn ctx dynamisOrder openPhase >>= revealed ctx keyA "dynamis" >>= \x -> rewrite ctx x failedPhase
   answerUnowned ctx "dynamis"
-  retryOf ctx p `shouldReturn` refusedWith 503 "provider_unavailable"
-  answerNonce w $ rvNonce reveal
   retryOf ctx p `shouldReturn` refusedWith 503 "provider_unavailable"
   stored ctx p `shouldReturn` p
 
@@ -1143,12 +1193,25 @@ testRetryShortDeadline :: IO ()
 testRetryShortDeadline = withWorker $ \w@W {wCtx = ctx} -> do
   (r, _) <- paidIn ctx aliceOrder id >>= committedByUs w
   f <- failedAfterRegister w r
-  rv <- signedReveal ctx keyA reveal {rvDeadline = fromJust (nrRevealBefore r) - 1} r
+  rv <- signedReveal ctx keyA reveal {rvDeadline = orderSeconds + 899} r
   short <- rewrite ctx f $ \o -> o {nrReveal = Just rv}
   answerNonce w $ rvNonce rv
   v <- retried ctx short
   (field "phase" v, field "label" v) `shouldBe` (Just "queued", Just J.Null)
   nrReveal <$> stored ctx short `shouldReturn` Nothing
+
+testRetryLapsedIntent :: IO ()
+testRetryLapsedIntent = withWorker $ \w@W {wCtx = ctx} -> do
+  (r, t) <- paidIn ctx aliceOrder id >>= committedByUs w
+  rv <- signedReveal ctx keyA reveal r
+  f <- failedAfterRegister w r >>= \x -> rewrite ctx x (\o -> o {nrReveal = Just rv})
+  answerNonce w $ rvNonce rv
+  advance ctx $ fromIntegral (t + maxAge + 1 - orderSeconds)
+  field "label" <$> retried ctx f `shouldReturn` Just "alicebakery"
+  void $ steps w f >>= awaiting
+  x <- stored ctx f
+  (nrPhase x, nrReveal x, nrRevealBefore x) `shouldBe` (PCommitting, Just rv, Nothing)
+  length <$> sent w `shouldReturn` 2
 
 testRetryNonceMoved :: IO ()
 testRetryNonceMoved = withWorker $ \w@W {wCtx = ctx} -> do

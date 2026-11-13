@@ -21,6 +21,7 @@ module StoreService.Names.Sender
     runSender,
     senderRound,
     replaceAfter,
+    minTip,
     maxTxFeeWei,
   )
 where
@@ -119,6 +120,10 @@ followInterval = 4000000
 -- | The max fee covers six full blocks in a row, each raising the base fee by 12.5%.
 baseFeeHeadroom :: Integer
 baseFeeHeadroom = 2
+
+-- | 0.01 gwei, so quiet blocks whose median tip is near zero do not leave a transaction under every other.
+minTip :: Word64
+minTip = 10_000_000
 
 -- | Nodes accept a replacement only with both fees at least 10% higher.
 bumped :: Integer -> Integer
@@ -309,10 +314,10 @@ settle Sender {snStore, snInFlight} nonce InFlight {ifHashes, ifOutcome} outcome
 update :: Sender -> Word64 -> (InFlight -> InFlight) -> IO ()
 update Sender {snInFlight} nonce f = atomically $ modifyTVar' snInFlight $ M.adjust f nonce
 
--- | The tip the node suggests and the latest base fee, as Integer so that no fee arithmetic wraps.
+-- | The recent blocks' median tip, at least minTip, and the latest base fee, as Integer so that no fee arithmetic wraps.
 marketFees :: ChainClient -> IO (Either ChainError (Integer, Integer))
 marketFees c = runExceptT $ do
-  tip <- ExceptT $ maxPriorityFee c
+  tip <- max minTip <$> ExceptT (recentTip c)
   Block {blockBaseFee} <- ExceptT $ latestBlock c
   pure (toInteger tip, toInteger blockBaseFee)
 

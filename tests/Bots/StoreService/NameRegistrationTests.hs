@@ -107,7 +107,7 @@ send :: TVar ChaChaDRG -> ChainClient -> Address -> ByteString -> IO SignedTx
 send g c@ChainClient {ccRegistrar} to calldata = do
   gas <- right' =<< estimateGas c to calldata
   nonce <- right' =<< transactionCount c ccRegistrar Pending
-  tip <- right' =<< maxPriorityFee c
+  tip <- right' =<< recentTip c
   Block {blockBaseFee} <- right' =<< latestBlock c
   tx@SignedTx {stRaw, stHash} <-
     right <$> signTransaction g c TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gas, trMaxFeePerGas = 2 * blockBaseFee + tip, trMaxPriorityFeePerGas = tip}
