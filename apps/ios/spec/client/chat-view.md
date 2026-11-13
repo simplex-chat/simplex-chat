@@ -436,7 +436,7 @@ FramedItemView        background, quote background and header backgrounds omitte
                       captionless media, chat link without text, voice and file without text (metaPlacement.gapBelowBlock),
                       emoji: terminalCardBottomGap below
                       text: terminalTextTopGap above
-MsgContentView        line box terminalLineBox; meta line for live messages, and in the line box after empty lines at the text end
+MsgContentView        line box terminalLineBox; meta line for live messages
                       text ends with the transparent copy of the meta (reserveSpaceForMeta)
                       text without markdownBlocks (over 2000 markup tokens) keeps one full line per empty line
 MarkdownBlocksView    all gaps have zero width: the column is as wide as its widest block
@@ -445,14 +445,15 @@ MarkdownBlocksView    all gaps have zero width: the column is as wide as its wid
                       heading after another block: terminalLevelStep
                       block other than a heading after a heading: terminalHeadingBottomGap
                       each empty line typed before or between blocks and list entries: terminalParagraphGap added
-                      empty lines after the last block: line breaks of the tokens after it, less one when the text does not end
-                      with a line break (the core removes one final line break); terminalParagraphGap each, then the meta line
+                      empty lines after the last block: not drawn (BlocksLayout.trailingEmptyLines 0), so the time is beside
+                      the last line when it fits; bubbles draw them, as line breaks of the tokens after it, less one when the
+                      text does not end with a line break (the core removes one final line break), then the meta line
                       at most maxEmptyLines (100) empty lines in one gap (emptyLines)
                       heading size: body × 1.25^max(0, 3 − level), bold (terminalHeadingFont); classic chat items too (chatHeadings, user)
                       item info, welcome message and profile description: body × 1.5, 1.3, 1.15 for levels 1–3 (headingFont)
                       code, tables and rules (cardMargins): last block of a live message: terminalParagraphGap below,
                       above the typing line; otherwise no margins
-                      last block of a message that is not live, without empty lines after it: MessageLastBlock
+                      last block of a message that is not live: MessageLastBlock
                       rules of a rule-only message: as wide as the copy of the meta, or the item less its text edges
                       when a quote or header is wider (ruleMinWidth: msgWidth less 24pt; terminalQuote reports its full width)
 emoji                 EmojiItemView: 0 above, terminalCardBottomGap below; MessageLastLine
