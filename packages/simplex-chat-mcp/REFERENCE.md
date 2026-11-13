@@ -676,7 +676,7 @@ Only you see this link: it never enters Claude's context or tool results. Scan t
 - Owners can add people with a group link of their own or by inviting their contacts.
 - Observers can't send messages in the Main group, so they can't use `/join N`.
 - Owners of the Main group are invited to every session's group as owners. They get each invitation in the Main group.
-- `/sessions` lists the sessions and marks the closed ones with `, closed`. `/join N` sends you an invitation to the group of session N, as an admin, or as an owner if you own the Main group.
+- `/sessions` lists the sessions and marks the closed ones with `, closed`. `/join N` sends you an invitation to the group of session N, as an admin, or as an owner if you own the Main group. Another one-line message that starts with `/` gets `Unknown command.`, as a new message without a quote.
 - Leaving the Main group, being removed from it, or getting another role there changes nothing in the session groups.
 - When no owner remains, the service creates a new link. In a terminal, `npx -y @simplex-chat/mcp@VERSION link` prints it with a QR code. While the group has owners, the command names them instead.
 

@@ -1478,17 +1478,26 @@ describe("Main group", () => {
     hub.main.onMessage(mainMessage("/join 2", bob))
     hub.main.onMessage(mainMessage("/join 5", bob))
     hub.main.onMessage(mainMessage("/help", bob))
-    await until(() => chat.replies.length === 4)
+    await until(() => chat.replies.length === 3 && sentTo(chat, 10).length === 1)
     expect(chat.replies).toEqual([
       "1 · one\n2 · two, closed",
       `Sent you an invitation to "2 · two".`,
       "No session 5. /sessions lists the sessions.",
-      "Unknown command.",
     ])
+    expect(sentTo(chat, 10)).toEqual(["Unknown command."])
     expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 7, memberRole: T.GroupMemberRole.Admin})
     hub.main.onMessage(mainMessage("/join 2", alice))
-    await until(() => chat.replies.length === 5)
+    await until(() => chat.replies.length === 4)
     expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 3, memberRole: T.GroupMemberRole.Owner})
+  })
+
+  it("answers another / command, such as /secret NAME VALUE sent there, with Unknown command. as a new message, without a quote of its value", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    hub.main.onMessage(mainMessage("/secret API_TOKEN value-1234", alice))
+    await until(() => chat.sent.length === 1)
+    expect(chat.sent).toEqual([{chat: [T.ChatType.Group, 10], messages: [{msgContent: {type: "text", text: unknownCommand}, mentions: {}}]}])
+    expect(chat.replies).toEqual([])
   })
 
   it("replaces the Main group at once also while owners exist, without a post there, and answers /approve reset and /reject reset as unknown commands", async () => {
@@ -1504,8 +1513,8 @@ describe("Main group", () => {
     expect(session.control.groupId).toBe(20)
     hub.main.onMessage(mainMessage("/approve reset", alice))
     hub.main.onMessage(mainMessage("/reject reset", alice))
-    await until(() => chat.replies.length === 2)
-    expect(chat.replies).toEqual(["Unknown command.", "Unknown command."])
+    await until(() => sentTo(chat, 21).length === 2)
+    expect(sentTo(chat, 21)).toEqual(["Unknown command.", "Unknown command."])
   })
 
   it("leaves the session groups and the members who joined them from the Main group as they are at a reset of the owners: both still prompt and approve", async () => {

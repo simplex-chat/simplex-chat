@@ -1,6 +1,6 @@
 # SimpleX MCP server: agent secrets
 
-Status: implemented, for review. Decisions of 2026-11-12 and 2026-11-13. Code references: master `b7b05a261`; core references: `src/Simplex/Chat` of master; opencode references: opencode 1.19.5, `packages/opencode/src`. Size: 137 changed lines in `src`, 48 lines of the plugin.
+Status: implemented, for review. Decisions of 2026-11-12 and 2026-11-13. Code references: master `b7b05a261`; core references: `src/Simplex/Chat` of master; opencode references: opencode 1.19.5, `packages/opencode/src`. Size: 139 changed lines in `src`, 48 lines of the plugin.
 
 ## Decisions
 
@@ -12,7 +12,7 @@ Status: implemented, for review. Decisions of 2026-11-12 and 2026-11-13. Code re
 6. Discovery: `list` returns the names and the folder, never the values; its description states the use in commands, as `"$(cat FOLDER/NAME)"`.
 7. `send` and `connect` texts are not checked for values; the approval cards are the control.
 8. Budget: about 110 changed lines in `src`, at most 132; the plugin counted separately, 30 to 50 lines.
-9. 2026-11-13: the list of commands and `Unknown command.` are posted without a quote, so a mistyped `/secrt NAME VALUE` or `/secrets NAME VALUE` leaves no copy of the value in the reply once its sender deletes it.
+9. 2026-11-13: the list of commands and `Unknown command.` are posted without a quote, in the Main group too, so a mistyped `/secrt NAME VALUE` or `/secrets NAME VALUE` leaves no copy of the value in the reply once its sender deletes it.
 10. 2026-11-13: an owner's profile update that turns full deletion off gets at once an update that turns it on, queued with the owner commands, so the agent deletes a later `/secret` with full deletion on; every profile update starts from the profile in the chat database, in `serve` too.
 
 ## Option
@@ -195,6 +195,7 @@ control.ts  controlCommands     the secrets entry
             ownerRequest        secret, unsecret, secrets
 hub.ts      createSessionGroup  fullDelete
             onEvent             groupUpdated of a session group to its onGroupUpdated
+main-group.ts  onMessage        Unknown command. posted
 serve.ts    events              newChatItems of the control group in any scope to onMessage; its groupUpdated to onGroupUpdated
 ```
 
@@ -323,7 +324,7 @@ test/tsconfig.json            include: ../opencode/**/*
 - `test/unit/fixtures.ts`: `FakeChat.apiDeleteMemberChatItem` records each call with the count of messages sent before it.
 - `test/e2e/scenarios.test.ts`: the owner's `/secret`: `chatItemsDeleted` at the owner, the reply without a quote, the value in the file, the agent's control chat items without it, `list` with the folder and the name.
 - `test/unit/plugin.test.ts`, `test/e2e/launch.test.ts`: `opencode` in `files` and in the tarball's top-level entries.
-- `test/unit/sessions.test.ts`: full deletion in the preferences of a new session group; `Unknown command.` posted without a quote; full deletion turned on again at an owner's profile update, before a `/secret` sent right after is deleted, and left when an owner's update keeps it on.
+- `test/unit/sessions.test.ts`: full deletion in the preferences of a new session group; `Unknown command.` posted without a quote, in a session group and in the Main group, also for `/secret NAME VALUE` there; full deletion turned on again at an owner's profile update, before a `/secret` sent right after is deleted, and left when an owner's update keeps it on.
 - `test/e2e/service.test.ts`: `Unknown command.` for `//compact` without a quote.
 
 ## Docs

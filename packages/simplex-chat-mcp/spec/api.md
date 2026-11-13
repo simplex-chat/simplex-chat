@@ -722,7 +722,7 @@ Commands from any member, one line `/KEYWORD PARAMS` as in [2.1](#21-commands-an
 | `/join N` | no session N | `No session N. /sessions lists the sessions.` | [hub.ts:438](../src/hub.ts#L438) |
 | `/join N` | the sender is a member of its group | `You are a member of "N · NAME".` | [hub.ts:439-444](../src/hub.ts#L439-L444) |
 | `/join N` | otherwise: the sender is invited through the Main group, as `owner` when the sender is an owner of the Main group, else as `admin` | `Sent you an invitation to "N · NAME".` | [hub.ts:440](../src/hub.ts#L440), [:217-219](../src/hub.ts#L217-L219) |
-| other one-line `/` text | | `Unknown command.` | [main-group.ts:14](../src/main-group.ts#L14), [:114](../src/main-group.ts#L114) |
+| other one-line `/` text | | `Unknown command.`, as a new message, without a quote | [main-group.ts:14](../src/main-group.ts#L14), [:91](../src/main-group.ts#L91), [:114](../src/main-group.ts#L114) |
 
 Posts:
 

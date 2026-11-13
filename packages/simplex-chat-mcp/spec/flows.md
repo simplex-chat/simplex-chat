@@ -1333,6 +1333,7 @@ Notes:
   The end-to-end test counts one post for each join in both groups ([test/e2e/service.test.ts](../test/e2e/service.test.ts)).
 - A person added to the group directly has the rights of the role that the adding member set, as a member from the Main group has the rights of its role ([hub.ts:230-233](../src/hub.ts#L230-L233), [:312-314](../src/hub.ts#L312-L314)).
 - Claude answers `/join N` from a member of the group of session N with `You are a member of "N · NAME".` ([hub.ts:439-444](../src/hub.ts#L439-L444)).
+- Claude answers another one-line `/` text in the Main group with `Unknown command.` as a new message, without a quote ([main-group.ts:91](../src/main-group.ts#L91), [:114](../src/main-group.ts#L114)).
 - At a reset of the owners, the session groups and their members stay as they are ([flow 25](#25-reset-owners)).
 
 Source: [main-group.ts:111-115](../src/main-group.ts#L111-L115), [:117-132](../src/main-group.ts#L117-L132), [hub.ts:217-228](../src/hub.ts#L217-L228), [:436-447](../src/hub.ts#L436-L447), [:520](../src/hub.ts#L520), [control.ts:396-408](../src/control.ts#L396-L408), [:930-937](../src/control.ts#L930-L937).
