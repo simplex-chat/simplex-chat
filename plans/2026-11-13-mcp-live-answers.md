@@ -16,7 +16,7 @@ The channel cannot: Claude Code sends a channel server only permission requests 
 
 When a person's prompt starts a turn, Claude posts an empty live message at once. The apps show it under the LIVE header, with typing dots. It replies to the prompt when the prompt came from the group. The turn's first post fills this opening message: the first line of Claude's text, or the first step.
 
-Each later text of Claude is a new live message from its first line. Claude's texts are its remarks before steps, such as `I'll read the hook first.`, and its answer. The terminal shows all of them; the group sees only the answer now. A text grows by whole lines, with an update at most every 3 seconds, and is finalized when Claude ends it. Steps are posted as in `ep/mcp-activity`. After a non-blank answer, Claude posts the end line in small print, which is the turn's alert (Q1). With `ep/mcp-session-usage`, the same line shows the turn's usage, so the turn ends with one line after the answer.
+Each later text of Claude is a new live message from its first line. Claude's texts are its remarks before steps, such as `I'll read the hook first.`, and its answer. The terminal shows all of them; the group sees only the answer now. A text grows by whole lines, with an update at most every 3 seconds, and is finalized when Claude ends it. Steps are posted as in `ep/mcp-activity`. After a non-blank answer, Claude posts the end line in small print, which is the turn's alert (Q1). With `ep/mcp-session-usage`, the same line shows the turn's usage and the plan's usage, so the turn ends with one line after the answer.
 
 Run L1, times from the prompt's hook:
 ```
@@ -40,8 +40,8 @@ post                                 text                                       
 opening message                      empty                                      yes    silent      the prompt from the group
 Claude's text                        its whole lines so far                     yes    silent      -
 end line                             !- ✅ Done in DURATION!                    no     important   -
-end line with ep/mcp-session-usage   !- ✅ Done in USAGE!                       no     important   -
-end line, start of the turn unknown  !- ✅ Done!                                no     important   -
+end line with ep/mcp-session-usage   !- ✅ Done in USAGELIMITS!                 no     important   -
+end line, start of the turn unknown  !- ✅ DoneLIMITS!                          no     important   -
 opening message at the end of a      ⏹️ Stopped                                 no     silent      kept
 turn without Stop
 opening message at a blank answer    !- ✅ Done in DURATION!                    no     silent      kept
@@ -49,7 +49,9 @@ opening message at a blank answer    !- ✅ Done in DURATION!                   
 
 - `!- TEXT!` is small text: the apps show TEXT smaller and in the secondary color (fact 11 of `ep/mcp-session-usage`), and a notification shows TEXT without the marks (`Notifications.swift:200-214`, `NtfManager.kt:134-145`).
 - DURATION is the time from the prompt's hook to the Stop hook, in the format of the step lines: `41 ms`, `2.0 s`, `42 s`, `4 min 12 s`, `1 h 5 min`.
-- USAGE is the usage text of `ep/mcp-session-usage`, which the Stop hook reads from the transcript: `2 min 51 s · 16.0k output tokens · 673k tokens in context`. The line is then `!- ✅ Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context!`. Without a usage text, as when the transcript has no entry of the turn yet (fact 9), the line keeps DURATION.
+- USAGE is the usage text of `ep/mcp-session-usage`, which the Stop hook reads from the transcript: `2 min 51 s · 16.0k output tokens · 673k in context`. Without a usage text, as when the transcript has no entry of the turn yet (fact 9), the line keeps DURATION.
+- LIMITS is the plan's usage of `ep/mcp-session-usage`, from its status line command: ` · 5 h: 34%` and ` · week: 61%`, each when known and not reset. The hub appends it after USAGE, after DURATION, or after `Done`. Without it, LIMITS is empty.
+- An example: `!- ✅ Done in 2 min 51 s · 16.0k output tokens · 673k in context · 5 h: 34% · week: 61%!`. Without the turn's figures: `!- ✅ Done · 5 h: 34% · week: 61%!`.
 - A blank answer gets no end line, so it gets no alert. An answer that a group preference refuses gets its refusal text, and then the end line.
 - A text longer than one message is finalized at the part that fits, measured as for answers, and continues in a new live message.
 - A turn that ends without Stop, after an interruption or an API error, gets no end line. Its live texts are finalized with their text, as steps are, and an empty opening message gets `⏹️ Stopped`.
@@ -137,15 +139,15 @@ Facts:
 Choices:
 
 17. Claude Code runs `node "${CLAUDE_PLUGIN_ROOT}/dist/display.js"` for MessageDisplay, with `timeout` 2, without `async`, which Claude Code ignores for this event (fact 2).
-18. `display.ts` loads only Node modules and the new `paths.ts`, because the terminal waits for it (facts 5 and 15). `dataRoot`, `socketPath` and the token file's name move from `files.ts` to `paths.ts`, and `files.ts` exports them as before.
-19. The display hook sends `{id, pid, at, text: {message, index, final, delta}}` with `POST /turn`, waits at most 1 s, and prints `{}`. It starts no service, makes no retry and logs nothing. It does not check whether the run is interactive: for a `claude -p` or Agent SDK run, the service has no session and answers 409 (facts 6 and 16).
+18. `display.ts` loads only Node modules and two new modules, `paths.ts` and `service-request.ts`, because the terminal waits for it (facts 5 and 15). `dataRoot`, `socketPath` and the token file's name move from `files.ts` to `paths.ts`, and `files.ts` exports them as before. `service-request.ts` has `postToService`, one request to the running service within a time limit, without starting it. The status line command of `ep/mcp-session-usage`, `status-line.ts`, uses both modules too. So `paths.ts` and `service-request.ts` import only Node modules and each other: no `simplex-chat`, and no module that loads it, such as `files.ts`, `log.ts`, `socket.ts`, `client.ts`, `config.ts` or `messages.ts`. A unit test holds this rule for the imports of the three modules.
+19. The display hook sends `{id, pid, at, text: {message, index, final, delta}}` with `postToService`, waits at most 1 s, and prints `{}`. It starts no service, makes no retry and logs nothing. It does not check whether the run is interactive: for a `claude -p` or Agent SDK run, the service has no session and answers 409 (facts 6 and 16).
 20. `Session.turn` queues a text batch and returns, so the service answers before the post, and the hook holds the terminal only for its request.
 21. At a prompt that starts a turn, after `User`'s post of a typed prompt, the hub posts the opening message: empty, live, silent, replying to the member's message that the prompt matched. The prompt is one that `User` posts or that matches a member's prompt; the hub posts none for a prompt added to the running turn, a `/` command or Claude Code's own prompt. When the core refuses the reply, as for a deleted prompt, the hub posts the message without it, as for answers (decision 50 of `plans/2026-11-07-mcp-claude-code-channel.md`).
 22. The turn's first post fills the opening message: the first text, a step's start, the first part of an answer posted at Stop, or the end line of a blank answer. Only a post whose hook started after the prompt's hook fills it, so a late Stop of the previous turn posts its own messages.
 23. The hub applies a message's batches in index order. It posts a live silent message at the first text that is not blank, updates it at most once per 3 s (fact 12), and finalizes it at the final batch at once.
 24. When a text outgrows one message, measured as `textParts` measures, the hub finalizes the live message with the part that fits and continues the rest in a new live message.
 25. At Stop, the hub first applies the queued batches. The answer's message is Claude's newest text whose first batch's hook started before the Stop hook, when its trimmed text starts the trimmed answer. The hub finalizes it with the answer when the texts differ, as after a lost batch. Without such a message, the hub posts the answer as today, in silent parts.
-26. After a non-blank answer, the hub posts the end line in small print with priority 1, in a send of its own after the answer. DURATION runs from the newest turn record before the Stop hook to the Stop hook. Without a turn record, the line is `!- ✅ Done!`. The end line also follows an answer that a group preference refuses, after its refusal text, because it is the turn's alert.
+26. After a non-blank answer, the hub posts the end line in small print with priority 1, in a send of its own after the answer. DURATION runs from the newest turn record before the Stop hook to the Stop hook. Without a turn record, the line is `!- ✅ Done!`, or `!- ✅ Done LIMITS!` with `ep/mcp-session-usage`. The end line also follows an answer that a group preference refuses, after its refusal text, because it is the turn's alert.
 27. `endSteps(before)` becomes `endLive(before)`: it finalizes the steps and texts that started before `before` with their text, and an empty opening message with `⏹️ Stopped`. It runs at a prompt that starts a turn, at the last detach and at the hub's stop. At Stop it runs for steps and texts, after the claim of decision 25.
 28. The hub drops a batch of an ended text, and the first batch of a text whose hook started before the last answer (fact 7). It keeps the last 100 ended message IDs.
 29. The opening message, Claude's texts and an answer posted at Stop are silent; the end line is important. This replaces decision 22 of `ep/mcp-activity`.
@@ -155,7 +157,7 @@ Choices:
 33. `duration` moves from `src/hook.ts` to `src/messages.ts`, for the step lines and the end line.
 34. Texts are posted in the order their first batches arrive, among themselves and with the steps.
 35. When the core refuses a text's send or update with a group preference, as for a SimpleX link while links are off (`Commands.hs:853-854` for an update), the hub posts `Claude's text was not posted: PREF OFF` once for that text. It finalizes the text's message with the text accepted last and drops the text's later batches. An answer posted at Stop keeps the subject `Claude's answer was not posted`.
-36. The end line and the usage line of `ep/mcp-session-usage` are one message: `!- ✅ Done in FIGURES!`, important, the turn's last post after a non-blank answer, with every part of the answer silent. FIGURES is the Stop hook's usage text when it has one, and DURATION of decision 26 otherwise. Both items build on `ep/mcp-activity`, and either can merge first. The first one adds the line in this form with its own figures: this item with DURATION, in a send of its own after the claimed or posted answer; `ep/mcp-session-usage` with its usage text, as the last message of the answer's send. The second one adds its part to that line: this item, the line after a streamed answer and DURATION when the hook sends no usage; `ep/mcp-session-usage`, its usage text in place of DURATION. So no release posts two lines after an answer. For `ep/mcp-session-usage`, this changes its decision 20: the line becomes important and starts with `✅ Done in`, every part of the answer becomes silent, and the line also follows a refused answer.
+36. The end line and the usage line of `ep/mcp-session-usage` are one message: `!- ✅ Done in FIGURESLIMITS!`, important, the turn's last post after a non-blank answer, with every part of the answer silent. FIGURES is the Stop hook's usage text when it has one, and DURATION of decision 26 otherwise. LIMITS is ` · 5 h: N%` and ` · week: N%` for the windows of the plan's newest usage not reset, which the hub appends after FIGURES, also after DURATION. Without FIGURES, the line is `!- ✅ DoneLIMITS!`. Both items build on `ep/mcp-activity`, and either can merge first. The first one adds the line in this form with its own parts: this item with DURATION, in a send of its own after the claimed or posted answer; `ep/mcp-session-usage` with its usage text and LIMITS, as the last message of the answer's send. The second one adds its parts to that line: this item, the line after a streamed answer and DURATION when the hook sends no usage; `ep/mcp-session-usage`, its usage text in place of DURATION, and LIMITS. So no release posts two lines after an answer. `ep/mcp-session-usage` takes this as its decision 19 (commit `3cc99fad0`).
 
 ## 5. Design
 
@@ -180,6 +182,7 @@ hooks/hooks.json     MessageDisplay               new entry: node dist/display.j
 src/paths.ts         new                          dataRoot, socketPath and serviceTokenFile, moved from files.ts
 src/files.ts         dataRoot, socketPath,        imported from paths.ts; dataRoot and socketPath exported as before
                      serviceToken
+src/service-request.ts  new                       postToService: one request within a time limit, no service start (decision 18)
 src/display.ts       new                          the MessageDisplay hook (decision 19)
 src/protocol.ts      TurnRequest                  + text: TextBatch {message, index, final, delta}
 src/messages.ts      duration                     moved from hook.ts
@@ -246,7 +249,7 @@ Stop(answer, at):
   if claimed and its text differs from the answer: finalize its item with the answer
   endLive(at) for steps and texts; the turn records and the reply as today
   if not claimed and answer is not blank: post the answer in silent parts, the first filling the opening message
-  if answer is not blank: post !- ✅ Done in FIGURES!, priority 1, FIGURES = usage ?? DURATION (decision 36)
+  if answer is not blank: post !- ✅ Done in FIGURESLIMITS!, priority 1, FIGURES = usage ?? DURATION (decision 36)
   else if the opening message is open: finalize it with !- ✅ Done in DURATION!
 
 prompt that starts a turn (at):
@@ -304,7 +307,8 @@ Done when:
 #   criterion                                                                                    checked by
 1   Claude Code runs dist/display.js for MessageDisplay, synchronous, with a 2 s timeout           unit: plugin
 2   the display hook posts each batch with the session, the process and the batch, prints {},     unit: display
-    starts no service, and gives up after 1 s
+    starts no service, and gives up after 1 s; display.ts, paths.ts and service-request.ts
+    import only Node modules and each other
 3   POST /turn answers a batch before the hub posts it                                            unit: service
 4   a prompt that starts a turn gets an empty silent live message, replying to an owner's prompt, unit: sessions
     and the turn's first post fills it
@@ -320,7 +324,7 @@ Done when:
 ```
 
 Tests:
-- `test/unit/display.test.ts`, new: "posts each batch of Claude's text to the service with the session, the process and the batch, and prints {}" and "prints {} at once and starts no service when none runs, and after 1 s when the service does not answer". On master the module does not exist.
+- `test/unit/display.test.ts`, new: "posts each batch of Claude's text to the service with the session, the process and the batch, and prints {}" and "prints {} at once and starts no service when none runs, and after 1 s when the service does not answer", and "loads only Node modules, paths.ts and service-request.ts", which reads the imports of the three modules. On master the modules do not exist.
 - `test/unit/plugin.test.ts`, changed: "runs the hooks from the plugin's own build, allows the plugin's tools, runs the turn hook at the start and the end of every tool use, and runs the display hook synchronously for MessageDisplay". It fails on master, whose `hooks.json` has no MessageDisplay.
 - `test/unit/sessions.test.ts`, new, in "session channel":
   - "opens an empty silent live message at a prompt that starts a turn, replying to the owner's prompt and after User's post of a typed prompt, and none for a prompt added to the running turn, a command or Claude Code's own prompt".
@@ -336,7 +340,7 @@ Tests:
 - `test/unit/service.test.ts`, changed: "passes text batches to the session and answers before its posts, and ends its live posts at the last detach".
 - `test/unit/hook.test.ts` and `files.test.ts` stay as they are: they test `duration` through the step lines, and `dataRoot` and `socketPath` through the exports of `files.ts`.
 - `test/e2e/service.test.ts`, changed: the mirroring test runs `dist/display.js` with the inputs of run L1 and then the Stop hook. The owner's app receives the opening message, its updates and its finalization, not edited, and `!- ✅ Done in` with the time.
-- With `ep/mcp-session-usage` merged first, the tests of the end line expect its usage text, and its e2e test expects `!- ✅ Done in 2.0 s · 861 output tokens · 35.6k tokens in context!`.
+- With `ep/mcp-session-usage` merged first, the tests of the end line expect its usage text, and its e2e test expects `!- ✅ Done in 2.0 s · 861 output tokens · 35.6k in context · 5 h: 34% · week: 61%!`.
 - `TESTING.md`: the real-session check in the terminal and the app, and the time of the display hook process.
 - The sessions tests use `text` of `TurnRequest` and `endLive`, so they compile only with this change. No app changes, so no app test workflows.
 
@@ -345,7 +349,7 @@ Tests:
 - `README.md:36`: Claude's text appears live as Claude writes it, and the turn ends with one line in small print that alerts.
 - `REFERENCE.md`, "Prompts and answers": the opening message, the texts, the end line, the priorities and the terminal's display by lines.
 - `ROADMAP.md:12`: removed.
-- `spec/flows.md`: a flow of a turn's texts with the order rules; `spec/api.md`: the MessageDisplay entry, `dist/display.js` and `text` of `POST /turn`, the channel instructions; `spec/architecture.md`: the texts, the opening message, the end line and `paths.ts`.
+- `spec/flows.md`: a flow of a turn's texts with the order rules; `spec/api.md`: the MessageDisplay entry, `dist/display.js` and `text` of `POST /turn`, the channel instructions; `spec/architecture.md`: the texts, the opening message, the end line, `paths.ts` and `service-request.ts`.
 - `TESTING.md`: the tests and the measurement.
 
 ## 9. Conflict areas with the other items
@@ -357,15 +361,17 @@ src/hub.ts                  Session.turn, answer, startLine, endSteps,          
 src/service.ts              SessionLike, onAttach                               mcp-activity, mcp-fixes (runService)
 src/hook.ts                 duration                                            mcp-activity, mcp-session-usage (shares it in hook.ts)
 src/messages.ts             duration, added                                     mcp-replies (ReplyTo, quoteLine), mcp-fixes (maxNameLength)
-src/files.ts, paths.ts      dataRoot, socketPath, serviceToken                  none
+src/files.ts, paths.ts      dataRoot, socketPath, serviceToken                  mcp-session-usage (status-line.ts imports paths.ts)
+src/service-request.ts      postToService                                       mcp-session-usage (status-line.ts posts its limits with it)
 hooks/hooks.json            MessageDisplay                                      mcp-activity
 src/session.ts              channelInstructions                                 mcp-replies (the reply_to sentences)
 src/tools.ts                replyTool.description                               mcp-replies
 src/hub.ts, the end line    Session.answer, the line after the answer           mcp-session-usage: one line, decision 36
-src/protocol.ts             TurnRequest                                         mcp-activity (step), mcp-session-usage (usage, switched)
+src/protocol.ts             TurnRequest                                         mcp-activity (step), mcp-session-usage (usage, switched,
+                                                                                limits)
 REFERENCE.md, spec          "Prompts and answers", the turn flows               mcp-activity, mcp-replies, mcp-reactions
 ```
 
 ## 10. Estimate
 
-About 220 lines of source and 350 of tests, one and a half days after `ep/mcp-activity` merges. A median turn of this machine gets one more message, the end line, and one update of the opening message. Each text adds a send, an update per 3 s while it streams, and its finalization.
+About 230 lines of source and 360 of tests, one and a half days after `ep/mcp-activity` merges. A median turn of this machine gets one more message, the end line, and one update of the opening message. Each text adds a send, an update per 3 s while it streams, and its finalization.
