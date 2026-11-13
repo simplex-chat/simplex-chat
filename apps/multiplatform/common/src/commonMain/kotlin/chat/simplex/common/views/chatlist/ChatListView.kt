@@ -259,9 +259,6 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     }
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
-  KeyChangeEffect(chatModel.currentUser.value?.userId) {
-    searchText.value = TextFieldValue()
-  }
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   Box(Modifier.fillMaxSize()) {
     if (oneHandUI.value) {
@@ -866,7 +863,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
       if (hasText.value) {
         val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
         BackHandler(onBack = hideSearchOnBack)
-        KeyChangeEffect(chatModel.currentRemoteHost.value) {
+        KeyChangeEffect(chatModel.currentRemoteHost.value, chatModel.currentUser.value?.userId) {
           hideSearchOnBack()
         }
       } else {
