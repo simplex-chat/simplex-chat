@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -317,7 +318,7 @@ sepoliaChainId = 11155111
 
 -- | 5 gwei.
 defaultMaxFeePerGas :: Word64
-defaultMaxFeePerGas = 5000000000
+defaultMaxFeePerGas = 5_000_000_000
 
 defaultTermStart :: String
 defaultTermStart = "2027-01-01T00:00:00Z"

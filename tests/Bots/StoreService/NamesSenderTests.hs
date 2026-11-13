@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Bots.StoreService.NamesSenderTests (namesSenderTests) where
@@ -324,7 +325,7 @@ testFeeCapSubmit g = withCapSetup cap g $ \s@Setup {node, store} -> do
   [raw] <- sentTransactions node
   (\TxRequest {trMaxPriorityFeePerGas, trMaxFeePerGas} -> (trMaxPriorityFeePerGas, trMaxFeePerGas)) <$> decodeSignedTx raw `shouldBe` Right (fakeTip, cap)
   where
-    cap = 20000000000 :: Word64
+    cap = 20_000_000_000 :: Word64
 
 testFeeCapReplace :: TVar ChaChaDRG -> IO ()
 testFeeCapReplace g = withCapSetup cap g $ \s@Setup {node} -> do

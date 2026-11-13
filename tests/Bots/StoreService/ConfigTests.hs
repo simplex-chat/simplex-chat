@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Bots.StoreService.ConfigTests where
@@ -784,7 +785,7 @@ testNamesDefaults = do
   (cServiceKey == expectedKey) `shouldBe` True
   cConfirmations `shouldBe` 3
   cGasLimitCap `shouldBe` 8000000
-  cMaxFeePerGas `shouldBe` 5000000000
+  cMaxFeePerGas `shouldBe` 5_000_000_000
 
 testNamesWrittenOut :: IO ()
 testNamesWrittenOut = do

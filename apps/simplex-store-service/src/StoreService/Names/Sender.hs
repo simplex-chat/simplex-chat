@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -330,7 +331,7 @@ feeCap ChainClient {ccConfig = ChainConfig {cMaxFeePerGas}} gasLimit = (min conf
     bound = maxTxFeeWei `div` toInteger (max 1 gasLimit)
 
 maxTxFeeWei :: Integer
-maxTxFeeWei = 10000000000000000
+maxTxFeeWei = 10_000_000_000_000_000
 
 maxTxFeeText :: Text
 maxTxFeeText = "0.01 ETH"
