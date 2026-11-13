@@ -1,6 +1,6 @@
 # SimpleX MCP: the list of sessions in the Main group
 
-Status: plan for review. Code references: master `97bbbd9ac`. Claude Code references: version 2.1.322 and its binary at the byte offsets given, and the 27 session records of Claude Code 2.1.260 to 2.1.322 on this machine, read on 2026-11-13. Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
+Status: plan for review. The user answered Q1 A and Q2 B on 2026-11-13; decisions 16 and 17 apply Q2 B. Code references: master `97bbbd9ac`. Claude Code references: version 2.1.322 and its binary at the byte offsets given, and the 27 session records of Claude Code 2.1.260 to 2.1.322 on this machine, read on 2026-11-13. Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
 
 ## 1. Goal
 
@@ -15,49 +15,61 @@ On a separate post for waiting sessions, in the same message:
 > I think we have an idea of "important messages" to indicate waiting, and limit alerts to them only. A separate "waiting" seems wrong.
 
 Outcome:
-- Claude keeps one message in the Main group with a line for each session and its state, and edits it when a state changes.
+- Claude keeps one message in the Main group with every session of the data folder, and edits it when a state changes. Each running session has a line with its state, and one last line names the sessions that are not running.
 - The states are those of Claude Code itself: working, waiting and idle. A session also waits for you while a card in its group waits for a decision.
-- `/sessions` lists every session with its state, in the same lines.
+- `/sessions` replies with the same text.
 
 ## 2. What users see
 
-After the first owner joins the Main group, Claude posts its greeting, as in 0.3.0, and then the list. The list has one line per session, by session number:
+After the first owner joins the Main group, Claude posts its greeting, as in 0.3.0, and then the list. The list shows every session of the data folder (Q2 B):
 
 ```
-🟠 1 · openclaw: working
-🔵 2 · simplex-chat: waiting for you, 2 approvals
-🔵 3 · website: waiting for you in Claude Code
-🟢 4 · docs: idle
-⚪ 5 · bio: not running
+🟠 3 · simplex-chat: working
+🔵 6 · website: waiting for you, 2 approvals
+🔵 7 · docs: waiting for you in Claude Code
+🟢 8 · app: idle
+⚪ Not running: 5 · bio, 4 · notes, 2 · openclaw, 1 · first
 ```
 
-Without a session to show, the list is `No session is running.`
+A session is running while a Claude Code is attached to it, or while cards wait in its group. Each running session has its own line, by session number. The last line, `⚪ Not running: `, names every other session, newest first, as `N · NAME` separated by `, `. Without any session, the list is `No sessions.`
 
-Lines:
+Lines of running sessions:
 ```
 line                                        when, the first that applies
 🔵 N · NAME: waiting for you, K approvals    K cards wait for a decision in the session's group; "1 approval" for one
-⚪ N · NAME: not running                     no Claude Code is attached to the session, or the service is stopping
 🔵 N · NAME: waiting for you in Claude Code  Claude Code waits for an answer in its own window, such as a dialog
 🟠 N · NAME: working                         Claude Code works: a turn, or a subagent or another delegated task
 🟢 N · NAME: idle                            Claude Code waits for the next prompt, also while a background command runs
 ▶️ N · NAME: running                         Claude Code is attached, and its state can't be read
 ```
 
+The list is one message, so it is cut to the size of one message:
+- The lines of running sessions are kept whole.
+- The `⚪` line names the sessions that are not running, newest first, while the text still fits. The rest is counted at its end: `⚪ Not running: 212 · api, 211 · docs, 190 older sessions` (`1 older session` for one). When no name fits, the line is `⚪ Not running: 210 older sessions`.
+- The text of a message takes at most 14,962 bytes as JSON encodes it, a line break taking 2. That holds at least 62 lines of running sessions with names of 50 four-byte characters, and the `⚪` line after them. With more running sessions than fit, the core refuses the post or the edit, and the list keeps its last text.
+
+How the list changes:
 - The emojis have the colors of Claude Code's own state indicator: green for Idle, orange for Working…, blue for Waiting.
 - A tool-use card counts only while Claude Code shows its permission dialog, or while its state can't be read. When someone answers the dialog in the terminal, the card stays in the group until the turn ends (0.3.0 decision 29), and the line shows the session working again.
-- The list shows the sessions whose Claude Code runs, the ended ones until the service closes them 10 minutes later, and any session with cards waiting (Q2).
+- When Claude Code ends, its session moves into the `⚪` line at once.
 - Claude edits the list within 2 seconds of a change. An edit alerts nobody, and the apps mark the message "edited".
-- Messages posted after the list, such as each owner's invitation to a new session's group, move it up (Q1).
+- Messages posted after the list, such as each owner's invitation to a new session's group, move it up (Q1 A).
 - When the list is 23 hours old, Claude posts a new list at the bottom and deletes the old one for everyone. The core lets Claude edit a message only within 24 hours.
 - The list's own posts are silent once receivers support silent messages (`ep/mcp-silent-messages`). Until then a new list alerts as a normal message.
-- When the service stops, Claude edits the list once more: every session in it is not running.
+- When the service stops, Claude edits the list once more: every session is in the `⚪` line.
 
-`/sessions` replies with the line of every session of the data folder, ended ones included, or `No sessions.` without any:
+Limits of the list's message:
 ```
-⚪ 1 · openclaw: not running
-🟠 2 · simplex-chat: working
+limit                         value                                       what Claude does
+size of one message           15,602 bytes with a 600-byte envelope;      the ⚪ line keeps the newest names that fit and
+                              14,962 bytes of text as JSON encodes it      counts the rest; running lines are kept whole
+editing window of the core    24 hours from the post                      a new list at 23 hours; the old one deleted
+deletion for everyone         30 hours from the post                      a refused deletion is logged; the old list keeps
+                                                                          its last text
+edit rate                     the text is rendered every 2 seconds        an edit only when the text changed
 ```
+
+`/sessions` replies with the text of the list, cut to the size of one message with its quote of the command.
 
 Before and after:
 ```
@@ -68,8 +80,8 @@ Claude works on a turn                  nothing in the Main group             �
 a card waits in the session's group     the card                              the card; 🔵 waiting for you, 1 approval
 a dialog waits in Claude Code           nothing                               🔵 waiting for you in Claude Code
 a turn ends, or is interrupted          the answer in the session's group     🟢 idle
-Claude Code ends                        nothing                               ⚪ not running; the line goes 10 minutes later
-/sessions                               N · NAME, and ", closed"              EMOJI N · NAME: STATE
+Claude Code ends                        nothing                               the session moves into the ⚪ line
+/sessions                               N · NAME, and ", closed"              the text of the list
 the list is 23 hours old                -                                     a new list at the bottom; the old one deleted
 ```
 
@@ -117,13 +129,13 @@ sequenceDiagram
 
 ## 3. Questions for the user
 
-Q1. Where does the list stay as it changes?
+Q1. Where does the list stay as it changes? Answered A by the user on 2026-11-13.
 - A, recommended: Claude edits one message in place. Edits alert nobody. Messages posted after it move it up: each session start sends every owner an invitation in the Main group, and each command gets a reply there. Claude posts a new list at the bottom once a day, because the core edits a message only within 24 hours. Cost: one new message a day while the service runs.
 - B: Claude keeps the list as the last message. When another message follows it, Claude posts the list again at the bottom at the next change and deletes the old one, as the support bot does with its cards ([cards.ts:257-287](../apps/simplex-support-bot/src/cards.ts#L257-L287)). The Main group's chat-list preview then shows the list. Cost: a new message at about every session start, because of the invitations, and a deleted message left in place each time.
 - C: a core and app change that moves an edited message down, as the user proposed for the support bot too. It is a later pull request; A applies until then.
 
-Q2. Which sessions does the list show?
-- A, recommended: the sessions whose Claude Code runs, the ended ones until the service closes them 10 minutes later, and any session with cards waiting. `/sessions` lists every session with its state. The list holds as many lines as sessions run at once.
+Q2. Which sessions does the list show? Answered B by the user on 2026-11-13. Decisions 16 and 17 keep the list readable as it grows: the sessions that are not running share one line, newest first, and the oldest are counted when the message is full.
+- A, recommended in the first draft: the sessions whose Claude Code runs, the ended ones until the service closes them 10 minutes later, and any session with cards waiting. `/sessions` lists every session with its state. The list holds as many lines as sessions run at once.
 - B: every session of the data folder, ended ones as not running. A data folder keeps every session, and session numbers only grow, so the list grows with every session ever started, up to the size of one message.
 
 ## 4. Decisions
@@ -139,26 +151,29 @@ Facts:
 8. The core edits a sent message only within one day of its time: `editable = deletable && isNothing itemForwarded`, with `deletable` true while `currentTs - itemTs < nominalDay` ([Messages.hs:538-550](../src/Simplex/Chat/Messages.hs#L538-L550)). An edit of another item is refused with `invalidChatItemUpdate` ([Commands.hs:861](../src/Simplex/Chat/Library/Commands.hs#L861), [:883](../src/Simplex/Chat/Library/Commands.hs#L883)). Deletion for everyone is allowed for a day and 6 hours ([Commands.hs:956](../src/Simplex/Chat/Library/Commands.hs#L956)).
 9. An update is sent without the notification flag ([Protocol.hs:1339-1348](../src/Simplex/Chat/Protocol.hs#L1339-L1348)). The apps alert for an update only when it creates the item ([SimpleXAPI.kt:3825-3843](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L3825-L3843), [SimpleXAPI.swift:3209-3219](../apps/ios/Shared/Model/SimpleXAPI.swift#L3209-L3219)), and the chat list shows the update of a chat's last item ([ChatModel.kt:679-681](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L679-L681)). An edit of an item that is not live marks it edited ([Commands.hs:877](../src/Simplex/Chat/Library/Commands.hs#L877)).
 10. Each new session group gets an invitation for each owner of the Main group ([hub.ts:421-423](../packages/simplex-chat-mcp/src/hub.ts#L421-L423)), sent over the Main group and saved there as an item ([Commands.hs:4416-4418](../src/Simplex/Chat/Library/Commands.hs#L4416-L4418)); "The invited member sees it in group A" ([2026-10-10-invite-member-via-group.md](../docs/rfcs/2026-10-10-invite-member-via-group.md)).
-11. The service closes a session 10 minutes after its last attachment ends, later while the session has actions other than a mode card ([service.ts:17](../packages/simplex-chat-mcp/src/service.ts#L17), [:404-414](../packages/simplex-chat-mcp/src/service.ts#L404-L414), [hub.ts:119-121](../packages/simplex-chat-mcp/src/hub.ts#L119-L121)). Tool-use cards end at the next prompt or answer and at the last detach ([hub.ts:181](../packages/simplex-chat-mcp/src/hub.ts#L181), [:204-208](../packages/simplex-chat-mcp/src/hub.ts#L204-L208), [service.ts:321](../packages/simplex-chat-mcp/src/service.ts#L321)).
+11. Tool-use cards end at the next prompt or answer and at the last detach ([hub.ts:181](../packages/simplex-chat-mcp/src/hub.ts#L181), [:204-208](../packages/simplex-chat-mcp/src/hub.ts#L204-L208), [service.ts:321](../packages/simplex-chat-mcp/src/service.ts#L321)).
 12. Actions cancelled by a stop stay `pending` with `interrupted` set, and their cards say `Cancelled: the server stopped.` ([actions.ts:284-295](../packages/simplex-chat-mcp/src/actions.ts#L284-L295), [control.ts:683-686](../packages/simplex-chat-mcp/src/control.ts#L683-L686)).
 13. The Main group's custom data is `{simplexMcpMain: true}` ([main-group.ts:12](../packages/simplex-chat-mcp/src/main-group.ts#L12), [:202](../packages/simplex-chat-mcp/src/main-group.ts#L202)), and `findMainGroup` finds the group by that key ([main-group.ts:185-188](../packages/simplex-chat-mcp/src/main-group.ts#L185-L188)).
 
+14. One message holds at most 15,602 bytes as the plugin measures it: 600 for the envelope, and the JSON of the content, the file name, the quote and the mentions ([tools.ts:163-164](../packages/simplex-chat-mcp/src/tools.ts#L163-L164), [:1575-1578](../packages/simplex-chat-mcp/src/tools.ts#L1575-L1578)). A text without a quote then takes at most 14,962 bytes as JSON encodes it. A session's display name has at most 50 code points ([messages.ts:12](../packages/simplex-chat-mcp/src/messages.ts#L12), [:361](../packages/simplex-chat-mcp/src/messages.ts#L361), [hub.ts:528-530](../packages/simplex-chat-mcp/src/hub.ts#L528-L530)).
+
 Choices:
 
-14. The list is one message of Claude in the Main group, edited in place, with a new message when it is 23 hours old (Q1 A).
-15. The list shows the sessions open in the service and the sessions with cards waiting, by number (Q2 A). `/sessions` replies with the line of every session.
-16. The state of a session comes from Claude Code's record (facts 2-5), not from the hooks. A turn's end is not visible to the hooks after an interrupt, and a typed prompt that waits for its own turn runs its hook before the previous turn ends (fact 7).
-17. The session server sends the path of its record in `POST /session` as `record`: `CLAUDE_CONFIG_DIR` or `~/.claude`, then `sessions`, then its parent's PID with `.json`. The service passes it to the session. A later `/session` of the session replaces it.
-18. Every 2 seconds the hub reads the record of each listed session with an attachment, and renders the list. A record that does not parse keeps the last status read (fact 4). A missing path, a missing file or another status gives `running`.
-19. The lines and their order are those of section 2. The cards are the session's pending actions without those cancelled by a stop (fact 12). A tool-use card counts while the record says `waiting`, or while the record can't be read.
-20. Claude posts the first list only while the Main group has an owner, so it follows the greeting. The item and its time are kept in the Main group's custom data as `simplexMcpList: {item, at}`, next to `simplexMcpMain`, so a restarted service edits the same list.
-21. Claude edits the list only when its text changed since the last post or edit; the first render after a start always edits.
-22. Claude replaces a list that is 23 hours old, or whose edit the core refuses with `invalidChatItemUpdate` or `chatItemNotFound`: it posts the new list, saves its item and time, and deletes the old one for everyone. A refused deletion is logged; the old list then keeps its last text, as after a service stopped for over 30 hours.
-23. Claude posts the list with `priority: -1`, the silent priority of `ep/mcp-silent-messages`, as `ep/mcp-activity` posts its step lines. The core and the apps ignore it until they support it.
-24. At its stop, the hub renders the list once more before the cores close, with every session not running.
-25. A reset of the owners creates a new Main group without the list; the list is posted there once an owner joins.
-26. The protocol version stays 1. `record` is optional: an older service ignores it, and a session of an older session server shows `running`.
-27. The greeting and the command menu stay: `/sessions` still lists the sessions.
+15. The list is one message of Claude in the Main group, edited in place, with a new message when it is 23 hours old (Q1 A).
+16. The list shows every session of the data folder (Q2 B). A running session, with a Claude Code attached or with cards waiting, has its own line, by number. The last line, `⚪ Not running: `, names every other session as `N · NAME`, newest first, separated by `, `. Without any session, the text is `No sessions.` `/sessions` replies with the same text.
+17. The text fits one message by `fitsMessage` (fact 14), without a quote for the list, and with the quote of the command for the reply to `/sessions`. The lines of running sessions are kept whole. The `⚪` line takes the most names, newest first, for which the text with the count of the rest, `, K older sessions` (`1 older session`), still fits; when no name fits, it is `⚪ Not running: K older sessions`. A line of a running session takes at most 239 bytes: 5 for the emoji and the space, 200 for the name, 32 for `: waiting for you in Claude Code` and 2 for the line break. So at least 62 such lines fit with the `⚪` line. With more, the core refuses the post or the edit as too large, the refusal is logged, and the list keeps its last text.
+18. The state of a session comes from Claude Code's record (facts 2-5), not from the hooks. A turn's end is not visible to the hooks after an interrupt, and a typed prompt that waits for its own turn runs its hook before the previous turn ends (fact 7).
+19. The session server sends the path of its record in `POST /session` as `record`: `CLAUDE_CONFIG_DIR` or `~/.claude`, then `sessions`, then its parent's PID with `.json`. The service passes it to the session. A later `/session` of the session replaces it.
+20. Every 2 seconds the hub reads the record of each session with an attachment, and renders the list. A record that does not parse keeps the last status read (fact 4). A missing path, a missing file or another status gives `running`.
+21. The lines of running sessions are those of section 2. The cards are the session's pending actions without those cancelled by a stop (fact 12). A tool-use card counts while the record says `waiting`, or while the record can't be read.
+22. Claude posts the first list only while the Main group has an owner, so it follows the greeting. The item and its time are kept in the Main group's custom data as `simplexMcpList: {item, at}`, next to `simplexMcpMain`, so a restarted service edits the same list.
+23. Claude edits the list only when its text changed since the last post or edit; the first render after a start always edits.
+24. Claude replaces a list that is 23 hours old, or whose edit the core refuses with `invalidChatItemUpdate` or `chatItemNotFound`: it posts the new list, saves its item and time, and deletes the old one for everyone. A refused deletion is logged; the old list then keeps its last text, as after a service stopped for over 30 hours.
+25. Claude posts the list with `priority: -1`, the silent priority of `ep/mcp-silent-messages`, as `ep/mcp-activity` posts its step lines. The core and the apps ignore it until they support it.
+26. At its stop, the hub renders the list once more before the cores close, with every session in the `⚪` line: the stop cancels every card (fact 12).
+27. A reset of the owners creates a new Main group without the list; the list is posted there once an owner joins.
+28. The protocol version stays 1. `record` is optional: an older service ignores it, and a session of an older session server shows `running`.
+29. The greeting and the command menu stay: `/sessions` still lists the sessions.
 
 ## 5. Design
 
@@ -188,6 +203,17 @@ L5. state in each session group's name       none in the Main group             
 ```
 L2 and L3 cost more messages and alerts; L4 does not show the state unasked; L5 is not in the Main group and costs a profile update per change.
 
+Options for every session in one message (Q2 B):
+```
+option                                          size of the message                  cost
+F1. a line per running session, one ⚪ line     the running lines and one            the oldest names are counted
+    of the others, newest first (chosen)        wrapped line                         once the message is full
+F2. a line per session, the oldest cut          a line per session ever started      hundreds of lines to scroll past
+F3. several messages, as pages                  up to one message each               more posts and edits; not one list
+F4. ranges of numbers for the others            the running lines and the ranges     the names of ended sessions are lost
+```
+F2 makes the running sessions hard to find among the ended ones, F3 costs a message per page and breaks the one list, and F4 drops the names that `/join N` needs.
+
 Options for when the list is rendered:
 ```
 option                                     cost
@@ -202,20 +228,22 @@ Changes:
 ```
 file               function or type               change
 src/protocol.ts    SessionRequest                 + record?: string
-src/session.ts     startSession                   the request gets record (decision 17)
+src/session.ts     startSession                   the request gets record (decision 19)
 src/service.ts     SessionLike                    + record?: string
                    onSession                      agent.record = request.record
 src/hub.ts         constants                      listCheck = 2 s
                    Session                        + record, + claude: the last status read; readRecord(); line(running)
                    Hub.open                       starts the list timer, unref'd
-                   Hub.showSessions, new          reads the records of the listed attached sessions; main.showList(text)
-                   Hub.sessionsText               the line of every session; "No sessions." without any
+                   Hub.showSessions, new          reads the records of the attached sessions; main.showList(sessionsText)
+                   Hub.sessionsText(quote?)       the text of decisions 16 and 17, fitted with the quote when given;
+                                                  "No sessions." without any session
                    Hub.stop                       clears the timer; waits for a running render; the last render before
                                                   the cores close
-                   stateLine, new function        the line of section 2
-src/main-group.ts  constants                      listKey simplexMcpList, listAge 23 h, "No session is running."
+                   stateLine, new function        the line of a running session, section 2
+src/main-group.ts  constants                      listKey simplexMcpList, listAge 23 h
+                   SessionGroups.sessionsText     + the quote of the command, for /sessions
                    MainGroup                      + list {item, at} from the custom data; + shown text
-                   MainGroup.showList, new        decisions 20-23, serialized with the group's events
+                   MainGroup.showList, new        decisions 22-25, serialized with the group's events
                    MainGroup.replace              the list cleared with the old group
 ```
 
@@ -227,25 +255,37 @@ readRecord():
     no file: claude = undefined
     unparsable: claude unchanged
 
-line(running):
-  cards = actions.pending() without interrupted ones,
-          and without permission cards when claude is known and not "waiting"
+cards = actions.pending() without interrupted ones,
+        and without permission cards when claude is known and not "waiting"
+attached = onLine set and the hub not stopping
+running = attached, or cards > 0
+
+line, of a running session:
   cards > 0              🔵 N · NAME: waiting for you, K approval(s)
-  not running            ⚪ N · NAME: not running
   claude = "waiting"     🔵 N · NAME: waiting for you in Claude Code
   claude = "busy"        🟠 N · NAME: working
   claude = idle, shell   🟢 N · NAME: idle
   otherwise              ▶️ N · NAME: running
-  running = attached and the hub not stopping
+```
+
+Text of the list, and of the reply to `/sessions` with its quote:
+```
+sessionsText(quote):
+  no session: "No sessions."
+  lines = the lines of the running sessions, by number
+  names = "N · NAME" of the other sessions, by number from the newest
+  rest(k) = "K older sessions", "1 older session" for one, with K = the count of names - k
+  ⚪(k) = "⚪ Not running: " + the first k names, and rest(k) when K > 0, joined by ", "
+  text(k) = lines, then ⚪(k), joined by line breaks; lines alone when names is empty
+  k = the largest k for which text(k) fits one message with quote (fact 14), or 0
+  text = text(k)
 ```
 
 Hub and Main group:
 ```
 every 2 s, and once at the stop:
-  listed = sessions that are open, or have cards; by number
-  for each listed attached session: readRecord()
-  text = lines of listed, or "No session is running."
-  main.showList(text)
+  for each attached session: readRecord()
+  main.showList(sessionsText(no quote))
 
 showList(text), after the group's earlier events:
   the group lost: nothing
@@ -266,8 +306,8 @@ stateDiagram-v2
   state "🟢 idle" as idle
   state "🟠 working" as working
   state "🔵 waiting for you" as waiting
-  state "⚪ not running" as stopped
-  [*] --> stopped: the session opens
+  state "⚪ in the line Not running" as stopped
+  [*] --> stopped: the session is created
   stopped --> idle: Claude Code attaches
   idle --> working: record busy
   working --> waiting: a card, or record waiting
@@ -277,10 +317,10 @@ stateDiagram-v2
   working --> idle: record idle or shell
   idle --> stopped: Claude Code ends
   working --> stopped: Claude Code ends
-  stopped --> [*]: the service closes the session
+  stopped --> waiting: a card of an ended session
 ```
 
-A session attached while its record can't be read is `▶️ running` in place of idle, working and waiting in Claude Code.
+A session stays in the list for as long as the data folder keeps it. A session attached while its record can't be read is `▶️ running` in place of idle, working and waiting in Claude Code.
 
 ```mermaid
 flowchart LR
@@ -300,7 +340,7 @@ flowchart LR
 - Older Claude Code: every record on this machine since 2.1.260 has `status` (fact 5). Without a readable record, attached sessions show `▶️ running`.
 - Older session servers, of Claude Code sessions started before the update: their `/session` has no `record`, so their sessions show `▶️ running` until Claude Code restarts.
 - Older services: a newer hook stops an older service ([client.ts:37-40](../packages/simplex-chat-mcp/src/client.ts#L37-L40)); an older service ignores `record`.
-- Older data folders: the Main group has no `simplexMcpList`, so Claude posts a list at the first render while the group has an owner. In a group whose owner joined long ago, it follows the existing messages.
+- Older data folders: the Main group has no `simplexMcpList`, so Claude posts a list at the first render while the group has an owner. In a group whose owner joined long ago, it follows the existing messages. Every session stored before the update is in it, in the `⚪` line until its Claude Code attaches.
 - `serve`: unchanged; it has no Main group.
 
 ## 7. Acceptance and tests
@@ -308,7 +348,8 @@ flowchart LR
 Done when:
 ```
 #   criterion                                                                                checked by
-1   after the greeting, Claude posts the list of the open sessions, silent                  unit: sessions; e2e
+1   after the greeting, Claude posts the list of every session, silent: the running ones    unit: sessions; e2e
+    by number, then the ⚪ line, newest first
 2   each line follows Claude Code's record: busy, waiting, idle, shell; an attached         unit: sessions
     session without a record is running; a partial record keeps the last state
 3   cards count: tool-use cards only while the record says waiting or is unknown;           unit: sessions
@@ -318,33 +359,36 @@ Done when:
 5   a list 23 hours old, or whose edit is refused, is replaced and the old one deleted      unit: sessions
     for everyone; a refused deletion is logged
 6   no list without an owner; after a reset of the owners, a new list once an owner joins   unit: sessions
-7   at the stop, every listed session is not running                                         unit: sessions
-8   /sessions lists every session with its line                                              unit: sessions; e2e
-9   the session server sends record from CLAUDE_CONFIG_DIR or ~/.claude and its parent's    unit: session; unit: service
+7   at the stop, every session is in the ⚪ line                                             unit: sessions
+8   /sessions replies with the text of the list, fitted with its quote                       unit: sessions; e2e
+9   the text fits one message: the ⚪ line keeps the newest names that fit and counts the    unit: sessions
+    older ones; with no name room, only the count; running lines are never cut
+10  the session server sends record from CLAUDE_CONFIG_DIR or ~/.claude and its parent's   unit: session; unit: service
     PID, and the service passes it to the session
-10  a real session: working, waiting for you with a card, waiting for you in Claude Code,   TESTING check
-    idle after an interrupt, not running after an exit
+11  a real session: working, waiting for you with a card, waiting for you in Claude Code,   TESTING check
+    idle after an interrupt, in the ⚪ line after an exit
 ```
 
 Tests:
 - `test/unit/sessions.test.ts`, in "Main group", new:
-  - "posts the list of the open sessions after the greeting, silent, and edits it as Claude Code's records and the cards change: working, waiting for you, waiting for you in Claude Code, idle and not running". It calls `Hub.showSessions`, so it compiles only with this change; the e2e test below fails on master.
+  - "posts the list of every session after the greeting, silent, and edits it as Claude Code's records and the cards change: working, waiting for you, waiting for you in Claude Code, idle, and the ⚪ line after an exit". It calls `Hub.showSessions`, so it compiles only with this change; the e2e test below fails on master.
+  - "fits the list in one message: the ⚪ line keeps the newest names that fit and counts the older ones, only the count when no name fits, and every line of a running session", with 400 stored sessions, with names of 50 four-byte characters, and with the quote of `/sessions`.
   - "counts a tool-use card only while Claude Code shows its dialog or its record is unknown, every other card, and no card cancelled by a stop".
   - "keeps a session's last state while its record is written, and shows running without a record, without its file or with another status".
   - "posts a new list and deletes the old one for everyone when the list is 23 hours old or its edit is refused, logs a refused deletion, and edits the list of the Main group's data after a restart".
   - "posts no list while the Main group has no owner, and a new one in the new Main group after a reset of the owners once an owner joins".
-  - "shows every listed session as not running at the hub's stop".
-- `test/unit/sessions.test.ts`, changed: "lists the sessions and invites a member to the group of a session as admin by /join" expects the new lines.
+  - "puts every session in the ⚪ line at the hub's stop".
+- `test/unit/sessions.test.ts`, changed: "lists the sessions and invites a member to the group of a session as admin by /join" expects the text of the list.
 - `test/unit/session.test.ts`, changed: the registered request has `record`, with and without `CLAUDE_CONFIG_DIR`.
 - `test/unit/service.test.ts`, changed: "/session passes its record to the session".
-- `test/e2e/service.test.ts`, new: "the Main group shows the open sessions with their states from Claude Code's record and the cards, edited in place". A session with a record file attaches; the test writes `busy`, starts a `connect` whose card waits, approves it, and writes `idle`; Alice's app gets the list and its updates. It fails on master: no list arrives. The `/sessions` expectations of the first test are changed to the new lines.
-- `TESTING.md`, a real-session check: two sessions show in the list. `sleep 20` with Bash shows 🟠. `Run ls with Bash.` from the group shows 🔵 with 1 approval; after `/approve N` it shows 🟠, and 🟢 when the turn ends. Esc during a turn shows 🟢 within 2 s. A question of Claude in the terminal, such as AskUserQuestion, shows 🔵 in Claude Code. Exiting Claude Code shows ⚪, and the line goes 10 minutes later. `/sessions` lists both.
+- `test/e2e/service.test.ts`, new: "the Main group shows every session, the running ones with their states from Claude Code's record and the cards, edited in place". A session with a record file attaches; the test writes `busy`, starts a `connect` whose card waits, approves it, and writes `idle`; Alice's app gets the list and its updates. It fails on master: no list arrives. The `/sessions` expectations of the first test are changed to the text of the list.
+- `TESTING.md`, a real-session check: two sessions show in the list. `sleep 20` with Bash shows 🟠. `Run ls with Bash.` from the group shows 🔵 with 1 approval; after `/approve N` it shows 🟠, and 🟢 when the turn ends. Esc during a turn shows 🟢 within 2 s. A question of Claude in the terminal, such as AskUserQuestion, shows 🔵 in Claude Code. Exiting Claude Code moves the session into the ⚪ line. `/sessions` replies with the same text.
 - Run: `npm test --prefix packages/simplex-chat-mcp`, and the end-to-end tests as TESTING.md states; the reduced build runs them in CI. No app changes, so no app test workflows.
 
 ## 8. Docs to change
 
-- `README.md:34`: step 3 says that the Main group lists the running sessions with their states.
-- `REFERENCE.md`, "The Main group" (547-575): the list, its lines, edits, the daily replacement, the stop; the `/sessions` bullet with the new lines.
+- `README.md:34`: step 3 says that the Main group lists the sessions with their states.
+- `REFERENCE.md`, "The Main group" (547-575): the list, its lines, the `⚪` line and its cut, edits, the daily replacement, the stop; the `/sessions` bullet with the text of the list.
 - `ROADMAP.md:17`: the line is removed.
 - `spec/api.md` 4.2: the `/sessions` rows, a "Posts" row for the list, the custom data `simplexMcpList`; 4.6: `record` of `POST /session`.
 - `spec/architecture.md` 8.2: `Hub.showSessions`, `sessionsText`, `stop`, `stateLine`, `Session.record`, `readRecord`, `MainGroup.showList`; 8.3: the memory rows of `Session.record`, `Session.claude` and `MainGroup.list`, the custom data row, and Claude Code's record among the files read.
@@ -379,7 +423,7 @@ Claude Code's record              the start of work                            m
 
 ```
 part                                        source lines   test lines
-hub.ts, main-group.ts                       100            180 unit
+hub.ts, main-group.ts                       115            210 unit
 session.ts, service.ts, protocol.ts         5              20 unit
 e2e                                                        50
 docs                                        60 lines of text
