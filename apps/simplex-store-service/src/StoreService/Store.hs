@@ -50,6 +50,8 @@ module StoreService.Store
     getEditableTrackers,
     RevokeResult (..),
     revokeCode,
+    BadgeCounts (..),
+    badgeCounts,
   )
 where
 
@@ -65,7 +67,7 @@ import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges (BadgeCredential, BadgeMasterKey (..), BadgeType)
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.StoreService (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState)
-import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus, BadgePurchaseStatus (..))
+import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgePurchaseStatus (..))
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), PaymentProvider (..), PaymentStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
@@ -647,3 +649,26 @@ getEditableTrackers db sentAfter =
       ORDER BY badge_code_id
     |]
     (Only sentAfter)
+
+data BadgeCounts = BadgeCounts
+  { bcPurchases :: [(Text, Int)],
+    bcSubscriptions :: [(Text, Int)],
+    bcOpenCodes :: Int
+  }
+  deriving (Eq, Show)
+
+-- | Open codes are paid or free, not revoked, not expired, and have redemptions left.
+badgeCounts :: DB.Connection -> UTCTime -> IO BadgeCounts
+badgeCounts db now = do
+  bcPurchases <- DB.query_ db "SELECT status, COUNT(*) FROM sx_badge_service_badge_purchases GROUP BY status ORDER BY status"
+  bcSubscriptions <- DB.query_ db "SELECT subscription_state, COUNT(*) FROM sx_badge_service_payments WHERE subscription_state IS NOT NULL GROUP BY subscription_state ORDER BY subscription_state"
+  bcOpenCodes <-
+    maybeFirstRow' 0 fromOnly $
+      DB.query
+        db
+        [sql|
+          SELECT COUNT(*) FROM sx_badge_service_badge_codes
+          WHERE code_payment_status IN (?,?) AND redeem_count < redeem_limit AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > ?)
+        |]
+        (textEncode CPSPaid, textEncode CPSFree, now)
+  pure BadgeCounts {bcPurchases, bcSubscriptions, bcOpenCodes}

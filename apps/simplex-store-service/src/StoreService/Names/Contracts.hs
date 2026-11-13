@@ -30,6 +30,7 @@ module StoreService.Names.Contracts
     termsText,
     fetchCurrentTerms,
     runTermsFetch,
+    termsHeld,
     policyNonce,
     acceptedTerms,
     confirmedTag,
@@ -264,6 +265,14 @@ termsText ct@Contracts {ctTermsTexts, ctFetching} t@Terms {tmHash} =
     Nothing -> withMVar ctFetching $ \_ -> kept >>= maybe (fetchTerms ct t) (pure . Right)
   where
     kept = M.lookup tmHash <$> readIORef ctTermsTexts
+
+-- | Each kind of terms the name policy links, with whether its text is held; nothing is fetched.
+termsHeld :: Contracts -> IO (Either ChainError [(Text, Bool)])
+termsHeld ct@Contracts {ctTermsTexts} = termsLinks ct >>= mapM held
+  where
+    held (generalLink, communityLink) = do
+      texts <- readIORef ctTermsTexts
+      pure [(kind, M.member tmHash texts) | (kind, Just Terms {tmHash}) <- [("general", termsOf generalLink), ("community", termsOf communityLink)]]
 
 fetchCurrentTerms :: Contracts -> IO ()
 fetchCurrentTerms ct =

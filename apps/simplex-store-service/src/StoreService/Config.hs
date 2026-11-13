@@ -341,9 +341,9 @@ retiredListenerKeys =
     ("names_hosts", "listener.names_hosts is replaced by listener.names_port: serve the names site on its own port")
   ]
 
--- | The [listener] keys only [names] uses.
+-- | The [listener] keys only the names site reads.
 namesListenerKeys :: [Text]
-namesListenerKeys = ["names_static_dir", "names_export_dir", "names_port", "metrics_port"]
+namesListenerKeys = ["names_static_dir", "names_export_dir", "names_port"]
 
 serviceKeyBytes :: Int
 serviceKeyBytes = 32
@@ -417,7 +417,7 @@ trailingNoise = skipSpace *> skipMany (comment *> skipSpace)
 knownSettings :: [(Text, [Text])]
 knownSettings =
   -- The retired keys are known, so parseConfig refuses them rather than a warning calling them ignored.
-  [ ("listener", ["host", "badges_port", "badges_static_dir", "serve_webapp", "badges_export_dir", "trust_forwarded_for"] <> namesListenerKeys <> map fst retiredListenerKeys),
+  [ ("listener", ["host", "badges_port", "badges_static_dir", "serve_webapp", "badges_export_dir", "trust_forwarded_for", "metrics_port"] <> namesListenerKeys <> map fst retiredListenerKeys),
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),

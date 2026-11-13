@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
+module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, insertProviderInvoice, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
 import Bots.StoreService.FakeEthNode (plainTerms)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
@@ -132,11 +132,14 @@ paidOrder :: Text -> PaidOrder
 paidOrder invId = PaidOrder {poMethod = btc, poPrice = price, poInvoiceId = InvoiceId invId, poProviderRef = "ref-" <> invId}
 
 insertInvoiceRow :: DB.Connection -> Text -> UTCTime -> Text -> IO ()
-insertInvoiceRow db invId expiresAt status =
+insertInvoiceRow db = insertProviderInvoice db "crypto"
+
+insertProviderInvoice :: DB.Connection -> Text -> Text -> UTCTime -> Text -> IO ()
+insertProviderInvoice db provider invId expiresAt status =
   DB.execute
     db
     "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, payment_address, payment_crypto_currency, payment_crypto_amount, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
-    ((invId, "crypto" :: Text, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
+    ((invId, provider, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
 
 -- | A paid order whose invoice, named after the registration, expires at the given time.
 placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either RegistrationRefused ())

@@ -9,6 +9,7 @@ import Bots.StoreService.CatalogTests
 import Bots.StoreService.ConfigTests
 import Bots.StoreService.GroupIntegrationTests
 import Bots.StoreService.GroupTests
+import Bots.StoreService.MetricsTests
 import Bots.StoreService.NameRegistrationTests
 import Bots.StoreService.NamesBalancesTests
 import Bots.StoreService.NamesLateCreditTests
@@ -18,7 +19,6 @@ import Bots.StoreService.NamesCommunityTests
 import Bots.StoreService.NamesContractsTests
 import Bots.StoreService.NamesLabelTests
 import Bots.StoreService.NamesLinksTests
-import Bots.StoreService.NamesMetricsTests
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests
 import Bots.StoreService.NamesPhasesTests
@@ -111,6 +111,7 @@ main = do
         badgeStripeTests
         badgeNameRegistrationTests
         badgeStoreVerifierTests
+        storeMetricsTests
       namesConfigTests
       namesBalancesTests
       namesLateCreditTests
@@ -120,7 +121,6 @@ main = do
       namesContractsTests
       namesLabelTests
       namesLinksTests
-      namesMetricsTests
       namesOrdersTests
       namesOwnerTests
       namesPhasesTests

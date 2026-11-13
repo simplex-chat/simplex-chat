@@ -496,7 +496,9 @@ data NamesCounts = NamesCounts
     ncOldestPending :: Maybe UTCTime,
     ncOpenInvoices :: Int,
     ncHeldBalances :: Int,
-    ncHeldCents :: Int
+    ncHeldCents :: Int,
+    ncPendingEdits :: Int,
+    ncOldestEdit :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -1593,12 +1595,14 @@ namesCounts db = do
         (SELECT MIN(sent_at) FROM sx_badge_service_name_transactions WHERE status = ?),
         (SELECT COUNT(*) FROM sx_badge_service_name_invoices ni JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id WHERE i.status = ?),
         (SELECT COUNT(*) FROM sx_badge_service_name_balances WHERE reserved_by IS NOT NULL),
-        (SELECT COALESCE(SUM(amount), 0) FROM sx_badge_service_name_balances WHERE reserved_by IS NOT NULL)
+        (SELECT COALESCE(SUM(amount), 0) FROM sx_badge_service_name_balances WHERE reserved_by IS NOT NULL),
+        (SELECT COUNT(*) FROM sx_badge_service_name_record_edits WHERE state = ?),
+        (SELECT MIN(created_at) FROM sx_badge_service_name_record_edits WHERE state = ?)
     |]
-    (PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, invoiceStatusText ISOpen)
+    (PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, invoiceStatusText ISOpen, pendingEdit, pendingEdit)
     >>= \case
-      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents)] ->
-        pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents}
+      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit)] ->
+        pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit}
       _ -> E.throwIO $ StoreDecodeError "names counts: not one row"
 
 int64 :: Word64 -> Int64

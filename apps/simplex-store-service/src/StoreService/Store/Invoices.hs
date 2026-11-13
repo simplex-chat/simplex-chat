@@ -25,6 +25,7 @@ module StoreService.Store.Invoices
     codeHashExists,
     OverdueInvoice (..),
     overdueInvoices,
+    openInvoiceCounts,
     expireOverdueInvoice,
     lockInvoice,
     unfundedQuery,
@@ -266,6 +267,13 @@ qOverdueInvoices =
       <> "WHERE status = 'open' AND expires_at < ? "
       <> unfundedOnly
       <> "ORDER BY @invoices.created_at"
+
+qOpenInvoiceCounts :: Query
+qOpenInvoiceCounts =
+  mkQuery $
+    "SELECT provider, COUNT(*), COALESCE(SUM(CASE WHEN expires_at < ? "
+      <> unfundedOnly
+      <> "THEN 1 ELSE 0 END), 0) FROM @invoices WHERE status = 'open' GROUP BY provider ORDER BY provider"
 
 qExpireOverdue :: Query
 qExpireOverdue =
@@ -616,6 +624,10 @@ overdueInvoices st cutoff = do
       Nothing -> do
         logError ("store: overdue invoice " <> oiProviderRef <> " names provider " <> providerTxt <> ", which this build does not know, so it is left open")
         pure Nothing
+
+-- | Open invoices by provider, each with how many of them the sweep would expire at this cutoff.
+openInvoiceCounts :: DB.Connection -> UTCTime -> IO [(Text, Int, Int)]
+openInvoiceCounts db cutoff = DB.query db qOpenInvoiceCounts (Only (truncateToSecond cutoff))
 
 -- | Expires the invoice if it is still open, has received no money, and is past the cutoff.
 expireOverdueInvoice :: DB.Connection -> UTCTime -> InvoiceId -> IO Bool

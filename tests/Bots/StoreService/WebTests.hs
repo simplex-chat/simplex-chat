@@ -304,7 +304,7 @@ badgeWebTests = do
     it "refuses a settlement instant in the future, as a millisecond clock gives" testFutureSettledInstantIsRefused
   describe "store service poller" $ do
     it "settles a payment with no webhook delivered anywhere" testSettlesWithNoWebhookAtAll
-    it "reads only the invoices it is waiting on, and lists on the stray cadence" testPassReadsWhatItAwaits
+    it "reads only the invoices it is waiting on, and lists on the stray cadence, recording when the provider's list succeeded" testPassReadsWhatItAwaits
     it "asks the provider nothing when it is waiting on nothing" testIdlePassAsksNothing
     it "lists instead of reading once too many invoices are open" testManyOpenInvoicesList
     it "sweeps nothing when no provider can account for the rows" testNoProviderAccountsForNothing
@@ -314,7 +314,7 @@ badgeWebTests = do
     it "passes over a listed invoice this service does not hold" testForeignRefIsPassedOver
     it "changes nothing when the provider fails, and settles on the next pass" testProviderFailureLosesNothing
     it "asks a stalled BTCPay once in a pass and again in the next, settling a card invoice listed after its invoices" testStalledBTCPayHoldsNoCardSettlement
-    it "reads the overdue invoices on their own after a list that timed out" testListTimeoutKeepsTheReads
+    it "reads the overdue invoices on their own after a list that timed out, recording no successful list" testListTimeoutKeepsTheReads
     it "reads every invoice of a provider whose reads fail without a timeout" testFailedReadKeepsTheOtherReads
     it "reads the cadence fresh from the waiters each pass" testCadenceFollowsTheWaiters
     it "cuts an idle sleep short when a browser arrives during it" testWaiterCutsTheIdleSleepShort
@@ -350,7 +350,7 @@ badgeWebTests = do
     it "pages past a hundred open invoices, a request per hundred" testListPaginates
     it "stops paging at its ceiling rather than looping on a server that ignores take" testPagingStopsAtTheCeiling
   describe "store service webhook" $ do
-    it "verifies a real BTCPay signature over the bytes as received, and queues" testWebhookVerifiesARealSignature
+    it "verifies a real BTCPay signature over the bytes as received, and queues, recording when only a verified delivery came" testWebhookVerifiesARealSignature
     it "hands the adapter the raw body, byte for byte" testWebhookPassesTheRawBytes
     it "queues a read and answers 200 empty, reaching no provider" testWebhookQueuesARead
     it "settles by the poller's own path, so there is one settlement lane" testWebhookSettlesByThePollerPath
@@ -3028,9 +3028,13 @@ testPassReadsWhatItAwaits = bounded "reads what it awaits" $ withStubPoller race
   b <- seedOpenRef (weStore env) 2 "p-2" someExpiry
   c <- seedOpenRef (weStore env) 3 "p-3" someExpiry
   setSignals ref [("p-1", settledSignal), ("p-2", settledSignal), ("p-3", settledSignal)]
+  before <- getCurrentTime
   runOnePass poller
   stubCalls ref `shouldReturn` [StubRead "p-1", StubRead "p-2", StubRead "p-3", StubListOpen]
   mapM (invoiceStatus (weStore env)) [a, b, c] `shouldReturn` [ISPaid, ISPaid, ISPaid]
+  listed <- readTVarIO (peListedOk poller)
+  Map.keys listed `shouldBe` ["crypto"]
+  all (>= before) listed `shouldBe` True
 
 testIdlePassAsksNothing :: IO ()
 testIdlePassAsksNothing = bounded "idle pass" $ withStubPoller raceHold $ \ref poller env _ -> do
@@ -3173,6 +3177,7 @@ testListTimeoutKeepsTheReads = bounded "list timeout" $ withStubPoller raceHold 
   runOnePass poller
   stubCalls ref `shouldReturn` [StubListOpen, StubRead "p-overdue"]
   invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
+  readTVarIO (peListedOk poller) `shouldReturn` Map.empty
 
 testFailedReadKeepsTheOtherReads :: IO ()
 testFailedReadKeepsTheOtherReads = bounded "failed read" $ withStubPoller raceHold $ \ref poller env _ -> do
@@ -3777,14 +3782,18 @@ testWebhookVerifiesARealSignature = bounded "real signature" $ withFakePoller $ 
   Just row <- getInvoice (weStore env) iid
   let secret = bWebhookSecret (fbConfig fake)
       body = webhookEvent "InvoiceSettled" (irProviderRef row)
+  unsigned <- postWebhook client [] body
+  statusOf unsigned `shouldBe` 400
+  readTVarIO (weWebhookAt env) `shouldReturn` Map.empty
   delivered <- postWebhook client (webhookSigHeader secret body) body
   statusOf delivered `shouldBe` 200
   responseBody delivered `shouldBe` ""
+  verifiedAt <- readTVarIO (weWebhookAt env)
+  Map.keys verifiedAt `shouldBe` ["crypto"]
   tampered <- postWebhook client (webhookSigHeader secret body) (body <> " ")
   statusOf tampered `shouldBe` 400
   responseBody tampered `shouldBe` ""
-  unsigned <- postWebhook client [] body
-  statusOf unsigned `shouldBe` 400
+  readTVarIO (weWebhookAt env) `shouldReturn` verifiedAt
   invoiceStatus (weStore env) iid `shouldReturn` ISOpen
   setInvoiceState fake (irProviderRef row) ["status" .= ("Settled" :: Text), "paymentMethodPaid" .= ("0.32095000" :: Text)]
   drainHints poller
