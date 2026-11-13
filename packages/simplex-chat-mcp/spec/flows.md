@@ -215,7 +215,7 @@ Notes:
 - After a failed prepared connect, the server deletes the prepared chat without notifying ([tools.ts:882-889](../src/tools.ts#L882-L889)).
 - The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([tools.ts:662-670](../src/tools.ts#L662-L670), [:891-896](../src/tools.ts#L891-L896)). In the plugin, the pending connection ID is also recorded in the session group's custom data. When the connection completes after the call returned, within a day of the record, its chat becomes the session's ([tools.ts:832](../src/tools.ts#L832), [hub.ts:171-176](../src/hub.ts#L171-L176), [:521-522](../src/hub.ts#L521-L522)).
 - In the perform step the server waits for the other side until `startedAt + wait`, at most until `created + 23 h 50 min`, and then reports `connected: false` ([tools.ts:153](../src/tools.ts#L153), [:820](../src/tools.ts#L820), [:846-849](../src/tools.ts#L846-L849)).
-- Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([tools.ts:903](../src/tools.ts#L903), [messages.ts:365-373](../src/messages.ts#L365-L373)).
+- Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([tools.ts:903](../src/tools.ts#L903), [messages.ts:366-374](../src/messages.ts#L366-L374)).
 - For a target the agent is connected to, the result is `status: known` with its chat fields, and no action is created ([tools.ts:744](../src/tools.ts#L744)). In the plugin, the chat becomes the session's when it has no owner ([tools.ts:757-762](../src/tools.ts#L757-L762)).
 - Exact progress texts: `Action N waits for an approver until TIME.`, then `Action N waits for the connection until TIME.`, then `K messages in CHAT; waiting until TIME.` ([actions.ts:414-425](../src/actions.ts#L414-L425), [tools.ts:790](../src/tools.ts#L790)).
 
@@ -264,10 +264,10 @@ Notes:
 - Checks before the action: `text` or `file`, the chat connected, role `observer` or `relay` refused, `reply_to` item a message, mentioned members present and the chat a group, and the message length with its quote ([tools.ts:913-924](../src/tools.ts#L913-L924)).
 - The server starts collecting before the send and, after it, drops items with IDs up to the sent item ([tools.ts:956](../src/tools.ts#L956), [:969-971](../src/tools.ts#L969-L971)).
 - Mentioned names missing from the text are prefixed as `@name` ([tools.ts:1579-1582](../src/tools.ts#L1579-L1582)).
-- While a collected message is live, the server waits for its final update; live items are left out of `responses` and counted in `more` ([messages.ts:365-373](../src/messages.ts#L365-L373), [tools.ts:942](../src/tools.ts#L942), [:948](../src/tools.ts#L948)).
-- At most 100 replies are kept per action; later ones are counted as overflow ([messages.ts:10](../src/messages.ts#L10), [:120-121](../src/messages.ts#L120-L121)).
+- While a collected message is live, the server waits for its final update; live items are left out of `responses` and counted in `more` ([messages.ts:366-374](../src/messages.ts#L366-L374), [tools.ts:942](../src/tools.ts#L942), [:948](../src/tools.ts#L948)).
+- At most 100 replies are kept per action; later ones are counted as overflow ([messages.ts:10](../src/messages.ts#L10), [:121-122](../src/messages.ts#L121-L122)).
 
-Source: [tools.ts:908-977](../src/tools.ts#L908-L977), [messages.ts:110-125](../src/messages.ts#L110-L125), [:365-373](../src/messages.ts#L365-L373), [control.ts:715-721](../src/control.ts#L715-L721).
+Source: [tools.ts:908-977](../src/tools.ts#L908-L977), [messages.ts:111-126](../src/messages.ts#L111-L126), [:366-374](../src/messages.ts#L366-L374), [control.ts:715-721](../src/control.ts#L715-L721).
 
 ---
 
@@ -294,13 +294,13 @@ sequenceDiagram
 
 Notes:
 
-- With unread items the server reads `around` the first unread item, `count` 0, then pages of `after` the last item, `count` 100, until it holds `limit + 1` unread, non-live messages or a page is short ([messages.ts:327-341](../src/messages.ts#L327-L341)).
+- With unread items the server reads `around` the first unread item, `count` 0, then pages of `after` the last item, `count` 100, until it holds `limit + 1` unread, non-live messages or a page is short ([messages.ts:328-342](../src/messages.ts#L328-L342)).
 - Unread items other than messages in the read pages are marked read with the returned messages ([tools.ts:1255](../src/tools.ts#L1255), [:1272](../src/tools.ts#L1272)).
 - `more`: the arrived messages not returned, the overflow and the unread items not read ([tools.ts:1274](../src/tools.ts#L1274)).
 - Items received while the pages are read are returned once ([tools.ts:1254-1257](../src/tools.ts#L1254-L1257)).
 - Exact progress text: `No new messages in CHAT; waiting until TIME.` ([tools.ts:1261](../src/tools.ts#L1261)).
 
-Source: [tools.ts:1243-1278](../src/tools.ts#L1243-L1278), [messages.ts:327-373](../src/messages.ts#L327-L373).
+Source: [tools.ts:1243-1278](../src/tools.ts#L1243-L1278), [messages.ts:328-374](../src/messages.ts#L328-L374).
 
 ---
 
@@ -491,7 +491,7 @@ Notes:
 - For a call aborted before `create`, the server returns before it creates an action ([tools.ts:749](../src/tools.ts#L749), [:929](../src/tools.ts#L929), [:1072](../src/tools.ts#L1072), [:1106](../src/tools.ts#L1106)).
 - Abort path in the SDK: on `res` close the web request is aborted ([node index.cjs:299-303](../node_modules/@modelcontextprotocol/node/dist/index.cjs#L299-L303)); the per-request transport is closed ([server index.cjs:86-90](../node_modules/@modelcontextprotocol/server/dist/index.cjs#L86-L90)); the handler signal is aborted ([src-BhnGYybN.cjs:6425](../node_modules/@modelcontextprotocol/server/dist/src-BhnGYybN.cjs#L6425)).
 
-Source: [tools.ts:768-780](../src/tools.ts#L768-L780), [:933-951](../src/tools.ts#L933-L951), [:1286](../src/tools.ts#L1286), [actions.ts:249-261](../src/actions.ts#L249-L261), [messages.ts:349-363](../src/messages.ts#L349-L363).
+Source: [tools.ts:768-780](../src/tools.ts#L768-L780), [:933-951](../src/tools.ts#L933-L951), [:1286](../src/tools.ts#L1286), [actions.ts:249-261](../src/actions.ts#L249-L261), [messages.ts:350-364](../src/messages.ts#L350-L364).
 
 ---
 
@@ -631,7 +631,7 @@ Notes:
   - The outcome card of an action performed in mode `host` or under a standing approval is posted after the decision. When it is refused, it is replaced by `Action N was performed; its card was not posted: ` or `Action N failed; its card was not posted: `, and that text.
   - A refused edit of a card is replaced by `Action N OUTCOME; its card was not updated: ` and that text. OUTCOME is `was performed`, `failed`, `was rejected`, `expired` or `ended`.
   - After the decision, the action is not changed by a refused card.
-- A file the core receives without a request, a short voice message, also in a member chat of a group, is moved into the chat's folder at `rcvFileComplete`; one whose transfer started before a restart, only when it has its full size. Its message then shows it as `offered`, and `download` returns its path after the approval ([tools.ts:623-643](../src/tools.ts#L623-L643), [:1211-1220](../src/tools.ts#L1211-L1220), [messages.ts:232-246](../src/messages.ts#L232-L246)).
+- A file the core receives without a request, a short voice message, also in a member chat of a group, is moved into the chat's folder at `rcvFileComplete`; one whose transfer started before a restart, only when it has its full size. Its message then shows it as `offered`, and `download` returns its path after the approval ([tools.ts:623-643](../src/tools.ts#L623-L643), [:1211-1220](../src/tools.ts#L1211-L1220), [messages.ts:233-247](../src/messages.ts#L233-L247)).
 
 Source: [tools.ts:1090-1232](../src/tools.ts#L1090-L1232), [control.ts:700-750](../src/control.ts#L700-L750), [tools.ts:672-699](../src/tools.ts#L672-L699).
 
@@ -746,7 +746,7 @@ Notes:
 - The line `Left ...` goes to the log and to the owners; the members of #9 see only that the agent left.
 - The files message is posted after the reply, and only when the folder has files ([control.ts:347-348](../src/control.ts#L347-L348), [:389-391](../src/control.ts#L389-L391)).
 - `/delete CHAT files` works for a current or a left chat; the failed downloads return `Your owner deleted the files of this chat.`, and the reply counts the forwarded files too ([tools.ts:1040-1058](../src/tools.ts#L1040-L1058)).
-- The paged reads find the downloads the core continues after a restart, which have no download in memory; for a left chat they find none ([messages.ts:313-321](../src/messages.ts#L313-L321), [tools.ts:1047-1053](../src/tools.ts#L1047-L1053)).
+- The paged reads find the downloads the core continues after a restart, which have no download in memory; for a left chat they find none ([messages.ts:314-322](../src/messages.ts#L314-L322), [tools.ts:1047-1053](../src/tools.ts#L1047-L1053)).
 
 Source: [control.ts:336-360](../src/control.ts#L336-L360), [tools.ts:1035-1058](../src/tools.ts#L1035-L1058), [:1080-1088](../src/tools.ts#L1080-L1088).
 
@@ -787,10 +787,10 @@ sequenceDiagram
   participant O as Owner
   CC->>HK: {session_id, session_title, cwd, model}
   HK->>D: GET /status: not running
-  HK->>D: spawn simplex-mcp service
+  HK->>D: spawn simplex-mcp service through a launcher, which exits at once
   D->>D: lock, stored sessions, socket listens
   D->>C: openCore ROOT/_hub "Claude"
-  D->>C: apiNewGroup "SimpleX MCP", short description and welcome of trust, {simplexMcpMain: true}
+  D->>C: apiNewGroup "Claude Control", short description and welcome of trust, {simplexMcpMain: true}
   M->>C: apiGetGroupLinkStr #35;M: none, apiCreateGroupLink #35;M member
   D->>U: openCore ROOT/_user "User"
   U->>C: joins the hub's one-time link#59; the contact of its connection marked simplexMcpUser
@@ -818,6 +818,8 @@ sequenceDiagram
 Notes:
 
 - Only the person gets the link. It is passed in the hook's `systemMessage`, and it is in no hook context or tool result ([hook.ts:94-96](../src/hook.ts#L94-L96)).
+- The service is spawned by a launcher, `node -e LAUNCHER COMMAND ARGS`, which exits at once, so the service is no descendant of the hook. When Claude Code exits during the hook, it ends the hook and the hook's descendants, and the service keeps starting. The service drops its ready line when the hook is gone, and the next session start shows the link ([client.ts:14-18](../src/client.ts#L14-L18), [:79](../src/client.ts#L79), [service.ts:507-513](../src/service.ts#L507-L513)).
+- The Main group's name is `main_group`, `Claude Control` by default, followed by ` - MACHINE` when `SIMPLEX_MCP_MACHINE` is set ([config.ts:40](../src/config.ts#L40), [:50-57](../src/config.ts#L50-L57)).
 - The service deletes the preset contact of a new profile, in `_hub` and in `_user` ([core.ts:28](../src/core.ts#L28), [:44-52](../src/core.ts#L44-L52)).
 - `User` connects only at the first start. At later starts, the service finds the hub's contact marked `simplexMcpUser`, the contact whose connection belongs to the invitation that the hub created. When `User` does not connect within 60 s, the service runs without it, and terminal prompts are not posted ([user.ts:21](../src/user.ts#L21), [:38-48](../src/user.ts#L38-L48), [:60-62](../src/user.ts#L60-L62), [hub.ts:391](../src/hub.ts#L391)).
 - At a later start without owners, the service keeps the Main group's link ([main-group.ts:68-76](../src/main-group.ts#L68-L76)).
@@ -827,7 +829,7 @@ Notes:
 - At each join other than `User`'s, Claude posts in the session group the rights of the joiner's role. For a role that can send, other than owner, the post ends with the command that makes the joiner an observer ([hub.ts:230-237](../src/hub.ts#L230-L237), [:535](../src/hub.ts#L535)).
 - The service reads the hub's contact of `User` after `User` opens, so that the sessions recognize `User`'s messages ([hub.ts:392](../src/hub.ts#L392)).
 
-Source: [hook.ts:81-100](../src/hook.ts#L81-L100), [client.ts:35-92](../src/client.ts#L35-L92), [service.ts:93-119](../src/service.ts#L93-L119), [:218-262](../src/service.ts#L218-L262), [hub.ts:383-401](../src/hub.ts#L383-L401), [:422-440](../src/hub.ts#L422-L440), [:493-505](../src/hub.ts#L493-L505), [main-group.ts:117-140](../src/main-group.ts#L117-L140), [user.ts:16-57](../src/user.ts#L16-L57).
+Source: [hook.ts:81-100](../src/hook.ts#L81-L100), [client.ts:40-97](../src/client.ts#L40-L97), [service.ts:93-119](../src/service.ts#L93-L119), [:218-262](../src/service.ts#L218-L262), [hub.ts:383-401](../src/hub.ts#L383-L401), [:422-440](../src/hub.ts#L422-L440), [:493-505](../src/hub.ts#L493-L505), [main-group.ts:117-140](../src/main-group.ts#L117-L140), [user.ts:16-57](../src/user.ts#L16-L57).
 
 ---
 
@@ -859,7 +861,7 @@ Notes:
 
 - With an invalid option, or in a run that is not interactive, the session process does not connect to the service, even at a permission request of Claude Code. For every call, it returns the option's error. In a run that is not interactive, the text of [flow 30](#30-a-run-that-is-not-interactive) is returned instead, also with an invalid option ([session.ts:44-51](../src/session.ts#L44-L51), [:57](../src/session.ts#L57), [:59](../src/session.ts#L59), [:66](../src/session.ts#L66)).
 - For a session without a folder, the service creates the folder at `/session`, and answers `/attach`, `/call`, `/permission` and `/turn` with 409. After a 409 to a call, the session process registers again in `call` and repeats the call once ([service.ts:392-402](../src/service.ts#L392-L402), [session.ts:120-130](../src/session.ts#L120-L130)).
-- When the `/attach` stream ends, or a connection or a spawn fails, the session process drops the connection and connects again. So the channel works again without a tool call. A single timer is set for each attempt, so the delay doubles once per failed attempt. The session process stops retrying at another protocol version, the `ProtocolError`, and at a 403 of `/session` ([session.ts:88-112](../src/session.ts#L88-L112), [:177-183](../src/session.ts#L177-L183), [client.ts:45](../src/client.ts#L45)).
+- When the `/attach` stream ends, or a connection or a spawn fails, the session process drops the connection and connects again. So the channel works again without a tool call. A single timer is set for each attempt, so the delay doubles once per failed attempt. The session process stops retrying at another protocol version, the `ProtocolError`, and at a 403 of `/session` ([session.ts:88-112](../src/session.ts#L88-L112), [:177-183](../src/session.ts#L177-L183), [client.ts:50](../src/client.ts#L50)).
 
 Source: [session.ts:40-67](../src/session.ts#L40-L67), [:160-185](../src/session.ts#L160-L185), [service.ts:201-324](../src/service.ts#L201-L324).
 
@@ -952,10 +954,10 @@ sequenceDiagram
 Notes:
 
 - Every message of a member other than `User` is a prompt, however the member joined, except a one-line `/` text. Claude answers a one-line `/` text of a moderator, member or author with `Only admins and owners of this group can send / commands.` From an admin or owner, a one-line `/` text is a command of the group. For one outside the group's requests, such as `/model sonnet`, the reply is `Unknown command.` ([hub.ts:153-161](../src/hub.ts#L153-L161), [:239-242](../src/hub.ts#L239-L242), [:323-329](../src/hub.ts#L323-L329), [control.ts:249](../src/control.ts#L249), [:672-677](../src/control.ts#L672-L677)).
-- The session handles messages in arrival order. So a prompt is delivered after the file of an earlier prompt. The reply to a one-line `/` text of a moderator, member or author is posted after the earlier prompts ([hub.ts:157](../src/hub.ts#L157), [:159](../src/hub.ts#L159), [:319-321](../src/hub.ts#L319-L321)).
+- The session handles messages in arrival order. So a prompt is delivered after the file of an earlier prompt. The reply to a one-line `/` text of a moderator, member or author is posted after the earlier prompts ([hub.ts:157](../src/hub.ts#L157), [:160](../src/hub.ts#L160), [:319-321](../src/hub.ts#L319-L321)).
 - After a service start, a prompt that arrives before its session attaches again is held up to 30 s from the hub's open. So a prompt sent while the service was stopped is still delivered to the session ([hub.ts:244-246](../src/hub.ts#L244-L246), [:394](../src/hub.ts#L394)).
 - In a session started without the channel flag, Claude Code receives the notification and drops it.
-- A reply reaches Claude after a quote line, `> ` and the type of a quoted message other than a text and the first line of its text, up to 200 characters with `…` when it is cut. `reply_to` is the quoted item's ID when the group has it, and `reply_to_from` its sender when the group knows it. The pushed prompt holds the quote line, so the channel tag of the reply matches it ([hub.ts:159-160](../src/hub.ts#L159-L160), [:256-258](../src/hub.ts#L256-L258), [messages.ts:206-230](../src/messages.ts#L206-L230), [session.ts:198](../src/session.ts#L198)).
+- A reply reaches Claude after a quote line, `> ` and the type of a quoted message other than a text and the first line of its text, up to 200 characters with `…` when it is cut. `reply_to` is the quoted item's ID when the group has it, and `reply_to_from` its sender when the group knows it. The pushed prompt holds the quote line, so the channel tag of the reply matches it ([hub.ts:159-160](../src/hub.ts#L159-L160), [:256-258](../src/hub.ts#L256-L258), [messages.ts:207-231](../src/messages.ts#L207-L231), [session.ts:198](../src/session.ts#L198)).
 
 Source: [hub.ts:153-161](../src/hub.ts#L153-L161), [:239-269](../src/hub.ts#L239-L269), [service.ts:314](../src/service.ts#L314), [session.ts:53-56](../src/session.ts#L53-L56), [:197-201](../src/session.ts#L197-L201).
 
@@ -1163,9 +1165,9 @@ sequenceDiagram
   Note over M,N: the session groups and the roles of their members stay as they are
   D-->>R: {link}
   alt on a terminal
-    R-->>P: "SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:, QR code, link
+    R-->>P: "Claude Control" was replaced. Join the new one in the SimpleX app. The link works once:, QR code, link
   else without a terminal, as by Claude's tools
-    R-->>P: "SimpleX MCP" was replaced. Run npx -y @simplex-chat/mcp@VERSION link in a terminal to see the link to the new one.
+    R-->>P: "Claude Control" was replaced. Run npx -y @simplex-chat/mcp@VERSION link in a terminal to see the link to the new one.
   end
 ```
 
@@ -1201,7 +1203,7 @@ sequenceDiagram
 Notes:
 
 - The service cancels the stop timer when it creates an entry for a call or an attachment ([service.ts:357-367](../src/service.ts#L357-L367)).
-- A service of a higher version is kept. When the service speaks another protocol version, clients fail with `Restart Claude Code to update the SimpleX plugin.` ([client.ts:35-47](../src/client.ts#L35-L47)).
+- A service of a higher version is kept. When the service speaks another protocol version, clients fail with `Restart Claude Code to update the SimpleX plugin.` ([client.ts:40-52](../src/client.ts#L40-L52)).
 
 Source: [service.ts:177-199](../src/service.ts#L177-L199), [:315-323](../src/service.ts#L315-L323), [:404-422](../src/service.ts#L404-L422), [hub.ts:474-484](../src/hub.ts#L474-L484).
 
@@ -1404,7 +1406,7 @@ Notes:
 - A refused server answers every call with that text, relays no permission request and does not register again ([session.ts:79-80](../src/session.ts#L79-L80), [:92](../src/session.ts#L92), [:115](../src/session.ts#L115), [:127](../src/session.ts#L127), [:162-165](../src/session.ts#L162-L165)).
 - A hook without `CLAUDE_PID` sends no mark. A failed mark is logged as `SimpleX MCP session start` ([hook.ts:102-112](../src/hook.ts#L102-L112)).
 
-Source: [config.ts:22-32](../src/config.ts#L22-L32), [hook.ts:81-85](../src/hook.ts#L81-L85), [:115](../src/hook.ts#L115), [service.ts:221](../src/service.ts#L221), [:237-248](../src/service.ts#L237-L248), [session.ts:45](../src/session.ts#L45).
+Source: [config.ts:23-33](../src/config.ts#L23-L33), [hook.ts:81-85](../src/hook.ts#L81-L85), [:115](../src/hook.ts#L115), [service.ts:221](../src/service.ts#L221), [:237-248](../src/service.ts#L237-L248), [session.ts:45](../src/session.ts#L45).
 
 ---
 
@@ -1488,7 +1490,7 @@ Notes:
 
 - A reaction of a member whose role sends, other than `User`, is a prompt. The core accepts the reactions of observers, and the hub ignores them. A reaction in the Main group reaches no session ([hub.ts:163-169](../src/hub.ts#L163-L169), [:239-242](../src/hub.ts#L239-L242), [:517](../src/hub.ts#L517), [control.ts:884-886](../src/control.ts#L884-L886)).
 - A reaction is never a command or an approval. A 👍 to a tool-use card leaves the card pending, and reaches Claude as a prompt.
-- The reacted message is quoted by the rule of a reply's quote, with the item's file name for an empty text, such as `> video: ride.mp4`. Its file is not received ([hub.ts:167-168](../src/hub.ts#L167-L168), [:248](../src/hub.ts#L248), [messages.ts:206-230](../src/messages.ts#L206-L230)).
+- The reacted message is quoted by the rule of a reply's quote, with the item's file name for an empty text, such as `> video: ride.mp4`. Its file is not received ([hub.ts:167-168](../src/hub.ts#L167-L168), [:248](../src/hub.ts#L248), [messages.ts:207-231](../src/messages.ts#L207-L231)).
 - The answer of the turn quotes the reacted message, Claude's own messages included ([hub.ts:289](../src/hub.ts#L289)).
 - Each of this plugin's channel tags in a turn's prompt matches one pushed prompt. So two equal reactions to one message are quoted in their own turns ([hub.ts:308-317](../src/hub.ts#L308-L317)).
 - Owners turn reactions off with the group's preference "Message reactions", and the core then emits no `chatItemReaction`.

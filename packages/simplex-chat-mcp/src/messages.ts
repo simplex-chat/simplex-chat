@@ -9,10 +9,11 @@ const maxTimer = 2_147_483_647
 const pageSize = 100
 const maxCollected = 100
 const prohibitedNameChars = ".,;/\\#@'\"`~"
-const maxNameLength = 50
+export const maxNameLength = 50
 const replyTextLength = 200
 const lineBreak = /\r\n?|[\n\v\f\u0085\p{Zl}\p{Zp}]/u
 const edgeSpace = /^[\s\u0085]+|[\s\u0085]+$/g
+const bidiControls = /[\u{202A}-\u{202E}\u{2066}-\u{2069}]/gu
 const graphemes = new Intl.Segmenter(undefined, {granularity: "grapheme"})
 const receivingStatuses: T.CIFileStatus["type"][] = ["rcvAccepted", "rcvTransfer", "rcvWarning"]
 export const missingFile = "The received file is not in the agent's files folder."
@@ -226,7 +227,7 @@ export function quoteLine({type, text}: ReplyTo): string {
 }
 
 function trimmed(text: string): string {
-  return text.replace(edgeSpace, "")
+  return text.replace(bidiControls, "").replace(edgeSpace, "")
 }
 
 function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, rejectedFiles: ReadonlySet<number>, data: string): MessageFile {

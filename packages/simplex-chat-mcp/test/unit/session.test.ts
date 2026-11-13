@@ -95,7 +95,7 @@ function listCall(client: LineClient): Promise<any> {
 
 const listed = {chats: [], actions: []}
 const listResult = {content: [{type: "text", text: JSON.stringify(listed)}], structuredContent: listed}
-const registered = `session ${JSON.stringify({id, pid: process.ppid, project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}})}`
+const registered = `session ${JSON.stringify({id, pid: process.ppid, project: "/p/app", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}})}`
 const stdins: PassThrough[] = []
 
 beforeEach(() => {
@@ -128,6 +128,14 @@ describe("session server", () => {
     const error = {content: [{type: "text", text: "Plugin option approve: requests or host expected, got x. Change it in /plugin > Installed > simplex > Configure options."}], isError: true}
     expect((await listCall(client)).result).toEqual(error)
     expect((await client.request("tools/call", {name: "receive", arguments: {chat: "@1"}})).result).toEqual(error)
+    expect(seen).toEqual([])
+  })
+
+  it("answers every call with an invalid machine name, without the service", async () => {
+    await fakeService(async res => endWithResult(res, listResult))
+    const {client} = await session({SIMPLEX_MCP_MACHINE: "my.laptop"})
+    const error = {content: [{type: "text", text: "SIMPLEX_MCP_MACHINE: a valid SimpleX name, such as mylaptop expected, got my.laptop. Change it in the environment of this machine."}], isError: true}
+    expect((await listCall(client)).result).toEqual(error)
     expect(seen).toEqual([])
   })
 

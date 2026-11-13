@@ -102,6 +102,18 @@ describe("message fields", () => {
     expect(line({type: "unknown", tag: "poll", text: "", json: {}})).toBe(">")
   })
 
+  it("removes the bidi controls U+202A-U+202E and U+2066-U+2069 from the quote, also at its edges, and keeps the joiners of an emoji sequence", () => {
+    const trail = groupChat(group(15, "Trail"))
+    const line = (content: object): string => quoteLine(toReplyTo(trail, {content: content as T.MsgContent}, {name: "Scout"}))
+    for (const control of [0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069].map(code => String.fromCharCode(code))) {
+      expect(line({type: "text", text: `abc${control}def`})).toBe("> abcdef")
+      expect(replyText(`${control} Fixed.${control}`)).toBe("Fixed.")
+      expect(line({type: "image", text: control, image: ""})).toBe("> image")
+    }
+    const family = String.fromCodePoint(0x1f468, 0x200d, 0x1f469, 0x200d, 0x1f467)
+    expect(replyText(`${family}${String.fromCharCode(0x202e)}`)).toBe(family)
+  })
+
   it("describes direct, channel and sent messages", () => {
     const directory = direct(contact(4, "SimpleX Directory", {peerType: "bot"}))
     expect(toMessage(directory, item(21, "found 3", {type: "directRcv"}, {status: "rcvRead"}), self, noRejections, data)).toMatchObject({chat: "@4", from: "SimpleX Directory", from_type: "bot", new: false})
