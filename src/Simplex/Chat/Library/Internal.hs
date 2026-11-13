@@ -1618,8 +1618,10 @@ connectToRelayAsync user gInfo relayLink = do
     Just _ -> pure ()
     Nothing -> do
       subMode <- chatReadVar subscriptionMode
-      newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
+      newConnIds@(cmdId, connId) <- prepareAgentCreation user CFGetRelayDataJoin False SCMInvitation
       withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
+      relayLink' <- restoreShortLink' relayLink
+      void $ withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (Just connId) relayLink'
 
 updatePublicGroupData :: User -> GroupInfo -> GroupKeys -> CM GroupInfo
 updatePublicGroupData user gInfo gks
