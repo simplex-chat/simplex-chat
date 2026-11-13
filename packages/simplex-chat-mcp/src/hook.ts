@@ -4,7 +4,7 @@ import {ServiceClient} from "./client"
 import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError, oneLine} from "./log"
-import {Step, TitleReply} from "./protocol"
+import {Step, TitleReply, TurnRequest} from "./protocol"
 import {qrCodeText} from "./qr"
 import {SocketError, isNotRunning} from "./socket"
 import {version} from "./version"
@@ -14,27 +14,47 @@ const serviceStopped = "The SimpleX service stopped; it starts again with the ne
 const unknownSession = 409
 const turnAttempts = 15
 const turnRetryMs = 1_000
+// spec: spec/api.md#plugin-commands
 const maxText = 250_000
+// spec: spec/api.md#plugin-options
 const answerReads = 20
+// spec: spec/api.md#plugin-options
 const promptReads = 600
+// spec: spec/api.md#plugin-options
+const compactionReads = 120
+// spec: spec/api.md#plugin-options
+const compactionReadFactor = 10
+// spec: spec/api.md#plugin-options
+const compactionAge = 60_000
+// spec: spec/api.md#plugin-options
+const compactionSkew = 5_000
+// spec: spec/api.md#plugin-options
 const transcriptReadMs = 100
 const transcriptTailBytes = 1_048_576
+// spec: spec/api.md#plugin-options
+const compactionTailBytes = 4 * transcriptTailBytes
+// spec: spec/api.md#plugin-options
+const boundaryMarker = '"compact_boundary"'
+// spec: spec/api.md#plugin-options
+const tokenCount = new Intl.NumberFormat("en", {notation: "compact"})
 const syntheticModel = "<synthetic>"
 const maxNote = 200
 const statusEmoji = new Map([["completed", "✅"], ["failed", "❌"], ["stopped", "⏹️"], ["killed", "⏹️"]])
 const teammatePrompt = /^Another Claude session sent a message[^:\n]*:\n<teammate-message /
 const teammateMessage = /<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/g
 const pluginTools = "mcp__plugin_simplex_simplex__"
-const toolEvents = ["PreToolUse", "PostToolUse", "PostToolUseFailure"]
 const stepFields = ["description", "query", "url", "file_path", "path", "pattern", "command"]
 
+// spec: spec/api.md#plugin-options
 interface SessionStartInput {
   session_id: string
   session_title?: string
   cwd: string
   model?: string
+  source?: string
 }
 
+// spec: spec/api.md#plugin-options
 interface TurnInput {
   session_id: string
   hook_event_name?: string
@@ -53,6 +73,7 @@ interface TurnInput {
   is_interrupt?: boolean
 }
 
+// spec: spec/api.md#plugin-options
 interface Origin {
   kind?: unknown
   name?: unknown
@@ -62,8 +83,12 @@ interface Origin {
   handbackReportText?: unknown
 }
 
+// spec: spec/api.md#plugin-options
 interface TranscriptEntry {
   type?: unknown
+  subtype?: unknown
+  timestamp?: unknown
+  compactMetadata?: {trigger?: unknown; preTokens?: unknown; postTokens?: unknown}
   isSidechain?: unknown
   promptId?: unknown
   origin?: Origin | null
@@ -89,6 +114,7 @@ export interface HookDeps {
   nodeVersion: string
 }
 
+// spec: spec/architecture.md#hook-sessionstart
 export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = process.env, deps?: HookDeps, at = performance.timeOrigin): Promise<HookOutput> {
   if (!interactive(env)) {
     if (interactiveEntrypoint(env)) await markUnattended(stdin, env, deps?.client)
@@ -101,7 +127,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
     const config = readConfig(env)
     const client = deps?.client ?? ServiceClient.forRoot(dataRoot(env))
     await client.ensureService(version)
-    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), at, name: input.session_title, project: input.cwd, model: input.model, config})
+    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), at, name: input.session_title, project: input.cwd, model: input.source === "compact" ? undefined : input.model, config})
     const {link, owners} = owner
     if (owners.length > 0 || link === undefined) return {}
     return {systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "${mainGroup}":\n${qrCodeText(link, "plain")}\n${link}`}
@@ -110,6 +136,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
   }
 }
 
+// spec: spec/architecture.md#hook-markunattended
 async function markUnattended(stdin: string, env: NodeJS.ProcessEnv, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env))): Promise<void> {
   const pid = claudePid(env)
   if (pid === undefined) return
@@ -122,16 +149,14 @@ async function markUnattended(stdin: string, env: NodeJS.ProcessEnv, client: Hoo
   }
 }
 
+// spec: spec/architecture.md#hook-turn
 export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env)), retryMs = turnRetryMs, at = performance.timeOrigin, readMs = transcriptReadMs): Promise<HookOutput> {
   if (!interactive(env)) return {}
   try {
     const input = JSON.parse(stdin) as TurnInput
-    const toolUse = toolEvents.includes(input.hook_event_name ?? "")
-    const step = toolUse ? stepOf(input) : undefined
-    if (toolUse && step === undefined) return {}
-    const model = input.to_model ?? (input.hook_event_name === "Stop" ? await answerModel(input, readMs) : undefined)
-    const kind = input.hook_event_name === "UserPromptSubmit" ? await promptKind(input, readMs) : undefined
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), ...kind, answer: cut(input.last_assistant_message), model, effort: input.effort?.level, step}
+    const event = await eventFields(input, at, readMs)
+    if (event === undefined) return {}
+    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: cut(input.last_assistant_message), model: input.to_model, effort: input.effort?.level, ...event}
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -148,45 +173,89 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   return {}
 }
 
+// spec: spec/architecture.md#hook-turn
+async function eventFields(input: TurnInput, at: number, readMs: number): Promise<Partial<TurnRequest> | undefined> {
+  switch (input.hook_event_name) {
+    case "Stop":
+      return {model: input.to_model ?? (await answerModel(input, readMs))}
+    case "UserPromptSubmit":
+      return promptKind(input, readMs)
+    case "PreToolUse":
+    case "PostToolUse":
+    case "PostToolUseFailure": {
+      const step = stepOf(input)
+      return step === undefined ? undefined : {step}
+    }
+    case "PostCompact": {
+      const note = await compactionNote(input, at, readMs)
+      return note === undefined ? undefined : {note}
+    }
+    default:
+      return {}
+  }
+}
+
+// spec: spec/architecture.md#hook-answermodel
 async function answerModel({transcript_path: path, last_assistant_message: message}: TurnInput, readMs: number): Promise<string | undefined> {
   const answer = message?.trim()
   if (!path || !answer) return undefined
   const last = await findInTranscript(path, answer, answerReads, readMs, tail => {
-    const entry = lastAnswer(tail)
+    const entry = lastAnswer(tail.toString())
     return entry?.text === answer ? entry : undefined
   })
   return last?.model
 }
 
+// spec: spec/architecture.md#hook-answermodel
 async function promptKind({transcript_path: path, prompt_id: id, prompt}: TurnInput, readMs: number): Promise<PromptKind> {
   const text = prompt?.trim()
   if (!path || !text) return {typed: false}
-  return (await findInTranscript(path, text, promptReads, readMs, (tail, last) => promptRecord(tail, id, text, last))) ?? {typed: false}
+  return (await findInTranscript(path, text, promptReads, readMs, (tail, last) => promptRecord(tail.toString(), id, text, last))) ?? {typed: false}
 }
 
-async function findInTranscript<T>(path: string, text: string, reads: number, readMs: number, find: (tail: string, last: boolean) => T | undefined): Promise<T | undefined> {
-  const bytes = transcriptTailBytes + 2 * Buffer.byteLength(text)
+// spec: spec/architecture.md#hook-compactionnote
+async function compactionNote({transcript_path: path, agent_id: agent}: TurnInput, at: number, readMs: number): Promise<string | undefined> {
+  if (!path || agent !== undefined) return undefined
+  const boundary = await findInTranscript(path, "", compactionReads, compactionReadFactor * readMs, tail => (tail.includes(boundaryMarker) ? recentBoundary(tail.toString(), at) : undefined), compactionTailBytes)
+  if (boundary === undefined) return undefined
+  const {trigger, preTokens, postTokens} = boundary.compactMetadata ?? {}
+  const counts = typeof preTokens === "number" && typeof postTokens === "number" ? `: ${tokenCount.format(preTokens)} → ${tokenCount.format(postTokens)} tokens` : ""
+  return `⚙️ Context summarised ${trigger === "manual" ? "on request" : "automatically"}${counts}`
+}
+
+// spec: spec/architecture.md#hook-compactionnote
+function recentBoundary(tail: string, at: number): TranscriptEntry | undefined {
+  const boundaries = tail.split("\n").flatMap(line => (line.includes(boundaryMarker) ? (transcriptEntry(line) ?? []) : []))
+  const created = (entry: TranscriptEntry): number => Date.parse(String(entry.timestamp))
+  return boundaries.filter(entry => entry.type === "system" && entry.subtype === "compact_boundary" && entry.isSidechain !== true && created(entry) >= at - compactionAge && created(entry) <= at + compactionSkew).at(-1)
+}
+
+// spec: spec/architecture.md#hook-answermodel
+async function findInTranscript<T>(path: string, text: string, reads: number, readMs: number, find: (tail: Buffer, last: boolean) => T | undefined, tailBytes = transcriptTailBytes): Promise<T | undefined> {
+  const bytes = tailBytes + 2 * Buffer.byteLength(text)
   for (let read = 1; ; read++) {
-    const tail = await readTail(path, bytes).catch(() => "")
+    const tail = await readTail(path, bytes).catch(() => Buffer.alloc(0))
     const found = find(tail, read === reads)
     if (found !== undefined || read === reads) return found
     await new Promise(resolve => setTimeout(resolve, readMs))
   }
 }
 
-async function readTail(path: string, bytes: number): Promise<string> {
+// spec: spec/architecture.md#hook-answermodel
+async function readTail(path: string, bytes: number): Promise<Buffer> {
   const file = await open(path, "r")
   try {
     const {size} = await file.stat()
     const length = Math.min(size, bytes)
     const buffer = Buffer.alloc(length)
     const {bytesRead} = await file.read(buffer, 0, length, size - length)
-    return buffer.toString("utf8", 0, bytesRead)
+    return buffer.subarray(0, bytesRead)
   } finally {
     await file.close()
   }
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function lastAnswer(tail: string): {text: string; model?: string} | undefined {
   const lines = tail.split("\n")
   for (let i = lines.length - 1; i >= 0; i--) {
@@ -198,6 +267,7 @@ function lastAnswer(tail: string): {text: string; model?: string} | undefined {
   return undefined
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function promptRecord(tail: string, id: string | undefined, text: string, last: boolean): PromptKind | undefined {
   const entries = tail.split("\n").flatMap(line => transcriptEntry(line) ?? [])
   const first = id === undefined ? -1 : entries.findIndex(entry => entry.type === "user" && entry.isSidechain !== true && entry.promptId === id)
@@ -216,18 +286,21 @@ function promptRecord(tail: string, id: string | undefined, text: string, last: 
   return first === -1 ? undefined : {typed: after.some(entry => isPrompt(entry) && entry.promptId === id && entry.origin?.kind === "human")}
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function isPrompt(entry: TranscriptEntry): boolean {
   const content = entry.message?.content
   const toolResult = Array.isArray(content) && content.some((part: {type?: unknown} | null) => part?.type === "tool_result")
   return entry.type === "user" && entry.isSidechain !== true && !toolResult
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function recordText(entry: TranscriptEntry): string | undefined {
   if (isPrompt(entry)) return textOf(entry.message?.content)
   if (entry.type === "attachment" && entry.isSidechain !== true && entry.attachment?.type === "queued_command") return textOf(entry.attachment.prompt)
   return undefined
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function recordKind(record: TranscriptEntry, id: string | undefined, text: string): PromptKind {
   const origin = record.type === "attachment" ? (record.attachment?.origin ?? (record.attachment?.commandMode === "task-notification" ? {kind: "task-notification"} : undefined)) : record.origin
   const note = noteOf(origin, record.turnOrigin, text)
@@ -235,6 +308,7 @@ function recordKind(record: TranscriptEntry, id: string | undefined, text: strin
   return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: shortened(note)}), ...(midTurn ? {midTurn} : {})}
 }
 
+// spec: spec/architecture.md#hook-noteof
 function noteOf(origin: Origin | null | undefined, turnOrigin: unknown, text: string): string | undefined {
   switch (origin?.kind) {
     case "human":
@@ -255,6 +329,7 @@ function noteOf(origin: Origin | null | undefined, turnOrigin: unknown, text: st
   }
 }
 
+// spec: spec/architecture.md#hook-noteof
 function taskNote(text: string): string {
   const block = /<task-notification>([\s\S]*?)<\/task-notification>/.exec(text)?.[1]
   if (block === undefined) return `🔔 ${firstLine(text)}`
@@ -265,6 +340,7 @@ function taskNote(text: string): string {
   return `${emoji} ${summary}${event === "" ? "" : `: ${event}`}`
 }
 
+// spec: spec/architecture.md#hook-noteof
 function teammateNote(text: string): string | undefined {
   if (!teammatePrompt.test(text)) return undefined
   const match = [...text.matchAll(teammateMessage)].find(([, , , body]) => !idleNotification(body))
@@ -274,6 +350,7 @@ function teammateNote(text: string): string | undefined {
   return `✉️ Message from ${oneLine(decoded(sender))}: ${firstLine(summary === undefined ? body : decoded(summary))}`
 }
 
+// spec: spec/architecture.md#hook-noteof
 function idleNotification(body: string): boolean {
   try {
     return (JSON.parse(body) as {type?: unknown} | null)?.type === "idle_notification"
@@ -282,10 +359,12 @@ function idleNotification(body: string): boolean {
   }
 }
 
+// spec: spec/architecture.md#hook-noteof
 function peerName(origin: Origin): string {
   return oneLine(stringOf(origin.name) ?? stringOf(origin.from) ?? "another session")
 }
 
+// spec: spec/architecture.md#hook-stepof
 function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_name: event, tool_input: fields = {}, cwd, is_interrupt: interrupted, duration_ms: ms}: TurnInput): Step | undefined {
   if (id === undefined || tool === undefined || agent !== undefined || tool.startsWith(pluginTools)) return undefined
   const text = shortened(stepText(tool, fields, cwd))
@@ -295,6 +374,7 @@ function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_n
   return {id, text: `${text} ${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`, end: true}
 }
 
+// spec: spec/architecture.md#hook-stepof
 function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string | undefined): string {
   const field = (name: string): string => firstLine(stringOf(fields[name]) ?? "")
   const path = (name: string): string => displayPath(field(name), cwd)
@@ -325,12 +405,14 @@ function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string 
   }
 }
 
+// spec: spec/architecture.md#hook-stepof
 function displayPath(path: string, cwd: string | undefined): string {
   if (cwd === undefined || path === "") return path
   const inside = relative(cwd, path)
   return isAbsolute(inside) || inside.startsWith("..") ? path : inside
 }
 
+// spec: spec/architecture.md#hook-stepof
 function duration(exact: number): string {
   const ms = Math.round(exact)
   const seconds = Math.floor(ms / 1000)
@@ -341,23 +423,28 @@ function duration(exact: number): string {
   return `${Math.floor(seconds / 3600)} h ${Math.floor(seconds / 60) % 60} min`
 }
 
+// spec: spec/architecture.md#hook-noteof
 function firstLine(text: string): string {
   return text.split("\n").map(line => oneLine(line).trim()).find(line => line !== "") ?? ""
 }
 
+// spec: spec/architecture.md#hook-noteof
 function decoded(text: string): string {
   return text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&")
 }
 
+// spec: spec/architecture.md#hook-noteof
 function stringOf(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined
 }
 
+// spec: spec/architecture.md#hook-noteof
 function shortened(note: string): string {
   const chars = [...note]
   return chars.length <= maxNote ? note : `${chars.slice(0, maxNote - 1).join("")}…`
 }
 
+// spec: spec/api.md#plugin-options
 function transcriptEntry(line: string): TranscriptEntry | undefined {
   if (!line.startsWith("{")) return undefined
   try {
@@ -367,12 +454,14 @@ function transcriptEntry(line: string): TranscriptEntry | undefined {
   }
 }
 
+// spec: spec/api.md#plugin-options
 function textOf(content: unknown): string {
   if (typeof content === "string") return content.trim()
   if (!Array.isArray(content)) return ""
   return content.flatMap((part: {type?: unknown; text?: unknown} | null) => (part?.type === "text" && typeof part.text === "string" ? [part.text] : [])).join("\n").trim()
 }
 
+// spec: spec/api.md#plugin-commands
 function cut(text: string | undefined): string | undefined {
   return text === undefined || text.length <= maxText ? text : `${text.slice(0, maxText).replace(/[\ud800-\udbff]$/, "")}…`
 }
