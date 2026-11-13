@@ -348,7 +348,7 @@ Incognito: the core creates a random profile for that one chat, so peers of diff
 In mode `requests`, the server shows what the agent does in a live message, the status message, in a chat approved for all messages where the agent can post: a chat with a person, a group or a business chat. Channels and chats with bots and agents are excluded. In a group, every member sees the status message and its notes.
 
 - The server posts the status message when messages are returned by a `receive`, unless the chat has one.
-- The server also posts the status message at once when it receives a message in that chat, unless the chat has one, with the label `received, waiting for the agent`: the owner sees at once that the server runs, also while the agent is not in a `receive` of that chat. When messages of that chat are returned by a `receive` or by a `send`, the label is changed to `thinking` at once.
+- The server also posts the status message at once when it receives a message in that chat, unless the chat has one, with the label `received, waiting for the agent`: the owner sees at once that the server runs, also while the agent is not in a `receive` of that chat. A live message is received when its sender completes it; an edit of a message posts no status message. When messages of that chat are returned by a `receive` or by a `send`, the label is changed to `thinking` at once.
 - With `live: true`, the text of a `send`, a note, is shown under the status line at once, and a status message is posted when the chat has none. Such a call is not an action: `status: live` is returned at once. A note with `file`, `reply_to` or `mention`, a note above 2000 characters, and a note to another chat are refused. In the description of `receive`, the agent is asked to call `send` with `live: true` and a short note in the same response as the tool call of a step that takes minutes.
 - The agent's next message to that chat without `live` is sent as a new message, and the status message is then deleted for everyone.
 
@@ -645,7 +645,7 @@ One server runs per data folder: a second one exits, because two processes on on
 
 ## Claude Code plugin
 
-The plugin gives every Claude Code session its own SimpleX group. In that group you send the session prompts, approve its actions and tool use, and read its answers. One service runs all sessions that share a data folder. Peers see one SimpleX profile, `Claude`. Sessions have the tools of `serve` (`connect`, `send`, `receive`, `download`, `list` and `leave`), and `reply`, which sends files to the session's group.
+The plugin gives every Claude Code session its own SimpleX group. In that group you send the session prompts, approve its actions and tool use, and read its answers. One service runs all sessions that share a data folder. Peers see one SimpleX profile, `Claude`. Sessions have the tools of `serve` (`connect`, `send`, `receive`, `download`, `list` and `leave`), and `reply`, which sends files to the session's group. In mode `requests`, the service shows the [status messages](#status-while-the-agent-works) of sessions as `serve` does. When the service stops, it deletes them and waits 10 seconds for the deletions and the cancelled cards to be sent; when it starts, it deletes those left by a crash.
 
 ### Install
 

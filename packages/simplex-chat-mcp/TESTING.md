@@ -109,6 +109,7 @@ Status messages, in your chat with the agent:
 5. Send a prompt, and send `/revoke @N` in "My Agent" while the status message is shown: the status message is deleted within about 20 seconds, and a card is posted for the answer.
 6. With a group of yours and a second member in it: give Claude Code the group prompt of [Prompt the agent from the app](REFERENCE.md#prompt-the-agent-from-the-app), approve its card, and send `/approve #N all` in "My Agent". After a message of either member, a status message is posted; both members see it and its notes, and the terminal prints `Note to group <name> (#N): <the note>`.
 7. In your chat with the agent, send `stop`: the agent answers and stops calling `receive`. Send another prompt: `◐ received, waiting for the agent · 0:00` is shown at once and kept, with the next frame at each update. Ask Claude Code in the terminal to take your prompts again: when its `receive` returns the prompt, the label is `thinking` at once.
+8. Send `stop` again, then start a live message with a prompt: no status message is posted while it is live. Send it: `◐ received, waiting for the agent · 0:00` is shown at once. Ask Claude Code to take your prompts again; after its answer, edit one of your earlier messages: no status message is posted.
 
 Status messages with llama-swap:
 
@@ -192,7 +193,7 @@ The MCP server and the SessionStart, UserPromptSubmit, Stop and PostModelSwitch 
 - `npm test` runs the unit tests of the plugin's parts:
   - the session server and its channel;
   - the service;
-  - the hub with its Main group, the sessions' groups and the tool-use cards;
+  - the hub with its Main group, the sessions' groups, the tool-use cards, and the sessions' status messages at the service's stop and start;
   - the hooks;
   - the plugin files.
 

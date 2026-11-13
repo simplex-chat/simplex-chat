@@ -23,7 +23,7 @@ The SimpleX core (libsimplex, release `core-7.1.3.0`) runs inside the same Node.
 
 A tool call is held open by the server until the owner decides and, for `connect` and `send`, until the replies arrive, and for `download`, until the file is received or `wait` passes. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
 
-When `receive` returns messages, the server starts a status message in the chat: one live message, edited while the agent works and deleted after the agent's next message there is sent. The server also posts a status message at each message received in such a chat while it has none, with the label `received, waiting for the agent` until a `receive` or a `send` returns messages of that chat. Status messages are shown in chats with people, groups and business chats that have a standing approval of messages, in mode `requests`. With `live: true` on `send`, the text is shown at once under the status line, and the result is status `live`, without an action; each such note is printed in the terminal. With `--inference URL`, the server polls llama-swap or llama-server at URL, and the model loading, the prompt tokens read and the tokens per second are shown in the status line.
+When `receive` returns messages, the server starts a status message in the chat: one live message, edited while the agent works and deleted after the agent's next message there is sent. The server also posts a status message at each message received in such a chat while it has none, a live message when its sender completes it, with the label `received, waiting for the agent` until a `receive` or a `send` returns messages of that chat. Status messages are shown in chats with people, groups and business chats that have a standing approval of messages, in mode `requests`. With `live: true` on `send`, the text is shown at once under the status line, and the result is status `live`, without an action; each such note is printed in the terminal. With `--inference URL`, the server polls llama-swap or llama-server at URL, and the model loading, the prompt tokens read and the tokens per second are shown in the status line.
 
 With `--abort-file FILE`, the status line ends with ` · /abort`. At a message `/abort` from anyone in a chat whose status message is shown, the message is kept from the agent, 1 is added to the count in FILE, and every status message is ended with `◼ aborted`; the script that runs the agent reads FILE and restarts the agent at each change of the count.
 
@@ -245,8 +245,8 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L94) | `startAgent` | [94](../src/serve.ts#L94) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L18) | `startHttp` | [18](../src/http.ts#L18) |
 | Hook endpoint | [`src/http.ts`](../src/http.ts#L63) | `receiveHook` | [63](../src/http.ts#L63) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L509) | `registerTools` | [509](../src/tools.ts#L509) |
-| Downloads | [`src/tools.ts`](../src/tools.ts#L606) | `AgentTools.downloadFile` | [606](../src/tools.ts#L606) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L510) | `registerTools` | [510](../src/tools.ts#L510) |
+| Downloads | [`src/tools.ts`](../src/tools.ts#L607) | `AgentTools.downloadFile` | [607](../src/tools.ts#L607) |
 | Status messages | [`src/status.ts`](../src/status.ts#L32) | `Statuses` | [32](../src/status.ts#L32) |
 | Inference endpoint | [`src/inference.ts`](../src/inference.ts#L31) | `inferencePoller` | [31](../src/inference.ts#L31) |
 | Claude Code activity | [`src/activity.ts`](../src/activity.ts#L24) | `Activity` | [24](../src/activity.ts#L24) |

@@ -24,6 +24,7 @@ import {
   chatNumber,
   chatRef,
   chatType,
+  completesLive,
   fileContent,
   fileOffer,
   filePaths,
@@ -642,7 +643,7 @@ export class AgentTools {
       const ref = chatRef(chatInfo)
       if (ref === undefined || !this.owns(chatInfo) || content.type !== "rcvMsgContent" || isLive(chatItem)) continue
       if (this.statuses.offersAbort(ref) && content.msgContent.type === "text" && content.msgContent.text.trim() === "/abort") this.abortAgent(ref, chatInfo, chatItem)
-      else if (this.showsStatus(ref, chatInfo)) this.statuses.queue(ref)
+      else this.onArrival({chatInfo, chatItem})
     }
     return items.filter(({chatItem}) => !this.abortItems.has(chatItem.meta.itemId))
   }
@@ -658,6 +659,11 @@ export class AgentTools {
     } catch (error) {
       logError(`abort in ${chat}`, error)
     }
+  }
+
+  private onArrival({chatInfo, chatItem: {content}}: T.AChatItem): void {
+    const chat = chatRef(chatInfo)
+    if (chat !== undefined && this.owns(chatInfo) && content.type === "rcvMsgContent" && this.showsStatus(chat, chatInfo)) this.statuses.queue(chat)
   }
 
   onFile({chatInfo, chatItem: {content, file}}: T.AChatItem): void {
@@ -706,6 +712,7 @@ export class AgentTools {
         return watch.deliver(this.onNewItems(event.chatItems))
       case "chatItemUpdated":
         this.onFile(event.chatItem)
+        if (completesLive(event.chatItem.chatItem)) this.onArrival(event.chatItem)
         return watch.update(event.chatItem)
       case "chatItemsDeleted":
         return watch.remove(event.chatItemDeletions.map(({deletedChatItem}) => deletedChatItem))

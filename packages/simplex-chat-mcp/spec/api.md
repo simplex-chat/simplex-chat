@@ -54,17 +54,17 @@
 
 | Rule | Code |
 |---|---|
-| Tools are registered on each per-request `McpServer` with description, input schema, output schema and, in mode `host`, `_meta: {"anthropic/requiresUserInteraction": true}` for `connect`, `send`, `download` and `leave` | [tools.ts:496-503](../src/tools.ts#L496-L503), [:509-519](../src/tools.ts#L509-L519), [:556-558](../src/tools.ts#L556-L558) |
-| Tool descriptions and server instructions; the instructions name the agent's display name | [tools.ts:423-463](../src/tools.ts#L423-L463), [serve.ts:117](../src/serve.ts#L117) |
+| Tools are registered on each per-request `McpServer` with description, input schema, output schema and, in mode `host`, `_meta: {"anthropic/requiresUserInteraction": true}` for `connect`, `send`, `download` and `leave` | [tools.ts:497-504](../src/tools.ts#L497-L504), [:510-520](../src/tools.ts#L510-L520), [:557-559](../src/tools.ts#L557-L559) |
+| Tool descriptions and server instructions; the instructions name the agent's display name | [tools.ts:424-464](../src/tools.ts#L424-L464), [serve.ts:117](../src/serve.ts#L117) |
 | Arguments are validated by the SDK; a failure is a result with `isError: true` and the text `Input validation error: Invalid arguments for tool NAME: ERRORS` | [mcp-BumlNux0.cjs:1812-1817](../node_modules/@modelcontextprotocol/server/dist/mcp-BumlNux0.cjs#L1812-L1817) |
-| `additionalProperties: false` is set in every input schema | [tools.ts:268](../src/tools.ts#L268), [:286](../src/tools.ts#L286), [:297](../src/tools.ts#L297), [:300](../src/tools.ts#L300), [:308](../src/tools.ts#L308), [:319](../src/tools.ts#L319) |
-| A result is sent as `structuredContent` and as its JSON in one text item | [tools.ts:564](../src/tools.ts#L564) |
-| A tool error is sent as `isError: true` with one text item: the `ToolError` text, or the `errorText` of other errors | [tools.ts:566](../src/tools.ts#L566), [log.ts:45-49](../src/log.ts#L45-L49) |
-| An aborted call ends with the result `Cancelled.`, `isError: true`, which the SDK discards | [tools.ts:505](../src/tools.ts#L505), [:517](../src/tools.ts#L517) |
-| With a `progressToken` in `_meta`, `notifications/progress` is sent at the start of each wait and every 60 s, with `progress` 0, 1, 2, ... and a `message` | [tools.ts:1798-1808](../src/tools.ts#L1798-L1808), [messages.ts:305-309](../src/messages.ts#L305-L309) |
+| `additionalProperties: false` is set in every input schema | [tools.ts:269](../src/tools.ts#L269), [:287](../src/tools.ts#L287), [:298](../src/tools.ts#L298), [:301](../src/tools.ts#L301), [:309](../src/tools.ts#L309), [:320](../src/tools.ts#L320) |
+| A result is sent as `structuredContent` and as its JSON in one text item | [tools.ts:565](../src/tools.ts#L565) |
+| A tool error is sent as `isError: true` with one text item: the `ToolError` text, or the `errorText` of other errors | [tools.ts:567](../src/tools.ts#L567), [log.ts:45-49](../src/log.ts#L45-L49) |
+| An aborted call ends with the result `Cancelled.`, `isError: true`, which the SDK discards | [tools.ts:506](../src/tools.ts#L506), [:518](../src/tools.ts#L518) |
+| With a `progressToken` in `_meta`, `notifications/progress` is sent at the start of each wait and every 60 s, with `progress` 0, 1, 2, ... and a `message` | [tools.ts:1805-1815](../src/tools.ts#L1805-L1815), [messages.ts:309-313](../src/messages.ts#L309-L313) |
 | The call is aborted when the client closes the response stream or sends `notifications/cancelled`; the action is kept | [src-BhnGYybN.cjs:6338-6341](../node_modules/@modelcontextprotocol/server/dist/src-BhnGYybN.cjs#L6338-L6341), [:6425](../node_modules/@modelcontextprotocol/server/dist/src-BhnGYybN.cjs#L6425) |
-| A call with the same tool and action fields as an action in memory is attached to it; a `send` with `live: true` is never attached. The key is the JSON array of the session number, the tool and the fields, with the session number `undefined` for `serve` | [tools.ts:1790-1792](../src/tools.ts#L1790-L1792), [:782-784](../src/tools.ts#L782-L784), [:941](../src/tools.ts#L941), [actions.ts:176-178](../src/actions.ts#L176-L178) |
-| Messages are marked read after the last wait of a call that is not aborted | [tools.ts:828](../src/tools.ts#L828), [:995](../src/tools.ts#L995), [:1341](../src/tools.ts#L1341) |
+| A call with the same tool and action fields as an action in memory is attached to it; a `send` with `live: true` is never attached. The key is the JSON array of the session number, the tool and the fields, with the session number `undefined` for `serve` | [tools.ts:1797-1799](../src/tools.ts#L1797-L1799), [:789-791](../src/tools.ts#L789-L791), [:948](../src/tools.ts#L948), [actions.ts:176-178](../src/actions.ts#L176-L178) |
+| Messages are marked read after the last wait of a call that is not aborted | [tools.ts:835](../src/tools.ts#L835), [:1002](../src/tools.ts#L1002), [:1348](../src/tools.ts#L1348) |
 
 Action fields of the key:
 
@@ -75,7 +75,7 @@ Action fields of the key:
 | `download` | `chat`<br>`item` |
 | `leave` | `chat` |
 
-Result status of the four action tools ([`actionResult`](../src/tools.ts#L797-L809)):
+Result status of the four action tools ([`actionResult`](../src/tools.ts#L804-L816)):
 
 | Status | Meaning | Extra fields |
 |---|---|---|
@@ -89,7 +89,7 @@ Result status of the four action tools ([`actionResult`](../src/tools.ts#L797-L8
 
 ### 1.2 `connect`
 
-Handler: [`AgentTools.connect`](../src/tools.ts#L768-L791). Perform: [`performConnect`](../src/tools.ts#L847-L880). Schemas: [input](../src/tools.ts#L258-L269), [output](../src/tools.ts#L325-L335).
+Handler: [`AgentTools.connect`](../src/tools.ts#L775-L798). Perform: [`performConnect`](../src/tools.ts#L854-L887). Schemas: [input](../src/tools.ts#L259-L270), [output](../src/tools.ts#L326-L336).
 
 Input:
 
@@ -105,13 +105,13 @@ Output fields by case:
 
 | Case | Fields | Code |
 |---|---|---|
-| `known` | `status` and the chat fields of the known chat. The plugin's rules for a known chat are in [4.1](#41-tools-in-the-plugin) | [tools.ts:773](../src/tools.ts#L773), [:786-791](../src/tools.ts#L786-L791) |
-| `done`, chat unknown | `action`, `status`, `type`, `connected: false`, plan fields `name`, `peer_type`, `description`, `welcome`, `commands`, `known_as` when present | [tools.ts:794](../src/tools.ts#L794), [:1550-1556](../src/tools.ts#L1550-L1556) |
-| `done`, chat known | `action`, `status`, chat fields, `messages` | [tools.ts:811-831](../src/tools.ts#L811-L831) |
-| `failed` | `action`, `status`, `error` | [tools.ts:802](../src/tools.ts#L802) |
-| `rejected`, `expired` | `action`, `status` | [tools.ts:802](../src/tools.ts#L802) |
+| `known` | `status` and the chat fields of the known chat. The plugin's rules for a known chat are in [4.1](#41-tools-in-the-plugin) | [tools.ts:780](../src/tools.ts#L780), [:793-798](../src/tools.ts#L793-L798) |
+| `done`, chat unknown | `action`, `status`, `type`, `connected: false`, plan fields `name`, `peer_type`, `description`, `welcome`, `commands`, `known_as` when present | [tools.ts:801](../src/tools.ts#L801), [:1557-1563](../src/tools.ts#L1557-L1563) |
+| `done`, chat known | `action`, `status`, chat fields, `messages` | [tools.ts:818-838](../src/tools.ts#L818-L838) |
+| `failed` | `action`, `status`, `error` | [tools.ts:809](../src/tools.ts#L809) |
+| `rejected`, `expired` | `action`, `status` | [tools.ts:809](../src/tools.ts#L809) |
 
-Chat fields ([`chatFields`](../src/tools.ts#L1406-L1433)):
+Chat fields ([`chatFields`](../src/tools.ts#L1413-L1440)):
 
 | Field | Contact | Group, business chat or channel |
 |---|---|---|
@@ -127,23 +127,23 @@ Chat fields ([`chatFields`](../src/tools.ts#L1406-L1433)):
 | `role` | | the agent's member role |
 | `connected` | active connection status `ready` | membership status `connected` or `complete` |
 
-`messages`: message items among the last 50 items of the chat when the result is built, replaced by their collected copies, followed by the items collected since the connection; live items are left out; new items are marked read ([tools.ts:813](../src/tools.ts#L813), [:823-830](../src/tools.ts#L823-L830)).
+`messages`: message items among the last 50 items of the chat when the result is built, replaced by their collected copies, followed by the items collected since the connection; live items are left out; new items are marked read ([tools.ts:820](../src/tools.ts#L820), [:830-837](../src/tools.ts#L830-L837)).
 
 Tool errors:
 
 | Text | Condition | Code |
 |---|---|---|
-| `Not a SimpleX link or name: TARGET` | whitespace in `target`, or `invalidConnReq` from `apiConnectPlan` | [tools.ts:835](../src/tools.ts#L835), [:841](../src/tools.ts#L841) |
-| an app error text, for example `Name not found: This SimpleX name is not registered. Please check the name.`, or `SimpleX error: CHAIN: DETAILS` | other errors of `apiConnectPlan`, or a plan of type `error` | [tools.ts:842](../src/tools.ts#L842), [:1477](../src/tools.ts#L1477), [log.ts:51-53](../src/log.ts#L51-L53) |
-| `TARGET can't be joined now: PLAN.` | `invitationLink` other than `ok` and `known`<br>`contactAddress` other than `ok`, `known`, `contactViaAddress` and `connectingConfirmReconnect`<br>`groupLink` other than `ok`, `known` and `connectingConfirmReconnect` | [tools.ts:1468](../src/tools.ts#L1468), [:1481](../src/tools.ts#L1481), [:1499](../src/tools.ts#L1499), [:1521](../src/tools.ts#L1521) |
-| `message: TARGET is not a contact or business address with short link data, or its contact exists without a connection.` | `message` given and the plan has `takesMessage: false` | [tools.ts:775](../src/tools.ts#L775) |
+| `Not a SimpleX link or name: TARGET` | whitespace in `target`, or `invalidConnReq` from `apiConnectPlan` | [tools.ts:842](../src/tools.ts#L842), [:848](../src/tools.ts#L848) |
+| an app error text, for example `Name not found: This SimpleX name is not registered. Please check the name.`, or `SimpleX error: CHAIN: DETAILS` | other errors of `apiConnectPlan`, or a plan of type `error` | [tools.ts:849](../src/tools.ts#L849), [:1484](../src/tools.ts#L1484), [log.ts:51-53](../src/log.ts#L51-L53) |
+| `TARGET can't be joined now: PLAN.` | `invitationLink` other than `ok` and `known`<br>`contactAddress` other than `ok`, `known`, `contactViaAddress` and `connectingConfirmReconnect`<br>`groupLink` other than `ok`, `known` and `connectingConfirmReconnect` | [tools.ts:1475](../src/tools.ts#L1475), [:1488](../src/tools.ts#L1488), [:1506](../src/tools.ts#L1506), [:1528](../src/tools.ts#L1528) |
+| `message: TARGET is not a contact or business address with short link data, or its contact exists without a connection.` | `message` given and the plan has `takesMessage: false` | [tools.ts:782](../src/tools.ts#L782) |
 | refusals | see [1.9](#19-action-refusals) | |
 
-`takesMessage` is `true` for a contact address with short link data, for a known prepared contact, and for a known prepared business group ([tools.ts:1472](../src/tools.ts#L1472), [:1492](../src/tools.ts#L1492), [:1510](../src/tools.ts#L1510)).
+`takesMessage` is `true` for a contact address with short link data, for a known prepared contact, and for a known prepared business group ([tools.ts:1479](../src/tools.ts#L1479), [:1499](../src/tools.ts#L1499), [:1517](../src/tools.ts#L1517)).
 
 ### 1.3 `send`
 
-Handler: [`AgentTools.send`](../src/tools.ts#L938-L961). Result: [`sendResult`](../src/tools.ts#L985-L1005). Perform: [`performSend`](../src/tools.ts#L1007-L1032). Note: [`showNote`](../src/tools.ts#L963-L970). Schemas: [input](../src/tools.ts#L271-L287), [output](../src/tools.ts#L337-L349).
+Handler: [`AgentTools.send`](../src/tools.ts#L945-L968). Result: [`sendResult`](../src/tools.ts#L992-L1012). Perform: [`performSend`](../src/tools.ts#L1014-L1039). Note: [`showNote`](../src/tools.ts#L970-L977). Schemas: [input](../src/tools.ts#L272-L288), [output](../src/tools.ts#L338-L350).
 
 Input:
 
@@ -160,7 +160,7 @@ Input:
 | `limit` | integer | 1 to 100 | 50 | most responses returned |
 | `live` | boolean | | `false` | `true`: `text` is shown at once in the status message of `chat` ([1.10](#110-status-message)), and no action is created; `text` only, at most 2000 characters (code points); `wait`, `idle` and `limit` are ignored |
 
-File types by extension, lower-cased ([tools.ts:186-195](../src/tools.ts#L186-L195), [`attachmentMedia`](../src/tools.ts#L1748-L1759)):
+File types by extension, lower-cased ([tools.ts:187-196](../src/tools.ts#L187-L196), [`attachmentMedia`](../src/tools.ts#L1755-L1766)):
 
 | Extension | Message type | Sent file | Preview and duration |
 |---|---|---|---|
@@ -169,7 +169,7 @@ File types by extension, lower-cased ([tools.ts:186-195](../src/tools.ts#L186-L1
 | `.mp4`, `.mov` | video | unchanged | the first frame from `ffmpeg`, resized as a preview; duration from `ffprobe`, rounded; the fixed preview and 0 when they fail |
 | other, or `as: "file"` | file | unchanged | |
 
-The fixed preview is a 16 × 9 mid-gray PNG ([tools.ts:175](../src/tools.ts#L175)). `ffmpeg` and `ffprobe` run with `-protocol_whitelist file -f mov`, 30 s and 64 MB of output each ([tools.ts:1770-1788](../src/tools.ts#L1770-L1788)).
+The fixed preview is a 16 × 9 mid-gray PNG ([tools.ts:176](../src/tools.ts#L176)). `ffmpeg` and `ffprobe` run with `-protocol_whitelist file -f mov`, 30 s and 64 MB of output each ([tools.ts:1777-1795](../src/tools.ts#L1777-L1795)).
 
 Output:
 
@@ -183,44 +183,44 @@ Output:
 | `more` | `done` | collected responses not returned, live ones and overflow included |
 | `error` | `failed` | error text |
 
-Only `status` is required by the output schema ([tools.ts:348](../src/tools.ts#L348)).
+Only `status` is required by the output schema ([tools.ts:349](../src/tools.ts#L349)).
 
 Tool errors, in the order of the checks:
 
 | Text | Condition | Code |
 |---|---|---|
-| `text: required without file.` | neither `text` nor `file` | [tools.ts:943](../src/tools.ts#L943) |
-| `as: applies only with file.` | `as` without `file` | [tools.ts:944](../src/tools.ts#L944) |
-| `live: applies to text only; send file, reply_to and mention without live.` | `live` with `file`, `reply_to` or `mention` | [tools.ts:945](../src/tools.ts#L945) |
-| `text: at most 2000 characters with live.` | `live` with `text` over 2000 code points | [tools.ts:946](../src/tools.ts#L946), [:172](../src/tools.ts#L172) |
-| `No chat CHAT. list shows the agent's chats.` | invalid reference, the control chat, or a store error when the chat is read | [tools.ts:1370-1379](../src/tools.ts#L1370-L1379), [:1683-1685](../src/tools.ts#L1683-L1685) |
-| `The agent is not connected to CHAT and can't post; list shows connected: false.` | the chat is not connected | [tools.ts:948-949](../src/tools.ts#L948-L949), [:1609](../src/tools.ts#L1609) |
-| `The agent has role ROLE in CHAT and can't post.` | membership role `observer` or `relay` | [tools.ts:948-949](../src/tools.ts#L948-L949), [:1610-1613](../src/tools.ts#L1610-L1613) |
-| `No chat CHAT. list shows the agent's chats.` | `live` while `leave` or `/leave` of the chat runs | [tools.ts:964-965](../src/tools.ts#L964-L965), [:973](../src/tools.ts#L973) |
-| `live: CHAT is a channel or a chat with a bot or an agent; status messages are shown in chats with people, groups and business chats.` | `live` in a channel, or in a direct chat whose contact has peer type `bot` or `agent` | [tools.ts:974](../src/tools.ts#L974), [:1575-1582](../src/tools.ts#L1575-L1582) |
-| `live: status messages are shown in mode requests only; this server runs in mode host.` | `live` in mode `host` | [tools.ts:975](../src/tools.ts#L975) |
-| `live: The agent lost its control chat. The person who runs it has to restart it with --reset-owners.` | `live` after the control chat is lost | [tools.ts:976](../src/tools.ts#L976), [actions.ts:13](../src/actions.ts#L13) |
-| `live: your owner's approval of all messages to CHAT is required; list shows approved: true for such chats.` | `live` in a chat without a standing approval of messages by a current approver | [tools.ts:977](../src/tools.ts#L977), [control.ts:167-170](../src/control.ts#L167-L170) |
+| `text: required without file.` | neither `text` nor `file` | [tools.ts:950](../src/tools.ts#L950) |
+| `as: applies only with file.` | `as` without `file` | [tools.ts:951](../src/tools.ts#L951) |
+| `live: applies to text only; send file, reply_to and mention without live.` | `live` with `file`, `reply_to` or `mention` | [tools.ts:952](../src/tools.ts#L952) |
+| `text: at most 2000 characters with live.` | `live` with `text` over 2000 code points | [tools.ts:953](../src/tools.ts#L953), [:173](../src/tools.ts#L173) |
+| `No chat CHAT. list shows the agent's chats.` | invalid reference, the control chat, or a store error when the chat is read | [tools.ts:1377-1386](../src/tools.ts#L1377-L1386), [:1690-1692](../src/tools.ts#L1690-L1692) |
+| `The agent is not connected to CHAT and can't post; list shows connected: false.` | the chat is not connected | [tools.ts:955-956](../src/tools.ts#L955-L956), [:1616](../src/tools.ts#L1616) |
+| `The agent has role ROLE in CHAT and can't post.` | membership role `observer` or `relay` | [tools.ts:955-956](../src/tools.ts#L955-L956), [:1617-1620](../src/tools.ts#L1617-L1620) |
+| `No chat CHAT. list shows the agent's chats.` | `live` while `leave` or `/leave` of the chat runs | [tools.ts:971-972](../src/tools.ts#L971-L972), [:980](../src/tools.ts#L980) |
+| `live: CHAT is a channel or a chat with a bot or an agent; status messages are shown in chats with people, groups and business chats.` | `live` in a channel, or in a direct chat whose contact has peer type `bot` or `agent` | [tools.ts:981](../src/tools.ts#L981), [:1582-1589](../src/tools.ts#L1582-L1589) |
+| `live: status messages are shown in mode requests only; this server runs in mode host.` | `live` in mode `host` | [tools.ts:982](../src/tools.ts#L982) |
+| `live: The agent lost its control chat. The person who runs it has to restart it with --reset-owners.` | `live` after the control chat is lost | [tools.ts:983](../src/tools.ts#L983), [actions.ts:13](../src/actions.ts#L13) |
+| `live: your owner's approval of all messages to CHAT is required; list shows approved: true for such chats.` | `live` in a chat without a standing approval of messages by a current approver | [tools.ts:984](../src/tools.ts#L984), [control.ts:167-170](../src/control.ts#L167-L170) |
 | `The server is stopping.` | `live` after the stop started | [status.ts:67](../src/status.ts#L67), [actions.ts:14](../src/actions.ts#L14) |
 | `live: the update limit of the status message of CHAT is reached; send your answer without live.` | `live` when the status message has 59 renders | [status.ts:70-71](../src/status.ts#L70-L71) |
-| `reply_to: CHAT has no item N.` | the read of `around=N` fails, or the item is absent from it | [tools.ts:1384](../src/tools.ts#L1384) |
-| `reply_to: item N in CHAT is not a message.` | the item's content is not `rcvMsgContent` or `sndMsgContent` | [tools.ts:1386](../src/tools.ts#L1386) |
-| `mention: CHAT is a contact chat; mentions apply to groups and channels.` | `mention` with `@N` | [tools.ts:1392](../src/tools.ts#L1392) |
-| `mention: CHAT has no member N.` | ID absent from `apiListMembers` | [tools.ts:1397](../src/tools.ts#L1397) |
-| `mention: members N and M have the same name.` | two mentioned members with the same display name | [tools.ts:1400](../src/tools.ts#L1400) |
-| `file: an absolute path is expected.`<br>`file: no file at FILE.`<br>`file: PATH is not a file.`<br>`file: PATH can't be read.` | the path, after symbolic links | [tools.ts:1701-1712](../src/tools.ts#L1701-L1712) |
-| `file: PATH is refused: private keys and the server's own files are not sent.` | a file named `id_*`, `*.pem`, `*.key`, `*.p12` or `*.pfx`, or under `~/.ssh`, `~/.gnupg`, or the data folder or `~/.simplex-mcp` outside `DATA/files/`; each folder by its real path | [tools.ts:1048-1051](../src/tools.ts#L1048-L1051), [:1057-1062](../src/tools.ts#L1057-L1062) |
-| `file: PATH is empty.` | size 0 | [tools.ts:1052](../src/tools.ts#L1052) |
-| `text: too long for the message with its quote; shorten it.`<br>`text: too long for a message with this TYPE; shorten it.` | the message, as the core sends it, above 15602 bytes | [tools.ts:954](../src/tools.ts#L954), [:1656-1658](../src/tools.ts#L1656-L1658), [:1660-1676](../src/tools.ts#L1660-L1676) |
+| `reply_to: CHAT has no item N.` | the read of `around=N` fails, or the item is absent from it | [tools.ts:1391](../src/tools.ts#L1391) |
+| `reply_to: item N in CHAT is not a message.` | the item's content is not `rcvMsgContent` or `sndMsgContent` | [tools.ts:1393](../src/tools.ts#L1393) |
+| `mention: CHAT is a contact chat; mentions apply to groups and channels.` | `mention` with `@N` | [tools.ts:1399](../src/tools.ts#L1399) |
+| `mention: CHAT has no member N.` | ID absent from `apiListMembers` | [tools.ts:1404](../src/tools.ts#L1404) |
+| `mention: members N and M have the same name.` | two mentioned members with the same display name | [tools.ts:1407](../src/tools.ts#L1407) |
+| `file: an absolute path is expected.`<br>`file: no file at FILE.`<br>`file: PATH is not a file.`<br>`file: PATH can't be read.` | the path, after symbolic links | [tools.ts:1708-1719](../src/tools.ts#L1708-L1719) |
+| `file: PATH is refused: private keys and the server's own files are not sent.` | a file named `id_*`, `*.pem`, `*.key`, `*.p12` or `*.pfx`, or under `~/.ssh`, `~/.gnupg`, or the data folder or `~/.simplex-mcp` outside `DATA/files/`; each folder by its real path | [tools.ts:1055-1058](../src/tools.ts#L1055-L1058), [:1064-1069](../src/tools.ts#L1064-L1069) |
+| `file: PATH is empty.` | size 0 | [tools.ts:1059](../src/tools.ts#L1059) |
+| `text: too long for the message with its quote; shorten it.`<br>`text: too long for a message with this TYPE; shorten it.` | the message, as the core sends it, above 15602 bytes | [tools.ts:961](../src/tools.ts#L961), [:1663-1665](../src/tools.ts#L1663-L1665), [:1667-1683](../src/tools.ts#L1667-L1683) |
 | refusals | see [1.9](#19-action-refusals) | |
 
-The message is measured as 600 bytes plus the JSON of its content, the file's name, the quote and the mentioned names. The quote is the quoted text, or its file's name when the text is empty; a sent image or video quotes it as text, otherwise an image's preview is kept ([tools.ts:1660-1676](../src/tools.ts#L1660-L1676)).
+The message is measured as 600 bytes plus the JSON of its content, the file's name, the quote and the mentioned names. The quote is the quoted text, or its file's name when the text is empty; a sent image or video quotes it as text, otherwise an image's preview is kept ([tools.ts:1667-1683](../src/tools.ts#L1667-L1683)).
 
-The perform fails with `file: PATH changed after the request.` when the file's real path, size, inode or change time differs from the request ([tools.ts:1064-1069](../src/tools.ts#L1064-L1069)). A resized copy is deleted at `sndFileCompleteXFTP`, at `sndFileError` and after a failed send ([tools.ts:1029](../src/tools.ts#L1029), [:1034-1044](../src/tools.ts#L1034-L1044), [:724-726](../src/tools.ts#L724-L726)). After `apiSendMessages` returns, the status message of `chat` is deleted ([tools.ts:1023](../src/tools.ts#L1023), [1.10](#110-status-message)). When responses are returned and the chat of the first one is eligible ([1.10](#110-status-message)), a status message is started after they are marked read, unless the call was aborted ([tools.ts:995-997](../src/tools.ts#L995-L997)).
+The perform fails with `file: PATH changed after the request.` when the file's real path, size, inode or change time differs from the request ([tools.ts:1071-1076](../src/tools.ts#L1071-L1076)). A resized copy is deleted at `sndFileCompleteXFTP`, at `sndFileError` and after a failed send ([tools.ts:1036](../src/tools.ts#L1036), [:1041-1051](../src/tools.ts#L1041-L1051), [:731-733](../src/tools.ts#L731-L733)). After `apiSendMessages` returns, the status message of `chat` is deleted ([tools.ts:1030](../src/tools.ts#L1030), [1.10](#110-status-message)). When responses are returned and the chat of the first one is eligible ([1.10](#110-status-message)), a status message is started after they are marked read, unless the call was aborted ([tools.ts:1002-1004](../src/tools.ts#L1002-L1004)).
 
 ### 1.4 `receive`
 
-Handler: [`AgentTools.receive`](../src/tools.ts#L1311-L1348). Schemas: [input](../src/tools.ts#L289-L298), [output](../src/tools.ts#L351-L359).
+Handler: [`AgentTools.receive`](../src/tools.ts#L1318-L1355). Schemas: [input](../src/tools.ts#L290-L299), [output](../src/tools.ts#L352-L360).
 
 Input:
 
@@ -238,15 +238,15 @@ Output (all fields always present):
 | `messages` | unread received messages in chat order, then received messages that arrived during the call; live items and an `/abort` of [1.11](#111-abort) left out; at most `limit` |
 | `more` | new messages not returned, overflow, and unread items left unread by the page reads |
 
-Tool errors: `No chat CHAT. list shows the agent's chats.` for an invalid reference, the control chat, or a store error of the first read, `initial` 1 ([tools.ts:1313](../src/tools.ts#L1313), [:1317-1319](../src/tools.ts#L1317-L1319)); other chat errors, a store error of a later page read included, as their error text ([log.ts:45-53](../src/log.ts#L45-L53)).
+Tool errors: `No chat CHAT. list shows the agent's chats.` for an invalid reference, the control chat, or a store error of the first read, `initial` 1 ([tools.ts:1320](../src/tools.ts#L1320), [:1324-1326](../src/tools.ts#L1324-L1326)); other chat errors, a store error of a later page read included, as their error text ([log.ts:45-53](../src/log.ts#L45-L53)).
 
 Messages are read by `receive` without an action or an approval.
 
-When no message is new and `wait` is above 0, the status message of `chat` is deleted before the wait ([tools.ts:1327-1328](../src/tools.ts#L1327-L1328)). When messages are returned and the chat read of the call shows the chat eligible ([1.10](#110-status-message)), the status message is started after they are marked read, unless the call was aborted ([tools.ts:1340-1343](../src/tools.ts#L1340-L1343)).
+When no message is new and `wait` is above 0, the status message of `chat` is deleted before the wait ([tools.ts:1334-1335](../src/tools.ts#L1334-L1335)). When messages are returned and the chat read of the call shows the chat eligible ([1.10](#110-status-message)), the status message is started after they are marked read, unless the call was aborted ([tools.ts:1347-1350](../src/tools.ts#L1347-L1350)).
 
 ### 1.5 `download`
 
-Handler: [`AgentTools.download`](../src/tools.ts#L1151-L1171). Result: [`downloadResult`](../src/tools.ts#L1198-L1206). Perform: [`performDownload`](../src/tools.ts#L1208-L1212), [`downloadFile`](../src/tools.ts#L606-L633). Schemas: [input](../src/tools.ts#L311-L320), [output](../src/tools.ts#L406-L421).
+Handler: [`AgentTools.download`](../src/tools.ts#L1158-L1178). Result: [`downloadResult`](../src/tools.ts#L1205-L1213). Perform: [`performDownload`](../src/tools.ts#L1215-L1219), [`downloadFile`](../src/tools.ts#L607-L634). Schemas: [input](../src/tools.ts#L312-L321), [output](../src/tools.ts#L407-L422).
 
 Input:
 
@@ -266,47 +266,47 @@ Output:
 | `path` | `done` | `DATA/files/FOLDER/<file ID><extension>` |
 | `error` | `failed` | error text |
 
-FOLDER is `group-N` for `#N` and `contact-N` for `@N`; the extension is the file name's extension when it has 1 to 16 ASCII letters and digits ([messages.ts:215-227](../src/messages.ts#L215-L227)). `/forward` downloads a file to `DATA/forwarded/FOLDER/` under the same name; a later perform of the download moves it to the download path, after the copy for the post is made ([tools.ts:606-623](../src/tools.ts#L606-L623)).
+FOLDER is `group-N` for `#N` and `contact-N` for `@N`; the extension is the file name's extension when it has 1 to 16 ASCII letters and digits ([messages.ts:219-231](../src/messages.ts#L219-L231)). `/forward` downloads a file to `DATA/forwarded/FOLDER/` under the same name; a later perform of the download moves it to the download path, after the copy for the post is made ([tools.ts:607-624](../src/tools.ts#L607-L624)).
 
 Steps before the action:
 
 | Step | Code |
 |---|---|
-| a file in status `rcvInvitation`, or an XFTP file: the file's servers from `apiGetChatItemInfo`; while none, the call waits for `rcvFileDescrReady` until `wait` seconds after the call, with the progress `The sender is uploading the file of item N in CHAT; waiting until TIME.` | [tools.ts:1173-1190](../src/tools.ts#L1173-L1190) |
-| unknown servers: the file's servers that are not among the XFTP servers of `apiGetUserServers`, of no operator or of an enabled one, compared without their passwords | [tools.ts:1192-1196](../src/tools.ts#L1192-L1196) |
-| without unknown servers, and for a file ID not in rejected files, the chat's files approval, read again, makes the action performed at once | [tools.ts:1166](../src/tools.ts#L1166) |
+| a file in status `rcvInvitation`, or an XFTP file: the file's servers from `apiGetChatItemInfo`; while none, the call waits for `rcvFileDescrReady` until `wait` seconds after the call, with the progress `The sender is uploading the file of item N in CHAT; waiting until TIME.` | [tools.ts:1180-1197](../src/tools.ts#L1180-L1197) |
+| unknown servers: the file's servers that are not among the XFTP servers of `apiGetUserServers`, of no operator or of an enabled one, compared without their passwords | [tools.ts:1199-1203](../src/tools.ts#L1199-L1203) |
+| without unknown servers, and for a file ID not in rejected files, the chat's files approval, read again, makes the action performed at once | [tools.ts:1173](../src/tools.ts#L1173) |
 
-Perform: `apiReceiveFile(fileId, path, approvedRelays)`, for a file in status `rcvInvitation`. `approvedRelays` is true when the action's mode is `requests` and unknown servers are named on its card, and false otherwise. The core then checks the complete description ([tools.ts:629](../src/tools.ts#L629), [:1214-1223](../src/tools.ts#L1214-L1223)). The download ends at `rcvFileComplete`, `rcvFileError`, `rcvFileSndCancelled` or `chatItemUpdated` of its file, or at a check every 60 s ([tools.ts:663-685](../src/tools.ts#L663-L685), [:1225-1293](../src/tools.ts#L1225-L1293)).
+Perform: `apiReceiveFile(fileId, path, approvedRelays)`, for a file in status `rcvInvitation`. `approvedRelays` is true when the action's mode is `requests` and unknown servers are named on its card, and false otherwise. The core then checks the complete description ([tools.ts:630](../src/tools.ts#L630), [:1221-1230](../src/tools.ts#L1221-L1230)). The download ends at `rcvFileComplete`, `rcvFileError`, `rcvFileSndCancelled` or `chatItemUpdated` of its file, or at a check every 60 s ([tools.ts:669-691](../src/tools.ts#L669-L691), [:1232-1300](../src/tools.ts#L1232-L1300)).
 
 Failure texts of the perform:
 
 | Text | Condition | Code |
 |---|---|---|
-| the file's error, as in the file field | the file failed | [tools.ts:1254-1264](../src/tools.ts#L1254-L1264) |
-| `The sender cancelled the file.` | `rcvFileSndCancelled` | [tools.ts:680-685](../src/tools.ts#L680-L685) |
-| `The message or its chat was deleted.` | a check finds no message, contact or group | [tools.ts:180](../src/tools.ts#L180), [:1244-1252](../src/tools.ts#L1244-L1252) |
-| `The download made no progress for 30 minutes and was cancelled.` | no rise of `rcvProgress` for 30 minutes; the file is cancelled | [tools.ts:184](../src/tools.ts#L184), [:1237-1241](../src/tools.ts#L1237-L1241) |
-| `The received file is not in the agent's files folder.` | the file is received and neither the download path nor the forwarded path has a file | [messages.ts:14](../src/messages.ts#L14), [tools.ts:1266-1270](../src/tools.ts#L1266-L1270) |
-| `Your owner deleted the files of this chat.` | `/delete CHAT files` | [tools.ts:181](../src/tools.ts#L181), [:1095-1113](../src/tools.ts#L1095-L1113) |
-| `The file is on unknown servers that were not approved.` | a check reads an accepted file in status `rcvInvitation`: the core returned it to the offer when its description completed | [tools.ts:182](../src/tools.ts#L182), [:1233](../src/tools.ts#L1233) |
+| the file's error, as in the file field | the file failed | [tools.ts:1261-1271](../src/tools.ts#L1261-L1271) |
+| `The sender cancelled the file.` | `rcvFileSndCancelled` | [tools.ts:686-691](../src/tools.ts#L686-L691) |
+| `The message or its chat was deleted.` | a check finds no message, contact or group | [tools.ts:181](../src/tools.ts#L181), [:1251-1259](../src/tools.ts#L1251-L1259) |
+| `The download made no progress for 30 minutes and was cancelled.` | no rise of `rcvProgress` for 30 minutes; the file is cancelled | [tools.ts:185](../src/tools.ts#L185), [:1244-1248](../src/tools.ts#L1244-L1248) |
+| `The received file is not in the agent's files folder.` | the file is received and neither the download path nor the forwarded path has a file | [messages.ts:14](../src/messages.ts#L14), [tools.ts:1273-1277](../src/tools.ts#L1273-L1277) |
+| `Your owner deleted the files of this chat.` | `/delete CHAT files` | [tools.ts:182](../src/tools.ts#L182), [:1102-1120](../src/tools.ts#L1102-L1120) |
+| `The file is on unknown servers that were not approved.` | a check reads an accepted file in status `rcvInvitation`: the core returned it to the offer when its description completed | [tools.ts:183](../src/tools.ts#L183), [:1240](../src/tools.ts#L1240) |
 | `Unknown servers! Without Tor or VPN, your IP address will be visible to these XFTP relays: HOST, HOST.` | the core refuses the servers of the complete description at the acceptance | [log.ts:78-79](../src/log.ts#L78-L79) |
 
 Tool errors:
 
 | Text | Condition | Code |
 |---|---|---|
-| `No chat CHAT. list shows the agent's chats.` | invalid reference, the control chat, or a store error when the chat is read | [tools.ts:1156](../src/tools.ts#L1156) |
-| `item: CHAT has no item N.` | the item is not found | [tools.ts:1158](../src/tools.ts#L1158) |
-| `item: item N in CHAT has no received file.` | the item is not received or has no file | [tools.ts:1160](../src/tools.ts#L1160) |
-| `item: the file of item N in CHAT failed: ERROR` | the file field has status `failed` | [tools.ts:1161-1162](../src/tools.ts#L1161-L1162) |
-| `item: the sender has not uploaded the file of item N in CHAT yet; call download again later.` | no servers by the end of `wait`, also for a file invited without a description, whose servers the core does not list; no action is created | [tools.ts:1164](../src/tools.ts#L1164), [:1188](../src/tools.ts#L1188) |
+| `No chat CHAT. list shows the agent's chats.` | invalid reference, the control chat, or a store error when the chat is read | [tools.ts:1163](../src/tools.ts#L1163) |
+| `item: CHAT has no item N.` | the item is not found | [tools.ts:1165](../src/tools.ts#L1165) |
+| `item: item N in CHAT has no received file.` | the item is not received or has no file | [tools.ts:1167](../src/tools.ts#L1167) |
+| `item: the file of item N in CHAT failed: ERROR` | the file field has status `failed` | [tools.ts:1168-1169](../src/tools.ts#L1168-L1169) |
+| `item: the sender has not uploaded the file of item N in CHAT yet; call download again later.` | no servers by the end of `wait`, also for a file invited without a description, whose servers the core does not list; no action is created | [tools.ts:1171](../src/tools.ts#L1171), [:1195](../src/tools.ts#L1195) |
 | refusals | see [1.9](#19-action-refusals) | |
 
-A file ID whose download returned `rejected` or `expired` shows status `rejected` until a download of it is done or the server restarts ([tools.ts:1203-1204](../src/tools.ts#L1203-L1204)).
+A file ID whose download returned `rejected` or `expired` shows status `rejected` until a download of it is done or the server restarts ([tools.ts:1210-1211](../src/tools.ts#L1210-L1211)).
 
 ### 1.6 `list`
 
-Handler: [`AgentTools.listChats`](../src/tools.ts#L1350-L1358). Schemas: [input](../src/tools.ts#L300), [output](../src/tools.ts#L361-L393).
+Handler: [`AgentTools.listChats`](../src/tools.ts#L1357-L1365). Schemas: [input](../src/tools.ts#L301), [output](../src/tools.ts#L362-L394).
 
 Input: an empty object.
 
@@ -317,11 +317,11 @@ Output:
 | `chats` | `chat`<br>`type`<br>`name`<br>`simplex_name`, when verified<br>`peer_type`, when present<br>`incognito`<br>`known_as`, when incognito<br>`connected`<br>`unread`: `chatStats.unreadCount`<br>`approved: true`, only under a standing approval of messages in mode `requests` |
 | `actions` | `action`<br>`tool`<br>`input`: the input of the creating call<br>`state`<br>`open`: `true` while a call waits on it |
 
-`chats`: the contacts and groups of the main conversations from one read, `apiGetChats(USER, last 1000000)`, except the control chat. In the plugin, only the chats of the calling session are listed ([tools.ts:1360-1368](../src/tools.ts#L1360-L1368), [:596-598](../src/tools.ts#L596-L598)). `actions`: the actions in memory of the calling session other than its mode and tool-use cards, or all actions for `serve` ([tools.ts:1356](../src/tools.ts#L1356)).
+`chats`: the contacts and groups of the main conversations from one read, `apiGetChats(USER, last 1000000)`, except the control chat. In the plugin, only the chats of the calling session are listed ([tools.ts:1367-1375](../src/tools.ts#L1367-L1375), [:597-599](../src/tools.ts#L597-L599)). `actions`: the actions in memory of the calling session other than its mode and tool-use cards, or all actions for `serve` ([tools.ts:1363](../src/tools.ts#L1363)).
 
 ### 1.7 `leave`
 
-Handler: [`AgentTools.leave`](../src/tools.ts#L1121-L1129). Perform: [`leaveChat`](../src/tools.ts#L1135-L1149). Schemas: [input](../src/tools.ts#L302-L309), [output](../src/tools.ts#L395-L404).
+Handler: [`AgentTools.leave`](../src/tools.ts#L1128-L1136). Perform: [`leaveChat`](../src/tools.ts#L1142-L1156). Schemas: [input](../src/tools.ts#L303-L310), [output](../src/tools.ts#L396-L405).
 
 Input: `chat`, string, required, `@N` or `#N` of the agent.
 
@@ -341,13 +341,13 @@ Perform:
 | `@N` | `apiDeleteChat(Direct, N, full, notify)` |
 | `#N` | `apiLeaveGroup(N)` while the membership is current, `pending_approval` or `pending_review`<br>`apiDeleteChat(Group, N, full, notify)` |
 
-The chat is marked as being left from before its status message is deleted until these methods end; the status message is deleted first ([tools.ts:1136-1138](../src/tools.ts#L1136-L1138), [:1145-1147](../src/tools.ts#L1145-L1147)).
+The chat is marked as being left from before its status message is deleted until these methods end; the status message is deleted first ([tools.ts:1143-1145](../src/tools.ts#L1143-L1145), [:1152-1154](../src/tools.ts#L1152-L1154)).
 
-Tool errors: `No chat CHAT. list shows the agent's chats.` when no action with the same key is in memory and the chat is invalid, the control chat or unknown ([tools.ts:1124-1126](../src/tools.ts#L1124-L1126)); refusals.
+Tool errors: `No chat CHAT. list shows the agent's chats.` when no action with the same key is in memory and the chat is invalid, the control chat or unknown ([tools.ts:1131-1133](../src/tools.ts#L1131-L1133)); refusals.
 
 ### 1.8 Message, file and command objects
 
-Message ([`Message`](../src/messages.ts#L16-L28), [`toMessage`](../src/messages.ts#L174-L192), [schema](../src/tools.ts#L197-L230)):
+Message ([`Message`](../src/messages.ts#L16-L28), [`toMessage`](../src/messages.ts#L178-L196), [schema](../src/tools.ts#L198-L231)):
 
 | Field | Type | Presence | Source |
 |---|---|---|---|
@@ -363,7 +363,7 @@ Message ([`Message`](../src/messages.ts#L16-L28), [`toMessage`](../src/messages.
 | `reply_to` | object | quoted item with an ID | `{chat, item: quotedItem.itemId}` |
 | `mentions_me` | boolean | always | `meta.userMention` |
 
-File ([`messageFile`](../src/messages.ts#L194-L208)):
+File ([`messageFile`](../src/messages.ts#L198-L212)):
 
 | Field | Value |
 |---|---|
@@ -374,9 +374,9 @@ File ([`messageFile`](../src/messages.ts#L194-L208)):
 | `path` | `received`: the download path |
 | `error` | `failed`: the error text ([log.ts:197-244](../src/log.ts#L197-L244)) |
 
-Only received message items (`rcvMsgContent`) are returned by `send` and `receive`; `connect` also returns sent ones (`sndMsgContent`) ([messages.ts:101](../src/messages.ts#L101), [tools.ts:823](../src/tools.ts#L823)).
+Only received message items (`rcvMsgContent`) are returned by `send` and `receive`; `connect` also returns sent ones (`sndMsgContent`) ([messages.ts:101](../src/messages.ts#L101), [tools.ts:830](../src/tools.ts#L830)).
 
-Command ([`commandsOf`](../src/tools.ts#L1638-L1645), [schema](../src/tools.ts#L232-L242)):
+Command ([`commandsOf`](../src/tools.ts#L1645-L1652), [schema](../src/tools.ts#L233-L243)):
 
 | Form | Fields |
 |---|---|
@@ -407,25 +407,25 @@ The link texts of a `connect` card are its description and welcome lines. These 
 
 A status message is one live message of the agent in a chat, edited while the agent works and deleted afterwards, or ended with `◼ aborted` at an `/abort` of [1.11](#111-abort) ([`Statuses`](../src/status.ts#L32-L183)).
 
-Eligibility, all of ([`showsStatus`](../src/tools.ts#L981-L983)):
+Eligibility, all of ([`showsStatus`](../src/tools.ts#L988-L990)):
 
 | Condition | Code |
 |---|---|
-| the agent can post: the chat is connected and, in a group, the agent's role is other than `observer` and `relay` | [`postingRefusal`](../src/tools.ts#L1608-L1615) |
-| the chat is not being left by `leave` or `/leave` | [tools.ts:973](../src/tools.ts#L973) |
-| the chat is a direct chat with a contact of peer type other than `bot` and `agent`, a group or a business chat | [tools.ts:974](../src/tools.ts#L974), [:1575-1582](../src/tools.ts#L1575-L1582) |
-| mode `requests` | [tools.ts:975](../src/tools.ts#L975) |
-| the control chat is not lost | [tools.ts:976](../src/tools.ts#L976) |
-| a standing approval of messages to the chat, by a current approver | [tools.ts:977](../src/tools.ts#L977), [control.ts:167-170](../src/control.ts#L167-L170) |
+| the agent can post: the chat is connected and, in a group, the agent's role is other than `observer` and `relay` | [`postingRefusal`](../src/tools.ts#L1615-L1622) |
+| the chat is not being left by `leave` or `/leave` | [tools.ts:980](../src/tools.ts#L980) |
+| the chat is a direct chat with a contact of peer type other than `bot` and `agent`, a group or a business chat | [tools.ts:981](../src/tools.ts#L981), [:1582-1589](../src/tools.ts#L1582-L1589) |
+| mode `requests` | [tools.ts:982](../src/tools.ts#L982) |
+| the control chat is not lost | [tools.ts:983](../src/tools.ts#L983) |
+| a standing approval of messages to the chat, by a current approver | [tools.ts:984](../src/tools.ts#L984), [control.ts:167-170](../src/control.ts#L167-L170) |
 
-The chat and its eligibility are read again at each tick, the first tick included ([tools.ts:548-550](../src/tools.ts#L548-L550), [status.ts:137-143](../src/status.ts#L137-L143)). For a `send` with `live: true`, they are checked with the chat read of the call ([1.3](#13-send)); for a `receive`, the eligibility is also checked with the chat read of the call, before the status is created ([1.4](#14-receive)); for a received message, with the chat of the event; for the responses of a `send`, with the chat of the first response.
+The chat and its eligibility are read again at each tick, the first tick included ([tools.ts:549-551](../src/tools.ts#L549-L551), [status.ts:137-143](../src/status.ts#L137-L143)). For a `send` with `live: true`, they are checked with the chat read of the call ([1.3](#13-send)); for a `receive`, the eligibility is also checked with the chat read of the call, before the status is created ([1.4](#14-receive)); for a received message, with the chat of the event; for the responses of a `send`, with the chat of the first response.
 
 Start:
 
 | Event | Effect | Code |
 |---|---|---|
-| a received message, not live, in the main conversation of a chat that is eligible by the chat of the event, from any sender; the chat has no status, and the stop has not started | a waiting status is created with the label `received, waiting for the agent`, and its first tick runs at once; when the chat is not eligible at that tick, the status ends without a post | [tools.ts:642-645](../src/tools.ts#L642-L645), [status.ts:52-56](../src/status.ts#L52-L56) |
-| `receive` or `send` returns messages, from any sender, in a chat that is eligible by the chat read of `receive` or by the chat of the first response of `send`; the stop has not started | no status: a status is created with the label `thinking`, as above<br>a waiting status: the status is taken: its label is set to `thinking`, and it is rendered at once when it has 1 to 58 renders<br>another status: unchanged | [tools.ts:997](../src/tools.ts#L997), [:1343](../src/tools.ts#L1343), [status.ts:58-64](../src/status.ts#L58-L64) |
+| a received message in the main conversation of a chat that is eligible by the chat of the event, from any sender: a new item that is not live, or the update that completes a live item, with `itemLive` false and `itemEdited` false; the chat has no status, and the stop has not started | a waiting status is created with the label `received, waiting for the agent`, and its first tick runs at once; when the chat is not eligible at that tick, the status ends without a post | [tools.ts:644-646](../src/tools.ts#L644-L646), [:664-667](../src/tools.ts#L664-L667), [:715](../src/tools.ts#L715), [messages.ts:174-176](../src/messages.ts#L174-L176), [status.ts:52-56](../src/status.ts#L52-L56) |
+| `receive` or `send` returns messages, from any sender, in a chat that is eligible by the chat read of `receive` or by the chat of the first response of `send`; the stop has not started | no status: a status is created with the label `thinking`, as above<br>a waiting status: the status is taken: its label is set to `thinking`, and it is rendered at once when it has 1 to 58 renders<br>another status: unchanged | [tools.ts:1004](../src/tools.ts#L1004), [:1350](../src/tools.ts#L1350), [status.ts:58-64](../src/status.ts#L58-L64) |
 | `send` with `live: true` passes its checks; the chat has no status, or one created at least 23 hours earlier, which is deleted first | a status is created with the note and rendered at once; its next tick is in 3 s | [status.ts:66-76](../src/status.ts#L66-L76) |
 
 Text ([`statusText`](../src/status.ts#L185-L189)):
@@ -433,7 +433,7 @@ Text ([`statusText`](../src/status.ts#L185-L189)):
 | Part | Value |
 |---|---|
 | line of renders 1 to 49 | `FRAME LABEL · M:SS`; FRAME is `◐`, `◓`, `◑`, `◒` in turn, from `◐`; M:SS is the time since the status was created |
-| line of render 50 and later | `◌ working since YYYY-MM-DD HH:MM UTC`, or `◌ received, waiting for the agent since YYYY-MM-DD HH:MM UTC` for a waiting status; the time the status was created ([status.ts:187](../src/status.ts#L187), [messages.ts:337-339](../src/messages.ts#L337-L339)) |
+| line of render 50 and later | `◌ working since YYYY-MM-DD HH:MM UTC`, or `◌ received, waiting for the agent since YYYY-MM-DD HH:MM UTC` for a waiting status; the time the status was created ([status.ts:187](../src/status.ts#L187), [messages.ts:341-343](../src/messages.ts#L341-L343)) |
 | offer | with `--abort-file`, ` · /abort`; otherwise empty ([status.ts:155](../src/status.ts#L155)) |
 | text | the line and the offer; after a `send` with `live: true`, the line, the offer, a newline and the text of the last such call ([status.ts:188](../src/status.ts#L188)) |
 
@@ -463,7 +463,7 @@ Labels, first match ([`statusLabel`](../src/status.ts#L191-L228)):
 - A model ID is kept only when it matches `^[\w.:/+@-]{1,64}$`, and it is shown as a code span ([inference.ts:27](../src/inference.ts#L27), [:55](../src/inference.ts#L55), [:150-153](../src/inference.ts#L150-L153), [status.ts:206-208](../src/status.ts#L206-L208), [:226-228](../src/status.ts#L226-L228)).
 - The labels of Claude Code are chosen from the events of the status hooks of `register` ([3.2](#32-register), [5](#5-hook-endpoint)). FILE is kept only when it matches `^[\w.+@-]{1,64}$`, and a tool name and TYPE only when they match `^[\w-]{1,64}$`; otherwise the second form is shown. FILE, TOOL and TYPE are shown as code spans ([activity.ts:21-22](../src/activity.ts#L21-L22), [:36](../src/activity.ts#L36), [:64](../src/activity.ts#L64), [:103-106](../src/activity.ts#L103-L106), [status.ts:210-228](../src/status.ts#L210-L228)).
 - The label is read at renders 2 to 49 of a status other than a waiting one, after the inference poll, and it is the same for every chat ([status.ts:144-148](../src/status.ts#L144-L148), [:164-169](../src/status.ts#L164-L169)).
-- Every tool call is registered as running from its start to its end ([tools.ts:561](../src/tools.ts#L561), [:567-569](../src/tools.ts#L567-L569), [status.ts:42-50](../src/status.ts#L42-L50)).
+- Every tool call is registered as running from its start to its end ([tools.ts:562](../src/tools.ts#L562), [:568-570](../src/tools.ts#L568-L570), [status.ts:42-50](../src/status.ts#L42-L50)).
 - After a failed poll, the label is chosen as without `--inference` ([status.ts:171-182](../src/status.ts#L171-L182)).
 
 Schedule ([`tick`](../src/status.ts#L136-L151), [`schedule`](../src/status.ts#L158-L162)):
@@ -483,47 +483,47 @@ Deletion, at the first of:
 
 | Event | Code |
 |---|---|
-| `send` without `live` in the chat, after `apiSendMessages` of its perform returns | [tools.ts:1023](../src/tools.ts#L1023) |
-| `receive` of the chat, when nothing is new and `wait` is above 0 | [tools.ts:1327-1328](../src/tools.ts#L1327-L1328) |
-| `leave` or `/leave` of the chat, before the chat is deleted | [tools.ts:1138](../src/tools.ts#L1138) |
+| `send` without `live` in the chat, after `apiSendMessages` of its perform returns | [tools.ts:1030](../src/tools.ts#L1030) |
+| `receive` of the chat, when nothing is new and `wait` is above 0 | [tools.ts:1334-1335](../src/tools.ts#L1334-L1335) |
+| `leave` or `/leave` of the chat, before the chat is deleted | [tools.ts:1145](../src/tools.ts#L1145) |
 | a tick: the chat is not eligible, or its read fails | [status.ts:137-143](../src/status.ts#L137-L143) |
 | a tick: 23 hours after the status was created | [status.ts:143](../src/status.ts#L143) |
 | `send` with `live: true`, 23 hours or more after the status was created; a new status is created with the note | [status.ts:69](../src/status.ts#L69) |
 | a tick: 50 renders or more, no running call other than `receive`, and 30 minutes since a call last started or ended | [status.ts:142-143](../src/status.ts#L142-L143) |
 | a failed send or update of the status | [status.ts:122](../src/status.ts#L122), [:131-134](../src/status.ts#L131-L134) |
-| the stop | [status.ts:96-102](../src/status.ts#L96-L102), [serve.ts:158](../src/serve.ts#L158) |
+| the stop of `serve` or of the plugin's service | [status.ts:96-102](../src/status.ts#L96-L102), [serve.ts:158](../src/serve.ts#L158), [hub.ts:463](../src/hub.ts#L463) |
 
 The deletion is `apiDeleteChatItems` of the item with mode `broadcast`, sent only when the item was posted ([status.ts:78-86](../src/status.ts#L78-L86), [api.ts:1178-1213](../../simplex-chat-nodejs/src/api.ts#L1178-L1213)).
 
-At start, before the HTTP listener, each eligible chat is read in pages of 100 items from the last one, until a page is short or starts with an item older than 30 h − 10 min; the agent's own live message items younger than that and not marked deleted are deleted with mode `broadcast` ([serve.ts:115](../src/serve.ts#L115), [tools.ts:1304-1309](../src/tools.ts#L1304-L1309), [status.ts:104-119](../src/status.ts#L104-L119)).
+At the start of `serve`, before the HTTP listener, and at the start of the plugin's service, for each stored session after the sessions open, each eligible chat is read in pages of 100 items from the last one, until a page is short or starts with an item older than 30 h − 10 min; the agent's own live message items younger than that and not marked deleted are deleted with mode `broadcast` ([serve.ts:115](../src/serve.ts#L115), [hub.ts:379](../src/hub.ts#L379), [tools.ts:1311-1316](../src/tools.ts#L1311-L1316), [status.ts:104-119](../src/status.ts#L104-L119)).
 
 ### 1.11 `/abort`
 
-With `--abort-file FILE` ([3.1](#31-serve)), a message `/abort` in a chat whose status message is shown is counted in FILE for the script that runs the agent, and every status message is ended ([`onNewItems`](../src/tools.ts#L635-L648), [`abortAgent`](../src/tools.ts#L650-L661)).
+With `--abort-file FILE` ([3.1](#31-serve)), a message `/abort` in a chat whose status message is shown is counted in FILE for the script that runs the agent, and every status message is ended ([`onNewItems`](../src/tools.ts#L636-L649), [`abortAgent`](../src/tools.ts#L651-L662)).
 
 Recognition at the `newChatItems` event, all of:
 
 | Condition | Code |
 |---|---|
-| a received message item (`rcvMsgContent`), not live, in the main conversation of a contact or group chat; a member chat of a group is excluded | [tools.ts:642-643](../src/tools.ts#L642-L643), [messages.ts:135-137](../src/messages.ts#L135-L137) |
+| a received message item (`rcvMsgContent`), not live, in the main conversation of a contact or group chat; a member chat of a group is excluded | [tools.ts:643-644](../src/tools.ts#L643-L644), [messages.ts:135-137](../src/messages.ts#L135-L137) |
 | `--abort-file` is set, and the status of the chat has 1 or more renders | [status.ts:88-90](../src/status.ts#L88-L90) |
-| a text message whose text, without whitespace at both ends, is `/abort` | [tools.ts:644](../src/tools.ts#L644) |
+| a text message whose text, without whitespace at both ends, is `/abort` | [tools.ts:645](../src/tools.ts#L645) |
 
-Any sender qualifies: a contact, or any member of a group or business chat. During the first eligibility read of a status, at 0 renders, `/abort` is not offered. Other messages are handled as in [1.10](#110-status-message): a waiting status is queued in an eligible chat ([tools.ts:645](../src/tools.ts#L645)).
+Any sender qualifies: a contact, or any member of a group or business chat. During the first eligibility read of a status, at 0 renders, `/abort` is not offered. Other messages are handled as in [1.10](#110-status-message): a waiting status is queued in an eligible chat ([tools.ts:646](../src/tools.ts#L646), [:664-667](../src/tools.ts#L664-L667)).
 
 Steps, in order:
 
 | Step | Code |
 |---|---|
-| the item ID is added to `AgentTools.abortItems`, kept for the run | [tools.ts:545](../src/tools.ts#L545), [:651](../src/tools.ts#L651) |
-| the item is marked read, without a wait; a failure is logged as `abort in CHAT: ERROR` | [tools.ts:652](../src/tools.ts#L652) |
-| `Abort by SENDER in KIND NAME (CHAT).` on stdout ([3.4](#34-terminal-lines)) | [tools.ts:653-654](../src/tools.ts#L653-L654) |
-| the count is incremented and written to FILE ([3.1](#31-serve)) | [tools.ts:656](../src/tools.ts#L656), [files.ts:163](../src/files.ts#L163) |
-| every status is ended: one with 1 or more renders with the text `◼ aborted`, one with 0 renders with `""` | [tools.ts:657](../src/tools.ts#L657), [status.ts:92-94](../src/status.ts#L92-L94) |
-| a failure of the two steps above: `abort in CHAT: ERROR` on stderr; the statuses are kept | [tools.ts:655-660](../src/tools.ts#L655-L660) |
+| the item ID is added to `AgentTools.abortItems`, kept for the run | [tools.ts:546](../src/tools.ts#L546), [:652](../src/tools.ts#L652) |
+| the item is marked read, without a wait; a failure is logged as `abort in CHAT: ERROR` | [tools.ts:653](../src/tools.ts#L653) |
+| `Abort by SENDER in KIND NAME (CHAT).` on stdout ([3.4](#34-terminal-lines)) | [tools.ts:654-655](../src/tools.ts#L654-L655) |
+| the count is incremented and written to FILE ([3.1](#31-serve)) | [tools.ts:657](../src/tools.ts#L657), [files.ts:163](../src/files.ts#L163) |
+| every status is ended: one with 1 or more renders with the text `◼ aborted`, one with 0 renders with `""` | [tools.ts:658](../src/tools.ts#L658), [status.ts:92-94](../src/status.ts#L92-L94) |
+| a failure of the two steps above: `abort in CHAT: ERROR` on stderr; the statuses are kept | [tools.ts:656-661](../src/tools.ts#L656-L661) |
 
-- `onNewItems` returns the items whose ID is outside `abortItems`, and only these are delivered to the item watch: no `/abort` is collected as a response of a `send`, and a `receive` that waits is not woken by it ([tools.ts:647](../src/tools.ts#L647), [:706](../src/tools.ts#L706)).
-- The items of `abortItems` are left out of the unread items that `receive` reads, also an item read before it was marked read ([tools.ts:1322](../src/tools.ts#L1322)).
+- `onNewItems` returns the items whose ID is outside `abortItems`, and only these are delivered to the item watch: no `/abort` is collected as a response of a `send`, and a `receive` that waits is not woken by it ([tools.ts:648](../src/tools.ts#L648), [:712](../src/tools.ts#L712)).
+- The items of `abortItems` are left out of the unread items that `receive` reads, also an item read before it was marked read ([tools.ts:1329](../src/tools.ts#L1329)).
 - The end with `◼ aborted` is a final update of the posted item, not live; for a status not yet posted, nothing is sent ([status.ts:78-86](../src/status.ts#L78-L86), [api.ts:1199-1213](../../simplex-chat-nodejs/src/api.ts#L1199-L1213)). A status message then gets at most 59 renders and the final text.
 - After an abort, every status is ended, so `/abort` is offered in no chat until a status is rendered again; a second `/abort` of the same event is an ordinary message.
 - At the start of a `receive` that waits, the status of its chat is ended ([1.4](#14-receive)); an `/abort` that arrives then is an ordinary message, which that `receive` returns, unless a new status was shown by a note before it.
@@ -588,13 +588,13 @@ The server reads commands from members' messages in the main conversation of the
 | `receive CHAT off` | accepted | `Files from KIND NAME (CHAT) need approval again.` | [control.ts:312](../src/control.ts#L312) |
 | `leave CHAT` | CHAT unknown or the control chat | `No chat CHAT. /list shows the agent's chats.` | [control.ts:338](../src/control.ts#L338) |
 | `leave CHAT` | accepted, at once in both modes; the pending actions of CHAT with a card are rejected by the sender | `Left KIND NAME (CHAT), requested by NAME.`, or `Deleted ...` for a contact; logged too | [control.ts:336-350](../src/control.ts#L336-L350) |
-| `delete CHAT files` | the chat's downloads in memory fail and are cancelled; its other files in status `rcvAccepted`, `rcvTransfer` or `rcvWarning`, such as downloads the core continues after a restart, are cancelled; the folder of CHAT and its forwarded folder are deleted, for a current or a left chat | `Deleted K files from CHAT, SIZE.` (`1 file`), or `No files from CHAT.` | [control.ts:357-360](../src/control.ts#L357-L360), [tools.ts:1095-1113](../src/tools.ts#L1095-L1113), [messages.ts:275-283](../src/messages.ts#L275-L283) |
+| `delete CHAT files` | the chat's downloads in memory fail and are cancelled; its other files in status `rcvAccepted`, `rcvTransfer` or `rcvWarning`, such as downloads the core continues after a restart, are cancelled; the folder of CHAT and its forwarded folder are deleted, for a current or a left chat | `Deleted K files from CHAT, SIZE.` (`1 file`), or `No files from CHAT.` | [control.ts:357-360](../src/control.ts#L357-L360), [tools.ts:1102-1120](../src/tools.ts#L1102-L1120), [messages.ts:279-287](../src/messages.ts#L279-L287) |
 | `pending` | no pending action with a card | `No pending actions.` | [control.ts:254](../src/control.ts#L254) |
 | `pending` | otherwise | one line per action: `N  WHAT  expires YYYY-MM-DD HH:MM UTC` | [control.ts:253](../src/control.ts#L253), [:752-754](../src/control.ts#L752-L754) |
 | `list` | no chats | `No chats.` | [control.ts:405](../src/control.ts#L405) |
 | `list` | otherwise | one line per chat of the 100 most recent: `CHAT  KIND NAME`, then `, approved for this chat by APPROVER`, `, files approved by APPROVER` and `, not connected` when applicable, cut to 100 bytes with `…`; then `K older chats are not shown.` (`1 older chat is not shown.`) | [control.ts:393-406](../src/control.ts#L393-L406) |
 
-KIND is `contact`, `bot`, `agent`, `business`, `group` or `channel` ([tools.ts:1575-1582](../src/tools.ts#L1575-L1582)). WHAT is `connect to SUBJECT`, `send to SUBJECT`, `download NAME from SUBJECT`, `delete SUBJECT` or `leave SUBJECT` ([actions.ts:382-396](../src/actions.ts#L382-L396)). SIZE is in bytes, KB, MB or GB, by 1000, with one decimal ([control.ts:810-813](../src/control.ts#L810-L813)). Names are shown by `safeName` ([control.ts:827-830](../src/control.ts#L827-L830)).
+KIND is `contact`, `bot`, `agent`, `business`, `group` or `channel` ([tools.ts:1582-1589](../src/tools.ts#L1582-L1589)). WHAT is `connect to SUBJECT`, `send to SUBJECT`, `download NAME from SUBJECT`, `delete SUBJECT` or `leave SUBJECT` ([actions.ts:382-396](../src/actions.ts#L382-L396)). SIZE is in bytes, KB, MB or GB, by 1000, with one decimal ([control.ts:810-813](../src/control.ts#L810-L813)). Names are shown by `safeName` ([control.ts:827-830](../src/control.ts#L827-L830)).
 
 A standing approval is stored in the chat's custom data, `simplexMcp` for messages and `simplexMcpFiles` for files, as `{approvedBy, approvedById, approvedAt}`; it applies in mode `requests` while member `approvedById` is an approver ([control.ts:27-30](../src/control.ts#L27-L30), [:167-170](../src/control.ts#L167-L170)).
 
@@ -615,7 +615,7 @@ SUBJECT is `KIND NAME`, or `an unnamed KIND`, followed by ` (SIMPLEX_NAME)` when
 
 A card of a `send` with an image or video file, or of a `download` of an image or video, is an image or video message. Its image is the file's preview, and its caption is the card text. The preview is resized when it is too large for the card, and the card is text when the preview can't be resized ([control.ts:546-566](../src/control.ts#L546-L566)).
 
-In a plugin session group, the core can refuse a card with `feature not allowed NAME` ([control.ts:521-544](../src/control.ts#L521-L544), [:194](../src/control.ts#L194), [:756-760](../src/control.ts#L756-L760), [tools.ts:1692-1699](../src/tools.ts#L1692-L1699), [actions.ts:338-349](../src/actions.ts#L338-L349), [:213](../src/actions.ts#L213), [:266](../src/actions.ts#L266)):
+In a plugin session group, the core can refuse a card with `feature not allowed NAME` ([control.ts:521-544](../src/control.ts#L521-L544), [:194](../src/control.ts#L194), [:756-760](../src/control.ts#L756-L760), [tools.ts:1699-1706](../src/tools.ts#L1699-L1706), [actions.ts:338-349](../src/actions.ts#L338-L349), [:213](../src/actions.ts#L213), [:266](../src/actions.ts#L266)):
 - A card refused with `feature not allowed Files and media`, as when files and media are off in the group's preferences, is posted as text, and its later edits are text.
 - When the core refuses a card for another preference, even after the change to text, the card is not posted. In its place, Claude posts `Action N: NAME are off in the group of this session; its owners can turn them on in the group's preferences.` An action that waits for approval then fails with the text after `Action N: `.
 - After the decision, the action stays as it was, and `Action N: ` is replaced by a prefix with the outcome and the card. The outcome card of an action performed in mode `host` or under a standing approval is posted after the action, and its prefix is `Action N was performed; its card was not posted: ` or `Action N failed; its card was not posted: `. When the core refuses an edit this way, the prefix is `Action N OUTCOME; its card was not updated: `, with OUTCOME `was performed`, `failed`, `was rejected`, `expired` or `ended`.
@@ -659,7 +659,7 @@ An action performed without a card, in mode `host` or under a standing approval,
 | `send` with a refused file; logged too | ``Refused to send `PATH` to KIND NAME (CHAT): private keys and the server's own files are not sent.`` | [control.ts:199-203](../src/control.ts#L199-L203) |
 | `sndFileError` of a sent file; logged too | ``The file `NAME` was not sent to KIND NAME (CHAT): `REASON`.`` | [control.ts:205-214](../src/control.ts#L205-L214), [serve.ts:142](../src/serve.ts#L142) |
 | `/forward` of a file that is not received or not posted | ``Action N: the file was not received: `ERROR`.`` | [control.ts:328-331](../src/control.ts#L328-L331) |
-| `/forward` in a plugin session group, when the core refuses the post with `feature not allowed NAME`, as for `Files and media` or `Voice messages` | `Action N: NAME are off in the group of this session; its owners can turn them on in the group's preferences.` | [control.ts:328-331](../src/control.ts#L328-L331), [tools.ts:1692-1699](../src/tools.ts#L1692-L1699) |
+| `/forward` in a plugin session group, when the core refuses the post with `feature not allowed NAME`, as for `Files and media` or `Voice messages` | `Action N: NAME are off in the group of this session; its owners can turn them on in the group's preferences.` | [control.ts:328-331](../src/control.ts#L328-L331), [tools.ts:1699-1706](../src/tools.ts#L1699-L1706) |
 | after the reply to `/leave CHAT`, and after the outcome of a done `leave`, when the folder of CHAT has files | ``Files from KIND NAME (CHAT) are kept in `FOLDER`: K files, SIZE. /'delete CHAT files'`` | [control.ts:195-196](../src/control.ts#L195-L196), [:347-355](../src/control.ts#L347-L355) |
 
 ### 2.4 Membership messages
@@ -812,8 +812,8 @@ stdout ([log.ts:37-39](../src/log.ts#L37-L39)):
 | perform ended, not interrupted by the stop, mode `host` | `Action N: performed without approval (mode host).`, or `...; failed: ERROR.` | [actions.ts:404](../src/actions.ts#L404) |
 | rejected | `Action N rejected by NAME.` | [actions.ts:272](../src/actions.ts#L272) |
 | expired | `Action N expired.` | [actions.ts:310](../src/actions.ts#L310) |
-| `send` with `live: true` shown | `Note to KIND NAME (CHAT): TEXT`, or `an unnamed KIND`; the name and the text folded to one line | [tools.ts:968](../src/tools.ts#L968), [actions.ts:377-380](../src/actions.ts#L377-L380) |
-| `/abort` recognized ([1.11](#111-abort)) | `Abort by SENDER in KIND NAME (CHAT).`, or `an unnamed KIND`; the names folded to one line | [tools.ts:653-654](../src/tools.ts#L653-L654), [actions.ts:377-380](../src/actions.ts#L377-L380) |
+| `send` with `live: true` shown | `Note to KIND NAME (CHAT): TEXT`, or `an unnamed KIND`; the name and the text folded to one line | [tools.ts:975](../src/tools.ts#L975), [actions.ts:377-380](../src/actions.ts#L377-L380) |
+| `/abort` recognized ([1.11](#111-abort)) | `Abort by SENDER in KIND NAME (CHAT).`, or `an unnamed KIND`; the names folded to one line | [tools.ts:654-655](../src/tools.ts#L654-L655), [actions.ts:377-380](../src/actions.ts#L377-L380) |
 | `/leave CHAT` | `Left KIND NAME (CHAT), requested by NAME.` or `Deleted ...` | [control.ts:342](../src/control.ts#L342) |
 | refused file, file not sent | as in [2.3](#23-other-posts), names and paths on one line | [control.ts:201](../src/control.ts#L201), [:212](../src/control.ts#L212) |
 | stop | `Cancelled K action.` or `Cancelled K actions.` when K > 0<br>`Stopping: sending PARTS, up to S s. Ctrl-C to stop now.` when PARTS is not empty and S > 0; PARTS is `K cancelled card(s)` when cards were edited or posted and the control chat is not lost, and `M status deletion(s)` when status messages had a render, joined by ` and `<br>`Stopped.` | [serve.ts:157-159](../src/serve.ts#L157-L159), [:171-187](../src/serve.ts#L171-L187), [:162](../src/serve.ts#L162) |
@@ -829,7 +829,7 @@ stderr: `CONTEXT: ERROR` from `logError` ([log.ts:41-43](../src/log.ts#L41-L43))
 | `status of CHAT` | a failed send, update or deletion of a status message; a failed eligibility read of a current status; a failed tick; a failed leftover deletion | [status.ts:55](../src/status.ts#L55), [:117](../src/status.ts#L117), [:131-134](../src/status.ts#L131-L134), [:137-138](../src/status.ts#L137-L138), [:161](../src/status.ts#L161) |
 | `inference endpoint` | the first failed poll after the start or after a successful poll | [status.ts:177-179](../src/status.ts#L177-L179) |
 | `status messages` | a failed chat list before the leftover deletion | [serve.ts:115](../src/serve.ts#L115) |
-| `abort in CHAT` | a failed mark-read of an `/abort` item; a failed write of the abort count ([1.11](#111-abort)) | [tools.ts:652](../src/tools.ts#L652), [:658-659](../src/tools.ts#L658-L659) |
+| `abort in CHAT` | a failed mark-read of an `/abort` item; a failed write of the abort count ([1.11](#111-abort)) | [tools.ts:653](../src/tools.ts#L653), [:659-660](../src/tools.ts#L659-L660) |
 
 A poll error is `GET URL: REASON`, folded to one line, with REASON `HTTP N`, `invalid JSON`, `body over 1 MiB`, `no answer within 1 s`, or the message of the first error aggregated in the error's cause, of the cause, or of the error itself, in this order ([inference.ts:109-141](../src/inference.ts#L109-L141)).
 
@@ -842,16 +842,16 @@ A poll error is `GET URL: REASON`, folded to one line, with REASON `HTTP N`, `in
 | Rule | Code |
 |---|---|
 | The six tools of [1](#1-tools) and `reply` are registered on the session's `McpServer`. Claude Code names them `mcp__plugin_simplex_simplex__NAME` | [session.ts:57](../src/session.ts#L57), [hooks.json:4](../hooks/hooks.json#L4) |
-| The four action tools are registered with `_meta: {"anthropic/requiresUserInteraction": true}` when the option `approve` is `host` at the start of the session process | [session.ts:57](../src/session.ts#L57), [tools.ts:515](../src/tools.ts#L515) |
-| Instructions: those of [1.1](#11-common-rules), with the display name `Claude` and the host `SimpleX service`, followed by the channel instructions of [4.5](#45-channel) | [session.ts:21](../src/session.ts#L21), [:52](../src/session.ts#L52), [tools.ts:452-463](../src/tools.ts#L452-L463) |
-| `send`, `receive`, `download`, `leave` and `list` see only the session's own chats. For another session's chat, `send`, `receive`, `download` and `leave` return `No chat CHAT. list shows the agent's chats.` | [tools.ts:596-598](../src/tools.ts#L596-L598), [:1370-1379](../src/tools.ts#L1370-L1379) |
-| At `connect`, a known chat without an owner becomes the session's chat. `connect` to a chat of another session returns the tool error `The chat of TARGET belongs to another session; an admin or owner of that session's group can give it to this session with /give.` | [tools.ts:786-791](../src/tools.ts#L786-L791) |
-| Actions are numbered from 1 in each session group. The session number is part of the action key, see [1.1](#11-common-rules) | [hub.ts:75](../src/hub.ts#L75), [tools.ts:1790-1792](../src/tools.ts#L1790-L1792) |
-| Downloads are saved under `ROOT/_sessions/ID/files/` | [hub.ts:90](../src/hub.ts#L90), [messages.ts:225-227](../src/messages.ts#L225-L227) |
+| The four action tools are registered with `_meta: {"anthropic/requiresUserInteraction": true}` when the option `approve` is `host` at the start of the session process | [session.ts:57](../src/session.ts#L57), [tools.ts:516](../src/tools.ts#L516) |
+| Instructions: those of [1.1](#11-common-rules), with the display name `Claude` and the host `SimpleX service`, followed by the channel instructions of [4.5](#45-channel) | [session.ts:21](../src/session.ts#L21), [:52](../src/session.ts#L52), [tools.ts:453-464](../src/tools.ts#L453-L464) |
+| `send`, `receive`, `download`, `leave` and `list` see only the session's own chats. For another session's chat, `send`, `receive`, `download` and `leave` return `No chat CHAT. list shows the agent's chats.` | [tools.ts:597-599](../src/tools.ts#L597-L599), [:1377-1386](../src/tools.ts#L1377-L1386) |
+| At `connect`, a known chat without an owner becomes the session's chat. `connect` to a chat of another session returns the tool error `The chat of TARGET belongs to another session; an admin or owner of that session's group can give it to this session with /give.` | [tools.ts:793-798](../src/tools.ts#L793-L798) |
+| Actions are numbered from 1 in each session group. The session number is part of the action key, see [1.1](#11-common-rules) | [hub.ts:75](../src/hub.ts#L75), [tools.ts:1797-1799](../src/tools.ts#L1797-L1799) |
+| Downloads are saved under `ROOT/_sessions/ID/files/` | [hub.ts:90](../src/hub.ts#L90), [messages.ts:229-231](../src/messages.ts#L229-L231) |
 | A run is not interactive when `CLAUDE_CODE_SESSION_ATTENDED` is `0`, which Claude Code sets for the hooks of a run nobody attends, or when `CLAUDE_CODE_ENTRYPOINT` is `sdk-cli`, which Claude Code sets for `claude -p`, or `sdk-ts` or `sdk-py`, for the Agent SDK. Such a run has no session. Its session process does not connect to the service, and every tool returns `This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions.`, even when an option is invalid. Its hooks return `{}`, and the turn hooks send no request | [config.ts:23-33](../src/config.ts#L23-L33), [session.ts:15](../src/session.ts#L15), [:45-51](../src/session.ts#L45-L51), [:66](../src/session.ts#L66), [hook.ts:82-85](../src/hook.ts#L82-L85), [:115](../src/hook.ts#L115) |
 | A run with `CLAUDE_CODE_SESSION_ATTENDED` `0` and an entrypoint other than those three is, for example, a `claude -p` run started by a command of a VS Code or desktop-app session. Its SessionStart hook starts the service and sends `/title` with `unattended` for its `CLAUDE_PID`. The session server of that run gets the values of the attended session, `1` and its entrypoint. The service refuses it with status 403 when it registers from that process within 10 s of the mark. The refused server then answers every call with the same text, relays no permission request and registers no more | [hook.ts:102-112](../src/hook.ts#L102-L112), [service.ts:237-248](../src/service.ts#L237-L248), [session.ts:79-80](../src/session.ts#L79-L80), [:92](../src/session.ts#L92), [:115](../src/session.ts#L115), [:127](../src/session.ts#L127), [:162-165](../src/session.ts#L162-L165) |
 
-`reply` ([`replyTool`](../src/tools.ts#L473-L494), [`AgentTools.reply`](../src/tools.ts#L749-L766)):
+`reply` ([`replyTool`](../src/tools.ts#L474-L495), [`AgentTools.reply`](../src/tools.ts#L756-L773)):
 
 | Field | Type | Range | Default | Rule |
 |---|---|---|---|---|
@@ -872,7 +872,7 @@ on reply {file, text?}:
     tool error, the core's text
 ```
 
-Sources: [tools.ts:749-766](../src/tools.ts#L749-L766), [:1692-1699](../src/tools.ts#L1692-L1699), [:566](../src/tools.ts#L566), [hub.ts:93](../src/hub.ts#L93). The core checks the preference at the send, and only owners change it. Claude changes only its own fields of a group's profile, so the owners' preferences stay ([control.ts:115-140](../src/control.ts#L115-L140), [:632-640](../src/control.ts#L632-L640), [main-group.ts:57-66](../src/main-group.ts#L57-L66)). The profile updates are in [4.2](#42-main-group) and [4.3](#43-session-groups).
+Sources: [tools.ts:756-773](../src/tools.ts#L756-L773), [:1699-1706](../src/tools.ts#L1699-L1706), [:567](../src/tools.ts#L567), [hub.ts:93](../src/hub.ts#L93). The core checks the preference at the send, and only owners change it. Claude changes only its own fields of a group's profile, so the owners' preferences stay ([control.ts:115-140](../src/control.ts#L115-L140), [:632-640](../src/control.ts#L632-L640), [main-group.ts:57-66](../src/main-group.ts#L57-L66)). The profile updates are in [4.2](#42-main-group) and [4.3](#43-session-groups).
 
 ### 4.2 Main group
 
@@ -880,11 +880,11 @@ Commands from any member, one line `/KEYWORD PARAMS` as in [2.1](#21-commands-an
 
 | Request | Condition | Reply | Code |
 |---|---|---|---|
-| `/sessions` | no session | `No sessions.` | [hub.ts:431-434](../src/hub.ts#L431-L434) |
-| `/sessions` | otherwise | one line per session of the hub: `N · NAME`, with `, closed` when the service has no entry for it | [hub.ts:431-434](../src/hub.ts#L431-L434) |
-| `/join N` | no session N | `No session N. /sessions lists the sessions.` | [hub.ts:438](../src/hub.ts#L438) |
-| `/join N` | the sender is a member of its group | `You are a member of "N · NAME".` | [hub.ts:439-444](../src/hub.ts#L439-L444) |
-| `/join N` | otherwise: the sender is invited through the Main group, as `owner` when the sender is an owner of the Main group, else as `admin` | `Sent you an invitation to "N · NAME".` | [hub.ts:440](../src/hub.ts#L440), [:217-219](../src/hub.ts#L217-L219) |
+| `/sessions` | no session | `No sessions.` | [hub.ts:432-435](../src/hub.ts#L432-L435) |
+| `/sessions` | otherwise | one line per session of the hub: `N · NAME`, with `, closed` when the service has no entry for it | [hub.ts:432-435](../src/hub.ts#L432-L435) |
+| `/join N` | no session N | `No session N. /sessions lists the sessions.` | [hub.ts:439](../src/hub.ts#L439) |
+| `/join N` | the sender is a member of its group | `You are a member of "N · NAME".` | [hub.ts:440-445](../src/hub.ts#L440-L445) |
+| `/join N` | otherwise: the sender is invited through the Main group, as `owner` when the sender is an owner of the Main group, else as `admin` | `Sent you an invitation to "N · NAME".` | [hub.ts:441](../src/hub.ts#L441), [:217-219](../src/hub.ts#L217-L219) |
 | other one-line `/` text | | `Unknown command.` | [main-group.ts:14](../src/main-group.ts#L14), [:114](../src/main-group.ts#L114) |
 
 Posts:
@@ -922,10 +922,10 @@ Commands and replies are those of [2.1](#21-commands-and-replies), from approver
 | `/give CHAT N` | CHAT is not a chat of this session | `No chat CHAT. /list shows the agent's chats.` | [control.ts:364](../src/control.ts#L364) |
 | `/give CHAT N` | no session N | `No session N. /sessions in the Main group lists the sessions.` | [control.ts:366](../src/control.ts#L366) |
 | `/give CHAT N` | accepted: CHAT's owner is set to session N, and the pending actions of CHAT with a card are rejected by the sender | `Gave KIND NAME (CHAT) to session N.` | [control.ts:367-372](../src/control.ts#L367-L372) |
-| `/list`, `/revoke CHAT`, `/leave CHAT` | | only the chats of this session, even while the session is closed | [tools.ts:1360-1379](../src/tools.ts#L1360-L1379) |
+| `/list`, `/revoke CHAT`, `/leave CHAT` | | only the chats of this session, even while the session is closed | [tools.ts:1367-1386](../src/tools.ts#L1367-L1386) |
 | `/give CHAT N` in the control chat of `serve` | any sender | the help reply, as in 0.2 | [control.ts:249](../src/control.ts#L249), [:857](../src/control.ts#L857) |
 | `/observer #G ID` | #G is not this group | `#G is not this group.` | [control.ts:376](../src/control.ts#L376) |
-| `/observer #G ID` | member ID is neither current nor pending, as it is absent, gone, or invited and not joined yet | `No member ID in this group.` | [control.ts:377-379](../src/control.ts#L377-L379), [tools.ts:1621-1636](../src/tools.ts#L1621-L1636) |
+| `/observer #G ID` | member ID is neither current nor pending, as it is absent, gone, or invited and not joined yet | `No member ID in this group.` | [control.ts:377-379](../src/control.ts#L377-L379), [tools.ts:1628-1643](../src/tools.ts#L1628-L1643) |
 | `/observer #G ID` | ID is Claude, the sender, a relay or a member pending approval or review | `NAME's role can't be changed.` | [control.ts:380-382](../src/control.ts#L380-L382) |
 | `/observer #G ID` | the sender's role is below admin or below the member's role, as SimpleX requires for a role change | `Your role does not let you change the role of NAME.` | [control.ts:383](../src/control.ts#L383), [:880-882](../src/control.ts#L880-L882) |
 | `/observer #G ID` | accepted: the member's role is set to `observer`, and the members are read again. The standing approvals that this member gave are kept in the chat's custom data, and are ignored until the member is an admin or owner again | `NAME is an observer and can't send messages.` | [control.ts:384-386](../src/control.ts#L384-L386), [:888-891](../src/control.ts#L888-L891), [:167-170](../src/control.ts#L167-L170) |
@@ -962,14 +962,14 @@ Posts:
 | Poster | Text | Code |
 |---|---|---|
 | Claude | the final answer of each turn, in parts. The turn's prompt from the group, chosen by the hub from the turn records below, is quoted in the first part when the quote fits with the answer's first character. A changed short description is set after the answer | [hub.ts:180-202](../src/hub.ts#L180-L202), [:267-296](../src/hub.ts#L267-L296) |
-| Claude | `Session N is not running.`, as a reply to a prompt when the session is not attached at the prompt's delivery. The hub delivers the prompt after the earlier prompts and after the prompt's own file. In the first 30 s after the service's start, the reply is posted only when the session does not attach by their end | [hub.ts:153-160](../src/hub.ts#L153-L160), [:235-249](../src/hub.ts#L235-L249), [:379](../src/hub.ts#L379) |
+| Claude | `Session N is not running.`, as a reply to a prompt when the session is not attached at the prompt's delivery. The hub delivers the prompt after the earlier prompts and after the prompt's own file. In the first 30 s after the service's start, the reply is posted only when the session does not attach by their end | [hub.ts:153-160](../src/hub.ts#L153-L160), [:235-249](../src/hub.ts#L235-L249), [:380](../src/hub.ts#L380) |
 | Claude | `The file of this message was not received: ERROR`, as a reply to a prompt whose file was not received, see [4.5](#45-channel) | [hub.ts:235-259](../src/hub.ts#L235-L259) |
 | Claude | the reply to the one-line `/` texts of the rules above, quoting the message | [hub.ts:28](../src/hub.ts#L28), [:157](../src/hub.ts#L157) |
 | Claude | `note` of a `/turn` request, a line about one of Claude Code's own prompts, without a quote, before the other posts of the request. See the hook's notes below | [hub.ts:195](../src/hub.ts#L195), [hook.ts:217-290](../src/hook.ts#L217-L290) |
 | `User` | each prompt typed in the terminal, also one typed during a turn, in parts. A prompt with `typed: false` is left out, such as a notification of a background task. A request without `typed`, from an older plugin, is posted as typed. Blank prompts, prompts made only of this server's channel tags, the prompts pushed from the group and one-line `/` commands are left out too. `User` posts in the group that is marked with the session's number | [hub.ts:184-196](../src/hub.ts#L184-L196), [user.ts:29-32](../src/user.ts#L29-L32) |
-| Claude | a text in place of an answer, a note or a terminal prompt that the core refuses with `feature not allowed NAME`, as `SimpleX links` for a SimpleX link. The text for an answer is `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would. A note is replaced by `A note on Claude Code's prompt was not posted: ` and the same preference text. A terminal prompt is replaced by `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`, even while NAME is on only for roles above that of `User`. Claude is an owner of the group, so its answers and notes get only the texts with `are off`. The turn goes on | [hub.ts:195-196](../src/hub.ts#L195-L196), [:278-288](../src/hub.ts#L278-L288), [:524-526](../src/hub.ts#L524-L526), [tools.ts:1692-1699](../src/tools.ts#L1692-L1699) |
-| Claude | files sent by `reply`, at once | [tools.ts:749-766](../src/tools.ts#L749-L766), [hub.ts:93](../src/hub.ts#L93) |
-| Claude | the rights of the member's role, below. They are posted once for each join and each role change of a member other than `User`, at its `joinedGroupMember`, `connectedToGroupMember` or `memberRole` | [hub.ts:221-228](../src/hub.ts#L221-L228), [:519](../src/hub.ts#L519), [control.ts:40-43](../src/control.ts#L40-L43), [:884-891](../src/control.ts#L884-L891) |
+| Claude | a text in place of an answer, a note or a terminal prompt that the core refuses with `feature not allowed NAME`, as `SimpleX links` for a SimpleX link. The text for an answer is `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would. A note is replaced by `A note on Claude Code's prompt was not posted: ` and the same preference text. A terminal prompt is replaced by `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`, even while NAME is on only for roles above that of `User`. Claude is an owner of the group, so its answers and notes get only the texts with `are off`. The turn goes on | [hub.ts:195-196](../src/hub.ts#L195-L196), [:278-288](../src/hub.ts#L278-L288), [:525-527](../src/hub.ts#L525-L527), [tools.ts:1699-1706](../src/tools.ts#L1699-L1706) |
+| Claude | files sent by `reply`, at once | [tools.ts:756-773](../src/tools.ts#L756-L773), [hub.ts:93](../src/hub.ts#L93) |
+| Claude | the rights of the member's role, below. They are posted once for each join and each role change of a member other than `User`, at its `joinedGroupMember`, `connectedToGroupMember` or `memberRole` | [hub.ts:221-228](../src/hub.ts#L221-L228), [:520](../src/hub.ts#L520), [control.ts:40-43](../src/control.ts#L40-L43), [:884-891](../src/control.ts#L884-L891) |
 
 Rights posts, by the member's role in the session group:
 
@@ -982,9 +982,9 @@ Rights posts, by the member's role in the session group:
 
 #G is the session group, and ID is the member. The core raises no `memberRole` event for a role change that Claude makes itself, with `/observer`. The reply to `/observer` is the observer's post instead.
 
-Parts ([hub.ts:532-549](../src/hub.ts#L532-L549), [tools.ts:1660-1663](../src/tools.ts#L1660-L1663)): the hub cuts the text into the longest runs of whole characters that `fitsMessage` accepts as one message. `fitsMessage` is the measure of `send` in [1.3](#13-send), in UTF-8 bytes. The first part is measured with its quote. The hub puts up to 14962 bytes of text into a part without a quote: 14962 Latin, 7481 Cyrillic or 4987 CJK characters, fewer for characters escaped in JSON.
+Parts ([hub.ts:533-550](../src/hub.ts#L533-L550), [tools.ts:1667-1670](../src/tools.ts#L1667-L1670)): the hub cuts the text into the longest runs of whole characters that `fitsMessage` accepts as one message. `fitsMessage` is the measure of `send` in [1.3](#13-send), in UTF-8 bytes. The first part is measured with its quote. The hub puts up to 14962 bytes of text into a part without a quote: 14962 Latin, 7481 Cyrillic or 4987 CJK characters, fewer for characters escaped in JSON.
 
-Claude can quote a message in its answer and its replies. When the core refuses such a post with `errorStore` `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or with `largeMsg`, as for a reply that quotes a message near the size limit, the post is sent again without the quote ([hub.ts:290-296](../src/hub.ts#L290-L296), [:551-554](../src/hub.ts#L551-L554)).
+Claude can quote a message in its answer and its replies. When the core refuses such a post with `errorStore` `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or with `largeMsg`, as for a reply that quotes a message near the size limit, the post is sent again without the quote ([hub.ts:290-296](../src/hub.ts#L290-L296), [:552-555](../src/hub.ts#L552-L555)).
 
 Turn records, added at a `/turn` with `prompt`, are read and changed before the first await of each `/turn` ([hub.ts:54](../src/hub.ts#L54), [:180-186](../src/hub.ts#L180-L186), [:267-276](../src/hub.ts#L267-L276)):
 
@@ -1005,7 +1005,7 @@ on /turn {at, answer}, also an empty answer:
 at = performance.timeOrigin of the hook process; absent: Infinity for an answer's quote, now otherwise
 ```
 
-Group profile ([`createSessionGroup`](../src/hub.ts#L478-L490), [`Control.load`](../src/control.ts#L115-L122), [`describe`](../src/control.ts#L129-L131), [`updateProfile`](../src/control.ts#L133-L140)):
+Group profile ([`createSessionGroup`](../src/hub.ts#L479-L491), [`Control.load`](../src/control.ts#L115-L122), [`describe`](../src/control.ts#L129-L131), [`updateProfile`](../src/control.ts#L133-L140)):
 
 | Field | Value |
 |---|---|
@@ -1076,8 +1076,8 @@ The service speaks HTTP/1.1 over `ROOT/service.sock`, the fallback path or the W
 | `POST /permission` | `{id, requestId, toolName, description, inputPreview}` | `{}` after the card's action is created | [service.ts:143-147](../src/service.ts#L143-L147) |
 | `POST /turn` | `{id, pid?, at?, prompt?, typed?, note?, midTurn?, answer?, model?, effort?}`, `at` the time the hook started, `typed` whether a person typed the prompt, `note` the line Claude posts about one of Claude Code's own prompts, `midTurn` whether Claude Code added the prompt to a running turn | `{}` after the posts | [service.ts:148-152](../src/service.ts#L148-L152) |
 | `GET /status` | none | `{version, protocol, mainGroup, owner: {owners}, sessions: [{number, name, attached}]}`, with the open sessions | [service.ts:424-427](../src/service.ts#L424-L427) |
-| `GET /link` | none | `{owners, link?}`, the link while the Main group has no owner | [service.ts:154](../src/service.ts#L154), [hub.ts:392-395](../src/hub.ts#L392-L395) |
-| `POST /reset-owners` | none | `{link}`, the link of the new Main group. The group is replaced at once, even while owners exist | [service.ts:155](../src/service.ts#L155), [hub.ts:403-405](../src/hub.ts#L403-L405) |
+| `GET /link` | none | `{owners, link?}`, the link while the Main group has no owner | [service.ts:154](../src/service.ts#L154), [hub.ts:393-396](../src/hub.ts#L393-L396) |
+| `POST /reset-owners` | none | `{link}`, the link of the new Main group. The group is replaced at once, even while owners exist | [service.ts:155](../src/service.ts#L155), [hub.ts:404-406](../src/hub.ts#L404-L406) |
 | `POST /stop` | none | `{}` after the stop sequence. The process exits after the reply | [service.ts:156-159](../src/service.ts#L156-L159) |
 
 | Status | Error | Condition |
@@ -1118,11 +1118,11 @@ on a service stop:                               the held title requests, with t
 on the next start:                               each one taken as a new /title
 ```
 
-`/session` and `/title` without `unattended` apply `config` to the hub ([hub.ts:397-401](../src/hub.ts#L397-L401), [service.ts:213](../src/service.ts#L213), [:221](../src/service.ts#L221), [:232](../src/service.ts#L232), [:259](../src/service.ts#L259)):
+`/session` and `/title` without `unattended` apply `config` to the hub ([hub.ts:398-402](../src/hub.ts#L398-L402), [service.ts:213](../src/service.ts#L213), [:221](../src/service.ts#L221), [:232](../src/service.ts#L232), [:259](../src/service.ts#L259)):
 - The hub sets the expiry of all sessions from `expireHours`.
 - The hub renames the Main group when `mainGroup` differs.
 
-`/session` requests the session's mode ([hub.ts:132-151](../src/hub.ts#L132-L151), [:320-323](../src/hub.ts#L320-L323), [:325-328](../src/hub.ts#L325-L328), [:75](../src/hub.ts#L75), [:519](../src/hub.ts#L519)):
+`/session` requests the session's mode ([hub.ts:132-151](../src/hub.ts#L132-L151), [:320-323](../src/hub.ts#L320-L323), [:325-328](../src/hub.ts#L325-L328), [:75](../src/hub.ts#L75), [:520](../src/hub.ts#L520)):
 - `requests` applies at once. The hub ends a pending mode card and clears `hostDeclined`.
 - For `host`, the hub posts the mode card when the group has an approver and `hostDeclined` is unset. It posts the card at once, or after the next membership event of the group.
 - When the mode card is rejected, the hub sets `hostDeclined` in session.json.
@@ -1173,12 +1173,12 @@ The service's stdout and stderr are written to `service.log` ([client.ts:82](../
 | no owners, members present | `No owners in the Main group.` | [main-group.ts:15](../src/main-group.ts#L15), [:70](../src/main-group.ts#L70), [:124](../src/main-group.ts#L124) |
 | owner joined | `NAME joined (member ID) and is now an owner. The link is deleted.` | [main-group.ts:139](../src/main-group.ts#L139) |
 | Main group lost | `The Main group is lost. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` | [main-group.ts:144](../src/main-group.ts#L144) |
-| session group created | `Group "N · NAME" of session N created.` | [hub.ts:488](../src/hub.ts#L488) |
+| session group created | `Group "N · NAME" of session N created.` | [hub.ts:489](../src/hub.ts#L489) |
 | session group lost | `The group "N · NAME" is lost.` | [control.ts:483](../src/control.ts#L483) |
 | actions | as in [3.4](#34-terminal-lines), with ` of session N` after `Action N`, and `allowed.` for a tool use | [actions.ts:210](../src/actions.ts#L210), [:410](../src/actions.ts#L410) |
-| stop | `Cancelled K action(s).`, `Stopping: sending K cancelled card(s), up to 10 s. Ctrl-C to stop now.`, `Stopped.` | [service.ts:189](../src/service.ts#L189), [serve.ts:174-176](../src/serve.ts#L174-L176), [service.ts:192](../src/service.ts#L192) |
+| stop | `Stopping: sending PARTS, up to 10 s. Ctrl-C to stop now.`, with PARTS as in [3.4](#34-terminal-lines), counting the cards of the session groups that are not lost, then `Cancelled K action(s).`, `Stopped.` | [hub.ts:465](../src/hub.ts#L465), [serve.ts:174-176](../src/serve.ts#L174-L176), [service.ts:189](../src/service.ts#L189), [service.ts:192](../src/service.ts#L192) |
 
-stderr: `CONTEXT: ERROR` from `logError`, with CONTEXT among `Main group command`, `EVENT in the Main group`, `EVENT in the group of session N`, `prompt of session N`, `invitation to session N`, `User`, `User in session N`, `group of session N`, `session N`, `owner of CHAT`, `mode host of session N`, `title`, `ROOT/_sessions/ID/session.json`, `ROOT/titles.json`, `ROOT/service.log`, `METHOD PATH` and those of [3.4](#34-terminal-lines). Session processes and hooks write to their own stderr ([session.ts:55](../src/session.ts#L55), [:61](../src/session.ts#L61), [:93](../src/session.ts#L93), [hook.ts:110](../src/hook.ts#L110), [:132](../src/hook.ts#L132)):
+stderr: `CONTEXT: ERROR` from `logError`, with CONTEXT among `Main group command`, `EVENT in the Main group`, `EVENT in the group of session N`, `prompt of session N`, `invitation to session N`, `User`, `User in session N`, `group of session N`, `session N`, `owner of CHAT`, `mode host of session N`, `status messages of session N`, `title`, `ROOT/_sessions/ID/session.json`, `ROOT/titles.json`, `ROOT/service.log`, `METHOD PATH` and those of [3.4](#34-terminal-lines). Session processes and hooks write to their own stderr ([session.ts:55](../src/session.ts#L55), [:61](../src/session.ts#L61), [:93](../src/session.ts#L93), [hook.ts:110](../src/hook.ts#L110), [:132](../src/hook.ts#L132)):
 - A session process writes `SimpleX service: ERROR`, `SimpleX channel: ERROR` and `permission relay: ERROR`.
 - The SessionStart hook of an unattended run writes `SimpleX MCP session start: ERROR`, and the turn hook `SimpleX MCP turn: ERROR`.
 

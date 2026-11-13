@@ -52,7 +52,7 @@ export function groupChat(g: T.GroupInfo): T.ChatInfo {
   return {type: "group", groupInfo: g}
 }
 
-export function item(itemId: number, text: string, chatDir: T.CIDirection = {type: "directRcv"}, extra: {status?: string; quoted?: number; mention?: boolean; ts?: string; live?: boolean} = {}): T.ChatItem {
+export function item(itemId: number, text: string, chatDir: T.CIDirection = {type: "directRcv"}, extra: {status?: string; quoted?: number; mention?: boolean; ts?: string; live?: boolean; edited?: boolean} = {}): T.ChatItem {
   const received = chatDir.type.endsWith("Rcv")
   return {
     chatDir,
@@ -63,6 +63,7 @@ export function item(itemId: number, text: string, chatDir: T.CIDirection = {typ
       itemStatus: {type: extra.status ?? (received ? "rcvNew" : "sndSent")},
       userMention: extra.mention ?? false,
       ...(extra.live === undefined ? {} : {itemLive: extra.live}),
+      ...(extra.edited === undefined ? {} : {itemEdited: extra.edited}),
     },
     content: {type: received ? "rcvMsgContent" : "sndMsgContent", msgContent: {type: "text", text}},
     mentions: {},
@@ -200,6 +201,7 @@ export class FakeChat {
   chats = new Map<string, FakeChatData>()
   responses = new Map<string, object>()
   nextItemId = 500
+  closed = false
 
   async sendChatCmd(cmd: string): Promise<ChatResponse> {
     this.commands.push(cmd)
@@ -308,6 +310,14 @@ export class FakeChat {
 
   async apiListContacts(): Promise<T.Contact[]> {
     return [...this.chats.values()].flatMap(({chatInfo}) => (chatInfo.type === "direct" ? [chatInfo.contact] : []))
+  }
+
+  async apiListGroups(): Promise<T.GroupInfo[]> {
+    return [...this.chats.values()].flatMap(({chatInfo}) => (chatInfo.type === "group" ? [chatInfo.groupInfo] : []))
+  }
+
+  async close(): Promise<void> {
+    this.closed = true
   }
 
   async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
