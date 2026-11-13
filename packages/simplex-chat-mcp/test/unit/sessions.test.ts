@@ -669,7 +669,7 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([[{text: "Done.", quotedItemId: 43}]])
   })
 
-  it("passes a reaction of a member whose role sends as the quote line of the reacted message and the emoji, with the message's ID and sender, and nothing for an observer, User, a removed reaction, another kind of reaction or a reaction in the Main group", async () => {
+  it("passes a reaction of a member whose role sends as the quote line of the reacted message and the emoji, with the message's ID and sender, and nothing for an observer, User, a removed reaction or a reaction in the Main group", async () => {
     const chat = new FakeChat()
     const {hub, lines} = await channel(chat)
     hub.userContactId = 6
@@ -680,8 +680,6 @@ describe("session channel", () => {
       reaction(sessionGroup, answer, member(11, "Oscar", T.GroupMemberRole.Observer), emoji("👍")),
       reaction(sessionGroup, answer, sessionUser, emoji("👍")),
       reaction(sessionGroup, answer, bob, emoji("👍"), false),
-      reaction(sessionGroup, answer, bob, {type: "custom", value: "👍"}),
-      reaction(sessionGroup, answer, bob, {type: "unknown", tag: "custom", json: {type: "custom", value: "👍"}}),
       reaction(groupChat(hub.main["group"]), answer, bob, emoji("👍")),
       reaction(sessionGroup, answer, bob, emoji("👍")),
       reaction(sessionGroup, prompt, invitedAlice, emoji("👎")),
@@ -691,15 +689,18 @@ describe("session channel", () => {
       {prompt: {text: "> Tests pass: 212 of 212.\n👍", from: "Bob", item: 57, replyTo: {item: 57, from: "agent"}}},
       {prompt: {text: "> Run the tests\n👎", from: "Alice", item: 46, replyTo: {item: 46, from: "Bob"}}},
     ])
+    expect(answers(chat)).toEqual([])
   })
 
-  it("passes a reaction with an emoji of the apps as is, and with another value as ?, as the apps show it", async () => {
+  it("passes a reaction with an emoji of the apps, and replies to another reaction that it is not supported, without passing it", async () => {
     const chat = new FakeChat()
     const {hub, lines} = await channel(chat)
     const answer = item(57, "Tests pass.", {type: "groupSnd"})
-    for (const value of ["✅", "❤", "❤️", "🦄", "Line one\nLine two"]) await hub["onEvent"](reaction(sessionGroup, answer, bob, emoji(value)))
-    await until(() => lines.length === 5)
-    expect(lines.map(({prompt}) => prompt?.text)).toEqual(["> Tests pass.\n✅", "> Tests pass.\n❤", "> Tests pass.\n?", "> Tests pass.\n?", "> Tests pass.\n?"])
+    const unknown = [emoji("❤️"), emoji("🦄"), emoji("Line one\nLine two"), {type: "custom", value: "👍"}, {type: "unknown", tag: "custom", json: {type: "custom", value: "👍"}}]
+    for (const reacted of [emoji("✅"), ...unknown, emoji("❤")]) await hub["onEvent"](reaction(sessionGroup, answer, bob, reacted))
+    await until(() => lines.length === 2 && answers(chat).length === unknown.length)
+    expect(lines.map(({prompt}) => prompt?.text)).toEqual(["> Tests pass.\n✅", "> Tests pass.\n❤"])
+    expect(answers(chat)).toEqual(unknown.map(() => [{text: "This reaction is not supported.", quotedItemId: 57}]))
   })
 
   it("quotes in the prompt of a reaction to a reply the reacted message, not the message that the reply quotes", async () => {

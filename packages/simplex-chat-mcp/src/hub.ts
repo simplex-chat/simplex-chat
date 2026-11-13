@@ -162,10 +162,10 @@ export class Session {
 
   onReaction({added, reaction: {chatInfo, chatReaction}}: CEvt.ChatItemReaction): void {
     const {chatDir, chatItem, reaction} = chatReaction
-    const {content} = chatItem
-    if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || reaction.type !== "emoji" || (content.type !== "rcvMsgContent" && content.type !== "sndMsgContent")) return
-    const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: content.msgContent, fileName: chatItem.file?.fileName}, {name: this.hub.profile.profile.displayName})
-    this.queue(() => this.prompt({chatInfo, chatItem}, reactionEmoji.includes(reaction.emoji) ? reaction.emoji : "?", chatDir.groupMember, undefined, replyTo))
+    if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || this.isUser(chatDir.groupMember) || (chatItem.content.type !== "rcvMsgContent" && chatItem.content.type !== "sndMsgContent")) return
+    if (reaction.type !== "emoji" || !reactionEmoji.includes(reaction.emoji)) return this.queue(() => this.post(["This reaction is not supported."], chatItem.meta.itemId))
+    const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: chatItem.content.msgContent, fileName: chatItem.file?.fileName}, {name: this.hub.profile.profile.displayName})
+    this.queue(() => this.prompt({chatInfo, chatItem}, reaction.emoji, chatDir.groupMember, undefined, replyTo))
   }
 
   claimPending(connId: number, chat: string): void {

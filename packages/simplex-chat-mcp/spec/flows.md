@@ -1460,27 +1460,25 @@ sequenceDiagram
   participant CC as Claude Code
   O->>C: 👍 to a message in #35;G
   C->>N: chatItemReaction: Session.onReaction
-  alt removed, from an observer or a relay, of a type other than emoji, or to an item that is not a message
+  alt removed, from an observer, a relay or User, or to an item that is not a message
     N->>N: nothing
-  else an added emoji
-    N->>N: the emoji, or ? when it is not one of the apps' eight
+  else not one of the apps' eight emoji
+    N->>N: delivery = delivery then the reply, after the earlier messages of the session
+    N->>O: reply to the reacted message: This reaction is not supported.
+  else one of the apps' eight emoji
     N->>N: replyTo = toReplyTo of the reacted item, with its file name for an empty text
     N->>N: delivery = delivery then prompt: after the earlier messages of the session
-    alt from User
-      N->>N: nothing
-    else a prompt
-      opt no attachment, in the first 30 s after the hub opened
-        N->>N: wait for an attachment until then
-      end
-      alt no attachment now
-        N->>O: reply to the reacted message: Session N is not running.
-      else attached
-        N->>N: text = quote line of replyTo, a line break and 👍
-        N->>N: pushed += (text, the reacted item), at most 20
-        N->>D: onLine {prompt: {text, from, item, replyTo: {item, from?}}}, item the reacted message's ID
-        D->>S: the line on /attach
-        S->>CC: notifications/claude/channel {content, meta: {from, item, reply_to, reply_to_from?}}
-      end
+    opt no attachment, in the first 30 s after the hub opened
+      N->>N: wait for an attachment until then
+    end
+    alt no attachment now
+      N->>O: reply to the reacted message: Session N is not running.
+    else attached
+      N->>N: text = quote line of replyTo, a line break and 👍
+      N->>N: pushed += (text, the reacted item), at most 20
+      N->>D: onLine {prompt: {text, from, item, replyTo: {item, from?}}}, item the reacted message's ID
+      D->>S: the line on /attach
+      S->>CC: notifications/claude/channel {content, meta: {from, item, reply_to, reply_to_from?}}
     end
   end
   CC->>D: Stop hook: POST /turn {answer}
@@ -1489,9 +1487,9 @@ sequenceDiagram
 
 Notes:
 
-- A reaction of a member whose role sends, other than `User`, is a prompt. The core accepts the reactions of observers, and the hub ignores them. A reaction in the Main group reaches no session ([hub.ts:163-169](../src/hub.ts#L163-L169), [:239-242](../src/hub.ts#L239-L242), [:517](../src/hub.ts#L517), [control.ts:884-886](../src/control.ts#L884-L886)).
+- A reaction with one of the apps' eight emoji, of a member whose role sends, other than `User`, is a prompt. The core accepts the reactions of observers, and the hub ignores them. A reaction in the Main group reaches no session ([hub.ts:163-169](../src/hub.ts#L163-L169), [:239-242](../src/hub.ts#L239-L242), [:517](../src/hub.ts#L517), [control.ts:884-886](../src/control.ts#L884-L886)).
 - A reaction is never a command or an approval. A 👍 to a tool-use card leaves the card pending, and reaches Claude as a prompt.
-- The apps send and show eight emoji: 👍 👎 😀 😂 😢 ❤ 🚀 ✅. Another value of type `emoji`, such as `❤️` with U+FE0F, a newer emoji or a text, reaches Claude as `?`, as the Android and desktop apps show it ([hub.ts:29](../src/hub.ts#L29), [:168](../src/hub.ts#L168)).
+- The apps send and show eight emoji: 👍 👎 😀 😂 😢 ❤ 🚀 ✅. Any other reaction, such as `❤️` with U+FE0F, a newer emoji, a text or another type, reaches no session, and Claude replies `This reaction is not supported.` to the reacted message ([hub.ts:29](../src/hub.ts#L29), [:166](../src/hub.ts#L166)).
 - The reacted message is quoted by the rule of a reply's quote, with the item's file name for an empty text, such as `> video: ride.mp4`. Its file is not received ([hub.ts:167-168](../src/hub.ts#L167-L168), [:248](../src/hub.ts#L248), [messages.ts:207-231](../src/messages.ts#L207-L231)).
 - The answer of the turn quotes the reacted message, Claude's own messages included ([hub.ts:289](../src/hub.ts#L289)).
 - Each of this plugin's channel tags in a turn's prompt matches one pushed prompt. So two equal reactions to one message are quoted in their own turns ([hub.ts:308-317](../src/hub.ts#L308-L317)).

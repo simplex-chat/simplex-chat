@@ -27,7 +27,8 @@ Done when:
 6   a reaction to a pending tool-use card leaves the card pending                              unit test
 7   each channel tag of a turn's prompt matches one pushed prompt                               unit test
 8   in a real session, a reaction to Claude's answer gets an answer that quotes it              TESTING.md, check 6
-9   an emoji outside the apps' eight is passed as ?                                            unit test
+9   a reaction other than the apps' eight emoji is not passed and gets "This reaction is not     unit test
+    supported.", quoting the reacted message
 ```
 
 ## What users see
@@ -49,10 +50,12 @@ Alice, an owner, adds 👍 to a pending tool-use card    Alice's reaction; the r
                                                      nothing, and the card stays pending
 an owner turns off "Message reactions"               the apps offer no reactions                     nothing
 a reaction in the Main group                         the reaction                                    nothing
+a reaction other than the apps' eight emoji          `This reaction is not supported.` from Claude,  nothing
+                                                     as a reply to the reacted message
 ```
 
 Texts:
-- Claude writes its answers. The only text of the hub for a reaction is `Session N is not running.` of 0.3.0.
+- Claude writes its answers. The hub's texts for a reaction are `Session N is not running.` of 0.3.0 and `This reaction is not supported.`
 - `User` posts nothing for the prompt of a reaction.
 - Claude Code shows the reaction in the terminal as it shows a message from the group.
 
@@ -93,9 +96,9 @@ Messages in the simplex channel are prompts of the members of the SimpleX group 
 name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the
 message replied to, and reply_to_from, its sender, and its text starts with a line "> " with the type of that message
 when it is media, a file or a link, and the first line of its text, up to 200 characters, with … when it is cut. With
-the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji, or ?
-for an unknown one, after the quote line of the reacted message, with item equal to reply_to. Your final answer of each
-turn reaches them in that group; reply sends them a file.
+the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji after
+the quote line of the reacted message, with item equal to reply_to. Your final answer of each turn reaches them in that
+group; reply sends them a file.
 ```
 
 ```mermaid
@@ -149,9 +152,9 @@ Which reactions are passed:
 
 8. A reaction is a prompt: an emoji reply to the reacted message, in the user's words (Q1 A). Premise 2 of the 0.3.0 plan, "Everything in a session group is addressed to Claude", covers it.
 9. A reaction is passed only from a member whose role sends: author, member, moderator, admin or owner, as `canSend` checks ([control.ts:884-886](../packages/simplex-chat-mcp/src/control.ts#L884-L886)). The hub checks the role itself, because the core accepts an observer's reaction (decision 5). Rule 5 of the 0.3.0 trust model: observers cannot send.
-10. A reaction of `User` is not passed: `Session.prompt` drops `User` ([hub.ts:229-232](../packages/simplex-chat-mcp/src/hub.ts#L229-L232)).
+10. A reaction of `User` is not passed, and gets no reply: `Session.onReaction` drops it, as `Session.prompt` drops `User` ([hub.ts:229-232](../packages/simplex-chat-mcp/src/hub.ts#L229-L232)).
 11. A removed reaction, `added: false`, is not passed, and nothing is posted for it. A reaction already passed stays passed.
-12. A reaction is passed when its `type` is `emoji`. Other reactions are not passed. The member's message of the prompt is the emoji when it is one of the apps' eight, the constant `reactionEmoji`, and `?` otherwise, as the apps show it (decision 7; [hub.ts:29](../packages/simplex-chat-mcp/src/hub.ts#L29), [:168](../packages/simplex-chat-mcp/src/hub.ts#L168)). Decided by the user on 2026-11-13: Claude sees what members see. The hub also checks that the reacted item's content is `rcvMsgContent` or `sndMsgContent`, the only contents that the core lets members react to ([Messages.hs:388-390](../src/Simplex/Chat/Messages.hs#L388-L390), [CIContent.hs:193-197](../src/Simplex/Chat/Messages/CIContent.hs#L193-L197)), so that `toReplyTo` gets its `msgContent`.
+12. A reaction is passed when its `type` is `emoji` and its `emoji` is one of the apps' eight, the constant `reactionEmoji` (decision 7). The member's message of the prompt is the emoji. Any other reaction is not passed: the hub posts `This reaction is not supported.` on the delivery chain, quoting the reacted message ([hub.ts:29](../packages/simplex-chat-mcp/src/hub.ts#L29), [:166](../packages/simplex-chat-mcp/src/hub.ts#L166)). Decided by the user on 2026-11-13. The hub also checks that the reacted item's content is `rcvMsgContent` or `sndMsgContent`, the only contents that the core lets members react to ([Messages.hs:388-390](../src/Simplex/Chat/Messages.hs#L388-L390), [CIContent.hs:193-197](../src/Simplex/Chat/Messages/CIContent.hs#L193-L197)), so that `toReplyTo` gets its `msgContent`.
 13. Reactions in the Main group and in a member support scope are not passed. The hub passes a reaction to the session of its group when the reaction's chat has no `groupChatScope`, as `isGroupMessage` checks for messages ([control.ts:652-654](../packages/simplex-chat-mcp/src/control.ts#L652-L654), [hub.ts:495-499](../packages/simplex-chat-mcp/src/hub.ts#L495-L499)).
 14. A reaction is never a command or an approval. Commands and approvals are one-line `/` texts of admins and owners ([hub.ts:157-158](../packages/simplex-chat-mcp/src/hub.ts#L157-L158), [control.ts:271-288](../packages/simplex-chat-mcp/src/control.ts#L271-L288), [:672-677](../packages/simplex-chat-mcp/src/control.ts#L672-L677)).
 
@@ -244,12 +247,12 @@ on chatItemReaction e, group of session N, no groupChatScope:   N.onReaction(e)
 onReaction({added, reaction}):
   added
   reaction.chatReaction.chatDir is groupRcv, its member m
-  canSend(role of m)
-  reaction.chatReaction.reaction.type = emoji
+  canSend(role of m), m not User
   reacted.content is rcvMsgContent or sndMsgContent   (decision 12)
-  all true:   replyTo = toReplyTo(chatInfo, {itemId, chatDir, content, fileName} of reacted, {name: the hub's profile name})
-              text = emoji in reactionEmoji: emoji; else "?"   (decision 12)
-              delivery = delivery then prompt(reacted, text, m, no file, replyTo)
+  any false:  nothing
+  reaction not {type: emoji, emoji in reactionEmoji}:   delivery = delivery then post "This reaction is not supported.", quoting reacted
+  else:       replyTo = toReplyTo(chatInfo, {itemId, chatDir, content, fileName} of reacted, {name: the hub's profile name})
+              delivery = delivery then prompt(reacted, emoji, m, no file, replyTo)
 onMessage(m), another message:   replyTo = toReplyTo of m.quotedItem, when present   (the replies plan)
                                  delivery = delivery then prompt(m, text, member, m.file, replyTo)
 prompt(item, text, member, ciFile, replyTo):   member is User: nothing; else deliver(the same)
@@ -285,11 +288,11 @@ flowchart LR
   A -- no --> X
   A -- yes --> R{the reactor's role sends}
   R -- no --> X
-  R -- yes --> M{type emoji}
-  M -- no --> X
-  M -- yes --> U{the reactor is User}
+  R -- yes --> U{the reactor is User}
   U -- yes --> X
-  U -- no --> P[prompt on the delivery chain]
+  U -- no --> M{one of the apps' eight emoji}
+  M -- no --> N[reply: This reaction is not supported.]
+  M -- yes --> P[prompt on the delivery chain]
 ```
 
 Data flow:
@@ -326,7 +329,7 @@ Unit tests, `test/unit/sessions.test.ts`, "session channel":
 5. `replies that the session is not running to a reaction, quoting the reacted message`.
 6. `leaves a pending tool-use card pending when an approver reacts to it, and passes the reaction as a prompt`.
 7. `matches each channel tag of a turn's prompt to one pushed prompt, so two equal reactions to one message are quoted in their own turns`.
-8. `passes a reaction with an emoji of the apps as is, and with another value as ?, as the apps show it`: ✅ and ❤ as is; `❤️` with U+FE0F, 🦄 and a text of two lines as `?`.
+8. `passes a reaction with an emoji of the apps, and replies to another reaction that it is not supported, without passing it`: ✅ and ❤ are passed; `❤️` with U+FE0F, 🦄, a text of two lines and two reactions of another type get the reply.
 
 The unit tests of `toReplyTo`, of the quote line and of the meta keys in `session.test.ts` are those of the replies plan, made by `ep/mcp-replies`. This one adds to `is a channel` of `session.test.ts` that the instructions describe a reaction.
 
