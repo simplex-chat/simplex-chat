@@ -60,7 +60,8 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 31. [A prompt of Claude Code](#31-a-prompt-of-claude-code)
 32. [The steps of a turn](#32-the-steps-of-a-turn)
 33. [A reaction in the session group](#33-a-reaction-in-the-session-group)
-34. [A summary of the session's context](#34-a-summary-of-the-sessions-context)
+34. [A tool approved for the rest of a session](#34-a-tool-approved-for-the-rest-of-a-session)
+35. [A summary of the session's context](#35-a-summary-of-the-sessions-context)
 
 ---
 
@@ -1055,7 +1056,7 @@ Notes:
 - PostModelSwitch sends `{id, pid, at, model, effort}`, with `effort` when the hook's input has it ([`turn`](../src/hook.ts)). Nothing is posted for it. When the model or effort changed, the hub writes them to `session.json` and updates the short description ([`Session.turn`](../src/hub.ts)).
 - The hub takes a model or an effort level only from a request whose `at` is not older than the `at` of the value it took last. It keeps the two times apart, one for the model and one for the effort level. The model of a `/title` comes with the `at` of its SessionStart hook, so a hook that started during the wait of a held title keeps its model ([flow 27](#27-clear---continue-and-resume-in-one-session)). A request without `at` counts as the current time. So when a Stop request that waited for its transcript entry arrives after a later PostModelSwitch request, the model of the switch stays ([`Session.newer`](../src/hub.ts)).
 - For a Stop request with a changed model or effort, the hub posts the answer before it updates the short description. So the prompt of a request handled meanwhile is posted after the answer. The description is updated also when a post fails ([`Session.turn`](../src/hub.ts)).
-- A turn hook starts the service when none runs. It repeats a turn refused with 409 up to 15 times, 1 s apart, which is longer than the 10 s wait of a held title. It prints `{}` and logs errors on its stderr ([`turn`](../src/hook.ts)). Claude Code gives a hook without `timeout` 600 s, more than the 60 s of a prompt's reads, the 2 minutes of a compaction's reads of [flow 34](#34-a-summary-of-the-sessions-context) and the 15 s of repeats.
+- A turn hook starts the service when none runs. It repeats a turn refused with 409 up to 15 times, 1 s apart, which is longer than the 10 s wait of a held title. It prints `{}` and logs errors on its stderr ([`turn`](../src/hook.ts)). Claude Code gives a hook without `timeout` 600 s, more than the 60 s of a prompt's reads, the 2 minutes of a compaction's reads of [flow 35](#35-a-summary-of-the-sessions-context) and the 15 s of repeats.
 
 Source: the `UserPromptSubmit`, `Stop` and `PostModelSwitch` entries of [`hooks`](../hooks/hooks.json), [`Session.turn`, `turnQuote`, `answer`, `postRefusal`, `post`, `textParts`](../src/hub.ts), [`User.post`](../src/user.ts).
 
@@ -1074,7 +1075,7 @@ sequenceDiagram
   CC->>CC: the terminal dialog stays open
   S->>D: POST /permission {id, requestId, toolName, description, inputPreview}
   D->>N: permission
-  N->>O: card in #35;G: I want to use `Bash`: `DESCRIPTION`, preview, /'approve N' or /'reject N'
+  N->>O: card in #35;G: I want to use `Bash`: `DESCRIPTION`, preview, /'approve N', /'approve N all' or /'reject N'
   O->>N: /approve N
   N->>N: performing
   N->>D: onLine {permission: {requestId, behavior: allow}}
@@ -1090,6 +1091,7 @@ Notes:
 - The first answer, in the terminal or in the group, applies. The last line of a card that is still pending becomes `Ended.` at an answer, or at a prompt that is not mid-turn, whose hook started after the card was created, and when the last attachment of the session ends. A prompt that Claude Code adds to the running turn ends no card ([`Session.turn`, `endPermissions`](../src/hub.ts), [`Service.onAttach`](../src/service.ts), [`cardText`](../src/control.ts)).
 - The input preview is cut to fit the card ([`Control.refusal`, `fittedLines`](../src/control.ts)).
 - The card is posted in mode `requests` also for a session in mode `host` ([`Session.permission`](../src/hub.ts)).
+- `/approve N all` also approves the tool for the rest of the session, see [flow 34](#34-a-tool-approved-for-the-rest-of-a-session).
 
 Source: the notification handler of [`startSession`](../src/session.ts), [`ServiceLink.permission`](../src/session.ts), the `POST /permission` route of [`Service.routes`](../src/service.ts), [`Session.permission`](../src/hub.ts), [`requestLines`](../src/control.ts).
 
@@ -1548,7 +1550,67 @@ Source: [`Session.onReaction`, `prompt`, `refuseReaction`, `deliver`, `answer`, 
 
 ---
 
-## 34. A summary of the session's context
+## 34. A tool approved for the rest of a session
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant S as Session process
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  CC->>S: notifications/claude/channel/permission_request {request_id, tool_name: Bash, description, input_preview}
+  S->>D: POST /permission
+  D->>N: permission, Bash not approved
+  N->>O: card: I want to use Bash, /'approve 5', /'approve 5 all' or /'reject 5'
+  O->>N: /approve 5 all
+  N->>N: toolApprovals: Bash by Alice, logged
+  N->>D: onLine {tools: [{tool: Bash, approvedBy: Alice}]}
+  D->>S: the line on /attach, kept as the list of that attachment
+  N->>D: onLine {permission: {requestId, behavior: allow}}
+  D->>S: the line on /attach
+  S->>CC: notifications/claude/channel/permission allow
+  N->>O: card edited: Approved by Alice.
+  N->>O: reply: Approved Bash for the rest of this session by Alice. /'revoke Bash'
+  CC->>S: PreToolUse hook of type mcp_tool: tools/call pre_tool_use {tool: Bash}
+  S-->>CC: allow
+  CC->>CC: the next Bash use runs without a prompt, unless Claude Code's own rules ask
+```
+
+A use that Claude Code asks for by its own rules:
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant S as Session process
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  CC->>S: PreToolUse hook: tools/call pre_tool_use {tool: Bash}
+  S-->>CC: allow
+  CC->>CC: the command writes to .bashrc, a protected path: the permission flow
+  CC->>S: notifications/claude/channel/permission_request {request_id, tool_name: Bash, ...}
+  S->>D: POST /permission
+  D->>N: permission, Bash approved
+  N->>O: card with the line: Bash is approved for this session, and Claude Code still asks for this use. /'approve 6' or /'reject 6'
+```
+
+Notes:
+
+- Claude Code re-checks a call that a PreToolUse hook allows. A deny rule refuses it, and an ask rule, a safety check such as a write to a protected path, plan mode or the auto mode classifier sends it through the permission flow, which relays the prompt as a card. With Claude Code before 2.1.299, a hook's `allow` also ran writes in plan mode.
+- One tap approves its own card only. Other pending cards of the tool stay pending.
+- An approval counts while its approver is an admin or owner of the group. After a membership event, the hub sends the approved tools before the rights post; after `/observer`, `Control` sends them after it reads the members again.
+- `/revoke TOOL` removes an approval, and the session gets the new list. `/list` shows the approved tools after the chats.
+- The approvals belong to the Claude Code process of the session. A session server answers from the list of its current attachment only. When it drops the attachment after a failed call and attaches again, the hub sends it the approved tools, which it keeps. The approvals are dropped when `/session` comes from another process and when the session closes. The service tells processes apart by their ID and their start time, read on Linux and macOS; a `/session` whose start time is unknown counts as another process. While two processes have the session attached, only the attachments of the process of the last `/session` get the approved tools; the others get `{tools: []}`. The approvals also end when the session's group is lost, found at an event or at a load, and the session server gets `{tools: []}`.
+- The approvals are kept in memory, so a service restart drops them.
+- The terminal shows nothing at the approval, and Claude Code's `/permissions` doesn't list it.
+- While the plugin's MCP server is not connected, Claude Code reports `MCP server 'plugin:simplex:simplex' not connected` as a non-blocking PreToolUse hook error at each tool use, and the tool use goes on.
+
+Source: [`Control.ownerCommand`, `approveTool`, `revokeTool`, `approvedTools`, `endToolApprovals`, `load`, `lose`, `requestLines`, `commandsLine`, `ownerRequest`](../src/control.ts), [`Session.permission`, `onLine`, `sendTools`, `endToolApprovals`, `Hub.onEvent`](../src/hub.ts), [`Service.onSession`, `onAttach`, `scheduleIdle`, `processStart`](../src/service.ts), [`startSession`, `ServiceLink.open`, `ServiceLink.approvedBy`, `hookOutput`](../src/session.ts), [`hooks/hooks.json`](../hooks/hooks.json).
+
+---
+
+## 35. A summary of the session's context
 
 ```mermaid
 sequenceDiagram
