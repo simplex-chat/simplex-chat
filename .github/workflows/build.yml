@@ -331,7 +331,9 @@ jobs:
       - name: Compute image cache week
         id: week
         if: (matrix.should_run == true || matrix.kotlin == true) && env.release != 'true'
-        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+          echo "last=$(date -u -d '7 days ago' +%G-W%V)" >> "$GITHUB_OUTPUT"
 
       - name: Build and cache Docker image
         if: matrix.should_run == true || matrix.kotlin == true
@@ -347,7 +349,9 @@ jobs:
             GHC=${{ matrix.ghc }}
             USER_UID=${{ steps.ids.outputs.uid }}
             USER_GID=${{ steps.ids.outputs.gid }}
-          cache-from: ${{ env.release != 'true' && format('type=registry,ref={0}-{1}', env.image_cache, steps.week.outputs.week) || '' }}
+          cache-from: |
+            ${{ env.release != 'true' && format('type=registry,ref={0}-{1}', env.image_cache, steps.week.outputs.week) || '' }}
+            ${{ env.release != 'true' && format('type=registry,ref={0}-{1}', env.image_cache, steps.week.outputs.last) || '' }}
           cache-to: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && format('type=registry,ref={0}-{1},mode=max,ignore-error=true', env.image_cache, steps.week.outputs.week) || '' }}
 
       # Docker needs these flags for AppImage build:
