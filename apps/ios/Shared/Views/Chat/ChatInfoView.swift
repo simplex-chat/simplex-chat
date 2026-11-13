@@ -364,6 +364,13 @@ struct ChatInfoView: View {
                 )
             }
         }
+        .onChange(of: chat.chatInfo.contact?.userPreferences) { _ in
+            if let ct = chat.chatInfo.contact {
+                let allowed = contactUserPrefsToFeaturesAllowed(ct.mergedPreferences)
+                featuresAllowed = allowed
+                currentFeaturesAllowed = allowed
+            }
+        }
     }
 
     private func contactInfoHeader() -> some View {
