@@ -29,6 +29,7 @@ export interface SessionRequest {
   project: string
   name?: string
   config: Config
+  record?: string
 }
 
 // spec: spec/architecture.md#protocol-sessionrequest

@@ -44,6 +44,7 @@ export interface SessionLike {
   readonly number: number
   readonly displayName: string
   open: boolean
+  record?: string
   onLine?: (line: AttachLine) => void
   busy(): boolean
   rename(name: string): Promise<void>
@@ -231,6 +232,7 @@ export class Service {
     entry.seen = Date.now()
     if (request.pid !== undefined) this.registered.emit(String(request.pid))
     const agent = await entry.opening
+    agent.record = request.record
     if (previous.pid !== undefined && (previous.pid !== request.pid || started === undefined || previous.started !== started)) agent.endToolApprovals()
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
