@@ -60,7 +60,7 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..))
 import Simplex.Messaging.Server (runSMPServerBlocking)
-import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMaxClientCmdWait, defaultMessageExpiration, defaultNtfExpiration, defaultInactiveClientExpiration)
+import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultForwardWorkers, defaultMaxClientCmdWait, defaultMessageExpiration, defaultNtfExpiration, defaultInactiveClientExpiration)
 import NameResolver (NameRegistry, resolverNamesConfig, withNameResolver)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
 import Simplex.Messaging.Transport
@@ -678,6 +678,7 @@ smpServerCfg p =
       allowSMPProxy = True,
       serverClientConcurrency = 16,
       serverResolverConcurrency = 1000,
+      serverForwardWorkers = defaultForwardWorkers,
       maxClientCmdWait = defaultMaxClientCmdWait,
       namesConfig = Nothing,
       information = Nothing,
