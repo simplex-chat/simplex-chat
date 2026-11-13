@@ -6,7 +6,7 @@
 > Related docs: [README](../README.md) | [Reference](../REFERENCE.md) | [PLAN](../../../plans/2026-10-19-mcp-server.md)
 
 **Source:** [`cli.ts`](../src/cli.ts) | [`serve.ts`](../src/serve.ts) | [`http.ts`](../src/http.ts) | [`tools.ts`](../src/tools.ts) | [`actions.ts`](../src/actions.ts) | [`control.ts`](../src/control.ts) | [`messages.ts`](../src/messages.ts) | [`files.ts`](../src/files.ts) | [`register.ts`](../src/register.ts) | [`log.ts`](../src/log.ts) | [`core.ts`](../src/core.ts)
-**Plugin source:** [`session.ts`](../src/session.ts) | [`client.ts`](../src/client.ts) | [`socket.ts`](../src/socket.ts) | [`protocol.ts`](../src/protocol.ts) | [`service.ts`](../src/service.ts) | [`hub.ts`](../src/hub.ts) | [`main-group.ts`](../src/main-group.ts) | [`user.ts`](../src/user.ts) | [`hook.ts`](../src/hook.ts) | [`owner.ts`](../src/owner.ts) | [`config.ts`](../src/config.ts) | [`qr.ts`](../src/qr.ts)
+**Plugin source:** [`session.ts`](../src/session.ts) | [`client.ts`](../src/client.ts) | [`socket.ts`](../src/socket.ts) | [`protocol.ts`](../src/protocol.ts) | [`service.ts`](../src/service.ts) | [`hub.ts`](../src/hub.ts) | [`main-group.ts`](../src/main-group.ts) | [`user.ts`](../src/user.ts) | [`hook.ts`](../src/hook.ts) | [`display.ts`](../src/display.ts) | [`service-request.ts`](../src/service-request.ts) | [`paths.ts`](../src/paths.ts) | [`owner.ts`](../src/owner.ts) | [`config.ts`](../src/config.ts) | [`qr.ts`](../src/qr.ts)
 
 ---
 
@@ -268,6 +268,7 @@ Hooks are bound in [`serve.ts:96-102`](../src/serve.ts#L96-L102): `refusal`, `sa
 | `getChat`, `receivingFiles`, `markRead` | [310-326](../src/messages.ts#L310-L326) | `apiGetChat` and `apiChatItemsRead` by chat reference; the IDs of a chat's files in status `rcvAccepted`, `rcvTransfer` or `rcvWarning`, paged |
 | `unreadItems` | [328](../src/messages.ts#L328) | unread items of a chat after its `initial` read, paged |
 | `reportProgress`, `nextChange`, `awaitResponses` | [344-374](../src/messages.ts#L344-L374) | waits |
+| `duration` | in [`messages.ts`](../src/messages.ts) | a time rounded to whole milliseconds: `41 ms`, `2.0 s`, `42 s`, `4 min 12 s`, `1 h 5 min`, for the step lines and the end line of the plugin |
 | `validName`, `viewName` | [380-406](../src/messages.ts#L380-L406) | display name rules and `@name` form |
 
 ### [2.8 `files.ts`](../src/files.ts)
@@ -709,7 +710,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([c
 
 ## 8. Claude Code plugin
 
-The plugin runs the same tools, `Actions` and `Control` as `serve`, in other processes. ROOT is the plugin's data root, `~/.simplex-mcp` or `SIMPLEX_MCP_HOME` ([files.ts:31-34](../src/files.ts#L31-L34)).
+The plugin runs the same tools, `Actions` and `Control` as `serve`, in other processes. ROOT is the plugin's data root, `~/.simplex-mcp` or `SIMPLEX_MCP_HOME` ([`dataRoot`](../src/paths.ts)).
 
 ### 8.1 System diagram
 
@@ -718,6 +719,7 @@ flowchart LR
   subgraph cc["Claude Code"]
     ses["session 1, session 2"]
     hk["SessionStart, PreToolUse,<br/>UserPromptSubmit, Stop,<br/>PostModelSwitch hooks"]
+    dh["MessageDisplay hook"]
   end
   subgraph ps["simplex-mcp session, one per Claude Code session"]
     mcp["McpServer, stdio<br/>tools and channel"]
@@ -734,6 +736,7 @@ flowchart LR
   end
   ses -->|stdio| mcp
   hk -->|"node dist/cli.js hook ..."| link
+  dh -->|"node dist/display.js<br/>POST /turn, 1 s at most"| sock
   term["terminal"] -->|"npx ... link, reset-owners"| link
   mcp --> link
   link -->|"HTTP over ROOT/service.sock<br/>Authorization: Bearer"| sock
@@ -768,7 +771,7 @@ Data flow of a prompt from the session group:
 1. `Session.onMessage` receives a message of a member in the group of session N ([hub.ts:587-592](../src/hub.ts#L587-L592)). A one-line `/` command goes to `Control`. Another message is queued after the earlier ones, with the `replyTo` of its quote when it is a reply ([:173-181](../src/hub.ts#L173-L181), [messages.ts:207-216](../src/messages.ts#L207-L216)). `Session.prompt` drops a message of `User` and delivers the rest ([:265-268](../src/hub.ts#L265-L268)).
 2. In the first 30 s after the hub opened, a delivery without an attachment waits for one. With an attachment, the file of the message, if any, is received. Then, if the session is not attached, the hub replies `Session N is not running.` Otherwise the prompt, after the quote line of a reply, is pushed, and the line `{prompt}` is written to every `/attach` stream of the session ([hub.ts:270-285](../src/hub.ts#L270-L285), [messages.ts:224-231](../src/messages.ts#L224-L231), [service.ts:315](../src/service.ts#L315)).
 3. The session process sends it to Claude Code as `notifications/claude/channel`, with `reply_to` and `reply_to_from` of a reply ([session.ts:53-56](../src/session.ts#L53-L56), [:197-201](../src/session.ts#L197-L201)).
-4. The hooks post the terminal prompts and the final answer of each turn with `POST /turn` ([hook.ts:125-149](../src/hook.ts#L125-L149), [hub.ts:201-227](../src/hub.ts#L201-L227)).
+4. The turn hooks post the terminal prompts and the final answer of each turn with `POST /turn`, and the display hook posts Claude's text in batches as Claude writes it ([`turn`](../src/hook.ts), [`display`](../src/display.ts), [`Session.turn`](../src/hub.ts)). Claude posts an opening message at a prompt that starts a turn, a live message for each text, and the end line after the answer ([flow 33](flows.md#33-the-texts-of-a-turn)).
 
 ### 8.2 Modules
 
@@ -817,6 +820,7 @@ Data flow of a prompt from the session group:
 | `SessionRequest`, `TitleRequest` | [21-38](../src/protocol.ts#L21-L38) | `/session`, `/title`, with `unattended` for the mark of a process |
 | `PermissionRequest`, `TurnRequest` | [40-60](../src/protocol.ts#L40-L60) | `/permission`, `/turn` |
 | `Step` | [62-66](../src/protocol.ts#L62-L66) | `step` of `/turn`: the tool use's ID, the line's text, and `end` at the tool use's end |
+| `TextBatch` | in [`protocol.ts`](../src/protocol.ts) | `text` of `/turn`: the `message_id` of Claude's text, the batch's index, `final` at the text's last batch, and the batch's text |
 | `AttachLine` | [68-71](../src/protocol.ts#L68-L71) | `{prompt}` lines, with the `replyTo` of a reply, and `{permission}` lines of `/attach` |
 | `TitleReply`, `SessionReply`, `AttachRequest`, `CallRequest`, `CallLine` | [73-94](../src/protocol.ts#L73-L94) | replies and `/call` |
 | `StatusReply`, `ResetReply` | [96-104](../src/protocol.ts#L96-L104) | `/status`, `/reset-owners` |
@@ -848,7 +852,7 @@ Data flow of a prompt from the session group:
 
 | Symbol | Line | Contents |
 |---|---|---|
-| constants | [18-28](../src/hub.ts#L18-L28) | profile name `Claude`, session data key, first action number, 10 s stop wait, 60 s echo of a raw prompt, 20 pushed prompts, 10 minutes for a prompt's file, 1 day for a pending connection, 30 s of held prompts after the hub opens, the channel tags of this plugin, the one reply to the `/` commands of a member who is not an admin or owner |
+| constants | in [`hub.ts`](../src/hub.ts) | profile name `Claude`, session data key, first action number, 10 s stop wait, 60 s echo of a raw prompt, 20 pushed prompts, 10 minutes for a prompt's file, 1 day for a pending connection, 30 s of held prompts after the hub opens, the channel tags of this plugin, the one reply to the `/` commands of a member who is not an admin or owner, 3 s between the updates of a live text, 20 ended texts kept for the claim of an answer, and `⏹️ Stopped`, the text of an opening message that no post filled |
 | `hubTexts` | [34](../src/hub.ts#L34) | refusal texts of a lost session group, of a stop and of the limit of pending actions, which names the approvers |
 | `SessionGroupData` | [41-45](../src/hub.ts#L41-L45) | session number; pending connections of `connect` with their time; the approved mode |
 | `Session` | [59](../src/hub.ts#L59) | one Claude Code session, built from its `session.json` and its group's data. `Actions` get the hub's texts and the mode of the group's data, or `requests` without one. `AgentTools` get the session's ID and folder and the group for `reply`. `Control` of the session group gets the session's approver checks. The stored model and effort are kept as well. |
@@ -858,12 +862,14 @@ Data flow of a prompt from the session group:
 | `Session.onMessage` | [173-181](../src/hub.ts#L173-L181) | The hub answers a `/` command from a member who is not an approver with the one refusal, found by `refusesCommand` and posted on the `delivery` chain. The remaining one-line `/` texts go to `Control`, and other messages go to `prompt` on the `delivery` chain, in arrival order. The `replyTo` of a reply is computed here from its quote, with the hub's profile name as Claude's name, and passed with the message. |
 | `Session.claimPending` | [183](../src/hub.ts#L183) | When a connection of `connect` recorded in the last day completes, its record is removed and its chat is claimed. |
 | `Session.permission` | [190](../src/hub.ts#L190) | a `permission` action in mode `requests`. Its verdict is written to the attachments, and the action is removed when decided. |
-| `Session.turn` | [201](../src/hub.ts#L201) | Before any await, at an answer or a prompt that is not mid-turn, the permissions created before its hook started are ended, and so are the steps. An answer's quote is chosen, and its hook's start is recorded as the latest answer's hook start. A turn record is added for a prompt whose hook started no earlier than the latest answer's hook, unless the prompt is mid-turn and matched no pushed prompt. The model and the effort level of the request are taken only when its `at` is not older than the `at` of the value taken last, kept apart for each ([`newer`](../src/hub.ts#L297-L301)). A `/title` passes its model with the `at` of its SessionStart hook. A request without `at` counts as the current time. A changed description is recorded in `session.json`. After these steps, the request's `step` goes to `step`, Claude posts the request's `note` without a quote, silent, and `User` posts the terminal prompt unless its `typed` is false, or it is blank, made only of this plugin's channel tags, pushed or a command. A prompt without `typed` is posted as typed. The turn record of a prompt is kept whatever its `typed`. Claude posts the answer unless it is blank. The changed short description is set, even after a failed post. A prompt, a note, a step's line or an answer that the core refuses for a group preference is replaced by Claude's post with the preference's name. |
-| `Session.endPermissions`, `endSteps`, `fileDone` | [229-250](../src/hub.ts#L229-L250) | the end of pending permissions created before a time; the end of the steps started before a time, each removed by `endStep`, its ID kept as finished and its line updated with its own text, live off; it returns the promise of all updates started so far. The end of a prompt's file |
+| `Session.turn` | in [`Session`](../src/hub.ts) | Before any await, at an answer or a prompt that is not mid-turn, the permissions created before its hook started are ended, and so are the steps. At a prompt that is not mid-turn, each opening message without an end gets the hook's start as its end. At an answer, the turn's start is the newest turn record not marked as added whose hook started no later than the answer's hook. At both, `endTexts` is queued with the hook's start, and with the answer and the turn's start for an answer. An answer's quote is chosen, and its hook's start is recorded as the latest answer's hook start. A turn record is added for a prompt whose hook started no earlier than the latest answer's hook, unless the prompt is mid-turn and matched no pushed prompt. The record of a mid-turn prompt is marked as added. The model and the effort level of the request are taken only when its `at` is not older than the `at` of the value taken last, kept apart for each ([`newer`](../src/hub.ts#L297-L301)). A `/title` passes its model with the `at` of its SessionStart hook. A request without `at` counts as the current time. A changed description is recorded in `session.json`. After these steps, the request's `text` goes to `text`, its `step` to `step`, Claude posts the request's `note` without a quote, silent, and `User` posts the terminal prompt unless its `typed` is false, or it is blank, made only of this plugin's channel tags, pushed or a command. A prompt without `typed` is posted as typed. The turn record of a prompt is kept whatever its `typed`. A prompt that is not mid-turn, that `User` posts or that matched a pushed prompt, and whose hook started no earlier than the latest answer's hook, then gets the opening message from `openTurn`. An answer goes to `answer`, with the result of the claim of `endTexts`. The changed short description is set, even after a failed post. A prompt, a note, a step's line, a text or an answer that the core refuses for a group preference is replaced by Claude's post with the preference's name. |
+| `Session.endPermissions`, `endSteps`, `endLive`, `fileDone` | in [`Session`](../src/hub.ts) | the end of pending permissions created before a time; the end of the steps started before a time, each removed by `endStep`, its ID kept as finished and its line updated with its own text, live off; it returns the promise of all updates started so far. `endLive` ends every step, closes every opening message, queues the end of every text, and returns the promise of all updates started once that end has run. The end of a prompt's file |
 | `Session.invite`, `announceRights` | [252-263](../src/hub.ts#L252-L263) | invitation through the Main group. At a member's join or role change, other than `User`'s, the rights of the member's role are posted. The `/observer` command is added only for a role that can send, other than owner ([261](../src/hub.ts#L261)). |
 | `Session.prompt` | [265-268](../src/hub.ts#L265-L268) | a message of `User` dropped; the rest delivered |
-| `Session.deliver`, `receive`, `turnQuote`, `answer`, `postRefusal`, `post`, `pushedIn` | [270-319](../src/hub.ts#L270-L319), [374-392](../src/hub.ts#L374-L392) | `deliver` waits for the held prompts, and then receives the file while the session is attached. It writes the prompt line with the file's path. For a reply, it writes the given `replyTo` as the quote line before the text, in the pushed prompt and in the line's `text`, and its ID and sender as the line's `replyTo`. After a failure of the file, the line is written without the path, and a reply is posted. Without an attachment, the reply is `Session N is not running.` `receive` receives the file into the session's folder within 10 minutes. `turnQuote` returns the newest turn record before an answer, or else the oldest pushed prompt not quoted yet, which it marks quoted. `answer` posts the answer in parts, with its quote when the quote fits with the answer's first character, the parts before the last with priority -1 and the last with priority 1. `postRefusal` replaces a post that the core refuses with `feature not allowed NAME` by the subject and the text with the preference's name. The text is made by `featureOff` for an answer, and by `notAllowedForUser` for a prompt of `User`. `post` sends a post to the group, each part with its priority when one is given, and sends it again without its quote when the core refuses the quote. `pushedIn` returns the pushed prompts contained in a turn's prompt. |
-| `Session.step`, `startLine`, `endStep`, `expireSteps`, `remember` | [321-372](../src/hub.ts#L321-L372) | For a finished ID, `step` removes the ID and posts nothing. Otherwise `step` first ends the expired steps with `expireSteps`. At a start, `step` keeps the step's time, text, the promise of the line's ID from `startLine` and the wall-clock time of the send, set before the send is awaited, and starts the check of every minute when none runs. At an end, `step` ends its step with `endStep`, or, when no step is known, posts the final line with priority -1 and keeps the ID as finished. `startLine` sends the line as a live message with priority -1; after a refused send, the refusal is posted, after another failure the error is logged, and the promise gives no ID. `endStep` removes the step, stops the check when no step is left, and updates its line with a text and `liveMessage: false` when the line was posted, logging a failed update; the update is added to the session's promise of updates. `expireSteps` ends each step sent 23 hours ago or earlier by the wall clock with its own text, without keeping its ID as finished. `remember` keeps the last 100 finished IDs. |
+| `Session.deliver`, `receive`, `turnQuote`, `turnStart`, `answer`, `postAnswer`, `postRefusal`, `post`, `pushedIn` | in [`Session`](../src/hub.ts) | `deliver` waits for the held prompts, and then receives the file while the session is attached. It writes the prompt line with the file's path. For a reply, it writes the given `replyTo` as the quote line before the text, in the pushed prompt and in the line's `text`, and its ID and sender as the line's `replyTo`. After a failure of the file, the line is written without the path, and a reply is posted. Without an attachment, the reply is `Session N is not running.` `receive` receives the file into the session's folder within 10 minutes. `turnQuote` returns the newest turn record before an answer, or else the oldest pushed prompt not quoted yet, which it marks quoted. `turnStart` returns the start of the newest turn record not marked as added at or before a time. `answer` makes the end line with the time from the turn's start to the answer's hook start, or `!- ✅ Done!` without a turn's start. For a blank answer, it fills the opening message of the answer's time with the end line, live off. Otherwise it posts the answer with `postAnswer` unless a text was claimed for it, and then the end line with priority 1. Last, it closes the opening messages whose end, or whose start when they have no end, is at or before the answer's hook start. `postAnswer` posts the answer in parts with priority -1. Its first part fills the opening message of the answer's time, live off, or else it is posted with the quote when the quote fits with the answer's first character. When the core refuses that update, the opening message is put back. `postRefusal` replaces a post that the core refuses with `feature not allowed NAME` by the subject and the text with the preference's name. The text is made by `featureOff` for an answer, and by `notAllowedForUser` for a prompt of `User`. `post` sends a post to the group, each part with its priority when one is given, as a live message when asked, and sends it again without its quote when the core refuses the quote. `pushedIn` returns the pushed prompts contained in a turn's prompt. |
+| `Session.step`, `startLine`, `sendLine`, `refused`, `endStep`, `finalize`, `expireSteps`, `remember` | in [`Session`](../src/hub.ts) | For a finished ID, `step` removes the ID and posts nothing. Otherwise `step` first ends the expired steps with `expireSteps`. At a start, `step` queues `startLine` after the earlier live posts with `queueLive`. It keeps the step's time, text, the promise of the line's ID and the wall-clock time of the queueing, set before the send is awaited, and starts the check of every minute when none runs. At an end, `step` ends its step with `endStep`, or, when no step is known, posts the final line with priority -1 and keeps the ID as finished. `startLine` fills the opening message of the hook's start with the line, live or not as asked. Without that opening message, or when its send gave no ID, `sendLine` sends the line with priority -1, live when asked, quoting a given item. After a refused send or update, `refused` posts the refusal of the kind, a step's or a text's, and after another failure the error is logged; the promise then gives no ID. After a failed update, the opening message is put back. `endStep` removes the step, stops the check when no step is left, and passes its line to `finalize`. `finalize` updates a line with a text and `liveMessage: false` when the line was posted, logging a failed update; the update is added to the session's promise of updates. `expireSteps` ends each step sent 23 hours ago or earlier by the wall clock with its own text, without keeping its ID as finished. `remember` keeps the last 100 finished IDs. |
+| `Session.openTurn`, `boundOpenings`, `takeOpening`, `putBack`, `closeOpenings` | in [`Session`](../src/hub.ts) | `openTurn` sends an empty live line with priority -1, quoting the given prompt when the quote fits with an empty text, and keeps it as an opening message with the prompt hook's start. `boundOpenings` gives each opening message without an end, started at or before a time, that time as its end. `takeOpening` removes and returns the last kept opening message whose start is at or before a time and whose end, when it has one, is after that time. `putBack` keeps an opening message again. `closeOpenings` removes the opening messages whose end, or whose start when they have no end, is at or before a time, and finalizes each with `⏹️ Stopped`. |
+| `Session.text`, `queueLive`, `addBatch`, `showText`, `updateText`, `endPart`, `postPart`, `endText`, `dropText`, `endTexts`, `claim`, `updateItem` | in [`Session`](../src/hub.ts) | `text` queues `addBatch` with `queueLive`, with the latest answer's hook start at the request's arrival. `queueLive` runs its work after the earlier live posts, logs a failure as `live posts of session N`, and returns the work's result, or none after a failure. `addBatch` drops a batch of an ended text, and the first batch of a text whose hook started before the latest answer's hook, whose ID it keeps as ended. It keeps the batch by its index, and appends the batches in index order to the text's part. After the final batch and all batches before it, `endText` ends the text; otherwise `showText` shows it. `showText` cuts the part by `textParts`. When it has more than one part, `endPart` ends the parts before the last, and the last part starts a new message. A part that is not blank and has no message starts one with `startLine`, live; when that gives no ID, the text is dropped. Otherwise, when the part differs from the text sent last, a timer updates the message with the part 3 s after its last send. `updateText` updates the text's message, live or not as asked, and skips a live update with the text sent last. After a refusal for a group preference, the text is dropped, the refusal posted, and its message finalized with the text accepted last; another failure is logged. `endPart` clears the timer and finalizes the message with the first part, or posts it with `postPart`, not live, when the text has no message. It then posts the other parts with priority -1. `endText` drops the text, keeps it among the last 20 ended texts, and ends it with `endPart`, in parts by `textParts`. `dropText` clears the timer, removes the text and keeps its ID among the last 100 ended IDs. `endTexts` queues the claim of an answer, when one is given, and the end of every text whose hook started before a time. It returns whether the claim found the answer's text. `claim` takes the newest text, live or among the last 20 ended, whose first batch's hook started after the turn's start and before the answer's hook. When its finished parts and its part, trimmed, start the trimmed answer, the rest of the answer after the finished parts ends a live text, or updates the message of an ended text when it differs from its part. `updateItem` updates an item of the session group, live or not. |
 | `Session.queue`, `refusesCommand` | [394-400](../src/hub.ts#L394-L400) | the `delivery` chain; a one-line `/` text of a member other than `User` who is not an approver |
 | `Session.approves`, `isUser`, `setMode`, `declineHost`, `store`, `savePending` | [402-430](../src/hub.ts#L402-L430) | approver check: not `User`, the role `admin` or `owner` in the session group; the member of the contact `Hub.userContactId`; the mode and its record in the group's custom data; `hostDeclined` and its record; fields written into `session.json`; a pending connection recorded, those older than a day dropped |
 | `Hub.userContactId` | [441](../src/hub.ts#L441) | the hub's contact marked `simplexMcpUser`, read at the start |
@@ -871,11 +877,12 @@ Data flow of a prompt from the session group:
 | `Hub.configure`, `resetOwners` | [487-495](../src/hub.ts#L487-L495) | expiry of all sessions and the Main group name. The Main group is replaced at once, even while owners exist. |
 | `Hub.session` | [497](../src/hub.ts#L497) | the open session, renamed when its name changed, or a new `Session` with its stored or new group. The owners are invited to a new group. |
 | `Hub.sessionsText`, `join`, `inviteOwner` | [521-543](../src/hub.ts#L521-L543) | `SessionGroups` of the Main group |
-| `Hub.stop` | [549](../src/hub.ts#L549) | actions stopped, events awaited, cancelled cards awaited up to 10 s, steps ended, cores closed |
+| `Hub.stop` | in [`Hub`](../src/hub.ts) | actions stopped, events awaited, cancelled cards awaited up to 10 s, steps, opening messages and texts ended by `endLive` with their updates awaited, cores closed |
 | `storedGroup`, `createSessionGroup` | [562-581](../src/hub.ts#L562-L581) | the group of `session.json` with a matching session number; a new group with `User` added |
 | `Hub.onEvent` | [583](../src/hub.ts#L583) | event dispatch. Pending connections are claimed at `contactConnected` and `userJoinedGroup`. A session group's membership events go to its `Control`, `announceRights` and `askMode`, one at a time. |
 | `notAllowedForUser` | [615](../src/hub.ts#L615) | `NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` It is posted for a prompt of `User` refused by a group preference, including one that is on only for roles above that of `User`. |
 | `textParts` | [623](../src/hub.ts#L623) | the longest runs of whole characters that each fit in one message by `fitsMessage`, the first with the given quote. Each part is found by a binary search among the next `maxMessageLength` characters. |
+| `quoteOf`, `endLine`, `keepLast` | in [`hub.ts`](../src/hub.ts) | the quote of a prompt received in the group, when it fits with the first character of a text; `!- ✅ Done in DURATION!` by `duration`, or `!- ✅ Done!` without a time; a set of IDs that keeps its last 100 |
 | `isRefusedQuote` | [646](../src/hub.ts#L646) | `errorStore` `invalidQuote`, `chatItemNotFound` or `largeMsg` |
 
 #### [`main-group.ts`](../src/main-group.ts)
@@ -909,7 +916,7 @@ Data flow of a prompt from the session group:
 | `openCore` | [19](../src/core.ts#L19) | folder, `ChatApi.init` with prefix `FOLDER/simplex`, active user or a new one with peer type `agent`, `prepareCore`, event buffer, `startChat`, preset contact deleted for a new user, profile update |
 | `deletePresetContacts` | [44](../src/core.ts#L44) | the contact `Ask SimpleX Team`, deleted when it has no connection |
 
-#### [`hook.ts`](../src/hook.ts), [`owner.ts`](../src/owner.ts), [`qr.ts`](../src/qr.ts)
+#### [`hook.ts`](../src/hook.ts), [`display.ts`](../src/display.ts), [`service-request.ts`](../src/service-request.ts), [`owner.ts`](../src/owner.ts), [`qr.ts`](../src/qr.ts)
 
 | Symbol | Line | Contents |
 |---|---|---|
@@ -918,13 +925,15 @@ Data flow of a prompt from the session group:
 | `turn` | [hook.ts:125](../src/hook.ts#L125) | The output is `{}`. In a run that is not interactive, and for a tool use of a subagent or of this plugin, the hook sends nothing. Otherwise it calls `ensureService`, then sends `POST /turn` with the fields of [8.6](#86-channel-and-mirroring). The request is tried up to 15 times, 1 s apart, while the service returns status 409. |
 | `answerModel`, `promptKind`, `findInTranscript`, `readTail`, `lastAnswer`, `promptRecord`, `isPrompt`, `recordText`, `recordKind` | [hook.ts:151-236](../src/hook.ts#L151-L236) | `answerModel` finds the model of Stop's answer. It is the `message.model` of the last entry of type `assistant` without `isSidechain` in the tail of `transcript_path`, once that entry's text is the answer. No model is sent for `<synthetic>`, an answer without text, an empty path, an unreadable transcript, or an entry not written within the reads. `promptKind` finds whether a person typed the prompt of UserPromptSubmit, its note and whether it is mid-turn. Its record, found by `promptRecord`, is the newest user entry or `queued_command` attachment whose text is the prompt, without subagent entries and tool results: the entry with the hook's `prompt_id` as `promptId`, or a record after the first user entry with that ID, a tool result included. Until such an entry is in the tail, `promptRecord` waits; at the last read, and at once without `prompt_id`, it takes any record with the prompt's text. It also waits while an `enqueue` entry with the prompt's text follows the record. The prompt is typed when the record's `origin.kind` is `human`, and mid-turn when the record is not the entry with `prompt_id`. A `queued_command` attachment without origin and with the `commandMode` `task-notification` is a task notification. At the last read, a record with an `enqueue` entry after it is classified by its origin, and a typed one is mid-turn. Without a record, an `enqueue` entry with the prompt's text makes the prompt typed and mid-turn; otherwise an entry with `prompt_id` and the origin `human` makes it typed. `findInTranscript` reads the tail, the last 1 MiB plus twice the bytes of the answer or the prompt, 100 ms apart: at most 20 times for an answer and 600 times for a prompt, and it tells its search which read is the last. It treats a failed read, as of a missing file, as an empty tail. |
 | `noteOf`, `taskNote`, `teammateNote`, `idleNotification`, `peerName`, `firstLine`, `decoded`, `stringOf`, `shortened` | [hook.ts:238-287](../src/hook.ts#L238-L287), [:344-359](../src/hook.ts#L344-L359) | `noteOf` makes the note of a record from its origin, its `turnOrigin` and the prompt, as [api.md](api.md#48-plugin-options-files-and-hook-output) lists the lines. `taskNote` reads `<summary>`, `<event>` and `<status>` of the first `<task-notification>` block, and takes the first line of a prompt without one. `teammateNote` reads the sender, the `summary` and the message of the first `<teammate-message>` tag of a prompt without origin whose message is not an idle notification; `idleNotification` checks whether a message's JSON `type` is `idle_notification`. `firstLine`, `peerName` and `teammateNote` replace control and format characters with spaces in each first line and in the sender's name, as `oneLine` does, so a note is one line. `shortened` cuts a note to 200 characters, counted in code points. |
-| `stepOf`, `stepText`, `displayPath`, `duration` | [hook.ts:289-342](../src/hook.ts#L289-L342) | `stepOf` makes the `step` of a tool hook: `{id, text}` at PreToolUse, and the text with the outcome and the duration, or with `(in background)` for a launch in the background, and `end: true` at PostToolUse and PostToolUseFailure, as [api.md](api.md#48-plugin-options-files-and-hook-output) lists them. It gives no step without `tool_use_id` or `tool_name`, with `agent_id` or for this plugin's tools, and the hook then sends nothing. `stepText` makes the text from the tool's name and input, cut by `shortened` in `stepOf`. `displayPath` gives a path relative to `cwd`, unless the relative path is absolute or starts with `..`. `duration` formats `duration_ms`, rounded to whole milliseconds. |
+| `stepOf`, `stepText`, `displayPath` | in [`hook.ts`](../src/hook.ts) | `stepOf` makes the `step` of a tool hook: `{id, text}` at PreToolUse, and the text with the outcome and `duration_ms` formatted by `duration`, or with `(in background)` for a launch in the background, and `end: true` at PostToolUse and PostToolUseFailure, as [api.md](api.md#48-plugin-options-files-and-hook-output) lists them. It gives no step without `tool_use_id` or `tool_name`, with `agent_id` or for this plugin's tools, and the hook then sends nothing. `stepText` makes the text from the tool's name and input, cut by `shortened` in `stepOf`. `displayPath` gives a path relative to `cwd`, unless the relative path is absolute or starts with `..`. |
+| `display` | in [`display.ts`](../src/display.ts) | The MessageDisplay hook. Without a string `session_id` and `message_id` and an integer `index`, it sends nothing. Otherwise it sends `POST /turn` with `id`, `pid`, its start time `at` and `text` `{message, index, final, delta}`, where `final` is true only for `true` and `delta` is empty when it is not a string. It waits for the reply at most 1 s, starts no service, makes no retry and logs nothing. The process prints `{}` after the request. |
+| `postToService`, `claudePid` | in [`service-request.ts`](../src/service-request.ts) | `postToService` sends one request with the token of `ROOT/service.token` to the socket of ROOT, and resolves when the reply ends, at a failure, without a token file, or when the wait ends without a reply. `claudePid` is `CLAUDE_PID` when it is a positive integer. `display.ts`, `service-request.ts` and `paths.ts` import only Node modules and each other, so the display hook loads no `simplex-chat`. |
 | `linkCommand`, `resetCommand` | [owner.ts:7-8](../src/owner.ts#L7-L8) | `npx -y @simplex-chat/mcp@VERSION link` and `reset-owners`, VERSION of this package |
 | `linkText`, `resetOwnersText` | [owner.ts:10-20](../src/owner.ts#L10-L20) | the Main group's name with the owners, or with the link and a QR code on a terminal only |
 | `showLink`, `resetOwners` | [owner.ts:22-33](../src/owner.ts#L22-L33) | `link` takes the link from `GET /link` while no owner is in the Main group. `reset-owners` replaces the Main group at once, and shows the new link on a terminal only. |
 | `qrCodeText` | [qr.ts:14](../src/qr.ts#L14) | `small` and `large` with ANSI colors for terminals, `plain` for the hook message |
 
-#### [`config.ts`](../src/config.ts), [`files.ts`](../src/files.ts)
+#### [`config.ts`](../src/config.ts), [`files.ts`](../src/files.ts), [`paths.ts`](../src/paths.ts)
 
 | Symbol | Line | Contents |
 |---|---|---|
@@ -932,11 +941,12 @@ Data flow of a prompt from the session group:
 | `Config`, `defaultConfig`, `configVariables` | [config.ts:4-18](../src/config.ts#L4-L18) | the Main group name, the mode and the expiry hours; their defaults `Claude Control`, `requests` and 23; their variables |
 | `readConfig` | [config.ts:35](../src/config.ts#L35) | `CLAUDE_PLUGIN_OPTION_*` to `Config`, defaults for blank values, `ConfigError` texts |
 | `withMachine` | [config.ts:50](../src/config.ts#L50) | ` - MACHINE` from `SIMPLEX_MCP_MACHINE` after the Main group name, checked by `validName`, with the `ConfigError` texts of the variable |
-| `dataRoot`, `hubFolder`, `sessionFolder` | [files.ts:31-47](../src/files.ts#L31-L47) | ROOT, `ROOT/_hub`, `ROOT/_sessions/<lower-case ID>` |
+| `dataRoot`, `hubFolder`, `sessionFolder` | [`paths.ts`](../src/paths.ts), [`files.ts`](../src/files.ts) | ROOT, `ROOT/_hub`, `ROOT/_sessions/<lower-case ID>`. `files.ts` exports `dataRoot` of `paths.ts`. |
 | `SessionFile`, `readSessionFile`, `writeSessionFile`, `storedSessions` | [files.ts:11-72](../src/files.ts#L11-L72) | `session.json` with number, name, project, creation time, group, aliases, model, effort and a rejected mode `host`. An unparsable file is skipped with a log line. Each write goes to `session.json.tmp`, which is renamed into place. |
-| `socketPath` | [files.ts:74](../src/files.ts#L74) | `ROOT/service.sock`. A path over 103 bytes is replaced by `TMP/simplex-mcp-HASH.sock`, and Windows uses `\\.\pipe\simplex-mcp-HASH`. |
+| `socketPath` | [`paths.ts`](../src/paths.ts) | `ROOT/service.sock`. A path over 103 bytes is replaced by `TMP/simplex-mcp-HASH.sock`, and Windows uses `\\.\pipe\simplex-mcp-HASH`. `files.ts` exports it. |
+| `serviceTokenFile` | [`paths.ts`](../src/paths.ts) | `service.token`, the name of the token file in ROOT |
 | `logFile`, `trimLog`, `openLog` | [files.ts:81-101](../src/files.ts#L81-L101) | `ROOT/service.log`, emptied when over 10 MB, mode 0600 |
-| `serviceLock`, `serviceToken` | [files.ts:85-89](../src/files.ts#L85-L89) | `service.lock` and `ROOT/service.token`, the plugin's lock and token. Both names are written with a dot, which `serve` refuses in agent names, so the folders of agents in `~/.simplex-mcp` are not touched. |
+| `serviceLock`, `serviceToken` | [`files.ts`](../src/files.ts) | `service.lock` and `ROOT/service.token`, the plugin's lock and token. Both names are written with a dot, which `serve` refuses in agent names, so the folders of agents in `~/.simplex-mcp` are not touched. |
 
 #### Plugin files
 
@@ -944,7 +954,7 @@ Data flow of a prompt from the session group:
 |---|---|
 | [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json) | plugin `simplex`, version, description, `userConfig` |
 | [`.mcp.json`](../.mcp.json) | server `simplex`: `node dist/cli.js session` in the plugin's folder, tool call timeout, options as environment variables |
-| [`hooks/hooks.json`](../hooks/hooks.json) | SessionStart: `dist/cli.js hook session-start`; PreToolUse: `allow.js`; UserPromptSubmit, Stop, PostModelSwitch: `dist/cli.js hook turn`, in the background |
+| [`hooks/hooks.json`](../hooks/hooks.json) | SessionStart: `dist/cli.js hook session-start`; PreToolUse: `allow.js`; UserPromptSubmit, Stop, PostModelSwitch: `dist/cli.js hook turn`, in the background; MessageDisplay: `dist/display.js`, with a 2 s timeout, which Claude Code waits for |
 | [`package.json`](../package.json) | `bundleDependencies: true`. The production packages are bundled in the package's `node_modules`, without a lockfile, so Claude Code installs nothing in the plugin's folder. [`package-lock.json`](../package-lock.json), the tree of `npm ci`, is not packed. |
 | [`plugin/allow.js`](../plugin/allow.js) | PreToolUse allow decision |
 | [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json) | marketplace `simplex-chat`, plugin source npm `@simplex-chat/mcp` |
@@ -967,15 +977,19 @@ Memory of the service:
 | Sessions | `Hub.sessions`, by number ([hub.ts:443](../src/hub.ts#L443)) | `Hub.session` | events, Main group commands |
 | End of the held prompts | `Hub.promptsHeldUntil`, 30 s after the stored sessions opened ([hub.ts:442](../src/hub.ts#L442), [:469](../src/hub.ts#L469)) | `Hub.open` | `Session.deliver` |
 | Prompts in delivery | `Session.delivery`, a promise chain in arrival order ([hub.ts:76](../src/hub.ts#L76)) | `onMessage` | `deliver` |
-| Live steps | `Session.steps`, by `tool_use_id`: the start time of the step's hook, its text, the promise of its line's ID and the wall-clock time of its send ([hub.ts:52-57](../src/hub.ts#L52-L57), [:77](../src/hub.ts#L77)) | `step` | `step`, `endSteps`, `expireSteps` |
+| Live steps | `Session.steps`, by `tool_use_id`: the start time of the step's hook, its text, the promise of its line's ID and the wall-clock time at which its send was queued ([`Session`](../src/hub.ts)) | `step` | `step`, `endSteps`, `expireSteps` |
 | Finished steps | `Session.finished`, the IDs of the last 100 steps whose line was completed at their end or by `endSteps`, or posted at their end ([hub.ts:78](../src/hub.ts#L78), [:30](../src/hub.ts#L30)) | `step`, `endSteps` | `step` |
-| Updates of lines | `Session.finalizing`, the promise of every update of a line started so far ([hub.ts:79](../src/hub.ts#L79)) | `endStep` | `endSteps`, so `Hub.stop` waits for them |
+| Updates of lines | `Session.finalizing`, the promise of every update of a line started so far, of steps, texts and opening messages ([`Session`](../src/hub.ts)) | `finalize` | `endSteps`, `endLive`, so `Hub.stop` waits for them |
+| Opening messages | `Session.openings`: for each, the start of its prompt's hook, its end, the start of the next prompt's hook that starts a turn, and the promise of its item's ID | `openTurn`, `boundOpenings`, `takeOpening`, `putBack`, `closeOpenings` | `takeOpening`, `closeOpenings` |
+| Live texts | `Session.texts`, by `message_id`: the start of its first batch's hook, the batches by index, the next index to append, the index of the final batch, the text of its finished parts, its current part, the promise of the item's ID, the text sent last and the wall-clock time of that send, and the update timer | `addBatch`, `showText`, `updateText`, `endText`, `dropText` | `addBatch`, `endTexts`, `claim` |
+| Ended texts | `Session.endedTexts`, the last 100 `message_id`s of texts that ended or were dropped; `Session.recentTexts`, the last 20 ended texts | `dropText`, `addBatch`; `endText` | `addBatch`; `claim` |
+| Order of live posts | `Session.liveOrder`, a promise chain of the text work and the step starts, in arrival order | `queueLive` | `queueLive` |
 | Check of live steps | `Session.expiry`, an unreferenced timer that runs `expireSteps` every minute while a step is live ([hub.ts:32](../src/hub.ts#L32), [:80](../src/hub.ts#L80)) | `step`, `endStep` | `endStep` |
 | Actions of a session | `Session.actions`, numbered from 1 per session group ([hub.ts:61](../src/hub.ts#L61), [:95](../src/hub.ts#L95)) | tools, `permission`, `requestMode` | `Control`, `busy` |
 | Pushed prompts | `Session.pushed`, at most 20, each kept until it is matched by a turn's prompt. An entry is marked `quoted` once it is quoted by an answer without a turn record ([hub.ts:66](../src/hub.ts#L66)). | `deliver`, `turnQuote` | `turn`, `turnQuote` |
 | Files of prompts in transfer | `Session.receiving` ([hub.ts:67](../src/hub.ts#L67)) | `receive`, its 10-minute timer | `fileDone` |
 | Model and effort | `Session.description`, also in `session.json` ([hub.ts:68](../src/hub.ts#L68)) | constructor, `turn` | `turn` |
-| Turn records | `Session.turns`, the start time of each prompt hook that started no earlier than the latest answer's hook, except a mid-turn prompt that matched no pushed prompt, with its pushed prompt, or `null` for a terminal prompt or a command ([hub.ts:70-71](../src/hub.ts#L70-L71)) | `turn`. At an answer, the records that started before its hook are removed. | `turnQuote` |
+| Turn records | `Session.turns`, the start time of each prompt hook that started no earlier than the latest answer's hook, except a mid-turn prompt that matched no pushed prompt, with its pushed prompt, or `null` for a terminal prompt or a command. The record of a mid-turn prompt is marked as added ([`Session`](../src/hub.ts)). | `turn`. At an answer, the records that started before its hook are removed. | `turnQuote`, `turnStart` |
 | A rejected mode `host` | `Session.hostDeclined`, also in `session.json` ([hub.ts:73](../src/hub.ts#L73)) | constructor, `declineHost` | `askMode`, `requestMode` |
 | The requested mode | `Session.requested` ([hub.ts:72](../src/hub.ts#L72)) | `requestMode`, a rejected or expired `mode` card | `askMode` |
 | Members of the Main group, its link | `MainGroup` ([main-group.ts:28-31](../src/main-group.ts#L28-L31)) | `refreshMembers`, `openLink` | owner checks, the statement of trust at a join, `/status`, `/title`, `/link` |
@@ -1000,7 +1014,7 @@ Files:
 | Path | Contents | Written | Read |
 |---|---|---|---|
 | `ROOT/` | data root, mode 0700 | every client and the service ([client.ts:28](../src/client.ts#L28), [service.ts:437](../src/service.ts#L437)) | |
-| `ROOT/service.token` | the bearer token, 0600 | the first client or service ([files.ts:87-89](../src/files.ts#L87-L89), [:124-134](../src/files.ts#L124-L134)) | every client, the service |
+| `ROOT/service.token` | the bearer token, 0600 | the first client or service ([`serviceToken`, `serverToken`](../src/files.ts)) | every client, the service, the display hook ([`postToService`](../src/service-request.ts)) |
 | `ROOT/service.lock` | PID of the service, linked from `ROOT/service.lock.PID.HEX.tmp`. A stopped service's lock is claimed through `ROOT/service.lock.PID.claim`, which is removed after the takeover. | `Service.start` ([service.ts:95](../src/service.ts#L95), [files.ts:182-221](../src/files.ts#L182-L221)) | the next service |
 | `ROOT/titles.json` | the `/title` requests held at a stop, each with its `at`, 0600 | `shutdown` ([service.ts:181](../src/service.ts#L181)) | the next `Service.start`, which removes it ([service.ts:107](../src/service.ts#L107)) |
 | `ROOT/service.sock` | the socket | `listen` ([socket.ts:40-43](../src/socket.ts#L40-L43)) | clients |
@@ -1063,7 +1077,7 @@ After a stop, `Hub.onEvent` ignores events ([hub.ts:583-613](../src/hub.ts#L583-
 
 #### Attach, idle close and idle stop
 
-- The service cancels the session's idle timer at each attachment. When the last attachment ends, the service records the time, clears the line writer, ends the pending permissions and the steps, and starts the timer ([service.ts:305-326](../src/service.ts#L305-L326)).
+- The service cancels the session's idle timer at each attachment. When the last attachment ends, the service records the time, clears the line writer, ends the pending permissions, the steps, the opening messages and the texts, and starts the timer ([`onAttach`](../src/service.ts)).
 - After 10 minutes, the idle timer closes the entry when no call of the session runs and none of its actions is in memory. Otherwise the timer starts again ([service.ts:406-416](../src/service.ts#L406-L416)). The hub keeps the `Session` of a closed session, so Claude still answers `/list` and `/revoke` in its group ([hub.ts:497-502](../src/hub.ts#L497-L502)).
 - When no entry remains, the stop timer stops the service after 10 minutes. The timer is cleared when a new entry opens ([service.ts:418-424](../src/service.ts#L418-L424), [:364](../src/service.ts#L364)).
 
@@ -1072,7 +1086,7 @@ After a stop, `Hub.onEvent` ignores events ([hub.ts:583-613](../src/hub.ts#L583-
 On `SIGINT`, `SIGTERM`, `POST /stop` or the stop timer ([service.ts:178-200](../src/service.ts#L178-L200)):
 
 1. Timers are cleared, the held titles are saved in `ROOT/titles.json`, the listener closes, and open streams are destroyed.
-2. `Hub.stop` stops the actions of every session, and edits their cards to `Cancelled: the server stopped.` It awaits the queued group events, and gives the cancelled cards 10 s to be sent. Then the download checks stop, and the cores `_user` and `_hub` close ([hub.ts:549-560](../src/hub.ts#L549-L560)).
+2. `Hub.stop` stops the actions of every session, and edits their cards to `Cancelled: the server stopped.` It awaits the queued group events, and gives the cancelled cards 10 s to be sent. Then it ends the steps, the opening messages and the texts, and awaits their updates. Then the download checks stop, and the cores `_user` and `_hub` close ([`Hub.stop`](../src/hub.ts)).
 3. The service logs `Cancelled K action(s).`, releases the lock and logs `Stopped.` The process exits after the `/stop` reply is sent, or after its client disconnects before the reply is written.
 
 ### 8.5 Approval model
@@ -1124,7 +1138,7 @@ stateDiagram-v2
 | session to Claude Code | `notifications/claude/channel` `{content, meta: {from, item, file?, reply_to?, reply_to_from?}}`; `notifications/claude/channel/permission` `{request_id, behavior}` | [session.ts:197-201](../src/session.ts#L197-L201) |
 | Claude Code to session | `notifications/claude/channel/permission_request` `{request_id, tool_name, description, input_preview}` | [session.ts:58-62](../src/session.ts#L58-L62) |
 | session to service | `POST /permission` | [session.ts:114-118](../src/session.ts#L114-L118) |
-| hooks to service | `POST /turn` `{id, pid?, at?, prompt?, typed?, note?, midTurn?, answer?, model?, effort?, step?}`. `step` is `{id, text, end?}`, the line of a tool use from PreToolUse, PostToolUse or PostToolUseFailure. `pid` is `CLAUDE_PID`, and `at` is the hook's `performance.timeOrigin`. `prompt` and `answer`, the last answer, are cut to 250,000 characters. `typed` of UserPromptSubmit is true when a person typed the prompt. `note` is the line about one of Claude Code's own prompts. `midTurn` is true for a prompt that Claude Code added to a running turn. `model` is the new model of PostModelSwitch, or the model of Stop's answer in the transcript. `effort` is the effort level. | [hook.ts:125-378](../src/hook.ts#L125-L378) |
+| hooks to service | `POST /turn` `{id, pid?, at?, prompt?, typed?, note?, midTurn?, answer?, model?, effort?, step?, text?}`. `step` is `{id, text, end?}`, the line of a tool use from PreToolUse, PostToolUse or PostToolUseFailure. `text` is `{message, index, final, delta}`, a batch of Claude's text from MessageDisplay, sent by `dist/display.js` ([`display`](../src/display.ts)). `pid` is `CLAUDE_PID`, and `at` is the hook's `performance.timeOrigin`. `prompt` and `answer`, the last answer, are cut to 250,000 characters. `typed` of UserPromptSubmit is true when a person typed the prompt. `note` is the line about one of Claude Code's own prompts. `midTurn` is true for a prompt that Claude Code added to a running turn. `model` is the new model of PostModelSwitch, or the model of Stop's answer in the transcript. `effort` is the effort level. | [hook.ts:125-378](../src/hook.ts#L125-L378) |
 
 ```
 on a message m in N:               one-line "/" text from a member who is neither an admin, an owner nor User:
@@ -1142,28 +1156,61 @@ on /turn at time at, before any await:
   prompt p not midTurn, or answer a:   end pending permissions created before at
                                    endSteps(at): each live step with at below at leaves steps, enters finished,
                                    and its line is updated with its text, live off
+  prompt p not midTurn:            each opening without until, started at or before at: until = at
+  answer a:                        started = the at of the newest turn record not added, at or before at
+  prompt p not midTurn, or answer a:   queued after the live posts: claim(a, at, started) for an answer,
+                                   then each live text with at below at: endText(text, its part)
   answer a, also empty:            earlier = turns with at below at; quoted = the item of the newest earlier,
                                    or the oldest pushed not quoted, marked quoted, when earlier is empty; earlier leave turns
                                    answeredAt = max(answeredAt, at)
   prompt p:                        matched = pushed entries in this plugin's channel tags of p, or equal to p and pushed in the last 60 s
                                    at not below answeredAt, and not midTurn or matched not empty:
-                                   turns += (at, the oldest matched or null)
+                                   turns += (at, the oldest matched or null), marked added when midTurn
                                    matched leave pushed
   model or effort:                 skipped when at is older than modelAt or effortAt, the at of the value taken last
                                    else: modelAt or effortAt = at; a changed value: description, session.json
+on /turn text {message, index, final, delta}:
+                                   queued after the live posts, with answeredAt as it was at the request's arrival:
+                                   message ended: dropped
+                                   message new and at below answeredAt: dropped, message ended
+                                   batches[index] = delta; final: last = index; part += the next batches in index order
+                                   every batch up to last appended: endText(text, part); else showText
+showText:                          part cut by textParts: the parts before the last finalized, the last part in a new message
+                                   part not blank, no message: startLine(part, at), live; no ID: dropText
+                                   else part not the text sent last, no timer: update, live, 3 s after the last send
+endText(text, value):              dropText; recent += text, at most 20; the message finalized with the first part of value,
+                                   or, without a message, startLine(the first part, at), not live
+                                   the other parts posted with priority -1 after a shown first part
+dropText:                          timer cleared; text leaves texts; ended += message, at most 100
+a text's update refused for NAME:  dropText; "Claude's text was not posted: " and the preference's text; the message finalized
+                                   with the text sent last
 on /turn step {id, text, end}:     id finished: id leaves finished, nothing posted
-                                   no end: steps += (id, at, text, the line sent live with priority -1)
+                                   no end: steps += (id, at, text, startLine(text, at) queued after the live posts, live)
                                    end, id in steps: id leaves steps; the line updated with text, live off
                                    end, else: id enters finished; Claude posts text with priority -1
                                    finished keeps the last 100 IDs; a refused send: the refusal post, no line
+startLine(text, at, live):         opening = the last kept opening with start at or before at and at before until
+                                   opening with an item: the item updated with text; refused: opening kept again, refusal post
+                                   else: Claude posts text with priority -1, live when asked
 on /turn note:                     Claude posts note, without a quote, with priority -1; refused for NAME: Claude posts
                                    "Claude's note was not posted: " and the preference's text
 on /turn prompt p:                 typed not false, nothing matched, p not blank, not only this plugin's channel tags,
                                    not a one-line "/" command:
                                    User posts parts(p) in the group marked N
-on /turn answer a, not blank:      Claude posts parts(a), the first quoting quoted when the quote fits with the first character of a,
-                                   the parts before the last with priority -1 and the last with priority 1
-on the last detach, at Hub.stop:   endSteps()
+                                   not midTurn, User posted or matched not empty, at not below answeredAt:
+                                   openings += (at, an empty live line with priority -1, quoting the oldest matched when it fits)
+on /turn answer a, blank:          the opening of at finalized with the end line
+on /turn answer a, not blank:      claim found a text: nothing more of a
+                                   else: parts(a) with priority -1, the first filling the opening of at, live off,
+                                   or posted quoting quoted when the quote fits with the first character of a
+                                   then the end line with priority 1
+end line:                          "!- ✅ Done in " duration(at - started) "!", or "!- ✅ Done!" without started
+then, at an answer:                each opening with until, or its start without until, at or before at: finalized with "⏹️ Stopped"
+claim(a, before, started):         newest text, live or recent, with started below at below before
+                                   its finished parts and part, trimmed, start trimmed a:
+                                   the rest of a after the finished parts ends the live text, or updates the recent text's message
+                                   when it differs from its part
+on the last detach, at Hub.stop:   endSteps(); every opening finalized with "⏹️ Stopped"; queued: every live text ended with its part
 then, also after a failed post, a changed value: short description "MODEL · effort LEVEL"
 post with a quote:                 the core refuses it with invalidQuote, chatItemNotFound or largeMsg: the post again without the quote
 ```
@@ -1179,7 +1226,38 @@ sequenceDiagram
   Note over D: a later answer with at 4 quotes prompt N+1
 ```
 
-Sources: [hub.ts:173-243](../src/hub.ts#L173-L243), [:265-392](../src/hub.ts#L265-L392), [:623-640](../src/hub.ts#L623-L640).
+A text of Claude, by its `message_id`:
+
+```mermaid
+stateDiagram-v2
+  [*] --> waiting: first batch, its hook not before the latest answer's
+  waiting --> live: a part that is not blank, posted or filling an opening message
+  live --> live: later batches, an update at most every 3 s
+  live --> live: the part outgrows a message, the part that fits finalized
+  live --> ended: final batch, finalized with its part
+  live --> ended: claim at Stop, finalized with the rest of the answer
+  live --> ended: a prompt that starts a turn, the last detach or the stop, finalized with its part
+  live --> ended: an update refused for a preference, finalized with the text sent last
+  waiting --> ended: final batch, or the end of the texts
+  ended --> [*]: later batches dropped
+```
+
+An opening message:
+
+```mermaid
+stateDiagram-v2
+  [*] --> open: a prompt that starts a turn, an empty live line
+  open --> bounded: the next prompt that starts a turn, its hook start as the end
+  open --> filled: the first text, step or answer of a hook that started after the prompt's
+  bounded --> filled: such a post of a hook that started before the end
+  open --> filled: a blank answer, the end line
+  open --> stopped: an answer, the last detach or the stop, ⏹️ Stopped
+  bounded --> stopped: an answer of a hook not before the end, the last detach or the stop, ⏹️ Stopped
+  filled --> [*]
+  stopped --> [*]
+```
+
+Sources: [`Session.turn`, `text`, `step`, `answer`, `openTurn`, `endTexts`](../src/hub.ts), [`textParts`](../src/hub.ts).
 
 ### 8.7 Security boundaries
 
@@ -1216,6 +1294,10 @@ Sources: [hub.ts:173-243](../src/hub.ts#L173-L243), [:265-392](../src/hub.ts#L26
 | attachment retries of a session server | 1 s, doubled up to 30 s | [session.ts:19-20](../src/session.ts#L19-L20) |
 | part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [hub.ts:623-640](../src/hub.ts#L623-L640), [tools.ts:163-164](../src/tools.ts#L163-L164), [:1592-1595](../src/tools.ts#L1592-L1595) |
 | cancelled cards wait at stop | 10 s | [hub.ts:21](../src/hub.ts#L21) |
+| updates of a live text | one per 3 s, after its first post | [`textUpdateMs`, `showText`](../src/hub.ts) |
+| part of a live text | one message by `fitsMessage`, as a part of an answer without a quote | [`showText`, `textParts`](../src/hub.ts) |
+| ended texts | the last 100 `message_id`s; the last 20 texts for the claim of an answer | [`maxFinished`, `maxRecentTexts`, `keepLast`](../src/hub.ts) |
+| wait of the display hook for the service | 1 s, without retries; Claude Code's timeout of the hook is 2 s | [`requestWaitMs`](../src/display.ts), [`hooks.json`](../hooks/hooks.json) |
 | `service.log` | emptied over 10 MB, at a spawn and every hour | [files.ts:9](../src/files.ts#L9), [:91-94](../src/files.ts#L91-L94), [service.ts:20](../src/service.ts#L20) |
 | socket path | 103 bytes: `sun_path` of `sockaddr_un` holds 104 bytes on macOS and 108 on Linux, with the terminating NUL | [files.ts:8](../src/files.ts#L8) |
 | actions per session | 20 pending, 20 performing | [actions.ts:9-10](../src/actions.ts#L9-L10), [:199-203](../src/actions.ts#L199-L203) |

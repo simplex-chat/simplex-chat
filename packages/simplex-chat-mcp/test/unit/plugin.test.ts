@@ -38,7 +38,7 @@ describe("plugin", () => {
     expect(read(".mcp.json").mcpServers.simplex.timeout).toBe((maxExpireHours + responseWaitHours) * 3_600_000 + marginMs)
   })
 
-  it("runs the hooks from the plugin's own build, allows the plugin's tools, and runs the turn hook at the start and the end of every tool use", () => {
+  it("runs the hooks from the plugin's own build, allows the plugin's tools, runs the turn hook at the start and the end of every tool use, and runs the display hook synchronously for MessageDisplay", () => {
     const {hooks} = read("hooks/hooks.json")
     expect(hooks.SessionStart[0].hooks[0]).toEqual({type: "command", command: cli("hook session-start"), timeout: 600})
     expect(hooks.PreToolUse[0].matcher).toBe("mcp__plugin_simplex_simplex__.*")
@@ -47,6 +47,7 @@ describe("plugin", () => {
     const steps = {matcher: "*", hooks: [{type: "command", command: cli("hook turn"), async: true}]}
     expect(hooks.PreToolUse[1]).toEqual(steps)
     for (const event of ["PostToolUse", "PostToolUseFailure"]) expect(hooks[event]).toEqual([steps])
+    expect(hooks.MessageDisplay).toEqual([{hooks: [{type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/dist/display.js"', timeout: 2}]}])
   })
 
   it("ships the build, its bundled dependencies and the plugin files in the package, without a lockfile", () => {

@@ -4,8 +4,10 @@ import {ServiceClient} from "./client"
 import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError, oneLine} from "./log"
+import {duration} from "./messages"
 import {Step, TitleReply} from "./protocol"
 import {qrCodeText} from "./qr"
+import {claudePid} from "./service-request"
 import {SocketError, isNotRunning} from "./socket"
 import {version} from "./version"
 
@@ -331,16 +333,6 @@ function displayPath(path: string, cwd: string | undefined): string {
   return isAbsolute(inside) || inside.startsWith("..") ? path : inside
 }
 
-function duration(exact: number): string {
-  const ms = Math.round(exact)
-  const seconds = Math.floor(ms / 1000)
-  if (ms < 1000) return `${ms} ms`
-  if (ms < 10_000) return `${(Math.floor(ms / 100) / 10).toFixed(1)} s`
-  if (seconds < 60) return `${seconds} s`
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ${seconds % 60} s`
-  return `${Math.floor(seconds / 3600)} h ${Math.floor(seconds / 60) % 60} min`
-}
-
 function firstLine(text: string): string {
   return text.split("\n").map(line => oneLine(line).trim()).find(line => line !== "") ?? ""
 }
@@ -375,9 +367,4 @@ function textOf(content: unknown): string {
 
 function cut(text: string | undefined): string | undefined {
   return text === undefined || text.length <= maxText ? text : `${text.slice(0, maxText).replace(/[\ud800-\udbff]$/, "")}…`
-}
-
-function claudePid(env: NodeJS.ProcessEnv): number | undefined {
-  const pid = Number(env.CLAUDE_PID)
-  return Number.isInteger(pid) && pid > 0 ? pid : undefined
 }

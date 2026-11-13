@@ -45,7 +45,7 @@ export interface SessionLike {
   permission(request: PermissionRequest): void
   turn(request: TurnRequest): Promise<void>
   endPermissions(): void
-  endSteps(): Promise<void>
+  endLive(): Promise<void>
 }
 
 export interface ServiceDeps {
@@ -320,7 +320,7 @@ export class Service {
       entry.seen = Date.now()
       agent.onLine = undefined
       agent.endPermissions()
-      agent.endSteps()
+      agent.endLive()
       this.scheduleIdle(id, entry)
     })
   }

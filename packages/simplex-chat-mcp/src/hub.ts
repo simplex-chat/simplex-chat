@@ -9,8 +9,8 @@ import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
-import {Changes, ChatItemsWatch, ReplyTo, ToolCall, getChat, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
-import {AttachLine, OwnerState, PermissionRequest, ResetReply, Step, TurnRequest} from "./protocol"
+import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
+import {AttachLine, OwnerState, PermissionRequest, ResetReply, Step, TextBatch, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
 import {User, userContact} from "./user"
@@ -30,6 +30,9 @@ const noteRefused = "Claude's note was not posted"
 const maxFinished = 100
 const liveLineMs = 23 * 3_600_000
 const stepCheckMs = 60_000
+const textUpdateMs = 3_000
+const maxRecentTexts = 20
+const stoppedLine = "⏹️ Stopped"
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
 
@@ -56,6 +59,34 @@ interface LiveStep {
   sentAt: number
 }
 
+interface LiveText {
+  id: string
+  at: number
+  batches: string[]
+  next: number
+  last?: number
+  done: string
+  part: string
+  item?: Promise<number | undefined>
+  sent: string
+  sentAt: number
+  timer?: NodeJS.Timeout
+}
+
+interface Opening {
+  at: number
+  until?: number
+  item: Promise<number | undefined>
+}
+
+interface LineKind {
+  refused: string
+  log: string
+}
+
+const stepLines: LineKind = {refused: noteRefused, log: "steps"}
+const textLines: LineKind = {refused: "Claude's text was not posted", log: "texts"}
+
 export class Session {
   open = false
   readonly actions: Actions
@@ -67,17 +98,22 @@ export class Session {
   private readonly receiving = new Map<number, {resolve: () => void; reject: (error: Error) => void}>()
   private description: {model?: string; effort?: string}
   private readonly describedAt = {model: -Infinity, effort: -Infinity}
-  private turns: {at: number; item: T.ChatItem | null}[] = []
+  private turns: {at: number; item: T.ChatItem | null; added?: true}[] = []
   private answeredAt = -Infinity
   private requested?: Mode
   private hostDeclined: boolean
   private writer?: (line: AttachLine) => void
   private readonly attaching = new Changes()
-  private delivery: Promise<void> = Promise.resolve()
+  private delivery: Promise<unknown> = Promise.resolve()
   private readonly steps = new Map<string, LiveStep>()
   private readonly finished = new Set<string>()
   private finalizing: Promise<void> = Promise.resolve()
   private expiry?: NodeJS.Timeout
+  private openings: Opening[] = []
+  private readonly texts = new Map<string, LiveText>()
+  private readonly endedTexts = new Set<string>()
+  private readonly recentTexts: LiveText[] = []
+  private liveOrder: Promise<void> = Promise.resolve()
 
   constructor(
     private readonly hub: Hub,
@@ -198,15 +234,19 @@ export class Session {
     })
   }
 
-  async turn({at, prompt, typed, note, midTurn, answer, model, effort, step}: TurnRequest): Promise<void> {
-    if ((prompt !== undefined && midTurn !== true) || answer !== undefined) {
+  async turn({at, prompt, typed, note, midTurn, answer, model, effort, step, text}: TurnRequest): Promise<void> {
+    const startsTurn = prompt !== undefined && midTurn !== true
+    if (startsTurn || answer !== undefined) {
       this.endPermissions(at)
       this.endSteps(at)
     }
+    if (startsTurn) this.boundOpenings(at ?? Date.now())
+    const started = answer === undefined ? undefined : this.turnStart(at ?? Infinity)
+    const streamed = startsTurn || answer !== undefined ? this.endTexts(at ?? Infinity, answer, started) : undefined
     const quoted = answer === undefined ? undefined : this.turnQuote(at ?? Infinity)
     if (answer !== undefined) this.answeredAt = Math.max(this.answeredAt, at ?? Date.now())
     const matched = prompt === undefined ? [] : this.pushedIn(prompt)
-    if (prompt !== undefined && (midTurn !== true || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) this.turns.push({at: at ?? Date.now(), item: matched[0]?.item ?? null})
+    if (prompt !== undefined && (midTurn !== true || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) this.turns.push({at: at ?? Date.now(), item: matched[0]?.item ?? null, ...(startsTurn ? {} : {added: true as const})})
     this.pushed.splice(0, this.pushed.length, ...this.pushed.filter(entry => !matched.includes(entry)))
     const newModel = this.newer("model", model, at ?? Date.now())
     const newEffort = this.newer("effort", effort, at ?? Date.now())
@@ -216,10 +256,13 @@ export class Session {
       this.store(this.description)
     }
     try {
+      if (text !== undefined) this.text(text, at ?? Date.now())
       if (step !== undefined) await this.step(step, at ?? Date.now())
       if (note !== undefined) await this.post([{text: note, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
-      if (prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser))
-      if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
+      const typedPrompt = prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined
+      if (typedPrompt) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser))
+      if (startsTurn && (typedPrompt || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) this.openTurn(at ?? Date.now(), matched[0]?.item)
+      if (answer !== undefined) await this.answer(answer, quoted, at ?? Date.now(), (await streamed) === true, started)
     } finally {
       const {model: shown, effort: level} = this.description
       if (described) await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
@@ -240,6 +283,12 @@ export class Session {
       }
     }
     return this.finalizing
+  }
+
+  endLive(): Promise<void> {
+    this.endSteps()
+    this.closeOpenings(Infinity)
+    return this.endTexts(Infinity).then(() => this.finalizing)
   }
 
   fileDone(fileId: number, error?: string): void {
@@ -311,11 +360,36 @@ export class Session {
     return earlier.reduce((newest, turn) => (turn.at > newest.at ? turn : newest)).item ?? undefined
   }
 
-  private async answer(text: string, quoted: T.ChatItem | undefined): Promise<void> {
-    const quote = quoted?.content.type === "rcvMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
-    const quotes = quote !== undefined && fitsMessage({type: "text", text: [...text].slice(0, 1).join("")}, undefined, quote)
-    const parts = textParts(text, quotes ? quote : undefined).map((part, i, all) => ({text: part, priority: i === all.length - 1 ? 1 : -1}))
-    await this.post(parts, quotes ? quoted?.meta.itemId : undefined).catch(error => this.postRefusal(error, "Claude's answer was not posted", featureOff, quoted?.meta.itemId))
+  private turnStart(at: number): number | undefined {
+    const starts = this.turns.filter(turn => turn.added !== true && turn.at <= at).map(turn => turn.at)
+    return starts.length === 0 ? undefined : Math.max(...starts)
+  }
+
+  private async answer(text: string, quoted: T.ChatItem | undefined, at: number, streamed: boolean, started: number | undefined): Promise<void> {
+    const end = endLine(started === undefined ? undefined : at - started)
+    if (text.trim() === "") {
+      const opening = this.takeOpening(at)
+      if (opening !== undefined) await this.finalize(opening.item, end, textLines)
+    } else {
+      if (!streamed) await this.postAnswer(text, quoted, at)
+      await this.post([{text: end, priority: 1}])
+    }
+    this.closeOpenings(at)
+  }
+
+  private async postAnswer(text: string, quoted: T.ChatItem | undefined, at: number): Promise<void> {
+    const quote = quoteOf(quoted, text)
+    const parts = textParts(text, quote).map(part => ({text: part, priority: -1}))
+    const opening = this.takeOpening(at)
+    const opened = await opening?.item
+    const posted = opened === undefined ? this.post(parts, quote === undefined ? undefined : quoted?.meta.itemId) : this.updateItem(opened, parts[0].text, false).then(
+      () => (parts.length > 1 ? this.post(parts.slice(1)) : undefined),
+      error => {
+        this.putBack(opening)
+        throw error
+      },
+    )
+    await posted.catch(error => this.postRefusal(error, "Claude's answer was not posted", featureOff, quoted?.meta.itemId))
   }
 
   private async step({id, text, end}: Step, at: number): Promise<void> {
@@ -323,7 +397,7 @@ export class Session {
     this.expireSteps()
     const started = this.steps.get(id)
     if (end !== true) {
-      const item = this.startLine(text)
+      const item = this.queueLive(() => this.startLine(text, at, stepLines))
       this.steps.set(id, {at, text, item, sentAt: Date.now()})
       this.expiry ??= setInterval(() => this.expireSteps(), stepCheckMs).unref()
       await item
@@ -335,14 +409,173 @@ export class Session {
     }
   }
 
-  private async startLine(text: string): Promise<number | undefined> {
+  private async startLine(text: string, at: number, kind: LineKind, live = true): Promise<number | undefined> {
+    const opening = this.takeOpening(at)
+    const opened = await opening?.item
+    if (opened === undefined) return this.sendLine(text, kind, live)
     try {
-      const [sent] = await this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], [message({text, priority: -1})], true)
-      return sent?.chatItem.meta.itemId
+      await this.updateItem(opened, text, live)
+      return opened
     } catch (error) {
-      await this.postRefusal(error, noteRefused, featureOff).catch(failure => logError(`steps of session ${this.number}`, failure))
+      this.putBack(opening)
+      await this.refused(error, kind)
       return undefined
     }
+  }
+
+  private async sendLine(text: string, kind: LineKind, live: boolean, quotedItemId?: number): Promise<number | undefined> {
+    try {
+      const [sent] = await this.post([{text, priority: -1}], quotedItemId, live)
+      return sent?.chatItem.meta.itemId
+    } catch (error) {
+      await this.refused(error, kind)
+      return undefined
+    }
+  }
+
+  private refused(error: unknown, {refused, log}: LineKind): Promise<void> {
+    return this.postRefusal(error, refused, featureOff).catch(failure => logError(`${log} of session ${this.number}`, failure))
+  }
+
+  private openTurn(at: number, quoted: T.ChatItem | undefined): void {
+    const quotedItemId = quoteOf(quoted, "") === undefined ? undefined : quoted?.meta.itemId
+    this.openings.push({at, item: this.sendLine("", textLines, true, quotedItemId)})
+  }
+
+  private boundOpenings(at: number): void {
+    for (const opening of this.openings) if (opening.until === undefined && opening.at <= at) opening.until = at
+  }
+
+  private takeOpening(at: number): Opening | undefined {
+    const opening = this.openings.filter(({at: start, until}) => start <= at && (until === undefined || at < until)).at(-1)
+    if (opening !== undefined) this.openings.splice(this.openings.indexOf(opening), 1)
+    return opening
+  }
+
+  private putBack(opening: Opening | undefined): void {
+    if (opening !== undefined) this.openings.push(opening)
+  }
+
+  private closeOpenings(before: number): void {
+    const closed = this.openings.filter(({at, until}) => (until ?? at) <= before)
+    this.openings = this.openings.filter(opening => !closed.includes(opening))
+    for (const {item} of closed) void this.finalize(item, stoppedLine, textLines)
+  }
+
+  private text(batch: TextBatch, at: number): void {
+    const answeredAt = this.answeredAt
+    void this.queueLive(() => this.addBatch(batch, at, answeredAt))
+  }
+
+  private queueLive<R>(work: () => Promise<R>): Promise<R | undefined> {
+    const done = this.liveOrder.then(work)
+    this.liveOrder = done.then(
+      () => undefined,
+      error => logError(`live posts of session ${this.number}`, error),
+    )
+    return done.catch(() => undefined)
+  }
+
+  private async addBatch({message, index, final, delta}: TextBatch, at: number, answeredAt: number): Promise<void> {
+    if (this.endedTexts.has(message)) return
+    const known = this.texts.get(message)
+    if (known === undefined && at < answeredAt) return keepLast(this.endedTexts, message)
+    const text = known ?? {id: message, at, batches: [], next: 0, done: "", part: "", sent: "", sentAt: 0}
+    this.texts.set(message, text)
+    text.batches[index] = delta
+    if (final) text.last = index
+    while (text.batches[text.next] !== undefined) text.part += text.batches[text.next++]
+    if (text.last !== undefined && text.next > text.last) await this.endText(text, text.part)
+    else await this.showText(text)
+  }
+
+  private async showText(text: LiveText): Promise<void> {
+    const parts = textParts(text.part)
+    if (parts.length > 1) {
+      text.part = parts.pop()!
+      await this.endPart(text, parts)
+      text.done += parts.join("")
+      text.item = undefined
+    }
+    if (text.item === undefined && text.part.trim() !== "") {
+      text.item = this.startLine(text.part, text.at, textLines)
+      text.sent = text.part
+      text.sentAt = Date.now()
+      if ((await text.item) === undefined) this.dropText(text)
+    } else if (text.item !== undefined && text.timer === undefined && text.part !== text.sent) {
+      text.timer = setTimeout(() => void this.queueLive(() => this.updateText(text, text.part, true)), Math.max(0, text.sentAt + textUpdateMs - Date.now())).unref()
+    }
+  }
+
+  private async updateText(text: LiveText, value: string, live: boolean): Promise<boolean> {
+    text.timer = undefined
+    const itemId = await text.item
+    if (itemId === undefined) return false
+    if (live && value === text.sent) return true
+    try {
+      await this.updateItem(itemId, value, live)
+      text.sent = value
+      text.sentAt = Date.now()
+      return true
+    } catch (error) {
+      if (refusedFeature(error) === undefined) {
+        logError(`texts of session ${this.number}`, error)
+        return false
+      }
+      this.dropText(text)
+      await this.refused(error, textLines)
+      await this.updateItem(itemId, text.sent, false).catch(failure => logError(`texts of session ${this.number}`, failure))
+      return false
+    }
+  }
+
+  private async endPart(text: LiveText, [first, ...rest]: string[]): Promise<void> {
+    clearTimeout(text.timer)
+    const shown = text.item === undefined ? await this.postPart(text, first) : await this.updateText(text, first, false)
+    if (shown && rest.length > 0) await this.post(rest.map(part => ({text: part, priority: -1}))).catch(error => this.refused(error, textLines))
+  }
+
+  private async postPart(text: LiveText, value: string): Promise<boolean> {
+    if (value.trim() === "") return false
+    text.item = this.startLine(value, text.at, textLines, false)
+    return (await text.item) !== undefined
+  }
+
+  private async endText(text: LiveText, value: string): Promise<void> {
+    this.dropText(text)
+    if (this.recentTexts.push(text) > maxRecentTexts) this.recentTexts.shift()
+    text.part = value
+    await this.endPart(text, textParts(value))
+  }
+
+  private dropText(text: LiveText): void {
+    clearTimeout(text.timer)
+    text.timer = undefined
+    this.texts.delete(text.id)
+    keepLast(this.endedTexts, text.id)
+  }
+
+  private endTexts(before: number, answer?: string, started = -Infinity): Promise<boolean> {
+    return this.queueLive(async () => {
+      const streamed = answer !== undefined && (await this.claim(answer, before, started))
+      for (const text of [...this.texts.values()]) if (text.at < before) await this.endText(text, text.part)
+      return streamed
+    }).then(streamed => streamed === true)
+  }
+
+  private async claim(answer: string, before: number, started: number): Promise<boolean> {
+    const texts = [...this.texts.values(), ...this.recentTexts].filter(({at}) => at < before && at > started)
+    const newest = texts.reduce<LiveText | undefined>((found, text) => (found === undefined || text.at > found.at ? text : found), undefined)
+    const full = newest === undefined ? "" : (newest.done + newest.part).trim()
+    if (newest === undefined || full === "" || !answer.trim().startsWith(full)) return false
+    const rest = answer.trim().slice(newest.done.trimStart().length)
+    if (this.texts.has(newest.id)) await this.endText(newest, rest)
+    else if (rest !== newest.part.trim()) await this.endPart(newest, textParts(rest))
+    return true
+  }
+
+  private updateItem(itemId: number, text: string, live: boolean): Promise<T.ChatItem> {
+    return this.hub.chat.apiUpdateChatItem(T.ChatType.Group, this.control.groupId, itemId, {type: "text", text}, live)
   }
 
   private endStep(id: string, {item}: LiveStep, text: string): Promise<void> {
@@ -351,9 +584,13 @@ export class Session {
       clearInterval(this.expiry)
       this.expiry = undefined
     }
+    return this.finalize(item, text, stepLines)
+  }
+
+  private finalize(item: Promise<number | undefined>, text: string, {log}: LineKind): Promise<void> {
     const updated = item
-      .then(itemId => (itemId === undefined ? undefined : this.hub.chat.apiUpdateChatItem(T.ChatType.Group, this.control.groupId, itemId, {type: "text", text}, false)))
-      .then(() => undefined, error => logError(`steps of session ${this.number}`, error))
+      .then(itemId => (itemId === undefined ? undefined : this.updateItem(itemId, text, false)))
+      .then(() => undefined, error => logError(`${log} of session ${this.number}`, error))
     this.finalizing = Promise.all([this.finalizing, updated]).then(() => undefined)
     return updated
   }
@@ -366,9 +603,7 @@ export class Session {
   }
 
   private remember(id: string): void {
-    this.finished.add(id)
-    const [oldest] = this.finished
-    if (this.finished.size > maxFinished) this.finished.delete(oldest)
+    keepLast(this.finished, id)
   }
 
   private async postRefusal(error: unknown, subject: string, refusal: (feature: string) => string, quotedItemId?: number): Promise<void> {
@@ -377,9 +612,9 @@ export class Session {
     await this.post([{text: `${subject}: ${refusal(feature)}`}], quotedItemId)
   }
 
-  private async post(parts: Part[], quotedItemId?: number): Promise<void> {
-    const send = (quote?: number) => this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => message(part, i === 0 ? quote : undefined)))
-    await send(quotedItemId).catch(error => {
+  private post(parts: Part[], quotedItemId?: number, live = false): Promise<T.AChatItem[]> {
+    const send = (quote?: number) => this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => message(part, i === 0 ? quote : undefined)), live)
+    return send(quotedItemId).catch(error => {
       if (quotedItemId === undefined || !isRefusedQuote(error)) throw error
       return send()
     })
@@ -391,7 +626,7 @@ export class Session {
     return this.pushed.filter(entry => (entry.text === prompt && entry.at > recent) || tags.some(({item, content}) => item === entry.item.meta.itemId && content === entry.text.trim()))
   }
 
-  private queue(work: () => Promise<void>): void {
+  private queue(work: () => Promise<unknown>): void {
     this.delivery = this.delivery.then(work).catch(error => logError(`prompt of session ${this.number}`, error))
   }
 
@@ -552,7 +787,7 @@ export class Hub implements SessionGroups {
     const stopped = await Promise.all(sessions.map(async ({actions}) => ({lost: actions.lost, cancelled: await actions.stop()})))
     await this.controlEvents
     await waitForCancelledCards(stopped.flatMap(({lost, cancelled}) => (lost ? [] : cancelled)), cardsWait, new AbortController().signal)
-    await Promise.all(sessions.map(session => session.endSteps()))
+    await Promise.all(sessions.map(session => session.endLive()))
     for (const {tools} of sessions) tools.close()
     await this.user?.close()
     await this.chat.close()
@@ -641,6 +876,21 @@ function textParts(text: string, quote?: Parameters<typeof fitsMessage>[2]): str
 
 function message({text, priority}: Part, quotedItemId?: number): T.ComposedMessage & {priority?: number} {
   return {msgContent: {type: "text", text}, quotedItemId, mentions: {}, priority}
+}
+
+function quoteOf(quoted: T.ChatItem | undefined, text: string): Parameters<typeof fitsMessage>[2] {
+  const quote = quoted?.content.type === "rcvMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
+  return quote !== undefined && fitsMessage({type: "text", text: [...text].slice(0, 1).join("")}, undefined, quote) ? quote : undefined
+}
+
+function endLine(ms: number | undefined): string {
+  return `!- ✅ Done${ms === undefined ? "" : ` in ${duration(ms)}`}!`
+}
+
+function keepLast(ids: Set<string>, id: string): void {
+  ids.add(id)
+  const [oldest] = ids
+  if (ids.size > maxFinished) ids.delete(oldest)
 }
 
 function isRefusedQuote(error: unknown): boolean {

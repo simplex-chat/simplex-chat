@@ -57,12 +57,20 @@ export interface TurnRequest {
   model?: string
   effort?: string
   step?: Step
+  text?: TextBatch
 }
 
 export interface Step {
   id: string
   text: string
   end?: boolean
+}
+
+export interface TextBatch {
+  message: string
+  index: number
+  final: boolean
+  delta: string
 }
 
 export interface AttachLine {

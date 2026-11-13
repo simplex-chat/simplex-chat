@@ -9,7 +9,6 @@ What comes next for Claude Code in SimpleX Chat.
 - Code in messages is highlighted.
 - "Read more" folds long messages, at a length you set.
 - Long answers arrive as one message.
-- Answers appear live as Claude writes them, from the moment it starts working.
 - Alerts come only for messages that need you, such as answers and approval requests.
 - The desktop app works fully from the keyboard, with shortcuts, including Ctrl+U to delete to the start of the line, and `\` then Enter for a new line, as in Claude Code.
 

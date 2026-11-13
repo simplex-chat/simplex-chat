@@ -377,6 +377,16 @@ export function utcMinutes(time: number): string {
   return `${new Date(time).toISOString().slice(0, 16).replace("T", " ")} UTC`
 }
 
+export function duration(exact: number): string {
+  const ms = Math.round(exact)
+  const seconds = Math.floor(ms / 1000)
+  if (ms < 1000) return `${ms} ms`
+  if (ms < 10_000) return `${(Math.floor(ms / 100) / 10).toFixed(1)} s`
+  if (seconds < 60) return `${seconds} s`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ${seconds % 60} s`
+  return `${Math.floor(seconds / 3600)} h ${Math.floor(seconds / 60) % 60} min`
+}
+
 export function validName(name: string): string {
   const chars: string[] = []
   let previous = ""

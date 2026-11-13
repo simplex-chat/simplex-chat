@@ -18,7 +18,7 @@ import {version} from "../../src/version"
 import {descendants} from "../unit/fixtures"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
 import {SmpServer, startSmpServer, startXftpServer} from "./smpServer"
-import {killService, servicePid, spawnSession, spawnSessionStart} from "./stdio"
+import {killService, runDisplay, servicePid, spawnSession, spawnSessionStart} from "./stdio"
 
 const one = "11111111-1111-4111-8111-111111111111"
 const two = "22222222-2222-4222-8222-222222222222"
@@ -327,7 +327,7 @@ test("while SimpleX links are on for admins only in a session's group, Claude's 
   const link = await alice.chat.apiCreateGroupLink(camp.groupId, T.GroupMemberRole.Member)
   await setLinks(session, {enable: T.GroupFeatureEnabled.On, role: T.GroupMemberRole.Admin})
   const fromClaude = (check: (text: string) => boolean): Promise<T.AChatItem> => received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === "Claude" && check(chatItem.meta.itemText)))
-  const answer = fromClaude(text => text === `The group's address is ${link}`)
+  const answer = updated(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText === `The group's address is ${link}`))
   const notice = fromClaude(text => text.startsWith("User's prompt was not posted: "))
   await client.request("POST", "/turn", {id: one, prompt: `Open ${link}`, answer: `The group's address is ${link}`})
   await answer
@@ -351,7 +351,7 @@ test("while SimpleX links are off in a session's group, the connect card of a bo
   await sendNotice
 }, 600_000)
 
-test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it; an owner's reply to the answer reaches the session after the quote line, with the answer's ID and sender; Claude posts the line of a tool use live at its start and finalizes it at its end, not edited", async () => {
+test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, and the answer as Claude in the session's group, in the opening message of its turn, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the opening message of its turn quotes it; an owner's reply to the answer reaches the session after the quote line, with the answer's ID and sender; Claude posts the line of a tool use live at its start and finalizes it at its end, not edited; the display hook streams Claude's text into the opening message, live, finalized not edited, and the turn ends with one line in small print", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -376,7 +376,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   writeFileSync(transcript, userEntry("p1", "Fix the build", "human"))
   expect(await submitted).toEqual({})
   await typed
-  const fixed = received(alice.chat, message("Fixed.", "Claude"))
+  const fixed = updated(alice.chat, message("Fixed.", "Claude"))
   appendFileSync(transcript, `${JSON.stringify({type: "assistant", message: {model: "claude-opus-5", content: [{type: "text", text: "Fixed."}]}})}\n`)
   const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupId && toGroup.groupProfile.shortDescr === "claude-opus-5", 60_000)
   await hook({hook_event_name: "Stop", transcript_path: transcript, last_assistant_message: "Fixed."})
@@ -401,7 +401,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await until(() => attached.length === 2)
   const {item} = (attached[1] as {prompt: {item: number}}).prompt
   expect(attached[1]).toEqual({prompt: {text: "Run the tests", from: "Alice", item}})
-  const passed = received(alice.chat, message("Tests pass.", "Claude", sent.chatItem.meta.itemId))
+  const passed = updated(alice.chat, message("Tests pass.", "Claude", sent.chatItem.meta.itemId))
   await hook({hook_event_name: "UserPromptSubmit", prompt: `<channel source="plugin:simplex:simplex" from="Alice" item="${item}">\nRun the tests\n</channel>`})
   await hook({hook_event_name: "Stop", last_assistant_message: "Tests pass."})
   await passed
@@ -417,7 +417,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await midTurnNoted
   const [lint] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Run the linter")
   await until(() => attached.length === 3)
-  const linted = received(alice.chat, message("Lint passes.", "Claude", lint.chatItem.meta.itemId))
+  const linted = updated(alice.chat, message("Lint passes.", "Claude", lint.chatItem.meta.itemId))
   await hook({hook_event_name: "UserPromptSubmit", prompt: "Run the linter"})
   await hook({hook_event_name: "Stop", last_assistant_message: "Lint passes."})
   await alice.chat.apiSendTextReply(await linted, "Why so fast?")
@@ -431,7 +431,25 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await hook({hook_event_name: "PostToolUse", cwd: "/p", ...bash, tool_response: {stdout: "ok"}, duration_ms: 2018})
   const {meta: finalized} = (await ended).chatItem
   expect([finalized.itemLive, finalized.itemEdited]).toEqual([false, false])
+
+  const [summarize] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Summarize")
+  await until(() => attached.length === 5)
+  const opened = received(alice.chat, message("", "Claude", summarize.chatItem.meta.itemId))
+  await hook({hook_event_name: "UserPromptSubmit", prompt: "Summarize"})
+  expect((await opened).chatItem.meta.itemLive).toBe(true)
+  const display = (index: number, final: boolean, delta: string) => runDisplay({SIMPLEX_MCP_HOME: root}, {session_id: five, hook_event_name: "MessageDisplay", turn_id: "t1", message_id: "m1", index, final, delta})
+  const streamed = updated(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "Summary:\n"))
+  expect(await display(0, false, "Summary:\n")).toBe("{}\n")
+  expect((await streamed).chatItem.meta.itemLive).toBe(true)
+  const summarized = updated(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "Summary:\nAll green."))
+  expect(await display(1, true, "All green.")).toBe("{}\n")
+  const {meta: summary} = (await summarized).chatItem
+  expect([summary.itemLive, summary.itemEdited]).toEqual([false, false])
+  const endLine = received(alice.chat, inGroup(groupId, textStarts("!- ✅ Done in ")))
+  await turn(JSON.stringify({session_id: five, hook_event_name: "Stop", last_assistant_message: "Summary:\nAll green."}), {}, client, undefined, Date.now())
+  await endLine
   const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 50)
+  expect(chatItems.filter(({meta}) => meta.itemText === "Summary:\nAll green.")).toHaveLength(1)
   const fromUser = chatItems.filter(({chatDir, content}) => chatDir.type === "groupRcv" && chatDir.groupMember.memberProfile.displayName === "User" && content.type === "rcvMsgContent")
   expect(fromUser.map(({meta}) => meta.itemText)).toEqual(["Fix the build"])
 }, 600_000)
