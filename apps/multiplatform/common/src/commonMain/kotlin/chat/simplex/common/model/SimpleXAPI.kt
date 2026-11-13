@@ -8391,7 +8391,7 @@ sealed class BrokerErrorType {
   val string: String get() = when (this) {
     is RESPONSE -> "RESPONSE ${smpErr}"
     is UNEXPECTED -> "UNEXPECTED"
-    is NETWORK -> "NETWORK ${networkError.string}"
+    is NETWORK -> "NETWORK"
     is HOST -> "HOST"
     is TRANSPORT -> "TRANSPORT ${transportErr.string}"
     is TIMEOUT -> "TIMEOUT"
@@ -8489,14 +8489,6 @@ sealed class ProtocolCommandError {
 
 @Serializable
 sealed class NetworkError {
-  val string: String get() = when (this) {
-    is ConnectError -> "connectError $connectError"
-    is TLSError -> "tlsError $tlsError"
-    is UnknownCAError -> "unknownCAError"
-    is FailedError -> "failedError"
-    is TimeoutError -> "timeoutError"
-    is SubscribeError -> "subscribeError $subscribeError"
-  }
   @Serializable @SerialName("connectError") class ConnectError(val connectError: String): NetworkError()
   @Serializable @SerialName("tLSError") class TLSError(val tlsError: String): NetworkError()
   @Serializable @SerialName("unknownCAError") object UnknownCAError: NetworkError()
@@ -8614,9 +8606,9 @@ sealed class XFTPErrorType {
 @Serializable
 sealed class ProxyClientError {
   val string: String get() = when (this) {
-    is ProxyProtocolError -> "ProxyProtocolError ${protocolErr.string}"
+    is ProxyProtocolError -> "ProxyProtocolError $protocolErr"
     is ProxyUnexpectedResponse -> "ProxyUnexpectedResponse $responseStr"
-    is ProxyResponseError -> "ProxyResponseError ${responseErr.string}"
+    is ProxyResponseError -> "ProxyResponseError $responseErr"
   }
   @Serializable @SerialName("protocolError") class ProxyProtocolError(val protocolErr: SMPErrorType): ProxyClientError()
   @Serializable @SerialName("unexpectedResponse") class ProxyUnexpectedResponse(val responseStr: String): ProxyClientError()
