@@ -26,7 +26,7 @@ const pendingDays = 1
 const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
-
+const reactionEmoji = ["👍", "👎", "😀", "😂", "😢", "❤", "🚀", "✅"]
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
 
 export interface StoredSession {
@@ -163,9 +163,9 @@ export class Session {
   onReaction({added, reaction: {chatInfo, chatReaction}}: CEvt.ChatItemReaction): void {
     const {chatDir, chatItem, reaction} = chatReaction
     const {content} = chatItem
-    if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || reaction.type !== "emoji" || typeof reaction.emoji !== "string" || (content.type !== "rcvMsgContent" && content.type !== "sndMsgContent")) return
+    if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || reaction.type !== "emoji" || (content.type !== "rcvMsgContent" && content.type !== "sndMsgContent")) return
     const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: content.msgContent, fileName: chatItem.file?.fileName}, {name: this.hub.profile.profile.displayName})
-    this.queue(() => this.prompt({chatInfo, chatItem}, reaction.emoji, chatDir.groupMember, undefined, replyTo))
+    this.queue(() => this.prompt({chatInfo, chatItem}, reactionEmoji.includes(reaction.emoji) ? reaction.emoji : "?", chatDir.groupMember, undefined, replyTo))
   }
 
   claimPending(connId: number, chat: string): void {

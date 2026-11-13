@@ -27,6 +27,7 @@ Done when:
 6   a reaction to a pending tool-use card leaves the card pending                              unit test
 7   each channel tag of a turn's prompt matches one pushed prompt                               unit test
 8   in a real session, a reaction to Claude's answer gets an answer that quotes it              TESTING.md, check 6
+9   an emoji outside the apps' eight is passed as ?                                            unit test
 ```
 
 ## What users see
@@ -92,9 +93,9 @@ Messages in the simplex channel are prompts of the members of the SimpleX group 
 name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the
 message replied to, and reply_to_from, its sender, and its text starts with a line "> " with the type of that message
 when it is media, a file or a link, and the first line of its text, up to 200 characters, with … when it is cut. With
-the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji after
-the quote line of the reacted message, with item equal to reply_to. Your final answer of each turn reaches them in that
-group; reply sends them a file.
+the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji, or ?
+for an unknown one, after the quote line of the reacted message, with item equal to reply_to. Your final answer of each
+turn reaches them in that group; reply sends them a file.
 ```
 
 ```mermaid
@@ -142,7 +143,7 @@ The core and the apps:
 4. The group preference "Message reactions" is on by default and has no role ([Preferences.hs:575](../src/Simplex/Chat/Types/Preferences.hs#L575), [:73](../src/Simplex/Chat/Types/Preferences.hs#L73)). The hub creates session groups without it ([hub.ts:483](../packages/simplex-chat-mcp/src/hub.ts#L483)). While owners keep it off, the core drops received reactions and refuses to send them ([Subscriber.hs:2157](../src/Simplex/Chat/Library/Subscriber.hs#L2157), [Commands.hs:1028-1029](../src/Simplex/Chat/Library/Commands.hs#L1028-L1029)).
 5. The core accepts reactions from every role, observers included. A received reaction is handled without `memberCanSend`, which a new message must pass ([Subscriber.hs:1094](../src/Simplex/Chat/Library/Subscriber.hs#L1094), [:1083](../src/Simplex/Chat/Library/Subscriber.hs#L1083), [:1732-1740](../src/Simplex/Chat/Library/Subscriber.hs#L1732-L1740)). A sent reaction has no role check ([Commands.hs:999-1043](../src/Simplex/Chat/Library/Commands.hs#L999-L1043)), while a sent message needs the role author ([Commands.hs:4976](../src/Simplex/Chat/Library/Commands.hs#L4976), [:4981-4983](../src/Simplex/Chat/Library/Commands.hs#L4981-L4983)). The apps offer reactions by the preference alone ([ChatItemView.kt:410](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L410), [ChatModel.kt:2679](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L2679), [ChatView.swift:2431](../apps/ios/Shared/Views/Chat/ChatView.swift#L2431), [ChatTypes.swift:2304](../apps/ios/SimpleXChat/ChatTypes.swift#L2304)).
 6. A member adds up to 3 reactions to a message. The core passes an added reaction only when the member has not added it yet, and a removal only of a reaction the member added ([Internal.hs:117-118](../src/Simplex/Chat/Library/Internal.hs#L117-L118), [Subscriber.hs:2194](../src/Simplex/Chat/Library/Subscriber.hs#L2194)).
-7. The apps send 👍 👎 😀 😂 😢 ❤ 🚀 ✅ ([ChatModel.kt:4658-4666](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L4658-L4666), [ChatTypes.swift:5109-5117](../apps/ios/SimpleXChat/ChatTypes.swift#L5109-L5117), [Protocol.hs:598-601](../src/Simplex/Chat/Protocol.hs#L598-L601)). The core stores a reaction it does not know as its JSON object, and the event has that object ([Protocol.hs:563-570](../src/Simplex/Chat/Protocol.hs#L563-L570), [:574-576](../src/Simplex/Chat/Protocol.hs#L574-L576)). So `reaction` is `{type: "emoji", emoji}` also for an emoji of a newer app.
+7. The apps send 👍 👎 😀 😂 😢 ❤ 🚀 ✅ ([ChatModel.kt:4658-4666](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L4658-L4666), [ChatTypes.swift:5109-5117](../apps/ios/SimpleXChat/ChatTypes.swift#L5109-L5117), [Protocol.hs:598-601](../src/Simplex/Chat/Protocol.hs#L598-L601)). The core stores a reaction it does not know as its JSON object, and the event has that object ([Protocol.hs:563-570](../src/Simplex/Chat/Protocol.hs#L563-L570), [:574-580](../src/Simplex/Chat/Protocol.hs#L574-L580)). So `reaction` is `{type: "emoji", emoji}` also for an emoji of a newer app, for `❤️` with U+FE0F and for any text sent with the type `emoji`. The apps decode such a value as an unknown reaction, whose text is `?` ([ChatModel.kt:4591-4597](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L4591-L4597), [:4627-4633](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L4627-L4633), [ChatTypes.swift:5083-5092](../apps/ios/SimpleXChat/ChatTypes.swift#L5083-L5092), [:5126-5132](../apps/ios/SimpleXChat/ChatTypes.swift#L5126-L5132)). On the message, the Android and desktop apps show `?`, and the iOS app shows no emoji ([ChatItemView.kt:216](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L216), [ChatView.swift:2383-2386](../apps/ios/Shared/Views/Chat/ChatView.swift#L2383-L2386)).
 
 Which reactions are passed:
 
@@ -150,7 +151,7 @@ Which reactions are passed:
 9. A reaction is passed only from a member whose role sends: author, member, moderator, admin or owner, as `canSend` checks ([control.ts:884-886](../packages/simplex-chat-mcp/src/control.ts#L884-L886)). The hub checks the role itself, because the core accepts an observer's reaction (decision 5). Rule 5 of the 0.3.0 trust model: observers cannot send.
 10. A reaction of `User` is not passed: `Session.prompt` drops `User` ([hub.ts:229-232](../packages/simplex-chat-mcp/src/hub.ts#L229-L232)).
 11. A removed reaction, `added: false`, is not passed, and nothing is posted for it. A reaction already passed stays passed.
-12. A reaction is passed when its `type` is `emoji` and its `emoji` is a string. The member's message of the prompt is the emoji. Other reactions are not passed. The hub also checks that the reacted item's content is `rcvMsgContent` or `sndMsgContent`, the only contents that the core lets members react to ([Messages.hs:388-390](../src/Simplex/Chat/Messages.hs#L388-L390), [CIContent.hs:193-197](../src/Simplex/Chat/Messages/CIContent.hs#L193-L197)), so that `toReplyTo` gets its `msgContent`.
+12. A reaction is passed when its `type` is `emoji`. Other reactions are not passed. The member's message of the prompt is the emoji when it is one of the apps' eight, the constant `reactionEmoji`, and `?` otherwise, as the apps show it (decision 7; [hub.ts:29](../packages/simplex-chat-mcp/src/hub.ts#L29), [:168](../packages/simplex-chat-mcp/src/hub.ts#L168)). Decided by the user on 2026-11-13: Claude sees what members see. The hub also checks that the reacted item's content is `rcvMsgContent` or `sndMsgContent`, the only contents that the core lets members react to ([Messages.hs:388-390](../src/Simplex/Chat/Messages.hs#L388-L390), [CIContent.hs:193-197](../src/Simplex/Chat/Messages/CIContent.hs#L193-L197)), so that `toReplyTo` gets its `msgContent`.
 13. Reactions in the Main group and in a member support scope are not passed. The hub passes a reaction to the session of its group when the reaction's chat has no `groupChatScope`, as `isGroupMessage` checks for messages ([control.ts:652-654](../packages/simplex-chat-mcp/src/control.ts#L652-L654), [hub.ts:495-499](../packages/simplex-chat-mcp/src/hub.ts#L495-L499)).
 14. A reaction is never a command or an approval. Commands and approvals are one-line `/` texts of admins and owners ([hub.ts:157-158](../packages/simplex-chat-mcp/src/hub.ts#L157-L158), [control.ts:271-288](../packages/simplex-chat-mcp/src/control.ts#L271-L288), [:672-677](../packages/simplex-chat-mcp/src/control.ts#L672-L677)).
 
@@ -244,10 +245,11 @@ onReaction({added, reaction}):
   added
   reaction.chatReaction.chatDir is groupRcv, its member m
   canSend(role of m)
-  reaction.chatReaction.reaction.type = emoji, its emoji a string
+  reaction.chatReaction.reaction.type = emoji
   reacted.content is rcvMsgContent or sndMsgContent   (decision 12)
   all true:   replyTo = toReplyTo(chatInfo, {itemId, chatDir, content, fileName} of reacted, {name: the hub's profile name})
-              delivery = delivery then prompt(reacted, emoji, m, no file, replyTo)
+              text = emoji in reactionEmoji: emoji; else "?"   (decision 12)
+              delivery = delivery then prompt(reacted, text, m, no file, replyTo)
 onMessage(m), another message:   replyTo = toReplyTo of m.quotedItem, when present   (the replies plan)
                                  delivery = delivery then prompt(m, text, member, m.file, replyTo)
 prompt(item, text, member, ciFile, replyTo):   member is User: nothing; else deliver(the same)
@@ -283,7 +285,7 @@ flowchart LR
   A -- no --> X
   A -- yes --> R{the reactor's role sends}
   R -- no --> X
-  R -- yes --> M{type emoji, the emoji a string}
+  R -- yes --> M{type emoji}
   M -- no --> X
   M -- yes --> U{the reactor is User}
   U -- yes --> X
@@ -324,6 +326,7 @@ Unit tests, `test/unit/sessions.test.ts`, "session channel":
 5. `replies that the session is not running to a reaction, quoting the reacted message`.
 6. `leaves a pending tool-use card pending when an approver reacts to it, and passes the reaction as a prompt`.
 7. `matches each channel tag of a turn's prompt to one pushed prompt, so two equal reactions to one message are quoted in their own turns`.
+8. `passes a reaction with an emoji of the apps as is, and with another value as ?, as the apps show it`: ✅ and ❤ as is; `❤️` with U+FE0F, 🦄 and a text of two lines as `?`.
 
 The unit tests of `toReplyTo`, of the quote line and of the meta keys in `session.test.ts` are those of the replies plan, made by `ep/mcp-replies`. This one adds to `is a channel` of `session.test.ts` that the instructions describe a reaction.
 

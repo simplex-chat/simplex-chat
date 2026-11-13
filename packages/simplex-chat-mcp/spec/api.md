@@ -768,16 +768,17 @@ on a received message in the session group, by its text:
 the sender's role is the role in the session group of the message's member
 ```
 
-The hub handles reactions in the same order as the messages ([hub.ts:163-169](../src/hub.ts#L163-L169), [:239-242](../src/hub.ts#L239-L242), [:517](../src/hub.ts#L517)):
+The hub handles reactions in the same order as the messages ([hub.ts:29](../src/hub.ts#L29), [:163-169](../src/hub.ts#L163-L169), [:239-242](../src/hub.ts#L239-L242), [:517](../src/hub.ts#L517)):
 
 ```
 on chatItemReaction in the session group, outside a member support scope:
   a removed reaction                                       -> ignored
   the reacting member an observer or a relay               -> ignored
-  a reaction other than an emoji                           -> ignored
+  a reaction of a type other than emoji                    -> ignored
   the reacted item not a message                           -> ignored
   the reacting member User                                 -> ignored
-  an emoji                                                 -> the prompt EMOJI, after the quote line of the reacted message (4.5)
+  an emoji of the apps: 👍 👎 😀 😂 😢 ❤ 🚀 ✅             -> the prompt EMOJI, after the quote line of the reacted message (4.5)
+  another value of type emoji                              -> the prompt ?, after the quote line of the reacted message
 on chatItemReaction in the Main group                      -> ignored
 ```
 
@@ -894,7 +895,7 @@ Capabilities of the session server: `experimental: {"claude/channel": {}, "claud
 | to Claude Code | `notifications/claude/channel/permission` | `request_id`<br>`behavior`: `allow` or `deny` | [session.ts:199](../src/session.ts#L199) |
 | from Claude Code | `notifications/claude/channel/permission_request` | `request_id`, `tool_name`, `description`, `input_preview`, all strings | [session.ts:22-23](../src/session.ts#L22-L23), [:58-62](../src/session.ts#L58-L62) |
 
-Channel instructions: `Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the message replied to, and reply_to_from, its sender, and its text starts with a line "> " with the type of that message when it is not a text (link, image, video, voice, file, report or chat), and the first line of its text, up to 200 characters, with … when it is cut. With the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji after the quote line of the reacted message, with item equal to reply_to. Your final answer of each turn reaches them in that group; reply sends them a file.` ([session.ts:21](../src/session.ts#L21)).
+Channel instructions: `Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the message replied to, and reply_to_from, its sender, and its text starts with a line "> " with the type of that message when it is not a text (link, image, video, voice, file, report or chat), and the first line of its text, up to 200 characters, with … when it is cut. With the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji, or ? for an unknown one, after the quote line of the reacted message, with item equal to reply_to. Your final answer of each turn reaches them in that group; reply sends them a file.` ([session.ts:21](../src/session.ts#L21)).
 
 A member's reply reaches Claude with a quote line before its text, `> ` and a body, and a line break ([hub.ts:153-161](../src/hub.ts#L153-L161), [:244-259](../src/hub.ts#L244-L259), [messages.ts:207-231](../src/messages.ts#L207-L231)). The quoted message's ID, sender, type and text are those of [1.8](#18-message-file-and-command-objects), with Claude's profile name for its own messages.
 
@@ -911,7 +912,7 @@ A member's reply reaches Claude with a quote line before its text, `> ` and a bo
 
 The body is the text for a quoted text, and otherwise the type, then `: ` and the text when it is not empty. It is cut as the `text` of a quote: the first line without bidi controls, up to 200 characters with the type included, and `…` when the line is longer or more lines follow. A quote with an empty body is `>` alone. The prompt line of `/attach` holds the quote line and the text in `text`, and the ID and the sender in `replyTo`. The pushed prompt holds the same text, so a channel tag of a reply is matched to it. The quote line is data with which the member names a message; the member's text is the prompt.
 
-A member's reaction reaches Claude as its emoji after the quote line of the reacted message, `> Tests pass.\n👍`, with `item` and `reply_to` both the reacted message's ID; on the prompt line of `/attach` they are `item` and `replyTo.item` ([hub.ts:163-169](../src/hub.ts#L163-L169)). The quote line is made from the reacted item, with its file name for an empty text, so a video or a voice message without text is quoted with its file name, such as `> video: ride.mp4`. The reacted message's own file is not received. The answer of the reaction's turn quotes the reacted message, Claude's own messages included ([hub.ts:289](../src/hub.ts#L289)).
+A member's reaction reaches Claude as its emoji after the quote line of the reacted message, `> Tests pass.\n👍`, with `item` and `reply_to` both the reacted message's ID; on the prompt line of `/attach` they are `item` and `replyTo.item` ([hub.ts:163-169](../src/hub.ts#L163-L169)). The emoji is one of the apps' eight, `👍 👎 😀 😂 😢 ❤ 🚀 ✅`, the set of `MREmojiChar` in the iOS and Kotlin apps. Another value of type `emoji`, such as `❤️` with U+FE0F, a newer emoji or a text, reaches Claude as `?`, as the Android and desktop apps show it; the iOS app shows no emoji for it ([hub.ts:29](../src/hub.ts#L29), [:168](../src/hub.ts#L168)). The quote line is made from the reacted item, with its file name for an empty text, so a video or a voice message without text is quoted with its file name, such as `> video: ride.mp4`. The reacted message's own file is not received. The answer of the reaction's turn quotes the reacted message, Claude's own messages included ([hub.ts:289](../src/hub.ts#L289)).
 
 The session server negotiates the protocol revision 2025-11-25 and answers `server/discover` with `Method not found`, as `McpServer` of the SDK 2.3.1 does by default. Claude Code 2.1.319 registers no channel for a server that negotiates the modern revision 2026-07-28. A unit test of the session server checks both answers ([session.test.ts](../test/unit/session.test.ts)).
 

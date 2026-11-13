@@ -693,6 +693,15 @@ describe("session channel", () => {
     ])
   })
 
+  it("passes a reaction with an emoji of the apps as is, and with another value as ?, as the apps show it", async () => {
+    const chat = new FakeChat()
+    const {hub, lines} = await channel(chat)
+    const answer = item(57, "Tests pass.", {type: "groupSnd"})
+    for (const value of ["✅", "❤", "❤️", "🦄", "Line one\nLine two"]) await hub["onEvent"](reaction(sessionGroup, answer, bob, emoji(value)))
+    await until(() => lines.length === 5)
+    expect(lines.map(({prompt}) => prompt?.text)).toEqual(["> Tests pass.\n✅", "> Tests pass.\n❤", "> Tests pass.\n?", "> Tests pass.\n?", "> Tests pass.\n?"])
+  })
+
   it("quotes in the prompt of a reaction to a reply the reacted message, not the message that the reply quotes", async () => {
     const chat = new FakeChat()
     const {hub, lines} = await channel(chat)
