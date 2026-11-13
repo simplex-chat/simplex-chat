@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="600" viewBox="0 0 820 600" font-family="-apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000">
+  <title>Turning on: deleting connections started earlier</title>
+  <rect width="820" height="600" fill="#ffffff"/>
+
+  <text x="0" y="22" font-size="15" font-weight="600" fill="#162120">1. "Turn on parental controls", connecting or groups off</text>
+  <text x="430" y="22" font-size="15" font-weight="600" fill="#162120">2. When some couldn't be deleted</text>
+
+  <g transform="translate(0,36)">
+    <rect width="390" height="530" rx="24" fill="#f2f2f7" stroke="#d0d5d4"/>
+    <text x="16" y="36" font-size="17" fill="#0088ff">‹ Your privacy</text>
+    <text x="20" y="84" font-size="32" font-weight="700">Parental controls</text>
+    <rect x="16" y="132" width="358" height="308" rx="10" fill="#ffffff"/>
+    <rect x="16" y="460" width="358" height="50" rx="12" fill="#0088ff"/>
+    <text x="195" y="491" font-size="17" font-weight="600" fill="#ffffff" text-anchor="middle">Turn on parental controls</text>
+    <rect width="390" height="530" rx="24" fill="#000000" opacity="0.2"/>
+    <rect x="60" y="112" width="270" height="244" rx="14" fill="#f2f2f2"/>
+    <text x="195" y="142" font-size="17" font-weight="600" text-anchor="middle">Delete pending connections?</text>
+    <g font-size="13" text-anchor="middle">
+      <text x="195" y="165">Unused one-time links, sent contact</text>
+      <text x="195" y="182">requests and groups still being joined</text>
+      <text x="195" y="199">are deleted on every chat profile that</text>
+      <text x="195" y="216">isn't hidden. Hidden profiles keep</text>
+      <text x="195" y="233">theirs. Groups and channels already</text>
+      <text x="195" y="250">joined stay.</text>
+    </g>
+    <path d="M60,268 H330 M60,312 H330" stroke="#c6c6c8" stroke-width="0.6"/>
+    <text x="195" y="296" font-size="17" fill="#ff3b30" text-anchor="middle">Delete and turn on</text>
+    <text x="195" y="340" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">Cancel</text>
+    <rect x="56" y="108" width="278" height="252" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+  </g>
+
+  <g transform="translate(430,36)">
+    <rect width="390" height="530" rx="24" fill="#f2f2f7" stroke="#d0d5d4"/>
+    <text x="16" y="36" font-size="17" fill="#0088ff">‹ Your privacy</text>
+    <text x="20" y="84" font-size="32" font-weight="700">Parental controls</text>
+    <rect x="16" y="132" width="358" height="308" rx="10" fill="#ffffff"/>
+    <rect width="390" height="530" rx="24" fill="#000000" opacity="0.2"/>
+    <rect x="60" y="150" width="270" height="150" rx="14" fill="#f2f2f2"/>
+    <text x="195" y="180" font-size="17" font-weight="600" text-anchor="middle">Not all were deleted</text>
+    <g font-size="13" text-anchor="middle">
+      <text x="195" y="203">Parental controls are on. Some pending</text>
+      <text x="195" y="220">connections couldn't be deleted; the app</text>
+      <text x="195" y="237">tries again when it next starts.</text>
+    </g>
+    <path d="M60,256 H330 M195,256 V300" stroke="#c6c6c8" stroke-width="0.6"/>
+    <text x="127" y="284" font-size="17" fill="#0088ff" text-anchor="middle">OK</text>
+    <text x="262" y="284" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">Try again</text>
+    <rect x="56" y="146" width="278" height="158" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+  </g>
+
+  <text x="0" y="590" font-size="12" fill="#56625f">Also shown when connecting or groups is switched off later. Nothing is listed by name. Depends on the open choice for connections started earlier (P2).</text>
+</svg>

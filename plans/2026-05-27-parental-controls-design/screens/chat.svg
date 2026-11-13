@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1250" height="930" viewBox="0 0 1250 930" font-family="-apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000">
+  <title>A chat with parental controls on</title>
+  <defs>
+    <g id="i-photo" fill="none" stroke="#8a8a8e" stroke-width="1.6"><rect x="-11" y="-8.5" width="22" height="17" rx="3"/><path d="M-8.5,6 L-2.5,0 L2,4 L5,1 L8.5,5"/><circle cx="4" cy="-3" r="1.6"/></g>
+    <g id="i-filter" fill="none" stroke="#0088ff" stroke-width="1.6"><rect x="-8" y="-5" width="15" height="12" rx="2"/><path d="M-5,-8 H10 V4"/><path d="M-6,5 L-2,1 L1,3.5 L3,2 L5.5,5"/></g>
+    <g id="i-phone" fill="none" stroke="#0088ff" stroke-width="1.7"><path d="M-7,-8 L-3.5,-8 L-1.5,-3.5 L-4,-1.5 C-2.5,1.5 -0.5,3.5 2,4.5 L4,2 L8.5,4 L8.5,7.5 C8.5,8.5 7.5,9 6.5,9 C-2,8 -8.5,1.5 -9,-6.5 C-9,-7.5 -8,-8 -7,-8 Z"/></g>
+    <g id="i-dots" fill="#0088ff"><circle cx="-6" r="1.9"/><circle r="1.9"/><circle cx="6" r="1.9"/></g>
+    <g id="i-doc" fill="none" stroke="#8a8a8e" stroke-width="1.6"><path d="M-7,-10 H3 L8,-5 V10 H-7 Z M3,-10 V-5 H8"/></g>
+    <g id="i-down" fill="none" stroke="#0088ff" stroke-width="1.6"><circle r="11"/><path d="M0,-5 V5 M-4,1.5 L0,5.5 L4,1.5"/></g>
+    <g id="clip"><path d="M4,-3 L-3,4.5 C-4.5,6 -7,6 -8,4.5 C-9,3 -8.5,1 -7,-0.5 L1.5,-9 C3.5,-11 6.5,-11 8,-9 C9.5,-7 9,-4.5 7.5,-3 L-1,5.5" fill="none" stroke-width="1.8"/></g>
+    <g id="mic"><rect x="-3.5" y="-9" width="7" height="12" rx="3.5" fill="none" stroke-width="1.7"/><path d="M-7,-1 C-7,4.5 7,4.5 7,-1 M0,4.5 V9" fill="none" stroke-width="1.7"/></g>
+    <g id="placeholder">
+      <rect width="250" height="150" fill="#e5e5ea"/>
+      <use href="#i-photo" x="125" y="62"/>
+      <text x="125" y="98" font-size="13" fill="#8a8a8e" text-anchor="middle">Hidden by parental controls</text>
+    </g>
+    <g id="toolbar">
+      <rect width="390" height="96" fill="#f9f9f9"/>
+      <path d="M0,96 H390" stroke="#c6c6c8" stroke-width="0.5"/>
+      <text x="14" y="66" font-size="30" fill="#0088ff">‹</text>
+    </g>
+    <g id="alice-chat">
+      <use href="#toolbar"/>
+      <circle cx="160" cy="60" r="16" fill="#c7c7cc"/><text x="160" y="66" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="600">A</text>
+      <text x="184" y="66" font-size="17" font-weight="600">Alice</text>
+      <use href="#i-filter" x="322" y="60"/>
+      <use href="#i-dots" x="360" y="60"/>
+      <rect x="16" y="118" width="250" height="210" rx="18" fill="#f5f5f6"/>
+      <clipPath id="c1"><rect x="16" y="118" width="250" height="210" rx="18"/></clipPath>
+      <g clip-path="url(#c1)"><use href="#placeholder" x="16" y="118"/></g>
+      <text x="30" y="292" font-size="16">Look what I found!</text>
+      <text x="252" y="316" font-size="11" fill="#8a8a8e" text-anchor="end">10:41</text>
+      <rect x="16" y="340" width="250" height="64" rx="18" fill="#f5f5f6"/>
+      <use href="#i-doc" x="42" y="372"/>
+      <text x="62" y="368" font-size="15">holiday-plan.pdf</text>
+      <text x="62" y="388" font-size="13" fill="#8a8a8e">1.2 MB</text>
+      <text x="252" y="394" font-size="11" fill="#8a8a8e" text-anchor="end">10:42</text>
+      <rect x="16" y="416" width="250" height="176" rx="18" fill="#f5f5f6"/>
+      <clipPath id="c2"><rect x="16" y="416" width="250" height="176" rx="18"/></clipPath>
+      <g clip-path="url(#c2)"><rect x="16" y="416" width="250" height="64" fill="#e5e5ea"/><text x="141" y="453" font-size="13" fill="#8a8a8e" text-anchor="middle">Hidden by parental controls</text></g>
+      <text x="30" y="502" font-size="14" font-weight="600">Science museum: night tickets</text>
+      <text x="30" y="520" font-size="12" fill="#8a8a8e">museum.example</text>
+      <text x="30" y="548" font-size="16" fill="#0088ff" text-decoration="underline">museum.example/night</text>
+      <text x="252" y="580" font-size="11" fill="#8a8a8e" text-anchor="end">10:43</text>
+      <rect x="250" y="606" width="124" height="40" rx="18" fill="#e9f7ff"/>
+      <text x="266" y="631" font-size="16">Can we go?</text>
+      <rect x="0" y="760" width="390" height="84" fill="#f9f9f9"/>
+      <path d="M0,760 H390" stroke="#c6c6c8" stroke-width="0.5"/>
+      <use href="#clip" x="28" y="790" stroke="#c7c7cc"/>
+      <rect x="52" y="772" width="322" height="36" rx="18" fill="#ffffff" stroke="#c6c6c8"/>
+      <text x="66" y="796" font-size="17" fill="#c7c7cc">Message</text>
+      <use href="#mic" x="352" y="790" stroke="#c7c7cc"/>
+    </g>
+  </defs>
+  <rect width="1250" height="930" fill="#ffffff"/>
+
+  <text x="0" y="22" font-size="15" font-weight="600" fill="#162120">1. Calls, files, voice and media off</text>
+  <text x="430" y="22" font-size="15" font-weight="600" fill="#162120">2. Tapping the attachment button</text>
+  <text x="860" y="22" font-size="15" font-weight="600" fill="#162120">3. A contact that is always allowed</text>
+
+  <g transform="translate(0,36)">
+    <clipPath id="p1"><rect width="390" height="844" rx="24"/></clipPath>
+    <g clip-path="url(#p1)"><rect width="390" height="844" fill="#ffffff"/><use href="#alice-chat"/></g>
+    <rect width="390" height="844" rx="24" fill="none" stroke="#d0d5d4"/>
+    <rect x="18" y="120" width="246" height="146" rx="6" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+    <rect x="18" y="418" width="246" height="60" rx="6" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+    <rect x="14" y="776" width="28" height="28" rx="6" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="4 3"/>
+    <rect x="338" y="776" width="28" height="28" rx="6" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="4 3"/>
+  </g>
+
+  <g transform="translate(430,36)">
+    <clipPath id="p2"><rect width="390" height="844" rx="24"/></clipPath>
+    <g clip-path="url(#p2)"><rect width="390" height="844" fill="#ffffff"/><use href="#alice-chat"/><rect width="390" height="844" fill="#000000" opacity="0.2"/></g>
+    <rect width="390" height="844" rx="24" fill="none" stroke="#d0d5d4"/>
+    <rect x="60" y="346" width="270" height="152" rx="14" fill="#f2f2f2"/>
+    <text x="195" y="376" font-size="17" font-weight="600" text-anchor="middle">Turned off by</text>
+    <text x="195" y="397" font-size="17" font-weight="600" text-anchor="middle">parental controls</text>
+    <text x="195" y="420" font-size="13" text-anchor="middle">Sending files and media is off. A parent</text>
+    <text x="195" y="437" font-size="13" text-anchor="middle">can change this in Parental controls.</text>
+    <path d="M60,454 H330" stroke="#c6c6c8" stroke-width="0.6"/>
+    <text x="195" y="482" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">OK</text>
+    <rect x="56" y="342" width="278" height="160" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+  </g>
+
+  <g transform="translate(860,36)">
+    <clipPath id="p3"><rect width="390" height="844" rx="24"/></clipPath>
+    <g clip-path="url(#p3)">
+      <rect width="390" height="844" fill="#ffffff"/>
+      <use href="#toolbar"/>
+      <circle cx="160" cy="60" r="16" fill="#c7c7cc"/><text x="160" y="66" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="600">M</text>
+      <text x="184" y="66" font-size="17" font-weight="600">Mum</text>
+      <use href="#i-phone" x="322" y="60"/>
+      <use href="#i-dots" x="360" y="60"/>
+      <rect x="16" y="118" width="250" height="210" rx="18" fill="#f5f5f6"/>
+      <clipPath id="c3"><rect x="16" y="118" width="250" height="210" rx="18"/></clipPath>
+      <g clip-path="url(#c3)">
+        <rect x="16" y="118" width="250" height="150" fill="#9fd0f0"/>
+        <path d="M16,268 L16,220 C70,190 110,200 150,225 C190,205 230,195 266,215 L266,268 Z" fill="#6aa86a"/>
+        <circle cx="220" cy="155" r="16" fill="#f7d774"/>
+      </g>
+      <text x="30" y="292" font-size="16">Dinner is at seven</text>
+      <text x="252" y="316" font-size="11" fill="#8a8a8e" text-anchor="end">18:02</text>
+      <rect x="16" y="340" width="250" height="64" rx="18" fill="#f5f5f6"/>
+      <use href="#i-down" x="42" y="372"/>
+      <text x="62" y="368" font-size="15">shopping-list.pdf</text>
+      <text x="62" y="388" font-size="13" fill="#8a8a8e">24 KB</text>
+      <text x="252" y="394" font-size="11" fill="#8a8a8e" text-anchor="end">18:03</text>
+      <rect x="0" y="760" width="390" height="84" fill="#f9f9f9"/>
+      <path d="M0,760 H390" stroke="#c6c6c8" stroke-width="0.5"/>
+      <use href="#clip" x="28" y="790" stroke="#0088ff"/>
+      <rect x="52" y="772" width="322" height="36" rx="18" fill="#ffffff" stroke="#c6c6c8"/>
+      <text x="66" y="796" font-size="17" fill="#c7c7cc">Message</text>
+      <use href="#mic" x="352" y="790" stroke="#0088ff"/>
+    </g>
+    <rect width="390" height="844" rx="24" fill="none" stroke="#d0d5d4"/>
+  </g>
+
+  <text x="0" y="918" font-size="12" fill="#56625f">Dashed: new. Panel 1: the filter button takes the call button's place, as when calls are unavailable (ChatView.swift:584-587). The buttons are disabled as for "Files and media prohibited!".</text>
+</svg>
