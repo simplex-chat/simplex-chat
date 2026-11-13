@@ -184,6 +184,8 @@ Changes:
    contacts to add to a group      AddGroupMembersView.kt:354                   AddGroupMembersView.swift:222
    share and forward list          ShareListNavLinkView.kt:105                  (chooses by peer type already)
    call screen                     CallView.android.kt:398                      ActiveCallView.swift:329
+   call on the lock screen         CallActivity.kt:386 (android module), found  -
+                                   by the review
    call in the chat list           ChatListView.desktop.kt:66, :128             -
    link cards, contact             ChatModel.kt:5272                            ChatTypes.swift:5724
    link cards, invitation          ChatModel.kt:5273                            ChatTypes.swift:5726
@@ -196,7 +198,9 @@ Changes:
 23. Kotlin `ChatItemReactionMenuItem` gets an `icon`, the person by default; members and contacts pass the icon of their peer type. iOS `profileMenuItem` takes the peer type.
 24. Kotlin `ProfileImageForActiveCall` takes an `icon`, the person by default. The person keeps its drawing, enlarged by 14 dp to hide the circle's inner padding (`ChatInfoImage.kt:305-333`); another icon is drawn at the image size, as `ProfileImage` draws it.
 25. In the Kotlin share list, a chat other than a note folder or a group is drawn with `ChatInfoImage(chat.chatInfo, 42.dp)`. Its size and color equal those of `ShareListNavLinkView.kt:105` (`ChatInfoImage.kt:47-56`).
-26. iOS `MsgChatLink.iconName` and `smallIconName` become `icon` and `smallIcon` of type `Image`, because the agent placeholder is an image asset, not a system symbol. Their 5 callers pass the image. The helpers `image` of `ContextItemView.swift:93` and `ciQuoteIconView` of `FramedItemView.swift:386` take an `Image`; their other callers pass `Image(systemName:)`.
+26. iOS `MsgChatLink.iconName` and `smallIconName` become `icon` and `smallIcon(agent:)` of type `Image`, because the agent placeholder is an image asset, not a system symbol. Their 5 callers pass the image. The helpers `image` of `ContextItemView.swift:93` and `ciQuoteIconView` of `FramedItemView.swift:386` take an `Image`; their other callers pass `Image(systemName:)`.
+27. In text, a system symbol scales with the font and an image asset keeps its own size, 21.41 × 24 points for `agent`. So the compose context line draws the agent placeholder at the height of the symbol `person` of the body font, which `peerTypeIcon` and `smallIcon` take as `agent` (found by the review). The quote of a link sizes its icon to 18 points, as before.
+28. The lock-screen call of a contact without a name preview, `NotificationPreviewMode.HIDDEN`, keeps the person placeholder, so the lock screen shows nothing of the caller's profile.
 
 ## 5. Design
 
@@ -381,6 +385,8 @@ contact link card         ProfileImage with MsgChatLink.Contact.iconRes    Profi
 small link icon           Icon of MsgChatLink.Contact.smallIconRes         MsgChatLink.contact smallIcon
 reaction menu item        -                                                profileMenuItem
 active call card          ProfileImageForActiveCall                        -
+compose context line      -                                                ContextItemView with a contact link, one line for each
+                                                                           peer type
 ```
 The references are recorded from a run with the change. Both previews use parameters that the change adds, so they compile only after it; the failure on master is shown by the unit tests of the plugin and of the Kotlin link icons. At each other place of decision 20, one argument is added, checked in the diff.
 
