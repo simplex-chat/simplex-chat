@@ -3574,6 +3574,7 @@ data class ChatItem (
   fun autoReceiveFile(): CIFile? {
     val mc = content.msgContent
     return if (file != null &&
+      meta.itemDeleted == null &&
       ChatController.appPrefs.privacyAcceptImages.get() &&
       ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
           || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)

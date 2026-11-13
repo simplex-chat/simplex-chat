@@ -4113,6 +4113,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public func autoReceiveFile() -> CIFile? {
         if let file = file,
            let mc = content.msgContent,
+           meta.itemDeleted == nil,
            privacyAcceptImagesGroupDefault.get(),
            (mc.isImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
             || (mc.isVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
