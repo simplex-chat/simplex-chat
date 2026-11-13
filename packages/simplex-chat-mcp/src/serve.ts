@@ -90,7 +90,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
   await prepareCore(chat, data)
   const events = bufferEvents(chat)
   await chat.startChat()
-  const user = await updatedUser(chat, created, options.displayName ?? created.profile.displayName)
+  const user = await updatedUser(chat, created, options.displayName ?? created.profile.displayName, T.ChatPeerType.Agent)
   const displayName = user.profile.displayName
   const group = await controlGroup(chat, user.userId, displayName, options.resetOwners)
   const actions: Actions = new Actions(approve, expireHours, controlDataOf(group.customData)?.nextAction ?? 1, {

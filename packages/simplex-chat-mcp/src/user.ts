@@ -14,7 +14,7 @@ export class User {
   private constructor(private readonly chat: api.ChatApi, private readonly user: T.User) {}
 
   static async open(root: string, hub: api.ChatApi, hubUser: T.User): Promise<User> {
-    const core = await openCore(join(root, "_user"), userName)
+    const core = await openCore(join(root, "_user"), userName, T.ChatPeerType.Human)
     try {
       const user = new User(core.chat, core.user)
       await core.events(event => user.onEvent(event))

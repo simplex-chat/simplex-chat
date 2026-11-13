@@ -788,10 +788,10 @@ sequenceDiagram
   HK->>D: GET /status: not running
   HK->>D: spawn simplex-mcp service
   D->>D: lock, stored sessions, socket listens
-  D->>C: openCore ROOT/_hub "Claude"
+  D->>C: openCore ROOT/_hub "Claude" agent
   D->>C: apiNewGroup "SimpleX MCP", short description and welcome of trust, {simplexMcpMain: true}
   M->>C: apiGetGroupLinkStr #35;M: none, apiCreateGroupLink #35;M member
-  D->>U: openCore ROOT/_user "User"
+  D->>U: openCore ROOT/_user "User" human
   U->>C: joins the hub's one-time link#59; the contact of its connection marked simplexMcpUser
   D-->>HK: ready
   HK->>D: POST /title {id, pid, at, name, project, model, config}
@@ -818,6 +818,7 @@ Notes:
 
 - Only the person gets the link. It is passed in the hook's `systemMessage`, and it is in no hook context or tool result ([hook.ts:94-96](../src/hook.ts#L94-L96)).
 - The service deletes the preset contact of a new profile, in `_hub` and in `_user` ([core.ts:28](../src/core.ts#L28), [:44-52](../src/core.ts#L44-L52)).
+- At each start, `openCore` sets the peer type of each profile: `agent` for Claude and `human` for `User`. In a data folder of 0.3.0, `User` is changed from `agent` to `human` at the first start, and the core sends the change to the hub's contact of `User` at once. Members who join a session group later get `human`; members already in a session group keep `agent` for `User` ([core.ts:19-35](../src/core.ts#L19-L35), [:54-59](../src/core.ts#L54-L59), [hub.ts:369](../src/hub.ts#L369), [user.ts:17](../src/user.ts#L17)).
 - `User` connects only at the first start. At later starts, the service finds the hub's contact marked `simplexMcpUser`, the contact whose connection belongs to the invitation that the hub created. When `User` does not connect within 60 s, the service runs without it, and terminal prompts are not posted ([user.ts:21](../src/user.ts#L21), [:38-48](../src/user.ts#L38-L48), [:60-62](../src/user.ts#L60-L62), [hub.ts:376](../src/hub.ts#L376)).
 - At a later start without owners, the service keeps the Main group's link ([main-group.ts:68-76](../src/main-group.ts#L68-L76)).
 - Owners are invited to the groups of the open sessions when they join the Main group. The groups of closed sessions are joined with `/join N` ([hub.ts:449-453](../src/hub.ts#L449-L453), [:436-447](../src/hub.ts#L436-L447)).

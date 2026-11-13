@@ -720,7 +720,7 @@ Group profile ([`createMainGroup`](../src/main-group.ts#L195-L205), [`load`](../
 
 Claude updates only the display name and the command menu, starting each time from the group's current profile in the chat database. So the short description, the description and the preferences that owners set stay ([main-group.ts:57-66](../src/main-group.ts#L57-L66), [control.ts:632-640](../src/control.ts#L632-L640)).
 
-The hub's profile `Claude` posts in the group, with peer type `agent` ([hub.ts:18](../src/hub.ts#L18), [core.ts:24](../src/core.ts#L24)).
+The hub's profile `Claude` posts in the group, with peer type `agent` ([hub.ts:18](../src/hub.ts#L18), [:369](../src/hub.ts#L369), [core.ts:24](../src/core.ts#L24)).
 
 ### 4.3 Session groups
 
@@ -826,6 +826,7 @@ Group profile ([`createSessionGroup`](../src/hub.ts#L478-L490), [`Control.load`]
 | direct messages | off |
 | command menu | as in [2.5](#25-group-profile) |
 | members | `Claude`, the members invited through the Main group, the members others added directly, `User` |
+| peer types | `Claude` `agent`; `User` `human`, set at each service start ([user.ts:17](../src/user.ts#L17), [core.ts:54-59](../src/core.ts#L54-L59)). A member who joined while `User` had `agent`, as in 0.3.0, keeps `agent` for `User`: the core sends a member's profile to a group only after a change of its name, full name, short description, description or image |
 
 Claude makes the profile updates one at a time. It starts each from the group's current profile in the chat database and changes only the display name, the short description or the command menu. So a rename and a model change that overlap both stay.
 

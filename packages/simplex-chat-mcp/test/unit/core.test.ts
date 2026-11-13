@@ -1,5 +1,6 @@
 import {T} from "@simplex-chat/types"
-import {deletePresetContacts} from "../../src/core"
+import {api} from "simplex-chat"
+import {deletePresetContacts, updatedUser} from "../../src/core"
 import {FakeChat, contact, direct, user} from "./fixtures"
 
 beforeEach(() => {
@@ -41,5 +42,35 @@ describe("preset contact of a new profile", () => {
     await deletePresetContacts(chat.api(), user.userId)
     expect(chat.deleted.map(({chatId}) => chatId)).toEqual([5])
     expect(errors).toEqual(["preset contact 1: db locked"])
+  })
+})
+
+describe("display name and peer type of the profile at each start", () => {
+  const stored = {...user, profile: {...user.profile, displayName: "User", fullName: "", peerType: T.ChatPeerType.Agent}} as T.User
+
+  function profileChat(): {chat: api.ChatApi; updates: T.Profile[]} {
+    const updates: T.Profile[] = []
+    let current = stored
+    const chat = {
+      apiUpdateProfile: async (_userId: number, profile: T.Profile) => {
+        updates.push(profile)
+        current = {...current, profile: {...current.profile, ...profile}}
+      },
+      apiGetActiveUser: async () => current,
+    }
+    return {chat: chat as unknown as api.ChatApi, updates}
+  }
+
+  it("updates a profile whose peer type differs", async () => {
+    const {chat, updates} = profileChat()
+    const updated = await updatedUser(chat, stored, "User", T.ChatPeerType.Human)
+    expect(updates).toEqual([expect.objectContaining({displayName: "User", peerType: T.ChatPeerType.Human})])
+    expect(updated.profile.peerType).toBe(T.ChatPeerType.Human)
+  })
+
+  it("keeps a profile with its name and peer type", async () => {
+    const {chat, updates} = profileChat()
+    expect(await updatedUser(chat, stored, "User", T.ChatPeerType.Agent)).toBe(stored)
+    expect(updates).toEqual([])
   })
 })

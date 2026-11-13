@@ -12,6 +12,7 @@ import {resetOwners} from "../../src/owner"
 import {AttachLine, OwnerState, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
 import {qrCodeText} from "../../src/qr"
 import {Service, productionDeps} from "../../src/service"
+import {userContact} from "../../src/user"
 import {version} from "../../src/version"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
 import {SmpServer, startSmpServer, startXftpServer} from "./smpServer"
@@ -679,6 +680,15 @@ test("/observer ends the standing approvals of the member it makes an observer, 
   await dave.chat.apiJoinGroup(daveGroupOne)
   await daveJoined
   await daveRights
+}, 600_000)
+
+test("a data folder of 0.3.0 starts with User as a person, and an owner sees Claude as an agent and User as a person", async () => {
+  const {alice, hub, groupOne} = await linkSession("peers")
+  expect(hub.user!["user"].profile.peerType).toBe(T.ChatPeerType.Human)
+  await until(async () => (await userContact(hub.chat, hub.profile.userId))?.profile.peerType === T.ChatPeerType.Human)
+  const members = await alice.chat.apiListMembers(groupOne)
+  expect(members.find(({memberProfile}) => memberProfile.displayName === "Claude")?.memberProfile.peerType).toBe(T.ChatPeerType.Agent)
+  expect(members.find(({memberProfile}) => memberProfile.displayName === "User")?.memberProfile.peerType).toBe(T.ChatPeerType.Human)
 }, 600_000)
 
 test("a new session has no chats", async () => {

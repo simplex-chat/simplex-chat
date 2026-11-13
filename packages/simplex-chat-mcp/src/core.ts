@@ -16,17 +16,17 @@ export interface Core {
   events: (handler: EventHandler) => Promise<void>
 }
 
-export async function openCore(folder: string, displayName: string): Promise<Core> {
+export async function openCore(folder: string, displayName: string, peerType: T.ChatPeerType): Promise<Core> {
   createDataFolder(folder)
   const chat = await api.ChatApi.init({type: "sqlite", filePrefix: join(folder, "simplex")})
   try {
     const existing = await chat.apiGetActiveUser()
-    const created = existing ?? (await chat.apiCreateActiveUser({displayName, fullName: "", peerType: T.ChatPeerType.Agent}))
+    const created = existing ?? (await chat.apiCreateActiveUser({displayName, fullName: "", peerType}))
     await prepareCore(chat, folder)
     const events = bufferEvents(chat)
     await chat.startChat()
     if (existing === undefined) await deletePresetContacts(chat, created.userId)
-    const user = await updatedUser(chat, created, displayName)
+    const user = await updatedUser(chat, created, displayName, peerType)
     return {chat, user, events}
   } catch (error) {
     await chat.close().catch(() => undefined)
@@ -51,10 +51,10 @@ export async function deletePresetContacts(chat: api.ChatApi, userId: number): P
   }
 }
 
-export async function updatedUser(chat: api.ChatApi, user: T.User, displayName: string): Promise<T.User> {
+export async function updatedUser(chat: api.ChatApi, user: T.User, displayName: string, peerType: T.ChatPeerType): Promise<T.User> {
   const {profile} = user
-  if (displayName === profile.displayName && profile.peerType === T.ChatPeerType.Agent) return user
-  await chat.apiUpdateProfile(user.userId, {...util.fromLocalProfile(profile), displayName, peerType: T.ChatPeerType.Agent})
+  if (displayName === profile.displayName && profile.peerType === peerType) return user
+  await chat.apiUpdateProfile(user.userId, {...util.fromLocalProfile(profile), displayName, peerType})
   return (await chat.apiGetActiveUser())!
 }
 

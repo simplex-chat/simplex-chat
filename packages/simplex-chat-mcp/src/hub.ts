@@ -366,7 +366,7 @@ export class Hub implements SessionGroups {
   }
 
   static async open(root: string, config: Config, stored: StoredSession[]): Promise<Hub> {
-    const core = await openCore(hubFolder(root), profileName)
+    const core = await openCore(hubFolder(root), profileName, T.ChatPeerType.Agent)
     try {
       const {chat, user} = core
       const group = (await findMainGroup(chat, user.userId)) ?? (await createMainGroup(chat, user.userId, config.mainGroup))
