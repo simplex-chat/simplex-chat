@@ -1,6 +1,6 @@
 # SimpleX MCP plugin: reactions are passed to Claude
 
-Status: approved by the user on 2026-11-13. Decided by the user on 2026-11-12: Q1 A and Q2 A. Implemented on `ep/mcp-reactions`, on top of `ep/mcp-replies` (#8162 at `192915099`). Code references: master `9d3241b06` (MCP 0.3.0); in decisions 16, 19, 20 and 25, the `hub.ts` and `messages.ts` of this branch. Claude Code references: the binary of Claude Code 2.1.322, by byte offset, and https://code.claude.com/docs/en/channels-reference.
+Status: approved by the user on 2026-11-13. Decided by the user on 2026-11-12: Q1 A and Q2 A. Implemented on `ep/mcp-reactions`, on top of `ep/mcp-replies` (#8162 at `192915099`). Code references by line: master `9d3241b06` (MCP 0.3.0), except `messages.ts` in decisions 19 and 20, which is at `192915099`. The code of this branch is cited by file and function. Claude Code references: the binary of Claude Code 2.1.322, by byte offset, and https://code.claude.com/docs/en/channels-reference.
 
 ## Goal
 
@@ -29,6 +29,8 @@ Done when:
 8   in a real session, a reaction to Claude's answer gets an answer that quotes it              TESTING.md, check 6
 9   a reaction other than the apps' eight emoji is not passed and gets "This reaction is not     unit test
     supported.", quoting the reacted message
+10  that reply is posted once per member and reacted message, also after a removal and a new     unit test
+    add, and never for a reaction to the reply
 ```
 
 ## What users see
@@ -51,7 +53,8 @@ Alice, an owner, adds 👍 to a pending tool-use card    Alice's reaction; the r
 an owner turns off "Message reactions"               the apps offer no reactions                     nothing
 a reaction in the Main group                         the reaction                                    nothing
 a reaction other than the apps' eight emoji          `This reaction is not supported.` from Claude,  nothing
-                                                     as a reply to the reacted message
+                                                     as a reply to the reacted message, once per
+                                                     member and message
 ```
 
 Texts:
@@ -154,17 +157,17 @@ Which reactions are passed:
 9. A reaction is passed only from a member whose role sends: author, member, moderator, admin or owner, as `canSend` checks ([control.ts:884-886](../packages/simplex-chat-mcp/src/control.ts#L884-L886)). The hub checks the role itself, because the core accepts an observer's reaction (decision 5). Rule 5 of the 0.3.0 trust model: observers cannot send.
 10. A reaction of `User` is not passed, and gets no reply: `Session.onReaction` drops it, as `Session.prompt` drops `User` ([hub.ts:229-232](../packages/simplex-chat-mcp/src/hub.ts#L229-L232)).
 11. A removed reaction, `added: false`, is not passed, and nothing is posted for it. A reaction already passed stays passed.
-12. A reaction is passed when its `type` is `emoji` and its `emoji` is one of the apps' eight, the constant `reactionEmoji` (decision 7). The member's message of the prompt is the emoji. Any other reaction is not passed: the hub posts `This reaction is not supported.` on the delivery chain, quoting the reacted message ([hub.ts:29](../packages/simplex-chat-mcp/src/hub.ts#L29), [:166](../packages/simplex-chat-mcp/src/hub.ts#L166)). Decided by the user on 2026-11-13. The hub also checks that the reacted item's content is `rcvMsgContent` or `sndMsgContent`, the only contents that the core lets members react to ([Messages.hs:388-390](../src/Simplex/Chat/Messages.hs#L388-L390), [CIContent.hs:193-197](../src/Simplex/Chat/Messages/CIContent.hs#L193-L197)), so that `toReplyTo` gets its `msgContent`.
+12. A reaction is passed when its `type` is `emoji` and its `emoji` is one of the apps' eight, the constant `reactionEmoji` (decision 7). The member's message of the prompt is the emoji. Any other reaction is not passed: `Session.refuseReaction` in `hub.ts` posts `This reaction is not supported.` on the delivery chain, quoting the reacted message. It posts the reply once for each member and reacted message, kept in `Session.refusedReactions` while the service runs, so removing the reaction and adding it again gets no second reply. A reaction to a sent message with the reply's text gets no reply. Decided by the user on 2026-11-13. The hub also checks that the reacted item's content is `rcvMsgContent` or `sndMsgContent`, the only contents that the core lets members react to ([Messages.hs:388-390](../src/Simplex/Chat/Messages.hs#L388-L390), [CIContent.hs:193-197](../src/Simplex/Chat/Messages/CIContent.hs#L193-L197)), so that `toReplyTo` gets its `msgContent`.
 13. Reactions in the Main group and in a member support scope are not passed. The hub passes a reaction to the session of its group when the reaction's chat has no `groupChatScope`, as `isGroupMessage` checks for messages ([control.ts:652-654](../packages/simplex-chat-mcp/src/control.ts#L652-L654), [hub.ts:495-499](../packages/simplex-chat-mcp/src/hub.ts#L495-L499)).
 14. A reaction is never a command or an approval. Commands and approvals are one-line `/` texts of admins and owners ([hub.ts:157-158](../packages/simplex-chat-mcp/src/hub.ts#L157-L158), [control.ts:271-288](../packages/simplex-chat-mcp/src/control.ts#L271-L288), [:672-677](../packages/simplex-chat-mcp/src/control.ts#L672-L677)).
 
 Delivery:
 
 15. A reaction is delivered on the session's delivery chain, after the earlier messages, as a message is ([hub.ts:303-305](../packages/simplex-chat-mcp/src/hub.ts#L303-L305)). It waits for an attachment until 30 s after the hub opened. Without an attachment, Claude replies `Session N is not running.`, quoting the reacted message ([hub.ts:234-245](../packages/simplex-chat-mcp/src/hub.ts#L234-L245)).
-16. The caller of `deliver` gives it the prompt's file and `replyTo`: `prompt` and `deliver` take the parameters `ciFile` and `replyTo` beside the item ([hub.ts:239-259](../packages/simplex-chat-mcp/src/hub.ts#L239-L259)). `onMessage` gives a message's own file and the `replyTo` of a reply's `quotedItem` ([hub.ts:159-160](../packages/simplex-chat-mcp/src/hub.ts#L159-L160)). `onReaction` gives the `replyTo` of the reacted item and no file ([hub.ts:167-168](../packages/simplex-chat-mcp/src/hub.ts#L167-L168)). `deliver` takes neither from the item it delivers, because a reacted item can have a file or be a reply itself. At `192915099`, `deliver` receives the file of its item (`hub.ts:240`). The replies plan computes `replyTo` in `onMessage` by the same rule (its decision 12).
+16. The caller of `deliver` gives it the prompt's file and `replyTo`: `Session.prompt` and `Session.deliver` in `hub.ts` take the parameters `ciFile` and `replyTo` beside the item. `Session.onMessage` gives a message's own file and the `replyTo` of a reply's `quotedItem`. `Session.onReaction` gives the `replyTo` of the reacted item and no file. `deliver` takes neither from the item it delivers, because a reacted item can have a file or be a reply itself. At `192915099`, `deliver` receives the file of its item. The replies plan computes `replyTo` in `onMessage` by the same rule (its decision 12).
 17. `deliver` writes `quoteLine(replyTo)` and a line break before the member's message, as the replies plan specifies it (its decisions 12 and 18). The prompt line of a reaction is `{prompt: {text: "> BODY\nEMOJI", from: REACTOR, item: REACTED, replyTo: {item: REACTED, from: SENDER}}}` ([protocol.ts:59-62](../packages/simplex-chat-mcp/src/protocol.ts#L59-L62)). `item` is the reacted message's ID for two reasons. The hub's channel tags, its turn records and the answer's quote use `item` ([hub.ts:27](../packages/simplex-chat-mcp/src/hub.ts#L27), [:266-275](../packages/simplex-chat-mcp/src/hub.ts#L266-L275), [:297-301](../packages/simplex-chat-mcp/src/hub.ts#L297-L301)). A session server of 0.3.0 maps `text`, `from` and `item` and ignores other fields ([session.ts:198](../packages/simplex-chat-mcp/src/session.ts#L198)). `item` equal to `reply_to` marks a reaction for Claude.
 18. The session server maps `replyTo` to the meta `reply_to` and `reply_to_from`, as for a reply (decisions 1 to 4 and 25 of the replies plan). Claude Code keeps meta keys that match `^[a-zA-Z_][a-zA-Z0-9_]*$` (binary offset 308443090). The docs: "Keys must be identifiers: letters, digits, and underscores only. Keys containing hyphens or other characters are silently dropped."
-19. The `replyTo` of a reaction is the `ReplyTo` `{item, from, type?, text}` that `toReplyTo(chatInfo, {itemId, chatDir, content, fileName}, self)` computes from the reacted item: its `meta.itemId`, `chatDir`, `content.msgContent` and `file.fileName` (decisions 18 and 24 of the replies plan; [messages.ts:207-216](../packages/simplex-chat-mcp/src/messages.ts#L207-L216), [hub.ts:167](../packages/simplex-chat-mcp/src/hub.ts#L167)). Its sender is named by `itemSender` ([messages.ts:295-308](../packages/simplex-chat-mcp/src/messages.ts#L295-L308)), with the hub's profile name, `Claude`, as the agent's own name, `{name: this.hub.profile.profile.displayName}`, as `onMessage` names it for a reply ([hub.ts:159](../packages/simplex-chat-mcp/src/hub.ts#L159); decisions 8 and 12 of the replies plan). Every session group is created with that profile and not incognito ([hub.ts:495](../packages/simplex-chat-mcp/src/hub.ts#L495), [control.ts:626-627](../packages/simplex-chat-mcp/src/control.ts#L626-L627), [api.ts:658-659](../packages/simplex-chat-nodejs/src/api.ts#L658-L659)). The posts of `User` get `User`, and a member's messages the member's display name. `onReaction` computes `replyTo` when it queues the prompt, without an await, so the order of the delivery chain is kept (0.3.0 decision 45).
+19. The `replyTo` of a reaction is the `ReplyTo` `{item, from, type?, text}` that `toReplyTo(chatInfo, {itemId, chatDir, content, fileName}, self)` computes from the reacted item: its `meta.itemId`, `chatDir`, `content.msgContent` and `file.fileName` (decisions 18 and 24 of the replies plan; [messages.ts:207-216](../packages/simplex-chat-mcp/src/messages.ts#L207-L216), `Session.onReaction` in `hub.ts`). Its sender is named by `itemSender` ([messages.ts:295-308](../packages/simplex-chat-mcp/src/messages.ts#L295-L308)), with the hub's profile name, `Claude`, as the agent's own name, `{name: this.hub.profile.profile.displayName}`, as `Session.onMessage` names it for a reply (decisions 8 and 12 of the replies plan). Every session group is created with that profile and not incognito (`Hub.createSessionGroup` in `hub.ts`, `createGroup` in `control.ts`, [api.ts:658-659](../packages/simplex-chat-nodejs/src/api.ts#L658-L659)). The posts of `User` get `User`, and a member's messages the member's display name. `onReaction` computes `replyTo` when it queues the prompt, without an await, so the order of the delivery chain is kept (0.3.0 decision 45).
 20. The quote line of a reaction is `quoteLine` of its `replyTo`, by the rule of the replies plan (its decisions 5 to 7 and 26, and its mechanics of `replyText` and `quoteLine`; [messages.ts:207-231](../packages/simplex-chat-mcp/src/messages.ts#L207-L231)). `toReplyTo` sets `type` to `content.type` for a message other than a text and other than `unknown`, and `text` to the message's text, or to its file name when the text is empty. `quoteLine` is `> ` and `replyText` of a body: the text for a text; `TYPE: TEXT`, with the text trimmed, such as `image: Trail map near the gate`, for a link, image, video, voice message, file, report or chat; the type alone when the trimmed text is empty. An empty body gives `>` alone. Trimming also drops bidi controls. `replyText` takes the first line of the trimmed body, ended by a line break of any kind, trimmed. Over `replyTextLength`, 200, grapheme clusters, the type included, it takes the first 200 without the trailing spaces. `…` follows when the line is longer or more lines follow. A line break ends the body, so the quote takes one line of the content, and the emoji follows on the next. A reacted item has its file name, so a reacted image, video, voice message or file without text is quoted with its type and its file name. A reply's quote names an image or a file without text by its file name too, which the replier's core writes into the quote ([Internal.hs:374-378](../src/Simplex/Chat/Library/Internal.hs#L374-L378), [:398-399](../src/Simplex/Chat/Library/Internal.hs#L398-L399)). For a video or voice message without text, a reply's quote has no file name, and its line is the type alone, such as `> video` (decision 7 of the replies plan).
 21. Claude Code queues a channel notification as a prompt with priority `next`, origin `channel` and `skipSlashCommands` (binary offsets 308443184 and 314212088). The docs: "Events queue into the session and are processed in order. If several notifications arrive while Claude is busy, they're delivered together on the next turn and Claude handles them as a group."
 22. `User` posts nothing for the prompt of a reaction. Its transcript entry has the origin `channel`, so the hook sends `typed: false` ([hook.ts:124-129](../packages/simplex-chat-mcp/src/hook.ts#L124-L129), decision 121 of the 0.3.0 plan, [flow 21](../packages/simplex-chat-mcp/spec/flows.md#21-a-terminal-prompt-and-the-answer): "Task notifications, messages of other sessions and channel prompts have other origins."). Its channel tag also matches the pushed reaction, whose text is the quote line and the emoji ([hub.ts:195](../packages/simplex-chat-mcp/src/hub.ts#L195); decision 14 of the replies plan).
@@ -235,6 +238,8 @@ src/session.ts       channelNotification         first: meta reply_to and reply_
 src/session.ts       channelInstructions         first: the sentences on replies; this one: the sentence on reactions
 src/hub.ts           Hub.onEvent                 chatItemReaction of a session group: Session.onReaction
 src/hub.ts           Session.onReaction          new: the checks of decisions 9 to 12; the prompt with its replyTo on the delivery chain
+src/hub.ts           Session.refuseReaction      new: the reply to another reaction, once per member and reacted message
+src/hub.ts           Session.refusedReactions    new: the member and item IDs that got the reply
 src/hub.ts           Session.onMessage           passes the prompt with the message's own file
 src/hub.ts           Session.prompt, deliver     take ciFile, the file to receive; first: replyTo, and quoteLine of it
 src/hub.ts           Session.answer              quotes sndMsgContent items too
@@ -250,9 +255,13 @@ onReaction({added, reaction}):
   canSend(role of m), m not User
   reacted.content is rcvMsgContent or sndMsgContent   (decision 12)
   any false:  nothing
-  reaction not {type: emoji, emoji in reactionEmoji}:   delivery = delivery then post "This reaction is not supported.", quoting reacted
+  reaction not {type: emoji, emoji in reactionEmoji}:   refuseReaction(m, reacted)
   else:       replyTo = toReplyTo(chatInfo, {itemId, chatDir, content, fileName} of reacted, {name: the hub's profile name})
               delivery = delivery then prompt(reacted, emoji, m, no file, replyTo)
+refuseReaction(m, reacted):
+  (m, reacted) in refusedReactions, or reacted is a sent "This reaction is not supported.":   nothing
+  else:       refusedReactions += (m, reacted)
+              delivery = delivery then post "This reaction is not supported.", quoting reacted
 onMessage(m), another message:   replyTo = toReplyTo of m.quotedItem, when present   (the replies plan)
                                  delivery = delivery then prompt(m, text, member, m.file, replyTo)
 prompt(item, text, member, ciFile, replyTo):   member is User: nothing; else deliver(the same)
@@ -291,7 +300,9 @@ flowchart LR
   R -- yes --> U{the reactor is User}
   U -- yes --> X
   U -- no --> M{one of the apps' eight emoji}
-  M -- no --> N[reply: This reaction is not supported.]
+  M -- no --> F{replied before for this member and message, or a reaction to the reply}
+  F -- yes --> X
+  F -- no --> N[reply: This reaction is not supported.]
   M -- yes --> P[prompt on the delivery chain]
 ```
 
@@ -322,14 +333,15 @@ flowchart LR
 ## Acceptance and tests
 
 Unit tests, `test/unit/sessions.test.ts`, "session channel":
-1. `passes a reaction of a member whose role sends as the quote line of the reacted message and the emoji, with the message's ID and sender, and nothing for an observer, User, a removed reaction, another kind of reaction or a reaction in the Main group`. It fails at `7437f8f96`: no line is written. It compiles there, because it passes the event to `Hub.onEvent` as a `ChatEvent` and compares the lines with `toEqual`.
+1. `passes a reaction of a member whose role sends as the quote line of the reacted message and the emoji, with the message's ID and sender, and nothing, with no reply to an unknown value either, for an observer, User, a removed reaction or a reaction in the Main group`. It fails at `7437f8f96`: no line is written. It compiles there, because it passes the event to `Hub.onEvent` as a `ChatEvent` and compares the lines with `toEqual`.
 2. `quotes in the prompt of a reaction to a reply the reacted message, not the message that the reply quotes`.
 3. `quotes a reacted image or video without a caption by its type and file name, and receives no file of the reacted message`: `> image: IMG_2041.jpg\n❤` and `> video: ride.mp4\n🚀`.
 4. `quotes the reacted message in the answer of a reaction's turn, Claude's own answer included`.
 5. `replies that the session is not running to a reaction, quoting the reacted message`.
 6. `leaves a pending tool-use card pending when an approver reacts to it, and passes the reaction as a prompt`.
 7. `matches each channel tag of a turn's prompt to one pushed prompt, so two equal reactions to one message are quoted in their own turns`.
-8. `passes a reaction with an emoji of the apps, and replies to another reaction that it is not supported, without passing it`: ✅ and ❤ are passed; `❤️` with U+FE0F, 🦄, a text of two lines and two reactions of another type get the reply.
+8. `passes a reaction with an emoji of the apps, and replies to another reaction that it is not supported, without passing it`: ✅ and ❤ are passed; U+FE0F alone, `❤️` with U+FE0F, 🦄, a text of two lines and two reactions of another type, each to its own message, get the reply.
+9. `replies that a reaction is not supported once per member and reacted message, also after the reaction is removed and added again, and not to a reaction to that reply`.
 
 The unit tests of `toReplyTo`, of the quote line and of the meta keys in `session.test.ts` are those of the replies plan, made by `ep/mcp-replies`. This one adds to `is a channel` of `session.test.ts` that the instructions describe a reaction.
 

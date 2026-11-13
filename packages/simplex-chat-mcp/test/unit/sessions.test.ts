@@ -669,18 +669,23 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([[{text: "Done.", quotedItemId: 43}]])
   })
 
-  it("passes a reaction of a member whose role sends as the quote line of the reacted message and the emoji, with the message's ID and sender, and nothing for an observer, User, a removed reaction or a reaction in the Main group", async () => {
+  it("passes a reaction of a member whose role sends as the quote line of the reacted message and the emoji, with the message's ID and sender, and nothing, with no reply to an unknown value either, for an observer, User, a removed reaction or a reaction in the Main group", async () => {
     const chat = new FakeChat()
     const {hub, lines} = await channel(chat)
     hub.userContactId = 6
     const sessionUser = {...member(1006, "User"), memberContactId: 6}
+    const observer = member(11, "Oscar", T.GroupMemberRole.Observer)
     const answer = item(57, "Tests pass: 212 of 212.", {type: "groupSnd"})
     const prompt = item(46, "Run the tests", from(bob))
     for (const reacted of [
-      reaction(sessionGroup, answer, member(11, "Oscar", T.GroupMemberRole.Observer), emoji("👍")),
+      reaction(sessionGroup, answer, observer, emoji("👍")),
+      reaction(sessionGroup, answer, observer, emoji("🦄")),
       reaction(sessionGroup, answer, sessionUser, emoji("👍")),
+      reaction(sessionGroup, answer, sessionUser, emoji("🦄")),
       reaction(sessionGroup, answer, bob, emoji("👍"), false),
+      reaction(sessionGroup, answer, bob, emoji("🦄"), false),
       reaction(groupChat(hub.main["group"]), answer, bob, emoji("👍")),
+      reaction(groupChat(hub.main["group"]), answer, bob, emoji("🦄")),
       reaction(sessionGroup, answer, bob, emoji("👍")),
       reaction(sessionGroup, prompt, invitedAlice, emoji("👎")),
     ]) await hub["onEvent"](reacted)
@@ -695,12 +700,37 @@ describe("session channel", () => {
   it("passes a reaction with an emoji of the apps, and replies to another reaction that it is not supported, without passing it", async () => {
     const chat = new FakeChat()
     const {hub, lines} = await channel(chat)
-    const answer = item(57, "Tests pass.", {type: "groupSnd"})
-    const unknown = [emoji("❤️"), emoji("🦄"), emoji("Line one\nLine two"), {type: "custom", value: "👍"}, {type: "unknown", tag: "custom", json: {type: "custom", value: "👍"}}]
-    for (const reacted of [emoji("✅"), ...unknown, emoji("❤")]) await hub["onEvent"](reaction(sessionGroup, answer, bob, reacted))
+    const answer = (n: number) => item(n, "Tests pass.", {type: "groupSnd"})
+    const unknown = [emoji("️"), emoji("❤️"), emoji("🦄"), emoji("Line one\nLine two"), {type: "custom", value: "👍"}, {type: "unknown", tag: "custom", json: {type: "custom", value: "👍"}}]
+    await hub["onEvent"](reaction(sessionGroup, answer(57), bob, emoji("✅")))
+    for (const [i, reacted] of unknown.entries()) await hub["onEvent"](reaction(sessionGroup, answer(60 + i), bob, reacted))
+    await hub["onEvent"](reaction(sessionGroup, answer(57), bob, emoji("❤")))
     await until(() => lines.length === 2 && answers(chat).length === unknown.length)
     expect(lines.map(({prompt}) => prompt?.text)).toEqual(["> Tests pass.\n✅", "> Tests pass.\n❤"])
-    expect(answers(chat)).toEqual(unknown.map(() => [{text: "This reaction is not supported.", quotedItemId: 57}]))
+    expect(answers(chat)).toEqual(unknown.map((_, i) => [{text: "This reaction is not supported.", quotedItemId: 60 + i}]))
+  })
+
+  it("replies that a reaction is not supported once per member and reacted message, also after the reaction is removed and added again, and not to a reaction to that reply", async () => {
+    const chat = new FakeChat()
+    const {hub, lines} = await channel(chat)
+    const answer = item(57, "Tests pass.", {type: "groupSnd"})
+    const lint = item(58, "Lint passes.", {type: "groupSnd"})
+    const refusal = item(70, "This reaction is not supported.", {type: "groupSnd"})
+    for (const reacted of [
+      reaction(sessionGroup, answer, bob, emoji("️")),
+      reaction(sessionGroup, answer, bob, emoji("️"), false),
+      reaction(sessionGroup, answer, bob, emoji("️")),
+      reaction(sessionGroup, answer, bob, emoji("️"), false),
+      reaction(sessionGroup, answer, bob, emoji("🦄")),
+      reaction(sessionGroup, answer, invitedAlice, emoji("🦄")),
+      reaction(sessionGroup, lint, bob, emoji("🦄")),
+      reaction(sessionGroup, refusal, bob, emoji("🦄")),
+      reaction(sessionGroup, refusal, invitedAlice, emoji("️")),
+      reaction(sessionGroup, answer, bob, emoji("✅")),
+    ]) await hub["onEvent"](reacted)
+    await until(() => lines.length === 1)
+    expect(lines.map(({prompt}) => prompt?.text)).toEqual(["> Tests pass.\n✅"])
+    expect(answers(chat)).toEqual([57, 57, 58].map(quotedItemId => [{text: "This reaction is not supported.", quotedItemId}]))
   })
 
   it("quotes in the prompt of a reaction to a reply the reacted message, not the message that the reply quotes", async () => {

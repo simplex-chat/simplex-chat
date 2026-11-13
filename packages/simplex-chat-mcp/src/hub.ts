@@ -27,6 +27,8 @@ const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
 const reactionEmoji = ["👍", "👎", "😀", "😂", "😢", "❤", "🚀", "✅"]
+const unsupportedReaction = "This reaction is not supported."
+
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
 
 export interface StoredSession {
@@ -58,6 +60,7 @@ export class Session {
   private writer?: (line: AttachLine) => void
   private readonly attaching = new Changes()
   private delivery: Promise<void> = Promise.resolve()
+  private readonly refusedReactions = new Set<string>()
 
   constructor(
     private readonly hub: Hub,
@@ -162,9 +165,10 @@ export class Session {
 
   onReaction({added, reaction: {chatInfo, chatReaction}}: CEvt.ChatItemReaction): void {
     const {chatDir, chatItem, reaction} = chatReaction
-    if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || this.isUser(chatDir.groupMember) || (chatItem.content.type !== "rcvMsgContent" && chatItem.content.type !== "sndMsgContent")) return
-    if (reaction.type !== "emoji" || !reactionEmoji.includes(reaction.emoji)) return this.queue(() => this.post(["This reaction is not supported."], chatItem.meta.itemId))
-    const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: chatItem.content.msgContent, fileName: chatItem.file?.fileName}, {name: this.hub.profile.profile.displayName})
+    const {content} = chatItem
+    if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || this.isUser(chatDir.groupMember) || (content.type !== "rcvMsgContent" && content.type !== "sndMsgContent")) return
+    if (reaction.type !== "emoji" || !reactionEmoji.includes(reaction.emoji)) return this.refuseReaction(chatDir.groupMember, chatItem)
+    const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: content.msgContent, fileName: chatItem.file?.fileName}, {name: this.hub.profile.profile.displayName})
     this.queue(() => this.prompt({chatInfo, chatItem}, reaction.emoji, chatDir.groupMember, undefined, replyTo))
   }
 
@@ -239,6 +243,13 @@ export class Session {
   private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember, ciFile: T.CIFile | undefined, replyTo?: ReplyTo): Promise<void> {
     if (this.isUser(member)) return
     await this.deliver(ci, text, member, ciFile, replyTo)
+  }
+
+  private refuseReaction({groupMemberId}: T.GroupMember, {meta: {itemId}, content}: T.ChatItem): void {
+    const refused = `${groupMemberId} ${itemId}`
+    if (this.refusedReactions.has(refused) || (content.type === "sndMsgContent" && content.msgContent.text === unsupportedReaction)) return
+    this.refusedReactions.add(refused)
+    this.queue(() => this.post([unsupportedReaction], itemId))
   }
 
   private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember, ciFile: T.CIFile | undefined, replyTo?: ReplyTo): Promise<void> {

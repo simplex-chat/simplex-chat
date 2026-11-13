@@ -40,7 +40,7 @@ Rights in a session group follow the member's role there, however the member joi
 
 Claude posts a member's rights at each join and each role change. Claude posts the files of `reply` in a session group at once. The core sends them only while files and media are allowed in the group's preferences.
 
-The session server is also a Claude Code channel. The plugin passes each message in the session group to the running session as a prompt, except the messages of `User` and one-line `/` texts. It passes a reaction with one of the apps' eight emoji, of a member whose role sends, other than `User`, as the emoji after the quote line of the reacted message. It replies `This reaction is not supported.` to any other reaction. Claude Code runs no command from such a prompt. The plugin posts Claude Code's permission prompts in the group as cards. The plugin's hooks post the terminal prompts and the final answer of each turn in the group. The hooks keep the model and the effort level in the group's short description.
+The session server is also a Claude Code channel. The plugin passes each message in the session group to the running session as a prompt, except the messages of `User` and one-line `/` texts. It passes a reaction with one of the apps' eight emoji, of a member whose role sends, other than `User`, as the emoji after the quote line of the reacted message. It replies `This reaction is not supported.` to any other reaction, once for each member and reacted message. Claude Code runs no command from such a prompt. The plugin posts Claude Code's permission prompts in the group as cards. The plugin's hooks post the terminal prompts and the final answer of each turn in the group. The hooks keep the model and the effort level in the group's short description.
 
 ---
 
@@ -234,8 +234,8 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Service start by a client | [`src/client.ts`](../src/client.ts#L40) | `ServiceClient.ensureService` | [40](../src/client.ts#L40) |
 | Service process | [`src/service.ts`](../src/service.ts#L430) | `runService` | [430](../src/service.ts#L430) |
 | Service routes | [`src/service.ts`](../src/service.ts#L137) | `Service.routes` | [137](../src/service.ts#L137) |
-| Hub | [`src/hub.ts`](../src/hub.ts#L383) | `Hub.open` | [383](../src/hub.ts#L383) |
-| Session and its group | [`src/hub.ts`](../src/hub.ts#L43) | `Session` | [43](../src/hub.ts#L43) |
+| Hub | [`src/hub.ts`](../src/hub.ts#L394) | `Hub.open` | [394](../src/hub.ts#L394) |
+| Session and its group | [`src/hub.ts`](../src/hub.ts#L45) | `Session` | [45](../src/hub.ts#L45) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L26) | `MainGroup` | [26](../src/main-group.ts#L26) |
 | Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
 | Hooks | [`src/hook.ts`](../src/hook.ts#L81) | `sessionStart`, `turn` | [81](../src/hook.ts#L81), [114](../src/hook.ts#L114) |
