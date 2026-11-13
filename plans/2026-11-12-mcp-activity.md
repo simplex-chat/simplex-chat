@@ -280,7 +280,7 @@ flowchart LR
 - An older core in the plugin ignores `priority` (fact 8); with the core release with silent messages, the sends are silent.
 - When Claude Code gives these hook inputs without `tool_use_id` or `tool_name`, the hook sends nothing.
 - The steps and the finished IDs are kept in the service's memory. After a service restart during a step, its line stays live, and its end is posted as a new silent line.
-- Older services: the hook of this version stops an older service first (`src/client.ts:37-40`).
+- Older services: the hook of this version stops an older service first (`src/client.ts:42-45`).
 
 ## 7. Acceptance and tests
 
