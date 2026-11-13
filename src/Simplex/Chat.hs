@@ -21,6 +21,8 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Data.Bifunctor (bimap, second)
+import qualified Data.ByteString.Char8 as B
+import Data.Either (fromRight)
 import Data.List (partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
@@ -70,8 +72,12 @@ defaultChatConfig =
           },
       chatVRange = supportedChatVRange,
       callVRange = supportedCallVRange,
-      badgePublicKeys = M.mapKeys fromIntegral entitlementIssuerKeys,
-      badgeServiceAddress = Just $ either error id $ strDecode "https://smp5.simplex.im/a#ooSNWlEZTO2RPE0Ff5ZoybAs5zEhWLMlQrXesnhaZHM",
+      -- TEST ONLY, DO NOT COMMIT: local badge service issuer key at index 9.
+      -- Anyone holding the matching secret could mint badges that every client trusts.
+      badgePublicKeys =
+        let testIssuerKey = fromRight (error "bad test issuer key") . strDecode $ B.pack "kbK5FntscOKkMdzYt75TnfnBdP-OJUeQeLYHZp3-javAZSMNl9x4G4Ijak4iPcLgD-FUMix1ZH8hjGfH06QDXTsx9ap1HRVryV0WRHzxfgYVQG6Fgn8ulODsbra7Y6dv"
+         in M.insert 9 testIssuerKey $ M.mapKeys fromIntegral entitlementIssuerKeys,
+      badgeServiceAddress = Just $ either error id $ strDecode "https://smp6.simplex.im/a#T6ED7FZdfUfYxF9ILKk8pvVcKSbeXuiIhBkn2ZPgc9g",
       badgeCurrentTime = getCurrentTime,
       badgeRetryInterval = RetryInterval {initialInterval = 30_000000, increaseAfter = 0, maxInterval = 3600_000000},
       badgeConsecutiveRetries = 3,
