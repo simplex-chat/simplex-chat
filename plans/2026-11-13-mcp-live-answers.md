@@ -49,9 +49,9 @@ opening message at a blank answer    !- ✅ Done in DURATION!                   
 
 - `!- TEXT!` is small text: the apps show TEXT smaller and in the secondary color (fact 11 of `ep/mcp-session-usage`), and a notification shows TEXT without the marks (`Notifications.swift:200-214`, `NtfManager.kt:134-145`).
 - DURATION is the time from the prompt's hook to the Stop hook, in the format of the step lines: `41 ms`, `2.0 s`, `42 s`, `4 min 12 s`, `1 h 5 min`.
-- USAGE is the usage text of `ep/mcp-session-usage`, which the Stop hook reads from the transcript: `2 min 51 s · 16.0k output tokens · 673k in context`. Without a usage text, as when the transcript has no entry of the turn yet (fact 9), the line keeps DURATION.
+- USAGE is the usage text of `ep/mcp-session-usage`, which the Stop hook reads from the transcript: `2 min 51 s · 16.0k output tokens · 673k tokens in context`. Without a usage text, as when the transcript has no entry of the turn yet (fact 9), the line keeps DURATION.
 - LIMITS is the plan's usage of `ep/mcp-session-usage`, from its status line command: ` · 5 h: 34%` and ` · week: 61%`, each when known and not reset. The hub appends it after USAGE, after DURATION, or after `Done`. Without it, LIMITS is empty.
-- An example: `!- ✅ Done in 2 min 51 s · 16.0k output tokens · 673k in context · 5 h: 34% · week: 61%!`. Without the turn's figures: `!- ✅ Done · 5 h: 34% · week: 61%!`.
+- An example: `!- ✅ Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context · 5 h: 34% · week: 61%!`. Without the turn's figures: `!- ✅ Done · 5 h: 34% · week: 61%!`.
 - A blank answer gets no end line, so it gets no alert. An answer that a group preference refuses gets its refusal text, and then the end line.
 - A text longer than one message is finalized at the part that fits, measured as for answers, and continues in a new live message.
 - A turn that ends without Stop, after an interruption or an API error, gets no end line. Its live texts are finalized with their text, as steps are, and an empty opening message gets `⏹️ Stopped`.
@@ -340,7 +340,7 @@ Tests:
 - `test/unit/service.test.ts`, changed: "passes text batches to the session and answers before its posts, and ends its live posts at the last detach".
 - `test/unit/hook.test.ts` and `files.test.ts` stay as they are: they test `duration` through the step lines, and `dataRoot` and `socketPath` through the exports of `files.ts`.
 - `test/e2e/service.test.ts`, changed: the mirroring test runs `dist/display.js` with the inputs of run L1 and then the Stop hook. The owner's app receives the opening message, its updates and its finalization, not edited, and `!- ✅ Done in` with the time.
-- With `ep/mcp-session-usage` merged first, the tests of the end line expect its usage text, and its e2e test expects `!- ✅ Done in 2.0 s · 861 output tokens · 35.6k in context · 5 h: 34% · week: 61%!`.
+- With `ep/mcp-session-usage` merged first, the tests of the end line expect its usage text, and its e2e test expects `!- ✅ Done in 2.0 s · 861 output tokens · 35.6k tokens in context · 5 h: 34% · week: 61%!`.
 - `TESTING.md`: the real-session check in the terminal and the app, and the time of the display hook process.
 - The sessions tests use `text` of `TurnRequest` and `endLive`, so they compile only with this change. No app changes, so no app test workflows.
 
