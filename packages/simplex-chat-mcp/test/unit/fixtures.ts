@@ -1,3 +1,4 @@
+import {execFileSync} from "child_process"
 import {readFileSync} from "fs"
 import {AddressInfo} from "net"
 import {tmpdir} from "os"
@@ -186,6 +187,12 @@ export async function formFields({type, body}: AudioRequest): Promise<{[field: s
   const form = await new Response(body, {headers: {"content-type": type}}).formData()
   const fields = [...form.entries()].map(async ([field, value]): Promise<[string, unknown]> => [field, typeof value === "string" ? value : {name: value.name, content: Buffer.from(await value.arrayBuffer()).toString()}])
   return Object.fromEntries(await Promise.all(fields))
+}
+
+export function descendants(pid: number): number[] {
+  const parents = execFileSync("ps", ["-A", "-o", "pid=,ppid="], {encoding: "utf8"}).trim().split("\n").map(line => line.trim().split(/\s+/).map(Number))
+  const children = (parent: number): number[] => parents.flatMap(([child, ppid]) => (ppid === parent ? [child, ...children(child)] : []))
+  return children(pid)
 }
 
 interface FakeChatData {
