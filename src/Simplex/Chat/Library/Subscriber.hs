@@ -1653,6 +1653,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                           toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
         xGrpRelayInv :: InvitationId -> VersionRangeChat -> Maybe SignedMsg -> GroupRelayInvitation -> CM ()
         xGrpRelayInv invId chatVRange signedMsg_ groupRelayInv@GroupRelayInvitation {groupLink}
+          | not (isTrue userChatRelay && isNothing ucGroupId_) =
+              messageError "x.grp.relay.inv: invitation sent to non-relay link"
           | maxVersion chatVRange >= groupInvVersion && isNothing presHeader_ =
               messageError "x.grp.relay.inv: invitation is not signed by the owner"
           | otherwise = do
@@ -1665,6 +1667,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     createRelayRequestGroup db cxt user groupRelayInv presHeader_ invId chatVRange initialDelay GSMemAccepted RSInvited
                   lift $ void $ getRelayRequestWorker True
           where
+            User {userChatRelay} = user
             presHeader_ = relayInvPresHeader signedMsg_ groupRelayInv
         xGrpRelayTest :: InvitationId -> VersionRangeChat -> ByteString -> CM ()
         xGrpRelayTest invId chatVRange challenge
