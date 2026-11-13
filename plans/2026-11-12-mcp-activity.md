@@ -1,6 +1,6 @@
 # What Claude is doing: one line per step
 
-Status: Q1, Q2 and Q3 answered A on 2026-11-12. Code references: master `9d3241b06` (MCP 0.3.0) and `ep/mcp-harness-notes` at `ef93ce0dd`, on which this item is built. Claude Code references: version 2.1.322, its binary at the offsets given, two `claude -p` runs of 2026-11-12 with logging tool hooks (R3 and R4), and the transcripts of one machine.
+Status: Q1, Q2 and Q3 answered A on 2026-11-12; the plan was approved and is implemented on `ep/mcp-activity`. Code references: master `9d3241b06` (MCP 0.3.0) and `ep/mcp-harness-notes` at `ef93ce0dd`, on which this item is built; it was merged as master `97bbbd9ac`. Claude Code references: version 2.1.322, its binary at the offsets given, two `claude -p` runs of 2026-11-12 with logging tool hooks (R3 and R4), and the transcripts of one machine.
 
 ## 1. Goal
 
@@ -130,7 +130,7 @@ Facts:
 Choices:
 
 13. Claude Code runs `hook turn` from three hook entries with the matcher `*` and `async: true`: a second PreToolUse entry, a PostToolUse entry and a PostToolUseFailure entry.
-14. The hook sends `{id, pid, at, step}` for each event of a tool use. At PreToolUse, `step` is `{id: tool_use_id, text}`, with the text of section 2. At PostToolUse and PostToolUseFailure, `step` is `{id, text, end: true}`, where `text` is the text of the step, its outcome and its duration. The hook sends nothing for an input with `agent_id`, or for a tool whose name starts with `mcp__plugin_simplex_simplex__`.
+14. The hook sends `{id, pid, at, effort, step}` for each event of a tool use; `effort` is taken as from the other turn hooks. At PreToolUse, `step` is `{id: tool_use_id, text}`, with the text of section 2. At PostToolUse and PostToolUseFailure, `step` is `{id, text, end: true}`, where `text` is the text of the step, its outcome and its duration. The hook sends nothing for an input with `agent_id`, or for a tool whose name starts with `mcp__plugin_simplex_simplex__`.
 15. The hub posts the start of a step as a live message with `priority: -1`. It keeps the step's start time, its text and the promise of the item's ID, stored before the send is awaited.
 16. At the end of a known step, the hub removes the step and updates its item with the final text and `liveMessage: false`. When the start was not posted, the hub posts nothing at the end.
 17. For an end before its start, the hub posts the final text as a message with `priority: -1` and adds the step's ID to the finished IDs; it then posts nothing for the start. In fact 2 the two hooks are 58 ms apart, so the end can arrive first.
@@ -165,14 +165,15 @@ hooks/hooks.json  PreToolUse            second entry: matcher *, node dist/cli.j
                   PostToolUseFailure    new entry: matcher *, the same command, async
 src/protocol.ts   TurnRequest           + step: {id, text, end?}
 src/hook.ts       TurnInput             + cwd, agent_id, tool_name, tool_input, tool_use_id, duration_ms, is_interrupt
-                  turn                  tool events: {id, pid, at, step}; nothing for agent_id or this plugin's tools
-                  stepText              the text of section 2, cut by shortened
-                  stepEnd               stepText, the outcome and the duration
+                  turn                  tool events: {id, pid, at, effort, step}; nothing for agent_id or this plugin's tools
+                  stepOf                {id, text} at the start; the text, the outcome and the duration, end: true at the end
+                  stepText              the text of section 2, cut by shortened in stepOf
+                  displayPath           a path relative to cwd when it is inside it
                   duration              the format of section 2
 src/hub.ts        Session.turn          step: Session.step; endSteps(at) next to endPermissions(at)
                   Session.step          new: decisions 15 to 17 and 19
                   Session.endSteps      new: decision 18
-                  Session.post          + priority and live; returns the sent items
+                  Session.post          + a priority per part; the live line is sent by Session.step
                   Session.answer        priority per part: -1 for all parts but the last, 1 for the last
                   note posts            priority -1; refusal subject "Claude's note was not posted"
                   Hub.stop              endSteps of every session before the core closes
@@ -268,11 +269,18 @@ Done when:
 ```
 
 Tests:
-- `test/unit/hook.test.ts`: the PreToolUse, PostToolUse and PostToolUseFailure inputs of R3 and R4 and the tool inputs of the transcripts, with paths replaced; the request of each, its text, outcome and duration; none with `agent_id` or for `mcp__plugin_simplex_simplex__send`. Fails on master: no request.
-- `test/unit/sessions.test.ts`: the live send and its update; the order rules of decisions 16 to 19; the `priority` of each sent part and of a note.
-- `test/unit/service.test.ts`: `endSteps` at the last detach.
-- `test/unit/plugin.test.ts`: the hooks file.
-- `test/e2e/service.test.ts`: a PreToolUse hook and a PostToolUse hook post a live line as Claude and finalize it.
+- `test/unit/hook.test.ts`, new, in "turn hooks", with the tool inputs of R3, R4 and the transcripts:
+  - "send a step at the start of each tool use of the main conversation, with its text from the tool's input and paths relative to the session's folder". On master the requests have no `step`.
+  - "send a step at the end of each tool use with its outcome and duration, and nothing for a tool use of a subagent or of this plugin". On master the requests have no `step`, and the skipped tool uses are sent.
+- `test/unit/sessions.test.ts`, new, in "session channel":
+  - "posts the start of a step as a silent live line and updates it with the step's end, and posts the end that arrives before its start as a silent line, and nothing for that start".
+  - "ends the live lines of steps without an end with their text at an answer, at a prompt that starts a turn, at the last detach and at the hub's stop, not at a prompt added to the running turn, and posts nothing for their later ends".
+  - "posts the note of Claude Code's prompt and the parts of an answer but the last as silent, and the last part of an answer as important".
+  - "posts that Claude's note was not posted, naming the preference, once for a note and once for a step, and nothing at the step's end", in "while a preference of the session group refuses a post", replacing the test of the old subject.
+- `test/unit/service.test.ts`, changed: "passes permission requests and turns to the session, and its lines to the attachments while they exist, and ends its permissions and steps at the last detach".
+- `test/unit/plugin.test.ts`, changed: "runs the hooks from the plugin's own build, allows the plugin's tools, and runs the turn hook at the start and the end of every tool use".
+- `test/e2e/service.test.ts`, changed: the mirroring test ends with a PreToolUse hook and a PostToolUse hook of Bash, whose line is posted live as Claude and finalized, not edited.
+- The sessions and service tests use the new `step` of `TurnRequest` and `endSteps`, so they compile only with this change.
 
 ## 8. Docs to change
 
