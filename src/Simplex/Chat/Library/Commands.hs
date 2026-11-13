@@ -2470,7 +2470,7 @@ processChatCommand cxt nm = \case
       g'@GroupInfo {groupProfile = GroupProfile {publicGroup = pg}} <- getGroupInfo db cxt user groupId
       case pg of
         Just PublicGroupProfile {groupLink = link', publicGroupAccess = access'}
-          | link' == groupLink && (access' >>= groupDomainClaim) == Just claim ->
+          | link' == groupLink && (claimDomain <$> (access' >>= groupDomainClaim)) == Just (claimDomain claim) ->
               (,reason) <$> liftIO (setGroupDomainVerified db user g' verified)
         _ -> pure (g', Just "the name changed during verification")
     pure $ CRGroupDomainVerified user g' reason'
