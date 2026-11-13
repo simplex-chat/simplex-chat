@@ -261,7 +261,8 @@ CIImageView.kt, next to imageViewFullWidth; tall media: width × 0.97 ≤ height
   FlatMediaWidth                      layout: flatMediaWidth of the width given; max intrinsic width DEFAULT_MAX_IMAGE_WIDTH,
                                       so that a width(IntrinsicSize.Max) column above it is not narrower than the media's limit
 CIImageView.kt, CIVideoView.kt, LinkPreviews.kt
-  media box                    Modifier.mediaWidth; its layout takes the width of its constraints
+  media box                    Modifier.mediaWidth; its layout takes the width of its constraints, at most fixedMediaWidth
+                               or, in flat rows, DEFAULT_MAX_IMAGE_WIDTH, as on master
   image, player, preview       Modifier.mediaContentWidth; PlayerView takes a modifier in place of a width
   classic tall videos          fullWidth remembered per preview from the window width, as on master
 FramedItemView.kt:283
@@ -370,7 +371,7 @@ Tests that fail on master and pass after the change:
 Media widths, unit tests of the new functions:
 - `apps/multiplatform/common/src/commonTest/kotlin/chat/simplex/app/TerminalItemViewTest.kt`, `flatMediaWidth`: 402 − 24 gives 378 wide and 283.5 tall; 1000 gives 500 and 375.
 - `apps/ios/SimpleX Snapshots/SnapshotTests.swift`, `testTerminalMediaAndAvatarSizes`: `terminalMediaWidth(402)` is 378, `terminalMediaWidth(1000)` is 500; `scaledMemberImageSize(.large, terminalMemberImageBaseSize)` is 30.
-- `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/FlatMediaTest.kt` renders `FramedItemView` in a flat row and measures the red media on the pixels: a wide image is 378 at row 402 with the time over it; a tall one 283.5 with the time beside it; at row 900 they are 500 and 375 with the time beside them; a tall link preview is 283.5 and 375.
+- `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/FlatMediaTest.kt` renders `FramedItemView` in a flat row and measures the red media on the pixels: a wide image is 378 at row 402 with the time over it; a tall one 283.5 with the time beside it; at row 900 they are 500 and 375 with the time beside them; a tall link preview is 283.5 and 375. A wide image in a classic row of 900 is 500.
 
 Unit tests, `packages/simplex-chat-mcp/test/unit/sessions.test.ts`: the test above; the Main group of `createMainGroup` and of `reset-owners` has no `chatLayout`; a rename keeps an owner's `/set layout`.
 
@@ -477,8 +478,10 @@ Changes after the independent review of dbb7ca092:
 1. iOS: the width given to the media of a flat row is less the go-to button, `goToItemIconSize + goToItemIconGap + chatItemTextPadding`, in search results and on items forwarded from a chat of the user, as `TerminalMetaLayout` subtracts it on Android and desktop. Before, a wide image of such an item reached under the arrow at row 402.
 2. Kotlin: `FlatMediaTest` renders flat media, decision 18 included.
 3. Kotlin: the text below a sender row with an avatar starts `TERMINAL_HEADING_BOTTOM_GAP` below the lower of the name line and the avatar, as on iOS. Before, at font scales of 1.57 and more the name line is taller than the avatar, and the text touched it.
-4. The tall rule is one function, `isTallMedia`. `fixedMediaWidth` is the one decision between the classic width and the flat layout; the media box and its content act on its result, and the box's layout takes the width of its constraints. Swift `scaledMemberImageSize` takes the base size, 34 by default and `terminalMemberImageBaseSize`, 30, in flat rows.
+4. The tall rule is one function, `isTallMedia`. `fixedMediaWidth` is the one decision between the classic width and the flat layout; the media box and its content act on its result. Swift `scaledMemberImageSize` takes the base size, 34 by default and `terminalMemberImageBaseSize`, 30, in flat rows.
 5. The e2e test tells a missing Main group from one without a layout; the docs state the width of the captioned column and of media, less 12 on each side.
 6. Classic video widths are as on master (item 4); the mockup source of the README image is in the package.
+
+Change after the smoke tests of adf2aaebd: the layout of the image and video box keeps master's limit of its width, at most `fixedMediaWidth`, or `DEFAULT_MAX_IMAGE_WIDTH` in flat rows. Without the limit, a classic image or video box was given an unbounded width by the max intrinsic height query of the item's column, and the app showed "View crashed" when a picture was sent, in the `desktop-linux` run 43431679959 and the `android-emu` run 43431687443. `FlatMediaTest.classicWideImageStaysAt500` fails without the limit with the same exception.
 
 Kept as they are, named on the pull request page: tall link previews keep each platform's rule, up to 2.33 W tall on iOS and 0.75 W on Android and desktop; the deleted card in flat group rows starts at x 0; the tests that do not compile on master.

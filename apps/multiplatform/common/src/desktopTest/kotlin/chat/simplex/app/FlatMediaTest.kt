@@ -36,13 +36,13 @@ class FlatMediaTest {
     return "data:image/png;base64," + Base64.getEncoder().encodeToString(png)
   }
 
-  private fun media(rowWidth: Int, content: MsgContent): Media {
+  private fun media(rowWidth: Int, content: MsgContent, flat: Boolean = true): Media {
     val ci = ChatItem.getSampleData(1, CIDirection.DirectRcv(), text = content.text).copy(content = CIContent.RcvMsgContent(content))
     val blurRadius = appPrefs.privacyMediaBlurRadius.get()
     val rendered = try {
       appPrefs.privacyMediaBlurRadius.set(0)
       renderScene(width = rowWidth, height = 1200) {
-        CompositionLocalProvider(LocalTerminalLayout provides true) {
+        CompositionLocalProvider(LocalTerminalLayout provides flat) {
           Box(Modifier.width(rowWidth.dp).background(Color.White)) {
             FramedItemView(
               ChatModel.ChatsContext(secondaryContextFilter = null), Chat.sampleData, ci, imageProvider = { error("not opened") },
@@ -97,6 +97,12 @@ class FlatMediaTest {
     val tallImage = media(900, image(tall))
     assertWidth(375f, tallImage)
     assertTrue(tallImage.timeBeside && !tallImage.timeOver)
+  }
+
+  @Test
+  fun classicWideImageStaysAt500() {
+    val m = media(900, image(wide), flat = false)
+    assertTrue(abs(m.width - 500) <= 1, "width ${m.width}")
   }
 
   @Test

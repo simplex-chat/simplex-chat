@@ -44,10 +44,12 @@ fun CIVideoView(
       .then(
         if (!smallView) {
           val tall = isTallMedia(preview.width, preview.height)
+          val fixed = fixedMediaWidth(tall)
+          val w = fixed ?: DEFAULT_MAX_IMAGE_WIDTH
           // Size the media box from the preview aspect ratio (as CIImageView does), else the unprepared player surface
           // expands to PriorityLayout's max height and shows as a black strip; height tracks the clamped width (#7223).
-          Modifier.mediaWidth(fixedMediaWidth(tall), tall).layout { measurable, constraints ->
-            val width = constraints.maxWidth
+          Modifier.mediaWidth(fixed, tall).layout { measurable, constraints ->
+            val width = constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
             val height = (width * (preview.height.toFloat() / preview.width.toFloat()).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
             val placeable = measurable.measure(Constraints.fixed(width, height))
             layout(width, height) { placeable.place(0, 0) }

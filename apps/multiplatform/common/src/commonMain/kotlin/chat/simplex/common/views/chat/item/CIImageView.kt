@@ -193,9 +193,11 @@ fun CIImageView(
       .then(
         if (!smallView) {
           val tall = isTallMedia(previewBitmap.width, previewBitmap.height)
-          // Height follows the measured (clamped) width, not the nominal width, else wide images get an empty strip below.
-          Modifier.mediaWidth(fixedMediaWidth(tall), tall).layout { measurable, constraints ->
-            val width = constraints.maxWidth
+          val fixed = fixedMediaWidth(tall)
+          val w = fixed ?: DEFAULT_MAX_IMAGE_WIDTH
+          // Height follows the measured (clamped) width, not nominal w, else wide images get an empty strip below.
+          Modifier.mediaWidth(fixed, tall).layout { measurable, constraints ->
+            val width = constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
             val height = (width * (previewBitmap.height.toFloat() / previewBitmap.width.toFloat()).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
             val placeable = measurable.measure(Constraints.fixed(width, height))
             layout(width, height) { placeable.place(0, 0) }
