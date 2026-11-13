@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-35.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-36.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -61,7 +61,8 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 32. [The steps of a turn](#32-the-steps-of-a-turn)
 33. [A reaction in the session group](#33-a-reaction-in-the-session-group)
 34. [A tool approved for the rest of a session](#34-a-tool-approved-for-the-rest-of-a-session)
-35. [The texts of a turn](#35-the-texts-of-a-turn)
+35. [A summary of the session's context](#35-a-summary-of-the-sessions-context)
+36. [The texts of a turn](#36-the-texts-of-a-turn)
 
 ---
 
@@ -1005,7 +1006,7 @@ sequenceDiagram
   N->>N: end pending permissions created before at
   N->>N: quote = the newest turn record before at#59; it and the older ones leave turns
   N->>N: a changed model or effort, when at is not older than that of the value taken last: description, session.json
-  N->>N: claim: no text of Claude streamed the answer, as without the display hook (flow 35)
+  N->>N: claim: no text of Claude streamed the answer, as without the display hook (flow 36)
   alt the opening message of the turn was posted
     N->>C: apiUpdateChatItem #35;G the opening message, the answer's first part, live off
     N->>C: apiSendMessages #35;G the other parts, priority -1
@@ -1069,7 +1070,7 @@ Notes:
 - PostModelSwitch sends `{id, pid, at, model, effort}`, with `effort` when the hook's input has it ([`turn`](../src/hook.ts)). Nothing is posted for it. When the model or effort changed, the hub writes them to `session.json` and updates the short description ([`Session.turn`](../src/hub.ts)).
 - The hub takes a model or an effort level only from a request whose `at` is not older than the `at` of the value it took last. It keeps the two times apart, one for the model and one for the effort level. The model of a `/title` comes with the `at` of its SessionStart hook, so a hook that started during the wait of a held title keeps its model ([flow 27](#27-clear---continue-and-resume-in-one-session)). A request without `at` counts as the current time. So when a Stop request that waited for its transcript entry arrives after a later PostModelSwitch request, the model of the switch stays ([`Session.newer`](../src/hub.ts)).
 - For a Stop request with a changed model or effort, the hub posts the answer before it updates the short description. So the prompt of a request handled meanwhile is posted after the answer. The description is updated also when a post fails ([`Session.turn`](../src/hub.ts)).
-- A turn hook starts the service when none runs. It repeats a turn refused with 409 up to 15 times, 1 s apart, which is longer than the 10 s wait of a held title. It prints `{}` and logs errors on its stderr ([`turn`](../src/hook.ts)). Claude Code gives a hook without `timeout` 600 s, more than the 60 s of a prompt's reads and the 15 s of repeats.
+- A turn hook starts the service when none runs. It repeats a turn refused with 409 up to 15 times, 1 s apart, which is longer than the 10 s wait of a held title. It prints `{}` and logs errors on its stderr ([`turn`](../src/hook.ts)). Claude Code gives a hook without `timeout` 600 s, more than the 60 s of a prompt's reads, the 2 minutes of a compaction's reads of [flow 35](#35-a-summary-of-the-sessions-context) and the 15 s of repeats.
 
 Source: the `UserPromptSubmit`, `Stop` and `PostModelSwitch` entries of [`hooks`](../hooks/hooks.json), [`Session.turn`, `turnQuote`, `answer`, `postRefusal`, `post`, `textParts`](../src/hub.ts), [`User.post`](../src/user.ts).
 
@@ -1490,7 +1491,7 @@ sequenceDiagram
   CC->>D: Stop hook: POST /turn {answer}
   N->>N: endSteps(at), each step started before at and still without an end
   N->>C: apiUpdateChatItem #35;G item, the step's own text, live off
-  N->>C: apiSendMessages #35;G the answer, its parts with priority -1, unless a text of Claude streamed it (flow 35)
+  N->>C: apiSendMessages #35;G the answer, its parts with priority -1, unless a text of Claude streamed it (flow 36)
   N->>C: apiSendMessages #35;G [{text: "!- ✅ Done in DURATION!", priority: 1}]
 ```
 
@@ -1506,7 +1507,7 @@ Notes:
 - The steps and the finished IDs are kept in memory. When the service stops during a step, the hub's stop updates its line with its own text; after a crash, the line stays live. The step's end reaches the next service and is posted as a new silent line ([`Hub.stop`](../src/hub.ts)).
 - The tool hooks send `effort` as the other turn hooks do; the hub takes it by the hook's start time, as in [flow 21](#21-a-terminal-prompt-and-the-answer).
 - A core without message priority ignores `priority`, and an app without silent messages alerts for each line when it is posted. An update of a live message sends no SMP notification.
-- The hub sends a step's line after the text work queued before the step's request, so the line follows the texts whose batches arrived first. A step's line that is the turn's first post fills the turn's opening message ([flow 35](#35-the-texts-of-a-turn)).
+- The hub sends a step's line after the text work queued before the step's request, so the line follows the texts whose batches arrived first. A step's line that is the turn's first post fills the turn's opening message ([flow 36](#36-the-texts-of-a-turn)).
 
 Source: [`turn`, `stepOf`, `stepText`, `displayPath`](../src/hook.ts), [`duration`](../src/messages.ts), [`Session.turn`, `endPermissions`, `endSteps`, `answer`, `step`, `startLine`, `endStep`, `expireLive`, `remember`](../src/hub.ts), [`Service.onAttach`](../src/service.ts).
 
@@ -1628,7 +1629,39 @@ Source: [`Control.ownerCommand`, `approveTool`, `revokeTool`, `approvedTools`, `
 
 ---
 
-## 35. The texts of a turn
+## 35. A summary of the session's context
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant HK as PostCompact hook
+  participant SS as SessionStart hook
+  participant T as Transcript
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  CC->>CC: the context is full, or idle, or /compact: Claude Code summarises the conversation
+  CC->>SS: SessionStart {source: compact, model}
+  SS->>D: POST /title without model
+  CC->>HK: PostCompact {trigger, compact_summary}, agent_id for a subagent since 2.1.323
+  CC->>T: compact_boundary {timestamp, compactMetadata}, at once, or with the next request's records during a turn
+  HK->>T: the tail of 4 MiB, every second, up to 120 times
+  HK->>D: POST /turn {note}
+  N->>O: Claude: ⚙️ Context summarised automatically: 968K → 35K tokens
+```
+
+Notes:
+
+- Claude Code runs the PostCompact hooks after each compaction of the session's conversation and of its subagents' conversations, with `trigger` `auto` or `manual`. Since Claude Code 2.1.323 a subagent's input has `agent_id`, and the hook sends nothing for it ([`eventFields`, `compactionNote`](../src/hook.ts)).
+- The boundary is the last entry of type `system` and subtype `compact_boundary` without `isSidechain`, whose `timestamp` is no earlier than 60 s before the hook started and no later than 5 s after it. Claude Code creates it before it runs the PostCompact hooks. It writes the boundary of a compaction during a turn to the transcript with the records of the next request, a few seconds later, and the boundary of `/compact` and of an idle session at once. A subagent's boundary is written to the subagent's own transcript, so before 2.1.323 the hook reads for 2 minutes and sends nothing for a subagent's compaction. The upper bound keeps such a hook from taking the boundary of a compaction of the session's conversation that ends during its reads. A tail is decoded only when its bytes contain `"compact_boundary"` ([`recentBoundary`, `boundaryMarker`, `compactionAge`, `compactionSkew`](../src/hook.ts)).
+- The note is `⚙️ Context summarised `, then `on request` for `trigger` `manual` and `automatically` otherwise, then `: PRE → POST tokens` from `preTokens` and `postTokens` of the boundary's `compactMetadata`, in the compact notation of `Intl.NumberFormat`. Claude posts it silent and without a quote, as the notes of [flow 31](#31-a-prompt-of-claude-code). Without a note the hook sends no request ([`compactionNote`, `tokenCount`](../src/hook.ts), [`Session.turn`](../src/hub.ts)).
+- After a compaction Claude Code runs the SessionStart hooks with `source: compact` and the model of the compacted conversation, which is a subagent's model for a subagent's compaction. The SessionStart hook sends `/title` without the model then, so the group's description keeps the session's model ([`sessionStart`](../src/hook.ts)).
+
+Source: [`sessionStart`, `turn`, `eventFields`, `compactionNote`, `recentBoundary`, `findInTranscript`, `readTail`](../src/hook.ts), the `PostCompact` entry of [`hooks`](../hooks/hooks.json).
+
+---
+
+## 36. The texts of a turn
 
 ```mermaid
 sequenceDiagram
