@@ -27,7 +27,6 @@ private const val DEFAULT_FRAME_DURATION_MS = 100L
 private const val MIN_FRAME_DURATION_MS = 20L
 // A frame costing more than this holds most of a core to show under 10 frames a second
 private const val MAX_FRAME_DECODE_MS = 100L
-// Far above what a frame within the bounds above can cost, so only a stall reaches it
 private const val MAX_WAITED_FRAME_COST_MS = 10 * MAX_FRAME_DECODE_MS
 private const val SLOW_FRAME_COST = 2
 internal const val MAX_SLOW_FRAME_DEBT = 4
@@ -180,7 +179,7 @@ private suspend fun playFrames(animation: Animation, hidden: () -> Boolean, show
         debt = slowFrameDebt(debt, decodedIn > MAX_FRAME_DECODE_MS * 1_000_000)
         // The bitmap is never closed, as the wrapper points at its pixels and a frame may still be drawn
         showFrame(bitmap.asComposeImageBitmap())
-        if (debt >= MAX_SLOW_FRAME_DEBT) {
+        if (debt >= MAX_SLOW_FRAME_DEBT || !frameCostWithinBounds(decodedIn / 1_000_000)) {
           Log.d(TAG, "Animation too expensive to decode, stopping on this frame")
           return
         }
@@ -205,10 +204,11 @@ private suspend fun awaitFramesAreSeen(hidden: () -> Boolean) {
 private fun framesAreSeen(hidden: () -> Boolean): Boolean =
   simplexWindowState.windowVisible.value && !simplexWindowState.windowState.isMinimized && !hidden()
 
-// Waiting out the cost as well as the delay leaves an animation about half a decoder thread. The cost is
-// wall time, so a stall is only waited out so far.
+// Waiting out the cost as well as the delay leaves an animation about half a decoder thread
 internal fun frameWait(delayMs: Long, costMs: Long): Long =
-  maxOf(delayMs, costMs.coerceAtMost(MAX_WAITED_FRAME_COST_MS))
+  maxOf(delayMs, costMs)
+
+internal fun frameCostWithinBounds(costMs: Long): Boolean = costMs <= MAX_WAITED_FRAME_COST_MS
 
 internal fun fileSizeWithinBounds(size: Int): Boolean = size <= MAX_ANIMATED_FILE_SIZE
 
