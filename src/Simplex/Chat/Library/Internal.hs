@@ -67,7 +67,6 @@ import Simplex.Chat.Operators
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
-import Simplex.Chat.Store.Connections (getChatLockEntity)
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Files
@@ -165,11 +164,6 @@ withFileLock name = withEntityLock name . CLFile
 withUserProfileLock :: Text -> CM a -> CM a
 withUserProfileLock name = withEntityLock name CLUserProfile
 {-# INLINE withUserProfileLock #-}
-
-withConnEntityLock :: Text -> AgentConnId -> CM a -> CM a
-withConnEntityLock name acId action = do
-  entity <- withStore (`getChatLockEntity` acId)
-  withEntityLock name entity action
 
 useServerCfgs :: forall p. UserProtocol p => SProtocolType p -> RandomAgentServers -> [(Text, ServerOperator)] -> [UserServer p] -> NonEmpty (ServerCfg p)
 useServerCfgs p RandomAgentServers {smpServers, xftpServers} opDomains =
@@ -1757,9 +1751,9 @@ deleteGroupLinkIfExists user gInfo = do
   mapM_ (deleteGroupLink_ user gInfo) conn_
 
 deleteGroupLink_ :: User -> GroupInfo -> Connection -> CM ()
-deleteGroupLink_ user gInfo conn@Connection {agentConnId} = do
-  withConnEntityLock "deleteGroupLink" agentConnId $ withStore' $ \db -> deleteGroupLink db user gInfo
+deleteGroupLink_ user gInfo conn = do
   deleteAgentConnectionAsync $ aConnId conn
+  withStore' $ \db -> deleteGroupLink db user gInfo
 
 startProximateTimedItemThread :: User -> (ChatRef, ChatItemId) -> UTCTime -> CM ()
 startProximateTimedItemThread user itemRef deleteAt = do
@@ -3183,12 +3177,11 @@ setAgentConnShortLinkAsync user conn@Connection {connId} userLinkData crClientDa
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFSetShortLink
   withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) userLinkData crClientData_
 
-getAgentConnShortLinkAsync :: User -> CommandFunction -> Maybe Connection -> ShortLinkContact -> CM (CommandId, ConnId)
-getAgentConnShortLinkAsync user cmdFunc conn_ shortLink = do
+getAgentConnShortLinkAsync :: User -> CommandFunction -> Connection -> ShortLinkContact -> CM ()
+getAgentConnShortLinkAsync user cmdFunc conn@Connection {connId} shortLink = do
   shortLink' <- restoreShortLink' shortLink
-  cmdId <- withStore' $ \db -> createCommand db user (dbConnId <$> conn_) cmdFunc
-  connId <- withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (aConnId <$> conn_) shortLink'
-  pure (cmdId, connId)
+  cmdId <- withStore' $ \db -> createCommand db user (Just connId) cmdFunc
+  void $ withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (Just $ aConnId conn) shortLink'
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()
 agentXFTPDeleteRcvFile aFileId fileId = do

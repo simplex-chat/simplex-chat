@@ -53,21 +53,25 @@ import Database.SQLite.Simple.QQ (sql)
 
 getChatLockEntity :: DB.Connection -> AgentConnId -> ExceptT StoreError IO ChatLockEntity
 getChatLockEntity db agentConnId = do
-  ((connId, connType) :. (contactId, groupMemberId, userContactLinkId)) <-
+  ((connId, connType) :. (contactId, groupMemberId, userContactLinkId, linkGroupId)) <-
     ExceptT . firstRow id (SEConnectionNotFound agentConnId) $
       DB.query
         db
         [sql|
-          SELECT connection_id, conn_type, contact_id, group_member_id, user_contact_link_id
-          FROM connections
-          WHERE agent_conn_id = ?
+          SELECT c.connection_id, c.conn_type, c.contact_id, c.group_member_id, c.user_contact_link_id, uc.group_id
+          FROM connections c
+          LEFT JOIN user_contact_links uc ON uc.user_contact_link_id = c.user_contact_link_id
+          WHERE c.agent_conn_id = ?
         |]
         (Only agentConnId)
   let err = throwError $ SEInternalError $ "connection " <> show connType <> " without entity"
   case connType of
     ConnMember -> maybe err (fmap CLGroup . getMemberGroupId) groupMemberId
     ConnContact -> pure $ maybe (CLConnection connId) CLContact contactId
-    ConnUserContact -> maybe err (pure . CLUserContact) userContactLinkId
+    ConnUserContact -> case (linkGroupId, userContactLinkId) of
+      (Just groupId, _) -> pure $ CLGroup groupId
+      (_, Just uclId) -> pure $ CLUserContact uclId
+      _ -> err
   where
     getMemberGroupId :: GroupMemberId -> ExceptT StoreError IO GroupId
     getMemberGroupId groupMemberId =
