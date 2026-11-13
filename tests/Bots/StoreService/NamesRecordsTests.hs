@@ -35,6 +35,8 @@ import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, m
 import Network.HTTP.Types (hContentType, statusCode)
 import qualified Network.Wai as W
 import qualified Network.Wai.Handler.Warp as Warp
+import Simplex.Chat.Names.Abi
+import Simplex.Chat.Names.Registration (Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, multicallCalldata, nodeBytes, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -44,12 +46,10 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Records
-import StoreService.Names.Registration (Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, multicallCalldata, nodeBytes, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Sender (Sender, followTransactions, newSender)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), SignedChange (..), getRecordEditByBody, insertRecordEdit)

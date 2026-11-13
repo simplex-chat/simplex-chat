@@ -51,12 +51,12 @@ import Network.HTTP.Client (Manager, Request, RequestBody (..), httpLbs, method,
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Types (status404, status429)
 import Network.HTTP.Types.Status (statusCode)
+import Simplex.Chat.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector, uint256)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Links (LinkKind (..), linkMaxBytes)
