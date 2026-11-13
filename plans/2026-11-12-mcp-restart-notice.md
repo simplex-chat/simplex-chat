@@ -106,9 +106,9 @@ peers of incognito chats              linking the chats by the time and text of 
 
 ## Docs
 
-- `README.md`: a paragraph in "Prompt your agent from the app".
-- `REFERENCE.md`: section "Restart notice"; the quick start with the version line and the notice; the security line of `/approve #N all`.
+- `REFERENCE.md`: section "Restart notice"; a paragraph in "Prompt the agent from the app"; the notice in the quick start; the security line of `/approve #N all`; each marked as of the next version.
 - `TESTING.md`: the notice at the first join; a restart step; `prepack` and `postpack`.
-- `PLAN.md`: section Restart notice; the scope, package, first start, other lines, start sequence, peers, scenarios and tests; decisions.
-- `spec/`: api, architecture, flows and README, with line anchors remapped from `git diff -U0 c6e7549b12`.
-- `package.json`: version unchanged.
+- `plans/2026-10-19-mcp-server.md`: section Restart notice; the scope, package, first start, other lines, start sequence, peers, scenarios and tests; decisions.
+- `plans/2026-11-07-mcp-claude-code-channel.md`: decision 119 and the pack of the package, amended with `dist/commit.txt` and `postpack`.
+- `spec/`: api, architecture, flows and README, with line anchors remapped to the merged source; the flow of the notice is flow 32.
+- `package.json`, `package-lock.json`, `.claude-plugin/plugin.json`: version unchanged, 0.3.0; the notice comes with the next version.

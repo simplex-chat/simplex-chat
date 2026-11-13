@@ -1,13 +1,17 @@
 {
   "name": "@simplex-chat/mcp",
-  "version": "0.2.0",
-  "description": "MCP server that gives an AI agent its own SimpleX profile",
+  "version": "0.3.0",
+  "description": "MCP server and Claude Code plugin that give AI agents a SimpleX profile, approved in your app",
   "bin": {
     "simplex-mcp": "dist/cli.js"
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    ".claude-plugin",
+    ".mcp.json",
+    "hooks",
+    "plugin"
   ],
   "engines": {
     "node": ">=22"
@@ -20,15 +24,16 @@
     "prepack": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc && node -e \"try{require('fs').writeFileSync('dist/commit.txt',require('child_process').execFileSync('git',['rev-parse','--short=10','HEAD'],{stdio:'pipe'}))}catch{}\"",
     "postpack": "node -e \"require('fs').rmSync('dist/commit.txt',{force:true})\"",
     "test": "jest test/unit",
-    "test:e2e": "jest test/e2e"
+    "test:e2e": "tsc && jest test/e2e"
   },
   "dependencies": {
     "@modelcontextprotocol/node": "^2.1.1",
     "@modelcontextprotocol/server": "^2.3.1",
-    "@simplex-chat/types": "^7.1.0-beta.9.1",
+    "@simplex-chat/types": "^7.1.3",
     "qrcode": "^1.5",
-    "simplex-chat": "^7.1.0-beta.10.2"
+    "simplex-chat": "^7.1.3"
   },
+  "bundleDependencies": true,
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^22.0.0",
@@ -44,6 +49,8 @@
   "keywords": [
     "simplex",
     "mcp",
+    "claude-code",
+    "plugin",
     "agent",
     "privacy"
   ],
