@@ -1895,7 +1895,7 @@ processChatCommand cxt nm = \case
           CTDirect -> expireContactChatItems user cxt globalTTL chatId
           CTGroup | isNothing scope ->
             let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
-              in expireGroupChatItems user cxt globalTTL createdAtCutoff chatId
+              in expireGroupChatItems user cxt globalTTL createdAtCutoff True chatId
           _ -> throwCmdError "not supported"
   SetChatTTL chatName newTTL -> withUser' $ \user@User {userId} -> do
     chatRef <- getChatRef user chatName
@@ -2446,10 +2446,16 @@ processChatCommand cxt nm = \case
     let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
     domain <- maybe (throwCmdError "contact has no name to verify") pure contactDomain
     (verified, reason) <- verifyEntityDomain user nm NTContact domain connLink_
-    ct' <- maybe (pure ct) (\v -> withFastStore' $ \db -> setContactDomainVerified db user ct v) verified
-    pure $ CRContactDomainVerified user ct' reason
+    (ct', reason') <- case verified of
+      Nothing -> pure (ct, reason)
+      Just v -> withFastStore $ \db -> do
+        ct'@Contact {profile = LocalProfile {contactDomain = claim}} <- getContact db cxt user contactId
+        if claim == contactDomain
+          then (,reason) <$> liftIO (setContactDomainVerified db user ct' v)
+          else pure (ct', Just "the name changed during verification")
+    pure $ CRContactDomainVerified user ct' reason'
   APIVerifyGroupDomain groupId -> withUser $ \user -> do
-    g@GroupInfo {groupProfile = GroupProfile {publicGroup}} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
+    GroupInfo {groupProfile = GroupProfile {publicGroup}} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     PublicGroupProfile {groupLink, publicGroupAccess} <- maybe (throwCmdError "not a public group") pure publicGroup
     claim <- maybe (throwCmdError "group has no name to verify") pure $ publicGroupAccess >>= groupDomainClaim
     -- checks the profile link, not the link we joined through (which may have rotated)
@@ -2460,8 +2466,12 @@ processChatCommand cxt nm = \case
           | otherwise -> pure (False, Just "the name does not resolve to the link in the group profile")
         Left (ChatErrorAgent {agentError = SMP _ (NAME SMP.NOT_FOUND)}) -> pure (False, Just "the name is not registered")
         Left e -> throwError e
-    g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified
-    pure $ CRGroupDomainVerified user g' reason
+    (g', reason') <- withFastStore $ \db -> do
+      g'@GroupInfo {groupProfile = GroupProfile {publicGroup = pg}} <- getGroupInfo db cxt user groupId
+      if pg == publicGroup
+        then (,reason) <$> liftIO (setGroupDomainVerified db user g' verified)
+        else pure (g', Just "the name changed during verification")
+    pure $ CRGroupDomainVerified user g' reason'
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
     ct@Contact {profile = LocalProfile {contactLink}, groupDirectInv} <- withFastStore $ \db -> getContact db cxt user contactId
     when (isJust groupDirectInv) $ throwCmdError "contact is a member contact request"
@@ -2743,16 +2753,16 @@ processChatCommand cxt nm = \case
     processChatCommand cxt nm $ APINewGroup userId incognito gProfile
   APINewPublicGroup userId incognito relayIds groupProfile -> withUserId userId $ \user -> do
     (gProfile', memberId, groupKeys, setupLink) <- prepareGroupLink user
-    gInfo <- newGroup user incognito gProfile' memberId groupKeys (Just 1)
+    gInfo@GroupInfo {groupId} <- newGroup user incognito gProfile' memberId groupKeys (Just 1)
     (gLink, results) <- setupLink gInfo `catchAllErrors` \e -> do
-      deleteInProgressGroup user gInfo
+      withGroupLock "newPublicGroup" groupId $ deleteInProgressGroup user gInfo
       throwError e
     case partitionEithers (map snd results) of
       ([], groupRelays) -> do
         createNewGroupItems user gInfo
         pure $ CRPublicGroupCreated user gInfo gLink groupRelays
       (errors@(e : _), _) -> do
-        deleteInProgressGroup user gInfo
+        withGroupLock "newPublicGroup" groupId $ deleteInProgressGroup user gInfo
         -- If all errors are temporary (network, timeout, host), throw to allow retry
         if all isTempErr errors
           then throwError e
@@ -2939,7 +2949,7 @@ processChatCommand cxt nm = \case
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Left ct -> throwChatError $ CEContactNotActive ct
   APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> withGroupLock "acceptMember" groupId $ do
-    (g@(GIK gInfo _), m) <- withFastStore $ \db -> (,) <$> getGroupInfoKeys db cxt user groupId <*> getGroupMemberById db cxt user gmId
+    (g@(GIK gInfo _), m) <- withFastStore $ \db -> (,) <$> getGroupInfoKeys db cxt user groupId <*> getGroupMember db cxt user groupId gmId
     -- same rule as role change (moderators grant up to member); pending member's role is a stand-in, so treat it as member
     assertUserGroupRole gInfo $ roleRequiredToChange GRMember role
     case memberStatus m of
@@ -2997,8 +3007,8 @@ processChatCommand cxt nm = \case
             Just c | connReady c -> GSMemConnected
             _ -> GSMemAnnounced
       _ -> throwCmdError "member should be pending approval and invitee, or pending review and not invitee"
-  APIDeleteMemberSupportChat groupId gmId -> withUser $ \user -> do
-    (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user groupId <*> getGroupMemberById db cxt user gmId
+  APIDeleteMemberSupportChat groupId gmId -> withUser $ \user -> withGroupLock "deleteMemberSupportChat" groupId $ do
+    (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user groupId <*> getGroupMember db cxt user groupId gmId
     when (isNothing $ supportChat m) $ throwCmdError "member has no support chat"
     when (memberPending m) $ throwCmdError "member is pending"
     (gInfo', m') <- withFastStore' $ \db -> do
@@ -3353,7 +3363,7 @@ processChatCommand cxt nm = \case
   ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do
     ct_ <- forM cName_ $ \cName -> withFastStore $ \db -> getContactByName db cxt user cName
     processChatCommand cxt nm $ APIListGroups userId (contactId' <$> ct_) search_
-  APIUpdateGroupProfile groupId p' -> withUser $ \user -> withGroupLock "updateGroupProfile" groupId $ do
+  APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
     gInfo <- withFastStore $ \db -> getGroupInfoKeys db cxt user groupId
     runUpdateGroupProfile user gInfo p' False
   UpdateGroupNames gName GroupProfile {displayName, fullName, shortDescr} ->
@@ -3364,7 +3374,7 @@ processChatCommand cxt nm = \case
     updateGroupProfileByName gName $ \p -> p {description}
   ShowGroupDescription gName -> withUser $ \user ->
     CRGroupDescription user <$> withFastStore (\db -> getGroupInfoByName db cxt user gName)
-  APISetPublicGroupAccess gId access@PublicGroupAccess {groupDomainClaim = newClaim} -> withUser $ \user -> withGroupLock "setPublicGroupAccess" gId $ do
+  APISetPublicGroupAccess gId access@PublicGroupAccess {groupDomainClaim = newClaim} -> withUser $ \user -> do
     gInfo@(GIK GroupInfo {groupProfile = p@GroupProfile {publicGroup}} _) <- withStore $ \db -> getGroupInfoKeys db cxt user gId
     case publicGroup of
       Just pg@PublicGroupProfile {groupLink, publicGroupAccess = existingAccess} -> do
@@ -3407,7 +3417,7 @@ processChatCommand cxt nm = \case
     gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     gLnk <- withFastStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo gLnk
-  APIAddGroupShortLink groupId -> withUser $ \user -> withGroupLock "addGroupShortLink" groupId $ do
+  APIAddGroupShortLink groupId -> withUser $ \user -> do
     (g@(GIK gInfo _), gLink) <- withFastStore $ \db -> do
       g@(GIK gInfo _) <- getGroupInfoKeys db cxt user groupId
       gLink <- getGroupLink db user gInfo
@@ -4300,15 +4310,14 @@ processChatCommand cxt nm = \case
     updateGroupProfileByName = updateGroupProfileByName_ Nothing
     updateGroupProfileByName_ :: Maybe GroupFeature -> GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse
     updateGroupProfileByName_ feature_ gName update = withUser $ \user -> do
-      groupId <- withStore $ \db -> getGroupIdByName db user gName
-      withGroupLock "updateGroupProfile" groupId $ do
-        gInfo@(GIK g@GroupInfo {groupProfile = p} _) <- withStore $ \db -> getGroupInfoKeys db cxt user groupId
-        forM_ feature_ $ \feature -> do
-          let channel = useRelays' g
-              applicable = if channel then groupFeatureInChannel feature else groupFeatureInRegularGroup feature
-          unless applicable $
-            throwCmdError $ T.unpack (groupFeatureNameText feature) <> " is not available in " <> (if channel then "channels" else "groups")
-        runUpdateGroupProfile user gInfo (update p) False
+      gInfo@(GIK g@GroupInfo {groupProfile = p} _) <- withStore $ \db ->
+        getGroupIdByName db user gName >>= getGroupInfoKeys db cxt user
+      forM_ feature_ $ \feature -> do
+        let channel = useRelays' g
+            applicable = if channel then groupFeatureInChannel feature else groupFeatureInRegularGroup feature
+        unless applicable $
+          throwCmdError $ T.unpack (groupFeatureNameText feature) <> " is not available in " <> (if channel then "channels" else "groups")
+      runUpdateGroupProfile user gInfo (update p) False
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> CM (Maybe Call)) -> CM ChatResponse
     withCurrentCall ctId action = do
       (user, ct) <- withStore $ \db -> do
@@ -6530,8 +6539,9 @@ cleanupManager = do
       -- older than 30 minutes to avoid deleting a newly created group
       let cutoffTs = addUTCTime (- 1800) ts
       inProgressGroups <- withStore' $ \db -> getInProgressGroups db cxt user cutoffTs
-      forM_ inProgressGroups $ \gInfo ->
-        deleteInProgressGroup user gInfo `catchAllErrors` eToView
+      forM_ inProgressGroups $ \gInfo@GroupInfo {groupId} ->
+        withGroupLock "cleanupInProgressGroups" groupId (whenM (withStore' (`isGroupInProgress` gInfo)) $ deleteInProgressGroup user gInfo)
+          `catchAllErrors` eToView
     cleanupStaleRelayTestConns user = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-300) ts
@@ -6570,7 +6580,7 @@ cleanupManager = do
       withStore' (`deleteUnfundedStoreReceipts` cutoffTs)
 
 deleteInProgressGroup :: User -> GroupInfo -> CM ()
-deleteInProgressGroup user gInfo@GroupInfo {groupId} = withGroupLock "deleteInProgressGroup" groupId $ do
+deleteInProgressGroup user gInfo = do
   deleteGroupLinkIfExists user gInfo
   deleteGroupConnections user gInfo False
   withFastStore' $ \db -> deleteGroup db user gInfo
@@ -6624,7 +6634,7 @@ expireChatItems user@User {userId} globalTTL sync = do
   loop contactIds $ expireContactChatItems user cxt globalTTL
   lift waitChatStartedAndActivated
   groupIds <- withStore' $ \db -> getUserGroupsToExpire db user globalTTL
-  loop groupIds $ expireGroupChatItems user cxt globalTTL createdAtCutoff
+  loop groupIds $ expireGroupChatItems user cxt globalTTL createdAtCutoff sync
   where
     loop :: [Int64] -> (Int64 -> CM ()) -> CM ()
     loop [] _ = pure ()
@@ -6653,8 +6663,8 @@ expireContactChatItems user cxt globalTTL ctId =
         deleteCIFiles user filesInfo
         withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
 
-expireGroupChatItems :: User -> StoreCxt -> Int64 -> UTCTime -> GroupId -> CM ()
-expireGroupChatItems user cxt globalTTL createdAtCutoff groupId =
+expireGroupChatItems :: User -> StoreCxt -> Int64 -> UTCTime -> Bool -> GroupId -> CM ()
+expireGroupChatItems user cxt globalTTL createdAtCutoff sync groupId =
   tryAllErrors (withStore $ \db -> getGroupInfo db cxt user groupId) >>= mapM_ process
   where
     process gInfo@GroupInfo {chatItemTTL} =
@@ -6663,8 +6673,9 @@ expireGroupChatItems user cxt globalTTL createdAtCutoff groupId =
         filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
         deleteCIFiles user filesInfo
         withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
-        membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db cxt user gInfo
-        forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
+        unless sync $ withGroupLock "expireGroupChatItems" groupId $ do
+          membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db cxt user gInfo
+          forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
 
 withExpirationDate :: Int64 -> Maybe Int64 -> (UTCTime -> CM ()) -> CM ()
 withExpirationDate globalTTL chatItemTTL action = do

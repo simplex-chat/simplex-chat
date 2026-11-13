@@ -32,7 +32,7 @@ import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, storeCxt, withAgent)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
@@ -40,6 +40,9 @@ import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
+import Simplex.Chat.Store.Connections (getChatLockEntity)
+import Simplex.Chat.Store.Groups (getGroupIdByName, getGroupLinkConnection)
+import Simplex.Chat.Store.Shared (ChatLockEntity (..), getGroupInfo)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -140,6 +143,7 @@ chatGroupTests = do
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
     it "ignore relay join request in group without relays" testGroupLinkIgnoreRelayJoinRequest
+    it "group link connection is locked with its group" testGroupLinkLockedWithGroup
   describe "group links - member screening" $ do
     it "reject member - blocked name" testGLinkRejectBlockedName
     it "accept member - only host approval" testGLinkApproveMember
@@ -3760,6 +3764,23 @@ sendMemberJoinRequest cc groupLink =
           dm <- encodeConnInfo $ XMember bobProfile (MemberId "member") (MemberKey memberKey) Nothing
           withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq dm PQSupportOff SMSubscribe
     runExceptT joinGroup `runReaderT` chatController cc >>= either (fail . show) (\_ -> pure ())
+
+testGroupLinkLockedWithGroup :: HasCallStack => TestParams -> IO ()
+testGroupLinkLockedWithGroup =
+  testChat aliceProfile $ \alice -> do
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/create link #team"
+    _ <- getGroupLink alice "team" GRMember True
+    let cxt = storeCxt $ chatController alice
+    r <- withCCTransaction alice $ \db -> withCCUser alice $ \user -> runExceptT $ do
+      gInfo <- getGroupInfo db cxt user =<< getGroupIdByName db user "team"
+      Connection {agentConnId = acId} <- getGroupLinkConnection db cxt user gInfo
+      (,) (groupId' gInfo) <$> getChatLockEntity db acId
+    case r of
+      Right (gId, CLGroup gId') -> gId' `shouldBe` gId
+      _ -> expectationFailure "group link connection is not locked with its group"
 
 testGLinkRejectBlockedName :: HasCallStack => TestParams -> IO ()
 testGLinkRejectBlockedName =

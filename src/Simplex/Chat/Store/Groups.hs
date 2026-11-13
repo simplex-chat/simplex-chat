@@ -82,6 +82,7 @@ module Simplex.Chat.Store.Groups
     cleanupHostGroupLinkConn,
     deleteGroup,
     getInProgressGroups,
+    isGroupInProgress,
     getBaseGroupDetails,
     getContactGroupPreferences,
     getGroupInvitation,
@@ -1075,6 +1076,10 @@ getInProgressGroups db cxt user@User {userId} createdAtCutoff = do
       (userId, createdAtCutoff)
   rights <$> mapM (runExceptT . getGroupInfo db cxt user) groupIds
 
+isGroupInProgress :: DB.Connection -> GroupInfo -> IO Bool
+isGroupInProgress db GroupInfo {groupId} =
+  fromMaybe False <$> maybeFirstRow fromOnlyBI (DB.query db "SELECT creating_in_progress FROM groups WHERE group_id = ?" (Only groupId))
+
 getBaseGroupDetails :: DB.Connection -> StoreCxt -> User -> Maybe ContactId -> Maybe Text -> IO [GroupInfo]
 getBaseGroupDetails db cxt User {userId, userContactId} _contactId_ search_ = do
   currentTs <- getCurrentTime
@@ -1365,13 +1370,12 @@ getGroupMembersForExpiration db cxt user@User {userId, userContactId} GroupInfo 
           <> [sql|
                 WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
                   AND m.member_status IN (?, ?, ?, ?)
-                  AND (c.connection_id IS NULL OR c.conn_status = ?)
                   AND m.group_member_id NOT IN (
                     SELECT DISTINCT group_member_id FROM chat_items
                   )
               |]
       )
-      (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown, ConnDeleted)
+      (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
 
 getRemovedMembersToCleanup :: DB.Connection -> StoreCxt -> User -> UTCTime -> IO [GroupMember]
 getRemovedMembersToCleanup db cxt user@User {userId} cutoffTs = do
