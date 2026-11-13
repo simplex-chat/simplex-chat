@@ -226,10 +226,10 @@ Hooks are bound in [`serve.ts:96-102`](../src/serve.ts#L96-L102): `refusal`, `sa
 | `Control.postCard`, `Control.outcome` | [186-197](../src/control.ts#L186-L197) | card post and card edit; the kept-files message after a done leave |
 | `Control.refusedFile`, `Control.fileNotSent` | [199-214](../src/control.ts#L199-L214) | posts about files |
 | `Control.onMessage` | [216](../src/control.ts#L216) | owner commands, queued one at a time. In a group of the plugin's session, the session passes it the one-line `/` texts, and the texts of `User` are dropped. |
-| `Control.onEvent` | [228](../src/control.ts#L228) | membership changes and loss of the control chat |
+| `Control.onEvent` | [228](../src/control.ts#L228) | membership changes and loss of the control chat. `lose`, at a loss of the group and at `load` of a lost group, ends the tool approvals and calls `toolsChanged`. |
 | `Control.ownerCommand` | [246](../src/control.ts#L246) | command dispatch and replies. A text outside the requests is answered with the command list, or with `Unknown command.` in a group of the plugin's session. |
 | `approveChat`, `revoke`, `forward`, `leave`, `deleteFiles` | [293-360](../src/control.ts#L293-L360) | owner requests |
-| `approvedTools`, `endToolApprovals`, `approveTool`, `revokeTool` | | the approvals of tools of a group of the plugin's session, in memory, by tool name, with the approver's name and member ID. `approvedTools` returns those whose approver is an approver now. `approveTool` records the tool of a pending `permission` action, logs, calls `toolsChanged`, approves the action and replies with `/'revoke TOOL'`. `revokeTool` deletes one, logs and calls `toolsChanged`. `endToolApprovals` drops all. `chatsText` lists the approved tools after the chats, and `setObserver` calls `toolsChanged` after it reads the members again. |
+| `approvedTools`, `endToolApprovals`, `approveTool`, `revokeTool` | | the approvals of tools of a group of the plugin's session, in memory, by tool name, with the approver's name and member ID. `approvedTools` returns those whose approver is an approver now. `approveTool` records the tool of a pending `permission` action, logs, calls `toolsChanged`, approves the action and replies with `/'revoke TOOL'`. `revokeTool` deletes one, logs and calls `toolsChanged`. `endToolApprovals` drops all; it also runs when the session's group is lost. `chatsText` lists the approved tools after the chats, and `setObserver` calls `toolsChanged` after it reads the members again. |
 | `give`, `setObserver` | [362-387](../src/control.ts#L362-L387) | `/give CHAT N` and `/observer #G ID` in a group of the plugin's session. `setObserver` replies `NAME's role can't be changed.` for a member with status `pending_approval` or `pending_review` ([381-382](../src/control.ts#L381-L382)). For a member who is neither current nor pending, such as an invited member who has not joined, the reply is `No member ID in this group.` ([379](../src/control.ts#L379), [`memberCurrentOrPending`](../src/tools.ts#L1549-L1551)). Only a current member's role is set to `observer`, when the sender's role is admin or owner and not below the member's role. The members are then read again, and the observer's rights are the reply. |
 | `isApprover` | [593-598](../src/control.ts#L593-L598) | the session's check in a group of the plugin's session; otherwise role `owner`, and the `--owners` list when given |
 | `roleOrder`, `roleRank`, `canSend` | [44](../src/control.ts#L44), [880-886](../src/control.ts#L880-L886) | the roles of SimpleX from `relay` to `owner`, in the order of the core; a role above `observer` |
@@ -978,7 +978,7 @@ Memory of the service:
 | Model and effort | `Session.description`, also in `session.json` ([hub.ts:67](../src/hub.ts#L67)) | constructor, `turn` | `turn` |
 | Turn records | `Session.turns`, the start time of each prompt hook that started no earlier than the latest answer's hook, except a mid-turn prompt that matched no pushed prompt, with its pushed prompt, or `null` for a terminal prompt or a command ([hub.ts:69-70](../src/hub.ts#L69-L70)) | `turn`. At an answer, the records that started before its hook are removed. | `turnQuote` |
 | A rejected mode `host` | `Session.hostDeclined`, also in `session.json` ([hub.ts:72](../src/hub.ts#L72)) | constructor, `declineHost` | `askMode`, `requestMode` |
-| Approvals of tools | `Control.toolApprovals`, by tool name: the approver's name and member ID and the time | `/approve N all`, `/revoke TOOL`, `endToolApprovals` when the session closes or another process registers it | `approvedTools`: `Session.sendTools`, `Session.permission`, `/list` |
+| Approvals of tools | `Control.toolApprovals`, by tool name: the approver's name and member ID and the time | `/approve N all`, `/revoke TOOL`, `endToolApprovals` when the session closes, another process registers it or its group is lost | `approvedTools`: `Session.sendTools`, `Session.permission`, `/list` |
 | Approved tools sent | `Session.sentTools`, the list last written to the attachments, empty for a new writer | `sendTools`, `onLine` | `sendTools` |
 | The requested mode | `Session.requested` ([hub.ts:71](../src/hub.ts#L71)) | `requestMode`, a rejected or expired `mode` card | `askMode` |
 | Members of the Main group, its link | `MainGroup` ([main-group.ts:28-31](../src/main-group.ts#L28-L31)) | `refreshMembers`, `openLink` | owner checks, the statement of trust at a join, `/status`, `/title`, `/link` |
@@ -1130,6 +1130,7 @@ Approval of a tool for the rest of a session, kept in `Control` by tool name. Th
 | the approver is an admin or owner again | inactive | approved | the same |
 | `/approve N all` by another approver | inactive | approved by that approver | `control.ts`: `Control.approveTool` |
 | `/revoke TOOL`; the session closes; `/session` from another process ID | approved, inactive | removed | `control.ts`: `Control.revokeTool`, `Control.endToolApprovals`; `service.ts`: `Service.onSession`, `Service.scheduleIdle` |
+| the session's group is lost: deleted, Claude removed, or Claude no longer its owner | approved, inactive | removed, and `{tools: []}` sent | `control.ts`: `Control.onEvent`, `lose` |
 | the session's process attaches again, as after a failed call | approved, inactive | unchanged | `service.ts`: `Service.onAttach` |
 
 ```mermaid
@@ -1138,8 +1139,8 @@ stateDiagram-v2
   approved --> inactive: its approver is no longer an admin or owner
   inactive --> approved: its approver is an admin or owner again
   inactive --> approved: /approve N all by another approver, who is recorded
-  approved --> [*]: /revoke TOOL, the session closes, or another process registers it
-  inactive --> [*]: /revoke TOOL, the session closes, or another process registers it
+  approved --> [*]: /revoke TOOL, the session closes, another process registers it, or the group is lost
+  inactive --> [*]: /revoke TOOL, the session closes, another process registers it, or the group is lost
 ```
 
 ### 8.6 Channel and mirroring

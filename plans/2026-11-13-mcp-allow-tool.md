@@ -1,6 +1,6 @@
 # SimpleX MCP: approve a tool for the rest of a session
 
-Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-allow-tool`, stacked on `ep/mcp-activity`; decisions 29 to 32 were made in the implementation, and 33 and 34 after review round 1. Code references: master `97bbbd9ac` (MCP 0.3.0 with #8157). Claude Code references: version 2.1.322 and its binary at the offsets given, the documentation pages quoted, and three `claude -p` runs of Claude Code 2.1.323, recorded on 2026-11-13 (R1 to R3). Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
+Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-allow-tool`, stacked on `ep/mcp-activity`; decisions 29 to 32 were made in the implementation, and 33 to 35 after review round 1. Code references: master `97bbbd9ac` (MCP 0.3.0 with #8157). Claude Code references: version 2.1.322 and its binary at the offsets given, the documentation pages quoted, and three `claude -p` runs of Claude Code 2.1.323, recorded on 2026-11-13 (R1 to R3). Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
 
 The runs used a test MCP server whose tool `pre_tool_use` answers a PreToolUse hook of type `mcp_tool`, with `--setting-sources project --permission-mode default`. A `-p` run refuses a call that would show a prompt, so a refusal there stands for a prompt in an interactive session.
 - R1: the hook answered `allow` for Bash and Write. `echo one > a.txt` with Bash ran, and a Write of `notes.txt` ran. A Write of `.bashrc` was refused: "Claude requested permissions to edit .../.bashrc which is a sensitive file." The server logged three calls, `{"tool":"Bash"}`, `{"tool":"Write"}` and `{"tool":"Write"}`.
@@ -163,6 +163,7 @@ Decided after review round 1 of `c4099e36d`:
 
 33. The approvals belong to the Claude Code process of the session, as the approved lifetime "the rest of a session" requires. Before, the last detach ended them, so a session server that dropped its attachment after a failed call and attached again lost them without a post. Now `Service.onAttach` keeps them; `Service.onSession` ends them when the session is registered from a process ID other than the recorded one, and `Service.scheduleIdle` ends them when the session closes, 10 minutes after Claude Code ends. It replaces the drop at the last detach of decision 18. Between the end of Claude Code and the session's close, `/list` still shows them; no process can use them, because another process's registration ends them first.
 34. While the plugin's MCP server is not connected, Claude Code 2.1.322 reports a non-blocking PreToolUse hook error at each tool use: `Ayr` returns `MCP server 'plugin:simplex:simplex' not connected`, and the hook runner yields `hook_non_blocking_error` (binary 296919792, 297052400 to 297052700). REFERENCE says so; the hook stays of type `mcp_tool`.
+35. The tool approvals end when the session's group is lost: when it is deleted, when Claude is removed, and when Claude is no longer its owner, as `Control.onEvent` finds, and at `Control.load` of a lost group. `Control.lose` ends them and calls `toolsChanged`, so the session server gets `{tools: []}`.
 
 ## 5. Design
 
