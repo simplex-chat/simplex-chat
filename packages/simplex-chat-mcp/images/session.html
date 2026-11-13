@@ -1,0 +1,207 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: "UI"; font-weight: 400; src: url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.1.0/files/inter-latin-400-normal.woff2"); }
+@font-face { font-family: "UI"; font-weight: 500; src: url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.1.0/files/inter-latin-500-normal.woff2"); }
+@font-face { font-family: "UI"; font-weight: 600; src: url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.1.0/files/inter-latin-600-normal.woff2"); }
+@font-face { font-family: "UI"; font-weight: 700; src: url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.1.0/files/inter-latin-700-normal.woff2"); }
+@font-face { font-family: "Mono"; font-weight: 400; src: url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.1.0/files/jetbrains-mono-latin-400-normal.woff2"); }
+
+:root {
+  --primary: #0088ff;
+  --secondary: #8b8786;
+  --text: #000;
+  --bg: #e8f5ff;
+  --bar: rgb(230, 239, 245);
+  --pad: 12px;
+  --body: 17px;
+  --line: 23.4px;
+  --gap: 7.8px;
+  --avatar: 30px;
+}
+
+html, body { margin: 0; padding: 0; }
+body { width: 742px; height: 1489px; background: url("approval.png") no-repeat 0 0; position: relative; overflow: hidden; }
+
+.screen {
+  position: absolute;
+  left: 50.5px;
+  top: 50.5px;
+  width: 641px;
+  height: 1388px;
+  border-radius: 78px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.inner {
+  width: 390px;
+  height: 844.5px;
+  transform: scale(1.6436);
+  transform-origin: 0 0;
+  position: relative;
+  font-family: "UI";
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+  letter-spacing: -0.2px;
+}
+
+.status { position: absolute; left: 0; top: 0; width: 390px; height: 47px; background: var(--bar); z-index: 3; }
+.status .time { position: absolute; left: 0; width: 95px; top: 12px; text-align: center; font-weight: 600; font-size: 17px; letter-spacing: -0.3px; }
+.notch { position: absolute; left: 0; top: 0; z-index: 4; }
+.status .icons { position: absolute; right: 22px; top: 15px; }
+
+.nav { position: absolute; left: 0; top: 47px; width: 390px; height: 38px; background: var(--bar); border-bottom: 0.5px solid rgba(0, 0, 0, 0.18); z-index: 3; }
+.nav .back { position: absolute; left: 12px; top: 6px; }
+.nav .title { position: absolute; left: 0; right: 0; top: 2px; display: flex; justify-content: center; align-items: center; gap: 8px; font-weight: 600; font-size: 17px; letter-spacing: -0.3px; }
+.nav .more { position: absolute; right: 14px; top: 6px; }
+
+.chat { position: absolute; left: 0; top: 85px; width: 390px; bottom: 87px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; }
+
+.row { position: relative; padding-top: var(--gap); }
+.row.first { padding-top: 0; }
+.sender { position: relative; height: var(--line); line-height: var(--line); padding-left: calc(var(--pad) + var(--avatar) + var(--pad)); font-size: var(--body); white-space: nowrap; }
+.sender .name { font-weight: 600; color: var(--secondary); }
+.sender .name.own { color: var(--primary); }
+.sender .role { font-weight: 500; color: var(--secondary); margin-left: 15px; }
+.avatar { position: absolute; left: var(--pad); top: calc(var(--line) / 2 - var(--avatar) / 2); width: var(--avatar); height: var(--avatar); }
+.content { margin-top: calc(var(--avatar) / 2 - var(--line) / 2 + 2.5px); padding: 0 var(--pad); font-size: var(--body); line-height: var(--line); color: var(--text); }
+.content.card { margin-top: calc(var(--avatar) / 2 - var(--line) / 2 + var(--gap)); }
+.content p { margin: 0; }
+code { font-family: "Mono"; font-size: 15.6px; letter-spacing: -0.4px; }
+.cmd { font-family: "Mono"; font-size: 15.6px; letter-spacing: -0.4px; color: var(--primary); }
+.meta { float: right; margin-left: 10px; font-size: 12px; color: var(--secondary); line-height: var(--line); letter-spacing: 0; }
+.meta .mark { font-size: 11px; margin-right: 3px; }
+
+.quote { display: flex; gap: 10px; margin-bottom: var(--gap); }
+.quote .bar { width: 4px; border-radius: 2px; background: rgba(0, 0, 0, 0.16); }
+.quote .qname { font-size: 14.3px; line-height: 19px; color: var(--primary); }
+.quote .qtext { font-size: 15px; line-height: 20px; color: rgba(0, 0, 0, 0.7); }
+
+.compose { position: absolute; left: 0; bottom: 0; width: 390px; height: 87px; background: var(--bar); border-top: 0.5px solid rgba(0, 0, 0, 0.12); z-index: 3; }
+.compose .slash { position: absolute; left: 13px; top: 15px; font-size: 21px; font-weight: 400; color: var(--primary); letter-spacing: -1px; }
+.compose .clip { position: absolute; left: 43px; top: 16px; }
+.compose .field { position: absolute; left: 77px; top: 8.5px; width: 301px; height: 38px; border-radius: 19px; background: #fff; border: 0.5px solid rgba(0, 0, 0, 0.18); box-sizing: border-box; }
+.compose .mic { position: absolute; left: 233px; top: 8px; }
+.compose .bolt { position: absolute; left: 274px; top: 8px; }
+</style>
+</head>
+<body>
+<div class="screen"><div class="inner">
+
+  <svg class="notch" width="390" height="34" viewBox="0 0 390 34">
+    <path d="M100 0 H290 V13 C290 21.3 283.3 28 275 28 H115 C106.7 28 100 21.3 100 13 Z" fill="#000"/>
+    <path d="M94 0 H100 V6 C100 2.7 97.3 0 94 0 Z M296 0 H290 V6 C290 2.7 292.7 0 296 0 Z" fill="#000"/>
+  </svg>
+
+  <div class="status">
+    <div class="time">14:05</div>
+    <svg class="icons" width="76" height="14" viewBox="0 0 76 14">
+      <rect x="0" y="9" width="3.2" height="4.2" rx="0.8" fill="#000"/>
+      <rect x="4.8" y="6.6" width="3.2" height="6.6" rx="0.8" fill="#000"/>
+      <rect x="9.6" y="4.2" width="3.2" height="9" rx="0.8" fill="#000"/>
+      <rect x="14.4" y="1.8" width="3.2" height="11.4" rx="0.8" fill="#000"/>
+      <path d="M31.5 3.3 C35 3.3 38.1 4.7 40.4 7 L41.6 5.8 C39 3.2 35.4 1.6 31.5 1.6 C27.6 1.6 24 3.2 21.4 5.8 L22.6 7 C24.9 4.7 28 3.3 31.5 3.3 Z" fill="#000"/>
+      <path d="M31.5 6.6 C33.6 6.6 35.5 7.4 36.9 8.8 L38.1 7.6 C36.4 5.9 34.1 4.9 31.5 4.9 C28.9 4.9 26.6 5.9 24.9 7.6 L26.1 8.8 C27.5 7.4 29.4 6.6 31.5 6.6 Z" fill="#000"/>
+      <path d="M31.5 9.6 C32.6 9.6 33.6 10 34.3 10.7 L31.5 13.5 L28.7 10.7 C29.4 10 30.4 9.6 31.5 9.6 Z" fill="#000"/>
+      <rect x="49" y="1.5" width="23" height="11.4" rx="3.4" fill="none" stroke="#000" stroke-opacity="0.4" stroke-width="1"/>
+      <rect x="51" y="3.5" width="14" height="7.4" rx="1.8" fill="#000"/>
+      <path d="M73.4 5.3 C74.3 5.6 74.8 6.3 74.8 7.2 C74.8 8.1 74.3 8.8 73.4 9.1 Z" fill="#000" fill-opacity="0.4"/>
+    </svg>
+  </div>
+
+  <div class="nav">
+    <svg class="back" width="13" height="22" viewBox="0 0 13 22"><path d="M11 2 L2 11 L11 20" fill="none" stroke="#0088ff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="title">
+      <svg width="32" height="32" viewBox="0 0 32 32">
+        <circle cx="16" cy="16" r="16" fill="#cdd3da"/>
+        <circle cx="12.2" cy="12.6" r="3.6" fill="#fff"/>
+        <path d="M5.6 23.4 C5.6 19.6 8.4 17.4 12.2 17.4 C16 17.4 18.8 19.6 18.8 23.4 Z" fill="#fff"/>
+        <circle cx="20.6" cy="11.8" r="3" fill="#fff" fill-opacity="0.85"/>
+        <path d="M19.4 16.4 C23.6 16 26.4 18.2 26.4 21.8 H20.6 C20.6 19.6 20.2 17.8 19.4 16.4 Z" fill="#fff" fill-opacity="0.85"/>
+      </svg>
+      <span>1 · my-project</span>
+    </div>
+    <svg class="more" width="26" height="26" viewBox="0 0 26 26">
+      <circle cx="6" cy="13" r="2.2" fill="#0088ff"/>
+      <circle cx="13" cy="13" r="2.2" fill="#0088ff"/>
+      <circle cx="20" cy="13" r="2.2" fill="#0088ff"/>
+    </svg>
+  </div>
+
+  <div class="chat">
+
+    <div class="row first">
+      <div class="sender"><svg class="avatar"><use href="#agent"/></svg><span class="name">Claude</span><span class="role">owner</span></div>
+      <div class="content"><p>alice is an owner and can send prompts to Claude and the group's commands, and approve tool use.<span class="meta">14:01</span></p></div>
+    </div>
+
+    <div class="row">
+      <div class="sender"><svg class="avatar"><use href="#person"/></svg><span class="name own">alice</span><span class="role">owner</span></div>
+      <div class="content"><p>Are the tests passing?<span class="meta"><span class="mark">✓✓</span>14:02</span></p></div>
+    </div>
+
+    <div class="row">
+      <div class="sender"><svg class="avatar"><use href="#agent"/></svg><span class="name">Claude</span><span class="role">owner</span></div>
+      <div class="content">
+        <p>I want to use <code>Bash</code>: <code>Run unit tests</code><br><code>npm test</code><br>Approved by alice.<span class="meta"><span class="mark">✎</span>14:02</span></p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="sender"><svg class="avatar"><use href="#person"/></svg><span class="name own">alice</span><span class="role">owner</span></div>
+      <div class="content"><p><span class="cmd">/approve 1</span><span class="meta"><span class="mark">✓✓</span>14:02</span></p></div>
+    </div>
+
+    <div class="row">
+      <div class="sender"><svg class="avatar"><use href="#agent"/></svg><span class="name">Claude</span><span class="role">owner</span></div>
+      <div class="content card">
+        <div class="quote"><div class="bar"></div><div><div class="qname">alice</div><div class="qtext">Are the tests passing?</div></div></div>
+        <p>543 of 544 pass. One test in <code>hub.test.ts</code> fails: an answer quotes an older prompt. Shall I fix it?<span class="meta">14:03</span></p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="sender"><svg class="avatar"><use href="#person"/></svg><span class="name own">alice</span><span class="role">owner</span></div>
+      <div class="content"><p>Yes, fix it and run the tests again.<span class="meta"><span class="mark">✓✓</span>14:04</span></p></div>
+    </div>
+
+    <div class="row">
+      <div class="sender"><svg class="avatar"><use href="#agent"/></svg><span class="name">Claude</span><span class="role">owner</span></div>
+      <div class="content">
+        <p>I want to use <code>Bash</code>: <code>Run unit tests</code><br><code>npm test</code><br><span class="cmd">/approve 2</span> or <span class="cmd">/reject 2</span><span class="meta">14:05</span></p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="compose">
+    <div class="slash">//</div>
+    <svg class="clip" width="22" height="24" viewBox="0 0 22 24"><path d="M15.6 7.4 L8.4 14.6 C7.4 15.6 7.4 17 8.4 17.9 C9.3 18.9 10.8 18.9 11.7 17.9 L19 10.6 C20.9 8.7 20.9 5.7 19 3.8 C17.1 1.9 14.1 1.9 12.2 3.8 L4.4 11.6 C1.7 14.3 1.7 18.6 4.4 21.3" fill="none" stroke="#0088ff" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <div class="field">
+      <svg class="mic" width="20" height="22" viewBox="0 0 20 22"><rect x="6.5" y="1" width="7" height="12" rx="3.5" fill="#0088ff"/><path d="M3.5 9.5 C3.5 13.3 6.4 16 10 16 C13.6 16 16.5 13.3 16.5 9.5" fill="none" stroke="#0088ff" stroke-width="1.6" stroke-linecap="round"/><path d="M10 16 V20" stroke="#0088ff" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <svg class="bolt" width="16" height="22" viewBox="0 0 16 22"><path d="M9.5 1 L1.5 12.5 H7.5 L6 21 L14.5 9 H8.5 Z" fill="#0088ff"/></svg>
+    </div>
+  </div>
+
+</div></div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="person" viewBox="0 0 34 34">
+      <circle cx="17" cy="17" r="17" fill="#cdd3da"/>
+      <circle cx="17" cy="13" r="5.6" fill="#fff"/>
+      <path d="M6.4 28.4 C8.4 23.4 12.3 20.8 17 20.8 C21.7 20.8 25.6 23.4 27.6 28.4 C24.8 31.1 21.1 32.6 17 32.6 C12.9 32.6 9.2 31.1 6.4 28.4 Z" fill="#fff"/>
+    </symbol>
+    <symbol id="agent" viewBox="0 0 34 34">
+      <circle cx="17" cy="17" r="16" fill="#fff"/>
+      <svg x="0" y="0" width="34" height="34" viewBox="124.5 -878.5 711 797">
+        <path fill="#cdd3da" d="M564.12,-698.86 C564.12,-652.47 526.51,-614.86 480.12,-614.86 C433.73,-614.86 396.12,-652.47 396.12,-698.86 C396.12,-745.25 433.73,-782.86 480.12,-782.86 C526.51,-782.86 564.12,-745.25 564.12,-698.86 Z M373.01,-371.05 C373.01,-324.66 335.4,-287.05 289.01,-287.05 C242.62,-287.05 205.01,-324.66 205.01,-371.05 C205.01,-417.44 242.62,-455.05 289.01,-455.05 C335.4,-455.05 373.01,-417.44 373.01,-371.05 Z M755.03,-371.07 C755.03,-324.68 717.42,-287.07 671.03,-287.07 C624.63,-287.07 587.03,-324.68 587.03,-371.07 C587.03,-417.46 624.63,-455.07 671.03,-455.07 C717.42,-455.07 755.03,-417.46 755.03,-371.07 Z"/>
+      </svg>
+    </symbol>
+  </defs>
+</svg>
+</body>
+</html>

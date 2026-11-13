@@ -158,7 +158,7 @@ test("an owner joins the Main group and each session's group, whose profile sets
   const groups = await invitations
   const [groupOne, groupTwo] = [groups.get("1 · one")!, groups.get("2 · two")!]
   const layouts = new Map((await alice.chat.apiListGroups(alice.user.userId)).map(({groupId, groupProfile}) => [groupId, groupProfile.chatLayout]))
-  expect([layouts.get(groupOne), layouts.get(groupTwo), layouts.get(mainGroupId)]).toEqual([T.ChatLayout.Terminal, T.ChatLayout.Terminal, undefined])
+  expect([layouts.get(groupOne), layouts.get(groupTwo), layouts.has(mainGroupId), layouts.get(mainGroupId)]).toEqual([T.ChatLayout.Terminal, T.ChatLayout.Terminal, true, undefined])
   expect((await client.request<StatusReply>("GET", "/status")).owner).toEqual({owners: ["Alice"]})
   const ownerSends = (groupId: number, text: string) => alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], text)
   const card = (groupId: number, text: string): Promise<T.AChatItem> => received(alice.chat, inGroup(groupId, textStarts(text)))
