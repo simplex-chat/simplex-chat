@@ -28,7 +28,7 @@ where
 
 import StoreService.Codes (issueFailedText, issueOneCode, revokeBadgeCode, singleUse)
 import StoreService.Config (GroupConfig (..))
-import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction, groupCommands)
+import StoreService.Group.Command (CmdAction (..), GroupCmd (..), MoneyCmd, groupCmdAction, groupCommands)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Store (CodeIssuer (..), groupNameCodesIssuedSince)
 import StoreService.Names.Turns (Turns)
@@ -229,8 +229,8 @@ coalesceTrackerRefreshes = snd . foldr keepLast (S.empty, [])
 logUncaught :: HasCallStack => IO () -> IO ()
 logUncaught a = a `catchOwn'` withFrozenCallStack (logError . tshow)
 
-handleGroupEvent :: ChatController -> Turns -> Bool -> GroupId -> GroupEvent -> IO ()
-handleGroupEvent cc turns namesOn groupId ev = logUncaught (handle ev)
+handleGroupEvent :: ChatController -> Turns -> Bool -> (MoneyCmd -> IO (Either Text Text)) -> GroupId -> GroupEvent -> IO ()
+handleGroupEvent cc turns namesOn runMoney groupId ev = logUncaught (handle ev)
   where
     handle = \case
       GEInGroup gid action
@@ -239,7 +239,7 @@ handleGroupEvent cc turns namesOn groupId ev = logUncaught (handle ev)
             GAJoined -> promoteOwner cc groupId
             GAProfileUpdated -> restoreServiceProfile cc groupId
             GACommand role t -> case groupCmdAction role t of
-              RunCmd cmd -> runGroupCmd cc turns namesOn groupId cmd
+              RunCmd cmd -> runGroupCmd cc turns namesOn runMoney groupId cmd
               ReplyText txt -> void $ sendGroupText cc groupId "command reply" txt
               IgnoreMsg -> pure ()
       GETracker badgeCodeId code -> updateTracker cc groupId badgeCodeId code
@@ -257,15 +257,15 @@ promoteFirstOwner cc g@GroupInfo {groupId, groupProfile} member =
     _ -> pure ()
 
 -- Nothing is a group that is not served, so its events are drained.
-runGroupLane :: ChatController -> Turns -> Bool -> TQueue GroupEvent -> Maybe GroupId -> IO ()
-runGroupLane cc turns namesOn q groupId_ = case groupId_ of
+runGroupLane :: ChatController -> Turns -> Bool -> (MoneyCmd -> IO (Either Text Text)) -> TQueue GroupEvent -> Maybe GroupId -> IO ()
+runGroupLane cc turns namesOn runMoney q groupId_ = case groupId_ of
   Just groupId -> do
     promoteOwner cc groupId
     -- Reconciling precedes the first batch, so queued events write after the correction.
     reconcileTrackers cc groupId
     forever $ do
       evs <- atomically $ (:) <$> readTQueue q <*> flushTQueue q
-      mapM_ (handleGroupEvent cc turns namesOn groupId) (coalesceTrackerRefreshes evs)
+      mapM_ (handleGroupEvent cc turns namesOn runMoney groupId) (coalesceTrackerRefreshes evs)
   Nothing -> forever $ void $ atomically (readTQueue q)
 
 -- The earliest joined member is promoted, not the one who just joined, so a join the lane never handled
@@ -295,8 +295,8 @@ noOwnerHint gName =
   "the badge group has no member owner, make one with /mr #" <> viewName gName <> " <member> owner in --run-cli mode"
     <> ", or a member pending review with /accept member #" <> viewName gName <> " @<member> owner in --run-cli mode"
 
-runGroupCmd :: ChatController -> Turns -> Bool -> GroupId -> GroupCmd -> IO ()
-runGroupCmd cc turns namesOn groupId = \case
+runGroupCmd :: ChatController -> Turns -> Bool -> (MoneyCmd -> IO (Either Text Text)) -> GroupId -> GroupCmd -> IO ()
+runGroupCmd cc turns namesOn runMoney groupId = \case
   GCIssue bt months uses ->
     issueOneCode cc bt months CPSFree uses >>= \case
       Left _ -> reply issueFailedText
@@ -317,6 +317,7 @@ runGroupCmd cc turns namesOn groupId = \case
   GCRevokeName code -> do
     outcome <- either id id <$> revokeNameCode turns cc code
     reply (formatNameCode (NCPrepaid code) <> ": " <> outcome)
+  GCMoney cmd -> runMoney cmd >>= void . sendGroupText cc groupId "money reply, /balance shows what was recorded" . either id id
   where
     reply = void . sendGroupText cc groupId "reply, any codes in it are lost"
     withinNameCodes issue = do

@@ -5,6 +5,7 @@
 
 module StoreService.Group.Command
   ( GroupCmd (..),
+    MoneyCmd (..),
     CmdAction (..),
     groupCmdAction,
     groupCommands,
@@ -12,6 +13,9 @@ module StoreService.Group.Command
     badgeTypeP,
     nameCodeP,
     prepaidCodeP,
+    balanceArgsP,
+    recordRefundArgsP,
+    closeArgsP,
     textTokenP,
     maxMonths,
     maxUses,
@@ -47,6 +51,10 @@ data GroupCmd
   | GCIssueName Int Int
   | GCRevoke BadgeCode
   | GCRevokeName NamePrepaidCode
+  | GCMoney MoneyCmd
+  deriving (Eq, Show)
+
+data MoneyCmd = MCBalance Text | MCRecordRefund Text Int | MCClose Text
   deriving (Eq, Show)
 
 data CmdAction
@@ -76,18 +84,22 @@ cmdArgsP = \case
   CTIssue -> uncurry GCIssueName <$> nameCodeP <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> optP usesOpt
   CTBulk -> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
   CTRevoke -> GCRevoke <$> codeP <|> GCRevokeName <$> prepaidCodeP
+  CTBalance -> GCMoney <$> balanceArgsP
+  CTRecordRefund -> GCMoney <$> recordRefundArgsP
+  CTClose -> GCMoney <$> closeArgsP
   where
     countP = A.space *> optValueP countOpt
 
 -- | An option's keyword, its placeholder in the usage reply and its bounds; an omitted option takes the lowest value.
 data CmdOpt = CmdOpt {optKey :: Text, optVar :: Text, optMin :: Int, optMax :: Int}
 
-lengthOpt, yearsOpt, monthsOpt, usesOpt, countOpt :: CmdOpt
+lengthOpt, yearsOpt, monthsOpt, usesOpt, countOpt, centsOpt :: CmdOpt
 lengthOpt = CmdOpt "length" "<length>" minNameLength maxNameLength
 yearsOpt = CmdOpt "years" "<Y>" minNameYears maxNameYears
 monthsOpt = CmdOpt "months" "<M>" 1 maxMonths
 usesOpt = CmdOpt "uses" "<N>" 1 maxUses
 countOpt = CmdOpt "count" "<N>" 1 maxBulk
+centsOpt = CmdOpt "cents" "<cents>" 1 maxBound
 
 optP :: CmdOpt -> A.Parser Int
 optP opt = fromMaybe (optMin opt) <$> optional (A.space *> optValueP opt)
@@ -120,6 +132,14 @@ prepaidCodeP =
     Just (NCPrepaid code) -> pure code
     _ -> fail "not a prepaid name code"
 
+balanceArgsP, recordRefundArgsP, closeArgsP :: A.Parser MoneyCmd
+balanceArgsP = MCBalance <$> referenceP
+recordRefundArgsP = MCRecordRefund <$> referenceP <* A.space <*> boundedInt centsOpt
+closeArgsP = MCClose <$> referenceP
+
+referenceP :: A.Parser Text
+referenceP = safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace)
+
 -- attoparsec's decimal wraps silently at Int, so the bound is checked on the wider Integer.
 boundedInt :: CmdOpt -> A.Parser Int
 boundedInt CmdOpt {optKey, optMin, optMax} = do
@@ -147,7 +167,7 @@ textTokenP = do
   maybe (fail "invalid value") pure $ textDecode $ safeDecodeUtf8 t
 
 -- The advertised menu lists the commands in this order.
-data CmdTag = CTIssue | CTBulk | CTRevoke
+data CmdTag = CTIssue | CTBulk | CTRevoke | CTBalance | CTRecordRefund | CTClose
   deriving (Bounded, Enum)
 
 cmdName :: CmdTag -> Text
@@ -155,12 +175,18 @@ cmdName = \case
   CTIssue -> "issue"
   CTBulk -> "bulk"
   CTRevoke -> "revoke"
+  CTBalance -> "balance"
+  CTRecordRefund -> "record_refund"
+  CTClose -> "close"
 
 cmdLabel :: CmdTag -> Text
 cmdLabel = \case
   CTIssue -> "Generate a code"
   CTBulk -> "Generate many codes"
   CTRevoke -> "Revoke a code"
+  CTBalance -> "Show an order's balance"
+  CTRecordRefund -> "Record a balance refund"
+  CTClose -> "Close a failed order"
 
 -- The menu hints and the usage replies are built from the same kinds, options and bounds, so they cannot drift apart.
 cmdParams :: CmdTag -> Text
@@ -168,7 +194,11 @@ cmdParams = \case
   CTIssue -> kindParams (nameArg : badgeKinds) [yearsOpt, monthsOpt] <> " [" <> optArg usesOpt <> "]"
   CTBulk -> kindParams badgeKinds [monthsOpt] <> " " <> optArg countOpt
   CTRevoke -> "<code>"
+  CTBalance -> referenceArg
+  CTRecordRefund -> referenceArg <> " " <> optVar centsOpt
+  CTClose -> referenceArg
   where
+    referenceArg = "<reference>"
     kindParams kinds opts = "<" <> T.intercalate "|" kinds <> "> [" <> T.intercalate "|" (map optKey opts) <> " <N>]"
 
 cmdUsage :: CmdTag -> Text
@@ -180,8 +210,12 @@ cmdUsage = \case
       [(nameArg, [lengthOpt, yearsOpt]), (badgeKindsText, [monthsOpt, usesOpt])]
       ["name 6 years 5", "supporter months 12"]
   CTBulk -> kindUsage CTBulk ("[" <> optArg monthsOpt <> "] " <> optArg countOpt) [(badgeKindsText, [monthsOpt, countOpt])] ["legend months 3 count 10"]
-  CTRevoke -> "Usage: " <> cmdText CTRevoke (cmdParams CTRevoke)
+  CTRevoke -> plainUsage CTRevoke
+  CTBalance -> plainUsage CTBalance
+  CTRecordRefund -> plainUsage CTRecordRefund
+  CTClose -> plainUsage CTClose
   where
+    plainUsage tag = "Usage: " <> cmdText tag (cmdParams tag)
     badgeKindsText = T.intercalate ", " badgeKinds
 
 kindUsage :: CmdTag -> Text -> [(Text, [CmdOpt])] -> [Text] -> Text
@@ -211,6 +245,9 @@ cmdMinRole = \case
   CTIssue -> GRModerator
   CTBulk -> GRModerator
   CTRevoke -> GRAdmin
+  CTBalance -> GROwner
+  CTRecordRefund -> GROwner
+  CTClose -> GROwner
 
 -- | This is the reply to a well-formed command from a sender who may not run it; Nothing means silence.
 cmdRefusal :: CmdTag -> Maybe Text
@@ -219,3 +256,6 @@ cmdRefusal = \case
   CTBulk -> Nothing
   -- The sender has just published a code that stays redeemable, so they must learn it was not revoked.
   CTRevoke -> Just "Only admins can revoke codes. This code is now visible to all members."
+  CTBalance -> Nothing
+  CTRecordRefund -> Nothing
+  CTClose -> Nothing
