@@ -175,7 +175,7 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(imageFromBase64("data:image/png;base64," + pngData(600, 600).base64EncodedString())?.size, CGSize(width: 512, height: 512))
         XCTAssertNil(imageFromBase64("data:image/png;base64," + pngData(4321, 1).base64EncodedString()))
         XCTAssertEqual(try loadedImage(pngData(1000, 10))?.size, CGSize(width: 1000, height: 10))
-        XCTAssertEqual(try loadedImage(pngData(4400, 10))?.size, CGSize(width: 4320, height: 10))
+        XCTAssertEqual(try loadedImage(pngData(8640, 20))?.size, CGSize(width: 4320, height: 10))
         XCTAssertNil(try loadedImage(pngData(16385, 1)))
     }
 }
