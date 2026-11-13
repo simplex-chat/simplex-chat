@@ -93,8 +93,11 @@ The agent's \`receive\` of CHAT returns a due prompt once; until then, the later
 An owner who approves actions adds a schedule, and its prompts become due only while that owner approves actions.
 /'unschedule CHAT N' removes schedule N of CHAT and renumbers the later ones. /schedules lists up to ${listedSchedules} schedules of all chats.
 Example: \`/schedule #3 0 7 * * 1-5 Post the trail report.\`, at 07:00 on weekdays.`
-const helpHelp = `/help lists the commands. /'help COMMAND' shows how to use COMMAND, written with or without its \`/\`, such as /'help schedule'.
+const helpUsage = "/help lists the commands. /'help COMMAND' shows how to use COMMAND, written with or without its `/`, such as /'help schedule'."
+const helpHelp = `${helpUsage}
 Every member who can post in this chat may use /help; the other commands are for the owners who approve actions.`
+const sessionHelpHelp = `${helpUsage}
+Only admins and owners of this group can send / commands, /help included, and approve actions.`
 const helpTexts = new Map<string, string>([
   ["", commandsHelp],
   ["approve", approveHelp],
@@ -110,6 +113,10 @@ const helpTexts = new Map<string, string>([
   ["unschedule", scheduleHelp],
   ["schedules", scheduleHelp],
   ["help", helpHelp],
+])
+const sessionHelpTexts = new Map<string, string>([
+  ...helpTexts,
+  ["help", sessionHelpHelp],
 ])
 
 export interface ControlData {
@@ -325,7 +332,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     this.actions.expireDue()
     const request = ownerRequest(command, this.options.session !== undefined)
     if (request === undefined) return this.options.session === undefined ? commandsReply : unknownCommand
-    if (request.type === "help") return helpTexts.get(request.topic) ?? noHelp
+    if (request.type === "help") return (this.options.session === undefined ? helpTexts : sessionHelpTexts).get(request.topic) ?? noHelp
     if (!this.isApprover(sender)) return this.options.session !== undefined ? undefined : this.options.owners === undefined ? "Only owners approve actions." : "Only the owners listed in --owners approve actions."
     switch (request.type) {
       case "pending": {

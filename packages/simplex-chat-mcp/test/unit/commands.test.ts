@@ -1015,6 +1015,14 @@ describe("help", () => {
     ])
   })
 
+  it("explains /help with the rule of the agent control chat: /help for every member, the other commands for the owners who approve actions", async () => {
+    const {control} = await setup()
+    expect((await control.ownerCommand(bob, parseCommand("/help help")!))!.split("\n")).toEqual([
+      "/help lists the commands. /'help COMMAND' shows how to use COMMAND, written with or without its `/`, such as /'help schedule'.",
+      "Every member who can post in this chat may use /help; the other commands are for the owners who approve actions.",
+    ])
+  })
+
   it("answers an unknown topic without repeating it", async () => {
     const {control} = await setup()
     for (const text of ["/help Schedule", "/help schedule now", "/help /", "/help //schedule", "/help #2", "/help constructor", "/help __proto__"]) {

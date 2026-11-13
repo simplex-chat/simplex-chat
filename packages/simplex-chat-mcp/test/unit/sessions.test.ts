@@ -1080,6 +1080,25 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([43, 44, 47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]))
   })
 
+  it("answers /help help with the rule of the group, which refuses the /help of a member", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const mia = member(13, "Mia", T.GroupMemberRole.Member)
+    chat.members.set(20, [self, invitedAlice, mia])
+    await session.control.load()
+    session.onMessage(event(sessionGroup, item(40, "/help help", from(invitedAlice))))
+    session.onMessage(event(sessionGroup, item(41, "/help", from(mia))))
+    await session["delivery"]
+    await session.control["ownerCommands"]
+    expect(chat.replies.map(reply => reply.split("\n"))).toEqual([
+      [
+        "/help lists the commands. /'help COMMAND' shows how to use COMMAND, written with or without its `/`, such as /'help schedule'.",
+        "Only admins and owners of this group can send / commands, /help included, and approve actions.",
+      ],
+    ])
+    expect(answers(chat)).toEqual([[{text: commandsApproversOnly, quotedItemId: 41}]])
+  })
+
   it("answers nothing and performs nothing for a / command of a member that reaches the commands past the one refusal", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)

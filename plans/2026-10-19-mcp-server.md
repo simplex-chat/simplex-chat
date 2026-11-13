@@ -1769,3 +1769,7 @@ C6      Claude Code closes the request stream when a call times out or its task 
 - The server answers `/help` and `/help COMMAND` from every member who can post in the agent control chat; it accepts the other commands from approvers only.
 - The command menu has `/help`.
 - The limits in the help texts are read from the constants that the server checks.
+
+## Decisions of 2026-11-13
+
+- In a plugin session group, `/help help` states the rule of that group: only admins and owners send its `/` commands, `/help` included, and approve actions.
