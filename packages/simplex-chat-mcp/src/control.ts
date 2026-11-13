@@ -649,7 +649,7 @@ export async function deleteGroup(chat: api.ChatApi, {groupId, membership}: T.Gr
   await chat.apiDeleteChat(T.ChatType.Group, groupId, {type: "full", notify: true})
 }
 
-export function isGroupMessage({chatInfo}: T.AChatItem, groupId: number): boolean {
+export function isGroupMessage({chatInfo}: Pick<T.AChatItem, "chatInfo">, groupId: number): boolean {
   return chatInfo.type === "group" && chatInfo.groupInfo.groupId === groupId && chatInfo.groupChatScope === undefined
 }
 

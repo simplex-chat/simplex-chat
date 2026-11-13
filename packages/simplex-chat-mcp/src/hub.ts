@@ -1,6 +1,6 @@
 import {mkdirSync, rmSync} from "fs"
 import {dirname, join} from "path"
-import {ChatEvent, T} from "@simplex-chat/types"
+import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, HostTexts, Mode, isDecided, maxPending} from "./actions"
 import {Config} from "./config"
@@ -157,7 +157,15 @@ export class Session {
     if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([commandsApproversOnly], ci.chatItem.meta.itemId))
     if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
     const replyTo = quotedItem === undefined ? undefined : toReplyTo(ci.chatInfo, quotedItem, {name: this.hub.profile.profile.displayName})
-    this.queue(() => this.prompt(ci, text, chatDir.groupMember, replyTo))
+    this.queue(() => this.prompt(ci, text, chatDir.groupMember, ci.chatItem.file, replyTo))
+  }
+
+  onReaction({added, reaction: {chatInfo, chatReaction}}: CEvt.ChatItemReaction): void {
+    const {chatDir, chatItem, reaction} = chatReaction
+    const {content} = chatItem
+    if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || reaction.type !== "emoji" || typeof reaction.emoji !== "string" || (content.type !== "rcvMsgContent" && content.type !== "sndMsgContent")) return
+    const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: content.msgContent, fileName: chatItem.file?.fileName}, {name: this.hub.profile.profile.displayName})
+    this.queue(() => this.prompt({chatInfo, chatItem}, reaction.emoji, chatDir.groupMember, undefined, replyTo))
   }
 
   claimPending(connId: number, chat: string): void {
@@ -228,16 +236,16 @@ export class Session {
     await this.post([`${rightsText(name, member.memberRole)}${observer}`])
   }
 
-  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember, replyTo?: ReplyTo): Promise<void> {
+  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember, ciFile: T.CIFile | undefined, replyTo?: ReplyTo): Promise<void> {
     if (this.isUser(member)) return
-    await this.deliver(ci, text, member, replyTo)
+    await this.deliver(ci, text, member, ciFile, replyTo)
   }
 
-  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember, replyTo?: ReplyTo): Promise<void> {
+  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember, ciFile: T.CIFile | undefined, replyTo?: ReplyTo): Promise<void> {
     const left = this.hub.promptsHeldUntil - Date.now()
     if (this.onLine === undefined && left > 0) await nextChange(this.attaching, new AbortController().signal, left)
     const {chatItem} = ci
-    const file = this.onLine === undefined || chatItem.file === undefined ? undefined : await this.receive(chatItem.file).catch(async error => {
+    const file = this.onLine === undefined || ciFile === undefined ? undefined : await this.receive(ciFile).catch(async error => {
       await this.post([`The file of this message was not received: ${oneLine(errorText(error))}`], chatItem.meta.itemId)
       return undefined
     })
@@ -278,7 +286,7 @@ export class Session {
   }
 
   private async answer(text: string, quoted: T.ChatItem | undefined): Promise<void> {
-    const quote = quoted?.content.type === "rcvMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
+    const quote = quoted?.content.type === "rcvMsgContent" || quoted?.content.type === "sndMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
     const quotes = quote !== undefined && fitsMessage({type: "text", text: [...text].slice(0, 1).join("")}, undefined, quote)
     await this.post(textParts(text, quotes ? quote : undefined), quotes ? quoted?.meta.itemId : undefined).catch(error => this.postRefusal(error, "Claude's answer was not posted", featureOff, quoted?.meta.itemId))
   }
@@ -300,7 +308,12 @@ export class Session {
   private pushedIn(prompt: string): {text: string; item: T.ChatItem; at: number}[] {
     const recent = Date.now() - promptEcho
     const tags = [...prompt.matchAll(channelPrompt)].map(([, item, content]) => ({item: Number(item), content: content.trim()}))
-    return this.pushed.filter(entry => (entry.text === prompt && entry.at > recent) || tags.some(({item, content}) => item === entry.item.meta.itemId && content === entry.text.trim()))
+    const tagged: number[] = []
+    for (const {item, content} of tags) {
+      const i = this.pushed.findIndex((entry, j) => !tagged.includes(j) && item === entry.item.meta.itemId && content === entry.text.trim())
+      if (i >= 0) tagged.push(i)
+    }
+    return this.pushed.filter((entry, i) => (entry.text === prompt && entry.at > recent) || tagged.includes(i))
   }
 
   private queue(work: () => Promise<void>): void {
@@ -501,6 +514,7 @@ export class Hub implements SessionGroups {
         else sessions.find(({control}) => isGroupMessage(ci, control.groupId))?.onMessage(ci)
       }
     }
+    if (event.type === "chatItemReaction") sessions.find(({control}) => isGroupMessage(event.reaction, control.groupId))?.onReaction(event)
     const {file} = event.type === "rcvFileComplete" ? event.chatItem.chatItem : {}
     if (file !== undefined) sessions.forEach(session => session.fileDone(file.fileId))
     if (event.type === "rcvFileError") sessions.forEach(session => session.fileDone(event.rcvFileTransfer.fileId, errorText(event.agentError)))
