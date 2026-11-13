@@ -123,6 +123,14 @@ private val previewScenes = listOf(
   SnapshotScene("NetworkAndServers.PreviewNetworkAndServersLayout") { PreviewNetworkAndServersLayout() },
 )
 
+private val avatarScenes = listOf(
+  SnapshotScene("Avatars.ChatListPeople", chatItemFontScales) { AvatarChatListPeople() },
+  SnapshotScene("Avatars.ChatListGroups", chatItemFontScales) { AvatarChatListGroups() },
+  SnapshotScene("Avatars.Toolbars", chatItemFontScales) { AvatarToolbars() },
+  SnapshotScene("Avatars.Rows") { AvatarRows() },
+  SnapshotScene("Avatars.LinksAndBadge") { AvatarLinksAndBadge() },
+)
+
 private val previewsCallingCore = listOf(
   "AddChannelView.PreviewAddChannelView",
   "AddGroupView.PreviewAddGroupLayout",
@@ -174,7 +182,7 @@ class SnapshotTest {
       for (base in listOf(DefaultTheme.LIGHT, DefaultTheme.DARK)) {
         ThemeManager.applyTheme(base.themeName)
         val themeName = base.name.lowercase()
-        for (scene in previewScenes) {
+        for (scene in previewScenes + avatarScenes) {
           for (scale in scene.fontScales) {
             appPrefs.fontScale.set(scale)
             ChatModel.terminalItems.value = listOf()
