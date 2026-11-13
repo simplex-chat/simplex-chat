@@ -1,6 +1,6 @@
 # Claude as an agent, User as a person
 
-Status: draft for review. Code references: master `9d3241b06`. Branch `ep/mcp-agent-profile`. The user answered Q1 (b) and Q2 (b) on 2026-11-12; the plan follows these answers.
+Status: approved by the user on 2026-11-13 at `7c0da7fef`, with the answers Q1 (b) and Q2 (b); implemented on `ep/mcp-agent-profile` after the merge of master `97bbbd9ac`. Code references: master `9d3241b06`.
 
 Outcome:
 - The apps choose the placeholder of another person's profile by its peer type: in groups, in contact lists, in reactions, in calls, for contact requests and on link cards. Claude gets the agent placeholder in its session groups and in the Main group.
@@ -109,12 +109,26 @@ sequenceDiagram
 ## 3. Questions for the user
 
 Q1. A peer type change in existing groups. Answered on 2026-11-12: (b).
-- (b), the answer: no core change. In session groups joined before the upgrade, updated apps show `User` with the agent placeholder. New groups and later joiners see a person. The user's note: "I don't understand why core has to change - if our plugin correctly updates profile, the update will be sent on the next message." It is not sent: for a change of the peer type alone, the core leaves `user_member_profile_updated_at` as it is (`src/Simplex/Chat/Store/Profiles.hs:369-376`), and the profile is sent to a group only before a message after that time (`src/Simplex/Chat/Library/Internal.hs:2717-2739`, decision 4).
+- (b), the answer: no core change. In session groups joined before the upgrade, updated apps show `User` with the agent placeholder. New groups and later joiners see a person.
+- The user's note: "I don't understand why core has to change - if our plugin correctly updates profile, the update will be sent on the next message."
+- The answer. The plugin updates the profile correctly: at each start, `updatedUser` calls `apiUpdateProfile` with the peer type `human` (decision 14). The core then sends the profile by three routes:
+  ```
+  route                                          User's new profile reaches                      code
+  x.info to each contact, at once                the hub's contact of User                       Commands.hs:4134-4169
+  introductions by the host and the profiles     every member who joins a session group after    Internal.hs:1355-1365;
+  sent at each new member connection             the update                                      Subscriber.hs:519
+  x.info to a group before the next message      no group: the core sends it only after a        Internal.hs:2717-2739;
+  there                                          change of the name, full name, short             Store/Profiles.hs:369-376
+                                                 description, description or image
+  ```
+  So the update is not sent with the next message: before a message, the core sends the profile to a group only when `user_member_profile_updated_at` is later than the group's last send, and a change of the peer type alone leaves that time as it is. The plugin can reach the members already in a group only by changing one of those fields, as G2 of [Design](#5-design) does with two visible changes.
 - (a), the alternative: the core counts a peer type change as a change of the member profile, 3 changed lines at `src/Simplex/Chat/Store/Profiles.hs:374-376`, with the test of [Acceptance](#7-acceptance-and-tests). The profile is sent to each group before the next message there, as after a name change. Owners see `updated profile` from `User` once, above `User`'s next terminal prompt, and then the person placeholder. Every client gets the change: a bot or an agent that changes its peer type sends it to its groups. The plugin gets it with the core release that follows, when `release.ts` pins it and the plugin's lock is updated (decision 16).
 
 Q2. Placeholders of contacts on other screens. Answered on 2026-11-12: (b).
 - (b), the answer: every placeholder of another person's profile is chosen by its peer type: the 18 sites of the first draft and 6 more found in the search for every site (decision 20).
 - (a), the first recommendation: only `MemberProfileImage`.
+- The user's note: "you mean in app UI we don't show bot or agent? why is that I wonder? can you understand?"
+- The answer. The apps show the peer type only where it was added for direct chats with bots. #5360, `4811d663e`, 2025-08-07, added the peer type to identify bots: the cube of a bot contact in the chat list and chat info, and the bot's commands menu (`Contact.chatIconName`, `isBot`). #7738, `77f9f4a46`, 2026-10-17, added `agent` at the same places through `peerTypeIcon`, and in the alerts of links. Neither pull request changed `MemberProfileImage`, which draws every member avatar and dates from 2024 (`b04f15997`, `7a418918d`, blurred images of blocked members), nor the other screens of decision 20. So members, contact lists, reactions, calls, contact requests and link cards kept the person placeholder for every peer type.
 
 ## 4. Decisions
 
@@ -244,15 +258,17 @@ file                                                   change
 commonMain/.../model/ChatModel.kt                      peerTypeIcon(peerType, person = ic_account_circle_filled);
                                                        MsgChatLink.iconRes and smallIconRes of Contact and Invitation by peerTypeIcon,
                                                        smallIconRes with person = ic_person; business keeps ic_work_filled_padded and ic_work
-commonMain/.../views/chat/group/GroupMemberInfoView.kt MemberProfileImage: icon = peerTypeIcon(mem.memberProfile.peerType)
+commonMain/.../views/chat/group/GroupMemberInfoView.kt MemberProfileImage: icon = peerTypeIcon(mem.memberProfile.peerType);
+                                                       preview PreviewPeerTypePlaceholders
 commonMain/.../views/helpers/ChatInfoImage.kt          ChatInfoImage: ContactRequest by peerTypeIcon of the request's profile;
-                                                       ProfileImageForActiveCall: icon (decision 24); preview PreviewPeerTypePlaceholders
+                                                       ProfileImageForActiveCall: icon (decision 24)
 commonMain/.../views/chat/item/ChatItemView.kt         ChatItemReactionMenuItem.icon; members and contacts pass theirs; drawn at 221
 commonMain/.../views/chat/group/AddGroupMembersView.kt  ProfileImage(36.dp, contact.image, contact.chatIconName)
 commonMain/.../views/chatlist/ShareListNavLinkView.kt  ChatInfoImage(chat.chatInfo, 42.dp) for a chat that is neither a note folder nor a group
 androidMain/.../views/call/CallView.android.kt         icon = call.contact.chatIconName
 desktopMain/.../views/chatlist/ChatListView.desktop.kt icon = call.contact.chatIconName at 66 and at 128
-desktopTest/.../SnapshotTest.kt                        scene ChatInfoImage.PreviewPeerTypePlaceholders
+desktopTest/.../SnapshotTest.kt                        scene GroupMemberInfoView.PreviewPeerTypePlaceholders
+desktopTest/.../PeerTypeIconTest.kt                    link card icons and small link icons by peer type
 desktopTest/snapshots/                                 2 references, light and dark
 ```
 
@@ -341,8 +357,11 @@ packages/simplex-chat-mcp/test/unit/core.test.ts:              unit     does not
   "keeps a profile with its name and peer type"
 packages/simplex-chat-mcp/test/e2e/service.test.ts:            e2e      yes: User stays agent
   "a data folder of 0.3.0 starts with User as a person, and an owner sees Claude as an agent and User as a person"
-ChatInfoImage.PreviewPeerTypePlaceholders, desktop             snapshot yes: master draws the person in every row
-PeerTypePlaceholders_Previews, iOS                             snapshot yes, for the rows of master's interfaces
+apps/multiplatform/.../desktopTest/.../PeerTypeIconTest.kt:     unit     yes: master returns the person for every peer type
+  "linkCardsShowThePeerType"
+  "smallLinkIconsShowThePeerType"
+GroupMemberInfoView.PreviewPeerTypePlaceholders, desktop       snapshot uses the new icon of ProfileImageForActiveCall
+PeerTypePlaceholders_Previews, iOS                             snapshot uses the new icon and smallIcon of MsgChatLink
 ```
 
 The e2e test runs `linkSession`, whose `prepareRoot` creates `User` with `agent` as 0.3.0 does (`test/e2e/helpers.ts:30-35`), and checks:
@@ -363,7 +382,7 @@ small link icon           Icon of MsgChatLink.Contact.smallIconRes         MsgCh
 reaction menu item        -                                                profileMenuItem
 active call card          ProfileImageForActiveCall                        -
 ```
-The references are recorded from a run with the change. The rows of the member avatar, the contact request and the Kotlin link icons are drawn with interfaces of master: a run of the preview and its references before the change fails the comparison, and a run after it passes. The rows of the iOS link icons, the reaction menu item and the active call card need the new parameters, so they are drawn only after the change. At each other place of decision 20, one argument is added, checked in the diff.
+The references are recorded from a run with the change. Both previews use parameters that the change adds, so they compile only after it; the failure on master is shown by the unit tests of the plugin and of the Kotlin link icons. At each other place of decision 20, one argument is added, checked in the diff.
 
 CI:
 - The reduced build runs the changed scopes: kotlin (`:common:desktopTest`, which fails for a preview without a scene), ios (build and `check-previews.py`), mcp (unit and e2e tests).
@@ -386,8 +405,9 @@ packages/simplex-chat-mcp/spec/architecture.md:904    openCore: a new profile wi
 packages/simplex-chat-mcp/spec/flows.md:790, :793     openCore with agent and with human; a note on the upgrade of User at each start
 packages/simplex-chat-mcp/TESTING.md:188              the e2e test above
 packages/simplex-chat-mcp/TESTING.md, real session    a check: in the app, Claude's posts show the agent placeholder and User's the person one
-apps/multiplatform/spec/client/chat-view.md:130       MemberImage: the member's image, otherwise the placeholder of its peer type
-apps/ios/spec/client/chat-view.md:361                 the same for the avatar of a row
+apps/multiplatform/spec/client/chat-view.md:375       MemberProfileImage: the member's image, otherwise the placeholder of its peer type
+apps/ios/spec/client/chat-view.md:564                 the same, in the section of the member list; both lines are outside the flat layout's
+                                                      sections, which flat-sessions changes
 ```
 README.md is unchanged: it names no peer type.
 
@@ -396,11 +416,14 @@ README.md is unchanged: it names no peer type.
 ```
 file or function                                              items
 packages/simplex-chat-mcp/ROADMAP.md:7-8                      line 7 is removed by flat-sessions and line 8 by this item: adjacent lines
-packages/simplex-chat-mcp/src/hub.ts Hub.open (368)           other functions of hub.ts are changed by harness-notes, reactions and replies
-packages/simplex-chat-mcp/test/e2e/service.test.ts            a test of every item is added at the end of the file
+packages/simplex-chat-mcp/src/hub.ts Hub.open (369)           other functions of hub.ts are changed by reactions and replies
+packages/simplex-chat-mcp/test/e2e/service.test.ts            this item's test is added before "a new session has no chats"; tests of other
+                                                              items are added at the end of the file
 packages/simplex-chat-mcp/TESTING.md, the list of e2e tests   an entry of every item is added there
 packages/simplex-chat-mcp/REFERENCE.md:578-596, sessions      flat-sessions (layout of session groups), replies, reactions
-packages/simplex-chat-mcp/spec/flows.md flow 17, :790-826     harness-notes, flat-sessions (group profile at creation)
+packages/simplex-chat-mcp/spec/flows.md flow 17, :790-827     flat-sessions (group profile at creation)
+GroupMemberInfoView.kt, GroupMemberInfoView.swift             MemberProfileImage, also changed by flat-sessions for the flat rows: one added
+  MemberProfileImage                                          argument here, icon = peerTypeIcon(mem.memberProfile.peerType)
 apps .../SnapshotTest.kt previewScenes, iOS previewScenes      flat-sessions, if it adds previews: adjacent lines of sorted lists
 apps/ios/Shared/Views/Chat/ChatView.swift                      flat-sessions changes the rows (2000-2240); this item changes profileMenuItem
                                                               and the reaction menus (2984, 3278, 3301)
