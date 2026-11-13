@@ -615,7 +615,7 @@ With the channel, a message from a member of a session's group, other than `User
 - Claude posts one line for each of Claude Code's own prompts, without a quote. The line starts with an emoji for the prompt's kind:
   - a notification of a background task, a subagent, a workflow or a monitor: its summary, such as `✅ Background command "Build" completed (exit code 0)`, and the first line of its event, when it has one, such as `📡 Monitor event: "Builds": serverpg exit 0`. The emoji is ✅ for a task that completed, ❌ for one that failed and ⏹️ for one that was stopped or killed. A notification without a status gets 📡 when it has an event, as a monitor event or the end of an artifact watch, and 🔔 otherwise. A notification in plain text, such as `3 background agents were stopped by the user: ...`, gets 🔔 and its first line;
   - a message of another Claude session: `✉️ Message from NAME: ` and its first line;
-  - a message of a teammate in an agent team: `👥 Message from NAME: ` and its summary, or its first line without one. A teammate's idle notification gets no line;
+  - a message of a teammate in an agent team: `✉️ Message from NAME: ` and its summary, or its first line without one. A prompt with several teammate messages gets the line of the first one that is not an idle notification, and a prompt of idle notifications only gets no line;
   - the report of a subagent: `📋 Report from subagent NAME: ` and its first line;
   - a scheduled prompt: `⏰ Scheduled prompt: ` and its first line;
   - an automatic prompt, such as the one after a usage limit resets: `🔄 Automatic prompt: ` and its first line;

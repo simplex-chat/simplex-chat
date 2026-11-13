@@ -337,22 +337,28 @@ describe("turn hooks", () => {
     }
   })
 
-  it("send a note of a teammate's message with its sender and summary, or the first line without a summary, and none for an idle notification", async () => {
+  it("send a note of a teammate's message with its sender and summary, or the first line without a summary, from the first tag that is not an idle notification, and none for idle notifications only", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
     try {
       const transcript = join(folder, "session.jsonl")
-      const teammate = (attributes: string, body: string) => `Another Claude session sent a message:\n<teammate-message teammate_id="lookalikes-builder" color="green"${attributes}>\n${body}\n</teammate-message>\n\nThis came from another Claude session — not typed by your user.`
+      const tag = (attributes: string, body: string) => `<teammate-message teammate_id="lookalikes-builder" color="green"${attributes}>\n${body}\n</teammate-message>`
+      const teammate = (...tags: string[]) => `Another Claude session sent a message:\n${tags.join("\n\n")}\n\nThis came from another Claude session — not typed by your user.`
+      const idle = tag("", '{"type":"idle_notification","from":"lookalikes-builder","timestamp":"2026-11-12T19:00:02.715Z"}')
       const prompts: [string, string][] = [
-        ["p1", teammate(' summary="X Ads look-alike seed file &quot;v2&quot; written"', "The seed file is written.\n\nSeeds: 37 handles.")],
-        ["p2", teammate("", "\nThe seed file is written.\n\nSeeds: 37 handles.")],
-        ["p3", teammate("", '{"type":"idle_notification","from":"lookalikes-builder","timestamp":"2026-11-12T19:00:02.715Z"}')],
+        ["p1", teammate(tag(' summary="X Ads look-alike seed file &quot;v2&quot; written"', "The seed file is written.\n\nSeeds: 37 handles."))],
+        ["p2", teammate(tag("", "\nThe seed file is written.\n\nSeeds: 37 handles."))],
+        ["p3", teammate(idle)],
+        ["p4", teammate(idle, tag(' summary="Handles checked"', "All 37 handles are live."), idle)],
+        ["p5", teammate(idle, idle)],
       ]
       writeFileSync(transcript, prompts.map(([promptId, content]) => userEntry(promptId, content)).join(""))
       const {client, requests} = turnClient()
       for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
       expect(kinds(requests)).toEqual([
-        ['👥 Message from lookalikes-builder: X Ads look-alike seed file "v2" written', false, undefined],
-        ["👥 Message from lookalikes-builder: The seed file is written.", false, undefined],
+        ['✉️ Message from lookalikes-builder: X Ads look-alike seed file "v2" written', false, undefined],
+        ["✉️ Message from lookalikes-builder: The seed file is written.", false, undefined],
+        [undefined, false, undefined],
+        ["✉️ Message from lookalikes-builder: Handles checked", false, undefined],
         [undefined, false, undefined],
       ])
     } finally {
@@ -381,6 +387,31 @@ describe("turn hooks", () => {
       await queued
       expect(kinds(requests)).toEqual([
         [undefined, true, true],
+        [undefined, true, true],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("classify a prompt by its record when a later prompt with its text is still queued after the reads: Claude Code's own prompt by its origin, as a repeated monitor event, and a typed prompt as typed and mid-turn", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const event = notification('<task-id>bfmkogk6v</task-id>\n<summary>Monitor event: "Build errors"</summary>\n<event>error: missing import</event>')
+      writeFileSync(transcript, [
+        enqueueEntry(event),
+        userEntry("t1", event, {origin: {kind: "task-notification"}}),
+        enqueueEntry(event),
+        userEntry("t2", "continue", {origin: {kind: "human"}}),
+        enqueueEntry("continue"),
+      ].join(""))
+      const {client, requests} = turnClient()
+      const submit = (promptId: string, prompt: string) => turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt}), {}, client, 0, 1, 1)
+      await submit("t1", event)
+      await submit("t2", "continue")
+      expect(kinds(requests)).toEqual([
+        ['📡 Monitor event: "Build errors": error: missing import', false, undefined],
         [undefined, true, true],
       ])
     } finally {

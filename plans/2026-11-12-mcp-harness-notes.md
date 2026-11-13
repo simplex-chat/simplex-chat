@@ -37,7 +37,7 @@ monitor event            📡 Monitor event: "Exit status of each of the 4 flag-
 other task notification  🔔 Goal check-in: background work still running
 message of a session     ✉️ Message from mcp-impl2: I read the channel-verify evidence, and it confirms your fact. I will record it in TESTING check 6 after round 6, with Claude Code 2.1.319, and I hold code changes until th…
 subagent report          📋 Report from subagent ios-terminal: ## iOS terminal layout: owner decisions and screenshot tests
-teammate's message       👥 Message from lookalikes-builder: X Ads look-alike seed file written
+teammate's message       ✉️ Message from lookalikes-builder: X Ads look-alike seed file written
 plain task notification  🔔 3 background agents were stopped by the user: "Duarte drafts the ad post", "Miller drafts the ad post", "Heath brothers draft the ad post".
 scheduled prompt         ⏰ Scheduled prompt: Reply with the single word tick.   (R1)
 automatic prompt         🔄 Automatic prompt: Your claude.ai usage limit has reset. Continue the task you were working on when the limit was reached; do not repeat work that is already complete.
@@ -54,8 +54,8 @@ task notification:       EMOJI SUMMARY, and ": EVENT" when the notification has 
   without a block        🔔 and the first non-blank line of the prompt
 message of a session     ✉️ Message from NAME: the first non-blank line of the message
 subagent report          📋 Report from subagent NAME: the first non-blank line of the report
-teammate's message       👥 Message from NAME: its summary, or the first non-blank line of the message;
-                         nothing for an idle notification
+teammate's message       ✉️ Message from NAME: its summary, or the first non-blank line of the message,
+                         from the first tag that is not an idle notification; nothing for idle notifications only
 scheduled prompt         ⏰ Scheduled prompt: the first non-blank line of the prompt
 automatic prompt         🔄 Automatic prompt: the first non-blank line of the prompt
 another kind             ⚙️ Claude Code: the first non-blank line of the prompt
@@ -161,10 +161,16 @@ Choices:
 
 Decided after review round 1 of `9c78e6276`:
 
-25. A teammate's message gets `👥 Message from NAME: ` and its `summary`, or the first line of the message without one, cut to 200; an idle notification gets no note (fact 9).
+25. A teammate's message gets `✉️ Message from NAME: `, as a message of another session, and its `summary`, or the first line of the message without one, cut to 200. The note is made from the first tag that is not an idle notification, and a prompt of idle notifications only gets no note (fact 9, decision 31). The user, 2026-11-12, on the first emoji of this note: "👥 this looks horrible".
 26. The first entry with `prompt_id` is any user entry of the main conversation with that ID, a tool result included: a long turn's first entry can be more than 1 MiB back, and its tool results carry its ID. The `enqueue` fallback of decision 16 also applies when no entry with `prompt_id` is in the tail.
 27. While an `enqueue` entry with the prompt's text follows the found record, the hook waits: the prompt is a later one with the text of the turn's own prompt, still queued. An `enqueue` entry precedes the record of every queued prompt in R2.
 28. A task notification without a `<task-notification>` block, such as `3 background agents were stopped by the user: ...`, gets 🔔 and its first line. A `queued_command` attachment without `origin` and with the `commandMode` `task-notification` is a task notification.
+
+Decided after review round 2 of `ef93ce0dd`:
+
+29. At the last read, the hook classifies a record still followed by an `enqueue` entry with its text by the record, and marks a typed record mid-turn. Claude Code runs the hook of its own prompt only when the prompt is taken (fact 5), so at the last read the queued prompt is a later one with the same text, such as a repeated monitor event. Before, the hook marked such a prompt typed, and `User` posted its block. The fallback of decision 16 applies only without a record.
+30. The wait of decision 27 stays. The hook of Claude Code's own prompt added to a turn can read the transcript before the fold's entries are written, and without the wait it would take the record of an earlier prompt with its text. In R2 the hook of the task notification started with a transcript of 292,045 bytes, before the tool result, the `remove` entries and the `queued_command` attachment. So when a later prompt with the text of a turn's own prompt is added to that turn within the reads, the hook of the turn's prompt takes the later record. Its note is the same line, it is mid-turn, and the turn gets no turn record: the answer then quotes the oldest pushed prompt not quoted yet, when there is one ([hub.ts:269-273](../packages/simplex-chat-mcp/src/hub.ts#L269-L273)).
+31. A teammate's prompt can have several `<teammate-message>` tags, separated by blank lines. Of 1,903 teammate prompts in the transcripts, 204 have several tags, and 54 of these have an idle notification first and a message after it; 1,084 have only idle notifications.
 
 ## 5. Design
 
@@ -213,8 +219,10 @@ on UserPromptSubmit {prompt_id, prompt, transcript_path}:
     records   = user entries without isSidechain and tool results, and queued_command attachments
     first     = the first entry with promptId = prompt_id
     record    = the newest record whose text is text: at or after first, or anywhere without first
-    found: stop
+    found, and no enqueue entry of content text after it: stop
     first absent and prompt_id given: wait, except at the last read
+  last read, a record with an enqueue entry of content text after it:
+    the record's kind; a typed record is also mid-turn
   last read, no record:
     an enqueue entry of content text after first: typed true, midTurn true, no note
     else: typed = an entry with promptId = prompt_id has origin.kind human; no note
@@ -274,12 +282,15 @@ Done when:
 9  a refused note is replaced by the PREF OFF post                                                unit: sessions
 10 a request without note and midTurn behaves as in 0.3.0                                         existing unit and e2e tests unchanged
 11 real session: a background command, a subagent and a scheduled prompt show their lines          TESTING check
+12 the note of Claude Code's prompt is sent while a repeat of its text is queued after the reads  unit: hook
+13 a teammate's message after idle notifications in one prompt gets its note                      unit: hook
 ```
 
 Tests:
 - `test/unit/hook.test.ts`, new: "sends a one-line note for each kind of Claude Code's prompt, from its transcript record, and none for typed and channel prompts": entries of R1 and of this machine's transcripts, with paths replaced. It fails on master, which sends no `note`.
 - `test/unit/hook.test.ts`, new: "finds a prompt added to a running turn by its queued command after the turn's entry, and marks it mid-turn": the R2 records. With master, the notification in the typed turn is typed and "Say the word charlie." is not, so it fails.
 - `test/unit/hook.test.ts`, new: the meta entry before the prompt's entry, an older prompt with the same text, and the queued typed prompt after the reads.
+- `test/unit/hook.test.ts`, round 2: a monitor event whose repeat is queued after the reads keeps its note, and is typed and mid-turn on `ef93ce0dd`; a teammate's prompt with an idle notification before a message gets the message's note, and no note on `ef93ce0dd`.
 - The tests build the records of R1 and R2 in their own code, so the test of 0.3.0 decision 121 stays unchanged and no fixture file is added.
 - `test/unit/sessions.test.ts`, new: "posts the note of Claude Code's prompt as Claude without a quote, and the turn's answer without a quote" (fails on master: nothing is posted); "keeps the turn's quote and tool-use cards for a mid-turn prompt" (fails on master: the answer loses the quote and the card ends); "replaces a refused note with the preference's text".
 - `test/e2e/service.test.ts`, changed: the mirroring test adds a summary to its notification, expects Claude's line and no post of `User`, and adds a notification as a queued command of the typed turn `p1`.

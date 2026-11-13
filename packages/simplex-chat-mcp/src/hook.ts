@@ -21,7 +21,8 @@ const transcriptTailBytes = 1_048_576
 const syntheticModel = "<synthetic>"
 const maxNote = 200
 const statusEmoji = new Map([["completed", "✅"], ["failed", "❌"], ["stopped", "⏹️"], ["killed", "⏹️"]])
-const teammateMessage = /^Another Claude session sent a message[^:\n]*:\n<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/
+const teammatePrompt = /^Another Claude session sent a message[^:\n]*:\n<teammate-message /
+const teammateMessage = /<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/g
 
 interface SessionStartInput {
   session_id: string
@@ -193,6 +194,10 @@ function promptRecord(tail: string, id: string | undefined, text: string, last: 
   const record = records.at(-1)
   if (record !== undefined && !queuedAfter(record + 1)) return recordKind(after[record], id, text)
   if (!last) return undefined
+  if (record !== undefined) {
+    const kind = recordKind(after[record], id, text)
+    return kind.typed ? {...kind, midTurn: true} : kind
+  }
   if (queuedAfter(0)) return {typed: true, midTurn: true}
   return first === -1 ? undefined : {typed: after.some(entry => isPrompt(entry) && entry.promptId === id && entry.origin?.kind === "human")}
 }
@@ -247,12 +252,12 @@ function taskNote(text: string): string {
 }
 
 function teammateNote(text: string): string | undefined {
-  const match = teammateMessage.exec(text)
-  if (match === null) return undefined
+  if (!teammatePrompt.test(text)) return undefined
+  const match = [...text.matchAll(teammateMessage)].find(([, , , body]) => !idleNotification(body))
+  if (match === undefined) return undefined
   const [, sender, attributes, body] = match
-  if (idleNotification(body)) return undefined
   const summary = /\ssummary="([^"]*)"/.exec(attributes)?.[1]
-  return `👥 Message from ${decoded(sender)}: ${firstLine(summary === undefined ? body : decoded(summary))}`
+  return `✉️ Message from ${decoded(sender)}: ${firstLine(summary === undefined ? body : decoded(summary))}`
 }
 
 function idleNotification(body: string): boolean {
