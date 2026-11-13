@@ -252,7 +252,8 @@ createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor
           ("allowed_payment_method_types[]", "card"),
           ("metadata[order]", reference)
         ]
-      create headers = stripeSend env what methodPost ["v1", "payment_intents"] [] headers (Just form)
+      checkout = env {seCfg = (seCfg env) {sTimeoutMicros = sCheckoutTimeoutMicros (seCfg env)}}
+      create headers = stripeSend checkout what methodPost ["v1", "payment_intents"] [] headers (Just form)
   -- a name order sent again after a lost answer gets the intent its first create made
   (replayed, keyed) <- create [("Idempotency-Key", B8.intercalate ":" [reference, amount, currency])]
   created <- if replayed then replayedIntent (snd <$> create []) keyed else pure keyed

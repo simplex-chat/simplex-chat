@@ -28,7 +28,7 @@ module Bots.StoreService.FakeBTCPay
   )
 where
 
-import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), providerTimeoutMicros)
+import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), providerCheckoutTimeoutMicros, providerTimeoutMicros)
 import Bots.StoreService.FakeHttp (setSwitch, stalledAnswer)
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM
@@ -175,7 +175,8 @@ fakeConfig host =
       bExpiryMinutes = fakeExpiryMinutes,
       bSpeedPolicy = MediumSpeed,
       bPaymentTolerance = 0.5,
-      bTimeoutMicros = providerTimeoutMicros
+      bTimeoutMicros = providerTimeoutMicros,
+      bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros
     }
 
 -- | A BTCPay webhook delivery shaped as its documentation shows. Both suites sign this exact

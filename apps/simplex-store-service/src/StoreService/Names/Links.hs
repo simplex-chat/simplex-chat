@@ -30,7 +30,7 @@ data LinkKind = LKContact | LKChannel
   deriving (Eq, Show)
 
 linkMaxBytes :: Int
-linkMaxBytes = 4096
+linkMaxBytes = 1024
 
 -- the page's rule for one short link, so both refuse the same links
 linkKindOf :: Text -> Maybe LinkKind

@@ -42,7 +42,7 @@ import StoreService.Config (minNameYears)
 maxBulk, maxUses, maxMonths, maxNameYears :: Int
 maxBulk = 100
 maxUses = 1000
-maxMonths = 255
+maxMonths = 12
 maxNameYears = 10
 
 data GroupCmd
