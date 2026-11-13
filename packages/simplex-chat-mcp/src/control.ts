@@ -92,7 +92,7 @@ CRON: 5 fields, minute 0-59, hour 0-23, day of month 1-31, month 1-12 and day of
 A field is \`*\`, \`N\`, \`A-B\`, \`*/S\` or \`A-B/S\`, or a comma list of them. When neither day field starts with \`*\`, a match of either one suffices.
 CHAT: a chat ID from /list. PROMPT: the rest of the line, at most ${maxPromptLength} characters. A chat has at most ${maxSchedules} schedules.
 The agent's \`receive\` of CHAT returns a due prompt once; until then, the later times of its schedule are skipped, and it is lost when the server stops.
-An owner who approves actions adds a schedule, and its prompts become due only while that owner approves actions.
+A member who approves actions adds a schedule, and its prompts become due only while that member approves actions.
 /'unschedule CHAT N' removes schedule N of CHAT and renumbers the later ones. /schedules lists up to ${listedSchedules} schedules of all chats.
 Example: \`/schedule #3 0 7 * * 1-5 Post the trail report.\`, at 07:00 on weekdays.`
 const giveHelp = `/'give CHAT N' gives the agent's chat CHAT to session N, so that only session N and the commands of its group can use CHAT; the pending actions of CHAT here are rejected, and its schedules move to session N without their due prompts.

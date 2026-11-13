@@ -512,6 +512,24 @@ describe("session groups", () => {
     expect(two.schedules.pending("@4")).toBe(0)
   })
 
+  it("state in /help schedule that a member who approves actions adds a schedule, and make the prompts of an admin's schedule due only while that admin approves actions", async () => {
+    jest.useFakeTimers({now: clockStart, doNotFake: ["setImmediate"]})
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "auth"))
+    const dan = member(12, "Dan", T.GroupMemberRole.Admin)
+    chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1), items: []})
+    chat.members.set(20, [self, invitedAlice, dan])
+    await session.control.load()
+    expect((await session.control.ownerCommand(dan, {keyword: "help", params: "schedule"}))!.split("\n")).toContain("A member who approves actions adds a schedule, and its prompts become due only while that member approves actions.")
+    await session.control.ownerCommand(dan, {keyword: "schedule", params: "@4 * * * * * Search for trail shoes."})
+    jest.advanceTimersByTime(30_000)
+    expect(session.schedules.take("@4")).toEqual([{prompt: "Search for trail shoes.", at: dueAt(7, 0)}])
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "observer", params: "#20 12"})).toBe("Dan is an observer and can't send messages.")
+    jest.advanceTimersByTime(60_000)
+    expect(session.schedules.pending("@4")).toBe(0)
+  })
+
   it("list and revoke the standing approvals of a closed session in its group", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)

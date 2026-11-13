@@ -1009,7 +1009,7 @@ describe("help", () => {
       "A field is `*`, `N`, `A-B`, `*/S` or `A-B/S`, or a comma list of them. When neither day field starts with `*`, a match of either one suffices.",
       "CHAT: a chat ID from /list. PROMPT: the rest of the line, at most 2000 characters. A chat has at most 10 schedules.",
       "The agent's `receive` of CHAT returns a due prompt once; until then, the later times of its schedule are skipped, and it is lost when the server stops.",
-      "An owner who approves actions adds a schedule, and its prompts become due only while that owner approves actions.",
+      "A member who approves actions adds a schedule, and its prompts become due only while that member approves actions.",
       "/'unschedule CHAT N' removes schedule N of CHAT and renumbers the later ones. /schedules lists up to 100 schedules of all chats.",
       "Example: `/schedule #3 0 7 * * 1-5 Post the trail report.`, at 07:00 on weekdays.",
     ])
