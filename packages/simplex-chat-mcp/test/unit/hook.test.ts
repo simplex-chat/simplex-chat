@@ -42,8 +42,8 @@ describe("SessionStart hook", () => {
     expect(await sessionStart(started, {CLAUDE_PID: "4321"}, {client, nodeVersion: "22.1.0"}, 5)).toEqual({})
     expect(await sessionStart(started, {}, {client, nodeVersion: "22.1.0"})).toEqual({})
     expect(requests).toEqual([
-      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, at: 5, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}},
-      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", at: performance.timeOrigin, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}},
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, at: 5, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", at: performance.timeOrigin, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
     ])
   })
 
@@ -76,7 +76,7 @@ describe("SessionStart hook", () => {
     const ensured = jest.spyOn(client, "ensureService")
     expect(await sessionStart(input, env, {client, nodeVersion: "22.1.0"})).toEqual({})
     expect(ensured).toHaveBeenCalledTimes(1)
-    expect(requests).toEqual([{method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 1769596, project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}, unattended: true}}])
+    expect(requests).toEqual([{method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 1769596, project: "/p/app", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}, unattended: true}}])
     const {env: turnEnv} = recordedRun("claude-vscode", "UserPromptSubmit")
     expect(await turn(JSON.stringify({session_id: "11111111-1111-4111-8111-111111111111", prompt: "Fix the build"}), turnEnv, client)).toEqual({})
     expect(requests).toHaveLength(1)
@@ -100,6 +100,9 @@ describe("SessionStart hook", () => {
     expect(await sessionStart("not json", {}, {client, nodeVersion: "22.1.0"})).toMatchObject({systemMessage: expect.stringMatching(/^SimpleX MCP: /)})
     expect(await sessionStart(input, {CLAUDE_PLUGIN_OPTION_APPROVE: "x"}, {client, nodeVersion: "22.1.0"})).toEqual({
       systemMessage: "SimpleX MCP: Plugin option approve: requests or host expected, got x. Change it in /plugin > Installed > simplex > Configure options.",
+    })
+    expect(await sessionStart(input, {SIMPLEX_MCP_MACHINE: "my.laptop"}, {client, nodeVersion: "22.1.0"})).toEqual({
+      systemMessage: "SimpleX MCP: SIMPLEX_MCP_MACHINE: a valid SimpleX name, such as mylaptop expected, got my.laptop. Change it in the environment of this machine.",
     })
   })
 
@@ -238,6 +241,255 @@ describe("turn hooks", () => {
       await submitted
       await written
       expect(requests).toEqual([{method: "POST", route: "/turn", body: {id, at: 1, prompt: "Fix the build", typed: true}}])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  const notification = (fields: string, after = "") => `<task-notification>\n${fields}\n</task-notification>${after}`
+  const userEntry = (promptId: string, content: unknown, extra: object = {}) => `${JSON.stringify({type: "user", promptId, ...extra, message: {role: "user", content}})}\n`
+  const queuedEntry = (prompt: string, origin: object) => `${JSON.stringify({type: "attachment", attachment: {type: "queued_command", prompt, origin, commandMode: "prompt"}})}\n`
+  const enqueueEntry = (content: string) => `${JSON.stringify({type: "queue-operation", operation: "enqueue", content})}\n`
+  const kinds = (requests: unknown[]) => requests.map(request => (request as {body: {note?: string; typed: boolean; midTurn?: boolean}}).body).map(({note, typed, midTurn}) => [note, typed, midTurn])
+
+  it("send a one-line note of each kind of Claude Code's own prompt, from the origin of its transcript entry, and none for a typed or a channel prompt", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const long = "x".repeat(300)
+      const prompts: [string, string, object][] = [
+        ["p1", notification(`<task-id>b2gj1pdcw</task-id>\n<output-file>/p/tasks/b2gj1pdcw.output</output-file>\n<status>completed</status>\n<summary>Background command "Rebuild tests &amp;&amp; show errors" completed (exit code 0)</summary>`), {origin: {kind: "task-notification", producer: "session-task"}}],
+        ["p2", notification(`<task-id>w5asfny36</task-id>\n<status>failed</status>\n<summary>Dynamic workflow "Research" failed: TypeError: null is not an object\n    at &lt;anonymous&gt; (workflow.js:144:22)</summary>`), {origin: {kind: "task-notification"}}],
+        ["p3", notification(`<task-id>b4mg8bpso</task-id>\n<status>killed</status>\n<summary>Background command "Serve the docs" was stopped</summary>`), {origin: {kind: "task-notification"}}],
+        ["p4", notification(`<task-id>boud456ze</task-id>\n<summary>Monitor event: "Exit status of each of the 4 flag-combination builds"</summary>\n<event>\nserverpg exit 0\nclientpg exit 0</event>`, "\nIf this event is something the user would act on now, send a PushNotification."), {origin: {kind: "task-notification"}}],
+        ["p5", notification("<summary>Goal check-in: background work still running</summary>", "\n<system-reminder>\nThe goal is still active.\n</system-reminder>"), {origin: {kind: "task-notification"}}],
+        ["p6", 'Another Claude session sent a message:\n<agent-message from="mcp-impl2">\nI read the evidence.\n\nDetails follow.\n</agent-message>', {origin: {kind: "peer", from: "mcp-impl2", senderTaskId: "amcp-impl2-1", name: "mcp-impl2", body: "I read the evidence.\n\nDetails follow."}}],
+        ["p7", 'Another Claude session sent a message:\n<agent-message from="a43be993e71d0a22f">\n[Subagent hand-back] The report follows:\n  \n  ## Review of the race fix\n</agent-message>', {origin: {kind: "peer", from: "a43be993e71d0a22f", senderTaskId: "a43be993e71d0a22f", name: "general-purpose", body: "[Subagent hand-back] The report follows:\n  \n  ## Review of the race fix", handback: true, handbackReportText: "\n## Review of the race fix\n\nNo defect."}}],
+        ["p8", 'Another Claude session sent a message:\n<agent-message from="ios-terminal">\n[Subagent hand-back] The report follows:\n  All done.\n</agent-message>', {origin: {kind: "peer", from: "ios-terminal", senderTaskId: "a1", name: "ios-terminal", body: "[Subagent hand-back] The report follows:\n  All done.", handback: true}}],
+        ["p9", "Reply with the single word tick.", {isMeta: true, turnOrigin: "scheduled", scheduledTaskId: "d2657e37"}],
+        ["p10", "Your claude.ai usage limit has reset. Continue the task you were working on when the limit was reached; do not repeat work that is already complete.", {isMeta: true, origin: {kind: "auto-continuation"}}],
+        ["p11", "The coordinator sent a message while you were working:\nApproved.", {isMeta: true, origin: {kind: "coordinator"}}],
+        ["p12", "Fix the build", {origin: {kind: "human"}}],
+        ["p13", '<channel source="plugin:simplex:simplex" from="Alice" item="7">\nRun the tests\n</channel>', {isMeta: true, origin: {kind: "channel", server: "plugin:simplex:simplex"}}],
+        ["p14", "Run the checks", {turnOrigin: "sdk"}],
+        ["p15", `Another Claude session sent a message:\n<agent-message from="reviewer">\n${long}\n</agent-message>`, {origin: {kind: "peer", from: "reviewer", name: "reviewer", body: long}}],
+      ]
+      writeFileSync(transcript, prompts.map(([promptId, content, extra]) => userEntry(promptId, content, extra)).join(""))
+      const {client, requests} = turnClient()
+      for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
+      const prefix = "✉️ Message from reviewer: "
+      expect(kinds(requests)).toEqual([
+        ['✅ Background command "Rebuild tests && show errors" completed (exit code 0)', false, undefined],
+        ['❌ Dynamic workflow "Research" failed: TypeError: null is not an object', false, undefined],
+        ['⏹️ Background command "Serve the docs" was stopped', false, undefined],
+        ['📡 Monitor event: "Exit status of each of the 4 flag-combination builds": serverpg exit 0', false, undefined],
+        ["🔔 Goal check-in: background work still running", false, undefined],
+        ["✉️ Message from mcp-impl2: I read the evidence.", false, undefined],
+        ["📋 Report from subagent general-purpose: ## Review of the race fix", false, undefined],
+        ["📋 Report from subagent ios-terminal: [Subagent hand-back] The report follows:", false, undefined],
+        ["⏰ Scheduled prompt: Reply with the single word tick.", false, undefined],
+        ["🔄 Automatic prompt: Your claude.ai usage limit has reset. Continue the task you were working on when the limit was reached; do not repeat work that is already complete.", false, undefined],
+        ["⚙️ Claude Code: The coordinator sent a message while you were working:", false, undefined],
+        [undefined, true, undefined],
+        [undefined, false, undefined],
+        [undefined, false, undefined],
+        [`${prefix}${"x".repeat(199 - [...prefix].length)}…`, false, undefined],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("find a prompt that reaches a running turn by its queued command or its own later entry after the entry of the turn's prompt ID, and mark it mid-turn", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const alpha = notification('<task-id>buq1jepzn</task-id>\n<status>completed</status>\n<summary>Background command "Run the tests" completed (exit code 0)</summary>')
+      const gamma = notification('<task-id>btjw2lm2a</task-id>\n<status>completed</status>\n<summary>Background command "Echo gamma" completed (exit code 0)</summary>')
+      writeFileSync(transcript, [
+        userEntry("t1", "Run the tests in the background, then wait.", {origin: {kind: "human"}}),
+        userEntry("t1", [{type: "tool_result", tool_use_id: "toolu_1", content: "Command running in background with ID: buq1jepzn."}]),
+        enqueueEntry(alpha),
+        enqueueEntry("Also say the word bravo."),
+      ].join(""))
+      const {client, requests} = turnClient()
+      const submit = (promptId: string, prompt: string) => turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt}), {}, client, 0, 1, 10)
+      const added = submit("t1", alpha)
+      const queued = new Promise<void>(resolve => setTimeout(() => resolve(appendFileSync(transcript, `${queuedEntry(alpha, {kind: "task-notification", producer: "session-task"})}${queuedEntry("Also say the word bravo.", {kind: "human"})}`)), 30))
+      await added
+      await queued
+      await submit("t1", "Also say the word bravo.")
+      appendFileSync(transcript, [
+        userEntry("t2", gamma, {origin: {kind: "task-notification"}}),
+        enqueueEntry("Say the word charlie."),
+        queuedEntry("Say the word charlie.", {kind: "human"}),
+        userEntry("t3", "Then lint it.", {origin: {kind: "human"}}),
+      ].join(""))
+      await submit("t2", gamma)
+      await submit("t2", "Say the word charlie.")
+      await submit("t2", "Then lint it.")
+      expect(kinds(requests)).toEqual([
+        ['✅ Background command "Run the tests" completed (exit code 0)', false, true],
+        [undefined, true, true],
+        ['✅ Background command "Echo gamma" completed (exit code 0)', false, undefined],
+        [undefined, true, true],
+        [undefined, true, true],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("send a note of a teammate's message with its sender and summary, or the first line without a summary, from the first tag that is not an idle notification, and none for idle notifications only", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const tag = (attributes: string, body: string) => `<teammate-message teammate_id="lookalikes-builder" color="green"${attributes}>\n${body}\n</teammate-message>`
+      const teammate = (...tags: string[]) => `Another Claude session sent a message:\n${tags.join("\n\n")}\n\nThis came from another Claude session — not typed by your user.`
+      const idle = tag("", '{"type":"idle_notification","from":"lookalikes-builder","timestamp":"2026-11-12T19:00:02.715Z"}')
+      const prompts: [string, string][] = [
+        ["p1", teammate(tag(' summary="X Ads look-alike seed file &quot;v2&quot; written"', "The seed file is written.\n\nSeeds: 37 handles."))],
+        ["p2", teammate(tag("", "\nThe seed file is written.\n\nSeeds: 37 handles."))],
+        ["p3", teammate(idle)],
+        ["p4", teammate(idle, tag(' summary="Handles checked"', "All 37 handles are live."), idle)],
+        ["p5", teammate(idle, idle)],
+      ]
+      writeFileSync(transcript, prompts.map(([promptId, content]) => userEntry(promptId, content)).join(""))
+      const {client, requests} = turnClient()
+      for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
+      expect(kinds(requests)).toEqual([
+        ['✉️ Message from lookalikes-builder: X Ads look-alike seed file "v2" written', false, undefined],
+        ["✉️ Message from lookalikes-builder: The seed file is written.", false, undefined],
+        [undefined, false, undefined],
+        ["✉️ Message from lookalikes-builder: Handles checked", false, undefined],
+        [undefined, false, undefined],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("keep a note on one line when the sender's name has a line break or a control character", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const prompts: [string, string, object][] = [
+        ["p1", 'Another Claude session sent a message:\n<agent-message from="a1">\nDone.\n</agent-message>', {origin: {kind: "peer", from: "a1", name: "mcp-impl2\n‮reviewer", body: "Done."}}],
+        ["p2", 'Another Claude session sent a message:\n<agent-message from="a2">\nAll done.\n</agent-message>', {origin: {kind: "peer", from: "a2", name: "ios\r\nterminal", body: "All done.", handback: true, handbackReportText: "All done."}}],
+        ["p3", 'Another Claude session sent a message:\n<teammate-message teammate_id="lookalikes\nbuilder" color="green">\nThe seed file is written.\n</teammate-message>', {}],
+      ]
+      writeFileSync(transcript, prompts.map(([promptId, content, extra]) => userEntry(promptId, content, extra)).join(""))
+      const {client, requests} = turnClient()
+      for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
+      expect(kinds(requests)).toEqual([
+        ["✉️ Message from mcp-impl2 reviewer: Done.", false, undefined],
+        ["📋 Report from subagent ios terminal: All done.", false, undefined],
+        ["✉️ Message from lookalikes builder: The seed file is written.", false, undefined],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("find a prompt of a long turn whose first entry is out of the tail by the turn's tool results, and keep waiting for a prompt with the text of the turn's own prompt while it is queued", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const toolResult = (promptId: string) => userEntry(promptId, [{type: "tool_result", tool_use_id: "toolu_1", content: "ok"}])
+      writeFileSync(transcript, [
+        toolResult("t1"),
+        enqueueEntry("Run the linter"),
+        userEntry("t2", "continue", {origin: {kind: "human"}}),
+        toolResult("t2"),
+        enqueueEntry("continue"),
+      ].join(""))
+      const {client, requests} = turnClient()
+      const submit = (promptId: string, prompt: string, readMs = 1) => turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt}), {}, client, 0, 1, readMs)
+      await submit("t1", "Run the linter")
+      const again = submit("t2", "continue", 10)
+      const queued = new Promise<void>(resolve => setTimeout(() => resolve(appendFileSync(transcript, queuedEntry("continue", {kind: "human"}))), 30))
+      await again
+      await queued
+      expect(kinds(requests)).toEqual([
+        [undefined, true, true],
+        [undefined, true, true],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("classify a prompt by its record when a later prompt with its text is still queued after the reads: Claude Code's own prompt by its origin, as a repeated monitor event, and a typed prompt as typed and mid-turn", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const event = notification('<task-id>bfmkogk6v</task-id>\n<summary>Monitor event: "Build errors"</summary>\n<event>error: missing import</event>')
+      writeFileSync(transcript, [
+        enqueueEntry(event),
+        userEntry("t1", event, {origin: {kind: "task-notification"}}),
+        enqueueEntry(event),
+        userEntry("t2", "continue", {origin: {kind: "human"}}),
+        enqueueEntry("continue"),
+      ].join(""))
+      const {client, requests} = turnClient()
+      const submit = (promptId: string, prompt: string) => turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt}), {}, client, 0, 1, 1)
+      await submit("t1", event)
+      await submit("t2", "continue")
+      expect(kinds(requests)).toEqual([
+        ['📡 Monitor event: "Build errors": error: missing import', false, undefined],
+        [undefined, true, true],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("send the first line of a task notification without a block, also from a queued command that has only its command mode", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const stopped = '3 background agents were stopped by the user: "Duarte drafts the ad post", "Miller drafts the ad post".'
+      const stoppedAgain = '2 background agents were stopped by the user: "Heath brothers draft the ad post".'
+      writeFileSync(transcript, [
+        userEntry("t1", stopped, {origin: {kind: "task-notification"}}),
+        `${JSON.stringify({type: "attachment", attachment: {type: "queued_command", prompt: stoppedAgain, commandMode: "task-notification"}})}\n`,
+      ].join(""))
+      const {client, requests} = turnClient()
+      for (const prompt of [stopped, stoppedAgain]) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "t1", prompt}), {}, client, 0, 1, 1)
+      expect(kinds(requests)).toEqual([
+        [`🔔 ${stopped}`, false, undefined],
+        [`🔔 ${stoppedAgain}`, false, true],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("take the entry of the prompt ID whose text is the prompt, also when an older prompt has the same text, mark a prompt still queued after the reads as typed and mid-turn, and fall back to the origin of the prompt ID's entry", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      writeFileSync(transcript, [
+        userEntry("p1", "<system-reminder>\nTools used before the summary.\n</system-reminder>", {isMeta: true}),
+        userEntry("p1", "Fix the build", {origin: {kind: "human"}}),
+        userEntry("p2", notification("<status>completed</status>\n<summary>Agent \"Review\" finished</summary>"), {origin: {kind: "task-notification"}}),
+        enqueueEntry("Run the linter"),
+      ].join(""))
+      const {client, requests} = turnClient()
+      const submit = (promptId: string, prompt: string) => turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt}), {}, client, 0, 1, 1)
+      await submit("p1", "Fix the build")
+      await submit("p2", "Run the linter")
+      await submit("p1", "Fix the build, then deploy")
+      const again = submit("p3", "Fix the build")
+      const written = new Promise<void>(resolve => setTimeout(() => resolve(appendFileSync(transcript, userEntry("p3", "Fix the build", {origin: {kind: "human"}}))), 30))
+      await again
+      await written
+      expect(kinds(requests)).toEqual([
+        [undefined, true, undefined],
+        [undefined, true, true],
+        [undefined, true, undefined],
+        [undefined, true, undefined],
+      ])
     } finally {
       rmSync(folder, {recursive: true, force: true})
     }

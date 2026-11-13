@@ -9,7 +9,7 @@ import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
-import {Changes, ChatItemsWatch, ToolCall, getChat, nextChange, storedName, validName} from "./messages"
+import {Changes, ChatItemsWatch, ReplyTo, ToolCall, getChat, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
 import {AttachLine, OwnerState, PermissionRequest, ResetReply, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
@@ -151,12 +151,13 @@ export class Session {
   }
 
   onMessage(ci: T.AChatItem): void {
-    const {chatDir, content} = ci.chatItem
+    const {chatDir, content, quotedItem} = ci.chatItem
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
     const {text} = content.msgContent
     if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([commandsApproversOnly], ci.chatItem.meta.itemId))
     if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
-    this.queue(() => this.prompt(ci, text, chatDir.groupMember))
+    const replyTo = quotedItem === undefined ? undefined : toReplyTo(ci.chatInfo, quotedItem, {name: this.hub.profile.profile.displayName})
+    this.queue(() => this.prompt(ci, text, chatDir.groupMember, replyTo))
   }
 
   claimPending(connId: number, chat: string): void {
@@ -177,12 +178,12 @@ export class Session {
     })
   }
 
-  async turn({at, prompt, typed, answer, model, effort}: TurnRequest): Promise<void> {
-    if (prompt !== undefined || answer !== undefined) this.endPermissions(at)
+  async turn({at, prompt, typed, note, midTurn, answer, model, effort}: TurnRequest): Promise<void> {
+    if ((prompt !== undefined && midTurn !== true) || answer !== undefined) this.endPermissions(at)
     const quoted = answer === undefined ? undefined : this.turnQuote(at ?? Infinity)
     if (answer !== undefined) this.answeredAt = Math.max(this.answeredAt, at ?? Date.now())
     const matched = prompt === undefined ? [] : this.pushedIn(prompt)
-    if (prompt !== undefined && (at ?? Date.now()) >= this.answeredAt) this.turns.push({at: at ?? Date.now(), item: matched[0]?.item ?? null})
+    if (prompt !== undefined && (midTurn !== true || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) this.turns.push({at: at ?? Date.now(), item: matched[0]?.item ?? null})
     this.pushed.splice(0, this.pushed.length, ...this.pushed.filter(entry => !matched.includes(entry)))
     const newModel = this.newer("model", model, at ?? Date.now())
     const newEffort = this.newer("effort", effort, at ?? Date.now())
@@ -192,6 +193,7 @@ export class Session {
       this.store(this.description)
     }
     try {
+      if (note !== undefined) await this.post([note]).catch(error => this.postRefusal(error, "A note on Claude Code's prompt was not posted", featureOff))
       if (prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser))
       if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
     } finally {
@@ -226,12 +228,12 @@ export class Session {
     await this.post([`${rightsText(name, member.memberRole)}${observer}`])
   }
 
-  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
+  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember, replyTo?: ReplyTo): Promise<void> {
     if (this.isUser(member)) return
-    await this.deliver(ci, text, member)
+    await this.deliver(ci, text, member, replyTo)
   }
 
-  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
+  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember, replyTo?: ReplyTo): Promise<void> {
     const left = this.hub.promptsHeldUntil - Date.now()
     if (this.onLine === undefined && left > 0) await nextChange(this.attaching, new AbortController().signal, left)
     const {chatItem} = ci
@@ -243,8 +245,9 @@ export class Session {
       await this.post([`Session ${this.number} is not running.`], chatItem.meta.itemId)
       return
     }
-    if (this.pushed.push({text, item: chatItem, at: Date.now()}) > maxPushed) this.pushed.shift()
-    this.onLine({prompt: {text, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file})}})
+    const promptText = replyTo === undefined ? text : `${quoteLine(replyTo)}\n${text}`
+    if (this.pushed.push({text: promptText, item: chatItem, at: Date.now()}) > maxPushed) this.pushed.shift()
+    this.onLine({prompt: {text: promptText, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file}), ...(replyTo === undefined ? {} : {replyTo: {item: replyTo.item, from: replyTo.from}})}})
   }
 
   private async receive({fileId, fileName}: T.CIFile): Promise<string> {

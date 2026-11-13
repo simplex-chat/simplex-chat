@@ -623,6 +623,51 @@ describe("session channel", () => {
     expect(lines).toHaveLength(2)
   })
 
+  it("passes a member's reply to the session as the quote line and the text, with the ID and sender of the quoted message: Claude's answer, a card of several lines, a post of User, another member's prompt, an image whose quote has the file name, a video without text, and a message absent from the group", async () => {
+    const chat = new FakeChat()
+    const {session, lines} = await channel(chat)
+    const reply = (n: number, text: string, quotedItem: object): T.AChatItem => event(sessionGroup, {...item(n, text, from(invitedAlice)), quotedItem: {sentAt: "", ...quotedItem}} as unknown as T.ChatItem)
+    const quoted = (chatDir: object, itemId: number | undefined, content: object): object => ({chatDir, ...(itemId === undefined ? {} : {itemId}), content})
+    const text = (value: string): object => ({type: "text", text: value})
+    const card = "I want to use `Bash`: `Run shell command`\n`rm -rf build`\n/'approve 3' or /'reject 3'"
+    const replies = [
+      reply(43, "No, the other test", quoted({type: "groupSnd"}, 41, text("Fixed: the build passes."))),
+      reply(44, "Why?", quoted({type: "groupSnd"}, 38, text(card))),
+      reply(45, "Is it done?", quoted(from(member(8, "User")), 36, text("Fix the build"))),
+      reply(46, "Agreed", quoted(from(bob), 35, text("Run the tests"))),
+      reply(47, "What is it?", quoted(from(bob), 34, {type: "image", text: "IMG_2041.jpg", image: ""})),
+      reply(48, "Play it", quoted(from(bob), 33, {type: "video", text: "", image: "", duration: 5})),
+      reply(49, "Shorter", quoted({type: "groupSnd"}, 32, text("a".repeat(300)))),
+      reply(50, "Who said it?", quoted(from(bob), undefined, text("Meet at 9"))),
+    ]
+    for (const ci of replies) session.onMessage(ci)
+    await until(() => lines.length === replies.length)
+    expect(lines).toEqual([
+      {prompt: {text: "> Fixed: the build passes.\nNo, the other test", from: "Alice", item: 43, replyTo: {item: 41, from: "agent"}}},
+      {prompt: {text: "> I want to use `Bash`: `Run shell command`…\nWhy?", from: "Alice", item: 44, replyTo: {item: 38, from: "agent"}}},
+      {prompt: {text: "> Fix the build\nIs it done?", from: "Alice", item: 45, replyTo: {item: 36, from: "User"}}},
+      {prompt: {text: "> Run the tests\nAgreed", from: "Alice", item: 46, replyTo: {item: 35, from: "Bob"}}},
+      {prompt: {text: "> image: IMG_2041.jpg\nWhat is it?", from: "Alice", item: 47, replyTo: {item: 34, from: "Bob"}}},
+      {prompt: {text: "> video\nPlay it", from: "Alice", item: 48, replyTo: {item: 33, from: "Bob"}}},
+      {prompt: {text: `> ${"a".repeat(200)}…\nShorter`, from: "Alice", item: 49, replyTo: {item: 32, from: "agent"}}},
+      {prompt: {text: "> Meet at 9\nWho said it?", from: "Alice", item: 50, replyTo: {from: "Bob"}}},
+    ])
+  })
+
+  it("matches the prompt of a reply in the channel tag with the quote line and the reply attributes, escaped as Claude Code escapes them, so User posts nothing and the answer quotes the reply", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posts: string[] = []
+    hub.user = {post: async (_n: number, parts: string[]) => void posts.push(...parts)} as unknown as User
+    const quoted = {chatDir: from(member(7, `Bob "B" O'Neil`)), itemId: 41, sentAt: "", content: {type: "text", text: 'Fixed: <b>the</b> build & "tests"'}}
+    session.onMessage(event(sessionGroup, {...item(43, 'No, the other "test"', from(invitedAlice)), quotedItem: quoted} as unknown as T.ChatItem))
+    await until(() => session["pushed"].length === 1)
+    await session.turn({id: id1, prompt: '<channel source="plugin:simplex:simplex" from="Alice" item="43" reply_to="41" reply_to_from="Bob &quot;B&quot; O&apos;Neil">\n> Fixed: <b>the</b> build & "tests"\nNo, the other "test"\n</channel>'})
+    await session.turn({id: id1, answer: "Done."})
+    expect(posts).toEqual([])
+    expect(answers(chat)).toEqual([[{text: "Done.", quotedItemId: 43}]])
+  })
+
   it("shows the model and effort in the group description, posts terminal prompts as User except pushed ones, raw or in this channel's tag, and prompts made only of this channel's tags, and answers as Claude, quoting the owner's prompt", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)
@@ -697,6 +742,48 @@ describe("session channel", () => {
     expect(posts).toEqual(["Run the tests", "Run the linter"])
     expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: "Noted.", quotedItemId: undefined}], [{text: "Tests pass.", quotedItemId: undefined}]])
     expect(session["turns"]).toEqual([{at: 7, item: null}])
+  })
+
+  it("posts the note of Claude Code's own prompt as Claude without a quote, and the answer of the turn it starts without a quote", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posts: string[] = []
+    hub.user = {post: async (_n: number, parts: string[]) => void posts.push(parts.join(""))} as unknown as User
+    const note = '✅ Background command "Build" completed (exit code 0)'
+    await ownerPrompt(session, 42, "Fix the build")
+    await session.turn({id: id1, at: 1, prompt: tag(42, "Fix the build"), typed: false})
+    await session.turn({id: id1, at: 2, answer: "Fixed."})
+    await session.turn({id: id1, at: 3, prompt: "<task-notification>\n<task-id>b1</task-id>\n</task-notification>", typed: false, note})
+    await session.turn({id: id1, at: 4, answer: "The build passed."})
+    expect(posts).toEqual([])
+    expect(answers(chat)).toEqual([[{text: "Fixed.", quotedItemId: 42}], [{text: note, quotedItemId: undefined}], [{text: "The build passed.", quotedItemId: undefined}]])
+  })
+
+  it("keeps the turn's quote and its open tool-use cards for a prompt that reaches the running turn, and adds a turn record for an owner's prompt among them", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const posts: string[] = []
+    hub.user = {post: async (_n: number, parts: string[]) => void posts.push(parts.join(""))} as unknown as User
+    const note = '✅ Background command "Tests" completed (exit code 0)'
+    await ownerPrompt(session, 42, "Fix the build")
+    await session.turn({id: id1, at: 1, prompt: tag(42, "Fix the build"), typed: false})
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    await until(() => sentTo(chat, 20).length === 1)
+    const later = Date.now() + 1_000
+    await session.turn({id: id1, at: later, prompt: "<task-notification>\n<task-id>b2</task-id>\n</task-notification>", typed: false, note, midTurn: true})
+    await session.turn({id: id1, at: later + 1, prompt: "Also run the linter", typed: true, midTurn: true})
+    expect(session.actions.pending().map(({tool}) => tool)).toEqual(["permission"])
+    expect(chat.updates).toEqual([])
+    await session.turn({id: id1, at: later + 2, answer: "Fixed, and the linter passes."})
+    expect(posts).toEqual(["Also run the linter"])
+    expect(answers(chat).slice(1)).toEqual([[{text: note, quotedItemId: undefined}], [{text: "Fixed, and the linter passes.", quotedItemId: 42}]])
+    await until(() => chat.updates.length === 1)
+    await ownerPrompt(session, 43, "Deploy")
+    await session.turn({id: id1, at: later + 3, prompt: tag(43, "Deploy"), typed: false})
+    await ownerPrompt(session, 44, "and tag it")
+    await session.turn({id: id1, at: later + 4, prompt: tag(44, "and tag it"), typed: false, midTurn: true})
+    await session.turn({id: id1, at: later + 5, answer: "Deployed and tagged."})
+    expect(answers(chat).at(-1)).toEqual([{text: "Deployed and tagged.", quotedItemId: 44}])
   })
 
   it("splits an answer and a terminal prompt where a message reaches the size the core accepts, with the quote in the first part of an answer, for Latin, Cyrillic and CJK texts", async () => {
@@ -1241,6 +1328,14 @@ describe("session channel", () => {
       refuseInGroup(chat)
       await session.turn({id: id1, answer: `The bot's address is ${link}`})
       expect(groupPosts(chat)).toEqual([{type: "text", text: `Claude's answer was not posted: ${off("SimpleX links")}`}])
+    })
+
+    it("posts that a note on Claude Code's prompt was not posted, naming the preference", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      refuseInGroup(chat)
+      await session.turn({id: id1, prompt: "Another Claude session sent a message: ...", typed: false, note: `✉️ Message from reviewer: Join ${link}`})
+      expect(groupPosts(chat)).toEqual([{type: "text", text: `A note on Claude Code's prompt was not posted: ${off("SimpleX links")}`}])
     })
 
     it("posts that User's prompt was not posted, naming the preference, and posts the answer", async () => {
