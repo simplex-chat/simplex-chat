@@ -549,11 +549,11 @@ testIssueRejectsBadArguments ps =
     let refuses arg = issueRaw cc arg >>= (`shouldSatisfy` isLeft)
     refuses "suporter"
     refuses "supporter 0"
-    refuses "supporter 256"
+    refuses "supporter 13"
     refuses "supporter 18446744073709551617"
     refuses "supporter 1 gratis"
     refuses ""
-    issueRaw cc "supporter 255 paid" >>= (`shouldSatisfy` isRight)
+    issueRaw cc "supporter 12 paid" >>= (`shouldSatisfy` isRight)
 
 -- | Left is a refusal or a failure the service answers as a command error.
 issueRaw :: HasCallStack => ChatController -> String -> IO (Either T.Text ())
@@ -1885,7 +1885,7 @@ testRevokeRejectsTrailingInput ps =
 
 -- The text is spelled out rather than taken from the service, so a change there fails here.
 badgeCmdUsage :: Text
-badgeCmdUsage = "Usage: //issue supporter|legend|investor [months 1-255] [paid|unpaid|free], //issue name <length 6-63> [years 2-10] [paid|free], //revoke <code>, //balance <reference>, //record_refund <reference> <cents>, or //close <reference>"
+badgeCmdUsage = "Usage: //issue supporter|legend|investor [months 1-12] [paid|unpaid|free], //issue name <length 6-63> [years 2-10] [paid|free], //revoke <code>, //balance <reference>, //record_refund <reference> <cents>, or //close <reference>"
 
 purchaseCmd :: BadgeMasterKey -> ServicePayment -> StoreServiceCommand
 purchaseCmd masterKey payment = STCPurchaseBadge {masterKey, payment, upgrade = Nothing}

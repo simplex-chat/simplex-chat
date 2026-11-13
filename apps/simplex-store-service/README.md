@@ -1381,7 +1381,7 @@ The command is sent to the running service in `--run-cli` mode, not a way to sta
 //issue name 7 years 5
 ```
 
-`months` defaults to 1 and must be between 1 and 255; the status defaults to `free` and records
+`months` defaults to 1 and must be between 1 and 12; the status defaults to `free` and records
 whether the code was sold (`paid`), is awaiting payment (`unpaid`), or was issued by an operator
 (`free`). Redemption refuses an `unpaid` code with `payment_pending`: the web checkout writes the
 code row when the invoice is created, and settlement is what marks it paid.
@@ -1429,7 +1429,7 @@ its codes are not counted). The code commands take these forms:
 `/issue` makes one code and `/bulk` makes `<N>` single-use badge codes. `<kind>` is `name` with a
 length, in `/issue` only, or a badge type: `supporter`, `legend` or `investor`. A name takes a length
 of 6 to 63 and `years`, 2 to 10 and 2 by default; a name code issued in the group is single-use and
-`free`. A badge takes `months`, 1 to 255 and 1
+`free`. A badge takes `months`, 1 to 12 and 1
 by default, and in `/issue` also `uses`, 1 to 1000. `count` is 1 to 100. A value outside these
 bounds, a length for a badge, `months` or `uses` for a name, or `name` in `/bulk` gets the usage reply, which
 lists the form, each kind's bounds and an example of each. The group's command menu shows the kinds
