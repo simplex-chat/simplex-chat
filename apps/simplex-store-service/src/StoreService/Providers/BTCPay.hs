@@ -307,16 +307,17 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
   case cryptoTarget spm of
     Left e -> pure (Left e)
     Right (methodId, cc) -> do
-      created <- greenfield env what methodPost ["invoices"] [] (Just (body methodId))
+      created <- greenfield checkout what methodPost ["invoices"] [] (Just (body methodId))
       case created >>= decodeGreenfield what of
         Left e@(ProviderError m) -> do
           logWarn ("btcpay: the failed request was " <> safeDecodeUtf8 (LB.toStrict (J.encode (body methodId))) <> " -- " <> m)
           pure (Left e)
         Right GCreated {gcId} -> do
-          ms <- greenfield env what methodGet ["invoices", gcId, "payment-methods"] [] Nothing
+          ms <- greenfield checkout what methodGet ["invoices", gcId, "payment-methods"] [] Nothing
           either (cancelCreated gcId) (pure . Right) (ms >>= destination methodId cc gcId)
   where
     what = "create invoice"
+    checkout = env {beCfg = beCfg {bTimeoutMicros = bCheckoutTimeoutMicros beCfg}}
     cancelCreated ref (ProviderError e) = do
       cancelled <- cancelInvoice env ref
       pure $ Left $ ProviderError $ e <> "; invoice " <> ref <> either (\(ProviderError c) -> " is left open, as its cancel failed: " <> c) (const " is cancelled") cancelled

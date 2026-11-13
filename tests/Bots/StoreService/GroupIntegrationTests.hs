@@ -421,7 +421,7 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
 namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
   it "issues a prepaid code on /issue name for 2 years by default and for the years given, answering the usage to /bulk name" testGroupNameCodes
-  it "issues at most 10 name codes a day in the group, not counting console codes" testGroupNameCodesPerDay
+  it "issues at most name_codes_per_day name codes a day in the group, not counting console codes" testGroupNameCodesPerDay
   it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
   it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
 
@@ -441,12 +441,13 @@ testGroupNameCodes ps = do
 testGroupNameCodesPerDay :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesPerDay ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
+  let capped = svc {gsIniSections = "" : codesOnlyNames <> chainSection}
+  runGroupServiceAs capped (Just testGroupConfig {gNameCodesPerDay = 3}) $ \cc env gid -> withOwnerJoined ps cc env gid $ \alice -> do
     replicateM_ 2 $ issueNameRaw cc "name 6"
-    replicateM_ 10 $ T.isPrefixOf "Code: " <$> replyTo cc alice "/issue name 6" `shouldReturn` True
-    replyTo cc alice "/issue name 6" `shouldReturn` "At most 10 name codes are issued in a day, 10 so far. Issue more with //issue name in --run-cli."
-    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 12
-    countRows cc "sx_badge_service_name_prepaid_codes WHERE issued_in_group = 1" `shouldReturn` 10
+    replicateM_ 3 $ T.isPrefixOf "Code: " <$> replyTo cc alice "/issue name 6" `shouldReturn` True
+    replyTo cc alice "/issue name 6" `shouldReturn` "At most 3 name codes are issued in a day, 3 so far. Issue more with //issue name in --run-cli."
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 5
+    countRows cc "sx_badge_service_name_prepaid_codes WHERE issued_in_group = 1" `shouldReturn` 3
 
 testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
 testOperatorNameCodes ps = do
@@ -700,7 +701,7 @@ groupDescr :: Text
 groupDescr = "badge ops desk"
 
 testGroupConfig :: GroupConfig
-testGroupConfig = GroupConfig {gDisplayName = T.pack groupName, gDescription = Just groupDescr}
+testGroupConfig = GroupConfig {gDisplayName = T.pack groupName, gDescription = Just groupDescr, gNameCodesPerDay = 10}
 
 revokeReply :: Text -> Text -> Text
 revokeReply code outcome = code <> ": " <> outcome
@@ -807,8 +808,8 @@ groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIn
   Right serviceCfg <- readServiceConfig iniPath
   pure ((mkStoreServiceOpts ps secretKey) {noAddress = True}, serviceCfg, port)
   where
-    groupSection GroupConfig {gDisplayName, gDescription} =
-      ["", "[group]", "display_name = " <> T.unpack gDisplayName]
+    groupSection GroupConfig {gDisplayName, gDescription, gNameCodesPerDay} =
+      ["", "[group]", "display_name = " <> T.unpack gDisplayName, "name_codes_per_day = " <> show gNameCodesPerDay]
         <> maybe [] (\d -> ["description = " <> T.unpack d]) gDescription
 
 withGroupOwner :: HasCallStack => TestParams -> (BadgeIssuerKey -> ChatController -> ServiceState -> TestCC -> IO ()) -> IO ()
@@ -898,7 +899,7 @@ testConfigNotApplied ps = do
   svc <- prepareGroupService ps
   -- Clearing the commands makes the restart rewrite the profile, the only path that could apply the new config.
   runGroupService svc $ \cc _ gid -> clearCommandsSettingFullDelete cc gid
-  runGroupServiceAs svc (Just GroupConfig {gDisplayName = "renamedbadges", gDescription = Just "renamed desk"}) $ \cc env gid -> do
+  runGroupServiceAs svc (Just testGroupConfig {gDisplayName = "renamedbadges", gDescription = Just "renamed desk"}) $ \cc env gid -> do
     waitAdvertisedCommands cc gid
     awaitLane cc env
     groupCount cc `shouldReturn` 1
@@ -1209,10 +1210,10 @@ testBlockedMemberCommandIgnored ps = do
       -- The block and the command travel over different connections, so the block is awaited first.
       send alice ("/block for all #" <> groupName <> " bob")
       waitMemberBlocked cc gid "bob"
-      sendGroupCmd bob "/bulk legend months 255 count 100"
-      (deleted, content) <- waitBlockedItem cc "/bulk legend months 255 count 100"
+      sendGroupCmd bob "/bulk legend months 12 count 100"
+      (deleted, content) <- waitBlockedItem cc "/bulk legend months 12 count 100"
       deleted `shouldBe` blockedByAdminMark
-      content `shouldSatisfy` T.isInfixOf "/bulk legend months 255 count 100"
+      content `shouldSatisfy` T.isInfixOf "/bulk legend months 12 count 100"
       ownerIssuesNext cc alice 1
       awaitOnConsole alice "Code: SB-"
       awaitOnConsole bob "Code: SB-"
@@ -1827,10 +1828,10 @@ singleRow sql = \case
   _ -> error $ "more than one row from: " <> sql
 
 issueUsage :: Text
-issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
 
 bulkUsage :: Text
-bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk legend months 3 count 10"
+bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–12, count 1–100\ne.g. /bulk legend months 3 count 10"
 
 -- The list is spelled out rather than taken from the service, so a change there fails here.
 expectedCommands :: [ChatBotCommand]

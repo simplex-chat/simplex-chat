@@ -22,7 +22,7 @@ module Bots.StoreService.FakeStripe
   )
 where
 
-import StoreService.Config (StripeConfig (..), providerTimeoutMicros)
+import StoreService.Config (StripeConfig (..), providerCheckoutTimeoutMicros, providerTimeoutMicros)
 import Bots.StoreService.FakeHttp (setSwitch, stalledAnswer)
 import Control.Concurrent.STM
 import Control.Monad (forM_, when)
@@ -153,7 +153,8 @@ fakeConfig host =
       sWebhookSecret = fakeWebhookSecret,
       sSessionMinutes = fakeSessionMinutes,
       sHost = host,
-      sTimeoutMicros = providerTimeoutMicros
+      sTimeoutMicros = providerTimeoutMicros,
+      sCheckoutTimeoutMicros = providerCheckoutTimeoutMicros
     }
 
 -- | Stripe-Signature: t=<unix>,v1=<hex HMAC-SHA256 of "t.body">.

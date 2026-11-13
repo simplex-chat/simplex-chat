@@ -122,7 +122,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "names a payment method with no destination, and writes nothing" testFakeCreateNoDestination
     it "names a payment method with no amount, and writes nothing" testFakeCreateNoAmount
     it "refuses an answer past the size it will hold, and reads again after" testFakeOversizeAnswer
-    it "ends a call whose answer stalls in its body after the configured timeout, and reads again after" testFakeStalledAnswer
+    it "ends a call whose answer stalls in its body after the configured timeout, a create after the longer checkout one, and reads again after" testFakeStalledAnswer
     it "makes a 500 on a read a ProviderError the next read recovers from" testFakeRead500
     it "verifies a webhook with the secret it was configured with" testFakeWebhookSecretWiring
     it "keeps totalPaid distinguishable in every fixture an amount is asserted from" testFixturesGuardTotalPaid
@@ -862,14 +862,17 @@ testFakeOversizeAnswer = withProvider $ \fake p -> do
     Left e -> expectationFailure ("the next read must recover, and got " <> show e)
 
 testFakeStalledAnswer :: IO ()
-testFakeStalledAnswer = withProviderConfigured (\cfg -> cfg {bTimeoutMicros = 300000}) $ \fake p -> do
+testFakeStalledAnswer = withProviderConfigured (\cfg -> cfg {bTimeoutMicros = 300000, bCheckoutTimeoutMicros = 900000}) $ \fake p -> do
   ProviderInvoice {piProviderRef = invRef} <- createdInvoice p (SPMCrypto CCBtc)
   answerStalled fake True
   start <- getCurrentTime
   pReadInvoice p invRef >>= (`shouldSatisfy` namesInError "read invoice failed: timed out")
+  readEnd <- getCurrentTime
   pCreateInvoice p (SPMCrypto CCBtc) fiftyFourDollars >>= (`shouldSatisfy` namesInError "create invoice failed: timed out")
-  elapsed <- (`diffUTCTime` start) <$> getCurrentTime
-  elapsed `shouldSatisfy` (< 2)
+  createEnd <- getCurrentTime
+  diffUTCTime readEnd start `shouldSatisfy` (< 0.9)
+  diffUTCTime createEnd readEnd `shouldSatisfy` (>= 0.9)
+  diffUTCTime createEnd start `shouldSatisfy` (< 3)
   answerStalled fake False
   pReadInvoice p invRef >>= \case
     Right _ -> pure ()

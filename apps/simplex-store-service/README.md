@@ -183,7 +183,8 @@ by its IPv4 address.
 Checkouts that reach the provider (`POST /api/invoice` and `POST /api/registration/:id/spend` with a
 difference to pay, each a provider invoice or card PaymentIntent) are also capped at 5 a minute for
 each IPv4 /24 or IPv6 /48, and at 60 card and 30 BTCPay checkouts a minute for all clients together.
-A call to BTCPay or Stripe, its body read included, fails as a provider error after 10 seconds; the
+A call to BTCPay or Stripe, its body read included, fails as a provider error after 10 seconds, and
+after 30 seconds when it creates a checkout's invoice or card payment, which a buyer waits on; the
 lookup of the provider's host name is outside that bound. After a timed-out read, cancel or rate
 call, the poller asks that provider nothing more in the same pass; a timed-out list stops nothing.
 Searches read the chain at most 16 at a time and long polls hold at most 500 at a time, for all clients
@@ -1257,44 +1258,48 @@ cast send $REGISTRAR --value 1ether --interactive
 ```
 
 The gas below was measured on a local anvil deployment of the contracts (the names webapp's
-`dev/deploy.ts`), with a 63-letter label and links of 4096 bytes, the most the service accepts,
-before the terms became links accepted for every name. The acceptance's figures are those of the
+`dev/deploy.ts`), with a 63-letter label and links of 4096 bytes, before the terms became links
+accepted for every name. The service now accepts links of at most 1024 bytes, so the rows with links
+are upper bounds: each byte of a link costs about 730 gas. The acceptance's figures are those of the
 community names' acceptance then, whose work its two functions repeat; a plain name's register now also
 reads, clears and logs its acceptance, as a community name's did:
 
-| Transaction | Gas limit | Gas used | Limit × 100 gwei |
+| Transaction | Gas limit | Gas used | At most: limit × 5 gwei, within 0.01 ETH |
 |---|---|---|---|
-| `commit` | 58,983 | 53,521 | 0.0059 ETH |
-| `commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`, the acceptance | 95,795 | 94,791 | 0.0096 ETH |
-| `registerWithCredit`, no links | 568,116 | 504,408 | 0.0568 ETH |
-| `registerWithCredit`, one link | 3,673,412 | 3,489,551 | 0.3673 ETH |
-| `registerWithCredit`, two links | 6,791,417 | 6,467,815 | 0.6791 ETH |
-| `setTextWithSig`, a new link | 3,026,449 | 3,026,449 | 0.3026 ETH |
-| `setTextWithSig`, a link replacing one | 462,289 | 462,289 | 0.0462 ETH |
-| `setTextWithSig`, a link removed | 698,644 | 558,916 | 0.0699 ETH |
-| `clearRecordsWithSig` | 80,312 | 80,312 | 0.0080 ETH |
-| `multicall`, two new links | 6,054,042 | 6,008,868 | 0.6054 ETH |
+| `commit` | 58,983 | 53,521 | 0.0003 ETH |
+| `commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`, the acceptance | 95,795 | 94,791 | 0.0005 ETH |
+| `registerWithCredit`, no links | 568,116 | 504,408 | 0.0028 ETH |
+| `registerWithCredit`, one link | 3,673,412 | 3,489,551 | 0.01 ETH |
+| `registerWithCredit`, two links | 6,791,417 | 6,467,815 | 0.01 ETH |
+| `setTextWithSig`, a new link | 3,026,449 | 3,026,449 | 0.01 ETH |
+| `setTextWithSig`, a link replacing one | 462,289 | 462,289 | 0.0023 ETH |
+| `setTextWithSig`, a link removed | 698,644 | 558,916 | 0.0035 ETH |
+| `clearRecordsWithSig` | 80,312 | 80,312 | 0.0004 ETH |
+| `multicall`, two new links | 6,054,042 | 6,008,868 | 0.01 ETH |
 
 - The service sets each transaction's gas limit a fifth above its estimate, within `gas_limit_cap`,
-  and its max fee to at most `max_fee_per_gas` (default 100 gwei). The node accepts a transaction only
-  while the balance covers its limit × max fee, so each needs held about 1.2 × the last column. What
-  it is charged is gas used × the block's base fee plus tip, usually far less.
-- An order is one commit, one acceptance relay and one register: 0.6946 ETH at the cap with two links, 0.0723 ETH with
-  none. The expected orders × 0.6946 ETH, plus 0.6054 ETH per expected Save of both links (0.3026 ETH
-  for one), pays for all of them even at the cap. A name's link edits are at most
-  `record_edits_per_year` (3) a year, see [Link edits](#link-edits). The figures scale with
-  `max_fee_per_gas` until a transaction's gas limit × `max_fee_per_gas` passes 1 ETH; above that its
-  max fee stays capped, as the last point says.
+  and its max fee to at most `max_fee_per_gas` (default 5 gwei) and at most 0.01 ETH divided by its
+  gas limit, so no transaction can cost more than 0.01 ETH. The node accepts a transaction only while
+  the balance covers its limit × max fee, so each needs held about the last column. What it is
+  charged is gas used × the block's base fee plus tip, usually far less: at a base fee of 0.1 gwei, a
+  register with two links costs about 0.00065 ETH and its tip.
+- An order is one commit, one acceptance relay and one register: 0.0108 ETH at the cap with two
+  links, 0.0036 ETH with none. The expected orders × 0.0108 ETH, plus 0.01 ETH per expected Save of
+  one or both links, pays for all of them even at the cap. A name's link edits are at most
+  `record_edits_per_year` (3) a year, see [Link edits](#link-edits). Below 0.01 ETH the figures scale
+  with `max_fee_per_gas`.
 - A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
   transactions with links of 4096 bytes, and 28,082 less with short links.
 - `gas_limit_cap` (default 8,000,000) must be at least 6,791,417: a transaction whose estimate is
   above it is not sent.
-- Each transaction's max fee is also at most 1 ETH divided by its gas limit, since reth and geth
-  refuse a transaction whose gas limit × max fee is above `--rpc.txfeecap`, 1 ETH by default, and
-  every later transaction of the key would wait behind it. The defaults stay under the bound, at
-  0.8 ETH for 8,000,000 gas. A transaction it caps logs `[NOTE …] names sender: nonce <n> at max
-  fee <wei>, capped so that its gas limit <gas> costs at most 1 ETH`, and a replacement it caps logs
-  `[NOTE …] names sender: replacing nonce <n> at max fee <wei>, capped so that …`.
+- The 0.01 ETH bound applies above 2,000,000 gas at 5 gwei: registers and edits with long links. It
+  also keeps every transaction under reth's and geth's `--rpc.txfeecap`, 1 ETH by default, above which
+  the node refuses a transaction and every later one of the key waits behind it. A transaction it
+  caps logs `[NOTE …] names sender: nonce <n> at max fee <wei>, capped so that its gas limit <gas>
+  costs at most 0.01 ETH`, and a replacement it caps logs `[NOTE …] names sender: replacing nonce
+  <n> at max fee <wei>, capped so that …`.
+- When the base fee is above the cap, orders wait until it falls. Mainnet's base fee is rarely above
+  1 gwei, so 5 gwei waits out only a spike.
 
 #### Check the balance and transactions in flight
 
@@ -1340,7 +1345,7 @@ With `metrics_port` set, both are exported before they run out (see [Metrics](#m
   once mined, as two registers sent while the allowance covers one can, fails its order with no
   such line; the next order's dry run logs it, and the buyer can Try again.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above the fee cap <cap>;
-  the transaction waits` when fees are above the fee cap, `max_fee_per_gas` or 1 ETH over the gas
+  the transaction waits` when fees are above the fee cap, `max_fee_per_gas` or 0.01 ETH over the gas
   limit. Nothing is signed until they fall.
 - `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over the fee cap
   <cap>` when a transaction stuck in the pool cannot be bumped within the fee cap. A register waiting
@@ -1483,7 +1488,7 @@ The command is sent to the running service in `--run-cli` mode, not a way to sta
 //issue name 7 years 5
 ```
 
-`months` defaults to 1 and must be between 1 and 255; the status defaults to `free` and records
+`months` defaults to 1 and must be between 1 and 12; the status defaults to `free` and records
 whether the code was sold (`paid`), is awaiting payment (`unpaid`), or was issued by an operator
 (`free`). Redemption refuses an `unpaid` code with `payment_pending`: the web checkout writes the
 code row when the invoice is created, and settlement is what marks it paid.
@@ -1519,9 +1524,10 @@ With `[group]` in `store_service.ini`, the service manages one group and serves 
 it: `/issue` and `/bulk` for moderators and above, `/revoke <code>` for admins and owners, and
 `/balance`, `/record_refund` and `/close` for owners (see [Balances and failed orders in the
 group](#balances-and-failed-orders-in-the-group)). Each name code
-registers at the sponsor allowance's and the gas key's cost, so the group issues at most 10 of them
-in 24 hours (`//issue name` in `--run-cli` has no limit, and
-its codes are not counted). The code commands take these forms:
+registers at the sponsor allowance's and the gas key's cost, so the group issues at most
+`[group] name_codes_per_day` of them in 24 hours, 10 by default and 0 for none (`//issue name` in
+`--run-cli` has no limit, and its codes are not counted). Raise it for a planned batch, restart the
+service, and lower it again after; the allowance has to cover the names the codes will register. The code commands take these forms:
 
 ```
 /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]
@@ -1531,7 +1537,7 @@ its codes are not counted). The code commands take these forms:
 `/issue` makes one code and `/bulk` makes `<N>` single-use badge codes. `<kind>` is `name` with a
 length, in `/issue` only, or a badge type: `supporter`, `legend` or `investor`. A name takes a length
 of 6 to 63 and `years`, 2 to 10 and 2 by default; a name code issued in the group is single-use and
-`free`. A badge takes `months`, 1 to 255 and 1
+`free`. A badge takes `months`, 1 to 12 and 1
 by default, and in `/issue` also `uses`, 1 to 1000. `count` is 1 to 100. A value outside these
 bounds, a length for a badge, `months` or `uses` for a name, or `name` in `/bulk` gets the usage reply, which
 lists the form, each kind's bounds and an example of each. The group's command menu shows the kinds

@@ -63,7 +63,7 @@ badgeStripeTests = describe "badge stripe adapter" $ do
     it "cancels an intent waiting for a card after three declines in a row, and keeps one with fewer" testDeclinesCancel
     it "makes a 500 at checkout a ProviderError, creating nothing" testFakeCreate500
     it "makes a 500 on a read a ProviderError the next read recovers from" testFakeRead500
-    it "ends a call whose answer stalls in its body after the configured timeout, and reads again after" testFakeStalledAnswer
+    it "ends a call whose answer stalls in its body after the configured timeout, a create after the longer checkout one, and reads again after" testFakeStalledAnswer
     it "refuses a crypto method, since Stripe offers none" testRefusesCrypto
     it "makes an unknown intent status a ProviderError, not a silent no-signal" testFakeReadUnknownStatus
     it "settles a succeeded intent with no charge at read time" testSettledNoChargeReadTime
@@ -291,14 +291,17 @@ testFakeRead500 = withProvider $ \fake p -> do
   pReadInvoice p pid `shouldReturn` Right (Just (SigSettled fiftyFourDollarsReceived fixtureChargeAt))
 
 testFakeStalledAnswer :: IO ()
-testFakeStalledAnswer = withProviderConfigured (\cfg -> cfg {sTimeoutMicros = 300000}) $ \fake p -> do
+testFakeStalledAnswer = withProviderConfigured (\cfg -> cfg {sTimeoutMicros = 300000, sCheckoutTimeoutMicros = 900000}) $ \fake p -> do
   ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
   answerStalled fake True
   start <- getCurrentTime
   pReadInvoice p pid >>= (`shouldSatisfy` namesInError ("read intent " <> pid <> " failed: timed out"))
+  readEnd <- getCurrentTime
   pCreateInvoice p (SPMCard CPStripe) fiftyFourDollars >>= (`shouldSatisfy` namesInError "create intent failed: timed out")
-  elapsed <- (`diffUTCTime` start) <$> getCurrentTime
-  elapsed `shouldSatisfy` (< 2)
+  createEnd <- getCurrentTime
+  diffUTCTime readEnd start `shouldSatisfy` (< 0.9)
+  diffUTCTime createEnd readEnd `shouldSatisfy` (>= 0.9)
+  diffUTCTime createEnd start `shouldSatisfy` (< 3)
   answerStalled fake False
   pReadInvoice p pid `shouldReturn` Right Nothing
 

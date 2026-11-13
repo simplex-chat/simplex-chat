@@ -22,8 +22,8 @@ import Test.Hspec
 badgeGroupTests :: Spec
 badgeGroupTests = describe "badge group" $ do
   let p = groupCmdAction GROwner
-      issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
-      bulkUsage = ReplyText "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk legend months 3 count 10"
+      issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+      bulkUsage = ReplyText "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–12, count 1–100\ne.g. /bulk legend months 3 count 10"
       revokeUsage = ReplyText "Usage: /revoke <code>"
   it "issue defaults" $ p "/issue supporter" `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
   it "issue with months and uses" $ p "/issue legend months 6 uses 50" `shouldBe` RunCmd (GCIssue BTLegend 6 50)
@@ -45,7 +45,7 @@ badgeGroupTests = describe "badge group" $ do
   it "rejects values past the upper bounds" $ do
     p "/issue supporter uses 1001" `shouldBe` issueUsage
     p "/bulk supporter count 101" `shouldBe` bulkUsage
-    p "/issue supporter months 256" `shouldBe` issueUsage
+    p "/issue supporter months 13" `shouldBe` issueUsage
   it "rejects zero values" $ do
     p "/bulk supporter count 0" `shouldBe` bulkUsage
     p "/issue supporter months 0" `shouldBe` issueUsage
@@ -57,7 +57,7 @@ badgeGroupTests = describe "badge group" $ do
   it "accepts the upper bounds" $ do
     p "/issue supporter uses 1000" `shouldBe` RunCmd (GCIssue BTSupporter 1 1000)
     p "/bulk supporter count 100" `shouldBe` RunCmd (GCBulk BTSupporter 1 100)
-    p "/issue supporter months 255" `shouldBe` RunCmd (GCIssue BTSupporter 255 1)
+    p "/issue supporter months 12" `shouldBe` RunCmd (GCIssue BTSupporter 12 1)
   it "revoke" $ do
     code <- newCode
     p ("/revoke " <> badgeCodeText code) `shouldBe` RunCmd (GCRevoke code)
@@ -143,7 +143,7 @@ badgeGroupTests = describe "badge group" $ do
       map (`groupCmdAction` ("/revoke " <> badgeCodeText code)) [GRMember, GRModerator]
         `shouldBe` replicate 2 (ReplyText "Only admins can revoke codes. This code is now visible to all members.")
   describe "configured group name and description" $ do
-    let cfg name descr = GroupConfig {gDisplayName = name, gDescription = descr}
+    let cfg name descr = GroupConfig {gDisplayName = name, gDescription = descr, gNameCodesPerDay = 10}
         profile name descr =
           GroupProfile
             { displayName = name,
