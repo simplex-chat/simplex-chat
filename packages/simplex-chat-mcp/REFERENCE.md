@@ -651,7 +651,7 @@ Claude: I want to use `Bash`: `List files`
         /approve 5 or /reject 5
 ```
 
-`/approve 5` allows the tool use, and `/reject 5` denies it. The dialog in the terminal stays open, and the first answer, in the terminal or in the group, applies. A card that is still pending when its turn ends, when the next prompt arrives or when the session ends gets `Ended.` The preview of the tool's input is shortened to fit the card.
+`/approve 5` allows the tool use, and `/reject 5` denies it. The dialog in the terminal stays open, and the first answer, in the terminal or in the group, applies. A card that is still pending gets `Ended.` when its turn ends, when a prompt starts the next turn, or when the session ends. A prompt that Claude Code adds to the running turn leaves the card pending. The preview of the tool's input is shortened to fit the card.
 
 ### Model and effort
 

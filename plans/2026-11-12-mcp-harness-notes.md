@@ -142,7 +142,7 @@ Facts:
 9. A message of another session has `origin: {kind: "peer", from, name, senderTaskId, body}`, with `body` equal to the text in `<agent-message from="...">` or `<cross-session-message ...>`. A subagent's hand-back adds `handback: true` and, since 2.1.302, `handbackReportText`, the report without its frame. `name` is the agent's name, or its type, such as `general-purpose`, for an unnamed agent (transcripts). `<agent-message>` has no `summary` attribute. A message of a teammate in an agent team has no `origin`: its prompt is `Another Claude session sent a message:` and a `<teammate-message teammate_id="NAME" color="..." summary="...">` tag, with an optional `summary` escaped as XML (binary 292849344). Of 2,096 teammate message tags in the transcripts, 1,762 hold an idle notification, a JSON body with `"type":"idle_notification"`.
 10. `auto-continuation` is the origin of the usage-limit continuation (binary 308243173) and of other automatic prompts, such as "Implement the following plan:" after plan mode (324005632) and a command's next input (324147282).
 11. 0.3.0 finds the entry with `prompt_id` and takes the first one ([hook.ts:172](../packages/simplex-chat-mcp/src/hook.ts#L172)), whatever its text. So a task notification added to a typed turn is marked typed, and `User` posts the block; a prompt typed during a notification or channel turn is not typed, and `User` does not post it.
-12. 0.3.0 adds a turn record with the hook's `at` for every prompt request, and ends open tool-use cards created before it ([hub.ts:181](../packages/simplex-chat-mcp/src/hub.ts#L181), [:185](../packages/simplex-chat-mcp/src/hub.ts#L185)). A record without an item, added during a turn, takes the place of that turn's prompt in its answer's quote ([hub.ts:266-275](../packages/simplex-chat-mcp/src/hub.ts#L266-L275)).
+12. 0.3.0 adds a turn record with the hook's `at` for every prompt request whose hook started no earlier than the hook of the last answer handled (`answeredAt`), and ends open tool-use cards created before it at every prompt and answer ([hub.ts:181](../packages/simplex-chat-mcp/src/hub.ts#L181), [:185](../packages/simplex-chat-mcp/src/hub.ts#L185)). A record without an item, added during a turn, takes the place of that turn's prompt in its answer's quote ([hub.ts:266-275](../packages/simplex-chat-mcp/src/hub.ts#L266-L275)).
 
 Choices:
 
@@ -151,7 +151,7 @@ Choices:
 15. The hook finds the prompt's record by its text, so that a prompt added to a running turn gets its own origin. The record is the newest of these whose text is the prompt: the entry with `prompt_id`, and the records after the first entry with `prompt_id`, both user entries and `queued_command` attachments. Until an entry with `prompt_id` is in the tail, the hook waits for it, so that an older prompt with the same text is not taken; at the last read it takes any record of the tail. User entries of subagents and tool results are skipped, as in 0.3.0. Without `prompt_id`, the newest such record at once. The hook reads up to 600 times, 100 ms apart, as in 0.3.0.
 16. After the last read without a record, a `queue-operation` `enqueue` entry with the prompt's text after the entry with `prompt_id` makes the prompt typed and mid-turn: by fact 5, only a submitted prompt runs its hook while it waits. Otherwise the prompt is typed when an entry with `prompt_id` has the origin `human`, past a meta entry without origin, and it gets no note.
 17. A prompt is mid-turn when its record is not an entry with `prompt_id`. The hook sends `midTurn: true` for it.
-18. A mid-turn prompt ends no tool-use card, and adds a turn record only when it matched a pushed prompt. So the answer of the turn quotes the turn's prompt, or an owner's prompt added to the turn, as in 0.3.0. It amends 0.3.0 decisions 29 and 39.
+18. A mid-turn prompt ends no tool-use card. It adds a turn record only when it matched a pushed prompt and, as every prompt, its hook started no earlier than the hook of the last answer handled (`answeredAt`). So the answer of the turn quotes the turn's prompt, or an owner's prompt added to the turn, as in 0.3.0. It amends 0.3.0 decisions 29 and 39.
 19. The kind comes from the record's `origin.kind`, and from `turnOrigin: "scheduled"` without `origin`. `human` is typed. `channel` gets no note: its messages are in the group, or come from another channel's people, and Claude's answer is posted. A record without `origin` and not scheduled gets no note.
 20. The note of a subagent's report uses `handbackReportText`, and `body` without it.
 21. A line has at most 200 characters, counted in code points; a longer line keeps 199 and ends with `…`. In each first line and in NAME, control and format characters become spaces, as in [log.ts:33-35](../packages/simplex-chat-mcp/src/log.ts#L33-L35), so a note is one line. Of 5,127 notes computed from this machine's transcripts, 1,279 are cut.
@@ -207,7 +207,8 @@ src/hook.ts               TranscriptEntry              + turnOrigin, attachment 
                           promptEntry -> promptRecord  records by text; the last read applies decision 16
                           findInTranscript             find gets the last read's flag
                           noteOf, taskNote, firstLine  the line (section 2, decisions 19-21)
-src/hub.ts                Session.turn                 endPermissions and the turn record skip mid-turn prompts (decision 18);
+src/hub.ts                Session.turn                 endPermissions skips mid-turn prompts, and the turn record skips those
+                                                       that matched no pushed prompt (decision 18);
                                                        post note as Claude, PREF OFF on refusal (decision 22)
 ```
 
@@ -256,7 +257,7 @@ flowchart LR
   K -- human --> U[typed: User posts]
   K -- channel --> N[nothing]
   K -- others --> L[note: Claude posts one line]
-  M --> X[no card ended; record only for a matched owner prompt]
+  M --> X[no card ended; record only for a matched owner prompt whose hook started no earlier than answeredAt]
 ```
 
 ## 6. Compatibility
