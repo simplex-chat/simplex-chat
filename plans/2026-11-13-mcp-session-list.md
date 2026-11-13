@@ -395,7 +395,7 @@ Tests:
 
 - `README.md:34`: step 3 says that the Main group lists the sessions with their states.
 - `REFERENCE.md`, "The Main group" (547-575): the list, its lines, the `⚪` line and its cut, edits, the daily replacement, the stop; the `/sessions` bullet with the text of the list.
-- `ROADMAP.md:17`: the line is removed.
+- `ROADMAP.md`: the line is marked ✅. The items delivered since 0.3.0 are restored above it, marked ✅.
 - `spec/api.md` 4.2: the `/sessions` rows, a "Posts" row for the list, the custom data `simplexMcpList`; 4.6: `record` of `POST /session`.
 - `spec/architecture.md` 8.2: `Hub.showSessions`, `sessionsText`, `stop`, `stateLine`, `Session.record`, `readRecord`, `MainGroup.showList`; 8.3: the memory rows of `Session.record`, `Session.claude` and `MainGroup.list`, the custom data row, and Claude Code's record among the files read.
 - `spec/flows.md`: flow 17 ends with the list; a new flow, the list of sessions, with the replacement.
