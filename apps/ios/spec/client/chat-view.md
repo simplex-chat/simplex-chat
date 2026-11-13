@@ -453,6 +453,8 @@ MarkdownBlocksView    all gaps have zero width: the column is as wide as its wid
                       item info, welcome message and profile description: body × 1.5, 1.3, 1.15 for levels 1–3 (headingFont)
                       code, tables and rules (cardMargins): last block of a live message: terminalParagraphGap below,
                       above the typing line; otherwise no margins
+                      code cards (CodeBlockCard): as wide as the code, at most the row, so the time is beside a short card,
+                      on the last baseline of the code (bubbles: as wide as the bubble)
                       last block of a message that is not live: MessageLastBlock
                       rules of a rule-only message: as wide as the copy of the meta, or the item less its text edges
                       when a quote or header is wider (ruleMinWidth: msgWidth less 24pt; terminalQuote reports its full width)

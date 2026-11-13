@@ -877,7 +877,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
             CodeBlockCard(color: cardColor, radius: 12 * roundness, copyText: codeText(content)) {
                 text(start, content, monospacedFont(l.font), l).fixedSize(horizontal: true, vertical: false)
             }
-            .if(terminal) { cardMargins($0, last) }
+            .if(terminal) { cardMargins($0.alignmentGuide(.lastTextBaseline) { d in d[explicit: .lastTextBaseline] ?? d[.bottom] - 8 + monospacedFont(l.font).descender }, last) }
         case let .table(columns, header, rows):
             tableView(columns, [header] + rows, start, l)
                 .if(terminal) { cardMargins($0.alignmentGuide(.lastTextBaseline) { d in d[explicit: .lastTextBaseline] ?? d[.bottom] - 4 + l.font.descender }, last) }
@@ -1048,6 +1048,7 @@ private func cellAlignment(_ align: TableAlign) -> Alignment {
 
 private struct CodeBlockCard<Content: View>: View {
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalLayout) private var terminal
     var color: Color
     var radius: CGFloat
     var copyText: String
@@ -1060,7 +1061,7 @@ private struct CodeBlockCard<Content: View>: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .if(!terminal) { $0.frame(maxWidth: .infinity, alignment: .leading) }
         .overlay(alignment: .topTrailing) {
             if showCopy {
                 Button {
