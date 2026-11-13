@@ -917,6 +917,7 @@ func doStartChat() -> DBMigrationResult? {
 func activateChat() -> DBMigrationResult? {
     logger.debug("NotificationService: activateChat")
     let state = NSEChatState.shared.value
+    updateNetCfg()
     NSEChatState.shared.set(.active)
     if apiActivateChat() {
         logger.debug("NotificationService: activateChat: after apiActivateChat")
@@ -1071,7 +1072,7 @@ func updateNetCfg() {
     if newNetConfig != networkConfig {
         logger.debug("NotificationService applying changed network config")
         do {
-            try setNetworkConfig(networkConfig)
+            try setNetworkConfig(newNetConfig)
             networkConfig = newNetConfig
         } catch {
             logger.error("NotificationService apply changed network config error: \(responseError(error))")
