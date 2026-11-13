@@ -28,7 +28,7 @@ Done when:
 4  the plugin's User has peer type human; Claude and the agents of serve keep agent      unit tests of core.ts; e2e test of the service
 5  after a service start on a data folder of 0.3.0, User has peer type human             the same e2e test: prepareRoot makes User agent
 6  an owner who joins a session group sees Claude as agent and User as human             the same e2e test
-7  docs state the peer types; the roadmap line is removed                                review
+7  docs state the peer types; the roadmap line is marked delivered                       review
 8  a change of the peer type alone is sent to each group before the next message there,  core test, fails on master
    and members see `updated profile` once
 ```
@@ -415,7 +415,7 @@ The core test is "change of peer type alone is sent on next message" in "members
 
 ```
 file                                                  change
-packages/simplex-chat-mcp/ROADMAP.md:8                the line removed
+packages/simplex-chat-mcp/ROADMAP.md:8                the line kept and marked as delivered, "- ✅ TEXT", as in the main README
 packages/simplex-chat-mcp/REFERENCE.md:581            after "User is a second profile ...": Claude's profile has the peer type agent, and the
                                                       app shows it with the agent placeholder; User's profile has the peer type human
 packages/simplex-chat-mcp/spec/api.md:723, :826       the members Claude, peer type agent, and User, peer type human
@@ -434,7 +434,7 @@ README.md is unchanged: it names no peer type.
 
 ```
 file or function                                              items
-packages/simplex-chat-mcp/ROADMAP.md:7-8                      line 7 is removed by flat-sessions and line 8 by this item: adjacent lines
+packages/simplex-chat-mcp/ROADMAP.md:7-8                      line 7 is marked by flat-sessions and line 8 by this item: adjacent lines
 packages/simplex-chat-mcp/src/hub.ts Hub.open (369)           other functions of hub.ts are changed by reactions and replies
 packages/simplex-chat-mcp/test/e2e/service.test.ts            this item's test is added before "a new session has no chats"; tests of other
                                                               items are added at the end of the file
