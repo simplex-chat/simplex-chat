@@ -66,7 +66,7 @@ fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, hidden: () -> Boo
 private val animationDecoder = Dispatchers.Default.limitedParallelism(2)
 
 private fun openAnimation(data: ByteArray): Animation? {
-  if (!looksAnimatable(data) || !fileSizeWithinBounds(data.size)) return null
+  if (!looksAnimatable(data) || !fileSizeWithinBounds(data.size) || !frameCountWithinBounds(encodedFrameCount(data))) return null
   var codec: Codec? = null
   var animation: Animation? = null
   try {
@@ -109,6 +109,48 @@ internal fun looksAnimatable(data: ByteArray): Boolean =
 private fun ByteArray.startsWith(ascii: String, offset: Int = 0): Boolean {
   if (size < offset + ascii.length) return false
   return ascii.indices.all { this[offset + it] == ascii[it].code.toByte() }
+}
+
+internal fun encodedFrameCount(data: ByteArray): Int =
+  if (data.startsWith("GIF8")) gifFrameCount(data) else webpFrameCount(data)
+
+private fun gifFrameCount(data: ByteArray): Int {
+  fun byte(pos: Int) = if (pos < data.size) data[pos].toInt() and 0xFF else 0
+  fun colorTableSize(flags: Int) = if (flags and 0x80 != 0) 3 shl ((flags and 7) + 1) else 0
+  fun afterSubBlocks(start: Int): Int {
+    var pos = start
+    while (byte(pos) != 0) pos += 1 + byte(pos)
+    return pos + 1
+  }
+  fun afterApplicationExtension(start: Int): Int {
+    val loopCount = start + 12
+    val isLoopExtension = byte(start) == 11 &&
+      (data.startsWith("NETSCAPE2.0", offset = start + 1) || data.startsWith("ANIMEXTS1.0", offset = start + 1))
+    return afterSubBlocks(if (isLoopExtension && byte(loopCount) == 0) loopCount + 1 else start)
+  }
+  var pos = 13 + colorTableSize(byte(10))
+  var frames = 0
+  while (pos < data.size && frames <= MAX_ANIMATED_FRAMES) {
+    when (byte(pos)) {
+      0x21 -> pos = if (byte(pos + 1) == 0xFF) afterApplicationExtension(pos + 2) else afterSubBlocks(pos + 2)
+      0x2C -> {
+        frames++
+        pos = afterSubBlocks(pos + 11 + colorTableSize(byte(pos + 9)))
+      }
+      else -> return frames
+    }
+  }
+  return frames
+}
+
+private fun webpFrameCount(data: ByteArray): Int {
+  var frames = 0
+  var pos = 12
+  while (pos < data.size && frames <= MAX_ANIMATED_FRAMES) {
+    if (data.startsWith("ANMF", offset = pos)) frames++
+    pos++
+  }
+  return frames
 }
 
 internal fun rasterWithinBounds(width: Int, height: Int, bytesPerPixel: Int): Boolean {
