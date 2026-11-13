@@ -1,5 +1,5 @@
 import {open} from "fs/promises"
-import {sep} from "path"
+import {isAbsolute, relative} from "path"
 import {ServiceClient} from "./client"
 import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
@@ -25,6 +25,7 @@ const statusEmoji = new Map([["completed", "✅"], ["failed", "❌"], ["stopped"
 const teammatePrompt = /^Another Claude session sent a message[^:\n]*:\n<teammate-message /
 const teammateMessage = /<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/g
 const pluginTools = "mcp__plugin_simplex_simplex__"
+const toolEvents = ["PreToolUse", "PostToolUse", "PostToolUseFailure"]
 const stepFields = ["description", "query", "url", "file_path", "path", "pattern", "command"]
 
 interface SessionStartInput {
@@ -125,10 +126,12 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   if (!interactive(env)) return {}
   try {
     const input = JSON.parse(stdin) as TurnInput
-    if (input.tool_use_id !== undefined && (input.agent_id !== undefined || input.tool_name?.startsWith(pluginTools) === true)) return {}
+    const toolUse = toolEvents.includes(input.hook_event_name ?? "")
+    const step = toolUse ? stepOf(input) : undefined
+    if (toolUse && step === undefined) return {}
     const model = input.to_model ?? (input.hook_event_name === "Stop" ? await answerModel(input, readMs) : undefined)
     const kind = input.hook_event_name === "UserPromptSubmit" ? await promptKind(input, readMs) : undefined
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), ...kind, answer: cut(input.last_assistant_message), model, effort: input.effort?.level, step: stepOf(input)}
+    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), ...kind, answer: cut(input.last_assistant_message), model, effort: input.effort?.level, step}
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -283,45 +286,53 @@ function peerName(origin: Origin): string {
   return oneLine(stringOf(origin.name) ?? stringOf(origin.from) ?? "another session")
 }
 
-function stepOf(input: TurnInput): Step | undefined {
-  const {tool_use_id: id, hook_event_name: event, is_interrupt: interrupted, duration_ms: ms} = input
-  if (id === undefined) return undefined
-  const text = shortened(stepText(input))
+function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_name: event, tool_input: fields = {}, cwd, is_interrupt: interrupted, duration_ms: ms}: TurnInput): Step | undefined {
+  if (id === undefined || tool === undefined || agent !== undefined || tool.startsWith(pluginTools)) return undefined
+  const text = shortened(stepText(tool, fields, cwd))
   if (event === "PreToolUse") return {id, text}
+  if (event === "PostToolUse" && fields.run_in_background === true) return {id, text: `${text} (in background)`, end: true}
   const outcome = event === "PostToolUse" ? "✅" : interrupted === true ? "⏹️" : "❌"
   return {id, text: `${text} ${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`, end: true}
 }
 
-function stepText({tool_name: tool = "", tool_input: fields = {}, cwd}: TurnInput): string {
-  const field = (name: string): string => stringOf(fields[name]) ?? ""
-  const path = (name: string): string => oneLine(displayPath(field(name), cwd))
+function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string | undefined): string {
+  const field = (name: string): string => firstLine(stringOf(fields[name]) ?? "")
+  const path = (name: string): string => displayPath(field(name), cwd)
   switch (tool) {
     case "Bash":
-      return `💻 ${firstLine(field("description")) || firstLine(field("command"))}`
+      return `💻 ${field("description") || field("command")}`
     case "Read":
       return `📖 Read ${path("file_path")}`
     case "Edit":
       return `✏️ Edit ${path("file_path")}`
     case "Write":
       return `📝 Write ${path("file_path")}`
+    case "Grep":
+    case "Glob": {
+      const where = path("path")
+      return `🔍 ${tool} ${field("pattern")}${where === "" ? "" : ` in ${where}`}`
+    }
     case "WebFetch":
-      return `🌐 Fetch ${firstLine(field("url"))}`
+      return `🌐 Fetch ${field("url")}`
     case "WebSearch":
-      return `🔎 Search ${firstLine(field("query"))}`
+      return `🔎 Search ${field("query")}`
     case "Agent":
-      return `🤖 Agent: ${firstLine(field("description"))}`
+      return `🤖 Agent: ${field("description")}`
     default: {
-      const value = stepFields.map(name => stringOf(fields[name])).find(text => text !== undefined)
-      return `🔧 ${oneLine(tool)}${value === undefined ? "" : `: ${firstLine(value)}`}`
+      const value = stepFields.map(field).find(text => text !== "")
+      return `🔧 ${oneLine(tool)}${value === undefined ? "" : `: ${value}`}`
     }
   }
 }
 
 function displayPath(path: string, cwd: string | undefined): string {
-  return cwd !== undefined && path.startsWith(`${cwd}${sep}`) ? path.slice(cwd.length + 1) : path
+  if (cwd === undefined || path === "") return path
+  const inside = relative(cwd, path)
+  return isAbsolute(inside) || inside.startsWith("..") ? path : inside
 }
 
-function duration(ms: number): string {
+function duration(exact: number): string {
+  const ms = Math.round(exact)
   const seconds = Math.floor(ms / 1000)
   if (ms < 1000) return `${ms} ms`
   if (ms < 10_000) return `${(Math.floor(ms / 100) / 10).toFixed(1)} s`

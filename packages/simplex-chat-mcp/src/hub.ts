@@ -28,6 +28,7 @@ const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
 const noteRefused = "Claude's note was not posted"
 const maxFinished = 100
+const liveLineMs = 23 * 3_600_000
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
 
@@ -40,6 +41,18 @@ interface SessionGroupData {
   session: number
   pending?: {connId: number; at: number}[]
   mode?: Mode
+}
+
+interface Part {
+  text: string
+  priority?: number
+}
+
+interface LiveStep {
+  at: number
+  text: string
+  item: Promise<number | undefined>
+  expiry: NodeJS.Timeout
 }
 
 export class Session {
@@ -60,8 +73,9 @@ export class Session {
   private writer?: (line: AttachLine) => void
   private readonly attaching = new Changes()
   private delivery: Promise<void> = Promise.resolve()
-  private readonly steps = new Map<string, {at: number; text: string; item: Promise<number | undefined>}>()
+  private readonly steps = new Map<string, LiveStep>()
   private readonly finished = new Set<string>()
+  private finalizing: Promise<void> = Promise.resolve()
 
   constructor(
     private readonly hub: Hub,
@@ -158,7 +172,7 @@ export class Session {
     const {chatDir, content} = ci.chatItem
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
     const {text} = content.msgContent
-    if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([commandsApproversOnly], ci.chatItem.meta.itemId))
+    if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([{text: commandsApproversOnly}], ci.chatItem.meta.itemId))
     if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
     this.queue(() => this.prompt(ci, text, chatDir.groupMember))
   }
@@ -200,7 +214,7 @@ export class Session {
     }
     try {
       if (step !== undefined) await this.step(step, at ?? Date.now())
-      if (note !== undefined) await this.post([note], undefined, [-1]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+      if (note !== undefined) await this.post([{text: note, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
       if (prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser))
       if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
     } finally {
@@ -216,15 +230,13 @@ export class Session {
   }
 
   endSteps(before = Infinity): Promise<void> {
-    const ended = [...this.steps].filter(([, {at}]) => at < before)
-    for (const [id] of ended) {
-      this.steps.delete(id)
-      this.finish(id)
+    for (const [id, step] of this.steps) {
+      if (step.at < before) {
+        this.remember(id)
+        this.endStep(id, step, step.text)
+      }
     }
-    return Promise.all(ended.map(([, {item, text}]) => this.finalize(item, text))).then(
-      () => undefined,
-      error => logError(`steps of session ${this.number}`, error),
-    )
+    return this.finalizing
   }
 
   fileDone(fileId: number, error?: string): void {
@@ -244,7 +256,7 @@ export class Session {
     if (this.isUser(member)) return
     const name = safeName(member.memberProfile.displayName)
     const observer = canSend(member.memberRole) && member.memberRole !== T.GroupMemberRole.Owner ? ` You can change role to observer to stop it: /'observer #${this.control.groupId} ${member.groupMemberId}'` : ""
-    await this.post([`${rightsText(name, member.memberRole)}${observer}`])
+    await this.post([{text: `${rightsText(name, member.memberRole)}${observer}`}])
   }
 
   private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
@@ -257,11 +269,11 @@ export class Session {
     if (this.onLine === undefined && left > 0) await nextChange(this.attaching, new AbortController().signal, left)
     const {chatItem} = ci
     const file = this.onLine === undefined || chatItem.file === undefined ? undefined : await this.receive(chatItem.file).catch(async error => {
-      await this.post([`The file of this message was not received: ${oneLine(errorText(error))}`], chatItem.meta.itemId)
+      await this.post([{text: `The file of this message was not received: ${oneLine(errorText(error))}`}], chatItem.meta.itemId)
       return undefined
     })
     if (this.onLine === undefined) {
-      await this.post([`Session ${this.number} is not running.`], chatItem.meta.itemId)
+      await this.post([{text: `Session ${this.number} is not running.`}], chatItem.meta.itemId)
       return
     }
     if (this.pushed.push({text, item: chatItem, at: Date.now()}) > maxPushed) this.pushed.shift()
@@ -298,36 +310,51 @@ export class Session {
   private async answer(text: string, quoted: T.ChatItem | undefined): Promise<void> {
     const quote = quoted?.content.type === "rcvMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
     const quotes = quote !== undefined && fitsMessage({type: "text", text: [...text].slice(0, 1).join("")}, undefined, quote)
-    const parts = textParts(text, quotes ? quote : undefined)
-    await this.post(parts, quotes ? quoted?.meta.itemId : undefined, parts.map((_, i) => (i === parts.length - 1 ? 1 : -1))).catch(error => this.postRefusal(error, "Claude's answer was not posted", featureOff, quoted?.meta.itemId))
+    const parts = textParts(text, quotes ? quote : undefined).map((part, i, all) => ({text: part, priority: i === all.length - 1 ? 1 : -1}))
+    await this.post(parts, quotes ? quoted?.meta.itemId : undefined).catch(error => this.postRefusal(error, "Claude's answer was not posted", featureOff, quoted?.meta.itemId))
   }
 
   private async step({id, text, end}: Step, at: number): Promise<void> {
     if (this.finished.delete(id)) return
     const started = this.steps.get(id)
     if (end !== true) {
-      const line: T.ComposedMessage & {priority: number} = {msgContent: {type: "text", text}, mentions: {}, priority: -1}
-      const item = this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], [line], true).then(
-        ([sent]) => sent?.chatItem.meta.itemId,
-        error => this.postRefusal(error, noteRefused, featureOff).then(() => undefined),
-      )
-      this.steps.set(id, {at, text, item})
+      const item = this.startLine(text)
+      this.steps.set(id, {at, text, item, expiry: setTimeout(() => this.expireStep(id), liveLineMs).unref()})
       await item
     } else if (started === undefined) {
-      this.finish(id)
-      await this.post([text], undefined, [-1]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+      this.remember(id)
+      await this.post([{text, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
     } else {
-      this.steps.delete(id)
-      await this.finalize(started.item, text)
+      await this.endStep(id, started, text)
     }
   }
 
-  private async finalize(item: Promise<number | undefined>, text: string): Promise<void> {
-    const itemId = await item
-    if (itemId !== undefined) await this.hub.chat.apiUpdateChatItem(T.ChatType.Group, this.control.groupId, itemId, {type: "text", text}, false)
+  private async startLine(text: string): Promise<number | undefined> {
+    try {
+      const [sent] = await this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], [message({text, priority: -1})], true)
+      return sent?.chatItem.meta.itemId
+    } catch (error) {
+      await this.postRefusal(error, noteRefused, featureOff).catch(failure => logError(`steps of session ${this.number}`, failure))
+      return undefined
+    }
   }
 
-  private finish(id: string): void {
+  private endStep(id: string, {item, expiry}: LiveStep, text: string): Promise<void> {
+    clearTimeout(expiry)
+    this.steps.delete(id)
+    const updated = item
+      .then(itemId => (itemId === undefined ? undefined : this.hub.chat.apiUpdateChatItem(T.ChatType.Group, this.control.groupId, itemId, {type: "text", text}, false)))
+      .then(() => undefined, error => logError(`steps of session ${this.number}`, error))
+    this.finalizing = Promise.all([this.finalizing, updated]).then(() => undefined)
+    return updated
+  }
+
+  private expireStep(id: string): void {
+    const step = this.steps.get(id)
+    if (step !== undefined) this.endStep(id, step, step.text)
+  }
+
+  private remember(id: string): void {
     this.finished.add(id)
     const [oldest] = this.finished
     if (this.finished.size > maxFinished) this.finished.delete(oldest)
@@ -336,11 +363,11 @@ export class Session {
   private async postRefusal(error: unknown, subject: string, refusal: (feature: string) => string, quotedItemId?: number): Promise<void> {
     const feature = refusedFeature(error)
     if (feature === undefined) throw error
-    await this.post([`${subject}: ${refusal(feature)}`], quotedItemId)
+    await this.post([{text: `${subject}: ${refusal(feature)}`}], quotedItemId)
   }
 
-  private async post(parts: string[], quotedItemId?: number, priorities: number[] = []): Promise<void> {
-    const send = (quote?: number) => this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => ({msgContent: {type: "text", text: part}, quotedItemId: i === 0 ? quote : undefined, mentions: {}, priority: priorities[i]})))
+  private async post(parts: Part[], quotedItemId?: number): Promise<void> {
+    const send = (quote?: number) => this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => message(part, i === 0 ? quote : undefined)))
     await send(quotedItemId).catch(error => {
       if (quotedItemId === undefined || !isRefusedQuote(error)) throw error
       return send()
@@ -599,6 +626,10 @@ function textParts(text: string, quote?: Parameters<typeof fitsMessage>[2]): str
     start = low
   } while (start < chars.length)
   return parts
+}
+
+function message({text, priority}: Part, quotedItemId?: number): T.ComposedMessage & {priority?: number} {
+  return {msgContent: {type: "text", text}, quotedItemId, mentions: {}, priority}
 }
 
 function isRefusedQuote(error: unknown): boolean {

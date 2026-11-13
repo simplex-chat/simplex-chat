@@ -216,8 +216,8 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 
 | Component | File | Key symbol | Line |
 |---|---|---|---|
-| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L218) | `main` | [218](../src/cli.ts#L218) |
-| Argument parser | [`src/cli.ts`](../src/cli.ts#L63) | `parseCommand` | [63](../src/cli.ts#L63) |
+| Binary `simplex-mcp` | [`src/cli.ts`](../src/cli.ts#L216) | `main` | [216](../src/cli.ts#L216) |
+| Argument parser | [`src/cli.ts`](../src/cli.ts#L61) | `parseCommand` | [61](../src/cli.ts#L61) |
 | Server start | [`src/serve.ts`](../src/serve.ts#L64) | `startServer` | [64](../src/serve.ts#L64) |
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts#L87) | `startAgent` | [87](../src/serve.ts#L87) |
 | HTTP listener | [`src/http.ts`](../src/http.ts#L14) | `startHttp` | [14](../src/http.ts#L14) |
@@ -234,11 +234,11 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Service start by a client | [`src/client.ts`](../src/client.ts#L35) | `ServiceClient.ensureService` | [35](../src/client.ts#L35) |
 | Service process | [`src/service.ts`](../src/service.ts#L432) | `runService` | [432](../src/service.ts#L432) |
 | Service routes | [`src/service.ts`](../src/service.ts#L138) | `Service.routes` | [138](../src/service.ts#L138) |
-| Hub | [`src/hub.ts`](../src/hub.ts#L420) | `Hub.open` | [420](../src/hub.ts#L420) |
-| Session and its group | [`src/hub.ts`](../src/hub.ts#L45) | `Session` | [45](../src/hub.ts#L45) |
+| Hub | [`src/hub.ts`](../src/hub.ts#L447) | `Hub.open` | [447](../src/hub.ts#L447) |
+| Session and its group | [`src/hub.ts`](../src/hub.ts#L58) | `Session` | [58](../src/hub.ts#L58) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L26) | `MainGroup` | [26](../src/main-group.ts#L26) |
 | Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
-| Hooks | [`src/hook.ts`](../src/hook.ts#L91) | `sessionStart`, `turn` | [91](../src/hook.ts#L91), [124](../src/hook.ts#L124) |
+| Hooks | [`src/hook.ts`](../src/hook.ts#L92) | `sessionStart`, `turn` | [92](../src/hook.ts#L92), [125](../src/hook.ts#L125) |
 | `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts#L22) | `showLink`, `resetOwners` | [22](../src/owner.ts#L22), [28](../src/owner.ts#L28) |
 | SimpleX core | [`src/core.ts`](../src/core.ts#L19) | `openCore` | [19](../src/core.ts#L19) |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` | [6](../package.json#L6) |

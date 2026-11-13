@@ -503,12 +503,16 @@ describe("turn hooks", () => {
     await started("Read", {file_path: "/p/app/src/hook.ts"})
     await started("Edit", {file_path: "/etc/hosts", old_string: "a", new_string: "b"})
     await started("Write", {file_path: "/p/app/rfcs/2026-09-11-proof-of-work.md", content: "# Proof of work"})
+    await started("Read", {file_path: "/p/app-old/src/hook.ts"})
     await started("WebFetch", {url: "https://spec.torproject.org/hspow-spec/common-protocol.html", prompt: "Summarize"})
     await started("WebSearch", {query: '"hs_pow.c" tor source'})
     await started("Agent", {description: "Review pass 6 usage stats", prompt: "Review it.", subagent_type: "general-purpose"})
     await started("ToolSearch", {query: "select:Monitor", max_results: 5})
     await started("Glob", {pattern: "**/*.ts", path: "/p/app/src"})
+    await started("Grep", {pattern: "endSteps", path: "/p/app/src/hub.ts", output_mode: "content"})
+    await started("Grep", {pattern: "TODO"})
     await started("TodoWrite", {todos: [{content: "Test", status: "pending"}]})
+    await started("NotebookEdit", {description: " \n", notebook_path: "/p/app/a.ipynb", url: "https://example.com/a"})
     await started("Task", {description: `Review‮ ${"x".repeat(300)}`})
     expect(requests[0]).toEqual({method: "POST", route: "/turn", body: {id, pid: 4321, at: 1, effort: "high", step: {id: "toolu_Bash", text: "💻 Run the tests"}}})
     expect(steps(requests)).toEqual([
@@ -517,30 +521,41 @@ describe("turn hooks", () => {
       {id: "toolu_Read", text: "📖 Read src/hook.ts"},
       {id: "toolu_Edit", text: "✏️ Edit /etc/hosts"},
       {id: "toolu_Write", text: "📝 Write rfcs/2026-09-11-proof-of-work.md"},
+      {id: "toolu_Read", text: "📖 Read /p/app-old/src/hook.ts"},
       {id: "toolu_WebFetch", text: "🌐 Fetch https://spec.torproject.org/hspow-spec/common-protocol.html"},
       {id: "toolu_WebSearch", text: '🔎 Search "hs_pow.c" tor source'},
       {id: "toolu_Agent", text: "🤖 Agent: Review pass 6 usage stats"},
       {id: "toolu_ToolSearch", text: "🔧 ToolSearch: select:Monitor"},
-      {id: "toolu_Glob", text: "🔧 Glob: /p/app/src"},
+      {id: "toolu_Glob", text: "🔍 Glob **/*.ts in src"},
+      {id: "toolu_Grep", text: "🔍 Grep endSteps in src/hub.ts"},
+      {id: "toolu_Grep", text: "🔍 Grep TODO"},
       {id: "toolu_TodoWrite", text: "🔧 TodoWrite"},
+      {id: "toolu_NotebookEdit", text: "🔧 NotebookEdit: https://example.com/a"},
       {id: "toolu_Task", text: `🔧 Task: Review  ${"x".repeat(199 - [..."🔧 Task: Review  "].length)}…`},
     ])
   })
 
-  it("send a step at the end of each tool use with its outcome and duration, and nothing for a tool use of a subagent or of this plugin", async () => {
+  it("send a step at the end of each tool use with its outcome and duration, or in background for a launch, and nothing for a tool use of a subagent or of this plugin, or without its ID or tool", async () => {
     const {client, requests, ensured} = turnClient()
     const bash = {command: "npm test", description: "Run the tests"}
-    const ended = (event: string, extra: object, tool = "Bash") => turn(toolUse(event, tool, bash, extra), {}, client, 0, 1)
+    const ended = (event: string, extra: object, tool = "Bash", input: object = bash) => turn(toolUse(event, tool, input, extra), {}, client, 0, 1)
     await ended("PostToolUse", {tool_response: {stdout: "ok"}, duration_ms: 2018})
     await ended("PostToolUseFailure", {error: "Exit code 1", is_interrupt: false, duration_ms: 39})
     await ended("PostToolUseFailure", {error: "Interrupted", is_interrupt: true, duration_ms: 252_000})
     await ended("PostToolUse", {duration_ms: 42_500})
     await ended("PostToolUse", {duration_ms: 3_900_000})
     await ended("PostToolUse", {})
+    await ended("PostToolUse", {duration_ms: 41.6})
+    await ended("PostToolUse", {duration_ms: 1999.6})
+    await ended("PostToolUse", {duration_ms: 25}, "Bash", {...bash, run_in_background: true})
+    await ended("PostToolUse", {duration_ms: 31}, "Agent", {description: "Review", prompt: "Review it.", run_in_background: true})
+    await ended("PostToolUseFailure", {error: "Exit code 127", is_interrupt: false, duration_ms: 12}, "Bash", {...bash, run_in_background: true})
     await turn(toolUse("PreToolUse", "Bash", bash, {agent_id: "af945fc18f2e2d0d9", agent_type: "general-purpose"}), {}, client, 0, 1)
     await ended("PostToolUse", {agent_id: "af945fc18f2e2d0d9", duration_ms: 13})
     await turn(toolUse("PreToolUse", "mcp__plugin_simplex_simplex__send", {chat: "@1", text: "hi"}), {}, client, 0, 1)
     await ended("PostToolUse", {duration_ms: 120}, "mcp__plugin_simplex_simplex__send")
+    await turn(JSON.stringify({session_id: id, hook_event_name: "PreToolUse", tool_input: bash, tool_use_id: "toolu_1"}), {}, client, 0, 1)
+    await turn(JSON.stringify({session_id: id, hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: bash, duration_ms: 5}), {}, client, 0, 1)
     expect(steps(requests)).toEqual([
       {id: "toolu_Bash", text: "💻 Run the tests ✅ 2.0 s", end: true},
       {id: "toolu_Bash", text: "💻 Run the tests ❌ 39 ms", end: true},
@@ -548,8 +563,13 @@ describe("turn hooks", () => {
       {id: "toolu_Bash", text: "💻 Run the tests ✅ 42 s", end: true},
       {id: "toolu_Bash", text: "💻 Run the tests ✅ 1 h 5 min", end: true},
       {id: "toolu_Bash", text: "💻 Run the tests ✅", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ✅ 42 ms", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ✅ 2.0 s", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests (in background)", end: true},
+      {id: "toolu_Agent", text: "🤖 Agent: Review (in background)", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ❌ 12 ms", end: true},
     ])
-    expect(ensured()).toBe(6)
+    expect(ensured()).toBe(11)
   })
 
   it("cut a prompt or an answer over 250,000 characters, so that the request fits the socket's 1 MiB", async () => {

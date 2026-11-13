@@ -792,6 +792,77 @@ describe("session channel", () => {
     expect(priorities(chat)).toEqual([[-1], [-1, 1], [1]])
   })
 
+  it("updates the line of a step at its end and at the end of the steps also while the send of its start is in flight", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const send = chat.apiSendMessages.bind(chat)
+    const held: (() => void)[] = []
+    chat.apiSendMessages = (target, messages, live) => (live === true ? new Promise(resolve => held.push(() => resolve(send(target, messages, live)))) : send(target, messages, live))
+    const lines = chat.nextItemId
+    const started = session.turn({id: id1, at: 1, step: {id: "toolu_1", text: "💻 Run the tests"}})
+    const ended = session.turn({id: id1, at: 2, step: {id: "toolu_1", text: "💻 Run the tests ✅ 2.0 s", end: true}})
+    const second = session.turn({id: id1, at: 3, step: {id: "toolu_2", text: "📖 Read src/hook.ts"}})
+    const stepsEnded = session.endSteps()
+    await until(() => held.length === 2)
+    for (const release of held) release()
+    await Promise.all([started, ended, second, stepsEnded])
+    expect(sentTo(chat, 20)).toEqual(["💻 Run the tests", "📖 Read src/hook.ts"])
+    expect(chat.updates).toEqual([
+      {chatId: 20, itemId: lines, text: "💻 Run the tests ✅ 2.0 s"},
+      {chatId: 20, itemId: lines + 1, text: "📖 Read src/hook.ts"},
+    ])
+  })
+
+  it("logs a failed update of a step's line and a failed send of its start, and posts nothing more for them", async () => {
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text).trimEnd()), true))
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    chat.apiUpdateChatItem = async () => Promise.reject(new Error("invalid chat item update"))
+    await session.turn({id: id1, at: 1, step: {id: "toolu_1", text: "💻 Run the tests"}})
+    await session.turn({id: id1, at: 2, step: {id: "toolu_1", text: "💻 Run the tests ✅ 2.0 s", end: true}})
+    const send = chat.apiSendMessages.bind(chat)
+    chat.apiSendMessages = async (target, messages, live) => (live === true ? Promise.reject(new Error("network")) : send(target, messages, live))
+    await session.turn({id: id1, at: 3, step: {id: "toolu_2", text: "📖 Read src/hook.ts"}})
+    await session.turn({id: id1, at: 4, step: {id: "toolu_2", text: "📖 Read src/hook.ts ✅ 41 ms", end: true}})
+    expect(sentTo(chat, 20)).toEqual(["💻 Run the tests"])
+    expect(errors).toEqual(["steps of session 1: invalid chat item update", "steps of session 1: network"])
+  })
+
+  it("ends the live line of a step 23 hours after its start, before the core refuses its update, and posts its later end as a new silent line", async () => {
+    jest.useFakeTimers({doNotFake: ["nextTick", "setImmediate", "queueMicrotask"]})
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const line = chat.nextItemId
+    await session.turn({id: id1, at: 1, step: {id: "toolu_1", text: "💻 Run the tests"}})
+    await jest.advanceTimersByTimeAsync(23 * 3_600_000 - 1)
+    expect(chat.updates).toEqual([])
+    await jest.advanceTimersByTimeAsync(1)
+    expect(chat.updates).toEqual([{chatId: 20, itemId: line, text: "💻 Run the tests"}])
+    await session.turn({id: id1, at: 2, step: {id: "toolu_1", text: "💻 Run the tests ✅ 25 h 0 min", end: true}})
+    expect(sentTo(chat, 20)).toEqual(["💻 Run the tests", "💻 Run the tests ✅ 25 h 0 min"])
+    expect(priorities(chat)).toEqual([[-1], [-1]])
+    expect(chat.updates).toHaveLength(1)
+  })
+
+  it("closes the core at the hub's stop only after the updates of the lines that the end of the steps at the last detach started", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const events: string[] = []
+    await session.turn({id: id1, at: 1, step: {id: "toolu_1", text: "💻 Run the tests"}})
+    const update = chat.apiUpdateChatItem.bind(chat)
+    const held: (() => void)[] = []
+    chat.apiUpdateChatItem = (...args) => new Promise(resolve => held.push(() => resolve(update(...args).then(item => (events.push("updated"), item)))))
+    chat.close = async () => void events.push("closed")
+    void session.endSteps()
+    const stopped = hub.stop()
+    await until(() => held.length === 1)
+    expect(events).toEqual([])
+    held[0]()
+    await stopped
+    expect(events).toEqual(["updated", "closed"])
+  })
+
   it("splits an answer and a terminal prompt where a message reaches the size the core accepts, with the quote in the first part of an answer, for Latin, Cyrillic and CJK texts", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)

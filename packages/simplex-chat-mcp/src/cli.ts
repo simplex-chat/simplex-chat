@@ -7,9 +7,7 @@ import {ExitError, log, logError} from "./log"
 import {validName} from "./messages"
 import {resetOwners, showLink} from "./owner"
 import {RegisterOptions, Scope, register} from "./register"
-import {OwnerEntry, QrCodeSize, ServeOptions, serve} from "./serve"
-import {runService} from "./service"
-import {startSession} from "./session"
+import type {OwnerEntry, QrCodeSize, ServeOptions} from "./serve"
 
 export const helpText = `Usage:
   simplex-mcp serve NAME [options]     run agent NAME
@@ -222,13 +220,13 @@ async function main(args: string[]): Promise<void> {
       process.stdout.write(helpText)
       return
     case "serve":
-      return serve(command.options)
+      return (await import("./serve.js")).serve(command.options)
     case "register":
       return log(register(command.options))
     case "session":
-      return startSession()
+      return (await import("./session.js")).startSession()
     case "service":
-      return runService()
+      return (await import("./service.js")).runService()
     case "hook session-start":
       process.stdout.write(`${JSON.stringify(await sessionStart(await readStdin()))}\n`)
       return
