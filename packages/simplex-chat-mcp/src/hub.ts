@@ -9,8 +9,8 @@ import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
-import {Changes, ChatItemsWatch, ToolCall, getChat, nextChange, storedName, validName} from "./messages"
-import {AttachLine, OwnerState, PermissionRequest, ResetReply, TurnRequest} from "./protocol"
+import {Changes, ChatItemsWatch, ReplyTo, ToolCall, getChat, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
+import {AttachLine, OwnerState, PermissionRequest, ResetReply, Step, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
 import {User, userContact} from "./user"
@@ -26,6 +26,10 @@ const pendingDays = 1
 const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
+const noteRefused = "Claude's note was not posted"
+const maxFinished = 100
+const liveLineMs = 23 * 3_600_000
+const stepCheckMs = 60_000
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
 
@@ -38,6 +42,18 @@ interface SessionGroupData {
   session: number
   pending?: {connId: number; at: number}[]
   mode?: Mode
+}
+
+interface Part {
+  text: string
+  priority?: number
+}
+
+interface LiveStep {
+  at: number
+  text: string
+  item: Promise<number | undefined>
+  sentAt: number
 }
 
 export class Session {
@@ -58,6 +74,10 @@ export class Session {
   private writer?: (line: AttachLine) => void
   private readonly attaching = new Changes()
   private delivery: Promise<void> = Promise.resolve()
+  private readonly steps = new Map<string, LiveStep>()
+  private readonly finished = new Set<string>()
+  private finalizing: Promise<void> = Promise.resolve()
+  private expiry?: NodeJS.Timeout
 
   constructor(
     private readonly hub: Hub,
@@ -151,12 +171,13 @@ export class Session {
   }
 
   onMessage(ci: T.AChatItem): void {
-    const {chatDir, content} = ci.chatItem
+    const {chatDir, content, quotedItem} = ci.chatItem
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
     const {text} = content.msgContent
-    if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([commandsApproversOnly], ci.chatItem.meta.itemId))
+    if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([{text: commandsApproversOnly}], ci.chatItem.meta.itemId))
     if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
-    this.queue(() => this.prompt(ci, text, chatDir.groupMember))
+    const replyTo = quotedItem === undefined ? undefined : toReplyTo(ci.chatInfo, quotedItem, {name: this.hub.profile.profile.displayName})
+    this.queue(() => this.prompt(ci, text, chatDir.groupMember, replyTo))
   }
 
   claimPending(connId: number, chat: string): void {
@@ -177,8 +198,11 @@ export class Session {
     })
   }
 
-  async turn({at, prompt, typed, note, midTurn, answer, model, effort}: TurnRequest): Promise<void> {
-    if ((prompt !== undefined && midTurn !== true) || answer !== undefined) this.endPermissions(at)
+  async turn({at, prompt, typed, note, midTurn, answer, model, effort, step}: TurnRequest): Promise<void> {
+    if ((prompt !== undefined && midTurn !== true) || answer !== undefined) {
+      this.endPermissions(at)
+      this.endSteps(at)
+    }
     const quoted = answer === undefined ? undefined : this.turnQuote(at ?? Infinity)
     if (answer !== undefined) this.answeredAt = Math.max(this.answeredAt, at ?? Date.now())
     const matched = prompt === undefined ? [] : this.pushedIn(prompt)
@@ -192,7 +216,8 @@ export class Session {
       this.store(this.description)
     }
     try {
-      if (note !== undefined) await this.post([note]).catch(error => this.postRefusal(error, "A note on Claude Code's prompt was not posted", featureOff))
+      if (step !== undefined) await this.step(step, at ?? Date.now())
+      if (note !== undefined) await this.post([{text: note, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
       if (prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser))
       if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
     } finally {
@@ -205,6 +230,16 @@ export class Session {
     for (const action of this.actions.pending()) {
       if (action.tool === "permission" && action.created < before) this.actions.end(action)
     }
+  }
+
+  endSteps(before = Infinity): Promise<void> {
+    for (const [id, step] of this.steps) {
+      if (step.at < before) {
+        this.remember(id)
+        this.endStep(id, step, step.text)
+      }
+    }
+    return this.finalizing
   }
 
   fileDone(fileId: number, error?: string): void {
@@ -224,28 +259,29 @@ export class Session {
     if (this.isUser(member)) return
     const name = safeName(member.memberProfile.displayName)
     const observer = canSend(member.memberRole) && member.memberRole !== T.GroupMemberRole.Owner ? ` You can change role to observer to stop it: /'observer #${this.control.groupId} ${member.groupMemberId}'` : ""
-    await this.post([`${rightsText(name, member.memberRole)}${observer}`])
+    await this.post([{text: `${rightsText(name, member.memberRole)}${observer}`}])
   }
 
-  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
+  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember, replyTo?: ReplyTo): Promise<void> {
     if (this.isUser(member)) return
-    await this.deliver(ci, text, member)
+    await this.deliver(ci, text, member, replyTo)
   }
 
-  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember): Promise<void> {
+  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember, replyTo?: ReplyTo): Promise<void> {
     const left = this.hub.promptsHeldUntil - Date.now()
     if (this.onLine === undefined && left > 0) await nextChange(this.attaching, new AbortController().signal, left)
     const {chatItem} = ci
     const file = this.onLine === undefined || chatItem.file === undefined ? undefined : await this.receive(chatItem.file).catch(async error => {
-      await this.post([`The file of this message was not received: ${oneLine(errorText(error))}`], chatItem.meta.itemId)
+      await this.post([{text: `The file of this message was not received: ${oneLine(errorText(error))}`}], chatItem.meta.itemId)
       return undefined
     })
     if (this.onLine === undefined) {
-      await this.post([`Session ${this.number} is not running.`], chatItem.meta.itemId)
+      await this.post([{text: `Session ${this.number} is not running.`}], chatItem.meta.itemId)
       return
     }
-    if (this.pushed.push({text, item: chatItem, at: Date.now()}) > maxPushed) this.pushed.shift()
-    this.onLine({prompt: {text, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file})}})
+    const promptText = replyTo === undefined ? text : `${quoteLine(replyTo)}\n${text}`
+    if (this.pushed.push({text: promptText, item: chatItem, at: Date.now()}) > maxPushed) this.pushed.shift()
+    this.onLine({prompt: {text: promptText, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file}), ...(replyTo === undefined ? {} : {replyTo: {item: replyTo.item, from: replyTo.from}})}})
   }
 
   private async receive({fileId, fileName}: T.CIFile): Promise<string> {
@@ -278,17 +314,71 @@ export class Session {
   private async answer(text: string, quoted: T.ChatItem | undefined): Promise<void> {
     const quote = quoted?.content.type === "rcvMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
     const quotes = quote !== undefined && fitsMessage({type: "text", text: [...text].slice(0, 1).join("")}, undefined, quote)
-    await this.post(textParts(text, quotes ? quote : undefined), quotes ? quoted?.meta.itemId : undefined).catch(error => this.postRefusal(error, "Claude's answer was not posted", featureOff, quoted?.meta.itemId))
+    const parts = textParts(text, quotes ? quote : undefined).map((part, i, all) => ({text: part, priority: i === all.length - 1 ? 1 : -1}))
+    await this.post(parts, quotes ? quoted?.meta.itemId : undefined).catch(error => this.postRefusal(error, "Claude's answer was not posted", featureOff, quoted?.meta.itemId))
+  }
+
+  private async step({id, text, end}: Step, at: number): Promise<void> {
+    if (this.finished.delete(id)) return
+    this.expireSteps()
+    const started = this.steps.get(id)
+    if (end !== true) {
+      const item = this.startLine(text)
+      this.steps.set(id, {at, text, item, sentAt: Date.now()})
+      this.expiry ??= setInterval(() => this.expireSteps(), stepCheckMs).unref()
+      await item
+    } else if (started === undefined) {
+      this.remember(id)
+      await this.post([{text, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+    } else {
+      await this.endStep(id, started, text)
+    }
+  }
+
+  private async startLine(text: string): Promise<number | undefined> {
+    try {
+      const [sent] = await this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], [message({text, priority: -1})], true)
+      return sent?.chatItem.meta.itemId
+    } catch (error) {
+      await this.postRefusal(error, noteRefused, featureOff).catch(failure => logError(`steps of session ${this.number}`, failure))
+      return undefined
+    }
+  }
+
+  private endStep(id: string, {item}: LiveStep, text: string): Promise<void> {
+    this.steps.delete(id)
+    if (this.steps.size === 0) {
+      clearInterval(this.expiry)
+      this.expiry = undefined
+    }
+    const updated = item
+      .then(itemId => (itemId === undefined ? undefined : this.hub.chat.apiUpdateChatItem(T.ChatType.Group, this.control.groupId, itemId, {type: "text", text}, false)))
+      .then(() => undefined, error => logError(`steps of session ${this.number}`, error))
+    this.finalizing = Promise.all([this.finalizing, updated]).then(() => undefined)
+    return updated
+  }
+
+  private expireSteps(): void {
+    const before = Date.now() - liveLineMs
+    for (const [id, step] of this.steps) {
+      if (step.sentAt <= before) this.endStep(id, step, step.text)
+    }
+  }
+
+  private remember(id: string): void {
+    this.finished.add(id)
+    const [oldest] = this.finished
+    if (this.finished.size > maxFinished) this.finished.delete(oldest)
   }
 
   private async postRefusal(error: unknown, subject: string, refusal: (feature: string) => string, quotedItemId?: number): Promise<void> {
     const feature = refusedFeature(error)
     if (feature === undefined) throw error
-    await this.post([`${subject}: ${refusal(feature)}`], quotedItemId)
+    await this.post([{text: `${subject}: ${refusal(feature)}`}], quotedItemId)
   }
 
-  private async post(parts: string[], quotedItemId?: number): Promise<void> {
-    const send = (quote?: number) => this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => ({msgContent: {type: "text", text: part}, quotedItemId: i === 0 ? quote : undefined, mentions: {}})))
+  private async post(parts: Part[], quotedItemId?: number): Promise<void> {
+    const send = (quote?: number) => this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => message(part, i === 0 ? quote : undefined)))
     await send(quotedItemId).catch(error => {
       if (quotedItemId === undefined || !isRefusedQuote(error)) throw error
       return send()
@@ -462,6 +552,7 @@ export class Hub implements SessionGroups {
     const stopped = await Promise.all(sessions.map(async ({actions}) => ({lost: actions.lost, cancelled: await actions.stop()})))
     await this.controlEvents
     await waitForCancelledCards(stopped.flatMap(({lost, cancelled}) => (lost ? [] : cancelled)), cardsWait, new AbortController().signal)
+    await Promise.all(sessions.map(session => session.endSteps()))
     for (const {tools} of sessions) tools.close()
     await this.user?.close()
     await this.chat.close()
@@ -546,6 +637,10 @@ function textParts(text: string, quote?: Parameters<typeof fitsMessage>[2]): str
     start = low
   } while (start < chars.length)
   return parts
+}
+
+function message({text, priority}: Part, quotedItemId?: number): T.ComposedMessage & {priority?: number} {
+  return {msgContent: {type: "text", text}, quotedItemId, mentions: {}, priority}
 }
 
 function isRefusedQuote(error: unknown): boolean {

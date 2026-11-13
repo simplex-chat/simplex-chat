@@ -1,4 +1,5 @@
 import {once} from "events"
+import * as fs from "fs"
 import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
 import {Server, request} from "http"
 import {Socket} from "net"
@@ -81,6 +82,9 @@ function deps(root: string) {
         },
         endPermissions: () => {
           agent.turns.push("ended")
+        },
+        endSteps: async () => {
+          agent.turns.push("steps ended")
         },
         call: async (tool: string, _input: unknown, call: {signal: AbortSignal; progress: (m: string) => void}) => {
           agent.calls.push(tool)
@@ -596,7 +600,7 @@ describe("service", () => {
     expect(await register(id1)).toMatchObject({number: 1, displayName: "1 · auth"})
   })
 
-  it("passes permission requests and turns to the session, and its lines to the attachments while they exist", async () => {
+  it("passes permission requests and turns to the session, and its lines to the attachments while they exist, and ends its permissions and steps at the last detach", async () => {
     const {d, agents} = deps(root)
     service = await Service.start(d, readDefaultConfig)
     await register(id1)
@@ -612,8 +616,8 @@ describe("service", () => {
     expect(lines[1]).toEqual({prompt: {text: "hi", from: "Alice", item: 7}})
     controller.abort()
     await attached
-    await until(() => agents[0].turns.length === 3)
-    expect(agents[0].turns).toEqual([permission, {id: id1, answer: "Done."}, "ended"])
+    await until(() => agents[0].turns.length === 4)
+    expect(agents[0].turns).toEqual([permission, {id: id1, answer: "Done."}, "ended", "steps ended"])
     expect(agents[0].onLine).toBeUndefined()
     await expect(post("/turn", {id: id2, answer: "x"})).rejects.toMatchObject({status: 409})
   })
@@ -932,6 +936,10 @@ describe("runService", () => {
   const answering = async (): Promise<void> => {
     other = await socket.listen(socketPath(root), serviceToken(root), {})
   }
+  const brokenReadyPipe = (): jest.SpyInstance =>
+    jest.spyOn(fs, "writeSync").mockImplementation(() => {
+      throw Object.assign(new Error("EPIPE: broken pipe, write"), {code: "EPIPE"})
+    })
 
   afterEach(async () => {
     if (other) await closeServer(other)
@@ -1003,6 +1011,32 @@ describe("runService", () => {
     }
     expect(readFileSync(readyFile, "utf8")).toBe("running\n")
     expect(write).not.toHaveBeenCalled()
+  })
+
+  it("ends without an error when the process that waited for its running line is gone", async () => {
+    await answering()
+    writeFileSync(lockFile(), `${process.ppid}\n`)
+    const write = brokenReadyPipe()
+    await runService({SIMPLEX_MCP_HOME: root, SIMPLEX_MCP_READY_FD: "3"})
+    expect(write).toHaveBeenCalledWith(3, "running\n")
+  })
+
+  it("keeps running after its own start when the process that waited for its ready line is gone", async () => {
+    const stop = jest.fn(async () => undefined)
+    jest.spyOn(Service, "start").mockResolvedValue({stop} as unknown as Service)
+    jest.spyOn(process.stdout, "write").mockImplementation(() => true)
+    serviceToken(root)
+    const write = brokenReadyPipe()
+    const signals = ["SIGINT", "SIGTERM"] as const
+    const before = signals.map(signal => process.listeners(signal))
+    try {
+      await runService({SIMPLEX_MCP_HOME: root, SIMPLEX_MCP_READY_FD: "3"})
+      expect(write).toHaveBeenCalledWith(3, "ready\n")
+      expect(signals.map(signal => process.listeners(signal).length)).toEqual(before.map(listeners => listeners.length + 1))
+      expect(stop).not.toHaveBeenCalled()
+    } finally {
+      signals.forEach((signal, i) => process.listeners(signal).filter(listener => !before[i].includes(listener)).forEach(listener => process.off(signal, listener)))
+    }
   })
 
   it("reports a start error and exits with 1", async () => {

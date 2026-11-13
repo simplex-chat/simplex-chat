@@ -7,9 +7,7 @@ import {ExitError, log, logError} from "./log"
 import {validName} from "./messages"
 import {resetOwners, showLink} from "./owner"
 import {RegisterOptions, Scope, register} from "./register"
-import {OwnerEntry, QrCodeSize, ServeOptions, serve} from "./serve"
-import {runService} from "./service"
-import {startSession} from "./session"
+import type {OwnerEntry, QrCodeSize, ServeOptions} from "./serve"
 
 export const helpText = `Usage:
   simplex-mcp serve NAME [options]     run agent NAME
@@ -17,7 +15,7 @@ export const helpText = `Usage:
   simplex-mcp session                  MCP server of one Claude Code session (run by the plugin)
   simplex-mcp service                  the shared SimpleX service of the plugin (started on demand)
   simplex-mcp hook session-start       Claude Code SessionStart hook (run by the plugin)
-  simplex-mcp hook turn                Claude Code hooks of prompts, answers and model changes (run by the plugin)
+  simplex-mcp hook turn                Claude Code hooks of prompts, answers, model changes and tool uses (run by the plugin)
   simplex-mcp link                     show the Main group link, or its owners
   simplex-mcp reset-owners             replace the Main group and its owners
 
@@ -222,13 +220,13 @@ async function main(args: string[]): Promise<void> {
       process.stdout.write(helpText)
       return
     case "serve":
-      return serve(command.options)
+      return (await import("./serve.js")).serve(command.options)
     case "register":
       return log(register(command.options))
     case "session":
-      return startSession()
+      return (await import("./session.js")).startSession()
     case "service":
-      return runService()
+      return (await import("./service.js")).runService()
     case "hook session-start":
       process.stdout.write(`${JSON.stringify(await sessionStart(await readStdin()))}\n`)
       return
