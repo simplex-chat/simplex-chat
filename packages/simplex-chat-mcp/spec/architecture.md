@@ -815,10 +815,10 @@ Data flow of a prompt from the session group:
 | `protocolVersion`, `unattendedStatus` | [5-6](../src/protocol.ts#L5-L6) | `1`; 403, the status of `/session` from a process marked unattended |
 | `Owners`, `OwnerState` | [13-19](../src/protocol.ts#L13-L19) | the owners' names; with the Main group link, for `/title` and `/link` only |
 | `SessionRequest`, `TitleRequest` | [21-38](../src/protocol.ts#L21-L38) | `/session`, `/title`, with `unattended` for the mark of a process |
-| `PermissionRequest`, `TurnRequest` | [40-57](../src/protocol.ts#L40-L57) | `/permission`, `/turn` |
+| `PermissionRequest`, `TurnRequest` | [40-59](../src/protocol.ts#L40-L59) | `/permission`, `/turn` |
 | `AttachLine` | [61](../src/protocol.ts#L61) | `{prompt}` lines, with the `replyTo` of a reply, and `{permission}` lines of `/attach` |
-| `TitleReply`, `SessionReply`, `AttachRequest`, `CallRequest`, `CallLine` | [64-85](../src/protocol.ts#L64-L85) | replies and `/call` |
-| `StatusReply`, `ResetReply` | [87-95](../src/protocol.ts#L87-L95) | `/status`, `/reset-owners` |
+| `TitleReply`, `SessionReply`, `AttachRequest`, `CallRequest`, `CallLine` | [66-87](../src/protocol.ts#L66-L87) | replies and `/call` |
+| `StatusReply`, `ResetReply` | [89-97](../src/protocol.ts#L89-L97) | `/status`, `/reset-owners` |
 
 #### [`service.ts`](../src/service.ts)
 
