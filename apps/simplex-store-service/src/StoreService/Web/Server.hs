@@ -413,10 +413,11 @@ createInvoiceHandler env@WebEnv {weStore, weConfig, weProviders, weWaiters} req 
         Nothing
           | LB.length body > fromIntegral maxBodyBytes -> refuse "body over the size limit" badRequest
           | otherwise -> maybe (refuse "malformed body" badRequest) badgeInvoice (parseCreateRequest o)
-        Just (J.String "name") | Just orders <- weOrders env -> nameInvoiceHandler orders (weHttp env) weConfig weProviders weWaiters o respond
+        Just (J.String "name") | Just orders <- weOrders env -> nameInvoiceHandler orders (weHttp env) client weConfig weProviders weWaiters o respond
         Just kind -> refuse ("no order of kind " <> tshow kind) badRequest
       _ -> refuse "malformed body" badRequest
   where
+    client = checkoutClient (weHttp env) req
     refuse :: Text -> Response -> IO ResponseReceived
     refuse why response = logNote ("POST /api/invoice refused: " <> why) >> respond response
     badgeInvoice cr@CreateRequest {crPriceId, crOfferId, crMethod, crCodeHash} = do
@@ -428,19 +429,19 @@ createInvoiceHandler env@WebEnv {weStore, weConfig, weProviders, weWaiters} req 
             True -> refuse "code hash already sold" codeConflict
             False -> case providerFor weProviders crMethod of
               Nothing -> refuse ("no provider configured for " <> tshow crMethod) providerUnavailable
-              Just provider -> createAtProvider env provider cr priced respond
+              Just provider -> createAtProvider env client provider cr priced respond
 
 -- | Once the provider call succeeds an invoice exists at BTCPay, and any path below that does not write our rows leaves it stranded.
-createAtProvider :: WebEnv -> Provider -> CreateRequest -> PricedOffer -> Respond -> IO ResponseReceived
-createAtProvider WebEnv {weStore, weConfig, weHttp} provider CreateRequest {crPriceId, crOfferId, crMethod, crCodeHash} priced respond =
-  limitedForAll weHttp invoicesLimit respond $ do
+createAtProvider :: WebEnv -> CheckoutClient -> Provider -> CreateRequest -> PricedOffer -> Respond -> IO ResponseReceived
+createAtProvider WebEnv {weStore, weConfig, weHttp} client provider CreateRequest {crPriceId, crOfferId, crMethod, crCodeHash} priced respond =
+  limitedCheckout weHttp client crMethod respond $ do
       invId@(InvoiceId orderId) <- newInvoiceId
       -- truncate once, so the response, the row and the provider get the same value
       now <- truncateToSecond <$> getCurrentTime
       let expiresAt = addUTCTime (invoiceWindow weConfig crMethod) now
           draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced, odReference = orderId}
       pCreateInvoice provider crMethod draft >>= \case
-        Left (ProviderError e) -> failed ("provider refused to create an invoice: " <> e) providerUnavailable
+        Left (ProviderError e) -> failed ("at the provider: " <> e) providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           let atProvider = "providerRef " <> piProviderRef
               ni =

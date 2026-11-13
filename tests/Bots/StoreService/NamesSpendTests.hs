@@ -18,7 +18,7 @@ import ChatTests.DBUtils (TestParams)
 import Control.Concurrent.Async (Async, async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
-import Control.Monad (forM_, join, void, when)
+import Control.Monad (forM_, join, replicateM_, void, when)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
@@ -33,7 +33,10 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
+import Network.HTTP.Client (responseBody)
+import Network.HTTP.Types (hContentType)
 import Network.Wai (Application)
+import qualified Network.Wai as Wai
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -56,7 +59,7 @@ import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Names.Turns (balanceTurnCount, labelTurnCount, withBalanceTurn)
 import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
 import qualified StoreService.Web.Http as Http (findLimit)
-import StoreService.Web.Http (createLimit, holdMicros, readLimit)
+import StoreService.Web.Http (Limit (..), checkoutClient, checkoutLimit, createLimit, holdMicros, limitedCheckout, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Orders (spendHandler)
 import StoreService.Web.Names.Owner (findHandler)
@@ -70,6 +73,7 @@ namesSpendTests = describe "StoreService names: spend" $ do
   describe "orders" $ do
     it "queues an order whose price the balance covers, spending the price and keeping the rest, or all of it" testCoveredSpend
     it "makes an invoice for the difference, the order holding all of the balance until the invoice's expiry" testDifferenceSpend
+    it "refuses a difference from a client network whose checkouts are used up, reaching no provider" testDifferenceLimitedPerNetwork
     it "answers an exact resend with its order in any phase, by its own hash, with a new timestamp and after the balance changed" testSpendResend
     it "keeps a spend and an /api/invoice order of the same fields apart, each meeting the other as order_exists" testInvoiceBodyApart
   describe "refusals" $ do
@@ -297,6 +301,18 @@ testDifferenceSpend = withSpend $ \ctx -> do
   nrAgreedTerms holder `shouldBe` oTerms aliceOrder
   fmap irAmount <$> getInvoice (cStore ctx) invId `shouldReturn` Just (CurrencyAmount 4000)
   field "balance" <$> viewOf ctx src `shouldReturn` Just (J.object ["amount" J..= (6000 :: Int), "held" J..= True, "heldUntil" J..= expiry, "refunded" J..= (0 :: Int)])
+
+testDifferenceLimitedPerNetwork :: IO ()
+testDifferenceLimitedPerNetwork = withSpend $ \ctx@Ctx {cClient, cWeb, cStub} -> do
+  src <- sourceOf ctx "src" 6000
+  let http = weHttp cWeb
+      fromNetwork forwardedFor = checkoutClient http Wai.defaultRequest {Wai.requestHeaders = [("X-Forwarded-For", forwardedFor)]}
+  replicateM_ (lmPerMinute checkoutLimit) $ limitedCheckout http (fromNetwork "203.0.113.7") (SPMCrypto CCBtc) (const $ pure ()) (pure ())
+  signed <- spendBody ctx src (difference 6000)
+  r <- webRequestBody cClient "POST" "/api/registration/src/spend" [(hContentType, "application/json"), ("X-Forwarded-For", "203.0.113.9")] (J.encode signed)
+  (statusOf r, J.decode (responseBody r)) `shouldBe` refusedWith 429 "rate_limited"
+  stubCalls cStub `shouldReturn` []
+  fst <$> spend ctx src (difference 6000) `shouldReturn` 200
 
 testSpendResend :: IO ()
 testSpendResend = withSpend $ \ctx@Ctx {cStore, cClock} -> do

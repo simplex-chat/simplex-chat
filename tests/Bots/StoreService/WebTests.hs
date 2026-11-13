@@ -42,7 +42,7 @@ module Bots.StoreService.WebTests
 where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
-import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig, PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultLogLevel)
+import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig, PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultLogLevel, providerTimeoutMicros)
 import StoreService.Orders (cancelOpenInvoice, codeLifetime, expireOverdue, settleOrder)
 import StoreService.Poller
 import StoreService.Providers
@@ -98,13 +98,15 @@ import GHC.IO.Handle.FD (handleToFd)
 import Network.HTTP.Client (Manager, Request (..), RequestBody (..), Response, defaultManagerSettings, httpLbs, newManager, parseRequest, responseBody, responseHeaders, responseStatus, responseTimeoutMicro)
 import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
 import Network.HTTP.Types.Status (statusCode)
+import Network.Socket (SockAddr (..), tupleToHostAddress, tupleToHostAddress6)
 import Network.Wai (Application)
+import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
 import Simplex.Chat.Badges.Ledger (addMonths, debitEntry, emptyEntry, grantEntry, issueEntry)
 import Simplex.Chat.StoreService (BadgeOffer (..), BadgePrice (..), StatementCreditType (..), StatementDebitType (..), StatementEntry (..), SubscriptionState (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
-import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
+import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore (..), withConnection, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface
@@ -260,6 +262,9 @@ badgeWebTests = do
     it "uses a forwarded client only when it parses as an IP address" testForwardedForMustBeAnAddress
     it "keys an IPv6 client by its /64 and an IPv4-mapped one by its IPv4 address" testIPv6ClientKey
     it "caps checkouts of every client together, counting only those that reach the provider" testInvoicesLimitForAll
+    it "caps checkouts per IPv4 /24 and IPv6 /48 before the shared cap, so the refused ones take none of it" testCheckoutLimitPerNetwork
+    it "admits a card checkout while the BTCPay ones are used up, the refused BTCPay ones taking none of the network's" testCardCheckoutPastSpentBTCPay
+    it "keys a checkout by the socket's IPv4 /24 or IPv6 /48 while forwarded addresses are not trusted" testCheckoutClientOfPeer
     it "refuses every badly signed webhook, logging only the first few of a minute" testWebhookRefusalLogCapped
     it "answers a poll at once with rate_limited while every hold slot is taken, and frees each slot after its hold" testHoldSlots
     it "runs a search's chain reads only in a free search slot, and frees each slot after them" testSearchSlots
@@ -308,6 +313,9 @@ badgeWebTests = do
     it "hands every signal the pass returned to settleOrder, unless the row answers it" testEverySignalSettles
     it "passes over a listed invoice this service does not hold" testForeignRefIsPassedOver
     it "changes nothing when the provider fails, and settles on the next pass" testProviderFailureLosesNothing
+    it "asks a stalled BTCPay once in a pass and again in the next, settling a card invoice listed after its invoices" testStalledBTCPayHoldsNoCardSettlement
+    it "reads the overdue invoices on their own after a list that timed out" testListTimeoutKeepsTheReads
+    it "reads every invoice of a provider whose reads fail without a timeout" testFailedReadKeepsTheOtherReads
     it "reads the cadence fresh from the waiters each pass" testCadenceFollowsTheWaiters
     it "cuts an idle sleep short when a browser arrives during it" testWaiterCutsTheIdleSleepShort
     it "serves a hint batch without postponing a pass that falls due" testHintsDoNotPostponeThePass
@@ -1287,7 +1295,7 @@ testExportWebapp = do
     staticDir <- prepareStaticDir root
     let outDir = root </> "out"
         lc = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = staticDir, lServeWebapp = False, lBadgesExportDir = Just outDir, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesPort = Nothing}
-        stripeCfg = Just StripeConfig {sSecretKey = "rk_test_x", sPublishableKey = "pk_test_injected", sWebhookSecret = "whsec_x", sSessionMinutes = 60, sHost = "https://api.stripe.com"}
+        stripeCfg = Just StripeConfig {sSecretKey = "rk_test_x", sPublishableKey = "pk_test_injected", sWebhookSecret = "whsec_x", sSessionMinutes = 60, sHost = "https://api.stripe.com", sTimeoutMicros = providerTimeoutMicros}
     exportWebapp (testServiceConfig staticDir False) {listener = lc, stripe = stripeCfg}
     idx <- LB.readFile (outDir </> "index.html")
     LB.toStrict idx `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
@@ -1649,7 +1657,8 @@ publishTestStripe =
       sPublishableKey = "pk_test_injected",
       sWebhookSecret = "whsec_x",
       sSessionMinutes = 60,
-      sHost = "https://api.stripe.com"
+      sHost = "https://api.stripe.com",
+      sTimeoutMicros = providerTimeoutMicros
     }
 
 testServesTheBuild :: IO ()
@@ -1934,9 +1943,53 @@ testInvoicesLimitForAll = bounded "checkouts for all" $ withSeededCheckout $ \cl
   let malformed i = statusOf <$> postCreateAs client i "{}"
       checkout i = statusOf <$> postCreateAs client i (createBody "price_legend" (Just "offer_12m") "btc" (codeHashText $ "code" <> tshow i))
   -- refused requests never reach the provider, so they take none of the shared checkouts
-  mapM malformed [1 .. lmPerMinute invoicesLimit + 1] >>= (`shouldSatisfy` all (== 400))
-  mapM checkout [1 .. lmPerMinute invoicesLimit] >>= (`shouldSatisfy` notElem 429)
-  checkout (lmPerMinute invoicesLimit + 1) `shouldReturn` 429
+  mapM malformed [1 .. checkouts + 1] >>= (`shouldSatisfy` all (== 400))
+  mapM checkout [1 .. checkouts] >>= (`shouldSatisfy` notElem 429)
+  checkout (checkouts + 1) `shouldReturn` 429
+  where
+    checkouts = lmPerMinute (invoicesLimit (SPMCrypto CCBtc))
+
+testCheckoutLimitPerNetwork :: IO ()
+testCheckoutLimitPerNetwork = bounded "checkouts per network" $ withCheckoutProvider distinctProviderRefs $ \_ _ client -> do
+  let checkout = checkoutFrom client "btc"
+      perNetwork = lmPerMinute checkoutLimit
+      inV4Network i = "198.51.100." <> show i
+      inV6Network i = "2001:db8:1:" <> show i <> "::1"
+  mapM (checkout . inV4Network) [1 .. perNetwork] >>= (`shouldSatisfy` all (== 200))
+  mapM (checkout . inV4Network) [perNetwork + 1 .. perNetwork + lmPerMinute (invoicesLimit (SPMCrypto CCBtc))] >>= (`shouldSatisfy` all (== 429))
+  checkout "::ffff:198.51.100.250" `shouldReturn` 429
+  checkout "198.51.101.1" `shouldReturn` 200
+  mapM (checkout . inV6Network) [1 .. perNetwork] >>= (`shouldSatisfy` all (== 200))
+  checkout (inV6Network (perNetwork + 1)) `shouldReturn` 429
+  checkout "2001:db8:2::1" `shouldReturn` 200
+
+testCardCheckoutPastSpentBTCPay :: IO ()
+testCardCheckoutPastSpentBTCPay = bounded "card past spent btcpay" $ withCheckoutProviders (\ref -> [distinctProviderRefs ref, card ref]) $ \_ env client -> do
+  let crypto = invoicesLimit (SPMCrypto CCBtc)
+      fromNetwork i = "198.51.100." <> show i
+  replicateM_ (lmPerMinute crypto) $ takeToken (weHttp env) crypto ""
+  mapM (checkoutFrom client "btc" . fromNetwork) [1 .. lmPerMinute checkoutLimit] >>= (`shouldSatisfy` all (== 429))
+  checkoutFrom client "card" (fromNetwork (lmPerMinute checkoutLimit + 1)) `shouldReturn` 200
+  where
+    card ref =
+      let p = distinctProviderRefs ref
+       in p {pProvider = PPStripe, pCreateInvoice = \spm draft -> fmap (\inv -> inv {piDestination = SPDCard CPStripe "pi_secret"}) <$> pCreateInvoice p spm draft}
+
+testCheckoutClientOfPeer :: IO ()
+testCheckoutClientOfPeer = do
+  http <- newHttpEnv (listener (testServiceConfig "" False))
+  let from addr = checkoutClient http Wai.defaultRequest {Wai.remoteHost = addr, Wai.requestHeaders = [("X-Forwarded-For", "203.0.113.1")]}
+      v4 a b c d = SockAddrInet 0 (tupleToHostAddress (a, b, c, d))
+      v6 a b c d = SockAddrInet6 0 0 (tupleToHostAddress6 (a, b, c, d, 0, 0, 0, 1)) 0
+  from (v4 198 51 100 1) `shouldBe` from (v4 198 51 100 200)
+  from (v4 198 51 100 1) `shouldNotBe` from (v4 198 51 101 1)
+  from (v6 0x2001 0xdb8 1 1) `shouldBe` from (v6 0x2001 0xdb8 1 0xffff)
+  from (v6 0x2001 0xdb8 1 1) `shouldNotBe` from (v6 0x2001 0xdb8 2 1)
+  from (SockAddrInet6 0 0 (tupleToHostAddress6 (0, 0, 0, 0, 0, 0xffff, 0xc633, 0x6407)) 0) `shouldBe` from (v4 198 51 100 1)
+
+checkoutFrom :: WebClient -> Text -> String -> IO Int
+checkoutFrom client methodText address =
+  statusOf <$> webRequestBody client "POST" "/api/invoice" [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack address)] (createBody supporterPriceId Nothing methodText (codeHashText (T.pack address)))
 
 testHoldSlots :: IO ()
 testHoldSlots = bounded "hold slots" $ withWebApp $ \env client -> do
@@ -2062,7 +2115,8 @@ testBTCPayConfig =
       bWebhookSecret = "webhook-secret",
       bExpiryMinutes = testExpiryMinutes,
       bSpeedPolicy = MediumSpeed,
-      bPaymentTolerance = 0.5
+      bPaymentTolerance = 0.5,
+      bTimeoutMicros = providerTimeoutMicros
     }
 
 supporterPriceId, legendPriceId, disabledPriceId :: Text
@@ -2105,14 +2159,17 @@ postCreateAs client i body =
     client
     "POST"
     "/api/invoice"
-    [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ("203.0.113." <> show i))]
+    [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ("203.0." <> show i <> ".1"))]
     body
 
 withCheckout :: (IORef StubState -> WebEnv -> WebClient -> IO a) -> IO a
 withCheckout = withCheckoutProvider stubProvider
 
 withCheckoutProvider :: (IORef StubState -> Provider) -> (IORef StubState -> WebEnv -> WebClient -> IO a) -> IO a
-withCheckoutProvider mkProvider action =
+withCheckoutProvider mkProvider = withCheckoutProviders (\ref -> [mkProvider ref])
+
+withCheckoutProviders :: (IORef StubState -> [Provider]) -> (IORef StubState -> WebEnv -> WebClient -> IO a) -> IO a
+withCheckoutProviders mkProviders action =
   withServiceStore $ \st -> do
     createDirectoryIfMissing True "tests/tmp"
     withTempDirectory "tests/tmp" "badge-checkout" $ \root -> do
@@ -2120,7 +2177,7 @@ withCheckoutProvider mkProvider action =
       seedCheckoutCatalog st
       ref <- newIORef (newStubState (Right sampleProviderInvoice))
       let cfg = (testServiceConfig staticDir True) {btcpay = Just testBTCPayConfig}
-      withListener [mkProvider ref] True holdMicros st cfg (action ref)
+      withListener (mkProviders ref) True holdMicros st cfg (action ref)
 
 invoiceCount :: DBStore -> IO Int
 invoiceCount st = withConnection st $ \db -> do
@@ -3088,6 +3145,42 @@ testProviderFailureLosesNothing = bounded "provider outage" $ withStubPoller rac
   runOnePass poller
   invoiceStatus (weStore env) iid `shouldReturn` ISPaid
   stubCalls ref `shouldReturn` [StubRead "p-1", StubListOpen, StubRead "p-1"]
+
+testStalledBTCPayHoldsNoCardSettlement :: IO ()
+testStalledBTCPayHoldsNoCardSettlement = bounded "stalled btcpay" $ withFakePoller $ \fake poller env _ -> do
+  stalled <- btcpayProvider (fbConfig fake) {bTimeoutMicros = 300000}
+  ref <- newIORef (newStubState (Right sampleProviderInvoice))
+  seedBadgePrice (weStore env) "price1"
+  btcpayRows <- mapM (\i -> seedOpenRef (weStore env) i ("p-btcpay-" <> tshow i) someExpiry) [1 .. 5]
+  cardRow <- seedOpenRefOf PPStripe (weStore env) 9 "p-stripe" someExpiry
+  setSignals ref [("p-stripe", settledSignal)]
+  answerStalled fake True
+  asked <- length <$> fakeRequests fake
+  let pass = runOnePass poller {peProviders = [stalled, (stubProvider ref) {pProvider = PPStripe}]}
+  pass
+  subtract asked . length <$> fakeRequests fake `shouldReturn` 1
+  mapM (invoiceStatus (weStore env)) (btcpayRows <> [cardRow]) `shouldReturn` replicate 5 ISOpen <> [ISPaid]
+  pass
+  subtract asked . length <$> fakeRequests fake `shouldReturn` 2
+
+testListTimeoutKeepsTheReads :: IO ()
+testListTimeoutKeepsTheReads = bounded "list timeout" $ withStubPoller raceHold $ \ref poller env _ -> do
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  overdue <- seedOpenRef (weStore env) 1 "p-overdue" (addUTCTime (-3600) now)
+  mapM_ (\i -> seedOpenRef (weStore env) i ("p-bulk-" <> tshow i) someExpiry) [2 .. readsPerPass + 2]
+  failList ref (Just (timeoutError "list invoices"))
+  runOnePass poller
+  stubCalls ref `shouldReturn` [StubListOpen, StubRead "p-overdue"]
+  invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
+
+testFailedReadKeepsTheOtherReads :: IO ()
+testFailedReadKeepsTheOtherReads = bounded "failed read" $ withStubPoller raceHold $ \ref poller env _ -> do
+  seedBadgePrice (weStore env) "price1"
+  mapM_ (\i -> seedOpenRef (weStore env) i ("p-" <> tshow i) someExpiry) [1 .. 3]
+  failRead ref (Just (ProviderError "connection refused"))
+  runOnePass poller
+  stubCalls ref `shouldReturn` [StubRead "p-1", StubRead "p-2", StubRead "p-3", StubListOpen]
 
 testCadenceFollowsTheWaiters :: IO ()
 testCadenceFollowsTheWaiters = bounded "cadence" $ withStubPoller raceHold $ \_ poller env client -> do

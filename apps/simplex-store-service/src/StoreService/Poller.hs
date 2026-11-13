@@ -40,7 +40,7 @@ import StoreService.Names.LateCredits (CreditOutcome (..), LateMoney (..), credi
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Store (CleanupKept (..), LateAlert (..), LateCredit (..), LateCreditState (..), LatePending (..), LateSupport (..), claimLateAlert, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
 import StoreService.Orders (decide, expireOverdue, settleOrder, signalReceived)
-import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), expiresItself, settleWindow, unitName)
+import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), expiresItself, isTimeout, settleWindow, unitName)
 import StoreService.Safely (safely, safelyWith)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
@@ -154,7 +154,12 @@ newPollerEnv peStore peWaiters pePhases peHints peProviders pePoll = do
 -- so an invoice with money in it is never expired. After a list that cannot account for every invoice, only overdue
 -- invoices read one by one are swept, so a flood of orders past the list's cap cannot stop the sweep.
 runOnePass :: PollerEnv -> IO ()
-runOnePass env@PollerEnv {peStore, peProviders} = do
+runOnePass env@PollerEnv {peProviders} = do
+  providers <- mapM passProvider peProviders
+  runPass env {peProviders = providers}
+
+runPass :: PollerEnv -> IO ()
+runPass env@PollerEnv {peStore, peProviders} = do
   now <- getCurrentTime
   forgetRates env
   rows <- unpaidRefs peStore (addUTCTime (negate settleWindow) now)
@@ -176,6 +181,20 @@ runOnePass env@PollerEnv {peStore, peProviders} = do
     Just m -> sweepPastWindow env now (readsBy rows m) m
   void $ safely "names: the late credit pass" (creditPass env now)
   cleanupUnpaid env now
+
+passProvider :: Provider -> IO Provider
+passProvider p@Provider {pProvider, pReadInvoice, pCancelInvoice, pListOpen, pCurrentRate} = do
+  timedOut <- newTVarIO False
+  let unlessTimedOut :: IO (Either ProviderError a) -> IO (Either ProviderError a)
+      unlessTimedOut call =
+        readTVarIO timedOut >>= \case
+          True -> pure $ Left $ ProviderError $ tshow pProvider <> " is not asked again in this pass, as a call to it timed out"
+          False -> call
+      skipping :: IO (Either ProviderError a) -> IO (Either ProviderError a)
+      skipping call = unlessTimedOut $ do
+        r <- call
+        r <$ when (either isTimeout (const False) r) (atomically $ writeTVar timedOut True)
+  pure p {pReadInvoice = skipping . pReadInvoice, pCancelInvoice = skipping . pCancelInvoice, pListOpen = unlessTimedOut pListOpen, pCurrentRate = (skipping .) <$> pCurrentRate}
 
 -- | The cases the stray list catches are rare and not urgent, so minutes, not the pass cadence.
 strayListInterval :: NominalDiffTime
