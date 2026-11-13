@@ -2465,9 +2465,10 @@ processChatCommand cxt nm = \case
     when (isJust groupDirectInv) $ throwCmdError "contact is a member contact request"
     ccLink <- case contactLink of
       Just (CLFull cReq) -> pure $ CCLink cReq Nothing
-      Just (CLShort sLnk) -> do
+      Just (CLShort sLnk@(CSLContact _ CCTContact _ _)) -> do
         (_, _, cReq) <- getShortLinkConnReq nm user sLnk
         pure $ CCLink cReq $ Just sLnk
+      Just (CLShort _) -> throwChatError CEInvalidConnReq
       Nothing -> throwCmdError "no address in contact profile"
     connectContactViaAddress user incognito ct ccLink `catchAllErrors` \e -> do
       -- get updated contact, in case connection was started - in UI it would lock ability to change incognito choice
