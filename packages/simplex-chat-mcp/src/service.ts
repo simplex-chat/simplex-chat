@@ -499,7 +499,15 @@ export function sessionName(title: string | undefined, project: string): string 
 function readyChannel(env: NodeJS.ProcessEnv): (line: string) => void {
   const fd = Number(env.SIMPLEX_MCP_READY_FD)
   return line => {
-    if (Number.isInteger(fd) && fd >= firstFreeFd) writeSync(fd, `${line}\n`)
+    if (Number.isInteger(fd) && fd >= firstFreeFd) writeReady(fd, `${line}\n`)
     else process.stdout.write(`${line}\n`)
+  }
+}
+
+function writeReady(fd: number, text: string): void {
+  try {
+    writeSync(fd, text)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EPIPE") throw error
   }
 }

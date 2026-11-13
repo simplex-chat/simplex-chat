@@ -1,4 +1,5 @@
 import {once} from "events"
+import * as fs from "fs"
 import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
 import {Server, request} from "http"
 import {Socket} from "net"
@@ -932,6 +933,10 @@ describe("runService", () => {
   const answering = async (): Promise<void> => {
     other = await socket.listen(socketPath(root), serviceToken(root), {})
   }
+  const brokenReadyPipe = (): jest.SpyInstance =>
+    jest.spyOn(fs, "writeSync").mockImplementation(() => {
+      throw Object.assign(new Error("EPIPE: broken pipe, write"), {code: "EPIPE"})
+    })
 
   afterEach(async () => {
     if (other) await closeServer(other)
@@ -1003,6 +1008,32 @@ describe("runService", () => {
     }
     expect(readFileSync(readyFile, "utf8")).toBe("running\n")
     expect(write).not.toHaveBeenCalled()
+  })
+
+  it("ends without an error when the process that waited for its running line is gone", async () => {
+    await answering()
+    writeFileSync(lockFile(), `${process.ppid}\n`)
+    const write = brokenReadyPipe()
+    await runService({SIMPLEX_MCP_HOME: root, SIMPLEX_MCP_READY_FD: "3"})
+    expect(write).toHaveBeenCalledWith(3, "running\n")
+  })
+
+  it("keeps running after its own start when the process that waited for its ready line is gone", async () => {
+    const stop = jest.fn(async () => undefined)
+    jest.spyOn(Service, "start").mockResolvedValue({stop} as unknown as Service)
+    jest.spyOn(process.stdout, "write").mockImplementation(() => true)
+    serviceToken(root)
+    const write = brokenReadyPipe()
+    const signals = ["SIGINT", "SIGTERM"] as const
+    const before = signals.map(signal => process.listeners(signal))
+    try {
+      await runService({SIMPLEX_MCP_HOME: root, SIMPLEX_MCP_READY_FD: "3"})
+      expect(write).toHaveBeenCalledWith(3, "ready\n")
+      expect(signals.map(signal => process.listeners(signal).length)).toEqual(before.map(listeners => listeners.length + 1))
+      expect(stop).not.toHaveBeenCalled()
+    } finally {
+      signals.forEach((signal, i) => process.listeners(signal).filter(listener => !before[i].includes(listener)).forEach(listener => process.off(signal, listener)))
+    }
   })
 
   it("reports a start error and exits with 1", async () => {

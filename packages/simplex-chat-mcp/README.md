@@ -29,15 +29,17 @@ You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://si
 
    If you don't want to run SimpleX MCP as a channel, start `claude` without the flag to use it as an MCP server. [Read more](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md#install).
 
-   Scan the QR code with the SimpleX app and tap Join. The group "SimpleX MCP" appears.
+   Scan the QR code with the SimpleX app and tap Join. The group "Claude Control" appears. At the first start the plugin downloads the SimpleX core library, so the QR code can take a minute. If you close Claude Code before then, the next start shows it.
 
-3. Each Claude Code session gets its own group, such as "1 · my-project". Join it from the invitation in "SimpleX MCP".
+   On several machines or containers, set `SIMPLEX_MCP_MACHINE` on each, for example `SIMPLEX_MCP_MACHINE=laptop`, to name its group "Claude Control - laptop".
+
+3. Each Claude Code session gets its own group, such as "1 · my-project". Join it from the invitation in "Claude Control".
 
 4. Send prompts in the session's group, and Claude answers there. Reply to a message to show Claude which one you mean. Prompts you type in the terminal appear there too, and Claude Code's own prompts, such as a finished background task, appear as one line each. Before Claude acts in other chats or uses a tool such as Bash, it asks in the group, and one tap approves.
 
 ## Safety
 
-- Anyone in "SimpleX MCP" can join your sessions as an admin, so only invite people you trust.
+- Anyone in "Claude Control" can join your sessions as an admin, so only invite people you trust.
 - In a session, admins and owners can prompt Claude and approve what it does. Other members can only prompt, and observers can only read.
 - Claude Code doesn't run `!` or `/` commands sent in the group.
 - Claude sends files to the group only if the group allows them.

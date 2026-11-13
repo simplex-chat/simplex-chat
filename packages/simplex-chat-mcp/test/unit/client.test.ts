@@ -6,7 +6,7 @@ import {logFile, serviceToken, socketPath} from "../../src/files"
 import {ExitError} from "../../src/log"
 import {protocolVersion} from "../../src/protocol"
 import {listen, sendJson} from "../../src/socket"
-import {closeServer} from "./fixtures"
+import {closeServer, descendants} from "./fixtures"
 
 let root: string
 const script = (body: string): [string, string[]] => {
@@ -36,6 +36,16 @@ describe("spawning the service", () => {
   it("reports a command that cannot start", async () => {
     const missing = join(root, "no-such-command")
     await expect(spawnService(root, [missing, []])).rejects.toEqual(new ExitError(`spawn ${missing} ENOENT`, 1))
+  })
+
+  it("starts the service outside the process tree of its caller, so that ending the caller with its descendants leaves the service running", async () => {
+    await spawnService(root, script(`require("fs").writeFileSync(process.env.SIMPLEX_MCP_HOME + "/pid", String(process.pid)); require("fs").writeSync(3, "ready\\n"); setTimeout(() => {}, 30_000)`))
+    const pid = Number(readFileSync(join(root, "pid"), "utf8"))
+    try {
+      expect(descendants(process.pid)).not.toContain(pid)
+    } finally {
+      process.kill(pid)
+    }
   })
 
   it("gives the service the data root", async () => {
