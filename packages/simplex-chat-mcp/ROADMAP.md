@@ -4,7 +4,6 @@ What comes next for Claude Code in SimpleX Chat.
 
 ## In the app
 
-- Sessions open in a flat layout by default, with the avatar raised and the text using the full width.
 - Claude appears as an agent, with the agent avatar.
 - Code in messages is highlighted.
 - "Read more" folds long messages, at a length you set.

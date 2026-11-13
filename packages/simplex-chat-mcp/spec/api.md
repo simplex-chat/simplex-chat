@@ -776,9 +776,9 @@ Posts:
 | Claude | `The file of this message was not received: ERROR`, as a reply to a prompt whose file was not received, see [4.5](#45-channel) | [hub.ts:234-258](../src/hub.ts#L234-L258) |
 | Claude | the reply to the one-line `/` texts of the rules above, quoting the message | [hub.ts:28](../src/hub.ts#L28), [:157](../src/hub.ts#L157) |
 | `User` | each prompt typed in the terminal, in parts. A prompt with `typed: false` is left out, such as a notification of a background task. A request without `typed`, from an older plugin, is posted as typed. Blank prompts, prompts made only of this server's channel tags, the prompts pushed from the group and one-line `/` commands are left out too. `User` posts in the group that is marked with the session's number | [hub.ts:184-195](../src/hub.ts#L184-L195), [user.ts:29-32](../src/user.ts#L29-L32) |
-| Claude | a text in place of an answer or a terminal prompt that the core refuses with `feature not allowed NAME`, as `SimpleX links` for a SimpleX link. The text for an answer is `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would. A terminal prompt is replaced by `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`, even while NAME is on only for roles above that of `User`. Claude is an owner of the group, so only the first text applies to its answers. The turn goes on | [hub.ts:195](../src/hub.ts#L195), [:277-287](../src/hub.ts#L277-L287), [:523-525](../src/hub.ts#L523-L525), [tools.ts:1607-1614](../src/tools.ts#L1607-L1614) |
+| Claude | a text in place of an answer or a terminal prompt that the core refuses with `feature not allowed NAME`, as `SimpleX links` for a SimpleX link. The text for an answer is `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would. A terminal prompt is replaced by `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`, even while NAME is on only for roles above that of `User`. Claude is an owner of the group, so only the first text applies to its answers. The turn goes on | [hub.ts:195](../src/hub.ts#L195), [:277-287](../src/hub.ts#L277-L287), [:524-526](../src/hub.ts#L524-L526), [tools.ts:1607-1614](../src/tools.ts#L1607-L1614) |
 | Claude | files sent by `reply`, at once | [tools.ts:713-730](../src/tools.ts#L713-L730), [hub.ts:93](../src/hub.ts#L93) |
-| Claude | the rights of the member's role, below. They are posted once for each join and each role change of a member other than `User`, at its `joinedGroupMember`, `connectedToGroupMember` or `memberRole` | [hub.ts:220-227](../src/hub.ts#L220-L227), [:518](../src/hub.ts#L518), [control.ts:40-43](../src/control.ts#L40-L43), [:884-891](../src/control.ts#L884-L891) |
+| Claude | the rights of the member's role, below. They are posted once for each join and each role change of a member other than `User`, at its `joinedGroupMember`, `connectedToGroupMember` or `memberRole` | [hub.ts:220-227](../src/hub.ts#L220-L227), [:519](../src/hub.ts#L519), [control.ts:40-43](../src/control.ts#L40-L43), [:884-891](../src/control.ts#L884-L891) |
 
 Rights posts, by the member's role in the session group:
 
@@ -791,9 +791,9 @@ Rights posts, by the member's role in the session group:
 
 #G is the session group, and ID is the member. The core raises no `memberRole` event for a role change that Claude makes itself, with `/observer`. The reply to `/observer` is the observer's post instead.
 
-Parts ([hub.ts:531-548](../src/hub.ts#L531-L548), [tools.ts:1575-1578](../src/tools.ts#L1575-L1578)): the hub cuts the text into the longest runs of whole characters that `fitsMessage` accepts as one message. `fitsMessage` is the measure of `send` in [1.3](#13-send), in UTF-8 bytes. The first part is measured with its quote. The hub puts up to 14962 bytes of text into a part without a quote: 14962 Latin, 7481 Cyrillic or 4987 CJK characters, fewer for characters escaped in JSON.
+Parts ([hub.ts:532-549](../src/hub.ts#L532-L549), [tools.ts:1575-1578](../src/tools.ts#L1575-L1578)): the hub cuts the text into the longest runs of whole characters that `fitsMessage` accepts as one message. `fitsMessage` is the measure of `send` in [1.3](#13-send), in UTF-8 bytes. The first part is measured with its quote. The hub puts up to 14962 bytes of text into a part without a quote: 14962 Latin, 7481 Cyrillic or 4987 CJK characters, fewer for characters escaped in JSON.
 
-Claude can quote a message in its answer and its replies. When the core refuses such a post with `errorStore` `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or with `largeMsg`, as for a reply that quotes a message near the size limit, the post is sent again without the quote ([hub.ts:289-295](../src/hub.ts#L289-L295), [:550-553](../src/hub.ts#L550-L553)).
+Claude can quote a message in its answer and its replies. When the core refuses such a post with `errorStore` `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, or with `largeMsg`, as for a reply that quotes a message near the size limit, the post is sent again without the quote ([hub.ts:289-295](../src/hub.ts#L289-L295), [:551-554](../src/hub.ts#L551-L554)).
 
 Turn records, one per `/turn` with `prompt`, are read and changed before the first await of each `/turn` ([hub.ts:54](../src/hub.ts#L54), [:180-186](../src/hub.ts#L180-L186), [:266-275](../src/hub.ts#L266-L275)):
 
@@ -813,7 +813,7 @@ on /turn {at, answer}, also an empty answer:
 at = performance.timeOrigin of the hook process; absent: Infinity for an answer's quote, now otherwise
 ```
 
-Group profile ([`createSessionGroup`](../src/hub.ts#L477-L489), [`Control.load`](../src/control.ts#L115-L122), [`describe`](../src/control.ts#L129-L131), [`updateProfile`](../src/control.ts#L133-L140)):
+Group profile ([`createSessionGroup`](../src/hub.ts#L477-L490), [`Control.load`](../src/control.ts#L115-L122), [`describe`](../src/control.ts#L129-L131), [`updateProfile`](../src/control.ts#L133-L140)):
 
 | Field | Value |
 |---|---|
@@ -823,6 +823,7 @@ Group profile ([`createSessionGroup`](../src/hub.ts#L477-L489), [`Control.load`]
 | history | on |
 | direct messages | off |
 | command menu | as in [2.5](#25-group-profile) |
+| chat layout | `terminal`, which the apps name Flat, set only when the group is created |
 | members | `Claude`, the members invited through the Main group, the members others added directly, `User` |
 
 Claude makes the profile updates one at a time. It starts each from the group's current profile in the chat database and changes only the display name, the short description or the command menu. So a rename and a model change that overlap both stay.
@@ -930,7 +931,7 @@ on the next start:                               each one taken as a new /title
 - The hub sets the expiry of all sessions from `expireHours`.
 - The hub renames the Main group when `mainGroup` differs.
 
-`/session` requests the session's mode ([hub.ts:132-151](../src/hub.ts#L132-L151), [:319-322](../src/hub.ts#L319-L322), [:324-327](../src/hub.ts#L324-L327), [:75](../src/hub.ts#L75), [:518](../src/hub.ts#L518)):
+`/session` requests the session's mode ([hub.ts:132-151](../src/hub.ts#L132-L151), [:319-322](../src/hub.ts#L319-L322), [:324-327](../src/hub.ts#L324-L327), [:75](../src/hub.ts#L75), [:519](../src/hub.ts#L519)):
 - `requests` applies at once. The hub ends a pending mode card and clears `hostDeclined`.
 - For `host`, the hub posts the mode card when the group has an approver and `hostDeclined` is unset. It posts the card at once, or after the next membership event of the group.
 - When the mode card is rejected, the hub sets `hostDeclined` in session.json.
@@ -980,7 +981,7 @@ The service's stdout and stderr are written to `service.log` ([client.ts:77](../
 | no owners, members present | `No owners in the Main group.` | [main-group.ts:15](../src/main-group.ts#L15), [:70](../src/main-group.ts#L70), [:124](../src/main-group.ts#L124) |
 | owner joined | `NAME joined (member ID) and is now an owner. The link is deleted.` | [main-group.ts:139](../src/main-group.ts#L139) |
 | Main group lost | `The Main group is lost. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` | [main-group.ts:144](../src/main-group.ts#L144) |
-| session group created | `Group "N · NAME" of session N created.` | [hub.ts:487](../src/hub.ts#L487) |
+| session group created | `Group "N · NAME" of session N created.` | [hub.ts:488](../src/hub.ts#L488) |
 | session group lost | `The group "N · NAME" is lost.` | [control.ts:483](../src/control.ts#L483) |
 | actions | as in [3.4](#34-terminal-lines), with ` of session N` after `Action N`, and `allowed.` for a tool use | [actions.ts:210](../src/actions.ts#L210), [:410](../src/actions.ts#L410) |
 | stop | `Cancelled K action(s).`, `Stopping: sending K cancelled card(s), up to 10 s. Ctrl-C to stop now.`, `Stopped.` | [service.ts:189](../src/service.ts#L189), [serve.ts:164](../src/serve.ts#L164), [service.ts:192](../src/service.ts#L192) |

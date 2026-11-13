@@ -481,6 +481,7 @@ export class Hub implements SessionGroups {
       fullName: "",
       description: `The Claude Code session ${number}. Members send it prompts; admins and owners also send the group's commands and approve tool use.`,
       groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, directMessages: {enable: T.GroupFeatureEnabled.Off}, commands: controlCommands},
+      chatLayout: T.ChatLayout.Terminal,
     }, {[sessionKey]: {session: number}})
     const user = await userContact(this.chat, this.profile.userId)
     if (user !== undefined) await this.chat.apiAddMember(group.groupId, user.contactId, T.GroupMemberRole.Member).catch(error => logError(`User in session ${number}`, error))

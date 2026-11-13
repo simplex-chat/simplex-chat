@@ -758,11 +758,11 @@ Data flow of a tool call:
 3. The session process sends `POST /call` with the session ID, the tool and the input. It relays each `{progress}` line as an MCP progress notification, and returns the `{result}` line ([session.ts:132-151](../src/session.ts#L132-L151)).
 4. The service checks the token ([socket.ts:18-48](../src/socket.ts#L18-L48)). It finds or opens the entry of the session or of its alias, and runs the session's `AgentTools.call` with a signal tied to the request ([service.ts:326-345](../src/service.ts#L326-L345)).
 5. `AgentTools` sends chat commands to the core `_hub`. Actions are created in the session's `Actions`, and the session's `Control` posts them as cards in the session's group ([hub.ts:69-103](../src/hub.ts#L69-L103)).
-6. The core emits events to `Hub.onEvent`. The hub passes them to the Main group, each session's `AgentTools.onEvent`, and the `Control` of the session group they belong to ([hub.ts:491-521](../src/hub.ts#L491-L521)).
+6. The core emits events to `Hub.onEvent`. The hub passes them to the Main group, each session's `AgentTools.onEvent`, and the `Control` of the session group they belong to ([hub.ts:492-522](../src/hub.ts#L492-L522)).
 
 Data flow of a prompt from the session group:
 
-1. `Session.onMessage` receives a message of a member in the group of session N ([hub.ts:495-500](../src/hub.ts#L495-L500)). A one-line `/` command goes to `Control`. Another message is queued after the earlier ones ([:153-160](../src/hub.ts#L153-L160)). `Session.prompt` drops a message of `User` and delivers the rest ([:229-232](../src/hub.ts#L229-L232)).
+1. `Session.onMessage` receives a message of a member in the group of session N ([hub.ts:496-501](../src/hub.ts#L496-L501)). A one-line `/` command goes to `Control`. Another message is queued after the earlier ones ([:153-160](../src/hub.ts#L153-L160)). `Session.prompt` drops a message of `User` and delivers the rest ([:229-232](../src/hub.ts#L229-L232)).
 2. In the first 30 s after the hub opened, a delivery without an attachment waits for one. With an attachment, the file of the message, if any, is received. Then, if the session is not attached, the hub replies `Session N is not running.` Otherwise the prompt is pushed, and the line `{prompt}` is written to every `/attach` stream of the session ([hub.ts:234-248](../src/hub.ts#L234-L248), [service.ts:314](../src/service.ts#L314)).
 3. The session process sends it to Claude Code as `notifications/claude/channel` ([session.ts:53-56](../src/session.ts#L53-L56), [:197-201](../src/session.ts#L197-L201)).
 4. The hooks post the terminal prompts and the final answer of each turn with `POST /turn` ([hook.ts:91-112](../src/hook.ts#L91-L112), [hub.ts:180-201](../src/hub.ts#L180-L201)).
@@ -867,11 +867,11 @@ Data flow of a prompt from the session group:
 | `Hub.session` | [406](../src/hub.ts#L406) | the open session, renamed when its name changed, or a new `Session` with its stored or new group. The owners are invited to a new group. |
 | `Hub.sessionsText`, `join`, `inviteOwner` | [430-452](../src/hub.ts#L430-L452) | `SessionGroups` of the Main group |
 | `Hub.stop` | [458](../src/hub.ts#L458) | actions stopped, events awaited, cancelled cards awaited up to 10 s, cores closed |
-| `storedGroup`, `createSessionGroup` | [470-489](../src/hub.ts#L470-L489) | the group of `session.json` with a matching session number; a new group with `User` added |
-| `Hub.onEvent` | [491](../src/hub.ts#L491) | event dispatch. Pending connections are claimed at `contactConnected` and `userJoinedGroup`. A session group's membership events go to its `Control`, `announceRights` and `askMode`, one at a time. |
-| `notAllowedForUser` | [523](../src/hub.ts#L523) | `NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` It is posted for a prompt of `User` refused by a group preference, including one that is on only for roles above that of `User`. |
-| `textParts` | [531](../src/hub.ts#L531) | the longest runs of whole characters that each fit in one message by `fitsMessage`, the first with the given quote. Each part is found by a binary search among the next `maxMessageLength` characters. |
-| `isRefusedQuote` | [550](../src/hub.ts#L550) | `errorStore` `invalidQuote`, `chatItemNotFound` or `largeMsg` |
+| `storedGroup`, `createSessionGroup` | [470-490](../src/hub.ts#L470-L490) | the group of `session.json` with a matching session number; a new group in the Flat layout with `User` added |
+| `Hub.onEvent` | [492](../src/hub.ts#L492) | event dispatch. Pending connections are claimed at `contactConnected` and `userJoinedGroup`. A session group's membership events go to its `Control`, `announceRights` and `askMode`, one at a time. |
+| `notAllowedForUser` | [524](../src/hub.ts#L524) | `NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` It is posted for a prompt of `User` refused by a group preference, including one that is on only for roles above that of `User`. |
+| `textParts` | [532](../src/hub.ts#L532) | the longest runs of whole characters that each fit in one message by `fitsMessage`, the first with the given quote. Each part is found by a binary search among the next `maxMessageLength` characters. |
+| `isRefusedQuote` | [551](../src/hub.ts#L551) | `errorStore` `invalidQuote`, `chatItemNotFound` or `largeMsg` |
 
 #### [`main-group.ts`](../src/main-group.ts)
 
@@ -975,7 +975,7 @@ Chat database custom data is in the core `_hub` unless noted:
 | Item | Entity | Value | Written by | Read by |
 |---|---|---|---|---|
 | Main group marker | Main group | `{simplexMcpMain: true}` | [`createMainGroup`](../src/main-group.ts#L195-L205) | [`findMainGroup`](../src/main-group.ts#L185-L188) |
-| Session group | group of session N | `{simplexMcpSession: {session: N, pending?: [{connId, at}], mode?}}`, where `mode` is the approved mode | [`createSessionGroup`](../src/hub.ts#L477-L489), [`setMode`](../src/hub.ts#L319-L322), [`savePending`](../src/hub.ts#L335-L339), [`claimPending`](../src/hub.ts#L162-L167) | [`storedGroup`](../src/hub.ts#L470-L475), [`Session` constructor](../src/hub.ts#L75), [`claimPending`](../src/hub.ts#L162-L167) |
+| Session group | group of session N | `{simplexMcpSession: {session: N, pending?: [{connId, at}], mode?}}`, where `mode` is the approved mode | [`createSessionGroup`](../src/hub.ts#L477-L490), [`setMode`](../src/hub.ts#L319-L322), [`savePending`](../src/hub.ts#L335-L339), [`claimPending`](../src/hub.ts#L162-L167) | [`storedGroup`](../src/hub.ts#L470-L475), [`Session` constructor](../src/hub.ts#L75), [`claimPending`](../src/hub.ts#L162-L167) |
 | Action counter | group of session N | `{simplexMcp: {control: true, nextAction}}`, merged with the other keys | [`saveCounter`, `saveData`](../src/control.ts#L172-L184) | [`Session` constructor](../src/hub.ts#L75) |
 | Chat owner | contact or group of a peer | `{...other keys, simplexMcpOwner: {session: ID}}` | [`claim`](../src/tools.ts#L581-L585), [`giveChat`](../src/tools.ts#L568-L571) | [`owns`](../src/tools.ts#L577-L579) |
 | Standing approvals | contact or group of a peer | as in [3.2](#32-chat-database-custom-data) | `Control` of the owning session's group | the same |
@@ -1036,7 +1036,7 @@ ensureService(VERSION):                               client.ts:32
 
 #### Event dispatch
 
-After a stop, `Hub.onEvent` ignores events ([hub.ts:491-521](../src/hub.ts#L491-L521)). Otherwise it runs `expireDue` of every session first, and then dispatches the event:
+After a stop, `Hub.onEvent` ignores events ([hub.ts:492-522](../src/hub.ts#L492-L522)). Otherwise it runs `expireDue` of every session first, and then dispatches the event:
 
 | Event | Condition | Handler |
 |---|---|---|
@@ -1076,9 +1076,9 @@ On `SIGINT`, `SIGTERM`, `POST /stop` or the stop timer ([service.ts:177-199](../
 | Everyone in the Main group is trusted with all sessions. This is stated in the group's short description and welcome message, set when the group is created, and in Claude's post at each join. In a session group, Claude posts the member's rights at each join and each role change, with the `/observer` command only for a role that can send, other than owner. The observer's rights are stated in Claude's reply to `/observer`. | [main-group.ts:16-18](../src/main-group.ts#L16-L18), [:195-205](../src/main-group.ts#L195-L205), [:127-128](../src/main-group.ts#L127-L128), [hub.ts:220-227](../src/hub.ts#L220-L227), [control.ts:386](../src/control.ts#L386), [:888-891](../src/control.ts#L888-L891) |
 | A file of `reply` is sent at once, in both modes. It can be refused by the group's preference for files and media, which owners set and the core enforces. A post of Claude or `User` in a session group, when refused by a group preference, is replaced by Claude's post with the preference's name, and is never dropped without one ([tools.ts:1607-1614](../src/tools.ts#L1607-L1614)). Claude updates a group's profile from its current profile in the chat database, and changes only its own fields, so the owners' preferences are kept. | [tools.ts:713-730](../src/tools.ts#L713-L730), [hub.ts:93](../src/hub.ts#L93), [control.ts:115-140](../src/control.ts#L115-L140), [:632-640](../src/control.ts#L632-L640), [main-group.ts:57-66](../src/main-group.ts#L57-L66) |
 | The first human who joins the Main group while it has no owner becomes an owner, and the link is deleted | [main-group.ts:122](../src/main-group.ts#L122), [:134-140](../src/main-group.ts#L134-L140) |
-| A session runs in mode `host` after an approver approves its `mode` card. The card is posted once an approver is in the group. After a rejection, the card is posted again only after `requests`. `requests` applies at once, and the hub ends a pending `mode` card. The mode is kept in the session group's custom data. | [hub.ts:132-151](../src/hub.ts#L132-L151), [:324-327](../src/hub.ts#L324-L327), [:518](../src/hub.ts#L518), [tools.ts:563-564](../src/tools.ts#L563-L564) |
+| A session runs in mode `host` after an approver approves its `mode` card. The card is posted once an approver is in the group. After a rejection, the card is posted again only after `requests`. `requests` applies at once, and the hub ends a pending `mode` card. The mode is kept in the session group's custom data. | [hub.ts:132-151](../src/hub.ts#L132-L151), [:324-327](../src/hub.ts#L324-L327), [:519](../src/hub.ts#L519), [tools.ts:563-564](../src/tools.ts#L563-L564) |
 | At a reset of the owners from the computer that runs Claude Code, the service replaces the Main group at once, even while owners exist. No owner's approval is needed for `reset-owners` and `POST /reset-owners`. | [hub.ts:402-404](../src/hub.ts#L402-L404), [owner.ts:28-33](../src/owner.ts#L28-L33), [main-group.ts:99-109](../src/main-group.ts#L99-L109) |
-| A chat without an owner is given to the session that connects it. The owner is set at one of four points: the perform, the connection event of its action, the completion of a pending connection that the session recorded, or a `connect` to the chat as a known chat. The tools of other sessions don't show the chat. With `/give CHAT N`, an approver moves the chat to session N. | [tools.ts:577-585](../src/tools.ts#L577-L585), [:750-755](../src/tools.ts#L750-L755), [:826](../src/tools.ts#L826), [:835](../src/tools.ts#L835), [:893](../src/tools.ts#L893), [hub.ts:162-167](../src/hub.ts#L162-L167), [:504-505](../src/hub.ts#L504-L505), [control.ts:362-373](../src/control.ts#L362-L373) |
+| A chat without an owner is given to the session that connects it. The owner is set at one of four points: the perform, the connection event of its action, the completion of a pending connection that the session recorded, or a `connect` to the chat as a known chat. The tools of other sessions don't show the chat. With `/give CHAT N`, an approver moves the chat to session N. | [tools.ts:577-585](../src/tools.ts#L577-L585), [:750-755](../src/tools.ts#L750-L755), [:826](../src/tools.ts#L826), [:835](../src/tools.ts#L835), [:893](../src/tools.ts#L893), [hub.ts:162-167](../src/hub.ts#L162-L167), [:505-506](../src/hub.ts#L505-L506), [control.ts:362-373](../src/control.ts#L362-L373) |
 
 Tool-use state machine, one action of tool `permission` per request:
 
@@ -1153,7 +1153,7 @@ sequenceDiagram
   Note over D: a later answer with at 4 quotes prompt N+1
 ```
 
-Sources: [hub.ts:153-207](../src/hub.ts#L153-L207), [:229-301](../src/hub.ts#L229-L301), [:531-548](../src/hub.ts#L531-L548).
+Sources: [hub.ts:153-207](../src/hub.ts#L153-L207), [:229-301](../src/hub.ts#L229-L301), [:532-549](../src/hub.ts#L532-L549).
 
 ### 8.7 Security boundaries
 
@@ -1187,7 +1187,7 @@ Sources: [hub.ts:153-207](../src/hub.ts#L153-L207), [:229-301](../src/hub.ts#L22
 | attempts of a turn the service refuses with status 409 | 15, 1 s apart | [hook.ts:13-15](../src/hook.ts#L13-L15) |
 | reads of the transcript for the model of Stop's answer and the origin of a prompt | 20 for the answer and 600 for the prompt, 100 ms apart, each of the last 1 MiB and twice the bytes of the answer or the prompt | [hook.ts:17-20](../src/hook.ts#L17-L20), [:131-152](../src/hook.ts#L131-L152) |
 | attachment retries of a session server | 1 s, doubled up to 30 s | [session.ts:19-20](../src/session.ts#L19-L20) |
-| part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [hub.ts:531-548](../src/hub.ts#L531-L548), [tools.ts:163-164](../src/tools.ts#L163-L164), [:1575-1578](../src/tools.ts#L1575-L1578) |
+| part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [hub.ts:532-549](../src/hub.ts#L532-L549), [tools.ts:163-164](../src/tools.ts#L163-L164), [:1575-1578](../src/tools.ts#L1575-L1578) |
 | cancelled cards wait at stop | 10 s | [hub.ts:21](../src/hub.ts#L21) |
 | `service.log` | emptied over 10 MB, at a spawn and every hour | [files.ts:9](../src/files.ts#L9), [:91-94](../src/files.ts#L91-L94), [service.ts:20](../src/service.ts#L20) |
 | socket path | 103 bytes: `sun_path` of `sockaddr_un` holds 104 bytes on macOS and 108 on Linux, with the terminating NUL | [files.ts:8](../src/files.ts#L8) |

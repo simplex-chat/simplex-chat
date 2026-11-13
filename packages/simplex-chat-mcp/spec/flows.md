@@ -211,7 +211,7 @@ Notes:
 | other links | `apiConnectPreparedLink(USER, incognito, LINK)` |
 
 - After a failed prepared connect, the server deletes the prepared chat without notifying ([tools.ts:876-883](../src/tools.ts#L876-L883)).
-- The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([tools.ts:655-663](../src/tools.ts#L655-L663), [:885-890](../src/tools.ts#L885-L890)). In the plugin, the pending connection ID is also recorded in the session group's custom data. When the connection completes after the call returned, within a day of the record, its chat becomes the session's ([tools.ts:826](../src/tools.ts#L826), [hub.ts:162-167](../src/hub.ts#L162-L167), [:504-505](../src/hub.ts#L504-L505)).
+- The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([tools.ts:655-663](../src/tools.ts#L655-L663), [:885-890](../src/tools.ts#L885-L890)). In the plugin, the pending connection ID is also recorded in the session group's custom data. When the connection completes after the call returned, within a day of the record, its chat becomes the session's ([tools.ts:826](../src/tools.ts#L826), [hub.ts:162-167](../src/hub.ts#L162-L167), [:505-506](../src/hub.ts#L505-L506)).
 - In the perform step the server waits for the other side until `startedAt + wait`, at most until `created + 23 h 50 min`, and then reports `connected: false` ([tools.ts:153](../src/tools.ts#L153), [:814](../src/tools.ts#L814), [:840-843](../src/tools.ts#L840-L843)).
 - Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([tools.ts:897](../src/tools.ts#L897), [messages.ts:327-335](../src/messages.ts#L327-L335)).
 - For a target the agent is connected to, the result is `status: known` with its chat fields, and no action is created ([tools.ts:737](../src/tools.ts#L737)). In the plugin, the chat becomes the session's when it has no owner ([tools.ts:750-755](../src/tools.ts#L750-L755)).
@@ -822,10 +822,10 @@ Notes:
 - Owners are invited to the groups of the open sessions when they join the Main group. The groups of closed sessions are joined with `/join N` ([hub.ts:448-452](../src/hub.ts#L448-L452), [:435-446](../src/hub.ts#L435-L446)).
 - The trust given to the Main group's members is stated in the group's short description and welcome message, which Claude sets when it creates the group ([main-group.ts:16-18](../src/main-group.ts#L16-L18), [:195-205](../src/main-group.ts#L195-L205)). Claude also states it in a post at each human's `joinedGroupMember` or `connectedToGroupMember` ([main-group.ts:127-128](../src/main-group.ts#L127-L128)). The joiner is found as in [flow 28](#28-a-member-joins-the-main-group-and-a-sessions-group-and-a-person-is-added-to-it).
 - Claude changes only the name and the menu of the Main group's profile, and starts each change from the group's current profile. So the short description, the welcome message and the preferences that owners set are kept ([main-group.ts:57-66](../src/main-group.ts#L57-L66), [control.ts:632-640](../src/control.ts#L632-L640)).
-- At each join other than `User`'s, Claude posts in the session group the rights of the joiner's role. For a role that can send, other than owner, the post ends with the command that makes the joiner an observer ([hub.ts:220-227](../src/hub.ts#L220-L227), [:518](../src/hub.ts#L518)).
+- At each join other than `User`'s, Claude posts in the session group the rights of the joiner's role. For a role that can send, other than owner, the post ends with the command that makes the joiner an observer ([hub.ts:220-227](../src/hub.ts#L220-L227), [:519](../src/hub.ts#L519)).
 - The service reads the hub's contact of `User` after `User` opens, so that the sessions recognize `User`'s messages ([hub.ts:376](../src/hub.ts#L376)).
 
-Source: [hook.ts:58-77](../src/hook.ts#L58-L77), [client.ts:35-92](../src/client.ts#L35-L92), [service.ts:93-119](../src/service.ts#L93-L119), [:218-262](../src/service.ts#L218-L262), [hub.ts:367-385](../src/hub.ts#L367-L385), [:406-424](../src/hub.ts#L406-L424), [:477-489](../src/hub.ts#L477-L489), [main-group.ts:117-140](../src/main-group.ts#L117-L140), [user.ts:16-57](../src/user.ts#L16-L57).
+Source: [hook.ts:58-77](../src/hook.ts#L58-L77), [client.ts:35-92](../src/client.ts#L35-L92), [service.ts:93-119](../src/service.ts#L93-L119), [:218-262](../src/service.ts#L218-L262), [hub.ts:367-385](../src/hub.ts#L367-L385), [:406-424](../src/hub.ts#L406-L424), [:477-490](../src/hub.ts#L477-L490), [main-group.ts:117-140](../src/main-group.ts#L117-L140), [user.ts:16-57](../src/user.ts#L16-L57).
 
 ---
 
@@ -1017,12 +1017,12 @@ Notes:
   - a blank prompt, which Claude Code sends for a prompt with images only;
   - a prompt made only of this plugin's channel tags, as after the pushed prompts were lost in a service restart;
   - a one-line `/` command, such as `/compact`.
-- An answer and a terminal prompt are posted in parts. Each part is the longest run of whole characters that fits in one message, as `send` measures it, and the first part of an answer is measured with its quote. The hub searches each part among the next 15602 characters. No command reply is posted to a part that `User` posts and that starts with `/` ([hub.ts:195](../src/hub.ts#L195), [:277-287](../src/hub.ts#L277-L287), [:531-548](../src/hub.ts#L531-L548), [tools.ts:1575-1578](../src/tools.ts#L1575-L1578), [control.ts:221](../src/control.ts#L221)).
-- When the core refuses the quote of an answer with `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, Claude posts the answer without the quote. It does the same when the core refuses the message with the quote as too large, with `largeMsg`. Claude also posts these replies without the quote in the same cases ([hub.ts:289-295](../src/hub.ts#L289-L295), [:550-553](../src/hub.ts#L550-L553)):
+- An answer and a terminal prompt are posted in parts. Each part is the longest run of whole characters that fits in one message, as `send` measures it, and the first part of an answer is measured with its quote. The hub searches each part among the next 15602 characters. No command reply is posted to a part that `User` posts and that starts with `/` ([hub.ts:195](../src/hub.ts#L195), [:277-287](../src/hub.ts#L277-L287), [:532-549](../src/hub.ts#L532-L549), [tools.ts:1575-1578](../src/tools.ts#L1575-L1578), [control.ts:221](../src/control.ts#L221)).
+- When the core refuses the quote of an answer with `invalidQuote` or `chatItemNotFound`, as for a deleted prompt, Claude posts the answer without the quote. It does the same when the core refuses the message with the quote as too large, with `largeMsg`. Claude also posts these replies without the quote in the same cases ([hub.ts:289-295](../src/hub.ts#L289-L295), [:551-554](../src/hub.ts#L551-L554)):
   - `Session N is not running.`
   - `The file of this message was not received: ERROR`
   - the reply to a one-line `/` text of a moderator, member or author
-- When the core refuses an answer or a terminal prompt with `feature not allowed NAME`, Claude posts a text in its place, and the turn goes on ([hub.ts:195](../src/hub.ts#L195), [:277-287](../src/hub.ts#L277-L287), [:523-525](../src/hub.ts#L523-L525)). NAME is, for example, `SimpleX links` for a SimpleX link while that preference is off. A prompt of `User` is also refused while the preference is on only for roles above that of `User`. The texts are:
+- When the core refuses an answer or a terminal prompt with `feature not allowed NAME`, Claude posts a text in its place, and the turn goes on ([hub.ts:195](../src/hub.ts#L195), [:277-287](../src/hub.ts#L277-L287), [:524-526](../src/hub.ts#L524-L526)). NAME is, for example, `SimpleX links` for a SimpleX link while that preference is off. A prompt of `User` is also refused while the preference is on only for roles above that of `User`. The texts are:
   - for an answer, `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would;
   - for a terminal prompt, `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`
 - The hook cuts a prompt or an answer over 250,000 characters at that length and appends `…`, so that the request fits within the socket's limit of 1 MiB ([hook.ts:16](../src/hook.ts#L16), [:190-192](../src/hook.ts#L190-L192)).
@@ -1036,7 +1036,7 @@ Notes:
 - For a Stop request with a changed model or effort, the hub posts the answer before it updates the short description. So the prompt of a request handled meanwhile is posted after the answer. The description is updated also when a post fails ([hub.ts:194-200](../src/hub.ts#L194-L200)).
 - A turn hook starts the service when none runs. It repeats a turn refused with 409 up to 15 times, 1 s apart, which is longer than the 10 s wait of a held title. It prints `{}` and logs errors on its stderr ([hook.ts:91-112](../src/hook.ts#L91-L112)). Claude Code gives a hook without `timeout` 600 s, more than the 60 s of a prompt's reads and the 15 s of repeats.
 
-Source: [hooks.json:5-7](../hooks/hooks.json#L5-L7), [hub.ts:180-201](../src/hub.ts#L180-L201), [:266-295](../src/hub.ts#L266-L295), [:531-548](../src/hub.ts#L531-L548), [user.ts:29-32](../src/user.ts#L29-L32).
+Source: [hooks.json:5-7](../hooks/hooks.json#L5-L7), [hub.ts:180-201](../src/hub.ts#L180-L201), [:266-295](../src/hub.ts#L266-L295), [:532-549](../src/hub.ts#L532-L549), [user.ts:29-32](../src/user.ts#L29-L32).
 
 ---
 
@@ -1103,7 +1103,7 @@ Notes:
 - An idle session is closed also while a `mode` card is pending ([hub.ts:119-121](../src/hub.ts#L119-L121)).
 - The session process marks the action tools for Claude Code's confirmation by the option read at its own start, before the owner decides ([session.ts:57](../src/session.ts#L57)).
 
-Source: [hub.ts:132-151](../src/hub.ts#L132-L151), [:319-333](../src/hub.ts#L319-L333), [:518](../src/hub.ts#L518), [tools.ts:563-564](../src/tools.ts#L563-L564).
+Source: [hub.ts:132-151](../src/hub.ts#L132-L151), [:319-333](../src/hub.ts#L319-L333), [:519](../src/hub.ts#L519), [tools.ts:563-564](../src/tools.ts#L563-L564).
 
 ---
 
@@ -1314,7 +1314,7 @@ Notes:
 - Claude answers `/join N` from a member of the group of session N with `You are a member of "N · NAME".` ([hub.ts:438-443](../src/hub.ts#L438-L443)).
 - At a reset of the owners, the session groups and their members stay as they are ([flow 25](#25-reset-owners)).
 
-Source: [main-group.ts:111-115](../src/main-group.ts#L111-L115), [:117-132](../src/main-group.ts#L117-L132), [hub.ts:216-227](../src/hub.ts#L216-L227), [:435-446](../src/hub.ts#L435-L446), [:518](../src/hub.ts#L518), [control.ts:375-387](../src/control.ts#L375-L387), [:884-891](../src/control.ts#L884-L891).
+Source: [main-group.ts:111-115](../src/main-group.ts#L111-L115), [:117-132](../src/main-group.ts#L117-L132), [hub.ts:216-227](../src/hub.ts#L216-L227), [:435-446](../src/hub.ts#L435-L446), [:519](../src/hub.ts#L519), [control.ts:375-387](../src/control.ts#L375-L387), [:884-891](../src/control.ts#L884-L891).
 
 ---
 

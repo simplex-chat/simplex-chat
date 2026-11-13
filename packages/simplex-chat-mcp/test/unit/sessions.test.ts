@@ -108,6 +108,7 @@ describe("session groups", () => {
           fullName: "",
           description: "The Claude Code session 1. Members send it prompts; admins and owners also send the group's commands and approve tool use.",
           groupPreferences: {history: {enable: "on"}, directMessages: {enable: "off"}, commands: controlCommands},
+          chatLayout: "terminal",
         },
       },
     ])
@@ -293,18 +294,19 @@ describe("session groups", () => {
     expect(groupInfo.groupProfile).toMatchObject({displayName: "1 · deploy", shortDescr: "claude-opus-5"})
   })
 
-  it("keep the profile an owner changed, its preference for files and media included, at the next update of the model and at a rename, from the group's current profile", async () => {
+  it("keep the profile an owner changed, its preference for files and media and its layout included, at the next update of the model and at a rename, from the group's current profile", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "auth"))
     const {groupInfo} = chat.chats.get("#20")!.chatInfo as T.ChatInfo.Group
     const files = {enable: T.GroupFeatureEnabled.Off}
-    groupInfo.groupProfile = {...groupInfo.groupProfile, description: "Release work", groupPreferences: {...groupInfo.groupProfile.groupPreferences, files}}
+    const chatLayout = T.ChatLayout.Classic
+    groupInfo.groupProfile = {...groupInfo.groupProfile, description: "Release work", groupPreferences: {...groupInfo.groupProfile.groupPreferences, files}, chatLayout}
     await session.turn({id: id1, model: "claude-opus-5"})
     await session.rename("deploy")
     expect(chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile)).toEqual([
-      expect.objectContaining({shortDescr: "claude-opus-5", description: "Release work", groupPreferences: expect.objectContaining({files})}),
-      expect.objectContaining({displayName: "1 · deploy", shortDescr: "claude-opus-5", description: "Release work", groupPreferences: expect.objectContaining({files})}),
+      expect.objectContaining({shortDescr: "claude-opus-5", description: "Release work", groupPreferences: expect.objectContaining({files}), chatLayout}),
+      expect.objectContaining({displayName: "1 · deploy", shortDescr: "claude-opus-5", description: "Release work", groupPreferences: expect.objectContaining({files}), chatLayout}),
     ])
   })
 
@@ -1350,6 +1352,7 @@ describe("Main group", () => {
     const texts = {shortDescr: "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does.", description: "Everyone in this group can join the groups of your Claude Code sessions, prompt Claude and approve what it does. Invite only people you trust with that."}
     await createMainGroup(chat.api(), 1, "SimpleX MCP")
     expect(chat.newGroups.at(-1)!.groupProfile).toMatchObject(texts)
+    expect(chat.newGroups.at(-1)!.groupProfile.chatLayout).toBeUndefined()
     const {groupInfo} = chat.chats.get("#10")!.chatInfo as T.ChatInfo.Group
     const edited = {shortDescr: "Sessions of the team", description: "Ask Alice before you approve."}
     groupInfo.groupProfile = {...groupInfo.groupProfile, ...edited}
@@ -1425,6 +1428,7 @@ describe("Main group", () => {
     const session = await openSession(hub, id1, stored(1, "auth"))
     expect(hub.owner().owners).toEqual(["Alice"])
     expect(await hub.resetOwners()).toEqual({link: "https://simplex.chat/g#link"})
+    expect(chat.newGroups.at(-1)!.groupProfile.chatLayout).toBeUndefined()
     expect(sentTo(chat, 10)).toEqual([])
     expect(chat.deleted).toEqual([{chatType: T.ChatType.Group, chatId: 10, mode: {type: "full", notify: true}}])
     expect(hub.main.groupId).toBe(21)
