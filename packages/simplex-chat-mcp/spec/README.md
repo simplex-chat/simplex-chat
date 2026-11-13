@@ -234,8 +234,8 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Service start by a client | [`src/client.ts`](../src/client.ts#L40) | `ServiceClient.ensureService` | [40](../src/client.ts#L40) |
 | Service process | [`src/service.ts`](../src/service.ts#L432) | `runService` | [432](../src/service.ts#L432) |
 | Service routes | [`src/service.ts`](../src/service.ts#L138) | `Service.routes` | [138](../src/service.ts#L138) |
-| Hub | [`src/hub.ts`](../src/hub.ts#L447) | `Hub.open` | [447](../src/hub.ts#L447) |
-| Session and its group | [`src/hub.ts`](../src/hub.ts#L58) | `Session` | [58](../src/hub.ts#L58) |
+| Hub | [`src/hub.ts`](../src/hub.ts#L456) | `Hub.open` | [456](../src/hub.ts#L456) |
+| Session and its group | [`src/hub.ts`](../src/hub.ts#L59) | `Session` | [59](../src/hub.ts#L59) |
 | Main group | [`src/main-group.ts`](../src/main-group.ts#L26) | `MainGroup` | [26](../src/main-group.ts#L26) |
 | Profile `User` | [`src/user.ts`](../src/user.ts#L13) | `User` | [13](../src/user.ts#L13) |
 | Hooks | [`src/hook.ts`](../src/hook.ts#L92) | `sessionStart`, `turn` | [92](../src/hook.ts#L92), [125](../src/hook.ts#L125) |

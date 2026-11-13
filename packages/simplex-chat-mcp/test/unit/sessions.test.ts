@@ -845,6 +845,27 @@ describe("session channel", () => {
     expect(chat.updates).toHaveLength(1)
   })
 
+  it("ends a live line 23 hours after its start by the wall clock, which runs on while the machine sleeps, at the next check of the minute or at the end of its step, and posts that end as a new silent line", async () => {
+    jest.useFakeTimers({doNotFake: ["nextTick", "setImmediate", "queueMicrotask"]})
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const line = chat.nextItemId
+    await session.turn({id: id1, at: 1, step: {id: "toolu_1", text: "💻 Run the tests"}})
+    jest.setSystemTime(Date.now() + 23 * 3_600_000)
+    expect(chat.updates).toEqual([])
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect(chat.updates).toEqual([{chatId: 20, itemId: line, text: "💻 Run the tests"}])
+    await session.turn({id: id1, at: 2, step: {id: "toolu_2", text: "📖 Read src/hook.ts"}})
+    jest.setSystemTime(Date.now() + 23 * 3_600_000)
+    await session.turn({id: id1, at: 3, step: {id: "toolu_2", text: "📖 Read src/hook.ts ✅ 23 h 0 min", end: true}})
+    expect(chat.updates).toEqual([
+      {chatId: 20, itemId: line, text: "💻 Run the tests"},
+      {chatId: 20, itemId: line + 1, text: "📖 Read src/hook.ts"},
+    ])
+    expect(sentTo(chat, 20)).toEqual(["💻 Run the tests", "📖 Read src/hook.ts", "📖 Read src/hook.ts ✅ 23 h 0 min"])
+    expect(priorities(chat)).toEqual([[-1], [-1], [-1]])
+  })
+
   it("closes the core at the hub's stop only after the updates of the lines that the end of the steps at the last detach started", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)

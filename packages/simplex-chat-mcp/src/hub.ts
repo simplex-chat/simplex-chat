@@ -29,6 +29,7 @@ const commandsApproversOnly = "Only admins and owners of this group can send / c
 const noteRefused = "Claude's note was not posted"
 const maxFinished = 100
 const liveLineMs = 23 * 3_600_000
+const stepCheckMs = 60_000
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
 
@@ -52,7 +53,7 @@ interface LiveStep {
   at: number
   text: string
   item: Promise<number | undefined>
-  expiry: NodeJS.Timeout
+  sentAt: number
 }
 
 export class Session {
@@ -76,6 +77,7 @@ export class Session {
   private readonly steps = new Map<string, LiveStep>()
   private readonly finished = new Set<string>()
   private finalizing: Promise<void> = Promise.resolve()
+  private expiry?: NodeJS.Timeout
 
   constructor(
     private readonly hub: Hub,
@@ -316,10 +318,12 @@ export class Session {
 
   private async step({id, text, end}: Step, at: number): Promise<void> {
     if (this.finished.delete(id)) return
+    this.expireSteps()
     const started = this.steps.get(id)
     if (end !== true) {
       const item = this.startLine(text)
-      this.steps.set(id, {at, text, item, expiry: setTimeout(() => this.expireStep(id), liveLineMs).unref()})
+      this.steps.set(id, {at, text, item, sentAt: Date.now()})
+      this.expiry ??= setInterval(() => this.expireSteps(), stepCheckMs).unref()
       await item
     } else if (started === undefined) {
       this.remember(id)
@@ -339,9 +343,12 @@ export class Session {
     }
   }
 
-  private endStep(id: string, {item, expiry}: LiveStep, text: string): Promise<void> {
-    clearTimeout(expiry)
+  private endStep(id: string, {item}: LiveStep, text: string): Promise<void> {
     this.steps.delete(id)
+    if (this.steps.size === 0) {
+      clearInterval(this.expiry)
+      this.expiry = undefined
+    }
     const updated = item
       .then(itemId => (itemId === undefined ? undefined : this.hub.chat.apiUpdateChatItem(T.ChatType.Group, this.control.groupId, itemId, {type: "text", text}, false)))
       .then(() => undefined, error => logError(`steps of session ${this.number}`, error))
@@ -349,9 +356,11 @@ export class Session {
     return updated
   }
 
-  private expireStep(id: string): void {
-    const step = this.steps.get(id)
-    if (step !== undefined) this.endStep(id, step, step.text)
+  private expireSteps(): void {
+    const before = Date.now() - liveLineMs
+    for (const [id, step] of this.steps) {
+      if (step.sentAt <= before) this.endStep(id, step, step.text)
+    }
   }
 
   private remember(id: string): void {

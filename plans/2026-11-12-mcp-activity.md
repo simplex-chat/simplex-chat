@@ -150,7 +150,7 @@ Choices:
 
 Decided after the review of `d2e3c688f`:
 
-27. The core refuses the update of a message older than a day: a sent item is editable within `nominalDay` of its time (`Messages.hs:538-539`, `Commands.hs:859-861`). A step can wait longer, as for an approval, because PreToolUse runs before Claude Code's permission prompt. So the hub finalizes a line still live 23 hours after its start with its own text, by a timer of the step, as the cards are bounded to 23 hours. The expiry keeps no finished ID, so the step's later end is posted as a new silent line. A failed update is logged, and the hub posts nothing more for the step.
+27. The core refuses the update of a message older than a day: a sent item is editable within `nominalDay` of its time (`Messages.hs:538-539`, `Commands.hs:859-861`). A step can wait longer, as for an approval, because PreToolUse runs before Claude Code's permission prompt. So the hub finalizes a line still live 23 hours after its start with its own text, as the cards are bounded to 23 hours. The hub measures the age of a line on the wall clock from the send of its start, as the core measures it from the item's time. Timers run on the monotonic clock, which stops while the computer sleeps, so the hub checks the ages of the live steps every minute while a step is live, and before each step. A computer that sleeps through the whole hour from 23 to 24 hours after a start leaves that line live. The expiry keeps no finished ID, so the step's later end is posted as a new silent line. A failed update is logged, and the hub posts nothing more for the step.
 28. A start whose send fails with an error other than a refusal is logged, and its promise gives no ID, so the hub posts nothing at its end.
 29. The hub keeps every started update of a line in one promise of the session. `endSteps` returns it, so `Hub.stop` waits for the updates that the last detach started before the core closes.
 30. The CLI imports `serve.ts`, `session.ts` and `service.ts` only for their commands. A hook process then loads only the hook's modules: `require` of `dist/cli.js` took 65 ms and 0.13 s of CPU, in place of 510 ms and 0.62 s (measured with `node -e` on this machine). The tool hooks keep the matcher `*` and skip this plugin's tools in the hook: Claude Code 2.1.322 tests a matcher as a JavaScript regular expression locally, and with another engine in a cloud session, which refuses some patterns (`uTr`, binary offset 291099155).
@@ -189,8 +189,8 @@ src/hook.ts       TurnInput             + cwd, agent_id, tool_name, tool_input, 
                   duration              the format of section 2, from whole milliseconds
 src/hub.ts        Session.turn          step: Session.step; endSteps(at) next to endPermissions(at)
                   Session.step          new: decisions 15 to 17, 19 and 27
-                  startLine, endStep    new: the live send, its update, the timer and the logs (decisions 27 to 29)
-                  expireStep, remember
+                  startLine, endStep    new: the live send, its update, the check of the ages and the logs (decisions 27 to 29)
+                  expireSteps, remember
                   Session.endSteps      new: decisions 18 and 29
                   Session.post, message parts {text, priority?}; message builds the composed message with priority
                   Session.answer        priority per part: -1 for all parts but the last, 1 for the last
@@ -208,18 +208,21 @@ Session.steps       Map<string, LiveStep>        live steps by tool_use_id
 LiveStep.at         number                       start time of the start's hook process
 LiveStep.text       string                       text of the step
 LiveStep.item       Promise<number | undefined>  ID of the live line; undefined when it was not posted
-LiveStep.expiry     timer                        23 hours after the start
+LiveStep.sentAt     number                       wall-clock time of the start's send in the service
 Session.finished    Set<string>                  last 100 finished tool_use_ids
 Session.finalizing  Promise<void>                every update of a line started so far
+Session.expiry      timer                        expireSteps every minute while a step is live
 ```
 
 ```
 step({id, text, end}, at):
   if finished has id: finished.delete(id); return
+  expireSteps()
   known = steps.get(id)
   if not end:
     item = startLine(text)
-    steps.set(id, {at, text, item, expiry: in 23 hours expireStep(id)})
+    steps.set(id, {at, text, item, sentAt: now})
+    expiry ??= every minute expireSteps()
     await item
   else if known is undefined:
     remember(id)
@@ -232,12 +235,13 @@ startLine(text):
   refused: the refusal post; another error: logged; → undefined
 
 endStep(id, step, text):
-  clear step.expiry; steps.delete(id)
+  steps.delete(id); steps empty: clear expiry
   updated = item ID ? apiUpdateChatItem(group, item ID, text, liveMessage false); a failure logged
   finalizing = finalizing and updated
 
-expireStep(id):
-  step still live: endStep(id, step, step.text), without remember
+expireSteps():
+  for each [id, step] of steps with now - step.sentAt >= 23 hours:
+    endStep(id, step, step.text), without remember
 
 endSteps(before):
   for each [id, step] of steps with step.at < before:
@@ -254,7 +258,7 @@ stateDiagram-v2
   [*] --> finished: end first, final line posted
   live --> [*]: end, line updated with the outcome
   live --> finished: endSteps, line finalized with its text
-  live --> [*]: 23 hours, line finalized with its text
+  live --> [*]: 23 hours by the wall clock, at the check of the minute or at the next step, line finalized with its text
   finished --> [*]: the other event, nothing posted
 ```
 
@@ -279,7 +283,7 @@ flowchart LR
 - Older receivers: the owner's app alerts for each line when it is posted, until it has silent messages (Q2). For the end of a line, only the Android and desktop apps alert, and only in another profile (fact 10).
 - An older core in the plugin ignores `priority` (fact 8); with the core release with silent messages, the sends are silent.
 - When Claude Code gives these hook inputs without `tool_use_id` or `tool_name`, the hook sends nothing.
-- The steps and the finished IDs are kept in the service's memory. After a service restart during a step, its line stays live, and its end is posted as a new silent line.
+- The steps and the finished IDs are kept in the service's memory. When the service stops during a step, `Hub.stop` finalizes its line with its own text; after a crash, the line stays live. The step's end reaches the next service and is posted as a new silent line.
 - Older services: the hook of this version stops an older service first (`src/client.ts:42-45`).
 
 ## 7. Acceptance and tests
@@ -310,6 +314,7 @@ Tests:
   - "updates the line of a step at its end and at the end of the steps also while the send of its start is in flight". It fails when the step is stored after the send is awaited.
   - "logs a failed update of a step's line and a failed send of its start, and posts nothing more for them". On `d2e3c688f` the end's request fails.
   - "ends the live line of a step 23 hours after its start, before the core refuses its update, and posts its later end as a new silent line".
+  - "ends a live line 23 hours after its start by the wall clock, which runs on while the machine sleeps, at the next check of the minute or at the end of its step, and posts that end as a new silent line". It fails with a timer of 23 hours on the monotonic clock.
   - "closes the core at the hub's stop only after the updates of the lines that the end of the steps at the last detach started". It fails when `endSteps` returns only its own updates.
   - "posts that Claude's note was not posted, naming the preference, once for a note and once for a step, and nothing at the step's end", in "while a preference of the session group refuses a post", replacing the test of the old subject.
 - `test/unit/service.test.ts`, changed: "passes permission requests and turns to the session, and its lines to the attachments while they exist, and ends its permissions and steps at the last detach".
