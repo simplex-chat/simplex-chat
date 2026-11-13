@@ -232,8 +232,8 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Tool registration | [`src/tools.ts`](../src/tools.ts#L506) | `registerTools` | [506](../src/tools.ts#L506) |
 | Downloads | [`src/tools.ts`](../src/tools.ts#L595) | `AgentTools.downloadFile` | [595](../src/tools.ts#L595) |
 | Action store | [`src/actions.ts`](../src/actions.ts#L147) | `Actions` | [147](../src/actions.ts#L147) |
-| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L172) | `Control` | [172](../src/control.ts#L172) |
-| Card text | [`src/control.ts`](../src/control.ts#L806) | `cardText` | [806](../src/control.ts#L806) |
+| Agent control chat and session groups | [`src/control.ts`](../src/control.ts#L184) | `Control` | [184](../src/control.ts#L184) |
+| Card text | [`src/control.ts`](../src/control.ts#L818) | `cardText` | [818](../src/control.ts#L818) |
 | Scheduled prompts | [`src/schedule.ts`](../src/schedule.ts#L12) | `Schedules` | [12](../src/schedule.ts#L12) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L86) | `ChatItemsWatch` | [86](../src/messages.ts#L86) |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts#L33) | `register` | [33](../src/register.ts#L33) |

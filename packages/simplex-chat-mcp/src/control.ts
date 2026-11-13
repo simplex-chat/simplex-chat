@@ -61,8 +61,10 @@ const commandsHelp = `/'approve N' or /'approve CHAT N' performs pending action 
 /list lists the agent's chats and their approvals.
 /'schedule CHAT CRON PROMPT' schedules a prompt for the agent in CHAT.
 /'unschedule CHAT N' removes schedule N of CHAT.
-/schedules lists the schedules of all chats.
-/'help COMMAND' shows how to use COMMAND, such as /'help schedule'.`
+/schedules lists the schedules of all chats.`
+const sessionCommandsHelp = `/'give CHAT N' gives the agent's chat CHAT to session N.
+/'observer #G ID' makes member ID of this group an observer.`
+const helpLine = "/'help COMMAND' shows how to use COMMAND, such as /'help schedule'."
 const approveHelp = `/'approve N' performs pending action N: a connect, send or leave. /'reject N' rejects pending action N, a download too. Its card then shows the outcome.
 /'approve CHAT N' and /'reject CHAT N' do the same for an action of CHAT, as its card shows.
 /'approve CHAT all' performs the pending sends to CHAT; later ones are performed at once and posted here, while you approve actions, until /'revoke CHAT'. It applies in mode requests only.
@@ -93,13 +95,20 @@ The agent's \`receive\` of CHAT returns a due prompt once; until then, the later
 An owner who approves actions adds a schedule, and its prompts become due only while that owner approves actions.
 /'unschedule CHAT N' removes schedule N of CHAT and renumbers the later ones. /schedules lists up to ${listedSchedules} schedules of all chats.
 Example: \`/schedule #3 0 7 * * 1-5 Post the trail report.\`, at 07:00 on weekdays.`
+const giveHelp = `/'give CHAT N' gives the agent's chat CHAT to session N, so that only session N and the commands of its group can use CHAT; the pending actions of CHAT here are rejected.
+CHAT: a chat ID from /list. N: a session number from /sessions in the Main group.
+Example: \`/give @3 2\`. Related: /list.`
+const observerHelp = `/'observer #G ID' makes member ID of this group, #G, an observer, who can't send messages. The approvals of all sends or files that the member gave, and the member's schedules, stop applying until the member is an admin or owner again.
+Admins and owners use it for another member whose role is not above their own.
+#G and ID: as in Claude's post of the member's rights at a join or a role change, which shows this command for a member who can send, other than an owner.
+Example: \`/observer #2 6\`. Related: /'help approve', /'help schedule'.`
 const helpUsage = "/help lists the commands. /'help COMMAND' shows how to use COMMAND, written with or without its `/`, such as /'help schedule'."
 const helpHelp = `${helpUsage}
 Every member who can post in this chat may use /help; the other commands are for the owners who approve actions.`
 const sessionHelpHelp = `${helpUsage}
 Only admins and owners of this group can send / commands, /help included, and approve actions.`
 const helpTexts = new Map<string, string>([
-  ["", commandsHelp],
+  ["", `${commandsHelp}\n${helpLine}`],
   ["approve", approveHelp],
   ["reject", approveHelp],
   ["receive", receiveHelp],
@@ -116,6 +125,9 @@ const helpTexts = new Map<string, string>([
 ])
 const sessionHelpTexts = new Map<string, string>([
   ...helpTexts,
+  ["", `${commandsHelp}\n${sessionCommandsHelp}\n${helpLine}`],
+  ["give", giveHelp],
+  ["observer", observerHelp],
   ["help", sessionHelpHelp],
 ])
 

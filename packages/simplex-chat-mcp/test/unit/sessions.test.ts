@@ -1099,6 +1099,31 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([[{text: commandsApproversOnly, quotedItemId: 41}]])
   })
 
+  it("lists /give and /observer in /help before the line of /help, and explains each, written with or without its slash", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const help = async (topic: string): Promise<string[]> => (await session.control.ownerCommand(invitedAlice, {keyword: "help", params: topic}))!.split("\n")
+    const lines = await help("")
+    expect(lines.map(line => /^\/'?(\w+)/.exec(line)![1])).toEqual(["approve", "reject", "receive", "forward", "revoke", "leave", "delete", "pending", "list", "schedule", "unschedule", "schedules", "give", "observer", "help"])
+    expect(lines.slice(-3)).toEqual([
+      "/'give CHAT N' gives the agent's chat CHAT to session N.",
+      "/'observer #G ID' makes member ID of this group an observer.",
+      "/'help COMMAND' shows how to use COMMAND, such as /'help schedule'.",
+    ])
+    expect(await help("give")).toEqual([
+      "/'give CHAT N' gives the agent's chat CHAT to session N, so that only session N and the commands of its group can use CHAT; the pending actions of CHAT here are rejected.",
+      "CHAT: a chat ID from /list. N: a session number from /sessions in the Main group.",
+      "Example: `/give @3 2`. Related: /list.",
+    ])
+    expect(await help("observer")).toEqual([
+      "/'observer #G ID' makes member ID of this group, #G, an observer, who can't send messages. The approvals of all sends or files that the member gave, and the member's schedules, stop applying until the member is an admin or owner again.",
+      "Admins and owners use it for another member whose role is not above their own.",
+      "#G and ID: as in Claude's post of the member's rights at a join or a role change, which shows this command for a member who can send, other than an owner.",
+      "Example: `/observer #2 6`. Related: /'help approve', /'help schedule'.",
+    ])
+    for (const topic of ["give", "observer"]) expect(await help(`/${topic}`)).toEqual(await help(topic))
+  })
+
   it("answers nothing and performs nothing for a / command of a member that reaches the commands past the one refusal", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
