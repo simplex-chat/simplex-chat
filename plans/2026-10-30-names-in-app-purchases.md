@@ -506,7 +506,7 @@ Otherwise the terms read as unavailable. Only test builds accept the site's loca
 - The name policy holds two links, general and community (`generalTermsLink()`, `communityTermsLink()`, `Names/Contracts.hs:209-219`); each terms hash is the keccak256 of its link (`termsOf`, `:221-224`).
 - The buyer signs an order with the hash of its name's kind, with the `community/` prefix for a listed name (`termsFor`, `Names/Community.hs:40-48`; `checkTerms`, `Names/Orders.hs:284-291`).
 - The acceptance has two EIP-712 types, `AcceptGeneralTerms` and `AcceptCommunityTerms` (`termsKind`, `Names/Registration.hs:89-112`).
-- The operator sets both links to the one document, with its line on community names (`docs/NAMES-CONDITIONS.md` at d94981224), a chain operation as M13 is. If the contract refuses one link for both kinds, the two links name the same file at two commits.
+- Both links point at the one document, with its line on community names (`docs/NAMES-CONDITIONS.md` at d94981224), set on chain already (brenzi, 13 Nov 2026). If the contract refuses one link for both kinds, the two links name the same file at two commits.
 
 **The other SMP commands** call the functions D5 extracts:
 
@@ -1189,7 +1189,7 @@ stateDiagram-v2
   - The expiry stays at most one horizon ahead of the block: 1095 days for a paid renewal and a sponsored community name; 4015 days for another sponsored name (`_sponsoredHorizon`).
   - A reserved name is refused (`NameReserved`).
   - `renewWithCredit(label, duration, referrer)` takes no owner signature and spends the allowance: the service checks that the asking wallet holds the name and that the renewal stays within these bounds before crediting; a renewal it can't send is refunded through support.
-  - The renewal screen carries the conditions tick: the Names Conditions apply to an extension by the act itself, and the chain records no acceptance for it, as `renewWithCredit` takes no signature.
+  - The renewal screen carries the conditions tick. Today `renewWithCredit` takes no signature, so the chain records no agreement for a renewal; recording it means only the owner can renew, which Q28 asks.
 - **Reminders:**
   - The row's footer reads "Registered until 31 Dec 2028." from stage 1, from the expiry stored beside each account, refreshed whenever the name is verified.
   - From 30 days before: the footer reads "Expires in 21 days"; a chat-list banner with a dismiss control, dismissible once a week, above promotional banners in the last 7 days; local notifications at 30 and 7 days.
@@ -1498,7 +1498,7 @@ By hand, also at the payments release's end:
 - P63: row 4 on an iPhone with a TestFlight build, which can't pay in the app: 1·2 and 4·1 reach 4·2 and open its invoice (AC4).
 - P35c: Q14's checks on devices, with the lock off and in passcode mode, desktop's floating console included.
 - P37, P46, by the lead, by hand in App Store Connect and the Google Play Console, as soon as P37 and P46 are built, for the testing by hand in the dev environment (Apple's sandbox, Play's licence testers) and the test purchases above: each store's product and price as 6.2 sets them, Play's Tokenized Digital Asset marking and Financial features declaration, and the App Store product submitted with the payments release's version.
-- The operator's chain operations, before the sale: M13 (`setPrices`, one base price), and both terms links set to the final `docs/NAMES-CONDITIONS.md` (6.3).
+- The operator's chain operation M13 (`setPrices`, one base price), before the sale.
 - The codes release's checks above.
 
 ### Stage 2
@@ -1642,6 +1642,7 @@ The other questions:
 - **Q22.** Ask for the device's check on Copy and Show straight after the key is created? → No: no lock during the purchase (1·4a's exception).
 - **Q25.** The terms on the checkout: one tick line whose link opens a half-screen sheet with the obligations and Agree (A), or the obligations under the tick on the checkout itself (B)? → A, the sheet (6.6's terms block).
 - **Q27.** Stage 2's "Set what it opens" takes "any link": a contact or channel link, also one outside the app, or a web address too? → Contact and channel links: the service's record edit takes a name's contact and channel records only and refuses any other value (`recordKinds`, `EIInvalidLink`, `StoreService/Web/Names/Records.hs:58, 75-76`), so a web address is new work in the service.
+- **Q28.** Stage 3. May anyone renew any name, or only its owner? → Only its owner: a renewal then records the owner's agreement to the Names Conditions on chain, as a registration does, through a contract change that takes the owner's signature; recording the agreement needs it (brenzi, 13 Nov 2026).
 
 ## 12. Out of scope (noticed, not doing)
 
