@@ -965,7 +965,10 @@ reveal's deadline, and the service relays it with `commitUnderGeneralTermsWithSi
 register refused for the acceptance (new terms, a used nonce), an acceptance of the other kind of
 terms, or one signed for the name policy before a `setNamePolicy`, clears the reveal, and the page
 signs again. A relay that reverts while the policy holds that acceptance for the commitment, as when
-another sent it first, is followed by the register.
+another sent it first, is followed by the register. The page signs the reveal and the acceptance
+with a deadline a week ahead, never before the commitment lapses, and the service keeps them across a
+lapse while the deadline has not passed and the sponsor nonce is unchanged: it commits again and
+registers with no new signature.
 
 ### Codes-only launch
 
@@ -1238,9 +1241,10 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
   key is enough and needs no restart. The line is logged again only when the node's message changes.
 - `[ERROR …] names worker: registration <id> waits: the registrar's allowance on the sponsor is
   used up; the guardian raises it with setRegistrarAllowance` when the sponsor refuses a register
-  with `InsufficientAllowance`. The order keeps its phase and its register is tried again every 15
-  seconds, so a top-up before its commitment lapses registers it with no restart. The line is
-  logged once per order. An order whose commitment lapses first fails, and the buyer can Try again.
+  with `InsufficientAllowance`. The order keeps its phase and its register's dry run is tried again
+  every 15 seconds, also past its commitment's lapse, so a top-up registers it with no restart, the
+  commitment sent again first when it lapsed. The line is logged once per order. An order whose
+  signature expires first, a week after the page signed it, fails, and the buyer can Try again.
   This holds when the register's dry run is refused. A register that passes its dry run and reverts
   once mined, as two registers sent while the allowance covers one can, fails its order with no
   such line; the next order's dry run logs it, and the buyer can Try again.
@@ -1255,7 +1259,9 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
 
 An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the
-service's gas. Past that the order fails, Try again and a move answer `400 bad_request`, and support closes it
+service's gas. The service's own commits after a lapse, which wait for it, count against that only when
+they revert, so a signature kept for its week registers over several commitment windows; Try again and
+a move count every commit. Past that the order fails, Try again and a move answer `400 bad_request`, and support closes it
 with `//close` (see [Closing a failed order](#closing-a-failed-order)).
 The log line is `[WARN …] names worker: registration <id> failed: it sent <n> transactions of one kind`.
 

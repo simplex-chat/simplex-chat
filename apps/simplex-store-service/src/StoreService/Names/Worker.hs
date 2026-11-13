@@ -194,16 +194,15 @@ fromCommitment w@Worker {wkOrders = OrdersEnv {oeConfig}} now r ages t
 commitmentLapse :: CommitmentAges -> Word64 -> Integer
 commitmentLapse CommitmentAges {caMax} t = toInteger t + caMax
 
--- | A live commitment is reused while revealMargin is left before its lapse, time for the page's reveal and the register to mine.
+-- | A live commitment, or a stored intent, is reused while revealMargin is left before its end, time for the page's reveal and the register to mine.
 reusable :: NamesConfig -> UTCTime -> Integer -> Bool
-reusable NamesConfig {nRevealMarginSeconds} now lapse = lapse - unixSeconds now >= toInteger nRevealMarginSeconds
+reusable NamesConfig {nRevealMarginSeconds} now end = end - unixSeconds now >= toInteger nRevealMarginSeconds
 
--- | The intent's deadline is the lapsed revealBefore, so it goes with the old transactions and reveal times; the page signs again.
+-- | The old commitment's transactions and reveal times; the reveal stays for the next commitment.
 lapsedFields :: NameRegistration -> NameRegistration
 lapsedFields r =
   r
-    { nrReveal = Nothing,
-      nrError = Nothing,
+    { nrError = Nothing,
       nrCommitTx = Nothing,
       nrCommitBlock = Nothing,
       nrRegisterTx = Nothing,
@@ -213,7 +212,7 @@ lapsedFields r =
     }
 
 -- | The reveal times come from the commitment's time. When that is not the block of our commit mined with status 1,
--- someone committed it again after a lapse, so our commit and the reveal signed for its window are cleared.
+-- someone committed it again after a lapse, so our commit is cleared.
 toCommitted :: Worker -> UTCTime -> NameRegistration -> CommitmentAges -> Word64 -> IO Next
 toCommitted w now r CommitmentAges {caMin, caMax} t =
   ourCommit w r t >>= \case
@@ -223,7 +222,7 @@ toCommitted w now r CommitmentAges {caMin, caMax} t =
     after age = fromInteger $ toInteger t + age
     minedBy = \case
       Just (h, block) -> r {nrCommitTx = Just h, nrCommitBlock = Just block}
-      Nothing -> r {nrReveal = Nothing, nrCommitTx = Nothing, nrCommitBlock = Nothing}
+      Nothing -> r {nrCommitTx = Nothing, nrCommitBlock = Nothing}
 
 -- | Among the signatures of the commit last sent, the one mined with status 1 at the commitment's time.
 ourCommit :: Worker -> NameRegistration -> Word64 -> IO (Either ChainError (Maybe (TxHash, Word64)))
@@ -251,7 +250,7 @@ commitSent w now r@NameRegistration {nrPhase, nrCommitTx} p
 
 -- | Waits for the page's reveal until the lapse, has its acceptance held by the name policy, waits for revealAfter, then registers.
 committed :: Worker -> UTCTime -> NameRegistration -> IO Next
-committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAfter, nrRevealBefore} =
+committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAfter} =
   inFlightTransaction wkSender (TxRegister nrId) >>= \case
     Just p -> registerSent w now r p
     Nothing -> case nrReveal of
@@ -259,15 +258,15 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
         Just lapse | now <= lapse -> pure $ waitUntil r $ addUTCTime chainSecond lapse
         _ -> save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notSignedInTime}
       Just rv@NameReveal {rvAcceptance, rvDeadline} ->
-        (pure (if unlapsed then rvAcceptance else Nothing) $>>= relayAcceptance w now r rvDeadline) >>= \case
+        -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then decides
+        (pure (if unlapsed now r then rvAcceptance else Nothing) $>>= relayAcceptance w now r rvDeadline) >>= \case
           Just next -> pure next
           Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
             Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
             _ -> sendRegister w now r rv
-  where
-    -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then
-    -- fails the order as it does a plain name's
-    unlapsed = all ((now <=) . secondsTime . toInteger) nrRevealBefore
+
+unlapsed :: UTCTime -> NameRegistration -> Bool
+unlapsed now NameRegistration {nrRevealBefore} = all ((now <=) . secondsTime . toInteger) nrRevealBefore
 
 -- | The relay of the reveal's acceptance to the name policy, sent without waiting for revealAfter; Nothing once the policy
 -- stores that acceptance. One signed for another policy, before a setNamePolicy, or for the other kind of terms, clears the
@@ -304,7 +303,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
 sendRegister :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO Next
 sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid)} rv =
   verifyRegisterIntent (sponsorDomain cChainId cSponsor) (fromInteger $ unixSeconds now) intent >>= \case
-    -- past its deadline the commitment has lapsed too; a wrong signer follows a change of the chain settings since the reveal
+    -- past its deadline the intent can no longer register; a wrong signer follows a change of the chain settings since the reveal
     Left refusal -> do
       logWarn $ "names worker: registration " <> rid <> ": its stored intent is refused, " <> T.pack refusal
       judge w now r Nothing
@@ -331,7 +330,8 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} =
 
 -- | A register that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
 -- with status 1 or the owner holds the name; committed again on InvalidNonce or a refused terms acceptance, for the page to sign again, the name
--- policy read again on TermsNotAccepted; kept waiting while the sponsor allowance is used up; taken on any revert while the name is not
+-- policy read again on TermsNotAccepted; committing again with its reveal on CommitmentTooOld, which the sponsor reverts only after the
+-- intent's and the allowance's checks; kept waiting while the sponsor allowance is used up; taken on any revert while the name is not
 -- available at the confirmation depth; failed otherwise, unless the dry run named the name as gone.
 judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO Next
 judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} reason =
@@ -345,6 +345,9 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
           when (e == RNTermsNotAccepted) $ forgetNamePolicy oeContracts
           store w now r {nrReveal = Nothing}
         Just RNCommitmentTooNew -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
+        Just RNCommitmentTooOld
+          | unlapsed now r -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
+          | otherwise -> store w now r {nrPhase = PCommitting}
         Just RNInsufficientAllowance -> pure (Nothing, Stalled (nrVersion r) "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance")
         _ -> case nrReveal of
           Just NameReveal {rvLabel} ->
@@ -445,7 +448,9 @@ maxSendsPerKind = 5
 -- | The send while the order has sent fewer than maxSendsPerKind transactions of its kind, else the order fails.
 withinSends :: Worker -> UTCTime -> NameRegistration -> (TxFor -> Bool) -> IO Next -> IO Next
 withinSends w@Worker {wkOrders} now r@NameRegistration {nrId = RegistrationId rid} ofKind send = do
-  sent <- sendsOf wkOrders r ofKind
+  txs <- orderTransactions wkOrders r
+  let minedCommits = [ntNonce | NameTransaction {ntFor = TxCommit _, ntNonce, ntStatus = TSMined} <- txs]
+      sent = sendCount ofKind [tx | tx@NameTransaction {ntNonce} <- txs, ntNonce `notElem` minedCommits]
   if sent < maxSendsPerKind
     then send
     else do
@@ -453,12 +458,14 @@ withinSends w@Worker {wkOrders} now r@NameRegistration {nrId = RegistrationId ri
       save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notRegistered}
 
 sendsUsedUp :: OrdersEnv -> NameRegistration -> IO Bool
-sendsUsedUp oe r = any (>= maxSendsPerKind) <$> mapM (sendsOf oe r) [isCommit, isAccept, isRegister]
+sendsUsedUp oe r = orderTransactions oe r <&> \txs -> any (\ofKind -> sendCount ofKind txs >= maxSendsPerKind) [isCommit, isAccept, isRegister]
 
 -- | One per nonce, as a fee replacement is the same send.
-sendsOf :: OrdersEnv -> NameRegistration -> (TxFor -> Bool) -> IO Int
-sendsOf OrdersEnv {oeStore} NameRegistration {nrId} ofKind =
-  length . nubOrd . map ntNonce . filter (ofKind . ntFor) <$> withTransaction oeStore (`registrationTransactions` nrId)
+sendCount :: (TxFor -> Bool) -> [NameTransaction] -> Int
+sendCount ofKind = length . nubOrd . map ntNonce . filter (ofKind . ntFor)
+
+orderTransactions :: OrdersEnv -> NameRegistration -> IO [NameTransaction]
+orderTransactions OrdersEnv {oeStore} NameRegistration {nrId} = withTransaction oeStore (`registrationTransactions` nrId)
 
 isCommit, isAccept, isRegister :: TxFor -> Bool
 isCommit = \case TxCommit _ -> True; _ -> False
@@ -492,25 +499,15 @@ requeue oe@OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrLength} 
         -- a failed order is already live, so only a changed version refuses the write
         Right (Left _) -> RTChanged
 
--- | The stored reveal while its intent can still register: accepted by the worker's check before sending, the sponsor nonce unmoved,
--- and the commitment live with revealMargin left in a window the intent's deadline covers. A new commit or another's re-commit
--- opens a window the old deadline cannot serve.
+-- | The stored reveal while its intent can still register: accepted by the worker's check before sending, revealMargin left
+-- before its deadline, and the sponsor nonce unmoved.
 servingReveal :: OrdersEnv -> UTCTime -> NameRegistration -> IO (Either ChainError (Maybe NameReveal))
-servingReveal OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}, oeContracts} now r@NameRegistration {nrOwner, nrCommitment, nrReveal} = case nrReveal of
+servingReveal OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}, oeContracts} now r@NameRegistration {nrOwner, nrReveal} = case nrReveal of
   Nothing -> pure $ Right Nothing
   Just rv@NameReveal {rvNonce, rvDeadline} ->
     verifyRegisterIntent (sponsorDomain cChainId cSponsor) (fromInteger $ unixSeconds now) (intentOf cfg r rv) >>= \case
-      Left _ -> pure $ Right Nothing
-      Right () -> runExceptT $ do
-        nonce <- ExceptT $ sponsorNonce oeContracts nrOwner
-        if nonce /= rvNonce
-          then pure Nothing
-          else do
-            ages <- ExceptT $ commitmentAges oeContracts
-            committedAt <- ExceptT $ commitmentTime oeContracts nrCommitment
-            pure $ case commitmentLapse ages <$> committedAt of
-              Just lapse | reusable cfg now lapse && lapse <= toInteger rvDeadline -> Just rv
-              _ -> Nothing
+      Right () | reusable cfg now (toInteger rvDeadline) -> fmap (\nonce -> if nonce == rvNonce then Just rv else Nothing) <$> sponsorNonce oeContracts nrOwner
+      _ -> pure $ Right Nothing
 
 data Closed = CLRegistered RegistrationId | CLRefunded (Maybe UTCTime) RefundRecord | CLRefused CloseRefusal
   deriving (Eq, Show)
