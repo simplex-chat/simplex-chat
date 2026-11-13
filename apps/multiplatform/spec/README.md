@@ -104,7 +104,7 @@ Common Module (commonMain)
 | Category | Path | Topic |
 |---|---|---|
 | Overview | [product/README.md](../product/README.md) | Product overview, capability map, navigation map |
-| Concepts | [product/concepts.md](../product/concepts.md) | 32 product concepts (PC1-PC32) mapped to docs + source |
+| Concepts | [product/concepts.md](../product/concepts.md) | 35 product concepts (PC1-PC35) mapped to docs + source |
 | Glossary | [product/glossary.md](../product/glossary.md) | Domain term definitions (9 sections) |
 | Rules | [product/rules.md](../product/rules.md) | 18 business rules in 6 categories |
 | Gaps | [product/gaps.md](../product/gaps.md) | 8 known gaps with recommendations |

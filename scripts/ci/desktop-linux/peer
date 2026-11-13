@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# Runs CLI peers for testing the app by hand. Each peer is the CLI on a terminal (script) with its files in PEERS/<name>:
+# it reads the commands appended to cmd, and its screen is saved to log. PEER_CLI is the CLI, by default the one cabal built.
+#
+#   peer start <name> <db prefix>    start the CLI on the database <db prefix> as the user <name>, created on the first start
+#   peer cmd <name> <command>        send the command
+#   peer log <name> [lines]          print the last lines (30) of the screen, without terminal codes
+#   peer wait <name> <pattern> [secs]
+#                                    wait up to secs (60) until lines of the screen after the last command match the pattern
+#                                    (grep -E), and print them
+#   peer stop <name>                 stop the CLI
+
+set -euo pipefail
+
+: "${PEERS:?PEERS must be the peers directory}"
+dir=$PEERS/${2:-}
+here=$(cd "$(dirname "$0")" && pwd)
+
+running() {
+  [ -f "$dir/pid" ] && kill -0 -- -"$(cat "$dir/pid")" 2> /dev/null
+}
+
+plain_text() {
+  sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g; s/\r//g'
+}
+
+start() {
+  local name=$1 db=$2 cli run
+  if running; then
+    echo "error: $name is already running"
+    return 1
+  fi
+  cli=${PEER_CLI:-$(cabal list-bin --project-file="$here/../../../cabal.project" exe:simplex-chat)}
+  mkdir -p "$dir"
+  : > "$dir/cmd"
+  : > "$dir/log"
+  echo 0 > "$dir/mark"
+  printf -v run 'stty cols 220 rows 50; exec %q -d %q --user-display-name %q' "$cli" "$db" "$name"
+  setsid bash -c 'tail -n +1 -f "$1" | script -qfec "$2" "$3"' _ "$dir/cmd" "$run" "$dir/log" < /dev/null > /dev/null 2>&1 &
+  echo $! > "$dir/pid"
+}
+
+wait_for() {
+  local name=$1 pattern=$2 secs=$3 deadline=$((SECONDS + $3))
+  until tail -c +$(($(cat "$dir/mark") + 1)) "$dir/log" | plain_text | grep -E -- "$pattern"; do
+    if [ "$SECONDS" -ge "$deadline" ]; then
+      echo "error: \"$pattern\" not on $name's screen after $secs s"
+      return 1
+    fi
+    sleep 1
+  done
+}
+
+stop() {
+  local pid
+  if ! running; then
+    rm -f "$dir/pid"
+    return
+  fi
+  pid=$(cat "$dir/pid")
+  kill -- -"$pid" 2> /dev/null || true
+  for _ in $(seq 10); do
+    kill -0 -- -"$pid" 2> /dev/null || break
+    sleep 1
+  done
+  kill -9 -- -"$pid" 2> /dev/null || true
+  rm -f "$dir/pid"
+}
+
+case "${1:-}" in
+  start) start "$2" "$3" ;;
+  cmd)
+    if ! running; then
+      echo "error: $2 is not running"
+      exit 1
+    fi
+    wc -c < "$dir/log" > "$dir/mark"
+    printf '%s\n' "$3" >> "$dir/cmd"
+    ;;
+  log) plain_text < "$dir/log" | tail -n "${3:-30}" ;;
+  wait) wait_for "$2" "$3" "${4:-60}" ;;
+  stop) stop ;;
+  *)
+    sed -n '3,/^$/s/^# \{0,1\}//p' "$0"
+    exit 1
+    ;;
+esac

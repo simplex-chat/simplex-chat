@@ -323,7 +323,7 @@ struct ChatPreviewView: View {
             } else {
                 switch cItem.meta.itemDeleted {
                 case let .moderated(_, byGroupMember): String.localizedStringWithFormat(NSLocalizedString("moderated by %@", comment: "marked deleted chat item preview text"), byGroupMember.displayName)
-                case .blocked: NSLocalizedString("blocked", comment: "marked deleted chat item preview text")
+                case .blocked: NSLocalizedString("hidden", comment: "marked deleted chat item preview text")
                 case .blockedByAdmin: NSLocalizedString("blocked by admin", comment: "marked deleted chat item preview text")
                 case .deleted, nil: NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
                 }

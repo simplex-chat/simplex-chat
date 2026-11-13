@@ -31,7 +31,7 @@ Configure all aspects of app behavior including notifications, network/servers, 
 | Notifications | `ic_bolt` / `ic_bolt_off` | `NotificationsSettingsView` | Push notification mode and preview settings |
 | Network & servers | `ic_wifi_tethering` | `NetworkAndServersView` | SMP/XFTP servers, proxy, .onion hosts, advanced network |
 | Audio & video calls | `ic_videocam` | `CallSettingsView` | WebRTC relay policy, ICE servers |
-| Privacy & security | `ic_lock` | `PrivacySettingsView` | SimpleX Lock, delivery receipts, link previews, auto-accept |
+| Privacy & security | `ic_lock` | `PrivacySettingsView` | SimpleX Lock, delivery receipts, link previews, contact deletion, auto-accept |
 | Appearance | `ic_light_mode` | `AppearanceView` | Theme, language, profile images, chat bubbles |
 
 All rows disabled when `chatModel.chatRunning != true` (except Appearance).
@@ -78,6 +78,7 @@ Organized in sections:
 |---|---|---|
 | Send link previews | `privacyLinkPreviews` | Auto-generate link preview cards |
 | Sanitize links | `privacySanitizeLinks` | Strip tracking parameters from URLs |
+| Contact deletion | `privacyContactDeletion` | Notify: deleting a contact notifies it; Ask: each deletion offers "Delete and notify" and "Delete silently". Default Ask; Notify for new users. The Chats section footer: "Ask: choose each time whether the contact is notified." |
 | Show last messages | `privacyShowChatPreviews` | Show message previews in chat list |
 | Message draft | `privacySaveLastDraft` | Save unsent message draft for each chat |
 

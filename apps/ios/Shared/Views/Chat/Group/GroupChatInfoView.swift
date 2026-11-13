@@ -48,7 +48,6 @@ struct GroupChatInfoView: View {
         case largeGroupReceiptsDisabled
         case blockMemberAlert(mem: GroupMember)
         case unblockMemberAlert(mem: GroupMember)
-        case blockForAllAlert(mem: GroupMember)
         case unblockForAllAlert(mem: GroupMember)
         case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
@@ -61,7 +60,6 @@ struct GroupChatInfoView: View {
             case .largeGroupReceiptsDisabled: return "largeGroupReceiptsDisabled"
             case let .blockMemberAlert(mem): return "blockMemberAlert \(mem.groupMemberId)"
             case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.groupMemberId)"
-            case let .blockForAllAlert(mem): return "blockForAllAlert \(mem.groupMemberId)"
             case let .unblockForAllAlert(mem): return "unblockForAllAlert \(mem.groupMemberId)"
             case let .error(title, _): return "error \(title)"
             }
@@ -244,6 +242,9 @@ struct GroupChatInfoView: View {
                         if groupInfo.canDelete {
                             deleteGroupButton()
                         }
+                        if groupInfo.canDeleteAndBanCustomer(members.map(\.wrapped)) {
+                            deleteAndBanButton()
+                        }
                         if groupInfo.membership.memberCurrentOrPending {
                             if !groupInfo.useRelays || !groupInfo.isOwner
                                 || members.contains(where: { $0.wrapped.memberRole == .owner && $0.wrapped.groupMemberId != groupInfo.membership.groupMemberId }) {
@@ -281,14 +282,17 @@ struct GroupChatInfoView: View {
         }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
-            case .deleteGroupAlert: return deleteGroupAlert()
+            case .deleteGroupAlert:
+                return deleteGroupAlert(chat, groupInfo) {
+                    dismiss()
+                    chatModel.chatId = nil
+                }
             case .clearChatAlert: return clearChatAlert()
             case .leaveGroupAlert: return leaveGroupAlert()
             case .cantInviteIncognitoAlert: return cantInviteIncognitoAlert()
             case .largeGroupReceiptsDisabled: return largeGroupReceiptsDisabledAlert()
             case let .blockMemberAlert(mem): return blockMemberAlert(groupInfo, mem)
             case let .unblockMemberAlert(mem): return unblockMemberAlert(groupInfo, mem)
-            case let .blockForAllAlert(mem): return blockForAllAlert(groupInfo, mem)
             case let .unblockForAllAlert(mem): return unblockForAllAlert(groupInfo, mem)
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
@@ -584,8 +588,11 @@ struct GroupChatInfoView: View {
         }
 
         @ViewBuilder private func memberInfo(_ member: GroupMember) -> some View {
-            if member.blocked {
+            if member.blockedByAdmin {
                 Text("blocked")
+                    .foregroundColor(theme.colors.secondary)
+            } else if !member.memberSettings.showMessages {
+                Text("hidden")
                     .foregroundColor(theme.colors.secondary)
             } else {
                 let role = member.memberRole
@@ -602,13 +609,13 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .blockMemberAlert(mem: member)
                     } label: {
-                        Label("Block member", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
+                        Label("Hide messages", systemImage: "eye.slash").foregroundColor(theme.colors.secondary)
                     }
                 } else {
                     Button {
                         alert = .unblockMemberAlert(mem: member)
                     } label: {
-                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
+                        Label("Show messages", systemImage: "eye").foregroundColor(theme.colors.primary)
                     }
                 }
             }
@@ -624,7 +631,7 @@ struct GroupChatInfoView: View {
                     }
                 } else {
                     Button {
-                        alert = .blockForAllAlert(mem: member)
+                        showBanMemberSheet(groupInfo, member)
                     } label: {
                         Label("Block for all", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
                     }
@@ -879,6 +886,18 @@ struct GroupChatInfoView: View {
         }
     }
 
+    private func deleteAndBanButton() -> some View {
+        Button(role: .destructive) {
+            deleteAndBanCustomerDialog(chat, groupInfo) {
+                dismiss()
+                chatModel.chatId = nil
+            }
+        } label: {
+            Label("Delete and block", systemImage: "hand.raised")
+                .foregroundColor(Color.red)
+        }
+    }
+
     private func clearChatButton() -> some View {
         Button() {
             alert = .clearChatAlert
@@ -899,29 +918,6 @@ struct GroupChatInfoView: View {
     }
 
     // TODO reuse this and clearChatAlert with ChatInfoView
-    private func deleteGroupAlert() -> Alert {
-        let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel?" : groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
-        return Alert(
-            title: Text(label),
-            message: Text(chat.chatInfo.displayName + "\n\n") + deleteGroupAlertMessage(groupInfo),
-            primaryButton: .destructive(Text("Delete")) {
-                Task {
-                    do {
-                        try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
-                        await MainActor.run {
-                            dismiss()
-                            chatModel.chatId = nil
-                            chatModel.removeChat(chat.chatInfo.id)
-                        }
-                    } catch let error {
-                        logger.error("deleteGroupAlert apiDeleteChat error: \(error.localizedDescription)")
-                    }
-                }
-            },
-            secondaryButton: .cancel()
-        )
-    }
-
     private func clearChatAlert() -> Alert {
         Alert(
             title: Text("Clear conversation?"),
@@ -1008,6 +1004,8 @@ func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: 
                 cancelAlertAction
             ]}
         )
+    } else if mem.blockedByAdmin && mem.canBanAndRemove(groupInfo: groupInfo) {
+        showRemoveBannedMemberSheet(groupInfo, mem, dismiss: dismiss)
     } else if groupInfo.useRelays {
         showAlert(
             NSLocalizedString("Remove subscriber?", comment: "alert title"),
@@ -1041,10 +1039,10 @@ func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: 
     }
 }
 
-func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, dismiss: DismissAction?) {
+func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, notice: LinkNotice? = nil, dismiss: DismissAction?) {
     Task {
         do {
-            let (updatedGroupInfo, updatedMembers) = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId], withMessages)
+            let (updatedGroupInfo, updatedMembers) = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId], withMessages, notice: notice)
             await MainActor.run {
                 ChatModel.shared.updateGroup(updatedGroupInfo)
                 updatedMembers.forEach { updatedMember in
@@ -1067,6 +1065,27 @@ func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool
     }
 }
 
+func deleteGroupAlert(_ chat: Chat, _ groupInfo: GroupInfo, afterDeletion: @escaping () -> Void = {}) -> Alert {
+    let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel?" : groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
+    return Alert(
+        title: Text(label),
+        message: Text(chat.chatInfo.displayName + "\n\n") + deleteGroupAlertMessage(groupInfo),
+        primaryButton: .destructive(Text("Delete")) {
+            if (groupInfo.isOwner && groupInfo.membership.memberActive && groupInfo.businessChat == nil) || groupInfo.isCustomerChatOwner {
+                let hasBusinessAddress = ChatModel.shared.userAddress?.addressSettings.businessAddress == true
+                showClosableAppSheet { close in
+                    deleteGroupKeepDialog(groupInfo, hasBusinessAddress: hasBusinessAddress, close: close) { keepConversation in
+                        deleteGroup(chat, keepConversation: keepConversation, afterDeletion)
+                    }
+                }
+            } else {
+                deleteGroup(chat, keepConversation: false, afterDeletion)
+            }
+        },
+        secondaryButton: .cancel()
+    )
+}
+
 func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
     groupInfo.useRelays ? (
         groupInfo.membership.memberCurrent
@@ -1081,6 +1100,33 @@ func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
             ? Text("Chat will be deleted for all members - this cannot be undone!")
             : Text("Chat will be deleted for you - this cannot be undone!")
     )
+}
+
+private func deleteGroupKeepDialog(_ groupInfo: GroupInfo, hasBusinessAddress: Bool, close: @escaping CloseSheet, delete: @escaping (_ keepConversation: Bool) -> Void) -> KeepConversationDialog {
+    KeepConversationDialog(
+        actionTitle: NSLocalizedString("Delete", comment: "delete group dialog"),
+        footer: groupInfo.isCustomerChatOwner
+            ? (hasBusinessAddress
+               ? Text("**\(groupInfo.displayName)** will be notified, and can reconnect via your address.")
+               : Text("**\(groupInfo.displayName)** will be notified."))
+            : nil,
+        close: close,
+        delete: delete
+    )
+}
+
+func deleteAndBanCustomerDialog(_ chat: Chat, _ groupInfo: GroupInfo, afterDeletion: @escaping () -> Void = {}) {
+    showDeleteAndBanDialog(.customer(groupInfo)) { keepConversation, notice in
+        deleteGroup(chat, keepConversation: keepConversation, notice: notice, afterDeletion)
+    }
+}
+
+private func deleteGroup(_ chat: Chat, keepConversation: Bool, notice: LinkNotice? = nil, _ afterDeletion: @escaping () -> Void) {
+    Task {
+        if await deleteChat(chat, chatDeleteMode: ChatDeleteMode(keepConversation: keepConversation, notify: true), notice: notice) {
+            await MainActor.run { afterDeletion() }
+        }
+    }
 }
 
 struct GroupPreferencesButton: View {
@@ -1230,5 +1276,102 @@ struct GroupChatInfoView_Previews: PreviewProvider {
             onSearch: {},
             localAlias: ""
         )
+    }
+}
+
+func previewCustomerChat() -> GroupInfo {
+    var groupInfo = GroupInfo.sampleData
+    groupInfo.localDisplayName = "alice"
+    groupInfo.groupProfile = GroupProfile(displayName: "alice", fullName: "")
+    groupInfo.businessChat = .sampleData
+    groupInfo.membership.memberRole = .owner
+    groupInfo.membership.memberProfile = LocalProfile(profileId: 99, displayName: "SimpleX", fullName: "", localAlias: "")
+    groupInfo.membership.memberContactProfileId = 99
+    return groupInfo
+}
+
+func previewGroup(_ role: GroupMemberRole, channel: Bool = false) -> GroupInfo {
+    var groupInfo = GroupInfo.sampleData
+    groupInfo.useRelays = channel
+    groupInfo.membership.memberRole = role
+    return groupInfo
+}
+
+struct GroupChatInfoView_DeleteAndBan_Previews: PreviewProvider {
+    static var previews: some View {
+        let groupInfo = previewCustomerChat()
+        var customer = GroupMember.sampleData
+        customer.groupMemberId = 2
+        customer.memberId = BusinessChatInfo.sampleData.customerId
+        customer.memberRole = .member
+        customer.activeConn?.peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)
+        let chatModel = ChatModel()
+        chatModel.groupMembers = [GMember(customer)]
+        return GroupChatInfoView(
+            chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: []),
+            groupInfo: Binding.constant(groupInfo),
+            scrollToItemId: Binding.constant(nil),
+            composeState: Binding.constant(ComposeState()),
+            onSearch: {},
+            localAlias: ""
+        )
+        .environmentObject(chatModel)
+        .frame(height: 1450)
+    }
+}
+
+struct DeleteGroupKeepDialog_Previews: PreviewProvider {
+    static var previews: some View {
+        deleteGroupKeepDialog(GroupInfo.sampleData, hasBusinessAddress: false, close: { _ in }) { _ in }
+        deleteGroupKeepDialog(previewCustomerChat(), hasBusinessAddress: true, close: { _ in }) { _ in }
+    }
+}
+
+struct DeleteBusinessChatAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        let groupInfo = previewCustomerChat()
+        return Color.clear.alert(isPresented: .constant(true)) {
+            deleteGroupAlert(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil)), groupInfo)
+        }
+    }
+}
+
+struct GroupChatInfoView_Members_Previews: PreviewProvider {
+    static var previews: some View {
+        let groupInfo = previewGroup(.owner)
+        let member = { (id: Int64, name: String) -> GroupMember in
+            var m = previewBannableMember()
+            m.groupMemberId = id
+            m.memberId = name
+            m.localDisplayName = name
+            m.memberProfile = LocalProfile(profileId: id, displayName: name, fullName: "", localAlias: "")
+            m.memberContactProfileId = id
+            return m
+        }
+        var banned = member(3, "carol")
+        banned.blockedByAdmin = true
+        var hidden = member(4, "dan")
+        hidden.memberSettings.showMessages = false
+        let chatModel = ChatModel()
+        chatModel.groupMembers = [GMember(member(2, "bob")), GMember(banned), GMember(hidden)]
+        return GroupChatInfoView(
+            chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: []),
+            groupInfo: Binding.constant(groupInfo),
+            scrollToItemId: Binding.constant(nil),
+            composeState: Binding.constant(ComposeState()),
+            onSearch: {},
+            localAlias: ""
+        )
+        .environmentObject(chatModel)
+        .frame(height: 1800)
+    }
+}
+
+struct DeleteChannelAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        let channel = previewGroup(.owner, channel: true)
+        return Color.clear.alert(isPresented: .constant(true)) {
+            deleteGroupAlert(Chat(chatInfo: .group(groupInfo: channel, groupChatScope: nil)), channel)
+        }
     }
 }

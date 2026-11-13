@@ -66,7 +66,7 @@ struct FramedItemView: View {
                         case let .moderated(_, byGroupMember):
                             framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.displayName)").italic())
                         case .blocked:
-                            framedItemHeader(icon: "hand.raised", caption: Text("blocked").italic())
+                            framedItemHeader(icon: "hand.raised", caption: Text("hidden").italic())
                         case .blockedByAdmin:
                             framedItemHeader(icon: "hand.raised", caption: Text("blocked by admin").italic())
                         case .deleted:

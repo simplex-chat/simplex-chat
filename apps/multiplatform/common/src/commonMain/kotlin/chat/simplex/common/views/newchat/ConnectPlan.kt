@@ -1,24 +1,85 @@
 package chat.simplex.common.views.newchat
 
 import SectionItemView
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.views.chat.item.bansGuideLink
 import chat.simplex.common.views.chat.subscriberCountStr
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import kotlinx.coroutines.*
+import kotlinx.datetime.Instant
+import java.time.format.FormatStyle
 
 enum class ConnectionLinkType {
   INVITATION, CONTACT, GROUP
+}
+
+enum class LinkNoticeTarget {
+  Group, Channel, Contact, Business;
+
+  companion object {
+    fun fromLinkType(linkType: SimplexLinkType?): LinkNoticeTarget = when (linkType) {
+      SimplexLinkType.group -> Group
+      SimplexLinkType.channel -> Channel
+      else -> Contact
+    }
+
+    fun fromConnLink(connLink: CreatedConnLink): LinkNoticeTarget =
+      fromLinkType((strConnectTarget(connLink.connShortLink ?: connLink.connFullLink) as? ConnectTarget.Link)?.linkType)
+
+    fun fromGroupInfo(groupInfo: GroupInfo): LinkNoticeTarget = when {
+      groupInfo.businessChat != null -> Business
+      groupInfo.isChannel -> Channel
+      else -> Group
+    }
+  }
+}
+
+fun showLinkNoticeAlert(target: LinkNoticeTarget, expiresAt: Instant?, cleanup: (() -> Unit)? = null) {
+  val (banned, bannedUntil) = when (target) {
+    LinkNoticeTarget.Group -> MR.strings.link_notice_banned_group to MR.strings.link_notice_banned_group_until
+    LinkNoticeTarget.Channel -> MR.strings.link_notice_banned_channel to MR.strings.link_notice_banned_channel_until
+    LinkNoticeTarget.Contact -> MR.strings.link_notice_banned_contact to MR.strings.link_notice_banned_contact_until
+    LinkNoticeTarget.Business -> MR.strings.link_notice_banned_business to MR.strings.link_notice_banned_business_until
+  }
+  val text = expiresAt?.let { String.format(generalGetString(bannedUntil), localTimestamp(it, FormatStyle.SHORT)) } ?: generalGetString(banned)
+  AlertManager.privacySensitive.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.link_notice_alert_title),
+    text = AnnotatedString(text),
+    onDismissRequest = { cleanup?.invoke() }
+  ) {
+    val uriHandler = LocalUriHandler.current
+    Column {
+      SectionItemView({
+        AlertManager.privacySensitive.hideAlert()
+        cleanup?.invoke()
+      }) {
+        Text(generalGetString(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+      SectionItemView({
+        AlertManager.privacySensitive.hideAlert()
+        cleanup?.invoke()
+        uriHandler.openUriCatching(bansGuideLink)
+      }) {
+        Text(generalGetString(MR.strings.how_it_works), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+    }
+  }
 }
 
 suspend fun planAndConnect(
@@ -244,6 +305,11 @@ private suspend fun planAndConnectTask(
             cleanup()
           }
         }
+        is ContactAddressPlan.LinkNotice -> {
+          Log.d(TAG, "planAndConnect, .ContactAddress, .LinkNotice")
+          val plan = connectionPlan.contactAddressPlan
+          showLinkNoticeAlert(if (plan.contactSLinkData_?.business == true) LinkNoticeTarget.Business else LinkNoticeTarget.Contact, plan.expiresAt, cleanup)
+        }
       }
       is ConnectionPlan.GroupLink -> when (connectionPlan.groupLinkPlan) {
         is GroupLinkPlan.Ok ->
@@ -387,6 +453,15 @@ private suspend fun planAndConnectTask(
             )
             cleanup()
           }
+        }
+        is GroupLinkPlan.LinkNotice -> {
+          Log.d(TAG, "planAndConnect, .GroupLink, .LinkNotice")
+          val noticeTarget = when {
+            target is ConnectTarget.Link -> LinkNoticeTarget.fromLinkType(target.linkType)
+            planSimplexName?.nameType == SimplexNameType.publicGroup -> LinkNoticeTarget.Channel
+            else -> LinkNoticeTarget.Group
+          }
+          showLinkNoticeAlert(noticeTarget, connectionPlan.groupLinkPlan.expiresAt, cleanup)
         }
       }
       is ConnectionPlan.Error -> {
@@ -807,4 +882,20 @@ fun ownerVerificationMessage(ov: OwnerVerification?): String? = when (ov) {
   is OwnerVerification.Verified -> generalGetString(MR.strings.owner_verification_passed)
   is OwnerVerification.Failed -> String.format(generalGetString(MR.strings.owner_verification_failed), ov.reason)
   null -> null
+}
+
+@Preview
+@Composable
+fun PreviewLinkNoticeAlertGroup() {
+  SimpleXTheme {
+    AlertPreview(AlertManager.privacySensitive) { showLinkNoticeAlert(LinkNoticeTarget.Group, Instant.parse("2026-11-08T12:00:00Z")) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewLinkNoticeAlertContact() {
+  SimpleXTheme {
+    AlertPreview(AlertManager.privacySensitive) { showLinkNoticeAlert(LinkNoticeTarget.Contact, expiresAt = null) }
+  }
 }

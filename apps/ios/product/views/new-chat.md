@@ -113,6 +113,10 @@ Calls `apiNewPublicGroup(incognito:relayIds:groupProfile:)` which returns `publi
 
 When `planAndConnect` encounters a `.simplexLink(_, .relay, _, _)`, it shows a "Relay address" alert: "This is a chat relay address, it cannot be used to connect." Connection is blocked.
 
+### Blocked Link
+
+When the plan is `.linkNotice`, `planAndConnect` shows the "Not allowed" alert (`showLinkNoticeAlert`) and does not connect; see [connection flow 7a2](../flows/connection.md).
+
 ### Channel Prepare/Join Alerts
 
 | Context | Channel behavior | Group behavior |

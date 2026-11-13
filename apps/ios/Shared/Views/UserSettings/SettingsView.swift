@@ -37,6 +37,7 @@ let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
 let DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES = "privacyVerifySimplexNames"
 let DEFAULT_PRIVACY_SHOW_SIGNATURE = "privacyShowSignature"
 let DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION = "privacyShowEncryption"
+let DEFAULT_PRIVACY_CONTACT_DELETION = "privacyContactDeletion"
 let DEFAULT_PRIVACY_SAVE_LAST_DRAFT = "privacySaveLastDraft"
 let DEFAULT_PRIVACY_PROTECT_SCREEN = "privacyProtectScreen"
 let DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET = "privacyDeliveryReceiptsSet"
@@ -117,6 +118,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_PRIVACY_PROTECT_SCREEN: false,
     DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET: false,
     DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS: 0,
+    DEFAULT_PRIVACY_CONTACT_DELETION: ContactDeletion.ask.rawValue,
     DEFAULT_EXPERIMENTAL_CALLS: false,
     DEFAULT_CHAT_V3_DB_MIGRATION: V3DBMigrationState.offer.rawValue,
     DEFAULT_DEVELOPER_TOOLS: false,
@@ -221,6 +223,8 @@ let chatLayoutDefault = EnumDefault<ChatLayout>(defaults: UserDefaults.standard,
 let privacySimplexLinkModeDefault = EnumDefault<SimpleXLinkMode>(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_SIMPLEX_LINK_MODE, withDefault: .description)
 
 let privacyLocalAuthModeDefault = EnumDefault<LAMode>(defaults: UserDefaults.standard, forKey: DEFAULT_LA_MODE, withDefault: .system)
+
+let privacyContactDeletionDefault = EnumDefault<ContactDeletion>(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_CONTACT_DELETION, withDefault: .ask)
 
 let privacyDeliveryReceiptsSet = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET)
 

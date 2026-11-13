@@ -105,22 +105,26 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 ### 6. Remove Member
 
 1. Admin/owner navigates to member info -> taps "Remove".
-2. Calls `apiRemoveMembers(groupId:memberIds:withMessages:)`:
+2. Calls `apiRemoveMembers(groupId:memberIds:withMessages:notice:)`:
    ```swift
-   func apiRemoveMembers(_ groupId: Int64, _ memberIds: [Int64], _ withMessages: Bool) async throws -> (GroupInfo, [GroupMember])
+   func apiRemoveMembers(_ groupId: Int64, _ memberIds: [Int64], _ withMessages: Bool, notice: LinkNotice? = nil) async throws -> (GroupInfo, [GroupMember])
    ```
 3. `withMessages: true` also deletes all messages from that member.
 4. Core returns `ChatResponse2.userDeletedMembers(user, updatedGroupInfo, members, withMessages)`.
-5. Removed member receives notification and loses access.
+5. Without `notice`, the removed member receives a notification and loses access.
+6. With `notice` (a blocked member, or "Block and remove"), the removal is silent: members on version 23 or later see no event, apps on earlier versions show the removal, the removed member is not told unless it is an admin, and the removed member's app does not rejoin via the group link for the chosen duration (`BanDuration`: 1 day, 1 week, Forever). Forever asks to type "yes" in "Remove forever?" (`removeBannedMember`).
+7. A notice is offered only when the member supports `LINK_NOTICE_VERSION`.
 
 ### 7. Block Member for All
 
-1. Admin can block a member's messages from being visible to all group members.
-2. Calls `apiBlockMembersForAll(groupId:memberIds:blocked:)`:
+1. Moderator, admin or owner taps "Block for all" in member info or in the member swipe actions.
+2. "Block member for all?" (`showBanMemberSheet`) offers "Block for" 1 day (default), 1 week or Forever; admins and owners also get "Block and remove" and "Block, remove and delete messages". The footer: "**<name>** won't be notified, and the messages will be hidden for all." for moderators, "**<name>** won't be notified, and if removed, can't rejoin while blocked." for admins and owners.
+3. Calls `apiBlockMembersForAll(groupId:memberIds:blocked:ttl:)`; `ttl` is absent for Forever:
    ```swift
-   func apiBlockMembersForAll(_ groupId: Int64, _ memberIds: [Int64], _ blocked: Bool) async throws -> [GroupMember]
+   func apiBlockMembersForAll(_ groupId: Int64, _ memberIds: [Int64], _ blocked: Bool, ttl: Int64? = nil) async throws -> [GroupMember]
    ```
-3. Core returns `ChatResponse2.membersBlockedForAllUser(user, _, members, _)`.
+4. Core returns `ChatResponse2.membersBlockedForAllUser(user, _, members, _)`; `GroupMember.blockedUntil` is the end time.
+5. Blocked members' messages are hidden for all members; only moderators and above see placeholders.
 
 ### 8. Leave Group
 
@@ -136,13 +140,15 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 
 ### 9. Delete Group
 
-1. Owner navigates to `GroupChatInfoView` -> taps "Delete group".
-2. Calls `apiDeleteChat(type: .group, id: groupId)`:
+1. Owner navigates to `GroupChatInfoView` -> taps "Delete group", or uses "Delete" in the chat list swipe; both show `deleteGroupAlert` (`GroupChatInfoView.swift`).
+2. For an active owner (`isOwner` and `membership.memberActive`) of a group or channel, and for the active owner of a business chat with a customer, a sheet with "Keep conversation", Delete and Cancel follows (`KeepConversationDialog`); a member who left or was removed, and an owner whose membership is not active (for example `memAccepted`), delete after the alert only, as the core keeps the conversation only for an active owner.
+3. Calls `apiDeleteChat(type: .group, id: groupId, chatDeleteMode:)` through `deleteChat`; "Keep conversation" off sends `.full`, on sends `.entity`:
    ```swift
-   func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async throws
+   func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async throws -> GroupInfo?
    ```
-3. Core notifies all members and removes the group.
-4. Chat is removed from `ChatModel.shared.chats`.
+4. Core notifies all members. With `.full` the chat is removed from `ChatModel.shared.chats`; with `.entity` core returns the group with membership status `memGroupDeleted`, and `ChatModel.updateGroup` keeps the chat in the list.
+5. Business chat of the owner: the sheet says "**<customer>** will be notified.", or "**<customer>** will be notified, and can reconnect via your address." when the user's address is a business address (`userAddress.addressSettings.businessAddress`).
+6. "Delete and block" for the owner of a business chat (`deleteAndBanCustomerDialog`): the dialogs of [connection flow 8](connection.md#8-delete-archive-or-block-a-contact) with the customer's name; `apiDeleteChat` with a `LinkNotice`, so the core removes the customer silently with the notice and then deletes the chat.
 
 ### 10. Group Link Management
 

@@ -112,7 +112,7 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | `apiConnectContactViaAddress` | `userId, incognito, contactId` | Connect via address | [L137](../Shared/Model/AppAPITypes.swift#L137) |
 | `apiAcceptContact` | `incognito, contactReqId` | Accept contact request | [L154](../Shared/Model/AppAPITypes.swift#L154) |
 | `apiRejectContact` | `contactReqId` | Reject contact request | [L155](../Shared/Model/AppAPITypes.swift#L155) |
-| `apiDeleteChat` | `type, id, chatDeleteMode` | Delete conversation | [L138](../Shared/Model/AppAPITypes.swift#L138) |
+| `apiDeleteChat` | `type, id, chatDeleteMode, notice` | Delete or archive a chat; `ChatDeleteMode`: `.full`, `.entity` (keep conversation; for groups only an active owner), `.archive` (contacts); with `notice`, a contact or a business chat customer is deleted silently and blocked from connecting via the user's address | [L145](../Shared/Model/AppAPITypes.swift#L145) |
 | `apiClearChat` | `type, id` | Clear conversation history | [L139](../Shared/Model/AppAPITypes.swift#L139) |
 | `apiListContacts` | `userId` | List all contacts | [L140](../Shared/Model/AppAPITypes.swift#L140) |
 | `apiSetContactPrefs` | `contactId, preferences` | Set contact preferences | [L142](../Shared/Model/AppAPITypes.swift#L142) |
@@ -131,12 +131,12 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | `apiAddMember` | `groupId, contactId, memberRole` | Invite contact to group | [L75](../Shared/Model/AppAPITypes.swift#L75) |
 | `apiJoinGroup` | `groupId` | Accept group invitation | [L76](../Shared/Model/AppAPITypes.swift#L76) |
 | `apiAcceptMember` | `groupId, groupMemberId, memberRole` | Accept member (knocking) | [L77](../Shared/Model/AppAPITypes.swift#L77) |
-| `apiRemoveMembers` | `groupId, memberIds, withMessages` | Remove members | [L81](../Shared/Model/AppAPITypes.swift#L81) |
+| `apiRemoveMembers` | `groupId, memberIds, withMessages, notice` | Remove members; with `notice` the removal is silent and blocks rejoining | [L85](../Shared/Model/AppAPITypes.swift#L85) |
 | `apiLeaveGroup` | `groupId` | Leave group | [L82](../Shared/Model/AppAPITypes.swift#L82) |
 | `apiListMembers` | `groupId` | List group members | [L83](../Shared/Model/AppAPITypes.swift#L83) |
 | `apiUpdateGroupProfile` | `groupId, groupProfile` | Update group name/image/description | [L84](../Shared/Model/AppAPITypes.swift#L84) |
 | `apiMembersRole` | `groupId, memberIds, memberRole` | Change member roles | [L79](../Shared/Model/AppAPITypes.swift#L79) |
-| `apiBlockMembersForAll` | `groupId, memberIds, blocked` | Block members for all | [L80](../Shared/Model/AppAPITypes.swift#L80) |
+| `apiBlockMembersForAll` | `groupId, memberIds, blocked, ttl` | Block members for all, for `ttl` seconds or forever | [L84](../Shared/Model/AppAPITypes.swift#L84) |
 | `apiCreateGroupLink` | `groupId, memberRole` | Create shareable group link | [L85](../Shared/Model/AppAPITypes.swift#L85) |
 | `apiGroupLinkMemberRole` | `groupId, memberRole` | Change group link default role | [L86](../Shared/Model/AppAPITypes.swift#L86) |
 | `apiDeleteGroupLink` | `groupId` | Delete group link | [L87](../Shared/Model/AppAPITypes.swift#L87) |

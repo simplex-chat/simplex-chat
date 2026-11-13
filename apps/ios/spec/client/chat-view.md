@@ -536,6 +536,73 @@ WallpaperSetupView        image scale type, scale slider and wallpaper tint hidd
 
 ---
 
+## GroupChatInfoView and GroupMemberInfoView — Blocks
+
+Rows of the group member list (`GroupChatInfoView` `MemberRowView.memberInfo`) show "blocked" for a member blocked by admin, "hidden" for a member whose messages the user hid, and the role badge otherwise.
+
+Members below moderator get "Hide messages" / "Show messages" (`blockMemberAlert`, `unblockMemberAlert`), which change only the user's `memberSettings.showMessages`. Moderators and above get "Block for all" (`showBanMemberSheet`, which presents `banMemberDialog`), a sheet with "Block for" (`BanDuration`: 1 day, 1 week, Forever) and "Block"; admins and owners also get "Block and remove" and "Block, remove and delete messages" when `GroupMember.canBanAndRemove` (removal allowed, member current or pending, member below moderator, member supports `LINK_NOTICE_VERSION`). The sheet is closed before the chosen action runs. "Unblock for all" (`unblockForAllAlert`) ends a block; member info shows "Blocked until <time>" from `GroupMember.blockedUntil`, or "Blocked by admin". Removal of a blocked member that supports `LINK_NOTICE_VERSION` uses `showRemoveBannedMemberSheet` (`removeBannedMemberDialog`); every removal with a block goes through `removeBannedMember`, where Forever asks to type "yes" in "Remove forever?" (`removeForeverAlert`, built by `typedConfirmationAlert`), and calls `removeMember` with a `LinkNotice`.
+
+---
+
+## ChatInfoView and GroupChatInfoView — Deletion, Archive, Delete and Block
+
+Sheets: `showClosableAppSheet` (`AppSheet.swift`) presents a sheet with `showAppSheet` at the medium and large detents and passes it a `CloseSheet`, which dismisses the sheet and then runs the next step; `BanDialog` and `KeepConversationDialog` close before their action runs.
+
+`KeepConversationDialog` (`ChatInfoView.swift`):
+
+```
+title          optional navigation title
+toggle         Keep conversation, off
+confirmWord    optional field; the action is enabled when the trimmed, lowercased text equals the word
+action         destructive button, actionTitle; delete(keepConversation) after closing
+Cancel         closes
+footer         optional text
+```
+
+`ChatDeleteMode(keepConversation:notify:)` maps the toggle: on gives `.entity(notify:)`, off `.full(notify:)`.
+
+Contact deletion (`deleteContactDialog`):
+
+```
+ready and active    deleteActiveContactDialog: privacyContactDeletionDefault
+  .notify           deleteContactAlert (Alert): Delete, Cancel → dialog 2, notify on
+  .ask              deleteContactActionSheet: Delete and notify, Delete silently → dialog 2
+  dialog 2          deleteContactKeepDialog: Delete; footer "**<name>** will be notified." or "won't be notified.",
+                    with ", and can reconnect via your address." when ChatModel.userAddress is set
+otherwise           deleteNotReadyContact: Confirm contact deletion?
+```
+
+`deleteContactMessage` is the message of both dialog 1 forms: "Contact with **<name>** will be deleted - this cannot be undone!". `deleteContactMaybeErrorAlert` deletes with `deleteContactChat` and an optional `LinkNotice`, then shows `deleteContactNotice` after `.entity`: "Contact deleted!", with "in Archived contacts" for an archived contact (`chatDeleted`) and "in the list of chats" otherwise.
+
+Archive (`archiveContact`): `deleteContactChat` with `.archive` (`/_delete @<id> archive`), then `deleteConversationNotice` through `AlertManager`: "Contact archived!", with the text for an active contact or for a deleted one. For `.entity` and `.archive`, `deleteContactChat` updates the contact in place (`ChatModel.updateContact`), so the chat keeps its items, stats, position and wallpaper files, and moves the chat's preset tag counts from the previous contact to the returned one.
+
+Delete and block (`showDeleteAndBanDialog`), for a `DeleteAndBanTarget` (`.contact` or `.customer`), which gives the name and the deletion line:
+
+```
+dialog 1        deleteAndBanDialog: BanDialog "Delete and block?", "Block for", Delete and block, Cancel; deletionText
+1 day, 1 week   deleteAndBanKeepDialog: "Delete and block?", Keep conversation; timedBanText
+Forever         deleteAndBanKeepDialog: "Delete and block forever?", Keep conversation, field "Type yes"; foreverText
+result          delete(keepConversation, duration.notice)
+```
+
+- contact: `deleteAndBanContactDialog`, shown when `Contact.canDeleteAndBan` (`sndReady`, `active`, `activeConn.viaUserContactLink` set, `peerChatVRange.maxVersion >= LINK_NOTICE_VERSION`): `deleteContactMaybeErrorAlert` with `notify: false` and the notice; entries: `ChatInfoView.deleteAndBanButton`, the chat list "Block", the Archived contacts "Block" (`ContactListNavLink.deletedChatNavLink`)
+- customer: `deleteAndBanCustomerDialog` (`GroupChatInfoView.swift`): `deleteChat` with the notice; `GroupChatInfoView.deleteAndBanButton` is shown when `GroupInfo.canDeleteAndBanCustomer(members)`: `isCustomerChatOwner` (`isOwner`, `membership.memberActive`, `businessChat.chatType == .customer`) and the member with `businessChat.customerId` passes `canBanAndRemove`
+
+Group deletion (`deleteGroupAlert`, `GroupChatInfoView.swift`, also used by the chat list):
+
+```
+alert           title and message as before
+owner           (isOwner && membership.memberActive && businessChat == nil) || isCustomerChatOwner:
+                deleteGroupKeepDialog, Delete; footer for isCustomerChatOwner "**<name>** will be notified.",
+                with ", and can reconnect via your address." when userAddress.addressSettings.businessAddress
+others          deletion after the alert
+deletion        deleteGroup → deleteChat(chatDeleteMode, notice); afterDeletion on success
+```
+
+`deleteChat` (`SimpleXAPI.swift`) returns whether the deletion succeeded; with `.entity` it updates the group that `apiDeleteChat` returns (membership `memGroupDeleted`), otherwise it removes the chat. From group info, `afterDeletion` dismisses the sheet and closes the chat.
+
+---
+
 ## GroupChatInfoView — Channel Adaptations
 
 When `groupInfo.useRelays == true`, [`GroupChatInfoView`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L16) adapts its sections:

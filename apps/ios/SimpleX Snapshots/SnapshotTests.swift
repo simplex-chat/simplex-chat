@@ -192,12 +192,14 @@ private struct SnapshotScene {
     var height: CGFloat? = nil
     var allSizes: Bool
     var device: Bool
+    var alert: Bool
     var view: AnyView
 
-    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false, device: Bool = false) {
+    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false, device: Bool = false, alert: Bool = false) {
         name = String(describing: preview).replacingOccurrences(of: "_Previews", with: "")
         self.allSizes = allSizes
         self.device = device
+        self.alert = alert
         view = AnyView(preview.previews)
     }
 }
@@ -210,23 +212,35 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(AddGroupMembersView_Previews.self),
         SnapshotScene(AddGroupView_Previews.self, device: true),
         SnapshotScene(AdvancedNetworkSettings_Previews.self, device: true),
+        SnapshotScene(ArchivedContactDeletedAlert_Previews.self, alert: true),
         SnapshotScene(BadgesCheckOrderView_Previews.self),
         SnapshotScene(BadgesHowItWorksView_Previews.self),
         SnapshotScene(BadgesHowLongView_Previews.self),
         SnapshotScene(BadgesRedeemCodeView_Previews.self, device: true),
         SnapshotScene(BadgesSupportSimplexView_Previews.self, device: true),
+        SnapshotScene(BanMemberDialog_Moderator_Previews.self),
+        SnapshotScene(BanMemberDialog_Owner_Previews.self),
+        SnapshotScene(BanMemberForeverDialog_Moderator_Previews.self),
+        SnapshotScene(BanMemberForeverDialog_Owner_Previews.self),
+        SnapshotScene(BanSubscriberDialog_Moderator_Previews.self),
+        SnapshotScene(BanSubscriberDialog_Owner_Previews.self),
         SnapshotScene(CallSettings_Previews.self, device: true),
         SnapshotScene(ChannelMembersView_Previews.self),
         SnapshotScene(ChannelRelaysView_Previews.self),
         SnapshotScene(ChatHelp_Previews.self),
         SnapshotScene(ChatInfoImage_Previews.self),
         SnapshotScene(ChatInfoToolbar_Previews.self),
+        SnapshotScene(ChatInfoView_DeleteAndBan_Previews.self),
         SnapshotScene(ChatInfoView_Previews.self, device: true),
         SnapshotScene(ChatItemForwardingView_Previews.self),
         SnapshotScene(ChatItemInfoView_Previews.self),
         SnapshotScene(ChatItemView_NonMsgContentDeleted_Previews.self, allSizes: true),
         SnapshotScene(ChatItemView_Previews.self, allSizes: true),
+        SnapshotScene(ChatListMoreDialog_BusinessChat_Previews.self),
+        SnapshotScene(ChatListMoreDialog_Contact_Previews.self),
+        SnapshotScene(ChatListMoreDialog_Group_Previews.self),
         SnapshotScene(ChatListNavLink_Previews.self),
+        SnapshotScene(ChatListSwipeActions_Previews.self),
         SnapshotScene(ChatListView_Previews.self),
         SnapshotScene(ChatPreviewView_Previews.self),
         SnapshotScene(ChatView_Previews.self, device: true),
@@ -246,6 +260,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ClassicParagraphs_Previews.self, allSizes: true),
         SnapshotScene(ComposeVoiceView_Previews.self),
         SnapshotScene(ConnectDesktopView_Previews.self, device: true),
+        SnapshotScene(ContactArchivedAlert_Previews.self, alert: true),
         SnapshotScene(ContactConnectionInfo_Previews.self),
         SnapshotScene(ContactConnectionView_Previews.self),
         SnapshotScene(ContactPreferencesView_Previews.self, device: true),
@@ -261,7 +276,18 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(DatabaseEncryptionView_Previews.self, device: true),
         SnapshotScene(DatabaseErrorView_Previews.self),
         SnapshotScene(DatabaseView_Previews.self, device: true),
+        SnapshotScene(DeleteAndBanContactDialog_Previews.self),
+        SnapshotScene(DeleteAndBanContactForeverDialog_Previews.self),
+        SnapshotScene(DeleteAndBanCustomerDialog_Previews.self),
+        SnapshotScene(DeleteAndBanCustomerForeverDialog_Previews.self),
+        SnapshotScene(DeleteAndBanUnavailableAlert_Previews.self, alert: true),
+        SnapshotScene(DeleteBusinessChatAlert_Previews.self, alert: true),
+        SnapshotScene(DeleteChannelAlert_Previews.self, alert: true),
+        SnapshotScene(DeleteContactActionSheet_Previews.self),
+        SnapshotScene(DeleteContactAlert_Previews.self, alert: true),
+        SnapshotScene(DeleteContactKeepDialog_Previews.self),
         SnapshotScene(DeletedItemView_Previews.self, allSizes: true),
+        SnapshotScene(DeleteGroupKeepDialog_Previews.self),
         SnapshotScene(DetermineWidth_Previews.self),
         SnapshotScene(DeveloperView_Previews.self),
         SnapshotScene(EmojiItemView_Previews.self, allSizes: true),
@@ -270,16 +296,23 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(FramedItemView_Edited_Previews.self, allSizes: true),
         SnapshotScene(FramedItemView_Previews.self, allSizes: true),
         SnapshotScene(GetStakeBanner_Previews.self),
+        SnapshotScene(GroupChatInfoView_DeleteAndBan_Previews.self),
+        SnapshotScene(GroupChatInfoView_Members_Previews.self),
         SnapshotScene(GroupChatInfoView_Previews.self, device: true),
         SnapshotScene(GroupLinkView_Previews.self),
         SnapshotScene(GroupMemberInfoView_Previews.self, device: true),
         SnapshotScene(GroupPreferencesView_Previews.self, device: true),
         SnapshotScene(GroupProfileView_Previews.self, device: true),
         SnapshotScene(GroupWelcomeView_Previews.self),
+        SnapshotScene(HideMessagesAlert_Previews.self, alert: true),
         SnapshotScene(IncognitoHelp_Previews.self),
         SnapshotScene(IncomingCallView_Previews.self),
         SnapshotScene(IntegrityErrorItemView_Previews.self, allSizes: true),
         SnapshotScene(LargeLinkPreview_Previews.self, allSizes: true),
+        SnapshotScene(LiftBanAlert_Previews.self, alert: true),
+        SnapshotScene(LiftBanSubscriberAlert_Previews.self, alert: true),
+        SnapshotScene(LinkNoticeContactAlert_Previews.self, alert: true),
+        SnapshotScene(LinkNoticeGroupAlert_Previews.self, alert: true),
         SnapshotScene(LocalAuthView_Previews.self),
         SnapshotScene(MarkdownHelp_Previews.self),
         SnapshotScene(MarkedDeletedItemView_Previews.self, allSizes: true),
@@ -308,6 +341,10 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ProfilePrivacyView_Previews.self, device: true),
         SnapshotScene(ProtocolServerView_Previews.self),
         SnapshotScene(QRCode_Previews.self),
+        SnapshotScene(RemoveBannedMemberDialog_Previews.self),
+        SnapshotScene(RemoveBannedSubscriberDialog_Previews.self),
+        SnapshotScene(RemoveForeverAlert_Previews.self, alert: true),
+        SnapshotScene(RemoveSubscriberForeverAlert_Previews.self, alert: true),
         SnapshotScene(RTCServers_Previews.self),
         SnapshotScene(ScanCodeView_Previews.self),
         SnapshotScene(ScanProtocolServer_Previews.self),
@@ -316,9 +353,11 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(SetAppPasscodeView_Previews.self),
         SnapshotScene(SetDeliveryReceiptsView_Previews.self),
         SnapshotScene(SettingsView_Previews.self, device: true),
+        SnapshotScene(ShowMessagesAlert_Previews.self, alert: true),
         SnapshotScene(SimpleXInfo_Previews.self, device: true),
         SnapshotScene(SmallLinkPreview_Previews.self),
         SnapshotScene(SupportSimpleXBanner_Previews.self),
+        SnapshotScene(TagListView_Previews.self),
         SnapshotScene(TerminalAvatars_Previews.self, allSizes: true),
         SnapshotScene(TerminalMedia_Previews.self),
         SnapshotScene(TerminalNames_Previews.self, allSizes: true),
@@ -380,6 +419,9 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
         }
     }
     window.endEditing(true)
+    if scene.alert {
+        host.presentedViewController?.view.superview?.subviews.forEach { $0.isHidden = false }
+    }
     removeAnimations(window.layer)
     let format = UIGraphicsImageRendererFormat.default()
     format.scale = 1
@@ -508,6 +550,112 @@ struct ClassicOverviewChannel_Previews: PreviewProvider {
 struct ClassicParagraphs_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().paragraphs()
+    }
+}
+
+struct ChatListSwipeActions_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().swipeActions()
+    }
+}
+
+private struct SwipeActionsRow: View {
+    var title: String
+    var actions: ChatListActions
+    var systemImage: (ChatListAction) -> String = { $0.label.systemImage }
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            Text(verbatim: title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            HStack(spacing: 0) {
+                if !actions.more.isEmpty {
+                    tile(NSLocalizedString("More", comment: "swipe action"), "ellipsis", nil)
+                }
+                ForEach(Array(actions.shown.reversed()), id: \.self) { action in
+                    let label = action.label
+                    tile(label.title, systemImage(action), label.tint)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .padding(.horizontal)
+    }
+
+    private func tile(_ title: String, _ systemImage: String, _ tint: Color?) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: systemImage)
+            Text(title).font(.subheadline.weight(.medium))
+        }
+        .foregroundColor(.white)
+        .frame(width: 80, height: 80)
+        .background(tint ?? Color(uiColor: .systemGray))
+    }
+}
+
+struct LinkNoticeGroupAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview {
+            linkNoticeAlert(.group, expiresAt: previewDate.addingTimeInterval(24 * 60 * 60), cleanup: nil)
+        })
+    }
+}
+
+struct LinkNoticeContactAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview {
+            linkNoticeAlert(.contact, expiresAt: nil, cleanup: nil)
+        })
+    }
+}
+
+struct RemoveForeverAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview(typedText: foreverConfirmationWord) {
+            removeForeverAlert(previewGroup(.owner), previewBannableMember(), withMessages: false, dismiss: nil)
+        })
+    }
+}
+
+struct RemoveSubscriberForeverAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview(typedText: foreverConfirmationWord) {
+            removeForeverAlert(previewGroup(.owner, channel: true), previewBannableMember(), withMessages: false, dismiss: nil)
+        })
+    }
+}
+
+private struct AlertControllerPreview: UIViewControllerRepresentable {
+    var typedText: String? = nil
+    var alert: () -> UIAlertController
+
+    func makeUIViewController(context: Context) -> AlertPresenter {
+        AlertPresenter(alert(), typedText: typedText)
+    }
+
+    func updateUIViewController(_ presenter: AlertPresenter, context: Context) {}
+}
+
+private final class AlertPresenter: UIViewController {
+    private let alert: UIAlertController
+
+    init(_ alert: UIAlertController, typedText: String?) {
+        self.alert = alert
+        super.init(nibName: nil, bundle: nil)
+        if let typedText, let field = alert.textFields?.first {
+            field.text = typedText
+            field.sendActions(for: .editingChanged)
+        }
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if alert.presentingViewController == nil {
+            present(alert, animated: false)
+        }
     }
 }
 
@@ -1051,6 +1199,44 @@ private final class SnapshotFixtures {
             msg(.groupRcv(groupMember: bob), "", -80, content: .voice(text: "", duration: 21), file: CIFile.getSample(fileId: id(), fileName: "voice.m4a", fileSize: 30_720, filePath: nil, fileStatus: .rcvInvitation)),
             msg(.groupRcv(groupMember: carol), "", -70, content: .file(""), file: CIFile.getSample(fileId: id(), fileName: "notes.txt", fileSize: 2_048, filePath: nil, fileStatus: .rcvInvitation))
         ], terminal: terminal)
+    }
+
+    func swipeActions() -> some View {
+        let items = [msg(.directRcv, "hello", -10)]
+        var bannable = contact
+        bannable.activeConn?.viaUserContactLink = 1
+        bannable.activeConn?.peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)
+        var archived = bannable
+        archived.chatDeleted = true
+        var customerChat = team
+        customerChat.businessChat = .sampleData
+        customerChat.membership.memberRole = .owner
+        var owner = team
+        owner.membership.memberRole = .owner
+        var channelOwner = news
+        channelOwner.membership.memberRole = .owner
+        var left = team
+        left.membership.memberStatus = .memLeft
+        let group = { (groupInfo: GroupInfo, chatItems: [ChatItem], chatStats: ChatStats) in
+            ChatListActions.group(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: chatItems, chatStats: chatStats), groupInfo)
+        }
+        return VStack(spacing: 16) {
+            SwipeActionsRow(title: "Contact", actions: .contact(Chat(chatInfo: .direct(contact: contact), chatItems: items), contact))
+            SwipeActionsRow(title: "Contact connected via your address", actions: .contact(Chat(chatInfo: .direct(contact: bannable), chatItems: items), bannable))
+            SwipeActionsRow(title: "Contact connected via your address, no messages", actions: .contact(Chat(chatInfo: .direct(contact: bannable)), bannable))
+            SwipeActionsRow(title: "Archived contacts: contact connected via your address", actions: ChatListActions([ChatListAction.deleteContact(archived)] + (archived.canDeleteAndBan ? [ChatListAction.banContact(archived)] : []), more: [])) { action in
+                if case .banContact = action { return "hand.raised" }
+                return "trash"
+            }
+            SwipeActionsRow(title: "Business chat owner", actions: group(customerChat, items, ChatStats()))
+            SwipeActionsRow(title: "Business chat owner, no messages", actions: group(customerChat, [], ChatStats()))
+            SwipeActionsRow(title: "Group owner", actions: group(owner, items, ChatStats()))
+            SwipeActionsRow(title: "Group owner, with reports", actions: group(owner, items, ChatStats(reportsCount: 1)))
+            SwipeActionsRow(title: "Channel owner", actions: group(channelOwner, items, ChatStats()))
+            SwipeActionsRow(title: "Member", actions: group(team, items, ChatStats()))
+            SwipeActionsRow(title: "Member who left", actions: group(left, items, ChatStats()))
+        }
+        .padding(.vertical)
     }
 
     func overviewChannel(terminal: Bool) -> ChatRows {

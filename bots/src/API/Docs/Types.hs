@@ -234,7 +234,7 @@ chatTypesDocsData =
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
     (sti @ChatBotCommand, STUnion, "CBC", [], "", ""),
-    (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", "")] (OnOffParam "notify" "notify" (Just True)), ""),
+    (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", ""), ("archive", "")] (OnOffParam "notify" "notify" (Just True)), ""),
     (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], "", ""),
     (sti @ChatErrorType, STUnion, "CE", ["CEContactNotFound", "CEServerProtocol", "CECallState", "CEInvalidChatMessage"], "", ""),
     (sti @BadgeStatus, STEnum, "BS", [], "", ""),
@@ -330,6 +330,7 @@ chatTypesDocsData =
     (sti @InvitedBy, STUnion, "IB", [], "", ""),
     (sti @KeepAliveOpts, STRecord, "", [], "", ""),
     (sti @LinkContent, STUnion, "LC", [], "", ""),
+    (sti @LinkNotice, STRecord, "", [], "", ""),
     (sti @LinkOwnerSig, STRecord, "", [], "", ""),
     (sti @LinkPreview, STRecord, "", [], "", ""),
     (sti @ListEntry, STRecord, "", [], "", ""),
@@ -594,6 +595,7 @@ deriving instance Generic JSONCIFileStatus
 deriving instance Generic JSONCIStatus
 deriving instance Generic KeepAliveOpts
 deriving instance Generic LinkContent
+deriving instance Generic LinkNotice
 deriving instance Generic LinkOwnerSig
 deriving instance Generic LinkPreview
 deriving instance Generic ListEntry

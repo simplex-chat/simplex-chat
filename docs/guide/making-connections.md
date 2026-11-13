@@ -122,3 +122,24 @@ Open one of your conversations, tap the contact's name in the chat toolbar and
 tap "Contact preferences". Here you can choose whether you wish to allow
 disappearing messages, deleting messages for everyone, message reactions, voice
 messages and audio/video calls.
+
+## Deleting and archiving contacts
+
+Swipe the contact left in the list of conversations (iOS), tap and hold it
+(Android) or right-click it (desktop):
+
+- "Archive" (under "More" on iOS when the conversation has messages) moves the
+  conversation with its messages to Archived contacts, which you open with the
+  pencil button. The contact is not told, and you can still send messages from
+  there.
+- "Delete" asks whether to keep the conversation. With [Contact
+  deletion](./app-settings.md#contact-deletion) set to Ask, you also choose
+  "Delete and notify" or "Delete silently".
+- "Delete and block" ("Block" in the iOS swipe) is shown for a contact who
+  connected via your SimpleX address, when the contact's app supports it. The
+  contact is not notified, and cannot connect to you via your address for the
+  time you choose in "Block for": 1 day, 1 week or forever. See
+  [Blocking members](./secret-groups.md#blocking-members).
+
+"Delete contact" and "Delete and block" are also at the bottom of the contact
+page, and "Delete" and "Delete and block" are offered in Archived contacts.

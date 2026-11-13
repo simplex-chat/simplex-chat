@@ -301,6 +301,8 @@ fun showFileErrorAlert(err: FileError, file: CIFile? = null, temporary: Boolean 
   }
 }
 
+val bansGuideLink = "https://simplex.chat/docs/guide/secret-groups.html#blocking-members"
+
 val contentModerationPostLink = "https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html#preventing-server-abuse-without-compromising-e2e-encryption"
 
 fun showContentBlockedAlert(title: String, message: String) {

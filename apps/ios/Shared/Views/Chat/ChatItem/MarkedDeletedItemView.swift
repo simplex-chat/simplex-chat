@@ -65,7 +65,7 @@ struct MarkedDeletedItemView: View {
             : total == blockedByAdmin
             ? "\(total) messages blocked by admin"
             : total == blocked + blockedByAdmin
-            ? "\(total) messages blocked"
+            ? "\(total) messages hidden"
             : "\(total) messages marked deleted"
         } else {
             return markedDeletedText
@@ -80,7 +80,7 @@ struct MarkedDeletedItemView: View {
         } else {
             switch chatItem.meta.itemDeleted {
             case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.displayName)"
-            case .blocked: "blocked"
+            case .blocked: "hidden"
             case .blockedByAdmin: "blocked by admin"
             case .deleted, nil: "marked deleted"
             }

@@ -81,8 +81,8 @@ enum ChatCommand: ChatCmdProtocol {
     case apiAcceptMember(groupId: Int64, groupMemberId: Int64, memberRole: GroupMemberRole)
     case apiDeleteMemberSupportChat(groupId: Int64, groupMemberId: Int64)
     case apiMembersRole(groupId: Int64, memberIds: [Int64], memberRole: GroupMemberRole)
-    case apiBlockMembersForAll(groupId: Int64, memberIds: [Int64], blocked: Bool)
-    case apiRemoveMembers(groupId: Int64, memberIds: [Int64], withMessages: Bool)
+    case apiBlockMembersForAll(groupId: Int64, memberIds: [Int64], blocked: Bool, ttl: Int64?)
+    case apiRemoveMembers(groupId: Int64, memberIds: [Int64], withMessages: Bool, notice: LinkNotice?)
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
     case apiUpdateGroupProfile(groupId: Int64, groupProfile: GroupProfile)
@@ -142,7 +142,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?)
     case apiConnect(userId: Int64, incognito: Bool, connLink: CreatedConnLink)
     case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
-    case apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode)
+    case apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode, notice: LinkNotice?)
     case apiClearChat(type: ChatType, id: Int64)
     case apiListContacts(userId: Int64)
     case apiUpdateProfile(userId: Int64, profile: Profile)
@@ -266,7 +266,7 @@ enum ChatCommand: ChatCmdProtocol {
                 let msgs = encodeJSON(composedMessages)
                 return "/_create *\(noteFolderId) json \(msgs)"
             case let .apiReportMessage(groupId, chatItemId, reportReason, reportText):
-                return "/_report #\(groupId) \(chatItemId) reason=\(reportReason) \(reportText)"
+                return "/_report #\(groupId) \(chatItemId) reason=\(reportReason.rawValue) \(reportText)"
             case let .apiUpdateChatItem(type, id, scope, itemId, um, live): return "/_update item \(ref(type, id, scope: scope)) \(itemId) live=\(onOff(live)) \(um.cmdString)"
             case let .apiDeleteChatItem(type, id, scope, itemIds, mode): return "/_delete item \(ref(type, id, scope: scope)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
@@ -301,8 +301,8 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiAcceptMember(groupId, groupMemberId, memberRole): return "/_accept member #\(groupId) \(groupMemberId) \(memberRole.rawValue)"
             case let .apiDeleteMemberSupportChat(groupId, groupMemberId): return "/_delete member chat #\(groupId) \(groupMemberId)"
             case let .apiMembersRole(groupId, memberIds, memberRole): return "/_member role #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) \(memberRole.rawValue)"
-            case let .apiBlockMembersForAll(groupId, memberIds, blocked): return "/_block #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) blocked=\(onOff(blocked))"
-            case let .apiRemoveMembers(groupId, memberIds, withMessages): return "/_remove #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) messages=\(onOff(withMessages))"
+            case let .apiBlockMembersForAll(groupId, memberIds, blocked, ttl): return "/_block #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) blocked=\(onOff(blocked))\(ttl.map { " ttl=\($0)" } ?? "")"
+            case let .apiRemoveMembers(groupId, memberIds, withMessages, notice): return "/_remove #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) messages=\(onOff(withMessages))\(notice.map { " notice=\(encodeJSON($0))" } ?? "")"
             case let .apiLeaveGroup(groupId): return "/_leave #\(groupId)"
             case let .apiListMembers(groupId): return "/_members #\(groupId)"
             case let .apiUpdateGroupProfile(groupId, groupProfile): return "/_group_profile #\(groupId) \(encodeJSON(groupProfile))"
@@ -374,7 +374,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiConnectPreparedGroup(groupId, incognito, mc): return "/_connect group #\(groupId) incognito=\(onOff(incognito))\(maybeContent(mc))"
             case let .apiConnect(userId, incognito, connLink): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connLink.connFullLink) \(connLink.connShortLink ?? "")"
             case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
-            case let .apiDeleteChat(type, id, chatDeleteMode): return "/_delete \(ref(type, id, scope: nil)) \(chatDeleteMode.cmdString)"
+            case let .apiDeleteChat(type, id, chatDeleteMode, notice): return "/_delete \(ref(type, id, scope: nil)) \(chatDeleteMode.cmdString)\(notice.map { " notice=\(encodeJSON($0))" } ?? "")"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id, scope: nil))"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
             case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"
@@ -1548,6 +1548,7 @@ enum ContactAddressPlan: Decodable, Hashable {
     case connectingProhibit(contact: Contact)
     case known(contact: Contact)
     case contactViaAddress(contact: Contact)
+    case linkNotice(expiresAt: Date?, contactSLinkData_: ContactShortLinkData?)
 }
 
 public struct GroupShortLinkInfo: Decodable, Hashable {
@@ -1564,6 +1565,7 @@ enum GroupLinkPlan: Decodable, Hashable {
     case known(groupInfo: GroupInfo)
     case noRelays(groupSLinkData_: GroupShortLinkData?)
     case updateRequired(groupSLinkData_: GroupShortLinkData?)
+    case linkNotice(expiresAt: Date?)
 }
 
 struct ChatTagData: Encodable {
@@ -1580,16 +1582,50 @@ struct UpdatedMessage: Encodable {
     }
 }
 
+struct LinkNotice: Encodable {
+    var ttl: Int64?
+}
+
+enum BanDuration: Identifiable, Hashable, CaseIterable {
+    case day
+    case week
+    case forever
+
+    var id: Self { self }
+
+    var ttl: Int64? {
+        switch self {
+        case .day: 86400
+        case .week: 604800
+        case .forever: nil
+        }
+    }
+
+    var notice: LinkNotice { LinkNotice(ttl: ttl) }
+
+    var text: String {
+        switch self {
+        case .day: NSLocalizedString("1 day", comment: "time interval")
+        case .week: NSLocalizedString("1 week", comment: "time interval")
+        case .forever: NSLocalizedString("Forever", comment: "ban duration")
+        }
+    }
+}
+
 enum ChatDeleteMode: Codable {
     case full(notify: Bool)
     case entity(notify: Bool)
-    case messages
+    case archive
+
+    init(keepConversation: Bool, notify: Bool) {
+        self = keepConversation ? .entity(notify: notify) : .full(notify: notify)
+    }
 
     var cmdString: String {
         switch self {
         case let .full(notify): "full notify=\(onOff(notify))"
         case let .entity(notify): "entity notify=\(onOff(notify))"
-        case .messages: "messages"
+        case .archive: "archive"
         }
     }
 
@@ -2306,6 +2342,7 @@ struct AppSettings: Codable, Equatable {
     var privacySaveLastDraft: Bool? = nil
     var privacyProtectScreen: Bool? = nil
     var privacyMediaBlurRadius: Int? = nil
+    var privacyContactDeletion: ContactDeletion? = nil
     var notificationMode: AppSettingsNotificationMode? = nil
     var notificationPreviewMode: NotificationPreviewMode? = nil
     var webrtcPolicyRelay: Bool? = nil
@@ -2343,6 +2380,7 @@ struct AppSettings: Codable, Equatable {
         if privacySaveLastDraft != def.privacySaveLastDraft { empty.privacySaveLastDraft = privacySaveLastDraft }
         if privacyProtectScreen != def.privacyProtectScreen { empty.privacyProtectScreen = privacyProtectScreen }
         if privacyMediaBlurRadius != def.privacyMediaBlurRadius { empty.privacyMediaBlurRadius = privacyMediaBlurRadius }
+        if privacyContactDeletion != def.privacyContactDeletion { empty.privacyContactDeletion = privacyContactDeletion }
         if notificationMode != def.notificationMode { empty.notificationMode = notificationMode }
         if notificationPreviewMode != def.notificationPreviewMode { empty.notificationPreviewMode = notificationPreviewMode }
         if webrtcPolicyRelay != def.webrtcPolicyRelay { empty.webrtcPolicyRelay = webrtcPolicyRelay }
@@ -2381,6 +2419,7 @@ struct AppSettings: Codable, Equatable {
             privacySaveLastDraft: true,
             privacyProtectScreen: false,
             privacyMediaBlurRadius: 0,
+            privacyContactDeletion: .ask,
             notificationMode: AppSettingsNotificationMode.instant,
             notificationPreviewMode: NotificationPreviewMode.message,
             webrtcPolicyRelay: true,

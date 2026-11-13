@@ -42,6 +42,9 @@
 | PC30 | Member Support Chat |
 | PC31 | Channels (Relays) |
 | PC32 | Terminal Chat Layout |
+| PC33 | Blocks and Link Notices |
+| PC34 | Chat Deletion, Archive and Delete and Block |
+| PC35 | Chat List Actions |
 
 ---
 
@@ -55,8 +58,8 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `App.kt` | PC1 through PC32 | High | Root composable — navigation scaffold for all features |
 | `AppLock.kt` | PC22 | Medium | App lock state and authorization lifecycle |
-| `model/ChatModel.kt` | PC1 through PC32 | High | Central state object — every feature reads or writes here |
-| `model/SimpleXAPI.kt` | PC1 through PC32 | High | FFI bridge to Haskell core — all commands and responses |
+| `model/ChatModel.kt` | PC1 through PC35 | High | Central state object — every feature reads or writes here |
+| `model/SimpleXAPI.kt` | PC1 through PC35 | High | FFI bridge to Haskell core — all commands and responses |
 | `model/CryptoFile.kt` | PC10, PC23 | Medium | Encrypted file read/write helpers |
 | `platform/Core.kt` | PC1 through PC32 | High | Native FFI declarations (`chatMigrateInit`, `chatSendCmd`, etc.) — all API traffic |
 | `platform/AppCommon.kt` | PC1 through PC32 | Medium | Shared app initialization logic |
@@ -94,9 +97,9 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `views/chatlist/ChatListView.kt` | PC1, PC28 | High | Main screen — chat list rendering and search |
 | `views/chatlist/GetStakeBanner.kt` | PC1 | Low | Crowdfunding banner and shared banner card chrome |
-| `views/chatlist/ChatListNavLinkView.kt` | PC1, PC2, PC3 | Medium | Navigation from chat list item to chat |
+| `views/chatlist/ChatListNavLinkView.kt` | PC1, PC2, PC3, PC28, PC34, PC35 | Medium | Navigation from chat list item to chat; chat menus with Archive and Delete and block |
 | `views/chatlist/ChatPreviewView.kt` | PC1, PC2, PC3, PC11 | Medium | Chat row preview rendering |
-| `views/chatlist/TagListView.kt` | PC28 | Medium | Chat tag filter UI |
+| `views/chatlist/TagListView.kt` | PC28, PC35 | Medium | Chat tag filter UI; list sheet with the Favorites row |
 | `views/chatlist/UserPicker.kt` | PC19, PC21 | Medium | Multi-profile switcher overlay |
 | `views/chatlist/ShareListView.kt` | PC10 | Low | Share target list |
 | `views/chatlist/ShareListNavLinkView.kt` | PC10 | Low | Share target navigation |
@@ -118,7 +121,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/chat/ComposeImageView.kt` | PC10 | Low | Image attachment preview in compose area |
 | `views/chat/ContextItemView.kt` | PC6 | Low | Reply/edit quote preview |
 | `views/chat/SelectableChatItemToolbars.kt` | PC7, PC10 | Medium | Multi-select toolbar (delete, forward) |
-| `views/chat/ChatInfoView.kt` | PC2, PC13, PC20, PC32 | Medium | Contact details and verification |
+| `views/chat/ChatInfoView.kt` | PC2, PC13, PC20, PC32, PC34 | Medium | Contact details and verification; contact deletion, archive and Delete and block |
 | `views/chat/ContactPreferences.kt` | PC2, PC8 | Medium | Per-contact feature preferences |
 | `views/chat/ChatItemInfoView.kt` | PC2, PC3 | Low | Message delivery detail |
 | `views/chat/ChatItemsLoader.kt` | PC2, PC3 | Medium | Pagination and message loading logic |
@@ -164,9 +167,9 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `views/chat/group/GroupChatInfoView.kt` | PC3, PC14, PC15, PC16, PC30 | High | Group management hub |
+| `views/chat/group/GroupChatInfoView.kt` | PC3, PC14, PC15, PC16, PC30, PC33, PC34 | High | Group management hub; block dialogs of the member menu and the selection; group deletion with Keep conversation, Delete and block for business chats |
 | `views/chat/group/AddGroupMembersView.kt` | PC14, PC16 | Medium | Member invitation flow |
-| `views/chat/group/GroupMemberInfoView.kt` | PC3, PC14, PC16, PC30, PC31 | Medium | Member details and role management; relay-address + rejected-status info rows |
+| `views/chat/group/GroupMemberInfoView.kt` | PC3, PC14, PC16, PC30, PC31, PC33, PC34 | Medium | Member details and role management; relay-address + rejected-status info rows; block dialogs; the typed confirmation, also of Delete and block forever |
 | `views/chat/group/ChannelRelaysView.kt` | PC31 | Medium | Channel relay list, add/remove entries |
 | `views/chat/group/AddGroupRelayView.kt` | PC31 | Low | Add relay sheet |
 | `views/chat/group/GroupProfileView.kt` | PC3, PC14 | Medium | Group profile editing |
@@ -195,14 +198,14 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `views/newchat/NewChatView.kt` | PC12, PC29 | High | New connection creation — onramp for all contacts |
 | `views/newchat/NewChatSheet.kt` | PC12 | Medium | Bottom sheet with connection options |
-| `views/newchat/ConnectPlan.kt` | PC12, PC15 | Medium | Link parsing and connection plan resolution |
+| `views/newchat/ConnectPlan.kt` | PC12, PC15, PC33 | Medium | Link parsing and connection plan resolution; "Not allowed" alert for a blocked link |
 | `views/newchat/AddGroupView.kt` | PC3, PC14 | Medium | New group creation flow |
 | `views/newchat/AddChannelView.kt` | PC31 | Medium | Public channel creation, channel link card, `RelayStatusIndicator` |
 | `views/newchat/ContactConnectionInfoView.kt` | PC12 | Low | Pending connection details |
 | `views/newchat/AddContactLearnMore.kt` | PC12 | Low | Educational content |
 | `views/newchat/QRCode.kt` | PC12 | Low | QR code display |
 | `views/newchat/QRCodeScanner.kt` | PC12 | Low | QR code camera scanner |
-| `views/contacts/ContactListNavView.kt` | PC1, PC12 | Medium | Contact list navigation |
+| `views/contacts/ContactListNavView.kt` | PC1, PC12, PC34, PC35 | Medium | Contact list navigation; Delete and block in Archived contacts |
 | `views/contacts/ContactPreviewView.kt` | PC12 | Low | Contact row preview |
 
 ### 1.9 Views — User Settings
@@ -211,7 +214,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `views/usersettings/SettingsView.kt` | PC18, PC22, PC23, PC24, PC25, PC29 | Medium | Settings navigation hub |
 | `views/usersettings/Appearance.kt` | PC24, PC32 | Low | Theme and appearance customization |
-| `views/usersettings/PrivacySettings.kt` | PC20, PC22 | Medium | Privacy and lock settings |
+| `views/usersettings/PrivacySettings.kt` | PC20, PC22, PC34 | Medium | Privacy and lock settings; contact deletion setting |
 | `views/usersettings/UserProfileView.kt` | PC19 | Medium | Profile display name and image editing |
 | `views/usersettings/UserProfilesView.kt` | PC19, PC21 | Medium | Multi-profile management |
 | `views/usersettings/HiddenProfileView.kt` | PC21 | Medium | Hidden profile access |
@@ -316,7 +319,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `views/TerminalView.kt` | — | Low | Developer chat console |
 | `views/SplashView.kt` | — | Low | Splash screen |
-| `views/WelcomeView.kt` | PC1 | Low | Empty-state welcome |
+| `views/WelcomeView.kt` | PC1, PC34 | Low | Empty-state welcome; the first profile sets the contact deletion setting to Notify |
 | `views/Preview.kt` | — | Low | Compose preview utilities |
 
 ---
@@ -535,7 +538,7 @@ The Haskell core is compiled as a shared native library (`libsimplex.so` / `libs
 | `src/Simplex/Chat/Operators.hs` | PC25 | Medium | Server operator management |
 | `src/Simplex/Chat/Operators/Presets.hs` | PC25 | Low | Preset server operators |
 | `src/Simplex/Chat/Operators/Conditions.hs` | PC25 | Low | Operator usage conditions |
-| `src/Simplex/Chat/AppSettings.hs` | PC25, PC32 | Low | App settings sync types |
+| `src/Simplex/Chat/AppSettings.hs` | PC25, PC32, PC34 | Low | App settings sync types |
 | `src/Simplex/Chat/Mobile.hs` | PC1 through PC32 | High | C FFI exports — JNI bridge target |
 | `src/Simplex/Chat/Mobile/File.hs` | PC10 | Medium | Mobile file read/write FFI |
 | `src/Simplex/Chat/Mobile/Shared.hs` | PC1 through PC32 | Medium | Shared FFI helpers |

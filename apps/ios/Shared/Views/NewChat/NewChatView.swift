@@ -920,6 +920,65 @@ private func showInvitationLinkConnectingAlert(cleanup: (() -> Void)?) {
     )
 }
 
+enum LinkNoticeTarget {
+    case group
+    case channel
+    case contact
+    case business
+
+    init(_ linkType: SimplexLinkType?) {
+        self = switch linkType {
+        case .group: .group
+        case .channel: .channel
+        default: .contact
+        }
+    }
+
+    init(_ connLink: CreatedConnLink) {
+        self = if case let .link(_, linkType, _) = strConnectTarget(connLink.connShortLink ?? connLink.connFullLink) { LinkNoticeTarget(linkType) } else { .contact }
+    }
+
+    init(_ groupInfo: GroupInfo) {
+        self = groupInfo.businessChat != nil ? .business : groupInfo.isChannel ? .channel : .group
+    }
+}
+
+func showLinkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: (() -> Void)? = nil) {
+    getTopViewController()?.present(linkNoticeAlert(target, expiresAt: expiresAt, cleanup: cleanup), animated: true)
+}
+
+func linkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: (() -> Void)?) -> UIAlertController {
+    let (banned, bannedUntil) = switch target {
+    case .group: (
+        NSLocalizedString("Blocked by the admins of this group.", comment: "alert message"),
+        NSLocalizedString("Blocked by the admins of this group until %@.", comment: "alert message")
+    )
+    case .channel: (
+        NSLocalizedString("Blocked by the owners of this channel.", comment: "alert message"),
+        NSLocalizedString("Blocked by the owners of this channel until %@.", comment: "alert message")
+    )
+    case .contact: (
+        NSLocalizedString("Blocked by this contact.", comment: "alert message"),
+        NSLocalizedString("Blocked by this contact until %@.", comment: "alert message")
+    )
+    case .business: (
+        NSLocalizedString("Blocked by this business.", comment: "alert message"),
+        NSLocalizedString("Blocked by this business until %@.", comment: "alert message")
+    )
+    }
+    return alertController(
+        NSLocalizedString("Not allowed", comment: "alert title"),
+        message: expiresAt.map { String.localizedStringWithFormat(bannedUntil, $0.formatted(date: .abbreviated, time: .shortened)) } ?? banned,
+        actions: [
+            okCleanupAlertAction(cleanup: cleanup),
+            UIAlertAction(title: NSLocalizedString("How it works", comment: "alert button"), style: .default) { _ in
+                cleanup?()
+                UIApplication.shared.open(bansGuideLink)
+            }
+        ]
+    )
+}
+
 private func showGroupLinkConnectingAlert(groupInfo: GroupInfo?, cleanup: (() -> Void)?) {
     if let groupInfo = groupInfo {
         if groupInfo.businessChat == nil {
@@ -1517,6 +1576,11 @@ func planAndConnect(
                                 cleanup: cleanup
                             )
                         }
+                    case let .linkNotice(expiresAt, contactSLinkData_):
+                        logger.debug("planAndConnect, .contactAddress, .linkNotice")
+                        await MainActor.run {
+                            showLinkNoticeAlert(contactSLinkData_?.business == true ? .business : .contact, expiresAt: expiresAt, cleanup: cleanup)
+                        }
                     }
                 case let .groupLink(glp):
                     switch glp {
@@ -1646,6 +1710,15 @@ func planAndConnect(
                                 )
                                 cleanup?()
                             }
+                        }
+                    case let .linkNotice(expiresAt):
+                        logger.debug("planAndConnect, .groupLink, .linkNotice")
+                        let target: LinkNoticeTarget =
+                            if case let .link(_, linkType, _) = strConnectTarget(shortOrFullLink) { LinkNoticeTarget(linkType) }
+                            else if planSimplexName?.nameType == .publicGroup { .channel }
+                            else { .group }
+                        await MainActor.run {
+                            showLinkNoticeAlert(target, expiresAt: expiresAt, cleanup: cleanup)
                         }
                     }
                 case let .error(chatError):

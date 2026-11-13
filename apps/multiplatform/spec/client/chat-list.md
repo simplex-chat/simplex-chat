@@ -208,12 +208,14 @@ Routes each chat to the appropriate click action and context menu based on `chat
 
 | ChatInfo Type | Click Action | Context Menu |
 |---|---|---|
-| `ChatInfo.Direct` | `directChatAction` (opens chat) | `ContactMenuItems`: mark read/unread, mute, favorite, tag, clear, delete |
-| `ChatInfo.Group` | `groupChatAction` (opens chat or joins) | `GroupMenuItems`: mark read/unread, mute, favorite, tag, clear, leave, delete |
+| `ChatInfo.Direct` | `directChatAction` (opens chat) | `ContactMenuItems`: mark read/unread, mute, tag, clear, archive (`ArchiveContactAction`, when `!contact.chatDeleted`), delete and block (`DeleteAndBanContactAction`, when `contact.canDeleteAndBan`), delete |
+| `ChatInfo.Group` | `groupChatAction` (opens chat or joins) | `GroupMenuItems`: mark read/unread, mute, tag, clear, leave, delete and block (`DeleteAndBanCustomerAction`, when `groupInfo.isCustomerChatOwner`, the active owner of the business side: `deleteAndBanCustomer` loads the members with `apiListMembers` and shows `deleteAndBanCustomerDialog` when `canDeleteAndBanCustomer`, otherwise "Can't block"), delete |
 | `ChatInfo.Local` | `noteFolderChatAction` (opens notes) | `NoteFolderMenuItems`: mark read, clear, delete |
 | `ChatInfo.ContactRequest` | `contactRequestAlertDialog` (accept/reject) | `ContactRequestMenuItems`: reject |
 | `ChatInfo.ContactConnection` | Sets `chatModel.chatId` (opens connection info) | `ContactConnectionMenuItems`: delete |
 | `ChatInfo.InvalidJSON` | Sets `chatModel.chatId` | No menu |
+
+The tag item (`TagListAction`, "Add to list" or "Change list") always opens `TagListView` for the chat, also when no lists exist; a favorite is set there.
 
 ### Selection Highlight
 
@@ -245,7 +247,7 @@ Layout logic:
 
 ### TagListView
 
-**Location:** [`TagListView.kt#L47`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/TagListView.kt#L47)
+**Location:** [`TagListView.kt#L48`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/TagListView.kt#L48)
 
 Full-screen tag management view opened from the "+" button or long-press menu.
 
@@ -253,6 +255,7 @@ Full-screen tag management view opened from the "+" button or long-press menu.
 fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode: Boolean)
 ```
 
+- With `chat` set, the first item is the Favorites row: "Favorites" with `ic_star_filled` when the chat is a favorite and `ic_star` otherwise, then a divider; a tap calls `toggleChatFavorite` and closes the view.
 - Displays all user tags in a `LazyColumnWithScrollBar`.
 - Supports drag-and-drop reordering via `rememberDragDropState` (calls `apiReorderChatTags`).
 - Each tag row shows emoji/icon, name, chat count, and a checkbox if opened for a specific chat (to assign/unassign tags).

@@ -93,7 +93,27 @@ Shown when `developerTools` preference is enabled:
 | Action | Description |
 |---|---|
 | Clear chat | Deletes all messages in chat (with confirmation via `clearChatDialog`) |
-| Delete contact | Removes the contact and all associated data (with confirmation via `deleteContactDialog`) |
+| Delete and block | Shown when `Contact.canDeleteAndBan`; see Delete and Block below |
+| Delete contact | Removes the contact (with confirmation via `deleteContactDialog`); see Contact Deletion below |
+
+### Contact Deletion
+
+A contact that is ready and active, archived or not, is deleted in two dialogs:
+1. "Delete contact?" (`confirmActiveContactDeletion`): "Contact with **<name>** will be deleted - this cannot be undone!" With the privacy setting "Contact deletion" Notify it has "Delete"; with Ask it has "Delete and notify" and "Delete silently".
+2. "Delete contact?" (`deleteActiveContactDialog`): "**<name>** will be notified." or "**<name>** won't be notified.", with ", and can reconnect via your address." when the user has an address; "Keep conversation" and "Delete" (`showKeepConversationDialog`). Keep conversation on deletes the contact and keeps the conversation (`ChatDeleteMode.Entity`); an archived contact then stays in Archived contacts. After the core confirms the deletion, "Contact deleted!" follows with "You can still view conversation with <name> in the list of chats.", or "...in Archived contacts." for an archived contact (`showDeleteContactNotice`); "Delete and block" with Keep conversation shows the same notice. Off deletes the contact with the conversation (`ChatDeleteMode.Full`).
+
+Any other contact gets "Confirm contact deletion?" with Confirm (`deleteNotReadyContact`).
+
+"Archive" in the chat list menu (`archiveContact`) moves the contact to Archived contacts without clearing the conversation (`ChatDeleteMode.Archive`), with no confirmation; after the core confirms it, "Contact archived!" is shown with "You can send messages to <name> from Archived contacts.", or "You can view the conversation with <name> in Archived contacts." for a deleted contact; "Don't show again" sets `showDeleteConversationNotice`.
+
+### Delete and Block
+
+Offered in contact info, in the chat list menu and in the Archived contacts menu when `Contact.canDeleteAndBan`: the contact is ready and active, connected via the user's address (`Connection.viaUserContactLink`), and supports `LINK_NOTICE_VERSION`. The contact is deleted without notification, and the contact's app does not connect via the user's address for the chosen duration (`deleteAndBanContactDialog`):
+1. "Delete and block?" (`deleteAndBanDialog`): "Contact with **<name>** will be deleted - this cannot be undone!"; "Block for" 1 day (default), 1 week or Forever; "Delete and block".
+2. For 1 day or 1 week, "Delete and block?": "**<name>** won't be notified, and can't connect to you for <duration>."; "Keep conversation" and "Delete and block".
+3. For Forever, "Delete and block forever?": "**<name>** won't be notified, and can't connect via your address again, except from another app."; "Keep conversation", the field with the placeholder "Type yes" and "Delete and block", enabled when the field is "yes".
+
+The deletion is `apiDeleteContact` with `ChatDeleteMode.Entity` (Keep conversation) or `ChatDeleteMode.Full`, `notify` off, and the `LinkNotice` of the duration. A one-time link is not affected by the block.
 
 ## Source Files
 

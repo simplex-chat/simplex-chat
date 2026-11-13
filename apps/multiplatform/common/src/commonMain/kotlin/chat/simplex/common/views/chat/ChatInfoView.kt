@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.*
 import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.chatlist.*
 import androidx.compose.ui.text.*
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,7 +40,12 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.group.BanDialogAction
 import chat.simplex.common.views.chat.group.ChatTTLOption
+import chat.simplex.common.views.chat.group.FOREVER_CONFIRMATION_WORD
+import chat.simplex.common.views.chat.group.previewBusinessChatInfo
+import chat.simplex.common.views.chat.group.showBanDialog
+import chat.simplex.common.views.chat.group.showTypedConfirmationDialog
 import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chatlist.updateChatSettings
@@ -115,6 +121,7 @@ fun ChatInfoView(
         }
       },
       deleteContact = { deleteContactDialog(chat, chatModel, close) },
+      deleteAndBan = { deleteAndBanContactDialog(chat, contact, chatModel, close) },
       clearChat = { clearChatDialog(chat, close) },
       switchContactAddress = {
         showSwitchAddressAlert(switchAddress = {
@@ -235,11 +242,8 @@ fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? =
   if (chatInfo is ChatInfo.Direct) {
     val contact = chatInfo.contact
     when {
-      contact.sndReady && contact.active && !chatInfo.chatDeleted ->
-        deleteContactOrConversationDialog(chat, contact, chatModel, close)
-
-      contact.sndReady && contact.active && chatInfo.chatDeleted ->
-        deleteContactWithoutConversation(chat, chatModel, close)
+      contact.sndReady && contact.active ->
+        confirmActiveContactDeletion(chat, contact, chatModel.controller.appPrefs.privacyContactDeletion.get(), chatModel.userAddress.value != null, chatModel, close)
 
       else -> // !(contact.sndReady && contact.active)
         deleteNotReadyContact(chat, chatModel, close)
@@ -247,31 +251,24 @@ fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? =
   }
 }
 
-private fun deleteContactOrConversationDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)?) {
+private fun confirmActiveContactDeletion(chat: Chat, contact: Contact, contactDeletion: ContactDeletion, hasAddress: Boolean, chatModel: ChatModel, close: (() -> Unit)?) {
+  val notifyOptions = when (contactDeletion) {
+    ContactDeletion.Notify -> listOf(MR.strings.delete_verb to true)
+    ContactDeletion.Ask -> listOf(MR.strings.delete_and_notify_contact to true, MR.strings.delete_without_notification to false)
+  }
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
-    text = contact.displayName,
-    parseHtml = false,
+    text = formatWithBoldName(generalGetString(MR.strings.delete_contact_with_cannot_undo_warning), contact.displayName),
     buttons = {
       Column {
-        // Only delete conversation
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          deleteContact(chat, chatModel, close, chatDeleteMode = ChatDeleteMode.Messages())
-          if (chatModel.controller.appPrefs.showDeleteConversationNotice.get()) {
-            showDeleteConversationNotice(contact)
+        notifyOptions.forEach { (textId, notify) ->
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            deleteActiveContactDialog(chat, contact, notify, hasAddress, chatModel, close)
+          }) {
+            Text(generalGetString(textId), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
           }
-        }) {
-          Text(generalGetString(MR.strings.only_delete_conversation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
         }
-        // Delete contact
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          deleteActiveContactDialog(chat, contact, chatModel, close)
-        }) {
-          Text(generalGetString(MR.strings.button_delete_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
-        }
-        // Cancel
         SectionItemView({
           AlertManager.shared.hideAlert()
         }) {
@@ -284,8 +281,8 @@ private fun deleteContactOrConversationDialog(chat: Chat, contact: Contact, chat
 
 private fun showDeleteConversationNotice(contact: Contact) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.conversation_deleted),
-    text = String.format(generalGetString(MR.strings.you_can_still_send_messages_to_contact), contact.displayName),
+    title = generalGetString(MR.strings.contact_archived),
+    text = String.format(generalGetString(if (contact.active) MR.strings.you_can_still_send_messages_to_contact else MR.strings.you_can_view_conversation_in_archived_contacts), contact.displayName),
     confirmText = generalGetString(MR.strings.ok),
     dismissText = generalGetString(MR.strings.dont_show_again),
     onDismiss = {
@@ -305,119 +302,70 @@ sealed class ContactDeleteMode {
     }
 }
 
-private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  val contactDeleteMode = mutableStateOf<ContactDeleteMode>(ContactDeleteMode.Full())
-
-  AlertManager.shared.showAlertDialogButtonsColumn(
+private fun deleteActiveContactDialog(chat: Chat, contact: Contact, notify: Boolean, hasAddress: Boolean, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  val textId = if (hasAddress) {
+    if (notify) MR.strings.contact_will_be_notified_can_connect_again else MR.strings.contact_wont_be_notified_can_connect_again
+  } else {
+    if (notify) MR.strings.contact_will_be_notified else MR.strings.contact_wont_be_notified
+  }
+  showKeepConversationDialog(
     title = generalGetString(MR.strings.delete_contact_question),
-    text = "${contact.displayName}\n\n${generalGetString(MR.strings.delete_contact_cannot_undo_warning)}",
-    parseHtml = false,
-    buttons = {
-      Column {
-        // Keep conversation toggle
-        SectionItemView {
-          Row(
-            Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-          ) {
-            Text(stringResource(MR.strings.keep_conversation))
-            Spacer(Modifier.width(DEFAULT_PADDING))
-            DefaultSwitch(
-              checked = contactDeleteMode.value is ContactDeleteMode.Entity,
-              onCheckedChange = {
-                contactDeleteMode.value =
-                  if (it) ContactDeleteMode.Entity() else ContactDeleteMode.Full()
-              },
-            )
-          }
-        }
-        // Delete without notification
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          deleteContact(chat, chatModel, close, chatDeleteMode = contactDeleteMode.value.toChatDeleteMode(notify = false))
-          if (contactDeleteMode.value is ContactDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
-            showDeleteContactNotice(contact)
-          }
-        }) {
-          Text(generalGetString(MR.strings.delete_without_notification), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
-        }
-        // Delete contact and notify
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          deleteContact(chat, chatModel, close, chatDeleteMode = contactDeleteMode.value.toChatDeleteMode(notify = true))
-          if (contactDeleteMode.value is ContactDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
-            showDeleteContactNotice(contact)
-          }
-        }) {
-          Text(generalGetString(MR.strings.delete_and_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
-        }
-        // Cancel
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-        }) {
-          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
+    text = formatWithBoldName(generalGetString(textId), contact.displayName),
+    confirmText = generalGetString(MR.strings.delete_verb),
+    notify = notify
+  ) { chatDeleteMode ->
+    deleteContact(chat, chatModel, close, chatDeleteMode) {
+      if (chatDeleteMode is ChatDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
+        showDeleteContactNotice(contact)
       }
     }
-  )
+  }
 }
 
-private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
-  AlertManager.shared.showAlertDialogButtonsColumn(
-    title = generalGetString(MR.strings.confirm_delete_contact_question),
-    text = "${chat.chatInfo.displayName}\n\n${generalGetString(MR.strings.delete_contact_cannot_undo_warning)}",
-    parseHtml = false,
-    buttons = {
-      Column {
-        // Delete and notify contact
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          deleteContact(
-            chat,
-            chatModel,
-            close,
-            chatDeleteMode = ContactDeleteMode.Full().toChatDeleteMode(notify = true)
-          )
-        }) {
-          Text(
-            generalGetString(MR.strings.delete_and_notify_contact),
-            Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colors.error
-          )
-        }
-        // Delete without notification
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          deleteContact(
-            chat,
-            chatModel,
-            close,
-            chatDeleteMode = ContactDeleteMode.Full().toChatDeleteMode(notify = false)
-          )
-        }) {
-          Text(
-            generalGetString(MR.strings.delete_without_notification),
-            Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colors.error
-          )
-        }
+fun showKeepConversationDialog(title: String, text: AnnotatedString?, confirmText: String, notify: Boolean, confirm: (ChatDeleteMode) -> Unit) {
+  val contactDeleteMode = mutableStateOf<ContactDeleteMode>(ContactDeleteMode.Full())
+  val buttons: @Composable () -> Unit = {
+    Column {
+      KeepConversationToggle(contactDeleteMode)
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+        confirm(contactDeleteMode.value.toChatDeleteMode(notify))
+      }) {
+        Text(confirmText, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
       }
-      // Cancel
       SectionItemView({
         AlertManager.shared.hideAlert()
       }) {
-        Text(
-          stringResource(MR.strings.cancel_verb),
-          Modifier.fillMaxWidth(),
-          textAlign = TextAlign.Center,
-          color = MaterialTheme.colors.primary
-        )
+        Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
       }
     }
-  )
+  }
+  if (text != null) {
+    AlertManager.shared.showAlertDialogButtonsColumn(title = title, text = text, buttons = buttons)
+  } else {
+    AlertManager.shared.showAlertDialogButtonsColumn(title = title, parseHtml = false, buttons = buttons)
+  }
+}
+
+@Composable
+private fun KeepConversationToggle(contactDeleteMode: MutableState<ContactDeleteMode>) {
+  SectionItemView {
+    Row(
+      Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.Center
+    ) {
+      Text(stringResource(MR.strings.keep_conversation))
+      Spacer(Modifier.width(DEFAULT_PADDING))
+      DefaultSwitch(
+        checked = contactDeleteMode.value is ContactDeleteMode.Entity,
+        onCheckedChange = {
+          contactDeleteMode.value =
+            if (it) ContactDeleteMode.Entity() else ContactDeleteMode.Full()
+        },
+      )
+    }
+  }
 }
 
 private fun deleteNotReadyContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
@@ -461,7 +409,7 @@ private fun deleteNotReadyContact(chat: Chat, chatModel: ChatModel, close: (() -
 private fun showDeleteContactNotice(contact: Contact) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.contact_deleted),
-    text = String.format(generalGetString(MR.strings.you_can_still_view_conversation_with_contact), contact.displayName),
+    text = String.format(generalGetString(if (contact.chatDeleted) MR.strings.you_can_still_view_conversation_in_archived_contacts else MR.strings.you_can_still_view_conversation_with_contact), contact.displayName),
     confirmText = generalGetString(MR.strings.ok),
     dismissText = generalGetString(MR.strings.dont_show_again),
     onDismiss = {
@@ -470,20 +418,21 @@ private fun showDeleteContactNotice(contact: Contact) {
   )
 }
 
-fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)) {
+fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null, onSuccess: () -> Unit = {}) {
   val chatInfo = chat.chatInfo
   withBGApi {
     val chatRh = chat.remoteHostId
-    val ct = chatModel.controller.apiDeleteContact(chatRh, chatInfo.apiId, chatDeleteMode)
+    val ct = chatModel.controller.apiDeleteContact(chatRh, chatInfo.apiId, chatDeleteMode, notice)
     if (ct != null) {
       withContext(Dispatchers.Main) {
         when (chatDeleteMode) {
           is ChatDeleteMode.Full ->
             chatModel.chatsContext.removeChat(chatRh, chatInfo.id)
-          is ChatDeleteMode.Entity ->
+          is ChatDeleteMode.Entity, is ChatDeleteMode.Archive -> {
             chatModel.chatsContext.updateContact(chatRh, ct)
-          is ChatDeleteMode.Messages ->
-            chatModel.chatsContext.clearChat(chatRh, ChatInfo.Direct(ct))
+            chatModel.addPresetChatTags(ChatInfo.Direct(ct), chat.chatStats)
+            chatModel.removePresetChatTags(chatInfo, chat.chatStats)
+          }
         }
       }
       if (chatModel.chatId.value == chatInfo.id) {
@@ -492,7 +441,60 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDe
       }
       ntfManager.cancelNotificationsForChat(chatInfo.id)
       close?.invoke()
+      onSuccess()
     }
+  }
+}
+
+fun archiveContact(chat: Chat, contact: Contact, chatModel: ChatModel) {
+  deleteContact(chat, chatModel, close = null, chatDeleteMode = ChatDeleteMode.Archive()) {
+    if (chatModel.controller.appPrefs.showDeleteConversationNotice.get()) {
+      showDeleteConversationNotice(contact)
+    }
+  }
+}
+
+fun deleteAndBanContactDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  deleteAndBanDialog(contact.displayName, MR.strings.delete_contact_with_cannot_undo_warning) { chatDeleteMode, notice ->
+    deleteContact(chat, chatModel, close, chatDeleteMode, notice) {
+      if (chatDeleteMode is ChatDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
+        showDeleteContactNotice(contact)
+      }
+    }
+  }
+}
+
+fun deleteAndBanDialog(name: String, deletionWarningId: StringResource, delete: (ChatDeleteMode, LinkNotice) -> Unit) {
+  val deleteAndBan = BanDialogAction(generalGetString(MR.strings.delete_and_ban)) { duration ->
+    if (duration == BanDuration.Forever) {
+      deleteAndBanForeverDialog(name) { delete(it, duration.notice) }
+    } else {
+      deleteAndBanKeepConversationDialog(name, duration) { delete(it, duration.notice) }
+    }
+  }
+  showBanDialog(generalGetString(MR.strings.delete_and_ban_question), formatWithBoldName(generalGetString(deletionWarningId), name), listOf(deleteAndBan))
+}
+
+private fun deleteAndBanKeepConversationDialog(name: String, duration: BanDuration, delete: (ChatDeleteMode) -> Unit) {
+  showKeepConversationDialog(
+    title = generalGetString(MR.strings.delete_and_ban_question),
+    text = formatWithBoldName(generalGetString(MR.strings.contact_cant_connect_for_duration), name, duration.text),
+    confirmText = generalGetString(MR.strings.delete_and_ban),
+    notify = false,
+    confirm = delete
+  )
+}
+
+private fun deleteAndBanForeverDialog(name: String, delete: (ChatDeleteMode) -> Unit) {
+  val contactDeleteMode = mutableStateOf<ContactDeleteMode>(ContactDeleteMode.Full())
+  showTypedConfirmationDialog(
+    title = generalGetString(MR.strings.delete_and_ban_forever_question),
+    text = formatWithBoldName(generalGetString(MR.strings.delete_and_ban_forever_desc), name),
+    word = FOREVER_CONFIRMATION_WORD,
+    confirmText = generalGetString(MR.strings.delete_and_ban),
+    content = { KeepConversationToggle(contactDeleteMode) }
+  ) {
+    delete(contactDeleteMode.value.toChatDeleteMode(notify = false))
   }
 }
 
@@ -534,6 +536,7 @@ fun ChatInfoLayout(
   onLocalAliasChanged: (String) -> Unit,
   openPreferences: () -> Unit,
   deleteContact: () -> Unit,
+  deleteAndBan: () -> Unit,
   clearChat: () -> Unit,
   switchContactAddress: () -> Unit,
   abortSwitchContactAddress: () -> Unit,
@@ -682,6 +685,9 @@ fun ChatInfoLayout(
 
     SectionView {
       ClearChatButton(clearChat)
+      if (contact.canDeleteAndBan) {
+        DeleteAndBanButton(deleteAndBan)
+      }
       DeleteContactButton(deleteContact)
     }
 
@@ -1263,6 +1269,17 @@ fun ClearChatButton(onClick: () -> Unit) {
 }
 
 @Composable
+fun DeleteAndBanButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_back_hand),
+    stringResource(MR.strings.delete_and_ban),
+    click = onClick,
+    textColor = Color.Red,
+    iconColor = Color.Red,
+  )
+}
+
+@Composable
 private fun DeleteContactButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_delete),
@@ -1526,35 +1543,132 @@ private suspend fun afterSetChatTTL(chatsCtx: ChatModel.ChatsContext, rhId: Long
 @Composable
 fun PreviewChatInfoLayout() {
   SimpleXTheme {
-    ChatInfoLayout(
-      chat = Chat(
-        remoteHostId = null,
-        chatInfo = ChatInfo.Direct.sampleData,
-        chatItems = arrayListOf()
-      ),
-      Contact.sampleData,
-      User.sampleData,
-      sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
-      setSendReceipts = {},
-      chatItemTTL = remember { mutableStateOf(ChatItemTTL.fromSeconds(0)) },
-      setChatItemTTL = {},
-      localAlias = "",
-      connectionCode = "123",
-      developerTools = false,
-      connStats = remember { mutableStateOf(null) },
-      onLocalAliasChanged = {},
-      customUserProfile = null,
-      openPreferences = {},
-      deleteContact = {},
-      clearChat = {},
-      switchContactAddress = {},
-      abortSwitchContactAddress = {},
-      syncContactConnection = {},
-      syncContactConnectionForce = {},
-      verifyClicked = {},
-      close = {},
-      onSearchClicked = {},
-      deletingItems = remember { mutableStateOf(false) }
-    )
+    ChatInfoLayoutPreview(Contact.sampleData)
+  }
+}
+
+@Preview
+@Composable
+fun PreviewChatInfoLayoutDeleteAndBan() {
+  val contact = Contact.sampleData.copy(activeConn = Connection.sampleData.copy(viaUserContactLink = 1, peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
+  SimpleXTheme {
+    CompositionLocalProvider(LocalAppBarHandler provides remember { AppBarHandler(null, null, scrollState = ScrollState(Int.MAX_VALUE)) }) {
+      ChatInfoLayoutPreview(contact)
+    }
+  }
+}
+
+@Composable
+private fun ChatInfoLayoutPreview(contact: Contact) {
+  ChatInfoLayout(
+    chat = Chat(
+      remoteHostId = null,
+      chatInfo = ChatInfo.Direct(contact),
+      chatItems = arrayListOf()
+    ),
+    contact,
+    User.sampleData,
+    sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
+    setSendReceipts = {},
+    chatItemTTL = remember { mutableStateOf(ChatItemTTL.fromSeconds(0)) },
+    setChatItemTTL = {},
+    localAlias = "",
+    connectionCode = "123",
+    developerTools = false,
+    connStats = remember { mutableStateOf(null) },
+    onLocalAliasChanged = {},
+    customUserProfile = null,
+    openPreferences = {},
+    deleteContact = {},
+    deleteAndBan = {},
+    clearChat = {},
+    switchContactAddress = {},
+    abortSwitchContactAddress = {},
+    syncContactConnection = {},
+    syncContactConnectionForce = {},
+    verifyClicked = {},
+    close = {},
+    onSearchClicked = {},
+    deletingItems = remember { mutableStateOf(false) }
+  )
+}
+
+@Preview
+@Composable
+fun PreviewDeleteContactDialogNotify() {
+  SimpleXTheme {
+    AlertPreview { confirmActiveContactDeletion(Chat.sampleData, Contact.sampleData, ContactDeletion.Notify, hasAddress = true, ChatModel, close = null) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteContactDialogAsk() {
+  SimpleXTheme {
+    AlertPreview { confirmActiveContactDeletion(Chat.sampleData, Contact.sampleData, ContactDeletion.Ask, hasAddress = true, ChatModel, close = null) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteContactKeepConversationDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteActiveContactDialog(Chat.sampleData, Contact.sampleData, notify = true, hasAddress = true, ChatModel) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewContactArchivedAlert() {
+  SimpleXTheme {
+    AlertPreview { showDeleteConversationNotice(Contact.sampleData) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeletedContactArchivedAlert() {
+  SimpleXTheme {
+    AlertPreview { showDeleteConversationNotice(Contact.sampleData.copy(contactStatus = ContactStatus.DeletedByUser)) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewContactDeletedFromArchiveAlert() {
+  SimpleXTheme {
+    AlertPreview { showDeleteContactNotice(Contact.sampleData.copy(chatDeleted = true)) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteAndBanContactDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteAndBanContactDialog(Chat.sampleData, Contact.sampleData, ChatModel) }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteAndBanKeepConversationDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteAndBanKeepConversationDialog(Contact.sampleData.displayName, BanDuration.Day) {} }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteAndBanContactForeverDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteAndBanForeverDialog(Contact.sampleData.displayName) {} }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewDeleteAndBanCustomerForeverDialog() {
+  SimpleXTheme {
+    AlertPreview { deleteAndBanForeverDialog(previewBusinessChatInfo.displayName) {} }
   }
 }
