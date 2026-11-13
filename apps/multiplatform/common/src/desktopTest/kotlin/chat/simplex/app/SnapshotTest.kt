@@ -129,6 +129,8 @@ private val avatarScenes = listOf(
   SnapshotScene("Avatars.Toolbars", chatItemFontScales) { AvatarToolbars() },
   SnapshotScene("Avatars.Rows") { AvatarRows() },
   SnapshotScene("Avatars.LinksAndBadge") { AvatarLinksAndBadge() },
+  SnapshotScene("Avatars.Lists") { AvatarLists() },
+  SnapshotScene("Avatars.ChannelMembers") { AvatarChannelMembers() },
 )
 
 private val previewsCallingCore = listOf(
