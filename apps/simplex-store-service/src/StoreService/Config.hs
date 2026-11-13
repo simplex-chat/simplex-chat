@@ -21,6 +21,7 @@ module StoreService.Config
     defaultExpiryMinutes,
     defaultSessionMinutes,
     providerTimeoutMicros,
+    providerCheckoutTimeoutMicros,
     defaultLogLevel,
     minNameYears,
     localChainId,
@@ -104,7 +105,8 @@ data BTCPayConfig = BTCPayConfig
     bExpiryMinutes :: Int,
     bSpeedPolicy :: SpeedPolicy,
     bPaymentTolerance :: Double,
-    bTimeoutMicros :: Int
+    bTimeoutMicros :: Int,
+    bCheckoutTimeoutMicros :: Int
   }
   deriving (Eq)
 
@@ -118,7 +120,8 @@ data StripeConfig = StripeConfig
     sWebhookSecret :: Text,
     sSessionMinutes :: Int,
     sHost :: Text,
-    sTimeoutMicros :: Int
+    sTimeoutMicros :: Int,
+    sCheckoutTimeoutMicros :: Int
   }
   deriving (Eq)
 
@@ -237,8 +240,9 @@ defaultStripeHost = "https://api.stripe.com"
 defaultSessionMinutes :: Int
 defaultSessionMinutes = 60
 
-providerTimeoutMicros :: Int
+providerTimeoutMicros, providerCheckoutTimeoutMicros :: Int
 providerTimeoutMicros = 10 * 1000000
+providerCheckoutTimeoutMicros = 30 * 1000000
 
 defaultLogLevel :: LogLevel
 defaultLogLevel = LogNote
@@ -589,7 +593,7 @@ parseConfig ini = do
           bExpiryMinutes <- expiryMinutes
           bSpeedPolicy <- speedPolicy
           bPaymentTolerance <- tolerance
-          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros})
+          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros, bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros})
     -- A negative window puts BTCPay's startDate in the future, so every poll comes back empty.
     expiryMinutes = do
       v <- num "btcpay" "expiry_minutes" defaultExpiryMinutes
@@ -639,7 +643,7 @@ parseConfig ini = do
           sWebhookSecret <- required "stripe" "webhook_secret"
           sSessionMinutes <- sessionMinutes
           let sHost = defaultStripeHost
-          pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost, sTimeoutMicros = providerTimeoutMicros})
+          pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost, sTimeoutMicros = providerTimeoutMicros, sCheckoutTimeoutMicros = providerCheckoutTimeoutMicros})
     appleSection
       | not (hasSection "apple") = Right Nothing
       | otherwise = do
