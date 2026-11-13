@@ -1,6 +1,6 @@
 # SimpleX MCP: approve a tool for the rest of a session
 
-Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-allow-tool`, stacked on `ep/mcp-activity`; decisions 29 to 32 were made in the implementation, and 33 to 35 after review round 1. Code references: master `97bbbd9ac` (MCP 0.3.0 with #8157). Claude Code references: version 2.1.322 and its binary at the offsets given, the documentation pages quoted, and three `claude -p` runs of Claude Code 2.1.323, recorded on 2026-11-13 (R1 to R3). Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
+Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-allow-tool`, stacked on `ep/mcp-activity`; decisions 29 to 32 were made in the implementation, 33 to 35 after review round 1, and 36 and 37 after the re-check of `1d16c6942`. Code references: master `97bbbd9ac` (MCP 0.3.0 with #8157). Claude Code references: version 2.1.322 and its binary at the offsets given, the documentation pages quoted, and three `claude -p` runs of Claude Code 2.1.323, recorded on 2026-11-13 (R1 to R3). Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
 
 The runs used a test MCP server whose tool `pre_tool_use` answers a PreToolUse hook of type `mcp_tool`, with `--setting-sources project --permission-mode default`. A `-p` run refuses a call that would show a prompt, so a refusal there stands for a prompt in an interactive session.
 - R1: the hook answered `allow` for Bash and Write. `echo one > a.txt` with Bash ran, and a Write of `notes.txt` ran. A Write of `.bashrc` was refused: "Claude requested permissions to edit .../.bashrc which is a sensitive file." The server logged three calls, `{"tool":"Bash"}`, `{"tool":"Write"}` and `{"tool":"Write"}`.
@@ -72,7 +72,8 @@ the session ends                         cards end                            ca
 Rules:
 - An approval covers every later use of its tool in the Claude Code session, by subagents too.
 - It counts while its approver is an admin or owner of the group, as a standing approval of a chat does (0.3.0 decision 93).
-- It is dropped when the session's Claude Code process ends: when another process opens the session, when the session closes, or when the service restarts (decision 33).
+- It is dropped when the session's Claude Code process ends: when another process opens the session, when the session closes, or when the service restarts (decisions 33 and 36). It also ends when the session's group is lost (decision 35).
+- While two Claude Code processes have the session open, only the one that opened it last gets it (decision 37).
 - One tap approves its own card only. The other pending cards of the same tool stay pending.
 - The terminal shows nothing at the approval. Claude Code's `/permissions` does not list it, because the plugin keeps it.
 - With `ep/mcp-activity`, each use that runs has its step line in the group.
@@ -161,9 +162,14 @@ Decided in the implementation:
 
 Decided after review round 1 of `c4099e36d`:
 
-33. The approvals belong to the Claude Code process of the session, as the approved lifetime "the rest of a session" requires. Before, the last detach ended them, so a session server that dropped its attachment after a failed call and attached again lost them without a post. Now `Service.onAttach` keeps them; `Service.onSession` ends them when the session is registered from a process ID other than the recorded one, and `Service.scheduleIdle` ends them when the session closes, 10 minutes after Claude Code ends. It replaces the drop at the last detach of decision 18. Between the end of Claude Code and the session's close, `/list` still shows them; no process can use them, because another process's registration ends them first.
-34. While the plugin's MCP server is not connected, Claude Code 2.1.322 reports a non-blocking PreToolUse hook error at each tool use: `Ayr` returns `MCP server 'plugin:simplex:simplex' not connected`, and the hook runner yields `hook_non_blocking_error` (binary 296919792, 297052400 to 297052700). REFERENCE says so; the hook stays of type `mcp_tool`.
-35. The tool approvals end when the session's group is lost: when it is deleted, when Claude is removed, and when Claude is no longer its owner, as `Control.onEvent` finds, and at `Control.load` of a lost group. `Control.lose` ends them and calls `toolsChanged`, so the session server gets `{tools: []}`.
+33. The approvals belong to the Claude Code process of the session, as the approved lifetime "the rest of a session" requires. Before, the last detach ended them, so a session server that dropped its attachment after a failed call and attached again lost them without a post. Now `Service.onAttach` keeps them; `Service.onSession` ends them when the session is registered from a process other than the recorded one (decision 36), and `Service.scheduleIdle` ends them when the session closes, 10 minutes after Claude Code ends. The close waits while a call runs or the session has an action in memory other than a `mode` card, such as a pending card (`Session.busy`). It replaces the drop at the last detach of decision 18. Between the end of Claude Code and the session's close, `/list` still shows them; no process can use them, because another process's registration ends them first.
+34. While the plugin's MCP server is not connected, Claude Code 2.1.322 reports a non-blocking PreToolUse hook error at each tool use: `Ayr` returns `MCP server 'plugin:simplex:simplex' not connected`, and the hook runner yields `hook_non_blocking_error` (binary: `let st=` of `Ayr` at 296919784; the error branch `if(yu.error||!yu.ok)` at 297052655, with its `hook_non_blocking_error` yield at 297052849). REFERENCE says so; the hook stays of type `mcp_tool`.
+35. The tool approvals end when the session's group is lost: when it is deleted, when Claude is removed, and when Claude is no longer its owner, as `Control.onEvent` finds, and at `Control.load` of a lost group. `Control.lose` ends them and calls `toolsChanged`, so the session server gets `{tools: []}`. `Control.load` runs when the hub opens a session and at a rename (`Hub.session`, `Session.rename`, `Control.rename`). After a load, the `toolsChanged` call of `Control.lose` sends the empty list, as `Hub.onEvent` does after an event; the test of a load of a lost group fails without that call.
+
+Decided after the re-check of `1d16c6942`:
+
+36. A process of a session is its ID and its start time. `processStart` reads the start time: on Linux, field 22 of `/proc/PID/stat`, the start in clock ticks after boot, by one file read; on macOS, the output of `ps -o lstart= -p PID`, the start to the second, by one `ps` run. On other systems, and for a process that does not run, it returns nothing, and the IDs alone are compared. `Service.onSession` reads it before its wait for a title, records it in `Entry.started`, and ends the approvals when a process was recorded and the ID or the start time differs.
+37. `/attach` has the session server's parent process ID, `pid`. `Service.onAttach` records it with the attachment's writer in `Entry.writers`. The session's line writer passes a `{tools}` line to the writers whose `pid` is the one of the last `/session`, and `{tools: []}` to the others; the other lines reach every writer. No attachment is ended.
 
 ## 5. Design
 
@@ -190,8 +196,10 @@ hooks/hooks.json      PreToolUse                       + {"matcher": "*", "hooks
                                                          "tool": "pre_tool_use", "input": {"tool": "${tool_name}"}, "timeout": 5}]}
 src/protocol.ts       AttachLine                       + tools?: ApprovedTool[]
                       ApprovedTool                     new: {tool, approvedBy}
+                      AttachRequest                    + pid?: number (decision 37)
 src/session.ts        startSession                     registers pre_tool_use with the description of decision 24
                       ServiceLink                      + its list: replaced at a tools line, emptied when its /attach ends; approvedBy(tool)
+                      ServiceLink.open                 /attach with the parent process ID (decision 37)
                       hookOutput                       new: the allow JSON of decision 23, or ""
 src/actions.ts        PermissionAction                 + toolApproved: boolean
 src/control.ts        SessionOptions                   + toolsChanged
@@ -201,6 +209,7 @@ src/control.ts        SessionOptions                   + toolsChanged
                       approveTool, revokeTool          new: record or delete, log, toolsChanged, the replies of section 2
                       approvedTools                    new: the approvals whose approver is an approver now
                       endToolApprovals                 new: empties the approvals
+                      lose                             endToolApprovals, then toolsChanged (decision 35)
                       setObserver                      toolsChanged after the members are read again
                       chatsText                        + a line per approved tool
                       requestLines, commandsLine       permission: the line of an approved tool; the all command otherwise
@@ -210,7 +219,13 @@ src/hub.ts            Session constructor              + toolsChanged: () => thi
                       sendTools                        new: the tools line when the list differs from the one sent
                       endToolApprovals                 new: control.endToolApprovals(), then sendTools()
                       Hub.onEvent                      the control events of a session group end with session.sendTools()
-src/service.ts        SessionLike, onAttach            + endToolApprovals(), called at the last detach after endPermissions()
+src/service.ts        SessionLike                      + endToolApprovals()
+                      ServiceDeps, processStart        new: the start time of a process (decision 36)
+                      Entry                            + started; writers record the pid of their /attach
+                      onSession                        ends the approvals at another process ID or start time (decisions 33, 36)
+                      onAttach                         {tools} to the writers of the last /session's pid, {tools: []} to the
+                                                       others (decision 37)
+                      scheduleIdle                     ends the approvals at the session's close (decision 33)
 ```
 
 Service:
@@ -224,16 +239,20 @@ on /revoke TOOL by an approver:      approvals has TOOL: delete it, log, send to
                                      otherwise: reply "Uses of `TOOL` have no standing approval."
 approved tools:                      the approvals whose member is an admin or owner of the group now, other than Claude and User
 send tools:                          approved tools differ from those last sent: line {tools} to the attachments
+                                     of the process of the last /session, {tools: []} to the others (decision 37)
 on a new attachment:                 last sent = []; send tools
 on a membership event, /observer:    send tools
 on the last detach:                  cards ended (0.3.0); approvals kept; last sent = []
-on /session from another process ID: approvals emptied (decision 33)
-on the session's close:              approvals emptied (decision 33)
+on /session from another process:    approvals emptied; a process is its ID and start time (decisions 33, 36)
+on the session's close:              approvals emptied (decision 33); the close waits while a call runs or an
+                                     action other than a mode card, such as a pending card, is in memory
+on the group's loss:                 approvals emptied; send tools; found at an event or a load (decision 35)
 on permission_request of TOOL:       card, as in 0.3.0; TOOL among the approved tools: the line of section 2 and no all command
 ```
 
 Session server and Claude Code:
 ```
+on its /attach:                      the request has its parent process ID (decision 37)
 on a line {tools}:                   list = tools
 on the end of its /attach:           list = []
 on PreToolUse(tool_name):            the mcp_tool hook calls pre_tool_use {tool: tool_name}
@@ -250,7 +269,8 @@ flowchart LR
   E[membership event, /observer] --> H
   A[new attachment] --> H
   H -- line tools on /attach --> L[session server: list]
-  X[another process registers, or the session closes] --> Z[approvals emptied]
+  H -- empty tools line on /attach --> K[session server of another process: empty list]
+  X[another process registers, the session closes, or the group is lost] --> Z[approvals emptied]
   Z --> H
   P[Claude Code: PreToolUse] -- tools/call pre_tool_use --> L
   L -- allow or nothing --> P
@@ -265,8 +285,8 @@ stateDiagram-v2
   approved --> inactive: its approver is no longer an admin or owner
   inactive --> approved: its approver is an admin or owner again
   inactive --> approved: /approve N all by another approver, who is recorded
-  approved --> [*]: /revoke TOOL, the session closes, or another process registers it
-  inactive --> [*]: /revoke TOOL, the session closes, or another process registers it
+  approved --> [*]: /revoke TOOL, the session closes, another process registers it, or the group is lost
+  inactive --> [*]: /revoke TOOL, the session closes, another process registers it, or the group is lost
 ```
 
 ## 6. Compatibility
@@ -286,11 +306,13 @@ Done when:
 3  the approval reaches the session at once, and a new attachment gets it                      unit: sessions, service
 4  an approval counts only while its approver is an admin or owner, also after /observer        unit: sessions; e2e
 5  /revoke TOOL ends it, /list shows it, /approve N all of another action is refused            unit: sessions
-6  the last detach ends the approvals, and the session server empties its list                  unit: sessions, service, session
+6  the approvals hold across a re-attach; another process or the session's close ends them     unit: sessions, service, session
 7  a card of an approved tool has the line and no all command                                  unit: sessions, cards
 8  hooks.json has the mcp_tool hook; tools/list has pre_tool_use                                unit: plugin, session; e2e launch
 9  real session: an approved Bash runs without a prompt; a write to .bashrc still asks         TESTING check
 10 serve and the other 0.3.0 tests pass unchanged, but for the tool list and the commands line  npm test, e2e
+11 a process is its ID and start time; another start time with the same ID ends the approvals  unit: service
+12 the group's loss ends the approvals; only the last process's attachments get them           unit: sessions, service
 ```
 
 Tests:
@@ -298,13 +320,15 @@ Tests:
   - new "approves a tool for the rest of the session by /approve N all: the use runs, the reply names the tool and /revoke, the session gets the approved tools, and a later card of the tool says that Claude Code still asks for it". It fails on master, which replies `Unknown command.`
   - new "counts an approved tool only while its approver is an admin or owner, after a role change and after /observer, and sends each change to the session".
   - new "revokes an approved tool by /revoke TOOL, lists approved tools after the chats in /list, and answers /approve N all of an action that is not a tool use".
-  - new "ends the approvals of tools at the last detach, and sends the approved tools to each new attachment".
+  - new "keeps the approvals of tools across a detach, sends them to each new attachment, and ends them at endToolApprovals" (decision 33).
+  - new "counts the approved tools of an approver no more when the approver leaves or is removed, and sends the new list to the session".
+  - new, for each loss of decision 35: "ends the tool approvals when the session's group is lost because LOSS, and sends the empty list to the session", and "ends the tool approvals when a load finds the session's group lost, and sends the empty list to the session".
   - changed: the cards test (559-577) and the preview test (589-598) expect the new commands line. The test of 1163-1171 keeps the bare `/revoke` as unknown and drops `/approve N all`.
 - `test/unit/session.test.ts`, "session server": new "answers the PreToolUse hook's call with allow for a tool that the service approved, and with an empty text for other tools, after its /attach ends and in a run that is not interactive". It fails on master: there is no `pre_tool_use`. The tool list of 209 adds `pre_tool_use`.
-- `test/unit/service.test.ts`: the fake session records `endToolApprovals`; the test of 599-621 expects it after `ended`.
+- `test/unit/service.test.ts`: the fake session records `endToolApprovals`, and the deps give a start time per PID. New: "keeps the tool approvals of a session when its process attaches again, and ends them when another process registers the session and when the session closes" (decision 33); "ends the tool approvals when a process with the PID of an ended process of the session registers it, by the start time of the process" and "reads the start time of a running process, the same at each read, and nothing for a process that does not run" (decision 36); "sends the approved tools only to the attachments of the process that registered the session last, and an empty list to the others" (decision 37).
 - `test/unit/cards.test.ts`: the permission card with and without `toolApproved`.
 - `test/unit/plugin.test.ts`: the hooks test (41-47) expects the `mcp_tool` entry.
-- `test/e2e/service.test.ts`: the test of 426 adds `/approve N all` from the owner: the stream gets the tools line and `allow`, and the owner gets the reply. The test of 618 adds the tools line `[]` after `/observer` of the admin who approved Bash. The tool list of 714 adds `pre_tool_use`.
+- `test/e2e/service.test.ts`: the test of 426 adds `/approve N all` from the owner: the stream gets the tools line and `allow`, and the owner gets the reply; its `/attach` has the `pid` of its `/session` (decision 37). The test of 618 adds the tools line `[]` after `/observer` of the admin who approved Bash. The tool list of 714 adds `pre_tool_use`.
 - `test/e2e/launch.test.ts:66`: the tool list adds `pre_tool_use`.
 - Run: `npm test --prefix packages/simplex-chat-mcp`, and the end-to-end tests as TESTING.md states, in the reduced build of CI. No app changes, so no app test workflows.
 - TESTING.md, check 7 of a real session, extended: tap `/approve N all` on a Bash card; ask for `pwd` with Bash, which runs without a card or a terminal prompt; ask Claude to append a line to `.bashrc` in the project with Bash, which gets a card with the line of section 2; send `/revoke Bash`, after which Bash asks again; exit, start with `--continue`, and Bash asks again.
