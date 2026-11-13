@@ -253,11 +253,13 @@ chatGroupTests = do
     it "reactions of blocked member are ignored" testBlockedMemberReactionsIgnored
     it "profile updates of blocked member are marked blocked" testBlockedMemberProfileUpdate
     it "message updates of blocked member are marked blocked" testBlockedMemberUpdatesMarkedBlocked
+    it "message updates of member blocked by admin are ignored" testBlockedByAdminUpdatesIgnored
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
     it "should not accept reports when preference is off" testGroupMemberReportsPreferenceOff
+    it "should not send reports when preference is off" testGroupMemberReportsPreferenceOffSend
   describe "group member mentions" $ do
     it "should send and edit messages with member mentions" testMemberMention
     it "should forward and quote message updating mentioned member name" testForwardQuoteMention
@@ -8036,18 +8038,58 @@ testBlockedMemberUpdatesMarkedBlocked =
 
       threadDelay 1000000
 
+      cath ##> "/_member settings #1 3 {\"showMessages\": false}"
+      cath <## "ok"
+
+      bob ##> ("/_update item #1 " <> msgItemId <> " text hello again")
+      bob <# "#team [edited] hello again"
+      alice <# "#team bob> [edited] hello again"
+      cath <# "#team bob> [edited] hello again <muted>"
+
+      alice #$> ("/_get chat #1 count=1", chat, [(0, "hello again")])
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "hello again [blocked]")])
+
+testBlockedByAdminUpdatesIgnored :: HasCallStack => TestParams -> IO ()
+testBlockedByAdminUpdatesIgnored =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      alice ##> "/set delete #team on"
+      alice <## "updated group preferences:"
+      alice <## "Full deletion: on"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team: (signed)"
+            bob <## "updated group preferences:"
+            bob <## "Full deletion: on",
+          do
+            cath <## "alice updated group #team: (signed)"
+            cath <## "updated group preferences:"
+            cath <## "Full deletion: on"
+        ]
+
+      threadDelay 1000000
+
+      bob #> "#team hello"
+      [alice, cath] *<# "#team bob> hello"
+      msgItemId <- lastItemId bob
+
+      threadDelay 1000000
+
       alice ##> "/block for all #team bob"
       alice <## "#team: you blocked bob (signed)"
       cath <## "#team: alice blocked bob (signed)"
       bob <// 50000
 
-      bob ##> ("/_update item #1 " <> msgItemId <> " text hello @alice")
-      bob <# "#team [edited] hello @alice"
-      alice <# "#team bob> [edited] hello @alice <muted>"
-      cath <# "#team bob> [edited] hello @alice <muted>"
+      bob ##> ("/_update item #1 " <> msgItemId <> " text hello again")
+      bob <# "#team [edited] hello again"
+      bob #> "#team 1"
+      alice <# "#team bob> blocked [blocked by admin] <muted>"
+      cath <# "#team bob> blocked [blocked by admin] <muted>"
 
-      alice #$> ("/_get chat #1 count=2", chat, [(0, "hello @alice [blocked by admin]"), (1, "blocked bob (signed)")])
-      cath #$> ("/_get chat #1 count=2", chat, [(0, "hello @alice [blocked by admin]"), (0, "blocked bob (signed)")])
+      alice #$> ("/_get chat #1 count=3", chat, [(0, "hello"), (1, "blocked bob (signed)"), (0, "blocked [blocked by admin]")])
+      cath #$> ("/_get chat #1 count=3", chat, [(0, "hello"), (0, "blocked bob (signed)"), (0, "blocked [blocked by admin]")])
 
 testBlockForAllFullDelete :: HasCallStack => TestParams -> IO ()
 testBlockForAllFullDelete =
@@ -8604,30 +8646,42 @@ testGroupMemberReportsPreferenceOff :: HasCallStack => TestParams -> IO ()
 testGroupMemberReportsPreferenceOff =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3' "jokes" alice (bob, GRAdmin) (cath, GRMember)
-      alice ##> "/set reports #jokes off"
-      alice <## "updated group preferences:"
-      alice <## "Member reports: off"
-      concurrentlyN_
-        [ do
-            bob <## "alice updated group #jokes: (signed)"
-            bob <## "updated group preferences:"
-            bob <## "Member reports: off",
-          do
-            cath <## "alice updated group #jokes: (signed)"
-            cath <## "updated group preferences:"
-            cath <## "Member reports: off"
-        ]
-      bob #> "#jokes inappropriate joke"
-      [alice, cath] *<# "#jokes bob> inappropriate joke"
-      cath ##> "/report #jokes content inappropriate joke"
-      cath <## "bad chat command: feature not allowed Member reports"
+      createGroupReportsOff alice bob cath
       GroupMember {groupId, activeConn = Just conn} <- getTestMember cath "jokes" "alice"
       runExceptT (sendDirectMemberMessage conn (XMsgNew $ mcSimple $ MCReport "report content" RRContent) groupId) `runReaderT` chatController cath
         >>= either (fail . show) (\_ -> pure ())
       cath #> "#jokes ok joke"
       [alice, bob] *<# "#jokes cath> ok joke"
       alice #$> ("/_get chat #1 content=report count=100", chat, [])
+
+testGroupMemberReportsPreferenceOffSend :: HasCallStack => TestParams -> IO ()
+testGroupMemberReportsPreferenceOffSend =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroupReportsOff alice bob cath
+      bob #> "#jokes inappropriate joke"
+      [alice, cath] *<# "#jokes bob> inappropriate joke"
+      cath ##> "/report #jokes content inappropriate joke"
+      cath <## "bad chat command: feature not allowed Member reports"
+      (alice </)
+      (bob </)
+
+createGroupReportsOff :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
+createGroupReportsOff alice bob cath = do
+  createGroup3' "jokes" alice (bob, GRAdmin) (cath, GRMember)
+  alice ##> "/set reports #jokes off"
+  alice <## "updated group preferences:"
+  alice <## "Member reports: off"
+  concurrentlyN_
+    [ do
+        bob <## "alice updated group #jokes: (signed)"
+        bob <## "updated group preferences:"
+        bob <## "Member reports: off",
+      do
+        cath <## "alice updated group #jokes: (signed)"
+        cath <## "updated group preferences:"
+        cath <## "Member reports: off"
+    ]
 
 testMemberMention :: HasCallStack => TestParams -> IO ()
 testMemberMention =
