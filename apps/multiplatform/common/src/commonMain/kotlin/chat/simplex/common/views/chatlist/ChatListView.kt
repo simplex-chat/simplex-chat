@@ -46,7 +46,6 @@ import chat.simplex.common.views.badges.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -242,20 +241,13 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   LaunchedEffect(Unit) {
     if (noticesShown) return@LaunchedEffect
     val showWhatsNew = shouldShowWhatsNew(chatModel)
-    val showUpdatedConditions = chatModel.conditions.value.conditionsAction is UsageConditionsAction.Review
+    val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
     if (showWhatsNew || showUpdatedConditions) {
       // Requested here, so that the country is known by the time the modal opens
       platform.androidLoadPlayStoreCountry()
       delay(1000L)
       noticesShown = true
-      if (showWhatsNew) {
-        ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
-      } else {
-        ModalManager.center.showModalCloseable { close -> UsageConditionsView(mutableStateOf(emptyList()), mutableStateOf(emptyList()), close, chatModel.remoteHostId()) }
-        if (chatModel.conditions.value.conditionsAction?.shouldShowNotice == true) {
-          try { chatModel.controller.setConditionsNotified(rh = chatModel.remoteHostId(), conditionsId = chatModel.conditions.value.currentConditions.conditionsId) } catch (e: Exception) { Log.d(TAG, "ChatListView setConditionsNotified error: ${e.message}") }
-        }
-      }
+      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
     }
   }
 

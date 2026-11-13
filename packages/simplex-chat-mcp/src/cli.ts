@@ -2,14 +2,29 @@
 import {homedir} from "os"
 import {join, resolve} from "path"
 import {Mode} from "./actions"
+import {sessionStart, turn} from "./hook"
 import {ExitError, log, logError} from "./log"
 import {validName} from "./messages"
+import {resetOwners, showLink} from "./owner"
 import {RegisterOptions, Scope, register} from "./register"
 import {OwnerEntry, QrCodeSize, ServeOptions, serve} from "./serve"
+import {runService} from "./service"
+import {startSession} from "./session"
 
 export const helpText = `Usage:
   simplex-mcp serve NAME [options]     run agent NAME
   simplex-mcp register NAME [options]  add agent NAME to Claude Code
+  simplex-mcp session                  MCP server of one Claude Code session (run by the plugin)
+  simplex-mcp service                  the shared SimpleX service of the plugin (started on demand)
+  simplex-mcp hook session-start       Claude Code SessionStart hook (run by the plugin)
+  simplex-mcp hook turn                Claude Code hooks of prompts, answers and model changes (run by the plugin)
+  simplex-mcp link                     show the Main group link, or its owners
+  simplex-mcp reset-owners             replace the Main group and its owners
+
+Claude Code plugin:
+  /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/.claude-plugin/marketplace.json
+  /plugin install simplex@simplex-chat
+  SIMPLEX_MCP_HOME       the plugin's data folder (default: ~/.simplex-mcp)
 
 serve options:
   --data DIR             data folder (default: ~/.simplex-mcp/NAME)
@@ -41,14 +56,19 @@ register options:
 --reset-owners takes --owners without a list.
 `
 
+const pluginCommands = ["session", "service", "hook session-start", "hook turn", "link", "reset-owners"] as const
+
 export type Command =
   | {command: "help"}
   | {command: "serve"; options: ServeOptions}
   | {command: "register"; options: RegisterOptions}
+  | {command: (typeof pluginCommands)[number]}
 
 export function parseCommand(args: string[], home: string = homedir()): Command {
   const [command, name, ...rest] = args
   if (command === "--help") return {command: "help"}
+  const plugin = pluginCommands.find(words => words === args.join(" "))
+  if (plugin !== undefined) return {command: plugin}
   if (command !== "serve" && command !== "register") throw usageError("Usage: simplex-mcp serve NAME [options] or simplex-mcp register NAME [options]. Run simplex-mcp --help.")
   if (name === undefined || !validAgentName(name)) throw usageError("NAME: 1 to 32 lowercase letters, digits and single hyphens, starting with a letter or digit.")
   const options = new OptionReader(rest)
@@ -221,7 +241,29 @@ async function main(args: string[]): Promise<void> {
       return serve(command.options)
     case "register":
       return log(register(command.options))
+    case "session":
+      return startSession()
+    case "service":
+      return runService()
+    case "hook session-start":
+      process.stdout.write(`${JSON.stringify(await sessionStart(await readStdin()))}\n`)
+      return
+    case "hook turn":
+      process.stdout.write(`${JSON.stringify(await turn(await readStdin()))}\n`)
+      return
+    case "link":
+      process.stdout.write(`${await showLink()}\n`)
+      return
+    case "reset-owners":
+      process.stdout.write(`${await resetOwners()}\n`)
+      return
   }
+}
+
+async function readStdin(): Promise<string> {
+  let text = ""
+  for await (const chunk of process.stdin) text += chunk
+  return text
 }
 
 if (require.main === module) {
