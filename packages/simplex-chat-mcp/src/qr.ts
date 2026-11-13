@@ -11,6 +11,7 @@ const darkTopCell = "\x1b[37;40m▄"
 const darkBottomCell = "\x1b[30;47m▄"
 const resetColors = "\x1b[0m"
 
+// spec: spec/architecture.md#qr-qrcodetext
 export function qrCodeText(link: string, style: QrStyle): string {
   const {modules} = qrcode.create(link, {errorCorrectionLevel: "L"})
   const positions = Array.from({length: modules.size + 2 * qrMargin}, (_, i) => i - qrMargin)

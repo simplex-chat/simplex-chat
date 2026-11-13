@@ -30,6 +30,7 @@ export interface Entry {
   timeout: number
 }
 
+// spec: spec/architecture.md#register-register
 export function register({name, data, scope}: RegisterOptions, run: Run = runCommand, projectFolder: () => string = projectRoot): string {
   const server = readServerFile(data)
   if (server === undefined) throw new ExitError(`Agent "${name}" was never started. Start it with: npx -y @simplex-chat/mcp serve ${name}`, 1)
@@ -43,6 +44,7 @@ export function register({name, data, scope}: RegisterOptions, run: Run = runCom
   return `Added to Claude Code: scope ${scope}, server ${serverName}.`
 }
 
+// spec: spec/architecture.md#register-registryentry
 export function registryEntry(port: number, data: string, expireHours: number): Entry {
   return {
     type: "http",
@@ -52,11 +54,13 @@ export function registryEntry(port: number, data: string, expireHours: number): 
   }
 }
 
+// spec: spec/architecture.md#register-manualentrytext
 function manualEntryText(scope: Scope, serverName: string, entry: string, projectFolder: () => string): string {
   const location = scope === "user" ? `"mcpServers"` : `"projects" > "${projectFolder()}" > "mcpServers"`
   return `Add this entry under ${location} in ~/.claude.json: {"${serverName}": ${entry}}`
 }
 
+// spec: spec/architecture.md#register-projectroot
 export function projectRoot(folder: string = process.cwd()): string {
   const start = resolve(folder)
   const root = gitRoot(start)
@@ -83,6 +87,7 @@ function repositoryRoot(root: string): string {
   }
 }
 
+// spec: spec/architecture.md#register-runcommand
 function runCommand(command: string, args: string[]): RunResult {
   const result = spawnSync(command, args, {encoding: "utf8"})
   const missing = (result.error as NodeJS.ErrnoException | undefined)?.code === "ENOENT"

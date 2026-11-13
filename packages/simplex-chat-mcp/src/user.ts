@@ -13,6 +13,7 @@ const connectTimeout = 60_000
 export class User {
   private constructor(private readonly chat: api.ChatApi, private readonly user: T.User) {}
 
+  // spec: spec/architecture.md#user-user-open
   static async open(root: string, hub: api.ChatApi, hubUser: T.User): Promise<User> {
     const core = await openCore(join(root, "_user"), userName)
     try {
@@ -26,6 +27,7 @@ export class User {
     }
   }
 
+  // spec: spec/architecture.md#user-user-post
   async post(session: number, parts: string[]): Promise<void> {
     const group = (await this.chat.apiListGroups(this.user.userId)).find(({customData}) => (customData as {[sessionKey]?: number} | undefined)?.[sessionKey] === session)
     if (group !== undefined) await this.chat.apiSendMessages([T.ChatType.Group, group.groupId], parts.map(text => ({msgContent: {type: "text", text}, mentions: {}})))
@@ -35,6 +37,7 @@ export class User {
     return this.chat.close()
   }
 
+  // spec: spec/architecture.md#user-user-connect
   private async connect(hub: api.ChatApi, hubUser: T.User): Promise<void> {
     const r = await hub.sendChatCmd(CC.APIAddContact.cmdString({userId: hubUser.userId, incognito: false}))
     if (r.type !== "invitation") throw new api.ChatCommandError("error creating link", r)
@@ -47,6 +50,7 @@ export class User {
     await hub.apiSetContactCustomData(event.contact.contactId, {[userKey]: true})
   }
 
+  // spec: spec/architecture.md#user-user-onevent
   private async onEvent(event: ChatEvent): Promise<void> {
     if (event.type === "contactConnected") return this.chat.apiSetContactCustomData(event.contact.contactId, {[claudeKey]: true})
     if (event.type !== "receivedGroupInvitation" || (event.contact.customData as {[claudeKey]?: boolean} | undefined)?.[claudeKey] !== true) return
@@ -57,6 +61,7 @@ export class User {
   }
 }
 
+// spec: spec/architecture.md#user-usercontact
 export async function userContact(chat: api.ChatApi, userId: number): Promise<T.Contact | undefined> {
   return (await chat.apiListContacts(userId)).find(({customData}) => (customData as {[userKey]?: boolean} | undefined)?.[userKey] === true)
 }

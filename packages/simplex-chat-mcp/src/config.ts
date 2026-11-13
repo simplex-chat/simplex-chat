@@ -1,6 +1,7 @@
 import {Mode} from "./actions"
 import {maxNameLength, validName} from "./messages"
 
+// spec: spec/architecture.md#config-config
 export interface Config {
   mainGroup: string
   approve: Mode
@@ -9,8 +10,10 @@ export interface Config {
 
 type Key = keyof Config
 
+// spec: spec/architecture.md#config-config
 export const defaultConfig: Config = {mainGroup: "Claude Control", approve: "requests", expireHours: 23}
 
+// spec: spec/architecture.md#config-config
 export const configVariables: {[key in Key]: string} = {
   mainGroup: "CLAUDE_PLUGIN_OPTION_MAIN_GROUP",
   approve: "CLAUDE_PLUGIN_OPTION_APPROVE",
@@ -24,14 +27,17 @@ const unattendedEntrypoints = ["sdk-cli", "sdk-ts", "sdk-py"]
 
 export class ConfigError extends Error {}
 
+// spec: spec/architecture.md#config-interactiveentrypoint
 export function interactiveEntrypoint(env: NodeJS.ProcessEnv = process.env): boolean {
   return !unattendedEntrypoints.includes(env.CLAUDE_CODE_ENTRYPOINT ?? "")
 }
 
+// spec: spec/architecture.md#config-interactiveentrypoint
 export function interactive(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.CLAUDE_CODE_SESSION_ATTENDED !== "0" && interactiveEntrypoint(env)
 }
 
+// spec: spec/architecture.md#config-readconfig
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const value = (key: Key): string | undefined => {
     const given = env[configVariables[key]]?.trim()
@@ -47,6 +53,7 @@ function mainGroup(value: string | undefined): string {
   return value
 }
 
+// spec: spec/architecture.md#config-withmachine
 function withMachine(name: string, machine: string | undefined): string {
   if (machine === undefined) return name
   const valid = validName(machine)

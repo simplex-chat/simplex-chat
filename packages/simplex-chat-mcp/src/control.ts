@@ -10,6 +10,7 @@ import {AgentTools, chatSubject, customDataOf, featureOff, fitsMessage, isActive
 
 export {qrCodeText}
 
+// spec: spec/architecture.md#control-controlcommands
 export const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
   {type: "command", keyword: "list", label: "Chats and approvals"},
@@ -24,6 +25,7 @@ const cardTooLong = {
   connect: "message: too long for its approval card; shorten it.",
   download: "item: the names of its file and chat are too long for its approval card.",
 }
+// spec: spec/architecture.md#control-standings
 const standings: {[standing in Standing]: {key: string; approved: string; scope: string; revoke: (chat: string) => string; listed: string}} = {
   messages: {key: "simplexMcp", approved: "Approved for", scope: "Messages to", revoke: chat => `revoke ${chat}`, listed: "approved for this chat by"},
   files: {key: "simplexMcpFiles", approved: "Files approved for", scope: "Files from", revoke: chat => `receive ${chat} off`, listed: "files approved by"},
@@ -40,14 +42,18 @@ const noSessionApprover = `The group of this session has no admin or owner to ap
 const approverRights = "can send prompts to Claude and the group's commands, and approve tool use"
 const senderRights = "can send prompts to Claude; the group's commands and approvals need the role admin or owner"
 const observerRights = "can't send messages"
+// spec: spec/architecture.md#control-sessionapproverroles
 export const sessionApproverRoles: T.GroupMemberRole[] = [T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
+// spec: spec/architecture.md#control-roleorder
 const roleOrder: T.GroupMemberRole[] = [T.GroupMemberRole.Relay, T.GroupMemberRole.Observer, T.GroupMemberRole.Author, T.GroupMemberRole.Member, T.GroupMemberRole.Moderator, T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 
+// spec: spec/architecture.md#control-controldata
 export interface ControlData {
   control: true
   nextAction: number
 }
 
+// spec: spec/architecture.md#control-controloptions
 export interface ControlOptions {
   displayName: string
   owners?: OwnerEntry[]
@@ -56,6 +62,7 @@ export interface ControlOptions {
   qrCode: QrCodeSize
 }
 
+// spec: spec/architecture.md#control-controloptions
 export interface SessionOptions {
   approves: (member: T.GroupMember) => boolean
   ownerOf: (session: number) => string | undefined
@@ -67,12 +74,14 @@ export interface Command {
   params: string
 }
 
+// spec: spec/architecture.md#control-chatapproval
 interface ChatApproval {
   approvedBy: string
   approvedById: number
   approvedAt: string
 }
 
+// spec: spec/architecture.md#control-ownerrequest-type
 type OwnerRequest =
   | {type: "approve" | "reject" | "receive" | "forward"; action: number; chat?: string}
   | {type: "receiveAll"; action: number; chat: string}
@@ -112,6 +121,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return `#${this.group.groupId}`
   }
 
+  // spec: spec/architecture.md#control-control-load
   async load(): Promise<void> {
     if (isLost(this.group)) return this.lose()
     const {displayName} = this.options
@@ -121,15 +131,18 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     await this.refreshMembers()
   }
 
+  // spec: spec/architecture.md#control-control-rename
   async rename(displayName: string): Promise<void> {
     this.options.displayName = displayName
     await this.load()
   }
 
+  // spec: spec/architecture.md#control-control-rename
   async describe(shortDescr: string): Promise<void> {
     await this.updateProfile(profile => (profile.shortDescr === shortDescr ? undefined : {...profile, shortDescr}))
   }
 
+  // spec: spec/architecture.md#control-control-rename
   private updateProfile(change: (profile: T.GroupProfile) => T.GroupProfile | undefined): Promise<void> {
     const update = this.profileUpdates.then(async () => {
       const group = await (this.options.session === undefined ? changeGroupProfile : updateGroupProfile)(this.chat, this.group, change)
@@ -139,6 +152,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return update
   }
 
+  // spec: spec/architecture.md#control-control-start
   async start(): Promise<void> {
     if (this.actions.lost) return
     const {owners} = this.options
@@ -147,6 +161,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return this.startListed(owners)
   }
 
+  // spec: spec/architecture.md#control-control-refusal
   refusal(action: Action): string | undefined {
     const {mode} = action
     const approver = this.longestApproverName()
@@ -160,19 +175,23 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       : "The agent has no approving owner. The person who runs it has to restart it with the --owners options it printed."
   }
 
+  // spec: spec/architecture.md#control-control-hasapprover
   hasApprover(): boolean {
     return this.approvers().length > 0
   }
 
+  // spec: spec/architecture.md#control-control-standingapprover
   standingApprover(chatInfo: T.ChatInfo, standing: Standing): string | undefined {
     const approval = approvalOf(customDataOf(chatInfo), standings[standing].key)
     return this.actions.mode === "requests" && approval !== undefined && this.approvers().some(({groupMemberId}) => groupMemberId === approval.approvedById) ? safeName(approval.approvedBy) : undefined
   }
 
+  // spec: spec/architecture.md#control-control-savecounter
   saveCounter(nextAction: number): Promise<void> {
     return this.saveData(controlData(nextAction))
   }
 
+  // spec: spec/architecture.md#control-control-savecounter
   saveData(data: object): Promise<void> {
     const write = this.writes.then(async () => {
       const customData = {...this.group.customData, ...data}
@@ -183,10 +202,12 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return write
   }
 
+  // spec: spec/architecture.md#control-control-postcard
   async postCard(action: Action): Promise<number> {
     return this.postCardContent(action, await this.cardContent(action))
   }
 
+  // spec: spec/architecture.md#control-control-postcard
   async outcome(action: Action): Promise<void> {
     if (!hasOutcomeCard(action)) return
     const content = await this.cardContent(action)
@@ -196,12 +217,14 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (filesNote !== undefined) await this.post(filesNote)
   }
 
+  // spec: spec/architecture.md#control-control-refusedfile
   refusedFile(path: string, chatInfo: T.ChatInfo, chat: string): void {
     const refused = (shown: Shown, shownPath: string): string => `Refused to send ${shownPath} to ${chatName(chatSubject(chatInfo), shown.name)} (${chat}): ${refusedFileReason}.`
     log(refused(inLog, oneLine(path)))
     if (!this.actions.lost) this.post(refused(inChat, codeSpan(oneLine(path)))).catch(error => logError("refused file", error))
   }
 
+  // spec: spec/architecture.md#control-control-refusedfile
   fileNotSent({chatItem_, errorMessage}: CEvt.SndFileError): void {
     const file = chatItem_?.chatItem.file
     const chat = chatItem_ === undefined ? undefined : chatRef(chatItem_.chatInfo)
@@ -213,6 +236,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (!this.actions.lost) this.post(notSent(inChat, codeSpan(oneLine(file.fileName)), codeSpan(oneLine(reason)))).catch(error => logError("file not sent", error))
   }
 
+  // spec: spec/architecture.md#control-control-onmessage
   onMessage(ci: T.AChatItem): void {
     const {chatItem} = ci
     if (this.actions.lost || chatItem.chatDir.type !== "groupRcv" || chatItem.content.type !== "rcvMsgContent") return
@@ -225,6 +249,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       .catch(error => logError("control chat command", error))
   }
 
+  // spec: spec/architecture.md#control-control-onevent
   async onEvent(event: ChatEvent): Promise<void> {
     if (this.actions.lost) return
     if (losesControl(event)) return this.lose()
@@ -243,6 +268,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (owners !== undefined && owners.length > 0) await this.reportOwnerChanges(owners, before)
   }
 
+  // spec: spec/architecture.md#control-control-ownercommand
   async ownerCommand(sender: T.GroupMember, command: Command): Promise<string | undefined> {
     this.actions.expireDue()
     const request = ownerRequest(command, this.options.session !== undefined)
@@ -290,6 +316,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     }
   }
 
+  // spec: spec/architecture.md#control-control-approvechat
   private async approveChat(sender: T.GroupMember, chat: string, standing: Standing, named?: Action): Promise<string> {
     const {key, approved, revoke} = standings[standing]
     const chatInfo = await this.agentChat(chat)
@@ -303,6 +330,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return `${approved} ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}. /'${revoke(chat)}'`
   }
 
+  // spec: spec/architecture.md#control-control-approvechat
   private async revoke(chat: string, standing: Standing): Promise<string> {
     const {key, scope} = standings[standing]
     const chatInfo = await this.agentChat(chat)
@@ -312,6 +340,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return `${scope} ${chatName(chatSubject(chatInfo))} (${chat}) need approval again.`
   }
 
+  // spec: spec/architecture.md#control-control-approvechat
   private forward(action: DownloadAction): void {
     this.tools
       .forwardFile(action)
@@ -333,6 +362,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       .catch(error => logError(`action ${action.n} file`, error))
   }
 
+  // spec: spec/architecture.md#control-control-approvechat
   private async leave(sender: T.GroupMember, chat: string): Promise<string> {
     const chatInfo = await this.agentChat(chat)
     if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
@@ -354,11 +384,13 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return count === 0 ? undefined : `Files from ${chatName(subject)} (${chat}) are kept in ${codeSpan(oneLine(folder))}: ${filesText(count)}, ${sizeText(bytes)}. /'delete ${chat} files'`
   }
 
+  // spec: spec/architecture.md#control-control-approvechat
   private async deleteFiles(chat: string): Promise<string> {
     const {count, bytes} = await this.tools.deleteChatFiles(chat)
     return count === 0 ? `No files from ${chat}.` : `Deleted ${filesText(count)} from ${chat}, ${sizeText(bytes)}.`
   }
 
+  // spec: spec/architecture.md#control-control-give
   private async give(sender: T.GroupMember, chat: string, session: number): Promise<string> {
     const chatInfo = await this.agentChat(chat)
     if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
@@ -372,6 +404,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return `Gave ${chatName(chatSubject(chatInfo))} (${chat}) to session ${session}.`
   }
 
+  // spec: spec/architecture.md#control-control-give
   private async setObserver(sender: T.GroupMember, group: string, groupMemberId: number): Promise<string> {
     if (group !== this.chatRef) return `${group} is not this group.`
     await this.refreshMembers()
@@ -518,6 +551,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return item.chatItem.meta.itemId
   }
 
+  // spec: spec/architecture.md#control-control-postcardcontent
   private async postCardContent(action: Action, msgContent: T.MsgContent): Promise<number> {
     try {
       return await this.postMessage({msgContent, mentions: {}})
@@ -533,16 +567,19 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     }
   }
 
+  // spec: spec/architecture.md#control-control-postcardcontent
   private sessionRefusal(error: unknown): string | undefined {
     return this.options.session === undefined ? undefined : refusedFeature(error)
   }
 
+  // spec: spec/architecture.md#control-control-postcardcontent
   private async postRefusal(error: unknown, subject: string): Promise<void> {
     const feature = this.sessionRefusal(error)
     if (feature === undefined) throw error
     await this.post(`${subject}: ${featureOff(feature)}`)
   }
 
+  // spec: spec/architecture.md#control-control-cardcontent
   private async cardContent(action: Action): Promise<T.MsgContent> {
     const text = cardText(action, action.mode)
     const file = action.tool === "download" || action.tool === "send" ? action.file : undefined
@@ -552,6 +589,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return action.cardImage === "" ? {type: "text", text} : {...content, image: action.cardImage}
   }
 
+  // spec: spec/architecture.md#control-control-cardcontent
   private async fittedImage(action: Action, content: T.MsgContent.Image | T.MsgContent.Video): Promise<string> {
     const {image} = content
     const fields = JSON.stringify({...content, text: "", image: ""}).length - JSON.stringify({type: "text", text: ""}).length
@@ -590,6 +628,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return member.groupMemberId !== this.group.membership.groupMemberId && isActive(member)
   }
 
+  // spec: spec/architecture.md#control-control-isapprover
   private isApprover(member: T.GroupMember): boolean {
     const {owners, session} = this.options
     if (session !== undefined) return session.approves(member)
@@ -602,6 +641,7 @@ export function hasOutcomeCard(action: Action): boolean {
   return action.tool !== "download" || action.card !== undefined
 }
 
+// spec: spec/architecture.md#control-findcontrolgroup
 export async function findControlGroup(chat: api.ChatApi, userId: number): Promise<T.GroupInfo | undefined> {
   const groups = (await chat.apiListGroups(userId)).filter(({customData}) => controlDataOf(customData) !== undefined)
   return groups.reduce<T.GroupInfo | undefined>((latest, group) => (latest === undefined || group.groupId > latest.groupId ? group : latest), undefined)
@@ -612,6 +652,7 @@ export function controlDataOf(customData: object | undefined): ControlData | und
   return data?.control === true && typeof data.nextAction === "number" ? {control: true, nextAction: data.nextAction} : undefined
 }
 
+// spec: spec/architecture.md#control-findcontrolgroup
 export async function createControlChat(chat: api.ChatApi, userId: number, displayName: string, nextAction: number): Promise<T.GroupInfo> {
   const group = await createGroup(chat, userId, {
     displayName,
@@ -623,36 +664,43 @@ export async function createControlChat(chat: api.ChatApi, userId: number, displ
   return group
 }
 
+// spec: spec/architecture.md#control-creategroup
 export async function createGroup(chat: api.ChatApi, userId: number, profile: T.GroupProfile, customData: object): Promise<T.GroupInfo> {
   const group = await chat.apiNewGroup(userId, profile)
   await chat.apiSetGroupCustomData(group.groupId, customData)
   return {...group, customData}
 }
 
+// spec: spec/architecture.md#control-creategroup
 export async function updateGroupProfile(chat: api.ChatApi, group: T.GroupInfo, change: (profile: T.GroupProfile) => T.GroupProfile | undefined): Promise<T.GroupInfo> {
   const {chatInfo} = await chat.apiGetChat(T.ChatType.Group, group.groupId, 0)
   return changeGroupProfile(chat, chatInfo.type === "group" ? chatInfo.groupInfo : group, change)
 }
 
+// spec: spec/architecture.md#control-creategroup
 async function changeGroupProfile(chat: api.ChatApi, group: T.GroupInfo, change: (profile: T.GroupProfile) => T.GroupProfile | undefined): Promise<T.GroupInfo> {
   const profile = change(group.groupProfile)
   return profile === undefined ? group : chat.apiUpdateGroupProfile(group.groupId, profile)
 }
 
+// spec: spec/architecture.md#control-findcontrolgroup
 export async function resetControlChat(chat: api.ChatApi, userId: number, group: T.GroupInfo, displayName: string, nextAction: number): Promise<T.GroupInfo> {
   await deleteGroup(chat, group)
   return createControlChat(chat, userId, displayName, nextAction)
 }
 
+// spec: spec/architecture.md#control-creategroup
 export async function deleteGroup(chat: api.ChatApi, {groupId, membership}: T.GroupInfo): Promise<void> {
   if (memberCurrent(membership) && membership.memberRole !== T.GroupMemberRole.Owner) await chat.apiLeaveGroup(groupId)
   await chat.apiDeleteChat(T.ChatType.Group, groupId, {type: "full", notify: true})
 }
 
+// spec: spec/architecture.md#control-isgroupmessage
 export function isGroupMessage({chatInfo}: T.AChatItem, groupId: number): boolean {
   return chatInfo.type === "group" && chatInfo.groupInfo.groupId === groupId && chatInfo.groupChatScope === undefined
 }
 
+// spec: spec/architecture.md#control-iscontrolevent
 export function isControlEvent(event: ChatEvent, groupId: number): boolean {
   switch (event.type) {
     case "joinedGroupMember":
@@ -669,6 +717,7 @@ export function isControlEvent(event: ChatEvent, groupId: number): boolean {
   }
 }
 
+// spec: spec/architecture.md#control-parsecommand
 export function parseCommand(text: string): Command | undefined {
   const lines = text.split("\n")
   if (lines.at(-1) === "") lines.pop()
@@ -676,6 +725,7 @@ export function parseCommand(text: string): Command | undefined {
   return match ? {keyword: match[1], params: match[2].trim()} : undefined
 }
 
+// spec: spec/architecture.md#control-cardtext
 export function cardText(action: Action, mode: Actions["mode"]): string {
   const request = requestLines(action)
   const approval = mode === "host" ? "Performed without approval (mode host)" : action.standing ? `Approved for this chat by ${action.decidedBy}` : `Approved by ${action.decidedBy}`
@@ -697,6 +747,7 @@ export function cardText(action: Action, mode: Actions["mode"]): string {
   }
 }
 
+// spec: spec/architecture.md#control-cardtext
 function requestLines(action: Action): string[] {
   const done = action.state === "done"
   if (action.tool === "mode") return [`${done ? "I run" : "I want to run"} in mode ${action.input.mode}: Claude Code asks you before each of my actions, and they are performed without approval here.`]
@@ -732,6 +783,7 @@ function requestLines(action: Action): string[] {
   }
 }
 
+// spec: spec/architecture.md#control-cardtext
 function commandsLine(action: Action): string {
   switch (action.tool) {
     case "connect":
@@ -753,22 +805,26 @@ function pendingLine(action: Action): string {
   return `${action.n}  ${summary(action, safeName).what}  expires ${utcMinutes(action.expires)}`
 }
 
+// spec: spec/architecture.md#control-control-postcardcontent
 function refusedCardSubject({n, state, ended}: Action, card: "posted" | "updated"): string {
   const outcomes: {[decided in State]?: string} = {done: "was performed", failed: "failed", rejected: "was rejected", expired: "expired"}
   const outcome = ended ? "ended" : outcomes[state]
   return outcome === undefined ? `Action ${n}` : `Action ${n} ${outcome}; its card was not ${card}`
 }
 
+// spec: spec/architecture.md#control-largestcard
 function largestCard(action: Action, mode: Actions["mode"], approver: string): number {
   const decidedBy = action.decidedBy ?? approver
   const cards: Action[] = [action, {...action, state: "done", decidedBy}, {...action, state: "failed", decidedBy, error: longestError}]
   return Math.max(...cards.map(card => encodedLength(cardText(card, mode))))
 }
 
+// spec: spec/architecture.md#control-largestcard
 function encodedLength(text: string): number {
   return [...text].reduce((length, c) => length + (/["\\\n\r\t]/.test(c) ? 2 : c < " " ? 6 : Buffer.byteLength(c)), 0)
 }
 
+// spec: spec/architecture.md#control-truncatedline
 function truncatedLine(line: string, maxLength: number): string {
   if (encodedLength(line) <= maxLength) return line
   let length = encodedLength(truncationMark)
@@ -781,6 +837,7 @@ function truncatedLine(line: string, maxLength: number): string {
   return `${kept}${truncationMark}`
 }
 
+// spec: spec/architecture.md#control-truncatedline
 function fittedLines(lines: string[], budget = Infinity): string[] {
   const fitted: string[] = []
   let left = budget
@@ -801,12 +858,14 @@ function chatName(subject: Subject, showName: (name: string) => string = safeNam
   return subjectText({...subject, simplexName: undefined}, showName)
 }
 
+// spec: spec/architecture.md#control-serversline
 function serversLine(unknownServers: string[]): string {
   if (unknownServers.length === 0) return "Servers: known."
   const hosts = unknownServers.map(server => codeSpan(oneLine(serverHostname(server)))).join(", ")
   return `Servers: ${hosts}, unknown: downloading shows ${unknownServers.length === 1 ? "it" : "them"} this computer's IP address.`
 }
 
+// spec: spec/architecture.md#control-serversline
 function sizeText(bytes: number): string {
   const exponent = Math.min(Math.floor(Math.log10(Math.max(bytes, 1)) / 3), 3)
   return exponent === 0 ? `${bytes} bytes` : `${(bytes / 1000 ** exponent).toFixed(1)} ${["KB", "MB", "GB"][exponent - 1]}`
@@ -820,15 +879,18 @@ function codeLines(text: string | undefined): string[] {
   return text === undefined ? [] : text.split("\n").map(line => (line.trim() === "" ? "" : codeSpan(line)))
 }
 
+// spec: spec/architecture.md#control-codespan
 export function codeSpan(text: string): string {
   return `\`${text.replace(/`/g, "'").replace(/^ | $/g, "\u00a0")}\``
 }
 
+// spec: spec/architecture.md#control-codespan
 export function safeName(name: string): string {
   const line = oneLine(name)
   return validName(line) === line ? line : codeSpan(line)
 }
 
+// spec: spec/architecture.md#control-codespan
 function mentionText(name: string): string {
   const line = oneLine(name)
   return validName(line) === line ? `@${viewName(line)}` : codeSpan(`@${line}`)
@@ -843,6 +905,7 @@ function approvalOf(customData: object | undefined, key: string): {approvedBy: s
   return typeof data?.approvedBy === "string" && typeof data.approvedById === "number" ? {approvedBy: data.approvedBy, approvedById: data.approvedById} : undefined
 }
 
+// spec: spec/architecture.md#control-ownerrequest
 function ownerRequest({keyword, params}: Command, session: boolean): OwnerRequest | undefined {
   const words = params === "" ? [] : params.split(/\s+/)
   const chat = words.length === 2 && isChatRef(words[0]) ? words[0] : undefined
@@ -860,6 +923,7 @@ function ownerRequest({keyword, params}: Command, session: boolean): OwnerReques
   return undefined
 }
 
+// spec: spec/architecture.md#control-losescontrol
 export function losesControl(event: ChatEvent): boolean {
   switch (event.type) {
     case "deletedMemberUser":
@@ -872,19 +936,23 @@ export function losesControl(event: ChatEvent): boolean {
   }
 }
 
+// spec: spec/architecture.md#control-losescontrol
 export function isLost({membership}: T.GroupInfo): boolean {
   const statuses: T.GroupMemberStatus[] = [T.GroupMemberStatus.Creator, T.GroupMemberStatus.Connected, T.GroupMemberStatus.Complete]
   return membership.memberRole !== T.GroupMemberRole.Owner || !statuses.includes(membership.memberStatus)
 }
 
+// spec: spec/architecture.md#control-roleorder
 function roleRank(role: T.GroupMemberRole): number {
   return roleOrder.indexOf(role)
 }
 
+// spec: spec/architecture.md#control-roleorder
 export function canSend(role: T.GroupMemberRole): boolean {
   return roleRank(role) > roleRank(T.GroupMemberRole.Observer)
 }
 
+// spec: spec/architecture.md#control-sessionapproverroles
 export function rightsText(name: string, role: T.GroupMemberRole): string {
   const rights = sessionApproverRoles.includes(role) ? approverRights : canSend(role) ? senderRights : observerRights
   return `${name} is ${/^[aeiou]/.test(role) ? "an" : "a"} ${role} and ${rights}.`
@@ -902,10 +970,12 @@ function memberText({groupMemberId, memberProfile}: T.GroupMember, showName: (na
   return `${showName(memberProfile.displayName)} (member ${groupMemberId})`
 }
 
+// spec: spec/architecture.md#control-joinedtext
 export function joinedText(member: T.GroupMember, showName: (name: string) => string): string {
   return `${showName(member.memberProfile.displayName)} joined (member ${member.groupMemberId})`
 }
 
+// spec: spec/architecture.md#control-entrytext
 export function entryText({memberId, name}: OwnerEntry): string {
   return shellWord(`${memberId}:${name}`, /^\d+:[\p{L}\p{N}_-]+$/u)
 }
@@ -914,6 +984,7 @@ function ownersText(members: T.GroupMember[]): string {
   return members.map(({groupMemberId, memberProfile}) => entryText({memberId: groupMemberId, name: oneLine(memberProfile.displayName)})).join(",")
 }
 
+// spec: spec/architecture.md#control-entrytext
 function restartText(members: T.GroupMember[], shown: Shown): string {
   return `Restart the server with ${shown.command(`--owners ${ownersText(members)}`)}`
 }

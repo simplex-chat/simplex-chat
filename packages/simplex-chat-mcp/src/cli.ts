@@ -11,6 +11,7 @@ import {OwnerEntry, QrCodeSize, ServeOptions, serve} from "./serve"
 import {runService} from "./service"
 import {startSession} from "./session"
 
+// spec: spec/architecture.md#cli-helptext
 export const helpText = `Usage:
   simplex-mcp serve NAME [options]     run agent NAME
   simplex-mcp register NAME [options]  add agent NAME to Claude Code
@@ -52,14 +53,17 @@ register options:
 --reset-owners takes --owners without a list.
 `
 
+// spec: spec/architecture.md#cli-plugincommands
 const pluginCommands = ["session", "service", "hook session-start", "hook turn", "link", "reset-owners"] as const
 
+// spec: spec/architecture.md#cli-command
 export type Command =
   | {command: "help"}
   | {command: "serve"; options: ServeOptions}
   | {command: "register"; options: RegisterOptions}
   | {command: (typeof pluginCommands)[number]}
 
+// spec: spec/architecture.md#cli-parsecommand
 export function parseCommand(args: string[], home: string = homedir()): Command {
   const [command, name, ...rest] = args
   if (command === "--help") return {command: "help"}
@@ -71,6 +75,7 @@ export function parseCommand(args: string[], home: string = homedir()): Command 
   return command === "serve" ? {command, options: serveOptions(name, options, home)} : {command, options: registerOptions(name, options, home)}
 }
 
+// spec: spec/architecture.md#cli-serveoptions
 function serveOptions(name: string, options: OptionReader, home: string): ServeOptions {
   const serve: ServeOptions = {
     name,
@@ -127,6 +132,7 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
   return serve
 }
 
+// spec: spec/architecture.md#cli-registeroptions
 function registerOptions(name: string, options: OptionReader, home: string): RegisterOptions {
   const register: RegisterOptions = {name, data: dataFolder(name, home), scope: "user"}
   for (let option = options.next(); option !== undefined; option = options.next()) {
@@ -144,6 +150,7 @@ function registerOptions(name: string, options: OptionReader, home: string): Reg
   return register
 }
 
+// spec: spec/architecture.md#cli-optionreader
 class OptionReader {
   private index = 0
 
@@ -166,6 +173,7 @@ class OptionReader {
   }
 }
 
+// spec: spec/architecture.md#cli-validagentname
 export function validAgentName(name: string): boolean {
   return name.length <= 32 && /^[a-z0-9](-?[a-z0-9])*-?$/.test(name)
 }
@@ -211,10 +219,12 @@ function unknownOption(option: string): ExitError {
   return usageError(`Unknown option ${option}. Run simplex-mcp --help.`)
 }
 
+// spec: spec/architecture.md#cli-usageerror
 function usageError(message: string): ExitError {
   return new ExitError(message, 2)
 }
 
+// spec: spec/architecture.md#cli-main
 async function main(args: string[]): Promise<void> {
   const command = parseCommand(args)
   switch (command.command) {

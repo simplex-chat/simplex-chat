@@ -24,6 +24,7 @@ export class ProtocolError extends ExitError {}
 export class ServiceClient {
   private constructor(readonly root: string, private readonly token: string, private readonly path: string) {}
 
+  // spec: spec/architecture.md#client-serviceclient-forroot
   static forRoot(root: string): ServiceClient {
     createDataFolder(root)
     return new ServiceClient(root, serviceToken(root), socketPath(root))
@@ -37,6 +38,7 @@ export class ServiceClient {
     return streamLines(this.path, this.token, route, body, onLine, signal)
   }
 
+  // spec: spec/architecture.md#client-serviceclient-ensureservice
   async ensureService(version: string, spawnIt: SpawnService = root => spawnService(root)): Promise<StatusReply> {
     let status = await this.status()
     if (status !== undefined && compareVersions(status.version, version) < 0) {
@@ -73,6 +75,7 @@ export function serviceCommand(): [string, string[]] {
   return [process.execPath, [join(__dirname, "cli.js"), "service"]]
 }
 
+// spec: spec/architecture.md#client-spawnservice
 export async function spawnService(root: string, [command, args]: [string, string[]] = serviceCommand()): Promise<void> {
   const log = openLog(root)
   try {
@@ -96,6 +99,7 @@ export async function spawnService(root: string, [command, args]: [string, strin
   }
 }
 
+// spec: spec/architecture.md#client-firstline
 function firstLine(stream: Readable, child: ChildProcess): Promise<string> {
   return new Promise((resolve, reject) => {
     let text = ""
@@ -122,6 +126,7 @@ function firstLine(stream: Readable, child: ChildProcess): Promise<string> {
   })
 }
 
+// spec: spec/architecture.md#client-compareversions
 export function compareVersions(a: string, b: string): number {
   const parts = (version: string): number[] => version.split(/[.-]/).slice(0, 3).map(Number)
   const [x, y] = [parts(a), parts(b)]

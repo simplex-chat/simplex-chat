@@ -2,8 +2,11 @@ import {errorText, log, logError, oneLine} from "./log"
 import {Changes, Collected, FileOffer, FileType, ToolCall, nextChange, reportProgress, utcMinutes} from "./messages"
 import type {ConnectInput, DownloadInput, LeaveInput, PlanSummary, SendInput} from "./tools"
 
+// spec: spec/architecture.md#actions-mode
 export type Mode = "requests" | "host"
+// spec: spec/architecture.md#actions-state
 export type State = "pending" | "performing" | "done" | "failed" | "rejected" | "expired"
+// spec: spec/architecture.md#actions-standing
 export type Standing = "messages" | "files"
 
 export const maxPending = 20
@@ -15,14 +18,17 @@ export const stoppingMessage = "The server is stopping."
 const pendingMessage = `${maxPending} actions are pending; wait for the owner's decisions.`
 const performingMessage = `${maxPerforming} actions are being performed; wait for their results.`
 
+// spec: spec/architecture.md#actions-toolerror
 export class ToolError extends Error {}
 
+// spec: spec/architecture.md#actions-hosttexts
 export interface HostTexts {
   lost: string
   stopping: string
   pending: string
 }
 
+// spec: spec/architecture.md#actions-subject
 export interface Subject {
   kind: string
   name?: string
@@ -30,12 +36,14 @@ export interface Subject {
   incognito: boolean
 }
 
+// spec: spec/architecture.md#actions-connref
 export interface ConnRef {
   pcc?: number
   contact?: number
   group?: number
 }
 
+// spec: spec/architecture.md#actions-actionrecord
 interface ActionRecord {
   readonly n: number
   readonly session?: number
@@ -56,6 +64,7 @@ interface ActionRecord {
   cardImage?: string
 }
 
+// spec: spec/architecture.md#actions-connectaction
 export interface ConnectAction extends ActionRecord {
   readonly tool: "connect"
   readonly input: ConnectInput
@@ -84,6 +93,7 @@ export interface Attachment {
   readonly duration?: number
 }
 
+// spec: spec/architecture.md#actions-connectaction
 export interface SendAction extends ActionRecord {
   readonly tool: "send"
   readonly input: SendInput
@@ -97,6 +107,7 @@ export interface SendAction extends ActionRecord {
   sentAt?: number
 }
 
+// spec: spec/architecture.md#actions-connectaction
 export interface LeaveAction extends ActionRecord {
   readonly tool: "leave"
   readonly input: LeaveInput
@@ -104,6 +115,7 @@ export interface LeaveAction extends ActionRecord {
   readonly chat: string
 }
 
+// spec: spec/architecture.md#actions-connectaction
 export interface DownloadAction extends ActionRecord {
   readonly tool: "download"
   readonly input: DownloadInput
@@ -117,6 +129,7 @@ export interface DownloadAction extends ActionRecord {
   path?: string
 }
 
+// spec: spec/architecture.md#actions-modeaction
 export interface ModeAction extends ActionRecord {
   readonly tool: "mode"
   readonly input: {mode: Mode}
@@ -124,6 +137,7 @@ export interface ModeAction extends ActionRecord {
   readonly chat?: undefined
 }
 
+// spec: spec/architecture.md#actions-modeaction
 export interface PermissionAction extends ActionRecord {
   readonly tool: "permission"
   readonly input: {requestId: string; toolName: string; description: string; inputPreview: string}
@@ -136,6 +150,7 @@ export type Action = ConnectAction | SendAction | LeaveAction | DownloadAction |
 
 export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord> | Omit<DownloadAction, keyof ActionRecord> | Omit<ModeAction, keyof ActionRecord> | Omit<PermissionAction, keyof ActionRecord>
 
+// spec: spec/architecture.md#actions-actionhooks
 export interface ActionHooks {
   refusal(action: Action): string | undefined
   saveCounter(next: number): Promise<void>
@@ -144,6 +159,7 @@ export interface ActionHooks {
   outcome(action: Action): Promise<void>
 }
 
+// spec: spec/architecture.md#actions-actions
 export class Actions {
   lost = false
   private stopping = false
@@ -177,6 +193,7 @@ export class Actions {
     return this.all().find(action => action.key === key)
   }
 
+  // spec: spec/architecture.md#actions-actions-create
   create(key: string, fields: NewAction, approvedBy?: string, session?: number, mode: Mode = this.mode): Action {
     const n = this.next
     const created = Date.now()
@@ -214,10 +231,12 @@ export class Actions {
     return action
   }
 
+  // spec: spec/architecture.md#actions-actions-ofsession
   ofSession(session?: number): Action[] {
     return this.all().filter(action => action.session === session)
   }
 
+  // spec: spec/architecture.md#actions-actions-ofsession
   remove(action: Action): void {
     if (!this.actions.delete(action.n)) return
     clearTimeout(this.expiries.get(action.n))
@@ -225,27 +244,32 @@ export class Actions {
     action.stopCollecting?.()
   }
 
+  // spec: spec/architecture.md#actions-actions-ofsession
   openCall(action: Action): void {
     action.open++
   }
 
+  // spec: spec/architecture.md#actions-actions-ofsession
   closeCall(action: Action): void {
     action.open--
     this.forgetExpired(action)
   }
 
+  // spec: spec/architecture.md#actions-actions-ofsession
   end(action: Action): void {
     action.ended = true
     this.decide(action, "expired")
     this.updateCard(action)
   }
 
+  // spec: spec/architecture.md#actions-actions-expiredue
   expireDue(): void {
     if (this.stopping) return
     const now = Date.now()
     for (const action of this.all().filter(({expires}) => expires <= now)) this.expire(action)
   }
 
+  // spec: spec/architecture.md#actions-actions-decided
   async decided(action: Action, call: ToolCall, until: () => number = () => Infinity): Promise<boolean> {
     if (isDecided(action.state)) return true
     const stopProgress = reportProgress(call, () => progressText(action))
@@ -281,6 +305,7 @@ export class Actions {
     }
   }
 
+  // spec: spec/architecture.md#actions-actions-stop
   async stop(): Promise<Action[]> {
     this.stopping = true
     for (const timer of this.expiries.values()) clearTimeout(timer)
@@ -294,11 +319,13 @@ export class Actions {
     return stopped
   }
 
+  // spec: spec/architecture.md#actions-actions-scheduleexpiry
   private scheduleExpiry(action: Action, delay = action.expires - Date.now()): void {
     const timer = setTimeout(() => this.expire(action), Math.min(delay, expiryCheck))
     this.expiries.set(action.n, timer.unref())
   }
 
+  // spec: spec/architecture.md#actions-actions-scheduleexpiry
   private expire(action: Action): void {
     clearTimeout(this.expiries.get(action.n))
     this.expiries.delete(action.n)
@@ -311,6 +338,7 @@ export class Actions {
     this.updateCard(action)
   }
 
+  // spec: spec/architecture.md#actions-actions-scheduleexpiry
   private forgetExpired(action: Action): void {
     if (isDecided(action.state) && action.open === 0 && action.expires <= Date.now()) this.remove(action)
   }
@@ -379,6 +407,7 @@ export function subjectText({kind, name, simplexName}: Subject, showName: (name:
   return simplexName === undefined ? named : `${named} (${simplexName})`
 }
 
+// spec: spec/architecture.md#actions-summary
 export function summary(action: Action, showName: (name: string) => string): {what: string; detail: string} {
   if (action.tool === "mode") return {what: `run in mode ${action.input.mode}`, detail: ""}
   if (action.tool === "permission") return {what: `use ${showName(action.input.toolName)}`, detail: ""}
@@ -399,6 +428,7 @@ export function leaveVerbs({chat}: Pick<LeaveAction, "chat">): {present: string;
   return chat.startsWith("@") ? {present: "delete", past: "deleted"} : {present: "leave", past: "left"}
 }
 
+// spec: spec/architecture.md#actions-summary
 function performedText(action: Action): string {
   const failure = action.state === "failed" ? `; failed: ${oneLine(action.error ?? "")}` : ""
   if (action.mode === "host") return sentence(action, `performed without approval (mode host)${failure}`)
@@ -411,6 +441,7 @@ function performedText(action: Action): string {
   return action.connected ? "connected." : "connection requested."
 }
 
+// spec: spec/architecture.md#actions-summary
 function progressText(action: Action): string {
   switch (action.state) {
     case "pending":
@@ -424,6 +455,7 @@ function progressText(action: Action): string {
   }
 }
 
+// spec: spec/architecture.md#actions-summary
 function sentence({session}: Action, text: string): string {
   return session !== undefined && text.endsWith(".") ? text : `${text}.`
 }
