@@ -498,13 +498,13 @@ describe("turn hooks", () => {
     }
   })
 
-  it("post one line for a compaction of the session's conversation, from its boundary in the transcript after the boundary is written, with its trigger and token counts, and nothing for a subagent's compaction, a boundary of a subagent or a boundary older than 60 s", async () => {
+  it("post one line for a compaction of the session's conversation, from its boundary in the transcript after the boundary is written, with its trigger and token counts, and nothing for a subagent's compaction, a boundary of a subagent, a boundary older than 60 s or one stamped after the hook started", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
     try {
       const transcript = join(folder, "session.jsonl")
       const at = Date.now()
       const boundary = (age: number, compactMetadata: object, extra: object = {}) => `${JSON.stringify({type: "system", subtype: "compact_boundary", content: "Conversation compacted", ...extra, timestamp: new Date(at - age).toISOString(), compactMetadata})}\n`
-      writeFileSync(transcript, `${boundary(61_000, {trigger: "auto", preTokens: 967_931, postTokens: 22_484})}${boundary(1_000, {trigger: "auto", preTokens: 972_401, postTokens: 9_145}, {isSidechain: true})}`)
+      writeFileSync(transcript, `${boundary(61_000, {trigger: "auto", preTokens: 967_931, postTokens: 22_484})}${boundary(1_000, {trigger: "auto", preTokens: 972_401, postTokens: 9_145}, {isSidechain: true})}${boundary(-6_000, {trigger: "auto", preTokens: 968_000, postTokens: 30_000})}`)
       const {client, requests} = turnClient()
       const compact = (extra: object = {}) => turn(JSON.stringify({session_id: id, hook_event_name: "PostCompact", transcript_path: transcript, trigger: "auto", compact_summary: "Summary.", ...extra}), {}, client, 0, at, 1)
       expect(await compact()).toEqual({})

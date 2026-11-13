@@ -19,9 +19,11 @@ const promptReads = 600
 const compactionReads = 120
 const compactionReadFactor = 10
 const compactionAge = 60_000
+const compactionSkew = 5_000
 const transcriptReadMs = 100
 const transcriptTailBytes = 1_048_576
 const compactionTailBytes = 4 * transcriptTailBytes
+const boundaryMarker = '"compact_boundary"'
 const tokenCount = new Intl.NumberFormat("en", {notation: "compact"})
 const syntheticModel = "<synthetic>"
 const maxNote = 200
@@ -150,8 +152,8 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
 async function answerModel({transcript_path: path, last_assistant_message: message}: TurnInput, readMs: number): Promise<string | undefined> {
   const answer = message?.trim()
   if (!path || !answer) return undefined
-  const last = await findInTranscript(path, transcriptTailBytes + 2 * Buffer.byteLength(answer), answerReads, readMs, tail => {
-    const entry = lastAnswer(tail)
+  const last = await findInTranscript(path, answer, answerReads, readMs, tail => {
+    const entry = lastAnswer(tail.toString())
     return entry?.text === answer ? entry : undefined
   })
   return last?.model
@@ -160,40 +162,42 @@ async function answerModel({transcript_path: path, last_assistant_message: messa
 async function promptKind({transcript_path: path, prompt_id: id, prompt}: TurnInput, readMs: number): Promise<PromptKind> {
   const text = prompt?.trim()
   if (!path || !text) return {typed: false}
-  return (await findInTranscript(path, transcriptTailBytes + 2 * Buffer.byteLength(text), promptReads, readMs, (tail, last) => promptRecord(tail, id, text, last))) ?? {typed: false}
+  return (await findInTranscript(path, text, promptReads, readMs, (tail, last) => promptRecord(tail.toString(), id, text, last))) ?? {typed: false}
 }
 
 async function compactionNote({transcript_path: path, agent_id: agent}: TurnInput, at: number, readMs: number): Promise<string | undefined> {
   if (!path || agent !== undefined) return undefined
-  const boundary = await findInTranscript(path, compactionTailBytes, compactionReads, compactionReadFactor * readMs, tail => recentBoundary(tail, at - compactionAge))
+  const boundary = await findInTranscript(path, "", compactionReads, compactionReadFactor * readMs, tail => (tail.includes(boundaryMarker) ? recentBoundary(tail.toString(), at) : undefined), compactionTailBytes)
   if (boundary === undefined) return undefined
   const {trigger, preTokens, postTokens} = boundary.compactMetadata ?? {}
   const counts = typeof preTokens === "number" && typeof postTokens === "number" ? `: ${tokenCount.format(preTokens)} → ${tokenCount.format(postTokens)} tokens` : ""
   return `⚙️ Context summarised ${trigger === "manual" ? "on request" : "automatically"}${counts}`
 }
 
-function recentBoundary(tail: string, since: number): TranscriptEntry | undefined {
-  const boundaries = tail.split("\n").flatMap(line => (line.includes('"compact_boundary"') ? (transcriptEntry(line) ?? []) : []))
-  return boundaries.filter(entry => entry.type === "system" && entry.subtype === "compact_boundary" && entry.isSidechain !== true && Date.parse(String(entry.timestamp)) >= since).at(-1)
+function recentBoundary(tail: string, at: number): TranscriptEntry | undefined {
+  const boundaries = tail.split("\n").flatMap(line => (line.includes(boundaryMarker) ? (transcriptEntry(line) ?? []) : []))
+  const created = (entry: TranscriptEntry): number => Date.parse(String(entry.timestamp))
+  return boundaries.filter(entry => entry.type === "system" && entry.subtype === "compact_boundary" && entry.isSidechain !== true && created(entry) >= at - compactionAge && created(entry) <= at + compactionSkew).at(-1)
 }
 
-async function findInTranscript<T>(path: string, bytes: number, reads: number, readMs: number, find: (tail: string, last: boolean) => T | undefined): Promise<T | undefined> {
+async function findInTranscript<T>(path: string, text: string, reads: number, readMs: number, find: (tail: Buffer, last: boolean) => T | undefined, tailBytes = transcriptTailBytes): Promise<T | undefined> {
+  const bytes = tailBytes + 2 * Buffer.byteLength(text)
   for (let read = 1; ; read++) {
-    const tail = await readTail(path, bytes).catch(() => "")
+    const tail = await readTail(path, bytes).catch(() => Buffer.alloc(0))
     const found = find(tail, read === reads)
     if (found !== undefined || read === reads) return found
     await new Promise(resolve => setTimeout(resolve, readMs))
   }
 }
 
-async function readTail(path: string, bytes: number): Promise<string> {
+async function readTail(path: string, bytes: number): Promise<Buffer> {
   const file = await open(path, "r")
   try {
     const {size} = await file.stat()
     const length = Math.min(size, bytes)
     const buffer = Buffer.alloc(length)
     const {bytesRead} = await file.read(buffer, 0, length, size - length)
-    return buffer.toString("utf8", 0, bytesRead)
+    return buffer.subarray(0, bytesRead)
   } finally {
     await file.close()
   }

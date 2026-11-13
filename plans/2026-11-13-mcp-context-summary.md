@@ -104,7 +104,7 @@ Choices:
 12. One line, when the summary is in place (Q1 A, answered by the user). The summary is not posted (Q2 A, answered by the user).
 13. `hooks/hooks.json` gets a PostCompact entry without a matcher: `node "${CLAUDE_PLUGIN_ROOT}/dist/cli.js" hook turn`, with `async: true`, as the other turn hooks.
 14. For an input with `agent_id`, the hook sends nothing.
-15. Otherwise the hook reads the transcript's tail of 4 MiB, up to 120 times, 1 s apart. The boundary is the last entry of type `system` and subtype `compact_boundary`, without `isSidechain: true`, whose timestamp is no earlier than 60 s before the hook started (`at`). The tail is four times the largest batch of fact 7 since 2.1.283. The 2 minutes cover the delays of fact 6. A subagent's compaction before 2.1.323 costs at most 120 reads, about 5 s of processor time over the 2 minutes (fact 11).
+15. Otherwise the hook reads the transcript's tail of 4 MiB, up to 120 times, 1 s apart. The boundary is the last entry of type `system` and subtype `compact_boundary`, without `isSidechain: true`, whose timestamp is no earlier than 60 s before the hook started (`at`) and, after review round 1, no later than 5 s after it: Claude Code creates the boundary before it runs the PostCompact hooks (fact 3), so the hook of a subagent's compaction before 2.1.323 does not take the boundary of a compaction of the session that ends during its reads. A tail is decoded only when its bytes contain `"compact_boundary"`. The tail is four times the largest batch of fact 7 since 2.1.283. The 2 minutes cover the delays of fact 6. A subagent's compaction before 2.1.323 costs at most 120 reads, about 5 s of processor time over the 2 minutes (fact 11).
 16. Without such a boundary after the reads, the hook sends nothing. So before 2.1.323 a subagent's compaction posts nothing (facts 3 and 8).
 17. The line is `⚙️ Context summarised `, then `on request` for `trigger: manual` and `automatically` otherwise, then `: PRE → POST tokens` when `preTokens` and `postTokens` are numbers. The numbers are formatted by `Intl.NumberFormat("en", {notation: "compact"})`: 967,558 is `968K`, 4,595 is `4.6K` and 850 is `850`. ⚙️ is the user's choice (Q1). The note of another kind of Claude Code's prompt also starts with ⚙️, followed by `Claude Code: `, so the words after the emoji tell the two lines apart.
 18. The hook sends `{id, pid, at, note}` in `POST /turn`. The hub posts `note` unchanged as Claude, without a quote, as the notes of Claude Code's prompts ([hub.ts:195](../packages/simplex-chat-mcp/src/hub.ts#L195)). The hub and the protocol do not change, and the protocol version stays 1. With `ep/mcp-activity`, every note is posted silent, this line included.
@@ -156,7 +156,7 @@ on PostCompact {session_id, transcript_path, agent_id}:
   agent_id set or no transcript_path: nothing
   read the last 4 MiB of the transcript up to 120 times, 1 s apart:
     boundary = the last entry with type system, subtype compact_boundary,
-               without isSidechain, with timestamp >= at - 60 s
+               without isSidechain, with at - 60 s <= timestamp <= at + 5 s
     found: stop
   none: nothing
   note = "⚙️ Context summarised " + (trigger = manual ? "on request" : "automatically")
@@ -193,7 +193,8 @@ Done when:
 #  criterion                                                                                checked by
 1  a compaction of the main conversation gives its line, with the trigger and token counts  unit: hook
 2  the line is sent after the boundary is written, also 30 reads after the hook started     unit: hook
-3  an input with agent_id, a sidechain boundary or one older than 60 s sends nothing         unit: hook
+3  an input with agent_id, a sidechain boundary, one older than 60 s or one created more     unit: hook
+   than 5 s after the hook started sends nothing
 4  Claude posts the line in the session's group, without a quote                            e2e: service
 5  the SessionStart hook of a compaction sends no model                                     unit: hook
 6  hooks.json runs hook turn for PostCompact, in the background                             unit: plugin

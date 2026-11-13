@@ -417,7 +417,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await midTurnNoted
   const compacted = received(alice.chat, message("⚙️ Context summarised on request: 399K → 25K tokens", "Claude"))
   appendFileSync(transcript, `${JSON.stringify({type: "system", subtype: "compact_boundary", content: "Conversation compacted", timestamp: new Date().toISOString(), compactMetadata: {trigger: "manual", preTokens: 398_983, postTokens: 25_399}})}\n`)
-  await hook({hook_event_name: "PostCompact", transcript_path: transcript, trigger: "manual", compact_summary: "Summary."})
+  await turn(JSON.stringify({session_id: five, hook_event_name: "PostCompact", transcript_path: transcript, trigger: "manual", compact_summary: "Summary."}), {}, client, undefined, Date.now())
   await compacted
   const [lint] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Run the linter")
   await until(() => attached.length === 3)
