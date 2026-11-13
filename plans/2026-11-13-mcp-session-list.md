@@ -1,6 +1,6 @@
 # SimpleX MCP: the list of sessions in the Main group
 
-Status: plan for review. The user answered Q1 A and Q2 B on 2026-11-13; decisions 16 and 17 apply Q2 B. Code references: master `97bbbd9ac`. Claude Code references: version 2.1.322 and its binary at the byte offsets given, and the 27 session records of Claude Code 2.1.260 to 2.1.322 on this machine, read on 2026-11-13. Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
+Status: approved by the user on 2026-11-13 and implemented on `ep/mcp-session-list`, on top of `ep/mcp-activity`. The user answered Q1 A and Q2 B on 2026-11-13; decisions 16 and 17 apply Q2 B. Code references: master `97bbbd9ac`. Claude Code references: version 2.1.322 and its binary at the byte offsets given, and the 27 session records of Claude Code 2.1.260 to 2.1.322 on this machine, read on 2026-11-13. Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
 
 ## 1. Goal
 
@@ -231,19 +231,25 @@ src/protocol.ts    SessionRequest                 + record?: string
 src/session.ts     startSession                   the request gets record (decision 19)
 src/service.ts     SessionLike                    + record?: string
                    onSession                      agent.record = request.record
-src/hub.ts         constants                      listCheck = 2 s
-                   Session                        + record, + claude: the last status read; readRecord(); line(running)
+src/hub.ts         constants                      listCheckMs = 2 s; claudeStates, unknownState
+                   Session                        + record, + claudeStatus: the last status read; readRecord();
+                                                  stateLine(), the line of a running session, section 2, or none;
+                                                  attached, a private getter
+                   Hub                            + stopped made public, read by Session.attached; + listTimer, listing
                    Hub.open                       starts the list timer, unref'd
                    Hub.showSessions, new          reads the records of the attached sessions; main.showList(sessionsText)
                    Hub.sessionsText(quote?)       the text of decisions 16 and 17, fitted with the quote when given;
                                                   "No sessions." without any session
                    Hub.stop                       clears the timer; waits for a running render; the last render before
                                                   the cores close
-                   stateLine, new function        the line of a running session, section 2
+                   notRunningLine, new function   the ⚪ line with the first K names and the count of the rest
 src/main-group.ts  constants                      listKey simplexMcpList, listAge 23 h
                    SessionGroups.sessionsText     + the quote of the command, for /sessions
                    MainGroup                      + list {item, at} from the custom data; + shown text
-                   MainGroup.showList, new        decisions 22-25, serialized with the group's events
+                   MainGroup.onMessage, command   the command's content passed as the quote of /sessions
+                   MainGroup.showList, new        decisions 22-25, serialized with the group's events; replaceList,
+                                                  postList; isRefusedEdit, listOf
+                   MainGroup.post                 returns the item's ID; an optional priority
                    MainGroup.replace              the list cleared with the old group
 ```
 
