@@ -37,7 +37,7 @@ struct ChatPreviewView: View {
                 }
                 .padding(.leading, 4)
 
-                let chatTs = if let cItem {
+                let chatTs = if let cItem, cItem.content != .chatBanner {
                     cItem.meta.itemTs
                 } else {
                     chat.chatInfo.chatTs

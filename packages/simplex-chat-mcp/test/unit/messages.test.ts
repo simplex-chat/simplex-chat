@@ -6,9 +6,9 @@ import {basename, dirname, join} from "path"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
-import {Action, Actions, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
+import {Action, Actions, ConnectAction, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
-import {ChatItemsWatch, Collected, awaitResponses, toMessage} from "../../src/messages"
+import {Changes, ChatItemsWatch, Collected, awaitResponses, nextChange, quoteLine, replyText, toMessage, toReplyTo} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -40,9 +40,78 @@ describe("message fields", () => {
       time: "2026-10-17T11:00:00Z",
       text: "Ridgecrest, $142",
       new: true,
-      reply_to: {chat: "#15", item: 30},
+      reply_to: {chat: "#15", item: 30, text: ""},
       mentions_me: true,
     })
+  })
+
+  it("describes the message a reply quotes: its ID when the chat has it, its sender by the direction of the quote, its type when it is not a text, and the first line of its text, cut at 200 characters", () => {
+    const bob = member(44, "Bob")
+    const trail = groupChat(group(15, "Trail", member(1, "Scout")))
+    const directory = direct(contact(4, "SimpleX Directory"))
+    const replyTo = (quotedItem: object, chatInfo: T.ChatInfo = trail) => {
+      const chatDir: T.CIDirection = chatInfo.type === "direct" ? {type: "directRcv"} : {type: "groupRcv", groupMember: bob}
+      return toMessage(chatInfo, {...item(31, "ok", chatDir), quotedItem: {sentAt: "", ...quotedItem}} as unknown as T.ChatItem, {name: "Scout"}, noRejections, data).reply_to
+    }
+    const fromBob = {type: "groupRcv", groupMember: bob}
+    const text = (value: string): object => ({type: "text", text: value})
+    expect(replyTo({chatDir: fromBob, itemId: 30, content: text("Which trail is shorter?")})).toEqual({chat: "#15", item: 30, from: "Bob", text: "Which trail is shorter?"})
+    expect(replyTo({chatDir: {type: "groupSnd"}, itemId: 29, content: text("Ridge or valley?\nPick one.")})).toEqual({chat: "#15", item: 29, from: "Scout", text: "Ridge or valley?…"})
+    expect(replyTo({chatDir: fromBob, content: text(`  ${"a".repeat(200)}  `)})).toEqual({chat: "#15", from: "Bob", text: "a".repeat(200)})
+    expect(replyTo({chatDir: fromBob, content: text("a".repeat(201))})).toEqual({chat: "#15", from: "Bob", text: `${"a".repeat(200)}…`})
+    expect(replyTo({chatDir: {type: "channelRcv"}, content: text("Meet at 9")})).toEqual({chat: "#15", text: "Meet at 9"})
+    expect(replyTo({chatDir: fromBob, itemId: 28, content: {type: "link", text: "See https://simplex.chat", preview: {uri: "https://simplex.chat", title: "SimpleX", description: "", image: ""}}})).toEqual({chat: "#15", item: 28, from: "Bob", type: "link", text: "See https://simplex.chat"})
+    expect(replyTo({chatDir: fromBob, itemId: 27, content: {type: "image", text: "Trail map\nnear the gate", image: ""}})).toEqual({chat: "#15", item: 27, from: "Bob", type: "image", text: "Trail map…"})
+    expect(replyTo({chatDir: fromBob, itemId: 26, content: {type: "image", text: "IMG_2041.jpg", image: ""}})).toEqual({chat: "#15", item: 26, from: "Bob", type: "image", text: "IMG_2041.jpg"})
+    expect(replyTo({chatDir: fromBob, itemId: 25, content: {type: "video", text: "", image: "", duration: 5}})).toEqual({chat: "#15", item: 25, from: "Bob", type: "video", text: ""})
+    expect(replyTo({chatDir: fromBob, itemId: 24, content: {type: "voice", text: "", duration: 3}})).toEqual({chat: "#15", item: 24, from: "Bob", type: "voice", text: ""})
+    expect(replyTo({chatDir: fromBob, itemId: 23, content: {type: "file", text: "build.log"}})).toEqual({chat: "#15", item: 23, from: "Bob", type: "file", text: "build.log"})
+    expect(replyTo({chatDir: {type: "directRcv"}, itemId: 20, content: text("found 3")}, directory)).toEqual({chat: "@4", item: 20, from: "SimpleX Directory", text: "found 3"})
+    expect(replyTo({chatDir: {type: "directSnd"}, itemId: 19, content: text("shoes")}, directory)).toEqual({chat: "@4", item: 19, from: "Scout", text: "shoes"})
+  })
+
+  it("writes the quote line of each type: the text, or the type with the text, or the type alone, cut at 200 characters with the type included, and uses the file name for an empty text when it is given", () => {
+    const trail = groupChat(group(15, "Trail"))
+    const line = (content: object, fileName?: string): string => quoteLine(toReplyTo(trail, {content: content as T.MsgContent, fileName}, {name: "Scout"}))
+    expect(line({type: "text", text: "Fixed: the build passes."})).toBe("> Fixed: the build passes.")
+    expect(line({type: "text", text: "I want to use `Bash`\n`ls`"})).toBe("> I want to use `Bash`…")
+    expect(line({type: "link", text: "See https://simplex.chat", preview: {}})).toBe("> link: See https://simplex.chat")
+    expect(line({type: "image", text: "Trail map", image: ""})).toBe("> image: Trail map")
+    expect(line({type: "video", text: "", image: "", duration: 5})).toBe("> video")
+    expect(line({type: "voice", text: "", duration: 3})).toBe("> voice")
+    expect(line({type: "file", text: "build.log"})).toBe("> file: build.log")
+    expect(line({type: "image", text: "", image: ""}, "IMG_2041.jpg")).toBe("> image: IMG_2041.jpg")
+    expect(line({type: "unknown", tag: "poll", text: "Pick one", json: {}})).toBe("> Pick one")
+    expect(line({type: "file", text: "a".repeat(194)})).toBe(`> file: ${"a".repeat(194)}`)
+    expect(line({type: "file", text: "a".repeat(195)})).toBe(`> file: ${"a".repeat(194)}…`)
+  })
+
+  it("ends the quote at every line break, keeps a caption after a blank first line, cuts between grapheme clusters without a space before …, and writes > alone for an empty quote", () => {
+    const trail = groupChat(group(15, "Trail"))
+    const line = (content: object): string => quoteLine(toReplyTo(trail, {content: content as T.MsgContent}, {name: "Scout"}))
+    for (const lineBreak of ["\n", "\r\n", ...[0x0d, 0x0b, 0x0c, 0x85, 0x2028, 0x2029].map(code => String.fromCharCode(code))]) {
+      expect(line({type: "text", text: `Fixed.${lineBreak}Tests pass.`})).toBe("> Fixed.…")
+      expect(replyText(`Fixed.${lineBreak}Tests pass.`)).toBe("Fixed.…")
+    }
+    expect(line({type: "image", text: "\nTrail map", image: ""})).toBe("> image: Trail map")
+    expect(line({type: "image", text: `${String.fromCharCode(0x2028)}Trail map`, image: ""})).toBe("> image: Trail map")
+    const family = String.fromCodePoint(0x1f468, 0x200d, 0x1f469, 0x200d, 0x1f467)
+    expect(replyText(`${"a".repeat(199)}${family}b`)).toBe(`${"a".repeat(199)}${family}…`)
+    expect(replyText(`${"a".repeat(198)}${family}`)).toBe(`${"a".repeat(198)}${family}`)
+    expect(replyText(`${"a".repeat(199)} bcd`)).toBe(`${"a".repeat(199)}…`)
+    expect(line({type: "unknown", tag: "poll", text: "", json: {}})).toBe(">")
+  })
+
+  it("removes the bidi controls U+202A-U+202E and U+2066-U+2069 from the quote, also at its edges, and keeps the joiners of an emoji sequence", () => {
+    const trail = groupChat(group(15, "Trail"))
+    const line = (content: object): string => quoteLine(toReplyTo(trail, {content: content as T.MsgContent}, {name: "Scout"}))
+    for (const control of [0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069].map(code => String.fromCharCode(code))) {
+      expect(line({type: "text", text: `abc${control}def`})).toBe("> abcdef")
+      expect(replyText(`${control} Fixed.${control}`)).toBe("Fixed.")
+      expect(line({type: "image", text: control, image: ""})).toBe("> image")
+    }
+    const family = String.fromCodePoint(0x1f468, 0x200d, 0x1f469, 0x200d, 0x1f467)
+    expect(replyText(`${family}${String.fromCharCode(0x202e)}`)).toBe(family)
   })
 
   it("describes direct, channel and sent messages", () => {
@@ -94,6 +163,33 @@ describe("message fields", () => {
     expect(toMessage(chatInfo, prohibited, self, noRejections, data).file).toEqual({name: "report.pdf", size: 2400000, type: "file", status: "failed", error: "Large file! The file is above the limit of 1048576 bytes for its sender. Sender's badge expired."})
     expect(toMessage(chatInfo, fileItem(31, {type: "file", text: "report"}, {type: "sndComplete"}, {chatDir: {type: "directSnd"}, fileSource: {filePath: "/home/alice/report.pdf"}}), self, noRejections, data)).not.toHaveProperty("file")
     expect(toMessage(chatInfo, item(32, "no file"), self, noRejections, data)).not.toHaveProperty("file")
+  })
+})
+
+describe("next change", () => {
+  it("waits with no timer for a change or the signal when no time limit is given", async () => {
+    jest.useFakeTimers()
+    const changes = new Changes()
+    const changed = nextChange(changes, signal().call.signal)
+    expect(jest.getTimerCount()).toBe(0)
+    changes.notify()
+    expect(await changed).toBe(true)
+    const {controller, call} = signal()
+    const aborted = nextChange(changes, call.signal)
+    expect(jest.getTimerCount()).toBe(0)
+    controller.abort()
+    expect(await aborted).toBe(false)
+  })
+
+  it("ends at the time limit when one is given", async () => {
+    jest.useFakeTimers()
+    let finished = false
+    const waiting = nextChange(new Changes(), signal().call.signal, 1_000).then(result => (finished = result))
+    await jest.advanceTimersByTimeAsync(999)
+    expect(finished).toBe(false)
+    await jest.advanceTimersByTimeAsync(1)
+    expect(await waiting).toBe(true)
+    expect(jest.getTimerCount()).toBe(0)
   })
 })
 
@@ -185,9 +281,9 @@ function textOf(result: CallToolResult | undefined): string {
   return (result!.content[0] as {text: string}).text
 }
 
-function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
+function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined, session?: number): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, actions.mode), watch}
+  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, actions.mode, session), watch}
 }
 
 describe("receive", () => {
@@ -327,6 +423,36 @@ describe("receive", () => {
     const second = (await tools.call("receive", {chat: "@4", limit: 1}, signal().call))!.structuredContent as {messages: {item: number}[]; more: number}
     expect(second).toMatchObject({messages: [{item: 23}], more: 0})
   })
+
+  it("names the agent in a quote of its own message by its name in the chat, the incognito name included", async () => {
+    const chat = new FakeChat()
+    const incognito = {...contact(4, "Ridgeline"), activeConn: {connId: 204, connStatus: {type: "ready"}, customUserProfileId: 77}} as unknown as T.Contact
+    const quoting = (itemId: number, chatDir: T.CIDirection, quotedDir: object, quotedText: string): T.ChatItem =>
+      ({...item(itemId, "The ridge one", chatDir), quotedItem: {chatDir: quotedDir, itemId: itemId - 1, sentAt: "", content: {type: "text", text: quotedText}}}) as unknown as T.ChatItem
+    chat.chats.set("@4", {chatInfo: direct(incognito), items: [quoting(21, {type: "directRcv"}, {type: "directSnd"}, "Which trail is shorter?")]})
+    chat.chats.set("@5", {chatInfo: direct(contact(5, "Switchback")), items: [quoting(31, {type: "directRcv"}, {type: "directSnd"}, "Any news?")]})
+    chat.chats.set("#15", {chatInfo: groupChat(group(15, "Trail", member(1, "Quiet Fox", T.GroupMemberRole.Member))), items: [quoting(41, {type: "groupRcv", groupMember: member(44, "Bob")}, {type: "groupSnd"}, "Meet at 9?")]})
+    chat.responses.set("/_info @4", {type: "contactInfo", user, contact: incognito, customUserProfile: {displayName: "Quiet Fox"}})
+    const {tools} = agentTools(chat)
+    const replyTo = async (ref: string): Promise<unknown> => ((await tools.call("receive", {chat: ref}, signal().call))!.structuredContent as {messages: {reply_to?: object}[]}).messages[0].reply_to
+    expect(await replyTo("@4")).toEqual({chat: "@4", item: 20, from: "Quiet Fox", text: "Which trail is shorter?"})
+    expect(await replyTo("@5")).toEqual({chat: "@5", item: 30, from: "agent", text: "Any news?"})
+    expect(await replyTo("#15")).toEqual({chat: "#15", item: 40, from: "Quiet Fox", text: "Meet at 9?"})
+  })
+
+  it("names the agent by its profile name, logs the error and returns the messages it marked read, when the incognito name can't be read", async () => {
+    const chat = new FakeChat()
+    const incognito = {...contact(6, "Ridgeline"), activeConn: {connId: 206, connStatus: {type: "ready"}, customUserProfileId: 78}} as unknown as T.Contact
+    const reply = {...item(21, "The ridge one", {type: "directRcv"}), quotedItem: {chatDir: {type: "directSnd"}, itemId: 20, sentAt: "", content: {type: "text", text: "Which trail?"}}} as unknown as T.ChatItem
+    chat.chats.set("@6", {chatInfo: direct(incognito), items: [reply]})
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
+    const {tools} = agentTools(chat)
+    const result = (await tools.call("receive", {chat: "@6"}, signal().call))!.structuredContent as {messages: {item: number; reply_to?: object}[]}
+    expect(result.messages).toMatchObject([{item: 21, reply_to: {chat: "@6", item: 20, from: "agent", text: "Which trail?"}}])
+    expect(chat.commands).toContain("/_read chat items @6 21")
+    expect(errors).toEqual([expect.stringMatching(/^incognito name in @6: /)])
+  })
 })
 
 describe("send", () => {
@@ -447,6 +573,26 @@ describe("send", () => {
     expect(finished).toBe(false)
     await jest.advanceTimersByTimeAsync(1)
     expect((await sending)!.structuredContent).toMatchObject({status: "done", responses: [], more: 0})
+  })
+
+  it("keeps actions of two sessions apart", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Bob")), items: []})
+    const actions = actionsWith("requests", fakeHooks())
+    const first = agentTools(chat, actions, undefined, 1).tools
+    const second = agentTools(chat, actions, undefined, 2).tools
+    const calls = [signal(), signal()]
+    const sending = [first, second].map((tools, i) => tools.call("send", {chat: "@4", text: "hello"}, calls[i].call))
+    await settled()
+    expect(actions.all().map(({session}) => session)).toEqual([1, 2])
+    for (const tools of [first, second]) {
+      const {actions: listed} = (await tools.call("list", {}, signal().call))!.structuredContent as {actions: {action: number}[]}
+      expect(listed.length).toBe(1)
+    }
+    const {actions: listedFirst} = (await first.call("list", {}, signal().call))!.structuredContent as {actions: {action: number}[]}
+    expect(listedFirst.map(({action}) => action)).toEqual([actions.all()[0].n])
+    calls.forEach(({controller}) => controller.abort())
+    await Promise.all(sending)
   })
 
   it("creates no action for a call aborted before it", async () => {
@@ -917,6 +1063,50 @@ describe("connect", () => {
     expect(action).toMatchObject({state: "done", chat: "@12", connected: true})
     tools.onContactConnected({type: "contactConnected", user, contact: {...contact(13, "Other"), activeConn: {connId: 300, connStatus: {type: "ready"}}} as unknown as T.Contact})
     expect(action.chat).toBe("@12")
+  })
+
+  it("completes on a connection event only the connect of the session whose core sent it, when contact IDs are equal", async () => {
+    jest.useFakeTimers()
+    const linkData = {profile: {displayName: "Ridgeline", fullName: ""}, business: false}
+    const started = {...contact(8, "Ridgeline"), activeConn: {connId: 208, connStatus: {type: "joined"}}} as unknown as T.Contact
+    const connected = {...contact(8, "Ridgeline"), activeConn: {connId: 208, connStatus: {type: "ready"}}} as unknown as T.Contact
+    const sessionChat = (): FakeChat => {
+      const chat = new FakeChat()
+      chat.chats.set("@8", {chatInfo: direct(started), items: []})
+      chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok", contactSLinkData_: linkData}}))
+      chat.responses.set(`/_prepare contact 1 ${link} ${JSON.stringify(linkData)}`, {type: "newPreparedChat", chat: {chatInfo: direct(started), chatItems: []}})
+      chat.responses.set(`/_connect contact @8 json {"type":"text","text":"hello"}`, {type: "startedConnectionToContact", contact: started})
+      return chat
+    }
+    const fake = fakeHooks()
+    const actions = actionsWith("requests", fake)
+    const first = agentTools(sessionChat(), actions, undefined, 1)
+    const chat2 = sessionChat()
+    const second = agentTools(chat2, actions, undefined, 2)
+    fake.hooks.perform = (action, signal) => (action.session === 1 ? first : second).tools.perform(action, signal)
+    const calls = [signal(), signal()]
+    const input = {target: link, message: "hello"}
+    const connecting = [first.tools.call("connect", input, calls[0].call), second.tools.call("connect", input, calls[1].call)]
+    await jest.advanceTimersByTimeAsync(0)
+    const [action1, action2] = [actions.get(1) as ConnectAction, actions.get(2) as ConnectAction]
+    expect([action1.session, action2.session]).toEqual([1, 2])
+    actions.approve(action1, "Alice")
+    actions.approve(action2, "Alice")
+    await jest.advanceTimersByTimeAsync(0)
+    expect([action1, action2]).toMatchObject([{state: "performing", conn: {contact: 8}}, {state: "performing", conn: {contact: 8}}])
+    chat2.chats.set("@8", {chatInfo: direct(connected), items: []})
+    second.tools.onContactConnected({type: "contactConnected", user, contact: connected})
+    second.watch.deliver([chat2.addItem("@8", item(41, "Session 2 only."))])
+    await jest.advanceTimersByTimeAsync(0)
+    expect(action2).toMatchObject({connected: true, chat: "@8"})
+    expect(action2.messages.items.map(({chatItem}) => chatItem.meta.itemId)).toEqual([41])
+    expect(action1).toMatchObject({state: "performing", chat: "@8"})
+    expect(action1.connected).toBeUndefined()
+    expect(action1.stopCollecting).toBeUndefined()
+    expect(action1.messages.items).toEqual([])
+    for (const {controller} of calls) controller.abort()
+    expect(await Promise.all(connecting)).toEqual([undefined, undefined])
+    await actions.stop()
   })
 
   it("returns at the end of wait, counted from the approval, when no reply to message arrives", async () => {

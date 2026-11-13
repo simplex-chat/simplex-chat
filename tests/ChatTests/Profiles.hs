@@ -30,7 +30,7 @@ import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePu
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt)
 import Simplex.Chat.Library.Internal (encodeShortLinkData, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage')
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, LinkPreview (..), MsgChatLink (..), MsgContent (..), encodeChatBinding)
+import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, LinkPreview (LinkPreview), MsgChatLink (..), MsgContent (..), encodeChatBinding)
 import Simplex.Chat.Store.Groups (getGroupMembers)
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
 import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), ImageData (..), Profile (..), GroupRejectionReason (..), User (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)

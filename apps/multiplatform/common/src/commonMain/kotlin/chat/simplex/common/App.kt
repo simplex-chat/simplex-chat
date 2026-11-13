@@ -91,7 +91,7 @@ fun MainScreen() {
     showChatDatabaseError = chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null
   }
   var showAdvertiseLAAlert by remember { mutableStateOf(false) }
-  LaunchedEffect(showAdvertiseLAAlert) {
+  LaunchedEffect(showAdvertiseLAAlert, chatModel.chatRunning.value != null) {
     if (
       !chatModel.controller.appPrefs.laNoticeShown.get()
       && !appPrefs.performLA.get()
@@ -99,6 +99,7 @@ fun MainScreen() {
       && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
       && chatModel.chats.size > 3
       && chatModel.activeCallInvitation.value == null
+      && !AlertManager.shared.hasAlertsShown()
     ) {
       AppLock.showLANotice(ChatModel.controller.appPrefs.laNoticeShown) }
   }
