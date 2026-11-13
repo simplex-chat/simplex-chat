@@ -356,8 +356,8 @@ unknown values                              skipped
 
 ```
 row padding        top: topGap; with an avatar topGap + terminalHeadingBottomGap, so the avatar is that far below the row above
-overhang           the avatar's part above and below the name line: (avatarSize − the body line height) / 2,
-                   at least 0; 0 in a row without an avatar
+avatarBelowNameLine the avatar's part above and below the name line: (avatarSize − the body line height) / 2,
+                   negative when the name line is taller; 0 in a row without an avatar
 sender row         HStack, centred: the avatar column and the name; as tall as the taller of the two
   avatar column    groups and channels: avatarSize + chatItemTextPadding, with the sender avatar
                    terminalAvatarOvershoot (2pt) before the ink of flat letters of the message text: chatItemTextPadding
@@ -372,9 +372,11 @@ sender row         HStack, centred: the avatar column and the name; as tall as t
   name             name and badge in the body text style, semibold (primary for own items, secondary otherwise)
                    role label in the body text style, medium, secondary, 15pt after the name; line box of the body font
                    start padding chatItemTextPadding
-  below            terminalParagraphGap when the content starts with a card (contentStartsWithCard: terminalItemStartsWithCard),
-                   otherwise 0, less the overhang, so the content starts at the bottom of the name line and the avatar
-                   overhangs its first line
+  below            contentGap below the name line, less the avatar's part below it (at least 0), as the bottom padding
+contentGap         terminalParagraphGap when the content starts with a card (contentStartsWithCard: terminalItemStartsWithCard),
+                   otherwise 0; with an avatar, at least terminalAvatarBottomGap (6pt) from the avatar's bottom to the card's
+                   top, or to the capitals of the first line (the top of the body line box, ascender less cap height)
+                   (user, 2026-11-13: "looks like we need 6dp")
 content            from the row start, below the name line
 selection          SelectedChatItem 8pt from the start; row moved by 28pt; selected row tint primary 10%
 media width        terminalMediaWidth(listWidth less the selection offset and a go-to button): that width less two text
