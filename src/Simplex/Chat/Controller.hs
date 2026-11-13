@@ -72,7 +72,7 @@ import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
 import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
-import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo, retryTransaction)
+import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg, Worker)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
@@ -1828,7 +1828,7 @@ withStorePriority priority action = do
 withStoreIsolation' :: IsolationLevel -> (DB.Connection -> IO a) -> CM a
 withStoreIsolation' isolation action = do
   ChatController {chatStore} <- ask
-  liftIOEither $ retryTransaction 3 (withTransactionIsolation chatStore isolation $ fmap Right . action) `catchOwn'` handleDBErrors
+  liftIOEither $ withTransactionIsolation chatStore isolation (fmap Right . action) `catchOwn'` handleDBErrors
 
 withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do
