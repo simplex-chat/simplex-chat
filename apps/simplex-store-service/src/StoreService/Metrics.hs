@@ -40,6 +40,7 @@ import Network.HTTP.Types (hContentType, status200)
 import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges.Code (maxNameLength)
+import Simplex.Chat.Badges.Types (BadgePurchaseStatus (..), SubscriptionState (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (raceAny_, tshow)
@@ -57,6 +58,7 @@ import StoreService.Web.Server (webSettings)
 
 data MetricsEnv = MetricsEnv
   { meStore :: DBStore,
+    meProviders :: [Text],
     meListedOk :: TVar (Map Text UTCTime),
     meWebhookAt :: TVar (Map Text UTCTime),
     -- | @Nothing@ when the ini has no @[names]@ section.
@@ -142,17 +144,28 @@ runCensus ns v = forever $ do
   threadDelay censusInterval
 
 -- | Open invoices come as (provider, open, overdue).
-serviceText :: [(Text, Int, Int)] -> BadgeCounts -> ProviderTimes -> Text
-serviceText invoices BadgeCounts {bcPurchases, bcSubscriptions, bcOpenCodes} ProviderTimes {ptListedOk, ptWebhookAt} =
+serviceText :: [Text] -> [(Text, Int, Int)] -> BadgeCounts -> ProviderTimes -> Text
+serviceText providers invoices BadgeCounts {bcPurchases, bcSubscriptions, bcOpenCodes} ProviderTimes {ptListedOk, ptWebhookAt} =
   T.concat
-    [ gauge "simplex_store_invoices_open" "Open invoices by provider" [labelled "provider" p (value n) | (p, n, _) <- invoices],
-      gauge "simplex_store_invoices_overdue" "Open invoices past their expiry and its grace with no money received, which the poller expires once the provider answers" [labelled "provider" p (value n) | (p, _, n) <- invoices],
+    [ gauge "simplex_store_invoices_open" "Open invoices by provider" [labelled "provider" p (value n) | (p, (n, _)) <- invoiceCounts],
+      gauge "simplex_store_invoices_overdue" "Open invoices past their expiry and its grace with no money received, which the poller expires once the provider answers" [labelled "provider" p (value n) | (p, (_, n)) <- invoiceCounts],
       gauge "simplex_store_provider_list_ok_timestamp_seconds" "When the poller last listed the provider's open invoices successfully" [labelled "provider" p (timestamp t) | (p, t) <- M.toList ptListedOk],
       gauge "simplex_store_provider_webhook_timestamp_seconds" "When the provider last delivered a webhook that verified" [labelled "provider" p (timestamp t) | (p, t) <- M.toList ptWebhookAt],
-      gauge "simplex_store_badges_purchases" "Badge purchases by status" [labelled "status" s (value n) | (s, n) <- bcPurchases],
-      gauge "simplex_store_badges_subscriptions" "App store subscriptions paying for badges, by state" [labelled "state" s (value n) | (s, n) <- bcSubscriptions],
+      gauge "simplex_store_badges_purchases" "Badge purchases by status" [labelled "status" s (value n) | (s, n) <- withZeros purchaseStatuses bcPurchases],
+      gauge "simplex_store_badges_subscriptions" "App store subscriptions paying for badges, by state" [labelled "state" s (value n) | (s, n) <- withZeros subscriptionStates bcSubscriptions],
       gauge "simplex_store_badges_codes_open" "Badge codes paid or free, not revoked or expired, with redemptions left" (Just $ value bcOpenCodes)
     ]
+  where
+    invoiceCounts = M.toList $ M.union (M.fromList [(p, (n, overdue)) | (p, n, overdue) <- invoices]) (M.fromList [(p, (0, 0)) | p <- providers])
+
+withZeros :: [Text] -> [(Text, Int)] -> [(Text, Int)]
+withZeros known counts = M.toList $ M.union (M.fromList counts) (M.fromList [(k, 0) | k <- known])
+
+purchaseStatuses :: [Text]
+purchaseStatuses = map textEncode [PSAcquiring, PSIssued, PSSuperseded, PSFailed]
+
+subscriptionStates :: [Text]
+subscriptionStates = map textEncode [SSRenewing, SSCancelled, SSBillingRetry, SSEnded]
 
 namesText :: NamesCounts -> ChainRead -> Text
 namesText NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit} ChainRead {crFunds, crHead, crTerms, crReadAt, crOk} =
@@ -234,7 +247,7 @@ censusText CensusRead {crCensus, crFailures} =
                 <> line "_count" level (length lengths)
 
 metricsApp :: MetricsEnv -> TVar ChainRead -> TVar CensusRead -> Application
-metricsApp MetricsEnv {meStore, meListedOk, meWebhookAt, meNames} v census req respond = case pathInfo req of
+metricsApp MetricsEnv {meStore, meProviders, meListedOk, meWebhookAt, meNames} v census req respond = case pathInfo req of
   ["metrics"] -> only "GET" req respond $ do
     now <- getCurrentTime
     (invoices, badges, names) <- withTransaction meStore $ \db ->
@@ -242,7 +255,7 @@ metricsApp MetricsEnv {meStore, meListedOk, meWebhookAt, meNames} v census req r
     times <- ProviderTimes <$> readTVarIO meListedOk <*> readTVarIO meWebhookAt
     chain <- readTVarIO v
     counted <- readTVarIO census
-    let text = serviceText invoices badges times <> foldMap (\n -> namesText n chain <> censusText counted) names
+    let text = serviceText meProviders invoices badges times <> foldMap (\n -> namesText n chain <> censusText counted) names
     respond $ responseLBS status200 [(hContentType, "text/plain; version=0.0.4; charset=utf-8")] $ LB.fromStrict $ encodeUtf8 text
   _ -> respond notFound
 

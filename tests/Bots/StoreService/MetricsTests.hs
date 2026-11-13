@@ -26,7 +26,7 @@ import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64, Word8)
 import Network.HTTP.Client (Response, responseBody, responseHeaders)
 import Network.HTTP.Types (hContentType)
-import Simplex.Chat.Badges.Types (SubscriptionState (..))
+import Simplex.Chat.Badges.Types (BadgePurchaseStatus (..), SubscriptionState (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -51,7 +51,7 @@ import Test.Hspec
 storeMetricsTests :: Spec
 storeMetricsTests = describe "StoreService: metrics" $ do
   g <- runIO C.newRandom
-  it "counts open invoices by provider with those the sweep would expire, badge purchases by status, subscriptions by state and open badge codes, with the providers' last list and webhook" testServiceCounts
+  it "counts open invoices by provider with those the sweep would expire, badge purchases by status, subscriptions by state and open badge codes, with the providers' last list and webhook, and 0 for a provider, status or state without rows" testServiceCounts
   it "counts name orders by phase, the oldest change among the orders the service moves on, pending transactions by nonce, open name invoices, held balances and pending record edits" testNamesCounts
   it "reads the registrar's funds, the latest block and which terms texts are held, and keeps each part while a read fails" $ testChainRead g
   it "answers GET /metrics with the service metrics alone without names, and with the names metrics while the node holds the chain read" $ testScrape g
@@ -160,11 +160,11 @@ testServiceCounts = withServiceStore $ \st -> do
       db
       "INSERT INTO sx_badge_service_payments (payment_id, invoice_id, provider, amount, currency, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
       ("pay-s" :: Text, "s-funded" :: Text, "stripe" :: Text, price, "usd" :: Text, "pending" :: Text, t0, t0)
-    forM_ [(1, "active"), (2, "active"), (3, "expired")] $ \(n, status) ->
+    forM_ [(1, PSIssued), (2, PSIssued), (3, PSSuperseded)] $ \(n, status) ->
       DB.execute
         db
         "INSERT INTO sx_badge_service_badge_purchases (purchase_key, master_key, initial_badge_type, current_badge_type, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-        (Binary $ digestFixture n, Binary $ digestFixture (n + 100), "supporter" :: Text, "supporter" :: Text, status :: Text, t0, t0)
+        (Binary $ digestFixture n, Binary $ digestFixture (n + 100), "supporter" :: Text, "supporter" :: Text, textEncode status, t0, t0)
     forM_ [("sub-1", SSRenewing), ("sub-2", SSRenewing), ("sub-3", SSBillingRetry)] $ \(paymentId, state) ->
       DB.execute
         db
@@ -178,7 +178,7 @@ testServiceCounts = withServiceStore $ \st -> do
   (invoices, badges) <- withTransaction st $ \db -> (,) <$> openInvoiceCounts db (at 10) <*> badgeCounts db (at 10)
   invoices `shouldBe` [("crypto", 2, 1), ("stripe", 1, 0)]
   let times = ProviderTimes {ptListedOk = M.fromList [("crypto", at 11), ("stripe", at 12)], ptWebhookAt = M.fromList [("stripe", at 13)]}
-  typedSamples (serviceText invoices badges times)
+  typedSamples (serviceText ["crypto", "stripe"] invoices badges times)
     `shouldBe` [ "simplex_store_invoices_open{provider=\"crypto\"} 2",
                  "simplex_store_invoices_open{provider=\"stripe\"} 1",
                  "simplex_store_invoices_overdue{provider=\"crypto\"} 1",
@@ -186,11 +186,25 @@ testServiceCounts = withServiceStore $ \st -> do
                  "simplex_store_provider_list_ok_timestamp_seconds{provider=\"crypto\"} " <> seconds (at 11),
                  "simplex_store_provider_list_ok_timestamp_seconds{provider=\"stripe\"} " <> seconds (at 12),
                  "simplex_store_provider_webhook_timestamp_seconds{provider=\"stripe\"} " <> seconds (at 13),
-                 "simplex_store_badges_purchases{status=\"active\"} 2",
-                 "simplex_store_badges_purchases{status=\"expired\"} 1",
+                 "simplex_store_badges_purchases{status=\"acquiring\"} 0",
+                 "simplex_store_badges_purchases{status=\"failed\"} 0",
+                 "simplex_store_badges_purchases{status=\"issued\"} 2",
+                 "simplex_store_badges_purchases{status=\"superseded\"} 1",
                  "simplex_store_badges_subscriptions{state=\"billingRetry\"} 1",
+                 "simplex_store_badges_subscriptions{state=\"cancelled\"} 0",
+                 "simplex_store_badges_subscriptions{state=\"ended\"} 0",
                  "simplex_store_badges_subscriptions{state=\"renewing\"} 2",
                  "simplex_store_badges_codes_open 2"
+               ]
+  closed <- withTransaction st $ \db -> do
+    DB.execute_ db "UPDATE sx_badge_service_invoices SET status = 'expired' WHERE status = 'open'"
+    openInvoiceCounts db (at 10)
+  closed `shouldBe` []
+  filter ("simplex_store_invoices_" `T.isPrefixOf`) (typedSamples (serviceText ["crypto", "stripe"] closed badges times))
+    `shouldBe` [ "simplex_store_invoices_open{provider=\"crypto\"} 0",
+                 "simplex_store_invoices_open{provider=\"stripe\"} 0",
+                 "simplex_store_invoices_overdue{provider=\"crypto\"} 0",
+                 "simplex_store_invoices_overdue{provider=\"stripe\"} 0"
                ]
   where
     -- open: the first two; then unpaid, used up, revoked, expired
@@ -294,13 +308,14 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   webhookAt <- newTVarIO M.empty
   v <- newTVarIO noChainRead
   census <- newTVarIO noCensusRead
-  let badgesOnly = MetricsEnv {meStore = st, meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing}
+  let badgesOnly = MetricsEnv {meStore = st, meProviders = ["crypto"], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing}
       ns = NamesSource {nsChain = c, nsContracts = ct}
   withApp (metricsApp badgesOnly v census) $ \client -> do
     r <- webGet client "/metrics"
     (statusOf r, lookup hContentType (responseHeaders r)) `shouldBe` (200, Just "text/plain; version=0.0.4; charset=utf-8")
     let samples = typedSamples $ bodyText r
     samples `shouldContain` ["simplex_store_badges_codes_open 0"]
+    samples `shouldContain` ["simplex_store_invoices_open{provider=\"crypto\"} 0"]
     filter (\l -> any (`T.isPrefixOf` l) ["simplex_store_names_", "simplex_names", "simplex_name_"]) samples `shouldBe` []
     statusOf <$> webGet client "/" `shouldReturn` 404
     statusOf <$> webRequestBody client "POST" "/metrics" [] "" `shouldReturn` 405

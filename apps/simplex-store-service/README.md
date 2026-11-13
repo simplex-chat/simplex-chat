@@ -884,12 +884,12 @@ service running.
 
 | Metric | Value |
 |---|---|
-| `simplex_store_invoices_open{provider}` | open invoices of badges and names, by provider: `crypto` (BTCPay) or `stripe` |
+| `simplex_store_invoices_open{provider}` | open invoices of badges and names, by provider: `crypto` (BTCPay) or `stripe`; 0 for a configured provider with none |
 | `simplex_store_invoices_overdue{provider}` | those of them past their expiry and its 10-minute grace with no money received; the poller expires each once the provider answers, so a count that stays up means the provider cannot be read or the invoice cancelled there |
 | `simplex_store_provider_list_ok_timestamp_seconds{provider}` | when the poller last listed the provider's open invoices successfully, every one or two minutes at the default `idle_seconds`; absent until the first list |
 | `simplex_store_provider_webhook_timestamp_seconds{provider}` | when the provider last delivered a webhook that verified; absent until the first one |
-| `simplex_store_badges_purchases{status}` | badge purchases by status |
-| `simplex_store_badges_subscriptions{state}` | App Store and Google Play subscriptions paying for badges, by state: `renewing`, `cancelled`, `billingRetry` or `ended` |
+| `simplex_store_badges_purchases{status}` | badge purchases by status: `acquiring`, `issued`, `superseded` or `failed`, each 0 when it has none |
+| `simplex_store_badges_subscriptions{state}` | App Store and Google Play subscriptions paying for badges, by state: `renewing`, `cancelled`, `billingRetry` or `ended`, each 0 when it has none |
 | `simplex_store_badges_codes_open` | badge codes paid or free, not revoked or expired, with redemptions left |
 | `simplex_store_names_orders{phase}` | name orders in the phase: `unpaid`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed`; the queue is `queued` to `registering`, while `unpaid` also counts closed orders kept for 30 days and `failed` every failed order not tried again |
 | `simplex_store_names_queue_oldest_change_timestamp_seconds` | the last change, in Unix seconds, of the order unchanged longest among those the service moves on: `queued`, `committing`, `registering`, and `committed` with the page's reveal stored; absent when there is none |
