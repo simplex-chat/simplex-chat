@@ -139,6 +139,32 @@ final class SnapshotTests: XCTestCase {
     }
 
     @MainActor
+    func testAppearanceProfileImages() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard (env["SNAPSHOT_SIZE"] ?? "large") == "large" else { return }
+        let dir = layoutCheckDir(env)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        ChatModel.shared.currentUser = User.sampleData
+        for dark in [false, true] {
+            let theme = snapshotTheme(dark)
+            CurrentColors = theme
+            let window = UIWindow(windowScene: windowScene)
+            window.overrideUserInterfaceStyle = dark ? .dark : .light
+            window.rootViewController = UIHostingController(rootView: AppearanceSettings()
+                .environmentObject(ChatModel.shared)
+                .environmentObject(SceneDelegate())
+                .environmentObject(theme.toAppTheme()))
+            window.frame = CGRect(x: 0, y: 0, width: windowScene.screen.bounds.width, height: 1600)
+            window.isHidden = false
+            settle()
+            try XCTUnwrap(windowImage(window).pngData()).write(to: dir.appendingPathComponent("appearance-profile-images-\(dark ? "dark" : "light").png"))
+            window.isHidden = true
+            window.rootViewController = nil
+        }
+    }
+
+    @MainActor
     func testTerminalSpacing() {
         let items = SnapshotFixtures().spacingItems()
         let p = terminalParagraphGap
@@ -340,6 +366,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
         SnapshotScene(UserPicker_Previews.self),
+        SnapshotScene(UserPickerUnread_Previews.self),
         SnapshotScene(VerifyCodeView_Previews.self, device: true),
         SnapshotScene(VersionView_Previews.self),
         SnapshotScene(WhySimpleX_Previews.self),
@@ -529,6 +556,35 @@ struct ClassicParagraphs_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().paragraphs()
     }
+}
+
+struct UserPickerUnread_Previews: PreviewProvider {
+    static var previews: some View {
+        let m = ChatModel()
+        keepingCurrentColors { m.currentUser = User.sampleData }
+        m.users = [
+            UserInfo.sampleData,
+            UserInfo(user: otherUser(2, "bob", image: nil), unreadCount: 3),
+            UserInfo(user: otherUser(3, "carol", image: imageBase64(UIColor(red: 0.55, green: 0.35, blue: 0.75, alpha: 1), CGSize(width: 64, height: 64))), unreadCount: 12)
+        ]
+        return UserPicker(userPickerShown: .constant(true), activeSheet: .constant(nil))
+            .environmentObject(m)
+    }
+
+    private static func otherUser(_ id: Int64, _ name: String, image: String?) -> User {
+        var u = User.sampleData
+        u.userId = id
+        u.activeUser = false
+        u.activeOrder = id
+        u.profile = LocalProfile(profileId: id, displayName: name, fullName: "", image: image, localAlias: "")
+        return u
+    }
+}
+
+private func keepingCurrentColors(_ change: () -> Void) {
+    let colors = CurrentColors
+    change()
+    CurrentColors = colors
 }
 
 private struct ChatRows: View {
@@ -984,9 +1040,12 @@ private final class SnapshotFixtures {
     func deleted(terminal: Bool) -> some View {
         chatRows(teamChat, [
             msg(.groupRcv(groupMember: alice), "Welcome, carol!", -20),
-            ChatItem(chatDir: .groupRcv(groupMember: bob), meta: CIMeta.getSample(id(), ts(-18), "this item is deleted", .rcvRead), content: .rcvDeleted(deleteMode: .cidmBroadcast)),
-            ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-16), "Thanks!", .rcvRead, itemDeleted: .moderated(deletedTs: ts(-15), byGroupMember: alice)), content: .rcvMsgContent(msgContent: .text("Thanks!"))),
-            ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-14), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 1))),
+            msg(.groupRcv(groupMember: bob), "Hi all", -18),
+            ChatItem(chatDir: .groupRcv(groupMember: bob), meta: CIMeta.getSample(id(), ts(-18 + 20.0 / 60), "this item is deleted", .rcvRead), content: .rcvDeleted(deleteMode: .cidmBroadcast)),
+            msg(.groupRcv(groupMember: carol), "Hello", -16),
+            ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-16 + 20.0 / 60), "Thanks!", .rcvRead, itemDeleted: .moderated(deletedTs: ts(-15), byGroupMember: alice)), content: .rcvMsgContent(msgContent: .text("Thanks!"))),
+            msg(.groupRcv(groupMember: carol), "Glad to be here", -14),
+            ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-14 + 20.0 / 60), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 1))),
             ChatItem(chatDir: .groupRcv(groupMember: bob), meta: CIMeta.getSample(id(), ts(-13), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 2, toMsgId: 2))),
             msg(.groupSnd, "ok", -12)
         ], terminal: terminal)
