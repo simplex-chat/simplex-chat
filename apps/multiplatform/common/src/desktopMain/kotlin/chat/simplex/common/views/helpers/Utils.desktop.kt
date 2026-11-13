@@ -19,6 +19,10 @@ import java.util.*
 import javax.imageio.ImageIO
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withContext
 
 private val bStyle = SpanStyle(fontWeight = FontWeight.Bold)
 private val iStyle = SpanStyle(fontStyle = FontStyle.Italic)
@@ -29,6 +33,7 @@ private const val MAX_IMAGE_DIMENSION = 4320
 private const val MAX_THUMBNAIL_DIMENSION = 1000
 // Source images larger than this on either side are rejected (bounds the decoder's per-scanline buffer)
 private const val MAX_SOURCE_IMAGE_DIMENSION = 16384
+private const val MAX_SOURCE_IMAGE_PIXELS = 8192 * 8192
 // Hard ceiling on the decoded raster in pixels, independent of aspect ratio, so an extreme-aspect image within the
 // source cap can't blow up memory. Sized to the full-screen target's area (~18.7 MP -> ~75 MB at 4 bytes/px).
 private const val MAX_DECODED_PIXELS = MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION
@@ -129,6 +134,9 @@ private val loadedImageCache = Collections.synchronizedMap(object : LinkedHashMa
   override fun removeEldestEntry(eldest: Map.Entry<String, Pair<ImageBitmap, ByteArray>>): Boolean = size > 30
 })
 
+@OptIn(ExperimentalCoroutinesApi::class)
+private val imageDecoder = Dispatchers.IO.limitedParallelism(1)
+
 actual fun clearImageCaches() {
   loadedImageCache.clear()
 }
@@ -143,8 +151,10 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
     loadedImageCache[filePath] ?: try {
       val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
       if (!isImageFile(data)) return null
-      val bitmap = decodeBoundedImage(data, MAX_THUMBNAIL_DIMENSION)
+      val bitmap = withContext(imageDecoder) { decodeBoundedImage(data, MAX_THUMBNAIL_DIMENSION) }
       (bitmap to data).also { loadedImageCache[filePath] = it }
+    } catch (e: CancellationException) {
+      throw e
     } catch (e: Throwable) {
       Log.e(TAG, "Unable to load image: " + e.stackTraceToString())
       null
@@ -211,7 +221,7 @@ internal fun decodeBoundedBufferedImage(data: ByteArray, maxDimension: Int): Buf
 }
 
 internal fun sourceDimensionsWithinLimits(width: Int, height: Int): Boolean =
-  width in 1..MAX_SOURCE_IMAGE_DIMENSION && height in 1..MAX_SOURCE_IMAGE_DIMENSION
+  width in 1..MAX_SOURCE_IMAGE_DIMENSION && height in 1..MAX_SOURCE_IMAGE_DIMENSION && width * height <= MAX_SOURCE_IMAGE_PIXELS
 
 // Power-of-two subsampling factor for bounded decoding. First keeps the smaller side at or above maxDimension
 // (mirroring Android's calculateInSampleSize) so portrait images stay sharp instead of being over-subsampled by a
