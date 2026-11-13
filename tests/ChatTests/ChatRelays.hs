@@ -38,6 +38,7 @@ chatRelayTests = do
     it "re-add soft-deleted relay by same address" testReAddRelaySameAddress
     it "re-add soft-deleted relay by same name" testReAddRelaySameName
     it "test chat relay" testChatRelayTest
+    it "relay invitation to non-relay address is rejected" testRelayInvNonRelayAddress
     it "relay profile updated in address" testRelayProfileUpdateInAddress
   describe "relay capabilities" $ do
     it "relay sends webDomain in capabilities" testRelayWebCapabilities
@@ -222,6 +223,19 @@ testChatRelayTest ps =
         bob <## "To create a new chat address use /ad"
         alice ##> ("/relay test " <> bobSLink)
         alice <##.. ["relay test failed at RTSGetLink, error: ", "relay test failed at RTSConnect, error: "]
+
+testRelayInvNonRelayAddress :: HasCallStack => TestParams -> IO ()
+testRelayInvNonRelayAddress ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      _ <- setupRelay alice bob
+      alice ##> "/public group relays=1 #news"
+      alice <## "group #news is created"
+      alice <## "wait for selected relay(s) to join, then you can invite members via group link"
+      bob <## "error: x.grp.relay.inv: invitation sent to non-relay link"
+      bob ##> "/gs"
+      bob <## "you have no groups!"
+      bob <## "to create: /g <name>"
 
 testRelayProfileUpdateInAddress :: HasCallStack => TestParams -> IO ()
 testRelayProfileUpdateInAddress ps =

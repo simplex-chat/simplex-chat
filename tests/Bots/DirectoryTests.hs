@@ -676,6 +676,12 @@ testDelistedOwnerRemoved ps =
                  "The group is no longer listed in the directory."
                ]
         superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is de-listed (group owner is removed)."
+        bob #> "@'SimpleX Directory' /role 1 observer"
+        bob <# "'SimpleX Directory'> > /role 1 observer"
+        bob <## "      You must have a group owner role to view or change the settings of the group ID 1 (privacy)"
+        bob #> "@'SimpleX Directory' /filter 1 off"
+        bob <# "'SimpleX Directory'> > /filter 1 off"
+        bob <## "      You must have a group owner role to view or change the settings of the group ID 1 (privacy)"
         connectViaMerged cath dsLink "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
         groupNotFound cath "privacy"
 
@@ -841,6 +847,9 @@ testDelistedRoleChanges ps =
                ]
         superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is de-listed (user role is set to admin)."
         groupNotFound cath "privacy"
+        bob #> "@'SimpleX Directory' /role 1 observer"
+        bob <# "'SimpleX Directory'> > /role 1 observer"
+        bob <## "      You must have a group owner role to view or change the settings of the group ID 1 (privacy)"
         -- re-listed if owner role changed back without profile changes
         cath ##> "/mr privacy bob owner"
         cath <## "#privacy: you changed the role of bob to owner (signed)"

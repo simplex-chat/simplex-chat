@@ -39,7 +39,7 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), MsgScope (..), ReportReason (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -226,6 +226,7 @@ chatGroupTests = do
     it "cancelled files are not attached (text message is still sent)" testGroupHistoryFileCancel
     it "cancelled files without text are excluded" testGroupHistoryFileCancelNoText
     it "quoted messages" testGroupHistoryQuotes
+    it "reply to deleted message is sent without quote" testGroupHistoryQuoteDeletedMessage
     it "deleted message is not included" testGroupHistoryDeletedMessage
     it "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
     it "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage
@@ -249,10 +250,14 @@ chatGroupTests = do
     it "block left/removed members" testBlockForAllLeftRemoved
     it "mentions of blocked member are ignored" testBlockForAllMentionsIgnored
     it "replies of blocked member are not mentions" testBlockedMemberReplyNotMention
+    it "reactions of blocked member are ignored" testBlockedMemberReactionsIgnored
+    it "profile updates of blocked member are marked blocked" testBlockedMemberProfileUpdate
+    it "message updates of blocked member are marked blocked" testBlockedMemberUpdatesMarkedBlocked
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
+    it "should not accept reports when preference is off" testGroupMemberReportsPreferenceOff
   describe "group member mentions" $ do
     it "should send and edit messages with member mentions" testMemberMention
     it "should forward and quote message updating mentioned member name" testForwardQuoteMention
@@ -265,6 +270,7 @@ chatGroupTests = do
     it "should forward messages inside support scope" testScopedSupportForward
     it "should forward messages inside support scope while member is in review" testScopedSupportForwardWhileReview
     it "should not forward messages from support to main scope" testScopedSupportDontForward
+    it "should not update message in main scope via support scope" testScopedSupportDontUpdateMainScope
     it "should forward group wide message (x.grp.info) to all members, including in review" testScopedSupportForwardAll
     it "should not forward messages between support scopes" testScopedSupportDontForwardBetweenScopes
     it "should forward file inside support scope" testScopedSupportForwardFile
@@ -7006,6 +7012,49 @@ testGroupHistoryQuotes =
             ((0, "4"), Just (0, "BOB"))
           ]
 
+testGroupHistoryQuoteDeletedMessage :: HasCallStack => TestParams -> IO ()
+testGroupHistoryQuoteDeletedMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      bob #> "#team hey!"
+      alice <# "#team bob> hey!"
+      bobMsgId <- lastItemId bob
+
+      threadDelay 1000000
+
+      alice `send` "> #team @bob (hey) hello"
+      alice <# "#team > bob hey!"
+      alice <## "      hello"
+      bob <# "#team alice!> > bob hey!"
+      bob <## "      hello"
+
+      bob #$> ("/_delete item #1 " <> bobMsgId <> " broadcast", id, "message marked deleted")
+      alice <# "#team bob> [marked deleted] hey!"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chat' <$> getTermLine cath
+      r `shouldContain` [((0, "hello"), Nothing)]
+      r `shouldNotContain` [((0, "hey!"), Nothing)]
+
 testGroupHistoryDeletedMessage :: HasCallStack => TestParams -> IO ()
 testGroupHistoryDeletedMessage =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -7872,6 +7921,134 @@ testBlockedMemberReplyNotMention =
       cath <# "#team alice> > bob hi"
       cath <## "      hey again!"
 
+testBlockedMemberReactionsIgnored :: HasCallStack => TestParams -> IO ()
+testBlockedMemberReactionsIgnored =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      cath <# "#team alice> hi"
+
+      bob ##> "+1 #team hi"
+      bob <## "added 👍"
+      alice <# "#team bob> > alice hi"
+      alice <## "    + 👍"
+      cath <# "#team bob> > alice hi"
+      cath <## "    + 👍"
+
+      cath ##> "/_member settings #1 3 {\"showMessages\": false}"
+      cath <## "ok"
+
+      bob ##> "+^ #team hi"
+      bob <## "added 🚀"
+      alice <# "#team bob> > alice hi"
+      alice <## "    + 🚀"
+      (cath </)
+      alice ##> "/tail #team 1"
+      alice <# "#team hi"
+      alice <## "      👍 1 🚀 1"
+      cath ##> "/tail #team 1"
+      cath <# "#team alice> hi"
+      cath <## "      👍 1"
+
+      cath ##> "/_member settings #1 3 {\"showMessages\": true}"
+      cath <## "ok"
+
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob (signed)"
+      cath <## "#team: alice blocked bob (signed)"
+      bob <// 50000
+
+      bob ##> "+- #team hi"
+      bob <## "added 👎"
+      (alice </)
+      (cath </)
+
+      bob ##> "-1 #team hi"
+      bob <## "removed 👍"
+      alice <# "#team bob> > alice hi <muted>"
+      alice <## "    - 👍 <muted>"
+      cath <# "#team bob> > alice hi <muted>"
+      cath <## "    - 👍 <muted>"
+      alice ##> "/tail #team 2"
+      alice <# "#team hi"
+      alice <## "      🚀 1"
+      alice <# "#team blocked bob (signed)"
+      cath ##> "/tail #team 2"
+      cath <# "#team alice> hi"
+      cath <# "#team alice> blocked bob (signed)"
+
+testBlockedMemberProfileUpdate :: HasCallStack => TestParams -> IO ()
+testBlockedMemberProfileUpdate =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      cath ##> "/_member settings #1 3 {\"showMessages\": false}"
+      cath <## "ok"
+
+      bob ##> "/p rob"
+      bob <## "user profile is changed to rob (your 1 contacts are notified)"
+      alice <## "contact bob changed to rob"
+      alice <## "use @rob <message> to send messages"
+
+      bob #> "#team 1"
+      alice <# "#team rob> 1"
+      cath <# "#team rob> 1 [blocked] <muted>"
+
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed) [blocked]"), (0, "1 [blocked]")])
+
+      alice ##> "/block for all #team rob"
+      alice <## "#team: you blocked rob (signed)"
+      cath <## "#team: alice blocked rob (signed)"
+      bob <// 50000
+
+      threadDelay 1000000
+
+      bob ##> "/p robert"
+      bob <## "user profile is changed to robert (your 1 contacts are notified)"
+      alice <## "contact rob changed to robert"
+      alice <## "use @robert <message> to send messages"
+
+      bob #> "#team 2"
+      alice <# "#team robert> 2 [blocked by admin] <muted>"
+      cath <# "#team robert> 2 [blocked by admin] <muted>"
+
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed) [blocked by admin]"), (0, "2 [blocked by admin]")])
+
+testBlockedMemberUpdatesMarkedBlocked :: HasCallStack => TestParams -> IO ()
+testBlockedMemberUpdatesMarkedBlocked =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      bob #> "#team hello"
+      [alice, cath] *<# "#team bob> hello"
+      msgItemId <- lastItemId bob
+
+      threadDelay 1000000
+
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob (signed)"
+      cath <## "#team: alice blocked bob (signed)"
+      bob <// 50000
+
+      bob ##> ("/_update item #1 " <> msgItemId <> " text hello @alice")
+      bob <# "#team [edited] hello @alice"
+      alice <# "#team bob> [edited] hello @alice <muted>"
+      cath <# "#team bob> [edited] hello @alice <muted>"
+
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "hello @alice [blocked by admin]"), (1, "blocked bob (signed)")])
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "hello @alice [blocked by admin]"), (0, "blocked bob (signed)")])
+
 testBlockForAllFullDelete :: HasCallStack => TestParams -> IO ()
 testBlockForAllFullDelete =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -8423,6 +8600,35 @@ testGroupMemberReports =
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
       dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
 
+testGroupMemberReportsPreferenceOff :: HasCallStack => TestParams -> IO ()
+testGroupMemberReportsPreferenceOff =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "jokes" alice (bob, GRAdmin) (cath, GRMember)
+      alice ##> "/set reports #jokes off"
+      alice <## "updated group preferences:"
+      alice <## "Member reports: off"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #jokes: (signed)"
+            bob <## "updated group preferences:"
+            bob <## "Member reports: off",
+          do
+            cath <## "alice updated group #jokes: (signed)"
+            cath <## "updated group preferences:"
+            cath <## "Member reports: off"
+        ]
+      bob #> "#jokes inappropriate joke"
+      [alice, cath] *<# "#jokes bob> inappropriate joke"
+      cath ##> "/report #jokes content inappropriate joke"
+      cath <## "bad chat command: feature not allowed Member reports"
+      GroupMember {groupId, activeConn = Just conn} <- getTestMember cath "jokes" "alice"
+      runExceptT (sendDirectMemberMessage conn (XMsgNew $ mcSimple $ MCReport "report content" RRContent) groupId) `runReaderT` chatController cath
+        >>= either (fail . show) (\_ -> pure ())
+      cath #> "#jokes ok joke"
+      [alice, bob] *<# "#jokes cath> ok joke"
+      alice #$> ("/_get chat #1 content=report count=100", chat, [])
+
 testMemberMention :: HasCallStack => TestParams -> IO ()
 testMemberMention =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -8722,6 +8928,38 @@ testScopedSupportForward =
     dan #> "#team (support: bob) 4"
     alice <# "#team (support: bob) dan> 4"
     bob <# "#team (support) dan> 4 [>>]"
+
+testScopedSupportDontUpdateMainScope :: HasCallStack => TestParams -> IO ()
+testScopedSupportDontUpdateMainScope =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      bob #> "#team hello"
+      [alice, cath] *<# "#team bob> hello"
+      msgItemId <- lastItemId bob
+
+      threadDelay 1000000
+
+      alice ##> "/mr team bob observer"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of bob to observer (signed)",
+          bob <## "#team: alice changed your role from admin to observer (signed)",
+          cath <## "#team: alice changed the role of bob from admin to observer (signed)"
+        ]
+
+      bob ##> ("/_update item #1 " <> msgItemId <> " text hello again")
+      bob <## "#team: you don't have permission to send messages"
+
+      bob ##> ("/_update item #1(_support) " <> msgItemId <> " text hello again")
+      bob <# "#team (support) [edited] hello again"
+      alice <## "error: member is not allowed to send messages"
+      cath <## "error: member is not allowed to send messages"
+
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "hello"), (1, "changed role of bob to observer (signed)")])
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "hello"), (0, "changed role of bob to observer (signed)")])
 
 testScopedSupportForwardWhileReview :: HasCallStack => TestParams -> IO ()
 testScopedSupportForwardWhileReview =
@@ -9653,6 +9891,16 @@ testSupportPreferenceChannel ps =
           -- cath can't send support (no existing chat)
           cath ##> "#team (support) hey"
           cath <## "bad chat command: feature not allowed Chat with admins"
+          alice ##> "#team (support: cath) hey too"
+          alice <## "bad chat command: feature not allowed Chat with admins"
+
+          cathMemId <- memberIdByName cath "cath"
+          GroupMember {groupId, activeConn = Just conn} <- getTestMember cath "team" "relay"
+          let scopedMsg = (mcSimple (MCText "hey") :: MsgContainer) {scope = Just $ MSMember cathMemId}
+          runExceptT (sendDirectMemberMessage conn (XMsgNew scopedMsg) groupId) `runReaderT` chatController cath
+            >>= either (fail . show) (\_ -> pure ())
+          relay <## "error: x.msg.new: feature not allowed Chat with admins"
+          (alice </)
           alice ##> "#team (support: cath) hey too"
           alice <## "bad chat command: feature not allowed Chat with admins"
 

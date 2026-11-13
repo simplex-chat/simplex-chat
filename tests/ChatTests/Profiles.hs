@@ -30,7 +30,7 @@ import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePu
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt)
 import Simplex.Chat.Library.Internal (encodeShortLinkData, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage')
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
+import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, LinkPreview (..), MsgChatLink (..), MsgContent (..), encodeChatBinding)
 import Simplex.Chat.Store.Groups (getGroupMembers)
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
 import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), ImageData (..), Profile (..), GroupRejectionReason (..), User (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
@@ -164,6 +164,7 @@ chatProfileTests = do
     describe "group preferences for specific member role" $ do
       it "direct messages" testGroupPrefsDirectForRole
       it "files & media" testGroupPrefsFilesForRole
+      it "files & media in link previews and message updates" testGroupPrefsFilesLinkPreview
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
     it "set user, contact and group UI theme" testSetUITheme
   describe "chat layout" $ do
@@ -3767,6 +3768,44 @@ testGroupPrefsFilesForRole = testChat3 aliceProfile bobProfile cathProfile $
       cc <## "updated group preferences:"
       cc <## "Files and media: on for owners"
 
+testGroupPrefsFilesLinkPreview :: HasCallStack => TestParams -> IO ()
+testGroupPrefsFilesLinkPreview = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+    threadDelay 1000000
+    alice ##> "/set files #team on owner"
+    alice <## "updated group preferences:"
+    alice <## "Files and media: on for owners"
+    forM_ [bob, cath] $ \cc -> do
+      cc <## "alice updated group #team: (signed)"
+      cc <## "updated group preferences:"
+      cc <## "Files and media: on for owners"
+    threadDelay 1000000
+    bob ##> ("/_send #1 json [{\"msgContent\": " <> T.unpack (encodeJSON link) <> "}]")
+    bob <# "#team https://simplex.chat"
+    [alice, cath] *<# "#team bob> https://simplex.chat"
+    forM_ [alice, cath] $ \cc -> lastItemIsLink cc `shouldReturn` False
+    bob #> "#team hello"
+    [alice, cath] *<# "#team bob> hello"
+    msgItemId <- lastItemId bob
+    bob ##> ("/_update item #1 " <> msgItemId <> " json {\"msgContent\": " <> T.unpack (encodeJSON $ MCImage "hello" img) <> ", \"mentions\": {}}")
+    bob <# "#team [edited] hello"
+    bob ##> ("/_update item #1 " <> msgItemId <> " json {\"msgContent\": " <> T.unpack (encodeJSON link) <> ", \"mentions\": {}}")
+    bob <# "#team [edited] https://simplex.chat"
+    [alice, cath] *<# "#team bob> [edited] https://simplex.chat"
+    forM_ [alice, cath] $ \cc -> lastItemIsLink cc `shouldReturn` False
+    alice ##> ("/_send #1 json [{\"msgContent\": " <> T.unpack (encodeJSON link) <> "}]")
+    alice <# "#team https://simplex.chat"
+    [bob, cath] *<# "#team alice> https://simplex.chat"
+    forM_ [bob, cath] $ \cc -> lastItemIsLink cc `shouldReturn` True
+  where
+    img = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
+    link = MCLink "https://simplex.chat" $ LinkPreview "https://simplex.chat" "SimpleX Chat" "" img Nothing
+    lastItemIsLink :: TestCC -> IO Bool
+    lastItemIsLink cc = do
+      [Only itemContent] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT item_content FROM chat_items ORDER BY chat_item_id DESC LIMIT 1" :: IO [Only T.Text]
+      pure $ "\"type\":\"link\"" `T.isInfixOf` itemContent
+
 testGroupPrefsSimplexLinksForRole :: HasCallStack => TestParams -> IO ()
 testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> withXFTPServer alice $ do
@@ -3789,6 +3828,8 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     bob ##> ("#team \"" <> lnk1 <> " " <> lnk2 <> "\"")
     bob <## "bad chat command: feature not allowed SimpleX links"
     bob ##> ("#team \"" <> lnk1 <> "\\n" <> lnk2 <> "\"")
+    bob <## "bad chat command: feature not allowed SimpleX links"
+    bob ##> ("/_send #1 json [{\"msgContent\": " <> T.unpack (encodeJSON $ MCLink "test" $ LinkPreview (T.pack inv) "title" "" (ImageData "") Nothing) <> "}]")
     bob <## "bad chat command: feature not allowed SimpleX links"
     (alice </)
     (cath </)
