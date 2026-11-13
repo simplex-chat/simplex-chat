@@ -213,6 +213,13 @@ func metaCopyJoiner(_ rightToLeft: Bool) -> Text {
     Text(verbatim: rightToLeft ? "\u{2060}\u{200F}" : "\u{2060}\u{200E}")
 }
 
+func terminalShowsStatus(_ status: CIStatus, showTimestamp: Bool) -> Bool {
+    switch status {
+    case .sndSent(sndProgress: .complete), .sndRcvd(msgRcptStatus: .ok, sndProgress: .complete): showTimestamp
+    default: true
+    }
+}
+
 struct ItemWithMeta<Meta: View, Content: View>: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.terminalLayout) private var terminal

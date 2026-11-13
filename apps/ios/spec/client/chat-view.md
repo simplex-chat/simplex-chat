@@ -498,6 +498,8 @@ row height         at least the meta height
 
 `metaReserved`: content with its own reserve for the time: text with the copy, files, emoji, events.
 
+Status: [`terminalShowsStatus(status, showTimestamp)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L216) draws the sent and delivered marks of a completed delivery (`sndSent` and `sndRcvd(.ok)`, both `.complete`) only with the time; pending, partial, error and unread states always. `CIMetaView` and the copies in `MsgContentView` and `CIFileView` apply it in Flat rows; bubbles draw the status in each bubble.
+
 [`ChatEventWithMeta(chatItem) { ts in }`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L351) passes the end of the event text, placed after the classic separator: classic `chatItem.timestampText`; terminal `metaCopyJoiner`, two no-break spaces and the transparent unbreakable time in regular weight.
 
 Meta copy, `ciMetaText(unbreakable: true)`:
