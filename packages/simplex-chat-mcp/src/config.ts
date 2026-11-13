@@ -1,5 +1,5 @@
 import {Mode} from "./actions"
-import {validName} from "./messages"
+import {maxNameLength, validName} from "./messages"
 
 export interface Config {
   mainGroup: string
@@ -9,7 +9,7 @@ export interface Config {
 
 type Key = keyof Config
 
-export const defaultConfig: Config = {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}
+export const defaultConfig: Config = {mainGroup: "Claude Control", approve: "requests", expireHours: 23}
 
 export const configVariables: {[key in Key]: string} = {
   mainGroup: "CLAUDE_PLUGIN_OPTION_MAIN_GROUP",
@@ -19,6 +19,7 @@ export const configVariables: {[key in Key]: string} = {
 
 const optionNames: {[key in Key]: string} = {mainGroup: "main_group", approve: "approve", expireHours: "expire_hours"}
 const configurePath = "/plugin > Installed > simplex > Configure options"
+const machineVariable = "SIMPLEX_MCP_MACHINE"
 const unattendedEntrypoints = ["sdk-cli", "sdk-ts", "sdk-py"]
 
 export class ConfigError extends Error {}
@@ -36,14 +37,27 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     const given = env[configVariables[key]]?.trim()
     return given === undefined || given === "" ? undefined : given
   }
-  return {mainGroup: mainGroup(value("mainGroup")), approve: approve(value("approve")), expireHours: expireHours(value("expireHours"))}
+  return {mainGroup: withMachine(mainGroup(value("mainGroup")), env[machineVariable]?.trim() || undefined), approve: approve(value("approve")), expireHours: expireHours(value("expireHours"))}
 }
 
 function mainGroup(value: string | undefined): string {
   if (value === undefined) return defaultConfig.mainGroup
   const valid = validName(value)
-  if (valid !== value) throw configError("mainGroup", value, valid === "" ? "a valid SimpleX name" : `a valid SimpleX name, such as ${valid}`)
+  if (valid !== value) throw configError("mainGroup", value, nameExpected(valid))
   return value
+}
+
+function withMachine(name: string, machine: string | undefined): string {
+  if (machine === undefined) return name
+  const valid = validName(machine)
+  if (valid !== machine) throw new ConfigError(`${machineVariable}: ${nameExpected(valid)} expected, got ${machine}. Change it in the environment of this machine.`)
+  const named = `${name} - ${machine}`
+  if (validName(named) !== named) throw new ConfigError(`Plugin option ${optionNames.mainGroup} with ${machineVariable}: a valid SimpleX name of at most ${maxNameLength} characters expected, got ${named}. Change one of them.`)
+  return named
+}
+
+function nameExpected(valid: string): string {
+  return valid === "" ? "a valid SimpleX name" : `a valid SimpleX name, such as ${valid}`
 }
 
 function approve(value: string | undefined): Mode {
