@@ -1182,11 +1182,9 @@ processChatCommand cxt nm = \case
           prepareMsgReq :: CChatItem c -> CM (Maybe (MsgContent, Maybe CryptoFile))
           prepareMsgReq (CChatItem md ci) = forwardMsgContent ci $>>= forwardContent ci . dropOwnerSig
             where
-              dropOwnerSig = \case
-                mc@MCChat {text, chatLink}
-                  | SMDSnd <- md, fromChat == toChat -> mc
-                  | otherwise -> MCChat {text, chatLink, ownerSig = Nothing}
-                mc -> mc
+              dropOwnerSig mc
+                | SMDSnd <- md, fromChat == toChat = mc
+                | otherwise = dropLinkOwnerSig mc
           forwardCIFF :: ChatItem c d -> Maybe CIForwardedFrom -> Maybe CIForwardedFrom
           forwardCIFF ChatItem {meta = CIMeta {itemForwarded}} ciff = case itemForwarded of
             Nothing -> ciff
@@ -2212,7 +2210,8 @@ processChatCommand cxt nm = \case
     pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan
   APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
   APIPrepareContact userId accLink verifiedDomain contactSLinkData -> withUserId userId $ \user -> do
-    let ContactShortLinkData {profile, message, business, chatLayout} = contactSLinkData
+    let ContactShortLinkData {profile, message = message_, business, chatLayout} = contactSLinkData
+        message = dropLinkOwnerSig <$> message_
     welcomeSharedMsgId <- forM message $ \_ -> getSharedMsgId
     case accLink of
       ACCL SCMContact ccLink

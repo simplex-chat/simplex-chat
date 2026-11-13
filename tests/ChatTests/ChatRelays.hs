@@ -335,6 +335,7 @@ testShareChannelChannel ps =
       alice ##> "/share chat #news #updates"
       alice <# "#updates link to join channel #news (signed):"
       _ <- getTermLine2 alice -- link, ownerSig
+      aItemId <- lastItemId alice
       relay <# "#updates> link to join channel #news (signed):"
       _ <- getTermLine2 relay -- link, ownerSig
       bob <# "#updates> link to join channel #news (signed): [>>]"
@@ -366,6 +367,7 @@ testShareChannelChannel ps =
           cLink' = either error id $ strDecode (B.pack sLink1)
           mc = MCChat (T.pack sLink1) (MCLGroup cLink' (testGroupProfile {displayName = "news"} :: GroupProfile)) (Just sig)
           cm = "{\"msgContent\":" <> LB.unpack (J.encode mc) <> "}"
+          um = "{\"msgContent\":" <> LB.unpack (J.encode mc) <> ",\"mentions\":{}}"
       bob ##> ("/_send #3 json [" <> cm <> "]")
       bob <# "#bob_ch link to join group #news (signed):"
       _ <- getTermLine2 bob -- bob's testView ownerSig (his sent has the sig data)
@@ -373,6 +375,24 @@ testShareChannelChannel ps =
       _ <- getTermLine relay
       cath <# "#bob_ch bob> link to join group #news: [>>]"
       _ <- getTermLine cath
+      bob #> "#bob_ch hi"
+      relay <# "#bob_ch> hi"
+      cath <# "#bob_ch> hi [>>]"
+      bItemId <- lastItemId bob
+      bob ##> ("/_update item #3 " <> bItemId <> " json " <> um)
+      bob <# "#bob_ch [edited] link to join group #news (signed):"
+      _ <- getTermLine bob
+      relay <# "#bob_ch> [edited] link to join group #news:"
+      _ <- getTermLine relay
+      cath <# "#bob_ch> [edited] link to join group #news:"
+      _ <- getTermLine cath
+      alice ##> ("/_update item #2 " <> aItemId <> " json " <> um)
+      alice <# "#updates [edited] link to join group #news (signed):"
+      _ <- getTermLine alice
+      relay <# "#updates> [edited] link to join group #news (signed):"
+      _ <- getTermLine relay
+      bob <# "#updates> [edited] link to join group #news (signed):"
+      _ <- getTermLine bob
       -- cath joins "news" (group #2 for cath since "bob_ch" is #1)
       memberJoinChannel' "news" 2 1 0 1 [relay] [alice] sLink1 fLink1 cath
       -- alice sends message, both receive
