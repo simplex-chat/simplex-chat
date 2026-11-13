@@ -1770,6 +1770,7 @@ ChatType_cmd_string(chatType) + str(chatId) + ((GroupChatScope_cmd_string(chatSc
 **Record type**:
 - unreadCount: int
 - unreadMentions: int
+- unreadSilent: int
 - reportsCount: int
 - minUnreadItemId: int64
 - unreadChat: bool

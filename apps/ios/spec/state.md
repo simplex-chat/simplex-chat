@@ -58,7 +58,8 @@ ChatTagsModel (singleton -- filter state)
 ├── userTags: [ChatTag]
 ├── activeFilter: ActiveFilter?
 ├── presetTags: [PresetTag: Int]
-└── unreadTags: [Int64: Int]
+├── unreadTags: [Int64: Int]
+└── silentTags: [Int64: Int]
 ```
 
 ---
@@ -257,7 +258,8 @@ enum SecondaryItemsModelFilter {
 | `userTags` | `[ChatTag]` | User-defined tags | [L192](../Shared/Model/ChatModel.swift#L192) |
 | `activeFilter` | `ActiveFilter?` | Currently active filter tab | [L193](../Shared/Model/ChatModel.swift#L193) |
 | `presetTags` | `[PresetTag: Int]` | Preset tag counts (groups, contacts, favorites, etc.) | [L194](../Shared/Model/ChatModel.swift#L194) |
-| `unreadTags` | `[Int64: Int]` | Unread count per user tag | [L195](../Shared/Model/ChatModel.swift#L195) |
+| `unreadTags` | `[Int64: Int]` | Count of chats with `unreadTag == .unread` per user tag | [L195](../Shared/Model/ChatModel.swift#L195) |
+| `silentTags` | `[Int64: Int]` | Count of chats with `unreadTag == .silent` per user tag | [L196](../Shared/Model/ChatModel.swift#L196) |
 
 ### [ActiveFilter](../Shared/Views/ChatList/ChatListView.swift#L52)
 
@@ -317,6 +319,7 @@ Represents a single conversation in the chat list. Each `Chat` is an independent
 struct ChatStats: Decodable, Hashable {
     var unreadCount: Int = 0
     var unreadMentions: Int = 0
+    var unreadSilent: Int = 0
     var reportsCount: Int = 0
     var minUnreadItemId: Int64 = 0
     var unreadChat: Bool = false
@@ -329,7 +332,7 @@ struct ChatStats: Decodable, Hashable {
 |----------|-------------|------|
 | `id` | Chat ID from `chatInfo.id` | [L1336](../Shared/Model/ChatModel.swift#L1336) |
 | `viewId` | Unique view identity including creation time | [L1338](../Shared/Model/ChatModel.swift#L1338) |
-| `unreadTag` | Whether chat counts as "unread" based on notification settings | [L1328](../Shared/Model/ChatModel.swift#L1328) |
+| `unreadTag` | `.unread`, `.silent` or `.read` based on notification settings: `.silent` when only silent items are unread in mode "All" | [L1328](../Shared/Model/ChatModel.swift#L1328) |
 | `supportUnreadCount` | Unread count for group support scope | [L1340](../Shared/Model/ChatModel.swift#L1340) |
 
 ---

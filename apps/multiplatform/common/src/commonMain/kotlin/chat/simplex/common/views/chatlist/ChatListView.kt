@@ -1341,6 +1341,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
   val alwaysShownPresetTags = presetTags.filter { !presetCanBeCollapsed(it.key) && it.value > 0 }
   val activeFilter = remember { chatModel.activeChatTagFilter }
   val unreadTags = remember { chatModel.unreadTags }
+  val silentTags = remember { chatModel.silentTags }
   val rhId = chatModel.remoteHostId()
 
   val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
@@ -1401,7 +1402,11 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
           }
           Spacer(Modifier.width(4.dp))
           Box {
-            val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
+            val (badgeText, badgeColor) = when {
+              (unreadTags[tag.chatTagId] ?: 0) > 0 -> " ●" to MaterialTheme.colors.primary
+              (silentTags[tag.chatTagId] ?: 0) > 0 -> " ○" to MaterialTheme.colors.secondary
+              else -> "" to MaterialTheme.colors.primary
+            }
             val invisibleText = buildAnnotatedString {
               append(tag.chatTagText)
               withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {
@@ -1419,7 +1424,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
             // Visible text with styles
             val visibleText = buildAnnotatedString {
               append(tag.chatTagText)
-              withStyle(SpanStyle(fontSize = 12.5.sp, color = MaterialTheme.colors.primary)) {
+              withStyle(SpanStyle(fontSize = 12.5.sp, color = badgeColor)) {
                 append(badgeText)
               }
             }
@@ -1628,7 +1633,7 @@ private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
   when (activeFilter) {
     is ActiveFilter.PresetTag -> presetTagMatchesChat(activeFilter.tag, chat.chatInfo, chat.chatStats)
     is ActiveFilter.UserTag -> chat.chatInfo.chatTags?.contains(activeFilter.tag.chatTagId) ?: false
-    is ActiveFilter.Unread -> chat.unreadTag
+    is ActiveFilter.Unread -> chat.unreadTag == UnreadTag.Unread
     else -> true
   }
 

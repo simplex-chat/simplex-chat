@@ -238,13 +238,17 @@ struct ChatPreviewView: View {
                         .padding(.bottom, 1)
                 }
                 let singleUnreadIsMention = s.unreadMentions > 0 && s.unreadCount == 1
+                let onlySilent = !singleUnreadIsMention && s.unreadCount == s.unreadSilent && !s.unreadChat
                 (singleUnreadIsMention ? Text("\(MENTION_START)") : unreadCountText(s.unreadCount))
                     .font(userFont <= .xxxLarge ? .caption : .caption2)
-                    .foregroundColor(.white)
+                    .foregroundColor(onlySilent ? theme.colors.secondary : .white)
                     .padding(.horizontal, dynamicSize(userFont).unreadPadding)
                     .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
-                    .background(singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(false) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
+                    .background(onlySilent ? Color.clear : singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(false) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
                     .cornerRadius(dynamicSize(userFont).unreadCorner)
+                    .if(onlySilent) {
+                        $0.overlay(RoundedRectangle(cornerRadius: dynamicSize(userFont).unreadCorner).stroke(theme.colors.secondary))
+                    }
             }
             .frame(height: dynamicChatInfoSize)
         } else if let ntfMode = chat.chatInfo.chatSettings?.enableNtfs, ntfMode != .all {

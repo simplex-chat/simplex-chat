@@ -172,6 +172,7 @@ toTypeInfo tr =
       "Version" -> ST TInt []
       "VersionRoster" -> ST TInt64 []
       "BoolDef" -> ST TBool []
+      "IntDef" -> ST TInt []
       "PQEncryption" -> ST TBool []
       "PQSupport" -> ST TBool []
       "AChatInfo" -> ST "ChatInfo" []

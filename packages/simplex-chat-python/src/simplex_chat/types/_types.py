@@ -1400,6 +1400,7 @@ class ChatSettings(TypedDict):
 class ChatStats(TypedDict):
     unreadCount: int  # int
     unreadMentions: int  # int
+    unreadSilent: int  # int
     reportsCount: int  # int
     minUnreadItemId: int  # int64
     unreadChat: bool

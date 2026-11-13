@@ -184,6 +184,7 @@ class ChatTagsModel: ObservableObject {
     @Published var activeFilter: ActiveFilter? = nil
     @Published var presetTags: [PresetTag: Int] = [:]   // count per preset tag
     @Published var unreadTags: [Int64: Int] = [:]        // unread count per user tag
+    @Published var silentTags: [Int64: Int] = [:]        // count of chats with only silent unread items per user tag
 }
 ```
 

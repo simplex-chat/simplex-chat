@@ -1,3 +1,7 @@
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
+
 module ChatTests.ChatList where
 
 import ChatClient
@@ -5,7 +9,11 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.Format.ISO8601 (iso8601Show)
+import Simplex.Chat.Controller (ChatResponse (CRApiChat, CRApiChats))
+import Simplex.Chat.Core (sendChatCmdStr)
+import Simplex.Chat.Messages (AChat (..), Chat (..), ChatStats (..))
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
+import Simplex.Chat.Types (IntDef (..))
 import Test.Hspec hiding (it)
 
 chatListTests :: SpecWith TestParams
@@ -16,6 +24,7 @@ chatListTests = do
   it "filter by search query" testFilterSearch
   it "filter favorite" testFilterFavorite
   it "filter unread" testFilterUnread
+  it "filter unread without chats with only silent unread items" testFilterUnreadSilent
   it "filter favorite or unread" testFilterFavoriteOrUnread
   it "sort and filter chats of all types" testPaginationAllChatTypes
 
@@ -142,6 +151,49 @@ testFilterUnread =
       alice ##> "/_settings @3 {\"enableNtfs\":\"all\",\"favorite\":true}"
       alice <## "ok"
       getChats_ alice query [("@bob", "hey")]
+
+testFilterUnreadSilent :: HasCallStack => TestParams -> IO ()
+testFilterUnreadSilent =
+  testChatOpts2 testOpts {markRead = False} aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      let query = "{\"type\": \"filters\", \"favorite\": false, \"unread\": true}"
+
+      bob ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"working\"}, \"priority\": -1}]"
+      bob <# "@alice working"
+      alice <# "bob> working"
+      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"working\"}, \"priority\": -1}]"
+      bob <# "#team working"
+      alice <# "#team bob> working"
+      getChats_ alice query []
+      unreadCounts alice `shouldReturn` [(1, 1), (1, 1)]
+      chatUnreadCounts alice "#1" `shouldReturn` (1, 1)
+      chatUnreadCounts alice "@2" `shouldReturn` (1, 1)
+
+      bob #> "#team done"
+      alice <# "#team bob> done"
+      getChats_ alice query [("#team", "done")]
+      unreadCounts alice `shouldReturn` [(2, 1), (1, 1)]
+      chatUnreadCounts alice "#1" `shouldReturn` (2, 1)
+
+      doneId <- lastItemId alice
+      alice #$> ("/_read chat items #1 " <> doneId, id, "items read for chat")
+      getChats_ alice query []
+      unreadCounts alice `shouldReturn` [(1, 1), (1, 1)]
+      alice #$> ("/_read chat @2", id, "ok")
+      unreadCounts alice `shouldReturn` [(1, 1), (0, 0)]
+
+unreadCounts :: TestCC -> IO [(Int, Int)]
+unreadCounts TestCC {chatController = cc} =
+  sendChatCmdStr cc "/_get chats 1" >>= \case
+    Right (CRApiChats _ cs) -> pure [(unreadCount, n) | AChat _ Chat {chatStats = ChatStats {unreadCount, unreadSilent = IntDef n}} <- cs]
+    r -> fail $ show r
+
+chatUnreadCounts :: TestCC -> String -> IO (Int, Int)
+chatUnreadCounts TestCC {chatController = cc} chatRef =
+  sendChatCmdStr cc ("/_get chat " <> chatRef <> " initial=10") >>= \case
+    Right (CRApiChat _ (AChat _ Chat {chatStats = ChatStats {unreadCount, unreadSilent = IntDef n}}) _) -> pure (unreadCount, n)
+    r -> fail $ show r
 
 testFilterFavoriteOrUnread :: HasCallStack => TestParams -> IO ()
 testFilterFavoriteOrUnread =

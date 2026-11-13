@@ -103,6 +103,7 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 | `chatModel.userTags` | `ChatModel.userTags` | User-created custom tags |
 | `chatModel.presetTags` | `ChatModel.presetTags` | Map of `PresetTagKind` to count |
 | `chatModel.unreadTags` | `ChatModel.unreadTags` | Map of tag ID to unread count |
+| `chatModel.silentTags` | `ChatModel.silentTags` | Map of tag ID to the count of chats with only silent unread items |
 | `chatModel.chatId` | `ChatModel.chatId` | Currently selected chat ID (highlights row) |
 | `chatModel.currentUser` | `ChatModel.currentUser` | Active user profile |
 | `chatModel.users` | `ChatModel.users` | All user profiles (for UserPicker) |

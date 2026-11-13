@@ -459,6 +459,7 @@ deriving instance Show AChat
 data ChatStats = ChatStats
   { unreadCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
     unreadMentions :: Int, -- returned both in /_get chat initial API and in /_get chats API
+    unreadSilent :: IntDef,
     reportsCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
     minUnreadItemId :: ChatItemId,
     unreadChat :: Bool
@@ -466,7 +467,7 @@ data ChatStats = ChatStats
   deriving (Show)
 
 emptyChatStats :: ChatStats
-emptyChatStats = ChatStats 0 0 0 0 False
+emptyChatStats = ChatStats 0 0 (IntDef 0) 0 0 False
 
 data NavigationInfo = NavigationInfo
   { afterUnread :: Int,

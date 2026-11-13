@@ -3081,7 +3081,7 @@ object ChatController {
               }
               chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
             }
-          } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
+          } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem) && !cItem.meta.silent) {
             withContext(Dispatchers.Main) {
               chatModel.chatsContext.increaseUnreadCounter(rhId, r.user)
             }
@@ -3127,7 +3127,7 @@ object ChatController {
       is CR.ChatItemsDeleted -> {
         if (!active(r.user)) {
           r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
-            if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled(deletedChatItem.chatItem)) {
+            if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled(deletedChatItem.chatItem) && !deletedChatItem.chatItem.meta.silent) {
               withContext(Dispatchers.Main) {
                 chatModel.chatsContext.decreaseUnreadCounter(rhId, r.user)
               }

@@ -2006,6 +2006,7 @@ export interface ChatSettings {
 export interface ChatStats {
   unreadCount: number // int
   unreadMentions: number // int
+  unreadSilent: number // int
   reportsCount: number // int
   minUnreadItemId: number // int64
   unreadChat: boolean

@@ -2549,12 +2549,14 @@ public struct ChatStats: Decodable, Hashable {
     public init(
         unreadCount: Int = 0,
         unreadMentions: Int = 0,
+        unreadSilent: Int = 0,
         reportsCount: Int = 0,
         minUnreadItemId: Int64 = 0,
         unreadChat: Bool = false
     ) {
         self.unreadCount = unreadCount
         self.unreadMentions = unreadMentions
+        self.unreadSilent = unreadSilent
         self.reportsCount = reportsCount
         self.minUnreadItemId = minUnreadItemId
         self.unreadChat = unreadChat
@@ -2562,6 +2564,7 @@ public struct ChatStats: Decodable, Hashable {
 
     public var unreadCount: Int = 0
     public var unreadMentions: Int = 0
+    public var unreadSilent: Int = 0
     // actual only via getChats() and getChat(.initial), otherwise, zero
     public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0

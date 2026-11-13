@@ -493,10 +493,12 @@ fun ChatPreviewView(
                     )
                   }
                 } else {
+                  val onlySilent = n == chat.chatStats.unreadSilent && !chat.chatStats.unreadChat
                   UnreadBadge(
                     text = if (n > 0) unreadCountStr(n) else "",
-                    backgroundColor = if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant,
-                    yOffset = 3.dp
+                    backgroundColor = if (disabled || showNtfsIcon || onlySilent) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant,
+                    yOffset = 3.dp,
+                    outline = onlySilent
                   )
                 }
               }
@@ -592,16 +594,17 @@ private fun groupInvitationPreviewText(currentUserProfileDisplayName: String?, g
 fun UnreadBadge(
   text: String,
   backgroundColor: Color,
-  yOffset: Dp? = null
+  yOffset: Dp? = null,
+  outline: Boolean = false
 ) {
   Text(
     text,
-    color = Color.White,
+    color = if (outline) backgroundColor else Color.White,
     fontSize = 10.sp,
     style = TextStyle(textAlign = TextAlign.Center),
     modifier = Modifier
       .offset(y = yOffset ?: 0.dp)
-      .background(backgroundColor, shape = CircleShape)
+      .then(if (outline) Modifier.border(1.dp, backgroundColor, CircleShape) else Modifier.background(backgroundColor, shape = CircleShape))
       .badgeLayout()
       .padding(horizontal = 2.sp.toDp())
       .padding(vertical = 1.sp.toDp())

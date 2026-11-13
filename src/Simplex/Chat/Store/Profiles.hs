@@ -201,7 +201,26 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
                 AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR (g.enable_ntfs = 2 AND i.user_mention = 1))
             |]
             (userId, CISRcvNew)
-      pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount}
+      silentCount <-
+        maybeFirstRow fromOnly $
+          DB.query
+            db
+            [sql|
+              SELECT
+                (
+                  SELECT COUNT(1)
+                  FROM chat_items i
+                  JOIN contacts ct USING (contact_id)
+                  WHERE i.user_id = ? AND i.item_status = ? AND i.item_priority < 0 AND (ct.enable_ntfs = 1 OR ct.enable_ntfs IS NULL) AND ct.deleted = 0
+                ) + (
+                  SELECT COUNT(1)
+                  FROM chat_items i
+                  JOIN groups g USING (group_id)
+                  WHERE i.user_id = ? AND i.item_status = ? AND i.item_priority < 0 AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
+                )
+            |]
+            (userId, CISRcvNew, userId, CISRcvNew)
+      pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount - fromMaybe 0 silentCount}
 
 getUsers :: DB.Connection -> IO [User]
 getUsers db = do

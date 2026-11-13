@@ -1928,12 +1928,12 @@ func markSupportChatRead(_ groupInfo: GroupInfo, _ member: GroupMember) async {
     }
 }
 
-func apiMarkChatItemsRead(_ im: ItemsModel, _ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], mentionsRead: Int) async {
+func apiMarkChatItemsRead(_ im: ItemsModel, _ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], mentionsRead: Int, silentRead: Int) async {
     do {
         let updatedChatInfo = try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemIds: itemIds)
         await MainActor.run {
             ChatModel.shared.updateChatInfo(updatedChatInfo)
-            ChatModel.shared.markChatItemsRead(im, cInfo, itemIds, mentionsRead)
+            ChatModel.shared.markChatItemsRead(im, cInfo, itemIds, mentionsRead, silentRead)
         }
     } catch {
         logger.error("apiChatItemsRead error: \(responseError(error))")
@@ -2710,7 +2710,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
                     if cItem.isActiveReport {
                         m.increaseGroupReportsCounter(cInfo.id)
                     }
-                } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
+                } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) && !cItem.meta.silent {
                     m.increaseUnreadCounter(user: user)
                 }
             }
@@ -2756,7 +2756,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if !active(user) {
             for item in items {
                 let d = item.deletedChatItem
-                if item.toChatItem == nil && d.chatItem.isRcvNew && d.chatInfo.ntfsEnabled(chatItem: d.chatItem) {
+                if item.toChatItem == nil && d.chatItem.isRcvNew && d.chatInfo.ntfsEnabled(chatItem: d.chatItem) && !d.chatItem.meta.silent {
                     await MainActor.run {
                         m.decreaseUnreadCounter(user: user)
                     }
