@@ -122,7 +122,7 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 - Prices come from the chain: `SimplexPriceOracle` holds cents a year per label length, with a base for other lengths; the service quotes `rentPriceUSD` with a placeholder label of the name's length and refuses a price under a cent (`chainPriceCents`, `Names/Contracts.hs:182-188`); since https://github.com/simplex-chat/simplex-chat/pull/8093 (`names` at 6a8ae41d0), a price under `[names] min_price_cents_per_year`, 5000 by default, for each year.
 - One price is a chain operation (M13): `setPrices` with base 5000 cents a year and no per-length entry. The site's search, the resolver's `NamePricing` and the allowance spent per registration follow it. It replaces the store spec's $100, $200 and $400 (`2026-10-21-store-api.md:103`).
 - 6 to 63 characters: letters, digits and hyphens (`minNameLength`, `maxNameLength`, in the service and in `src/Simplex/Chat/Badges/Code.hs`).
-- After expiry, a grace period (`GRACE_PERIOD()`, 90 days in the terms draft): the owner keeps the name and can renew it, and it can't be transferred; then anyone can register it.
+- After expiry, a grace period (`GRACE_PERIOD()`, 90 days in the SimpleX Names Conditions): the owner keeps the name and can renew it, and it can't be transferred; then anyone can register it.
 
 ### 3.2 Buying on the site today
 
@@ -131,7 +131,7 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 - A prepaid code `SN<length>-…` pays too. Group admins issue them free (`issueNameCode … CPSFree`, `StoreService/Group.hs:278-279`; `runFor`, `StoreService/Group/Command.hs`); the operator's `//issue name` issues them paid or free, never unpaid (`issueNameCmdP`, `StoreService/Service.hs:536-543`).
 - The browser makes a wallet per order. Its secret is the owner code, `SN-` and 30 characters, the 128-bit entropy of a 12-word BIP-39 phrase (`src/Simplex/Chat/Badges/Code.hs`). The name registers to that wallet.
 - Terms on chain: the buyer signs each order with the hash of its kind's terms; the reveal carries the owner's acceptance, which the service relays before the register; `terms_unavailable` and `terms_changed` refuse an order (`checkTerms`, `Names/Orders.hs:284-291`).
-- The terms text: `docs/NAMES-TERMS.md` in the closed draft https://github.com/simplex-chat/simplex-chat/pull/8002, at 672d13e9e; the name policy links whichever file is current.
+- The terms text: the SimpleX Names Conditions of Use, `docs/NAMES-CONDITIONS.md` on master since https://github.com/simplex-chat/simplex-chat/pull/8135 (d94981224): one obligation, a second for a community name; no age and no purchase section (Q3, Q4); the name policy links whichever file is current.
 - The search reads `/#/?name=<label>` (`webapp/src/views/search.ts:44`, `views/shell.ts:122`). Its "is yours" page tells the buyer to set the name on their address and shows the code (`webapp/src/views/order.ts:1262`).
 - Codes-only refuses paid orders before the full launch (`nCodesOnly`, `StoreService/Web/Names/Orders.hs:88, 240`).
 
@@ -193,7 +193,7 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 | Pull request | Relation |
 |---|---|
 | https://github.com/simplex-chat/simplex-chat/pull/7675 store spec | Followed: codes, terms; its price list replaced (3.1) |
-| https://github.com/simplex-chat/simplex-chat/pull/8002 terms of use, https://github.com/simplex-chat/simplex-chat/pull/7994 placeholder texts, both closed | The app reads whatever the policy links (Q3, Q4) |
+| https://github.com/simplex-chat/simplex-chat/pull/8002 terms of use, https://github.com/simplex-chat/simplex-chat/pull/7994 placeholder texts, both closed; https://github.com/simplex-chat/simplex-chat/pull/8135 the final Names Conditions, merged | The app shows the Names Conditions' words on the checkout and reads whatever the policy links (Q3, Q4) |
 | https://github.com/simplex-chat/simplex-chat/pull/8010 Lightning, closed | Left out |
 | https://github.com/simplex-chat/simplex.domains/pull/6 the site | Followed; gains the link parameter and "Open in SimpleX" (6.8) |
 | https://github.com/simplex-chat/simplex-chat/pull/7693 registration primitives | Moved into the library (P5, P6) |
@@ -254,7 +254,7 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 - **D10.** Signing stays in the core: a library function takes an account index and uses the account key only inside it; named commands build and sign their own messages; no chat command signs text its caller gives.
 - **D11.** A name code is a wallet, and redeeming one is a transfer. The name code stays on the device and the app sends only that wallet's signatures; a prepaid code is sent as it is. The code's wallet offers the name with `approveWithSig`, and the app's account accepts the terms and takes it with `claimWithSig`: three transactions, each relayed by the service; then the recovery key owns the name. In stage 1 only a name that already opens this profile's address or channel moves.
 - **D12.** The recovery key comes after the search and before the checkout, the first time only. 1·4 creates it; a half-screen sheet over it, 1·4a, offers to save it; saving is optional; the words show only on Show; a quiet reminder until Copy or Show. Restore comes in stage 2, with its scan.
-- **D13.** The app signs each order with the terms the user ticked for it on the checkout: one tick, whose link opens a half-screen sheet with two obligations, a third for a community name, and Agree (the obligations on the checkout itself are Q25's alternative B), one link to one document with a section on community names, opened from the sheet as onboarding's conditions of use; the checkout's buttons stay off until ticked. The obligations' words are placeholders for the terms' own.
+- **D13.** The app signs each order with the terms the user ticked for it on the checkout: one tick, whose link opens a half-screen sheet with the SimpleX Names Conditions' obligation, a second for a community name, and Agree (the obligation on the checkout itself is Q25's alternative B), one link to one document, opened from the sheet as onboarding's conditions of use; the checkout's buttons stay off until ticked. The words are the Names Conditions' own.
 - **D14.** In stage 1 buying and codes start from the address and a channel's info; the hub, with Register a name, Import and Restore purchases, comes in stage 2, under Advanced settings.
 - **D15.** In stage 1 a name may open nothing: 1·5's ✕ registers it so, and a list of the profile's names under Advanced settings shows it, as it shows a name replaced by a newer one on the same address (Q12).
 - **D16.** A taken name shows "Taken", without pictures, and a separate "What it's used for" button (Q18).
@@ -506,7 +506,7 @@ Otherwise the terms read as unavailable. Only test builds accept the site's loca
 - The name policy holds two links, general and community (`generalTermsLink()`, `communityTermsLink()`, `Names/Contracts.hs:209-219`); each terms hash is the keccak256 of its link (`termsOf`, `:221-224`).
 - The buyer signs an order with the hash of its name's kind, with the `community/` prefix for a listed name (`termsFor`, `Names/Community.hs:40-48`; `checkTerms`, `Names/Orders.hs:284-291`).
 - The acceptance has two EIP-712 types, `AcceptGeneralTerms` and `AcceptCommunityTerms` (`termsKind`, `Names/Registration.hs:89-112`).
-- The operator sets both links to the one document, with its section on community names (`docs/NAMES-TERMS.md` at 672d13e9e), a chain operation as M13 is. If the contract refuses one link for both kinds, the two links name the same file at two commits.
+- The operator sets both links to the one document, with its line on community names (`docs/NAMES-CONDITIONS.md` at d94981224), a chain operation as M13 is. If the contract refuses one link for both kinds, the two links name the same file at two commits.
 
 **The other SMP commands** call the functions D5 extracts:
 
@@ -725,14 +725,14 @@ Rules for every screen:
 - Names are counted in characters.
 - Every price is the store's, in its currency; on row 4, the service's, in US dollars.
 - The terms block, on the checkout of every order (1·5, 2·3, 4·2) and on 3·1 for a move, above the main button:
-  - one tick, "I agree to the SimpleX names terms", ticked there or by the sheet's Agree; its link opens a half-screen sheet, 1·5a, as 1·4a is for the key: "SimpleX names terms", "You agree:", "to use the name lawfully, respecting others' rights;" and "not to use it for fraud or impersonation."; for a community name, "bakery.simplex is a community name. You agree:", "not to use it for fraud or impersonation;" and a third line, "to use it for its community, not as a brand."; then "Read the full terms" and "Agree", which ticks and closes the sheet; swiped away, the sheet changes nothing;
-  - the words are placeholders for the terms' own;
-  - "Read the full terms" opens the text as onboarding's conditions of use do: iOS a `.sheet` (`OnboardingConditionsView`, `ChooseServerOperators.swift:107`); Android and desktop `ModalManager.fullscreen.showModal`, a full-screen modal (`ChooseServerOperators.kt:111, 157`). It shows the text whose hash the app signs, by the link of the name's kind; "Loading the terms…" while it loads; "The terms can't be shown now. Try again in a moment." with "Try again" when it can't;
+  - one tick, "I agree to the SimpleX Names Conditions", ticked there or by the sheet's Agree; its link opens a half-screen sheet, 1·5a, as 1·4a is for the key: "SimpleX Names Conditions", "You agree:", "not to use the name for fraud, to impersonate people or organizations, to store links to illegal content, or to knowingly infringe the rights of others, including trademarks."; for a community name, "bakery.simplex is a community name. You agree:", that line and a second, "to use it to benefit its community, not as the brand of one person or business."; then "Read the full conditions" and "Agree", which ticks and closes the sheet; swiped away, the sheet changes nothing;
+  - the words are the Names Conditions' own (`docs/NAMES-CONDITIONS.md`, "You agree");
+  - "Read the full conditions" opens the text as onboarding's conditions of use do: iOS a `.sheet` (`OnboardingConditionsView`, `ChooseServerOperators.swift:107`); Android and desktop `ModalManager.fullscreen.showModal`, a full-screen modal (`ChooseServerOperators.kt:111, 157`). It shows the text whose hash the app signs, by the link of the name's kind; "Loading the conditions…" while it loads; "The conditions can't be shown now. Try again in a moment." with "Try again" when it can't;
   - Pay, "Register with your payment", "Register with your code", "Pay in browser" and 3·1's "Move into this app" stay off until ticked;
-  - on `terms_changed` the tick comes back unticked under "The terms changed. Agree to them again.": on the checkout before paying, in place on 1·7 after.
+  - on `terms_changed` the tick comes back unticked under "The conditions changed. Agree to them again.": on the checkout before paying, in place on 1·7 after.
 - The images show each lane's screens with their numbers and routes; where the words below differ from an image, the words below hold. A state not named here takes a listed state's words.
-- Alternative B, the obligations under the tick on the checkout itself with no sheet, drawn in lane 1 and noted beside 2·3, 3·1 and 4·2, is Q25.
-- Privacy disclosures stay off the screens: section 7 states each as a property, and P57a, P57b and P57c put them in `PRIVACY.md`, ⚠ each text approved by the lead. The names terms' text (https://github.com/simplex-chat/simplex-chat/pull/8002) is outside this plan.
+- Alternative B, the obligation under the tick on the checkout itself with no sheet, drawn in lane 1 and noted beside 2·3, 3·1 and 4·2, is Q25.
+- Privacy disclosures stay off the screens: section 7 states each as a property, and P57a, P57b and P57c put them in `PRIVACY.md`, ⚠ each text approved by the lead. The Names Conditions' text (`docs/NAMES-CONDITIONS.md`) is outside this plan.
 - The codes release: 1·1 opens 1·2 in every build, and 4·1's code-only form on iOS outside the US; 1·2 keeps "Register with code" whatever the catalog says, with the codes-only state's line while the catalog reads codes-only and "This version registers names with a code." once it reads open; its "Buy in browser" opens the site's search for the name (`/#/?name=<label>`, 3.2), with no 1·4, where D18 allows and the catalog reads open (Q26). 1·5, 1·6, 1·10, 4·1's priced form and the rest of row 4 come with the payments release.
 
 #### Row 1, buy in the app (Google Play; iOS when its payment is on). Stage 1, except 1·4's "I already have a key"
@@ -842,7 +842,7 @@ flowchart TD
 | Purchase cancelled by the store | "The purchase was cancelled." → 1·5 | | |
 | Paid, the sale closed | "Paid, waiting for the sale"; "Your payment waits for the sale to open; open the app then to register the name." (or "to reopen in 5 hrs") | No stage started. "dynamism.simplex isn't held meanwhile." | "Close" |
 | Paid, terms unreadable | "Paid, waiting to order"; "Your payment is kept. Names can't be ordered right now; open the app later to order it." | No stage started | "Close" |
-| Terms changed while waiting | "Agree to the terms again"; "Your payment is kept." | "dynamism.simplex isn't held meanwhile."; the checkout's terms block in the name's kind, unticked, in place, asked once the order can be placed | The order goes in once ticked; "Contact SimpleX team", or "Choose another name" when the kind changed |
+| Terms changed while waiting | "Agree to the conditions again"; "Your payment is kept." | "dynamism.simplex isn't held meanwhile."; the checkout's terms block in the name's kind, unticked, in place, asked once the order can be placed | The order goes in once ticked; "Contact SimpleX team", or "Choose another name" when the kind changed |
 | Terms changed at the reveal | Registering | "The registration is not signed yet."; the checkout's terms block, unticked, in place | Signed once ticked |
 | The register past the day's cap | Registering | ✓ "Ordered", "Waiting". "Registering waits for today's limit and goes on by itself when it can. dynamism.simplex isn't held meanwhile." | "Close" |
 | Signing refused three times | Registering | "The name could not be signed", "The service refused the signed registration." | "Try again", which reads the clock and signs again; "Close" |
@@ -1050,7 +1050,7 @@ The path: search → key the first time → checkout with the terms tick → the
 - Search: on today's name screen; "I have a code" under Register, above "Buy in browser".
 - A taken name: "What it's used for" (Q18).
 - Opens: the address or channel it started from, or nothing with the sketch's ✕, whose warning shows in place of its alert (Q12).
-- Terms: one tick on the checkout for each order; its link opens a half-screen sheet with two obligations and a third for a community name, and the one document from there, as onboarding's conditions of use.
+- Terms: one tick on the checkout for each order; its link opens a half-screen sheet with the Names Conditions' obligation and a second for a community name, and the one document from there, as onboarding's conditions of use.
 - Recovery key: after the search, before the checkout; one screen and a sheet; the device's check when opened later; stage 1's own words.
 - Registering: "Ordered · Waiting (countdown) · Registering"; the site's keep-the-app-open warning until the reveal; Close only leaves; reopening continues without asking.
 - Done: a screen; a quiet key reminder; 1·11's key row.
@@ -1625,8 +1625,8 @@ The other questions:
 
 - **Q1.** Keep a recovery key that finds no names on a new phone? → Yes, after a warning (6·3).
 - **Q2.** The word for your own name coming into the app? → "Move"; "transfer" for someone else.
-- **Q3.** ⚠ Legal. Does the app say buyers must be 18 or older? → No; the terms say it.
-- **Q4.** ⚠ Legal. The app's own purchase terms, besides the names terms? → Yes: a purchase section in the one names terms document, its text approved by the lead.
+- **Q3.** ⚠ Legal. Must buyers be 18 or older, and does the app say so? → No line in the app: the Names Conditions set no age.
+- **Q4.** ⚠ Legal. The app's own purchase terms, besides the Names Conditions? → Yes: a purchase section in the Names Conditions, which have none today, its text approved by the lead.
 - **Q5.** Decided. When iOS store payment is switched on? → In the payments release, shown only in App Store builds, as the badges (6.9).
 - **Q6.** ⚠ Privacy policy. Linking a payment to its name? → Register at once, fine for v1; `PRIVACY.md` states it (section 7, P57b), the screens don't.
 - **Q7.** Detail of Q24. What the invoice's link holds? → The code's hash alone; no order code shows (decided on 11 Nov).
