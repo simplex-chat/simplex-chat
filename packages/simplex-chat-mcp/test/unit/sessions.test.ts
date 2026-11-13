@@ -681,7 +681,8 @@ describe("session channel", () => {
       reaction(sessionGroup, answer, sessionUser, emoji("👍")),
       reaction(sessionGroup, answer, bob, emoji("👍"), false),
       reaction(sessionGroup, answer, bob, {type: "custom", value: "👍"}),
-      reaction(groupChat(group(10, "SimpleX MCP", self)), answer, bob, emoji("👍")),
+      reaction(sessionGroup, answer, bob, {type: "unknown", tag: "custom", json: {type: "custom", value: "👍"}}),
+      reaction(groupChat(hub.main["group"]), answer, bob, emoji("👍")),
       reaction(sessionGroup, answer, bob, emoji("👍")),
       reaction(sessionGroup, prompt, invitedAlice, emoji("👎")),
     ]) await hub["onEvent"](reacted)
