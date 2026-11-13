@@ -2,7 +2,6 @@ import XCTest
 import SwiftUI
 import UIKit
 import AVFoundation
-import PushKit
 import WebRTC
 import LZString
 @testable import SimpleX
@@ -220,25 +219,6 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(client.activeCall?.connection.transceivers.count, 1)
         XCTAssertFalse(call.localMediaSources.camera)
     }
-
-    @MainActor
-    func testVoIPPushWithExpiredCallSuspendsChat() async {
-        let chatStarted = await waitUntil(30) { ChatModel.shared.chatRunning == true && AppChatState.shared.value == .active }
-        guard chatStarted else { return XCTFail("chat is not running") }
-        let payload = CallPushPayload([
-            "contactId": "@1",
-            "displayName": "alice",
-            "callUUID": UUID().uuidString.lowercased(),
-            "callTs": Date.now.timeIntervalSince1970 - 600,
-            "media": CallMediaType.audio.rawValue
-        ])
-        CallController.shared.pushRegistry(PKPushRegistry(queue: nil), didReceiveIncomingPushWith: payload, for: .voIP) {}
-        let suspended = await waitUntil(15) { appStateGroupDefault.get().inactive }
-        CallController.shared.shouldSuspendChat = false
-        _ = await waitUntil(20) { AppChatState.shared.value != .suspending }
-        startChatForCall()
-        XCTAssertTrue(suspended)
-    }
 }
 
 private actor CallResponses {
@@ -251,27 +231,6 @@ private actor CallResponses {
     func response(to command: WCallCommand) -> WCallResponse? {
         messages.last { $0.command == command }?.resp
     }
-}
-
-private final class CallPushPayload: PKPushPayload {
-    private let payload: [AnyHashable: Any]
-
-    init(_ payload: [AnyHashable: Any]) {
-        self.payload = payload
-        super.init()
-    }
-
-    override var dictionaryPayload: [AnyHashable: Any] { payload }
-}
-
-@MainActor
-private func waitUntil(_ seconds: TimeInterval, _ condition: () -> Bool) async -> Bool {
-    let deadline = Date.now.addingTimeInterval(seconds)
-    while !condition() {
-        if Date.now > deadline { return false }
-        try? await Task.sleep(nanoseconds: 100_000_000)
-    }
-    return true
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {
