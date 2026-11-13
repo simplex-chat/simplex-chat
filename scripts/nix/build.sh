@@ -78,30 +78,8 @@ for package in $packages; do
     printf '%s\n' "$attribute"
   else
     mkdir -p "$out_dir/$system"
-    crash_since=
-    if [ "$system" = x86_64-darwin ] && [ "${GITHUB_ACTIONS:-}" = true ]; then
-      crash_since=$(date +%s) || crash_since=
-    fi
-    if nix build --print-build-logs --timeout "${NIX_BUILD_TIMEOUT:-7200}" \
+    nix build --print-build-logs --timeout "${NIX_BUILD_TIMEOUT:-7200}" \
       --out-link "$out_dir/$system/$package" \
-      "$repo_dir#$attribute" "$@"; then
-      :
-    else
-      status=$?
-      if [ -n "$crash_since" ] && command -v python3 >/dev/null 2>&1; then
-        # ReportCrash can provide a compiler fault's registers and stack even
-        # when the failure is outside the separate ghc-boot Setup diagnostic.
-        python3 "$repo_dir/scripts/nix/collect-darwin-ghc-crash.py" \
-          --since "$crash_since" || printf '%s\n' 'Darwin crash-report collection failed.' >&2
-        if [ "$attribute" = hydraJobs.x86_64-darwin.x86_64-darwin-ios:lib:simplex-chat ]; then
-          # This separate, bounded replay records an observed compiler SIGBUS.
-          # Always return the saved canonical build status below.
-          python3 "$repo_dir/scripts/nix/trace-intel-ghc.py" \
-            --repo "$repo_dir" --attribute "$attribute" --log "$repo_dir/nix-build.log" || \
-            printf '%s\n' 'Intel GHC signal diagnostic failed.' >&2
-        fi
-      fi
-      exit "$status"
-    fi
+      "$repo_dir#$attribute" "$@"
   fi
 done

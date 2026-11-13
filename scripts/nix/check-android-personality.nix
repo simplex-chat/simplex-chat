@@ -1,12 +1,19 @@
-{ system ? builtins.currentSystem }:
+{ system ? builtins.currentSystem
+, haskellNix ? null
+, nativePackages ? null
+}:
 let
-  flake = builtins.getFlake (toString ../..);
-  haskellNix = flake.inputs.haskellNix;
-  nativePackages = import ./native-packages.nix { inherit haskellNix; };
-  pkgs = nativePackages system;
+  # The standalone `nix eval --file` entry still finds the pinned compiler.
+  # Hydra passes both arguments so evaluating this job does not re-enter the flake.
+  flake = if haskellNix == null || nativePackages == null
+    then builtins.getFlake (toString ../..)
+    else null;
+  haskellNix' = if haskellNix != null then haskellNix else flake.inputs.haskellNix;
+  nativePackages' = if nativePackages != null then nativePackages else import ./native-packages.nix { haskellNix = haskellNix'; };
+  pkgs = nativePackages' system;
   # The pinned NDK runs on x86_64 Linux. Keep the tiny payload compilation on
   # that existing target, even when QEMU itself is tested on native ARM64.
-  buildPkgs = nativePackages "x86_64-linux";
+  buildPkgs = nativePackages' "x86_64-linux";
   target = import buildPkgs.path {
     localSystem = { system = "x86_64-linux"; };
     inherit (buildPkgs) overlays;
@@ -15,7 +22,8 @@ let
       // { androidSdkVersion = "26"; };
   };
   emulator = import ./android-arm32-qemu.nix {
-    inherit haskellNix pkgs;
+    haskellNix = haskellNix';
+    inherit pkgs;
     hostPlatform = target.stdenv.hostPlatform;
   };
   payload = buildPkgs.runCommand "android-arm32-personality-payload" {} ''

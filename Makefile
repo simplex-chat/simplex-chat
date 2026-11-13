@@ -6,7 +6,7 @@ export NIX_SYSTEM
 export NIX_OUT_DIR
 export NIX_BUILD_TIMEOUT
 
-.PHONY: help nix-list nix-build nix-native nix-android nix-windows nix-linux-static nix-ios nix-darwin-libs
+.PHONY: help nix-list nix-build nix-test nix-native nix-android nix-windows nix-linux-static nix-ios nix-darwin-libs
 
 help: ## Show build commands.
 	@awk 'BEGIN { FS = ":.*## " } /^[a-zA-Z_-]+:.*## / { printf "  %-20s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -17,6 +17,9 @@ nix-list: ## List selected Hydra outputs without building (NIX_TARGET=all).
 
 nix-build: ## Build the host's existing Hydra outputs (NIX_TARGET=all, NIX_ARGS=...).
 	./scripts/nix/build.sh $(NIX_TARGET) $(NIX_ARGS)
+
+nix-test: ## Build this host's Hydra test jobs (nix flake check).
+	nix flake check --print-build-logs --keep-going
 
 nix-native: ## Build the native Haskell library and CLI.
 	./scripts/nix/build.sh native $(NIX_ARGS)

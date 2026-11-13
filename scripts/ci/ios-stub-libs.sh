@@ -9,7 +9,8 @@ set -eu
 IOS_DIR=apps/ios
 PBXPROJ=$IOS_DIR/SimpleX.xcodeproj/project.pbxproj
 OUT_DIR=$IOS_DIR/Libraries/sim
-ARCH=arm64
+# CI's macOS runner is arm64. Nix's x86_64-darwin job exports ARCH.
+ARCH=${ARCH:-arm64}
 MIN_IOS=15.0
 
 tmp=$(mktemp -d)

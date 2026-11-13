@@ -663,29 +663,16 @@
               );
             };
         }.${system} or {});
-        # build all packages in hydra.
-        hydraJobs = packages;
-
-        checks = pkgs.lib.optionalAttrs (system == "x86_64-linux") {
-          windows-rts-fs = import ./scripts/nix/check-windows-fs.nix { inherit pkgs; };
-          windows-blst-linkage = import ./scripts/nix/check-windows-blst-linkage.nix { inherit pkgs; };
-          ghc-elf-comdat-functions = import ./scripts/nix/check-elf-comdat-functions.nix {
-            inherit pkgs;
-            compiler = (compilerSelection pkgs).ghc914-sh;
-            patch = haskellNix + "/overlays/patches/ghc914-rts-elf-comdat-functions.patch";
-          };
-          ghc-elf-alignment = import ./scripts/nix/check-elf-alignment.nix {
-            inherit pkgs;
-            compiler = (compilerSelection pkgs).ghc914-sh;
-          };
-        } // pkgs.lib.optionalAttrs (system == "x86_64-darwin") {
-          ghc-macho-info-tables = import ./scripts/nix/check-macho-info-tables.nix {
-            inherit pkgs;
-            compiler = (compilerSelection pkgs).ghc914-sh;
-          };
-        } // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
-          ios-archive-converter = iosArchiveConverter;
+        tests = import ./scripts/nix/tests.nix {
+          inherit pkgs haskellNix system nativePackages iosArchiveConverter;
+          lib = pkgs.lib;
+          nativeProject = drv pkgs;
+          compiler = (compilerSelection pkgs).ghc914-sh;
         };
+        # Release outputs stay under their existing names. The test jobs are
+        # siblings, so Hydra builds them and `nix flake check` builds the same set.
+        hydraJobs = packages // tests;
+        checks = tests;
 
         devShell = let
 	updateCmd = pkgs.writeShellApplication {

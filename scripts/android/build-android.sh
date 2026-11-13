@@ -5,7 +5,7 @@ set -eu
 repo="https://github.com/simplex-chat/simplex-chat"
 
 u="$USER"
-tmp="$(mktemp -d)"
+tmp="$(mktemp -d -t)"
 folder="$tmp/simplex-chat"
 
 nix_ver="nix-2.22.0"
