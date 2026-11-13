@@ -305,7 +305,7 @@ My Agent: Schedule 1 of group Builders (#3): 0 7 * * 1-5, server time UTC+01:00.
 - CHAT: a chat ID from `/list`.
 - CRON: the 5 words after CHAT; the fields are minute, hour, day of month, month and day of week, in server time. A field is `*`, `N`, `A-B`, `*/S` or `A-B/S`, or a comma list of these; names such as `MON` are refused. Ranges: minute 0-59, hour 0-23, day of month 1-31, month 1-12, day of week 0-7, with 0 and 7 for Sunday. When neither day field starts with `*`, a match of either one suffices, as in vixie cron.
 - PROMPT: the rest of the one-line message, at most 2000 characters; a sixth cron field is read as the first word of PROMPT.
-- Server time: the local time of the server, in the system's time zone, or in the one set by the `TZ` environment variable, such as `TZ=Europe/Berlin npx -y @simplex-chat/mcp serve my-agent`. Its current UTC offset is shown in the reply to `/schedule`. At a daylight saving change, a skipped local time is never matched, and a repeated one can be matched twice.
+- Server time: the local time of the server, in the system's time zone, or in the one set by the `TZ` environment variable, such as `TZ=Europe/Berlin npx -y @simplex-chat/mcp serve my-agent`. In the group of a [Claude Code session](#sessions-and-their-groups), server time is the local time of the plugin's service. The service takes `TZ` from the environment of the Claude Code session or command that started it; while it runs, that time zone applies to the schedules of all sessions. The current UTC offset of server time is shown in the reply to `/schedule`. At a daylight saving change, a skipped local time is never matched, and a repeated one can be matched twice.
 
 At each minute matched by a schedule, its prompt becomes due:
 - `receive` of the chat returns it once, in `scheduled` ([What the agent sees](#what-the-agent-sees)), and a `receive` waiting in the chat ends at once. A session waiting in `receive` of the chat, as asked by the prompt in [Prompt the agent from the app](#prompt-the-agent-from-the-app), gets it at that minute.
@@ -776,7 +776,7 @@ The folders, and the files the service writes, are readable only by the user, ex
 ### Plugin security
 
 - The service listens only on its local socket, in a folder only the user can read, and every request needs the token. On Windows the named pipe has no folder permissions, so the token is the only check.
-- The service gets only the environment variables it uses: the paths of the home, temporary and cache folders, the locale, the proxy and certificate settings, `NODE_OPTIONS`, the `SIMPLEX_` variables and the plugin options.
+- The service gets only the environment variables it uses: the paths of the home, temporary and cache folders, the locale and the time zone, the proxy and certificate settings, `NODE_OPTIONS`, the `SIMPLEX_` variables and the plugin options.
 - Everyone in the Main group is trusted with all sessions. In a session's group, rights follow the member's role, see [Sessions and their groups](#sessions-and-their-groups).
 - Claude Code runs no command from a message of a session's group, even one that starts with `!`. Claude gets the text, and its tool use follows Claude Code's permissions.
 - Only you get the Main group link. The session start shows it, and `link` prints it in a terminal.
