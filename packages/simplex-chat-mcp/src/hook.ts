@@ -16,9 +16,13 @@ const serviceStopped = "The SimpleX service stopped; it starts again with the ne
 const unknownSession = 409
 const turnAttempts = 15
 const turnRetryMs = 1_000
+// spec: spec/api.md#plugin-commands
 const maxText = 250_000
+// spec: spec/api.md#plugin-options
 const answerReads = 20
+// spec: spec/api.md#plugin-options
 const promptReads = 600
+// spec: spec/api.md#plugin-options
 const transcriptReadMs = 100
 const transcriptTailBytes = 1_048_576
 const usageTailBytes = [4, 16, 64].map(mebibytes => mebibytes * 1_048_576)
@@ -31,6 +35,7 @@ const pluginTools = "mcp__plugin_simplex_simplex__"
 const toolEvents = ["PreToolUse", "PostToolUse", "PostToolUseFailure"]
 const stepFields = ["description", "query", "url", "file_path", "path", "pattern", "command"]
 
+// spec: spec/api.md#plugin-options
 interface SessionStartInput {
   session_id: string
   session_title?: string
@@ -38,6 +43,7 @@ interface SessionStartInput {
   model?: string
 }
 
+// spec: spec/api.md#plugin-options
 interface TurnInput {
   session_id: string
   hook_event_name?: string
@@ -56,6 +62,7 @@ interface TurnInput {
   is_interrupt?: boolean
 }
 
+// spec: spec/api.md#plugin-options
 interface Origin {
   kind?: unknown
   name?: unknown
@@ -65,6 +72,7 @@ interface Origin {
   handbackReportText?: unknown
 }
 
+// spec: spec/api.md#plugin-options
 interface TranscriptEntry {
   type?: unknown
   isSidechain?: unknown
@@ -78,6 +86,7 @@ interface TranscriptEntry {
   message?: {id?: unknown; model?: unknown; content?: unknown; usage?: Usage}
 }
 
+// spec: spec/api.md#plugin-options
 interface Usage {
   input_tokens?: unknown
   cache_creation_input_tokens?: unknown
@@ -111,6 +120,7 @@ export interface HookDeps {
   nodeVersion: string
 }
 
+// spec: spec/architecture.md#hook-sessionstart
 export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = process.env, deps?: HookDeps, at = performance.timeOrigin): Promise<HookOutput> {
   if (!interactive(env)) {
     if (interactiveEntrypoint(env)) await markUnattended(stdin, env, deps?.client)
@@ -132,6 +142,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
   }
 }
 
+// spec: spec/architecture.md#hook-markunattended
 async function markUnattended(stdin: string, env: NodeJS.ProcessEnv, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env))): Promise<void> {
   const pid = claudePid(env)
   if (pid === undefined) return
@@ -144,6 +155,7 @@ async function markUnattended(stdin: string, env: NodeJS.ProcessEnv, client: Hoo
   }
 }
 
+// spec: spec/architecture.md#hook-turn
 export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env)), retryMs = turnRetryMs, at = performance.timeOrigin, readMs = transcriptReadMs): Promise<HookOutput> {
   if (!interactive(env)) return {}
   try {
@@ -171,6 +183,7 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   return {}
 }
 
+// spec: spec/architecture.md#hook-answermodel
 async function answerRecord({transcript_path: path, prompt_id: id, last_assistant_message: message}: TurnInput, readMs: number): Promise<{model?: string; usage?: string}> {
   const answer = message?.trim()
   if (!path || !answer) return {}
@@ -185,6 +198,7 @@ async function answerRecord({transcript_path: path, prompt_id: id, last_assistan
   return {model: last.model, usage: measured ? await turnUsage(path, id, {at: answeredAt, usage}, last.tail) : undefined}
 }
 
+// spec: spec/architecture.md#hook-turnusage
 async function turnUsage(path: string, promptId: string, answer: AnswerUsage, tail: string): Promise<string | undefined> {
   let usage = usageOf(tail, promptId, answer)
   for (const bytes of usageTailBytes) {
@@ -194,6 +208,7 @@ async function turnUsage(path: string, promptId: string, answer: AnswerUsage, ta
   return usage
 }
 
+// spec: spec/architecture.md#hook-turnusage
 function usageOf(tail: string, promptId: string, {at, usage}: AnswerUsage): string | undefined {
   const lines = tail.split("\n")
   const first = lines.findIndex(line => line.includes(promptId) && startsTurn(transcriptEntry(line), promptId))
@@ -209,18 +224,22 @@ function usageOf(tail: string, promptId: string, {at, usage}: AnswerUsage): stri
   return `${duration(ms)} · ${tokenCount(written)} output tokens · ${tokenCount(context)} tokens in context`
 }
 
+// spec: spec/architecture.md#hook-turnusage
 function startsTurn(entry: TranscriptEntry | undefined, promptId: string): boolean {
   return entry !== undefined && isPrompt(entry) && entry.promptId === promptId
 }
 
+// spec: spec/architecture.md#hook-turnusage
 function timeOf(entry: TranscriptEntry | undefined): number {
   return typeof entry?.timestamp === "string" ? Date.parse(entry.timestamp) : NaN
 }
 
+// spec: spec/architecture.md#hook-turnusage
 function count(value: unknown): number {
   return typeof value === "number" ? value : 0
 }
 
+// spec: spec/architecture.md#hook-turnusage
 function tokenCount(tokens: number): string {
   if (tokens < 1_000) return String(tokens)
   if (tokens < 100_000) return `${(Math.floor(tokens / 100) / 10).toFixed(1)}k`
@@ -228,12 +247,14 @@ function tokenCount(tokens: number): string {
   return `${(Math.floor(tokens / 100_000) / 10).toFixed(1)}M`
 }
 
+// spec: spec/architecture.md#hook-answermodel
 async function promptKind({transcript_path: path, prompt_id: id, prompt}: TurnInput, readMs: number): Promise<PromptKind> {
   const text = prompt?.trim()
   if (!path || !text) return {typed: false}
   return (await findInTranscript(path, text, promptReads, readMs, (tail, last) => promptRecord(tail, id, text, last))) ?? {typed: false}
 }
 
+// spec: spec/architecture.md#hook-answermodel
 async function findInTranscript<T>(path: string, text: string, reads: number, readMs: number, find: (tail: string, last: boolean) => T | undefined): Promise<T | undefined> {
   const bytes = transcriptTailBytes + 2 * Buffer.byteLength(text)
   for (let read = 1; ; read++) {
@@ -244,6 +265,7 @@ async function findInTranscript<T>(path: string, text: string, reads: number, re
   }
 }
 
+// spec: spec/architecture.md#hook-answermodel
 async function readTail(path: string, bytes: number): Promise<string> {
   const file = await open(path, "r")
   try {
@@ -257,6 +279,7 @@ async function readTail(path: string, bytes: number): Promise<string> {
   }
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function lastAnswer(tail: string): Answer | undefined {
   const lines = tail.split("\n")
   for (let i = lines.length - 1; i >= 0; i--) {
@@ -268,6 +291,7 @@ function lastAnswer(tail: string): Answer | undefined {
   return undefined
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function promptRecord(tail: string, id: string | undefined, text: string, last: boolean): PromptKind | undefined {
   const entries = tail.split("\n").flatMap(line => transcriptEntry(line) ?? [])
   const first = id === undefined ? -1 : entries.findIndex(entry => entry.type === "user" && entry.isSidechain !== true && entry.promptId === id)
@@ -286,18 +310,21 @@ function promptRecord(tail: string, id: string | undefined, text: string, last: 
   return first === -1 ? undefined : {typed: after.some(entry => isPrompt(entry) && entry.promptId === id && entry.origin?.kind === "human")}
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function isPrompt(entry: TranscriptEntry): boolean {
   const content = entry.message?.content
   const toolResult = Array.isArray(content) && content.some((part: {type?: unknown} | null) => part?.type === "tool_result")
   return entry.type === "user" && entry.isSidechain !== true && !toolResult
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function recordText(entry: TranscriptEntry): string | undefined {
   if (isPrompt(entry)) return textOf(entry.message?.content)
   if (entry.type === "attachment" && entry.isSidechain !== true && entry.attachment?.type === "queued_command") return textOf(entry.attachment.prompt)
   return undefined
 }
 
+// spec: spec/architecture.md#hook-answermodel
 function recordKind(record: TranscriptEntry, id: string | undefined, text: string): PromptKind {
   const origin = record.type === "attachment" ? (record.attachment?.origin ?? (record.attachment?.commandMode === "task-notification" ? {kind: "task-notification"} : undefined)) : record.origin
   const note = noteOf(origin, record.turnOrigin, text)
@@ -305,6 +332,7 @@ function recordKind(record: TranscriptEntry, id: string | undefined, text: strin
   return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: shortened(note)}), ...(midTurn ? {midTurn} : {})}
 }
 
+// spec: spec/architecture.md#hook-noteof
 function noteOf(origin: Origin | null | undefined, turnOrigin: unknown, text: string): string | undefined {
   switch (origin?.kind) {
     case "human":
@@ -325,6 +353,7 @@ function noteOf(origin: Origin | null | undefined, turnOrigin: unknown, text: st
   }
 }
 
+// spec: spec/architecture.md#hook-noteof
 function taskNote(text: string): string {
   const block = /<task-notification>([\s\S]*?)<\/task-notification>/.exec(text)?.[1]
   if (block === undefined) return `🔔 ${firstLine(text)}`
@@ -335,6 +364,7 @@ function taskNote(text: string): string {
   return `${emoji} ${summary}${event === "" ? "" : `: ${event}`}`
 }
 
+// spec: spec/architecture.md#hook-noteof
 function teammateNote(text: string): string | undefined {
   if (!teammatePrompt.test(text)) return undefined
   const match = [...text.matchAll(teammateMessage)].find(([, , , body]) => !idleNotification(body))
@@ -344,6 +374,7 @@ function teammateNote(text: string): string | undefined {
   return `✉️ Message from ${oneLine(decoded(sender))}: ${firstLine(summary === undefined ? body : decoded(summary))}`
 }
 
+// spec: spec/architecture.md#hook-noteof
 function idleNotification(body: string): boolean {
   try {
     return (JSON.parse(body) as {type?: unknown} | null)?.type === "idle_notification"
@@ -352,10 +383,12 @@ function idleNotification(body: string): boolean {
   }
 }
 
+// spec: spec/architecture.md#hook-noteof
 function peerName(origin: Origin): string {
   return oneLine(stringOf(origin.name) ?? stringOf(origin.from) ?? "another session")
 }
 
+// spec: spec/architecture.md#hook-stepof
 function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_name: event, tool_input: fields = {}, cwd, is_interrupt: interrupted, duration_ms: ms}: TurnInput): Step | undefined {
   if (id === undefined || tool === undefined || agent !== undefined || tool.startsWith(pluginTools)) return undefined
   const text = shortened(stepText(tool, fields, cwd))
@@ -365,6 +398,7 @@ function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_n
   return {id, text: `${text} ${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`, end: true}
 }
 
+// spec: spec/architecture.md#hook-stepof
 function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string | undefined): string {
   const field = (name: string): string => firstLine(stringOf(fields[name]) ?? "")
   const path = (name: string): string => displayPath(field(name), cwd)
@@ -395,29 +429,35 @@ function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string 
   }
 }
 
+// spec: spec/architecture.md#hook-stepof
 function displayPath(path: string, cwd: string | undefined): string {
   if (cwd === undefined || path === "") return path
   const inside = relative(cwd, path)
   return isAbsolute(inside) || inside.startsWith("..") ? path : inside
 }
 
+// spec: spec/architecture.md#hook-noteof
 function firstLine(text: string): string {
   return text.split("\n").map(line => oneLine(line).trim()).find(line => line !== "") ?? ""
 }
 
+// spec: spec/architecture.md#hook-noteof
 function decoded(text: string): string {
   return text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&")
 }
 
+// spec: spec/architecture.md#hook-noteof
 function stringOf(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined
 }
 
+// spec: spec/architecture.md#hook-noteof
 function shortened(note: string): string {
   const chars = [...note]
   return chars.length <= maxNote ? note : `${chars.slice(0, maxNote - 1).join("")}…`
 }
 
+// spec: spec/api.md#plugin-options
 function transcriptEntry(line: string): TranscriptEntry | undefined {
   if (!line.startsWith("{")) return undefined
   try {
@@ -427,12 +467,14 @@ function transcriptEntry(line: string): TranscriptEntry | undefined {
   }
 }
 
+// spec: spec/api.md#plugin-options
 function textOf(content: unknown): string {
   if (typeof content === "string") return content.trim()
   if (!Array.isArray(content)) return ""
   return content.flatMap((part: {type?: unknown; text?: unknown} | null) => (part?.type === "text" && typeof part.text === "string" ? [part.text] : [])).join("\n").trim()
 }
 
+// spec: spec/api.md#plugin-commands
 function cut(text: string | undefined): string | undefined {
   return text === undefined || text.length <= maxText ? text : `${text.slice(0, maxText).replace(/[\ud800-\udbff]$/, "")}…`
 }

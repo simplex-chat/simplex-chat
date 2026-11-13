@@ -9,6 +9,7 @@ import {resetOwners, showLink} from "./owner"
 import {RegisterOptions, Scope, register} from "./register"
 import type {OwnerEntry, QrCodeSize, ServeOptions} from "./serve"
 
+// spec: spec/architecture.md#cli-helptext
 export const helpText = `Usage:
   simplex-mcp serve NAME [options]     run agent NAME
   simplex-mcp register NAME [options]  add agent NAME to Claude Code
@@ -50,14 +51,17 @@ register options:
 --reset-owners takes --owners without a list.
 `
 
+// spec: spec/architecture.md#cli-plugincommands
 const pluginCommands = ["session", "service", "hook session-start", "hook turn", "link", "reset-owners"] as const
 
+// spec: spec/architecture.md#cli-command
 export type Command =
   | {command: "help"}
   | {command: "serve"; options: ServeOptions}
   | {command: "register"; options: RegisterOptions}
   | {command: (typeof pluginCommands)[number]}
 
+// spec: spec/architecture.md#cli-parsecommand
 export function parseCommand(args: string[], home: string = homedir()): Command {
   const [command, name, ...rest] = args
   if (command === "--help") return {command: "help"}
@@ -69,6 +73,7 @@ export function parseCommand(args: string[], home: string = homedir()): Command 
   return command === "serve" ? {command, options: serveOptions(name, options, home)} : {command, options: registerOptions(name, options, home)}
 }
 
+// spec: spec/architecture.md#cli-serveoptions
 function serveOptions(name: string, options: OptionReader, home: string): ServeOptions {
   const serve: ServeOptions = {
     name,
@@ -125,6 +130,7 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
   return serve
 }
 
+// spec: spec/architecture.md#cli-registeroptions
 function registerOptions(name: string, options: OptionReader, home: string): RegisterOptions {
   const register: RegisterOptions = {name, data: dataFolder(name, home), scope: "user"}
   for (let option = options.next(); option !== undefined; option = options.next()) {
@@ -142,6 +148,7 @@ function registerOptions(name: string, options: OptionReader, home: string): Reg
   return register
 }
 
+// spec: spec/architecture.md#cli-optionreader
 class OptionReader {
   private index = 0
 
@@ -151,6 +158,7 @@ class OptionReader {
     return this.args[this.index++]
   }
 
+  // spec: spec/api.md#exit-codes
   value(option: string): string {
     const value = this.optionalValue()
     if (value === undefined) throw usageError(`${option}: a value expected.`)
@@ -164,37 +172,44 @@ class OptionReader {
   }
 }
 
+// spec: spec/architecture.md#cli-validagentname
 export function validAgentName(name: string): boolean {
   return name.length <= 32 && /^[a-z0-9](-?[a-z0-9])*-?$/.test(name)
 }
 
+// spec: spec/api.md#serve-options
 function displayName(value: string): string {
   const valid = validName(value)
   if (valid !== value) throw usageError(`--display-name: not a valid SimpleX name; try ${valid}`)
   return value
 }
 
+// spec: spec/api.md#exit-codes
 function approveMode(value: string): Mode {
   if (value !== "requests" && value !== "host") throw usageError(`--approve: requests or host expected, got ${value}`)
   return value
 }
 
+// spec: spec/api.md#exit-codes
 function qrCodeSize(value: string): QrCodeSize {
   if (value !== "small" && value !== "large") throw usageError(`--qr-code: small or large expected, got ${value}`)
   return value
 }
 
+// spec: spec/api.md#exit-codes
 function scope(value: string): Scope {
   if (value !== "user" && value !== "local") throw usageError(`--scope: user or local expected, got ${value}`)
   return value
 }
 
+// spec: spec/api.md#serve-options
 function ownerEntry(entry: string): OwnerEntry {
   const match = /^([1-9]\d*):(.+)$/.exec(entry)
   if (!match) throw usageError(`--owners: ID:NAME expected, got ${entry}`)
   return {memberId: Number(match[1]), name: match[2]}
 }
 
+// spec: spec/api.md#exit-codes
 function integer(option: string, value: string, min: number, max: number, expected: string): number {
   const n = Number(value)
   if (!/^\d+$/.test(value) || n < min || n > max) throw usageError(`${option}: ${expected} expected, got ${value}`)
@@ -205,14 +220,17 @@ function dataFolder(name: string, home: string): string {
   return join(home, ".simplex-mcp", name)
 }
 
+// spec: spec/api.md#exit-codes
 function unknownOption(option: string): ExitError {
   return usageError(`Unknown option ${option}. Run simplex-mcp --help.`)
 }
 
+// spec: spec/architecture.md#cli-usageerror
 function usageError(message: string): ExitError {
   return new ExitError(message, 2)
 }
 
+// spec: spec/architecture.md#cli-main
 async function main(args: string[]): Promise<void> {
   const command = parseCommand(args)
   switch (command.command) {

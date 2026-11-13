@@ -20,6 +20,7 @@ interface Usage {
   percent: number
 }
 
+// spec: spec/architecture.md#status-line-statusline
 export async function statusLine(stdin: string, write: (line: string) => void, env: NodeJS.ProcessEnv = process.env, at = performance.timeOrigin): Promise<void> {
   const {session_id: id, model, effort, context_window: context, rate_limits: windows} = inputOf(stdin)
   const level = typeof effort?.level === "string" ? effort.level : undefined
@@ -30,10 +31,12 @@ export async function statusLine(stdin: string, write: (line: string) => void, e
   if (typeof id === "string" && (level !== undefined || limited)) await postToService(dataRoot(env), "/turn", {id, pid: claudePid(env), at, effort: level, limits: limited ? limits : undefined, statusLine: true}, requestWaitMs)
 }
 
+// spec: spec/architecture.md#status-line-statusline
 export function limitParts({fiveHour, week}: {fiveHour?: Usage; week?: Usage}): string[] {
   return [fiveHour === undefined ? [] : [`5 h: ${Math.floor(fiveHour.percent)}%`], week === undefined ? [] : [`week: ${Math.floor(week.percent)}%`]].flat()
 }
 
+// spec: spec/architecture.md#status-line-statusline
 export function runStatusLine(): void {
   let stdin = ""
   process.stdin.setEncoding("utf8")

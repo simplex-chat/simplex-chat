@@ -1,6 +1,6 @@
 import {mkdirSync, rmSync} from "fs"
 import {dirname, join} from "path"
-import {ChatEvent, T} from "@simplex-chat/types"
+import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, HostTexts, Mode, isDecided, maxPending} from "./actions"
 import {Config} from "./config"
@@ -16,25 +16,46 @@ import {limitParts} from "./status-line"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
 import {User, userContact} from "./user"
 
+// spec: spec/architecture.md#hub-constants
 const profileName = "Claude"
+// spec: spec/architecture.md#hub-constants
 const sessionKey = "simplexMcpSession"
+// spec: spec/architecture.md#hub-constants
 const firstAction = 1
+// spec: spec/architecture.md#hub-constants
 const cardsWait = 10
+// spec: spec/architecture.md#hub-constants
 const promptEcho = 60_000
+// spec: spec/architecture.md#hub-constants
 const maxPushed = 20
+// spec: spec/architecture.md#hub-constants
 const fileWait = 10 * 60_000
+// spec: spec/architecture.md#hub-constants
 const pendingDays = 1
+// spec: spec/architecture.md#hub-constants
 const attachWait = 30_000
+// spec: spec/architecture.md#hub-constants
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
+// spec: spec/api.md#session-groups
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
+// spec: spec/architecture.md#hub-constants
+const reactionEmoji = ["👍", "👎", "😀", "😂", "😢", "❤", "🚀", "✅"]
+// spec: spec/architecture.md#hub-constants
+const unsupportedReaction = "This reaction is not supported."
 const noteRefused = "Claude's note was not posted"
 const maxFinished = 100
+// spec: spec/api.md#session-groups
 const liveLineMs = 23 * 3_600_000
+// spec: spec/api.md#session-groups
 const stepCheckMs = 60_000
+// spec: spec/architecture.md#hub-constants
 const textUpdateMs = 3_000
+// spec: spec/architecture.md#hub-constants
 const maxRecentTexts = 20
+// spec: spec/architecture.md#hub-constants
 const stoppedLine = "⏹️ Stopped"
 
+// spec: spec/architecture.md#hub-hubtexts
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
 
 export interface StoredSession {
@@ -42,6 +63,7 @@ export interface StoredSession {
   session: SessionFile
 }
 
+// spec: spec/architecture.md#hub-sessiongroupdata
 interface SessionGroupData {
   session: number
   pending?: {connId: number; at: number}[]
@@ -92,6 +114,7 @@ const stepLines: LineKind = {refused: noteRefused, log: "steps"}
 const textLines: LineKind = {refused: "Claude's text was not posted", log: "texts"}
 const answerLines: LineKind = {refused: "Claude's answer was not posted", log: "answers"}
 
+// spec: spec/architecture.md#hub-session
 export class Session {
   open = false
   readonly actions: Actions
@@ -112,6 +135,7 @@ export class Session {
   private writer?: (line: AttachLine) => void
   private readonly attaching = new Changes()
   private delivery: Promise<unknown> = Promise.resolve()
+  private readonly refusedReactions = new Set<string>()
   private readonly steps = new Map<string, LiveStep>()
   private readonly finished = new Set<string>()
   private finalizing: Promise<void> = Promise.resolve()
@@ -170,6 +194,7 @@ export class Session {
     return groupName(this.number, this.name)
   }
 
+  // spec: spec/architecture.md#hub-session-online
   get onLine(): ((line: AttachLine) => void) | undefined {
     return this.writer
   }
@@ -179,6 +204,7 @@ export class Session {
     this.attaching.notify()
   }
 
+  // spec: spec/architecture.md#hub-session-busy
   busy(): boolean {
     return this.actions.all().some(({tool}) => tool !== "mode")
   }
@@ -192,6 +218,7 @@ export class Session {
     await this.control.rename(this.displayName)
   }
 
+  // spec: spec/architecture.md#hub-session-requestmode
   requestMode(mode: Mode): void {
     this.requested = mode
     if (mode === "host") return this.askMode()
@@ -200,6 +227,7 @@ export class Session {
     if (this.actions.mode !== mode) this.setMode(mode)
   }
 
+  // spec: spec/architecture.md#hub-session-requestmode
   askMode(): void {
     if (this.requested !== "host" || this.hostDeclined || this.actions.mode === "host" || !this.control.hasApprover() || this.actions.pending().some(({tool}) => tool === "mode")) return
     try {
@@ -213,6 +241,7 @@ export class Session {
     }
   }
 
+  // spec: spec/architecture.md#hub-session-onmessage
   onMessage(ci: T.AChatItem): void {
     const {chatDir, content, quotedItem} = ci.chatItem
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
@@ -220,9 +249,20 @@ export class Session {
     if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([{text: commandsApproversOnly}], ci.chatItem.meta.itemId))
     if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
     const replyTo = quotedItem === undefined ? undefined : toReplyTo(ci.chatInfo, quotedItem, {name: this.hub.profile.profile.displayName})
-    this.queue(() => this.prompt(ci, text, chatDir.groupMember, replyTo))
+    this.queue(() => this.prompt(ci, text, chatDir.groupMember, ci.chatItem.file, replyTo))
   }
 
+  // spec: spec/architecture.md#hub-session-onreaction
+  onReaction({added, reaction: {chatInfo, chatReaction}}: CEvt.ChatItemReaction): void {
+    const {chatDir, chatItem, reaction} = chatReaction
+    const {content} = chatItem
+    if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || this.isUser(chatDir.groupMember) || (content.type !== "rcvMsgContent" && content.type !== "sndMsgContent")) return
+    if (reaction.type !== "emoji" || !reactionEmoji.includes(reaction.emoji)) return this.refuseReaction(chatDir.groupMember, chatItem)
+    const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: content.msgContent, fileName: chatItem.file?.fileName}, {name: this.hub.profile.profile.displayName})
+    this.queue(() => this.prompt({chatInfo, chatItem}, reaction.emoji, chatDir.groupMember, undefined, replyTo))
+  }
+
+  // spec: spec/architecture.md#hub-session-claimpending
   claimPending(connId: number, chat: string): void {
     const recent = Date.now() - pendingDays * 86_400_000
     if (!this.data.pending?.some(entry => entry.connId === connId && entry.at > recent)) return
@@ -230,6 +270,7 @@ export class Session {
     this.tools.claim(chat).catch(error => logError(`owner of ${chat}`, error))
   }
 
+  // spec: spec/architecture.md#hub-session-permission
   permission({requestId, toolName, description, inputPreview}: PermissionRequest): void {
     const action = this.actions.create(`permission ${requestId}`, {tool: "permission", input: {requestId, toolName, description, inputPreview}}, undefined, this.number, "requests")
     const unsubscribe = action.changes.subscribe(() => {
@@ -241,6 +282,7 @@ export class Session {
     })
   }
 
+  // spec: spec/architecture.md#hub-session-turn
   async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine}: TurnRequest): Promise<void> {
     const startsTurn = prompt !== undefined && midTurn !== true
     if (startsTurn || answer !== undefined) {
@@ -285,12 +327,14 @@ export class Session {
     }
   }
 
+  // spec: spec/architecture.md#hub-session-endpermissions
   endPermissions(before = Infinity): void {
     for (const action of this.actions.pending()) {
       if (action.tool === "permission" && action.created < before) this.actions.end(action)
     }
   }
 
+  // spec: spec/architecture.md#hub-session-endpermissions
   endSteps(before = Infinity): Promise<void> {
     for (const [id, step] of this.steps) {
       if (step.at < before) {
@@ -301,12 +345,14 @@ export class Session {
     return this.finalizing
   }
 
+  // spec: spec/architecture.md#hub-session-endpermissions
   endLive(): Promise<void> {
     this.endSteps()
     this.closeOpenings(() => true)
     return this.endTexts(Infinity).then(() => this.finalizing)
   }
 
+  // spec: spec/architecture.md#hub-session-endpermissions
   fileDone(fileId: number, error?: string): void {
     const waiting = this.receiving.get(fileId)
     this.receiving.delete(fileId)
@@ -314,10 +360,12 @@ export class Session {
     else waiting?.reject(new Error(error))
   }
 
+  // spec: spec/architecture.md#hub-session-invite
   async invite(member: T.GroupMember, role: T.GroupMemberRole): Promise<void> {
     await this.hub.chat.apiAddMemberViaGroup(this.control.groupId, this.hub.main.groupId, member.groupMemberId, role)
   }
 
+  // spec: spec/architecture.md#hub-session-invite
   async announceRights(event: ChatEvent): Promise<void> {
     if (this.actions.lost || (event.type !== "joinedGroupMember" && event.type !== "connectedToGroupMember" && event.type !== "memberRole")) return
     const {member} = event
@@ -327,16 +375,26 @@ export class Session {
     await this.post([{text: `${rightsText(name, member.memberRole)}${observer}`}])
   }
 
-  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember, replyTo?: ReplyTo): Promise<void> {
+  // spec: spec/architecture.md#hub-session-prompt
+  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember, ciFile: T.CIFile | undefined, replyTo?: ReplyTo): Promise<void> {
     if (this.isUser(member)) return
-    await this.deliver(ci, text, member, replyTo)
+    await this.deliver(ci, text, member, ciFile, replyTo)
   }
 
-  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember, replyTo?: ReplyTo): Promise<void> {
+  // spec: spec/architecture.md#hub-session-refusereaction
+  private refuseReaction({groupMemberId}: T.GroupMember, {meta: {itemId}, content}: T.ChatItem): void {
+    const refused = `${groupMemberId} ${itemId}`
+    if (this.refusedReactions.has(refused) || (content.type === "sndMsgContent" && content.msgContent.text === unsupportedReaction)) return
+    this.refusedReactions.add(refused)
+    this.queue(() => this.post([{text: unsupportedReaction}], itemId))
+  }
+
+  // spec: spec/architecture.md#hub-session-deliver
+  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember, ciFile: T.CIFile | undefined, replyTo?: ReplyTo): Promise<void> {
     const left = this.hub.promptsHeldUntil - Date.now()
     if (this.onLine === undefined && left > 0) await nextChange(this.attaching, new AbortController().signal, left)
     const {chatItem} = ci
-    const file = this.onLine === undefined || chatItem.file === undefined ? undefined : await this.receive(chatItem.file).catch(async error => {
+    const file = this.onLine === undefined || ciFile === undefined ? undefined : await this.receive(ciFile).catch(async error => {
       await this.post([{text: `The file of this message was not received: ${oneLine(errorText(error))}`}], chatItem.meta.itemId)
       return undefined
     })
@@ -349,6 +407,7 @@ export class Session {
     this.onLine({prompt: {text: promptText, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file}), ...(replyTo === undefined ? {} : {replyTo: {item: replyTo.item, from: replyTo.from}})}})
   }
 
+  // spec: spec/architecture.md#hub-session-deliver
   private async receive({fileId, fileName}: T.CIFile): Promise<string> {
     const path = join(sessionFolder(this.hub.root, this.id), "files", "group", storedName(fileId, fileName))
     mkdirSync(dirname(path), {recursive: true, mode: 0o700})
@@ -359,12 +418,14 @@ export class Session {
     return path
   }
 
+  // spec: spec/api.md#session-group-profile
   private newer(field: "model" | "effort", value: string | undefined, at: number): string | undefined {
     if (value === undefined || at < this.describedAt[field]) return undefined
     this.describedAt[field] = at
     return value
   }
 
+  // spec: spec/architecture.md#hub-session-deliver
   private turnQuote(at: number): T.ChatItem | undefined {
     const earlier = this.turns.filter(turn => turn.at < at)
     if (earlier.length === 0) {
@@ -376,11 +437,13 @@ export class Session {
     return earlier.reduce((newest, turn) => (turn.at > newest.at ? turn : newest)).item ?? undefined
   }
 
+  // spec: spec/architecture.md#hub-session-deliver
   private turnStart(at: number): number | undefined {
     const starts = this.turns.filter(turn => turn.added !== true && turn.at <= at).map(turn => turn.at)
     return starts.length === 0 ? undefined : Math.max(...starts)
   }
 
+  // spec: spec/architecture.md#hub-session-deliver
   private async answer(text: string, quoted: T.ChatItem | undefined, at: number, streamed: boolean, started: number | undefined, usage: string | undefined): Promise<void> {
     const end = endLine(usage ?? (started === undefined ? undefined : duration(at - started)), this.limits)
     if (text.trim() === "") {
@@ -393,6 +456,7 @@ export class Session {
     this.closeOpenings(({at: start, until}) => (until ?? start) <= at)
   }
 
+  // spec: spec/architecture.md#hub-session-deliver
   private async postAnswer(text: string, quoted: T.ChatItem | undefined, at: number): Promise<void> {
     const quote = quoteOf(quoted, text)
     const parts = textParts(text, quote).map(part => ({text: part, priority: -1}))
@@ -403,6 +467,7 @@ export class Session {
     await posted?.catch(error => this.postRefusal(error, answerLines.refused, featureOff, quoted?.meta.itemId))
   }
 
+  // spec: spec/architecture.md#hub-session-step
   private async step({id, text, end}: Step, at: number): Promise<void> {
     if (this.finished.delete(id)) return
     this.expireLive()
@@ -421,6 +486,7 @@ export class Session {
     }
   }
 
+  // spec: spec/architecture.md#hub-session-step
   private async startLine(text: string, at: number, kind: LineKind, live = true, onRefused?: () => void): Promise<number | undefined> {
     const opened = await this.takeOpening(at)?.item
     const filled = opened === undefined ? undefined : await this.fill(opened, text, live, kind, onRefused)
@@ -429,6 +495,7 @@ export class Session {
     return this.sendLine(text, kind, live, undefined, onRefused)
   }
 
+  // spec: spec/architecture.md#hub-session-step
   private async fill(itemId: number, text: string, live: boolean, kind: LineKind, onRefused?: () => void): Promise<"filled" | "refused" | "failed"> {
     try {
       await this.updateItem(itemId, text, live)
@@ -436,6 +503,7 @@ export class Session {
     } catch (error) {
       if (refusedFeature(error) === undefined) {
         logError(`${kind.log} of session ${this.number}`, error)
+        void this.finalize(Promise.resolve(itemId), stoppedLine, kind)
         return "failed"
       }
       if (await this.refused(error, kind, itemId)) onRefused?.()
@@ -443,6 +511,7 @@ export class Session {
     }
   }
 
+  // spec: spec/architecture.md#hub-session-step
   private async sendLine(text: string, kind: LineKind, live: boolean, quotedItemId?: number, onRefused?: () => void): Promise<number | undefined> {
     try {
       const [sent] = await this.post([{text, priority: -1}], quotedItemId, live)
@@ -453,6 +522,7 @@ export class Session {
     }
   }
 
+  // spec: spec/architecture.md#hub-session-step
   private refused(error: unknown, kind: LineKind, itemId?: number): Promise<boolean> {
     return this.postRefusal(error, kind.refused, featureOff, undefined, itemId).then(
       () => true,
@@ -464,6 +534,7 @@ export class Session {
     )
   }
 
+  // spec: spec/architecture.md#hub-session-openturn
   private openTurn(at: number, quoted: T.ChatItem | undefined, after?: Promise<unknown>): void {
     const quotedItemId = quoteOf(quoted, "") === undefined ? undefined : quoted?.meta.itemId
     const send = () => this.sendLine("", textLines, true, quotedItemId)
@@ -472,31 +543,37 @@ export class Session {
     this.watchLive()
   }
 
+  // spec: spec/architecture.md#hub-session-openturn
   private boundOpenings(at: number): void {
     for (const opening of this.openings) if (opening.until === undefined && opening.at <= at) opening.until = at
   }
 
+  // spec: spec/architecture.md#hub-session-openturn
   private openingFor(at: number): Opening | undefined {
     return this.openings.filter(({at: start, until}) => start <= at && (until === undefined || at < until)).at(-1)
   }
 
+  // spec: spec/architecture.md#hub-session-openturn
   private takeOpening(at: number): Opening | undefined {
     const opening = this.openingFor(at)
     if (opening !== undefined) this.openings.splice(this.openings.indexOf(opening), 1)
     return opening
   }
 
+  // spec: spec/architecture.md#hub-session-openturn
   private closeOpenings(closes: (opening: Opening) => boolean): void {
     const closed = this.openings.filter(closes)
     this.openings = this.openings.filter(opening => !closed.includes(opening))
     for (const {item} of closed) void this.finalize(item, stoppedLine, textLines)
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private text(batch: TextBatch, at: number): void {
     const answeredAt = this.answeredAt
     void this.queueLive(() => this.addBatch(batch, at, answeredAt))
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private queueLive<R>(work: () => Promise<R>): Promise<R | undefined> {
     const done = this.liveOrder.then(work)
     this.liveOrder = done.then(
@@ -506,6 +583,7 @@ export class Session {
     return done.catch(() => undefined)
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private async addBatch({message, index, final, delta}: TextBatch, at: number, answeredAt: number): Promise<void> {
     if (this.endedTexts.has(message)) return
     const known = this.texts.get(message)
@@ -519,6 +597,7 @@ export class Session {
     else await this.showText(text)
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private async showText(text: LiveText): Promise<void> {
     const parts = textParts(text.part)
     if (parts.length > 1) {
@@ -540,6 +619,7 @@ export class Session {
     }
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private async updateText(text: LiveText, value: string, live: boolean): Promise<boolean> {
     text.timer = undefined
     if (live && this.texts.get(text.id) !== text) return false
@@ -563,6 +643,7 @@ export class Session {
     }
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private async endPart(text: LiveText, [first, ...rest]: string[]): Promise<void> {
     clearTimeout(text.timer)
     const shown = text.item === undefined ? await this.postPart(text, first) : await this.updateText(text, first, false)
@@ -573,12 +654,14 @@ export class Session {
     }
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private async postPart(text: LiveText, value: string): Promise<boolean> {
     if (value.trim() === "") return false
     text.item = this.startLine(value, text.at, textLines, false, () => this.refuseText(text))
     return (await text.item) !== undefined
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private async endText(text: LiveText, value: string): Promise<void> {
     this.dropText(text)
     text.part = value
@@ -586,16 +669,19 @@ export class Session {
     if (text.refused !== true && (await text.item) !== undefined) this.keepRecent(text)
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private refuseText(text: LiveText): void {
     this.dropText(text)
     if (text.refused !== true) this.keepRecent(text)
     text.refused = true
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private keepRecent(text: LiveText): void {
     if (this.recentTexts.push(text) > maxRecentTexts) this.recentTexts.shift()
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private dropText(text: LiveText): void {
     clearTimeout(text.timer)
     text.timer = undefined
@@ -603,6 +689,7 @@ export class Session {
     keepLast(this.endedTexts, text.id)
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private endTexts(before: number, answer?: string, started = -Infinity): Promise<boolean> {
     return this.queueLive(async () => {
       const streamed = answer !== undefined && (await this.claim(answer, before, started))
@@ -611,6 +698,7 @@ export class Session {
     }).then(streamed => streamed === true)
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private async claim(answer: string, before: number, started: number): Promise<boolean> {
     const texts = [...this.texts.values(), ...this.recentTexts].filter(({at}) => at < before && at > started)
     const newest = texts.reduce<LiveText | undefined>((found, text) => (found === undefined || text.at > found.at ? text : found), undefined)
@@ -623,16 +711,19 @@ export class Session {
     return true
   }
 
+  // spec: spec/architecture.md#hub-session-text
   private updateItem(itemId: number, text: string, live: boolean): Promise<T.ChatItem> {
     return this.hub.chat.apiUpdateChatItem(T.ChatType.Group, this.control.groupId, itemId, {type: "text", text}, live)
   }
 
+  // spec: spec/architecture.md#hub-session-step
   private endStep(id: string, {item}: LiveStep, text: string): Promise<void> {
     this.steps.delete(id)
     this.watchLive()
     return this.finalize(item, text, stepLines)
   }
 
+  // spec: spec/architecture.md#hub-session-step
   private finalize(item: Promise<number | undefined>, text: string, {log}: LineKind): Promise<void> {
     const updated = item
       .then(itemId => (itemId === undefined ? undefined : this.updateItem(itemId, text, false)))
@@ -641,6 +732,7 @@ export class Session {
     return updated
   }
 
+  // spec: spec/architecture.md#hub-session-step
   private expireLive(): void {
     const before = Date.now() - liveLineMs
     for (const [id, step] of this.steps) {
@@ -653,6 +745,7 @@ export class Session {
     })
   }
 
+  // spec: spec/architecture.md#hub-session-step
   private watchLive(): void {
     if (this.steps.size > 0 || this.texts.size > 0 || this.openings.length > 0) {
       this.expiry ??= setInterval(() => this.expireLive(), stepCheckMs).unref()
@@ -662,10 +755,12 @@ export class Session {
     }
   }
 
+  // spec: spec/architecture.md#hub-session-step
   private remember(id: string): void {
     keepLast(this.finished, id)
   }
 
+  // spec: spec/architecture.md#hub-session-deliver
   private async postRefusal(error: unknown, subject: string, refusal: (feature: string) => string, quotedItemId?: number, itemId?: number): Promise<void> {
     const feature = refusedFeature(error)
     if (feature === undefined) throw error
@@ -673,6 +768,7 @@ export class Session {
     await (itemId === undefined ? this.post([{text}], quotedItemId) : this.updateItem(itemId, text, false))
   }
 
+  // spec: spec/architecture.md#hub-session-deliver
   private post(parts: Part[], quotedItemId?: number, live = false): Promise<T.AChatItem[]> {
     const send = (quote?: number) => this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => message(part, i === 0 ? quote : undefined)), live)
     return send(quotedItemId).catch(error => {
@@ -681,44 +777,58 @@ export class Session {
     })
   }
 
+  // spec: spec/architecture.md#hub-session-deliver
   private pushedIn(prompt: string): {text: string; item: T.ChatItem; at: number}[] {
     const recent = Date.now() - promptEcho
     const tags = [...prompt.matchAll(channelPrompt)].map(([, item, content]) => ({item: Number(item), content: content.trim()}))
-    return this.pushed.filter(entry => (entry.text === prompt && entry.at > recent) || tags.some(({item, content}) => item === entry.item.meta.itemId && content === entry.text.trim()))
+    const tagged: number[] = []
+    for (const {item, content} of tags) {
+      const i = this.pushed.findIndex((entry, j) => !tagged.includes(j) && item === entry.item.meta.itemId && content === entry.text.trim())
+      if (i >= 0) tagged.push(i)
+    }
+    return this.pushed.filter((entry, i) => (entry.text === prompt && entry.at > recent) || tagged.includes(i))
   }
 
+  // spec: spec/architecture.md#hub-session-queue
   private queue(work: () => Promise<unknown>): void {
     this.delivery = this.delivery.then(work).catch(error => logError(`prompt of session ${this.number}`, error))
   }
 
+  // spec: spec/architecture.md#hub-session-queue
   private refusesCommand(text: string, member: T.GroupMember): boolean {
     return parseCommand(text) !== undefined && !this.approves(member) && !this.isUser(member)
   }
 
+  // spec: spec/architecture.md#hub-session-approves
   private approves(member: T.GroupMember): boolean {
     return sessionApproverRoles.includes(member.memberRole) && !this.isUser(member)
   }
 
+  // spec: spec/architecture.md#hub-session-approves
   private isUser(member: T.GroupMember): boolean {
     return member.memberContactId !== undefined && member.memberContactId === this.hub.userContactId
   }
 
+  // spec: spec/architecture.md#hub-session-approves
   private setMode(mode: Mode): void {
     this.actions.mode = mode
     this.saveData({...this.data, mode}).catch(error => logError(`session ${this.number}`, error))
   }
 
+  // spec: spec/architecture.md#hub-session-approves
   private declineHost(declined: boolean): void {
     this.hostDeclined = declined
     this.store({hostDeclined: declined || undefined})
   }
 
+  // spec: spec/architecture.md#hub-session-approves
   private store(fields: Partial<SessionFile>): void {
     const folder = sessionFolder(this.hub.root, this.id)
     const stored = readSessionFile(folder)
     if (stored !== undefined) writeSessionFile(folder, {...stored, ...fields})
   }
 
+  // spec: spec/architecture.md#hub-session-approves
   private savePending(connId: number): void {
     const recent = Date.now() - pendingDays * 86_400_000
     const pending = [...(this.data.pending ?? []).filter(({at}) => at > recent), {connId, at: Date.now()}]
@@ -751,6 +861,7 @@ export class Hub implements SessionGroups {
     this.main = new MainGroup(chat, mainGroup, profile.userId, mainName, this)
   }
 
+  // spec: spec/architecture.md#hub-hub-open
   static async open(root: string, config: Config, stored: StoredSession[]): Promise<Hub> {
     const core = await openCore(hubFolder(root), profileName)
     try {
@@ -775,21 +886,25 @@ export class Hub implements SessionGroups {
     return this.main.displayName
   }
 
+  // spec: spec/api.md#socket-protocol
   owner(): OwnerState {
     const {link} = this.main
     return {owners: this.main.owners().map(({memberProfile}) => memberProfile.displayName), ...(link === undefined ? {} : {link})}
   }
 
+  // spec: spec/architecture.md#hub-hub-configure
   async configure(config: Config): Promise<void> {
     this.expireHours = config.expireHours
     for (const {actions} of this.sessions.values()) actions.expireHours = config.expireHours
     if (config.mainGroup !== this.main.displayName) await this.main.rename(config.mainGroup)
   }
 
+  // spec: spec/api.md#socket-protocol
   async resetOwners(): Promise<ResetReply> {
     return {link: await this.main.replace()}
   }
 
+  // spec: spec/architecture.md#hub-hub-session
   async session(id: string, stored: SessionFile): Promise<Session> {
     const opened = this.sessions.get(stored.number)
     if (opened !== undefined) {
@@ -814,11 +929,13 @@ export class Hub implements SessionGroups {
     return this.sessions.get(number)?.id
   }
 
+  // spec: spec/api.md#main-group
   sessionsText(): string {
     const lines = [...this.sessions.values()].map(session => `${session.displayName}${session.open ? "" : ", closed"}`)
     return lines.length > 0 ? lines.join("\n") : "No sessions."
   }
 
+  // spec: spec/api.md#main-group
   async join(member: T.GroupMember, number: number): Promise<string> {
     const session = this.sessions.get(number)
     if (session === undefined) return `No session ${number}. /sessions lists the sessions.`
@@ -832,6 +949,7 @@ export class Hub implements SessionGroups {
     return `Sent you an invitation to "${session.displayName}".`
   }
 
+  // spec: spec/architecture.md#hub-hub-sessionstext
   async inviteOwner(member: T.GroupMember): Promise<void> {
     for (const session of this.sessions.values()) {
       if (session.open) await session.invite(member, T.GroupMemberRole.Owner).catch(error => logError(`invitation to session ${session.number}`, error))
@@ -842,6 +960,7 @@ export class Hub implements SessionGroups {
     for (const {actions} of this.sessions.values()) actions.expireDue()
   }
 
+  // spec: spec/architecture.md#hub-hub-stop
   async stop(): Promise<Action[]> {
     this.stopped = true
     const sessions = [...this.sessions.values()]
@@ -855,6 +974,7 @@ export class Hub implements SessionGroups {
     return stopped.flatMap(({cancelled}) => cancelled)
   }
 
+  // spec: spec/architecture.md#hub-hub-storedgroup
   private async storedGroup({group, number}: SessionFile): Promise<T.GroupInfo | undefined> {
     if (group === undefined) return undefined
     const chat = await getChat(this.chat, `#${group}`, 0).catch(() => undefined)
@@ -862,6 +982,7 @@ export class Hub implements SessionGroups {
     return sessionDataOf(groupInfo?.customData)?.session === number ? groupInfo : undefined
   }
 
+  // spec: spec/api.md#session-group-profile
   private async createSessionGroup({number, name}: SessionFile): Promise<T.GroupInfo> {
     const displayName = groupName(number, name)
     const group = await createGroup(this.chat, this.profile.userId, {
@@ -876,6 +997,7 @@ export class Hub implements SessionGroups {
     return group
   }
 
+  // spec: spec/architecture.md#hub-hub-onevent
   private async onEvent(event: ChatEvent): Promise<void> {
     if (this.stopped) return
     this.expireDue()
@@ -886,6 +1008,7 @@ export class Hub implements SessionGroups {
         else sessions.find(({control}) => isGroupMessage(ci, control.groupId))?.onMessage(ci)
       }
     }
+    if (event.type === "chatItemReaction") sessions.find(({control}) => isGroupMessage(event.reaction, control.groupId))?.onReaction(event)
     const {file} = event.type === "rcvFileComplete" ? event.chatItem.chatItem : {}
     if (file !== undefined) sessions.forEach(session => session.fileDone(file.fileId))
     if (event.type === "rcvFileError") sessions.forEach(session => session.fileDone(event.rcvFileTransfer.fileId, errorText(event.agentError)))
@@ -908,6 +1031,7 @@ export class Hub implements SessionGroups {
   }
 }
 
+// spec: spec/architecture.md#hub-notallowedforuser
 function notAllowedForUser(feature: string): string {
   return `${feature} are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`
 }
@@ -916,6 +1040,7 @@ function groupName(number: number, name: string): string {
   return validName(`${number} · ${name}`)
 }
 
+// spec: spec/architecture.md#hub-textparts
 function textParts(text: string, quote?: Parameters<typeof fitsMessage>[2]): string[] {
   const chars = [...text]
   const parts: string[] = []
@@ -939,27 +1064,32 @@ function message({text, priority}: Part, quotedItemId?: number): T.ComposedMessa
   return {msgContent: {type: "text", text}, quotedItemId, mentions: {}, priority}
 }
 
+// spec: spec/architecture.md#hub-quoteof
 function quoteOf(quoted: T.ChatItem | undefined, text: string): Parameters<typeof fitsMessage>[2] {
-  const quote = quoted?.content.type === "rcvMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
+  const quote = quoted?.content.type === "rcvMsgContent" || quoted?.content.type === "sndMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
   return quote !== undefined && fitsMessage({type: "text", text: [...text].slice(0, 1).join("")}, undefined, quote) ? quote : undefined
 }
 
+// spec: spec/architecture.md#hub-quoteof
 function endLine(figures: string | undefined, {fiveHour, week}: Limits): string {
   const now = Date.now() / 1_000
   const current = (window: LimitWindow | undefined): LimitWindow | undefined => (window !== undefined && window.resetsAt > now ? window : undefined)
   return small([`✅ Done${figures === undefined ? "" : ` in ${figures}`}`, ...limitParts({fiveHour: current(fiveHour), week: current(week)})].join(" · "))
 }
 
+// spec: spec/architecture.md#hub-quoteof
 function small(text: string): string {
   return text.includes("!") ? text : `!- ${text}!`
 }
 
+// spec: spec/architecture.md#hub-quoteof
 function keepLast(ids: Set<string>, id: string): void {
   ids.add(id)
   const [oldest] = ids
   if (ids.size > maxFinished) ids.delete(oldest)
 }
 
+// spec: spec/architecture.md#hub-isrefusedquote
 function isRefusedQuote(error: unknown): boolean {
   const chatError = chatErrorOf(error)
   return chatError?.type === "errorStore" && (chatError.storeError.type === "invalidQuote" || chatError.storeError.type === "chatItemNotFound" || chatError.storeError.type === "largeMsg")

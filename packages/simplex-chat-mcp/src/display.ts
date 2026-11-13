@@ -11,6 +11,7 @@ interface DisplayInput {
   delta?: unknown
 }
 
+// spec: spec/architecture.md#display-display
 export async function display(stdin: string, env: NodeJS.ProcessEnv = process.env, at = performance.timeOrigin): Promise<void> {
   const {session_id: id, message_id: message, index, final, delta} = inputOf(stdin)
   if (typeof id !== "string" || typeof message !== "string" || !Number.isInteger(index)) return

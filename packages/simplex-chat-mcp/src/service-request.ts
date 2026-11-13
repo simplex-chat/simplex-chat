@@ -3,6 +3,7 @@ import {request} from "http"
 import {join} from "path"
 import {serviceTokenFile, socketPath} from "./paths"
 
+// spec: spec/architecture.md#service-request-posttoservice
 export function postToService(root: string, route: string, body: unknown, waitMs: number): Promise<void> {
   return new Promise(resolve => {
     let token: string
@@ -21,6 +22,7 @@ export function postToService(root: string, route: string, body: unknown, waitMs
   })
 }
 
+// spec: spec/architecture.md#service-request-posttoservice
 export function claudePid(env: NodeJS.ProcessEnv): number | undefined {
   const pid = Number(env.CLAUDE_PID)
   return Number.isInteger(pid) && pid > 0 ? pid : undefined
