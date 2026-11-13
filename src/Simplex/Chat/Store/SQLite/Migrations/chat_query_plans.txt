@@ -1619,6 +1619,16 @@ SEARCH c USING INDEX idx_connections_contact_id (contact_id=?)
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+          SELECT c.connection_id, c.conn_type, c.contact_id, c.group_member_id, c.user_contact_link_id, uc.group_id
+          FROM connections c
+          LEFT JOIN user_contact_links uc ON uc.user_contact_link_id = c.user_contact_link_id
+          WHERE c.agent_conn_id = ?
+        
+Plan:
+SEARCH c USING INDEX sqlite_autoindex_connections_1 (agent_conn_id=?)
+SEARCH uc USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
           SELECT chat_item_id
           FROM chat_items
           WHERE user_id = ? AND group_id = ? AND group_member_id IS NULL AND item_text like ?
@@ -1686,14 +1696,6 @@ Query:
         
 Plan:
 SEARCH chat_item_moderations USING INDEX idx_chat_item_moderations_group (group_id=? AND item_member_id=? AND shared_msg_id=?)
-
-Query: 
-          SELECT connection_id, conn_type, contact_id, group_member_id, user_contact_link_id
-          FROM connections
-          WHERE agent_conn_id = ?
-        
-Plan:
-SEARCH connections USING INDEX sqlite_autoindex_connections_1 (agent_conn_id=?)
 
 Query: 
           SELECT contact_id, group_id
@@ -6082,6 +6084,7 @@ Query:
    
                 WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
                   AND m.member_status IN (?, ?, ?, ?)
+                  AND (c.connection_id IS NULL OR c.conn_status = ?)
                   AND m.group_member_id NOT IN (
                     SELECT DISTINCT group_member_id FROM chat_items
                   )
