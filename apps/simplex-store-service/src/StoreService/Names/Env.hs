@@ -34,10 +34,10 @@ data NamesEnv = NamesEnv
   }
 
 newNamesEnv :: ChatController -> UserId -> NamesConfig -> DBStore -> Turns -> Waiters -> [Provider] -> IO NamesEnv
-newNamesEnv neChat@ChatController {random} neUserId neConfig@NamesConfig {nTLD, nChain, nRecordEditsPerYear} neStore neTurns neWaiters neProviders = do
+newNamesEnv neChat@ChatController {random} neUserId neConfig@NamesConfig {nTLD, nChain, nRecordEditsPerYear, nMinPriceCentsPerYear} neStore neTurns neWaiters neProviders = do
   nePhases <- newPhases
   neChain <- newChainClient random nChain
-  neContracts <- newContracts nTLD neChain
+  neContracts <- newContracts neStore nTLD nMinPriceCentsPerYear neChain
   neProfiles <- newProfiles defaultProfileLimits monotonicSeconds (chatProfile neChat neUserId) systemResolver
   neSender <- newSender random neChain neStore getCurrentTime
   neRecords <- newRecords neStore neTurns neContracts neChain neSender nTLD nRecordEditsPerYear getCurrentTime

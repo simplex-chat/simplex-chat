@@ -443,7 +443,7 @@ mkInvoiceRow
     invoiceProduct <- case (badgeType, months, registrationId) of
       (Just bt, Just m, Nothing) -> Right (IPBadge bt (fromIntegral m))
       (Nothing, Nothing, Just rid) -> Right (IPName (RegistrationId rid))
-      _ -> Left ("invoice product: " <> invId)
+      _ -> Left ("invoice product: " <> providerRef)
     status <- note "invoices.status" (textToInvoiceStatus statusTxt)
     destination <- note "invoice payment destination" (mkDestination url addr cryptoCur cryptoAmt)
     pure
@@ -614,7 +614,7 @@ overdueInvoices st cutoff = do
     toOverdue (i, providerTxt, oiProviderRef, oiCreatedAt) = case textDecode providerTxt of
       Just oiProvider -> pure $ Just OverdueInvoice {oiInvoiceId = InvoiceId i, oiProvider, oiProviderRef, oiCreatedAt}
       Nothing -> do
-        logError ("store: overdue invoice " <> i <> " names provider " <> providerTxt <> ", which this build does not know, so it is left open")
+        logError ("store: overdue invoice " <> oiProviderRef <> " names provider " <> providerTxt <> ", which this build does not know, so it is left open")
         pure Nothing
 
 -- | Expires the invoice if it is still open, has received no money, and is past the cutoff.

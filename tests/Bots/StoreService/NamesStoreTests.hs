@@ -150,7 +150,7 @@ issue st n c = withTransaction st $ \db -> do
   fromJust <$> getPrepaidCodeById db codeId
 
 usable :: NewPrepaidCode
-usable = NewPrepaidCode {npcCodeHash = "", npcMinLength = 8, npcYears = twoYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing}
+usable = NewPrepaidCode {npcCodeHash = "", npcMinLength = 8, npcYears = twoYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
 
 placeCode :: DBStore -> Text -> Address -> OrderFields -> PrepaidCode -> IO (Either RegistrationRefused ())
 placeCode st rid owner o code = withTransaction st $ \db -> createCodeRegistration db (newReg rid owner o) code t0
@@ -162,7 +162,7 @@ write :: DBStore -> NameRegistration -> IO VersionWrite
 write st r = withTransaction st $ \db -> updateRegistration db r (at 1)
 
 namesTables :: [Text]
-namesTables = map ("sx_badge_service_name_" <>) ["prepaid_codes", "registrations", "invoices", "record_edits", "record_changes", "transactions", "balances", "late_credits"]
+namesTables = map ("sx_badge_service_name_" <>) ["prepaid_codes", "registrations", "invoices", "record_edits", "record_changes", "transactions", "balances", "late_credits", "terms"]
 
 -- | Added to the badge tables' payments by the names migrations.
 balancePaymentColumns :: [Text]
@@ -182,6 +182,7 @@ testNamesDownUp = withServiceStore $ \st -> do
   placePaid st "r2" ownerB (order "bobsbakery" 2) (at 60) `shouldReturn` Right ()
   placePaid st "r3" ownerB (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
   withTransaction st $ \db -> insertPayment db "inv-r3"
+  withTransaction st $ \db -> setTermsText db (digestFixture 1) "terms"
   runMigrations st $ MTRDown (mapMaybe toDownMigration names)
   mapM (columnsOf st) namesTables `shouldReturn` map (const []) namesTables
   mapM (invoiceCount st) ["inv-r2", "inv-r3"] `shouldReturn` [0, 1]
@@ -570,7 +571,7 @@ testUnpaidCleanup = withServiceStore $ \st -> do
   r <- reg st "queued"
   void $ write st r {nrPhase = PQueued}
   candidates <- withTransaction st $ \db -> unpaidCleanupCandidates db (at 61)
-  map (\(RegistrationId rid, InvoiceId invId) -> (rid, invId)) candidates `shouldBe` [("old", "inv-old")]
+  map (\(RegistrationId rid, InvoiceId invId, ref) -> (rid, invId, ref)) candidates `shouldBe` [("old", "inv-old", "ref-inv-old")]
   withTransaction st (\db -> mapM (deleteUnpaidRegistration db . RegistrationId) ["old", "funded", "queued"]) `shouldReturn` [Right (), Left CKPaid, Left CKPaid]
   withTransaction st (\db -> getRegistration db (RegistrationId "old")) `shouldReturn` Nothing
   invoiceCount st "inv-old" `shouldReturn` 0

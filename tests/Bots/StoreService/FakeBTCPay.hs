@@ -17,6 +17,7 @@ module Bots.StoreService.FakeBTCPay
     usePaymentMethodsFixture,
     ignoreListPaging,
     answerOversize,
+    answerStalled,
     fakeRequests,
     apiRequests,
     fakeInvoiceIds,
@@ -27,7 +28,8 @@ module Bots.StoreService.FakeBTCPay
   )
 where
 
-import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..))
+import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), providerTimeoutMicros)
+import Bots.StoreService.FakeHttp (setSwitch, stalledAnswer)
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM
 import Control.Monad (join)
@@ -125,6 +127,7 @@ data FakeState = FakeState
     fsMethods :: Maybe Text,
     fsIgnorePaging :: Bool,
     fsOversize :: Bool,
+    fsStalled :: Bool,
     -- | The rates answer set by a test, else each pair asked at the fixtures' rate.
     fsRates :: Maybe J.Value,
     fsRequests :: [FakeRequest]
@@ -140,6 +143,7 @@ initialState =
       fsMethods = Nothing,
       fsIgnorePaging = False,
       fsOversize = False,
+      fsStalled = False,
       fsRates = Nothing,
       fsRequests = []
     }
@@ -170,7 +174,8 @@ fakeConfig host =
       bWebhookSecret = fakeWebhookSecret,
       bExpiryMinutes = fakeExpiryMinutes,
       bSpeedPolicy = MediumSpeed,
-      bPaymentTolerance = 0.5
+      bPaymentTolerance = 0.5,
+      bTimeoutMicros = providerTimeoutMicros
     }
 
 -- | A BTCPay webhook delivery shaped as its documentation shows. Both suites sign this exact
@@ -286,7 +291,8 @@ fakeApp stv req respond = do
     ["_fail"] | isPost -> control body setFail
     ["_fixtures"] | isPost -> control body setFixtures
     ["_paging"] | isPost -> control body setPaging
-    ["_oversize"] | isPost -> control body setOversize
+    ["_oversize"] | isPost -> control body (setSwitch stv "_oversize" (\on st -> st {fsOversize = on}))
+    ["_stalled"] | isPost -> control body (setSwitch stv "_stalled" (\on st -> st {fsStalled = on}))
     ["_rates"] | isPost -> setRatesAnswer body
     "api" : "v1" : "stores" : storeId : rest -> apiCall body storeId rest
     _ -> refuse notFound404 "no such path on the fake btcpay"
@@ -355,14 +361,6 @@ fakeApp stv req respond = do
       Just v -> atomically (modifyTVar' stv (\st -> st {fsRates = Just v})) >> ok
       Nothing -> refuse badRequest400 "_rates takes the answer to serve, as JSON"
 
-    setOversize o = case unknownKeys ["on"] o of
-      Just message -> pure (Just message)
-      Nothing -> case KM.lookup "on" o of
-        Just (J.Bool on) -> do
-          atomically (modifyTVar' stv (\st -> st {fsOversize = on}))
-          pure Nothing
-        _ -> pure (Just "_oversize takes {\"on\": <bool>}")
-
     setPaging o = case unknownKeys ["ignore"] o of
       Just message -> pure (Just message)
       Nothing -> case KM.lookup "ignore" o of
@@ -378,10 +376,14 @@ fakeApp stv req respond = do
       if storeId /= fakeStoreId
         then refuse notFound404 ("no store " <> storeId <> " on the fake btcpay")
         else case lookup hAuthorization (requestHeaders req) of
-          Just given | given == expectedAuth -> injectingFailure (greenfield body rest)
+          Just given | given == expectedAuth -> unlessStalled (injectingFailure (greenfield body rest))
           _ -> refuse unauthorized401 "Authorization must be `token <api-key>`"
 
     expectedAuth = "token " <> TE.encodeUtf8 fakeApiKey
+
+    unlessStalled act = do
+      stalled <- fsStalled <$> readTVarIO stv
+      if stalled then respond stalledAnswer else act
 
     injectingFailure act = do
       failing <- atomically $ do
@@ -409,6 +411,11 @@ fakeApp stv req respond = do
         withInvoice invId $ \inv -> do
           override <- fsMethods <$> readTVarIO stv
           serve (fromMaybe (methodsFixture (isMethodId inv)) override) (patchMethods inv)
+      ["invoices", invId, "status"] | isPost ->
+        withInvoice invId $ \inv -> do
+          let marked = inv {isStatus = fromMaybe (isStatus inv) (J.decode body >>= objectField "status" >>= asText)}
+          atomically $ modifyTVar' stv $ \st -> st {fsInvoices = M.insert invId marked (fsInvoices st)}
+          serve (invoiceFixture (isStatus marked)) (patchInvoice invId marked)
       _ -> refuse notFound404 "no such greenfield path on the fake btcpay"
 
     rates = do
@@ -551,6 +558,9 @@ failAfterCalls skip fake calls code =
 
 answerOversize :: FakeBTCPay -> Bool -> IO ()
 answerOversize fake on = controlPost fake "/_oversize" (J.object ["on" J..= on])
+
+answerStalled :: FakeBTCPay -> Bool -> IO ()
+answerStalled fake on = controlPost fake "/_stalled" (J.object ["on" J..= on])
 
 -- | The rates call answers this from now on.
 setRates :: FakeBTCPay -> J.Value -> IO ()

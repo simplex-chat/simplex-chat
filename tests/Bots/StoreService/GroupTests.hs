@@ -11,7 +11,7 @@ import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), addUTCTime)
 import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, randomBadgeCode)
-import Simplex.Chat.Controller (ChatCommand (DeleteGroup, MemberRole))
+import Simplex.Chat.Controller (ChatCommand (AcceptMember, DeleteGroup, MemberRole))
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import Simplex.Chat.Types (GroupProfile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -23,7 +23,7 @@ badgeGroupTests :: Spec
 badgeGroupTests = describe "badge group" $ do
   let p = groupCmdAction GROwner
       issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–255, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
-      bulkUsage = ReplyText "Usage: /bulk <kind> [<length>] [years <Y> | months <M>] count <N>\nname <length>: length 6–63, years 2–10, count 1–100\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk name 6 count 100 · /bulk legend months 3 count 10"
+      bulkUsage = ReplyText "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–255, count 1–100\ne.g. /bulk legend months 3 count 10"
       revokeUsage = ReplyText "Usage: /revoke <code>"
   it "issue defaults" $ p "/issue supporter" `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
   it "issue with months and uses" $ p "/issue legend months 6 uses 50" `shouldBe` RunCmd (GCIssue BTLegend 6 50)
@@ -83,16 +83,16 @@ badgeGroupTests = describe "badge group" $ do
                    (GROwner, (True, True, True))
                  ]
   describe "log hints give commands --run-cli parses for a group name with a space" $ do
-    let hintCommand = fst . T.breakOn " in --run-cli" . snd . T.breakOnEnd " with "
-        parsedHint hint = let cmd = hintCommand hint in (cmd, parseChatCommand (encodeUtf8 cmd))
+    let hintCommands = map (fst . T.breakOn " in --run-cli") . drop 1 . T.splitOn " with "
+        parsedHint hint = map (\cmd -> (cmd, parseChatCommand (encodeUtf8 cmd))) (hintCommands hint)
     it "owner" $
       case parsedHint (T.replace "<member>" "alice" $ noOwnerHint "SimpleX Badges_1") of
-        (_, Right (MemberRole g m GROwner)) -> (g, m) `shouldBe` ("SimpleX Badges_1", "alice")
-        (cmd, r) -> expectationFailure $ "owner command " <> show cmd <> " parsed as " <> show r
+        [(_, Right (MemberRole g m GROwner)), (_, Right (AcceptMember g' m' GROwner))] -> [(g, m), (g', m')] `shouldBe` replicate 2 ("SimpleX Badges_1", "alice")
+        cmds -> expectationFailure $ "owner commands parsed as " <> show cmds
     it "orphan group" $
       case parsedHint (orphanHint "SimpleX Badges_1") of
-        (_, Right (DeleteGroup g)) -> g `shouldBe` "SimpleX Badges_1"
-        (cmd, r) -> expectationFailure $ "delete command " <> show cmd <> " parsed as " <> show r
+        [(_, Right (DeleteGroup g))] -> g `shouldBe` "SimpleX Badges_1"
+        cmds -> expectationFailure $ "delete command parsed as " <> show cmds
   describe "classifying a group message" $ do
     it "answers an advertised command that does not parse" $ do
       map p
@@ -113,11 +113,22 @@ badgeGroupTests = describe "badge group" $ do
         `shouldBe` [IgnoreMsg, bulkUsage, bulkUsage]
       map (`groupCmdAction` "/revoke not-a-badge-code") [GRMember, GRModerator, GRAdmin]
         `shouldBe` [IgnoreMsg, IgnoreMsg, revokeUsage]
-    it "runs a name code command only for an admin or owner, refusing a moderator" $ do
+    it "runs a name code command for a moderator and above, saying nothing to a member" $ do
       map (`groupCmdAction` "/issue name 6") [GRMember, GRModerator, GRAdmin, GROwner]
-        `shouldBe` [IgnoreMsg, ReplyText "Only admins can issue name codes.", RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2)]
-      map (`groupCmdAction` "/bulk name 6 count 2") [GRModerator, GRAdmin]
-        `shouldBe` [ReplyText "Only admins can issue name codes.", RunCmd (GCBulkName 6 2 2)]
+        `shouldBe` [IgnoreMsg, RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2)]
+    it "runs /balance, /record_refund and /close only for an owner, saying nothing to others" $ do
+      let roles = [GRMember, GRModerator, GRAdmin, GROwner]
+          ownerOnly cmd = replicate 3 IgnoreMsg <> [RunCmd (GCMoney cmd)]
+      map (`groupCmdAction` "/balance s") roles `shouldBe` ownerOnly (MCBalance "s")
+      map (`groupCmdAction` "/record_refund inv-s 10000") roles `shouldBe` ownerOnly (MCRecordRefund "inv-s" 10000)
+      map (`groupCmdAction` "/close inv-f") roles `shouldBe` ownerOnly (MCClose "inv-f")
+      groupCmdAction GRAdmin "/record_refund s" `shouldBe` IgnoreMsg
+      p "/refund s 10000" `shouldBe` IgnoreMsg
+    it "answers a malformed /balance, /record_refund or /close with its usage" $
+      map p ["/balance", "/balance s junk", "/record_refund s", "/record_refund s 0", "/record_refund s -5", "/record_refund s 100.00", "/record_refund s 99999999999999999999", "/close", "/close s junk"]
+        `shouldBe` replicate 2 (ReplyText "Usage: /balance <reference>")
+          <> replicate 5 (ReplyText "Usage: /record_refund <reference> <cents>")
+          <> replicate 2 (ReplyText "Usage: /close <reference>")
     it "accepts a command padded with whitespace" $ do
       p " /issue supporter " `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
       p "\t/bulk supporter count 1" `shouldBe` RunCmd (GCBulk BTSupporter 1 1)

@@ -23,6 +23,7 @@ module StoreService.Names.Profiles
     newProfiles,
     monotonicSeconds,
     deadlineIn,
+    withSlot,
     chatProfile,
     systemResolver,
     planProfile,
@@ -110,7 +111,8 @@ data Profiles = Profiles
     lookupSlots :: TVar Int,
     previewLookups :: TVar Int,
     cache :: TVar (Map Text (Word64, LinkProfile)),
-    refusedHosts :: TVar (Map HostName (Word64, ()))
+    refusedHosts :: TVar (Map HostName (Word64, ())),
+    runningLookups :: TVar (Map HostName (Deadline, TMVar Bool))
   }
 
 newProfiles :: ProfileLimits -> IO Word64 -> ProfileFetcher -> HostResolver -> IO Profiles
@@ -121,13 +123,15 @@ newProfiles limits@ProfileLimits {searchFetchSlots, previewFetchSlots, hostLooku
   previewLookups <- newTVarIO previewLookupSlots
   cache <- newTVarIO Map.empty
   refusedHosts <- newTVarIO Map.empty
-  pure Profiles {limits, clock, fetchLink, resolveHost, searchSlots, previewSlots, lookupSlots, previewLookups, cache, refusedHosts}
+  runningLookups <- newTVarIO Map.empty
+  pure Profiles {limits, clock, fetchLink, resolveHost, searchSlots, previewSlots, lookupSlots, previewLookups, cache, refusedHosts, runningLookups}
 
 monotonicSeconds :: IO Word64
 monotonicSeconds = (`div` 1000000000) <$> getMonotonicTimeNSec
 
 -- | A time on the monotonic clock, in nanoseconds.
 newtype Deadline = Deadline Word64
+  deriving (Eq, Ord)
 
 nanosPerMicro :: Word64
 nanosPerMicro = 1000
@@ -349,23 +353,29 @@ checkHostsIn ps pools deadline = checkAll . L.toList
 -- | getAddrInfo is a foreign call that a timeout cannot interrupt, so each lookup runs in its own thread,
 -- which holds its lookup slot until the resolver answers, also after the caller has given up.
 lookupHost :: Profiles -> [TVar Int] -> Deadline -> HostName -> IO HostCheck
-lookupHost Profiles {limits = ProfileLimits {refusedHostSeconds, maxRefusedHosts}, clock, resolveHost, lookupSlots, refusedHosts} pools deadline name = do
+lookupHost Profiles {limits = ProfileLimits {fetchTimeout, refusedHostSeconds, maxRefusedHosts}, clock, resolveHost, lookupSlots, refusedHosts, runningLookups} pools deadline name = do
   now <- clock
   cachedRefusal <- isJust . freshEntry now name <$> readTVarIO refusedHosts
   if cachedRefusal
     then pure HostRefused
     else do
-      answer <- newEmptyTMVarIO
-      started <- mask_ $ waitUntil deadline (mapM_ takeSlot slots) >>= mapM (\() -> forkIOWithUnmask $ \unmask -> try (unmask $ resolveHost name) >>= finish answer)
-      case started of
+      lookup' <- (,) <$> deadlineIn fetchTimeout <*> newEmptyTMVarIO
+      running <- mask_ $ waitUntil deadline (runningOrStarted lookup') >>= mapM (started lookup')
+      case running of
         Nothing -> pure HostRefused
-        Just _ -> maybe HostUnanswered (bool HostRefused HostPublic) <$> waitUntil deadline (readTMVar answer)
+        Just (lookupDeadline, answer) -> maybe HostUnanswered (bool HostRefused HostPublic) <$> waitUntil (min deadline lookupDeadline) (readTMVar answer)
   where
+    runningOrStarted lookup' =
+      Map.lookup name <$> readTVar runningLookups >>= \case
+        Just running -> pure $ Just running
+        Nothing -> Nothing <$ (mapM_ takeSlot slots >> modifyTVar' runningLookups (Map.insert name lookup'))
+    started lookup'@(_, answer) = maybe (lookup' <$ forkIOWithUnmask (\unmask -> try (unmask $ resolveHost name) >>= finish answer)) pure
     finish answer resolved = do
       let public = either (\(_ :: SomeException) -> True) (all publicAddress) resolved
       now <- clock
       atomically $ do
         unless public $ modifyTVar' refusedHosts $ insertBounded maxRefusedHosts now name (now + refusedHostSeconds, ())
+        modifyTVar' runningLookups $ Map.delete name
         putTMVar answer public
         mapM_ releaseSlot slots
     slots = lookupSlots : pools

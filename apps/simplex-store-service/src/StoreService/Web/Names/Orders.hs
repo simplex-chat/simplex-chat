@@ -53,7 +53,7 @@ import StoreService.Orders (publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), expiresItself)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId, truncateToSecond)
 import StoreService.Waiters (Waiters, publish)
-import StoreService.Web.Http (HttpEnv, Respond, badRequest, confirmationsFor, internalError, invalidName, invoiceAt, invoicesLimit, invoicePairs, invoiceWindow, jsonError, jsonResponse, limitedForAll, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody, termsUnavailable)
+import StoreService.Web.Http (CheckoutClient, HttpEnv, Respond, badRequest, checkoutClient, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, limitedCheckout, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody, termsUnavailable)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
 
 data InvoiceOrder = InvoiceOrder
@@ -83,8 +83,8 @@ sendAnswer :: Respond -> Answer -> IO ResponseReceived
 sendAnswer respond Answer {aResponse, aAfter} = aAfter >> respond aResponse
 
 -- | POST /api/invoice for a name, its body already read and its kind checked.
-nameInvoiceHandler :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived
-nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} http cfg providers waiters body respond
+nameInvoiceHandler :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived
+nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} http client cfg providers waiters body respond
   | nCodesOnly (oeConfig env) = sendAnswer respond =<< refuse ORCodesOnly
   | otherwise = sendAnswer respond =<< case parseInvoiceOrder body of
     Left refusal -> refuse refusal
@@ -115,7 +115,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} http cfg providers wa
           insert new paid db at = first (const OROrderExists) <$> createPaidRegistration db new (OTInvoice ioMethod price) paid at
       firstRefusal checks >>= \case
         Just refusal -> refuse refusal
-        Nothing -> createAtProvider env http cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = orderHash orOwner fields (OTInvoice ioMethod price), ivHolders = [], ivMethod = ioMethod, ivPrice = price, ivAmount = ioPrice, ivInsert = insert}
+        Nothing -> createAtProvider env http client cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = orderHash orOwner fields (OTInvoice ioMethod price), ivHolders = [], ivMethod = ioMethod, ivPrice = price, ivAmount = ioPrice, ivInsert = insert}
 
 -- | An order paid by invoice: its order hash, the holders its transaction closes, the order's price, what its invoice asks
 -- (less than the price when a balance paid the rest), and its insert after the invoice row's.
@@ -130,19 +130,19 @@ data InvoicedOrder = InvoicedOrder
   }
 
 -- | The invoice is made at the provider first, then the order is written with its invoice row; an order not written has its invoice cancelled there.
-createAtProvider :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> Text -> InvoicedOrder -> IO Answer
-createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http cfg providers waiters what InvoicedOrder {ivRequest = req@OrderRequest {orOwner, orFields}, ivOrderHash, ivHolders, ivMethod, ivPrice, ivAmount, ivInsert} =
+createAtProvider :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> Text -> InvoicedOrder -> IO Answer
+createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http client cfg providers waiters what InvoicedOrder {ivRequest = req@OrderRequest {orOwner, orFields}, ivOrderHash, ivHolders, ivMethod, ivPrice, ivAmount, ivInsert} =
   case providerFor providers ivMethod of
     Nothing -> do
       logNote (what <> " refused: no provider configured for " <> tshow ivMethod)
       pure $ answerNow providerUnavailable
-    Just provider -> limitedForAll http invoicesLimit (pure . answerNow) $ do
+    Just provider -> limitedCheckout http client ivMethod (pure . answerNow) $ do
       invId <- newInvoiceId
       now <- truncateToSecond <$> oeNow
       let amount = CurrencyAmount ivAmount
       pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> hex ivOrderHash} >>= \case
         Left (ProviderError e) -> do
-          logError (what <> " failed: provider refused to create an invoice: " <> e)
+          logError (what <> " failed at the provider: " <> e)
           pure $ answerNow providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           rid <- newRegistrationId
@@ -160,7 +160,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http cfg providers wai
               registration_ <- withTransaction oeStore (`getRegistration` rid)
               response <- case (row_, registration_) of
                 (Just row, Just r) -> invoiceViewResponse env cfg r row
-                _ -> internalError <$ logError (what <> ": order " <> invText invId <> " is not readable after its commit")
+                _ -> internalError <$ logError (what <> ": the order of invoice " <> piProviderRef <> " is not readable after its commit")
               pure Answer {aResponse = response, aAfter = announceClosed env providers waiters closed}
   where
     -- An invoice created at the provider for an order that was not written would stay payable with nothing watching it.
@@ -280,7 +280,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} http
       Just (SPMCard _)
         | spPrice - spBalance < minCardChargeCents -> refuse ORBadRequest
       Just method ->
-        createAtProvider env http cfg providers waiters what $
+        createAtProvider env http (checkoutClient http req) cfg providers waiters what $
           InvoicedOrder {ivRequest = order, ivOrderHash = orderHash orOwner orFields (spendTerms spend), ivHolders = maybeToList holder, ivMethod = method, ivPrice = spPrice, ivAmount = fromIntegral (spPrice - spBalance), ivInsert = differenceOrderInsert spend}
 
 -- | Stripe refuses a USD charge under 50 cents, so the page offers only crypto for a smaller difference.
@@ -326,9 +326,6 @@ cancelAtProvider Provider {pCancelInvoice} ref =
   pCancelInvoice ref >>= \case
     Left (ProviderError e) -> logWarn ("names: cancelling invoice " <> ref <> " at the provider failed: " <> e)
     Right () -> pure ()
-
-invText :: InvoiceId -> Text
-invText (InvoiceId t) = t
 
 firstRefusal :: [IO (Either OrderRefusal ())] -> IO (Maybe OrderRefusal)
 firstRefusal = \case

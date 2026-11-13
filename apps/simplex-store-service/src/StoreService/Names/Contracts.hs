@@ -4,7 +4,7 @@
 {-# LANGUAGE TupleSections #-}
 
 module StoreService.Names.Contracts
-  ( Contracts (ctDeadline, ctTermsBackoff),
+  ( Contracts (ctDeadline, ctTermsBackoff, ctViewSlots),
     NameStatus (..),
     RegisteredName (..),
     NameRecords (..),
@@ -26,6 +26,8 @@ module StoreService.Names.Contracts
     termsOf,
     termsLinkAllowed,
     termsText,
+    fetchCurrentTerms,
+    runTermsFetch,
     policyNonce,
     acceptedTerms,
     confirmedTag,
@@ -40,10 +42,12 @@ module StoreService.Names.Contracts
 where
 
 import Control.Applicative ((<|>))
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Concurrently (..))
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
-import Control.Logger.Simple (logWarn)
-import Control.Monad (guard)
+import Control.Concurrent.STM (TVar, newTVarIO)
+import Control.Logger.Simple (logError, logWarn)
+import Control.Monad (forever, guard)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bifunctor (first)
@@ -55,27 +59,32 @@ import Data.Functor.Compose (Compose (..))
 import Data.IORef (IORef, atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey, labelNode, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
+import StoreService.Names.Store (getTermsText, setTermsText)
+import StoreService.Safely (safely)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
 data Contracts = Contracts
   { ctChain :: ChainClient,
+    ctStore :: DBStore,
     ctTLD :: SimplexTLD,
+    ctMinPriceCentsPerYear :: Int,
     ctRegistrar :: IORef (Maybe RegistrarConstants),
     ctCommitmentAges :: IORef (Maybe CommitmentAges),
     ctNamePolicy :: IORef (Maybe Address),
@@ -84,9 +93,10 @@ data Contracts = Contracts
     ctTermsLinks :: IORef (Maybe (Word64, (Text, Text))),
     ctFetchAfter :: IORef UTCTime,
     ctFetching :: MVar (),
-    -- | microseconds for all the reads of one name status or of one name's records
+    -- | microseconds for all the reads of one name status, of one name's records, or of one registration view
     ctDeadline :: Int,
-    ctTermsBackoff :: Int
+    ctTermsBackoff :: Int,
+    ctViewSlots :: TVar Int
   }
 
 data RegistrarConstants = RegistrarConstants {rcRegistry :: Address, rcGracePeriod :: Integer}
@@ -125,6 +135,9 @@ attoUsdPerCent = 10 ^ (16 :: Int)
 nameReadsDeadline :: Int
 nameReadsDeadline = 10000000
 
+viewReadSlots :: Int
+viewReadSlots = 16
+
 termsBackoffSeconds :: Int
 termsBackoffSeconds = 30
 
@@ -134,9 +147,12 @@ maxTermsBackoffSeconds = 3600
 maxTermsBytes :: Int
 maxTermsBytes = 256 * 1024
 
+termsFetchInterval :: Int
+termsFetchInterval = 3600 * 1000000
+
 -- | Reads nothing: the registrar's constants, the commitment ages and the name policy are read on first use and kept once read.
-newContracts :: SimplexTLD -> ChainClient -> IO Contracts
-newContracts ctTLD ctChain = do
+newContracts :: DBStore -> SimplexTLD -> Int -> ChainClient -> IO Contracts
+newContracts ctStore ctTLD ctMinPriceCentsPerYear ctChain = do
   ctRegistrar <- newIORef Nothing
   ctCommitmentAges <- newIORef Nothing
   ctNamePolicy <- newIORef Nothing
@@ -144,7 +160,8 @@ newContracts ctTLD ctChain = do
   ctTermsLinks <- newIORef Nothing
   ctFetchAfter <- newIORef =<< getCurrentTime
   ctFetching <- newMVar ()
-  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds}
+  ctViewSlots <- newTVarIO viewReadSlots
+  pure Contracts {ctChain, ctStore, ctTLD, ctMinPriceCentsPerYear, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds, ctViewSlots}
 
 -- | Registered while @nameExpires + GRACE_PERIOD@ is not before the latest block's time.
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)
@@ -177,15 +194,18 @@ textRecord :: Contracts -> LabelHash -> ByteString -> IO (Either ChainError Text
 textRecord ct lh key = call ct (resolver ct) ("text(bytes32,string)", abiTuple [Static $ nodeArg ct lh, Dynamic $ abiBytes key]) decodeString
 
 -- | Cents for a label of this length and these years. The oracle prices by length only,
--- so a placeholder label of that length keeps the label from the RPC node. A price under a cent is refused: a node
--- answering one would sell names for nothing while the sponsor allowance pays their rent.
+-- so a placeholder label of that length keeps the label from the RPC node. A price under the floor for these years is refused: a node
+-- answering one would sell names below it while the sponsor allowance pays their rent.
 chainPriceCents :: Contracts -> Int -> Int -> IO (Either ChainError Int)
-chainPriceCents ct len years = call ct (controller ct) ("rentPriceUSD(string,uint256)", args) $ \ret -> do
+chainPriceCents ct@Contracts {ctMinPriceCentsPerYear} len years = fmap (>>= checkFloor) . call ct (controller ct) ("rentPriceUSD(string,uint256)", args) $ \ret -> do
   base <- decodeUint256 ret
   let cents = base `div` attoUsdPerCent
-  if cents >= 1 && cents <= toInteger (maxBound :: Int) then Right (fromInteger cents) else Left AERange
+  if cents <= toInteger (maxBound :: Int) then Right (fromInteger cents) else Left AERange
   where
     args = abiTuple [Dynamic $ abiBytes $ B.replicate len 'a', Static $ uint256 $ toInteger years * secondsPerYear]
+    checkFloor cents
+      | toInteger cents >= toInteger ctMinPriceCentsPerYear * toInteger years = Right cents
+      | otherwise = Left $ ChainUnavailable $ "rentPriceUSD answered " <> tshow cents <> " cents for " <> tshow years <> " years, under names.min_price_cents_per_year"
 
 sponsorNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", addressWord owner) decodeWord64
@@ -234,30 +254,52 @@ termsText ct@Contracts {ctTermsTexts, ctFetching} t@Terms {tmHash} =
   where
     kept = M.lookup tmHash <$> readIORef ctTermsTexts
 
+fetchCurrentTerms :: Contracts -> IO ()
+fetchCurrentTerms ct =
+  termsLinks ct >>= \case
+    Right (generalLink, communityLink) -> mapM_ (termsText ct) $ mapMaybe termsOf [generalLink, communityLink]
+    Left e -> logWarn $ "names: the terms links could not be read to fetch their texts: " <> tshow e
+
+runTermsFetch :: Contracts -> IO ()
+runTermsFetch ct = forever $ safely "names terms fetch" (fetchCurrentTerms ct) >> threadDelay termsFetchInterval
+
 fetchTerms :: Contracts -> Terms -> IO (Either TermsRefusal Text)
-fetchTerms Contracts {ctChain, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash} =
+fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash} =
   allowedLink ctChain tmLink >>= \case
     Nothing -> pure $ Left TRLink
-    Just (url, digest) -> do
+    Just (url, digest) ->
+      withTransaction ctStore (`getTermsText` tmHash) >>= \case
+        Just stored -> case checked digest stored of
+          Right text -> keep text
+          Left (reason, _) -> do
+            logWarn $ "names: the stored terms text of " <> tmLink <> " is refused, " <> reason <> "; it is fetched again"
+            fetchOrWait url digest
+        Nothing -> fetchOrWait url digest
+  where
+    fetchOrWait url digest = do
       after <- readIORef ctFetchAfter
       now <- getCurrentTime
       if now < after
         then pure $ Left $ TRWait $ ceiling $ diffUTCTime after now
         else
           (>>= checked digest) <$> fetchText ctChain maxTermsBytes url >>= \case
-            Right text -> Right text <$ modifyIORef' ctTermsTexts (M.insert tmHash text)
+            Right text -> keep text <* store text
             Left (reason, retryAfter) -> do
               let wait = min maxTermsBackoffSeconds $ max ctTermsBackoff $ fromMaybe 0 retryAfter
               failedAt <- getCurrentTime
               writeIORef ctFetchAfter $ addUTCTime (fromIntegral wait) failedAt
               logWarn $ "names: the terms text of " <> tmLink <> " could not be fetched, " <> reason <> "; none is fetched for " <> tshow wait <> " seconds"
               pure $ Left $ TRWait wait
-  where
+    keep text = Right text <$ modifyIORef' ctTermsTexts (M.insert tmHash text)
+    store text =
+      withTransaction ctStore (\db -> setTermsText db tmHash $ encodeUtf8 text)
+        `catchOwn'` \e -> logError ("names: the terms text of " <> tmLink <> " could not be stored: " <> tshow e)
+    checked :: Maybe ByteString -> ByteString -> Either (Text, Maybe Int) Text
     checked digest body
-      | sha256Hash body /= digest = Left ("its SHA-256 is not the link's", Nothing)
+      | any (sha256Hash body /=) digest = Left ("its SHA-256 is not the link's", Nothing)
       | otherwise = first (const ("not UTF-8", Nothing)) $ decodeUtf8' body
 
-allowedLink :: ChainClient -> Text -> IO (Maybe (String, ByteString))
+allowedLink :: ChainClient -> Text -> IO (Maybe (String, Maybe ByteString))
 allowedLink c@ChainClient {ccConfig = ChainConfig {cChainId}} link = case termsLinkParts link of
   Just (False, parts) -> pure $ Just parts
   Just (True, parts)
@@ -267,16 +309,18 @@ allowedLink c@ChainClient {ccConfig = ChainConfig {cChainId}} link = case termsL
           _ -> Nothing
   _ -> pure Nothing
 
-termsLinkParts :: Text -> Maybe (Bool, (String, ByteString))
+termsLinkParts :: Text -> Maybe (Bool, (String, Maybe ByteString))
 termsLinkParts link = do
-  digest <- bytes32FromHex . ("0x" <>) =<< T.stripPrefix "#sha256=" fragment
-  (loopback, path) <- (False,) <$> forgejoPath <|> (True,) <$> loopbackPath
-  guard $ maybe False (not . T.null) (T.stripSuffix ".md" path) && all segment (T.splitOn "/" path)
+  digest <- if T.null fragment then pure Nothing else Just <$> (bytes32FromHex . ("0x" <>) =<< T.stripPrefix "#sha256=" fragment)
+  (loopback, path) <- (False,) <$> (commitPath forgejoPrefix <|> commitPath githubPrefix) <|> (True,) <$> loopbackPath
+  guard $ (isJust digest || not loopback) && maybe False (not . T.null) (T.stripSuffix ".md" path) && all segment (T.splitOn "/" path)
   pure (loopback, (T.unpack url, digest))
   where
     (url, fragment) = T.breakOn "#" link
-    forgejoPath = do
-      (commit, path) <- T.splitAt commitChars <$> T.stripPrefix "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/" url
+    forgejoPrefix = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/"
+    githubPrefix = "https://raw.githubusercontent.com/simplex-chat/simplex-chat/"
+    commitPath prefix = do
+      (commit, path) <- T.splitAt commitChars <$> T.stripPrefix prefix url
       guard $ T.length commit == commitChars && T.all lowerHex commit
       T.stripPrefix "/" path
     loopbackPath = do

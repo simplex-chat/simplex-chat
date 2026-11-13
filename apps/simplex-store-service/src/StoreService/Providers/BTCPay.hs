@@ -31,6 +31,7 @@ import StoreService.Providers
     Received (..),
     Uncreditable (..),
     settleWindow,
+    timeoutError,
     unitDecimals,
     WebhookError (..),
   )
@@ -78,6 +79,7 @@ import Simplex.Chat.PaymentService.Types
     ServicePaymentMethod (..),
   )
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import System.Timeout (timeout)
 
 -- Shapes cited from BTCPay Server v2.4.5 (https://github.com/btcpayserver/btcpayserver/tree/v2.4.5):
 -- - payment methods, GET stores/{storeId}/invoices/{invoiceId}/payment-methods: BTCPayServer.Client/Models/InvoicePaymentMethodDataModel.cs,
@@ -308,13 +310,16 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
       created <- greenfield env what methodPost ["invoices"] [] (Just (body methodId))
       case created >>= decodeGreenfield what of
         Left e@(ProviderError m) -> do
-          logWarn ("btcpay: the refused request was " <> safeDecodeUtf8 (LB.toStrict (J.encode (body methodId))) <> " -- " <> m)
+          logWarn ("btcpay: the failed request was " <> safeDecodeUtf8 (LB.toStrict (J.encode (body methodId))) <> " -- " <> m)
           pure (Left e)
         Right GCreated {gcId} -> do
           ms <- greenfield env what methodGet ["invoices", gcId, "payment-methods"] [] Nothing
-          pure (ms >>= destination methodId cc gcId)
+          either (cancelCreated gcId) (pure . Right) (ms >>= destination methodId cc gcId)
   where
     what = "create invoice"
+    cancelCreated ref (ProviderError e) = do
+      cancelled <- cancelInvoice env ref
+      pure $ Left $ ProviderError $ e <> "; invoice " <> ref <> either (\(ProviderError c) -> " is left open, as its cancel failed: " <> c) (const " is cancelled") cancelled
     body methodId =
       J.object
         [ "amount" J..= minorToDecimal odAmount,
@@ -579,7 +584,7 @@ verifyBTCPaySig secret hdrs body = do
 
 greenfield :: BTCPayEnv -> Text -> Method -> [Text] -> Query -> Maybe J.Value -> IO (Either ProviderError LB.ByteString)
 greenfield BTCPayEnv {beCfg, beManager} what verb segments query body = do
-  r <- try $ do
+  r <- timeout (bTimeoutMicros beCfg) $ try $ do
     req <- parseRequest (T.unpack url)
     let asked =
           req
@@ -596,9 +601,10 @@ greenfield BTCPayEnv {beCfg, beManager} what verb segments query body = do
       taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
       pure (statusCode (responseStatus resp), taken)
   pure $ case r of
+    Nothing -> Left (timeoutError what)
     -- http-client hides the Authorization header when showing a Request
-    Left (e :: HttpException) -> Left (ProviderError (what <> " failed: " <> tshow e))
-    Right (code, taken)
+    Just (Left (e :: HttpException)) -> Left (ProviderError (what <> " failed: " <> tshow e))
+    Just (Right (code, taken))
       | LB.length taken > maxProviderBytes ->
           Left . ProviderError $
             what <> " failed: HTTP " <> tshow code <> ", and the answer is over " <> tshow maxProviderBytes <> " bytes"

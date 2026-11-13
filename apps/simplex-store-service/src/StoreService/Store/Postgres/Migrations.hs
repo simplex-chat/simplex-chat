@@ -294,6 +294,7 @@ CREATE TABLE @name_prepaid_codes(
   revoked_at TIMESTAMPTZ,
   expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL,
+  issued_in_group SMALLINT NOT NULL DEFAULT 0,
   UNIQUE(code_hash)
 );
 
@@ -470,6 +471,11 @@ CREATE INDEX @idx_name_transactions_registration ON @name_transactions(registrat
 CREATE INDEX @idx_name_transactions_edit ON @name_transactions(name_record_edit_id);
 
 CREATE INDEX @idx_name_transactions_status ON @name_transactions(status, registrar_nonce);
+
+CREATE TABLE @name_terms(
+  terms_hash BYTEA NOT NULL PRIMARY KEY,
+  terms_text BYTEA NOT NULL
+);
 |]
 
 -- A table another table's foreign key references cannot be dropped, so reserved_by goes first.
@@ -479,6 +485,8 @@ down_m20261013_names =
   withPrefix
     servicePrefix
     [r|
+DROP TABLE @name_terms;
+
 DROP INDEX @idx_name_transactions_status;
 DROP INDEX @idx_name_transactions_edit;
 DROP INDEX @idx_name_transactions_registration;
