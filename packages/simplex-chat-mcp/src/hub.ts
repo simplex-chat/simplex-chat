@@ -92,6 +92,7 @@ export class Session {
   private requested?: Mode
   private hostDeclined: boolean
   private writer?: (line: AttachLine) => void
+  private sentTools = "[]"
   private readonly attaching = new Changes()
   private delivery: Promise<void> = Promise.resolve()
   private readonly refusedReactions = new Set<string>()
@@ -140,6 +141,7 @@ export class Session {
       approves: (member: T.GroupMember) => this.approves(member),
       ownerOf: (n: number) => hub.sessionId(n),
       isUser: (member: T.GroupMember) => this.isUser(member),
+      toolsChanged: () => this.sendTools(),
     }
     this.control = new Control(chat, group, {displayName: group.groupProfile.displayName, session, registerHint: "", qrCode: "small"}, this.actions, this.tools)
   }
@@ -155,6 +157,8 @@ export class Session {
 
   set onLine(writer: ((line: AttachLine) => void) | undefined) {
     this.writer = writer
+    this.sentTools = "[]"
+    this.sendTools()
     this.attaching.notify()
   }
 
@@ -226,7 +230,8 @@ export class Session {
 
   // spec: spec/architecture.md#hub-session-permission
   permission({requestId, toolName, description, inputPreview}: PermissionRequest): void {
-    const action = this.actions.create(`permission ${requestId}`, {tool: "permission", input: {requestId, toolName, description, inputPreview}}, undefined, this.number, "requests")
+    const toolApproved = this.control.approvedTools().some(({tool}) => tool === toolName)
+    const action = this.actions.create(`permission ${requestId}`, {tool: "permission", input: {requestId, toolName, description, inputPreview}, toolApproved}, undefined, this.number, "requests")
     const unsubscribe = action.changes.subscribe(() => {
       const behavior = action.state === "performing" ? "allow" : action.state === "rejected" ? "deny" : undefined
       if (behavior !== undefined) this.onLine?.({permission: {requestId, behavior}})
@@ -281,6 +286,21 @@ export class Session {
       }
     }
     return this.finalizing
+  }
+
+  // spec: spec/architecture.md#hub-session-endtoolapprovals
+  endToolApprovals(): void {
+    this.control.endToolApprovals()
+    this.sendTools()
+  }
+
+  // spec: spec/architecture.md#hub-session-endtoolapprovals
+  sendTools(): void {
+    const tools = this.control.approvedTools()
+    const sent = JSON.stringify(tools)
+    if (sent === this.sentTools) return
+    this.sentTools = sent
+    this.onLine?.({tools})
   }
 
   // spec: spec/architecture.md#hub-session-endpermissions
@@ -699,7 +719,7 @@ export class Hub implements SessionGroups {
     }
     const session = sessions.find(({control}) => isControlEvent(event, control.groupId))
     if (session !== undefined) {
-      this.controlEvents = this.controlEvents.then(() => session.control.onEvent(event)).then(() => session.announceRights(event)).then(() => session.askMode()).catch(error => logError(`${event.type} in the group of session ${session.number}`, error))
+      this.controlEvents = this.controlEvents.then(() => session.control.onEvent(event)).then(() => session.sendTools()).then(() => session.announceRights(event)).then(() => session.askMode()).catch(error => logError(`${event.type} in the group of session ${session.number}`, error))
     }
   }
 }
