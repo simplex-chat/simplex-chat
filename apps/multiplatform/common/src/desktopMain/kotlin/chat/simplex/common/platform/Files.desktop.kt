@@ -12,7 +12,7 @@ import java.net.URI
 actual val dataDir: File = File(desktopPlatform.dataPath)
 // No deleteOnExit() here: a transient second instance also inits this val, and its exit
 // would delete the shared folder while the primary runs. Registered in Main instead.
-actual val tmpDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex")
+actual val tmpDir: File = File(dataDir.absolutePath + File.separator + "app_temp")
 actual val filesDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_files")
 actual val appFilesDir: File = filesDir
 actual val wallpapersDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_assets" + File.separator + "wallpapers").also { it.mkdirs() }
