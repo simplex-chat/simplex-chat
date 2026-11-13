@@ -183,6 +183,22 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(edges.suffix(3).map(terminalTextTopGap), [0, 0, 0])
     }
 
+    func testTerminalStatusWithoutTime() {
+        let statuses: [CIStatus] = [
+            .sndNew,
+            .sndSent(sndProgress: .complete),
+            .sndSent(sndProgress: .partial),
+            .sndRcvd(msgRcptStatus: .ok, sndProgress: .complete),
+            .sndRcvd(msgRcptStatus: .ok, sndProgress: .partial),
+            .sndRcvd(msgRcptStatus: .badMsgHash, sndProgress: .complete),
+            .sndErrorAuth,
+            .rcvNew,
+            .rcvRead
+        ]
+        XCTAssertEqual(statuses.map { terminalShowsStatus($0, showTimestamp: false) }, [true, false, true, false, true, true, true, true, true])
+        XCTAssertEqual(statuses.map { terminalShowsStatus($0, showTimestamp: true) }, Array(repeating: true, count: statuses.count))
+    }
+
     func testTerminalMediaAndAvatarSizes() {
         XCTAssertEqual(terminalMediaWidth(402), 378)
         XCTAssertEqual(terminalMediaWidth(1000), 500)
