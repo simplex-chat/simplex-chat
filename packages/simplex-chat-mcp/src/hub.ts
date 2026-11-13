@@ -10,7 +10,7 @@ import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
 import {Changes, ChatItemsWatch, ToolCall, getChat, nextChange, storedName, validName} from "./messages"
-import {AttachLine, OwnerState, PermissionRequest, ResetReply, TurnRequest} from "./protocol"
+import {AttachLine, OwnerState, PermissionRequest, ResetReply, Step, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
 import {User, userContact} from "./user"
@@ -26,6 +26,8 @@ const pendingDays = 1
 const attachWait = 30_000
 const channelPrompt = /<channel source="plugin:simplex:simplex"[^\n]* item="(\d+)"[^\n]*>\n([\s\S]*?)\n<\/channel>/g
 const commandsApproversOnly = "Only admins and owners of this group can send / commands."
+const noteRefused = "Claude's note was not posted"
+const maxFinished = 100
 
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
 
@@ -58,6 +60,8 @@ export class Session {
   private writer?: (line: AttachLine) => void
   private readonly attaching = new Changes()
   private delivery: Promise<void> = Promise.resolve()
+  private readonly steps = new Map<string, {at: number; text: string; item: Promise<number | undefined>}>()
+  private readonly finished = new Set<string>()
 
   constructor(
     private readonly hub: Hub,
@@ -177,8 +181,11 @@ export class Session {
     })
   }
 
-  async turn({at, prompt, typed, note, midTurn, answer, model, effort}: TurnRequest): Promise<void> {
-    if ((prompt !== undefined && midTurn !== true) || answer !== undefined) this.endPermissions(at)
+  async turn({at, prompt, typed, note, midTurn, answer, model, effort, step}: TurnRequest): Promise<void> {
+    if ((prompt !== undefined && midTurn !== true) || answer !== undefined) {
+      this.endPermissions(at)
+      this.endSteps(at)
+    }
     const quoted = answer === undefined ? undefined : this.turnQuote(at ?? Infinity)
     if (answer !== undefined) this.answeredAt = Math.max(this.answeredAt, at ?? Date.now())
     const matched = prompt === undefined ? [] : this.pushedIn(prompt)
@@ -192,7 +199,8 @@ export class Session {
       this.store(this.description)
     }
     try {
-      if (note !== undefined) await this.post([note]).catch(error => this.postRefusal(error, "A note on Claude Code's prompt was not posted", featureOff))
+      if (step !== undefined) await this.step(step, at ?? Date.now())
+      if (note !== undefined) await this.post([note], undefined, [-1]).catch(error => this.postRefusal(error, noteRefused, featureOff))
       if (prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser))
       if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
     } finally {
@@ -205,6 +213,18 @@ export class Session {
     for (const action of this.actions.pending()) {
       if (action.tool === "permission" && action.created < before) this.actions.end(action)
     }
+  }
+
+  endSteps(before = Infinity): Promise<void> {
+    const ended = [...this.steps].filter(([, {at}]) => at < before)
+    for (const [id] of ended) {
+      this.steps.delete(id)
+      this.finish(id)
+    }
+    return Promise.all(ended.map(([, {item, text}]) => this.finalize(item, text))).then(
+      () => undefined,
+      error => logError(`steps of session ${this.number}`, error),
+    )
   }
 
   fileDone(fileId: number, error?: string): void {
@@ -278,7 +298,39 @@ export class Session {
   private async answer(text: string, quoted: T.ChatItem | undefined): Promise<void> {
     const quote = quoted?.content.type === "rcvMsgContent" ? {content: quoted.content.msgContent, fileName: quoted.file?.fileName} : undefined
     const quotes = quote !== undefined && fitsMessage({type: "text", text: [...text].slice(0, 1).join("")}, undefined, quote)
-    await this.post(textParts(text, quotes ? quote : undefined), quotes ? quoted?.meta.itemId : undefined).catch(error => this.postRefusal(error, "Claude's answer was not posted", featureOff, quoted?.meta.itemId))
+    const parts = textParts(text, quotes ? quote : undefined)
+    await this.post(parts, quotes ? quoted?.meta.itemId : undefined, parts.map((_, i) => (i === parts.length - 1 ? 1 : -1))).catch(error => this.postRefusal(error, "Claude's answer was not posted", featureOff, quoted?.meta.itemId))
+  }
+
+  private async step({id, text, end}: Step, at: number): Promise<void> {
+    if (this.finished.delete(id)) return
+    const started = this.steps.get(id)
+    if (end !== true) {
+      const line: T.ComposedMessage & {priority: number} = {msgContent: {type: "text", text}, mentions: {}, priority: -1}
+      const item = this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], [line], true).then(
+        ([sent]) => sent?.chatItem.meta.itemId,
+        error => this.postRefusal(error, noteRefused, featureOff).then(() => undefined),
+      )
+      this.steps.set(id, {at, text, item})
+      await item
+    } else if (started === undefined) {
+      this.finish(id)
+      await this.post([text], undefined, [-1]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+    } else {
+      this.steps.delete(id)
+      await this.finalize(started.item, text)
+    }
+  }
+
+  private async finalize(item: Promise<number | undefined>, text: string): Promise<void> {
+    const itemId = await item
+    if (itemId !== undefined) await this.hub.chat.apiUpdateChatItem(T.ChatType.Group, this.control.groupId, itemId, {type: "text", text}, false)
+  }
+
+  private finish(id: string): void {
+    this.finished.add(id)
+    const [oldest] = this.finished
+    if (this.finished.size > maxFinished) this.finished.delete(oldest)
   }
 
   private async postRefusal(error: unknown, subject: string, refusal: (feature: string) => string, quotedItemId?: number): Promise<void> {
@@ -287,8 +339,8 @@ export class Session {
     await this.post([`${subject}: ${refusal(feature)}`], quotedItemId)
   }
 
-  private async post(parts: string[], quotedItemId?: number): Promise<void> {
-    const send = (quote?: number) => this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => ({msgContent: {type: "text", text: part}, quotedItemId: i === 0 ? quote : undefined, mentions: {}})))
+  private async post(parts: string[], quotedItemId?: number, priorities: number[] = []): Promise<void> {
+    const send = (quote?: number) => this.hub.chat.apiSendMessages([T.ChatType.Group, this.control.groupId], parts.map((part, i) => ({msgContent: {type: "text", text: part}, quotedItemId: i === 0 ? quote : undefined, mentions: {}, priority: priorities[i]})))
     await send(quotedItemId).catch(error => {
       if (quotedItemId === undefined || !isRefusedQuote(error)) throw error
       return send()
@@ -462,6 +514,7 @@ export class Hub implements SessionGroups {
     const stopped = await Promise.all(sessions.map(async ({actions}) => ({lost: actions.lost, cancelled: await actions.stop()})))
     await this.controlEvents
     await waitForCancelledCards(stopped.flatMap(({lost, cancelled}) => (lost ? [] : cancelled)), cardsWait, new AbortController().signal)
+    await Promise.all(sessions.map(session => session.endSteps()))
     for (const {tools} of sessions) tools.close()
     await this.user?.close()
     await this.chat.close()
