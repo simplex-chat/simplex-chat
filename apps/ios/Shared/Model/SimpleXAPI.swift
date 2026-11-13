@@ -2710,7 +2710,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
                     if cItem.isActiveReport {
                         m.increaseGroupReportsCounter(cInfo.id)
                     }
-                } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) && !cItem.meta.silent {
+                } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) && !(cItem.meta.silent && cInfo.silentNotCounted) {
                     m.increaseUnreadCounter(user: user)
                 }
             }
@@ -2756,7 +2756,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if !active(user) {
             for item in items {
                 let d = item.deletedChatItem
-                if item.toChatItem == nil && d.chatItem.isRcvNew && d.chatInfo.ntfsEnabled(chatItem: d.chatItem) && !d.chatItem.meta.silent {
+                if item.toChatItem == nil && d.chatItem.isRcvNew && d.chatInfo.ntfsEnabled(chatItem: d.chatItem) && !(d.chatItem.meta.silent && d.chatInfo.silentNotCounted) {
                     await MainActor.run {
                         m.decreaseUnreadCounter(user: user)
                     }

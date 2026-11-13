@@ -7052,6 +7052,24 @@ INDEX 2
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=? AND created_at=? AND rowid>?)
 USE TEMP B-TREE FOR ORDER BY
 
+Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?  AND item_ts < ?) OR ( user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?  AND item_ts = ? AND chat_item_id < ?))  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Plan:
+MULTI-INDEX OR
+INDEX 1
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts<?)
+INDEX 2
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts=? AND rowid<?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?  AND item_ts > ?) OR ( user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?  AND item_ts = ? AND chat_item_id > ?))  ORDER BY item_ts ASC, chat_item_id ASC  LIMIT ?
+Plan:
+MULTI-INDEX OR
+INDEX 1
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts>?)
+INDEX 2
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts=? AND rowid>?)
+USE TEMP B-TREE FOR ORDER BY
+
 Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND item_ts < ?) OR ( user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND item_ts = ? AND chat_item_id < ?))  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
 MULTI-INDEX OR
@@ -7804,6 +7822,10 @@ Query: SELECT COUNT(1) FROM chat_item_versions WHERE chat_item_id = ?
 Plan:
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
 
+Query: SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? AND  item_status = ? AND item_priority < 0 
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_silent (user_id=? AND item_status=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_priority<?)
+
 Query: SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND  item_status = ? AND item_priority < 0 
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_silent (user_id=? AND item_status=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_priority<?)
@@ -7832,6 +7854,10 @@ SEARCH sp USING INDEX sqlite_autoindex_group_member_status_predicates_1 (member_
 Query: SELECT COUNT(1) FROM groups WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
+
+Query: SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? AND  item_status = ? 
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
 
 Query: SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND  item_status = ? 
 Plan:
@@ -7964,6 +7990,14 @@ SCAN chat_items
 Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND contact_id = ? AND shared_msg_id = ? AND item_sent = ?
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_direct_shared_msg_id (user_id=? AND contact_id=? AND shared_msg_id=?)
+
+Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? AND  item_status = ?  ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_status (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+
+Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? AND  item_viewed = ?  ORDER BY item_ts DESC, chat_item_id DESC LIMIT 1
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
 
 Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND  item_status = ?  ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1
 Plan:

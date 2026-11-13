@@ -2412,6 +2412,10 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var silentNotCounted: Bool {
+        chatSettings?.enableNtfs == .all
+    }
+
     public var chatSettings: ChatSettings? {
         switch self {
         case let .direct(contact): return contact.chatSettings

@@ -278,6 +278,8 @@ data class ChatStats(
 )
 ```
 
+`unreadSilent` counts unread silent items. The user's unread counter leaves them out in mode "All" (`ChatInfo.silentNotCounted`); in mode "Mentions" a silent mention counts as a mention.
+
 ### Derived Properties
 
 | Property | Line | Purpose |

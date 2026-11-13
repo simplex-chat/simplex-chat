@@ -1,6 +1,6 @@
 # Silent messages
 
-Status: Q1, Q2 and Q3 answered A by the user on 2026-11-12; Q4, the two tiers of unread items asked for in the note on Q3, is open. Code references: master `9d3241b06`. simplexmq at the commit of `cabal.project`, `71179c4d4`. Related plans: `2026-10-13-message-priority.md` (approved on 2026-10-13, not implemented), `2026-10-13-forwarded-notification-flag.md` (implemented by #7706).
+Status: Q1, Q2 and Q3 answered A by the user on 2026-11-12; Q4, the two tiers of unread items asked for in the note on Q3, and Q5, the look of a silent-only count, answered B on 2026-11-13. Code references: master `9d3241b06`. simplexmq at the commit of `cabal.project`, `71179c4d4`. Related plans: `2026-10-13-message-priority.md` (approved on 2026-10-13, not implemented), `2026-10-13-forwarded-notification-flag.md` (implemented by #7706).
 
 ## 1. Goal
 
@@ -65,14 +65,25 @@ Q3. Does a silent message count as unread? Answered A.
 - A, recommended: yes. The chat shows it as new, and the unread counters and the icon badge include it; only the alert is removed.
 - B: it arrives as read.
 
-Q4. How does a chat whose unread items are all silent look?
-- B, recommended: two tiers. Its count is shown in a gray outline badge in the chat list and on the chat's scroll button. A list label shows a small outline circle in place of `●` while its chats have only silent unread items. The unread filter, the iOS icon badge and the profile totals leave it out. A chat with silent and normal unread items shows the blue count of all of them, as now. Silent and muted stay independent: a muted chat keeps its gray badge. Cost, in a pull request stacked on this one, in the same release:
-  - core, about 100 lines: `ChatStats.unreadSilent`; two partial indexes of silent items, created in the migration of the column; the chat list queries join the count; the core's unread filters, the single-chat counts and the profile totals subtract it. Every count reads only its index and only unread silent items (decision 16).
+Q4. How does a chat whose unread items are all silent look? Answered B.
+- B, recommended: two tiers. Its count is shown in a gray outline badge in the chat list, and in gray inside the usual circle of the chat's scroll button. A list label shows a small outline circle in place of `●` while its chats have only silent unread items. The unread filter, the iOS icon badge and the profile totals leave it out. A chat with silent and normal unread items shows the blue count of all of them, as now. Silent and muted stay independent: a muted chat keeps its gray badge. Cost, in a pull request stacked on this one, in the same release:
+  - core, about 100 lines: `ChatStats.unreadSilent`; two partial indexes of silent items, created in a migration after the column's; the chat list queries join the count; the core's unread filters, the single-chat counts and the profile totals subtract it. Every count reads only its index and only unread silent items (decision 16).
   - API types: one field, generated.
   - apps, about 80 lines per platform: the count is kept where `unreadMentions` is kept; `unreadTag` becomes three-valued, none, silent or unread, and drives the unread filter and the list labels with a second map of tags; the badge style in the chat list and the chat; the iOS icon badge total.
   - A count, not a flag: apps change the counters per item received or read without the core, so they need the number of silent unread items to know when only silent ones remain (decision 17).
 - A: one tier, as answered in Q3: a blue count; the filter, the labels and the icon badge count silent items. No cost.
 - C: silent messages arrive read. A few lines. The chat list does not show that Claude worked.
+
+Q5. How is the count of a chat with only silent unread items drawn? Answered B, after the renders below, made by the Compose code of `ep/mcp-silent-unread` in the light and dark themes.
+- B, as built: a gray outline with a gray count; the scroll button shows the count in gray; a list label shows `○`.
+- A2: a gray filled badge with a white count, the badge of a muted chat.
+
+![Chat list: normal, silent B, silent A2, muted, mention](2026-11-12-mcp-silent-messages/silent-compose-all-light.png)
+![Chat list, dark theme](2026-11-12-mcp-silent-messages/silent-compose-all-dark.png)
+![Scroll button: normal and silent only](2026-11-12-mcp-silent-messages/silent-compose-scroll-light.png)
+![Scroll button, dark theme](2026-11-12-mcp-silent-messages/silent-compose-scroll-dark.png)
+![List labels: unread, silent only, read](2026-11-12-mcp-silent-messages/silent-compose-tags-light.png)
+![List labels, dark theme](2026-11-12-mcp-silent-messages/silent-compose-tags-dark.png)
 
 ## 4. Decisions
 
@@ -104,9 +115,9 @@ Two tiers of unread items, Q4 B, the stacked pull request:
     idx_chat_items_groups_silent    ON chat_items(user_id, item_status, group_id, group_scope_tag, group_scope_group_member_id, item_priority)
                                     WHERE item_priority < 0
     ```
-    EXPLAIN QUERY PLAN with sqlite3 3.45.1 on the master schema plus the column: `SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_silent (user_id=? AND item_status=? AND group_id>?)` for the counts per group, `... idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)` per contact, and `(... AND group_id=? ... AND item_priority<?)` and `(... AND contact_id=? AND item_priority<?)` for one chat, with `item_status` bound as a parameter. Without `item_priority` in the columns the plans are not covering. The indexes are empty after the migration; their creation scans `chat_items` once. Postgres gets the same partial indexes.
+    EXPLAIN QUERY PLAN with sqlite3 3.45.1 on the master schema plus the column: `SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_silent (user_id=? AND item_status=? AND group_id>?)` for the counts per group, `... idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)` per contact, and `(... AND group_id=? ... AND item_priority<?)` and `(... AND contact_id=? AND item_priority<?)` for one chat, with `item_status` bound as a parameter. Without `item_priority` in the columns the plans are not covering. The indexes are created by `M20261113_silent_indexes`, the migration after `M20261113_item_priority`, so a database that ran the column's migration gets them; they are empty after the migration, and their creation scans `chat_items` once. Postgres gets the same partial indexes.
 17. `ChatStats.unreadSilent :: Int`, next to `unreadMentions` (`Messages.hs:459-469`). Apps change the counters per item received or read, without the core: Kotlin `ChatModel.kt:621`, `:903-906`; iOS `ChatModel.swift:732`, `:849`, `:884`, `:1056`, `:1073`, `:1081-1083`, `:1161-1165`, `ChatView.swift:1835-1881`. A flag cannot be kept there: after a normal item is read, only a count tells whether the rest is silent. The count follows `unreadMentions` at each of these sites.
-18. Rules. `unreadTag` (Kotlin `ChatModel.kt:1483-1489`, iOS `ChatModel.swift:1443-1449`) drives the unread filter (`ChatListView.kt:1631`, `ChatListView.swift:699`) and the list labels (`ChatListView.kt:1404`, `ChatListView.swift:1083`). It becomes none, silent or unread: unread when a normal unread item counts in the chat's mode; silent when only silent unread items remain in mode "All"; the filter takes unread only; a label shows `●` for unread and a small outline circle for silent. The chat list badge (`ChatPreviewView.kt:460-500`, `ChatPreviewView.swift:229-246`) and the chat's scroll button (`ChatView.kt:2907`, `:3322`) draw a gray outline when `unreadCount == unreadSilent`. The iOS icon badge total (`ChatModel.swift:1193-1201`) adds `unreadCount - unreadSilent` for "All". The profile totals (`Store/Profiles.hs:176-204`) and the core's unread filters (`Store/Messages.hs:849`, `:860`, `:960`, `:971`) subtract the silent count.
+18. Rules. `unreadTag` (Kotlin `ChatModel.kt:1483-1489`, iOS `ChatModel.swift:1443-1449`) drives the unread filter (`ChatListView.kt:1631`, `ChatListView.swift:699`) and the list labels (`ChatListView.kt:1404`, `ChatListView.swift:1083`). It becomes none, silent or unread: unread when a normal unread item counts in the chat's mode; silent when only silent unread items remain in mode "All"; the filter takes unread only; a label shows `●` for unread and a small outline circle for silent. When `unreadCount == unreadSilent`, the chat list badge (`ChatPreviewView.kt:460-500`, `ChatPreviewView.swift:229-246`) is a gray outline with a gray count, and the chat's scroll button (`ChatView.kt:2907`, `:3322`) shows the count in gray inside its usual circle. The iOS icon badge total (`ChatModel.swift:1193-1201`) adds `unreadCount - unreadSilent` for "All". The profile totals (`Store/Profiles.hs:176-204`) and the core's unread filters (`Store/Messages.hs:849`, `:860`, `:960`, `:971`) subtract the silent count. Silent items are left out only in mode "All": in mode "Mentions" a silent mention counts as a mention, as in `unreadMentions`. The same rule holds in `unreadTag`, the filter, the profile totals, the iOS icon badge and the apps' user counters (`ChatInfo.silentNotCounted`: the other-profile counters, Kotlin `addChatItem`, `removeChatItem`, `markChatItemsRead`, `clearChat`, iOS `changeUnreadCounter` and `decreaseUnreadCounter`).
 
 ## 5. Design
 
@@ -183,7 +194,7 @@ Tests:
 - `tests/ChatTests/Groups.hs`, `Direct.hs`, `ChatRelays.hs`: silent send; the receiver's item priority; the SMP flag of the send and of the forward, read with `lastSndMsgFlags`, as `testGroupMsgForwardNotification` and `testChannels1RelayDeliverNotification` read it (`tests/ChatTests/Groups.hs:206`, `:295`, `:6141`). They fail on master: the field is dropped and the flag is `T`.
 - Kotlin `common/src/desktopTest`: `notifyMessageReceived` is not called for a silent item.
 - The reduced build with the Haskell tests above, and the app test workflows `desktop-linux`, `android-emu` and `ios-sim` with a silent message sent by the test backend.
-- Q4 B, in the stacked pull request: `tests/ChatTests/Groups.hs` and `Direct.hs` read `ChatStats.unreadSilent` with `getChatPreviews`, before and after `/_read chat items`, and the unread filter of the chat list query; the query plan test regenerates `chat_query_plans.txt` with the covering partial indexes; a Kotlin desktop test of `unreadTag`; screenshots of the outline badge and the list label in the app test workflows.
+- Q4 B, in the stacked pull request: `tests/ChatTests/ChatList.hs` reads `ChatStats.unreadSilent` of the chat list and of one chat, before and after `/_read chat items`, the unread filter of the chat list query, the profile totals of `/users` in modes "All" and "Mentions", and the counts of a member support scope; the query plan test regenerates `chat_query_plans.txt` with the covering partial indexes; Kotlin tests of `unreadTag` and of the chat and user counters across receive, delete, read and clear; the renders of Q5.
 
 ## 8. Docs to change
 

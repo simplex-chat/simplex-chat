@@ -25,6 +25,8 @@ chatListTests = do
   it "filter favorite" testFilterFavorite
   it "filter unread" testFilterUnread
   it "filter unread without chats with only silent unread items" testFilterUnreadSilent
+  it "profile totals leave out silent items in mode All" testUsersUnreadSilent
+  it "counts of a member support scope with silent items" testSupportScopeUnreadSilent
   it "filter favorite or unread" testFilterFavoriteOrUnread
   it "sort and filter chats of all types" testPaginationAllChatTypes
 
@@ -182,6 +184,51 @@ testFilterUnreadSilent =
       unreadCounts alice `shouldReturn` [(1, 1), (1, 1)]
       alice #$> ("/_read chat @2", id, "ok")
       unreadCounts alice `shouldReturn` [(1, 1), (0, 0)]
+
+testUsersUnreadSilent :: HasCallStack => TestParams -> IO ()
+testUsersUnreadSilent =
+  testChatOpts2 testOpts {markRead = False} aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      bob ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"working\"}, \"priority\": -1}]"
+      bob <# "@alice working"
+      alice <# "bob> working"
+      alice ##> "/users"
+      alice <## "alice (Alice) (active)"
+
+      bob #> "@alice done"
+      alice <# "bob> done"
+      alice ##> "/users"
+      alice <## "alice (Alice) (active, unread: 1)"
+
+      alice ##> "/_settings #1 {\"enableNtfs\":\"mentions\",\"favorite\":false}"
+      alice <## "ok"
+      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"working\"}, \"priority\": -1}]"
+      bob <# "#team working"
+      alice <# "#team bob> working <muted>"
+      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"@alice check\"}, \"mentions\": {\"alice\": 1}, \"priority\": -1}]"
+      bob <# "#team @alice check"
+      alice <# "#team bob!> @alice check"
+      alice ##> "/users"
+      alice <## "alice (Alice) (active, unread: 2)"
+
+testSupportScopeUnreadSilent :: HasCallStack => TestParams -> IO ()
+testSupportScopeUnreadSilent =
+  testChatOpts2 testOpts {markRead = False} aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      bob ##> "/_send #1(_support) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"working\"}, \"priority\": -1}]"
+      bob <# "#team (support) working"
+      alice <# "#team (support: bob) bob> working"
+      chatUnreadCounts alice "#1(_support:2)" `shouldReturn` (1, 1)
+
+      bob ##> "/_send #1(_support) text done"
+      bob <# "#team (support) done"
+      alice <# "#team (support: bob) bob> done"
+      chatUnreadCounts alice "#1(_support:2)" `shouldReturn` (2, 1)
+      chatUnreadCounts alice "#1" `shouldReturn` (0, 0)
 
 unreadCounts :: TestCC -> IO [(Int, Int)]
 unreadCounts TestCC {chatController = cc} =
