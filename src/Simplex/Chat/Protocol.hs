@@ -638,6 +638,14 @@ cmToQuotedMsg = \case
   ACME _ (XMsgNew MsgContainer {quote = Just quotedMsg}) -> Just quotedMsg
   _ -> Nothing
 
+limitPriority :: Int -> Int
+limitPriority = max (-1) . min 1
+
+cmPriority :: AChatMsgEvent -> Int
+cmPriority = \case
+  ACME _ (XMsgNew MsgContainer {priority = Just p}) -> limitPriority p
+  _ -> 0
+
 data MsgContentTag
   = MCText_
   | MCLink_
@@ -700,6 +708,7 @@ data MsgContainer = MsgContainer
     live :: Maybe Bool,
     scope :: Maybe MsgScope,
     asGroup :: Maybe Bool,
+    priority :: Maybe Int,
     quote :: Maybe QuotedMsg,
     parent :: Maybe MsgRef,
     forward :: Maybe Bool,
@@ -726,6 +735,7 @@ mcSimple content =
       live = Nothing,
       scope = Nothing,
       asGroup = Nothing,
+      priority = Nothing,
       quote = Nothing,
       parent = Nothing,
       forward = Nothing,
@@ -1347,8 +1357,13 @@ hasNotification = \case
   XCallInv_ -> True
   _ -> False
 
+eventHasNotification :: ChatMsgEvent e -> Bool
+eventHasNotification = \case
+  XMsgNew MsgContainer {priority = Just p} | p < 0 -> False
+  ev -> hasNotification $ toCMEventTag ev
+
 msgHasNotification :: VerifiedMsg e -> Bool
-msgHasNotification verifiedMsg = hasNotification $ toCMEventTag chatMsgEvent
+msgHasNotification verifiedMsg = eventHasNotification chatMsgEvent
   where
     ChatMessage {chatMsgEvent} = verifiedChatMsg verifiedMsg
 

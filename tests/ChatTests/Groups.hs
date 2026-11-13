@@ -22,9 +22,11 @@ import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVa
 import Control.Monad (forM_, void, when)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
+import qualified Data.Aeson as J
 import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy as LB
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Int (Int64)
@@ -33,6 +35,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
 import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
+import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
@@ -204,6 +207,7 @@ chatGroupTests = do
     it "report duplicate when direct copy is received after forwarded copy" testGroupMsgDirectDuplicateEvent
     it "forward message edit (x.msg.update)" testGroupMsgForwardEdit
     it "set notification flag of forwarded messages by the original event" testGroupMsgForwardNotification
+    it "send and forward silent message without notification flag" testGroupMsgForwardSilent
     it "forward message reaction (x.msg.react)" testGroupMsgForwardReaction
     it "forward message deletion (x.msg.del)" testGroupMsgForwardDeletion
     it "forward file (x.msg.file.descr)" testGroupMsgForwardFile
@@ -215,6 +219,7 @@ chatGroupTests = do
     it "forward group deletion (x.grp.del)" testGroupMsgForwardGroupDeletion
   describe "group history" $ do
     it "text messages" testGroupHistory
+    it "silent message" testGroupHistorySilent
     it "history is sent when joining via group link" testGroupHistoryGroupLink
     it "file with badge proof is received from history" testGroupHistoryFileBadgeProof
     it "file received from member with badge proof is received from history" testGroupHistoryRcvFileBadgeProof
@@ -293,6 +298,7 @@ chatGroupTests = do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
         it "should set notification flag of delivered messages" testChannels1RelayDeliverNotification
+        it "should deliver silent messages without notification flag" testChannels1RelayDeliverSilent
         it "should report duplicate message delivered by relay" testChannelDuplicateEvent
         describe "should deliver messages in a loop over members" $ do
           it "number of recipients is multiple of bucket size (3/1)" (testChannels1RelayDeliverLoop 1)
@@ -6148,6 +6154,27 @@ testGroupMsgForwardNotification =
       lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
       lastJobNotification alice `shouldReturn` False
 
+testGroupMsgForwardSilent :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardSilent =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
+      cath ##> "/set receipts all off"
+      cath <## "ok"
+      aliceConnId <- relayConnIdToMember bob "alice"
+      cathConnId <- relayConnIdToMember alice "cath"
+
+      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi there\"}, \"priority\": -1}]"
+      bob <# "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+      lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["F"]
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
+      lastJobNotification alice `shouldReturn` False
+      forM_ [alice, bob, cath] $ \cc ->
+        silentItem cc "/_get chat #1 count=1" `shouldReturn` True
+
 testGroupMsgForwardReaction :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReaction =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -6425,6 +6452,34 @@ testGroupHistory =
       [alice, cath] *<# "#team bob> 2"
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
+
+testGroupHistorySilent :: HasCallStack => TestParams -> IO ()
+testGroupHistorySilent =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hey!\"}, \"priority\": -1}]"
+      bob <# "#team hey!"
+      alice <# "#team bob> hey!"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team bob> hey! [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      silentItem cath "/_get chat #1 count=1 search=hey!" `shouldReturn` True
 
 testGroupHistoryGroupLink :: HasCallStack => TestParams -> IO ()
 testGroupHistoryGroupLink =
@@ -9801,6 +9856,28 @@ testChannels1RelayDeliverNotification ps =
             forM_ [danConnId, eveConnId] $ \connId ->
               lastSndMsgFlags bob connId 1 `shouldReturn` ["F"]
             lastJobNotification bob `shouldReturn` False
+
+testChannels1RelayDeliverSilent :: HasCallStack => TestParams -> IO ()
+testChannels1RelayDeliverSilent ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        cath ##> "/set receipts all off"
+        cath <## "ok"
+        bobConnId <- relayConnIdToMember alice "bob"
+        cathConnId <- relayConnIdToMember bob "cath"
+
+        alice ##> "/_send #1(as_group=on) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}, \"priority\": -1}]"
+        alice <# "#team hi"
+        bob <# "#team> hi"
+        cath <# "#team> hi [>>]"
+        lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["F"]
+        lastSndMsgFlags bob cathConnId 1 `shouldReturn` ["F"]
+        lastJobNotification bob `shouldReturn` False
+        forM_ [alice, bob, cath] $ \cc ->
+          silentItem cc "/_get chat #1 count=1" `shouldReturn` True
 
 testChannelDuplicateEvent :: HasCallStack => TestParams -> IO ()
 testChannelDuplicateEvent ps = do
@@ -13732,6 +13809,10 @@ lastSndMsgFlags cc connId n = do
       "SELECT msg_flags FROM messages WHERE conn_id = ? AND internal_snd_id IS NOT NULL AND msg_type = ? ORDER BY internal_id DESC LIMIT ?"
       (connId, Binary ("M" :: ByteString), n)
   pure $ reverse $ map fromOnly rows
+
+silentItem :: TestCC -> String -> IO Bool
+silentItem TestCC {chatController = cc} getChatCmd =
+  sendChatCmdStr cc getChatCmd >>= either (fail . show) (pure . B.isInfixOf "\"priority\":-1" . LB.toStrict . J.encode)
 
 lastJobNotification :: TestCC -> IO Bool
 lastJobNotification cc = do

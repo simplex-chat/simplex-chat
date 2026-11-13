@@ -3694,7 +3694,7 @@ data class ChatItem (
   val showNotification: Boolean get() =
     when (content) {
       is CIContent.SndMsgContent -> false
-      is CIContent.RcvMsgContent -> meta.itemDeleted == null
+      is CIContent.RcvMsgContent -> meta.itemDeleted == null && !meta.silent
       is CIContent.SndDeleted -> false
       is CIContent.RcvDeleted -> false
       is CIContent.SndCall -> false
@@ -4041,12 +4041,14 @@ data class CIMeta (
   val deletable: Boolean,
   val editable: Boolean,
   val showGroupAsSender: Boolean,
-  val msgVerified: MsgVerified? = null
+  val msgVerified: MsgVerified? = null,
+  val priority: Int? = null
 ) {
   val timestampText: String get() = getTimestampText(itemTs, true)
 
   val recent: Boolean get() = updatedAt + 10.toDuration(DurationUnit.SECONDS) > Clock.System.now()
   val isLive: Boolean get() = itemLive == true
+  val silent: Boolean get() = (priority ?: 0) < 0
   val disappearing: Boolean get() = !isRcvNew && itemTimed?.deleteAt != null
 
   val isRcvNew: Boolean get() = itemStatus is CIStatus.RcvNew

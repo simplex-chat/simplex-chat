@@ -13,6 +13,7 @@ module ChatTests.Direct where
 
 import ChatClient
 import ChatTests.DBUtils
+import ChatTests.Groups (lastSndMsgFlags, silentItem)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
@@ -75,6 +76,7 @@ chatDirectTests = do
     it "direct message delete multiple (many chat batches)" testDirectMessageDeleteMultipleManyBatches
     it "direct live message" testDirectLiveMessage
     it "direct timed message" testDirectTimedMessage
+    it "direct silent message" testDirectSilentMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
@@ -971,6 +973,25 @@ testDirectTimedMessage =
       alice ##> "/_send @2 live=off text hi"
       alice <# "@bob hi"
       bob <# "alice> hi"
+
+testDirectSilentMessage :: HasCallStack => TestParams -> IO ()
+testDirectSilentMessage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      [Only bobConnId] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT agent_conn_id FROM connections WHERE contact_id IS NOT NULL"
+
+      alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}, \"priority\": -1}]"
+      alice <# "@bob hi"
+      bob <# "alice> hi"
+      lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["F"]
+      silentItem alice "/_get chat @2 count=1" `shouldReturn` True
+      silentItem bob "/_get chat @2 count=1" `shouldReturn` True
+
+      alice #> "@bob hello"
+      bob <# "alice> hello"
+      lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["T"]
+      silentItem bob "/_get chat @2 count=1" `shouldReturn` False
 
 testRepeatAuthErrorsDisableContact :: HasCallStack => TestParams -> IO ()
 testRepeatAuthErrorsDisableContact =

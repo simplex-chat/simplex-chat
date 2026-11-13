@@ -1085,6 +1085,7 @@ GroupLink:
 - itemTimed: [CITimed](#citimed)?
 - itemLive: bool?
 - userMention: bool
+- priority: int?
 - hasLink: bool
 - deletable: bool
 - editable: bool
@@ -1909,6 +1910,7 @@ LARGE:
 - quotedItemId: int64?
 - msgContent: [MsgContent](#msgcontent)
 - mentions: {string : int64}
+- priority: int?
 
 
 ---

@@ -9,7 +9,8 @@ References are to `/code/simplex-chat-4`, commit `be2e1c1cc`. Haskell paths with
 ## 1. Rules
 ```
 priority          integer of a message: -1 low, 0 normal, 1 high; absent: 0
-                  a received value of 0 or below is normal, of 1 or above is high
+                  a received value of -1 or below is silent, of 0 normal, of 1 or above high
+                  silent is accepted in every chat from every sender (2026-11-12-mcp-silent-messages.md, Q1)
 scope             groups, business chats and channels
 senders           the API, the CLI and the libraries; the apps send normal priority
 item priority     set from x.msg.new when the item is created, limited to -1 .. 1
@@ -19,7 +20,7 @@ normal priority   a priority message of a sender who is not allowed (section 3),
 read item         an item already read when its priority is raised stays read; a notification is shown
 attention item    received item with userMention: mention or reply (as now), or high priority (new)
 ```
-- Notifications are created for every message, as now. Notification text and sound are unchanged. The SMP notification flag is set as now for new messages, and also for an update that raises the priority.
+- Notifications are created for every message except a silent one. Notification text and sound are unchanged. The SMP notification flag is set as now for new messages, and also for an update that raises the priority.
 - Mode `MFMentions`: the apps notify for attention items, as now; a high priority item is one of them. A raise is notified once, for an unread and for a read item.
 - An item that is a mention and high priority is shown as high priority.
 

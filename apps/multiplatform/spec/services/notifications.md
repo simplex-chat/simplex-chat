@@ -43,7 +43,7 @@ The global `ntfManager` instance is declared at [line 18](../../common/src/commo
 |---|---|---|
 | `notifyContactConnected` | [L21](../../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L21) | Displays "contact connected" notification for a `Contact` |
 | `notifyContactRequestReceived` | [L28](../../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L28) | Shows contact request notification with an "Accept" action button |
-| `notifyMessageReceived` | [L39](../../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L39) | Conditionally shows message notification based on `ntfsEnabled`, `showNotification`, and whether user is viewing that chat |
+| `notifyMessageReceived` | [L39](../../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L39) | Conditionally shows message notification based on `ntfsEnabled`, `showNotification`, and whether user is viewing that chat; `showNotification` is false for a silent item (`CIMeta.silent`, priority -1) |
 | `acceptContactRequestAction` | [L52](../../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L52) | Accepts a contact request from a notification action |
 | `openChatAction` | [L59](../../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L59) | Opens a specific chat from a notification tap, switching user if needed |
 | `showChatsAction` | [L74](../../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L74) | Opens the chat list, switching user if needed |

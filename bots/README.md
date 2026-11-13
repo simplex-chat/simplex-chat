@@ -163,6 +163,16 @@ See [API Commands and Responses](./api/COMMANDS.md) reference about specific com
 - "interactive" - all or some network requests will complete before command response is sent to the bot,
 - "background" - command response will be sent to the bot before scheduled network requests are sent.
 
+### Silent messages
+
+A message with `"priority": -1` in its [ComposedMessage](./api/TYPES.md#composedmessage) is silent: recipients see it in the chat and count it as unread, without a notification, a sound or a push. Bots can send progress updates as silent messages and the result as a normal message:
+
+```
+/_send #1 json [{"msgContent": {"type": "text", "text": "Ran the tests"}, "priority": -1}]
+```
+
+The received item has `"priority": -1` in its [CIMeta](./api/TYPES.md#cimeta). Apps that do not support silent messages show them as normal messages.
+
 ## Processing events
 
 Chat event is a WebSocket message in this format:

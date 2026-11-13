@@ -752,6 +752,7 @@ class CIMeta(TypedDict):
     itemTimed: NotRequired["CITimed"]
     itemLive: NotRequired[bool]
     userMention: bool
+    priority: NotRequired[int]  # int
     hasLink: bool
     deletable: bool
     editable: bool
@@ -1487,6 +1488,7 @@ class ComposedMessage(TypedDict):
     quotedItemId: NotRequired[int]  # int64
     msgContent: "MsgContent"
     mentions: dict[str, int]  # str : int64
+    priority: NotRequired[int]  # int
 
 class ConditionsAcceptance_accepted(TypedDict):
     type: Literal["accepted"]

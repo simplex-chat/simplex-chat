@@ -175,8 +175,8 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
 chatEventNotification :: ChatTerminal -> ChatController -> ChatEvent -> IO ()
 chatEventNotification t@ChatTerminal {sendNotification} cc = \case
   -- At the moment of writing received items are created one at a time
-  CEvtNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) : _) ->
-    when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ do
+  CEvtNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText, meta = CIMeta {priority}}) : _) ->
+    when (chatDirNtf u cInfo chatDir (isUserMention ci) && priority /= Just (-1)) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
         (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)

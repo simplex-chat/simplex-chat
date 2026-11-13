@@ -284,7 +284,7 @@ runGroupCmd cc groupId = \case
 -- The label says what is lost when the send fails, since the log line is its only trace.
 sendGroupText :: HasCallStack => ChatController -> GroupId -> Text -> Text -> IO (Maybe ChatItemId)
 sendGroupText cc groupId label txt =
-  sendChatCmd cc (APISendMessages (SRGroup groupId Nothing False) False Nothing False (ComposedMessage Nothing Nothing (MCText txt) M.empty :| [])) >>= \case
+  sendChatCmd cc (APISendMessages (SRGroup groupId Nothing False) False Nothing False (ComposedMessage Nothing Nothing (MCText txt) M.empty Nothing :| [])) >>= \case
     Right CRNewChatItems {chatItems = ci : _} -> pure (Just (aChatItemId ci))
     r -> withFrozenCallStack logError ("badge group message not sent (" <> label <> "): " <> tshow r) $> Nothing
 

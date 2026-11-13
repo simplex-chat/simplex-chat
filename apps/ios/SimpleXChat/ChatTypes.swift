@@ -4035,7 +4035,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var showNotification: Bool {
         switch content {
         case .sndMsgContent: return false
-        case .rcvMsgContent: return meta.itemDeleted == nil
+        case .rcvMsgContent: return meta.itemDeleted == nil && !meta.silent
         case .sndDeleted: return false
         case .rcvDeleted: return false
         case .sndCall: return false
@@ -4455,10 +4455,12 @@ public struct CIMeta: Decodable, Hashable {
     public var forwardedByMember: Int64?
     public var showGroupAsSender: Bool
     public var msgVerified: MsgVerified?
+    public var priority: Int?
 
     public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
     public var isLive: Bool { itemLive == true }
+    public var silent: Bool { (priority ?? 0) < 0 }
     public var disappearing: Bool { !isRcvNew && itemTimed?.deleteAt != nil }
 
     public var isRcvNew: Bool {

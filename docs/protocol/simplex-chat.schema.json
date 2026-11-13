@@ -119,6 +119,10 @@
         "file": {"ref": "fileInvitation"},
         "ttl": {"type": "integer"},
         "live": {"type": "boolean"},
+        "priority": {
+          "type": "integer",
+          "metadata": {"comment": "-1 or below: silent, receiving clients do not alert; 0 or absent: normal"}
+        },
         "quote": {
           "properties": {
             "msgRef": {"ref": "msgRef"},

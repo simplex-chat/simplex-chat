@@ -1095,6 +1095,7 @@ export interface CIMeta {
   itemTimed?: CITimed
   itemLive?: boolean
   userMention: boolean
+  priority?: number // int
   hasLink: boolean
   deletable: boolean
   editable: boolean
@@ -2137,6 +2138,7 @@ export interface ComposedMessage {
   quotedItemId?: number // int64
   msgContent: MsgContent
   mentions: {[key: string]: number} // string : int64
+  priority?: number // int
 }
 
 export type ConditionsAcceptance = ConditionsAcceptance.Accepted | ConditionsAcceptance.Required
