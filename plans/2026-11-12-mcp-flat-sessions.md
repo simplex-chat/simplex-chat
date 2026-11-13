@@ -1,6 +1,6 @@
 # Flat layout for session groups, with the avatar on the name line
 
-Status: questions answered by the user on 2026-11-12; the exact design of the rows waits for the user's approval before the app code. Code references: master `9d3241b06`.
+Status: questions answered by the user on 2026-11-12; the design approved on 2026-11-12 ("yes, proceed") after the design images of 13f7c0188; implemented with the deviations recorded in section 11. Code references: master `9d3241b06`.
 
 Outcome:
 - The group of each new Claude Code session opens in the Flat layout in the SimpleX app. The Main group and `serve`'s agent control chat keep the members' own layout.
@@ -167,7 +167,7 @@ The Flat layout in the apps:
 11. The new geometry applies to every Flat row with an avatar, in groups and channels, also outside the plugin (Q2 (a)).
 12. The avatar is centred on the name line (mockup source: `.avatar { top: calc(var(--line) / 2 - var(--avatar) / 2) }`).
 13. Messages, events and rows without a name start at the row's start; their text is at the text edge, `CHAT_ITEM_TEXT_PADDING`, 12 (mockup: `.content { padding: 0 var(--pad) }`).
-14. A message starts below the name line, and half the level step below the avatar: `terminalHeadingBottomGap`, 2.5 pt (`TerminalItemView.swift:18`), and `TERMINAL_HEADING_BOTTOM_GAP`, 2.4 dp (`TerminalItemView.kt:66`). When it starts with a card, the paragraph gap is added below the lower of the two, as below the name now (`TerminalItemView.kt:431`; `TerminalItemView.swift:404`). The user: "there should be a bit larger gap under name/avatar on ios". Without it, the first line's capitals were 6.7 pt below the avatar on iOS: its line box starts at the avatar's bottom, and SF Pro's capitals sit 6.7 pt into a 23.4 pt line. With it, they are 9.2 pt below, as far as the avatar is from the baseline of the line above, 9.2 pt. On Android and desktop the same constant gives 8.3 dp, because Inter's capitals sit 6 dp into a 22 dp line. Equal numbers would need a value for Android alone, 3.25 dp, or a gap computed from the fonts; the shared constant keeps one rule, with gaps of 0.54 and 0.52 of the body size.
+14. A message starts half the level step below the lower of the name line and the avatar, on both platforms (as implemented, section 11): `terminalHeadingBottomGap`, 2.5 pt (`TerminalItemView.swift:18`), and `TERMINAL_HEADING_BOTTOM_GAP`, 2.4 dp (`TerminalItemView.kt:66`). When it starts with a card, the paragraph gap is added below the lower of the two, as below the name now (`TerminalItemView.kt:431`; `TerminalItemView.swift:404`). The user: "there should be a bit larger gap under name/avatar on ios". Without it, the first line's capitals were 6.7 pt below the avatar on iOS: its line box starts at the avatar's bottom, and SF Pro's capitals sit 6.7 pt into a 23.4 pt line. With it, they are 9.2 pt below, as far as the avatar is from the baseline of the line above, 9.2 pt. On Android and desktop the same constant gives 8.3 dp, because Inter's capitals sit 6 dp into a 22 dp line. Equal numbers would need a value for Android alone, 3.25 dp, or a gap computed from the fonts; the shared constant keeps one rule, with gaps of 0.54 and 0.52 of the body size.
 15. The name stays 12 after the visible avatar, by the user's rule of one 12 padding (I26: `plans/2026-10-13-flat-chat-layout-ui.md:39`; `apps/ios/spec/client/chat-view.md:360`). With the 30 pt avatar the name is at 54 pt, where the README mockup has it; the README image is drawn again with the 30 pt avatar (section 8).
 16. The gap above a row is at least the avatar's part above the name line. `terminalRowGap` is 0 below a date separator, below the chat banner and for the oldest loaded item (`TerminalItemView.kt:138-139`; `TerminalItemView.swift:130-135`); there the avatar's part sets the gap, so the avatar stays inside its own row.
 17. In the Flat layout both platforms size media by one width, W = min(500, row width − 24), in groups, channels and direct chats (the user, 2026-11-12: "horizontal images ... take full screen width, as on android, and limited on desktop"). A wide image, video or link preview image is W wide; a tall or square one is 0.75 W. Each platform keeps its test of wide: width > height on iOS (`CIImageView.swift:101`, `CIVideoView.swift:204`), width × 0.97 > height on Android and desktop (`CIImageView.kt:111`). Heights keep their rule, at most 2.33 of the width (`ImageUtils.swift:425-427`; `CIImageView.kt:193`).
@@ -230,9 +230,8 @@ measure        avatar
 avatarOffset   (name height − avatar height) / 2, negative for an avatar taller than the name line
 nameTop        max(topGap, −avatarOffset)
 avatarTop      nameTop + avatarOffset
-messageTop     a card first: max(nameTop + name height, avatarTop + avatar height) + TERMINAL_PARAGRAPH_GAP
-               otherwise: max(nameTop + name height, avatarTop + avatar height + TERMINAL_HEADING_BOTTOM_GAP), the gap
-               with an avatar only
+messageTop     max(nameTop + name height, avatarTop + avatar height), then
+               a card first: + TERMINAL_PARAGRAPH_GAP; otherwise with an avatar: + TERMINAL_HEADING_BOTTOM_GAP
 avatar at      (CHAT_ITEM_TEXT_PADDING, avatarTop)
 name at        (gutter, nameTop)
 message at     (0, messageTop)
@@ -247,14 +246,43 @@ TerminalItemView.kt
   TERMINAL_MEMBER_IMAGE_SIZE   27.dp
   terminalGutter(chatInfo)     TERMINAL_MEMBER_IMAGE_SIZE × fontSizeSqrtMultiplier + CHAT_ITEM_TEXT_PADDING in groups
   chatItemSender               avatars of TERMINAL_MEMBER_IMAGE_SIZE × fontSizeSqrtMultiplier, drawn to the edge
-  flatMediaWidth(given, wide)  min(DEFAULT_MAX_IMAGE_WIDTH, given) × (1 when wide, else 0.75)
 ChatView.kt
-  MemberImage(member, size, toEdge)   the size given; classic rows pass MEMBER_IMAGE_SIZE × fontSizeSqrtMultiplier
+  MemberImage(member, size, toEdge)   the size given, by default MEMBER_IMAGE_SIZE × fontSizeSqrtMultiplier
 ChatInfoImage.kt, GroupMemberInfoView.kt
-  ProfileImage, MemberProfileImage    toEdge: the placeholder icon at 1.2 of the box, centred; a photo with
-                                      ProfileIconModifier(size, padding = false); otherwise as now
+  ProfileImage, MemberProfileImage    toEdge: the placeholder icon and its background disc at 1.2 of the box, centred;
+                                      a photo with ProfileIconModifier(size, padding = false); otherwise as now
+CIImageView.kt, next to imageViewFullWidth; tall media: width × 0.97 ≤ height, as the classic test
+  isTallMedia(width, height)          the one test of tall or square media
+  fixedMediaWidth(tall, fullWidth)    classic rows: 0.75 of fullWidth (imageViewFullWidth by default) for tall media,
+                                      otherwise DEFAULT_MAX_IMAGE_WIDTH; flat rows: null, the width is set in layout
+  Modifier.mediaWidth(fixed, tall)    the media box: width(fixed); flat rows: FlatMediaWidth
+  Modifier.mediaContentWidth(fixed)   the image or player in the box: width(fixed); flat rows: fillMaxWidth
+  flatMediaWidth(given, tall)         min(DEFAULT_MAX_IMAGE_WIDTH, given) × (0.75 when tall, else 1)
+  FlatMediaWidth                      layout: flatMediaWidth of the width given; max intrinsic width DEFAULT_MAX_IMAGE_WIDTH,
+                                      so that a width(IntrinsicSize.Max) column above it is not narrower than the media's limit
 CIImageView.kt, CIVideoView.kt, LinkPreviews.kt
-  tall or square media         flat rows: flatMediaWidth of the width the layout is given; classic rows as now
+  media box                    Modifier.mediaWidth; its layout takes the width of its constraints
+  image, player, preview       Modifier.mediaContentWidth; PlayerView takes a modifier in place of a width
+  classic tall videos          fullWidth remembered per preview from the window width, as on master
+FramedItemView.kt:283
+  column of the item           width(IntrinsicSize.Max), except for captionless media in flat rows, whose column is as
+                               wide as the media, so the time is beside tall media when it fits (decision 18)
+```
+
+The width of flat media, from the row to the image:
+
+```mermaid
+flowchart TB
+  R[TerminalChatItemRow: the message in the full row width] --> M[TerminalMetaLayout: the row less the time box or the go-to button]
+  M --> C{captionless media?}
+  C -->|yes| C1[column: as wide as its content]
+  C -->|no| C2[column: width IntrinsicSize.Max, at least 524 from the media's max intrinsic width 500 + 24, at most the row]
+  C1 --> P[PriorityLayout: media first]
+  C2 --> P
+  P --> B[mediaModifier: 12 padding on each side]
+  B --> F[FlatMediaWidth: flatMediaWidth of the width given, min 500 × 1 or 0.75]
+  F --> L[box layout: height from the aspect ratio, at most 2.33 of the width]
+  L --> I[image or player: mediaContentWidth, fills the box]
 ```
 
 ### 5.3 iOS
@@ -264,33 +292,40 @@ CIImageView.kt, CIVideoView.kt, LinkPreviews.kt
 ```
 body          VStack, leading
                 sender row: HStack, centred
-                  gutter column: ZStack, the avatar chatItemTextPadding from the start
+                  avatar column: ZStack, avatarSize + chatItemTextPadding wide, the avatar chatItemTextPadding
+                  from the start
                   name and role, chatItemTextPadding from the column
                   below it: terminalParagraphGap when contentStartsWithCard, otherwise terminalHeadingBottomGap
                   with an avatar
                 content
 top padding   max(0, topGap − overhang)
-overhang      with an avatar: max(0, (gutter − chatItemTextPadding − terminalLineHeight(body font)) / 2); otherwise 0
+overhang      with an avatar: max(0, (avatarSize − terminalLineHeight(body font)) / 2); otherwise 0
 ```
 
-The sender row is as tall as the taller of the avatar and the name line, so the content starts below both. The top padding less the overhang keeps the name line `topGap` below the row above. Callers in `AppearanceSettings.swift:396`, `:399` stay.
+The sender row is as tall as the taller of the avatar and the name line, so the content starts below both. The top padding less the overhang keeps the name line `topGap` below the row above. The row takes `avatarSize` in place of `gutter`; the callers in `AppearanceSettings.swift:396`, `:399` pass 0.
 
 ```
 TerminalItemView.swift
   terminalMaxMediaWidth          500
   terminalMediaWidth(row)        min(terminalMaxMediaWidth, row − 2 × chatItemTextPadding)
-  terminalMemberImageSize(font)  30 × dynamicSize(font).profileImageSize ÷ dynamicSize(.large).profileImageSize
+  terminalMemberImageBaseSize    30
+ChatView.swift
+  scaledMemberImageSize(font, base)  base × dynamicSize(font).profileImageSize ÷ dynamicSize(.large).profileImageSize;
+                                     base by default memberImageBaseSize, 34
+  goToItemIconSize, goToItemIconGap  13 and 10, of the go-to button
 ChatView.swift, terminalItemRow
-  gutter                         terminalMemberImageSize + chatItemTextPadding in groups
-  maxWidth of chatItemWithMenu   terminalMediaWidth(listWidth − leading)
-  chatItemSender, groupSenderImage   avatars of terminalMemberImageSize
+  avatarSize                     terminalImageSize, scaledMemberImageSize(font, terminalMemberImageBaseSize), in groups
+  maxWidth of chatItemWithMenu   terminalMediaWidth(listWidth − leading − the go-to button), the button
+                                 goToItemIconSize + goToItemIconGap + chatItemTextPadding wide in search results and
+                                 on items forwarded from a chat of the user, otherwise 0
+  chatItemSender, groupSenderImage   avatars of terminalImageSize
 ```
 
 ```mermaid
 flowchart LR
   T[ChatView: terminal] --> W[TerminalChatItemRow]
   S[chatItemSender: name, role, avatar] --> W
-  G[gutter: avatar width + 12 in groups] --> W
+  G[avatarSize in groups] --> W
   W --> X[sender row: avatar centred on the name line]
   W --> Y[content from the row start, below the avatar]
 ```
@@ -334,7 +369,8 @@ Tests that fail on master and pass after the change:
 
 Media widths, unit tests of the new functions:
 - `apps/multiplatform/common/src/commonTest/kotlin/chat/simplex/app/TerminalItemViewTest.kt`, `flatMediaWidth`: 402 − 24 gives 378 wide and 283.5 tall; 1000 gives 500 and 375.
-- `apps/ios/SimpleX Snapshots/SnapshotTests.swift`, a test next to `testTerminalSpacing`: `terminalMediaWidth(402)` is 378, `terminalMediaWidth(1000)` is 500; `terminalMemberImageSize` is 30 at `.large`.
+- `apps/ios/SimpleX Snapshots/SnapshotTests.swift`, `testTerminalMediaAndAvatarSizes`: `terminalMediaWidth(402)` is 378, `terminalMediaWidth(1000)` is 500; `scaledMemberImageSize(.large, terminalMemberImageBaseSize)` is 30.
+- `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/FlatMediaTest.kt` renders `FramedItemView` in a flat row and measures the red media on the pixels: a wide image is 378 at row 402 with the time over it; a tall one 283.5 with the time beside it; at row 900 they are 500 and 375 with the time beside them; a tall link preview is 283.5 and 375.
 
 Unit tests, `packages/simplex-chat-mcp/test/unit/sessions.test.ts`: the test above; the Main group of `createMainGroup` and of `reset-owners` has no `chatLayout`; a rename keeps an owner's `/set layout`.
 
@@ -345,17 +381,20 @@ Android and desktop, `apps/multiplatform/common/src/desktopTest/kotlin/chat/simp
 - `avatarCentredOnNameLine`: the avatar's centre is on the centre of the name line, measured against a row without an avatar.
 - `gapAboveNameCoversAvatar`: with `topGap` 20, the avatar's top is at 20 less its part above the name line; with `topGap` 0, it is at 0.
 - `cardBelowAvatarTakesParagraphGap`: a card starts the paragraph gap below the avatar.
-- `textWithoutAvatarTakesNoGap`: a sender row without an avatar, as in a direct chat, keeps the text right below the name.
+- `textBelowNameLineTallerThanAvatarTakesHalfStep`: at font scale 2 the name line is taller than the avatar, and the text starts `TERMINAL_HEADING_BOTTOM_GAP` below the name line.
+- `textWithoutAvatarTakesNoGap`: a sender row without an avatar, as in a direct chat, keeps the text right below the name, 22 px at density 1.
 - The three existing tests pass unchanged.
 
-Android and desktop, a new `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/FlatAvatarTest.kt`: a 27 dp placeholder and a round photo drawn to the edge cover their box from 0 to 27, measured on the rendered pixels; drawn as now, they cover 2.25 to 24.75.
+Android and desktop, a new `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/FlatAvatarTest.kt`: a 27 dp placeholder and a round photo drawn to the edge cover pixel columns 0 to 26 of their box across its middle row; drawn as now, they stay within columns 2 to 24. The test sets `profileImageCornerRadius` to 50 while it renders and restores it.
 
-Snapshot references, recorded on the branch with `scripts/ci/snapshots-remote.py desktop record` and `ios record` against the fork:
+Snapshot references, recorded on the branch from the renders that the compare step flagged in the `desktop-linux` run 43341898825 and the `ios-sim` run 43341902820 on 9daddbde4, not with `scripts/ci/snapshots-remote.py record`:
 - desktop: `ChatView.PreviewGroupChatLayoutTerminal`, light and dark, fonts 100, 140 and 150: 6 files.
 - iOS: `TerminalAvatars`, `TerminalNames` and `TerminalSpacing` at three sizes, `TerminalOverviewGroup`, `TerminalOverviewChannel`, `TerminalOverviewDirect` and `TerminalMedia` at large, light and dark: 26 files. The two direct scenes change by their media widths.
 - Expected equal: `TerminalQuoteThumbnail`, `TerminalRuleOnly`, `TerminalRightToLeft` and every classic scene. A reference that the compare step lists beyond these is checked by eye before it is recorded.
 
 CI on the fork branch: the reduced build with the `kotlin`, `ios` and `mcp` scopes; then `android-emu`, `desktop-linux` and `ios-sim` once each, with the app uploaded (`scripts/ci/README.md`, "Starting a run"). `desktop-linux` and `ios-sim` compare the snapshots.
+
+The tests of the session group's profile and of `messagesStartAtRowStartBelowAvatar` fail on master by construction: master's group profile has no `chatLayout`, and master places the message at x 39 below the name. They were not run on master.
 
 ## 8. Docs to change
 
@@ -367,7 +406,10 @@ packages/simplex-chat-mcp/ROADMAP.md                  the line "Sessions open in
 packages/simplex-chat-mcp/spec/api.md                 4.3: a chat layout row in the session group's profile table
 packages/simplex-chat-mcp/spec/architecture.md        the row of createSessionGroup
 packages/simplex-chat-mcp/TESTING.md                  automated tests: the layout of the session group; real session: Flat and Flat (chat)
-packages/simplex-chat-mcp/images/session.png          drawn again from the mockup source with the 30 pt avatar, the name 12 after it
+packages/simplex-chat-mcp/images/session.png          drawn again from its mockup source, images/session.html, with the 30 pt avatar, the
+                                                      name 12 after it: the page rendered at 742 × 1489, device scale 1, by a headless browser
+packages/simplex-chat-mcp/images/session.html         the mockup source, added; its frame is approval.png and its fonts are Inter and
+                                                      JetBrains Mono 5.1.0 of fontsource
 packages/simplex-chat-mcp/README.md                   unchanged
 apps/multiplatform/spec/client/chat-view.md           section 10, Row Layout, and the rows of terminalGutter and TerminalChatItemRow
 apps/ios/spec/client/chat-view.md                     section 9, Rows: avatar size, sender row, media width
@@ -412,3 +454,27 @@ docs                                    30                       section 8
 CI                                      reduced build; android-emu 15 min; desktop-linux 12 min; ios-sim 25 min, twice
 total                                   about half a working day of an agent after the design approval, with the CI runs
 ```
+
+## 11. As implemented
+
+Sections 5 and 7 describe the code as implemented. The changes from the plan approved in 13f7c0188, with their reasons:
+
+1. The Kotlin media helpers are in `CIImageView.kt`, next to `imageViewFullWidth`, and take `tall`, the polarity of the existing test. `TerminalItemView.kt` gets no new imports, so the 34 line links to it in `apps/multiplatform/spec/client/chat-view.md` stay valid.
+2. Media widths on Android and desktop also depend on intrinsic measurement. `FramedItemView`'s column is `width(IntrinsicSize.Max)`, and an intrinsic query has no given width. The flat media box (`FlatMediaWidth`) reports `DEFAULT_MAX_IMAGE_WIDTH` as its maximum intrinsic width; otherwise a captioned tall image would be 281.25 in place of 283.5 at row 402, and 281.25 in place of 375 on desktop. The image and the player inside the box fill it (`Modifier.mediaContentWidth`); otherwise they would be drawn narrower than the box.
+3. `FramedItemView.kt:283`: captionless media in flat rows have no `width(IntrinsicSize.Max)` on the column. With the 500 intrinsic width the column would be the row, and the time would be drawn over tall media, against decision 18. For captionless media `PriorityLayout` limits the other children to the width of the media, so the column is as wide as the media, as before.
+4. `PlayerView` takes a modifier in place of a width, so that the player fills the media box in flat rows. Classic video widths stay as on master: the full width is remembered per preview from the window width (`videoViewFullWidth`).
+5. Names: `messageStart` of `TerminalChatItemRow` is `nameStart`, because the gutter places only the name. `ProfileImage` with `toEdge` scales the background disc with the icon, 0.7 of the 1.2 icon, so it still fills the placeholder's cut-outs. iOS `TerminalChatItemRow` takes `avatarSize` in place of `gutter`, and the overhang is computed from it.
+6. Tests: `FlatAvatarTest` measures pixel columns across the middle row, 0 to 26 drawn to the edge and within 2 to 24 as now, with the corner radius set to 50 for the round photo and restored. `textWithoutAvatarTakesNoGap` asserts 22 px. `avatarCentredOnNameLine` allows 1 px of rounding. `FlatMediaTest` and `textBelowNameLineTallerThanAvatarTakesHalfStep` were added after the review.
+7. Docs: the added line of `hub.ts` moves its later lines by one, so 25 links to `hub.ts` in `spec/api.md`, `architecture.md` and `flows.md` were updated. Links of the two app specs were updated where they pointed at master's lines. The README image is drawn from its mockup source, `images/session.html`, added to the package.
+8. The 32 references were recorded from the renders of the `desktop-linux` and `ios-sim` runs on the fork, copying only the renders that the compare step listed. `scripts/ci/snapshots-remote.py` starts runs in the repository of `origin`, simplex-chat/simplex-chat, which the agents' token cannot use, and copies every render.
+
+Changes after the independent review of dbb7ca092:
+
+1. iOS: the width given to the media of a flat row is less the go-to button, `goToItemIconSize + goToItemIconGap + chatItemTextPadding`, in search results and on items forwarded from a chat of the user, as `TerminalMetaLayout` subtracts it on Android and desktop. Before, a wide image of such an item reached under the arrow at row 402.
+2. Kotlin: `FlatMediaTest` renders flat media, decision 18 included.
+3. Kotlin: the text below a sender row with an avatar starts `TERMINAL_HEADING_BOTTOM_GAP` below the lower of the name line and the avatar, as on iOS. Before, at font scales of 1.57 and more the name line is taller than the avatar, and the text touched it.
+4. The tall rule is one function, `isTallMedia`. `fixedMediaWidth` is the one decision between the classic width and the flat layout; the media box and its content act on its result, and the box's layout takes the width of its constraints. Swift `scaledMemberImageSize` takes the base size, 34 by default and `terminalMemberImageBaseSize`, 30, in flat rows.
+5. The e2e test tells a missing Main group from one without a layout; the docs state the width of the captioned column and of media, less 12 on each side.
+6. Classic video widths are as on master (item 4); the mockup source of the README image is in the package.
+
+Kept as they are, named on the pull request page: tall link previews keep each platform's rule, up to 2.33 W tall on iOS and 0.75 W on Android and desktop; the deleted card in flat group rows starts at x 0; the tests that do not compile on master.
