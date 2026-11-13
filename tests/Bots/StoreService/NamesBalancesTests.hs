@@ -10,7 +10,7 @@ module Bots.StoreService.NamesBalancesTests (namesBalancesTests, cardPaid, cover
 import Bots.StoreService.FakeEthNode (plainTerms)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders)
 import Bots.StoreService.NamesStoreTests (at, btc, invoiceStatus, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
-import Bots.StoreService.WebTests (capturingStderr, rcv, withServiceStore, withServiceStores)
+import Bots.StoreService.WebTests (capturingStderr, overdueOf, rcv, withServiceStore, withServiceStores)
 import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
@@ -35,9 +35,10 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (balanceTurnCount, newTurns, turnsCount, withBalanceTurn, withLabelTurn)
+import StoreService.Names.View (addressText)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupUnpaid, newPollerEnv, unpaidRetention)
-import StoreService.Service (chainText, heldText)
+import StoreService.Service (CmdSource (..), chainText, heldText)
 import StoreService.Providers (Funded (..), PaymentSignal (..))
 import StoreService.Waiters (newWaiters)
 import StoreService.Web.Server (WebEnv (..))
@@ -414,9 +415,9 @@ testChain = withServiceStore $ \st -> do
   credit st "b" holdPrice
   coveredSpend st "c" "b" 10000 holdPrice `shouldReturn` Right ()
   withTransaction st (\db -> balanceChain db (RegistrationId "c"))
-    `shouldReturn` [ BalanceLink {lkRegistration = RegistrationId "c", lkPayment = RPBalance, lkPaid = 0, lkFromBalance = 10000, lkLateCredits = []},
-                     BalanceLink {lkRegistration = RegistrationId "b", lkPayment = RPInvoice btc (InvoiceId "inv-b"), lkPaid = holdPrice - 20000, lkFromBalance = 20000, lkLateCredits = []},
-                     BalanceLink {lkRegistration = RegistrationId "a", lkPayment = RPInvoice btc (InvoiceId "inv-a"), lkPaid = 20000, lkFromBalance = 0, lkLateCredits = []}
+    `shouldReturn` [ BalanceLink {lkRegistration = RegistrationId "c", lkOwner = ownerA, lkPayment = RPBalance, lkProviderRef = Nothing, lkPaid = 0, lkFromBalance = 10000, lkLateCredits = []},
+                     BalanceLink {lkRegistration = RegistrationId "b", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-b"), lkProviderRef = Just "ref-inv-b", lkPaid = holdPrice - 20000, lkFromBalance = 20000, lkLateCredits = []},
+                     BalanceLink {lkRegistration = RegistrationId "a", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-a"), lkProviderRef = Just "ref-inv-a", lkPaid = 20000, lkFromBalance = 0, lkLateCredits = []}
                    ]
 
 testChainOfClosed :: IO ()
@@ -429,7 +430,7 @@ testChainOfClosed = withServiceStore $ \st -> do
   let late = lateCredit "d" 1 (Just 40000) 2400
   creditLate st late `shouldReturn` True
   withTransaction st (\db -> balanceChain db (RegistrationId "d"))
-    `shouldReturn` [BalanceLink {lkRegistration = RegistrationId "d", lkPayment = RPInvoice btc (InvoiceId "inv-d"), lkPaid = 0, lkFromBalance = 0, lkLateCredits = [late]}]
+    `shouldReturn` [BalanceLink {lkRegistration = RegistrationId "d", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-d"), lkProviderRef = Just "ref-inv-d", lkPaid = 0, lkFromBalance = 0, lkLateCredits = [late]}]
 
 testChainOfOverpaid :: IO ()
 testChainOfOverpaid = withServiceStore $ \st -> do
@@ -439,7 +440,7 @@ testChainOfOverpaid = withServiceStore $ \st -> do
   let late = lateCredit "o" 1 (Just 40000) 2400
   creditLate st late `shouldReturn` True
   withTransaction st (\db -> balanceChain db (RegistrationId "o"))
-    `shouldReturn` [BalanceLink {lkRegistration = RegistrationId "o", lkPayment = RPInvoice btc (InvoiceId "inv-o"), lkPaid = 20000, lkFromBalance = 0, lkLateCredits = [late]}]
+    `shouldReturn` [BalanceLink {lkRegistration = RegistrationId "o", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-o"), lkProviderRef = Just "ref-inv-o", lkPaid = 20000, lkFromBalance = 0, lkLateCredits = [late]}]
 
 testBalanceOrderHash :: IO ()
 testBalanceOrderHash = withServiceStore $ \st -> do
@@ -489,7 +490,8 @@ testClosesRelease = withServiceStore $ \st -> do
     source st ("s-" <> c) 10000
     holder st ("h-" <> c) ("s-" <> c) 10000 (at 60) `shouldReturn` Right ()
   cancelOpenInvoice st waiters Nothing (InvoiceId "inv-h-cancel") (at 2) `shouldReturn` True
-  expireOverdue st waiters Nothing (at 61) (at 61) [InvoiceId "inv-h-sweep"] `shouldReturn` [InvoiceId "inv-h-sweep"]
+  swept <- overdueOf st (InvoiceId "inv-h-sweep")
+  expireOverdue st waiters Nothing (at 61) (at 61) [swept] `shouldReturn` [InvoiceId "inv-h-sweep"]
   settleOrder st waiters Nothing (InvoiceId "inv-h-settled") (SigClosed (rcv 0 Nothing) PaidInPart) (at 2) `shouldReturn` Right ISExpired
   next <- reg st "h-next"
   withTransaction st (\db -> closeOverdue db next (at 61)) `shouldReturn` Just (nrVersion next + 1)
@@ -549,7 +551,7 @@ testCleanupKeepsHolder = withOrders $ \Ctx {cStore = st, cWeb} -> do
   let due = addUTCTime (unpaidRetention + 1) t0
   poller <- newPollerEnv st (weWaiters cWeb) Nothing (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
   logs <- capturingStderr $ cleanupUnpaid poller due
-  logs `shouldSatisfy` T.isInfixOf "unpaid registration h is kept because it still holds the balance of registration s"
+  logs `shouldSatisfy` T.isInfixOf "the unpaid order of invoice ref-inv-h is kept because it still holds the balance of registration s"
   nrLive <$> reg st "h" `shouldReturn` True
   figures st "s" due `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" t0 True)
 
@@ -572,7 +574,7 @@ testRecordRefund = withServiceStore $ \st -> do
   cancelOpenInvoice st waiters Nothing (InvoiceId "inv-h") (at 2) `shouldReturn` True
   refundOf "s" 9000 t0 `shouldReturn` Left (RefundAmount 10000)
   chain <- withTransaction st $ \db -> balanceChain db (RegistrationId "s")
-  chain `shouldBe` [BalanceLink {lkRegistration = RegistrationId "s", lkPayment = RPInvoice btc (InvoiceId "inv-s"), lkPaid = 10000, lkFromBalance = 0, lkLateCredits = []}]
+  chain `shouldBe` [BalanceLink {lkRegistration = RegistrationId "s", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-s"), lkProviderRef = Just "ref-inv-s", lkPaid = 10000, lkFromBalance = 0, lkLateCredits = []}]
   refundOf "inv-s" 10000 t0 `shouldReturn` Right RefundRecord {rdRegistration = RegistrationId "s", rdCents = 10000, rdChain = chain}
   figures st "s" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
   refundOf "s" 10000 t0 `shouldReturn` Left (RefundAmount 0)
@@ -580,22 +582,26 @@ testRecordRefund = withServiceStore $ \st -> do
 
 testHeldText :: IO ()
 testHeldText = do
-  let held overdue funded = heldText BalanceHold {bhHolder = RegistrationId "h", bhUntil = UTCTime (fromGregorian 2027 1 2) 3600, bhOverdue = overdue, bhFunded = funded}
+  let heldFrom cmdSource overdue funded = heldText cmdSource BalanceHold {bhHolder = RegistrationId "h", bhUntil = UTCTime (fromGregorian 2027 1 2) 3600, bhOverdue = overdue, bhFunded = funded}
+      held = heldFrom FromConsole
   held False False `shouldBe` "held by order h, its invoice open until 2027-01-02 01:00 UTC; run the command again then"
   held True False `shouldBe` "held by order h, its invoice expired at 2027-01-02 01:00 UTC; start the service so the poller closes that order, 10 minutes after the expiry at the earliest, then stop it and run the command again"
+  heldFrom FromGroup True False `shouldBe` "held by order h, its invoice expired at 2027-01-02 01:00 UTC; the poller closes that order 10 minutes after the expiry at the earliest; run the command again then"
   held False True `shouldBe` "held by order h, whose invoice holds money; it holds until that payment settles or the invoice closes; run the command again then"
 
 testChainText :: IO ()
 testChainText = do
-  let link rid pay paid fromBalance lateCents =
-        BalanceLink {lkRegistration = RegistrationId rid, lkPayment = pay, lkPaid = paid, lkFromBalance = fromBalance, lkLateCredits = map (lateCredit rid 1 Nothing) lateCents}
-      byBtc = RPInvoice btc . InvoiceId . ("inv-" <>)
-  chainText [link "c" RPBalance 0 10000 [], link "b" (byBtc "b") 20000 20000 [], link "a" (byBtc "a") 20000 0 []]
-    `shouldBe` "order c: $100.00 from the balance of order b; order b: $200.00 by btc on invoice inv-b, $200.00 from the balance of order a; order a: $200.00 by btc on invoice inv-a"
-  chainText [link "d" (byBtc "d") 0 0 [2400]] `shouldBe` "order d: $24.00 late by btc on invoice inv-d"
-  chainText [link "o" (byBtc "o") 20000 0 [2400]] `shouldBe` "order o: $200.00 by btc on invoice inv-o, $24.00 overpaid by btc on invoice inv-o"
-  chainText [link "p" (RPCode 1) 0 0 []] `shouldBe` "order p: a prepaid code"
-  chainText [link "x" RPBalance 0 0 []] `shouldBe` "order x: no payment recorded"
+  let link rid (pay, ref_) paid fromBalance lateCents =
+        BalanceLink {lkRegistration = RegistrationId rid, lkOwner = ownerA, lkPayment = pay, lkProviderRef = ref_, lkPaid = paid, lkFromBalance = fromBalance, lkLateCredits = map (lateCredit rid 1 Nothing) lateCents}
+      byBtc r = (RPInvoice btc (InvoiceId $ "inv-" <> r), Just $ "ref-" <> r)
+      unbilled pay = (pay, Nothing)
+      order r = "order " <> r <> " of " <> addressText ownerA <> ": "
+  chainText [link "c" (unbilled RPBalance) 0 10000 [], link "b" (byBtc "b") 20000 20000 [], link "a" (byBtc "a") 20000 0 []]
+    `shouldBe` order "c" <> "$100.00 from the balance of order b; " <> order "b" <> "$200.00 by btc on invoice inv-b (provider reference ref-b), $200.00 from the balance of order a; " <> order "a" <> "$200.00 by btc on invoice inv-a (provider reference ref-a)"
+  chainText [link "d" (byBtc "d") 0 0 [2400]] `shouldBe` order "d" <> "$24.00 late by btc on invoice inv-d (provider reference ref-d)"
+  chainText [link "o" (byBtc "o") 20000 0 [2400]] `shouldBe` order "o" <> "$200.00 by btc on invoice inv-o (provider reference ref-o), $24.00 overpaid by btc on invoice inv-o (provider reference ref-o)"
+  chainText [link "p" (unbilled $ RPCode 1) 0 0 []] `shouldBe` order "p" <> "a prepaid code"
+  chainText [link "x" (unbilled RPBalance) 0 0 []] `shouldBe` order "x" <> "no payment recorded"
 
 -- late credits
 
@@ -637,7 +643,7 @@ testLateScans = withServiceStore $ \st -> do
       pendingOf r = withTransaction st $ \db -> (r,) <$> latePending db (InvoiceId $ "inv-" <> r)
   forM_ cases $ \(r, _, _, expected) -> pendingOf r `shouldReturn` (r, expected)
   pendingOf "live" `shouldReturn` ("live", Nothing)
-  withTransaction st uncreditedLateInvoices `shouldReturn` map (InvoiceId . ("inv-" <>)) ["uncredited", "card", "settledlate", "beforecents"]
+  withTransaction st uncreditedLateInvoices `shouldReturn` map (\r -> (InvoiceId $ "inv-" <> r, "ref-inv-" <> r)) ["uncredited", "card", "settledlate", "beforecents"]
   withTransaction st (\db -> lateCreditState db (InvoiceId "inv-part"))
     `shouldReturn` Just
       LateCreditState

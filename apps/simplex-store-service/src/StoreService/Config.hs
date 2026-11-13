@@ -20,6 +20,7 @@ module StoreService.Config
     ServiceConfig (..),
     defaultExpiryMinutes,
     defaultSessionMinutes,
+    providerTimeoutMicros,
     defaultLogLevel,
     minNameYears,
     localChainId,
@@ -103,7 +104,8 @@ data BTCPayConfig = BTCPayConfig
     bWebhookSecret :: Text,
     bExpiryMinutes :: Int,
     bSpeedPolicy :: SpeedPolicy,
-    bPaymentTolerance :: Double
+    bPaymentTolerance :: Double,
+    bTimeoutMicros :: Int
   }
   deriving (Eq)
 
@@ -116,7 +118,8 @@ data StripeConfig = StripeConfig
     sPublishableKey :: Text,
     sWebhookSecret :: Text,
     sSessionMinutes :: Int,
-    sHost :: Text
+    sHost :: Text,
+    sTimeoutMicros :: Int
   }
   deriving (Eq)
 
@@ -234,6 +237,9 @@ defaultStripeHost = "https://api.stripe.com"
 
 defaultSessionMinutes :: Int
 defaultSessionMinutes = 60
+
+providerTimeoutMicros :: Int
+providerTimeoutMicros = 10 * 1000000
 
 defaultLogLevel :: LogLevel
 defaultLogLevel = LogNote
@@ -586,7 +592,7 @@ parseConfig ini = do
           bExpiryMinutes <- expiryMinutes
           bSpeedPolicy <- speedPolicy
           bPaymentTolerance <- tolerance
-          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance})
+          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros})
     -- A negative window puts BTCPay's startDate in the future, so every poll comes back empty.
     expiryMinutes = do
       v <- num "btcpay" "expiry_minutes" defaultExpiryMinutes
@@ -636,7 +642,7 @@ parseConfig ini = do
           sWebhookSecret <- required "stripe" "webhook_secret"
           sSessionMinutes <- sessionMinutes
           let sHost = defaultStripeHost
-          pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost})
+          pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost, sTimeoutMicros = providerTimeoutMicros})
     appleSection
       | not (hasSection "apple") = Right Nothing
       | otherwise = do

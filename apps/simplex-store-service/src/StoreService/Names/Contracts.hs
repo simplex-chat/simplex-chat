@@ -4,7 +4,7 @@
 {-# LANGUAGE TupleSections #-}
 
 module StoreService.Names.Contracts
-  ( Contracts (ctDeadline, ctTermsBackoff),
+  ( Contracts (ctDeadline, ctTermsBackoff, ctViewSlots),
     NameStatus (..),
     RegisteredName (..),
     NameRecords (..),
@@ -47,6 +47,7 @@ import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Concurrently (..))
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
+import Control.Concurrent.STM (TVar, newTVarIO)
 import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forever, guard)
 import Control.Monad.Except (ExceptT (..), runExceptT)
@@ -94,9 +95,10 @@ data Contracts = Contracts
     ctTermsLinks :: IORef (Maybe (Word64, (Text, Text))),
     ctFetchAfter :: IORef UTCTime,
     ctFetching :: MVar (),
-    -- | microseconds for all the reads of one name status or of one name's records
+    -- | microseconds for all the reads of one name status, of one name's records, or of one registration view
     ctDeadline :: Int,
-    ctTermsBackoff :: Int
+    ctTermsBackoff :: Int,
+    ctViewSlots :: TVar Int
   }
 
 data RegistrarConstants = RegistrarConstants {rcRegistry :: Address, rcGracePeriod :: Integer}
@@ -138,6 +140,9 @@ attoUsdPerCent = 10 ^ (16 :: Int)
 nameReadsDeadline :: Int
 nameReadsDeadline = 10000000
 
+viewReadSlots :: Int
+viewReadSlots = 16
+
 termsBackoffSeconds :: Int
 termsBackoffSeconds = 30
 
@@ -160,7 +165,8 @@ newContracts ctStore ctTLD ctMinPriceCentsPerYear ctChain = do
   ctTermsLinks <- newIORef Nothing
   ctFetchAfter <- newIORef =<< getCurrentTime
   ctFetching <- newMVar ()
-  pure Contracts {ctChain, ctStore, ctTLD, ctMinPriceCentsPerYear, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds}
+  ctViewSlots <- newTVarIO viewReadSlots
+  pure Contracts {ctChain, ctStore, ctTLD, ctMinPriceCentsPerYear, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsTexts, ctTermsLinks, ctFetchAfter, ctFetching, ctDeadline = nameReadsDeadline, ctTermsBackoff = termsBackoffSeconds, ctViewSlots}
 
 -- | Registered while @nameExpires + GRACE_PERIOD@ is not before the latest block's time.
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)

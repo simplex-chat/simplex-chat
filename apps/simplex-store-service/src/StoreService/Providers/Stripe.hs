@@ -22,6 +22,7 @@ import StoreService.Providers
     ProviderInvoice (..),
     Received (..),
     settleWindow,
+    timeoutError,
     WebhookError (..),
   )
 import Control.Exception (try)
@@ -68,6 +69,7 @@ import Simplex.Chat.PaymentService.Types
     ServicePaymentMethod (..),
   )
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import System.Timeout (timeout)
 
 maxErrorBytes :: Int64
 maxErrorBytes = 4000
@@ -383,7 +385,7 @@ stripeSend ::
   Maybe [(ByteString, ByteString)] ->
   IO (Bool, Either ProviderError LB.ByteString)
 stripeSend StripeEnv {seCfg, seManager} what verb segments query headers form = do
-  r <- try $ do
+  r <- timeout (sTimeoutMicros seCfg) $ try $ do
     req0 <- parseRequest (T.unpack url)
     -- applyBasicAuth must wrap the record update, because updating requestHeaders after it would drop the header it adds.
     let req =
@@ -401,9 +403,10 @@ stripeSend StripeEnv {seCfg, seManager} what verb segments query headers form = 
       taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
       pure (lookup "Idempotent-Replayed" (responseHeaders resp) == Just "true", statusCode (responseStatus resp), taken)
   pure $ case r of
+    Nothing -> (False, Left (timeoutError what))
     -- http-client hides the Authorization header when showing a Request
-    Left (e :: HttpException) -> (False, Left (ProviderError (what <> " failed: " <> tshow e)))
-    Right (replayed, code, taken) -> (replayed, answer code taken)
+    Just (Left (e :: HttpException)) -> (False, Left (ProviderError (what <> " failed: " <> tshow e)))
+    Just (Right (replayed, code, taken)) -> (replayed, answer code taken)
   where
     answer code taken
       | LB.length taken > maxProviderBytes =
