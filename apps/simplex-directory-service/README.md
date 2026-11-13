@@ -72,8 +72,6 @@ simplex-directory-service \
 | `--admin-users ID:NAME[,...]` | none | Admin-only contacts (comma-separated) |
 | `--owners-group ID:NAME` | none | Group (by group ID) that owners of listed groups are invited into — automatically on listing, or via `/invite` |
 | `-d / --database PATH` | `~/.simplex/simplex_directory_service` | Database file path prefix |
-| `--directory-file PATH` | none | Append-only log of directory state (see [Directory state log](#directory-state-log)) |
-| `--migrate-directory-file check\|import\|export\|listing` | — | Check, import (log → DB), export (DB → log), or regenerate listing files, then exit |
 | `--web-folder PATH` | none | Write static listing JSON + group images here (see [Hosting the directory page](#hosting-the-directory-page)) |
 | `--no-address` | off | Skip checking/creating the bot's contact address |
 | `--service-name NAME` | `SimpleX Directory` | Bot display name (without `*` characters) |
@@ -85,13 +83,13 @@ simplex-directory-service \
 | `--captcha-generator PATH` | none | Executable that renders a captcha image; without it captchas are sent as plain text |
 | `--voice-captcha-generator PATH` | none | Executable that renders a voice captcha |
 | `--run-cli` | off | Run an interactive CLI alongside the bot (useful for bootstrap) |
+| `--client-service` | off | Use a client service certificate |
+| `--link-check-interval SECONDS` | `1800` | Interval for checking public group link data |
+| `--prohibited-to-observer` | off | Make a member an observer, and delete the message, when they post content the group prohibits |
+| `--always-captcha` | off | Require a captcha from joining members in all groups, regardless of group filter settings |
+| `--always-observer` | off | Make joining members observers in all groups, regardless of the group's setting in the directory |
+| `--knocking` | off | Require admin review before joining members are admitted, in all groups, regardless of group preference |
 | `-v / --version` | — | Print version and exit |
-
----
-
-## Directory State Log
-
-`--directory-file` keeps an append-only log of every change to directory state (registrations, status changes, promotions) alongside the SQLite database. It is optional but recommended for operability: it is human-inspectable and can be checked, exported, or re-imported with `--migrate-directory-file`. Without it, directory state lives only in the database.
 
 ---
 
