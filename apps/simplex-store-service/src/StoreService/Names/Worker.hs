@@ -44,6 +44,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word64)
+import Simplex.Chat.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (tshow, ($>>=))
@@ -54,7 +55,6 @@ import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, res
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts, acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, unixSeconds, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)

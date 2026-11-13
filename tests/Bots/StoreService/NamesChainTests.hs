@@ -17,9 +17,9 @@ import qualified Data.Text as T
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import qualified Network.HTTP.Client as HTTP
+import Simplex.Chat.Names.Abi (uint256)
 import qualified Simplex.Messaging.Crypto as C
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (uint256)
 import StoreService.Names.Chain
 import StoreService.Names.Revert
 import Test.Hspec

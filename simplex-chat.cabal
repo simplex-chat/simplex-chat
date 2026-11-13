@@ -46,6 +46,8 @@ library
       Simplex.Chat.Badges.StorePlan
       Simplex.Chat.Badges.Types
       Simplex.Chat.Names
+      Simplex.Chat.Names.Abi
+      Simplex.Chat.Names.Registration
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
@@ -460,7 +462,6 @@ executable simplex-store-service
       StoreService.Config
       StoreService.Group
       StoreService.Group.Command
-      StoreService.Names.Abi
       StoreService.Names.Balances
       StoreService.Names.Chain
       StoreService.Names.Codes
@@ -474,7 +475,6 @@ executable simplex-store-service
       StoreService.Names.Phases
       StoreService.Names.Profiles
       StoreService.Names.Records
-      StoreService.Names.Registration
       StoreService.Names.Reveal
       StoreService.Names.Revert
       StoreService.Names.Sender
@@ -844,7 +844,6 @@ test-suite simplex-chat-test
       StoreService.Config
       StoreService.Group
       StoreService.Group.Command
-      StoreService.Names.Abi
       StoreService.Names.Balances
       StoreService.Names.Chain
       StoreService.Names.Codes
@@ -858,7 +857,6 @@ test-suite simplex-chat-test
       StoreService.Names.Phases
       StoreService.Names.Profiles
       StoreService.Names.Records
-      StoreService.Names.Registration
       StoreService.Names.Reveal
       StoreService.Names.Revert
       StoreService.Names.Sender

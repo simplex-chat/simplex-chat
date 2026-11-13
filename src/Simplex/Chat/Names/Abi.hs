@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module StoreService.Names.Abi
+module Simplex.Chat.Names.Abi
   ( AbiValue (..),
     AbiError (..),
     abiWordSize,

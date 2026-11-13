@@ -21,6 +21,7 @@ import Data.String (fromString)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Word (Word64, Word8)
+import Simplex.Chat.Names.Registration (commitCalldata)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
@@ -29,7 +30,6 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (commitCalldata)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender
 import StoreService.Names.Store (NameTransaction (..), TxFor (..), TxStatus (..), pendingTransactions, registrationTransactions)

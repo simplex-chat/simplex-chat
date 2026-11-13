@@ -90,6 +90,7 @@ import Network.HTTP.Types (ResponseHeaders, Status, badGateway502, badRequest400
 import Network.Wai (Application, rawPathInfo, requestMethod, responseLBS, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
 import Numeric (readHex, showHex)
+import Simplex.Chat.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, hex, selector, uint256)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strDecode)
@@ -97,7 +98,6 @@ import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, hex, selector, uint256)
 import StoreService.Names.Chain (ChainClient (..), TxRequest (..), decodeSignedTx, newChainClient)
 import System.Timeout (timeout)
 
