@@ -1,4 +1,5 @@
 import {once} from "events"
+import * as fs from "fs"
 import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
 import {Server, request} from "http"
 import {Socket} from "net"
@@ -1003,6 +1004,17 @@ describe("runService", () => {
     }
     expect(readFileSync(readyFile, "utf8")).toBe("running\n")
     expect(write).not.toHaveBeenCalled()
+  })
+
+  it("keeps running when the process that waited for its ready line is gone", async () => {
+    await answering()
+    writeFileSync(lockFile(), `${process.ppid}\n`)
+    const brokenPipe = Object.assign(new Error("EPIPE: broken pipe, write"), {code: "EPIPE"})
+    const write = jest.spyOn(fs, "writeSync").mockImplementation(() => {
+      throw brokenPipe
+    })
+    await runService({SIMPLEX_MCP_HOME: root, SIMPLEX_MCP_READY_FD: "3"})
+    expect(write).toHaveBeenCalledWith(3, "running\n")
   })
 
   it("reports a start error and exits with 1", async () => {
