@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.3.0: Claude Code activity in the status message
 
-Status: draft for review. Design of 2026-11-11; decisions 6 and 7 by the user; decision 8 of 2026-11-12 at the user's request. Code: stacked on the live status (`plans/2026-11-10-mcp-live-status.md`) at `0fa30e4f34`. Hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11.
+Status: draft for review. Design of 2026-11-11; decisions 6 and 7 by the user; decision 8 of 2026-11-12 and decision 9 of 2026-11-13 at the user's request. Code: stacked on the live status (`plans/2026-11-10-mcp-live-status.md`) at `0fa30e4f34`. Hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11.
 
 Dependencies:
 1. The status message of `plans/2026-11-10-mcp-live-status.md`.
@@ -17,6 +17,7 @@ Dependencies:
 6. Scope, decided by the user: notes (option 1) and Claude Code hooks (option 2) in one pull request, stacked on the pull request of the live status.
 7. Source budget, decided by the user: about 150 changed lines in `src`, up to 20% above; the user accepted the 267 changed lines after the review rounds.
 8. Arrival, 2026-11-12, at the user's request: after a `receive` with `typing: true` in a chat, the status is started at once at a message received there, as in section Arrival; about 25 changed lines in `src`.
+9. Every approved chat, 2026-11-13, at the user's request: `typing` is removed from `receive` (decision 23 of `plans/2026-11-10-mcp-live-status.md`); the status is queued at each message received in a chat that meets the conditions of status messages, by the chat of the event, as in section Arrival.
 
 ## Transport
 
@@ -184,15 +185,13 @@ after    For a step that takes minutes, call send with live: true and a short no
 
 ```
 item             rule
-typing chats     AgentTools.typingChats, memory: a chat added at a receive with typing true, removed at a receive of
-                 it without typing, before the chat is read
 arrival          AgentTools.onNewItems: a received message (rcvMsgContent), not live, in the main scope (chatRef) of a
-                 typing chat: Statuses.queue(chat)
+                 chat of this session that meets the conditions by the chat of the event: Statuses.queue(chat)
 queue(chat)      no status of the chat, not stopping: a status created with the label "received, waiting for the agent";
                  its first tick at once
 start(chat)      queue(chat); a waiting status taken: label "thinking", rendered at once while 0 < renders < 59
-start calls      receive with typing true that returns messages; sendResult with responses in a typing chat, after
-                 markRead and the abort check
+start calls      receive that returns messages, when the chat read of the call meets the conditions; sendResult with
+                 responses, when the chat of the first one meets them, after markRead and the abort check
 waiting label    kept at the ticks of a waiting status; the label read only for other labels
 frozen line      ◌ received, waiting for the agent since YYYY-MM-DD HH:MM UTC for a waiting status;
                  ◌ working since YYYY-MM-DD HH:MM UTC otherwise
@@ -274,10 +273,9 @@ serve.ts       startAgent            Activity of NAME; Agent.activity; the hook 
                listen                hook
 tools.ts       Agent                 activity
                receiveDescription    the note sentence
-               AgentTools            decision 8: typingChats
-               onNewItems            decision 8: queue at a message received in a typing chat
-               sendResult            decision 8: the abort check after markRead; start at responses in a typing chat
-               receive               decision 8: typingChats updated by typing
+               onNewItems            decisions 8 and 9: queue at a message received in a chat that meets the conditions
+               sendResult            decisions 8 and 9: the abort check after markRead; start at responses in a chat
+                                     that meets the conditions
 ```
 
 - `actions.ts`, `cli.ts`, `control.ts`, `log.ts` and `messages.ts` are unchanged.
@@ -292,8 +290,8 @@ tools.ts       Agent                 activity
 - `test/unit/register.test.ts`: the hook group of every event, with `NUL` on Windows; the user settings file with 2-space indentation, without the token; `CLAUDE_CONFIG_DIR`, and `~/.claude` when it is unset or empty; the local settings file; this agent's handlers replaced, other settings, hooks and groups kept, the same text at a second register; invalid settings files reported after the entry is added, and left unchanged; no status hooks after a failed add; the reply line.
 - `test/unit/files.test.ts`: `DIR/hook-headers`: its line, mode 0600, rewritten at a start, and its mode set again.
 - Decision 8, `test/unit/status.test.ts`: one queued status per chat, the waiting label at its ticks, `thinking` at once at the start, the labels after it; a start before the first post, posted as `thinking` after the eligibility read; the frozen waiting line, and the frozen working line at a later start; no queued status after the stop.
-- Decision 8, `test/unit/messages.test.ts`: one waiting status for several messages received after a `receive` with typing, `thinking` at once when a `receive` returns them; none for a chat without such a `receive` or after one without typing, an own or live message, a member support chat, or a chat without the approval; the waiting status of responses taken by their `send`.
-- Decision 8, `test/e2e/scenarios.test.ts`: in the direct chat and in the group, `receive` with typing before the prompt, the live item `◐ received, waiting for the agent · 0:00`; in the direct chat, its update with `thinking` when `receive` returns the prompt.
+- Decisions 8 and 9, `test/unit/messages.test.ts`: one waiting status for several messages received in an approved chat, `thinking` at once when a `receive` returns them; none, and no chat read, for an own or live message, a member support chat, a chat without the approval, or a chat with a bot; the waiting status of responses taken by their `send`.
+- Decisions 8 and 9, `test/e2e/scenarios.test.ts`: in the direct chat and in the group, the live item `◐ received, waiting for the agent · 0:00` at the prompt; in the direct chat, its update with `thinking` when `receive` returns the prompt.
 
 ## Docs
 

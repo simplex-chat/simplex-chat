@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.3: plan
 
-Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`), live status 2026-11-10 (`plans/2026-11-10-mcp-live-status.md`), Claude Code activity 2026-11-11 and the status at the arrival of a message 2026-11-12 (`plans/2026-11-11-mcp-live-activity.md`) · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); in the sections of the status message and the inference endpoint, master `f8776692df`; hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11; `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
+Status: draft · 2026-10-17, files and leave 2026-10-30 (`plans/2026-10-30-mcp-files-and-leave.md`), live status 2026-11-10 (`plans/2026-11-10-mcp-live-status.md`), Claude Code activity 2026-11-11 and the status at the arrival of a message 2026-11-12 (`plans/2026-11-11-mcp-live-activity.md`) · person-facing manual: `REFERENCE.md`, the plugin in short in `README.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11); in the sections of the status message and the inference endpoint, master `f8776692df`; hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11; `simplex-chat` 7.1.0-beta.10.2 loads core 7.1.0.20. Pending decisions: section Open.
 
 ## Scope
 
@@ -127,8 +127,8 @@ npm name       @simplex-chat/mcp
 binary         simplex-mcp -> dist/cli.js
 licence        AGPL-3.0
 Node.js        22
-chat library   simplex-chat ^7.1.0-beta.10.2
-types          @simplex-chat/types ^7.1.0-beta.9.1
+chat library   simplex-chat ^7.1.3
+types          @simplex-chat/types ^7.1.3
 MCP SDK        @modelcontextprotocol/server 2.3.1, @modelcontextprotocol/node 2.1.1
 QR code        qrcode ^1.5
 tests          jest with ts-jest, as packages/simplex-chat-nodejs; end to end with a local smp-server (SMP_SERVER), as steward test/e2e, and a local xftp-server (XFTP_SERVER)
@@ -198,7 +198,6 @@ downloads     memory: one per file ID, until the file is received or fails
 forwarding    memory: the /forward of a file ID until its copy for posting is made
 rejected files memory: file IDs whose download call returned rejected or expired; a done download removes its ID
 statuses      memory: at most one status message per chat; leftovers of a crash are deleted at the next start, in chats that meet the conditions of status messages
-typing chats  memory: each chat from a receive with typing true until a receive of it without typing
 activity      memory: the Claude Code activity of at most 16 agent sessions, from the status hooks
 ```
 
@@ -588,7 +587,7 @@ an owner in LIST loses the role or leaves,            Alice (member 3) is no lon
 
 ## What the owner sees: the status message
 
-When `receive` with `typing: true` returns messages of a chat approved with `/approve CHAT all`, the server posts a live message in that chat and edits it while the agent works: the status message. After such a `receive`, the server also posts it at once at each message received in that chat while the chat has none, as a waiting status, with the label `received, waiting for the agent` until a `receive` with `typing: true` or a `send` returns messages of the chat. It is deleted for everyone after the agent's answer is sent. Every member of a group or business chat sees it.
+When `receive` returns messages of a chat approved with `/approve CHAT all`, the server posts a live message in that chat and edits it while the agent works: the status message. The server also posts it at once at each message received in such a chat while the chat has none, as a waiting status, with the label `received, waiting for the agent` until a `receive` or a `send` returns messages of the chat. It is deleted for everyone after the agent's answer is sent. Every member of a group or business chat sees it.
 
 ```
 chat                                                          status message
@@ -651,7 +650,7 @@ otherwise                                                          thinking
 ```
 
 - The first line is `◐ thinking · 0:00`, or `◐ received, waiting for the agent · 0:00` for a waiting status. The label is read again for renders 2 to 49, except for a waiting status; a note is rendered with the last label.
-- A waiting status is taken when a `receive` with `typing: true` or a `send` returns messages of its chat: its label is set to `thinking`, and it is rendered at once while 0 < renders < 59; a waiting status taken before its first render is posted with `thinking`.
+- A waiting status is taken when a `receive` or a `send` returns messages of its chat: its label is set to `thinking`, and it is rendered at once while 0 < renders < 59; a waiting status taken before its first render is posted with `thinking`.
 - `` with `MODEL` ``: all processing slots belong to one model of llama-swap. Model IDs outside `^[\w.:/+@-]{1,64}$` are dropped.
 - `, N tokens read` is shown when N is above 0. `, N tokens/s`, rounded, is shown when the same slot and task were read in the previous poll, processing with tokens already decoded, and more tokens were decoded since then.
 - The Claude Code rows are read from the activity of the agent's sessions, reported by the status hooks (section Claude Code activity); the same rows are shown in every status message of the process.
@@ -865,7 +864,7 @@ other              file      none                                               
 - Hosts with a fixed tool-call limit (60 s to 300 s) need `wait` below it.
 - With `live`, the call returns `{status: "live", chat}` at once; a live call never attaches to an action. In the output schema, only `status` is required.
 - When a send without `live` is performed, the chat's status message is deleted after the message is sent; after a failed, rejected or expired send, it stays.
-- When responses are returned in a typing chat (section receive), the chat's status message is started, as by `receive` with `typing`.
+- When responses are returned and the chat of the first one meets the conditions of status messages, the chat's status message is started, as by `receive`.
 
 ### receive
 
@@ -874,7 +873,6 @@ input field   type     rule
 chat          string   required; a chat of the agent
 wait          number   optional; seconds to wait when no message is new; 0 to 86400; default 0
 limit         number   optional; 1 to 100; default 50
-typing        boolean  optional; default false; true: when messages are returned, the chat's status message is started (section What the owner sees: the status message); the chat is a typing chat until a receive of it without typing
 ```
 
 ```
@@ -885,8 +883,8 @@ more          number      always; new messages not returned
 ```
 
 - New: a received message that is unread when the call reads its page, or that arrives during the call. The returned ones are marked read; another call marking one read after this call collected it does not remove it.
-- When a call waits, with `wait` above 0 and nothing new, the chat's status message is deleted first, with or without `typing`.
-- In a typing chat without a status message, a waiting status is started at each received message (section Status message).
+- When a call waits, with `wait` above 0 and nothing new, the chat's status message is deleted first. When messages are returned, the chat's status message is started (section What the owner sees: the status message).
+- In an eligible chat without a status message, a waiting status is started at each received message (section Status message).
 - In the description, the agent is asked to call `send` with `live: true` and a short note in the same response as the tool call of a step that takes minutes.
 
 ### list
@@ -1066,7 +1064,7 @@ the agent connects to an address        a contact request, with the message
 the agent's message                     a message from that profile
 reply_to                                a quote of that item
 mention                                 @name in the text; a mention for that member
-receive with typing, send with live     the status message: a live message from that profile, edited in place, with the note under the line;
+receive, send with live                 the status message: a live message from that profile, edited in place, with the note under the line;
                                           every member of a group or business chat sees it
 the agent's answer after it             a new message; then the status message is deleted for everyone
 ```
@@ -1426,7 +1424,7 @@ until: wait seconds | idle seconds after the last collected item | the call's si
 progress at once and every 60 s: "<k> responses in <chat>; waiting until <time>."
 messages = collected, up to limit; more = the rest + overflow
 not aborted, at least one returned: /_read chat items <chat> <their IDs joined by ",">     # APIChatItemsRead, parser Commands.hs:6376; the list is non-empty
-not aborted, at least one returned, chat in typingChats: start(chat) of the status messages (section Status message)
+not aborted, at least one returned, showsStatus by the chat of the first one: start(chat) of the status messages (section Status message)
 the action is deleted from memory
 result {chat, item, responses: messages, more}
 ```
@@ -1567,7 +1565,6 @@ of progress                                 (an XFTP file returns to rcvInvitati
 ```
 receive(input, ctx):
   chat is the agent control chat: tool error "unknown chat"
-  typing: typingChats.add(chat); otherwise typingChats.delete(chat)
   from now, each newChatItems of chat adds its received message items to arrived
   s = /_get chat <chat> initial=1; a store error: tool error "unknown chat"
   s.chatStats.unreadCount > 0: pages = /_get chat <chat> around=<s.chatStats.minUnreadItemId> count=0 (that item alone),
@@ -1578,7 +1575,7 @@ receive(input, ctx):
     progress at once and every 60 s: "No new messages in <chat>; waiting until <time>."
   messages: new, up to limit; more = the rest + s.chatStats.unreadCount - the rcvNew items of pages (the unread items not read, at least 0)
   not aborted: /_read chat items <chat> <the IDs of messages and of skipped, joined by ",">, when that list is non-empty
-  not aborted, typing and messages not empty: start(chat) of the status messages (section Status message)
+  not aborted, messages not empty and showsStatus by the chat read of the call: start(chat) of the status messages (section Status message)
   result {chat, messages, more}
 
 list():
@@ -1628,7 +1625,7 @@ ending    undefined                       its live.end("")
 
 ```
 newChatItems, each item (AgentTools.onNewItems):
-  a received message (rcvMsgContent), not live, in the main scope of a chat in typingChats: queue(chat)
+  a received message (rcvMsgContent), not live, in the main scope of a chat of this session, showsStatus by the chat of the event: queue(chat)
 
 queue(chat):
   stopping, or a status of chat: return
@@ -2012,11 +2009,11 @@ options     defaults, ranges, --stop-wait from 0 to 60, NAME, --display-name at 
 commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; the wait at stop for status deletions alone and with cancelled cards; SIMPLEX_MCP_INFERENCE_KEY with a line break, a space or a non-ASCII character refused with exit code 2 before the data folder exists; /receive CHAT N all and /receive CHAT off beside the approval of messages; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
 actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
 cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes and the servers line; the attaching line of sends
-messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected, a forwarded file offered and then received; download: attach, performing at wait, a received file, a forwarded file kept outside the chat's folder and moved there at the approval, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request; receive with typing: a status in approved direct chats with people, groups and business chats, and none for an aborted call, without typing or messages, without the approval, with a bot or an agent, a disconnected contact, a channel, an observer role, a lost control chat or mode host; the status deleted when a receive of its chat waits, after the answer is sent, before leave, at the next tick after /revoke and after the control chat is lost, and kept when the answer fails; after receive with typing, one waiting status for the messages received before a receive, "thinking" at once when a receive returns them, and the waiting status of responses taken by their send; none for a chat without such a receive or after one without typing, an own or live message, a member support chat, or a chat without the approval; send with live: the note under the line and its log line, a pending send with the same text left unattached, an aborted call, the refusals; a call counted as running until it ends, also when it throws; leftovers read only in eligible chats
+messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected, a forwarded file offered and then received; download: attach, performing at wait, a received file, a forwarded file kept outside the chat's folder and moved there at the approval, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request; receive: a status in approved direct chats with people, groups and business chats, and none for an aborted call, without messages, without the approval, with a bot or an agent, a disconnected contact, a channel, an observer role, a lost control chat or mode host; the status deleted when a receive of its chat waits, after the answer is sent, before leave, at the next tick after /revoke and after the control chat is lost, and kept when the answer fails; in an approved chat, one waiting status for the messages received before a receive, "thinking" at once when a receive returns them, and the waiting status of responses taken by their send; none, and no chat read, for an own or live message, a member support chat, a chat without the approval, or a chat with a bot; send with live: the note under the line and its log line, a pending send with the same text left unattached, an aborted call, the refusals; a call counted as running until it ends, also when it throws; leftovers read only in eligible chats
 status      the post after the first read of the conditions; gaps of 3 s, then a tenth of the age up to 20 s; frames and elapsed time; the frozen line at render 50, then checks every 5 min; label ranks; the model and the counts in labels; deletion when the conditions are unmet or their read fails, at 23 h, and 30 min after the last call in the frozen phase; a note under the line and under the frozen line, refused at render 59; a status 23 h old replaced at a note; no tick render after a label read during which notes reached render 50; one status per chat; a queued status: one per chat, the waiting label at its ticks, "thinking" at once when it is started, the labels of the work after it; a queued status started before its first post, posted as "thinking"; the frozen line of a waiting status, and the frozen working line when it is started later; no queued status after the stop; nothing sent after a tick of an ended status; a failed command; stop; the logging of failed polls; leftovers page by page; the Claude Code rows ranked among the labels; Claude Code tools by kind, with the file base name or the tool name in a code span, or the second form
 inference   loading from /running; /props, then /slots, at up to 4 distinct allowed proxies, without the key; tokens/s between two polls, summed; tokens read; idle; fractional and negative counts ignored; the first 64 slots; the model of one busy model; a sleeping server; 503 of /props and /slots; a plain llama-server with the key; proxies on URL's host or loopback only; one poll per 3 s; failures by HTTP status, invalid JSON, a body over 1 MiB, a redirect, a refused connection and the 1 s deadline, folded to one line; a failing proxy left out; the model ID pattern; GET of /running, /props and /slots only
 activity    agent sessions from the first event with a tool of this server, other sessions and the servers of other agents ignored; the latest running tool, this server's tools and Agent left out; the tools of one session and agent dropped at its PostToolBatch; a PreToolUse after its end event ignored; the permission prompt until a tool of its session ends, fails or is denied, a batch ends or the turn stops; compaction until PostCompact or a PreToolUse of the main agent; the latest subagent until its SubagentStop; a session cleared at UserPromptSubmit, Stop, StopFailure and SessionEnd; 16 sessions; 64 tools, 64 subagents, 256 ended IDs; the patterns of file base names, tool names and agent types; bodies that are not objects, and fields of other types
-http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors; the typing and live schemas, status live and the required status of send's output; each description, and the instructions for a 15-character name, within 2048 characters; /hook: the parsed body passed on and 204 without a body, also before ready, a 4 MiB body, 413 above it, 411 without Content-Length, 401, 403, 405 with Allow, 400 for invalid JSON, the hook not called
+http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors; the live schema, the receive input fields, status live and the required status of send's output; each description, and the instructions for a 15-character name, within 2048 characters; /hook: the parsed body passed on and 204 without a body, also before ready, a 4 MiB body, 413 above it, 411 without Content-Length, 401, 403, 405 with Allow, 400 for invalid JSON, the hook not called
 register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors; on Windows, claude through cmd.exe after ENOENT, with cmd.exe quoting; the status hooks of every event, with NUL on Windows; the user settings file from CLAUDE_CONFIG_DIR, or ~/.claude when it is unset or empty; the local settings file; this agent's handlers replaced, other settings, hooks and groups kept, the same text at a second register; invalid settings files reported after the entry is added, and left unchanged; no status hooks after a failed add
 files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json and hook-headers; file modes set again on existing files
 log         every SimpleX error shape worded by the apps, in its JSON shape from @simplex-chat/types; the chain for other errors
@@ -2041,8 +2038,8 @@ port in use       serve on a bound port: exit before server.json is written and 
 leave command     /leave #N with a pending send for #N: the send rejected; the reply and the log line; the group's owner sees the agent leave
 files             an image from a group member: status offered; the download card with the preview and "Servers: known."; /forward: the file as a reply to the card, outside the chat's folder; /receive: the path, the same bytes; /reject: rejected; /receive #N A all: the reply, and a later download posts nothing
 send file         a 600 × 600 PNG of random pixels sent to a group: the card with the attaching line and the core's preview, not the fixed one; the member receives an image with the core's preview and a file smaller than the PNG, at most 261120 bytes; a private key refused, posted and logged
-typing            an approved direct chat: after receive with typing, a prompt, the live item "◐ received, waiting for the agent · 0:00", then its update with "thinking" when receive returns the prompt; a note under the line, and its log line; the answer as a new item, then the status deleted, and one outcome post in the agent control chat; at stop "Stopping: sending 1 status deletion, ..." and the deletion; at the next start a leftover live item deleted
-typing in a group an approved group: after receive with typing, a prompt, the status "◐ received, waiting for the agent · 0:00", its note, and its deletion after the answer
+status            an approved direct chat: a prompt, the live item "◐ received, waiting for the agent · 0:00", then its update with "thinking" when receive returns the prompt; a note under the line, and its log line; the answer as a new item, then the status deleted, and one outcome post in the agent control chat; at stop "Stopping: sending 1 status deletion, ..." and the deletion; at the next start a leftover live item deleted
+status in a group an approved group: a prompt, the status "◐ received, waiting for the agent · 0:00", its note, and its deletion after the answer
 ```
 
 Claude Code checks, by hand (TESTING.md):
@@ -2101,3 +2098,7 @@ C6      Claude Code closes the request stream when a call times out or its task 
 
 - Status at the arrival of a message (`plans/2026-11-11-mcp-live-activity.md`, decision 8): after a `receive` with `typing` in a chat, the server posts the status message at once at a message received there while the chat has none, with the label `received, waiting for the agent`; the label is `thinking` from the return of messages by a `receive` with `typing` or a `send`.
 - `/abort` (`plans/2026-11-12-mcp-abort.md`): with `serve --abort-file FILE`, in mode `requests` only and with FILE in a folder disjoint from the data folder, each status line ends with ` · /abort`. At a text message `/abort`, trimmed, from anyone in the main conversation of a chat whose status message is shown, the message is kept from `receive` and `send` and marked read; 1 is added to the count, and the count is written to `FILE.part` with mode 0644, which is renamed to FILE; every status message of the server is ended with `◼ aborted`; the sender and the chat are logged on one line. Elsewhere, `/abort` is an ordinary message. At the start, a missing FILE, or one without a count, is written with 0. The script that runs the agent reads FILE's first line, a missing FILE counting as 0, about every second, and restarts the agent's process group at each change. Without the option, the behavior is unchanged.
+
+## Decisions of 2026-11-13
+
+- The `typing` input of `receive` is removed: each `receive` that returns messages starts the status message of an eligible chat, and each message received in an eligible chat without a status message starts a waiting status.

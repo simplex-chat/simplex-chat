@@ -1,5 +1,9 @@
+import {join} from "path"
 import {T} from "@simplex-chat/types"
 import {api, bot} from "simplex-chat"
+import {ServiceClient} from "../../src/client"
+import {createDataFolder, hubFolder} from "../../src/files"
+import {CallLine} from "../../src/protocol"
 import {ServeOptions} from "../../src/serve"
 
 export const timeout = 60_000
@@ -21,6 +25,22 @@ export async function profileWithServer(smpAddress: string, filePrefix: string, 
   expect(await chat.sendChatCmd(`/smp ${smpAddress}`)).toMatchObject({type: "cmdOk"})
   if (xftpAddress !== undefined) expect(await chat.sendChatCmd(`/xftp ${xftpAddress}`)).toMatchObject({type: "cmdOk"})
   await chat.close()
+}
+
+export async function prepareRoot(smpAddress: string, root: string, xftpAddress?: string): Promise<void> {
+  for (const [folder, displayName] of [[hubFolder(root), "Claude"], [join(root, "_user"), "User"]]) {
+    createDataFolder(folder)
+    await profileWithServer(smpAddress, join(folder, "simplex"), {displayName, fullName: "", peerType: T.ChatPeerType.Agent}, xftpAddress)
+  }
+}
+
+export async function callTool(client: ServiceClient, id: string, tool: string, input: object): Promise<{isError?: boolean; text: string; result: any}> {
+  let result: any
+  await client.stream("/call", {id, tool, input}, line => {
+    const parsed = line as CallLine
+    if ("result" in parsed) result = parsed.result
+  })
+  return {isError: result?.isError, text: result?.content[0].text, result: result?.structuredContent}
 }
 
 export async function person(smpAddress: string, filePrefix: string, displayName: string, xftpAddress?: string): Promise<{chat: api.ChatApi; user: T.User}> {
@@ -106,7 +126,7 @@ export function deleted(chat: api.ChatApi, itemId: number): Promise<void> {
 export const textStarts = (prefix: string): ItemCheck => ci => ci.chatItem.meta.itemText.startsWith(prefix)
 
 export function cardNumber(ci: T.AChatItem): number {
-  return Number(/\/'(?:approve|receive) (?:[#@]\d+ )?(\d+)'/.exec(ci.chatItem.meta.itemText)![1])
+  return Number(/\/'(?:approve|receive) (?:(?:\d+:)?[#@]\d+ )?(\d+)'/.exec(ci.chatItem.meta.itemText)![1])
 }
 
 export function lines(ci: T.AChatItem): string[] {

@@ -65,7 +65,7 @@ struct CIFeaturePreferenceView: View {
 func allowFeatureToContact(_ contact: Contact, _ feature: ChatFeature, param: Int? = nil) {
     Task {
         do {
-            let prefs = contactUserPreferencesToPreferences(contact.mergedPreferences).setAllowed(feature, param: param)
+            let prefs = contact.userPreferences.setAllowed(feature, param: param)
             if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: prefs) {
                 await MainActor.run {
                     ChatModel.shared.updateContact(toContact)
