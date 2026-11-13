@@ -177,12 +177,12 @@ export class Session {
     })
   }
 
-  async turn({at, prompt, typed, answer, model, effort}: TurnRequest): Promise<void> {
-    if (prompt !== undefined || answer !== undefined) this.endPermissions(at)
+  async turn({at, prompt, typed, note, midTurn, answer, model, effort}: TurnRequest): Promise<void> {
+    if ((prompt !== undefined && midTurn !== true) || answer !== undefined) this.endPermissions(at)
     const quoted = answer === undefined ? undefined : this.turnQuote(at ?? Infinity)
     if (answer !== undefined) this.answeredAt = Math.max(this.answeredAt, at ?? Date.now())
     const matched = prompt === undefined ? [] : this.pushedIn(prompt)
-    if (prompt !== undefined && (at ?? Date.now()) >= this.answeredAt) this.turns.push({at: at ?? Date.now(), item: matched[0]?.item ?? null})
+    if (prompt !== undefined && (midTurn !== true || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) this.turns.push({at: at ?? Date.now(), item: matched[0]?.item ?? null})
     this.pushed.splice(0, this.pushed.length, ...this.pushed.filter(entry => !matched.includes(entry)))
     const newModel = this.newer("model", model, at ?? Date.now())
     const newEffort = this.newer("effort", effort, at ?? Date.now())
@@ -192,6 +192,7 @@ export class Session {
       this.store(this.description)
     }
     try {
+      if (note !== undefined) await this.post([note]).catch(error => this.postRefusal(error, "A note on Claude Code's prompt was not posted", featureOff))
       if (prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined) await this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser))
       if (answer !== undefined && answer.trim() !== "") await this.answer(answer, quoted)
     } finally {
