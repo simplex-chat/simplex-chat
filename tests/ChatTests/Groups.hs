@@ -14,7 +14,7 @@ module ChatTests.Groups where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKeys)
+import ChatTests.Profiles (addTestBadge, createGroupFilesForOwners, futureDate, issueTestBadge, lastItemIsLink, testBadgeKeys, testLinkMC)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -39,7 +39,7 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), MsgScope (..), ReportReason (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel, XMsgReact), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MREmojiChar (..), MsgContainer (..), MsgMention (..), MsgContent (..), MsgReaction (MREmoji), MsgScope (..), ReportReason (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -110,6 +110,7 @@ chatGroupTests = do
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
     xit "moderate message that arrives after the event of moderation" testGroupDelayedModeration
     xit "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
+    it "moderate message with link preview that arrives after the event of moderation" testGroupDelayedModerationLinkPreview
     it "remove member with messages (full deletion is enabled)" testDeleteMemberWithMessages
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
     it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
@@ -251,8 +252,10 @@ chatGroupTests = do
     it "mentions of blocked member are ignored" testBlockForAllMentionsIgnored
     it "replies of blocked member are not mentions" testBlockedMemberReplyNotMention
     it "reactions of blocked member are ignored" testBlockedMemberReactionsIgnored
+    it "reactions of blocked member to messages not yet received are ignored" testBlockedMemberEarlyReactionsIgnored
     it "profile updates of blocked member are marked blocked" testBlockedMemberProfileUpdate
     it "message updates of blocked member are marked blocked" testBlockedMemberUpdatesMarkedBlocked
+    it "mentions in message updates of blocked member are ignored" testBlockedMemberUpdateMentionsIgnored
     it "message updates of member blocked by admin are ignored" testBlockedByAdminUpdatesIgnored
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
@@ -348,6 +351,7 @@ chatGroupTests = do
       it "should not add relay when the invitation owner key differs from link data" testChannelAddRelayOwnerKeyMismatch
       it "should not add relay when the invitation group id differs from link data" testChannelAddRelayGroupIdMismatch
       it "should ignore relay invitation without the owner's signature" testChannelRelayInvUnsigned
+      it "should ignore relay invitation sent to a group link" testChannelRelayInvGroupLink
       it "should remove relay from channel" testChannelRemoveRelay
       it "should remove left relay from channel" testChannelRemoveLeftRelay
       describe "relay rejection" $ do
@@ -2131,6 +2135,22 @@ testGroupDelayedModerationFullDelete ps = do
   where
     -- version before forwarding, so cath doesn't expect alice to forward messages (groupForwardVersion = 4)
     cfg = testCfg {chatVRange = mkVersionRange (VersionChat 1) (VersionChat 3)}
+
+testGroupDelayedModerationLinkPreview :: HasCallStack => TestParams -> IO ()
+testGroupDelayedModerationLinkPreview =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroupFilesForOwners alice bob cath
+      bobMemId <- memberIdByName alice "bob"
+      GroupMember {groupId, activeConn = Just conn} <- getTestMember alice "team" "cath"
+      runExceptT (sendDirectMemberMessage conn (XMsgDel (SharedMsgId "link_msg") (Just bobMemId) Nothing False) groupId) `runReaderT` chatController alice
+        >>= either (fail . show) (\_ -> pure ())
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bobConnId <- relayConnIdToMember bob "cath"
+      agentSendBody bob bobConnId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "link_msg") (XMsgNew $ mcSimple testLinkMC)
+      cath <# "#team bob> [marked deleted by alice] https://simplex.chat"
+      lastItemIsLink cath `shouldReturn` False
 
 testDeleteMemberWithMessages :: HasCallStack => TestParams -> IO ()
 testDeleteMemberWithMessages =
@@ -7984,6 +8004,47 @@ testBlockedMemberReactionsIgnored =
       cath <# "#team alice> hi"
       cath <# "#team alice> blocked bob (signed)"
 
+testBlockedMemberEarlyReactionsIgnored :: HasCallStack => TestParams -> IO ()
+testBlockedMemberEarlyReactionsIgnored =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      aliceMemId <- memberIdByName bob "alice"
+      bobMemId <- memberIdByName bob "bob"
+      bobConnId <- relayConnIdToMember bob "cath"
+      aliceConnId <- relayConnIdToMember alice "cath"
+      let sendReaction smId msgScope =
+            agentSendBody bob bobConnId . chatMsgToBody $
+              ChatMessage chatInitialVRange Nothing (XMsgReact (SharedMsgId smId) (Just aliceMemId) msgScope (MREmoji $ MREmojiChar '👍') True)
+          sendMessage smId msgText =
+            agentSendBody alice aliceConnId . chatMsgToBody $
+              ChatMessage chatInitialVRange (Just $ SharedMsgId smId) (XMsgNew $ mcSimple $ MCText msgText)
+
+      sendReaction "msg_1" Nothing
+      sendReaction "msg_2" (Just $ MSMember bobMemId)
+      bob #> "#team 1"
+      [alice, cath] *<# "#team bob> 1"
+      (,) <$> reactionsCount cath "msg_1" <*> reactionsCount cath "msg_2" `shouldReturn` (1, 1)
+      sendMessage "msg_1" "hi"
+      cath <# "#team alice> hi"
+      cath <## "      👍 1"
+
+      cath ##> "/_member settings #1 3 {\"showMessages\": false}"
+      cath <## "ok"
+
+      sendReaction "msg_3" Nothing
+      sendReaction "msg_4" (Just $ MSMember bobMemId)
+      bob #> "#team 2"
+      alice <# "#team bob> 2"
+      cath <# "#team bob> 2 [blocked] <muted>"
+      (,) <$> reactionsCount cath "msg_3" <*> reactionsCount cath "msg_4" `shouldReturn` (0, 0)
+      sendMessage "msg_3" "hey"
+      cath <# "#team alice> hey"
+      (cath </)
+
 testBlockedMemberProfileUpdate :: HasCallStack => TestParams -> IO ()
 testBlockedMemberProfileUpdate =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -8048,6 +8109,30 @@ testBlockedMemberUpdatesMarkedBlocked =
 
       alice #$> ("/_get chat #1 count=1", chat, [(0, "hello again")])
       cath #$> ("/_get chat #1 count=1", chat, [(0, "hello again [blocked]")])
+
+testBlockedMemberUpdateMentionsIgnored :: HasCallStack => TestParams -> IO ()
+testBlockedMemberUpdateMentionsIgnored =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      bob #> "#team hello"
+      [alice, cath] *<# "#team bob> hello"
+
+      threadDelay 1000000
+
+      cath ##> "/_member settings #1 3 {\"showMessages\": false}"
+      cath <## "ok"
+
+      bob ##> "! #team hello @alice @cath"
+      bob <# "#team [edited] hello @alice @cath"
+      alice <# "#team bob> [edited] hello @alice @cath"
+      cath <# "#team bob> [edited] hello @alice @cath <muted>"
+
+      itemMentionsCount alice `shouldReturn` 2
+      itemMentionsCount cath `shouldReturn` 0
 
 testBlockedByAdminUpdatesIgnored :: HasCallStack => TestParams -> IO ()
 testBlockedByAdminUpdatesIgnored =
@@ -9015,6 +9100,13 @@ testScopedSupportDontUpdateMainScope =
       alice #$> ("/_get chat #1 count=2", chat, [(0, "hello"), (1, "changed role of bob to observer (signed)")])
       cath #$> ("/_get chat #1 count=2", chat, [(0, "hello"), (0, "changed role of bob to observer (signed)")])
 
+      bob #> "#team (support) hi"
+      [alice, cath] *<# "#team (support: bob) bob> hi"
+      supportItemId <- lastItemId bob
+      bob ##> ("/_update item #1(_support) " <> supportItemId <> " text hi again")
+      bob <# "#team (support) [edited] hi again"
+      [alice, cath] *<# "#team (support: bob) bob> [edited] hi again"
+
 testScopedSupportForwardWhileReview :: HasCallStack => TestParams -> IO ()
 testScopedSupportForwardWhileReview =
   testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
@@ -9888,6 +9980,17 @@ testSupportPreferenceGroup =
     alice ##> "#team (support: cath) hey"
     alice <## "bad chat command: feature not allowed Chat with admins"
 
+    GroupMember {groupId, activeConn = Just cathConn} <- getTestMember cath "team" "alice"
+    runExceptT (sendDirectMemberMessage cathConn (XMsgNew $ mcSimple $ MCReport "report content" RRContent) groupId) `runReaderT` chatController cath
+      >>= either (fail . show) (\_ -> pure ())
+    alice <## "error: x.msg.new: feature not allowed Chat with admins"
+    cathMemId <- memberIdByName cath "cath"
+    GroupMember {groupId = aliceGroupId, activeConn = Just aliceConn} <- getTestMember alice "team" "cath"
+    let scopedMsg = (mcSimple (MCText "hey") :: MsgContainer) {scope = Just $ MSMember cathMemId}
+    runExceptT (sendDirectMemberMessage aliceConn (XMsgNew scopedMsg) aliceGroupId) `runReaderT` chatController alice
+      >>= either (fail . show) (\_ -> pure ())
+    cath <## "error: x.msg.new: feature not allowed Chat with admins"
+
     -- bob can still send (existing chat)
     bob #> "#team (support) still here"
     alice <# "#team (support: bob) bob> still here"
@@ -9950,6 +10053,9 @@ testSupportPreferenceChannel ps =
 
           cathMemId <- memberIdByName cath "cath"
           GroupMember {groupId, activeConn = Just conn} <- getTestMember cath "team" "relay"
+          runExceptT (sendDirectMemberMessage conn (XMsgUpdate (SharedMsgId "new_msg") (MCText "hey") M.empty Nothing Nothing (Just $ MSMember cathMemId) Nothing) groupId) `runReaderT` chatController cath
+            >>= either (fail . show) (\_ -> pure ())
+          relay <## "error: x.msg.update: feature not allowed Chat with admins"
           let scopedMsg = (mcSimple (MCText "hey") :: MsgContainer) {scope = Just $ MSMember cathMemId}
           runExceptT (sendDirectMemberMessage conn (XMsgNew scopedMsg) groupId) `runReaderT` chatController cath
             >>= either (fail . show) (\_ -> pure ())
@@ -12471,6 +12577,20 @@ testChannelRelayInvUnsigned ps =
       sendUnsignedRelayInv alice cathSLink
       cath <##. "error: x.grp.relay.inv: invitation is not signed by the owner"
 
+testChannelRelayInvGroupLink :: HasCallStack => TestParams -> IO ()
+testChannelRelayInvGroupLink ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+      cath ##> "/g team"
+      cath <## "group #team is created"
+      cath <## "to add members use /a team <name> or /create link #team"
+      cath ##> "/create link #team"
+      (gSLink, _gLink) <- getGroupLinks cath "team" GRMember True
+      sendUnsignedRelayInv alice gSLink
+      cath <##. "error: x.grp.relay.inv: invitation sent to non-relay link"
+      cath ##> "/gs"
+      cath <## "#team (1 member)"
+
 sendUnsignedRelayInv :: TestCC -> String -> IO ()
 sendUnsignedRelayInv cc relayAddress =
   withCCUser cc $ \user -> do
@@ -14040,6 +14160,17 @@ lastJobNotification cc = do
   [Only (BI ntf)] <- withCCTransaction cc $ \db ->
     DB.query_ db "SELECT notification FROM delivery_jobs ORDER BY delivery_job_id DESC LIMIT 1"
   pure ntf
+
+reactionsCount :: TestCC -> ByteString -> IO Int
+reactionsCount cc smId = do
+  [Only n] <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT count(1) FROM chat_item_reactions WHERE shared_msg_id = ?" (Only $ SharedMsgId smId)
+  pure n
+
+itemMentionsCount :: TestCC -> IO Int
+itemMentionsCount cc = do
+  [Only n] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM chat_item_mentions"
+  pure n
 
 duplicateMessageEventsCfg :: IO (TVar [ContactName], ChatConfig)
 duplicateMessageEventsCfg = do

@@ -7,7 +7,6 @@ struct CIChatLinkHeader: View {
     @Environment(\.terminalLayout) private var terminal
     var chatItem: ChatItem
     var chatLink: MsgChatLink
-    var ownerSig: LinkOwnerSig?
     var hasText: Bool
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
@@ -28,7 +27,7 @@ struct CIChatLinkHeader: View {
                         .lineLimit(2)
                         .padding(.bottom, 2)
                 }
-                Text(chatLink.infoLine(signed: chatItem.chatDir.sent && ownerSig != nil))
+                Text(chatLink.infoLine(signed: chatItem.chatLinkSigned))
                     .font(.footnote)
                     .foregroundColor(theme.colors.secondary)
                     .padding(.bottom, 2)

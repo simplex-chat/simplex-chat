@@ -169,6 +169,34 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(voiceMessageTime_(nil), "00:00")
         XCTAssertEqual(voiceMessageTime_(TimeInterval(Int.max)), "00:00")
     }
+
+    func testAutoReceiveFileOfDeletedItem() {
+        privacyAcceptImagesGroupDefault.set(true)
+        func imageItem(_ itemDeleted: CIDeleted?) -> ChatItem {
+            ChatItem(
+                chatDir: .directRcv,
+                meta: CIMeta.getSample(1, .now, "", .rcvRead, itemDeleted: itemDeleted),
+                content: .rcvMsgContent(msgContent: .image(text: "", image: "")),
+                file: CIFile.getSample(fileName: "image.jpg", fileSize: 1000, filePath: nil, fileStatus: .rcvInvitation)
+            )
+        }
+        XCTAssertNotNil(imageItem(nil).autoReceiveFile())
+        XCTAssertNil(imageItem(.blocked(deletedTs: nil)).autoReceiveFile())
+        XCTAssertNil(imageItem(.blockedByAdmin(deletedTs: nil)).autoReceiveFile())
+        XCTAssertNil(imageItem(.deleted(deletedTs: nil)).autoReceiveFile())
+    }
+
+    func testChatLinkSignedOnSentCardOnly() {
+        let card = MsgContent.chat(
+            text: "",
+            chatLink: .invitation(invLink: "https://simplex.chat/invitation", profile: Profile.sampleData),
+            ownerSig: LinkOwnerSig(ownerId: nil, chatBinding: "", ownerSig: "")
+        )
+        let sent = ChatItem(chatDir: .directSnd, meta: CIMeta.getSample(1, .now, ""), content: .sndMsgContent(msgContent: card))
+        let received = ChatItem(chatDir: .directRcv, meta: CIMeta.getSample(2, .now, "", .rcvRead), content: .rcvMsgContent(msgContent: card))
+        XCTAssertTrue(sent.chatLinkSigned)
+        XCTAssertFalse(received.chatLinkSigned)
+    }
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {
