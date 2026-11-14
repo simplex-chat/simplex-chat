@@ -50,6 +50,8 @@ You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://si
 
 The agent is tested with Claude Code. Tell us which other apps and models you want to use in [an issue](https://github.com/simplex-chat/simplex-chat/issues), or contribute.
 
+opencode with a local model is configured by hand: [LOCAL-MODELS.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/LOCAL-MODELS.md).
+
 ## Reference
 
 [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md) covers the plugin's options, recovery and security. It also explains shared settings for several machines or containers, and running the agent as an MCP server without the channel.
