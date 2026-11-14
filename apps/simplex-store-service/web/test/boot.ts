@@ -22,6 +22,8 @@ export interface Page {
   storage: MemStorage;
   clipboard: Clipboard;
   fetches: Array<{ url: string; init?: RequestInit }>;
+  // What GET /api/config answers, outside the replies and the recorded fetches, as the page reads it at boot.
+  siteConfig: { stripePublishableKey: string | null };
   confirms: string[];
   workers: ServiceWorkers;
   connectivity: Connectivity;
@@ -44,6 +46,7 @@ export function installPage(opts: BootOptions = {}): Page {
   const { app, chrome, documentElement, clipboard, document, workers, connectivity } = installDocument();
   const storage = opts.storage ?? new MemStorage();
   const fetches: Array<{ url: string; init?: RequestInit }> = [];
+  const siteConfig: Page["siteConfig"] = { stripePublishableKey: null };
   const confirms: string[] = [];
   const windowListeners = new Map<string, Array<() => void>>();
   const location = { pathname: "/", search: "", hash: "" };
@@ -86,6 +89,10 @@ export function installPage(opts: BootOptions = {}): Page {
         windowListeners.set(type, list);
       },
       fetch: async (input: unknown, init?: RequestInit): Promise<Response> => {
+        if (String(input) === "/api/config") {
+          if (offline) throw new TypeError("Failed to fetch");
+          return responseOf({ status: 200, body: { mode: "open", ...siteConfig } });
+        }
         fetches.push(init ? { url: String(input), init } : { url: String(input) });
         // A browser with no network throws this TypeError.
         if (offline) throw new TypeError("Failed to fetch");
@@ -129,7 +136,7 @@ export function installPage(opts: BootOptions = {}): Page {
   }
 
   return {
-    app, chrome, documentElement, document, history, location, storage, clipboard, fetches, confirms, workers, connectivity,
+    app, chrome, documentElement, document, history, location, storage, clipboard, fetches, siteConfig, confirms, workers, connectivity,
     respondWith: (reply) => { nextResponse = reply; },
     answerHeld: (reply, match) => {
       const at = match === undefined ? 0 : held.findIndex((h) => h.url.includes(match));

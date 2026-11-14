@@ -7,7 +7,7 @@ import { money, moneyCompact } from "./format.js";
 import * as api from "./api.js";
 import { appCodeLink, readHash, resolveLoad } from "./routing.js";
 import * as screens from "./screens.js";
-import { appearanceFor, cardPlan, loadStripeJs, mountCard, publishableKey, type CardFailure, type ConfirmOutcome } from "./stripe.js";
+import { appearanceFor, cardPlan, loadStripeJs, mountCard, type CardFailure, type ConfirmOutcome } from "./stripe.js";
 import { Store, type StorageLike } from "./store.js";
 import { STEPS } from "./domain.js";
 import type { App, Method, OrderRecord, SessionRecord, Step, Theme } from "./domain.js";
@@ -751,10 +751,32 @@ function releaseCardElement(): void {
 
 type CardView = Extract<PaymentView, { screen: "cardForm" }>;
 
-// A repaint would build a fresh Element and re-enable Pay while the previous confirm is in flight, and checkout has no idempotency key.
+// null while the key could not be read. A failed read, or a service with no key yet, is asked again on the next card form.
+let siteKey: Promise<string | null> | null = null;
+function publishableKey(): Promise<string | null> {
+  siteKey ??= api.readPublishableKey(pageFetch).then(
+    (key) => {
+      if (key === "") siteKey = null;
+      return key;
+    },
+    () => {
+      siteKey = null;
+      return null;
+    },
+  );
+  return siteKey;
+}
+
 function renderCardForm(view: CardView): void {
   releaseCardElement();
-  const plan = cardPlan(publishableKey(), isOffline());
+  void publishableKey().then((key) => {
+    if (lastView === view) showCardForm(view, key);
+  });
+}
+
+// A repaint would build a fresh Element and re-enable Pay while the previous confirm is in flight, and checkout has no idempotency key.
+function showCardForm(view: CardView, key: string | null): void {
+  const plan = key === null ? { kind: "unavailable", reason: "offline" } as const : cardPlan(key, isOffline());
   if (plan.kind === "unavailable") {
     root.replaceChildren(cardFailureScreen(view, plan.reason));
     return;
@@ -958,6 +980,7 @@ if (embedded && welcomeHeight <= 0) welcomeHeight = Math.ceil(document.documentE
 const entryApp = readHash(location.hash).app;
 if (entryApp !== undefined) store.saveSession({ app: entryApp });
 
+void publishableKey();
 syncFromLocation(true);
 document.documentElement.classList.remove("sb-booting");
 registerServiceWorker();
