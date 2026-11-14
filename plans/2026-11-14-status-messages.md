@@ -2,7 +2,7 @@
 
 Status: plan for review, 2026-11-14. Branch `ep/status-messages`.
 
-A new message content type `status` carries status events, such as Claude's step lines. The apps merge consecutive status messages of one sender into one row. Silent text messages are never merged.
+A new message content type `status` carries status events, such as Claude's step lines. The apps merge consecutive status messages of one sender into one row. Silent text messages are never merged. A group preference `status`, off by default, allows status messages in a group. The preference has API and CLI, and no app UI.
 
 ## 1. Questions
 
@@ -32,6 +32,26 @@ option  rule
 (b)     the core never alerts for a status message
 ```
 
+Q4. A status message received in a group with `status` off. Recommended: (a).
+
+```
+option  receiving core
+(a)     saves it as a text message with the same text; the apps show it unmerged
+(b)     rejects it, as other features: the item "Status messages: prohibited"
+```
+
+With (b), the apps get `rcvGroupFeatureRejected` with feature `status`. Their GroupFeature enums lack it, as they lack `sessions` and `comments`, so the item does not decode without an app change. With (a), a message sent before the sender's core received the change of the preference stays readable.
+
+Q5. Direct chats. Recommended: (a).
+
+```
+option  rule
+(a)     status messages are allowed in direct chats
+(b)     a contact preference, off by default
+```
+
+A status message in a direct chat comes only from the contact, and a merged run holds only that contact's lines. With (b) and no app UI, a person can't turn it on, so the `serve` agents can't send status lines to their contacts.
+
 The renders show (a) of Q1 without the span, and (a) of Q2.
 
 ## 2. Renders
@@ -54,8 +74,11 @@ sequenceDiagram
   participant C as core of Claude
   participant R as core of a member
   participant A as app of the member
+  P->>C: create session group, preference status on
   P->>C: APISendMessages {type: "status", text}, live, priority -1
+  C->>C: status off in the group: error "feature not allowed Status messages"
   C->>R: x.msg.new, content {type: "status", text}
+  R->>R: status off in the group: content becomes {type: "text", text}
   R->>A: newChatItems, MCStatus
   A->>A: merge into the run of the sender
   P->>C: APIUpdateChatItem {type: "status", text + duration}, not live
@@ -77,7 +100,7 @@ stateDiagram-v2
 
 A run is a list of consecutive status items of one sender. Any other item, including a text of the same sender, ends the run.
 
-### 3.1 Core
+### 3.1 Content type
 
 ```
 place                                      change
@@ -106,7 +129,43 @@ older cores                           MCUnknown {tag = "status", text}; the JSON
 older apps                            MCUnknown with the text: shown as a text message, unmerged
 ```
 
-### 3.2 Kotlin
+### 3.2 Group preference
+
+```
+StatusGroupPreference
+  enable  GroupFeatureEnabled, default off
+  role    Maybe GroupMemberRole
+```
+
+```
+place                                         change
+Preferences.hs GroupFeature, SGroupFeature    GFStatus, "Status messages"
+Preferences.hs GroupPreferences               status :: Maybe StatusGroupPreference
+Preferences.hs FullGroupPreferences           status :: StatusGroupPreference
+Preferences.hs defaultGroupPrefs              off, no role
+Preferences.hs defaultBusinessGroupPrefs      off, no role
+Preferences.hs selectors, merge, setters      the status rows, as comments
+Preferences.hs GroupFeatureI, RoleI           GFStatus with role
+Preferences.hs allGroupFeatures               unchanged: GFStatus is left out, so no feature items
+Preferences.hs groupFeatureIn*                False
+Internal.hs prohibitedGroupContent            sent, MCStatus, not groupFeatureMemberAllowed SGFStatus: Just GFStatus
+Commands.hs APIUpdateChatItem, group          the same check for the new content
+Subscriber.hs newGroupContentMessage content  MCStatus from a member without the feature: MCText with the text
+Subscriber.hs groupMessageUpdate              the same conversion
+Commands.hs parser                            /set status #GROUP on|off [ROLE]
+bots/api, types.ts, _types.py                 StatusGroupPreference, regenerated
+```
+
+```
+chat            status allowed                 send                                          receive
+group, on       member role >= role, or any    sent                                          MCStatus
+group, off      never                          error "feature not allowed Status messages"   MCText with the text
+direct chat     always                         sent                                          MCStatus
+```
+
+The apps get no UI: GroupPreferences decoding ignores unknown keys, and no item names the feature.
+
+### 3.3 Kotlin
 
 ```
 place                                         change
@@ -128,7 +187,7 @@ desktopTest                                   MergedItems test: runs split by se
 
 Commit 7a51170ed has the rows for MsgContent, CIMergeCategory, mergeCategory, mergesWith, MergedItems.create, onClick, ContentItem, ComposeView, TerminalItemView and the previews. `LocalRevealedItems` sets the revealed items of a preview.
 
-### 3.3 iOS
+### 3.4 iOS
 
 ```
 place                                          change
@@ -143,29 +202,42 @@ ChatItemView.swift                             tap toggles; collapsed run with c
 previews, SnapshotTests.swift                  the same four scenes, references; check-previews.py
 ```
 
-### 3.4 Plugin
+### 3.5 Plugin
 
-The step lines of `ep/mcp-step-lines` are sent with `{type: "status", text}` in place of `{type: "text", text}`. The plugin bundles core 7.1.3, so this waits for a core release with `status`.
+```
+place                                    change
+Hub.createSessionGroup                   groupPreferences.status = {enable: on}
+Control.load, session groups             status set on at each start when it is off, as the command menu
+step lines of ep/mcp-step-lines          {type: "status", text} when the session group has status on; {type: "text", text} otherwise
+```
+
+Each CLI feature change writes all preferences of the group, so an absent `status` can't be told from an owner's off. The plugin sets it on at each start, as it sets the command menu. The plugin bundles core 7.1.3, so these rows wait for a core release with `status`.
 
 ## 4. Tests
 
 ```
-test                                                     place
-JSON round trip of status; unknown tag stays MCUnknown   tests/ProtocolTests.hs
-send, live update and final update of a status in a group; the member's CLI shows the text   tests/ChatTests/Groups.hs
-regenerated API docs                                     tests/APIDocs.hs
-MergedItems: one run per sender, a text ends a run       desktopTest
-four snapshot scenes                                     desktop-linux, ios-sim
+test                                                                       place
+JSON round trip of status; unknown tag stays MCUnknown                     tests/ProtocolTests.hs
+status in a group with the preference on: send, live update, final update; the member's CLI shows the text   tests/ChatTests/Groups.hs
+status in a group with the preference off: send error; a member below the role gets the error   tests/ChatTests/Groups.hs
+status received in a group with the preference off is saved as text       tests/ChatTests/Groups.hs
+status in a direct chat                                                    tests/ChatTests/Direct.hs
+/set status #team on                                                       tests/ChatTests/Groups.hs
+regenerated API docs                                                       tests/APIDocs.hs
+MergedItems: one run per sender, a text ends a run                         desktopTest
+four snapshot scenes                                                       desktop-linux, ios-sim
+session group created with status on; an existing one gets it at start     plugin unit and e2e tests
 ```
 
 ## 5. Estimate
 
 ```
 part                                    agent hours
-core and tests                          1.5
+core content type and tests             1.5
+core group preference and tests         1
 Kotlin: remaining rows, test, refs      1.5
 iOS                                     2.5
-plugin after the core release           0.5
+plugin after the core release           1
 review and CI                           1
-total                                   7
+total                                   8.5
 ```
