@@ -706,7 +706,7 @@ Vertically the avatar is centred on the name line box. The renders also show it 
                                                (MsgContentView.swift:1064); CodeBlockCard     time is beside a short card
                                                fillMaxWidth (MarkdownBlocks.kt:241)
 2   a big emoji shows only ✓                the time is hidden by the minute grouping     the status is drawn only with the time;    the time is drawn with the
-    (Spacing, 👍)                             (getItemSeparation, ChatView.kt:3802-3819;     errors and pending states still show       status on every sent row
+    (Spacing, 👍)                             (getItemSeparation, ChatView.kt:3802-3819;     errors and partial delivery still show     status on every sent row
                                                ChatView.swift:1779-1798), the status not
 3   Android and iOS: the message before a   the deleted item is the next newer item of    deleted and marked deleted items do not    keep
     deleted item shows no time (the second     the sender in the same minute, so the earlier  hide the time of the message before them
