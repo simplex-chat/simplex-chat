@@ -364,6 +364,8 @@ The server deletes the status message for everyone:
 - at an error of a command for the status message, with `status of CHAT: ERROR` logged;
 - when the server stops.
 
+When the agent ends its turn without an answer in that chat, for example after a message it leaves unanswered, the status message is shown until one of the other deletions above, such as the agent's next wait in a `receive` of that chat. When the agent runs no call after the `receive` that started it, the status message is deleted about 35 minutes after the start, at the first check at least 30 minutes after that `receive` ended.
+
 At the start, before it accepts calls, the server deletes its own live messages younger than 29 hours 50 minutes in the chats where these conditions are met: the status messages left by a crash.
 
 A deleted status message is shown as marked deleted, with its last text, unless full deletion is allowed:
