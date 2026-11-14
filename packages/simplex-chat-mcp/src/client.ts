@@ -10,7 +10,9 @@ import {isNotRunning, requestJson, streamLines} from "./socket"
 const serviceStartTimeout = 5 * 60_000
 const readyFd = 3
 const errorPrefix = "error: "
+// spec: spec/api.md#plugin-commands
 const serviceVariables = /^(PATH|PATHEXT|HOME|USERPROFILE|HOMEDRIVE|HOMEPATH|TMPDIR|TMP|TEMP|XDG_CACHE_HOME|LOCALAPPDATA|APPDATA|SYSTEMROOT|SYSTEMDRIVE|WINDIR|COMSPEC|LANG|LC_\w+|LD_LIBRARY_PATH|DYLD_LIBRARY_PATH|HTTPS?_PROXY|NO_PROXY|NODE_USE_ENV_PROXY|NODE_EXTRA_CA_CERTS|NODE_OPTIONS|SSL_CERT_(FILE|DIR)|SIMPLEX_\w+|CLAUDE_PLUGIN_OPTION_\w+)$/i
+// spec: spec/api.md#plugin-commands
 const launcher = [
   `const service = require("child_process").spawn(process.argv[1], process.argv.slice(2), {detached: true, windowsHide: true, stdio: ["ignore", 1, 2, ${readyFd}]})`,
   `service.on("error", error => require("fs").writeSync(${readyFd}, "${errorPrefix}" + error.message + "\\n"))`,
@@ -19,11 +21,13 @@ const launcher = [
 
 export type SpawnService = (root: string) => Promise<void>
 
+// spec: spec/api.md#plugin-results
 export class ProtocolError extends ExitError {}
 
 export class ServiceClient {
   private constructor(readonly root: string, private readonly token: string, private readonly path: string) {}
 
+  // spec: spec/architecture.md#client-serviceclient-forroot
   static forRoot(root: string): ServiceClient {
     createDataFolder(root)
     return new ServiceClient(root, serviceToken(root), socketPath(root))
@@ -37,6 +41,7 @@ export class ServiceClient {
     return streamLines(this.path, this.token, route, body, onLine, signal)
   }
 
+  // spec: spec/architecture.md#client-serviceclient-ensureservice
   async ensureService(version: string, spawnIt: SpawnService = root => spawnService(root)): Promise<StatusReply> {
     let status = await this.status()
     if (status !== undefined && compareVersions(status.version, version) < 0) {
@@ -73,6 +78,7 @@ export function serviceCommand(): [string, string[]] {
   return [process.execPath, [join(__dirname, "cli.js"), "service"]]
 }
 
+// spec: spec/architecture.md#client-spawnservice
 export async function spawnService(root: string, [command, args]: [string, string[]] = serviceCommand()): Promise<void> {
   const log = openLog(root)
   try {
@@ -96,6 +102,7 @@ export async function spawnService(root: string, [command, args]: [string, strin
   }
 }
 
+// spec: spec/architecture.md#client-firstline
 function firstLine(stream: Readable, child: ChildProcess): Promise<string> {
   return new Promise((resolve, reject) => {
     let text = ""
@@ -122,6 +129,7 @@ function firstLine(stream: Readable, child: ChildProcess): Promise<string> {
   })
 }
 
+// spec: spec/architecture.md#client-compareversions
 export function compareVersions(a: string, b: string): number {
   const parts = (version: string): number[] => version.split(/[.-]/).slice(0, 3).map(Number)
   const [x, y] = [parts(a), parts(b)]

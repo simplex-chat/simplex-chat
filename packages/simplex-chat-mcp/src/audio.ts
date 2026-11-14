@@ -6,6 +6,7 @@ import {basename} from "path"
 import {buffer} from "stream/consumers"
 import {errorText, logError} from "./log"
 
+// spec: spec/architecture.md#audio-audiooptions
 export interface AudioOptions {
   url: string
   stt: string
@@ -13,26 +14,31 @@ export interface AudioOptions {
   voice?: string
 }
 
+// spec: spec/architecture.md#audio-transcript-type
 export interface Transcript {
   transcript?: string
   transcript_error?: string
 }
 
+// spec: spec/architecture.md#audio-maxvoicebytes
 export const maxVoiceBytes = 1_500_000
 const requestTimeout = 10 * 60_000
 let transcriptions: Promise<unknown> = Promise.resolve()
 
+// spec: spec/architecture.md#audio-transcript
 export function transcript(audio: AudioOptions, path: string): Promise<string> {
   const turn = transcriptions.then(() => transcribe(audio, path))
   transcriptions = turn.catch(() => undefined)
   return turn
 }
 
+// spec: spec/architecture.md#audio-speech
 export function speech(audio: AudioOptions, input: string): Promise<Buffer> {
   const body = JSON.stringify({model: audio.tts, input, response_format: "wav", voice: audio.voice})
   return post("Text-to-speech", `${audio.url}/v1/audio/speech`, {headers: {"content-type": "application/json"}, body}, wav => wav)
 }
 
+// spec: spec/architecture.md#audio-writetranscript
 export async function writeTranscript(audio: AudioOptions, fileId: number, path: string): Promise<void> {
   const result: Transcript = await transcript(audio, path).then(
     text => ({transcript: text}),
@@ -44,6 +50,7 @@ export async function writeTranscript(audio: AudioOptions, fileId: number, path:
   await writeFile(`${path}.transcript.json`, JSON.stringify(result), {mode: 0o600}).catch(error => logError(`transcription of file ${fileId}`, error))
 }
 
+// spec: spec/architecture.md#audio-transcriptof
 export function transcriptOf(path: string): Transcript {
   try {
     const {transcript, transcript_error} = JSON.parse(readFileSync(`${path}.transcript.json`, "utf8"))
@@ -53,6 +60,7 @@ export function transcriptOf(path: string): Transcript {
   }
 }
 
+// spec: spec/architecture.md#audio-transcribe
 async function transcribe(audio: AudioOptions, path: string): Promise<string> {
   const bytes = await readFile(path)
   if (bytes.length > maxVoiceBytes) throw new Error(`Speech-to-text failed: the file has more than ${maxVoiceBytes} bytes.`)
@@ -66,6 +74,7 @@ async function transcribe(audio: AudioOptions, path: string): Promise<string> {
   })
 }
 
+// spec: spec/architecture.md#audio-post
 async function post<R>(service: string, url: string, init: RequestInit, read: (body: Buffer) => R): Promise<R> {
   const signal = AbortSignal.timeout(requestTimeout)
   try {
@@ -79,6 +88,7 @@ async function post<R>(service: string, url: string, init: RequestInit, read: (b
   }
 }
 
+// spec: spec/architecture.md#audio-send
 async function send(request: Request, signal: AbortSignal): Promise<IncomingMessage> {
   const body = Buffer.from(await request.arrayBuffer())
   const open = request.url.startsWith("https:") ? httpsRequest : httpRequest
