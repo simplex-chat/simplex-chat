@@ -72,6 +72,7 @@ private val previewScenes = listOf(
   SnapshotScene("AddGroupMembersView.PreviewAddGroupMembersLayout") { PreviewAddGroupMembersLayout() },
   SnapshotScene("GroupChatInfoView.PreviewGroupChatInfoLayout") { PreviewGroupChatInfoLayout() },
   SnapshotScene("GroupMemberInfoView.PreviewGroupMemberInfoLayout") { PreviewGroupMemberInfoLayout() },
+  SnapshotScene("GroupMemberInfoView.PreviewPeerTypePlaceholders") { PreviewPeerTypePlaceholders() },
   SnapshotScene("CIEventView.CIEventViewPreview", chatItemFontScales) { CIEventViewPreview() },
   SnapshotScene("CIGroupInvitationView.PendingCIGroupInvitationViewPreview", chatItemFontScales) { PendingCIGroupInvitationViewPreview() },
   SnapshotScene("CIGroupInvitationView.CIGroupInvitationViewAcceptedPreview", chatItemFontScales) { CIGroupInvitationViewAcceptedPreview() },

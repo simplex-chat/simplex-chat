@@ -84,7 +84,7 @@ import Network.Socket (SockAddr (..), hostAddress6ToTuple, hostAddressToTuple)
 import Network.Wai
 import Numeric (readHex, showHex)
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
-import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (safeDecodeUtf8, stateTVar', tshow)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
 import StoreService.Providers (Provider (..))
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), cryptoCurrencyText, invoiceStatusText, paymentHolds)
@@ -138,7 +138,7 @@ searchSlot HttpEnv {heSearches} = inSlot heSearches maxSearches
 inSlot :: TVar Int -> Int -> IO a -> IO (Maybe a)
 inSlot slots most action = bracket takeSlot releaseSlot $ \taken -> if taken then Just <$> action else pure Nothing
   where
-    takeSlot = atomically $ stateTVar slots $ \n -> if n < most then (True, n + 1) else (False, n)
+    takeSlot = atomically $ stateTVar' slots $ \n -> if n < most then (True, n + 1) else (False, n)
     releaseSlot taken = when taken $ atomically $ modifyTVar' slots (subtract 1)
 
 readLimit, createLimit, searchLimit, previewLimit, codeLimit, findLimit, recordsLimit :: Limit

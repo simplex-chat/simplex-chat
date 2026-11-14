@@ -29,7 +29,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON
 import Simplex.Messaging.Transport (TLS (..), TSbChainKeys (..), TransportPeer (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (AnyError (..), tshow)
+import Simplex.Messaging.Util (AnyError (..), stateTVar', tshow)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
 
@@ -54,9 +54,9 @@ data RemoteCrypto = RemoteCrypto
 
 getRemoteSndKeys :: RemoteCrypto -> STM (Word32, C.SbKeyNonce, C.SbKeyNonce)
 getRemoteSndKeys RemoteCrypto {sndCounter, chainKeys = TSbChainKeys {sndKey}} = do
-  corrId <- stateTVar sndCounter $ \c -> let !c' = c + 1 in (c', c')
-  cmdKN <- stateTVar sndKey C.sbcHkdf
-  fileKN <- stateTVar sndKey C.sbcHkdf
+  corrId <- stateTVar' sndCounter $ \c -> let c' = c + 1 in (c', c')
+  cmdKN <- stateTVar' sndKey C.sbcHkdf
+  fileKN <- stateTVar' sndKey C.sbcHkdf
   pure (corrId, cmdKN, fileKN)
 
 getRemoteRcvKeys :: RemoteCrypto -> Word32 -> STM (Either RemoteProtocolError (C.SbKeyNonce, C.SbKeyNonce))
@@ -78,7 +78,7 @@ getRemoteRcvKeys RemoteCrypto {rcvCounter, chainKeys = TSbChainKeys {rcvKey}, sk
           Right <$> getKeys
     maxSkip = 256
     maxSkippedKeys = 1024
-    getKeys = (,) <$> stateTVar rcvKey C.sbcHkdf <*> stateTVar rcvKey C.sbcHkdf
+    getKeys = (,) <$> stateTVar' rcvKey C.sbcHkdf <*> stateTVar' rcvKey C.sbcHkdf
     skipKeys !cId =
       when (cId < corrId) $ do
         keys <- getKeys

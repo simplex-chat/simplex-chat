@@ -160,6 +160,15 @@ final class SnapshotTests: XCTestCase {
         let rowHash = { (older: ChatItem) in ListItem(item: items[4], prevItem: items[5], nextItem: older, unreadBefore: 0).genHash(false, false) }
         XCTAssertNotEqual(rowHash(items[3]), rowHash(unreacted))
     }
+
+    func testVoiceMessageTimeFormatting() {
+        XCTAssertEqual(voiceMessageTime(90), "01:30")
+        XCTAssertEqual(voiceMessageTime(3600), "01:00:00")
+        XCTAssertEqual(voiceMessageTime(TimeInterval(Int.max)), "00:00")
+        XCTAssertEqual(voiceMessageTime(.nan), "00:00")
+        XCTAssertEqual(voiceMessageTime_(nil), "00:00")
+        XCTAssertEqual(voiceMessageTime_(TimeInterval(Int.max)), "00:00")
+    }
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {
@@ -293,6 +302,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(OperatorView_Previews.self),
         SnapshotScene(PasscodeEntry_Previews.self),
         SnapshotScene(PasscodeViewView_Previews.self),
+        SnapshotScene(PeerTypePlaceholders_Previews.self),
         SnapshotScene(PreferencesView_Previews.self),
         SnapshotScene(PrivacySettings_Previews.self),
         SnapshotScene(ProfileImage_Previews.self),
@@ -317,6 +327,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalOverviewDirect_Previews.self),
         SnapshotScene(TerminalOverviewGroup_Previews.self),
         SnapshotScene(TerminalQuoteThumbnail_Previews.self, allSizes: true),
+        SnapshotScene(TerminalRightToLeft_Previews.self),
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
         SnapshotScene(TerminalSpacing_Previews.self, allSizes: true),
         SnapshotScene(UserAddressLearnMore_Previews.self),
@@ -426,6 +437,12 @@ struct TerminalQuoteThumbnail_Previews: PreviewProvider {
 struct TerminalMedia_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().media()
+    }
+}
+
+struct TerminalRightToLeft_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().rightToLeft()
     }
 }
 
@@ -789,6 +806,29 @@ private final class SnapshotFixtures {
                 .paragraph(content: SegmentRange(from: 0, to: 1)),
                 .codeBlock(language: nil, content: SegmentRange(from: 4, to: 5))
             ]
+        ),
+        "# מה חדש\nגרסה חדשה של האפליקציה\n## תכונות\n| שינוי |\n|---|": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "# ", format: .markup(token: .headingMark(level: 1))),
+                FormattedText(text: "מה חדש"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "גרסה חדשה של האפליקציה"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "## ", format: .markup(token: .headingMark(level: 2))),
+                FormattedText(text: "תכונות"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "| ", format: .markup(token: .rowMark)),
+                FormattedText(text: "שינוי"),
+                FormattedText(text: " |", format: .markup(token: .cellMark)),
+                FormattedText(text: "\n", format: .markup(token: .hardBreak)),
+                FormattedText(text: "|---|", format: .markup(token: .delimiterRow(columns: [.none])))
+            ],
+            markdownBlocks: [
+                .heading(level: 1, content: SegmentRange(from: 1, to: 2)),
+                .paragraph(content: SegmentRange(from: 3, to: 4)),
+                .heading(level: 2, content: SegmentRange(from: 6, to: 7)),
+                .table(columns: [.none], header: [SegmentRange(from: 9, to: 10)], rows: [])
+            ]
         )
     ]
 
@@ -922,10 +962,17 @@ private final class SnapshotFixtures {
         }
     }
 
+    func rightToLeft() -> some View {
+        chatRows(direct, [
+            msg(.directRcv, "# מה חדש\nגרסה חדשה של האפליקציה\n## תכונות\n| שינוי |\n|---|", -10)
+        ], terminal: true)
+    }
+
     func ruleOnly() -> some View {
         chatRows(direct, [
             msg(.directRcv, "---", -10),
-            msg(.directRcv, "---", -9, quote: quote(.directSnd, "a quoted message that is much wider than the rule"))
+            msg(.directRcv, "---", -9, quote: quote(.directSnd, "a quoted message that is much wider than the rule")),
+            msg(.directRcv, "---", -8, content: .report(text: "---", reason: .spam))
         ], terminal: true)
     }
 

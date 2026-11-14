@@ -39,6 +39,7 @@ import Data.Word (Word8)
 import Network.HTTP.Types (Status, badRequest400, hAuthorization, hContentType, methodGet, methodPost, mkStatus, notFound404, ok200, parseSimpleQuery, unauthorized401)
 import Network.Wai (Application, Response, pathInfo, requestHeaders, requestMethod, responseLBS, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
+import Simplex.Messaging.Util (stateTVar')
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
 import UnliftIO.Temporary (withTempDirectory)
@@ -173,7 +174,7 @@ fakeApp key FakePlay {fpConfig = PlayStoreConfig {gTokenUrl}, fpAnswers, fpToken
         Just code -> respond $ status (mkStatus code "Refused")
         Nothing
           | validAssertion (parseSimpleQuery $ LB.toStrict body) -> do
-              bearer <- atomically $ stateTVar fpGrantedTokens $ \ts -> let t = "fake-access-" <> B8.pack (show (length ts)) in (t, ts <> [t])
+              bearer <- atomically $ stateTVar' fpGrantedTokens $ \ts -> let t = "fake-access-" <> B8.pack (show (length ts)) in (t, ts <> [t])
               seconds <- readTVarIO fpTokenSeconds
               respond $ json ok200 $ J.object ["access_token" J..= B8.unpack bearer, "expires_in" J..= seconds, "token_type" J..= ("Bearer" :: Text)]
           | otherwise -> respond $ json badRequest400 $ J.object ["error" J..= ("invalid_grant" :: Text)]

@@ -37,7 +37,7 @@ struct ChatPreviewView: View {
                 }
                 .padding(.leading, 4)
 
-                let chatTs = if let cItem {
+                let chatTs = if let cItem, cItem.content != .chatBanner {
                     cItem.meta.itemTs
                 } else {
                     chat.chatInfo.chatTs
@@ -444,7 +444,7 @@ struct ChatPreviewView: View {
             smallContentPreview(size: dynamicMediaSize, borderColor: chatLink.image != nil ? .secondary : .clear) {
                 ProfileImage(
                     imageStr: chatLink.image,
-                    icon: Image(systemName: chatLink.iconName),
+                    icon: chatLink.icon,
                     size: dynamicMediaSize,
                     color: Color(uiColor: .tertiaryLabel)
                 )

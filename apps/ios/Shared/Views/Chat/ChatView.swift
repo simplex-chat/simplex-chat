@@ -377,7 +377,7 @@ struct ChatView: View {
                 theme = buildTheme()
                 closeSearch()
                 mergedItems.boxedValue = MergedItems.create(im, revealedItems)
-                scrollView.updateItems(mergedItems.boxedValue.items)
+                scrollView.updateItems(mergedItems.boxedValue.items, true)
 
                 if let openAround = chatModel.openAroundItemId, let index = mergedItems.boxedValue.indexInParentItems[openAround] {
                     scrollView.scrollToItem(index)
@@ -917,7 +917,7 @@ struct ChatView: View {
                 return Group {
                     if case .chatBanner = ci.content {
                         VStack {
-                            ChatBannerView(chat: $chat)
+                            ChatBannerView(chat: chat)
                                 .padding(.bottom, 90)
                                 .padding(.top, 8)
 
@@ -1021,7 +1021,7 @@ struct ChatView: View {
     struct ChatBannerView: View {
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
-        @Binding @ObservedObject var chat: Chat
+        @ObservedObject var chat: Chat
 
         var body: some View {
             let v = VStack(spacing: 8) {
@@ -2981,7 +2981,7 @@ struct ChatView: View {
         @ViewBuilder private func contactReactionMenu(_ contact: Contact, _ r: CIReactionCount) -> some View {
             if !r.userReacted || r.totalReacted > 1 {
                 Button { showChatInfoSheet = true } label: {
-                    profileMenuItem(Text(contact.displayName), contact.image, radius: profileRadius)
+                    profileMenuItem(Text(contact.displayName), contact.image, peerType: contact.profile.peerType, radius: profileRadius)
                 }
             }
             if r.userReacted {
@@ -3275,7 +3275,7 @@ struct ReactionContextMenu: View {
                         selectedMember = member
                     }
                 } label: {
-                    profileMenuItem(Text(mem.displayName), mem.image, radius: profileRadius)
+                    profileMenuItem(Text(mem.displayName), mem.image, peerType: mem.memberProfile.peerType, radius: profileRadius)
                 }
                 .disabled(userMember)
             }
@@ -3298,13 +3298,13 @@ struct ReactionContextMenu: View {
     }
 }
 
-func profileMenuItem(_ nameText: Text, _ image: String?, radius: CGFloat) -> some View {
+func profileMenuItem(_ nameText: Text, _ image: String?, peerType: ChatPeerType? = nil, radius: CGFloat) -> some View {
     HStack {
         nameText
         if let image, let img = imageFromBase64(image) {
             Image(uiImage: maskToCustomShape(img, size: 30, radius: radius))
         } else {
-            Image(systemName: "person.crop.circle")
+            peerTypeIcon(peerType, person: Image(systemName: "person.crop.circle"))
         }
     }
 }

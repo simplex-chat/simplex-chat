@@ -1,11 +1,11 @@
 import {readFileSync, writeFileSync, existsSync} from "fs"
-import {api, bot, util} from "simplex-chat"
+import {api, bot, core, util} from "simplex-chat"
 import {T} from "@simplex-chat/types"
-import {parseConfig} from "./config.js"
+import {Config, parseConfig} from "./config.js"
 import {SupportBot} from "./bot.js"
+import {DbProbe, dryRun, migrationPlan} from "./dryRun.js"
 import {GrokApiClient, GrokMessage} from "./grok.js"
 import {loadGrokContext} from "./context.js"
-import {welcomeMessage} from "./messages.js"
 import {profileMutex, log, logError, getGroupInfo, getContact} from "./util.js"
 
 interface BotState {
@@ -35,10 +35,14 @@ async function main(): Promise<void> {
     completeHours: config.completeHours,
   })
   const grokEnabled = config.grokApiKey !== null
-  if (!grokEnabled) log("No GROK_API_KEY provided, disabling Grok support")
+  if (!grokEnabled) log("No Grok API key in GROK_API_KEY or grok.api_key, disabling Grok support")
 
   const stateFilePath = config.stateFile
   const state = readState(stateFilePath)
+
+  if (config.dryRun) {
+    process.exit((await runDryRun(config, state)) ? 0 : 1)
+  }
 
   // Forward-reference for event handlers during init
   let supportBot: SupportBot | undefined
@@ -91,12 +95,12 @@ async function main(): Promise<void> {
   log("Initializing main bot...")
   const [chat, mainUser, mainAddress] = await bot.run({
     profile: {displayName: "Ask SimpleX Team", fullName: "", image: supportImage},
-    dbOpts: config.db,
+    dbOpts: {...config.db, queueSize: config.queueSize},
     options: {
       addressSettings: {
         businessAddress: true,
         autoAccept: true,
-        welcomeMessage,
+        welcomeMessage: config.messages.welcome,
       },
       commands: desiredCommands,
       useBotProfile: true,
@@ -368,6 +372,60 @@ async function main(): Promise<void> {
   }
   process.on("SIGINT", () => shutdown("SIGINT"))
   process.on("SIGTERM", () => shutdown("SIGTERM"))
+}
+
+async function runDryRun(config: Config, state: BotState): Promise<boolean> {
+  const plan = migrationPlan(await probeDatabase(config.db), config)
+  if (!plan.ok) {
+    console.log(`FAIL  database: ${plan.reason}`)
+    return false
+  }
+  let chat: api.ChatApi
+  try {
+    chat = await api.ChatApi.init(config.db, plan.confirm)
+  } catch (err) {
+    console.log(`FAIL  database: ${migrationErrorText(err)}`)
+    return false
+  }
+  console.log(`ok    database ${config.db.type} opened, ${plan.result}`)
+  try {
+    return await dryRun(chat, config, state)
+  } finally {
+    await chat.close()
+  }
+}
+
+async function probeDatabase(db: api.DbConfig): Promise<DbProbe> {
+  try {
+    const chat = await api.ChatApi.init(db, core.MigrationConfirmation.Error)
+    await chat.close()
+    return {type: "current"}
+  } catch (err) {
+    const dbErr = (err as core.ChatInitError).dbMigrationError
+    if (dbErr?.type === "errorMigration") {
+      const me = dbErr.migrationError
+      if (me.type === "upgrade") return {type: "upgrade", names: me.upMigrations.map(m => m.upName)}
+      if (me.type === "downgrade") return {type: "downgrade", names: me.downMigrations}
+    }
+    return {type: "failed", text: migrationErrorText(err)}
+  }
+}
+
+function migrationErrorText(err: unknown): string {
+  const e = err as core.ChatInitError
+  const dbErr = e.dbMigrationError
+  if (dbErr?.type === "errorMigration") {
+    const me = dbErr.migrationError
+    switch (me.type) {
+      case "upgrade":
+        return `${me.upMigrations.length} migration(s) pending: ${me.upMigrations.map(m => m.upName).join(", ")}`
+      case "downgrade":
+        return `database is newer than this build, it would refuse to start; migrations to roll back: ${me.downMigrations.join(", ")}`
+      default:
+        return `migration state error: ${JSON.stringify(me)}`
+    }
+  }
+  return e.message
 }
 
 main().catch(err => {

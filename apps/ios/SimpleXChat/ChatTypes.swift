@@ -310,11 +310,11 @@ extension ChatLayout: Codable {
     }
 }
 
-public func peerTypeIcon(_ peerType: ChatPeerType?) -> Image {
+public func peerTypeIcon(_ peerType: ChatPeerType?, person: Image = Image(systemName: "person.crop.circle.fill"), agent: Image = Image("agent")) -> Image {
     switch peerType {
     case .bot: Image(systemName: "cube.fill")
-    case .agent: Image("agent")
-    default: Image(systemName: "person.crop.circle.fill")
+    case .agent: agent
+    default: person
     }
 }
 
@@ -957,18 +957,6 @@ public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> 
         files: fullPreferences.files,
         calls: fullPreferences.calls,
         commands: fullPreferences.commands
-    )
-}
-
-public func contactUserPreferencesToPreferences(_ contactUserPreferences: ContactUserPreferences) -> Preferences {
-    Preferences(
-        timedMessages: contactUserPreferences.timedMessages.userPreference.preference,
-        fullDelete: contactUserPreferences.fullDelete.userPreference.preference,
-        reactions: contactUserPreferences.reactions.userPreference.preference,
-        voice: contactUserPreferences.voice.userPreference.preference,
-        files: contactUserPreferences.files.userPreference.preference,
-        calls: contactUserPreferences.calls.userPreference.preference,
-        commands: contactUserPreferences.commands
     )
 }
 
@@ -5747,25 +5735,25 @@ public enum MsgChatLink: Equatable, Hashable {
         }
     }
 
-    public var iconName: String {
+    public var icon: Image {
         switch self {
         case let .group(_, groupProfile):
-            groupProfile.isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill"
-        case let .contact(_, _, business):
-            business ? "briefcase.circle.fill" : "person.crop.circle.fill"
-        case .invitation:
-            "person.crop.circle.fill"
+            Image(systemName: groupProfile.isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill")
+        case let .contact(_, profile, business):
+            business ? Image(systemName: "briefcase.circle.fill") : peerTypeIcon(profile.peerType)
+        case let .invitation(_, profile):
+            peerTypeIcon(profile.peerType)
         }
     }
 
-    public var smallIconName: String {
+    public func smallIcon(agent: Image = Image("agent")) -> Image {
         switch self {
         case let .group(_, groupProfile):
-            groupProfile.isChannel ? "antenna.radiowaves.left.and.right" : "person.2"
-        case let .contact(_, _, business):
-            business ? "briefcase" : "person"
-        case .invitation:
-            "person"
+            Image(systemName: groupProfile.isChannel ? "antenna.radiowaves.left.and.right" : "person.2")
+        case let .contact(_, profile, business):
+            business ? Image(systemName: "briefcase") : peerTypeIcon(profile.peerType, person: Image(systemName: "person"), agent: agent)
+        case let .invitation(_, profile):
+            peerTypeIcon(profile.peerType, person: Image(systemName: "person"), agent: agent)
         }
     }
 
