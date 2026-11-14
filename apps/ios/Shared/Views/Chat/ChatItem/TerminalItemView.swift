@@ -215,7 +215,7 @@ func metaCopyJoiner(_ rightToLeft: Bool) -> Text {
 
 func terminalShowsStatus(_ status: CIStatus, showTimestamp: Bool) -> Bool {
     switch status {
-    case .sndSent(sndProgress: .complete), .sndRcvd(msgRcptStatus: .ok, sndProgress: .complete): showTimestamp
+    case .sndNew, .sndSent(sndProgress: .complete), .sndRcvd(msgRcptStatus: .ok, sndProgress: .complete), .rcvNew, .rcvRead: showTimestamp
     default: true
     }
 }

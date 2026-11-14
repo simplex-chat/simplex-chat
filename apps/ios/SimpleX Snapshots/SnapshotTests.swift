@@ -195,7 +195,7 @@ final class SnapshotTests: XCTestCase {
             .rcvNew,
             .rcvRead
         ]
-        XCTAssertEqual(statuses.map { terminalShowsStatus($0, showTimestamp: false) }, [true, false, true, false, true, true, true, true, true])
+        XCTAssertEqual(statuses.map { terminalShowsStatus($0, showTimestamp: false) }, [false, false, true, false, true, true, true, false, false])
         XCTAssertEqual(statuses.map { terminalShowsStatus($0, showTimestamp: true) }, Array(repeating: true, count: statuses.count))
     }
 
