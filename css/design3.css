@@ -1039,6 +1039,14 @@ main .section-bg {
         --cover-fade-ramp: 48px;
     }
 
+    section.cover:has(p.webinar) {
+        --cover-phone-top: calc(var(--cover-text-b) + 16px + var(--cover-area-off) + var(--sec-vwu) * 9.15);
+    }
+
+    p.webinar .webinar-q {
+        display: none;
+    }
+
     section.cover,
     .chrome-ios section.cover,
     .safari-ios section.cover,

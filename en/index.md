@@ -9,6 +9,8 @@ You own your contacts, groups and channels.
 
 Own a part of it. [Invest in SimpleX Chat.](https://wefunder.com/simplex.chat?utm_source=home)
 
+Who owns your identity? [Join our webinar on Nov 19.](https://us06web.zoom.us/webinar/register/4717946558907/WN_20s72h57RyyYzOwoIRVUUQ)
+
 **3M**Downloads
 
 **600K**Monthly users
