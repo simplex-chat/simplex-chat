@@ -189,6 +189,7 @@ final class SnapshotTests: XCTestCase {
 
     @MainActor
     func testLinkAlertShowsFullHost() throws {
+        guard (ProcessInfo.processInfo.environment["SNAPSHOT_SIZE"] ?? "large") == "large" else { return }
         let host = Array(repeating: String(repeating: "a", count: 60), count: 3).joined(separator: ".") + ".example.com"
         let userInfo = String(repeating: "a", count: 180)
         let path = String(repeating: "b", count: 200)
