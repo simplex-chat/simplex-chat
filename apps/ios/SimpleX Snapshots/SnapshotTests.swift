@@ -220,12 +220,18 @@ private func fileItemImage(_ fileName: String) throws -> Data {
 
 @MainActor
 private func linkAlert(_ uri: String) throws -> UIAlertController {
+    let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+    let window = UIWindow(windowScene: windowScene)
+    window.rootViewController = UIViewController()
+    window.makeKeyAndVisible()
+    defer {
+        window.rootViewController?.dismiss(animated: false)
+        window.isHidden = true
+        window.rootViewController = nil
+    }
     openBrowserAlert(uri: uri)
     settle()
-    let alert = try XCTUnwrap(getTopViewController() as? UIAlertController)
-    alert.dismiss(animated: false)
-    settle()
-    return alert
+    return try XCTUnwrap(window.rootViewController?.presentedViewController as? UIAlertController, "scene activation state \(windowScene.activationState.rawValue)")
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {
