@@ -3584,7 +3584,7 @@ data class ChatItem (
     ) file else null
   }
 
-  val chatLinkSigned: Boolean get() = (content.msgContent as? MsgContent.MCChat)?.ownerSig != null
+  val chatLinkSigned: Boolean get() = chatDir.sent && (content.msgContent as? MsgContent.MCChat)?.ownerSig != null
 
   val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
 

@@ -4112,7 +4112,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     }
 
     public var chatLinkSigned: Bool {
-        if case let .chat(_, _, ownerSig) = content.msgContent { ownerSig != nil } else { false }
+        if case let .chat(_, _, ownerSig) = content.msgContent { chatDir.sent && ownerSig != nil } else { false }
     }
 
     public var encryptedFile: Bool? {
