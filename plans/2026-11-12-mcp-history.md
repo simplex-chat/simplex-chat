@@ -66,8 +66,8 @@ file                             change
 REFERENCE.md                     receive with history; the agent recalls the conversation in a new session; a recovery row for a lost session
 TESTING.md                       a step: history in a new session
 plans/2026-10-19-mcp-server.md   receive input and result; receive steps; tests; decisions of 2026-11-12
-spec/api.md                      1.4: history input and output; 1.8: from, from_type and sent items; anchors remapped
-spec/architecture.md             historyItems; limits; anchors remapped
-spec/flows.md                    5: history in the diagram and the notes; anchors remapped
-spec/README.md                   the role of messages.ts; anchors remapped
+spec/api.md                      1.4: history input and output; 1.8: from, from_type and sent items
+spec/architecture.md             historyItems; limits
+spec/flows.md                    5: history in the diagram and the notes
+spec/README.md                   the role of messages.ts
 ```
