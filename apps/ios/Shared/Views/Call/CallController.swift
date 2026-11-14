@@ -237,10 +237,12 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             } else {
                 logger.debug("CallController will expire call 1")
                 self.reportExpiredCall(update: update, completion)
+                return
             }
         } else {
             logger.debug("CallController will expire call 2")
             self.reportExpiredCall(payload: payload, completion)
+            return
         }
 
         //DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
@@ -275,7 +277,6 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                     self.provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
                 }
             }
-            DispatchQueue.main.async { self.suspendOnEndCall() }
             completion()
         }
     }
