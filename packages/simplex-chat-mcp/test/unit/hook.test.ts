@@ -550,24 +550,26 @@ describe("turn hooks", () => {
     await started("TodoWrite", {todos: [{content: "Test", status: "pending"}]})
     await started("NotebookEdit", {description: " \n", notebook_path: "/p/app/a.ipynb", url: "https://example.com/a"})
     await started("Task", {description: `Review‮ ${"x".repeat(300)}`})
-    expect(requests[0]).toEqual({method: "POST", route: "/turn", body: {id, pid: 4321, at: 1, effort: "high", step: {id: "toolu_Bash", text: "💻 Run the tests"}}})
+    await started("Bash", {description: "Say hi!", command: "echo hi"})
+    expect(requests[0]).toEqual({method: "POST", route: "/turn", body: {id, pid: 4321, at: 1, effort: "high", step: {id: "toolu_Bash", text: "!- 💻 Run the tests!"}}})
     expect(steps(requests)).toEqual([
-      {id: "toolu_Bash", text: "💻 Run the tests"},
-      {id: "toolu_Bash", text: "💻 git status"},
-      {id: "toolu_Read", text: "📖 Read src/hook.ts"},
-      {id: "toolu_Edit", text: "✏️ Edit /etc/hosts"},
-      {id: "toolu_Write", text: "📝 Write rfcs/2026-09-11-proof-of-work.md"},
-      {id: "toolu_Read", text: "📖 Read /p/app-old/src/hook.ts"},
-      {id: "toolu_WebFetch", text: "🌐 Fetch https://spec.torproject.org/hspow-spec/common-protocol.html"},
-      {id: "toolu_WebSearch", text: '🔎 Search "hs_pow.c" tor source'},
-      {id: "toolu_Agent", text: "🤖 Agent: Review pass 6 usage stats"},
-      {id: "toolu_ToolSearch", text: "🔧 ToolSearch: select:Monitor"},
-      {id: "toolu_Glob", text: "🔍 Glob **/*.ts in src"},
-      {id: "toolu_Grep", text: "🔍 Grep endSteps in src/hub.ts"},
-      {id: "toolu_Grep", text: "🔍 Grep TODO"},
-      {id: "toolu_TodoWrite", text: "🔧 TodoWrite"},
-      {id: "toolu_NotebookEdit", text: "🔧 NotebookEdit: https://example.com/a"},
-      {id: "toolu_Task", text: `🔧 Task: Review  ${"x".repeat(199 - [..."🔧 Task: Review  "].length)}…`},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests!"},
+      {id: "toolu_Bash", text: "!- 💻 git status!"},
+      {id: "toolu_Read", text: "!- 📖 Read src/hook.ts!"},
+      {id: "toolu_Edit", text: "!- ✏️ Edit /etc/hosts!"},
+      {id: "toolu_Write", text: "!- 📝 Write rfcs/2026-09-11-proof-of-work.md!"},
+      {id: "toolu_Read", text: "!- 📖 Read /p/app-old/src/hook.ts!"},
+      {id: "toolu_WebFetch", text: "!- 🌐 Fetch https://spec.torproject.org/hspow-spec/common-protocol.html!"},
+      {id: "toolu_WebSearch", text: '!- 🔎 Search "hs_pow.c" tor source!'},
+      {id: "toolu_Agent", text: "!- 🤖 Agent: Review pass 6 usage stats!"},
+      {id: "toolu_ToolSearch", text: "!- 🔧 ToolSearch: select:Monitor!"},
+      {id: "toolu_Glob", text: "!- 🔍 Glob **/*.ts in src!"},
+      {id: "toolu_Grep", text: "!- 🔍 Grep endSteps in src/hub.ts!"},
+      {id: "toolu_Grep", text: "!- 🔍 Grep TODO!"},
+      {id: "toolu_TodoWrite", text: "!- 🔧 TodoWrite!"},
+      {id: "toolu_NotebookEdit", text: "!- 🔧 NotebookEdit: https://example.com/a!"},
+      {id: "toolu_Task", text: `!- 🔧 Task: Review  ${"x".repeat(199 - [..."🔧 Task: Review  "].length)}…!`},
+      {id: "toolu_Bash", text: "💻 Say hi!"},
     ])
   })
 
@@ -593,17 +595,17 @@ describe("turn hooks", () => {
     await turn(JSON.stringify({session_id: id, hook_event_name: "PreToolUse", tool_input: bash, tool_use_id: "toolu_1"}), {}, client, 0, 1)
     await turn(JSON.stringify({session_id: id, hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: bash, duration_ms: 5}), {}, client, 0, 1)
     expect(steps(requests)).toEqual([
-      {id: "toolu_Bash", text: "💻 Run the tests !- 2.0 s!", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests ❌ !- 39 ms!", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests ⏹️ !- 4 min 12 s!", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests !- 42 s!", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests !- 1 h 5 min!", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests !- 42 ms!", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests !- 2.0 s!", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests (in background)", end: true},
-      {id: "toolu_Agent", text: "🤖 Agent: Review (in background)", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests ❌ !- 12 ms!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests 2.0 s!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests ❌ 39 ms!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests ⏹️ 4 min 12 s!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests 42 s!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests 1 h 5 min!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests 42 ms!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests 2.0 s!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests (in background)!", end: true},
+      {id: "toolu_Agent", text: "!- 🤖 Agent: Review (in background)!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests ❌ 12 ms!", end: true},
     ])
     expect(ensured()).toBe(11)
   })
