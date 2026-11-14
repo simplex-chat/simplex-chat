@@ -13,6 +13,6 @@ permalink: "/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-pr
 This is a permalink for a blog post about:
 
 - the new security audit of SimpleX Chat apps and SimpleX Network protocols by Trail of Bits.
-- the security reports from Anthropic's OSS Scanner program, which finds vulnerabilities in open-source software with Anthropic's frontier models.
+- the security reports from Anthropic's OSS Scanner program, which finds vulnerabilities in open-source software using frontier models.
 - the fixes in SimpleX Chat v7.1.4 and in the previous versions - please upgrade, and ask your contacts to upgrade too.
 - our security process: how we receive, assess, fix and disclose security reports.
