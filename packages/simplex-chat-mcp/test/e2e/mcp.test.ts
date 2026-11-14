@@ -3,6 +3,7 @@ import {tmpdir} from "os"
 import {join} from "path"
 import {T} from "@simplex-chat/types"
 import {RunningServer, startServer} from "../../src/serve"
+import {version} from "../../src/version"
 import {McpClient} from "./client"
 import {captureLog, cardNumber, person, profileWithServer, received, serveOptions, startBot, textStarts, until, updated} from "./helpers"
 import {SmpServer, freePort, startSmpServer} from "./smpServer"
@@ -149,7 +150,10 @@ test("agent with an owner, a bot and the tools", async () => {
     expect(logLines).toContain("Stopped.")
     expect((await cancelledCard).chatItem.meta.itemText.split("\n").at(-1)).toBe("Cancelled: the server stopped.")
 
+    const restartNotice = received(alice, textStarts("SimpleX MCP server "))
     server = await startServer(serveOptions(agentData, port))
+    expect((await restartNotice).chatItem.meta.itemText).toBe(`SimpleX MCP server ${version} started.`)
+    expect(logLines).toContain(`SimpleX MCP server ${version}, agent "agent"`)
     const refused = received(alice, textStarts(`Action ${n5} is not pending.`))
     await ownerSends(`/approve ${n5}`)
     await refused

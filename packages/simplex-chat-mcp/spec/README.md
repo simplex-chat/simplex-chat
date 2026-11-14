@@ -24,6 +24,8 @@ The SimpleX core (libsimplex, release `core-7.1.3.0`) runs inside the same Node.
 
 A tool call is held open by the server until the owner decides and, for `connect` and `send`, until the replies arrive, and for `download`, until the file is received or `wait` passes. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
 
+From the next version, at each start, after the owner setup and unless the control chat is lost, the server posts `SimpleX MCP server VERSION (COMMIT) started.` in the agent control chat and in the chats under a standing approval of messages where the agent can post as itself. COMMIT is the commit of the build, from `dist/commit.txt` of the package; without the file, ` (COMMIT)` is left out.
+
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
 The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server. The session server forwards tool calls over a local socket to `simplex-mcp service`, one service per data root. Requests on the socket are HTTP/1.1 with a bearer token. The service runs two cores:
@@ -174,7 +176,7 @@ graph TD
 | [`register.ts`](../src/register.ts) | `register` command: Claude Code entry of a `serve` agent |
 | [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send, chat owners |
 | [`actions.ts`](../src/actions.ts) | action records, state machine, expiry timers, per-session limits, stop |
-| [`control.ts`](../src/control.ts) | agent control chat and session groups: link, owners, owner commands, cards, counter |
+| [`control.ts`](../src/control.ts) | agent control chat and session groups: link, owners, owner commands, cards, counter, restart notice |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
 | [`core.ts`](../src/core.ts) | one SimpleX core: init, user, network config, temp folder, event buffer, profile update |
 | [`files.ts`](../src/files.ts) | data folders, lock, token, `headers.json`, `server.json`, session folders, socket path, service log |

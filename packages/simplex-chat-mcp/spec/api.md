@@ -186,7 +186,7 @@ Tool errors:
 | `as: applies only with file.` | `as` without `file` | [`AgentTools.send`](../src/tools.ts) |
 | `No chat CHAT. list shows the agent's chats.` | invalid reference, the control chat, or a store error when the chat is read | [`AgentTools.knownChat`, `unknownChat`](../src/tools.ts) |
 | `The agent is not connected to CHAT and can't post; list shows connected: false.` | the chat is not connected | [`AgentTools.send`](../src/tools.ts) |
-| `The agent has role ROLE in CHAT and can't post.` | membership role `observer` or `relay` | [`AgentTools.send`](../src/tools.ts) |
+| `The agent has role ROLE in CHAT and can't post.` | membership role `observer` or `relay` | [`AgentTools.send`, `readOnlyRole`](../src/tools.ts) |
 | `reply_to: CHAT has no item N.` | the read of `around=N` fails, or the item is absent from it | [`AgentTools.quotedItem`](../src/tools.ts) |
 | `reply_to: item N in CHAT is not a message.` | the item's content is not `rcvMsgContent` or `sndMsgContent` | [`AgentTools.quotedItem`](../src/tools.ts) |
 | `mention: CHAT is a contact chat; mentions apply to groups and channels.` | `mention` with `@N` | [`AgentTools.mentionedMembers`](../src/tools.ts) |
@@ -527,6 +527,9 @@ An action performed without a card, in mode `host` or under a standing approval,
 | `/forward` of a file that is not received or not posted | ``Action N: the file was not received: `ERROR`.`` | [`Control.forward`](../src/control.ts) |
 | `/forward` in a plugin session group, when the core refuses the post with `feature not allowed NAME`, as for `Files and media` or `Voice messages` | `Action N: NAME are off in the group of this session; its owners can turn them on in the group's preferences.` | [`Control.forward`](../src/control.ts), [`refusedFeature`, `featureOff`](../src/tools.ts) |
 | after the reply to `/leave CHAT`, and after the outcome of a done `leave`, when the folder of CHAT has files | ``Files from KIND NAME (CHAT) are kept in `FOLDER`: K files, SIZE. /'delete CHAT files'`` | [`Control.outcome`, `leave`, `leftChatFilesNote`](../src/control.ts) |
+| each start of `serve`, after `Listening on ...`, unless the control chat is lost; without a log line; also posted in other chats, below | `SimpleX MCP server VERSION started.`, VERSION as in the start line ([3.4](#34-terminal-lines)) | [`Control.postRestartNotice`](../src/control.ts), [`startAgent`](../src/serve.ts) |
+
+The restart notice is posted in the control chat first, then in each chat of `list` ([1.6](#16-list)), in its order, with a standing approval of messages that applies ([2.1](#21-commands-and-replies)), connected, where the agent's group role, if any, is neither `observer` nor `relay`, and the agent is not incognito; one post at a time, by `apiSendTextMessage` ([`Control.postRestartNotice`](../src/control.ts), [`readOnlyRole`](../src/tools.ts)). A failed post is logged as `restart notice to CHAT: ERROR`, and the notice is still posted in the remaining chats; a failed read of the chats is logged as `restart notice: ERROR`, and no notice is posted. In both cases the server continues the start ([`Control.postRestartNotice`](../src/control.ts), [`startAgent`](../src/serve.ts)).
 
 ### 2.4 Membership messages
 
@@ -643,7 +646,7 @@ stdout ([`log`](../src/log.ts)):
 
 | Moment | Line | Code |
 |---|---|---|
-| start | `SimpleX MCP server VERSION, agent "NAME"`<br>`Data folder: DATA`<br>`Approval mode: MODE` | [`startServer`](../src/serve.ts) |
+| start | `SimpleX MCP server VERSION, agent "NAME"`, VERSION the package version, followed by ` (COMMIT)` when `commit.txt` is next to the module, `dist/commit.txt` in the build, COMMIT its content trimmed; `dist/commit.txt` is written by the `prepack` script with the output of `git rev-parse --short=10 HEAD`, and deleted by `postpack`<br>`Data folder: DATA`<br>`Approval mode: MODE` | [`startServer`, `fullVersion`, `versionWithCommit`](../src/serve.ts), [`prepack`, `postpack`](../package.json) |
 | control chat created | `Agent control chat "DISPLAY" created.` | [`createControlChat`](../src/control.ts) |
 | link opened | `Join the agent control chat in the SimpleX app. The link works once:`<br>QR code<br>link<br>small QR code: `If the QR code does not scan, restart with --qr-code large, or paste the link into the app.`<br>role line | [`Control.openLink`](../src/control.ts) |
 | listening | `Listening on http://127.0.0.1:PORT/mcp` | [`startAgent`](../src/serve.ts) |
@@ -665,7 +668,7 @@ stdout ([`log`](../src/log.ts)):
 
 In the plugin's lines with `failed: ERROR.`, logged for the actions of a session, the last period is added only when ERROR does not end with one ([`sentence`](../src/actions.ts)). In `serve`, a period is added after every ERROR of these lines, and after every REASON of the line of a file not sent, as in 0.2.
 
-stderr: `CONTEXT: ERROR` from [`logError`](../src/log.ts), with CONTEXT one of `action N`, `action N card`, `action N card image`, `action N file`, `control chat command`, `EVENT in the agent control chat`, `EVENT event`, `refused file`, `file not sent`, `download of file N`, `file N`, `moving file N`, `cancelling file N`, `resizing PATH`, `preview`, `MCP`, `HTTP request`, `stop`, `simplex-mcp`. The library's download lines are written to stderr.
+stderr: `CONTEXT: ERROR` from [`logError`](../src/log.ts), with CONTEXT one of `action N`, `action N card`, `action N card image`, `action N file`, `control chat command`, `EVENT in the agent control chat`, `EVENT event`, `refused file`, `file not sent`, `restart notice`, `restart notice to CHAT`, `download of file N`, `file N`, `moving file N`, `cancelling file N`, `resizing PATH`, `preview`, `MCP`, `HTTP request`, `stop`, `simplex-mcp`. The library's download lines are written to stderr.
 
 ---
 
@@ -1113,7 +1116,7 @@ The default is used for a missing or blank variable ([`readConfig`, `mainGroup`,
 | [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json) | name `simplex`, version `0.3.0`, equal to `package.json`, description, author, homepage, repository, license, keywords, `userConfig` |
 | [`.mcp.json`](../.mcp.json) | server `simplex`: `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js session` with the three option variables, and `timeout` 169800000 ms |
 | [`hooks/hooks.json`](../hooks/hooks.json) | The SessionStart hook runs `node "${CLAUDE_PLUGIN_ROOT}/dist/cli.js" hook session-start`, with timeout 600 s. The command of PreToolUse, with matcher `mcp__plugin_simplex_simplex__.*`, is `node "${CLAUDE_PLUGIN_ROOT}/plugin/allow.js"`. UserPromptSubmit, Stop, PostModelSwitch and PostCompact use `node "${CLAUDE_PLUGIN_ROOT}/dist/cli.js" hook turn`, with `async: true`, and so do a second PreToolUse entry, PostToolUse and PostToolUseFailure, each with matcher `*`. The second PreToolUse entry also has a hook of type `mcp_tool`: it calls the tool `pre_tool_use` of the server `plugin:simplex:simplex` with the input `{"tool": "${tool_name}"}`, with timeout 5 s ([4.1](#41-tools-in-the-plugin)) |
-| [`package.json`](../package.json) | `files`: the build, `README.md` and the plugin files, without a lockfile. With `bundleDependencies: true`, the pack bundles the production packages of `node_modules`, the dependencies and their dependencies, and no development package. `prepack` deletes `dist` and builds it again. Claude Code installs a plugin's dependencies only when `bun.lock`, `npm-shrinkwrap.json`, `package-lock.json` or `bun.lockb` is in its folder. So it installs nothing here, and the plugin loads its bundled modules |
+| [`package.json`](../package.json) | `files`: the build, `README.md` and the plugin files, without a lockfile. With `bundleDependencies: true`, the pack bundles the production packages of `node_modules`, the dependencies and their dependencies, and no development package. `prepack` deletes `dist`, builds it again and writes `dist/commit.txt` for the restart notice of `serve`, and `postpack` deletes that file. Claude Code installs a plugin's dependencies only when `bun.lock`, `npm-shrinkwrap.json`, `package-lock.json` or `bun.lockb` is in its folder. So it installs nothing here, and the plugin loads its bundled modules |
 | [`package-lock.json`](../package-lock.json) | the tree that `npm ci` installs for development and in `build.yml` before the publication. Its production packages are marked `inBundle`. It is not packed |
 | [`plugin/allow.js`](../plugin/allow.js) | prints `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}` |
 | [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json) | marketplace `simplex-chat`, plugin `simplex`, source `{"source": "npm", "package": "@simplex-chat/mcp"}` |

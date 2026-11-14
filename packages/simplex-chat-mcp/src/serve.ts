@@ -1,3 +1,4 @@
+import {existsSync, readFileSync} from "fs"
 import {Server} from "http"
 import {join} from "path"
 import {McpServer, McpServerFactory} from "@modelcontextprotocol/server"
@@ -12,6 +13,9 @@ import {ExitError, log, logError, shellPath} from "./log"
 import {ChatItemsWatch} from "./messages"
 import {AgentTools, instructions} from "./tools"
 import {version} from "./version"
+
+// spec: spec/architecture.md#serve-fullversion
+const fullVersion: string = versionWithCommit(join(__dirname, "commit.txt"))
 
 export type QrCodeSize = "small" | "large"
 
@@ -74,7 +78,7 @@ export async function startServer(options: ServeOptions): Promise<RunningServer>
     const token = serverToken(data, options.newToken)
     writeHeadersFile(data, token)
     const chat = await api.ChatApi.init({type: "sqlite", filePrefix: join(data, "simplex")})
-    log(`SimpleX MCP server ${version}, agent "${name}"`)
+    log(`SimpleX MCP server ${fullVersion}, agent "${name}"`)
     log(`Data folder: ${data}`)
     log(`Approval mode: ${options.approve}`)
     try {
@@ -126,6 +130,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
   }
   started = true
   log(`Listening on http://127.0.0.1:${port}/mcp`)
+  await control.postRestartNotice(`SimpleX MCP server ${fullVersion} started.`).catch(error => logError("restart notice", error))
   let controlEvents = Promise.resolve()
   let stopped = false
   await events(async event => {
@@ -163,6 +168,11 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
 // spec: spec/architecture.md#serve-registerhint
 export function registerHint({name, data, dataGiven}: ServeOptions): string {
   return `Add the agent to Claude Code:\n  npx -y @simplex-chat/mcp register ${name}${dataGiven ? ` --data ${shellPath(data)}` : ""}`
+}
+
+// spec: spec/architecture.md#serve-versionwithcommit
+export function versionWithCommit(commitFile: string): string {
+  return existsSync(commitFile) ? `${version} (${readFileSync(commitFile, "utf8").trim()})` : version
 }
 
 // spec: spec/architecture.md#serve-waitforcancelledcards
