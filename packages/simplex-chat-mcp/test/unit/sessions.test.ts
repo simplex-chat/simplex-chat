@@ -905,7 +905,7 @@ describe("session channel", () => {
   const received = (...items: T.ChatItem[]): ChatEvent => ({type: "newChatItems", user, chatItems: items.map(ci => event(sessionGroup, ci))}) as unknown as ChatEvent
   const updated = (ci: T.ChatItem, edited = true): ChatEvent => ({type: "chatItemUpdated", user, chatItem: event(sessionGroup, {...ci, meta: {...ci.meta, itemEdited: edited}})}) as unknown as ChatEvent
 
-  it("passes an edit of a passed prompt with the same item and edited, with the quote line of a reply, once per new text, and nothing for an edit to a command, of a message not passed, of User's message or an update without an edit", async () => {
+  it("passes an edit of a passed prompt with the same item and edited, with the quote line of a reply, once per new text, and nothing for an edit to a command, of a message not passed, of User's message or an update with the same text", async () => {
     const chat = new FakeChat()
     const {hub, session, lines} = await channel(chat)
     hub.userContactId = 6
@@ -920,7 +920,7 @@ describe("session channel", () => {
       updated(item(45, "Never passed", from(invitedAlice))),
       updated(item(43, "/'approve 1'", from(invitedAlice))),
       updated(item(47, "Fix the tests", from(sessionUser))),
-      updated(item(43, "Run all tests", from(invitedAlice)), false),
+      updated(item(43, "Run the unit tests", from(invitedAlice)), false),
     ]) await hub["onEvent"](update)
     await until(() => lines.length === 4)
     await session["delivery"]
@@ -945,6 +945,27 @@ describe("session channel", () => {
     expect(lines).toEqual([
       {prompt: {text: "Run the tests", from: "Alice", item: 50}},
       {prompt: {text: "Run all tests", from: "Alice", item: 50, edited: true}},
+    ])
+  })
+
+  it("passes the current text of a member's pending live message before that member's next message, not before another member's, and its later final version as an edit", async () => {
+    const chat = new FakeChat()
+    const {hub, lines} = await channel(chat)
+    await hub["onEvent"](received(item(60, "Ru", from(invitedAlice), {live: true})))
+    await hub["onEvent"](updated(item(60, "Run th", from(invitedAlice), {live: true}), false))
+    await hub["onEvent"](received(item(61, "Status?", from(invitedAlice))))
+    await hub["onEvent"](received(item(62, "Hel", from(invitedAlice), {live: true})))
+    await hub["onEvent"](received(item(63, "Hi", from(bob))))
+    await until(() => lines.length === 3)
+    await hub["onEvent"](updated(item(62, "Hello", from(invitedAlice), {live: false}), false))
+    await hub["onEvent"](updated(item(60, "Run the tests", from(invitedAlice), {live: false}), false))
+    await until(() => lines.length === 5)
+    expect(lines).toEqual([
+      {prompt: {text: "Run th", from: "Alice", item: 60}},
+      {prompt: {text: "Status?", from: "Alice", item: 61}},
+      {prompt: {text: "Hi", from: "Bob", item: 63}},
+      {prompt: {text: "Hello", from: "Alice", item: 62}},
+      {prompt: {text: "Run the tests", from: "Alice", item: 60, edited: true}},
     ])
   })
 

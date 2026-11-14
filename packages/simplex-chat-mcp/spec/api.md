@@ -828,21 +828,24 @@ on chatItemReaction in the Main group                      -> ignored
 
 A reaction is never a command or an approval: a reaction to a pending card leaves the card pending.
 
-The hub handles updated messages in the same order ([`Session.onMessage`, `onUpdate`, `prompt`, `Hub.onEvent`](../src/hub.ts)):
+The hub handles live and updated messages in the same order ([`Session.onMessage`, `onUpdate`, `keepLive`, `passLive`, `prompt`, `Hub.onEvent`](../src/hub.ts)):
 
 ```
-on newChatItems in the session group, a message typed in live mode -> kept in liveItems, nothing passed
+on newChatItems in the session group, from a member:
+  first, each pending live message of that member -> handled as a new message, at its current text
+  a message typed in live mode                    -> kept in liveItems with its text, nothing passed
 on chatItemUpdated in the session group, outside a member support scope:
   not a member's received message                 -> ignored
-  a live version                                  -> kept in liveItems, nothing passed
-  the first version after live                    -> handled as a new message
-  not edited                                      -> ignored
-  edited to a / command                           -> ignored
-  edited, the item not in prompted                -> ignored: a message of User, a command or a message not passed
-  edited, the same text as in prompted            -> ignored
-  edited                                          -> the prompt with the new text, the same item and edited (4.5)
+  a live version                                  -> kept in liveItems with its text, nothing passed
+  the first version after live of a pending item  -> handled as a new message
+  a / command                                     -> ignored
+  the item not in prompted                        -> ignored: a message of User, a command or a message not passed
+  the same text as in prompted                    -> ignored
+  another text                                    -> the prompt with the new text, the same item and edited (4.5)
 on chatItemUpdated in the Main group              -> ignored
 ```
+
+A live message that never gets its final version, as when the sender's app closes while they type, reaches Claude at its last text before the member's next message. Its final version, when it arrives later, reaches Claude as an edit.
 
 An edit is never a command or an approval: a member who edits a message into a `/` command gets no reply.
 
@@ -978,7 +981,7 @@ A `{tools}` line of `/attach` sends no notification. The session server keeps it
 
 Channel instructions: `Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the message replied to, and reply_to_from, its sender, and its text starts with a line "> " with the type of that message when it is not a text (link, image, video, voice, file, report or chat), and the first line of its text, up to 200 characters, with … when it is cut. With the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji after the quote line of the reacted message, with item equal to reply_to. A message with edited is the new text of the message with the same item, which the member edited; it replaces the earlier text. Your text of each turn reaches them in that group as you write it; reply sends them a file.` ([`channelInstructions`](../src/session.ts)).
 
-A member's edit of a prompt reaches Claude as a new prompt with the same item, `meta.edited` and the new text, after the quote line of a reply. Only an edit of a message passed to Claude since the service started, among the newest 100, is passed, and only when its text changed. An edit to a `/` command passes nothing. A message typed in live mode reaches Claude once, at its first version after live, as a new message; its earlier versions pass nothing ([`Hub.onEvent`, `Session.onMessage`, `onUpdate`, `deliver`](../src/hub.ts)).
+A member's edit of a prompt reaches Claude as a new prompt with the same item, `meta.edited` and the new text, after the quote line of a reply. Only an edit of a message passed to Claude since the service started, among the newest 100, is passed, and only when its text changed. An edit to a `/` command passes nothing. A message typed in live mode reaches Claude once, at its first version after live, as a new message, or before the member's next message, at its last text; its earlier versions pass nothing ([`Hub.onEvent`, `Session.onMessage`, `onUpdate`, `passLive`, `deliver`](../src/hub.ts)).
 
 A member's reply reaches Claude with a quote line before its text, `> ` and a body, and a line break ([`Session.onMessage`, `deliver`, `withoutEndLine`](../src/hub.ts), [`toReplyTo`, `replyText`, `quoteLine`, `trimmed`](../src/messages.ts)). The quoted message's ID, sender, type and text are those of [1.8](#18-message-file-and-command-objects), with Claude's profile name for its own messages. The text of Claude's own message, a quote with `chatDir` `groupSnd`, is taken without a last line `!- Done…!`, the end line of an answer; a member's text keeps such a line. This holds for the reacted message of a reaction too.
 

@@ -146,7 +146,7 @@ export class Session {
   private name: string
   private readonly pushed: {text: string; item: T.ChatItem; at: number; quoted?: boolean}[] = []
   private readonly prompted = new Map<number, string>()
-  private readonly liveItems = new Set<number>()
+  private readonly liveItems = new Map<number, T.AChatItem>()
   private readonly receiving = new Map<number, {resolve: () => void; reject: (error: Error) => void}>()
   private description: {model?: string; effort?: string}
   private readonly describedAt = {model: -Infinity, effort: -Infinity}
@@ -310,25 +310,46 @@ export class Session {
   onMessage(ci: T.AChatItem): void {
     const {chatDir, content, meta} = ci.chatItem
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
-    if (isLive(ci.chatItem)) return bounded(this.liveItems.add(meta.itemId))
-    const {text} = content.msgContent
-    if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([{text: commandsApproversOnly}], meta.itemId))
-    if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
-    this.queue(() => this.prompt(ci, text, chatDir.groupMember, ci.chatItem.file, this.replyTo(ci)))
+    this.passLive(chatDir.groupMember, meta.itemId)
+    if (isLive(ci.chatItem)) return this.keepLive(ci)
+    this.pass(ci, chatDir.groupMember, content.msgContent.text)
   }
 
   // spec: spec/architecture.md#hub-session-onupdate
   onUpdate(ci: T.AChatItem): void {
     const {chatDir, content, meta} = ci.chatItem
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
-    if (isLive(ci.chatItem)) return bounded(this.liveItems.add(meta.itemId))
-    if (this.liveItems.delete(meta.itemId)) return this.onMessage(ci)
     const {text} = content.msgContent
-    if (!meta.itemEdited || parseCommand(text) !== undefined) return
+    if (isLive(ci.chatItem)) return this.keepLive(ci)
+    if (this.liveItems.delete(meta.itemId)) return this.pass(ci, chatDir.groupMember, text)
+    if (parseCommand(text) !== undefined) return
     this.queue(async () => {
       const earlier = this.prompted.get(meta.itemId)
       if (earlier !== undefined && earlier !== text) await this.prompt(ci, text, chatDir.groupMember, undefined, this.replyTo(ci), "edit")
     })
+  }
+
+  // spec: spec/architecture.md#hub-session-onmessage
+  private pass(ci: T.AChatItem, member: T.GroupMember, text: string): void {
+    if (this.refusesCommand(text, member)) return this.queue(() => this.post([{text: commandsApproversOnly}], ci.chatItem.meta.itemId))
+    if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
+    this.queue(() => this.prompt(ci, text, member, ci.chatItem.file, this.replyTo(ci)))
+  }
+
+  // spec: spec/architecture.md#hub-session-onupdate
+  private keepLive(ci: T.AChatItem): void {
+    this.liveItems.delete(ci.chatItem.meta.itemId)
+    bounded(this.liveItems.set(ci.chatItem.meta.itemId, ci))
+  }
+
+  // spec: spec/architecture.md#hub-session-onupdate
+  private passLive({groupMemberId}: T.GroupMember, itemId: number): void {
+    for (const [id, live] of this.liveItems) {
+      const {chatDir, content} = live.chatItem
+      if (id === itemId || chatDir.type !== "groupRcv" || chatDir.groupMember.groupMemberId !== groupMemberId || content.type !== "rcvMsgContent") continue
+      this.liveItems.delete(id)
+      this.pass(live, chatDir.groupMember, content.msgContent.text)
+    }
   }
 
   // spec: spec/architecture.md#hub-session-onmessage
@@ -1194,7 +1215,7 @@ function notAllowedForUser(feature: string): string {
 }
 
 // spec: spec/architecture.md#hub-session-onupdate
-function bounded(known: Set<number> | Map<number, string>): void {
+function bounded(known: Map<number, unknown>): void {
   for (const key of known.keys()) {
     if (known.size <= maxPrompted) return
     known.delete(key)
