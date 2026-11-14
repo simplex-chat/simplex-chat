@@ -1,6 +1,6 @@
 # SimpleX MCP server, the next version: receive with history
 
-Status: draft for review. Decided on 2026-11-12: history in `receive`, at most 50 messages. Code references: master `c6e7549b12`.
+Status: draft for review. Decided on 2026-11-12: history in `receive`, at most 50 messages. Code references: master `953389322`.
 
 ## Decisions
 
@@ -44,9 +44,7 @@ tools.ts      ReceiveInput        history
               receiveOutput       history
               receiveDescription  one sentence on history
               receive             history read after the wait, before markRead; in the result only with the input
-              historyMessages     new: chatFields, selfSender, historyItems, toMessage
-              selfSender          new: the self Sender of connect
-              connectedChat       selfSender
+              historyMessages     new: historyItems, toMessages
 ```
 
 ## Tests
