@@ -545,34 +545,38 @@ Android and desktop only: iOS draws SF Symbols and photos at the full frame (`Pr
 
 ```
 asset                              avatar uses                          icon uses elsewhere               change
-AccountCircleFilled                ProfileImage, ProfileImageForActive- none                              vector redrawn: circle 0 to 24
-(CustomIcons.kt)                   Call (ChatInfoImage.kt:85, :321)
-SupervisedUserCircleFilled         ProfileImage (ChatInfoImage.kt:86)   none                              vector redrawn: circle 0 to 24
+AccountCircleFilled                ProfileImage (ChatInfoImage.kt:81)   none                              viewport cropped to the circle,
+(CustomIcons.kt)                                                                                          20 × 20 (circleIcon)
+SupervisedUserCircleFilled         ProfileImage (ChatInfoImage.kt:82)   none                              viewport cropped to the circle,
+                                                                                                          20 × 20 (circleIcon)
 ic_account_circle_filled.svg,      swapped for the vectors above by     none                              unchanged (never drawn)
 ic_supervised_user_circle_filled   ProfileImage
-ic_folder_filled.svg               ChatInfoImage (notes), share list    none                              viewBox cropped to the circle
-                                   (ShareListNavLinkView.kt:101)
-ic_bigtop_updates_circle_filled    channel avatars (chatIconName,       the active Channels item of the   new asset ic_channel_avatar, the
-                                   AddChannelView, ConnectPlan)         tag menu (presetTagLabel,         viewBox cropped to 85 -875 790 790;
-                                                                        ChatListView.kt:1670, drawn at    the menu keeps the padded icon
-                                                                        :1582-1585)
-ic_work_filled_padded.svg          business avatars (chatIconName,      none                              redrawn as briefcase.circle.fill
-                                   ConnectPlan.kt:719)                                                    of iOS: a filled circle, the
-                                                                                                          briefcase cut out (alternative:
-                                                                                                          scaled 1.2 about the centre, as
-                                                                                                          Flat rows draw it now)
-ic_cube.svg, ic_agent.svg          bot and agent avatars (peerTypeIcon) none                              viewBox cropped to the cube's box,
-                                                                                                          as iOS agent.svg and cube.fill
-                                                                                                          (alternative: scaled 1.2)
+ic_folder_filled.svg               ChatInfoImage (notes), share list    none                              deleted; new asset
+                                   (ShareListNavLinkView, now through                                     ic_avatar_folder, the viewBox
+                                   ChatInfoImage, Q12)                                                    cropped to the circle, 80 -880
+                                                                                                          800 800
+ic_bigtop_updates_circle_filled    channel avatars (chatIconName,       the active Channels item of the   kept, padded, for the tag menu;
+                                   iconRes, AddChannelView,             tag menu (presetTagLabel,         channel avatars use the new asset
+                                   ConnectPlan)                         ChatListView.kt:1671)             ic_avatar_channel, the viewBox
+                                                                                                          cropped to 85 -875 790 790
+ic_work_filled_padded.svg          business avatars (chatIconName,      none                              deleted; new asset
+                                   iconRes, ConnectPlan.kt:719)                                           ic_avatar_business, briefcase.
+                                                                                                          circle.fill of iOS: a filled
+                                                                                                          circle, the briefcase cut out
+                                                                                                          (scaled 0.785)
+ic_cube.svg, ic_agent.svg          bot and agent avatars (peerTypeIcon) none                              deleted; new assets ic_avatar_bot
+                                                                                                          and ic_avatar_agent, the same
+                                                                                                          paths in the cube's box, 124.5
+                                                                                                          -878.5 711 797, as iOS agent.svg
+                                                                                                          and cube.fill
 ic_theater_comedy_filled.svg       IncognitoImage (chat toolbar)        7 icons (UserAddressView,         unchanged; IncognitoImage draws it
-                                                                        NewChatView, AddGroupMembers...) at its glyph size without padding
-ic_link.svg, ic_add_link.svg       pending connection avatar            about 20 icons                    new assets ic_link_avatar and
-                                   (ContactConnectionView.kt:26)                                          ic_add_link_avatar: a filled circle
-                                                                                                          with the link cut out, as iOS
-                                                                                                          link.circle.fill
+                                                                        NewChatView, AddGroupMembers...) at the box without padding
+ic_link.svg, ic_add_link.svg       pending connection avatar            about 20 icons                    unchanged: ContactConnectionView
+                                   (ContactConnectionView.kt:26)                                          draws the link glyph at 54√f
+                                                                                                          (12.3.1)
 ```
 
-The disc behind a placeholder (`ChatInfoImage.kt:91`, `iconSize * 0.7f`) fills the cut-outs of the person icon; it is redrawn at 0.84 of the box, as it is with `toEdge` now.
+The disc behind a placeholder fills the cut-outs of the person icon; it is drawn at 0.84 of the box (`ChatInfoImage.kt:87`, `size * 0.84f`; before: `iconSize * 0.7f`, 0.84 of the box with `toEdge`).
 
 ### 12.3 Compensations removed, screens re-tuned
 
