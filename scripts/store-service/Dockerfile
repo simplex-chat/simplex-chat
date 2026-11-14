@@ -27,14 +27,17 @@ RUN npm ci
 COPY apps/simplex-domains /names
 RUN npm run build
 
-# The webapps service: the two builds and the script that copies them into the folders Caddy serves.
+# The webapps service: copies the two builds into the folder Caddy serves, mounted at /out.
 FROM ubuntu:${UBUNTU} AS webapps
+
+RUN apt-get update && apt-get install -y --no-install-recommends rsync && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=badges /badges/dist /srv/badges
 COPY --from=names /names/webapp/dist /srv/names
-COPY --chmod=755 scripts/store-service/export-webapps.sh /usr/local/bin/export-webapps
 
-ENTRYPOINT ["export-webapps"]
+# --delay-updates renames every new file into place at the end, so a shell never precedes its assets.
+ENTRYPOINT ["rsync", "-rlpt", "--delete-after", "--delay-updates", "/srv/", "/out/"]
 
 FROM ubuntu:${UBUNTU} AS build
 

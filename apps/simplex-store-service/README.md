@@ -564,14 +564,15 @@ badge without paying.
 the repository root), `compose.yml` and the ini template `store_service.ini.example`; `dev/` holds
 the scripts of the dev setup and the webapp's cases. The service
 runs with `+client_postgres` and host networking, and serves the API and the webhooks. A second
-container, `webapps`, copies both built sites into `scripts/store-service/webapps/`, as `badges/` and `names/`, at
-every `docker compose up` and exits; one Caddy serves those folders and proxies the API to the
-service. The service writes no file of either site.
+container, `webapps`, copies both built sites into `scripts/store-service/webapps/`, as `badges/`
+and `names/`, at every `docker compose up` and exits; one Caddy serves those folders and proxies
+the API to the service. The service writes no file of either site.
 
-`webapps` is built from the same `Dockerfile` (target `webapps`), and its `export-webapps.sh` writes
-each site's files before its `index.html` and `sw.js`, then deletes what the build no longer has, so
-Caddy never serves a shell whose assets are missing. The folder must exist before
-`docker compose up`, owned by `USER_UID`, which the container runs as: `install -d webapps`.
+`webapps` is built from the same `Dockerfile` (target `webapps`) and runs
+`rsync -rlpt --delete-after --delay-updates`: every new file is renamed into place at the end, so
+Caddy never serves a shell whose assets are missing, and then what the build no longer has is
+deleted. The folder must exist before `docker compose up`, owned by `USER_UID`, which the
+container runs as: `install -d webapps`.
 
 `compose.yml` mounts the folder `scripts/store-service/config/` read-only at
 `/etc/simplex-store-service`. It holds `store_service.ini`, and the App Store root and the Play
