@@ -66,6 +66,7 @@ export interface TurnRequest {
   model?: string
   effort?: string
   step?: Step
+  text?: TextBatch
 }
 
 // spec: spec/architecture.md#protocol-step
@@ -73,6 +74,14 @@ export interface Step {
   id: string
   text: string
   end?: boolean
+}
+
+// spec: spec/architecture.md#protocol-textbatch
+export interface TextBatch {
+  message: string
+  index: number
+  final: boolean
+  delta: string
 }
 
 // spec: spec/architecture.md#protocol-attachline
