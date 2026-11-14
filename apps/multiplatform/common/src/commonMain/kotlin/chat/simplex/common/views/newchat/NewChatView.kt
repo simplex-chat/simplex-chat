@@ -366,7 +366,7 @@ fun ActiveProfilePicker(
           }
         }
       },
-        image = { ProfileImage(size = 42.dp, image = user.image) },
+        image = { ProfileImage(size = 35.dp, image = user.image, modifier = Modifier.centeredIn(42.dp)) },
         badge = user.profile.localBadge
     )
   }
@@ -558,7 +558,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
           )
           Spacer(Modifier.width(2.dp))
         } else {
-          ProfileImage(size = 42.dp, image = currentUser.image)
+          ProfileImage(size = 35.dp, image = currentUser.image, modifier = Modifier.centeredIn(42.dp))
         }
         TextIconSpaced(false)
         Text(
