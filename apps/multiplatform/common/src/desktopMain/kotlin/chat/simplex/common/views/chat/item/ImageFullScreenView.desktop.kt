@@ -25,8 +25,9 @@ actual fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap:
   val still by produceState(imageBitmap, data) {
     value = withContext(Dispatchers.IO) { getBitmapFromByteArray(data, false) ?: MR.images.decentralized.image.toComposeImageBitmap() }
   }
+  val frame = rememberAnimatedImage(data, imageBitmap)
   Image(
-    rememberAnimatedImage(data, still),
+    if (frame === imageBitmap) still else frame,
     contentDescription = stringResource(MR.strings.image_descr),
     contentScale = ContentScale.Fit,
     modifier = modifier,
