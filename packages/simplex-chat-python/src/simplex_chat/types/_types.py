@@ -2054,7 +2054,7 @@ class FullGroupPreferences(TypedDict):
     sessions: "RoleGroupPreference"
     comments: "CommentsGroupPreference"
     signMessages: "GroupPreference"
-    status: "RoleGroupPreference"
+    statusMessages: "RoleGroupPreference"
     commands: list["ChatBotCommand"]
 
 class FullPreferences(TypedDict):
@@ -2098,7 +2098,7 @@ class GroupDirectInvitation(TypedDict):
     fromGroupMemberConnId_: NotRequired[int]  # int64
     groupDirectInvStartedConnection: bool
 
-GroupFeature = Literal["timedMessages", "directMessages", "fullDelete", "reactions", "voice", "files", "simplexLinks", "reports", "history", "support", "sessions", "comments", "signMessages", "status"]
+GroupFeature = Literal["timedMessages", "directMessages", "fullDelete", "reactions", "voice", "files", "simplexLinks", "reports", "history", "support", "sessions", "comments", "signMessages", "statusMessages"]
 
 GroupFeatureEnabled = Literal["on", "off"]
 
@@ -2250,7 +2250,7 @@ class GroupPreferences(TypedDict):
     sessions: NotRequired["RoleGroupPreference"]
     comments: NotRequired["CommentsGroupPreference"]
     signMessages: NotRequired["GroupPreference"]
-    status: NotRequired["RoleGroupPreference"]
+    statusMessages: NotRequired["RoleGroupPreference"]
     commands: NotRequired[list["ChatBotCommand"]]
 
 class GroupProfile(TypedDict):

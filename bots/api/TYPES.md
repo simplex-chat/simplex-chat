@@ -2587,7 +2587,7 @@ Markup:
 - sessions: [RoleGroupPreference](#rolegrouppreference)
 - comments: [CommentsGroupPreference](#commentsgrouppreference)
 - signMessages: [GroupPreference](#grouppreference)
-- status: [RoleGroupPreference](#rolegrouppreference)
+- statusMessages: [RoleGroupPreference](#rolegrouppreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
 
 
@@ -2681,7 +2681,7 @@ MemberSupport:
 - "sessions"
 - "comments"
 - "signMessages"
-- "status"
+- "statusMessages"
 
 
 ---
@@ -2937,7 +2937,7 @@ contact=<contactId> owner=<memberId>
 - sessions: [RoleGroupPreference](#rolegrouppreference)?
 - comments: [CommentsGroupPreference](#commentsgrouppreference)?
 - signMessages: [GroupPreference](#grouppreference)?
-- status: [RoleGroupPreference](#rolegrouppreference)?
+- statusMessages: [RoleGroupPreference](#rolegrouppreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
 
 

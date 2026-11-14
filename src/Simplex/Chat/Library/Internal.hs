@@ -406,7 +406,7 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
   | isNothing scopeInfo && not (isVoice mc) && (isJust file_ || isMedia mc) && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
   | isNothing scopeInfo && isReport mc && (badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
   | isNothing scopeInfo && prohibitedSimplexLinks gInfo m mc ft = Just GFSimplexLinks
-  | sent && prohibitedStatus (fullGroupPreferences gInfo) (memberRole' m) mc = Just GFStatus
+  | sent && prohibitedStatus (fullGroupPreferences gInfo) (memberRole' m) mc = Just GFStatusMessages
   | otherwise = Nothing
   where
     supportAllowed = case scopeInfo of

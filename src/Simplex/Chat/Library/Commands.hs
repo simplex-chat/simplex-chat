@@ -853,7 +853,7 @@ processChatCommand cxt nm = \case
       if prohibitedSimplexLinks gInfo membership mc ft_
         then throwCmdError ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
         else if prohibitedStatus (fullGroupPreferences gInfo) (memberRole' membership) mc
-        then throwCmdError ("feature not allowed " <> T.unpack (groupFeatureNameText GFStatus))
+        then throwCmdError ("feature not allowed " <> T.unpack (groupFeatureNameText GFStatusMessages))
         else do
           -- TODO [knocking] check chat item scope?
           cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
@@ -7063,7 +7063,7 @@ chatCommandP =
       "/set signatures #" *> (SetGroupFeature (AGFNR SGFSignMessages) <$> displayNameP <*> _strP),
       "/set support #" *> (SetGroupFeature (AGFNR SGFSupport) <$> displayNameP <*> (A.space *> strP)),
       "/set links #" *> (SetGroupFeatureRole (AGFR SGFSimplexLinks) <$> displayNameP <*> _strP <*> optional memberRole),
-      "/set status #" *> (SetGroupFeatureRole (AGFR SGFStatus) <$> displayNameP <*> _strP <*> optional memberRole),
+      "/set status #" *> (SetGroupFeatureRole (AGFR SGFStatusMessages) <$> displayNameP <*> _strP <*> optional memberRole),
       "/set admission review #" *> (SetGroupMemberAdmissionReview <$> displayNameP <*> (A.space *> memberCriteriaP)),
       "/set layout #" *> (SetGroupChatLayout <$> displayNameP <* A.space <*> chatLayoutP_),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,

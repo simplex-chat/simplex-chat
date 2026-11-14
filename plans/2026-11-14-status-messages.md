@@ -2,7 +2,7 @@
 
 Status: decided 2026-11-14 (Q1 a, Q2 a, Q3 b, Q4 a, Q5 a), implemented in commit a4d9e64f9 on `ep/status-messages`.
 
-A new message content type `status` carries status events, such as Claude's step lines. The apps merge consecutive status messages of one sender into one row. Silent text messages are never merged. A group preference `status`, off by default, allows status messages in a group. The preference has API and CLI, and no app UI.
+A new message content type `status` carries status events, such as Claude's step lines. The apps merge consecutive status messages of one sender into one row. Silent text messages are never merged. A group preference `statusMessages`, off by default, allows status messages in a group. The preference has API and CLI (`/set status #GROUP on|off [ROLE]`), and no app UI.
 
 ## 1. Questions
 
@@ -34,7 +34,7 @@ option  rule
 
 A status message is sent without the notification flag (`eventHasNotification`), and the apps show no notification for it (`showNotification`), whatever its priority.
 
-Q4. A status message received in a group with `status` off. Recommended: (a).
+Q4. A status message received in a group with `statusMessages` off. Recommended: (a).
 
 ```
 option  receiving core
@@ -76,7 +76,7 @@ sequenceDiagram
   participant C as core of Claude
   participant R as core of a member
   participant A as app of the member
-  P->>C: create session group, preference status on
+  P->>C: create session group, preference statusMessages on
   P->>C: APISendMessages {type: "status", text}, live, priority -1
   C->>C: status off in the group: error "feature not allowed Status messages"
   C->>R: x.msg.new, content {type: "status", text}
@@ -134,33 +134,33 @@ older apps                            MCUnknown with the text: shown as a text m
 ### 3.2 Group preference
 
 ```
-StatusGroupPreference
+StatusMessagesGroupPreference
   enable  GroupFeatureEnabled, default off
   role    Maybe GroupMemberRole
 ```
 
 ```
 place                                         change
-Preferences.hs GroupFeature, SGroupFeature    GFStatus, "Status messages"
-Preferences.hs GroupPreferences               status :: Maybe StatusGroupPreference
-Preferences.hs FullGroupPreferences           status :: StatusGroupPreference
+Preferences.hs GroupFeature, SGroupFeature    GFStatusMessages ("statusMessages"), "Status messages"
+Preferences.hs GroupPreferences               statusMessages :: Maybe StatusMessagesGroupPreference
+Preferences.hs FullGroupPreferences           statusMessages :: StatusMessagesGroupPreference
 Preferences.hs defaultGroupPrefs              off, no role
 Preferences.hs defaultBusinessGroupPrefs      off, no role
-Preferences.hs selectors, merge, setters      the status rows, as comments
-Preferences.hs GroupFeatureI, RoleI           GFStatus with role
-Preferences.hs allGroupFeatures               unchanged: GFStatus is left out, so no feature items
+Preferences.hs selectors, merge, setters      the statusMessages rows, as comments
+Preferences.hs GroupFeatureI, RoleI           GFStatusMessages with role
+Preferences.hs allGroupFeatures               unchanged: GFStatusMessages is left out, so no feature items
 Preferences.hs groupFeatureIn*                True, so the CLI command is accepted in groups and channels
 Protocol.hs prohibitedStatus                  MCStatus and the role below the preference
 Protocol.hs groupRcvContent                   prohibited MCStatus becomes MCText with the text
 Protocol.hs eventHasNotification              False for x.msg.new with MCStatus; used for every notification flag
-Internal.hs prohibitedGroupContent            sent and prohibitedStatus: Just GFStatus
+Internal.hs prohibitedGroupContent            sent and prohibitedStatus: Just GFStatusMessages
 Commands.hs APIUpdateChatItem, group          prohibitedStatus: the same error
 Subscriber.hs newGroupContentMessage content  groupRcvContent with the sender's role, owner for a post as the group
 Subscriber.hs groupMessageUpdate              groupRcvContent
 Commands.hs parser                            /set status #GROUP on|off [ROLE]
-View.hs viewGroupUpdated                      a change of status is shown in "updated group preferences:"
-bots TypeInfo.hs                              StatusGroupPreference as RoleGroupPreference
-bots/api, types.ts, _types.py                 status in GroupPreferences and FullGroupPreferences
+View.hs viewGroupUpdated                      a change of statusMessages is shown in "updated group preferences:"
+bots TypeInfo.hs                              StatusMessagesGroupPreference as RoleGroupPreference
+bots/api, types.ts, _types.py                 statusMessages in GroupPreferences and FullGroupPreferences
 ```
 
 ```
@@ -214,8 +214,8 @@ SnapshotTests.swift                            four scenes: Classic/TerminalStat
 
 ```
 place                                    change
-Hub.createSessionGroup                   groupPreferences.status = {enable: on}
-step lines of ep/mcp-step-lines          {type: "status", text} when the session group has status on; {type: "text", text} otherwise
+Hub.createSessionGroup                   groupPreferences.statusMessages = {enable: on}
+step lines of ep/mcp-step-lines          {type: "status", text} when the session group has statusMessages on; {type: "text", text} otherwise
 ```
 
 The plugin bundles core 7.1.3, so these rows wait for a core release with `status`, in a later plugin commit.
@@ -224,16 +224,14 @@ The plugin bundles core 7.1.3, so these rows wait for a core release with `statu
 
 ```
 test                                                                       place
-JSON round trip of status; unknown tag stays MCUnknown                     tests/ProtocolTests.hs
-status in a group with the preference on: send, live update, final update; the member's CLI shows the text   tests/ChatTests/Groups.hs
-status in a group with the preference off: send error; a member below the role gets the error   tests/ChatTests/Groups.hs
-status received in a group with the preference off is saved as text       tests/ChatTests/Groups.hs
+JSON round trip of status; no notification flag                           tests/ProtocolTests.hs
+groupRcvContent: off, role below, role met                                 tests/ProtocolTests.hs
+group: off refuses, /set status #team on owner, member refused, live and final update, off refuses again   tests/ChatTests/Groups.hs
 status in a direct chat                                                    tests/ChatTests/Direct.hs
-/set status #team on                                                       tests/ChatTests/Groups.hs
 regenerated API docs                                                       tests/APIDocs.hs
-MergedItems: one run per sender, a text ends a run                         desktopTest
-four snapshot scenes                                                       desktop-linux, ios-sim
-session group created with status on; an existing one gets it at start     plugin unit and e2e tests
+MergedItems: one run per sender, a text ends a run                         ChatItemsMergerTest.kt
+four snapshot scenes in each app                                           desktop-linux, ios-sim
+session group created with statusMessages on                               plugin tests, later
 ```
 
 ## 5. Estimate

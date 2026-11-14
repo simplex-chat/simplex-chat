@@ -2930,7 +2930,7 @@ export interface FullGroupPreferences {
   sessions: RoleGroupPreference
   comments: CommentsGroupPreference
   signMessages: GroupPreference
-  status: RoleGroupPreference
+  statusMessages: RoleGroupPreference
   commands: ChatBotCommand[]
 }
 
@@ -3006,7 +3006,7 @@ export enum GroupFeature {
   Sessions = "sessions",
   Comments = "comments",
   SignMessages = "signMessages",
-  Status = "status",
+  StatusMessages = "statusMessages",
 }
 
 export enum GroupFeatureEnabled {
@@ -3222,7 +3222,7 @@ export interface GroupPreferences {
   sessions?: RoleGroupPreference
   comments?: CommentsGroupPreference
   signMessages?: GroupPreference
-  status?: RoleGroupPreference
+  statusMessages?: RoleGroupPreference
   commands?: ChatBotCommand[]
 }
 

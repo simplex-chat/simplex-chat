@@ -256,5 +256,5 @@ toTypeInfo tr =
         "FilesGroupPreference",
         "SessionsGroupPreference",
         "SimplexLinksGroupPreference",
-        "StatusGroupPreference"
+        "StatusMessagesGroupPreference"
       ]

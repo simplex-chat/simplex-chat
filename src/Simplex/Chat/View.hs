@@ -2138,7 +2138,7 @@ viewGroupUpdated
         | null prefs = []
         | otherwise = bold' "updated group preferences:" : prefs
         where
-          prefs = mapMaybe viewPref ((if useRelays' g' then channelGroupFeatures else regularGroupFeatures) <> [AGF SGFStatus])
+          prefs = mapMaybe viewPref ((if useRelays' g' then channelGroupFeatures else regularGroupFeatures) <> [AGF SGFStatusMessages])
           viewPref (AGF f)
             | pref gps == pref gps' = Nothing
             | otherwise = Just . plain $ groupPreferenceText (pref gps')

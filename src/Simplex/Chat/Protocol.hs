@@ -826,7 +826,7 @@ isStatus = \case
   _ -> False
 
 prohibitedStatus :: FullGroupPreferences -> GroupMemberRole -> MsgContent -> Bool
-prohibitedStatus prefs role mc = isStatus mc && not (groupFeatureMemberAllowed' SGFStatus role prefs)
+prohibitedStatus prefs role mc = isStatus mc && not (groupFeatureMemberAllowed' SGFStatusMessages role prefs)
 
 groupRcvContent :: FullGroupPreferences -> GroupMemberRole -> MsgContent -> MsgContent
 groupRcvContent prefs role mc
