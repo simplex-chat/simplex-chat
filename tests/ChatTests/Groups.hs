@@ -200,7 +200,7 @@ chatGroupTests = do
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
     it "reject forwarded content attributed to own membership" testGroupMsgForwardOwnMembershipRejected
-    it "do not accept and forward disappearing message when disappearing messages are off" testGroupMsgForwardTimedOff
+    it "accept and forward message without disappearing time when disappearing messages are off" testGroupMsgForwardTimedOff
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
@@ -387,6 +387,7 @@ chatGroupTests = do
       it "should cancel file sent as member" testChannelOwnerFileCancelAsMember
       it "should attribute reactions to member" testChannelReactionAttribution
       it "should ignore reaction to message not received" testChannelReactionNoItem
+      it "should not accept signed disappearing message when disappearing messages are off" testChannelSignedTimedOff
       it "should recreate deleted item with correct sendAsGroup from update" testChannelUpdateFallbackSendAsGroup
       it "should respect sendAsGroup parameter in forward API" testForwardAPIUsesParameter
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
@@ -5942,11 +5943,34 @@ testGroupMsgForwardTimedOff =
       createGroup3 "team" alice bob cath
       setupGroupForwarding alice bob cath
       connId <- relayConnIdToMember bob "alice"
-      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "timed_msg") $ XMsgNew (mcSimple (MCText "hello") :: MsgContainer) {ttl = Just 1}
-      alice <## "error: x.msg.new: feature not allowed Disappearing messages"
-      bob #> "#team hi"
-      alice <# "#team bob> hi"
-      cath <# "#team bob> hi [>>]"
+      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "timed_msg") $ XMsgNew (mcSimple (MCText "hello") :: MsgContainer) {ttl = Just 86400}
+      alice <# "#team bob> hello"
+      cath <# "#team bob> hello [>>]"
+      forM_ [alice, cath] $ \cc ->
+        withCCTransaction cc (\db -> DB.query_ db "SELECT timed_ttl FROM chat_items WHERE item_text = 'hello'") `shouldReturn` [Only (Nothing :: Maybe Int)]
+
+testChannelSignedTimedOff :: HasCallStack => TestParams -> IO ()
+testChannelSignedTimedOff ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+            alice ##> "/set disappear #team on 86400"
+            alice <## "updated group preferences:"
+            alice <## "Disappearing messages: on (1 day)"
+            forM_ [bob, cath, dan, eve] $ \cc -> do
+              cc <## "alice updated group #team: (signed)"
+              cc <## "updated group preferences:"
+              cc <## "Disappearing messages: on (1 day)"
+            void $ withCCTransaction bob $ \db -> DB.execute_ db "UPDATE group_profiles SET preferences = NULL, preferences_json = NULL"
+            cath ##> "/_send #1 sign=on text hello"
+            cath <#. "#team hello"
+            bob <## "error: x.msg.new: feature not allowed Disappearing messages"
+            (alice </)
+            (dan </)
 
 testGroupMsgForwardBatched :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardBatched =
