@@ -24,12 +24,24 @@ private fun errorBitmap(): ImageBitmap =
   ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="))).toComposeImageBitmap()
 
 private val base64BitmapCache = Collections.synchronizedMap(object : LinkedHashMap<String, ImageBitmap>(200, 0.75f, true) {
-  override fun removeEldestEntry(eldest: Map.Entry<String, ImageBitmap>): Boolean = size > 200
+  override fun removeEldestEntry(eldest: Map.Entry<String, ImageBitmap>): Boolean {
+    var bytes = values.sumOf { it.bytes() }
+    val bitmaps = values.iterator()
+    while (size > 1 && (size > 200 || bytes > MAX_BASE64_BITMAP_CACHE_BYTES)) {
+      bytes -= bitmaps.next().bytes()
+      bitmaps.remove()
+    }
+    return false
+  }
 })
 
+private fun ImageBitmap.bytes(): Long = width.toLong() * height * 4
+
+private const val MAX_BASE64_BITMAP_CACHE_BYTES = 64L * 1024 * 1024
 private const val MAX_IMAGE_DIMENSION = 4320
 private const val MAX_PREVIEW_DIMENSION = 512
-private const val MAX_PROGRESSIVE_PASSES = 16
+private const val MAX_PREVIEW_PROGRESSIVE_PASSES = 2
+internal const val MAX_PROGRESSIVE_PASSES = 16
 
 private val receivedImageFormats = setOf("png", "jpeg", "gif")
 
@@ -37,9 +49,9 @@ internal fun receivedImageReader(stream: ImageInputStream): ImageReader =
   ImageIO.getImageReaders(stream).asSequence().firstOrNull { it.formatName.lowercase() in receivedImageFormats }
     ?: throw IOException("Unsupported image format")
 
-internal fun receivedImageReadParam(reader: ImageReader, sampleSize: Int): ImageReadParam =
+internal fun receivedImageReadParam(reader: ImageReader, sampleSize: Int, progressivePasses: Int): ImageReadParam =
   reader.defaultReadParam.apply {
-    setSourceProgressivePasses(0, MAX_PROGRESSIVE_PASSES)
+    setSourceProgressivePasses(0, progressivePasses)
     if (sampleSize > 1) setSourceSubsampling(sampleSize, sampleSize, 0, 0)
   }
 
@@ -59,7 +71,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
       reader.dispose()
       return errorBitmap()
     }
-    val image = reader.read(0, receivedImageReadParam(reader, imageSampleSize(width, height, MAX_PREVIEW_DIMENSION)))
+    val image = reader.read(0, receivedImageReadParam(reader, imageSampleSize(width, height, MAX_PREVIEW_DIMENSION), MAX_PREVIEW_PROGRESSIVE_PASSES))
     reader.dispose()
     image.toComposeImageBitmap().also {
       base64BitmapCache[base64ImageString] = it
