@@ -1666,6 +1666,20 @@ describe("session channel", () => {
     expect(shown(chat)).toEqual([endedIn("Fixed.", "1 ms", 42), endedIn("Tests pass.", "1 ms", 43), endedIn("Deployed and tagged.", "1 ms", 44), endedIn("Green.", undefined, 46)])
   })
 
+  it("quotes in an answer without a turn record only a prompt pushed since the latest answer, not an older one that no prompt hook matched", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    await ownerPrompt(session, 41, "Fix the build")
+    await ownerPrompt(session, 42, "Is the server up?")
+    await new Promise(resolve => setTimeout(resolve, 5))
+    const answered = Date.now()
+    await session.turn({id: id1, at: answered - 1, prompt: tag(41, "Fix the build")})
+    await session.turn({id: id1, at: answered, answer: "Fixed."})
+    await ownerPrompt(session, 43, "Status?")
+    await session.turn({id: id1, at: Date.now() + 1, answer: "Green."})
+    expect(shown(chat)).toEqual([endedIn("Fixed.", "1 ms", 41), endedIn("Green.", undefined, 43)])
+  })
+
   it("quotes in each answer the prompt of its turn by the start of the hooks, when the Stop hook of a turn arrives after or during the prompt hook of the next turn", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)

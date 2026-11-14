@@ -891,7 +891,7 @@ on /turn {at, answer}, also an empty answer:
     quote = the item of the newest of earlier; null gives no quote
     turns = turns without earlier
   earlier empty:
-    quote = the oldest pushed prompt not quoted yet, marked quoted; it stays in pushed for its prompt
+    quote = the oldest pushed prompt not quoted yet and pushed at or after answeredAt, marked quoted; it stays in pushed for its prompt
   answeredAt = max(answeredAt, at)
 at = performance.timeOrigin of the hook process; absent: Infinity for an answer's quote, now otherwise
 ```

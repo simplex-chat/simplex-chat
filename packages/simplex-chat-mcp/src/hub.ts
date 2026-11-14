@@ -505,7 +505,7 @@ export class Session {
   private turnQuote(at: number): T.ChatItem | undefined {
     const earlier = this.turns.filter(turn => turn.at < at)
     if (earlier.length === 0) {
-      const oldest = this.pushed.find(entry => !entry.quoted)
+      const oldest = this.pushed.find(entry => !entry.quoted && entry.at >= this.answeredAt)
       if (oldest !== undefined) oldest.quoted = true
       return oldest?.item
     }
