@@ -165,5 +165,7 @@ class ChatItemsMergerTest {
     val shown = rows(developerTools = true)
     assertEquals(2L, shown[0].nextItem?.id)
     assertEquals(2L, shown[2].prevItem?.id)
+    val markedDeleted = ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(2L, Clock.System.now(), text = "", itemDeleted = CIDeleted.Deleted(null)), CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(1, 1)), reactions = emptyList())
+    assertEquals(false, markedDeleted.hiddenInChat(developerTools = false))
   }
 }

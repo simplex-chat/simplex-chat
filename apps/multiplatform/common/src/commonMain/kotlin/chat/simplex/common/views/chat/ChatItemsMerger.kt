@@ -108,10 +108,15 @@ data class MergedItems (
       )
     }
   }
+
+  fun olderShownRow(row: MergedItem): MergedItem? {
+    val older = row.oldest().nextItem ?: return null
+    return indexInParentItems[older.id]?.let { items.getOrNull(it) }
+  }
 }
 
 fun ChatItem.hiddenInChat(developerTools: Boolean): Boolean =
-  content is CIContent.RcvIntegrityError && !developerTools
+  content is CIContent.RcvIntegrityError && meta.itemDeleted == null && !developerTools
 
 private fun shownNeighbour(items: List<ChatItem>, index: Int, step: Int, developerTools: Boolean): ChatItem? {
   var i = index + step

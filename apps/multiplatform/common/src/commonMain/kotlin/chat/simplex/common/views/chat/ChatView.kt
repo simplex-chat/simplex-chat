@@ -830,7 +830,7 @@ fun ChatView(
               }
             },
             onComposed,
-            developerTools = chatModel.controller.appPrefs.developerTools.get(),
+            developerTools = remember { chatModel.controller.appPrefs.developerTools.state }.value,
             showViaProxy = chatModel.controller.appPrefs.showSentViaProxy.get(),
             showSearch = showSearch,
             showCommandsMenu = showCommandsMenu,
@@ -2278,10 +2278,10 @@ fun BoxScope.ChatItemsList(
           }
         }
       }
-      if (itemSeparation.date != null) {
-        DateSeparator(itemSeparation.date)
-      }
       if (!cItem.hiddenInChat(developerTools)) {
+        if (itemSeparation.date != null) {
+          DateSeparator(itemSeparation.date)
+        }
         ChatItemView(cItem, range, itemSeparation, previousItemSeparationLargeGap)
       }
     }
@@ -2456,7 +2456,7 @@ fun BoxScope.ChatItemsList(
         }
       } else {
         val isLastItem = index == mergedItemsValue.items.lastIndex
-        val last = if (isLastItem) reversedChatItems.value.lastOrNull() else null
+        val last = if (!isLastItem) null else if (item.hiddenInChat(developerTools)) listItem.prevItem else reversedChatItems.value.lastOrNull()
         val range = if (merged is MergedItem.Grouped) {
           merged.rangeInReversed.value
         } else {
@@ -2466,7 +2466,7 @@ fun BoxScope.ChatItemsList(
         val showAvatar = if (LocalTerminalLayout.current) terminalItemShowsSender(item, older) else shouldShowAvatar(item, older)
         val terminalGap = if (!LocalTerminalLayout.current) 0.sp else terminalRowGap(
           item, older,
-          separated = terminalRowsSeparated(mergedItemsValue.items.getOrNull(index + 1)),
+          separated = terminalRowsSeparated(mergedItemsValue.olderShownRow(merged)),
           largeGap = older != null && getItemSeparationLargeGap(older, merged.oldest().item),
           hasSenderRow = showAvatar
         )
