@@ -52,7 +52,6 @@ import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.abs
-import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -74,7 +73,6 @@ const val TERMINAL_HEADING_RATIO = 1.25f
 private const val CHAT_LINE_HEIGHT_RATIO = 22f / 16f
 private const val CHAT_LINE_HEIGHT_CONTRAST_SLOPE = 0.1515f
 const val INTER_CAP_HEIGHT = 2048f / 2816f
-const val INTER_SIDE_BEARING = 0.088f
 const val INTER_LINE_HEIGHT = 3408f / 2816f
 private val CHAT_LINE_HEIGHT_STYLE = LineHeightStyle(LineHeightStyle.Alignment.Proportional, LineHeightStyle.Trim.None)
 
@@ -401,11 +399,11 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
 
 val TERMINAL_MEMBER_IMAGE_SIZE: Dp = 27.dp
 val TERMINAL_AVATAR_OVERSHOOT: Dp = 2.dp
-val TERMINAL_AVATAR_TEXT_GAP: Dp = 6.dp
+val TERMINAL_AVATAR_GAP: Dp = 10.dp
 
 @Composable
 fun terminalGutter(chatInfo: ChatInfo): Dp =
-  if (chatInfo is ChatInfo.Group) TERMINAL_MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + CHAT_ITEM_TEXT_PADDING else 0.dp
+  if (chatInfo is ChatInfo.Group) TERMINAL_MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + TERMINAL_AVATAR_GAP - TERMINAL_AVATAR_OVERSHOOT else 0.dp
 
 @Composable
 fun TerminalChatItemRow(
@@ -417,7 +415,6 @@ fun TerminalChatItemRow(
 ) {
   val cardGap = TERMINAL_PARAGRAPH_GAP.toDp()
   val avatarGap = if (sender?.image != null) TERMINAL_HEADING_BOTTOM_GAP.toDp() else 0.dp
-  val bodyFontSize = MaterialTheme.typography.body1.fontSize
   Layout(
     content = {
       Box {
@@ -437,24 +434,19 @@ fun TerminalChatItemRow(
     modifier.fillMaxWidth()
   ) { measurables, constraints ->
     val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
+    val column = gutter.roundToPx()
+    val columnConstraints = looseConstraints.copy(maxWidth = (constraints.maxWidth - column).coerceAtLeast(0))
     val avatar = measurables[0].measure(looseConstraints)
-    val avatarStart = (CHAT_ITEM_TEXT_PADDING.toPx() + (bodyFontSize * INTER_SIDE_BEARING).toPx() - TERMINAL_AVATAR_OVERSHOOT.toPx()).roundToInt()
-    val nameStart = if (avatar.width > 0) avatarStart + avatar.width else gutter.roundToPx()
-    val name = measurables[1].measure(looseConstraints.copy(maxWidth = (constraints.maxWidth - nameStart).coerceAtLeast(0)))
-    val message = measurables[2].measure(looseConstraints)
+    val name = measurables[1].measure(columnConstraints)
+    val message = measurables[2].measure(columnConstraints)
     val avatarOffset = (name.height - avatar.height) / 2
     val nameTop = (topGap + avatarGap).roundToPx() + max(0, -avatarOffset)
     val avatarTop = nameTop + avatarOffset
-    val startsWithCard = message[CardTop] == 0
-    val belowName = nameTop + name.height + if (sender != null && startsWithCard) cardGap.roundToPx() else 0
-    val firstBaseline = message[FirstBaseline]
-    val lettersTop = if (startsWithCard || firstBaseline == AlignmentLine.Unspecified) 0 else firstBaseline - ceil((bodyFontSize * INTER_CAP_HEIGHT).toPx()).toInt()
-    val belowAvatar = if (avatar.height > 0) avatarTop + avatar.height + TERMINAL_AVATAR_TEXT_GAP.roundToPx() - lettersTop else 0
-    val messageTop = max(belowName, belowAvatar)
+    val messageTop = nameTop + name.height + if (sender != null && message[CardTop] == 0) cardGap.roundToPx() else 0
     layout(constraints.maxWidth, max(messageTop + message.height, avatarTop + avatar.height)) {
-      avatar.placeRelative(avatarStart, avatarTop)
-      name.placeRelative(nameStart, nameTop)
-      message.placeRelative(0, messageTop)
+      avatar.placeRelative((CHAT_ITEM_TEXT_PADDING - TERMINAL_AVATAR_OVERSHOOT).roundToPx(), avatarTop)
+      name.placeRelative(column, nameTop)
+      message.placeRelative(column, messageTop)
     }
   }
 }

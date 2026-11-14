@@ -4094,6 +4094,12 @@ fun PreviewGroupChatLayoutBanner() = GroupChatLayoutPreview(
   )
 )
 
+@Preview
+@Composable
+fun PreviewGroupChatLayoutTerminalSession() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  GroupChatLayoutPreview(sessionPreview())
+}
+
 private fun previewMember(id: Long, name: String) =
   GroupMember.sampleData.copy(groupMemberId = id, memberId = name, localDisplayName = name, memberProfile = LocalProfile.sampleData.copy(profileId = id, displayName = name, fullName = ""))
 
@@ -4144,6 +4150,42 @@ private fun defectsPreview(): List<ChatItem> {
     previewRcv(6, carol, 240, previewText("hello")),
     ChatItem.getDeletedContentSampleData(7, CIDirection.GroupRcv(carol), previewDate.plus(250, DateTimeUnit.SECOND)),
     previewRcv(8, carol, 360, previewText("The release goes out tomorrow"))
+  )
+}
+
+private fun sessionPreview(): List<ChatItem> {
+  val claude = previewMember(5, "Claude").let { it.copy(memberRole = GroupMemberRole.Owner, memberProfile = it.memberProfile.copy(peerType = ChatPeerType.Agent)) }
+  val delivered = CIStatus.SndRcvd(MsgReceiptStatus.Ok, SndCIStatusProgress.Complete)
+  val answer = previewRcv(6, claude, 170, previewText("543 of 544 pass. One test fails:\n```\nFAIL hub.test.ts (1 of 544)\n```\nShall I fix it?")).copy(
+    quotedItem = CIQuote(CIDirection.GroupSnd(), 2, sentAt = previewDate.plus(60, DateTimeUnit.SECOND), content = MsgContent.MCText("Are the tests passing?")),
+    formattedText = listOf(
+      FormattedText("543 of 544 pass. One test fails:"),
+      FormattedText("\n", Format.Markup(BlockToken.LineBreak())),
+      FormattedText("```", Format.Markup(BlockToken.FenceMark())),
+      FormattedText("\n", Format.Markup(BlockToken.HardBreak())),
+      FormattedText("FAIL hub.test.ts (1 of 544)"),
+      FormattedText("\n", Format.Markup(BlockToken.HardBreak())),
+      FormattedText("```", Format.Markup(BlockToken.FenceMark())),
+      FormattedText("\n", Format.Markup(BlockToken.LineBreak())),
+      FormattedText("Shall I fix it?")
+    ),
+    markdownBlocks = listOf(MarkdownBlock.Paragraph(SegmentRange(0, 1)), MarkdownBlock.CodeBlock(content = SegmentRange(4, 5)), MarkdownBlock.Paragraph(SegmentRange(8, 9)))
+  )
+  val image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAeCAIAAADRv8uKAAAAK0lEQVR42u3NMQ0AAAgDsElDB5oQjQw4mvRvavpExGKxWCwWi8VisVj8N16BwmJsLEkbxwAAAABJRU5ErkJggg=="
+  return listOf(
+    previewRcv(1, claude, 0, previewText("alice is an owner and can send prompts to Claude and the group's commands, and approve tool use.")),
+    previewSnd(2, 60, "Are the tests passing?", delivered),
+    previewRcv(3, claude, 70, previewText("Checking the test suite.")),
+    previewRcv(4, claude, 80, previewText("I want to use Bash: Run unit tests\nnpm test\n/approve 1 or /reject 1")),
+    previewSnd(5, 100, "/approve 1", delivered),
+    answer,
+    previewSnd(7, 245, "Yes, fix it.", delivered),
+    previewSnd(8, 250, "Then run the tests again.", delivered),
+    previewSnd(9, 255, "And commit.", delivered),
+    previewRcv(10, claude, 300, previewText("Fixing hub.ts.")),
+    previewRcv(11, claude, 305, previewText("Running the tests.")),
+    previewRcv(12, claude, 310, previewText("Done: the answer now quotes its own prompt.\n544 of 544 pass.\nCommitted as 1f3c2a9.")),
+    previewRcv(13, claude, 330, CIContent.RcvMsgContent(MsgContent.MCImage("Coverage after the fix", image)))
   )
 }
 

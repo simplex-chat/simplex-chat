@@ -2166,6 +2166,7 @@ struct ChatView: View {
             let selecting = selectedChatItems != nil && ci.canBeDeletedForSelf
             let leading: CGFloat = selecting ? 4 + 24 : 0
             let goToButton: CGFloat = searchIsNotBlank || ci.meta.itemForwarded?.chatTypeApiIdMsgId != nil ? goToItemIconSize + goToItemIconGap + chatItemTextPadding : 0
+            let avatarSize = chat.chatInfo.chatType == .group ? terminalImageSize : 0
             let older = merged.oldest().nextItem
             let topGap = terminalRowGap(
                 ci,
@@ -2181,11 +2182,11 @@ struct ChatView: View {
                 }
                 TerminalChatItemRow(
                     sender: showSender ? chatItemSender(ci, range) : nil,
-                    avatarSize: chat.chatInfo.chatType == .group ? terminalImageSize : 0,
+                    avatarSize: avatarSize,
                     topGap: topGap,
                     contentStartsWithCard: terminalItemStartsWithCard(ci, revealed: revealed)
                 ) {
-                    chatItemWithMenu(ci, range, terminalMediaWidth(listWidth - leading - goToButton), itemSeparation)
+                    chatItemWithMenu(ci, range, terminalMediaWidth(listWidth - leading - goToButton - terminalColumn(avatarSize)), itemSeparation)
                 }
                 .padding(.leading, leading)
             }

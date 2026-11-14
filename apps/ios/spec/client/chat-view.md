@@ -362,11 +362,9 @@ row padding        top: topGap; with an avatar topGap + terminalHeadingBottomGap
 avatarBelowNameLine the avatar's part above and below the name line: (avatarSize − the body line height) / 2,
                    negative when the name line is taller; 0 in a row without an avatar
 sender row         HStack, centred: the avatar column and the name; as tall as the taller of the two
-  avatar column    groups and channels: avatarSize wide, terminalAvatarOvershoot (2pt) before the ink of flat letters
-                   of the message text: chatItemTextPadding + the side bearing of H in the body font
-                   (flatLetterSideBearing) − 2pt, as round glyphs pass flat ones (user, 2026-11-13); other chats: none
-                   (avatarSize 0)
-                   one 12pt padding (user, I26): screen edge to the text, avatar to the name, time to the screen edge
+  avatar column    groups and channels: avatarSize wide at chatItemTextPadding − terminalAvatarOvershoot (10pt), 2pt into
+                   the screen padding, as round glyphs pass flat ones (user); other chats: none (avatarSize 0)
+                   one 12pt padding (user, I26): screen edge to the text in chats without avatars, time to the screen edge
   avatar           avatarSize: scaledMemberImageSize(font, terminalMemberImageBaseSize), 30pt × chat list profileImageSize ÷ 63
                    (dynamicSize at the text size, at most 75), centred on the name line
                    classic rows: memberImageSize, scaledMemberImageSize(font), 34pt (memberImageBaseSize) × the same ratio
@@ -374,15 +372,16 @@ sender row         HStack, centred: the avatar column and the name; as tall as t
                    classic sender name: memberImageSize + 10pt after the avatar's start, on the bubble edge (user, I23)
   name             name and badge in the body text style, semibold (primary for own items, secondary otherwise)
                    role label in the body text style, medium, secondary, 15pt after the name; line box of the body font
-                   start padding chatItemTextPadding after the avatar, so the name is 12pt after the visible avatar
-  below            contentGap below the name line, less the avatar's part below it (at least 0), as the bottom padding
-contentGap         terminalParagraphGap when the content starts with a card (contentStartsWithCard: terminalItemStartsWithCard),
-                   otherwise 0; with an avatar, at least terminalAvatarBottomGap (6pt) from the avatar's bottom to the card's
-                   top, or to the capitals of the first line (the top of the body line box, ascender less cap height)
-                   (user, 2026-11-13: "looks like we need 6dp")
-content            from the row start, below the name line
+                   start padding terminalAvatarGap (10pt) after the avatar, at the text start (50pt); without an avatar
+                   chatItemTextPadding
+  below            terminalParagraphGap when the content starts with a card (contentStartsWithCard:
+                   terminalItemStartsWithCard), otherwise 0, below the name line, less the avatar's part below it (at
+                   least 0), as the bottom padding
+content            below the name line, after terminalColumn(avatarSize): avatarSize + terminalAvatarGap −
+                   terminalAvatarOvershoot (38pt), so its 12pt text edge is at 50pt; every row of a group, with or without
+                   a sender row; 0 in other chats
 selection          SelectedChatItem 8pt from the start; row moved by 28pt; selected row tint primary 10%
-media width        terminalMediaWidth(listWidth less the selection offset and a go-to button): that width less two text
+media width        terminalMediaWidth(listWidth less the selection offset, a go-to button and the column): that width less two text
                    edges, at most terminalMaxMediaWidth (500); tall or square media 0.75 of it, as computed by ChatItemView
                    from maxWidth. The go-to button, in search results and on items forwarded from a chat of the user, is
                    the icon, its gap and chatItemTextPadding wide (goToItemIconSize + goToItemIconGap + 12), so media end

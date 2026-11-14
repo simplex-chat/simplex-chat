@@ -202,6 +202,9 @@ final class SnapshotTests: XCTestCase {
     func testTerminalMediaAndAvatarSizes() {
         XCTAssertEqual(terminalMediaWidth(402), 378)
         XCTAssertEqual(terminalMediaWidth(1000), 500)
+        XCTAssertEqual(terminalColumn(30), 38)
+        XCTAssertEqual(terminalColumn(0), 0)
+        XCTAssertEqual(terminalMediaWidth(402 - terminalColumn(30)), 340)
         XCTAssertEqual(scaledMemberImageSize(.large, terminalMemberImageBaseSize), 30)
     }
 
@@ -375,6 +378,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalQuoteThumbnail_Previews.self, allSizes: true),
         SnapshotScene(TerminalRightToLeft_Previews.self),
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
+        SnapshotScene(TerminalSession_Previews.self),
         SnapshotScene(TerminalSpacing_Previews.self, allSizes: true),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
@@ -508,6 +512,12 @@ struct TerminalRightToLeft_Previews: PreviewProvider {
 struct TerminalRuleOnly_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().ruleOnly()
+    }
+}
+
+struct TerminalSession_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().session()
     }
 }
 
@@ -881,6 +891,24 @@ private final class SnapshotFixtures {
                 ])
             ]
         ),
+        "543 of 544 pass. One test fails:\n```\nFAIL hub.test.ts (1 of 544)\n```\nShall I fix it?": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "543 of 544 pass. One test fails:"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "```", format: .markup(token: .fenceMark(language: nil))),
+                FormattedText(text: "\n", format: .markup(token: .hardBreak)),
+                FormattedText(text: "FAIL hub.test.ts (1 of 544)"),
+                FormattedText(text: "\n", format: .markup(token: .hardBreak)),
+                FormattedText(text: "```", format: .markup(token: .fenceMark(language: nil))),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "Shall I fix it?")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 0, to: 1)),
+                .codeBlock(language: nil, content: SegmentRange(from: 4, to: 5)),
+                .paragraph(content: SegmentRange(from: 8, to: 9))
+            ]
+        ),
         "run this one first:\n```\nnpm run publish\n```": ParsedMarkdown(
             formattedText: [
                 FormattedText(text: "run this one first:"),
@@ -1111,6 +1139,29 @@ private final class SnapshotFixtures {
 
     func spacing() -> some View {
         chatRows(teamChat, spacingItems(), terminal: true)
+    }
+
+    func session() -> some View {
+        var claude = Self.member(5, "Claude", .owner)
+        claude.memberProfile.peerType = .agent
+        var project = Self.group(3, "1 · my-project", channel: false)
+        project.membership = Self.member(99, "alice", .owner)
+        let prompt = "Are the tests passing?"
+        return chatRows(.group(groupInfo: project, groupChatScope: nil), [
+            msg(.groupRcv(groupMember: claude), "alice is an owner and can send prompts to Claude and the group's commands, and approve tool use.", -6),
+            msg(.groupSnd, prompt, -5),
+            msg(.groupRcv(groupMember: claude), "Checking the test suite.", -5 + 10.0 / 60),
+            msg(.groupRcv(groupMember: claude), "I want to use Bash: Run unit tests\nnpm test\n/approve 1 or /reject 1", -5 + 20.0 / 60),
+            msg(.groupSnd, "/approve 1", -5 + 40.0 / 60),
+            msg(.groupRcv(groupMember: claude), "543 of 544 pass. One test fails:\n```\nFAIL hub.test.ts (1 of 544)\n```\nShall I fix it?", -4, quote: quote(.groupSnd, prompt)),
+            msg(.groupSnd, "Yes, fix it.", -3),
+            msg(.groupSnd, "Then run the tests again.", -3 + 5.0 / 60),
+            msg(.groupSnd, "And commit.", -3 + 10.0 / 60),
+            msg(.groupRcv(groupMember: claude), "Fixing hub.ts.", -2),
+            msg(.groupRcv(groupMember: claude), "Running the tests.", -2 + 5.0 / 60),
+            msg(.groupRcv(groupMember: claude), "Done: the answer now quotes its own prompt.\n544 of 544 pass.\nCommitted as 1f3c2a9.", -2 + 10.0 / 60),
+            msg(.groupRcv(groupMember: claude), "Coverage after the fix", -2 + 30.0 / 60, content: .image(text: "Coverage after the fix", image: landscape), file: imageFile("coverage.jpg"))
+        ], terminal: true)
     }
 
     func paragraphs() -> some View {

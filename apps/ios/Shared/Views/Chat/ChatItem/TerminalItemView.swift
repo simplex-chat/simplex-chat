@@ -388,13 +388,10 @@ func terminalMediaWidth(_ row: CGFloat) -> CGFloat {
 
 let terminalMemberImageBaseSize: CGFloat = 30
 let terminalAvatarOvershoot: CGFloat = 2
-let terminalAvatarBottomGap: CGFloat = 6
+let terminalAvatarGap: CGFloat = 10
 
-private func flatLetterSideBearing(_ font: UIFont) -> CGFloat {
-    var letter = UniChar(("H" as Unicode.Scalar).value)
-    var glyph = CGGlyph()
-    CTFontGetGlyphsForCharacters(font as CTFont, &letter, &glyph, 1)
-    return CTFontGetBoundingRectsForGlyphs(font as CTFont, .horizontal, &glyph, nil, 1).minX
+func terminalColumn(_ avatarSize: CGFloat) -> CGFloat {
+    avatarSize > 0 ? avatarSize + terminalAvatarGap - terminalAvatarOvershoot : 0
 }
 
 struct ChatItemSender {
@@ -422,28 +419,21 @@ struct TerminalChatItemRow<Content: View>: View {
                             Color.clear.frame(width: avatarSize, height: 0)
                             sender.image
                         }
-                        .padding(.leading, chatItemTextPadding + flatLetterSideBearing(UIFont.preferredFont(forTextStyle: .body)) - terminalAvatarOvershoot)
+                        .padding(.leading, chatItemTextPadding - terminalAvatarOvershoot)
                     }
                     senderNameAndRole(sender)
-                        .padding(.leading, chatItemTextPadding)
+                        .padding(.leading, avatarSize > 0 ? terminalAvatarGap : chatItemTextPadding)
                 }
-                .padding(.bottom, contentGap - max(0, avatarBelowNameLine))
+                .padding(.bottom, (contentStartsWithCard ? terminalParagraphGap : 0) - max(0, avatarBelowNameLine))
             }
             content()
+                .padding(.leading, terminalColumn(avatarSize))
         }
         .padding(.top, topGap + (sender?.image == nil ? 0 : terminalHeadingBottomGap))
     }
 
     private var avatarBelowNameLine: CGFloat {
         sender?.image == nil ? 0 : (avatarSize - terminalLineHeight(UIFont.preferredFont(forTextStyle: .body), nil, theme)) / 2
-    }
-
-    private var contentGap: CGFloat {
-        let cardGap = contentStartsWithCard ? terminalParagraphGap : 0
-        guard sender?.image != nil else { return cardGap }
-        let font = UIFont.preferredFont(forTextStyle: .body)
-        let capTop = contentStartsWithCard ? 0 : terminalLineBox(font, nil, theme).top + font.ascender - font.capHeight
-        return max(cardGap, avatarBelowNameLine + terminalAvatarBottomGap - capTop)
     }
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {
