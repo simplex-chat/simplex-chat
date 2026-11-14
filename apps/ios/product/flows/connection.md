@@ -151,6 +151,7 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 | `ChatError.errorAgent(.SMP(_, .BLOCKED(info)))` | Server operator blocked connection | Alert: "Connection blocked" with reason |
 | `ChatError.errorAgent(.SMP(_, .QUOTA))` | Too many undelivered messages | Alert: "Undelivered messages" |
 | `ChatError.errorAgent(.INTERNAL("SEUniqueID"))` | Duplicate connection attempt | Alert: "Already connected?" |
+| `ChatError.errorAgent(.CONN(.DUPLICATE, _))` | One-time link already used to connect | Alert: "Already connected?" |
 | `ChatError.errorAgent(.BROKER(_, .TIMEOUT))` | Server timeout | Retryable via `chatApiSendCmdWithRetry` |
 | `ChatError.errorAgent(.BROKER(_, .NETWORK))` | Network failure | Retryable via `chatApiSendCmdWithRetry` |
 | `contactAlreadyExists` | Connecting to existing contact | Alert: "Contact already exists" with contact name |

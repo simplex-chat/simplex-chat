@@ -60,7 +60,7 @@ import Numeric.Natural (Natural)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..), InvoiceStatus (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (stateTVar', tshow)
 
 -- | Allows for our clock running ahead of the provider's; an expired invoice can still be marked paid.
 expiryGrace :: NominalDiffTime
@@ -404,7 +404,7 @@ cleanupUnpaid env@PollerEnv {peStore, peCleanedAt, peCleanupLeft} now = do
     when listed $ do
       atomically $ writeTVar peCleanedAt (Just now)
       void $ safely "names: the late payment alerts" (alertLatePayments env now)
-  candidates <- atomically $ stateTVar peCleanupLeft (splitAt cleanupReadsPerPass)
+  candidates <- atomically $ stateTVar' peCleanupLeft (splitAt cleanupReadsPerPass)
   deleted <- filterM (\c@(_, _, ref) -> safelyWith ("names cleanup: invoice " <> ref) False (cleanOne c)) candidates
   unless (null deleted) $ logNote ("names cleanup: deleted " <> tshow (length deleted) <> " unpaid order(s)")
   where
@@ -568,7 +568,7 @@ uncancelled :: PollerEnv -> UTCTime -> OverdueInvoice -> Text -> IO Bool
 uncancelled env@PollerEnv {peCancelFailed} now OverdueInvoice {oiProvider, oiProviderRef = ref, oiCreatedAt} e
   | diffUTCTime now oiCreatedAt <= settleWindow = keepOpen "it stays open until a cancel succeeds or it settles"
   | otherwise = do
-      firstFailed <- atomically $ stateTVar peCancelFailed $ \failed -> (M.lookup ref failed, M.insertWith (\_ first -> first) ref now failed)
+      firstFailed <- atomically $ stateTVar' peCancelFailed $ \failed -> (M.lookup ref failed, M.insertWith (\_ first -> first) ref now failed)
       case firstFailed of
         Just at | diffUTCTime now at >= cancelGiveUpDelay -> do
           logError ("badge poller: overdue " <> tshow oiProvider <> " invoice " <> ref <> " could not be cancelled at the provider, so it was expired here only; check it in the provider's dashboard: " <> e)
