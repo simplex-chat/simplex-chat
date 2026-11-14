@@ -238,11 +238,11 @@ private struct SnapshotScene {
     var device: Bool
     var view: AnyView
 
-    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false, device: Bool = false) {
+    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false, device: Bool = false, fitting: Bool = false) {
         name = String(describing: preview).replacingOccurrences(of: "_Previews", with: "")
         self.allSizes = allSizes
         self.device = device
-        view = AnyView(preview.previews)
+        view = fitting ? AnyView(preview.previews.fixedSize(horizontal: false, vertical: true)) : AnyView(preview.previews)
     }
 }
 
@@ -377,8 +377,8 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalSpacing_Previews.self, allSizes: true),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
-        SnapshotScene(UserPicker_Previews.self),
-        SnapshotScene(UserPickerUnread_Previews.self),
+        SnapshotScene(UserPicker_Previews.self, fitting: true),
+        SnapshotScene(UserPickerUnread_Previews.self, fitting: true),
         SnapshotScene(VerifyCodeView_Previews.self, device: true),
         SnapshotScene(VersionView_Previews.self),
         SnapshotScene(WhySimpleX_Previews.self),
