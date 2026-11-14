@@ -758,6 +758,37 @@ Scenes for the snapshots, on both platforms:
 - defect 4: iOS `TerminalSpacing`, carol's "ok"; Android a reacted message in the media scene;
 - defect 5: iOS `TerminalSpacing` at the accessibility sizes; Android `PreviewGroupChatLayoutTerminal` at font 150 with a long last line.
 
+As implemented on Android and desktop (2026-11-14; scenes `ChatView.PreviewGroupChatLayoutTerminalDefects`, `PreviewGroupChatLayoutBanner`, `PreviewGroupChatLayoutHiddenItems`, `PreviewGroupChatLayoutTerminalHiddenItems`):
+
+```
+decision          change                                                        measured at font 100, 2x render
+Q2 overshoot      avatar start = 12 + 0.088 em of the body font − 2 dp           letters' ink 13.44 dp, avatar 11.5 dp
+                  (TerminalChatItemRow; INTER_SIDE_BEARING,
+                  TERMINAL_AVATAR_OVERSHOOT)
+Q3 gap            message top = the lower of A and 6 dp below the avatar,        5.5 dp with the metric cap height,
+                  less the inset of the letters (first baseline − the cap        6 dp with it rounded up; at font 150
+                  height rounded up) or of a card                                A stays lower, 8.5 dp
+defect 1a         Flat rows draw no trailing empty lines (TextItemView)          the time on the list's last line
+defect 1b         none: a short code card is as wide as its code and the time
+                  is beside it already
+defect 2          terminalShowsStatus: a complete sent or received status is     the 👍 row has no ✓
+                  drawn only with the time (CIMetaView, metaReserveCopy,
+                  CIFileView)
+defect 3          getItemSeparation: a deleted, marked deleted or hidden         "hello" before a deleted item has
+                  newer item does not hide the time                               its time
+defect 4          terminalRowGap: no gap below a reactions row                   18 px gap removed
+defect 5          metaReserveCopy starts with a breaking space in Flat rows      "tomorrow" stays, the time alone
+                  too (TextItemView)                                              on the next line
+defect 6          a hidden integrity error renders no row (ChatViewListItem);    the gap and bob's empty sender row
+                  IntegrityErrorItemView always draws it (ChatItemView)          are gone
+Q6 blur           blur size / 4
+Q7 banner         top 20, 10 below the image                                     the banner 3 dp shorter
+Q9 share list     ChatInfoImage
+12.2 placeholders business a filled circle with the briefcase cut out (scaled
+                  0.785); bot and agent in the cube's box, 124.5 −878.5 711 797,
+                  as iOS agent.svg
+```
+
 ### 12.6 Renders
 
 - Decision renders, before the implementation: Q2 at three amounts and Q3 A and B, in the Android group and media scenes and iOS `TerminalOverviewGroup`, each with photos and placeholders.
