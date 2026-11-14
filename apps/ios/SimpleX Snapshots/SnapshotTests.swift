@@ -330,16 +330,19 @@ final class SnapshotTests: XCTestCase {
     }
 
     @MainActor
-    func testVoIPPushForExpiredCallSuspendsChat() async throws {
+    func testVoIPPushForExpiredCallKeepsChatSuspended() async throws {
         let chatActive = await waitUntilChatActive()
         guard chatActive else { return XCTFail("chat is not active") }
         let callKit = try CallKitFailingEndCallActions(callKitProvider())
         defer { callKit.restore() }
+        suspendChat()
+        let suspended = await waitUntil(20) { AppChatState.shared.value == .suspended }
         let handled = await receiveCallPush(callTs: Date.now.addingTimeInterval(-600))
-        let suspended = await waitUntil(20) { appStateGroupDefault.get().inactive }
+        let activated = await waitUntil(5) { !appStateGroupDefault.get().inactive }
         await activateChatAfterCallPush()
-        XCTAssertTrue(handled)
         XCTAssertTrue(suspended)
+        XCTAssertTrue(handled)
+        XCTAssertFalse(activated)
     }
 
     @MainActor
@@ -363,12 +366,16 @@ final class SnapshotTests: XCTestCase {
     func testVoIPPushKeepsChatActiveWhenAppOpens() async throws {
         let chatActive = await waitUntilChatActive()
         guard chatActive else { return XCTFail("chat is not active") }
-        let callKit = try CallKitFailingEndCallActions(callKitProvider())
+        let provider = try callKitProvider()
+        let callKit = CallKitFailingEndCallActions(provider)
         defer { callKit.restore() }
-        let handled = await receiveCallPush(callTs: Date.now.addingTimeInterval(-600))
+        let callUUID = UUID()
+        try await provider.reportNewIncomingCall(with: callUUID, update: CXCallUpdate())
+        let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
         try await Task.sleep(nanoseconds: 1_000_000_000)
         CallController.shared.shouldSuspendChat = false
         let suspended = await waitUntil(5) { appStateGroupDefault.get().inactive }
+        provider.reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
         await activateChatAfterCallPush()
         XCTAssertTrue(handled)
         XCTAssertFalse(suspended)
