@@ -47,9 +47,10 @@ where
 
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
-import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), GroupConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
+import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), GroupConfig (..), ListenerConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, joinerAcceptance, refreshTracker, revokeWithTracker, runGroupLane)
 import StoreService.Group.Command (MoneyCmd (..), badgeTypeP, balanceArgsP, closeArgsP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, recordRefundArgsP, textTokenP)
+import StoreService.Metrics (MetricsEnv (..), NamesSource (..), runMetrics)
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (ChainClient, newChainClient, nodeChainId)
@@ -65,8 +66,8 @@ import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runWorkers)
 import StoreService.Options
-import StoreService.Poller (expiryGrace, newPollerEnv, newReadHints, runPoller)
-import StoreService.Providers (Provider)
+import StoreService.Poller (PollerEnv (peListedOk), expiryGrace, newPollerEnv, newReadHints, runPoller)
+import StoreService.Providers (Provider (pProvider))
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store
@@ -78,7 +79,7 @@ import StoreService.StoreReceipts.Google (PlayVerifier (..), playStoreVerifier)
 import StoreService.StoreReceipts.Mock (newMockStoreVerifier)
 import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Bucket, takeFrom)
-import StoreService.Web.Server (checkSiteDirs, exportWebapp, newWebEnv, runWebListeners)
+import StoreService.Web.Server (WebEnv (weWebhookAt), checkSiteDirs, exportWebapp, newWebEnv, runWebListeners)
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM
 import Control.Logger.Simple (logError, logNote, logWarn)
@@ -119,7 +120,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
-import Simplex.Messaging.Encoding.String (strEncode)
+import Simplex.Messaging.Encoding.String (strEncode, textEncode)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (catchOwn, catchOwn', raceAny_, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version (isCompatible)
@@ -328,7 +329,10 @@ storeService opts serviceCfg baseCfg env = do
       exportWebapp sc
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
       nameLanes <- maybe (pure []) namesLanes namesEnv
-      pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes
+      let metricsEnv = MetricsEnv {meStore = chatStore, meProviders = map (textEncode . pProvider) providers, meListedOk = peListedOk pollerEnv, meWebhookAt = weWebhookAt webEnv, meNames = namesSource <$> namesEnv}
+          namesSource NamesEnv {neChain, neContracts} = NamesSource {nsChain = neChain, nsContracts = neContracts}
+          metricsLane = [runMetrics (listener sc) port metricsEnv | Just port <- [lMetricsPort $ listener sc]]
+      pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes <> metricsLane
 
 startNames :: ChatController -> Turns -> Waiters -> [Provider] -> NamesConfig -> IO NamesEnv
 startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig {nTLD, nCodesOnly, nMinPriceCentsPerYear, nChain = ChainConfig {cChainId}} =

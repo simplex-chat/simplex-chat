@@ -34,6 +34,7 @@ import StoreService.Web.Names (namesApp, namesRoutes)
 import StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView)
 import StoreService.Web.Names.Registration (heldFor, registrationChangedResponse, versionParam)
 import Control.Concurrent.Async (race)
+import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO)
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (filterM, forM_, void, when)
@@ -46,6 +47,8 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
 import Data.Functor ((<&>))
 import Data.List (isPrefixOf)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
@@ -80,7 +83,9 @@ data WebEnv = WebEnv
     -- | @Nothing@ when the ini has no @[names]@ section.
     weNames :: Maybe NamesEnv,
     -- | The name orders' part of weNames, which tests set without a chat controller.
-    weOrders :: Maybe OrdersEnv
+    weOrders :: Maybe OrdersEnv,
+    -- | When each provider last delivered a webhook that verified, by its text encoding.
+    weWebhookAt :: TVar (Map Text UTCTime)
   }
 
 -- | A built site, served when @serve_webapp@ is on.
@@ -95,7 +100,8 @@ newWebEnv weStore weConfig weWaiters weHints weProviders weNames = do
   weHttp <- newHttpEnv lc
   weBadgesSite <- if lServeWebapp then Just <$> loadSite (keyFills weConfig) lBadgesStaticDir else pure Nothing
   weNamesSite <- mapM (loadSite (namesFills weConfig)) (lNamesPort *> lNamesStaticDir)
-  pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weHttp, weBadgesSite, weNamesSite, weNames, weOrders = ordersEnv <$> weNames}
+  weWebhookAt <- newTVarIO M.empty
+  pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weHttp, weBadgesSite, weNamesSite, weNames, weOrders = ordersEnv <$> weNames, weWebhookAt}
   where
     lc@ListenerConfig {lServeWebapp, lBadgesStaticDir, lNamesStaticDir, lNamesPort} = listener weConfig
     loadSite fills dir = Site dir <$> prepareShell dir fills
@@ -523,8 +529,9 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
             case pVerifyWebhook p now (requestHeaders req) (LB.toStrict body) of
               Left (WebhookError e) -> refuse e
               Left (WebhookStale e) -> logRefusal logWarn (route <> " refused: " <> e) >> respond webhookRefused
-              Right Nothing -> ignore body "nothing this service acts on"
-              Right (Just ref) -> resolve body ref
+              Right ref_ -> do
+                atomically $ modifyTVar' (weWebhookAt env) $ M.insert (textEncode provider) now
+                maybe (ignore body "nothing this service acts on") (resolve body) ref_
     refuse :: Text -> IO ResponseReceived
     refuse why = logRefusal logNote (route <> " refused: " <> why) >> respond webhookRefused
     -- anyone can post here, so the lines a flood would write are capped, not the refusals

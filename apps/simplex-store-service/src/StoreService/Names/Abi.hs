@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module StoreService.Names.Abi
   ( AbiValue (..),
@@ -21,6 +22,7 @@ module StoreService.Names.Abi
     decodeBytes32,
     decodeBytes,
     decodeString,
+    decodeLabels,
   )
 where
 
@@ -125,6 +127,18 @@ decodeBytes ret = offsetAt 0 ret >>= bytesAt ret
 
 decodeString :: ByteString -> Either AbiError Text
 decodeString ret = decodeBytes ret >>= first (const AENotUtf8) . decodeUtf8'
+
+-- | A return of a bytes32[] and a string[] of the same length, paired.
+decodeLabels :: ByteString -> Either AbiError [(ByteString, Text)]
+decodeLabels ret = do
+  (hashCount, hashesStart) <- offsetAt 0 ret >>= arrayAt
+  (labelCount, labelsStart) <- offsetAt abiWordSize ret >>= arrayAt
+  unless (hashCount == labelCount) $ Left AEOffset
+  hashes <- mapM (\i -> wordAt (hashesStart + i * abiWordSize) ret) [0 .. hashCount - 1]
+  labels <- mapM (\i -> offsetAt (labelsStart + i * abiWordSize) ret >>= bytesAt ret . (labelsStart +) >>= first (const AENotUtf8) . decodeUtf8') [0 .. labelCount - 1]
+  pure $ zip hashes labels
+  where
+    arrayAt o = (,o + abiWordSize) <$> offsetAt o ret
 
 wordAt :: Int -> ByteString -> Either AbiError ByteString
 wordAt o ret

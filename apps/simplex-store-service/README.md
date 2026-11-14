@@ -701,7 +701,8 @@ With `serve_webapp = on` (all in one), the service listens on both ports, and ea
 own site: every path outside `/api/` and `/webhooks/` is a file of that site, `/` and `/index.html`
 its shell. Both ports answer `/api/` and `/webhooks/`, whatever the `Host`. A reverse proxy sends
 each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. With
-`serve_webapp = off`, the service listens on `badges_port` alone, for the API and the webhooks.
+`serve_webapp = off`, the service listens on `badges_port` alone, for the API and the webhooks. With
+`metrics_port`, it also listens on `127.0.0.1` on that port, for `/metrics` alone.
 
 ### Development with a local chain
 
@@ -862,6 +863,106 @@ simplex.domains {
 
 The service sets each file's type and `Cache-Control` itself: `no-cache`, and a year for
 `/assets/*`, so the names site's fonts and images are revalidated rather than kept for a day.
+
+### Metrics
+
+`[listener] metrics_port` turns on the store's Prometheus metrics. It is off when the key is
+absent and must differ from `badges_port` and `names_port`. The service answers `GET /metrics` on
+`127.0.0.1:<metrics_port>`, whatever `host` is, so only the machine itself reaches it:
+
+```ini
+[listener]
+metrics_port = 9300
+```
+
+Each scrape counts invoices, badges and, with `[names]`, name orders, transactions, balances and
+record edits in the database. With `[names]`, the registrar key's ETH balance, its sponsor
+allowance, the node's latest block and the terms links are read from the node at start and then
+every minute, and a scrape answers the last read, so a slow or failing node never delays a scrape.
+A part that fails keeps its last value, sets `simplex_store_names_chain_read_ok` to 0 and logs a
+warning. A port that cannot be listened on is logged as an error and leaves the rest of the
+service running.
+
+| Metric | Value |
+|---|---|
+| `simplex_store_invoices_open{provider}` | open invoices of badges and names, by provider: `crypto` (BTCPay) or `stripe`; 0 for a configured provider with none |
+| `simplex_store_invoices_overdue{provider}` | those of them past their expiry and its 10-minute grace with no money received; the poller expires each once the provider answers, so a count that stays up means the provider cannot be read or the invoice cancelled there |
+| `simplex_store_provider_list_ok_timestamp_seconds{provider}` | when the poller last listed the provider's open invoices successfully, every one or two minutes at the default `idle_seconds`; absent until the first list |
+| `simplex_store_provider_webhook_timestamp_seconds{provider}` | when the provider last delivered a webhook that verified; absent until the first one |
+| `simplex_store_badges_purchases{status}` | badge purchases by status: `acquiring`, `issued`, `superseded` or `failed`, each 0 when it has none |
+| `simplex_store_badges_subscriptions{state}` | App Store and Google Play subscriptions paying for badges, by state: `renewing`, `cancelled`, `billingRetry` or `ended`, each 0 when it has none |
+| `simplex_store_badges_codes_open` | badge codes paid or free, not revoked or expired, with redemptions left |
+| `simplex_store_names_orders{phase}` | name orders in the phase: `unpaid`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed`; the queue is `queued` to `registering`, while `unpaid` also counts closed orders kept for 30 days and `failed` every failed order not tried again |
+| `simplex_store_names_queue_oldest_change_timestamp_seconds` | the last change, in Unix seconds, of the order unchanged longest among those the service moves on: `queued`, `committing`, `registering`, and `committed` with the page's reveal stored; absent when there is none |
+| `simplex_store_names_transactions_pending` | registrar transactions sent and not settled, one per nonce, so a fee replacement counts once |
+| `simplex_store_names_transactions_oldest_pending_timestamp_seconds` | when the oldest of them was first signed; absent when none is pending |
+| `simplex_store_names_invoices_open` | open invoices of name orders |
+| `simplex_store_names_balances_held` | balances reserved by an order paying the difference, until that order is paid or closed |
+| `simplex_store_names_balances_held_cents` | the cents of those balances |
+| `simplex_store_names_record_edits_pending` | record edits relayed and not settled |
+| `simplex_store_names_record_edits_oldest_pending_timestamp_seconds` | when the oldest of them was made; absent when none is pending |
+| `simplex_store_names_registrar_balance_wei` | the registrar key's ETH balance, as last read |
+| `simplex_store_names_sponsor_allowance_cents` | its allowance left on the sponsor, in cents, rounded down, as last read |
+| `simplex_store_names_chain_head_block` | the node's latest block number, as last read |
+| `simplex_store_names_chain_head_timestamp_seconds` | that block's time |
+| `simplex_store_names_chain_base_fee_wei` | that block's base fee per gas |
+| `simplex_store_names_terms_held{kind}` | 1 when the service holds the text of the `general` or `community` terms the name policy links, 0 while it cannot fetch it, so names of that kind cannot be ordered; absent while the policy links none |
+| `simplex_store_names_chain_read_timestamp_seconds` | when every part of the read last succeeded |
+| `simplex_store_names_chain_read_ok` | 1 when the last read succeeded in every part, 0 when a part failed or none has finished |
+
+With `[names]`, the service also counts every name on chain, however it was registered, at start and
+then every 5 minutes, under the metric names of the former `simplex-names-exporter`. At the latest
+block it reads the base registrar's names (`totalSupply`, `tokenByIndex`), keeps those whose
+`nameExpires` is after the block's time, takes each label from `labelOf`, then walks the subname
+registrar (`subnameHook()`) level by level with `getChildren`, keeping subnames whose `ownerOf` is
+not zero. For each name it reads `resolver(node)` on the registry and, on the configured resolver,
+its `simplex.contact` and `simplex.channel` texts. The reads run 16 at a time at that one block. A
+failed census keeps the last one and is counted.
+
+| Metric | Value |
+|---|---|
+| `simplex_names{level,records}` | live names at `level` 2 (`alice.simplex`), 3 (`shop.alice.simplex`) and below, by `records`: `none`, `contact`, `channel`, `both`, or `other_resolver` for a name whose resolver is not the configured one, whose records are not read; names in the 90-day grace period are not counted |
+| `simplex_name_length` | histogram of label lengths in characters, by `level`, a bucket for each length 1 to 63 |
+| `simplex_names_block` | the block the census read |
+| `simplex_names_refresh_timestamp_seconds` | when the census last succeeded |
+| `simplex_names_refresh_failures_total` | counter of failed censuses since the service started |
+
+Every metric is a gauge, but for the census's histogram and counter. A stuck order, transaction or record edit, a node that cannot be read or
+has stopped following the chain, terms that cannot be shown and a payment provider that cannot be
+read show as:
+
+```
+time() - simplex_store_names_queue_oldest_change_timestamp_seconds > 1200
+time() - simplex_store_names_transactions_oldest_pending_timestamp_seconds > 900
+time() - simplex_store_names_record_edits_oldest_pending_timestamp_seconds > 900
+simplex_store_names_chain_read_ok == 0
+time() - simplex_store_names_chain_head_timestamp_seconds > 120
+simplex_store_names_terms_held == 0
+time() - simplex_store_provider_list_ok_timestamp_seconds > 600
+simplex_store_invoices_overdue > 0
+```
+
+The overdue count can be above 0 for a few seconds between an invoice's grace ending and the next
+poller pass, so its alert waits, as with `for: 10m`. Mainnet makes a block every 12 seconds, so a
+head older than 2 minutes means the node has fallen behind.
+
+An order moves on within minutes: its commit and register are each mined and confirmed, and the
+register waits about a minute after the commit. An order tried again can wait unchanged up to
+`reveal_margin_seconds` (900 by default) for its old commitment to lapse, so the queue alert's
+threshold is above it. Size the alerts on the balance and the allowance to
+the orders expected before a top-up, with the figures in [Fund the key](#fund-the-key).
+
+Caddy proxies it on the monitoring site of the host, beside node_exporter, inside that site's
+`handle_path /metrics/*` block:
+
+```
+handle_path /store_service* {
+	rewrite * /metrics
+	reverse_proxy http://127.0.0.1:9300
+}
+```
+
+Prometheus then scrapes `/metrics/store_service` on that site.
 
 ### Terms and community names
 
@@ -1234,6 +1335,7 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
 
 #### When funds or the allowance run out
 
+With `metrics_port` set, both are exported before they run out (see [Metrics](#metrics)).
 `docker compose logs store-service` shows:
 
 - `[ERROR …] names sender: nonce <n>: not sent: …`, with the node's `insufficient funds` message,

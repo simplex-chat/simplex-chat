@@ -460,8 +460,10 @@ executable simplex-store-service
       StoreService.Config
       StoreService.Group
       StoreService.Group.Command
+      StoreService.Metrics
       StoreService.Names.Abi
       StoreService.Names.Balances
+      StoreService.Names.Census
       StoreService.Names.Chain
       StoreService.Names.Codes
       StoreService.Names.Community
@@ -801,6 +803,7 @@ test-suite simplex-chat-test
       Bots.StoreService.FakeStripe
       Bots.StoreService.GroupIntegrationTests
       Bots.StoreService.GroupTests
+      Bots.StoreService.MetricsTests
       Bots.StoreService.NameRegistrationTests
       Bots.StoreService.NamesBalancesTests
       Bots.StoreService.NamesChainTests
@@ -844,8 +847,10 @@ test-suite simplex-chat-test
       StoreService.Config
       StoreService.Group
       StoreService.Group.Command
+      StoreService.Metrics
       StoreService.Names.Abi
       StoreService.Names.Balances
+      StoreService.Names.Census
       StoreService.Names.Chain
       StoreService.Names.Codes
       StoreService.Names.Community

@@ -11,6 +11,7 @@ module StoreService.Names.Contracts
     CommitmentAges (..),
     Terms (..),
     TermsRefusal (..),
+    RegistrarFunds (..),
     newContracts,
     secondsPerYear,
     nameStatus,
@@ -18,6 +19,7 @@ module StoreService.Names.Contracts
     textRecord,
     chainPriceCents,
     sponsorNonce,
+    registrarFunds,
     resolverNonce,
     namePolicy,
     forgetNamePolicy,
@@ -28,6 +30,7 @@ module StoreService.Names.Contracts
     termsText,
     fetchCurrentTerms,
     runTermsFetch,
+    termsHeld,
     policyNonce,
     acceptedTerms,
     confirmedTag,
@@ -38,6 +41,7 @@ module StoreService.Names.Contracts
     commitmentAges,
     together,
     concurrent,
+    callAt,
   )
 where
 
@@ -72,7 +76,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId, registrarBalance)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey, labelNode, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
@@ -123,6 +127,9 @@ data Terms = Terms {tmLink :: Text, tmHash :: ByteString}
   deriving (Eq, Show)
 
 data TermsRefusal = TRLink | TRWait Int
+  deriving (Eq, Show)
+
+data RegistrarFunds = RegistrarFunds {rfBalanceWei :: Integer, rfAllowanceCents :: Integer}
   deriving (Eq, Show)
 
 secondsPerYear :: Integer
@@ -210,6 +217,12 @@ chainPriceCents ct@Contracts {ctMinPriceCentsPerYear} len years = fmap (>>= chec
 sponsorNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", addressWord owner) decodeWord64
 
+registrarFunds :: Contracts -> IO (Either ChainError RegistrarFunds)
+registrarFunds ct@Contracts {ctChain = c@ChainClient {ccRegistrar}} =
+  together $ RegistrarFunds <$> concurrent (registrarBalance c) <*> concurrent allowance
+  where
+    allowance = call ct (cSponsor $ chainConfig ct) ("registrarAllowance(address)", addressWord ccRegistrar) $ fmap (`div` attoUsdPerCent) . decodeUint256
+
 resolverNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 resolverNonce ct owner = call ct (resolver ct) ("nonces(address)", addressWord owner) decodeWord64
 
@@ -253,6 +266,14 @@ termsText ct@Contracts {ctTermsTexts, ctFetching} t@Terms {tmHash} =
     Nothing -> withMVar ctFetching $ \_ -> kept >>= maybe (fetchTerms ct t) (pure . Right)
   where
     kept = M.lookup tmHash <$> readIORef ctTermsTexts
+
+-- | Each kind of terms the name policy links, with whether its text is held; nothing is fetched.
+termsHeld :: Contracts -> IO (Either ChainError [(Text, Bool)])
+termsHeld ct@Contracts {ctTermsTexts} = termsLinks ct >>= mapM held
+  where
+    held (generalLink, communityLink) = do
+      texts <- readIORef ctTermsTexts
+      pure [(kind, M.member tmHash texts) | (kind, Just Terms {tmHash}) <- [("general", termsOf generalLink), ("community", termsOf communityLink)]]
 
 fetchCurrentTerms :: Contracts -> IO ()
 fetchCurrentTerms ct =
