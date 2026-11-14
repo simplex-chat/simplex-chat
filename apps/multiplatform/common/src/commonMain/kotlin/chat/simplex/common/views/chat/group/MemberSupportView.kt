@@ -227,7 +227,7 @@ fun SupportChatRow(member: GroupMember, isChannel: Boolean) {
       horizontalArrangement = Arrangement.spacedBy(4.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      MemberProfileImage(size = MEMBER_ROW_AVATAR_SIZE, member)
+      MemberProfileImage(size = 35.dp, member, modifier = Modifier.centeredIn(MEMBER_ROW_AVATAR_SIZE))
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Column {
         Row(verticalAlignment = Alignment.CenterVertically) {

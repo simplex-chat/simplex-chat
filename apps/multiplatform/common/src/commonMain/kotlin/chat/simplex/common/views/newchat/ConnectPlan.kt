@@ -345,7 +345,7 @@ private suspend fun planAndConnectTask(
                 ProfileImage(
                   size = alertProfileImageSize,
                   image = groupSLinkData.groupProfile.image,
-                  icon = MR.images.ic_bigtop_updates_circle_filled
+                  icon = MR.images.ic_avatar_channel
                 )
               },
               subtitle = generalGetString(MR.strings.channel_no_active_relays_try_later),
@@ -510,7 +510,7 @@ fun openChat_(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, chat: Cha
   }
 }
 
-val alertProfileImageSize = 138.dp
+val alertProfileImageSize = 115.dp
 
 // For alerts that show the name inline (not as a profile with an avatar): "Alice" -> "Alice (@alice.testing)".
 private fun nameWithDomain(name: String, planSimplexName: SimplexNameInfo?): String =
@@ -716,7 +716,7 @@ fun showPrepareContactAlert(
         size = alertProfileImageSize,
         image = contactShortLinkData.profile.image,
         icon =
-          if (contactShortLinkData.business) MR.images.ic_work_filled_padded
+          if (contactShortLinkData.business) MR.images.ic_avatar_business
           else peerTypeIcon(contactShortLinkData.profile.peerType)
       )
     },
@@ -767,7 +767,7 @@ fun showPrepareGroupAlert(
       ProfileImage(
         size = alertProfileImageSize,
         image = groupShortLinkData.groupProfile.image,
-        icon = if (isChannel) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_supervised_user_circle_filled
+        icon = if (isChannel) MR.images.ic_avatar_channel else MR.images.ic_supervised_user_circle_filled
       )
     },
     nameCaption = planSimplexName?.shortStr,

@@ -210,7 +210,7 @@ private fun DecryptionErrorCard(onClick: () -> Unit, inlineMeta: (@Composable ()
       }
     }
   } else {
-    Surface(Modifier.clickable(onClick = onClick).messageCard(), shape = RoundedCornerShape(18.dp), color = receivedColor, contentColor = LocalContentColor.current) {
+    Surface(Modifier.padding(start = CHAT_ITEM_TEXT_PADDING).clickable(onClick = onClick).messageCard(), shape = RoundedCornerShape(18.dp), color = receivedColor, contentColor = LocalContentColor.current) {
       Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp), contentAlignment = Alignment.BottomEnd) {
         content()
       }

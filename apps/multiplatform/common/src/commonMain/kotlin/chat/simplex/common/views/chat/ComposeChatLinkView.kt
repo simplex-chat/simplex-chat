@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.MsgChatLink
 import chat.simplex.common.ui.theme.appColors
 import chat.simplex.common.views.helpers.ProfileImage
+import chat.simplex.common.views.helpers.centeredIn
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.res.*
 
@@ -29,7 +30,7 @@ fun ComposeChatLinkView(
       .padding(start = 8.dp, top = 6.dp, bottom = 6.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    ProfileImage(size = 54.dp, image = chatLink.image, icon = chatLink.iconRes)
+    ProfileImage(size = 45.dp, image = chatLink.image, icon = chatLink.iconRes, modifier = Modifier.centeredIn(54.dp))
     Column(
       Modifier.fillMaxWidth().weight(1f).padding(horizontal = 8.dp)
     ) {

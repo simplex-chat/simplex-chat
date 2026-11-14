@@ -56,7 +56,7 @@ fun CIGroupInvitationView(
     Row(
       Modifier.defaultMinSize(minWidth = 220.dp)
     ) {
-      ProfileImage(size = 54.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = iconColor)
+      ProfileImage(size = 45.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = iconColor, modifier = Modifier.centeredIn(54.dp))
       Spacer(Modifier.width(8.dp))
       Column(
         Modifier.defaultMinSize(minHeight = 54.dp),
@@ -87,10 +87,10 @@ fun CIGroupInvitationView(
   val receivedColor = MaterialTheme.appColors.receivedMessage
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp) }) { inlineMeta ->
     Surface(
-      modifier = if (action && !inProgress.value) Modifier.clickable(onClick = {
+      modifier = Modifier.padding(start = if (inlineMeta == null) CHAT_ITEM_TEXT_PADDING else 0.dp).then(if (action && !inProgress.value) Modifier.clickable(onClick = {
         inProgress.value = true
         joinGroup(groupInvitation.groupId) { inProgress.value = false }
-      }) else Modifier,
+      }) else Modifier),
       shape = RoundedCornerShape(18.dp),
       color = if (sent) sentColor else receivedColor,
       contentColor = LocalContentColor.current

@@ -362,7 +362,7 @@ fun ChatPreviewView(
           if (image != null) {
             Image(base64ToBitmap(image), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
           } else {
-            Icon(painterResource(mc.chatLink.iconRes), null, Modifier.size(44.sp.toDp()), tint = if (isInDarkTheme()) FileDark else FileLight)
+            ProfileImage(36.5.sp.toDp(), icon = mc.chatLink.iconRes, color = if (isInDarkTheme()) FileDark else FileLight)
           }
         }
       }
@@ -403,7 +403,7 @@ fun ChatPreviewView(
   Box(contentAlignment = Alignment.Center) {
     Row {
       Box(contentAlignment = Alignment.BottomEnd) {
-        ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier)
+        ChatInfoImage(cInfo, size = 60.dp * fontSizeSqrtMultiplier, modifier = Modifier.centeredIn(72.dp * fontSizeSqrtMultiplier))
         Box(Modifier.padding(end = 6.sp.toDp(), bottom = 6.sp.toDp())) {
           chatPreviewImageOverlayIcon()
         }

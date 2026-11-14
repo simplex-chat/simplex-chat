@@ -81,6 +81,7 @@ struct CIMsgError: View {
             .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
             .textSelection(.disabled)
             .simultaneousGesture(TapGesture().onEnded(onTap))
+            .padding(.leading, inlineMeta == nil ? chatItemTextPadding : 0)
         }
     }
 }

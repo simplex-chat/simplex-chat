@@ -280,7 +280,7 @@ fun FramedItemView(
         val tailRendered = chatItemTailRendered(ci, tailVisible, revealed = true)
         Column(
           Modifier
-            .width(IntrinsicSize.Max)
+            .then(if (terminal && captionlessMedia) Modifier else Modifier.width(IntrinsicSize.Max))
             .padding(start = if (!sent && tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
         ) {
           PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID, limitToPriorityWidth = !terminal || captionlessMedia) {

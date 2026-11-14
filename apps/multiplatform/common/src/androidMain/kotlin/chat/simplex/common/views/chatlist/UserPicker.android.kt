@@ -88,7 +88,7 @@ fun UserPickerUserBox(
     horizontalArrangement = Arrangement.spacedBy(USER_PICKER_ROW_PADDING)
   ) {
     Box {
-      ProfileImageForActiveCall(size = USER_PICKER_IMAGE_SIZE, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
+      ProfileImage(size = USER_PICKER_IMAGE_SIZE, image = userInfo.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
 
       if (userInfo.unreadCount > 0 && !userInfo.user.activeUser) {
         userUnreadBadge(userInfo.unreadCount, userInfo.user.showNtfs, false)

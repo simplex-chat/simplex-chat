@@ -59,7 +59,7 @@ actual fun UserPickerUsersSection(
               ) {
                 val user = u.user
                 Box {
-                  ProfileImage(size = 55.dp, image = user.profile.image, color = iconColor)
+                  ProfileImage(size = 46.dp, image = user.profile.image, color = iconColor, modifier = Modifier.centeredIn(55.dp))
 
                   if (u.unreadCount > 0 && !user.activeUser) {
                     userUnreadBadge(u.unreadCount, user.showNtfs, true)

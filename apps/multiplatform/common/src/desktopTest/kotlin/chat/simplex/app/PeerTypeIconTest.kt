@@ -4,6 +4,7 @@ import chat.simplex.common.model.ChatPeerType
 import chat.simplex.common.model.MsgChatLink
 import chat.simplex.common.model.Profile
 import chat.simplex.common.model.peerTypeIcon
+import chat.simplex.common.model.peerTypeSmallIcon
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -26,11 +27,11 @@ class PeerTypeIconTest {
 
   @Test
   fun smallLinkIconsShowThePeerType() {
-    assertEquals(peerTypeIcon(ChatPeerType.Agent), contact(ChatPeerType.Agent).smallIconRes)
-    assertEquals(peerTypeIcon(ChatPeerType.Bot), contact(ChatPeerType.Bot).smallIconRes)
+    assertEquals(peerTypeSmallIcon(ChatPeerType.Agent), contact(ChatPeerType.Agent).smallIconRes)
+    assertEquals(peerTypeSmallIcon(ChatPeerType.Bot), contact(ChatPeerType.Bot).smallIconRes)
     assertEquals(contact(null).smallIconRes, contact(ChatPeerType.Human).smallIconRes)
     assertNotEquals(peerTypeIcon(null), contact(null).smallIconRes)
-    assertEquals(peerTypeIcon(ChatPeerType.Bot), invitation(ChatPeerType.Bot).smallIconRes)
+    assertEquals(peerTypeSmallIcon(ChatPeerType.Bot), invitation(ChatPeerType.Bot).smallIconRes)
     assertEquals(contact(null, business = true).smallIconRes, contact(ChatPeerType.Agent, business = true).smallIconRes)
   }
 }

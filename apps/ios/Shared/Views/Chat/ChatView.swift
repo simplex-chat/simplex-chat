@@ -12,10 +12,12 @@ import SimpleXChat
 import SwiftyGif
 import Combine
 
-private let memberImageBaseSize: CGFloat = 34
+let memberImageBaseSize: CGFloat = 34
+private let goToItemIconSize: CGFloat = 13
+private let goToItemIconGap: CGFloat = 10
 
-func scaledMemberImageSize(_ font: DynamicTypeSize) -> CGFloat {
-    memberImageBaseSize * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
+func scaledMemberImageSize(_ font: DynamicTypeSize, _ baseSize: CGFloat = memberImageBaseSize) -> CGFloat {
+    baseSize * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
 }
 
 private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
@@ -96,6 +98,7 @@ struct ChatView: View {
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     let userSupportScopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
 
@@ -952,7 +955,7 @@ struct ChatView: View {
                             scrollToItem: scrollToItem,
                             scrollToItemId: $scrollToItemId,
                             merged: mergedItem,
-                            olderRow: mergedItems.boxedValue.items.indices.contains(index + 1) ? mergedItems.boxedValue.items[index + 1] : nil,
+                            olderRow: mergedItems.boxedValue.olderShownRow(of: mergedItem),
                             listWidth: g.size.width,
                             maxWidth: maxWidth,
                             composeState: $composeState,
@@ -998,6 +1001,10 @@ struct ChatView: View {
             .onChange(of: revealedItems) { revealed in
                 mergedItems.boxedValue = MergedItems.create(im, revealed)
                 scrollView.updateItems(mergedItems.boxedValue.items)
+            }
+            .onChange(of: developerTools) { _ in
+                mergedItems.boxedValue = MergedItems.create(im, revealedItems)
+                scrollView.updateItems(mergedItems.boxedValue.items, true)
             }
             .onChange(of: terminal) { _ in
                 scrollView.updateItems(mergedItems.boxedValue.items, true)
@@ -1757,11 +1764,16 @@ struct ChatView: View {
         @State private var actionSheet: SomeActionSheet? = nil
         @State private var swipeOffset: CGFloat = 0
         @State private var swipeExclusionFrames: [CGRect] = []
+        @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
         var revealed: Bool { revealedItems.contains(chatItem.id) }
 
         private var memberImageSize: CGFloat {
             scaledMemberImageSize(userFont)
+        }
+
+        private var terminalImageSize: CGFloat {
+            scaledMemberImageSize(userFont, terminalMemberImageBaseSize)
         }
 
         typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
@@ -1783,18 +1795,20 @@ struct ChatView: View {
                 chatItem.chatDir.sent == prevItem.chatDir.sent
             }
             let largeGap = !sameMemberAndDirection || prevItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
+            let prevDeleted = prevItem.meta.itemDeleted != nil || prevItem.isDeletedContent
 
             return ItemSeparation(
-                timestamp: largeGap || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(prevItem.meta.itemTs),
+                timestamp: largeGap || (terminal && prevDeleted) || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(prevItem.meta.itemTs),
                 largeGap: largeGap,
                 date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: prevItem.meta.itemTs) ? nil : prevItem.meta.itemTs
             )
         }
 
         var body: some View {
-            let last = isLastItem ? im.reversedChatItems.last : nil
             let listItem = merged.newest()
             let item = listItem.item
+            let hidden = item.isHidden(developerTools: developerTools)
+            let last = isLastItem ? (hidden ? listItem.prevItem : im.reversedChatItems.last) : nil
             let range: ClosedRange<Int>? = if case let .grouped(_, _, _, rangeInReversed, _, _, _, _) = merged {
                 rangeInReversed.boxedValue
             } else {
@@ -1810,19 +1824,21 @@ struct ChatView: View {
                 if let last {
                     DateSeparator(date: last.meta.itemTs).padding(8)
                 }
-                chatItemListView(range, showAvatar, item, itemSeparation)
-                    .overlay {
-                        if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
-                            Color.clear
-                                .contentShape(Rectangle())
-                                .simultaneousGesture(TapGesture().onEnded {
-                                    let checked = selected.contains(chatItem.id)
-                                    selectUnselectChatItem(select: !checked, chatItem)
-                                })
+                if !hidden {
+                    chatItemListView(range, showAvatar, item, itemSeparation)
+                        .overlay {
+                            if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .simultaneousGesture(TapGesture().onEnded {
+                                        let checked = selected.contains(chatItem.id)
+                                        selectUnselectChatItem(select: !checked, chatItem)
+                                    })
+                            }
                         }
+                    if let date = itemSeparation.date {
+                        DateSeparator(date: date).padding(8)
                     }
-                if let date = itemSeparation.date {
-                    DateSeparator(date: date).padding(8)
                 }
             }
             .onAppear {
@@ -2149,7 +2165,8 @@ struct ChatView: View {
         private func terminalItemRow(_ range: ClosedRange<Int>?, _ showSender: Bool, _ ci: ChatItem, _ itemSeparation: ItemSeparation) -> some View {
             let selecting = selectedChatItems != nil && ci.canBeDeletedForSelf
             let leading: CGFloat = selecting ? 4 + 24 : 0
-            let gutter = chat.chatInfo.chatType == .group ? memberImageSize + chatItemTextPadding : 0
+            let goToButton: CGFloat = searchIsNotBlank || ci.meta.itemForwarded?.chatTypeApiIdMsgId != nil ? goToItemIconSize + goToItemIconGap + chatItemTextPadding : 0
+            let avatarSize = chat.chatInfo.chatType == .group ? terminalImageSize : 0
             let older = merged.oldest().nextItem
             let topGap = terminalRowGap(
                 ci,
@@ -2165,11 +2182,11 @@ struct ChatView: View {
                 }
                 TerminalChatItemRow(
                     sender: showSender ? chatItemSender(ci, range) : nil,
-                    gutter: gutter,
+                    avatarSize: avatarSize,
                     topGap: topGap,
                     contentStartsWithCard: terminalItemStartsWithCard(ci, revealed: revealed)
                 ) {
-                    chatItemWithMenu(ci, range, min(maxWidth, listWidth - leading - gutter - 2 * chatItemTextPadding), itemSeparation)
+                    chatItemWithMenu(ci, range, terminalMediaWidth(listWidth - leading - goToButton - terminalColumn(avatarSize)), itemSeparation)
                 }
                 .padding(.leading, leading)
             }
@@ -2202,7 +2219,7 @@ struct ChatView: View {
                     role: memCount == 1 ? senderRole(member, groupInfo) : nil,
                     own: false,
                     image: AnyView(
-                        MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
+                        MemberProfileImage(member, size: terminalImageSize, backgroundColor: theme.colors.background)
                             .simultaneousGesture(TapGesture().onEnded {
                                 if let mem = m.getGroupMember(member.groupMemberId) {
                                     selectedMember = mem
@@ -2222,7 +2239,7 @@ struct ChatView: View {
                     badge: membership.nameBadge,
                     role: senderRole(membership, groupInfo),
                     own: true,
-                    image: AnyView(MemberProfileImage(membership, size: memberImageSize, backgroundColor: theme.colors.background))
+                    image: AnyView(MemberProfileImage(membership, size: terminalImageSize, backgroundColor: theme.colors.background))
                 )
             default:
                 return cInfo.incognito
@@ -2233,7 +2250,7 @@ struct ChatView: View {
 
         private func groupSenderImage(_ groupInfo: GroupInfo) -> AnyView {
             AnyView(
-                ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: memberImageSize, backgroundColor: theme.colors.background)
+                ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: terminalImageSize, backgroundColor: theme.colors.background)
                     .simultaneousGesture(TapGesture().onEnded { showChatInfoSheet = true })
             )
         }
@@ -2995,8 +3012,8 @@ struct ChatView: View {
         func goToItemInnerButton(_ alignStart: Bool, _ image: String, touchInProgress: Bool, _ onClick: @escaping () -> Void) -> some View {
             Image(systemName: image)
                 .resizable()
-                .frame(width: 13, height: 13)
-                .padding([alignStart ? .trailing : .leading], 10)
+                .frame(width: goToItemIconSize, height: goToItemIconSize)
+                .padding([alignStart ? .trailing : .leading], goToItemIconGap)
                 .tint(theme.colors.secondary.opacity(touchInProgress ? 1.0 : 0.4))
                 .simultaneousGesture(TapGesture().onEnded(onClick))
         }

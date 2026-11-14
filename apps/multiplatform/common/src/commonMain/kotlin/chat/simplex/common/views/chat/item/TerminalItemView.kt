@@ -136,7 +136,7 @@ private val ChatItem.channelIsSender: Boolean get() =
   chatDir is CIDirection.ChannelRcv || (chatDir is CIDirection.GroupSnd && meta.showGroupAsSender)
 
 fun terminalRowGap(item: ChatItem, older: ChatItem?, separated: Boolean, largeGap: Boolean, hasSenderRow: Boolean): TextUnit =
-  if (older != null && !separated && (largeGap || hasSenderRow || !item.isOneLine || !older.isOneLine || older.reactions.isNotEmpty())) TERMINAL_PARAGRAPH_GAP else 0.sp
+  if (older != null && !separated && (largeGap || hasSenderRow || !item.isOneLine || !older.isOneLine)) TERMINAL_PARAGRAPH_GAP else 0.sp
 
 fun terminalTextTop(item: ChatItem): TextUnit = when {
   item.cardAboveText || item.hasQuoteOrHeader && item.startsWithCard -> if (item.startsWithEmptyLines) 0.sp else TERMINAL_PARAGRAPH_GAP
@@ -152,6 +152,13 @@ fun terminalQuoteTop(item: ChatItem): TextUnit =
 
 fun terminalReactionsGap(item: ChatItem): TextUnit =
   if (item.reactions.isNotEmpty()) TERMINAL_PARAGRAPH_GAP else 0.sp
+
+fun terminalShowsStatus(status: CIStatus, showTimestamp: Boolean): Boolean = when {
+  status is CIStatus.SndNew || status is CIStatus.RcvNew || status is CIStatus.RcvRead -> showTimestamp
+  status is CIStatus.SndSent && status.sndProgress == SndCIStatusProgress.Complete -> showTimestamp
+  status is CIStatus.SndRcvd && status.msgRcptStatus == MsgReceiptStatus.Ok && status.sndProgress == SndCIStatusProgress.Complete -> showTimestamp
+  else -> true
+}
 
 val ChatItem.isOneLine: Boolean get() =
   textAtItemTop && markdownBlocks == null && '\n' !in content.text
@@ -321,11 +328,12 @@ fun chatItemSender(
   showChatInfo: () -> Unit
 ): ChatItemSender {
   val dir = cItem.chatDir
+  val imageSize = TERMINAL_MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier
   return when {
     cItem.channelIsSender && chatInfo is ChatInfo.Group ->
       ChatItemSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), dir.sent) {
         Box(Modifier.clickable { showChatInfo() }) {
-          ProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, chatInfo.groupInfo.image, chatInfo.groupInfo.chatIconName, backgroundColor = MaterialTheme.colors.background)
+          ProfileImage(imageSize, chatInfo.groupInfo.image, chatInfo.groupInfo.chatIconName, backgroundColor = MaterialTheme.colors.background)
         }
       }
     dir is CIDirection.DirectRcv ->
@@ -341,14 +349,14 @@ fun chatItemSender(
         false
       ) {
         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
-          MemberImage(member)
+          MemberImage(member, imageSize)
         }
       }
     }
     dir is CIDirection.GroupSnd && chatInfo is ChatInfo.Group -> {
       val membership = chatInfo.groupInfo.membership
       ChatItemSender(membership.displayName, membership.nameBadge, memberRole(membership, chatInfo.isChannel), true) {
-        MemberImage(membership)
+        MemberImage(membership, imageSize)
       }
     }
     chatInfo.incognito ->
@@ -389,9 +397,13 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
   }
 }
 
+val TERMINAL_MEMBER_IMAGE_SIZE: Dp = 27.dp
+val TERMINAL_AVATAR_OVERSHOOT: Dp = 2.dp
+val TERMINAL_AVATAR_GAP: Dp = 10.dp
+
 @Composable
 fun terminalGutter(chatInfo: ChatInfo): Dp =
-  if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + CHAT_ITEM_TEXT_PADDING else 0.dp
+  if (chatInfo is ChatInfo.Group) TERMINAL_MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + TERMINAL_AVATAR_GAP - TERMINAL_AVATAR_OVERSHOOT else 0.dp
 
 @Composable
 fun TerminalChatItemRow(
@@ -402,6 +414,7 @@ fun TerminalChatItemRow(
   content: @Composable () -> Unit
 ) {
   val cardGap = TERMINAL_PARAGRAPH_GAP.toDp()
+  val avatarGap = if (sender?.image != null) TERMINAL_HEADING_BOTTOM_GAP.toDp() else 0.dp
   Layout(
     content = {
       Box {
@@ -418,21 +431,22 @@ fun TerminalChatItemRow(
         content()
       }
     },
-    modifier
-      .padding(top = topGap)
-      .fillMaxWidth()
+    modifier.fillMaxWidth()
   ) { measurables, constraints ->
-    val messageStart = gutter.roundToPx()
     val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
-    val messageConstraints = looseConstraints.copy(maxWidth = (constraints.maxWidth - messageStart).coerceAtLeast(0))
+    val column = gutter.roundToPx()
+    val columnConstraints = looseConstraints.copy(maxWidth = (constraints.maxWidth - column).coerceAtLeast(0))
     val avatar = measurables[0].measure(looseConstraints)
-    val name = measurables[1].measure(messageConstraints)
-    val message = measurables[2].measure(messageConstraints)
-    val messageTop = name.height + if (sender != null && message[CardTop] == 0) cardGap.roundToPx() else 0
-    layout(constraints.maxWidth, max(messageTop + message.height, avatar.height)) {
-      avatar.placeRelative(CHAT_ITEM_TEXT_PADDING.roundToPx(), 0)
-      name.placeRelative(messageStart, 0)
-      message.placeRelative(messageStart, messageTop)
+    val name = measurables[1].measure(columnConstraints)
+    val message = measurables[2].measure(columnConstraints)
+    val avatarOffset = (name.height - avatar.height) / 2
+    val nameTop = (topGap + avatarGap).roundToPx() + max(0, -avatarOffset)
+    val avatarTop = nameTop + avatarOffset
+    val messageTop = nameTop + name.height + if (sender != null && message[CardTop] == 0) cardGap.roundToPx() else 0
+    layout(constraints.maxWidth, max(messageTop + message.height, avatarTop + avatar.height)) {
+      avatar.placeRelative((CHAT_ITEM_TEXT_PADDING - TERMINAL_AVATAR_OVERSHOOT).roundToPx(), avatarTop)
+      name.placeRelative(column, nameTop)
+      message.placeRelative(column, messageTop)
     }
   }
 }

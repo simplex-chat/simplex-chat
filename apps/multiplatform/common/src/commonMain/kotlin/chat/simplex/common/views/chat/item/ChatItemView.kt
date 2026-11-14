@@ -111,7 +111,6 @@ fun ChatItemView(
   reveal: (Boolean) -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   showChatInfo: () -> Unit,
-  developerTools: Boolean,
   showViaProxy: Boolean,
   showTimestamp: Boolean,
   itemSeparation: ItemSeparation,
@@ -219,7 +218,7 @@ fun ChatItemView(
               reactionMenuItems.value.forEach { m ->
                 ItemAction(
                   text = m.name,
-                  composable = { ProfileImage(44.dp, m.image, m.icon) },
+                  composable = { ProfileImage(37.dp, m.image, m.icon, modifier = Modifier.centeredIn(44.dp)) },
                   onClick = {
                     val click = m.onClick
                     if (click != null) {
@@ -719,11 +718,9 @@ fun ChatItemView(
                 is CIContent.RcvDeleted -> LegacyDeletedItem()
                 is CIContent.SndCall -> CallItem(c.status, c.duration)
                 is CIContent.RcvCall -> CallItem(c.status, c.duration)
-                is CIContent.RcvIntegrityError -> if (developerTools) {
+                is CIContent.RcvIntegrityError -> {
                   IntegrityErrorItemView(c.msgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
                   DeleteItemMenu()
-                } else {
-                  Box(Modifier.size(0.dp)) {}
                 }
                 is CIContent.RcvMsgErrorContent -> {
                   RcvMsgErrorItemView(c.rcvMsgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
@@ -1552,7 +1549,6 @@ fun PreviewChatItemView(
     reveal = {},
     showMemberInfo = { _, _ ->},
     showChatInfo = {},
-    developerTools = false,
     showViaProxy = false,
     showTimestamp = true,
     preview = true,
@@ -1641,7 +1637,6 @@ fun PreviewChatItemViewDeletedContent() = BubblePreview {
       reveal = {},
       showMemberInfo = { _, _ ->},
       showChatInfo = {},
-      developerTools = false,
       showViaProxy = false,
       preview = true,
       showTimestamp = true,

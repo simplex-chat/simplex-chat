@@ -906,6 +906,7 @@ at = performance.timeOrigin of the hook process; absent: Infinity for an answer'
 | history | on |
 | direct messages | off |
 | command menu | as in [2.5](#25-group-profile) |
+| chat layout | `terminal`, which the apps name Flat, set only when the group is created |
 | members | `Claude`, the members invited through the Main group, the members others added directly, `User` |
 | peer types | `Claude` `agent`; `User` `human`, set at each service start ([`User.open`](../src/user.ts), [`updatedUser`](../src/core.ts)). A member who joined while `User` had `agent`, as in 0.3.0, gets `human` with `User`'s next post in the group, with the event `updated profile`: the core sends a member's profile to a group before the next message after a change of its name, full name, short description, description, image or peer type |
 

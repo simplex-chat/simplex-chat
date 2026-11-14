@@ -63,6 +63,12 @@ private val previewScenes = listOf(
   SnapshotScene("ChatView.PreviewChatLayout") { PreviewChatLayout() },
   SnapshotScene("ChatView.PreviewGroupChatLayout") { PreviewGroupChatLayout() },
   SnapshotScene("ChatView.PreviewGroupChatLayoutTerminal", chatItemFontScales) { PreviewGroupChatLayoutTerminal() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutTerminalMedia", chatItemFontScales) { PreviewGroupChatLayoutTerminalMedia() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutHiddenItems") { PreviewGroupChatLayoutHiddenItems() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutTerminalHiddenItems") { PreviewGroupChatLayoutTerminalHiddenItems() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutTerminalDefects", chatItemFontScales) { PreviewGroupChatLayoutTerminalDefects() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutBanner") { PreviewGroupChatLayoutBanner() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutTerminalSession") { PreviewGroupChatLayoutTerminalSession() },
   SnapshotScene("ComposeFileView.PreviewComposeFileView") { PreviewComposeFileView() },
   SnapshotScene("ComposeVoiceView.PreviewComposeAudioView") { PreviewComposeAudioView() },
   SnapshotScene("ContextItemView.PreviewContextItemView") { PreviewContextItemView() },
@@ -123,6 +129,16 @@ private val previewScenes = listOf(
   SnapshotScene("NetworkAndServers.PreviewNetworkAndServersLayout") { PreviewNetworkAndServersLayout() },
 )
 
+private val avatarScenes = listOf(
+  SnapshotScene("Avatars.ChatListPeople", chatItemFontScales) { AvatarChatListPeople() },
+  SnapshotScene("Avatars.ChatListGroups", chatItemFontScales) { AvatarChatListGroups() },
+  SnapshotScene("Avatars.Toolbars", chatItemFontScales) { AvatarToolbars() },
+  SnapshotScene("Avatars.Rows") { AvatarRows() },
+  SnapshotScene("Avatars.LinksAndBadge") { AvatarLinksAndBadge() },
+  SnapshotScene("Avatars.Lists") { AvatarLists() },
+  SnapshotScene("Avatars.ChannelMembers") { AvatarChannelMembers() },
+)
+
 private val previewsCallingCore = listOf(
   "AddChannelView.PreviewAddChannelView",
   "AddGroupView.PreviewAddGroupLayout",
@@ -174,7 +190,7 @@ class SnapshotTest {
       for (base in listOf(DefaultTheme.LIGHT, DefaultTheme.DARK)) {
         ThemeManager.applyTheme(base.themeName)
         val themeName = base.name.lowercase()
-        for (scene in previewScenes) {
+        for (scene in previewScenes + avatarScenes) {
           for (scale in scene.fontScales) {
             appPrefs.fontScale.set(scale)
             ChatModel.terminalItems.value = listOf()

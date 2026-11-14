@@ -97,13 +97,7 @@ private fun SharePreviewView(chat: Chat, disabled: Boolean) {
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      if (chat.chatInfo is ChatInfo.Local) {
-        ProfileImage(size = 42.dp, null, icon = MR.images.ic_folder_filled, color = NoteFolderIconColor)
-      } else if (chat.chatInfo is ChatInfo.Group) {
-        ProfileImage(size = 42.dp, chat.chatInfo.image, icon = MR.images.ic_supervised_user_circle_filled)
-      } else {
-        ChatInfoImage(chat.chatInfo, 42.dp)
-      }
+      ChatInfoImage(chat.chatInfo, size = 35.dp, modifier = Modifier.centeredIn(42.dp))
       NameWithBadge(
         chat.chatInfo.chatViewName, chat.chatInfo.nameBadge, maxLines = 1, overflow = TextOverflow.Ellipsis,
         color = if (disabled) MaterialTheme.colors.secondary else if (chat.chatInfo.incognito) Indigo else Color.Unspecified

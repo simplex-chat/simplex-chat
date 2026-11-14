@@ -395,7 +395,7 @@ private fun ActiveCallOverlayLayout(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
           ) {
-            ProfileImage(size = 192.dp, image = call.contact.profile.image, icon = call.contact.chatIconName)
+            ProfileImage(size = 160.dp, image = call.contact.profile.image, icon = call.contact.chatIconName, modifier = Modifier.centeredIn(192.dp))
             AudioCallInfoView(call)
           }
         }
