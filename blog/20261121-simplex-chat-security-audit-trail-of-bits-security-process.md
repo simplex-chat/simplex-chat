@@ -15,4 +15,4 @@ This is a permalink for a blog post about:
 - the fixes in SimpleX Chat app - please upgrade to v7.1.4+, and ask your contacts to upgrade too.
 - the new security audit of SimpleX Chat apps and SimpleX Network protocols by Trail of Bits.
 - the security reports from Anthropic's OSS Scanner program that uses frontier models.
-- our security process: how we receive, assess, fix and disclose security reports.
+- our security process: how we manage security reports, Anthropic's OSS Scanner, and vulnerability disclosure process.
