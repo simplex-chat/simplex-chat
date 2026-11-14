@@ -55,6 +55,8 @@ internal fun receivedImageReadParam(reader: ImageReader, sampleSize: Int, progre
     if (sampleSize > 1) setSourceSubsampling(sampleSize, sampleSize, 0, 0)
   }
 
+internal fun ByteArray.byteAt(pos: Int): Int = if (pos < size) this[pos].toInt() and 0xFF else 0
+
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   base64BitmapCache[base64ImageString]?.let { return it }
   val imageString = base64ImageString

@@ -232,22 +232,22 @@ internal fun sourceDimensionsWithinLimits(width: Int, height: Int): Boolean =
   width in 1..MAX_SOURCE_IMAGE_DIMENSION && height in 1..MAX_SOURCE_IMAGE_DIMENSION && width * height <= MAX_SOURCE_IMAGE_PIXELS
 
 private fun gifMetadataWithinLimits(data: ByteArray): Boolean {
-  fun byte(pos: Int) = if (pos < data.size) data[pos].toInt() and 0xFF else 0
   var subBlocks = 0
   fun afterSubBlocks(start: Int): Int {
     var pos = start
-    while (byte(pos) != 0 && subBlocks <= MAX_GIF_METADATA_SUB_BLOCKS) {
+    while (data.byteAt(pos) != 0 && subBlocks <= MAX_GIF_METADATA_SUB_BLOCKS) {
       subBlocks++
-      pos += 1 + byte(pos)
+      pos += 1 + data.byteAt(pos)
     }
     return pos + 1
   }
-  var pos = 13 + if (byte(10) and 0x80 != 0) 3 shl ((byte(10) and 7) + 1) else 0
-  while (byte(pos) == 0x21 && subBlocks <= MAX_GIF_METADATA_SUB_BLOCKS) {
-    pos = when (byte(pos + 1)) {
+  val flags = data.byteAt(10)
+  var pos = 13 + if (flags and 0x80 != 0) 3 shl ((flags and 7) + 1) else 0
+  while (data.byteAt(pos) == 0x21 && subBlocks <= MAX_GIF_METADATA_SUB_BLOCKS) {
+    pos = when (data.byteAt(pos + 1)) {
       0xF9 -> pos + 8
       0x01 -> afterSubBlocks(pos + 15)
-      0xFF -> afterSubBlocks(pos + 3 + byte(pos + 2))
+      0xFF -> afterSubBlocks(pos + 3 + data.byteAt(pos + 2))
       else -> afterSubBlocks(pos + 2)
     }
   }
@@ -255,22 +255,22 @@ private fun gifMetadataWithinLimits(data: ByteArray): Boolean {
 }
 
 private fun jpegHasMultipleScans(data: ByteArray): Boolean {
-  if (!ImageFileType.JPEG.matches(data)) return false
-  fun byte(pos: Int) = if (pos < data.size) data[pos].toInt() and 0xFF else 0
+  if (data.byteAt(0) != 0xFF || data.byteAt(1) != 0xD8) return false
   var components = 0
   var pos = 2
   while (pos + 1 < data.size) {
-    val marker = byte(pos + 1)
-    if (byte(pos) != 0xFF || marker == 0xFF || marker == 0) {
+    val marker = data.byteAt(pos + 1)
+    if (data.byteAt(pos) != 0xFF || marker == 0xFF || marker == 0) {
       pos++
       continue
     }
     when (marker) {
-      0xC2 -> return true
-      0xC0, 0xC1 -> components = byte(pos + 9)
-      0xDA -> return byte(pos + 4) < components
+      0xC0, 0xC1 -> components = data.byteAt(pos + 9)
+      0xDA -> return data.byteAt(pos + 4) < components
+      0xC4, 0xCC, 0xDB, 0xDC, 0xDD, 0xFE, in 0xE0..0xEF -> {}
+      else -> return true
     }
-    pos += if (marker in 0xD0..0xD7 || marker == 0x01) 2 else 2 + (byte(pos + 2) shl 8 or byte(pos + 3))
+    pos += 2 + (data.byteAt(pos + 2) shl 8 or data.byteAt(pos + 3))
   }
   return false
 }
