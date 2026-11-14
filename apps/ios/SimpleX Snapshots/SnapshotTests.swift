@@ -2,6 +2,7 @@ import XCTest
 import SwiftUI
 import UIKit
 import AVFoundation
+import ImageIO
 @testable import SimpleX
 @testable import SimpleXChat
 
@@ -172,11 +173,22 @@ final class SnapshotTests: XCTestCase {
 
     func testReceivedImagesAreDecodedWithinLimits() throws {
         XCTAssertEqual(imageFromBase64("data:image/png;base64," + pngData(400, 300).base64EncodedString())?.size, CGSize(width: 400, height: 300))
-        XCTAssertEqual(imageFromBase64("data:image/png;base64," + pngData(600, 600).base64EncodedString())?.size, CGSize(width: 512, height: 512))
+        XCTAssertEqual(imageFromBase64("data:image/png;base64," + pngData(1000, 600).base64EncodedString())?.size, CGSize(width: 1000, height: 600))
+        XCTAssertEqual(imageFromBase64("data:image/png;base64," + pngData(2048, 1024).base64EncodedString())?.size, CGSize(width: 1024, height: 512))
         XCTAssertNil(imageFromBase64("data:image/png;base64," + pngData(4321, 1).base64EncodedString()))
         XCTAssertEqual(try loadedImage(pngData(1000, 10))?.size, CGSize(width: 1000, height: 10))
         XCTAssertEqual(try loadedImage(pngData(8640, 20))?.size, CGSize(width: 4320, height: 10))
         XCTAssertNil(try loadedImage(pngData(16385, 1)))
+        XCTAssertNil(try loadedImage(grayPngData(16384, 4097)))
+    }
+
+    func testImportedWallpaperKeepsItsSize() throws {
+        try FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
+        let imported = ThemeWallpaper(image: "data:image/png;base64," + pngData(1500, 1000).base64EncodedString()).importFromString()
+        let fileName = try XCTUnwrap(imported.imageFile)
+        defer { removeWallpaperFile(fileName: fileName) }
+        XCTAssertEqual(UIImage(contentsOfFile: getWallpaperFilePath(fileName).path)?.size, CGSize(width: 1500, height: 1000))
+        XCTAssertEqual(ThemeWallpaper(image: "data:image/png;base64,AAAA").importFromString(), ThemeWallpaper())
     }
 }
 
@@ -184,6 +196,17 @@ private func pngData(_ width: Int, _ height: Int) -> Data {
     let format = UIGraphicsImageRendererFormat.default()
     format.scale = 1
     return UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format).pngData { _ in }
+}
+
+private func grayPngData(_ width: Int, _ height: Int) throws -> Data {
+    let bytesPerRow = (width + 7) / 8
+    let provider = try XCTUnwrap(CGDataProvider(data: Data(count: bytesPerRow * height) as CFData))
+    let image = try XCTUnwrap(CGImage(width: width, height: height, bitsPerComponent: 1, bitsPerPixel: 1, bytesPerRow: bytesPerRow, space: CGColorSpaceCreateDeviceGray(), bitmapInfo: [], provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+    let data = NSMutableData()
+    let destination = try XCTUnwrap(CGImageDestinationCreateWithData(data as CFMutableData, "public.png" as CFString, 1, nil))
+    CGImageDestinationAddImage(destination, image, nil)
+    XCTAssertTrue(CGImageDestinationFinalize(destination))
+    return data as Data
 }
 
 private func loadedImage(_ data: Data) throws -> UIImage? {
