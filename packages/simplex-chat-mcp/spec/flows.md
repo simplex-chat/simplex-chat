@@ -793,10 +793,10 @@ sequenceDiagram
   HK->>D: GET /status: not running
   HK->>D: spawn simplex-mcp service through a launcher, which exits at once
   D->>D: lock, stored sessions, socket listens
-  D->>C: openCore ROOT/_hub "Claude"
+  D->>C: openCore ROOT/_hub "Claude" agent
   D->>C: apiNewGroup "Claude Control", short description and welcome of trust, {simplexMcpMain: true}
   M->>C: apiGetGroupLinkStr #35;M: none, apiCreateGroupLink #35;M member
-  D->>U: openCore ROOT/_user "User"
+  D->>U: openCore ROOT/_user "User" human
   U->>C: joins the hub's one-time link#59; the contact of its connection marked simplexMcpUser
   D-->>HK: ready
   HK->>D: POST /title {id, pid, at, name, project, model, config}
@@ -826,6 +826,7 @@ Notes:
 - The service is spawned by a launcher, `node -e LAUNCHER COMMAND ARGS`, which exits at once, so the service is no descendant of the hook. When Claude Code exits during the hook, it ends the hook and the hook's descendants, and the service keeps starting. The service drops its ready line when the hook is gone, and the next session start shows the link ([`launcher`, `spawnService`](../src/client.ts), [`writeReady`](../src/service.ts)).
 - The Main group's name is `main_group`, `Claude Control` by default, followed by ` - MACHINE` when `SIMPLEX_MCP_MACHINE` is set ([`readConfig`, `withMachine`](../src/config.ts)).
 - The service deletes the preset contact of a new profile, in `_hub` and in `_user` ([`openCore`, `deletePresetContacts`](../src/core.ts)).
+- At each start, `openCore` sets the peer type of each profile: `agent` for Claude and `human` for `User`. In a data folder of 0.3.0, `User` is changed from `agent` to `human` at the first start, and the core sends the change to the hub's contact of `User` at once. Members who join a session group later get `human`; members already in a session group get it with `User`'s next post there, as the event `updated profile` ([`openCore`, `updatedUser`](../src/core.ts), [`Hub.open`](../src/hub.ts), [`User.open`](../src/user.ts)).
 - `User` connects only at the first start. At later starts, the service finds the hub's contact marked `simplexMcpUser`, the contact whose connection belongs to the invitation that the hub created. When `User` does not connect within 60 s, the service runs without it, and terminal prompts are not posted ([`User.open`, `connect`, `userContact`](../src/user.ts), [`Hub.open`](../src/hub.ts)).
 - At a later start without owners, the service keeps the Main group's link ([`MainGroup.start`](../src/main-group.ts)).
 - Owners are invited to the groups of the open sessions when they join the Main group. The groups of closed sessions are joined with `/join N` ([`Hub.inviteOwner`, `join`](../src/hub.ts)).

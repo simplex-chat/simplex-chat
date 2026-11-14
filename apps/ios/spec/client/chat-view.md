@@ -561,7 +561,7 @@ Navigates to a dedicated members view with two sections:
 - **Owners**: current user (if owner) + members with `memberRole >= .owner`
 - **Subscribers** (admin+ only): members with `memberRole < .owner`
 
-Member rows show profile image, display name (with verified shield), connection status, and role badge. Non-user rows link to `GroupMemberInfoView`.
+Member rows show profile image, display name (with verified shield), connection status, and role badge. Non-user rows link to `GroupMemberInfoView`. `MemberProfileImage` draws a member's avatar: the member's image, otherwise the placeholder of its peer type (`peerTypeIcon`: person, agent or cube).
 
 ### Channel Link
 
