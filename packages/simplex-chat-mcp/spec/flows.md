@@ -284,16 +284,17 @@ sequenceDiagram
   participant W as ChatItemsWatch
   participant C as Core
   participant D as Peer
-  A->>T: receive {chat: #35;12, wait: 3600, limit: 50}
+  A->>T: receive {chat: #35;12, wait: 3600, limit: 50, history: 20}
   T->>W: collect #35;12 into arrived
   T->>C: apiGetChat #35;12 initial 1
   C-->>T: chatStats.unreadCount 0
   T-->>A: progress: No new messages in #35;12, waiting until TIME.
   D->>C: post, item 40
   C->>W: newChatItems: arrived
+  T->>C: apiGetChat #35;12 before 40 count 100
   T->>C: apiChatItemsRead #35;12 [40]
   T->>W: stop collecting
-  T-->>A: {chat: #35;12, messages: [40], more: 0}
+  T-->>A: {chat: #35;12, messages: [40], more: 0, history}
 ```
 
 Notes:
@@ -303,8 +304,9 @@ Notes:
 - `more`: the arrived messages not returned, the overflow and the unread items not read ([`AgentTools.receive`](../src/tools.ts)).
 - Items received while the pages are read are returned once ([`AgentTools.receive`](../src/tools.ts)).
 - Exact progress text: `No new messages in CHAT; waiting until TIME.` ([`AgentTools.receive`](../src/tools.ts)).
+- With `history`, after the wait the server reads pages of 100 items: `before` the first returned message, or `last` when none is returned, then `before` the first item of the previous page, until it holds `history` message items that are not new or live and have no `itemDeleted`, or a page is short; the agent's own items are named as in `connect` ([`AgentTools.receive`, `historyMessages`](../src/tools.ts), [`historyItems`](../src/messages.ts)).
 
-Source: [`AgentTools.receive`](../src/tools.ts), [`unreadItems`, `isNewMessage`, `reportProgress`, `nextChange`, `awaitResponses`](../src/messages.ts).
+Source: [`AgentTools.receive`, `historyMessages`](../src/tools.ts), [`unreadItems`, `isNewMessage`, `historyItems`, `reportProgress`, `nextChange`, `awaitResponses`](../src/messages.ts).
 
 ---
 

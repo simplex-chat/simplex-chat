@@ -165,6 +165,8 @@ describe("MCP", () => {
     expect(await text({chat: "@4", text: "x", wait: -1})).toMatch(/data\/wait must be >= 0$/)
     expect(await text({chat: "@4", text: "x", colour: "red"})).toMatch(/data must NOT have additional properties$/)
     expect(await text({text: "x"})).toMatch(/data must have required property 'chat'$/)
+    const {result} = await body(await post(modern("tools/call", {name: "receive", arguments: {chat: "@4", history: 51}}), modernHeaders("tools/call", "receive")))
+    expect(result).toMatchObject({isError: true, content: [{type: "text", text: "Input validation error: Invalid arguments for tool receive: data/history must be <= 50"}]})
     expect(actions.all()).toHaveLength(0)
   })
 
