@@ -2587,6 +2587,7 @@ Markup:
 - sessions: [RoleGroupPreference](#rolegrouppreference)
 - comments: [CommentsGroupPreference](#commentsgrouppreference)
 - signMessages: [GroupPreference](#grouppreference)
+- statusMessages: [RoleGroupPreference](#rolegrouppreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
 
 
@@ -2680,6 +2681,7 @@ MemberSupport:
 - "sessions"
 - "comments"
 - "signMessages"
+- "statusMessages"
 
 
 ---
@@ -2935,6 +2937,7 @@ contact=<contactId> owner=<memberId>
 - sessions: [RoleGroupPreference](#rolegrouppreference)?
 - comments: [CommentsGroupPreference](#commentsgrouppreference)?
 - signMessages: [GroupPreference](#grouppreference)?
+- statusMessages: [RoleGroupPreference](#rolegrouppreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
@@ -3342,6 +3345,10 @@ Chat:
 - chatLink: [MsgChatLink](#msgchatlink)
 - ownerSig: [LinkOwnerSig](#linkownersig)?
 
+Status:
+- type: "status"
+- text: string
+
 Unknown:
 - type: "unknown"
 - tag: string
@@ -3362,6 +3369,7 @@ Unknown:
 - "file"
 - "report"
 - "chat"
+- "status"
 
 
 ---

@@ -179,7 +179,7 @@ private func terminalMediaCard(_ item: ChatItem) -> Bool {
     switch item.content.msgContent {
     case .link, .image, .video, .voice, .file, .chat: true
     case .unknown: item.file != nil
-    case .text, .report, nil: false
+    case .text, .report, .status, nil: false
     }
 }
 

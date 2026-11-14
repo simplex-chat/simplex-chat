@@ -1825,7 +1825,8 @@ fun BoxScope.ChatItemsList(
   }
   val searchValueIsEmpty = remember { derivedStateOf { searchValue.value.isEmpty() } }
   val searchValueIsNotBlank = remember { derivedStateOf { searchValue.value.isNotBlank() || contentFilter.value != null } }
-  val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
+  val initialRevealedItems = LocalRevealedItems.current
+  val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(initialRevealedItems) }
   // not using reversedChatItems inside to prevent possible derivedState bug in Compose when one derived state access can cause crash asking another derived state
   val mergedItems = remember {
     derivedStateOf {
@@ -2469,7 +2470,7 @@ fun BoxScope.ChatItemsList(
           largeGap = older != null && getItemSeparationLargeGap(older, merged.oldest().item),
           hasSenderRow = showAvatar
         )
-        val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
+        val isRevealed = remember { derivedStateOf { mergedItems.value.revealedIds.contains(item.id) } }
         val eventGapBelow = if (LocalTerminalLayout.current) null else eventRunLargeGap(item, listItem.prevItem)
         val itemSeparation = rowItemSeparation(merged).let { if (eventGapBelow == null) it else it.copy(timestamp = it.timestamp || eventGapBelow, largeGap = eventGapBelow) }
         val eventGapAbove = if (LocalTerminalLayout.current) null else eventRunLargeGap(merged.oldest().item, older)
@@ -2478,7 +2479,7 @@ fun BoxScope.ChatItemsList(
           prevItemSeparationLargeGap = eventGapAbove
         } else if (merged is MergedItem.Single || isRevealed.value) {
           val prev = listItem.prevItem
-          val nextForGap = if ((item.mergeCategory != null && item.mergeCategory == prev?.mergeCategory) || isLastItem) null else listItem.nextItem
+          val nextForGap = if (item.mergesWith(prev) || isLastItem) null else listItem.nextItem
           prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
         } else {
           prevItemSeparationLargeGap = false
@@ -2604,8 +2605,9 @@ private fun NotifyChatListOnFinishingComposition(
   listState: State<LazyListState>,
   onComposed: suspend (chatId: String) -> Unit
 ) {
+  val initialRevealedItems = LocalRevealedItems.current
   LaunchedEffect(chatInfo.id) {
-    revealedItems.value = emptySet()
+    revealedItems.value = initialRevealedItems
     snapshotFlow { listState.value.layoutInfo.visibleItemsInfo.lastIndex }
       .distinctUntilChanged()
       .collect {
@@ -3395,9 +3397,8 @@ private fun selectUnselectChatItem(
   val itemIds = mutableSetOf<Long>()
   if (!revealed.value) {
     val currIndex = chatModel.getChatItemIndexOrNull(ci, reversedChatItems.value)
-    val ciCategory = ci.mergeCategory
-    if (currIndex != null && ciCategory != null) {
-      val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, ciCategory, reversedChatItems.value)
+    if (currIndex != null && ci.mergeCategory != null) {
+      val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, ci, reversedChatItems.value)
       val range = chatViewItemsRange(currIndex, prevHidden)
       if (range != null) {
         val reversed = reversedChatItems.value
@@ -4036,6 +4037,109 @@ fun PreviewGroupChatLayout() = BubblePreview {
 @Composable
 fun PreviewGroupChatLayoutTerminal() = CompositionLocalProvider(LocalTerminalLayout provides true) {
   PreviewGroupChatLayout()
+}
+
+val LocalRevealedItems = staticCompositionLocalOf { setOf<Long>() }
+
+private val statusRunItems: List<ChatItem> get() {
+  val claude = GroupMember.sampleData.copy(groupMemberId = 2, localDisplayName = "Claude", memberProfile = LocalProfile.sampleData.copy(displayName = "Claude", peerType = ChatPeerType.Agent))
+  fun rcv(id: Long, mc: MsgContent) = ChatItem.getSampleData(id, CIDirection.GroupRcv(claude), previewDate, mc.text, status = CIStatus.RcvRead()).copy(content = CIContent.RcvMsgContent(mc))
+  fun status(id: Long, step: String, duration: String) =
+    rcv(id, MsgContent.MCStatus("$step !- $duration!")).copy(formattedText = listOf(FormattedText("$step "), FormattedText(duration, Format.Small())))
+  return listOf(
+    ChatItem.getSampleData(1, CIDirection.GroupSnd(), previewDate, "Run the unit tests and fix what fails."),
+    status(2, "📖 Read src/hub.ts", "0.1 s"),
+    status(3, "🔎 Grep \"updatedUser\"", "0.2 s"),
+    status(4, "✏️ Edit src/core.ts", "0.1 s"),
+    status(5, "💻 Run unit tests", "42 s"),
+    status(6, "💻 Run type check", "2.1 s"),
+    rcv(7, MsgContent.MCText("All 616 unit tests pass, and the type check is clean."))
+  )
+}
+
+@Composable
+private fun PreviewStatusRun(revealed: Boolean) = BubblePreview {
+  SimpleXTheme {
+    val chatItems = statusRunItems
+    CompositionLocalProvider(LocalRevealedItems provides if (revealed) chatItems.map { it.id }.toSet() else emptySet()) {
+      ChatLayout(
+        chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } },
+        remoteHostId = remember { mutableStateOf(null) },
+        chat = remember { mutableStateOf(Chat.sampleData.copy(chatInfo = ChatInfo.Group.sampleData)) },
+        unreadCount = remember { mutableStateOf(0) },
+        composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
+        composeView = { _ -> },
+        scrollToItemId = remember { mutableStateOf(null) },
+        attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
+        attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
+        remember { mutableStateOf("") },
+        useLinkPreviews = true,
+        linkMode = SimplexLinkMode.DESCRIPTION,
+        selectedChatItems = remember { mutableStateOf(null) },
+        back = {},
+        info = {},
+        showReports = {},
+        showSupportChats = {},
+        showMemberInfo = { _, _ -> },
+        loadMessages = { _, _, _ -> },
+        deleteMessage = { _, _ -> },
+        deleteMessages = {},
+        archiveReports = { _, _ -> },
+        receiveFile = { _ -> },
+        cancelFile = {},
+        joinGroup = { _, _ -> },
+        startCall = {},
+        endCall = {},
+        acceptCall = { _ -> },
+        acceptFeature = { _, _, _ -> },
+        openDirectChat = { _ -> },
+        forwardItem = { _, _ -> },
+        updateContactStats = { },
+        updateMemberStats = { _, _ -> },
+        syncContactConnection = { },
+        syncMemberConnection = { _, _ -> },
+        findModelChat = { null },
+        findModelMember = { null },
+        setReaction = { _, _, _, _ -> },
+        showItemDetails = { _, _ -> },
+        addMembers = { _ -> },
+        openGroupLink = {},
+        markItemsRead = { _ -> },
+        markChatRead = {},
+        changeNtfsState = { _ -> },
+        onSearchValueChanged = {},
+        closeSearch = {},
+        onComposed = {},
+        developerTools = false,
+        showViaProxy = false,
+        showSearch = remember { mutableStateOf(false) },
+        showCommandsMenu = remember { mutableStateOf(false) },
+        contentFilter = remember { mutableStateOf(null) },
+        availableContent = remember { mutableStateOf(ContentFilter.initialList) },
+        searchPlaceholder = null
+      )
+    }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewStatusRunCollapsed() = PreviewStatusRun(revealed = false)
+
+@Preview
+@Composable
+fun PreviewStatusRunExpanded() = PreviewStatusRun(revealed = true)
+
+@Preview
+@Composable
+fun PreviewStatusRunCollapsedTerminal() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  PreviewStatusRun(revealed = false)
+}
+
+@Preview
+@Composable
+fun PreviewStatusRunExpandedTerminal() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  PreviewStatusRun(revealed = true)
 }
 
 enum class ContentFilter(

@@ -386,7 +386,7 @@ bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; o
 
 `ChatView` passes `olderRow`, the next merged item. `MergedItem.revealed`: true for `.single`, the flag of `.grouped`.
 
-A visible cell is rebuilt when the hash of its merged item changes ([`ListItem.genHash`](../../Shared/Views/Chat/ChatItemsMerger.swift#L284)). The hash of a single item includes whether the older item (`nextItem`) has reactions and whether it is one-line, so the cell is rebuilt, and `terminalRowGap` computed again, when the first reaction is added to the older item, its last reaction is removed, or an edit adds or removes its line break or block markdown. The gap of a grouped row does not depend on the older item's reactions or lines: its newest item is a deleted item or an event (`mergeCategory`), which is not one-line.
+A visible cell is rebuilt when the hash of its merged item changes ([`ListItem.genHash`](../../Shared/Views/Chat/ChatItemsMerger.swift#L283)). The hash of a single item includes whether the older item (`nextItem`) has reactions and whether it is one-line, so the cell is rebuilt, and `terminalRowGap` computed again, when the first reaction is added to the older item, its last reaction is removed, or an edit adds or removes its line break or block markdown. The gap of a grouped row does not depend on the older item's reactions or lines: its newest item is a deleted item or an event (`mergeCategory`), which is not one-line.
 
 ### Items
 

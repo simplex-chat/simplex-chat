@@ -273,6 +273,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
     is MsgContent.MCFile -> ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
     is MsgContent.MCReport -> ComposePreview.NoPreview
     is MsgContent.MCChat -> ComposePreview.NoPreview
+    is MsgContent.MCStatus -> ComposePreview.NoPreview
     is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
   }
 }
@@ -780,6 +781,7 @@ fun ComposeView(
           val text = if (msgText.isEmpty()) linkStr else "$msgText\n$linkStr"
           MsgContent.MCChat(text, chatLink = msgContent.chatLink, ownerSig = msgContent.ownerSig)
         }
+        is MsgContent.MCStatus -> MsgContent.MCStatus(msgText)
         is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = msgText, json = msgContent.json)
       }
     }

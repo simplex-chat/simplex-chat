@@ -98,6 +98,7 @@ chatGroupTests = do
     it "group message delete multiple" testGroupMessageDeleteMultiple
     it "group message delete multiple (many chat batches)" testGroupMessageDeleteMultipleManyBatches
     it "group live message" testGroupLiveMessage
+    it "group status messages" testGroupStatusMessages
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
     it "check owner role change" testOwnerRoleChange
@@ -1651,6 +1652,52 @@ testGroupLiveMessage =
     bob <## "message history:"
     bob .<## ": hello 2"
     bob .<## ":"
+
+testGroupStatusMessages :: HasCallStack => TestParams -> IO ()
+testGroupStatusMessages =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+    threadDelay 1000000
+    alice ##> sendStatus "" "Run unit tests"
+    alice <## "bad chat command: feature not allowed Status messages"
+    alice ##> "/set status #team on owner"
+    alice <## "updated group preferences:"
+    alice <## "Status messages: on for owners"
+    statusUpdated bob "Status messages: on for owners"
+    statusUpdated cath "Status messages: on for owners"
+    threadDelay 1000000
+    bob ##> sendStatus "" "Read src/hub.ts"
+    bob <## "bad chat command: feature not allowed Status messages"
+    alice ##> sendStatus " live=on" "Run unit tests"
+    alice <# "#team [LIVE started] Run unit tests"
+    bob <#. "#team alice> [LIVE started]"
+    cath <#. "#team alice> [LIVE started]"
+    statusItemId <- lastItemId alice
+    alice ##> ("/_update item #1 " <> statusItemId <> " json {\"msgContent\": {\"type\": \"status\", \"text\": \"Run unit tests 42 s\"}, \"mentions\": {}}")
+    alice <# "#team [LIVE] Run unit tests 42 s"
+    bob <# "#team alice> [LIVE ended] Run unit tests 42 s"
+    cath <# "#team alice> [LIVE ended] Run unit tests 42 s"
+    alice ##> "/set status #team off"
+    alice <## "updated group preferences:"
+    alice <## "Status messages: off"
+    statusUpdated bob "Status messages: off"
+    statusUpdated cath "Status messages: off"
+    threadDelay 1000000
+    alice ##> sendStatus "" "Run type check"
+    alice <## "bad chat command: feature not allowed Status messages"
+    alice `send` "#team <- #team Run unit tests 42 s"
+    alice <# "#team <- you #team"
+    alice <## "      Run unit tests 42 s"
+    bob <# "#team alice> -> forwarded"
+    bob <## "      Run unit tests 42 s"
+    cath <# "#team alice> -> forwarded"
+    cath <## "      Run unit tests 42 s"
+  where
+    sendStatus live text = "/_send #1" <> live <> " json [{\"msgContent\": {\"type\": \"status\", \"text\": \"" <> text <> "\"}}]"
+    statusUpdated cc pref = do
+      cc <## "alice updated group #team: (signed)"
+      cc <## "updated group preferences:"
+      cc <## pref
 
 testUpdateGroupProfile :: HasCallStack => TestParams -> IO ()
 testUpdateGroupProfile =

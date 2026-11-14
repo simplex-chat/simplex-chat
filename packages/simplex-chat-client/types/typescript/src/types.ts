@@ -2930,6 +2930,7 @@ export interface FullGroupPreferences {
   sessions: RoleGroupPreference
   comments: CommentsGroupPreference
   signMessages: GroupPreference
+  statusMessages: RoleGroupPreference
   commands: ChatBotCommand[]
 }
 
@@ -3005,6 +3006,7 @@ export enum GroupFeature {
   Sessions = "sessions",
   Comments = "comments",
   SignMessages = "signMessages",
+  StatusMessages = "statusMessages",
 }
 
 export enum GroupFeatureEnabled {
@@ -3220,6 +3222,7 @@ export interface GroupPreferences {
   sessions?: RoleGroupPreference
   comments?: CommentsGroupPreference
   signMessages?: GroupPreference
+  statusMessages?: RoleGroupPreference
   commands?: ChatBotCommand[]
 }
 
@@ -3591,10 +3594,11 @@ export type MsgContent =
   | MsgContent.File
   | MsgContent.Report
   | MsgContent.Chat
+  | MsgContent.Status
   | MsgContent.Unknown
 
 export namespace MsgContent {
-  export type Tag = "text" | "link" | "image" | "video" | "voice" | "file" | "report" | "chat" | "unknown"
+  export type Tag = "text" | "link" | "image" | "video" | "voice" | "file" | "report" | "chat" | "status" | "unknown"
 
   interface Interface {
     type: Tag
@@ -3648,6 +3652,11 @@ export namespace MsgContent {
     ownerSig?: LinkOwnerSig
   }
 
+  export interface Status extends Interface {
+    type: "status"
+    text: string
+  }
+
   export interface Unknown extends Interface {
     type: "unknown"
     tag: string
@@ -3665,6 +3674,7 @@ export enum MsgContentTag {
   File = "file",
   Report = "report",
   Chat = "chat",
+  Status = "status",
 }
 
 export enum MsgDecryptError {

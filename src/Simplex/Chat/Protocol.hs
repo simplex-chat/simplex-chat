@@ -647,6 +647,7 @@ data MsgContentTag
   | MCFile_
   | MCReport_
   | MCChat_
+  | MCStatus_
   | MCUnknown_ Text
   deriving (Eq, Show)
 
@@ -660,6 +661,7 @@ instance StrEncoding MsgContentTag where
     MCVoice_ -> "voice"
     MCReport_ -> "report"
     MCChat_ -> "chat"
+    MCStatus_ -> "status"
     MCUnknown_ t -> encodeUtf8 t
   strDecode = \case
     "text" -> Right MCText_
@@ -670,6 +672,7 @@ instance StrEncoding MsgContentTag where
     "file" -> Right MCFile_
     "report" -> Right MCReport_
     "chat" -> Right MCChat_
+    "status" -> Right MCStatus_
     t -> Right . MCUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
 
@@ -750,6 +753,7 @@ data MsgContent
   | MCFile {text :: Text}
   | MCReport {text :: Text, reason :: ReportReason}
   | MCChat {text :: Text, chatLink :: MsgChatLink, ownerSig :: Maybe LinkOwnerSig}
+  | MCStatus {text :: Text}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)
 
@@ -782,6 +786,7 @@ msgContentText = \case
     where
       msg = "report " <> safeDecodeUtf8 (strEncode reason)
   MCChat {text} -> text
+  MCStatus {text} -> text
   MCUnknown {text} -> text
 
 durationText :: Int -> Text
@@ -815,6 +820,24 @@ isReport = \case
   MCReport {} -> True
   _ -> False
 
+isStatus :: MsgContent -> Bool
+isStatus = \case
+  MCStatus {} -> True
+  _ -> False
+
+prohibitedStatus :: FullGroupPreferences -> GroupMemberRole -> MsgContent -> Bool
+prohibitedStatus prefs role mc = isStatus mc && not (groupFeatureMemberAllowed' SGFStatusMessages role prefs)
+
+isStatusMsgBody :: ByteString -> Bool
+isStatusMsgBody body = case J.eitherDecodeStrict' body :: Either String (ChatMessage 'Json) of
+  Right ChatMessage {chatMsgEvent = XMsgNew MsgContainer {content = MCStatus {}}} -> True
+  _ -> False
+
+allowedGroupContent :: FullGroupPreferences -> GroupMemberRole -> MsgContent -> MsgContent
+allowedGroupContent prefs role mc
+  | prohibitedStatus prefs role mc = MCText $ msgContentText mc
+  | otherwise = mc
+
 msgContentTag :: MsgContent -> MsgContentTag
 msgContentTag = \case
   MCText _ -> MCText_
@@ -825,6 +848,7 @@ msgContentTag = \case
   MCFile {} -> MCFile_
   MCReport {} -> MCReport_
   MCChat {} -> MCChat_
+  MCStatus {} -> MCStatus_
   MCUnknown {tag} -> MCUnknown_ tag
 
 data MsgMention = MsgMention {memberId :: MemberId}
@@ -887,6 +911,7 @@ instance FromJSON MsgContent where
         chatLink <- v .: "chatLink"
         ownerSig <- v .:? "ownerSig"
         pure MCChat {text, chatLink, ownerSig}
+      MCStatus_ -> MCStatus <$> v .: "text"
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
         pure MCUnknown {tag, text, json = v}
@@ -910,6 +935,7 @@ instance ToJSON MsgContent where
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
     MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
     MCChat {text, chatLink, ownerSig} -> J.object $ ("ownerSig" .=? ownerSig) ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
+    MCStatus t -> J.object ["type" .= MCStatus_, "text" .= t]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
@@ -920,6 +946,7 @@ instance ToJSON MsgContent where
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
     MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
     MCChat {text, chatLink, ownerSig} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink <> maybe mempty ("ownerSig" .=) ownerSig
+    MCStatus t -> J.pairs $ "type" .= MCStatus_ <> "text" .= t
 
 $(JQ.deriveJSON defaultJSON ''ForwardLink)
 
@@ -1347,8 +1374,13 @@ hasNotification = \case
   XCallInv_ -> True
   _ -> False
 
+eventHasNotification :: ChatMsgEvent e -> Bool
+eventHasNotification = \case
+  XMsgNew MsgContainer {content = MCStatus {}} -> False
+  ev -> hasNotification $ toCMEventTag ev
+
 msgHasNotification :: VerifiedMsg e -> Bool
-msgHasNotification verifiedMsg = hasNotification $ toCMEventTag chatMsgEvent
+msgHasNotification verifiedMsg = eventHasNotification chatMsgEvent
   where
     ChatMessage {chatMsgEvent} = verifiedChatMsg verifiedMsg
 

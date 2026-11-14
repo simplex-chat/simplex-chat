@@ -163,7 +163,7 @@ private val ChatItem.cardAboveText: Boolean get() =
   quotedItem != null || !textOnly
 
 private val ChatItem.textOnly: Boolean get() =
-  content.msgContent is MsgContent.MCText || content.msgContent is MsgContent.MCReport || content.msgContent is MsgContent.MCUnknown && file == null
+  content.msgContent is MsgContent.MCText || content.msgContent is MsgContent.MCStatus || content.msgContent is MsgContent.MCReport || content.msgContent is MsgContent.MCUnknown && file == null
 
 private val ChatItem.startsWithHeading: Boolean get() =
   markdownBlocks?.firstOrNull() is MarkdownBlock.Heading

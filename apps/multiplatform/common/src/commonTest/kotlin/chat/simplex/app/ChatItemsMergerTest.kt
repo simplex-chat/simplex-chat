@@ -151,4 +151,31 @@ class ChatItemsMergerTest {
       }.toString()
     )
   }
+
+  @Test
+  fun testStatusMerging() {
+    val claude = GroupMember.sampleData.copy(groupMemberId = 2)
+    val bob = GroupMember.sampleData.copy(groupMemberId = 3)
+    fun item(id: Long, member: GroupMember, mc: MsgContent) =
+      ChatItem(CIDirection.GroupRcv(member), CIMeta.getSample(id, Clock.System.now(), text = mc.text), CIContent.RcvMsgContent(mc), reactions = emptyList())
+    val items = listOf(
+      item(10L, claude, MsgContent.MCStatus("Run type check")),
+      item(9L, claude, MsgContent.MCStatus("Run unit tests")),
+      item(8L, bob, MsgContent.MCStatus("Read src/hub.ts")),
+      item(7L, claude, MsgContent.MCText("Done")),
+      item(6L, claude, MsgContent.MCStatus("Edit src/core.ts")),
+      item(5L, claude, MsgContent.MCStatus("Read src/core.ts")),
+    )
+    fun rows(merged: MergedItems) = merged.items.map { m ->
+      when (m) {
+        is MergedItem.Grouped -> m.items.map { it.item.id }
+        is MergedItem.Single -> listOf(m.item.item.id)
+      }
+    }
+    val merged = MergedItems.create(items, mutableStateOf(0), emptySet(), ActiveChatState())
+    assertEquals(listOf(listOf(10L, 9L), listOf(8L), listOf(7L), listOf(6L, 5L)), rows(merged))
+    val expanded = MergedItems.create(items, mutableStateOf(0), setOf(9L), ActiveChatState())
+    assertEquals(listOf(listOf(10L), listOf(9L), listOf(8L), listOf(7L), listOf(6L, 5L)), rows(expanded))
+    assertEquals(setOf(9L, 10L), expanded.revealedIds)
+  }
 }

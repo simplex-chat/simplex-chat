@@ -6481,6 +6481,9 @@ data class FullGroupPreferences(
   val history: GroupPreference,
   val support: GroupPreference,
   val signMessages: GroupPreference,
+  val sessions: RoleGroupPreference = RoleGroupPreference(GroupFeatureEnabled.OFF),
+  val comments: CommentsGroupPreference = CommentsGroupPreference(GroupFeatureEnabled.OFF),
+  val statusMessages: RoleGroupPreference = RoleGroupPreference(GroupFeatureEnabled.OFF),
   val commands: List<ChatBotCommand>,
 ) {
   fun toGroupPreferences(): GroupPreferences =
@@ -6496,6 +6499,9 @@ data class FullGroupPreferences(
       history = history,
       support = support,
       signMessages = signMessages,
+      sessions = sessions,
+      comments = comments,
+      statusMessages = statusMessages,
       commands = commands,
     )
 
@@ -6530,6 +6536,9 @@ data class GroupPreferences(
   val history: GroupPreference? = null,
   val support: GroupPreference? = null,
   val signMessages: GroupPreference? = null,
+  val sessions: RoleGroupPreference? = null,
+  val comments: CommentsGroupPreference? = null,
+  val statusMessages: RoleGroupPreference? = null,
   val commands: List<ChatBotCommand>? = null
 ) {
   companion object {
@@ -6583,6 +6592,12 @@ data class TimedMessagesGroupPreference(
 ) {
   val on: Boolean get() = enable == GroupFeatureEnabled.ON
 }
+
+@Serializable
+data class CommentsGroupPreference(
+  val enable: GroupFeatureEnabled,
+  val duration: Int? = null
+)
 
 @Serializable
 enum class GroupFeatureEnabled {

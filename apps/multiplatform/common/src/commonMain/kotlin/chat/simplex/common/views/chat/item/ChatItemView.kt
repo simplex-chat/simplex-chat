@@ -142,6 +142,8 @@ fun ChatItemView(
           text = info.second,
         )
       }
+    } else if (cItem.mergeCategory == CIMergeCategory.Status) {
+      { if ((range.value?.count() ?: 0) > 1 || revealed.value) reveal(!revealed.value) }
     } else { {} }
 
     @Composable
@@ -578,7 +580,14 @@ fun ChatItemView(
             @Composable
             fun ContentItem() {
               val mc = cItem.content.msgContent
-              if (!cItem.hasQuoteOrHeader) {
+              val statusRun = if (mc is MsgContent.MCStatus && !revealed.value) range.value?.count() ?: 1 else 1
+              if (statusRun > 1) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                  if (alignEnd) StatusRunCount(statusRun)
+                  Box(Modifier.weight(1f, fill = false)) { framedItemView() }
+                  if (!alignEnd) StatusRunCount(statusRun)
+                }
+              } else if (!cItem.hasQuoteOrHeader) {
                 if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
                   EmojiItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
@@ -882,6 +891,21 @@ fun ItemInfoAction(
 
 
 @Composable
+private fun StatusRunCount(count: Int) {
+  Row(
+    Modifier
+      .padding(horizontal = 6.dp)
+      .clip(RoundedCornerShape(50))
+      .background(MaterialTheme.colors.secondary.copy(alpha = 0.12f))
+      .padding(start = 8.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Text(count.toString(), color = MaterialTheme.colors.secondary, fontSize = 13.sp)
+    Icon(painterResource(MR.images.ic_keyboard_arrow_down), null, Modifier.size(16.dp), tint = MaterialTheme.colors.secondary)
+  }
+}
+
+@Composable
 fun DeleteItemAction(
   chatsCtx: ChatModel.ChatsContext,
   cInfo: ChatInfo,
@@ -901,9 +925,8 @@ fun DeleteItemAction(
       if (!revealed.value) {
         val reversedChatItems = chatsCtx.chatItems.value.asReversed()
         val currIndex = chatModel.getChatItemIndexOrNull(cItem, reversedChatItems)
-        val ciCategory = cItem.mergeCategory
-        if (currIndex != null && ciCategory != null) {
-          val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, ciCategory, reversedChatItems)
+        if (currIndex != null && cItem.mergeCategory != null) {
+          val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, cItem, reversedChatItems)
           val range = chatViewItemsRange(currIndex, prevHidden)
           if (range != null) {
             val itemIds: ArrayList<Long> = arrayListOf()
