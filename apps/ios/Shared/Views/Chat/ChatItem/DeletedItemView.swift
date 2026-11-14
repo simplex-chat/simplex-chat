@@ -29,6 +29,7 @@ struct DeletedItemView: View {
                         .padding(.horizontal, 12)
                 }
             }
+            .fixedSize(horizontal: true, vertical: false)
             .padding(.leading, 12)
             .padding(.trailing, inlineMeta == nil ? 12 : 0)
             .padding(.vertical, 6)
