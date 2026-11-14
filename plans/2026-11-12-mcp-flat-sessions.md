@@ -572,8 +572,11 @@ ic_cube.svg, ic_agent.svg          bot and agent avatars (peerTypeIcon) none    
 ic_theater_comedy_filled.svg       IncognitoImage (chat toolbar)        7 icons (UserAddressView,         unchanged; IncognitoImage draws it
                                                                         NewChatView, AddGroupMembers...) at the box without padding
 ic_link.svg, ic_add_link.svg       pending connection avatar            about 20 icons                    unchanged: ContactConnectionView
-                                   (ContactConnectionView.kt:26)                                          draws the link glyph at 54√f
-                                                                                                          (12.3.1)
+                                   (ContactConnectionView.kt:26)                                          draws the bare link glyph at 54√f
+                                                                                                          in 72√f (12.3.1), as iOS draws
+                                                                                                          link and link.badge.plus at 48 in
+                                                                                                          63 (ContactConnectionView.swift
+                                                                                                          :28-35)
 ```
 
 The disc behind a placeholder fills the cut-outs of the person icon; it is drawn at 0.84 of the box (`ChatInfoImage.kt:87`, `size * 0.84f`; before: `iconSize * 0.7f`, 0.84 of the box with `toEdge`).
@@ -756,9 +759,9 @@ Q6 gap            message top = the lower of A and 6 dp below the avatar,       
 defect 1a         Flat rows draw no trailing empty lines (TextItemView)          the time on the list's last line
 defect 1b         none: a short code card is as wide as its code and the time
                   is beside it already
-defect 2          terminalShowsStatus: a complete sent or received status is     the 👍 row has no ✓
-                  drawn only with the time (CIMetaView, metaReserveCopy,
-                  CIFileView)
+defect 2          terminalShowsStatus, as iOS: a new, completely sent,           the 👍 row has no ✓; bob's unread
+                  delivered, unread or read status is drawn only with the        "on my way" has no dot
+                  time (CIMetaView, metaReserveCopy, CIFileView)
 defect 3          getItemSeparation, Flat rows: a deleted or marked deleted      "hello" before a deleted item has
                   newer item does not hide the time                               its time
 defect 4          terminalRowGap: no gap below a reactions row                   18 px gap removed

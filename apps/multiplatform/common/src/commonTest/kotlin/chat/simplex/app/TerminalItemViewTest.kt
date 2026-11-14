@@ -16,6 +16,7 @@ import chat.simplex.common.views.chat.item.terminalItemShowsSender
 import chat.simplex.common.views.chat.item.terminalQuoteTop
 import chat.simplex.common.views.chat.item.terminalReactionsGap
 import chat.simplex.common.views.chat.item.terminalRowGap
+import chat.simplex.common.views.chat.item.terminalShowsStatus
 import chat.simplex.common.views.chat.item.terminalTextTop
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.Instant
@@ -326,6 +327,29 @@ class TerminalItemViewTest {
     val base = msg(2, CIDirection.DirectSnd(), 10)
     assertEquals(0.sp, terminalReactionsGap(base))
     assertEquals(TERMINAL_PARAGRAPH_GAP, terminalReactionsGap(base.copy(reactions = thumbsUp)))
+  }
+
+  @Test
+  fun statusWithoutTimeOnlyForPartialDeliveryAndErrors() {
+    listOf(
+      CIStatus.SndNew(),
+      CIStatus.SndSent(SndCIStatusProgress.Complete),
+      CIStatus.SndRcvd(MsgReceiptStatus.Ok, SndCIStatusProgress.Complete),
+      CIStatus.RcvNew(),
+      CIStatus.RcvRead()
+    ).forEach {
+      assertFalse(terminalShowsStatus(it, showTimestamp = false))
+      assertTrue(terminalShowsStatus(it, showTimestamp = true))
+    }
+    listOf(
+      CIStatus.SndSent(SndCIStatusProgress.Partial),
+      CIStatus.SndRcvd(MsgReceiptStatus.Ok, SndCIStatusProgress.Partial),
+      CIStatus.SndRcvd(MsgReceiptStatus.BadMsgHash, SndCIStatusProgress.Complete),
+      CIStatus.SndErrorAuth(),
+      CIStatus.Invalid("invalid")
+    ).forEach {
+      assertTrue(terminalShowsStatus(it, showTimestamp = false))
+    }
   }
 
   @Test

@@ -156,6 +156,7 @@ fun terminalReactionsGap(item: ChatItem): TextUnit =
   if (item.reactions.isNotEmpty()) TERMINAL_PARAGRAPH_GAP else 0.sp
 
 fun terminalShowsStatus(status: CIStatus, showTimestamp: Boolean): Boolean = when {
+  status is CIStatus.SndNew || status is CIStatus.RcvNew || status is CIStatus.RcvRead -> showTimestamp
   status is CIStatus.SndSent && status.sndProgress == SndCIStatusProgress.Complete -> showTimestamp
   status is CIStatus.SndRcvd && status.msgRcptStatus == MsgReceiptStatus.Ok && status.sndProgress == SndCIStatusProgress.Complete -> showTimestamp
   else -> true

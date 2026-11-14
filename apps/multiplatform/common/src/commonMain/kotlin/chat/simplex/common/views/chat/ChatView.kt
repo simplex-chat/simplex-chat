@@ -4139,6 +4139,7 @@ private fun defectsPreview(): List<ChatItem> {
     previewSnd(2, 120, "👍", CIStatus.SndSent(SndCIStatusProgress.Complete)),
     previewSnd(3, 130, "ok", CIStatus.SndSent(SndCIStatusProgress.Complete)),
     previewRcv(4, bob, 180, previewText("nice")).copy(reactions = listOf(CIReactionCount(MsgReaction.Emoji(MREmojiChar.Heart), userReacted = false, totalReacted = 2))),
+    previewRcv(9, bob, 185, previewText("on my way")).let { it.copy(meta = it.meta.copy(itemStatus = CIStatus.RcvNew())) },
     previewRcv(5, bob, 190, previewText("see you there")),
     previewRcv(6, carol, 240, previewText("hello")),
     ChatItem.getDeletedContentSampleData(7, CIDirection.GroupRcv(carol), previewDate.plus(250, DateTimeUnit.SECOND)),
