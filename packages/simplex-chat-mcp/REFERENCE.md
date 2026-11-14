@@ -401,6 +401,8 @@ The server deletes the status message for everyone:
 - at an error of a command for the status message, with `status of CHAT: ERROR` logged;
 - when the server stops.
 
+When the agent ends its turn without an answer in that chat, for example after a message it leaves unanswered, the status message is shown until one of the other deletions above, such as the agent's next wait in a `receive` of that chat. If no call of the agent follows the `receive` that started it, the status message is deleted about 35 minutes after the start, at the first check at least 30 minutes after that `receive` ended.
+
 At the start, before it accepts calls, the server deletes its own live messages younger than 29 hours 50 minutes in the chats where these conditions are met: the status messages left by a crash.
 
 A deleted status message is shown as marked deleted, with its last text, unless full deletion is allowed:
@@ -468,6 +470,7 @@ Connect to me as yourself at <your SimpleX address>, with the message:
 "I'm your agent, connected as you asked in Claude Code. I'll act on your prompts here, except security-sensitive ones."
 Then take my prompts from that chat and answer there: wait for my messages with receive (wait 3600),
 answer each one in that chat with send (wait 0), and call receive again after every answer, until I say stop.
+Answer my stop message there too before you finish.
 ```
 
 Or give it the link of a group of yours, where every member prompts it:
@@ -476,6 +479,7 @@ Or give it the link of a group of yours, where every member prompts it:
 Connect as yourself to my group at <your group link>.
 Then take the prompts of its members from that group and answer there: wait for their messages with receive (wait 3600),
 answer each one in that group with send (wait 0), and call receive again after every answer, until I say stop.
+Answer my stop message there too before you finish.
 ```
 
 Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers in that chat need no approval.
