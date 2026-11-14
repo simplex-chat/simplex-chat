@@ -350,7 +350,7 @@ When `privacyLinkPreviews` is enabled and the message contains a URL:
 
 ## 7. Draft Persistence
 
-**Location:** [`ComposeView.kt#L1394`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1394) (`KeyChangeEffect(chatModel.chatId.value)`)
+**Location:** [`ComposeView.kt#L1398`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1398) (`KeyChangeEffect(chatModel.chatId.value)`)
 
 Controlled by the `privacySaveLastDraft` preference.
 
@@ -411,9 +411,9 @@ When a draft exists for a chat, `ChatPreviewView` shows a pencil icon with the d
 
 Desktop only; on Android the [`ComposeEmojiButton()`](../../common/src/androidMain/kotlin/chat/simplex/common/views/chat/ComposeEmojiPicker.android.kt) actual is empty, as keyboards have their own emoji panel.
 
-An emoji button in [`ComposeActionButtons()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1346-L1363) toggles `emojiPickerShown`, owned by `ComposeView`. A picked emoji goes through [`onEmoji()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1290-L1292): [`insertingEmoji()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeEmojiPicker.kt#L10-L14) replaces the selection (clamped to the text) and moves the cursor after the emoji, then `onMessageChange` applies markdown parsing, link sanitizing and the large-emoji font. Emoji are ignored while a message is in progress. The picker stays open after picking. The text field collapses its selection to the end when the popup takes focus, so the emoji goes after selected text.
+An emoji button in [`ComposeActionButtons()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1350-L1367) toggles `emojiPickerShown`, owned by `ComposeView`. A picked emoji goes through [`onEmoji()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1294-L1296): [`insertingEmoji()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeEmojiPicker.kt#L10-L14) replaces the selection (clamped to the text) and moves the cursor after the emoji, then `onMessageChange` applies markdown parsing, link sanitizing and the large-emoji font. Emoji are ignored while a message is in progress. The picker stays open after picking. The text field collapses its selection to the end when the popup takes focus, so the emoji goes after selected text.
 
-[`emojiEnabled`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1282-L1288) is false when sending is not allowed or a voice message is previewed; the picker closes then. When the picker closes, the text field gets focus through `focusRequester`.
+[`emojiEnabled`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1286-L1292) is false when sending is not allowed or a voice message is previewed; the picker closes then. When the picker closes, the text field gets focus through `focusRequester`.
 
 | Function | Behavior |
 |---|---|

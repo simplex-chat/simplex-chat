@@ -378,15 +378,30 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     md c f s
       | T.null s || T.head s == ' ' || T.last s == ' ' =
           unmarked $ c `T.cons` s `T.snoc` c
-      | otherwise = markdown f s
+      | otherwise = spanMD (T.singleton c) f s
     doubleP :: Char -> Format -> Parser Markdown
     doubleP c f = do
       s <- A.string cc *> (T.concat <$> A.many' (A.takeWhile1 (\x -> x /= c && x /= '`') <|> codeTextP)) <* A.string cc <* notP (A.satisfy $ notClosingBefore c)
       if T.null s || isSpace (T.head s) || isSpace (T.last s)
         then fail "not formatted"
-        else pure $ markdown f s
+        else pure $ spanMD cc f s
       where
         cc = T.pack [c, c]
+    spanMD :: Text -> Format -> Text -> Markdown
+    spanMD d f s = case A.parseOnly ((sowLinkP <|> autolinkP <|> wordP) <* A.endOfInput) s of
+      Right (Markdown (Just lf) t) | spanLink lf -> markdown lf $ if hasShowText lf then d <> t <> d else t
+      _ -> markdown f s
+      where
+        spanLink = \case
+          Uri -> True
+          HyperLink {} -> True
+          SimplexLink {} -> True
+          Email -> True
+          _ -> False
+        hasShowText = \case
+          HyperLink {showText} -> isJust showText
+          SimplexLink {showText} -> isJust showText
+          _ -> False
     notClosingBefore :: Char -> Char -> Bool
     notClosingBefore c x = x == c || (c == '_' && isAlphaNum x)
     codeTextP :: Parser Text
@@ -450,10 +465,16 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     sowLinkP = do
       t <- enclosedP '[' ']' (\c -> c == '[' || c == '\n')
       l <- enclosedP '(' ')' isSpace
-      let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
-      when (hasPunct && t /= l && ("https://" <> t) /= l) $ fail "punctuation in hyperlink text"
-      f <- hyperLinkFormat t l
+      let t' = unstyledText t
+          hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t'
+      when (hasPunct && t' /= l && ("https://" <> t') /= l) $ fail "punctuation in hyperlink text"
+      f <- hyperLinkFormat t' l
       pure $ markdown f $ T.concat ["[", t, "](", l, ")"]
+    unstyledText t = fromMaybe t $ listToMaybe $ mapMaybe unwrap ["**", "__", "~~", "*", "_", "~"]
+      where
+        unwrap d = do
+          inner <- T.stripPrefix d t >>= T.stripSuffix d
+          inner <$ guard (not (T.null inner) && not (isSpace $ T.head inner) && not (isSpace $ T.last inner) && T.all (/= T.head d) inner)
     autolinkP = do
       l <- enclosedP '<' '>' (\c -> c == '<' || isSpace c)
       f <-if isEmail l then pure (HyperLink (Just l) ("mailto:" <> l)) else hyperLinkFormat l l

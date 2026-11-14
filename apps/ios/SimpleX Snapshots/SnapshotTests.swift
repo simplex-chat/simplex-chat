@@ -169,6 +169,47 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(voiceMessageTime_(nil), "00:00")
         XCTAssertEqual(voiceMessageTime_(TimeInterval(Int.max)), "00:00")
     }
+
+    func testSanitizeMessageKeepsMarkdown() {
+        let sanitize = { (uri: String) -> String? in uri.contains("?utm_source=a") ? uri.replacingOccurrences(of: "?utm_source=a", with: "") : nil }
+        let r1 = sanitizeMessage(
+            "**Note:** see https://x.com/?utm_source=a and `code`",
+            [
+                FormattedText(text: "Note:", format: .bold(singleStar: false)),
+                FormattedText(text: " see "),
+                FormattedText(text: "https://x.com/?utm_source=a", format: .uri),
+                FormattedText(text: " and "),
+                FormattedText(text: "code", format: .snippet)
+            ],
+            sanitize: sanitize
+        )
+        XCTAssertEqual(r1.message, "**Note:** see https://x.com/ and `code`")
+        XCTAssertEqual(r1.sanitizedPos, "**Note:** see https://x.com/".count)
+        XCTAssertEqual(r1.parsedMsg[2].text, "https://x.com/")
+        let r2 = sanitizeMessage(
+            "**[t](https://x.com/?utm_source=a)** and [**u**](https://y.com/?utm_source=a)",
+            [
+                FormattedText(text: "**[t](https://x.com/?utm_source=a)**", format: .hyperLink(showText: "t", linkUri: "https://x.com/?utm_source=a")),
+                FormattedText(text: " and "),
+                FormattedText(text: "[**u**](https://y.com/?utm_source=a)", format: .hyperLink(showText: "u", linkUri: "https://y.com/?utm_source=a"))
+            ],
+            sanitize: sanitize
+        )
+        XCTAssertEqual(r2.message, "**[t](https://x.com/)** and [**u**](https://y.com/)")
+        let r3 = sanitizeMessage(
+            "`https://x.com/?utm_source=a` https://x.com/?utm_source=a",
+            [
+                FormattedText(text: "https://x.com/?utm_source=a", format: .snippet),
+                FormattedText(text: " "),
+                FormattedText(text: "https://x.com/?utm_source=a", format: .uri)
+            ],
+            sanitize: sanitize
+        )
+        XCTAssertEqual(r3.message, "`https://x.com/?utm_source=a` https://x.com/")
+        let r4 = sanitizeMessage("**a** b", [FormattedText(text: "a", format: .bold(singleStar: false)), FormattedText(text: " b")], sanitize: sanitize)
+        XCTAssertEqual(r4.message, "**a** b")
+        XCTAssertNil(r4.sanitizedPos)
+    }
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {
