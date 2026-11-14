@@ -414,11 +414,14 @@ The server deletes every message whose first word is `/secret`, in any letter ca
 
 ### Use by the agent
 
-`list` returns `"secrets": {"folder": "/run/agent-secrets", "names": ["GITHUB_TOKEN"]}`, without the values. The `list` description states the use of a secret: only inside a shell command, as `"$(cat /run/agent-secrets/GITHUB_TOKEN)"`, never by its value. For example:
+`list` returns `"secrets": {"folder": "/run/agent-secrets", "names": ["GITHUB_TOKEN"]}`, without the values. The `list` description states the use of a secret: only inside a shell command, where the command does not print it, for example as an environment variable, a header read from the file or standard input, not as an argument that the command may print in an error, and never by its value. For example:
 
 ```
 curl -H "Authorization: Bearer $(cat /run/agent-secrets/GITHUB_TOKEN)" https://example.com/api
+cat /run/agent-secrets/GITHUB_TOKEN | sha256sum
 ```
+
+In `sha256sum "$(cat /run/agent-secrets/GITHUB_TOKEN)"`, the value is a file name, and sha256sum prints it in its error message: `sha256sum: VALUE: No such file or directory`.
 
 `send` refuses the files of the folder, as private keys: `file: PATH is refused: private keys and the server's own files are not sent.`
 

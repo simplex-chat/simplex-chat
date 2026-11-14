@@ -1,6 +1,6 @@
 # SimpleX MCP server: agent secrets
 
-Status: implemented, for review. Decisions of 2026-11-12 and 2026-11-13. Code references: master `b7b05a261`; core references: `src/Simplex/Chat` of master; opencode references: opencode 1.19.5, `packages/opencode/src`. Size: 139 changed lines in `src`, 48 lines of the plugin.
+Status: implemented, for review. Decisions of 2026-11-12, 2026-11-13 and 2026-11-14. Code references: master `b7b05a261`; core references: `src/Simplex/Chat` of master; opencode references: opencode 1.19.5, `packages/opencode/src`. Size: 139 changed lines in `src`, 48 lines of the plugin.
 
 ## Decisions
 
@@ -14,6 +14,7 @@ Status: implemented, for review. Decisions of 2026-11-12 and 2026-11-13. Code re
 8. Budget: about 110 changed lines in `src`, at most 132; the plugin counted separately, 30 to 50 lines.
 9. 2026-11-13: the list of commands and `Unknown command.` are posted without a quote, in the Main group too, so a mistyped `/secrt NAME VALUE` or `/secrets NAME VALUE` leaves no copy of the value in the reply once its sender deletes it.
 10. 2026-11-13: an owner's profile update that turns full deletion off gets at once an update that turns it on, queued with the owner commands, so the agent deletes a later `/secret` with full deletion on; every profile update starts from the profile in the chat database, in `serve` too.
+11. 2026-11-14: in the `list` description, the form `"$(cat FOLDER/NAME)"` of 6 is replaced by the rule that a secret is passed only where the command does not print it, such as an environment variable, a header read from the file or standard input, not as an argument that the command may print in an error.
 
 ## Option
 
@@ -209,7 +210,7 @@ secrets.folder   SECRETS, the server's path
 secrets.names    the names of the secrets
 ```
 
-- The `list` description adds: `secrets, when present, has the folder and the names of the secrets your owners set; use a secret only inside a shell command, as "$(cat FOLDER/NAME)" with its folder and name; never print, read or send its value.`
+- The `list` description adds: `secrets, when present, has the folder and the names of the secrets your owners set; use a secret only inside a shell command, where the command does not print it, for example as an environment variable, a header read from the file or standard input (cat FOLDER/NAME | command), not as an argument that the command may print in an error; never print, read or send its value.`
 - `send` refuses a file under SECRETS, by the real path of the folder, with the reason of private keys.
 - A sandbox of the agent mounts SECRETS at the server's path and runs with the server's user ID.
 
@@ -320,6 +321,7 @@ test/tsconfig.json            include: ../opencode/**/*
 - `test/unit/files.test.ts`: the folder mode 0700, an existing folder's mode kept; the value file mode 0600, `NAME.part` absent, a second value in place of the first; the index mode 0600 and its records; the names of matching files only, sorted; `remove` of unknown names and `../x` deletes nothing.
 - `test/unit/commands.test.ts`: `/secret` deleted before its reply, stored, the reply posted without a quote, the log line without the value; a member who is not an approver; several lines, `/Secret`, `/SECRET`, invalid names, a value of 7 characters, `/secret` alone; without `--secrets-folder`; `/secrets` with setters, times, a file without a record and `No secrets.`; `/unsecret` of a secret, of an unknown name and of `../x`; other forms of `/unsecret` and `/secrets`; `/secrt` and `/secrets` with a value: the commands reply as a new message, nothing deleted; mode host, with the spaces around the value removed; a member support chat; a failed deletion; the menu and full deletion of a new and of an existing control chat, from its stored profile also when the profile read at the start has full deletion on; full deletion turned on again at an owner's profile update, before a later `/secret` is deleted, and not after the control chat is lost.
 - `test/unit/messages.test.ts`: `list` with the folder and the names, without values, and without the folder; a file of the secrets folder refused, also through a symbolic link.
+- `test/unit/tools.test.ts`: the secrets line of the `list` description, as `tools/list` returns it.
 - `test/unit/opencode.test.ts`: a value replaced raw, URL-encoded, and in base64 and base64url at each alignment, `Basic` authorization included; a longer value before a value it contains; the names that the server lists, trailing newlines ignored; values of fewer than 8 characters refused; the hook on texts, tool inputs, outputs, errors and metadata, the info kept; values of removed and replaced secrets kept, also in a new server instance; a rejection without the folder and with a missing folder.
 - `test/unit/fixtures.ts`: `FakeChat.apiDeleteMemberChatItem` records each call with the count of messages sent before it.
 - `test/e2e/scenarios.test.ts`: the owner's `/secret`: `chatItemsDeleted` at the owner, the reply without a quote, the value in the file, the agent's control chat items without it, `list` with the folder and the name.

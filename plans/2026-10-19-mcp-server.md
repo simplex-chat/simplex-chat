@@ -794,7 +794,7 @@ secrets       object  {folder, names}: SECRETS and the names of the secrets, rea
 ```
 
 - `approved: true`: the chat has a standing approval; present only then, and never in mode host.
-- The description of `list` adds: `secrets, when present, has the folder and the names of the secrets your owners set; use a secret only inside a shell command, as "$(cat FOLDER/NAME)" with its folder and name; never print, read or send its value.`
+- The description of `list` adds: `secrets, when present, has the folder and the names of the secrets your owners set; use a secret only inside a shell command, where the command does not print it, for example as an environment variable, a header read from the file or standard input (cat FOLDER/NAME | command), not as an argument that the command may print in an error; never print, read or send its value.`
 - The agent's commands read `SECRETS/NAME` at the server's path: a sandbox of the agent mounts SECRETS at the same path and runs with the server's user ID, as the files are mode 0600.
 - An action with `open: false` resumes by calling `tool` with `input`.
 - The agent control chat is not one of the agent's chats: `list` leaves it out, and `send`, `receive` and `leave` return "unknown chat" for it.
