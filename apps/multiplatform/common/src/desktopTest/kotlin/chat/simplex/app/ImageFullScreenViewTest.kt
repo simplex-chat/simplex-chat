@@ -1,6 +1,5 @@
 package chat.simplex.app
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -9,7 +8,6 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -20,10 +18,9 @@ import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.chat.item.FullScreenImageView
 import chat.simplex.common.views.chat.item.ImageFullScreenView
 import chat.simplex.common.views.chat.item.ImageGalleryProvider
-import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.skia.Bitmap
-import org.jetbrains.skia.Image as SkiaImage
+import org.jetbrains.skia.Image
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
@@ -48,10 +45,12 @@ class ImageFullScreenViewTest {
 
   @Test
   fun testFullScreenImageShowsPlaceholderWhenNotDecoded() {
-    val placeholder = scene {
-      Image(MR.images.decentralized.image.toComposeImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-    }.use { it.render().pixels() }
-    scene { FullScreenImageView(Modifier.fillMaxSize(), "not an image".toByteArray(), solidImage(Color.BLUE)) }.use { scene ->
+    val data = "not an image".toByteArray()
+    val placeholder = scene { FullScreenImageView(Modifier.fillMaxSize(), data, solidImage(Color.GREEN)) }.use { scene ->
+      assertTrue(scene.renderUntil { it.centerColor() != Color.GREEN.rgb })
+      scene.render().pixels()
+    }
+    scene { FullScreenImageView(Modifier.fillMaxSize(), data, solidImage(Color.BLUE)) }.use { scene ->
       assertTrue(scene.renderUntil { it.pixels().contentEquals(placeholder) })
     }
   }
@@ -80,7 +79,7 @@ class ImageFullScreenViewTest {
   private fun scene(content: @Composable () -> Unit): ImageComposeScene =
     ImageComposeScene(width = SCENE_SIZE, height = SCENE_SIZE, density = Density(1f), coroutineContext = Dispatchers.Unconfined, content = content)
 
-  private fun ImageComposeScene.renderUntil(rendered: (SkiaImage) -> Boolean): Boolean {
+  private fun ImageComposeScene.renderUntil(rendered: (Image) -> Boolean): Boolean {
     val deadline = System.nanoTime() + 30_000_000_000L
     while (System.nanoTime() < deadline) {
       Snapshot.sendApplyNotifications()
@@ -90,9 +89,9 @@ class ImageFullScreenViewTest {
     return false
   }
 
-  private fun SkiaImage.centerColor(): Int = Bitmap.makeFromImage(this).getColor(SCENE_SIZE / 2, SCENE_SIZE / 2)
+  private fun Image.centerColor(): Int = Bitmap.makeFromImage(this).getColor(SCENE_SIZE / 2, SCENE_SIZE / 2)
 
-  private fun SkiaImage.pixels(): ByteArray = assertNotNull(Bitmap.makeFromImage(this).readPixels())
+  private fun Image.pixels(): ByteArray = assertNotNull(Bitmap.makeFromImage(this).readPixels())
 
   private fun solidImage(color: Color): ImageBitmap = filledImage(4, 4, color).toComposeImageBitmap()
 
