@@ -150,13 +150,20 @@ export function serverToken(dir: string, renew = false, name = "token"): string 
   return readFileSync(file, "utf8").trim()
 }
 
+// spec: spec/architecture.md#files-headersfile
 export function headersFile(dir: string): string {
   return join(dir, "headers.json")
+}
+
+// spec: spec/architecture.md#files-headersfile
+export function hookHeadersFile(dir: string): string {
+  return join(dir, "hook-headers")
 }
 
 // spec: spec/architecture.md#files-writeheadersfile
 export function writeHeadersFile(dir: string, token: string): void {
   writePrivateFile(headersFile(dir), `${JSON.stringify({Authorization: `Bearer ${token}`})}\n`)
+  writePrivateFile(hookHeadersFile(dir), `Authorization: Bearer ${token}\n`)
 }
 
 // spec: spec/architecture.md#files-writeserverfile

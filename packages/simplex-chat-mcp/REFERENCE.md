@@ -26,6 +26,7 @@ Status: v0.3. [`TESTING.md`](TESTING.md) describes a local build and test. The d
 - [Expiry](#expiry)
 - [What the owner sees](#what-the-owner-sees)
 - [What the agent sees](#what-the-agent-sees)
+- [Status while the agent works](#status-while-the-agent-works)
 - [Waiting for approval in Claude Code](#waiting-for-approval-in-claude-code)
 - [Prompt the agent from the app](#prompt-the-agent-from-the-app)
 - [Several agents](#several-agents)
@@ -43,6 +44,7 @@ Status: v0.3. [`TESTING.md`](TESTING.md) describes a local build and test. The d
 - On Linux x86-64: glibc 2.34 or later, and the system libraries `libcrypto.so.3`, `libgmp.so.10` and `libz.so.1`.
 - The SimpleX Chat app on a phone or computer, for the owner.
 - Claude Code; other MCP hosts with Streamable HTTP and custom headers can be configured by hand.
+- curl 7.55.0 or later on the PATH of Claude Code, for the [status hooks](#status-hooks).
 
 At its first start the server downloads the SimpleX core library, 29 to 50 MB depending on the platform, into `~/.cache/simplex-chat` (macOS: `~/Library/Caches/simplex-chat`, Windows: `%LOCALAPPDATA%\simplex-chat`). Unpacked on Linux, it takes about 240 MB.
 
@@ -83,7 +85,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
 
    ```
    $ npx -y @simplex-chat/mcp register my-agent
-   Added to Claude Code: scope user, server simplex-my-agent.
+   Added to Claude Code: scope user, server simplex-my-agent, status hooks in /home/alice/.claude/settings.json.
    ```
 
 4. Add `"mcp__simplex-my-agent"` to `permissions.allow` in `~/.claude/settings.json`, so Claude Code does not prompt for each call; approval happens in the SimpleX app.
@@ -170,6 +172,21 @@ claude mcp add-json --scope user simplex-my-agent '{"type":"http","url":"http://
 - `timeout` is the expiry plus 24 hours and 10 minutes, in milliseconds: the longest wait for a decision plus the longest wait for responses. After a change of `--expire` or `--port`, register the agent again; an agent on another port needs the same `--port` at every start.
 - The server must be running when Claude Code starts a session. If a session started before the server, run `/mcp reconnect all` in it (Claude Code 2.1.284 or later; earlier, reconnect `simplex-my-agent` in `/mcp`).
 
+When `claude mcp add-json` succeeds, `register` adds the [status hooks](#status-hooks) to the settings file of the scope, and prints its path:
+- `user`: `settings.json` in `CLAUDE_CONFIG_DIR`, or in `~/.claude` when it is unset or empty;
+- `local`: `.claude/settings.local.json` in the project folder.
+
+The hooks are one group without a matcher for each of the events `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`, `PermissionRequest`, `PermissionDenied`, `SubagentStart`, `SubagentStop`, `PreCompact`, `PostCompact`, `Stop`, `StopFailure` and `SessionEnd`, with this handler:
+
+```
+{"type": "command", "command": "curl", "args": ["-q", "--noproxy", "*", "-s", "-m", "2", "-o", "/dev/null", "-H", "@/home/alice/.simplex-mcp/my-agent/hook-headers", "-H", "Content-Type: application/json", "--data-binary", "@-", "http://127.0.0.1:5226/hook"], "async": true}
+```
+
+- Claude Code starts curl without a shell, passes it each event on stdin and continues without waiting for it. curl posts the event to the agent's server, with a limit of 2 seconds, and writes the answer to `/dev/null`, or to `NUL` on Windows.
+- With `-q`, curl reads no `.curlrc` file, and with `--noproxy *` it ignores the proxy variables of the environment. curl reads the token from `hook-headers` in the data folder at each post; the settings file contains only the path of that file.
+- Before it adds the hooks, `register` removes every handler with this data folder's `hook-headers` from the groups of these events, and the groups left empty. Other settings and hooks, the hooks of other agents included, are kept. The file is written again with 2-space indentation.
+- In an interactive session, Claude Code runs these hooks only in a folder whose trust dialog was accepted.
+
 Errors:
 
 ```
@@ -177,9 +194,13 @@ situation                  message
 never started              Agent "my-agent" was never started. Start it with: npx -y @simplex-chat/mcp serve my-agent
 claude not on PATH         Add this entry under "mcpServers" in ~/.claude.json: {"simplex-my-agent": {...}}
                            (--scope local: under "projects" > "<project folder>" > "mcpServers")
+invalid settings file      Added to Claude Code: scope user, server simplex-my-agent. /home/alice/.claude/settings.json is not a
+                           valid settings file; add these status hooks to it: {"hooks":{...}}
 ```
 
-The token is created at the agent's first start and saved in its data folder; every start writes it to `headers.json`. `serve my-agent --new-token` replaces it, and Claude Code sends the new token from its next connection, without a new `register`.
+A settings file is invalid when it is not a JSON object, when its `hooks` is neither an object nor `null`, or when the value of one of the 14 events above in `hooks` is not an array; `register` then leaves it unchanged. At each of these errors `register` exits with code 1.
+
+The token is created at the agent's first start and saved in its data folder; every start writes it to `headers.json` and `hook-headers`. `serve my-agent --new-token` replaces it, and Claude Code sends the new token from its next connection, and curl from its next post, without a new `register`.
 
 ## Approval modes
 
@@ -200,13 +221,13 @@ A pending action expires after `--expire HOURS`, 23 by default and at most: Simp
 
 A result that no call has returned is dropped after the action's expiry time; a repeated call after that creates a new action. At most 20 actions are pending at once; a further `connect`, `send`, `download` or `leave` fails until the owner decides.
 
-Actions last only while the server runs. When the server stops, the last line of each pending card is edited to `Cancelled: the server stopped.`, and the server waits up to 10 seconds, `--stop-wait`, for these edits to be sent: it prints `Stopping: sending 2 cancelled cards, up to 10 s. Ctrl-C to stop now.`, and a second Ctrl-C ends the wait. After a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
+Actions last only while the server runs. When the server stops, the last line of each pending card is edited to `Cancelled: the server stopped.`, and each status message is deleted. The server waits up to 10 seconds, `--stop-wait`, for these edits and deletions to be sent: it prints `Stopping: sending 2 cancelled cards and 1 status deletion, up to 10 s. Ctrl-C to stop now.`, and a second Ctrl-C ends the wait. After a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
 
 ## What the owner sees
 
 <img src="images/approval.png" alt="The agent asks in its control chat before it sends a message; one tap approves it" width="320">
 
-All of it is in the agent control chat, posted by the agent's profile. The chat has the agent's display name; to see it under another name in your chat list, set an alias for the chat in the app. Names that are valid display names are shown plain. All other text written by the agent or by peers, other names included, is shown as code, line by line; names and errors take one line. Commands and SimpleX links inside it cannot be tapped: a valid display name cannot contain `/`, and the app parses each line of a message separately.
+All of it is in the agent control chat, posted by the agent's profile, except the status messages, which are in the chats where the agent takes prompts ([Status while the agent works](#status-while-the-agent-works)). The agent control chat has the agent's display name; to see it under another name in your chat list, set an alias for the chat in the app. Names that are valid display names are shown plain. All other text written by the agent or by peers, other names included, is shown as code, line by line; names and errors take one line. Commands and SimpleX links inside it cannot be tapped: a valid display name cannot contain `/`, and the app parses each line of a message separately.
 
 ```
 My Agent: I want to connect to bot SimpleX Directory (@directory.simplex), as myself.
@@ -276,7 +297,7 @@ My Agent: I sent a message to business Ridgeline, where I am incognito:
           Approved for this chat by Alice. /revoke #9
 ```
 
-- It covers messages only: connecting and leaving are approved one by one.
+- It covers messages, status messages and notes only: connecting and leaving are approved one by one.
 - It lasts until `/revoke`, until the chat is deleted, or until the approving owner is no longer an approver. It survives restarts: it is kept in the agent's database, as custom data of that chat.
 - With it, the agent can send anything it can read, without asking, to everyone in that chat.
 - It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals.
@@ -298,8 +319,8 @@ Six tools:
 | Tool | What it does |
 |---|---|
 | `connect` | Joins a contact, bot, business, group or channel by a link or a SimpleX name, as the agent's profile or incognito. Returns the chat, its profile, welcome message, the commands a bot advertises, and the messages so far. |
-| `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
-| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. |
+| `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. With `live: true`, it shows a note in the chat's status message at once, without an action. |
+| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. When it returns messages, it starts the chat's status message. |
 | `download` | Downloads the file of a received message to the data folder and returns its full path. |
 | `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
 | `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
@@ -324,6 +345,111 @@ The server checks the file by its real path, after symbolic links, and refuses f
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in the [design record](../../plans/2026-10-19-mcp-server.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
+## Status while the agent works
+
+In mode `requests`, the server shows what the agent does in a live message, the status message, in a chat approved for all messages where the agent can post: a chat with a person, a group or a business chat. Channels and chats with bots and agents are excluded. In a group, every member sees the status message and its notes.
+
+- The server posts the status message when messages are returned by a `receive`, unless the chat has one.
+- The server also posts the status message at once when it receives a message in that chat, unless the chat has one, with the label `received, waiting for the agent`: the owner sees at once that the server runs, also while the agent is not in a `receive` of that chat. A live message is received when its sender completes it; an edit of a message posts no status message. When messages of that chat are returned by a `receive` or by a `send`, the label is changed to `thinking` at once.
+- With `live: true`, the text of a `send`, a note, is shown under the status line at once, and a status message is posted when the chat has none. Such a call is not an action: `status: live` is returned at once. A note with `file`, `reply_to` or `mention`, a note above 2000 characters, and a note to another chat are refused. In the description of `receive`, the agent is asked to call `send` with `live: true` and a short note in the same response as the tool call of a step that takes minutes.
+- The agent's next message to that chat without `live` is sent as a new message, and the status message is then deleted for everyone.
+
+```
+My Agent: ◑ using download · 0:30
+          Reading the file…
+```
+
+The apps show it under the header `LIVE`. The first line is the status line: a frame, turned at each update, a label, and the time since the start. From the 50th version, about 10 minutes after the start, the line is `◌ working since 2026-11-10 12:00 UTC`, or `◌ received, waiting for the agent since 2026-11-10 12:00 UTC` while the agent has not taken the message. A note is shown under the line until the next note.
+
+| Label, the first that applies | When |
+|---|---|
+| `received, waiting for the agent` | from a message received in the chat without a status message, until the agent takes the message: messages of the chat are returned by a `receive` or by a `send` |
+| `loading MODEL` | `--inference`: a model starts, or none is ready while one stops |
+| `reading the prompt with MODEL, N tokens read` | `--inference`: a model reads the prompt |
+| `generating with MODEL, N tokens/s` | `--inference`: a model generates |
+| `waiting for approval` | the agent waits in a call for your decision on a card |
+| `waiting for permission in Claude Code` | from Claude Code's permission prompt to the end of a tool call, a batch or the turn of its session ([Status hooks](#status-hooks)), so also during the allowed call |
+| `using TOOL` | the agent runs `connect`, `send`, `download`, `list` or `leave`; TOOL is the latest of them |
+| `compacting the conversation` | Claude Code compacts the conversation |
+| `running a command`, `reading FILE`, `editing FILE`, `searching files`, `searching the web` or `using NAME` | Claude Code runs a tool; the latest running tool is named, as the next table shows |
+| `running subagent TYPE` | a subagent of Claude Code runs; TYPE is the latest one's type |
+| `working` | `--inference`: the models are idle |
+| `thinking` | otherwise, in the first version of other status messages, and at once when the agent takes the message |
+
+MODEL, shown as code, is the model that starts, or the one model of all busy slots of llama-swap. Otherwise, and for a plain llama-server, `with MODEL` is left out, and `loading MODEL` becomes `loading the model`. `, N tokens read` is left out while N is 0, and `, N tokens/s` until two polls during the generation of one task. `waiting for approval` and `using TOOL` are computed from the agent's calls in all its chats.
+
+| Claude Code tool | Label |
+|---|---|
+| `Bash`, `PowerShell`, `Monitor` | `running a command` |
+| `Read` | `reading FILE` |
+| `Edit`, `Write`, `MultiEdit`, `NotebookEdit` | `editing FILE` |
+| `Grep`, `Glob` | `searching files` |
+| `WebSearch`, `WebFetch` | `searching the web` |
+| another tool, except `Agent` and the agent's own tools | `using NAME` |
+
+The labels of Claude Code's work are computed from the events of the [status hooks](#status-hooks), in all sessions the server follows. FILE is the file's name without its folder; NAME is the tool's name, without `mcp__SERVER__` for a tool of another MCP server; TYPE is the subagent's type. Each is shown as code. When a name is filtered out, the label is `reading a file`, `editing a file`, `using a tool` or `running a subagent`.
+
+The status line is updated 3 seconds apart at first, then at a tenth of its age, at most 20 seconds apart. From the 50th version, the server checks the chat every 5 minutes, without updates. Notes are shown at once up to the 59th version; a later note is refused. With its deletion, at most 60 messages per status message are sent to each recipient.
+
+The server deletes the status message for everyone:
+- after the agent's next message to that chat without `live` is sent;
+- when the agent starts to wait in a `receive` of that chat;
+- when the agent leaves the chat, and at `/leave`;
+- at the next update or check once the conditions above are no longer met in the chat, for example after `/revoke`, or after the agent loses its control chat;
+- 23 hours after the start, at the next check or note; a note at that age is shown in a new status message;
+- from the 50th version, 30 minutes after the last start or end of one of the agent's calls, at the next check, while the agent runs no call other than `receive`;
+- at an error of a command for the status message, with `status of CHAT: ERROR` logged;
+- when the server stops.
+
+When the agent ends its turn without an answer in that chat, for example after a message it leaves unanswered, the status message is shown until one of the other deletions above, such as the agent's next wait in a `receive` of that chat. If no call of the agent follows the `receive` that started it, the status message is deleted about 35 minutes after the start, at the first check at least 30 minutes after that `receive` ended.
+
+At the start, before it accepts calls, the server deletes its own live messages younger than 29 hours 50 minutes in the chats where these conditions are met: the status messages left by a crash.
+
+A deleted status message is shown as marked deleted, with its last text, unless full deletion is allowed:
+- in a direct chat, set "Delete for everyone" to "always" in the agent contact's preferences; "yes" is not enough, because the agent's own preference is "no";
+- in a group or a business chat, turn "Delete for everyone" on in the chat's preferences; the status message is then removed for every member.
+
+Notifications, by each recipient's apps:
+- the status message is notified as a new message;
+- its updates are notified only in a chat profile other than the active one, by the Android and desktop apps, once per update;
+- the answer is notified as a new message, and the deletion after it is not notified;
+- at a deletion without an answer, while the status message is the chat's last message, the Android app replaces a shown notification of that chat with "deleted" or "marked deleted", in the active chat profile.
+
+### Inference endpoint
+
+`--inference URL` names llama-swap, or a llama-server with one model; the state of its models is then shown in the labels.
+
+- URL: http or https, without user name and password; trailing slashes, query and hash are dropped. Another URL, and `--inference` with `--approve host`, are usage errors, exit code 2.
+- `SIMPLEX_MCP_INFERENCE_KEY`, when set, is sent as `Authorization: Bearer KEY` to URL only. Only visible ASCII characters are accepted in it; with another key, the server exits with `SIMPLEX_MCP_INFERENCE_KEY: visible ASCII characters expected.`, exit code 2.
+- The line `Inference endpoint: URL` is printed at the start, after `Approval mode: requests`.
+- At each timed update of the status line other than the first and the frozen one, the server reads `URL/running` of llama-swap, then `/props` and `/slots` of up to 4 servers of its ready models, on URL's host, or on loopback when URL is loopback. When `/running` answers 404, it reads `URL/props` and `URL/slots` of llama-server.
+- The result of one poll is shared by all status messages for 3 seconds. A poll is cancelled after 1 second; an answer over 1 MiB and a redirect are refused.
+- A failed poll is logged once on stderr as `inference endpoint: ERROR`, until the next successful poll; the labels are then those without `--inference`.
+
+### Status hooks
+
+With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-agent-to-claude-code)), Claude Code passes its events to curl, which posts them to `http://127.0.0.1:PORT/hook` of the agent's server, with the token.
+
+- The server follows a session of Claude Code from its first event with a tool of this agent, such as `mcp__simplex-my-agent__receive`, and ignores the events of other sessions. It follows at most 16 sessions, and drops the oldest one with its state.
+- Of each event, the server uses only `hook_event_name`, `session_id`, `tool_name`, `tool_use_id`, `agent_id`, `agent_type`, and the base name of `tool_input.file_path` or `tool_input.notebook_path`. The rest of the event, prompts, commands, file contents and tool results included, is discarded after parsing; nothing of it is saved or logged.
+- A file's base name is kept only when it consists of 1 to 64 ASCII letters, digits and characters of `_.+@-`. Tool names and subagent types follow the same rule, with `_` and `-` as the only characters besides ASCII letters and digits.
+- At most 64 running tools and 64 running subagents are kept, and 256 IDs of ended tool calls; the oldest is dropped.
+
+| Event of a followed session | State of the session after it |
+|---|---|
+| `PreToolUse` | its tool running, except `Agent`, the agent's own tools and a tool whose end event was received first; without `agent_id`, compaction ended |
+| `PostToolUse`, `PostToolUseFailure`, `PermissionDenied` | its tool and the permission prompt ended |
+| `PostToolBatch` | the tools of its agent and the permission prompt ended |
+| `PermissionRequest` | a permission prompt open |
+| `SubagentStart` | its subagent running |
+| `SubagentStop` | its subagent ended |
+| `PreCompact` | compaction running |
+| `PostCompact` | compaction ended |
+| `UserPromptSubmit`, `Stop`, `StopFailure`, `SessionEnd` | all its tools, subagents, permission prompt and compaction ended |
+
+- Claude Code runs curl in the background and hides the outcome outside verbose mode (Ctrl+O), so the failures of the posts while the server is stopped are hidden too.
+- The server checks the token, `Host` and `Origin` of a request to `/hook` as for `/mcp`. It answers a `POST` with 204, or with 411 without Content-Length, 413 for a body over 4 MiB and 400 for invalid JSON, and another method with 405.
+
 ## Waiting for approval in Claude Code
 
 An MCP server cannot start a turn of the agent: what the agent reads from the server are the results of its own tool calls. A call that waits for the owner, or for responses, stays open, and Claude Code turns it into a background task:
@@ -343,14 +469,26 @@ Give Claude Code your SimpleX address:
 Connect to me as yourself at <your SimpleX address>, with the message:
 "I'm your agent, connected as you asked in Claude Code. I'll act on your prompts here, except security-sensitive ones."
 Then take my prompts from that chat and answer there: wait for my messages with receive (wait 3600),
-answer each one in that chat, and call receive again after every answer, until I say stop.
+answer each one in that chat with send (wait 0), and call receive again after every answer, until I say stop.
+Answer my stop message there too before you finish.
 ```
 
-Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
+Or give it the link of a group of yours, where every member prompts it:
+
+```
+Connect as yourself to my group at <your group link>.
+Then take the prompts of its members from that group and answer there: wait for their messages with receive (wait 3600),
+answer each one in that group with send (wait 0), and call receive again after every answer, until I say stop.
+Answer my stop message there too before you finish.
+```
+
+Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers in that chat need no approval.
+
+Once you tap `all`, the agent shows what it does in a live message in that chat, for example `◐ thinking · 0:12`, and deletes that message when its answer is sent; in a group, every member sees it. The agent posts the status message as soon as it receives your prompt, as `◐ received, waiting for the agent · 0:00`, so you see at once that it runs. With the status hooks, the agent also shows Claude Code's work there, for example running a command, reading or editing a file, searching, running a subagent, or waiting for your permission in Claude Code. To have the status message removed rather than marked deleted, set "Delete for everyone" to "always" in the agent contact's preferences, or turn it on in the group's preferences. Keep that chat in your active chat profile: in other profiles, the Android and desktop apps notify of every update. With a local model behind llama-swap, start the agent with `--inference http://127.0.0.1:8080`: the agent then shows the model loading and its tokens per second.
 
 ## Several agents
 
-Each agent is its own process, with its own data folder, port, agent control chat and Claude Code server:
+Each agent is its own process, with its own data folder, port, agent control chat, Claude Code server and status hooks:
 
 ```
 npx -y @simplex-chat/mcp serve my-agent-2 --port 5227
@@ -408,12 +546,16 @@ serve options:
                          Without --owners, whoever joins becomes an owner and
                          every owner approves.
   --expire HOURS         pending actions expire after HOURS, 1 to 23 (default: 23)
-  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,
-                         0 to 60 (default: 10)
+  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards and status
+                         deletions to be sent, 0 to 60 (default: 10)
   --reset-owners         replace the owners: a new agent control chat and link
   --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)
   --qr-code SIZE         QR code of the link: small (default) or large
+  --inference URL        poll llama-swap or llama-server at URL for the model
+                         state and tokens per second shown in status messages;
+                         the API key, if any, is read from
+                         SIMPLEX_MCP_INFERENCE_KEY; mode requests only
 
 register options:
   --scope SCOPE          user (default) or local
@@ -430,6 +572,7 @@ register options:
   simplex_agent.db   SimpleX agent database: connections and keys
   token              access token, readable only by the user
   headers.json       the token as the Authorization header for Claude Code, readable only by the user
+  hook-headers       the token as the Authorization header line for curl in the status hooks, readable only by the user
   server.json        name, port and expiry of the server, read by register
   lock               PID of the running server
   tmp/               the SimpleX core's work folder for files in transfer
@@ -445,29 +588,32 @@ The folder is readable only by the user: every start sets its mode to 0700, exce
 
 The server keeps its action counter in the chat database, as custom data of the agent control chat, the approvals of all messages to a chat and of all files from it as custom data of that chat, and its actions in memory.
 
-The server keeps no log file: it writes its log to the terminal where `serve` runs, events to stdout and errors to stderr.
+The server keeps no log file: it writes its log to the terminal where `serve` runs, events to stdout and errors to stderr. Each note of a status message is written to stdout, for example `Note to contact Alice (@4): Reading the file…`.
 
 One server runs per data folder: a second one exits, because two processes on one database break each other's connections (a SimpleX server delivers a queue's messages only to the last process that subscribed to it).
 
 ## Security
 
 - In mode `requests`, the agent asks in the agent control chat before it connects, sends a message or a file, downloads a file or leaves, and the owner approves or rejects. On a download card, `/receive` gives the agent the file, and `/forward` sends it to the agent control chat, not to the agent.
-- Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you write, see [Prompt the agent from the app](#prompt-the-agent-from-the-app).
+- Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you and people you trust write, see [Prompt the agent from the app](#prompt-the-agent-from-the-app).
 - The server listens only on 127.0.0.1. Every request needs the token. Requests from web pages on other hosts, and requests with another `Host`, are refused (the SDK's localhost Origin and Host checks).
-- Any process with the token can act as the agent. The token is stored only in the data folder, in `token` and `headers.json`; Claude Code's config and the `claude mcp add-json` command line contain the command that prints `headers.json`, not the token.
+- Any process with the token can act as the agent. The token is stored only in the data folder, in `token`, `headers.json` and `hook-headers`; Claude Code's config and the `claude mcp add-json` command line contain the command that prints `headers.json`, and the status hooks the path of `hook-headers`, not the token.
 - Names written by peers are folded to one line, with control and format characters replaced by spaces, in the terminal and in the agent control chat; there, a name that is not a valid display name is shown as code.
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
 - After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
+- In such a chat, the status message and its notes are sent without asking and without a copy in the agent control chat; each note is written to the terminal. Everyone in the chat sees in the status line the names of the agent's running tools and of its model, the names of the files Claude Code reads and edits, without their folders, and the names of its other tools and subagent types, also for its work in other chats.
+- With the status hooks in scope `user`, Claude Code passes the events of every session of the user to curl, which posts them to the agent's server, with prompts, commands, file contents and tool results. The server uses only the fields named in [Status hooks](#status-hooks), keeps state only for the sessions that used the agent's tools, and logs nothing. curl ignores `.curlrc` files and proxy variables, so the events and the token are sent only to 127.0.0.1.
 - The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
 - After `/receive #N 7 all`, the agent's later downloads from that chat, of files on its XFTP servers, run without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; any other download of it fails, unless the IP address is protected.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
 - The agent has no address, so nobody can contact it first.
 - The agent uses private message routing: the SMP server that holds a contact's queue does not see the agent's IP address.
+- `SIMPLEX_MCP_INFERENCE_KEY` is sent only to the `--inference` URL; set it only for a URL on 127.0.0.1 or with https. The server reads the servers of llama-swap's models only on the URL's host, or on loopback when the URL is loopback, and refuses redirects. It shows a model ID only when the ID consists of 1 to 64 ASCII letters, digits and characters of `_.:/+@-`, and then as code; it folds the endpoint's error texts to one line.
 
 ## Claude Code plugin
 
-The plugin gives every Claude Code session its own SimpleX group. In that group you send the session prompts, approve its actions and tool use, and read its answers. One service runs all sessions that share a data folder. Peers see one SimpleX profile, `Claude`. Sessions have the tools of `serve` (`connect`, `send`, `receive`, `download`, `list` and `leave`), and `reply`, which sends files to the session's group.
+The plugin gives every Claude Code session its own SimpleX group. In that group you send the session prompts, approve its actions and tool use, and read its answers. One service runs all sessions that share a data folder. Peers see one SimpleX profile, `Claude`. Sessions have the tools of `serve` (`connect`, `send`, `receive`, `download`, `list` and `leave`), and `reply`, which sends files to the session's group. In mode `requests`, the service shows the [status messages](#status-while-the-agent-works) of sessions as `serve` does. When the service stops, it deletes them and waits 10 seconds for the deletions and the cancelled cards to be sent; when it starts, it deletes those left by a crash.
 
 ### Install
 

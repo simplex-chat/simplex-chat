@@ -1,16 +1,20 @@
 import * as childProcess from "child_process"
-import {mkdirSync, mkdtempSync, rmSync, writeFileSync} from "fs"
-import {tmpdir} from "os"
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
+import * as os from "os"
 import {join} from "path"
 import {createDataFolder, serverToken, writeServerFile} from "../../src/files"
 import {ExitError} from "../../src/log"
-import {RunResult, cmdArgument, projectRoot, register, registryEntry} from "../../src/register"
+import {RunResult, cmdArgument, projectRoot, register, registryEntry, statusHooks} from "../../src/register"
 
 let dir: string
+let config: string
 
 beforeEach(() => {
-  dir = join(mkdtempSync(join(tmpdir(), "simplex-mcp-register-")), "agent")
+  dir = join(mkdtempSync(join(os.tmpdir(), "simplex-mcp-register-")), "agent")
+  config = join(dir, "..", "config")
   createDataFolder(dir)
+  delete process.env.CLAUDE_CONFIG_DIR
+  jest.spyOn(os, "homedir").mockReturnValue(join(dir, ".."))
 })
 
 afterEach(() => {
@@ -23,6 +27,16 @@ const ok: RunResult = {missing: false, status: 0, stderr: ""}
 function recorder(results: RunResult[]): {calls: string[][]; run: (command: string, args: string[]) => RunResult} {
   const calls: string[][] = []
   return {calls, run: (command, args) => (calls.push([command, ...args]), results[calls.length - 1] ?? ok)}
+}
+
+const hookEvents = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PostToolBatch", "PermissionRequest", "PermissionDenied", "SubagentStart", "SubagentStop", "PreCompact", "PostCompact", "Stop", "StopFailure", "SessionEnd"]
+
+function statusHandler(port: number, data: string, nullDevice = "/dev/null"): object {
+  return {type: "command", command: "curl", args: ["-q", "--noproxy", "*", "-s", "-m", "2", "-o", nullDevice, "-H", `@${join(data, "hook-headers")}`, "-H", "Content-Type: application/json", "--data-binary", "@-", `http://127.0.0.1:${port}/hook`], async: true}
+}
+
+function statusGroups(port: number, data: string, nullDevice?: string): {[event: string]: object[]} {
+  return Object.fromEntries(hookEvents.map(event => [event, [{hooks: [statusHandler(port, data, nullDevice)]}]]))
 }
 
 describe("register", () => {
@@ -47,17 +61,95 @@ describe("register", () => {
     expect(registryEntry(5226, data, 23).headersHelper).toBe(`type "${join(data, "headers.json")}"`)
   })
 
+  it("builds a status hook group for every event: curl, without a curlrc file or a proxy, posts the event to /hook with the hook headers file, its output to the null device", () => {
+    onPlatform("linux")
+    expect(statusHooks(5226, "/home/alice/.simplex-mcp/agent")).toEqual(statusGroups(5226, "/home/alice/.simplex-mcp/agent"))
+    onPlatform("win32")
+    expect(statusHooks(5226, "/home/alice/.simplex-mcp/agent")).toEqual(statusGroups(5226, "/home/alice/.simplex-mcp/agent", "NUL"))
+  })
+
   it("removes the entry before adding it, with no token in the command", () => {
     writeServerFile(dir, {name: "agent", port: 5227, expireHours: 2})
     const token = serverToken(dir, false)
     const {calls, run} = recorder([{missing: false, status: 1, stderr: "not found"}, ok])
-    expect(register({name: "agent", data: dir, scope: "user"}, run)).toBe("Added to Claude Code: scope user, server simplex-agent.")
+    expect(register({name: "agent", data: dir, scope: "user"}, run, undefined, config)).toBe(`Added to Claude Code: scope user, server simplex-agent, status hooks in ${join(config, "settings.json")}.`)
     const entry = JSON.stringify({type: "http", url: "http://127.0.0.1:5227/mcp", headersHelper: `cat ${join(dir, "headers.json")}`, timeout: 26 * 3_600_000 + 600_000})
     expect(calls).toEqual([
       ["claude", "mcp", "remove", "--scope", "user", "simplex-agent"],
       ["claude", "mcp", "add-json", "--scope", "user", "simplex-agent", entry],
     ])
     expect(calls.flat().join(" ")).not.toContain(token)
+  })
+
+  it("writes the status hooks to the user settings file, indented by 2 spaces, with the path of the hook headers in place of the token", () => {
+    writeServerFile(dir, {name: "agent", port: 5227, expireHours: 2})
+    const token = serverToken(dir, false)
+    register({name: "agent", data: dir, scope: "user"}, recorder([]).run, undefined, config)
+    const text = readFileSync(join(config, "settings.json"), "utf8")
+    expect(JSON.parse(text)).toEqual({hooks: statusGroups(5227, dir)})
+    expect(text).toBe(`${JSON.stringify(JSON.parse(text), null, 2)}\n`)
+    expect(text).not.toContain(token)
+  })
+
+  it("takes the user settings folder from CLAUDE_CONFIG_DIR, as Claude Code does", () => {
+    writeServerFile(dir, {name: "agent", port: 5227, expireHours: 2})
+    process.env.CLAUDE_CONFIG_DIR = config
+    expect(register({name: "agent", data: dir, scope: "user"}, recorder([]).run)).toBe(`Added to Claude Code: scope user, server simplex-agent, status hooks in ${join(config, "settings.json")}.`)
+    expect(JSON.parse(readFileSync(join(config, "settings.json"), "utf8"))).toEqual({hooks: statusGroups(5227, dir)})
+  })
+
+  it("takes the user settings folder ~/.claude when CLAUDE_CONFIG_DIR is unset or empty", () => {
+    writeServerFile(dir, {name: "agent", port: 5227, expireHours: 2})
+    const file = join(dir, "..", ".claude", "settings.json")
+    const added = `Added to Claude Code: scope user, server simplex-agent, status hooks in ${file}.`
+    expect(register({name: "agent", data: dir, scope: "user"}, recorder([]).run)).toBe(added)
+    process.env.CLAUDE_CONFIG_DIR = ""
+    expect(register({name: "agent", data: dir, scope: "user"}, recorder([]).run)).toBe(added)
+    expect(JSON.parse(readFileSync(file, "utf8"))).toEqual({hooks: statusGroups(5227, dir)})
+  })
+
+  it("writes them to the local settings file of the project in scope local", () => {
+    writeServerFile(dir, {name: "agent", port: 5227, expireHours: 2})
+    const project = join(dir, "..", "project")
+    const file = join(project, ".claude", "settings.local.json")
+    expect(register({name: "agent", data: dir, scope: "local"}, recorder([]).run, () => project, config)).toBe(`Added to Claude Code: scope local, server simplex-agent, status hooks in ${file}.`)
+    expect(JSON.parse(readFileSync(file, "utf8"))).toEqual({hooks: statusGroups(5227, dir)})
+    expect(existsSync(config)).toBe(false)
+    expect(existsSync(join(dir, "..", ".claude"))).toBe(false)
+  })
+
+  it("replaces the status hooks of the agent's data folder, and keeps other settings, hooks and groups", () => {
+    writeServerFile(dir, {name: "agent", port: 5227, expireHours: 2})
+    const file = join(config, "settings.json")
+    const lint = {type: "command", command: "lint"}
+    const otherAgent = {hooks: [statusHandler(5300, join(dir, "..", "other"))]}
+    const hooks = {PreToolUse: [{matcher: "Bash", hooks: [lint, statusHandler(5226, dir)]}, {hooks: [statusHandler(5226, dir)]}], PostToolUse: [otherAgent], Notification: [{hooks: [lint]}]}
+    mkdirSync(config, {recursive: true})
+    writeFileSync(file, JSON.stringify({model: "opus", hooks}))
+    register({name: "agent", data: dir, scope: "user"}, recorder([]).run, undefined, config)
+    const current = statusGroups(5227, dir)
+    expect(JSON.parse(readFileSync(file, "utf8"))).toEqual({
+      model: "opus",
+      hooks: {...current, PreToolUse: [{matcher: "Bash", hooks: [lint]}, ...current.PreToolUse], PostToolUse: [otherAgent, ...current.PostToolUse], Notification: [{hooks: [lint]}]},
+    })
+    const written = readFileSync(file, "utf8")
+    register({name: "agent", data: dir, scope: "user"}, recorder([]).run, undefined, config)
+    expect(readFileSync(file, "utf8")).toBe(written)
+  })
+
+  it("reports the status hooks to add by hand when the settings file is not a JSON object, its hooks are not an object or the hooks of an event are not an array, after adding the entry, and leaves the file unchanged", () => {
+    writeServerFile(dir, {name: "agent", port: 5227, expireHours: 2})
+    const file = join(config, "settings.json")
+    mkdirSync(config, {recursive: true})
+    for (const text of ['{"model": "opus",', "[]", '{"hooks": []}', '{"hooks": {"Stop": {}}}']) {
+      writeFileSync(file, text)
+      const {calls, run} = recorder([])
+      expect(() => register({name: "agent", data: dir, scope: "user"}, run, undefined, config)).toThrow(
+        new ExitError(`Added to Claude Code: scope user, server simplex-agent. ${file} is not a valid settings file; add these status hooks to it: ${JSON.stringify({hooks: statusGroups(5227, dir)})}`, 1),
+      )
+      expect(calls.map(call => call.slice(0, 3))).toEqual([["claude", "mcp", "remove"], ["claude", "mcp", "add-json"]])
+      expect(readFileSync(file, "utf8")).toBe(text)
+    }
   })
 
   it("reports an agent that was never started", () => {
@@ -79,11 +171,12 @@ describe("register", () => {
     )
   })
 
-  it("reports a failed add", () => {
+  it("reports a failed add, and writes no status hooks", () => {
     writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
-    expect(() => register({name: "agent", data: dir, scope: "user"}, recorder([ok, {missing: false, status: 1, stderr: "bad scope\n"}]).run)).toThrow(
+    expect(() => register({name: "agent", data: dir, scope: "user"}, recorder([ok, {missing: false, status: 1, stderr: "bad scope\n"}]).run, undefined, config)).toThrow(
       new ExitError("claude mcp add-json failed: bad scope", 1),
     )
+    expect(existsSync(config)).toBe(false)
   })
 
   describe("when claude can't be spawned", () => {
@@ -97,7 +190,7 @@ describe("register", () => {
     it("runs it through cmd.exe on Windows, with the arguments quoted for cmd.exe", () => {
       onPlatform("win32")
       const spawn = spawnClaude(0)
-      expect(register({name: "agent", data: dir, scope: "user"})).toBe("Added to Claude Code: scope user, server simplex-agent.")
+      expect(register({name: "agent", data: dir, scope: "user"}, undefined, undefined, config)).toBe(`Added to Claude Code: scope user, server simplex-agent, status hooks in ${join(config, "settings.json")}.`)
       const words = (args: string[]): string => ["claude", ...args.map(cmdArgument)].join(" ")
       expect(spawn.mock.calls).toEqual([
         ["claude", ["mcp", "remove", "--scope", "user", "simplex-agent"], {encoding: "utf8"}],

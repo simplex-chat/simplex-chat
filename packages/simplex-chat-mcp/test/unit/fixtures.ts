@@ -52,7 +52,7 @@ export function groupChat(g: T.GroupInfo): T.ChatInfo {
   return {type: "group", groupInfo: g}
 }
 
-export function item(itemId: number, text: string, chatDir: T.CIDirection = {type: "directRcv"}, extra: {status?: string; quoted?: number; mention?: boolean; ts?: string; live?: boolean} = {}): T.ChatItem {
+export function item(itemId: number, text: string, chatDir: T.CIDirection = {type: "directRcv"}, extra: {status?: string; quoted?: number; mention?: boolean; ts?: string; live?: boolean; edited?: boolean} = {}): T.ChatItem {
   const received = chatDir.type.endsWith("Rcv")
   return {
     chatDir,
@@ -63,6 +63,7 @@ export function item(itemId: number, text: string, chatDir: T.CIDirection = {typ
       itemStatus: {type: extra.status ?? (received ? "rcvNew" : "sndSent")},
       userMention: extra.mention ?? false,
       ...(extra.live === undefined ? {} : {itemLive: extra.live}),
+      ...(extra.edited === undefined ? {} : {itemEdited: extra.edited}),
     },
     content: {type: received ? "rcvMsgContent" : "sndMsgContent", msgContent: {type: "text", text}},
     mentions: {},
@@ -140,6 +141,18 @@ export async function until(condition: () => boolean): Promise<void> {
   expect(condition()).toBe(true)
 }
 
+export function livePost(chatType: T.ChatType, chatId: number, text: string): FakeChat["sent"][number] {
+  return {chat: [chatType, chatId], messages: [{msgContent: {type: "text", text}, mentions: {}}], live: true}
+}
+
+export function broadcastDeletion(chatType: T.ChatType, chatId: number, itemId: number): FakeChat["deletedItems"][number] {
+  return {chatType, chatId, itemIds: [itemId], deleteMode: T.CIDeleteMode.Broadcast}
+}
+
+export function texts(chat: FakeChat): string[] {
+  return [...chat.sent.map(({messages: [{msgContent}]}) => msgContent.text), ...chat.updates.map(({text}) => text)]
+}
+
 export function descendants(pid: number): number[] {
   const parents = execFileSync("ps", ["-A", "-o", "pid=,ppid="], {encoding: "utf8"}).trim().split("\n").map(line => line.trim().split(/\s+/).map(Number))
   const children = (parent: number): number[] => parents.flatMap(([child, ppid]) => (ppid === parent ? [child, ...children(child)] : []))
@@ -188,6 +201,7 @@ export class FakeChat {
   chats = new Map<string, FakeChatData>()
   responses = new Map<string, object>()
   nextItemId = 500
+  closed = false
 
   async sendChatCmd(cmd: string): Promise<ChatResponse> {
     this.commands.push(cmd)
@@ -219,7 +233,7 @@ export class FakeChat {
     this.sent.push({chat, messages, ...(liveMessage === true ? {live: true} : {})})
     const ref = `${chat[0] === T.ChatType.Direct ? "@" : "#"}${chat[1]}`
     const chatInfo = this.chats.get(ref)?.chatInfo ?? groupChat(group(chat[1], "control"))
-    return messages.map(({msgContent}) => event(chatInfo, item(this.nextItemId++, msgContent.text, chatInfo.type === "direct" ? {type: "directSnd"} : {type: "groupSnd"})))
+    return messages.map(({msgContent}) => event(chatInfo, item(this.nextItemId++, msgContent.text, chatInfo.type === "direct" ? {type: "directSnd"} : {type: "groupSnd"}, liveMessage ? {live: true} : {})))
   }
 
   async apiUpdateChatItem(_type: T.ChatType, chatId: number, itemId: number, msgContent: T.MsgContent, liveMessage?: boolean): Promise<T.ChatItem> {
@@ -298,6 +312,14 @@ export class FakeChat {
     return [...this.chats.values()].flatMap(({chatInfo}) => (chatInfo.type === "direct" ? [chatInfo.contact] : []))
   }
 
+  async apiListGroups(): Promise<T.GroupInfo[]> {
+    return [...this.chats.values()].flatMap(({chatInfo}) => (chatInfo.type === "group" ? [chatInfo.groupInfo] : []))
+  }
+
+  async close(): Promise<void> {
+    this.closed = true
+  }
+
   async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
     this.invitations.push({groupId, viaGroupId: 0, groupMemberId: contactId, memberRole})
     return member(2000 + contactId, `contact ${contactId}`, memberRole, T.GroupMemberStatus.Invited)
@@ -316,8 +338,6 @@ export class FakeChat {
     await new Promise(resolve => setImmediate(resolve))
     return {...group(groupId, groupProfile.displayName), groupProfile, ...(customData === undefined ? {} : {customData})}
   }
-
-  async close(): Promise<void> {}
 
   api(): api.ChatApi {
     return this as unknown as api.ChatApi
