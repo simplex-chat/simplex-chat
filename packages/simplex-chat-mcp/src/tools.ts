@@ -1386,6 +1386,7 @@ export class AgentTools {
       await markRead(this.agent.chat, chat, [...returned.map(({chatItem}) => chatItem.meta.itemId), ...skipped])
       if (call.signal.aborted) return undefined
       const messages = await this.toMessages(returned)
+      if (call.signal.aborted) return undefined
       const scheduled = this.agent.schedules?.take(chat) ?? []
       return {chat, messages, more: arrived.items.length - returned.length + arrived.overflow.size + unreadRest, ...(scheduled.length === 0 ? {} : {scheduled})}
     } finally {

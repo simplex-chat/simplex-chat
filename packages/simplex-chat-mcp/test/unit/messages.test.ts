@@ -527,6 +527,27 @@ describe("scheduled prompts in receive", () => {
     expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toEqual({chat: "@4", messages: [], more: 0, scheduled: [{prompt: "Check the trail report.", at: dueAt(7, 0)}]})
     schedules.stop()
   })
+
+  it("leaves the due prompts due when the call is aborted while it reads the agent's incognito name", async () => {
+    jest.useFakeTimers({now: clockStart})
+    const chat = new FakeChat()
+    const incognito = {...contact(4, "Switchback"), activeConn: {connId: 204, connStatus: {type: "ready"}, customUserProfileId: 77}} as unknown as T.Contact
+    chat.chats.set("@4", {chatInfo: direct(incognito), items: [item(21, "Trail closed at the pass.", {type: "directRcv"})]})
+    chat.responses.set("/_info @4", {type: "contactInfo", user, contact: incognito, customUserProfile: {displayName: "Quiet Fox"}})
+    const {tools, schedules} = scheduledTools(chat, {"@4": [scheduleEntry("0 7 * * *", "Check the trail report.")]})
+    schedules.start()
+    jest.advanceTimersByTime(30_000)
+    const {controller, call} = signal()
+    const read = chat.sendChatCmd.bind(chat)
+    chat.sendChatCmd = async cmd => {
+      if (cmd === "/_info @4") controller.abort()
+      return read(cmd)
+    }
+    expect(await tools.call("receive", {chat: "@4"}, call)).toBeUndefined()
+    expect(schedules.pending("@4")).toBe(1)
+    expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toEqual({chat: "@4", messages: [], more: 0, scheduled: [{prompt: "Check the trail report.", at: dueAt(7, 0)}]})
+    schedules.stop()
+  })
 })
 
 describe("send", () => {
