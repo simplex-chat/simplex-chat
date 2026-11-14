@@ -1,7 +1,10 @@
+import {execFile} from "child_process"
 import {EventEmitter} from "events"
 import {existsSync, writeSync} from "fs"
+import {readFile} from "fs/promises"
 import {Server, ServerResponse} from "http"
 import {basename, join} from "path"
+import {promisify} from "util"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {Action, Mode} from "./actions"
 import {Config, readConfig} from "./config"
@@ -17,11 +20,13 @@ import {version} from "./version"
 const idleClose = 10 * 60_000
 const idleStop = 10 * 60_000
 const processWait = 10_000
+const psWait = 2_000
 const logCheck = 3_600_000
 const lockChecks = 150
 const lockCheckWait = 100
 const firstFreeFd = 3
 const unnamedSession = "Claude Code"
+const run = promisify(execFile)
 
 // spec: spec/architecture.md#service-hublike
 export interface HubLike {
@@ -39,6 +44,7 @@ export interface SessionLike {
   readonly number: number
   readonly displayName: string
   open: boolean
+  record?: string
   onLine?: (line: AttachLine) => void
   busy(): boolean
   rename(name: string): Promise<void>
@@ -48,6 +54,7 @@ export interface SessionLike {
   turn(request: TurnRequest): Promise<void>
   endPermissions(): void
   endLive(): Promise<void>
+  endToolApprovals(): void
 }
 
 // spec: spec/architecture.md#service-hublike
@@ -57,6 +64,7 @@ export interface ServiceDeps {
   version: string
   openHub(config: Config, stored: StoredSession[]): Promise<HubLike>
   onStopped(code: number): void
+  processStart(pid: number): Promise<string | undefined>
   statusLine?: string
 }
 
@@ -66,9 +74,10 @@ interface Entry {
   agent?: SessionLike
   attached: number
   calls: number
-  writers: Set<(line: AttachLine) => void>
+  writers: Map<(line: AttachLine) => void, number | undefined>
   idle?: NodeJS.Timeout
   pid?: number
+  started?: string
   seen?: number
 }
 
@@ -220,14 +229,19 @@ export class Service {
   private async onSession(request: SessionRequest): Promise<SessionReply> {
     validConfig(request.config)
     this.refuseUnattended(request.pid)
+    const started = request.pid === undefined ? undefined : await this.deps.processStart(request.pid)
     const id = await this.resolve(request.id, request.pid, true)
     this.refuseUnattended(request.pid)
     const title = request.pid === undefined ? undefined : this.titles.get(request.pid)
     const entry = this.entry(id, {...request, id, name: request.name ?? (title?.id === id ? title.name : undefined)})
+    const previous = {pid: entry.pid, started: entry.started}
     entry.pid = request.pid
+    entry.started = started
     entry.seen = Date.now()
     if (request.pid !== undefined) this.registered.emit(String(request.pid))
     const agent = await entry.opening
+    agent.record = request.record
+    if (previous.pid !== undefined && (previous.pid !== request.pid || started === undefined || previous.started !== started)) agent.endToolApprovals()
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
     agent.requestMode(request.config.approve)
@@ -340,8 +354,8 @@ export class Service {
     clearTimeout(entry.idle)
     const write = startLines(res)
     write({version: this.deps.version, protocol: protocolVersion})
-    entry.writers.add(write)
-    agent.onLine = line => entry.writers.forEach(writer => writer(line))
+    entry.writers.set(write, request.pid)
+    agent.onLine = line => entry.writers.forEach((pid, writer) => writer(line.tools === undefined || pid === entry.pid ? line : {tools: []}))
     res.once("close", () => {
       entry.attached--
       entry.writers.delete(write)
@@ -394,7 +408,7 @@ export class Service {
     const existing = this.entries.get(id)
     if (existing !== undefined) return existing
     clearTimeout(this.stopTimer)
-    const entry: Entry = {attached: 0, calls: 0, writers: new Set(), opening: this.openAgent(id, folder, request)}
+    const entry: Entry = {attached: 0, calls: 0, writers: new Map(), opening: this.openAgent(id, folder, request)}
     this.entries.set(id, entry)
     this.scheduleIdle(id, entry)
     entry.opening.then(
@@ -447,6 +461,7 @@ export class Service {
       if (agent === undefined || entry.calls > 0 || agent.busy()) return this.scheduleIdle(id, entry)
       this.entries.delete(id)
       agent.open = false
+      agent.endToolApprovals()
       if (this.entries.size === 0) this.scheduleStop()
     }, idleClose)
   }
@@ -502,7 +517,20 @@ export function productionDeps(root: string): ServiceDeps {
     version,
     openHub: (config, stored) => Hub.open(root, config, stored),
     onStopped: code => process.exit(code),
+    processStart,
     statusLine: join(__dirname, "status-line.js"),
+  }
+}
+
+// spec: spec/architecture.md#service-processstart
+export async function processStart(pid: number): Promise<string | undefined> {
+  if (!Number.isSafeInteger(pid) || pid <= 0) return undefined
+  try {
+    if (process.platform === "linux") return (await readFile(`/proc/${pid}/stat`, "utf8")).split(") ").at(-1)?.split(" ")[19]
+    if (process.platform === "darwin") return (await run("/bin/ps", ["-o", "lstart=", "-p", String(pid)], {timeout: psWait})).stdout.trim() || undefined
+    return undefined
+  } catch {
+    return undefined
   }
 }
 

@@ -353,7 +353,7 @@ Tests:
 
 - `README.md`, step 4: Claude's text appears live as Claude writes it, and the turn ends with one line in small print that alerts.
 - `REFERENCE.md`, "Prompts and answers": the opening message, the texts, the end line, the priorities and the terminal's display by lines.
-- `ROADMAP.md`: the line removed.
+- `ROADMAP.md`: the line marked ✅.
 - `spec/flows.md`: a flow of a turn's texts with the order rules; `spec/api.md`: the MessageDisplay entry, `dist/display.js` and `text` of `POST /turn`, the channel instructions; `spec/architecture.md`: the texts, the opening message, the end line, `paths.ts` and `service-request.ts`.
 - `TESTING.md`: the tests and the measurement.
 
@@ -418,7 +418,8 @@ Changes against sections 4 and 5:
     that arrive during User's post wait for it.
 16  merge of master 975cc700a: the opening message of a reaction's turn quotes the reacted message, Claude's own
     included, and the answer fills it; quoteOf takes Claude's own messages, as master's postAnswer does; the
-    flow of a turn's texts is flow 34, after master's flow 33; code is cited by names with // spec: pointers.
+    flow of a turn's texts is flow 37, after master's flows 33 to 36 (953389322), and its TESTING check is 21;
+    code is cited by names with // spec: pointers; ROADMAP.md marks the item ✅ in place.
 ```
 
 ```mermaid

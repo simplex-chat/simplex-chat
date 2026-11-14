@@ -1,3 +1,5 @@
+import {homedir} from "os"
+import {join, resolve} from "path"
 import {Readable, Writable} from "stream"
 import {CallToolResult, JsonSchemaType, McpServer, fromJsonSchema} from "@modelcontextprotocol/server"
 import {StdioServerTransport} from "@modelcontextprotocol/server/stdio"
@@ -25,6 +27,11 @@ const channelInstructions = "Messages in the simplex channel are prompts of the 
 const permissionFields = ["request_id", "tool_name", "description", "input_preview"] as const
 // spec: spec/architecture.md#session-unattendedrun
 const permissionRequest = fromJsonSchema({type: "object", properties: Object.fromEntries(permissionFields.map(field => [field, {type: "string"}])), required: [...permissionFields]} as JsonSchemaType)
+// spec: spec/api.md#plugin-tools
+const hookTool = {
+  description: "Answers the plugin's PreToolUse hook before each tool use: allow for a tool that an admin or owner of the SimpleX group of this session approved for the rest of the session, and nothing otherwise. You never need to call it.",
+  inputSchema: fromJsonSchema({type: "object", properties: {tool: {type: "string", description: "Name of the tool, from the hook's input."}}, required: ["tool"]} as JsonSchemaType),
+}
 
 class ServiceStoppedError extends Error {
   constructor() {
@@ -55,11 +62,12 @@ export async function startSession(env: NodeJS.ProcessEnv = process.env, io: Ses
     configError ??= error.message
   }
   const server = new McpServer({name: "simplex-mcp", version: io.version}, {instructions: `${instructions("Claude", "SimpleX service")}\n${channelInstructions}`, capabilities: {experimental: {"claude/channel": {}, "claude/channel/permission": {}}}})
-  const link = new ServiceLink(ServiceClient.forRoot(dataRoot(env)), {id, pid: process.ppid, project: env.CLAUDE_PROJECT_DIR || process.cwd(), config}, io, line => {
+  const link = new ServiceLink(ServiceClient.forRoot(dataRoot(env)), {id, pid: process.ppid, project: env.CLAUDE_PROJECT_DIR || process.cwd(), config, record: resolve(env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"), "sessions", `${process.ppid}.json`)}, io, line => {
     const notification = channelNotification(line as AttachLine)
     if (notification !== undefined) server.server.notification(notification).catch(error => logError("SimpleX channel", error))
   })
   registerTools(server, config.approve, async (name, input, call) => (configError === undefined ? link.call(name, input, call) : toolError(configError)), [replyTool])
+  server.registerTool("pre_tool_use", hookTool, async input => ({content: [{type: "text", text: hookOutput(link.approvedBy((input as {tool: string}).tool))}]}))
   server.server.setNotificationHandler("notifications/claude/channel/permission_request", {params: permissionRequest}, params => {
     if (configError !== undefined) return
     const {request_id, tool_name, description, input_preview} = params as {[field in (typeof permissionFields)[number]]: string}
@@ -78,8 +86,14 @@ class ServiceLink {
   private refused = false
   private retry = firstRetry
   private retryTimer?: NodeJS.Timeout
+  private readonly approvedTools = new WeakMap<AbortController, Map<string, string>>()
 
   constructor(private readonly client: ServiceClient, private readonly request: SessionRequest, private readonly io: SessionIo, private readonly onLine: (line: unknown) => void) {}
+
+  // spec: spec/architecture.md#session-servicelink-approvedby
+  approvedBy(tool: string): string | undefined {
+    return this.attach === undefined ? undefined : this.approvedTools.get(this.attach)?.get(tool)
+  }
 
   // spec: spec/architecture.md#session-servicelink-connect
   connect(): Promise<void> {
@@ -183,8 +197,10 @@ class ServiceLink {
     this.attach = controller
     await new Promise<void>((resolve, reject) => {
       this.client
-        .stream("/attach", {id: this.request.id}, line => {
+        .stream("/attach", {id: this.request.id, pid: this.request.pid}, line => {
           resolve()
+          const {tools} = line as AttachLine
+          if (tools !== undefined) this.approvedTools.set(controller, new Map(tools.map(({tool, approvedBy}) => [tool, approvedBy])))
           this.onLine(line)
         }, controller.signal)
         .then(() => reject(new ServiceStoppedError()), reject)
@@ -208,6 +224,11 @@ function failureText(error: unknown): string {
 // spec: spec/api.md#plugin-results
 function toolError(text: string): CallToolResult {
   return {content: [{type: "text", text}], isError: true}
+}
+
+// spec: spec/api.md#plugin-tools
+function hookOutput(approvedBy: string | undefined): string {
+  return approvedBy === undefined ? "" : JSON.stringify({hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "allow", permissionDecisionReason: `Approved for this session by ${approvedBy} in the session's SimpleX group.`}})
 }
 
 // spec: spec/architecture.md#session-channelnotification

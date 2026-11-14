@@ -29,6 +29,7 @@ export interface SessionRequest {
   project: string
   name?: string
   config: Config
+  record?: string
 }
 
 // spec: spec/architecture.md#protocol-sessionrequest
@@ -103,6 +104,13 @@ export interface TextBatch {
 export interface AttachLine {
   prompt?: {text: string; from: string; item: number; file?: string; replyTo?: {item?: number; from?: string}}
   permission?: {requestId: string; behavior: "allow" | "deny"}
+  tools?: ApprovedTool[]
+}
+
+// spec: spec/architecture.md#protocol-attachline
+export interface ApprovedTool {
+  tool: string
+  approvedBy: string
 }
 
 // spec: spec/architecture.md#protocol-titlereply
@@ -121,6 +129,7 @@ export interface SessionReply extends ServiceInfo {
 // spec: spec/architecture.md#protocol-titlereply
 export interface AttachRequest {
   id: string
+  pid?: number
 }
 
 // spec: spec/architecture.md#protocol-titlereply

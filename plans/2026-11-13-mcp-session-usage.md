@@ -372,10 +372,10 @@ Tests:
 
 - `README.md:36`: each turn ends with a line in small print with its time and tokens. A new optional step: the status line setting, for the plan's usage.
 - `REFERENCE.md`: "Prompts and answers" (603-642), the end line; "Model and effort" (656-658) becomes "Model, effort and usage", with the switch lines, decision 21, and a part "Status line" with the setting, the terminal line and the cases of section 2; "Plugin data folder" (676-691), `status-line.js`.
-- `ROADMAP.md:21`: removed.
+- `ROADMAP.md`: the line marked ✅.
 - `spec/api.md`: 4.3, the posts table (772-781) and the group profile (818-832); 4.6, `POST /turn` (887); 4.8, the hook inputs (1018) and the status line command.
 - `spec/architecture.md`: 8.2, `hook.ts` (914), `status-line.ts`, `Session.turn` (857); 8.3, the limits in memory and `status-line.js` among the files; 8.6, the wire (1116) and the rules (1138-1146).
-- `spec/flows.md`: flow 21, the Stop request and its notes (986-1049); the model switch; a new flow 35, the status line command.
+- `spec/flows.md`: flow 21, the Stop request and its notes (986-1049); the model switch; a new flow 38, the status line command.
 - `spec/README.md`: the summary, `status-line.ts` in the dependency graph, the module table and the entry points.
 - `TESTING.md`: the automated tests (156, 173); check 9, with the setting.
 
