@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-36.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16 and 37, and the Claude Code plugin in flows 17-36.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -18,7 +18,7 @@ Participants:
 | O | the owner in the SimpleX app |
 | D | a peer |
 
-In flows 1-16, `#G` is the agent control chat, `USER` the agent's user ID, `DATA` the data folder. Calls to the core are shown as the `ChatApi` methods the server calls, with their arguments in short. Card and progress texts with a semicolon are shown with a comma in the diagrams; the exact texts are in [API](api.md).
+In flows 1-16 and 37, `#G` is the agent control chat, `USER` the agent's user ID, `DATA` the data folder. Calls to the core are shown as the `ChatApi` methods the server calls, with their arguments in short. Card and progress texts with a semicolon are shown with a comma in the diagrams; the exact texts are in [API](api.md).
 
 ---
 
@@ -64,6 +64,10 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 35. [A summary of the session's context](#35-a-summary-of-the-sessions-context)
 36. [The list of sessions](#36-the-list-of-sessions)
 
+`serve`, continued:
+
+37. [`/secret` and its use](#37-secret-and-its-use)
+
 ---
 
 ## 1. First start and the owner joins
@@ -86,7 +90,7 @@ sequenceDiagram
   S->>S: DATA/files/sent deleted
   S->>C: startChat, events buffered
   S->>C: apiListGroups USER (no control marker)
-  S->>C: apiNewGroup USER {My Agent, history on, menu pending, list and leave}
+  S->>C: apiNewGroup USER {My Agent, history on, full deletion on, menu pending, list, leave and secrets}
   S->>C: apiSetGroupCustomData #35;G {"simplexMcp":{"control":true,"nextAction":1}}
   S->>P: Agent control chat "My Agent" created.
   S->>K: load
@@ -116,6 +120,7 @@ Notes:
 - With `--qr-code small`, the line `If the QR code does not scan, ...` is printed after the link ([`Control.openLink`](../src/control.ts)).
 - Events that arrive before the HTTP listener starts are buffered and handled in order ([`bufferEvents`](../src/core.ts)).
 - The server runs `ownerJoined` for every `joinedGroupMember` event of a human without `--owners`, and the link is deleted in that handler ([`Control.onEvent`, `ownerJoined`](../src/control.ts)).
+- With `--secrets-folder`, the folder is created before the user is read, when missing ([`startAgent`](../src/serve.ts)).
 
 Source: [`main`, `readStdin`](../src/cli.ts), [`startServer`, `startAgent`](../src/serve.ts), [`prepareCore`, `deletePresetContacts`, `updatedUser`, `bufferEvents`, `setTempFolder`](../src/core.ts), [`createDataFolder`, `acquireLock`, `releaseLock`, `serverToken`, `headersFile`, `writeHeadersFile`, `writeServerFile`](../src/files.ts), [`startHttp`](../src/http.ts), [`Control.load`, `rename`, `describe`, `updateProfile`, `start`, `startOwners`, `openLink`, `deleteLink`, `findControlGroup`, `controlDataOf`, `createControlChat`, `createGroup`](../src/control.ts).
 
@@ -420,6 +425,7 @@ Notes:
 - In mode `host`, `standingApprover` returns `undefined`, so standing approvals are ignored by `send`, `download`, `list` and `/list`, and `/approve CHAT all` stores nothing; downloads get no card, so `/receive CHAT N all` has no card to act on ([`Control.standingApprover`, `ownerCommand`](../src/control.ts)).
 - A download in mode `host` is received without the approval of unknown servers, and it gets no card and no outcome post ([`AgentTools.downloadTo`, `startDownload`](../src/tools.ts), [`hasOutcomeCard`](../src/control.ts)).
 - The kept-files message also follows a done `leave` in mode `host` ([`Control.outcome`](../src/control.ts)).
+- The secret commands work as in mode `requests` ([`Control.ownerCommand`](../src/control.ts)).
 
 Source: [`AgentTools.register`](../src/tools.ts), [`Actions.create`, `runPerform`](../src/actions.ts), [`Control.outcome`, `cardText`](../src/control.ts).
 
@@ -959,7 +965,7 @@ sequenceDiagram
 
 Notes:
 
-- Every message of a member other than `User` is a prompt, however the member joined, except a one-line `/` text. Claude answers a one-line `/` text of a moderator, member or author with `Only admins and owners of this group can send / commands.` From an admin or owner, a one-line `/` text is a command of the group. For one outside the group's requests, such as `/model sonnet`, the reply is `Unknown command.` ([`Session.onMessage`, `prompt`, `refusesCommand`, `approves`](../src/hub.ts), [`Control.ownerCommand`, `parseCommand`](../src/control.ts)).
+- Every message of a member other than `User` is a prompt, however the member joined, except a one-line `/` text. Claude answers a one-line `/` text of a moderator, member or author with `Only admins and owners of this group can send / commands.` From an admin or owner, a one-line `/` text is a command of the group. For one outside the group's requests, such as `/model sonnet`, Claude posts `Unknown command.` as a new message, without a quote ([`Session.onMessage`, `prompt`, `refusesCommand`, `approves`](../src/hub.ts), [`Control.onMessage`, `ownerCommand`, `parseCommand`](../src/control.ts)).
 - The session handles messages in arrival order. So a prompt is delivered after the file of an earlier prompt. The reply to a one-line `/` text of a moderator, member or author is posted after the earlier prompts ([`Session.onMessage`, `queue`](../src/hub.ts)).
 - After a service start, a prompt that arrives before its session attaches again is held up to 30 s from the hub's open. So a prompt sent while the service was stopped is still delivered to the session ([`Session.deliver`, `Hub.open`](../src/hub.ts)).
 - In a session started without the channel flag, Claude Code receives the notification and drops it.
@@ -1338,6 +1344,7 @@ Notes:
   The end-to-end test counts one post for each join in both groups ([test/e2e/service.test.ts](../test/e2e/service.test.ts)).
 - A person added to the group directly has the rights of the role that the adding member set, as a member from the Main group has the rights of its role ([`Session.prompt`, `approves`](../src/hub.ts)).
 - Claude answers `/join N` from a member of the group of session N with `You are a member of "N · NAME".` ([`Hub.join`](../src/hub.ts)).
+- Claude answers another one-line `/` text in the Main group with `Unknown command.` as a new message, without a quote ([`MainGroup.onMessage`, `command`](../src/main-group.ts)).
 - At a reset of the owners, the session groups and their members stay as they are ([flow 25](#25-reset-owners)).
 
 Source: [`MainGroup.command`, `handleEvent`](../src/main-group.ts), [`Session.invite`, `announceRights`, `Hub.join`, `onEvent`](../src/hub.ts), [`Control.setObserver`, `canSend`, `rightsText`](../src/control.ts).
@@ -1373,7 +1380,7 @@ Notes:
 
 - `reply` creates no action and posts no card, in both modes. It is not an action tool, so Claude Code does not ask before it either ([`AgentTools.reply`, `sendFile`, `replyTool`](../src/tools.ts)).
 - The core checks the preference at the send, by the sender's role. Only owners change the preference.
-- At each profile update of `#G`, Claude sends the whole profile. It starts each update from the group's current profile in the chat database, and changes only the name, the short description and the commands. So the owners' preferences are kept ([`Control.load`, `rename`, `describe`, `updateProfile`, `updateGroupProfile`, `changeGroupProfile`](../src/control.ts)).
+- At each profile update of `#G`, Claude sends the whole profile. It starts each update from the group's current profile in the chat database, and changes only the name, the short description or the commands, or turns full deletion on. So the owners' other preferences are kept ([`Control.load`, `rename`, `describe`, `onGroupUpdated`, `updateProfile`, `updateGroupProfile`, `changeGroupProfile`](../src/control.ts)).
 
 Source: [`AgentTools.reply`, `sendFile`, `call`](../src/tools.ts), the `replyChat` of the [`Session`](../src/hub.ts) constructor, [`updateGroupProfile`, `changeGroupProfile`](../src/control.ts).
 
@@ -1692,3 +1699,55 @@ Notes:
 - An edit sends no SMP notification, and the apps alert for an edit only when it creates the item. The list's posts carry `priority: -1`; an app without silent messages alerts for them.
 
 Source: [`Hub.showSessions`, `Hub.sessionsText`, `Session.readRecord`, `Session.stateLine`](../src/hub.ts), [`MainGroup.showList`](../src/main-group.ts).
+
+---
+
+## 37. `/secret` and its use
+
+<a id="secret-flow"></a>`SECRETS` is the folder of `--secrets-folder`.
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant K as Control
+  participant C as Core
+  participant O as Owner
+  participant D as Member
+  participant A as Agent
+  participant T as AgentTools
+  O->>C: full deletion off
+  C->>K: groupUpdated
+  K->>K: onGroupUpdated: queued after the earlier commands
+  K->>C: apiGetChat #35;G, then apiUpdateGroupProfile #35;G with full deletion on
+  C->>O: full deletion on
+  C->>D: full deletion on
+  O->>C: /secret GITHUB_TOKEN VALUE
+  C->>K: newChatItems
+  K->>K: first word /secret: queued after the earlier commands
+  K->>C: apiDeleteMemberChatItem #35;G [item]
+  C->>O: the message deleted: moderated by the agent
+  C->>D: the message deleted: moderated by the agent
+  K->>K: ownerCommand: approver, --secrets-folder, NAME and VALUE checked
+  K->>K: Secrets.set: SECRETS/GITHUB_TOKEN.part written and renamed to SECRETS/GITHUB_TOKEN, the record in DATA/secrets.json
+  K->>P: Secret GITHUB_TOKEN set by Alice.
+  K->>C: apiSendMessages #35;G [Secret GITHUB_TOKEN is set. /'unsecret GITHUB_TOKEN'], without a quote
+  O->>C: /secrt GITHUB_TOKEN VALUE
+  C->>K: newChatItems
+  K->>C: apiSendMessages #35;G [Commands: ...], without a quote
+  O->>C: the message deleted for everyone
+  A->>T: list
+  T-->>A: {chats, actions, secrets: {folder: SECRETS, names: [GITHUB_TOKEN]}}
+  A->>A: a shell command with "$(cat SECRETS/GITHUB_TOKEN)"
+```
+
+Notes:
+
+- While the control chat is not lost, every `/secret` message is deleted, also one from a member who is not an approver, one with an invalid NAME or VALUE, and one in a member support chat, which gets no reply ([`Control.onMessage`](../src/control.ts)).
+- After a failed deletion the command does not run, and `control chat command: ERROR` is logged ([`Control.onMessage`](../src/control.ts)).
+- An owner's update of the group's profile reaches `Control.onGroupUpdated`, which queues an update from the group's profile in the chat database that turns full deletion on when it is off. A `/secret` that arrives after that profile update is deleted after it, also when both arrive together at a start ([`Control.onGroupUpdated`, `updateProfile`](../src/control.ts), the event handler of [`startAgent`](../src/serve.ts), [`Hub.onEvent`](../src/hub.ts)).
+- With full deletion on, the message is replaced by a moderated item in the agent's database and at each member; a member who receives the message after the deletion stores it as moderated ([`delGroupChatItems`](../../../src/Simplex/Chat/Library/Commands.hs), [`groupMessageDelete`, `newGroupContentMessage`, `applyModeration`](../../../src/Simplex/Chat/Library/Subscriber.hs)).
+- `/unsecret NAME` and `/secrets` are answered with replies that quote them, as other commands ([`Control.onMessage`](../src/control.ts)).
+- A mistyped `/secret`, such as `/secrt NAME VALUE` or `/secrets NAME VALUE`, is not deleted, and gets the list of commands as a new message, without a quote, so its sender's deletion for everyone leaves no copy of the value in the reply ([`Control.onMessage`, `ownerCommand`](../src/control.ts)).
+- The value is absent from the log line, the reply and the `list` result ([`setSecret`](../src/control.ts), [`AgentTools.listChats`](../src/tools.ts)).
+
+Source: [`Control.onMessage`, `onGroupUpdated`, `ownerCommand`, `setSecret`, `removeSecret`, `secretsText`](../src/control.ts), [`Secrets`](../src/files.ts), [`AgentTools.listChats`](../src/tools.ts).

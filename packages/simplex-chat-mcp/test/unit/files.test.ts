@@ -3,7 +3,7 @@ import * as fs from "fs"
 import {chmodSync, closeSync, existsSync, fstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
-import {LockedError, acquireLock, createDataFolder, dataRoot, hubFolder, logFile, openLog, readServerFile, readSessionFile, releaseLock, serverToken, sessionFolder, socketPath, storedSessions, writeHeadersFile, writeServerFile, writeSessionFile} from "../../src/files"
+import {LockedError, SecretRecord, Secrets, acquireLock, createDataFolder, dataRoot, hubFolder, logFile, openLog, readServerFile, readSessionFile, releaseLock, serverToken, sessionFolder, socketPath, storedSessions, writeHeadersFile, writeServerFile, writeSessionFile} from "../../src/files"
 import {ExitError} from "../../src/log"
 
 const id = "34B7AEBF-E707-4D6F-ADD0-ECDFB4FFE281"
@@ -354,5 +354,60 @@ describe("service log", () => {
     chmodSync(logFile(root), 0o644)
     closeSync(openLog(root))
     expect(statSync(logFile(root)).mode & 0o777).toBe(0o600)
+  })
+})
+
+describe("secrets", () => {
+  const alice: SecretRecord = {setBy: "Alice", setById: 3, setAt: "2026-11-12T10:00:00.000Z"}
+  const bob: SecretRecord = {setBy: "Bob", setById: 7, setAt: "2026-11-12T11:30:00.000Z"}
+  let folder: string
+  let secrets: Secrets
+
+  beforeEach(() => {
+    folder = join(dir, "..", "secrets")
+    secrets = new Secrets(folder, join(dir, "secrets.json"))
+  })
+
+  it("creates a private folder and keeps the mode of an existing one", () => {
+    expect(statSync(folder).mode & 0o777).toBe(0o700)
+    chmodSync(folder, 0o750)
+    new Secrets(folder, join(dir, "secrets.json"))
+    expect(statSync(folder).mode & 0o777).toBe(0o750)
+  })
+
+  it("writes each value to a private file named by its secret, and replaces it", () => {
+    secrets.set("API_TOKEN", "first value", alice)
+    expect(readFileSync(join(folder, "API_TOKEN"), "utf8")).toBe("first value")
+    expect(statSync(join(folder, "API_TOKEN")).mode & 0o777).toBe(0o600)
+    expect(existsSync(join(folder, "API_TOKEN.part"))).toBe(false)
+    secrets.set("API_TOKEN", "second value", bob)
+    expect(readFileSync(join(folder, "API_TOKEN"), "utf8")).toBe("second value")
+  })
+
+  it("records the setter and the time in a private index in the data folder", () => {
+    expect(secrets.records()).toEqual({})
+    secrets.set("API_TOKEN", "first value", alice)
+    secrets.set("GIT_TOKEN", "second value", bob)
+    expect(statSync(join(dir, "secrets.json")).mode & 0o777).toBe(0o600)
+    expect(JSON.parse(readFileSync(join(dir, "secrets.json"), "utf8"))).toEqual({API_TOKEN: alice, GIT_TOKEN: bob})
+    expect(secrets.records()).toEqual({API_TOKEN: alice, GIT_TOKEN: bob})
+  })
+
+  it("lists the names of the secret files only, sorted", () => {
+    for (const name of ["GIT_TOKEN", "API_TOKEN", "API_TOKEN.part", "api_token", ".API_TOKEN", "1_TOKEN", `A${"B".repeat(64)}`]) writeFileSync(join(folder, name), "value")
+    expect(secrets.names()).toEqual(["API_TOKEN", "GIT_TOKEN"])
+  })
+
+  it("removes a secret with its record, and nothing for another name", () => {
+    secrets.set("API_TOKEN", "first value", alice)
+    secrets.set("GIT_TOKEN", "second value", bob)
+    writeFileSync(join(folder, "..", "x"), "outside")
+    for (const name of ["OTHER", "../x", "api_token"]) expect(secrets.remove(name)).toBe(false)
+    expect(readFileSync(join(folder, "..", "x"), "utf8")).toBe("outside")
+    expect(secrets.records()).toEqual({API_TOKEN: alice, GIT_TOKEN: bob})
+    expect(secrets.remove("API_TOKEN")).toBe(true)
+    expect(existsSync(join(folder, "API_TOKEN"))).toBe(false)
+    expect(secrets.names()).toEqual(["GIT_TOKEN"])
+    expect(secrets.records()).toEqual({GIT_TOKEN: bob})
   })
 })

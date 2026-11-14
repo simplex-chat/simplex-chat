@@ -173,6 +173,7 @@ export class FakeChat {
   sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]; live?: true}[] = []
   updates: {chatId: number; itemId: number; text: string; live?: true}[] = []
   replies: string[] = []
+  moderated: {groupId: number; itemIds: number[]; sentBefore: number}[] = []
   deleted: {chatType: T.ChatType; chatId: number; mode?: T.ChatDeleteMode}[] = []
   deletedItems: {chatType: T.ChatType; chatId: number; itemIds: number[]; deleteMode: T.CIDeleteMode}[] = []
   left: number[] = []
@@ -234,6 +235,11 @@ export class FakeChat {
 
   async apiSendTextReply(_ci: T.AChatItem, text: string): Promise<T.AChatItem[]> {
     this.replies.push(text)
+    return []
+  }
+
+  async apiDeleteMemberChatItem(groupId: number, itemIds: number[]): Promise<T.ChatItemDeletion[]> {
+    this.moderated.push({groupId, itemIds, sentBefore: this.sent.length})
     return []
   }
 

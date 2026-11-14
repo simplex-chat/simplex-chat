@@ -117,7 +117,7 @@ export class MainGroup {
     const sender = chatItem.chatDir.groupMember
     this.commands = this.commands
       .then(() => this.command(sender, command, msgContent))
-      .then(reply => this.chat.apiSendTextReply(ci, reply))
+      .then((reply): Promise<unknown> => (reply === unknownCommand ? this.post(reply) : this.chat.apiSendTextReply(ci, reply)))
       .catch(error => logError("Main group command", error))
   }
 

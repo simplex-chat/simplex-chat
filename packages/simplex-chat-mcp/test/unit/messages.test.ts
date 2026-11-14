@@ -8,6 +8,7 @@ import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Action, Actions, ConnectAction, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
+import {SecretRecord, Secrets} from "../../src/files"
 import {Changes, ChatItemsWatch, Collected, awaitResponses, nextChange, quoteLine, replyText, toMessage, toReplyTo} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
@@ -281,10 +282,12 @@ function textOf(result: CallToolResult | undefined): string {
   return (result!.content[0] as {text: string}).text
 }
 
-function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined, session?: number): {tools: AgentTools; watch: ChatItemsWatch} {
+function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined, session?: number, secrets?: Secrets): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, actions.mode, session), watch}
+  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data, secrets}, actions.mode, session), watch}
 }
+
+const secretRecord: SecretRecord = {setBy: "Alice", setById: 3, setAt: "2026-11-12T10:00:00.000Z"}
 
 describe("receive", () => {
   it("returns unread messages and messages arriving during the call, once each, and marks them read", async () => {
@@ -876,6 +879,19 @@ describe("send with a file", () => {
     const refused = (path: string): string => `file: ${path} is refused: private keys and the server's own files are not sent.`
     expect(await text(join(home, ".ssh", "config"))).toBe(refused(config))
     expect(await text(token)).toBe(refused(token))
+    expect(actions.all()).toEqual([])
+  })
+
+  it("refuses files in the secrets folder, also when the folder is a symbolic link", async () => {
+    mkdirSync(join(files, "real"))
+    symlinkSync(join(files, "real"), join(files, "secrets"))
+    const secrets = new Secrets(join(files, "secrets"), join(files, "secrets.json"))
+    secrets.set("API_TOKEN", "token value", secretRecord)
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory", {peerType: "bot"})), items: []})
+    const actions = actionsWith("requests", fakeHooks())
+    const {tools} = agentTools(chat, actions, () => undefined, undefined, secrets)
+    expect(textOf(await tools.call("send", {chat: "@4", file: join(files, "secrets", "API_TOKEN")}, signal().call))).toBe(`file: ${join(files, "real", "API_TOKEN")} is refused: private keys and the server's own files are not sent.`)
     expect(actions.all()).toEqual([])
   })
 
@@ -1922,5 +1938,18 @@ describe("list", () => {
     const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: {chat: string}[]}
     expect(chats.map(({chat: ref}) => ref)).toEqual(Array.from({length: 150}, (_, i) => `@${100 + i}`))
     expect(chat.commands.filter(cmd => cmd.startsWith("/_get chats "))).toEqual(['/_get chats 1 count=1000000 {"type":"filters","favorite":false,"unread":false}'])
+  })
+
+  it("returns the folder and the names of the secrets, without their values, only when the server keeps secrets", async () => {
+    const folder = mkdtempSync(join(os.tmpdir(), "simplex-mcp-secrets-"))
+    const secrets = new Secrets(join(folder, "secrets"), join(folder, "secrets.json"))
+    secrets.set("GIT_TOKEN", "git token value", secretRecord)
+    secrets.set("API_TOKEN", "api token value", secretRecord)
+    const chat = new FakeChat()
+    const result = await agentTools(chat, actionsWith("requests", fakeHooks()), () => undefined, undefined, secrets).tools.call("list", {}, signal().call)
+    expect(result!.structuredContent).toEqual({chats: [], actions: [], secrets: {folder: join(folder, "secrets"), names: ["API_TOKEN", "GIT_TOKEN"]}})
+    expect(textOf(result)).not.toMatch(/token value/)
+    expect((await agentTools(chat).tools.call("list", {}, signal().call))!.structuredContent).toStrictEqual({chats: [], actions: []})
+    rmSync(folder, {recursive: true, force: true})
   })
 })

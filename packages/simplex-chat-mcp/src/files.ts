@@ -27,6 +27,12 @@ export interface ServerFile {
   expireHours: number
 }
 
+// spec: spec/architecture.md#files-secretrecord
+export type SecretRecord = {setBy: string; setById: number; setAt: string}
+
+// spec: spec/architecture.md#files-secretrecord
+export const secretName = /^[A-Z][A-Z0-9_]{0,63}$/
+
 export class LockedError extends ExitError {}
 
 // spec: spec/architecture.md#files-dataroot
@@ -168,6 +174,40 @@ export function writeServerFile(dir: string, server: ServerFile): void {
 export function readServerFile(dir: string): ServerFile | undefined {
   const file = join(dir, "server.json")
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined
+}
+
+// spec: spec/architecture.md#files-secrets
+export class Secrets {
+  constructor(readonly folder: string, private readonly index: string) {
+    mkdirSync(folder, {recursive: true, mode: 0o700})
+  }
+
+  // spec: spec/architecture.md#files-secrets
+  names(): string[] {
+    return readdirSync(this.folder).filter(name => secretName.test(name)).sort()
+  }
+
+  // spec: spec/architecture.md#files-secrets
+  records(): {[name: string]: SecretRecord | undefined} {
+    return existsSync(this.index) ? JSON.parse(readFileSync(this.index, "utf8")) : {}
+  }
+
+  // spec: spec/architecture.md#files-secrets
+  set(name: string, value: string, record: SecretRecord): void {
+    const part = join(this.folder, `${name}.part`)
+    writePrivateFile(part, value)
+    renameSync(part, join(this.folder, name))
+    writePrivateFile(this.index, `${JSON.stringify({...this.records(), [name]: record})}\n`)
+  }
+
+  // spec: spec/architecture.md#files-secrets
+  remove(name: string): boolean {
+    if (!this.names().includes(name)) return false
+    unlinkSync(join(this.folder, name))
+    const {[name]: _, ...records} = this.records()
+    writePrivateFile(this.index, `${JSON.stringify(records)}\n`)
+    return true
+  }
 }
 
 // spec: spec/architecture.md#files-saveheldtitles

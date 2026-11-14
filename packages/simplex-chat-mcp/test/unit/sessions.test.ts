@@ -108,7 +108,7 @@ describe("session groups", () => {
           displayName: "1 · auth",
           fullName: "",
           description: "The Claude Code session 1. Members send it prompts; admins and owners also send the group's commands and approve tool use.",
-          groupPreferences: {history: {enable: "on"}, directMessages: {enable: "off"}, commands: controlCommands},
+          groupPreferences: {history: {enable: "on"}, directMessages: {enable: "off"}, fullDelete: {enable: "on"}, commands: controlCommands},
         },
       },
     ])
@@ -1559,8 +1559,30 @@ describe("session channel", () => {
       {prompt: {text: "//compact\nthen go on", from: "Dan", item: 53}},
       {prompt: {text: "/!ls\nthen go on", from: "Dan", item: 54}},
     ])
-    expect(chat.replies).toEqual([unknownCommand, unknownCommand, unknownCommand, unknownCommand])
-    expect(answers(chat)).toEqual([43, 44, 47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]))
+    expect(chat.replies).toEqual([])
+    expect(answers(chat).filter(([{text}]) => text === unknownCommand)).toEqual([40, 41, 42, 46].map(() => [{text: unknownCommand, quotedItemId: undefined}]))
+    expect(answers(chat).filter(([{text}]) => text !== unknownCommand)).toEqual([43, 44, 47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]))
+  })
+
+  it("turns full deletion on again at once when an owner turns it off, before it deletes a /secret sent right after, and leaves the profile when an owner's update keeps it on", async () => {
+    const chat = new FakeChat()
+    const {hub, session} = await channel(chat)
+    const {groupInfo} = chat.chats.get("#20")!.chatInfo as T.ChatInfo.Group
+    groupInfo.groupProfile = {...groupInfo.groupProfile, groupPreferences: {...groupInfo.groupProfile.groupPreferences, fullDelete: {enable: T.GroupFeatureEnabled.Off}}}
+    const atDeletion: (string | undefined)[] = []
+    const moderate = chat.apiDeleteMemberChatItem.bind(chat)
+    chat.apiDeleteMemberChatItem = async (groupId, itemIds) => {
+      atDeletion.push(groupInfo.groupProfile.groupPreferences?.fullDelete?.enable)
+      return moderate(groupId, itemIds)
+    }
+    const updated = {type: "groupUpdated", user, fromGroup: groupInfo, toGroup: groupInfo, member_: invitedAlice} as unknown as ChatEvent
+    await hub["onEvent"](updated)
+    await hub["onEvent"]({type: "newChatItems", user, chatItems: [event(sessionGroup, item(60, "/secret API_TOKEN value-1234", from(invitedAlice)))]} as unknown as ChatEvent)
+    await session.control["ownerCommands"]
+    await hub["onEvent"](updated)
+    await session.control["ownerCommands"]
+    expect(atDeletion).toEqual(["on"])
+    expect(chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile.groupPreferences?.fullDelete)).toEqual([{enable: "on"}])
   })
 
   it("answers nothing and performs nothing for a / command of a member that reaches the commands past the one refusal", async () => {
@@ -1942,17 +1964,26 @@ describe("Main group", () => {
     hub.main.onMessage(mainMessage("/join 2", bob))
     hub.main.onMessage(mainMessage("/join 5", bob))
     hub.main.onMessage(mainMessage("/help", bob))
-    await until(() => chat.replies.length === 4)
+    await until(() => chat.replies.length === 3 && sentTo(chat, 10).length === 1)
     expect(chat.replies).toEqual([
       "▶️ 1 · one: running\n⚪ Not running: 2 · two",
       `Sent you an invitation to "2 · two".`,
       "No session 5. /sessions lists the sessions.",
-      "Unknown command.",
     ])
+    expect(sentTo(chat, 10)).toEqual(["Unknown command."])
     expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 7, memberRole: T.GroupMemberRole.Admin})
     hub.main.onMessage(mainMessage("/join 2", alice))
-    await until(() => chat.replies.length === 5)
+    await until(() => chat.replies.length === 4)
     expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 3, memberRole: T.GroupMemberRole.Owner})
+  })
+
+  it("answers another / command, such as /secret NAME VALUE sent there, with Unknown command. as a new message, without a quote of its value", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    hub.main.onMessage(mainMessage("/secret API_TOKEN value-1234", alice))
+    await until(() => chat.sent.length === 1)
+    expect(chat.sent).toEqual([{chat: [T.ChatType.Group, 10], messages: [{msgContent: {type: "text", text: unknownCommand}, mentions: {}}]}])
+    expect(chat.replies).toEqual([])
   })
 
   it("posts the list of every session after the greeting, silent, and edits it as Claude Code's records and the cards change: working, waiting for you, waiting for you in Claude Code, idle, and the ⚪ line after an exit", async () => {
@@ -2191,8 +2222,8 @@ describe("Main group", () => {
     expect(session.control.groupId).toBe(20)
     hub.main.onMessage(mainMessage("/approve reset", alice))
     hub.main.onMessage(mainMessage("/reject reset", alice))
-    await until(() => chat.replies.length === 2)
-    expect(chat.replies).toEqual(["Unknown command.", "Unknown command."])
+    await until(() => sentTo(chat, 21).length === 2)
+    expect(sentTo(chat, 21)).toEqual(["Unknown command.", "Unknown command."])
   })
 
   it("leaves the session groups and the members who joined them from the Main group as they are at a reset of the owners: both still prompt and approve", async () => {

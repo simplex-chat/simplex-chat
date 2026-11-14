@@ -46,6 +46,10 @@ You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://si
 - Claude sends files to the group only if the group allows them.
 - Claude has no SimpleX address, so nobody can contact it first.
 
+## Secrets
+
+An agent run with `serve`, outside the plugin, takes secrets from its owners: start it with `--secrets-folder /run/agent-secrets`, and send `/secret GITHUB_TOKEN <value>` in its agent control chat. The server deletes your message for all members and saves the value in `/run/agent-secrets/GITHUB_TOKEN`. The agent gets the name, not the value, and uses it in commands as `"$(cat /run/agent-secrets/GITHUB_TOKEN)"`. When a command prints the value, Claude Code sends it to the model provider; opencode with the plugin of this package replaces it with `[secret GITHUB_TOKEN]`. Setup and limits: [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md#secrets).
+
 ## Only Claude Code, for now
 
 The agent is tested with Claude Code. Tell us which other apps and models you want to use in [an issue](https://github.com/simplex-chat/simplex-chat/issues), or contribute.

@@ -26,6 +26,8 @@ A tool call is held open by the server until the owner decides and, for `connect
 
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
+With `--secrets-folder`, an approver sets a secret with `/secret NAME VALUE` in the control chat: the server deletes the message for all members and writes the value to a file of the secrets folder. `list` returns the folder and the names, and the agent uses a value in shell commands by its path. With the package's opencode plugin, the values are replaced in the requests that opencode sends to the model.
+
 The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server. The session server forwards tool calls over a local socket to `simplex-mcp service`, one service per data root. Requests on the socket are HTTP/1.1 with a bearer token. The service runs two cores:
 - `Claude` is the profile that peers see. It holds the Main group, one group per session and the chats with peers. In a session's group it posts the answers, one line for each of Claude Code's own prompts, and one line for each summary of the session's context.
 - `User` is a member of every session group. It posts the prompts typed in the terminal.
@@ -130,10 +132,12 @@ graph TD
   control --> messages
   control --> qr
   control --> log
+  control --> files
   control -.-> serve
   tools --> actions
   tools --> messages
   tools --> log
+  tools -.-> files
   actions --> messages
   actions --> log
   actions -.-> tools
@@ -177,7 +181,7 @@ graph TD
 | [`control.ts`](../src/control.ts) | agent control chat and session groups: link, owners, owner commands, cards, counter |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
 | [`core.ts`](../src/core.ts) | one SimpleX core: init, user, network config, temp folder, event buffer, profile update |
-| [`files.ts`](../src/files.ts) | data folders, lock, token, `headers.json`, `server.json`, session folders, socket path, service log |
+| [`files.ts`](../src/files.ts) | data folders, lock, token, `headers.json`, `server.json`, session folders, socket path, service log, the secrets folder and `secrets.json` |
 | [`log.ts`](../src/log.ts) | log lines, error texts, shell quoting |
 | [`qr.ts`](../src/qr.ts) | QR code text: `small` and `large` for terminals, `plain` for the hook message |
 | [`version.ts`](../src/version.ts) | package version from `package.json` |
@@ -192,6 +196,7 @@ graph TD
 | [`hook.ts`](../src/hook.ts) | plugin: `hook session-start` and `hook turn` |
 | [`owner.ts`](../src/owner.ts) | plugin: `link` and `reset-owners` |
 | [`config.ts`](../src/config.ts) | plugin: option variables to `Config`, validation |
+| [`opencode/simplex-secrets.ts`](../opencode/simplex-secrets.ts) | opencode plugin, outside the server: the values of the secrets replaced in model requests |
 
 Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plugin-options-files-and-hook-output):
 - [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json)
@@ -230,6 +235,8 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Item watch | [`src/messages.ts`](../src/messages.ts) | `ChatItemsWatch` |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts) | `register` |
 | Data folder files | [`src/files.ts`](../src/files.ts) | `createDataFolder`, `acquireLock` |
+| Secrets folder | [`src/files.ts`](../src/files.ts) | `Secrets` |
+| opencode plugin | [`opencode/simplex-secrets.ts`](../opencode/simplex-secrets.ts) | default export |
 | Session server | [`src/session.ts`](../src/session.ts) | `startSession` |
 | Session to service link | [`src/session.ts`](../src/session.ts) | `ServiceLink` |
 | Service start by a client | [`src/client.ts`](../src/client.ts) | `ServiceClient.ensureService` |

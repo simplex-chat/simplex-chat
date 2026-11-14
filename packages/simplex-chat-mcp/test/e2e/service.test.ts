@@ -621,7 +621,7 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   await client.request("POST", "/permission", {id: one, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
   await bobSends(`/approve ${cardNumber(await toolUse)}`)
   await until(() => attached.some(({permission}) => permission?.behavior === "allow"))
-  const unknown = received(bob.chat, inGroup(bobGroupOne, ({chatItem}) => chatItem.meta.itemText === "Unknown command." && chatItem.quotedItem?.content.text === "//compact"))
+  const unknown = received(bob.chat, inGroup(bobGroupOne, ({chatItem}) => chatItem.meta.itemText === "Unknown command." && chatItem.quotedItem === undefined))
   await bobSends("//compact")
   await unknown
 

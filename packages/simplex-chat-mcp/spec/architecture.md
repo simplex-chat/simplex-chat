@@ -29,6 +29,7 @@
 flowchart LR
   subgraph host["MCP host"]
     cc["Claude Code"]
+    oc["opencode<br/>simplex-secrets.ts"]
   end
   subgraph proc["Node.js process: simplex-mcp serve NAME"]
     http["http.ts<br/>127.0.0.1:PORT/mcp<br/>Host and Origin guards<br/>bearer token<br/>path /mcp"]
@@ -56,7 +57,12 @@ flowchart LR
   serve --> tools
   serve --> messages
   serve --> files
-  files --> data[("DATA:<br/>token<br/>headers.json<br/>server.json<br/>lock")]
+  control --> files
+  files --> data[("DATA:<br/>token<br/>headers.json<br/>server.json<br/>lock<br/>secrets.json")]
+  files --> secrets[("SECRETS:<br/>one file per name")]
+  cc -.->|"commands:<br/>cat SECRETS/NAME"| secrets
+  oc -.->|"values replaced<br/>in model requests"| secrets
+  oc -->|"POST /mcp"| http
   tools --> folder[("DATA/files:<br/>group-N, contact-N<br/>sent")]
   tools --> lib
   control --> lib
@@ -93,7 +99,7 @@ Entry point of the `simplex-mcp` binary.
 | <a id="cli-plugincommands"></a>`pluginCommands` | `session`, `service`, `hook session-start`, `hook turn`, `link`, `reset-owners` |
 | <a id="cli-command"></a>`Command` | `help`, `serve` with `ServeOptions`, `register` with `RegisterOptions`, the plugin commands |
 | <a id="cli-parsecommand"></a>`parseCommand` | command, NAME and options to a `Command`, or the plugin command equal to the joined arguments |
-| <a id="cli-serveoptions"></a>`serveOptions` | defaults and option switch of `serve` |
+| <a id="cli-serveoptions"></a>`serveOptions` | defaults and option switch of `serve`; `--secrets-folder` checked against the data folder |
 | <a id="cli-registeroptions"></a>`registerOptions` | defaults and option switch of `register` |
 | <a id="cli-optionreader"></a>`OptionReader` | `value`: the next argument, required<br>`optionalValue`: the next argument, absent when missing or starting with `--` |
 | <a id="cli-validagentname"></a>`validAgentName` | `^[a-z0-9](-?[a-z0-9])*-?$`, at most 32 characters |
@@ -108,11 +114,11 @@ Start sequence, event dispatch and stop sequence of one agent.
 | Symbol | Contents |
 |---|---|
 | <a id="serve-ownerentry"></a>`OwnerEntry` | `{memberId, name}` of `--owners` |
-| <a id="serve-serveoptions"></a>`ServeOptions` | name, data folder and its `dataGiven` flag, display name, mode, owners, expiry, reset and token flags, port, QR code size, stop wait |
+| <a id="serve-serveoptions"></a>`ServeOptions` | name, data folder and its `dataGiven` flag, display name, mode, owners, expiry, reset and token flags, port, QR code size, stop wait, secrets folder |
 | <a id="serve-runningserver"></a>`RunningServer` | token, `ChatApi`, user, `Actions`, `stop` |
 | <a id="serve-serve"></a>`serve` | `startServer`, then SIGINT and SIGTERM handlers: the first signal stops, a second ends the stop wait |
 | <a id="serve-startserver"></a>`startServer` | data folder, lock, token, headers file, `ChatApi.init`, `startAgent`; cleanup on error |
-| <a id="serve-startagent"></a>`startAgent` | user, `prepareCore`, control group, wiring of `Actions`, `AgentTools`, `Control`, HTTP, event handler, `stop` |
+| <a id="serve-startagent"></a>`startAgent` | `Secrets` with `--secrets-folder`, user, `prepareCore`, control group, wiring of `Actions`, `AgentTools`, `Control`, HTTP, event handler, `stop` |
 | <a id="serve-registerhint"></a>`registerHint` | the `register` command line printed after the owner setup |
 | <a id="serve-waitforcancelledcards"></a>`waitForCancelledCards` | the fixed wait at stop for cards edited or posted at the stop, used by the plugin's hub as well |
 | <a id="serve-controlgroup"></a>`controlGroup` | found, created or reset agent control chat |
@@ -145,7 +151,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-inputs"></a>`ConnectInput`, `SendInput`, `ReceiveInput`, `LeaveInput`, `DownloadInput` | tool inputs |
 | <a id="tools-plansummary"></a>`PlanSummary` | card kind, chat type, name, SimpleX name, peer type, description, welcome, commands, `takesMessage` |
 | <a id="tools-chatfields"></a>`ChatFields` | chat fields of `connect` and `list` results |
-| <a id="tools-agent"></a>`Agent` | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder. The plugin adds the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection. |
+| <a id="tools-agent"></a>`Agent` | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder, `Secrets` with `--secrets-folder`. The plugin adds the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection. |
 | <a id="tools-joinmethod"></a>`JoinMethod` | `prepared`, `prepareChannel`, `viaAddress`, `prepareContact`, `connect` |
 | <a id="tools-schemas"></a>schemas, from `messageSchema` to `downloadOutput` | input and output JSON schemas |
 | <a id="tools-instructions"></a>descriptions, from `connectDescription` to `leaveDescription`, and `instructions` | tool descriptions and server instructions. `instructions` names the host at whose restart actions are cancelled, `server` by default. |
@@ -170,6 +176,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-agenttools-leavechat"></a>`leaveChat` | perform step of `leave` and `/leave`; the chat's forwarded files deleted |
 | <a id="tools-agenttools-download"></a>`download`, `fileServers`, `unknownServers` | the `download` call before its action |
 | <a id="tools-agenttools-startdownload"></a>`startDownload`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived` | a download's steps |
+| <a id="tools-agenttools-listchats"></a>`listChats` | the `list` result: chats, actions, and the secrets folder and names |
 | <a id="tools-agenttools-agentchats"></a>`agentChats`, `knownChat` | the agent's chats; a checked chat reference |
 | <a id="tools-agenttools-selfsender"></a>`selfSender`, `toMessages` | the agent's name and peer type in a chat, its incognito name in an incognito chat, or its profile name when the incognito name can't be read; the items of one chat as messages with that name, for the results of `connect`, `send` and `receive` |
 | <a id="tools-classifyplan"></a>`classifyPlan` | `apiConnectPlan` response to a join plan or a known chat |
@@ -212,13 +219,14 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 |---|---|
 | `qrCodeText` | the function of [`qr.ts`](../src/qr.ts), exported from `control.ts` as in 0.2 |
 | <a id="control-controlcommands"></a>`controlCommands` | the command menu |
+| <a id="control-fulldelete"></a>`fullDelete`, `commandsReply`, `secretsOff`, `secretUsage` | the full deletion preference of the group profile; the commands reply; the replies of the secret commands without `--secrets-folder` and to an invalid `/secret` |
 | <a id="control-standings"></a>`standings` | custom data key and reply words of the approvals of messages and files |
 | <a id="control-controldata"></a>`ControlData` | `{control: true, nextAction}` |
 | <a id="control-chatapproval"></a>`ChatApproval` | `{approvedBy, approvedById, approvedAt}` |
-| <a id="control-controloptions"></a>`ControlOptions`, `SessionOptions` | display name, `--owners`, register hint and QR code size. For a group of the plugin's session, its approver check, the session IDs by number, the check of `User` and `toolsChanged`, which sends the approved tools to the session, are added. |
+| <a id="control-controloptions"></a>`ControlOptions`, `SessionOptions` | display name, `--owners`, register hint, QR code size and `Secrets` with `--secrets-folder`. For a group of the plugin's session, its approver check, the session IDs by number, the check of `User` and `toolsChanged`, which sends the approved tools to the session, are added. |
 | <a id="control-ownerrequest-type"></a>`OwnerRequest` | parsed owner command |
-| <a id="control-control-load"></a>`Control.load` | lost check, group profile and menu through `updateProfile`, and member list |
-| <a id="control-control-rename"></a>`Control.rename`, `Control.describe`, `updateProfile` | the plugin's group name, and its short description. `updateProfile` makes one profile update at a time, and keeps the custom data in memory. A session group is updated from its current profile in the chat database. The agent control chat of `serve` is updated from the profile held in memory since the start, by `changeGroupProfile`. |
+| <a id="control-control-load"></a>`Control.load` | lost check, group profile with menu and full deletion through `updateProfile`, and member list |
+| <a id="control-control-rename"></a>`Control.rename`, `Control.describe`, `updateProfile` | the plugin's group name, and its short description. `updateProfile` makes one profile update at a time, and keeps the custom data in memory. Each update starts from the group's current profile in the chat database, by `updateGroupProfile`. |
 | <a id="control-control-start"></a>`Control.start` | owner setup per `--owners` |
 | <a id="control-control-refusal"></a>`Control.refusal` | bytes left for the link texts of a connect card and for the input preview of a tool-use card, card size of a send, connect or download, approver presence |
 | <a id="control-control-hasapprover"></a>`Control.hasApprover` | an approver is a member |
@@ -226,19 +234,21 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="control-control-savecounter"></a>`Control.saveCounter`, `Control.saveData` | queued writes of the counter and of other keys of the group's custom data |
 | <a id="control-control-postcard"></a>`Control.postCard`, `Control.outcome` | card post and card edit; the kept-files message after a done leave |
 | <a id="control-control-refusedfile"></a>`Control.refusedFile`, `Control.fileNotSent` | posts about files |
-| <a id="control-control-onmessage"></a>`Control.onMessage` | owner commands, queued one at a time. In a group of the plugin's session, the session passes it the one-line `/` texts, and the texts of `User` are dropped. |
+| <a id="control-control-onmessage"></a>`Control.onMessage` | owner commands, queued one at a time; the deletion of `/secret` messages before their command. The replies to a `/secret` and to a text outside the requests are new messages; the other replies quote their command. In a group of the plugin's session, the session passes it the one-line `/` texts, and the texts of `User` are dropped. |
+| <a id="control-control-ongroupupdated"></a>`Control.onGroupUpdated` | an owner's update of the group's profile: an update that turns full deletion on when it is off, queued with the owner commands, so a later `/secret` is deleted after it |
 | <a id="control-control-onevent"></a>`Control.onEvent` | membership changes and loss of the control chat. `lose`, at a loss of the group and at `load` of a lost group, ends the tool approvals and calls `toolsChanged`. |
 | <a id="control-control-ownercommand"></a>`Control.ownerCommand` | command dispatch and replies. A text outside the requests is answered with the command list, or with `Unknown command.` in a group of the plugin's session. |
 | <a id="control-control-approvechat"></a>`approveChat`, `revoke`, `forward`, `leave`, `deleteFiles` | owner requests |
 | <a id="control-control-approvedtools"></a>`approvedTools`, `endToolApprovals`, `approveTool`, `revokeTool` | the approvals of tools of a group of the plugin's session, in memory, by tool name, with the approver's name and member ID. `approvedTools` returns those whose approver is an approver now. `approveTool` records the tool of a pending `permission` action, logs, calls `toolsChanged`, approves the action and replies with `/'revoke TOOL'`. `revokeTool` deletes one, logs and calls `toolsChanged`. `endToolApprovals` drops all; it also runs when the session's group is lost. `chatsText` lists the approved tools after the chats, and `setObserver` calls `toolsChanged` after it reads the members again. |
 | <a id="control-control-give"></a>`give`, `setObserver` | `/give CHAT N` and `/observer #G ID` in a group of the plugin's session. `setObserver` replies `NAME's role can't be changed.` for a member with status `pending_approval` or `pending_review`. For a member who is neither current nor pending, such as an invited member who has not joined, the reply is `No member ID in this group.` ([`memberCurrentOrPending`](../src/tools.ts)). Only a current member's role is set to `observer`, when the sender's role is admin or owner and not below the member's role. The members are then read again, and the observer's rights are the reply. |
+| <a id="control-control-setsecret"></a>`setSecret`, `removeSecret`, `secretsText` | the secret commands |
 | <a id="control-control-isapprover"></a>`isApprover` | the session's check in a group of the plugin's session; otherwise role `owner`, and the `--owners` list when given |
 | <a id="control-roleorder"></a>`roleOrder`, `roleRank`, `canSend` | the roles of SimpleX from `relay` to `owner`, in the order of the core; a role above `observer` |
 | <a id="control-sessionapproverroles"></a>`sessionApproverRoles`, `rightsText` | `admin` and `owner`, the approvers of a session group. `rightsText` is `NAME is a ROLE and RIGHTS.`, with the rights of the approvers, of the other roles that send, or of an observer. |
 | <a id="control-control-postcardcontent"></a>`postCardContent`, `sessionRefusal`, `postRefusal`, `refusedCardSubject` | the post of a card. In a plugin session group, a card that the core refuses with `feature not allowed Files and media` is posted again as text, and its later edits are text. A card or an edit refused for another preference before the decision or at a stop is replaced by `Action N: ` and the text with the preference's name. An action that waits for approval then fails with that text. After the decision, the replacement is `Action N OUTCOME; its card was not posted: ` or `...; its card was not updated: ` with that text, where OUTCOME is `was performed`, `failed`, `was rejected`, `expired` or `ended`. The action is kept as it was. |
 | <a id="control-control-cardcontent"></a>`cardContent`, `fittedImage` | image and video cards with the file's preview |
 | <a id="control-findcontrolgroup"></a>`findControlGroup`, `createControlChat`, `resetControlChat` | control group lookup, creation, reset |
-| <a id="control-creategroup"></a>`createGroup`, `updateGroupProfile`, `changeGroupProfile`, `deleteGroup` | a group with its profile and custom data, for `serve` and the plugin's groups. A session group or the Main group is updated from its current profile in the chat database. The agent control chat of `serve` is updated from the profile held in memory since the start, as in 0.2. Each update is made only when the change returns a profile. A group is deleted for all members. |
+| <a id="control-creategroup"></a>`createGroup`, `updateGroupProfile`, `changeGroupProfile`, `deleteGroup` | a group with its profile and custom data, for `serve` and the plugin's groups. A group is updated from its current profile in the chat database. Each update is made only when the change returns a profile. A group is deleted for all members. |
 | <a id="control-isgroupmessage"></a>`isGroupMessage` | an item of one group's main scope |
 | <a id="control-iscontrolevent"></a>`isControlEvent` | membership events of the control group |
 | <a id="control-parsecommand"></a>`parseCommand` | one-line `/keyword params` |
@@ -275,6 +285,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 
 | Symbol | Contents |
 |---|---|
+| <a id="files-secretrecord"></a>`SecretRecord`, `secretName` | `{setBy, setById, setAt}` of a secret; `^[A-Z][A-Z0-9_]{0,63}$` |
 | <a id="files-createdatafolder"></a>`createDataFolder` | `mkdir -p` mode 0700; `chmod 0700` except on Windows |
 | <a id="files-acquirelock"></a>`acquireLock`, `releaseLock` | `DATA/lock`, or the file of the given name, with the PID. The holder is named in the error by the `user` argument, `server` or `service`. |
 | <a id="files-servertoken"></a>`serverToken` | `DATA/token`, or the file of the given name. An existing file is read, and is made private when the user owns it. A new token is 32 random bytes in base64url, and its file is created as the lock is. |
@@ -283,6 +294,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="files-takeover"></a>`takeOver` | The lock of a stopped process is claimed first, so that only one starter takes it over. The claim is a link of the lock to `lock.PID.claim`, or an exclusive write of `lock.PID.claim` where links fail. When that PID is still in the lock, the lock is removed and created again. The claim is then removed. |
 | <a id="files-writeheadersfile"></a>`writeHeadersFile` | `DATA/headers.json` |
 | <a id="files-writeserverfile"></a>`writeServerFile`, `readServerFile` | `DATA/server.json` |
+| <a id="files-secrets"></a>`Secrets` | the secrets folder, created with `mkdir -p` mode 0700: `names`, the file names that match `secretName`, sorted; `records`, read from `DATA/secrets.json`; `set`, the value written to `NAME.part`, renamed to `NAME`, and its record; `remove`, for a name among `names` only |
 
 ### [2.9 `register.ts`](../src/register.ts)
 
@@ -308,6 +320,20 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="log-serverhostname"></a>`serverHostname` | host of a server address |
 | <a id="log-chaintext"></a>`chainText`, `errorChain` | `SimpleX error: <type chain>: <scalar fields>`, details at most 500 characters |
 | <a id="log-fulldomainname"></a>`fullDomainName` | `SimplexDomain` to `name.simplex` or `name.testing` |
+
+### [2.11 `opencode/simplex-secrets.ts`](../opencode/simplex-secrets.ts)
+
+<a id="simplex-secrets"></a>An opencode plugin, shipped as TypeScript source in the package and run by opencode, outside the server. The folder of the secrets is read from `SIMPLEX_MCP_SECRETS` of the opencode process.
+
+| Symbol | Contents |
+|---|---|
+| <a id="simplex-secrets-secretname"></a>`secretName` | the name rule of `files.ts` |
+| <a id="simplex-secrets-seen"></a>`seen` | every form read since the process started, with its mark |
+| <a id="simplex-secrets-default"></a>default export | `{id: "simplex-secrets", server}`; `server` returns the hook `experimental.chat.messages.transform` |
+| <a id="simplex-secrets-hook"></a>the hook | throws without `SIMPLEX_MCP_SECRETS`; adds the forms of the folder to `seen`; replaces the parts of each message with redacted copies, longest form first |
+| <a id="simplex-secrets-replacements"></a>`replacements` | for each file of the folder that matches `secretName`: the value without trailing newlines, its `encodeURIComponent` form and its base64 forms, each with the mark `[secret NAME]`; throws for a value of fewer than 8 characters |
+| <a id="simplex-secrets-redacted"></a>`redacted` | a string with each form replaced by its mark; an array or object copied, each item redacted; other values unchanged |
+| <a id="simplex-secrets-base64forms"></a>`base64Forms` | base64 and base64url of the value after 0, 1 and 2 zero bytes, without padding and without the characters at both ends that hold bits of the adjacent bytes |
 
 ---
 
@@ -352,6 +378,9 @@ The profile, chats, items, members and file transfers are stored by the core in 
 | `DATA/files/group-N/`, `DATA/files/contact-N/` | downloaded files and files received without a download, named by file ID and extension | folder 0700 | the core at the download path ([`startDownload`](../src/tools.ts)); moves ([`moveFile`](../src/tools.ts)) | `download` results, `/forward`, `/leave`, `/delete CHAT files` |
 | `DATA/forwarded/group-N/`, `DATA/forwarded/contact-N/` | files `/forward` downloaded, named as above, until a download moves them to `DATA/files/` | folder 0700 | the core at the forwarded path ([`forwardFile`, `startDownload`](../src/tools.ts)) | `/forward`; moved by `download` ([`downloadFile`](../src/tools.ts)); deleted by `leave`, `/leave` and `/delete CHAT files` ([`deleteChatFiles`, `leaveChat`](../src/tools.ts)) |
 | `DATA/files/sent/` | resized copies of sent images, and copies of the files `/forward` posts, one folder per copy | folder 0700; a resized copy 0600 | [`resizedCopy`, `copyForSending`, `sentCopyPath`](../src/tools.ts) | the core; deleted at `sndFileCompleteXFTP`, `sndFileError` and at start ([`prepareCore`](../src/core.ts), [`AgentTools.onEvent`, `onSentFile`](../src/tools.ts)) |
+| `DATA/secrets.json` | `{NAME: {setBy, setById, setAt}}`, the records of the secrets | 0600, set again at every write except on Windows | `/secret`, `/unsecret` ([`Secrets.set`, `remove`](../src/files.ts)) | `/secrets` |
+| `SECRETS/` | the folder of `--secrets-folder` | 0700 when the server creates it; the mode of an existing folder is kept | every start with `--secrets-folder` ([`startAgent`](../src/serve.ts), the constructor of [`Secrets`](../src/files.ts)) | |
+| `SECRETS/NAME` | the value of secret NAME, as sent, without a newline | 0600, set again at every write except on Windows | `/secret`, through `SECRETS/NAME.part` ([`Secrets.set`](../src/files.ts)); deleted by `/unsecret` ([`Secrets.remove`](../src/files.ts)) | commands of the agent; the opencode plugin |
 
 The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the Node.js add-on into `CACHE/nodejs-addon-cce06d8/`, each with a `Downloading ...` line on stderr. CACHE is `$XDG_CACHE_HOME/simplex-chat` or `~/.cache/simplex-chat`; on macOS `~/Library/Caches/simplex-chat`; on Windows `%LOCALAPPDATA%\simplex-chat` ([`cacheRoot`, `resolveLibsDir`, `resolveAddonPath`, `installLibs`, `installAddon`](../../simplex-chat-nodejs/src/libs.ts)).
 
@@ -364,14 +393,14 @@ The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the No
 1. Data folder, lock, token and headers file are prepared ([`startServer`](../src/serve.ts)).
 2. libsimplex for SQLite is loaded by `ChatApi.init`, and the databases are migrated with confirmation `yesUp` ([`startServer`](../src/serve.ts), [`ChatApi.init`](../../simplex-chat-nodejs/src/api.ts)).
 3. Three log lines: version and NAME, data folder, mode ([`startServer`](../src/serve.ts)).
-4. The active user is read, or created with display name `--display-name` or NAME, empty full name and peer type `agent` ([`startAgent`](../src/serve.ts)).
+4. With `--secrets-folder`, `Secrets` is created, and the folder with it when missing ([`startAgent`](../src/serve.ts)). The active user is read, or created with display name `--display-name` or NAME, empty full name and peer type `agent` ([`startAgent`](../src/serve.ts)).
 5. `prepareCore` reads the network config and sets it with `smpProxyMode` `always` and `smpProxyFallback` `allowProtected` ([`startAgent`](../src/serve.ts), [`prepareCore`](../src/core.ts)).
 6. `prepareCore` sets `DATA/tmp` as the core's temp folder and deletes `DATA/files/sent` ([`prepareCore`](../src/core.ts)).
 7. Events are buffered, and the chat is started ([`startAgent`](../src/serve.ts)).
 8. A `--display-name` different from the profile, or a peer type other than `agent`, is applied with one `apiUpdateProfile` ([`startAgent`](../src/serve.ts), [`updatedUser`](../src/core.ts)).
 9. The agent control chat is found by its marker, created with counter 1, or reset with `--reset-owners` ([`startAgent`, `controlGroup`](../src/serve.ts)).
 10. `Actions`, `ChatItemsWatch`, `AgentTools` and `Control` are created; the counter is taken from the marker ([`startAgent`](../src/serve.ts)).
-11. `Control.load` sets `Actions.lost` for a lost control chat. Otherwise it updates the group name and command menu when they differ in the control chat's profile read at the start, as in 0.2, and reads the members ([`Control.load`, `updateProfile`, `changeGroupProfile`](../src/control.ts)).
+11. `Control.load` sets `Actions.lost` for a lost control chat. Otherwise it updates the group name, command menu and full deletion when they differ in the control chat's profile in the chat database, and reads the members ([`Control.load`, `updateProfile`, `updateGroupProfile`, `changeGroupProfile`](../src/control.ts)).
 12. The HTTP server listens; with the port in use, the process exits with code 1 ([`startAgent`, `listen`](../src/serve.ts)). Until step 14 ends, requests to `/mcp` that pass the token check get 503 with `Retry-After: 1` ([`startHttp`](../src/http.ts), the `started` flag of [`startAgent`](../src/serve.ts)).
 13. `server.json` is written ([`startAgent`](../src/serve.ts)).
 14. The server runs the owner setup, `Control.start`; after an error, HTTP is closed and the error is rethrown ([`startAgent`](../src/serve.ts)).
@@ -382,11 +411,12 @@ After an error inside `startAgent` (steps 4-16) the chat is closed; after any er
 
 ### 4.2 Event dispatch
 
-Each `onAny` receiver is awaited by the library before the next event is read ([`ChatApi.runEventsLoop`](../../simplex-chat-nodejs/src/api.ts)). The dispatcher, the event handler of [`startAgent`](../src/serve.ts), passes items of the control group to `Control` first. Every event then goes to [`AgentTools.onEvent`](../src/tools.ts), which runs the `AgentTools` and `ChatItemsWatch` handlers below. Finally, `Control` receives file errors and membership events:
+Each `onAny` receiver is awaited by the library before the next event is read ([`ChatApi.runEventsLoop`](../../simplex-chat-nodejs/src/api.ts)). The dispatcher, the event handler of [`startAgent`](../src/serve.ts), passes items and profile updates of the control group to `Control` first. Every event then goes to [`AgentTools.onEvent`](../src/tools.ts), which runs the `AgentTools` and `ChatItemsWatch` handlers below. Finally, `Control` receives file errors and membership events:
 
 | Event | Condition | Handler |
 |---|---|---|
-| `newChatItems` | item of the control group, main scope | [`Control.onMessage`](../src/control.ts) |
+| `newChatItems` | item of the control group, of the main conversation or a member support chat | [`Control.onMessage`](../src/control.ts) |
+| `groupUpdated` | an owner's update of the control group's profile | [`Control.onGroupUpdated`](../src/control.ts), queued with the owner commands |
 | `newChatItems` | every item | [`AgentTools.onNewItems`](../src/tools.ts), then [`ChatItemsWatch.deliver`](../src/messages.ts) |
 | `chatItemUpdated` | | [`AgentTools.onFile`](../src/tools.ts), then [`ChatItemsWatch.update`](../src/messages.ts) |
 | `chatItemsDeleted` | | [`ChatItemsWatch.remove`](../src/messages.ts) of each `deletedChatItem` |
@@ -401,7 +431,7 @@ Each `onAny` receiver is awaited by the library before the next event is read ([
 | `joinedGroupMember`<br>`joinedGroupMemberConnecting`<br>`connectedToGroupMember`<br>`memberRole`<br>`leftMember`<br>`deletedMember`<br>`deletedMemberUser`<br>`groupDeleted` | event of the control group | [`Control.onEvent`](../src/control.ts), queued one at a time |
 | any event | after `stop()` started | ignored |
 
-Owner commands are queued in a second chain, independent of the membership chain ([`Control.onMessage`](../src/control.ts)).
+Owner commands are queued in a second chain, independent of the membership chain ([`Control.onMessage`](../src/control.ts)). The deletion of a `/secret` message, also of one in a member support chat, is queued in that chain before its command ([`Control.onMessage`, `queueAfterReplies`](../src/control.ts)). An owner's profile update queues there the update that turns full deletion on when it is off, so a `/secret` that arrives after that profile update is deleted with full deletion on ([`Control.onGroupUpdated`](../src/control.ts)).
 
 ### 4.3 Stop
 
@@ -628,7 +658,7 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 | terminal names and errors of actions | folded to one line | [`Actions.create`, `performedText`](../src/actions.ts), [`inLog`](../src/control.ts) |
 | tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, file names, downloaded files, `description`, `welcome` and `commands` with their labels and params as data, not instructions; the instructions take a chat's messages as prompts only when the user said so in the session, and limit what the agent shares about its user | [`messageSchema`, `commandSchema`, `chatFieldSchemas`, `downloadOutput`, `instructions`](../src/tools.ts) |
 
-The server writes the tappable form `/'...'` only in the card's command line ([`commandsLine`](../src/control.ts)), in `/'revoke CHAT'` of standing cards and replies ([`cardText`, `Control.approveChat`](../src/control.ts)), and in `/'delete CHAT files'` of the kept-files message ([`Control.leftChatFilesNote`](../src/control.ts)).
+The server writes the tappable form `/'...'` only in the card's command line ([`commandsLine`](../src/control.ts)), in `/'revoke CHAT'` of standing cards and replies ([`cardText`, `Control.approveChat`](../src/control.ts)), in `/'delete CHAT files'` of the kept-files message ([`Control.leftChatFilesNote`](../src/control.ts)), and in `/'unsecret NAME'` of the reply to `/secret`, with NAME of capital letters, digits and `_` only ([`setSecret`](../src/control.ts), [`secretName`](../src/files.ts)).
 
 ### 6.4 Chat references
 
@@ -643,17 +673,18 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 
 | Rule | Code |
 |---|---|
-| source: `groupRcv` text items in the main scope of the control group | [`startAgent`](../src/serve.ts), [`Control.onMessage`, `isGroupMessage`](../src/control.ts) |
+| source: `groupRcv` text items in the main scope of the control group | [`startAgent`](../src/serve.ts), [`Control.onMessage`](../src/control.ts) |
 | form: one line `/keyword params`, leading spaces allowed | [`parseCommand`](../src/control.ts) |
-| A text outside the requests from any sender is answered with the help reply of `serve`, or with `Unknown command.` in a plugin session group. Other commands are accepted only from approvers. A command from another sender is answered in `serve`, and left without a reply in a plugin session group. | [`Control.ownerCommand`](../src/control.ts) |
+| A text outside the requests from any sender is answered with the help reply of `serve`, or with `Unknown command.` in a plugin session group, as a new message without a quote. Other commands are accepted only from approvers. A command from another sender is answered in `serve`, and left without a reply in a plugin session group. | [`Control.onMessage`, `ownerCommand`](../src/control.ts) |
 | commands run one at a time in arrival order | [`Control.onMessage`](../src/control.ts) |
 | `/approve`, `/reject`, `/receive` and `/forward` need a pending action with a card, and the action's chat when CHAT is given; `/receive` and `/forward` take downloads only, `/approve` the other actions only | [`Control.ownerCommand`](../src/control.ts) |
+| a `groupRcv` text item whose first word is `/secret`, in any letter case, of any sender, in the main scope or a member support chat, is deleted for all members before its command runs, and its reply is a new message without a quote | [`Control.onMessage`](../src/control.ts) |
 
 ### 6.6 Files
 
 | Rule | Code |
 |---|---|
-| `send` refuses files named `id_*`, `*.pem`, `*.key`, `*.p12` or `*.pfx`, and files under `~/.ssh`, `~/.gnupg`, the data folder and `~/.simplex-mcp` except the agent's own `DATA/files/`, each by its real path; the refusal is posted to the control chat and logged | [`AgentTools.attachment`, `isRefused`, `realFile`, `realFolder`](../src/tools.ts), [`Control.refusedFile`](../src/control.ts) |
+| `send` refuses files named `id_*`, `*.pem`, `*.key`, `*.p12` or `*.pfx`, and files under `~/.ssh`, `~/.gnupg`, the secrets folder, the data folder and `~/.simplex-mcp` except the agent's own `DATA/files/`, each by its real path; the refusal is posted to the control chat and logged | [`AgentTools.attachment`, `isRefused`, `realFile`, `realFolder`](../src/tools.ts), [`Control.refusedFile`](../src/control.ts) |
 | the file of a `send` is sent only when its real path, size, inode and change time at the perform are those of the request | [`AgentTools.fileToSend`](../src/tools.ts) |
 | a sent JPEG or PNG is a resized copy made by the core | [`AgentTools.resizedCopy`](../src/tools.ts) |
 | `ffmpeg` and `ffprobe` read a video as MP4 or QuickTime, local files only, without standard input, 30 s and 64 MiB of output each | [`videoFrame`, `videoDuration`, `commandOutput`](../src/tools.ts) |
@@ -668,6 +699,32 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 - The join link is a group link of the control chat with role `member`, or `observer` with `--owners`; it is printed with a QR code on stdout and deleted at the first join event ([`Control.openLink`, `ownerJoined`, `observerJoined`](../src/control.ts)).
 - At every start the server sets private message routing: `smpProxyMode` `always`, `smpProxyFallback` `allowProtected` ([`prepareCore`](../src/core.ts)).
 - With `incognito: true` the join methods connect incognito ([`AgentTools.join`](../src/tools.ts)); the core then uses a random profile for that chat ([PLAN, Participants](../../../plans/2026-10-19-mcp-server.md#participants)).
+
+### 6.8 Secrets
+
+<a id="security-secrets"></a>With the secrets, values are protected from accidental exposure to the model provider. A prompt injection that makes the agent send a value away by reference, such as in a command that reads `SECRETS/NAME`, is out of scope.
+
+| Rule | Code |
+|---|---|
+| a value is written only by an approver's `/secret`, to `SECRETS/NAME`, mode 0600 | [`Control.ownerCommand`, `setSecret`](../src/control.ts), [`Secrets.set`](../src/files.ts) |
+| a value is absent from the log, from the replies and from tool results: the log line and the replies name the secret, and `list` returns the names and the folder | [`setSecret`](../src/control.ts), [`AgentTools.listChats`](../src/tools.ts) |
+| a `/secret` message is deleted for all members before its command, in the main conversation and in member support chats; with full deletion, its content is replaced in the agent's database and in the members' apps | [`Control.onMessage`, `fullDelete`, `Control.load`](../src/control.ts), [`delGroupChatItems`](../../../src/Simplex/Chat/Library/Commands.hs), [`updateGroupChatItemModerated`](../../../src/Simplex/Chat/Store/Messages.hs) |
+| full deletion is turned on at every start when it is off, and at once after an owner's profile update turns it off, before a later `/secret` is deleted | [`Control.load`, `onGroupUpdated`](../src/control.ts), the event handler of [`startAgent`](../src/serve.ts), [`Hub.onEvent`](../src/hub.ts) |
+| a mistyped `/secret`, such as `/secrt NAME VALUE` or `/secrets NAME VALUE`, is not deleted; its reply, the list of commands, is a new message without a quote, so its sender's deletion for everyone leaves no copy of the value in the reply | [`Control.onMessage`, `ownerCommand`, `ownerRequest`](../src/control.ts) |
+| `send` refuses files under the secrets folder, by its real path | [`AgentTools.isRefused`](../src/tools.ts) |
+| `/unsecret` deletes only a name among `names()`, so a name with `/` or `..` deletes nothing | [`Secrets.remove`](../src/files.ts) |
+| the secrets folder is disjoint from the data folder | [`serveOptions`](../src/cli.ts) |
+| with the opencode plugin, the forms of the values are replaced in the parts of the messages that opencode passes to the hook | the hook of [`simplex-secrets.ts`](../opencode/simplex-secrets.ts) |
+
+Limits:
+
+- Owners' apps show a `/secret` message until its deletion reaches them.
+- A mistyped `/secret`, such as `/secrt NAME VALUE`, is neither deleted nor run: its sender deletes it for everyone in the app.
+- A message edited into a `/secret` command, and the later text of a live message, are neither deleted nor run: `onMessage` is called for new items only, not at `chatItemUpdated` (the event handler of [`startAgent`](../src/serve.ts)).
+- The agent forwards the messages of the control chat to members as an owner; the forwarded messages are stored with their delivery job in `DATA/simplex_chat.db` until the job is done and 7 days old ([`processGroupMessage`, `isUserGrpFwdRelay`, `runDeliveryTaskWorker`](../../../src/Simplex/Chat/Library/Subscriber.hs), [`createMsgDeliveryJob`, `deleteDoneDeliveryJobs`](../../../src/Simplex/Chat/Store/Delivery.hs), [`cleanupDeliveryJobs`](../../../src/Simplex/Chat/Library/Commands.hs)).
+- Every process of the server's user can read the files; the agent's commands read them.
+- Values that commands print are sent to the model provider by the MCP host, except for the forms replaced with the opencode plugin ([REFERENCE, Redaction](../REFERENCE.md#redaction)).
+- `send` and `connect` texts are not checked for values; the approval card shows them.
 
 ---
 
@@ -705,6 +762,8 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | agent NAME | 1 to 32 characters | [`validAgentName`](../src/cli.ts) |
 | display name | 50 characters, `mkValidName` rules | [`prohibitedNameChars`, `maxNameLength`, `validName`](../src/messages.ts) |
 | port | 1 to 65535, default 5226 | [`serveOptions`](../src/cli.ts) |
+| secret name | 1 to 64 characters: a capital letter, then capital letters, digits and `_` | [`secretName`](../src/files.ts) |
+| secret value | 8 characters (code points) or more, one line | [`setSecret`, `parseCommand`](../src/control.ts) |
 
 ---
 
@@ -881,7 +940,7 @@ Data flow of a prompt from the session group:
 | <a id="hub-hub-showsessions"></a>`Hub.showSessions`, `notRunningLine` | one render at a time: the records of the sessions read, and the text passed to `MainGroup.showList`; a failure is logged as `list of sessions: ERROR`. `notRunningLine` is the last line with the first K names and the count of the rest. |
 | <a id="hub-hub-stop"></a>`Hub.stop` | the timer of the list cleared, actions stopped, events awaited, the running render awaited, one more render with every session not running, cancelled cards awaited up to 10 s, steps ended, cores closed |
 | <a id="hub-hub-storedgroup"></a>`storedGroup`, `createSessionGroup` | the group of `session.json` with a matching session number; a new group with `User` added |
-| <a id="hub-hub-onevent"></a>`Hub.onEvent` | event dispatch. Pending connections are claimed at `contactConnected` and `userJoinedGroup`. A session group's membership events go to its `Control`, `sendTools`, `announceRights` and `askMode`, one at a time. |
+| <a id="hub-hub-onevent"></a>`Hub.onEvent` | event dispatch. Pending connections are claimed at `contactConnected` and `userJoinedGroup`. A session group's membership events go to its `Control`, `sendTools`, `announceRights` and `askMode`, one at a time, and an owner's update of its profile to `Control.onGroupUpdated`. |
 | <a id="hub-notallowedforuser"></a>`notAllowedForUser` | `NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` It is posted for a prompt of `User` refused by a group preference, including one that is on only for roles above that of `User`. |
 | <a id="hub-textparts"></a>`textParts` | the longest runs of whole characters that each fit in one message by `fitsMessage`, the first with the given quote. Each part is found by a binary search among the next `maxMessageLength` characters. |
 | <a id="hub-isrefusedquote"></a>`isRefusedQuote` | `errorStore` `invalidQuote`, `chatItemNotFound` or `largeMsg` |
@@ -894,7 +953,7 @@ Data flow of a prompt from the session group:
 | <a id="main-group-sessiongroups"></a>`SessionGroups` | what the Main group asks of the hub |
 | <a id="main-group-maingroup-owners"></a>`MainGroup.owners` | human members with role `owner` while the group is not lost |
 | <a id="main-group-maingroup-load"></a>`MainGroup.load`, `start` | lost check, name and menu from the group's current profile, and members. The short description and welcome message are kept. Without owners, `start` takes the existing link, or creates a new one. |
-| <a id="main-group-maingroup-onmessage"></a>`MainGroup.onMessage`, `command` | `/sessions`, `/join N`; `Unknown command.` for another |
+| <a id="main-group-maingroup-onmessage"></a>`MainGroup.onMessage`, `command` | `/sessions`, `/join N`, answered with replies that quote them; `Unknown command.` for another, as a new message without a quote |
 | <a id="main-group-maingroup-onevent"></a>`MainGroup.onEvent`, `handleEvent`, `ownerJoined` | The members are read again. The first human who joins becomes an owner. A new link is created when no owner remains. The statement of trust is posted at each human's join. New owners are invited to the open sessions. |
 | <a id="main-group-maingroup-replace"></a>`MainGroup.replace` | The Main group is deleted for all its members, and a new one is created with a new link, without a list of sessions. The session groups are kept. |
 | <a id="main-group-maingroup-showlist"></a>`MainGroup.showList`, `renderList`, `replaceList`, `postList`, `deleteItem`, `isRefusedEdit`, `isTooLarge` | `showList`, after the group's earlier events: nothing while the group is lost or for the text last refused as too large, `MainGroup.tooLarge`; such a refusal is kept and logged. `renderList`: without a list, a list posted while the group has an owner; a list 23 hours old replaced; an edit when the text differs from the text last shown; an edit refused with `invalidChatItemUpdate` or `chatItemNotFound` replaced. `postList` posts the text with priority -1 and saves the item and its time in the group's custom data; when the save fails, the new item is deleted for everyone and the error is passed on. `replaceList` posts a new list and deletes the old one for everyone, logging a refusal as `old list of sessions: ERROR`. |
@@ -1072,6 +1131,7 @@ After a stop, `Hub.onEvent` ignores events ([`Hub.onEvent`](../src/hub.ts)). Oth
 |---|---|---|
 | `newChatItems` | item of the Main group | [`MainGroup.onMessage`](../src/main-group.ts) |
 | `newChatItems` | item of a session group | [`Session.onMessage`](../src/hub.ts) |
+| `groupUpdated` | an owner's update of a session group's profile | [`Control.onGroupUpdated`](../src/control.ts) of that session, queued with its owner commands |
 | `chatItemReaction` | reaction in a session group | [`Session.onReaction`](../src/hub.ts) |
 | `rcvFileComplete`, `rcvFileError` | | [`Session.fileDone`](../src/hub.ts) of every session |
 | `contactConnected`, `userJoinedGroup` | a connection ID | [`Session.claimPending`](../src/hub.ts) of every session |
@@ -1105,7 +1165,7 @@ On `SIGINT`, `SIGTERM`, `POST /stop` or the stop timer ([`Service.shutdown`](../
 | A new action of a session is refused while its group has no approver | [`Control.refusal`](../src/control.ts) |
 | Changes of membership or role in the Main group, and its replacement by a reset of the owners, leave the session groups as they are | [`MainGroup.handleEvent`, `replace`](../src/main-group.ts) |
 | Everyone in the Main group is trusted with all sessions. This is stated in the group's short description and welcome message, set when the group is created, and in Claude's post at each join. In a session group, Claude posts the member's rights at each join and each role change, with the `/observer` command only for a role that can send, other than owner. The observer's rights are stated in Claude's reply to `/observer`. | [`welcome`, `joinRights`, `shortDescr`, `createMainGroup`, `MainGroup.handleEvent`](../src/main-group.ts), [`Session.announceRights`](../src/hub.ts), [`Control.setObserver`, `rightsText`](../src/control.ts) |
-| A file of `reply` is sent at once, in both modes. It can be refused by the group's preference for files and media, which owners set and the core enforces. A post of Claude or `User` in a session group, when refused by a group preference, is replaced by Claude's post with the preference's name, and is never dropped without one ([`refusedFeature`, `featureOff`](../src/tools.ts)). Claude updates a group's profile from its current profile in the chat database, and changes only its own fields, so the owners' preferences are kept. | [`AgentTools.reply`, `sendFile`](../src/tools.ts), the `replyChat` of the [`Session`](../src/hub.ts) constructor, [`Control.load`, `rename`, `describe`, `updateProfile`, `updateGroupProfile`, `changeGroupProfile`](../src/control.ts), [`MainGroup.load`](../src/main-group.ts) |
+| A file of `reply` is sent at once, in both modes. It can be refused by the group's preference for files and media, which owners set and the core enforces. A post of Claude or `User` in a session group, when refused by a group preference, is replaced by Claude's post with the preference's name, and is never dropped without one ([`refusedFeature`, `featureOff`](../src/tools.ts)). Claude updates a group's profile from its current profile in the chat database, and changes only its own fields and turns full deletion on, so the owners' other preferences are kept. | [`AgentTools.reply`, `sendFile`](../src/tools.ts), the `replyChat` of the [`Session`](../src/hub.ts) constructor, [`Control.load`, `rename`, `describe`, `updateProfile`, `updateGroupProfile`, `changeGroupProfile`](../src/control.ts), [`MainGroup.load`](../src/main-group.ts) |
 | The first human who joins the Main group while it has no owner becomes an owner, and the link is deleted | [`MainGroup.handleEvent`, `ownerJoined`](../src/main-group.ts) |
 | A session runs in mode `host` after an approver approves its `mode` card. The card is posted once an approver is in the group. After a rejection, the card is posted again only after `requests`. `requests` applies at once, and the hub ends a pending `mode` card. The mode is kept in the session group's custom data. | [`Session.requestMode`, `askMode`, `declineHost`, `Hub.onEvent`](../src/hub.ts), [`AgentTools.perform`](../src/tools.ts) |
 | At a reset of the owners from the computer that runs Claude Code, the service replaces the Main group at once, even while owners exist. No owner's approval is needed for `reset-owners` and `POST /reset-owners`. | [`Hub.resetOwners`](../src/hub.ts), [`resetOwners`](../src/owner.ts), [`MainGroup.replace`](../src/main-group.ts) |

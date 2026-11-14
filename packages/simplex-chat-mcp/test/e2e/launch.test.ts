@@ -42,7 +42,7 @@ test("the packed package has no lockfile, so Claude Code installs nothing, no li
   expect(packed.filter(path => lockfiles.includes(basename(path)))).toEqual([])
   const {stdout: listing} = await run("tar", ["-tvzf", tarball], {maxBuffer: 16 * 1024 * 1024})
   expect(listing.split("\n").filter(line => line !== "" && !["-", "d"].includes(line[0]))).toEqual([])
-  expect([...new Set(packed.map(path => path.split("/")[0]))].sort()).toEqual([".claude-plugin", ".mcp.json", "LICENSE", "README.md", "dist", "hooks", "node_modules", "package.json", "plugin"])
+  expect([...new Set(packed.map(path => path.split("/")[0]))].sort()).toEqual([".claude-plugin", ".mcp.json", "LICENSE", "README.md", "dist", "hooks", "node_modules", "opencode", "package.json", "plugin"])
   const lock = JSON.parse(readFileSync(join(packageDir, "package-lock.json"), "utf8"))
   const production = Object.keys(lock.packages).filter(path => path !== "" && !lock.packages[path].dev)
   expect([...new Set(packed.flatMap(path => packageRoot.exec(path)?.[1] ?? []))].sort()).toEqual(production.sort())

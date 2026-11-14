@@ -50,7 +50,7 @@ describe("plugin", () => {
   })
 
   it("ships the build, its bundled dependencies and the plugin files in the package, without a lockfile", () => {
-    expect(packageJson.files).toEqual(["dist", "README.md", ".claude-plugin", ".mcp.json", "hooks", "plugin"])
+    expect(packageJson.files).toEqual(["dist", "README.md", ".claude-plugin", ".mcp.json", "hooks", "plugin", "opencode"])
     expect(packageJson.bundleDependencies).toBe(true)
   })
 

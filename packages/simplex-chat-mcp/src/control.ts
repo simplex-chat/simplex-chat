@@ -1,6 +1,7 @@
 import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
 import {Action, ActionHooks, Actions, DownloadAction, PermissionAction, Standing, State, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
+import {Secrets, secretName} from "./files"
 import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import {linkCommand} from "./owner"
@@ -16,13 +17,20 @@ export const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
   {type: "command", keyword: "list", label: "Chats and approvals"},
   {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
+  {type: "command", keyword: "secrets", label: "Secrets"},
 ]
 
+// spec: spec/api.md#group-profile
+export const fullDelete: T.GroupPreference = {enable: T.GroupFeatureEnabled.On}
 // spec: spec/api.md#control-commands
-const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /secret, /unsecret, /secrets. Each card shows its commands."
 // spec: spec/api.md#control-commands
 const unknownCommand = "Unknown command."
 const filesAndMedia = "Files and media"
+// spec: spec/api.md#control-commands
+const secretsOff = "Secrets are off: the server runs without --secrets-folder."
+// spec: spec/api.md#control-commands
+const secretUsage = "Usage: /secret NAME VALUE on one line. NAME: capital letters, digits and _, starting with a letter, up to 64 characters. VALUE: 8 characters or more."
 const cardTooLong = {
   send: "text: too long for its approval card; shorten it.",
   connect: "message: too long for its approval card; shorten it.",
@@ -69,6 +77,7 @@ export interface ControlOptions {
   session?: SessionOptions
   registerHint: string
   qrCode: QrCodeSize
+  secrets?: Secrets
 }
 
 // spec: spec/architecture.md#control-controloptions
@@ -101,7 +110,9 @@ type OwnerRequest =
   | {type: "leave" | "deleteFiles"; chat: string}
   | {type: "give"; chat: string; session: number}
   | {type: "observer"; group: string; member: number}
-  | {type: "pending" | "list"}
+  | {type: "secret"; name: string; value: string}
+  | {type: "unsecret"; name: string}
+  | {type: "pending" | "list" | "secrets"}
 
 interface Shown {
   name: (name: string) => string
@@ -141,7 +152,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (isLost(this.group)) return this.lose()
     const {displayName} = this.options
     await this.updateProfile(profile =>
-      profile.displayName !== displayName || JSON.stringify(profile.groupPreferences?.commands) !== JSON.stringify(controlCommands) ? {...profile, displayName, groupPreferences: {...profile.groupPreferences, commands: controlCommands}} : undefined,
+      profile.displayName !== displayName || JSON.stringify(profile.groupPreferences?.commands) !== JSON.stringify(controlCommands) || profile.groupPreferences?.fullDelete?.enable !== fullDelete.enable ? {...profile, displayName, groupPreferences: {...profile.groupPreferences, fullDelete, commands: controlCommands}} : undefined,
     )
     await this.refreshMembers()
   }
@@ -160,7 +171,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   // spec: spec/api.md#group-profile
   private updateProfile(change: (profile: T.GroupProfile) => T.GroupProfile | undefined): Promise<void> {
     const update = this.profileUpdates.then(async () => {
-      const group = await (this.options.session === undefined ? changeGroupProfile : updateGroupProfile)(this.chat, this.group, change)
+      const group = await updateGroupProfile(this.chat, this.group, change)
       this.group = {...group, customData: this.group.customData}
     })
     this.profileUpdates = update.catch(() => undefined)
@@ -255,13 +266,21 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   onMessage(ci: T.AChatItem): void {
     const {chatItem} = ci
     if (this.actions.lost || chatItem.chatDir.type !== "groupRcv" || chatItem.content.type !== "rcvMsgContent") return
+    const secret = /^\s*\/secret(\s|$)/i.test(chatItem.content.msgContent.text)
+    if (ci.chatInfo.type === "group" && ci.chatInfo.groupChatScope !== undefined) return secret ? this.queueAfterReplies(() => this.chat.apiDeleteMemberChatItem(this.groupId, [chatItem.meta.itemId])) : undefined
     const command = parseCommand(chatItem.content.msgContent.text)
     const sender = chatItem.chatDir.groupMember
-    if (command === undefined || this.options.session?.isUser(sender)) return
+    if ((command === undefined && !secret) || this.options.session?.isUser(sender)) return
     this.ownerCommands = this.ownerCommands
-      .then(() => this.ownerCommand(sender, command))
-      .then(reply => (reply === undefined ? undefined : this.chat.apiSendTextReply(ci, reply)))
+      .then(() => (secret ? this.chat.apiDeleteMemberChatItem(this.groupId, [chatItem.meta.itemId]) : undefined))
+      .then(() => (command === undefined ? secretUsage : this.ownerCommand(sender, command)))
+      .then((reply): Promise<unknown> | undefined => (reply === undefined ? undefined : secret || reply === commandsReply || reply === unknownCommand ? this.post(reply) : this.chat.apiSendTextReply(ci, reply)))
       .catch(error => logError("control chat command", error))
+  }
+
+  // spec: spec/api.md#group-profile
+  onGroupUpdated(): void {
+    if (!this.actions.lost) this.queueAfterReplies(() => this.updateProfile(profile => (profile.groupPreferences?.fullDelete?.enable === fullDelete.enable ? undefined : {...profile, groupPreferences: {...profile.groupPreferences, fullDelete}})))
   }
 
   // spec: spec/architecture.md#control-control-onevent
@@ -311,6 +330,12 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         return this.give(sender, request.chat, request.session)
       case "observer":
         return this.setObserver(sender, request.group, request.member)
+      case "secret":
+        return this.options.secrets === undefined ? secretsOff : this.setSecret(this.options.secrets, sender, request.name, request.value)
+      case "unsecret":
+        return this.options.secrets === undefined ? secretsOff : this.removeSecret(this.options.secrets, sender, request.name)
+      case "secrets":
+        return this.options.secrets === undefined ? secretsOff : this.secretsText(this.options.secrets)
       case "approve":
       case "reject":
       case "receive":
@@ -489,6 +514,32 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (rest > 0) lines.push(`${rest} older chat${rest === 1 ? " is" : "s are"} not shown.`)
     lines.push(...this.approvedTools().map(({tool, approvedBy}) => `${codeSpan(oneLine(tool))}  approved for this session by ${safeName(approvedBy)}`))
     return lines.length > 0 ? lines.join("\n") : "No chats."
+  }
+
+  // spec: spec/api.md#control-commands
+  private setSecret(secrets: Secrets, sender: T.GroupMember, name: string, value: string): string {
+    if (!secretName.test(name) || [...value].length < 8) return secretUsage
+    const setBy = sender.memberProfile.displayName
+    secrets.set(name, value, {setBy, setById: sender.groupMemberId, setAt: new Date().toISOString()})
+    log(`Secret ${name} set by ${oneLine(setBy)}.`)
+    return `Secret ${name} is set. /'unsecret ${name}'`
+  }
+
+  // spec: spec/api.md#control-commands
+  private removeSecret(secrets: Secrets, sender: T.GroupMember, name: string): string {
+    if (!secrets.remove(name)) return "No such secret. /secrets lists them."
+    log(`Secret ${name} removed by ${oneLine(sender.memberProfile.displayName)}.`)
+    return `Secret ${name} is removed.`
+  }
+
+  // spec: spec/api.md#control-commands
+  private secretsText(secrets: Secrets): string {
+    const records = secrets.records()
+    const lines = secrets.names().map(name => {
+      const record = records[name]
+      return record === undefined ? name : `${name}  set by ${safeName(record.setBy)}  ${utcMinutes(Date.parse(record.setAt))}`
+    })
+    return lines.length > 0 ? lines.join("\n") : "No secrets."
   }
 
   private async agentChat(chat: string): Promise<T.ChatInfo | undefined> {
@@ -725,7 +776,7 @@ export async function createControlChat(chat: api.ChatApi, userId: number, displ
     displayName,
     fullName: "",
     description: "Supervise your AI agent here: approve or reject its connections and messages with one tap.",
-    groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, commands: controlCommands},
+    groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, fullDelete, commands: controlCommands},
   }, controlData(nextAction))
   log(`Agent control chat "${displayName}" created.`)
   return group
@@ -991,7 +1042,9 @@ function ownerRequest({keyword, params}: Command, session: boolean): OwnerReques
   if (session && keyword === "observer" && chat?.startsWith("#") && value !== undefined && /^\d+$/.test(value)) return {type: "observer", group: chat, member: Number(value)}
   if (session && keyword === "approve" && words.length === 2 && /^\d+$/.test(words[0]) && words[1] === "all") return {type: "approveTool", action: Number(words[0])}
   if (session && keyword === "revoke" && chat === undefined && value !== undefined && /^[\w-]+$/.test(value)) return {type: "revokeTool", tool: value}
-  if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
+  if (keyword === "secret") return {type: keyword, name: words[0] ?? "", value: params.replace(/^\S*\s*/, "")}
+  if (keyword === "unsecret" && words.length === 1) return {type: keyword, name: words[0]}
+  if ((keyword === "pending" || keyword === "list" || keyword === "secrets") && words.length === 0) return {type: keyword}
   return undefined
 }
 
