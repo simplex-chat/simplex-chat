@@ -2007,6 +2007,7 @@ export interface ChatStats {
   unreadCount: number // int
   unreadMentions: number // int
   unreadSilent: number // int
+  unreadHighPriority: number // int
   reportsCount: number // int
   minUnreadItemId: number // int64
   unreadChat: boolean
@@ -2933,6 +2934,7 @@ export interface FullGroupPreferences {
   sessions: RoleGroupPreference
   comments: CommentsGroupPreference
   signMessages: GroupPreference
+  msgPriority: RoleGroupPreference
   commands: ChatBotCommand[]
 }
 
@@ -3008,6 +3010,7 @@ export enum GroupFeature {
   Sessions = "sessions",
   Comments = "comments",
   SignMessages = "signMessages",
+  MsgPriority = "msgPriority",
 }
 
 export enum GroupFeatureEnabled {
@@ -3223,6 +3226,7 @@ export interface GroupPreferences {
   sessions?: RoleGroupPreference
   comments?: CommentsGroupPreference
   signMessages?: GroupPreference
+  msgPriority?: RoleGroupPreference
   commands?: ChatBotCommand[]
 }
 
@@ -3988,6 +3992,11 @@ export interface PreparedGroup {
   connLinkStartedConnection: boolean
   welcomeSharedMsgId?: string
   requestSharedMsgId?: string
+}
+
+export interface PriorityRaised {
+  newAttention: boolean
+  wasSilent: boolean
 }
 
 export interface Profile {
@@ -5760,6 +5769,7 @@ export interface UIThemeEntityOverrides {
 export interface UpdatedMessage {
   msgContent: MsgContent
   mentions: {[key: string]: number} // string : int64
+  priority?: number // int
 }
 
 export interface User {

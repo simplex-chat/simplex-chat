@@ -234,6 +234,7 @@ Message was updated by another user.
 - type: "chatItemUpdated"
 - user: [User](./TYPES.md#user)
 - chatItem: [AChatItem](./TYPES.md#achatitem)
+- priorityRaised: [PriorityRaised](./TYPES.md#priorityraised)?
 
 ---
 
