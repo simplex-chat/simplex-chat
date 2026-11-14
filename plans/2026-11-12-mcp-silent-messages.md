@@ -1,6 +1,6 @@
 # Silent messages
 
-Status: Q1, Q2 and Q3 answered A by the user on 2026-11-12; Q4, the two tiers of unread items asked for in the note on Q3, and Q5, the look of a silent-only count, answered B on 2026-11-13. Code references: master `9d3241b06`. simplexmq at the commit of `cabal.project`, `71179c4d4`. Related plans: `2026-10-13-message-priority.md` (approved on 2026-10-13, not implemented), `2026-10-13-forwarded-notification-flag.md` (implemented by #7706).
+Status: Q1, Q2 and Q3 answered A by the user on 2026-11-12; Q4, the two tiers of unread items asked for in the note on Q3, and Q5, the look of a silent-only count, answered B on 2026-11-13. On 2026-11-14 the user replaced Q2: silent and high priority ship together, as one message priority feature; section 11 is the delta to the approved priority plan, with Q6 and Q7 open. Code references: master `9d3241b06`. simplexmq at the commit of `cabal.project`, `71179c4d4`. Related plans: `2026-10-13-message-priority.md` (approved on 2026-10-13, not implemented), `2026-10-13-forwarded-notification-flag.md` (implemented by #7706).
 
 ## 1. Goal
 
@@ -57,7 +57,7 @@ Q1. Is a silent message priority −1 of the approved message-priority model? An
 - A, recommended: yes. One wire field, `priority`, serves silent now and important later. The approved plan said "Notifications are created for every message, as now"; −1 becomes silent instead. Silent is accepted from every sender in every chat, because it only removes alerts; the group preference of the approved plan stays for high priority.
 - B: a separate boolean `silent`. A second field and a second concept next to priority.
 
-Q2. When does "important" come? Answered A.
+Q2. When does "important" come? Answered A on 2026-11-12; replaced by the user on 2026-11-14 with B: silent and high priority ship together (section 11).
 - A, recommended: in the next pull request, as priority 1 of the approved plan, unchanged: an attention item that alerts also in "Mentions" mode, with a bell on the chat, its list label and the item. The plugin sends its answers with priority 1 from `ep/mcp-activity` on; until then receivers treat 1 as normal, and in "All" mode an answer already alerts.
 - B: in this pull request. It adds the bell, the counters, the list labels and the preference on three platforms.
 
@@ -218,3 +218,145 @@ packages/simplex-chat-nodejs, types      regenerated types: any branch that chan
 ## 10. Estimate
 
 About 250 lines of Haskell, 40 of Kotlin and Swift, generated types, and 150 lines of tests; two to three days with reviews. Q4 B adds about 100 lines of Haskell, 80 per app platform and 100 of tests, in a stacked pull request of one to two days. Then a core release and an app release before receivers stop alerting.
+
+## 11. Message priority: silent and high together
+
+The user, 2026-11-14: silent and important ship together, as one message priority feature, low, normal and high, as in email. The send controls of the apps are not decided and are not needed now. High priority is built from `2026-10-13-message-priority.md` (approved; "the approved plan" below). This section is its delta to `ep/mcp-silent-messages` and `ep/mcp-silent-unread`.
+
+### 11.1 Built
+
+```
+wire                 "priority" in x.msg.new
+core types           MsgContainer.priority
+                     ComposedMessage.priority
+                     CIMeta.priority
+                     NewSndChatItemData.priority
+                     ChatStats.unreadSilent
+                     IntDef
+core functions       limitPriority (-1 .. 0)
+                     sndPriority
+                     msgPriority
+                     cmPriority
+                     eventHasNotification
+                     prepareGroupMsg, parameter priority; sendHistory with the stored priority
+storage              chat_items.item_priority (M20261113_item_priority)
+                     idx_chat_items_contacts_silent, idx_chat_items_groups_silent (M20261113_silent_indexes)
+counts               unread silent items in the chat list, one chat, a member support scope, the core's unread filters and profile totals
+apps                 CIMeta.priority, silent; notification checks; NSE .silentMsg and silentMsgReceived
+                     UnreadTag Read | Silent | Unread; silentTags; ChatInfo.silentNotCounted
+                     gray outline badge, gray scroll button count, label "○"
+terminal             no notification and no change of the active chat for a silent item or its edit
+docs                 x.msg.new priority in the protocol doc and schema; bots/README "Silent messages"
+```
+
+### 11.2 To build from the approved plan
+
+```
+part                         approved section    work
+x.msg.update priority        2                   XMsgUpdate.priority, last field, at its positional uses
+UpdatedMessage.priority      2                   /_update item json with "priority": 1
+PriorityRaised               2                   newAttention :: Bool, wasSilent :: Bool (wasSilent is new, 11.3)
+CEvtChatItemUpdated          2                   priorityRaised :: Maybe PriorityRaised
+ChatStats                    1, 6                unreadHighPriority :: IntDef, groups only
+preference                   3                   GFMsgPriority, MsgPriorityGroupPreference, default on for admins
+                                                 /set priority #<group> on|off [<role>], CLI views; no feature items, no app screens
+sending                      4                   group: 1 when groupFeatureUserAllowed SGFMsgPriority, otherwise omitted; contact: omitted
+raise by the author          4                   APIUpdateChatItem: raise, condition, SMP flag on for the raising update
+receiving                    5                   rcvPriorityAllowed; userMention for high priority; groupMessageUpdate raise
+storage                      6                   updateGroupChatItem_ writes item_priority and user_mention
+notifications                1, 8                attention item in mode "Mentions"; raise notified once, unread or read
+apps model                   8                   CIMeta.highPriority, unreadHighPriority counters, priorityTags, raise event handling
+                                                 NSE: chatItemUpdated with priorityRaised handled as newChatItems
+apps views                   9                   bell in the chat list badge, list label, item meta (both layouts), item info row
+terminal                     10                  marks "!!", notification for a raise
+libraries                    11                  optional priority in apiSendTextMessage, apiSendTextReply, apiUpdateChatItem (Node.js)
+                                                 and api_send_text_message, api_send_text_reply, api_update_chat_item, Message.reply (Python)
+docs                         11                  x.msg.update priority, receiver rules, preference; bots/README "Message priority"
+tests                        13                  the high priority cases of section 13 of the approved plan
+```
+
+The apps send normal priority. The compose control stays deferred, as in open question 2 of the approved plan.
+
+### 11.3 Changes of the approved text by the built decisions
+
+```
+approved text                                      becomes
+1, 2  limited to -1 .. 1                           unchanged; the built -1 .. 0 returns to -1 .. 1
+4     sent value per chat                          sndPriority takes the chat: contact keeps -1 only; group keeps -1, and 1 when allowed
+2     PriorityRaised {newAttention}                adds wasSilent: a raised silent item leaves the gray tier
+6     migration M20261013_msg_priority             M20261113_item_priority, then M20261113_silent_indexes
+6     "indexes are unchanged"                      two partial indexes (Q4 B, decision 16)
+6     high priority sums inside ChatStats          Q7: a partial index counts both tiers
+8     UnreadTag None | Unread | HighPriority        Read | Silent | Unread | HighPriority
+8     unreadTags, priorityTags                     unreadTags, priorityTags, silentTags
+10    Output.hs: notification for a raise          kept; the built silent checks stay; a raised item is no longer silent
+11    "1 or above ... received as normal" (doc)    the receiver rules and the preference of the approved plan
+```
+
+The NSE decisions of this plan stay. A raise reaches the NSE as `.messageReceived`, which replaces the default best attempt, so the `.noNtf` rule for a push of only silent messages does not hide a raise. Silent is still accepted from every sender in every chat. High priority keeps the preference of the approved plan, and a raise keeps its main scope rule.
+
+### 11.4 Combined rules
+
+Item priority:
+```mermaid
+stateDiagram-v2
+  [*] --> silent: x.msg.new, priority -1, any sender
+  [*] --> normal: x.msg.new, priority 0 or absent, or 1 in a direct chat or from a sender who is not allowed
+  [*] --> high: x.msg.new, priority 1, allowed sender, group
+  silent --> high: x.msg.update priority 1 by the author, allowed, main scope
+  normal --> high: x.msg.update priority 1 by the author, allowed, main scope
+```
+
+Counters of a chat:
+```
+unreadCount           unread items
+unreadMentions        unread attention items: mention, reply, high priority
+unreadSilent          unread silent items
+unreadHighPriority    unread high priority items; groups only
+```
+
+`unreadTag`:
+```
+mode "All"         HighPriority if unreadHighPriority > 0
+                   Unread if unreadChat || unreadCount > unreadSilent
+                   Silent if unreadCount > 0
+                   Read otherwise
+mode "Mentions"    HighPriority if unreadHighPriority > 0
+                   Unread if unreadChat || unreadMentions > 0
+                   Read otherwise
+mode "None"        Unread if unreadChat
+                   Read otherwise
+unreadTags[tag]    chats with Unread or HighPriority
+priorityTags[tag]  chats with HighPriority
+silentTags[tag]    chats with Silent
+unread filter      Unread or HighPriority
+```
+
+Chat list badge, the first rule that holds:
+```
+unreadHighPriority > 0       bell and count, as in the badge table of the approved plan
+unreadMentions > 0           "@" and count, as now
+unreadCount == unreadSilent  gray outline count (Q5 B)
+otherwise                    count, as now
+```
+
+A raise of a silent item, for an unread item: `unreadSilent` - 1, `unreadHighPriority` + 1, `unreadMentions` + 1 when `newAttention`, and the user's counter + 1 in mode "All", because the item is no longer left out.
+
+### 11.5 Delivery
+
+One pull request carries the three parts: silent, the gray tier and high priority. `#8177` is not ready to merge and stays open until Q6 is answered.
+
+### 11.6 Questions
+
+Q6. Which pull request carries it?
+- A, recommended: a new branch `ep/message-priority` from the head of `ep/mcp-silent-unread`, one new pull request "core, ui: message priority", and `#8177` closed with a link to it. The history and the review fixes are kept; the title, the branch and the page describe the whole feature.
+- B: `#8177` grows: the stacked branch and the high priority commits go to `ep/mcp-silent-messages`. Its title and page are rewritten; the branch name says silent only.
+
+Q7. How are unread high priority items counted?
+- A, recommended: one partial index of group items with a priority, `WHERE item_priority <> 0`, in place of `idx_chat_items_groups_silent`; one join counts silent and high priority items from it. The contacts index stays silent only, because direct chats have no high priority. Every count reads only its index, as decision 16 measured for the silent index; the query plans are measured again for this one.
+- B: the approved sums `SUM(CASE WHEN user_mention = 1 AND item_priority > 0 ...)` inside the ChatStats aggregate. A condition on `item_priority` there makes the planner leave the covering index, so every unread item reads its table row (decision 16).
+This changes the approved text of section 6 and closes its open question 1.
+
+### 11.7 Estimate
+
+About 30 agent hours: core 14 (protocol and types 1, preference and CLI 2, send, update and receive with the raise 3, counts and index 2, terminal 1, libraries, generated types and docs 1, tests 4); Kotlin 6; iOS with the NSE 6; CI runs, renders of the bell, the page and review fixes 4.
