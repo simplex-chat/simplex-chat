@@ -29,7 +29,7 @@ function recorder(results: RunResult[]): {calls: string[][]; run: (command: stri
   return {calls, run: (command, args) => (calls.push([command, ...args]), results[calls.length - 1] ?? ok)}
 }
 
-const hookEvents = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PostToolBatch", "PermissionRequest", "PermissionDenied", "SubagentStart", "SubagentStop", "PreCompact", "PostCompact", "Stop", "StopFailure", "SessionEnd"]
+const hookEvents = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PostToolBatch", "PermissionRequest", "PermissionDenied", "SubagentStart", "SubagentStop", "PreCompact", "PostCompact", "Notification", "Stop", "StopFailure", "SessionEnd"]
 
 function statusHandler(port: number, data: string, nullDevice = "/dev/null"): object {
   return {type: "command", command: "curl", args: ["-q", "--noproxy", "*", "-s", "-m", "2", "-o", nullDevice, "-H", `@${join(data, "hook-headers")}`, "-H", "Content-Type: application/json", "--data-binary", "@-", `http://127.0.0.1:${port}/hook`], async: true}
@@ -130,7 +130,7 @@ describe("register", () => {
     const current = statusGroups(5227, dir)
     expect(JSON.parse(readFileSync(file, "utf8"))).toEqual({
       model: "opus",
-      hooks: {...current, PreToolUse: [{matcher: "Bash", hooks: [lint]}, ...current.PreToolUse], PostToolUse: [otherAgent, ...current.PostToolUse], Notification: [{hooks: [lint]}]},
+      hooks: {...current, PreToolUse: [{matcher: "Bash", hooks: [lint]}, ...current.PreToolUse], PostToolUse: [otherAgent, ...current.PostToolUse], Notification: [{hooks: [lint]}, ...current.Notification]},
     })
     const written = readFileSync(file, "utf8")
     register({name: "agent", data: dir, scope: "user"}, recorder([]).run, undefined, config)

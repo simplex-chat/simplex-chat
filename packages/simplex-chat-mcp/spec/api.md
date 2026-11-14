@@ -502,7 +502,7 @@ Deletion, at the first of:
 | a tick: 23 hours after the status was created | [`Statuses.tick`](../src/status.ts) |
 | `send` with `live: true`, 23 hours or more after the status was created; a new status is created with the note | [`Statuses.show`](../src/status.ts) |
 | a tick: 50 renders or more, no running call other than `receive`, and 30 minutes since a call last started or ended | [`Statuses.tick`](../src/status.ts) |
-| a `Stop`, `StopFailure` or `SessionEnd` of the status hooks after which no agent session runs a turn ([5.2](#52-events)), while no call runs; a waiting status is kept | [`Activity.record`, `endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts), the `Activity` of [`startAgent`](../src/serve.ts) |
+| a `Stop`, `StopFailure`, `SessionEnd` or idle notification of the status hooks after which no agent session runs a turn ([5.2](#52-events)), while no call runs; a waiting status is kept | [`Activity.record`, `endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts), the `Activity` of [`startAgent`](../src/serve.ts) |
 | a failed send or update of the status | [`Statuses.created`, `failed`](../src/status.ts) |
 | the stop of `serve` or of the plugin's service | [`Statuses.stop`](../src/status.ts), `stop` in [`startAgent`](../src/serve.ts), [`Hub.stop`](../src/hub.ts) |
 
@@ -729,7 +729,7 @@ Status hooks, written after `claude mcp add-json` succeeds ([`register`, `status
 |---|---|---|
 | settings file, scope `user` | `CONFIG/settings.json`; CONFIG is `CLAUDE_CONFIG_DIR`, or `~/.claude` when it is unset or empty | [`register`, `scopeLocations`](../src/register.ts) |
 | settings file, scope `local` | `PROJECT/.claude/settings.local.json`; PROJECT is the git repository root of the current folder, the main repository of a worktree, or the current folder outside a repository | [`scopeLocations`, `projectRoot`](../src/register.ts) |
-| events | `UserPromptSubmit`<br>`PreToolUse`<br>`PostToolUse`<br>`PostToolUseFailure`<br>`PostToolBatch`<br>`PermissionRequest`<br>`PermissionDenied`<br>`SubagentStart`<br>`SubagentStop`<br>`PreCompact`<br>`PostCompact`<br>`Stop`<br>`StopFailure`<br>`SessionEnd` | [`hookEvents`](../src/register.ts) |
+| events | `UserPromptSubmit`<br>`PreToolUse`<br>`PostToolUse`<br>`PostToolUseFailure`<br>`PostToolBatch`<br>`PermissionRequest`<br>`PermissionDenied`<br>`SubagentStart`<br>`SubagentStop`<br>`PreCompact`<br>`PostCompact`<br>`Notification`<br>`Stop`<br>`StopFailure`<br>`SessionEnd` | [`hookEvents`](../src/register.ts) |
 | matcher group | one per event, without a matcher, with one handler | [`statusHooks`](../src/register.ts) |
 | handler | `type` `command`<br>`command` `curl`<br>`args` below<br>`async` `true`: Claude Code does not wait for it | [`statusHooks`](../src/register.ts) |
 | `args` | `-q`: first, so the curlrc files are skipped<br>`--noproxy *`: the proxy variables ignored<br>`-s`: the progress meter and error messages suppressed<br>`-m 2`: at most 2 s<br>`-o /dev/null`, `-o NUL` on Windows: the answer discarded<br>`-H @DATA/hook-headers`: the `Authorization` header line of the file<br>`-H Content-Type: application/json`<br>`--data-binary @-`: a POST of the event JSON from standard input<br>`http://127.0.0.1:PORT/hook` | [`statusHooks`](../src/register.ts) |
@@ -1350,7 +1350,7 @@ Fields read; other fields of the body are discarded ([`Activity.record`, `fileNa
 
 | Field | Kept when |
 |---|---|
-| `hook_event_name`<br>`session_id`<br>`tool_use_id`<br>`agent_id` | a string |
+| `hook_event_name`<br>`session_id`<br>`tool_use_id`<br>`agent_id`<br>`notification_type` | a string |
 | `tool_name`<br>`agent_type` | it matches `^[\w-]{1,64}$` |
 | `tool_input.file_path`, or `tool_input.notebook_path` when `file_path` is not a string | its base name matches `^[\w.+@-]{1,64}$`; only the base name is kept |
 
@@ -1370,8 +1370,10 @@ Effects on the agent session, by `hook_event_name` ([`Activity.record`](../src/a
 | `PostCompact` | the compaction flag is cleared |
 | `UserPromptSubmit` | the running tools and subagents of the session are removed, and both flags are cleared; the session runs a turn ([`Activity.clear`](../src/activity.ts)) |
 | `Stop`<br>`StopFailure`<br>`SessionEnd` | as `UserPromptSubmit`, and the session's turn has ended; when no agent session runs a turn, `Statuses.turnsEnded` is called, and the status messages other than waiting ones are deleted while no call runs ([1.10](#110-status-message), [`Activity.endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts)) |
+| `Notification` | with `notification_type` `idle_prompt`, Claude Code's idle notification: as `Stop`; with another type: none |
 
-- A session runs a turn from its first event with a tool of this server, and from its `UserPromptSubmit`, until its `Stop`, `StopFailure` or `SessionEnd`. Other events leave the turn unchanged, so an end event of a tool received after `Stop` leaves the turn ended ([`Activity.record`, `clear`, `endTurn`](../src/activity.ts)).
+- A session runs a turn from its first event with a tool of this server, and from its `UserPromptSubmit`, until its `Stop`, `StopFailure`, `SessionEnd` or idle notification. Other events leave the turn unchanged, so an end event of a tool received after `Stop` leaves the turn ended ([`Activity.record`, `clear`, `endTurn`](../src/activity.ts)).
 - Running tools and subagents are kept up to 64 each, and ended IDs up to 256; beyond a limit, the earliest entry is removed ([`maxEntries`, `maxEnded`, `keepNewest`](../src/activity.ts)).
+- Claude Code 2.1.281 sends no `PostToolUse`, `PostToolUseFailure`, `PermissionDenied`, `PostToolBatch` or `Stop` after a refusal in its permission prompt. In the code of that version, Claude Code sends its idle notification a fixed time after the end of every turn, 60 s by default, an aborted turn included, when its terminal received no input since then and no dialog is open. So the permission flag of such a turn is cleared then, or at the session's next `UserPromptSubmit` or its `SessionEnd`.
 - Claude Code runs each hook in a separate process, so the posts of one session may be received out of order; for an end event received before its `PreToolUse`, the ID is kept as ended, and the late `PreToolUse` is skipped ([`Activity.record`](../src/activity.ts)).
 - Labels are chosen from the state of all agent sessions together: the permission flag and the compaction flag of any of them, the running tool recorded last and the subagent recorded last ([`Activity.state`](../src/activity.ts), [1.10](#110-status-message)).

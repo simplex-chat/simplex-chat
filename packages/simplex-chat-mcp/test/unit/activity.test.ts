@@ -151,6 +151,19 @@ describe("Claude Code activity", () => {
     expect(endsAfter("SessionEnd", "s2", {reason: "prompt_input_exit"})).toBe(3)
   })
 
+  it("ends the turn of a session at its idle notification, as after a refusal in the permission dialog, and ignores its other notifications", () => {
+    let ends = 0
+    const activity = new Activity("agent", () => ends++)
+    activity.record(ownCall("s1"))
+    activity.record(event("PreToolUse", {tool_name: "Bash", tool_use_id: "t1"}))
+    activity.record(event("PermissionRequest", {tool_name: "Bash"}))
+    activity.record(event("Notification", {notification_type: "permission_prompt", message: "Bash: run 'npm test'"}))
+    activity.record(event("Notification", {notification_type: ["idle_prompt"]}))
+    expect([activity.state(), ends]).toEqual([{asking: true, compacting: false, tool: {session: "s1", name: "Bash"}}, 0])
+    activity.record(event("Notification", {notification_type: "idle_prompt", message: "Claude is waiting for your input"}))
+    expect([activity.state(), ends]).toEqual([{asking: false, compacting: false}, 1])
+  })
+
   it("reports the end of the turns without a session that was dropped during its turn", () => {
     let ends = 0
     const activity = new Activity("agent", () => ends++)

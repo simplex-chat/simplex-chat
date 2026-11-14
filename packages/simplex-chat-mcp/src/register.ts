@@ -8,7 +8,7 @@ import {ExitError, shellPath} from "./log"
 const cmdNotFound = 9009
 const cmdMetaChars = /([()\][%!^"`<>&|;, *?])/g
 // spec: spec/architecture.md#register-hookevents
-const hookEvents = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PostToolBatch", "PermissionRequest", "PermissionDenied", "SubagentStart", "SubagentStop", "PreCompact", "PostCompact", "Stop", "StopFailure", "SessionEnd"]
+const hookEvents = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PostToolBatch", "PermissionRequest", "PermissionDenied", "SubagentStart", "SubagentStop", "PreCompact", "PostCompact", "Notification", "Stop", "StopFailure", "SessionEnd"]
 
 export type Scope = "user" | "local"
 

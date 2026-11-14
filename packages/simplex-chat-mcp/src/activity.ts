@@ -84,6 +84,9 @@ export class Activity {
         return
       case "UserPromptSubmit":
         return this.clear(session)
+      case "Notification":
+        if (textOf(event, "notification_type") === "idle_prompt") this.endTurn(session)
+        return
       case "Stop":
       case "StopFailure":
       case "SessionEnd":

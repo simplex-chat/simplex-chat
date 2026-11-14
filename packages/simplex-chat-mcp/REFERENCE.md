@@ -176,7 +176,7 @@ When `claude mcp add-json` succeeds, `register` adds the [status hooks](#status-
 - `user`: `settings.json` in `CLAUDE_CONFIG_DIR`, or in `~/.claude` when it is unset or empty;
 - `local`: `.claude/settings.local.json` in the project folder.
 
-The hooks are one group without a matcher for each of the events `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`, `PermissionRequest`, `PermissionDenied`, `SubagentStart`, `SubagentStop`, `PreCompact`, `PostCompact`, `Stop`, `StopFailure` and `SessionEnd`, with this handler:
+The hooks are one group without a matcher for each of the events `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`, `PermissionRequest`, `PermissionDenied`, `SubagentStart`, `SubagentStop`, `PreCompact`, `PostCompact`, `Notification`, `Stop`, `StopFailure` and `SessionEnd`, with this handler:
 
 ```
 {"type": "command", "command": "curl", "args": ["-q", "--noproxy", "*", "-s", "-m", "2", "-o", "/dev/null", "-H", "@/home/alice/.simplex-mcp/my-agent/hook-headers", "-H", "Content-Type: application/json", "--data-binary", "@-", "http://127.0.0.1:5226/hook"], "async": true}
@@ -198,7 +198,7 @@ invalid settings file      Added to Claude Code: scope user, server simplex-my-a
                            valid settings file; add these status hooks to it: {"hooks":{...}}
 ```
 
-A settings file is invalid when it is not a JSON object, when its `hooks` is neither an object nor `null`, or when the value of one of the 14 events above in `hooks` is not an array; `register` then leaves it unchanged. At each of these errors `register` exits with code 1.
+A settings file is invalid when it is not a JSON object, when its `hooks` is neither an object nor `null`, or when the value of one of the 15 events above in `hooks` is not an array; `register` then leaves it unchanged. At each of these errors `register` exits with code 1.
 
 The token is created at the agent's first start and saved in its data folder; every start writes it to `headers.json` and `hook-headers`. `serve my-agent --new-token` replaces it, and Claude Code sends the new token from its next connection, and curl from its next post, without a new `register`.
 
@@ -368,7 +368,7 @@ The apps show it under the header `LIVE`. The first line is the status line: a f
 | `reading the prompt with MODEL, N tokens read` | `--inference`: a model reads the prompt |
 | `generating with MODEL, N tokens/s` | `--inference`: a model generates |
 | `waiting for approval` | the agent waits in a call for your decision on a card |
-| `waiting for permission in Claude Code` | from Claude Code's permission prompt to the end of a tool call, a batch or the turn of its session ([Status hooks](#status-hooks)), so also during the allowed call |
+| `waiting for permission in Claude Code` | from Claude Code's permission prompt to the end of a tool call, a batch or the turn of its session ([Status hooks](#status-hooks)), so also during the allowed call; after a refusal in the prompt, to Claude Code's idle notification |
 | `using TOOL` | the agent runs `connect`, `send`, `download`, `list` or `leave`; TOOL is the latest of them |
 | `compacting the conversation` | Claude Code compacts the conversation |
 | `running a command`, `reading FILE`, `editing FILE`, `searching files`, `searching the web` or `using NAME` | Claude Code runs a tool; the latest running tool is named, as the next table shows |
@@ -432,8 +432,8 @@ Notifications, by each recipient's apps:
 With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-agent-to-claude-code)), Claude Code passes its events to curl, which posts them to `http://127.0.0.1:PORT/hook` of the agent's server, with the token.
 
 - The server follows a session of Claude Code from its first event with a tool of this agent, such as `mcp__simplex-my-agent__receive`, and ignores the events of other sessions. It follows at most 16 sessions, and drops the oldest one with its state.
-- A followed session runs a turn from its first event and from each `UserPromptSubmit`, until its `Stop`, `StopFailure` or `SessionEnd`. At the end of a turn after which no followed session runs a turn, while the agent runs no call, the server deletes the status messages, except those with the label `received, waiting for the agent`.
-- Of each event, the server uses only `hook_event_name`, `session_id`, `tool_name`, `tool_use_id`, `agent_id`, `agent_type`, and the base name of `tool_input.file_path` or `tool_input.notebook_path`. The rest of the event, prompts, commands, file contents and tool results included, is discarded after parsing; nothing of it is saved or logged.
+- A followed session runs a turn from its first event and from each `UserPromptSubmit`, until its `Stop`, `StopFailure`, `SessionEnd` or idle notification. At the end of a turn after which no followed session runs a turn, while the agent runs no call, the server deletes the status messages, except those with the label `received, waiting for the agent`.
+- Of each event, the server uses only `hook_event_name`, `session_id`, `tool_name`, `tool_use_id`, `agent_id`, `agent_type`, `notification_type`, and the base name of `tool_input.file_path` or `tool_input.notebook_path`. The rest of the event, prompts, commands, file contents and tool results included, is discarded after parsing; nothing of it is saved or logged.
 - A file's base name is kept only when it consists of 1 to 64 ASCII letters, digits and characters of `_.+@-`. Tool names and subagent types follow the same rule, with `_` and `-` as the only characters besides ASCII letters and digits.
 - At most 64 running tools and 64 running subagents are kept, and 256 IDs of ended tool calls; the oldest is dropped.
 
@@ -449,7 +449,9 @@ With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-age
 | `PostCompact` | compaction ended |
 | `UserPromptSubmit` | all its tools, subagents, permission prompt and compaction ended; a turn running |
 | `Stop`, `StopFailure`, `SessionEnd` | all its tools, subagents, permission prompt and compaction ended; its turn ended |
+| `Notification` with `notification_type` `idle_prompt`, Claude Code's idle notification | as `Stop` |
 
+- After a refusal in Claude Code's permission prompt, Claude Code 2.1.281 sends none of the other end events of the table. The label `waiting for permission in Claude Code` is then shown until Claude Code's idle notification, about one minute after the end of the turn. Claude Code sends that notification only when its terminal received no input since the end of the turn and no dialog of Claude Code is open; otherwise the label is shown until the session's next prompt or its end.
 - Claude Code runs curl in the background and hides the outcome outside verbose mode (Ctrl+O), so the failures of the posts while the server is stopped are hidden too.
 - The server checks the token, `Host` and `Origin` of a request to `/hook` as for `/mcp`. It answers a `POST` with 204, or with 411 without Content-Length, 413 for a body over 4 MiB and 400 for invalid JSON, and another method with 405.
 

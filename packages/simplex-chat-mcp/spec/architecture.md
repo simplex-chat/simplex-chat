@@ -99,7 +99,7 @@ Data flow of a hook event:
 2. The server checks Host, Origin, token and path, then method, `Content-Length` and JSON, passes the event to `Activity.record` and answers 204 ([`startHttp`, `receiveHook`](../src/http.ts), [`startAgent`](../src/serve.ts)).
 3. The fields of the event are kept for agent sessions only ([`Activity.record`](../src/activity.ts), [API 5.2](api.md#52-events)).
 4. At each tick with a label read, `Activity.state` is read by `Statuses` ([`Statuses.label`](../src/status.ts), [`Activity.state`](../src/activity.ts)).
-5. At a `Stop`, `StopFailure` or `SessionEnd` after which no agent session runs a turn, `Statuses.turnsEnded` is called, and it ends the statuses other than waiting ones while no call runs ([`Activity.endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts)).
+5. At a `Stop`, `StopFailure`, `SessionEnd` or idle notification after which no agent session runs a turn, `Statuses.turnsEnded` is called, and it ends the statuses other than waiting ones while no call runs ([`Activity.endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts)).
 
 ---
 
@@ -320,7 +320,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 
 | Symbol | Contents |
 |---|---|
-| <a id="register-hookevents"></a>`hookEvents` | the 14 events of the status hooks |
+| <a id="register-hookevents"></a>`hookEvents` | the 15 events of the status hooks |
 | <a id="register-register"></a>`register` | `claude mcp remove`, then `claude mcp add-json`, then the status hooks merged into the settings file of the scope |
 | <a id="register-registryentry"></a>`registryEntry` | `{type, url, headersHelper, timeout}` |
 | <a id="register-statushooks"></a>`statusHooks` | one matcher group per event with the curl handler |
@@ -860,7 +860,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | tool names and subagent types are kept only when they match `^[\w-]{1,64}$`, and file names only as base names that match `^[\w.+@-]{1,64}$`; each is shown in a code span, and a backtick matches neither pattern; the other Claude Code labels are fixed texts | [`namePattern`, `filePattern`, `Activity.record`, `fileName`](../src/activity.ts), [`toolLabels`, `fileVerbs`, `otherLabel`, `toolLabel`, `named`](../src/status.ts) |
 | the base names of the files that Claude Code reads and edits are shown in the status message, so in a group every member sees them | [`toolLabel`](../src/status.ts) |
 | `/hook` is guarded by the token of `/mcp`, so a local process without the token can't change the labels; a body is read only within 4 MiB by `Content-Length` | [`startHttp`, `receiveHook`](../src/http.ts) |
-| a running tool whose end event is lost is removed at the next `PostToolBatch` of its agent; every entry of a session is removed at its `UserPromptSubmit`, `Stop`, `StopFailure` or `SessionEnd` | [`Activity.record`, `clear`](../src/activity.ts) |
+| a running tool whose end event is lost is removed at the next `PostToolBatch` of its agent; every entry of a session is removed at its `UserPromptSubmit`, `Stop`, `StopFailure`, `SessionEnd` or idle notification, the end of a refused permission prompt included | [`Activity.record`, `clear`, `endTurn`](../src/activity.ts) |
 | status messages are deleted at the end of the turns only by the end events of agent sessions, while no call runs; a waiting status is kept, so a received message stays shown as received | [`Activity.record`, `endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts) |
 | poll error texts are folded to one line; the parser's text is replaced by `invalid JSON` | [`get`, `bodyJson`](../src/inference.ts) |
 | URL is `http` or `https` without user name and password; the key is read from the environment, accepted with visible ASCII characters only, and sent to URL only | [`inferenceUrl`](../src/cli.ts), [`inferenceKey`](../src/serve.ts), [`get`](../src/inference.ts) |
