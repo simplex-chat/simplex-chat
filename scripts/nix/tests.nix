@@ -98,16 +98,7 @@ let
 
   # These asserts do not depend on the build host. One Hydra system runs them.
   scope = lib.optionalAttrs (system == "x86_64-linux") {
-    "test:android-iserv-scope" = record "android-iserv-scope" (import ./check-android-iserv-scope.nix);
-    "test:android-pthread-scope" = record "android-pthread-scope" (import ./check-android-pthread-scope.nix);
-    "test:mingw-stdio-scope" = record "mingw-stdio-scope" (import ./check-mingw-stdio-scope.nix);
-    "test:musl-iserv-scope" = record "musl-iserv-scope" (import ./check-musl-iserv-scope.nix { inherit lib; });
-    "test:musl-rts-scope" = record "musl-rts-scope" (import ./check-musl-rts-scope.nix { inherit lib haskellNix; });
-    "test:windows-rts-scope" = record "windows-rts-scope" (import ./check-windows-rts-scope.nix { inherit lib; });
-    "test:windows-crypt32" = record "windows-crypt32" (import ./check-windows-crypt32.nix { inherit lib haskellNix; });
     "test:project-ghc-options" = record "project-ghc-options" (import ./check-project-ghc-options.nix { inherit lib haskellNix; });
-    "test:darwin-bitvec-runtime" = record "darwin-bitvec-runtime" (import ./check-darwin-bitvec-runtime.nix);
-    "test:darwin-bitvec-resolver" = record "darwin-bitvec-resolver" (import ./check-darwin-bitvec-resolver.nix { inherit lib haskellNix; });
   };
 
   linuxHeavy = lib.optionalAttrs (system == "x86_64-linux") {

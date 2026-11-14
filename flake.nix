@@ -1,7 +1,7 @@
 {
   description = "nix flake for simplex-chat";
   # hkm/stable-haskell: use the same compiler and boot libraries on every target.
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/fd96dff55bcf6f81ccb96872f16a2ec3970edab0";
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/ae3b6dfec6a1591b74c74e5849c9a39c504a60e6";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs";
   inputs.mac2ios.url = "github:zw3rk/mobile-core-tools";
   inputs.hackage = {
@@ -19,7 +19,7 @@
         pkgsCross = prev.pkgsCross // {
           aarch64-android-prebuilt = import prev.path {
             inherit system;
-            overlays = prev.overlays ++ [ (import ./scripts/nix/android-iconv-overlay.nix) ];
+            overlays = prev.overlays;
             # Permit the SDK/NDK's unfree packages only in these Android sets.
             # Some SDK fetchers use unprefixed names such as platform-tools.
             config = prev.config // { allowUnfree = true; };
@@ -27,7 +27,7 @@
           };
           armv7a-android-prebuilt = import prev.path {
             inherit system;
-            overlays = prev.overlays ++ [ (import ./scripts/nix/android-iconv-overlay.nix) ];
+            overlays = prev.overlays;
             # Permit the SDK/NDK's unfree packages only in these Android sets.
             # Some SDK fetchers use unprefixed names such as platform-tools.
             config = prev.config // { allowUnfree = true; };
@@ -38,11 +38,7 @@
       # `appendOverlays` with a singleton is identical to `extend`.
       let nativePackages = import ./scripts/nix/native-packages.nix { inherit haskellNix; }; in
       let compilerCache = import ./scripts/nix/compiler-cache-overlay.nix { inherit haskellNix; }; in
-      let androidEmulator = import ./scripts/nix/android-emulator-overlay.nix { inherit haskellNix; }; in
-      let muslIserv = import ./scripts/nix/musl-iserv-overlay.nix; in
-      let windowsRts = import ./scripts/nix/windows-rts-overlay.nix; in
-      let mingwStdio = import ./scripts/nix/mingw-stdio-overlay.nix; in
-      let pkgs = (nativePackages system).appendOverlays [android26 compilerCache androidEmulator muslIserv windowsRts mingwStdio]; in
+      let pkgs = (nativePackages system).appendOverlays [android26 compilerCache]; in
       let compilerSelection = import ./scripts/nix/compiler-selection.nix { inherit haskellNix; }; in
       let mobileRuntime = import ./scripts/nix/mobile-runtime.nix { inherit pkgs compilerSelection; }; in
       let drv' = { extra-modules, pkgs', package-flags ? {}, package-ghc-options ? {}, mobile ? false, ... }:
@@ -56,32 +52,12 @@
         packageOptions = package-ghc-options;
       };
       packageGhcOptions = projectGhcOptions.packages;
-      # Cabal 3.17 drops repeated option names in hsc2hs arguments. The
-      # Darwin archives need both -framework Security and CoreFoundation.
-      projectPkgs = if mobile && pkgs'.stdenv.hostPlatform.isDarwin
-        then pkgs'.appendOverlays [ (import ./scripts/nix/cabal-tool-overlay.nix) ]
-        else pkgs';
-      in projectPkgs.haskell-nix.project ({ config, ... }:
+      in pkgs'.haskell-nix.project ({ config, ... }:
       let
-        # Keep the patched Windows x509 metadata in the original plan too;
-        # post-plan Cabal edits can change native package unit IDs.
-        androidPthreads = import ./scripts/nix/android-pthread-libraries.nix {
-          pkgs = config.evalPackages;
-          hostPlatform = pkgs'.stdenv.hostPlatform;
-        };
-        darwinBitvec = import ./scripts/nix/darwin-bitvec-runtime.nix {
-          pkgs = config.evalPackages;
-          hostPlatform = pkgs'.stdenv.hostPlatform;
-          cc = pkgs'.stdenv.cc;
-        };
         patchedPackageSources = pkgs.lib.optional (
           config.compiler-nix-name == "ghc914-sh"
           && pkgs'.stdenv.buildPlatform.config != pkgs'.stdenv.hostPlatform.config
-        ) (import ./scripts/nix/composition-source.nix { pkgs = config.evalPackages; })
-        ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isWindows
-          (import ./scripts/nix/windows-x509-source.nix { pkgs = config.evalPackages; inherit haskellNix; })
-        ++ androidPthreads.packageSources
-        ++ darwinBitvec.packageSources;
+        ) (import ./scripts/nix/composition-source.nix { pkgs = config.evalPackages; });
       in {
         compiler-nix-name = compilerNixName;
         inherit compilerSelection;
@@ -111,7 +87,7 @@
           -- function types still need ghc-internal in a cross slice's DB.
           -- Patch before planning so the v2 slice declares the same dependency.
           packages: ${pkgs.lib.concatStringsSep " " (map toString patchedPackageSources)}
-        '' + androidPthreads.cabalProjectLocal + darwinBitvec.cabalProjectLocal + pkgs.lib.optionalString (mobile && pkgs'.stdenv.hostPlatform.isDarwin && pkgs'.stdenv.hostPlatform.isAarch64) ''
+        '' + pkgs.lib.optionalString (mobile && pkgs'.stdenv.hostPlatform.isDarwin && pkgs'.stdenv.hostPlatform.isAarch64) ''
           -- Keep every app C/C++ stub compatible with the same iOS ARM baseline.
           package *
             ghc-options: -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc -optcxx-mcpu=apple-a7 -optcxx-march=armv8-a+norcpc
@@ -143,7 +119,8 @@
               else [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ]
                 ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid
                   ./scripts/nix/direct-sqlcipher-android-log.patch
-                ++ androidPthreads.directSqlcipherPatches
+                ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid
+                  ./scripts/nix/direct-sqlcipher-android-pthread.patch
                 ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isMusl
                   ./scripts/nix/direct-sqlcipher-static-libraries.patch;
           } // pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isDarwin {
@@ -170,15 +147,7 @@
             }
           )
 
-          ] ++ darwinBitvec.modules ++ [
-            (import ./scripts/nix/windows-crypt32.nix {
-              hostPlatform = pkgs'.stdenv.hostPlatform;
-              inherit compilerNixName;
-            })
           ] ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isWindows ({ lib, ... }: {
-            # The preplanned local source already applies the modern patch.
-            # Avoid applying it again after v2 source packaging.
-            packages.crypton-x509-system.patches = lib.mkForce [];
             # HANDLE needs a signed pointer-width constant. Convert via Int:
             # Basement's RebindableSyntax has no HasNegation IntPtr instance.
             packages.basement.patches = lib.mkAfter [ ./scripts/nix/basement-windows-intptr.patch ];

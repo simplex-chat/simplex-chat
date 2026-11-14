@@ -21,10 +21,15 @@ let
     crossSystem = buildPkgs.lib.systems.examples.armv7a-android-prebuilt
       // { androidSdkVersion = "26"; };
   };
-  emulator = import ./android-arm32-qemu.nix {
-    haskellNix = haskellNix';
-    inherit pkgs;
+  emulator = import (haskellNix' + "/overlays/qemu-linux-user.nix") {
+    qemu = pkgs.qemu.override {
+      userOnly = true;
+      hostCpuTargets = [ "arm-linux-user" ];
+    };
+    inherit (pkgs) lib;
+    buildPlatform = pkgs.stdenv.hostPlatform;
     hostPlatform = target.stdenv.hostPlatform;
+    qemuSuffix = "arm";
   };
   payload = buildPkgs.runCommand "android-arm32-personality-payload" {} ''
     mkdir -p "$out"
