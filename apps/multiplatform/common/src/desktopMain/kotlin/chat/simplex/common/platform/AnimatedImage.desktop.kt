@@ -122,10 +122,10 @@ private fun gifFrameCount(data: ByteArray): Int {
     return pos + 1
   }
   fun afterApplicationExtension(start: Int): Int {
-    val loopCount = start + 12
+    val loopCountAt = start + 12
     val isLoopExtension = byte(start) == 11 &&
       (data.startsWith("NETSCAPE2.0", offset = start + 1) || data.startsWith("ANIMEXTS1.0", offset = start + 1))
-    return afterSubBlocks(if (isLoopExtension && byte(loopCount) == 0) loopCount + 1 else start)
+    return afterSubBlocks(if (isLoopExtension && byte(loopCountAt) == 0) loopCountAt + 1 else start)
   }
   var pos = 13 + colorTableSize(byte(10))
   var frames = 0
