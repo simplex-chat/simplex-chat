@@ -676,6 +676,15 @@ testDelistedOwnerRemoved ps =
                  "The group is no longer listed in the directory."
                ]
         superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is de-listed (group owner is removed)."
+        bob #> "@'SimpleX Directory' /delete 1:privacy"
+        bob <# "'SimpleX Directory'> > /delete 1:privacy"
+        bob <## "      You must have a group owner role to view or change the settings of the group ID 1 (privacy)"
+        bob #> "@'SimpleX Directory' /role 1 observer"
+        bob <# "'SimpleX Directory'> > /role 1 observer"
+        bob <## "      You must have a group owner role to view or change the settings of the group ID 1 (privacy)"
+        bob #> "@'SimpleX Directory' /filter 1 off"
+        bob <# "'SimpleX Directory'> > /filter 1 off"
+        bob <## "      You must have a group owner role to view or change the settings of the group ID 1 (privacy)"
         connectViaMerged cath dsLink "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
         groupNotFound cath "privacy"
 
@@ -841,6 +850,12 @@ testDelistedRoleChanges ps =
                ]
         superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is de-listed (user role is set to admin)."
         groupNotFound cath "privacy"
+        bob #> "@'SimpleX Directory' /role 1 observer"
+        bob <# "'SimpleX Directory'> > /role 1 observer"
+        bob <## "      You must have a group owner role to view or change the settings of the group ID 1 (privacy)"
+        bob #> "@'SimpleX Directory' /delete 1:privacy"
+        bob <# "'SimpleX Directory'> > /delete 1:privacy"
+        bob <## "      You must have a group owner role to view or change the settings of the group ID 1 (privacy)"
         -- re-listed if owner role changed back without profile changes
         cath ##> "/mr privacy bob owner"
         cath <## "#privacy: you changed the role of bob to owner (signed)"
@@ -2356,6 +2371,9 @@ testDeleteChannelRegistration ps =
         superUser <## "      Channel approved!"
         bob <# ("'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!")
         bob <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      This command is not available for public groups."
         -- owner deletes registration
         bob #> "@'SimpleX Directory' /delete 1:news"
         bob

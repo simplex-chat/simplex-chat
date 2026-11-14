@@ -1102,7 +1102,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           Left e -> sendReply $ "Error reading groups: " <> T.pack e
           Right gs -> sendGroupsInfo ct ciId isAdmin (gs, length gs)
       DCDeleteGroup gId gName ->
-        (if isAdmin then withGroupAndReg sendReply else withUserGroupReg) gId gName $ \g@GroupInfo {groupProfile = GroupProfile {displayName, publicGroup = pg_}} GroupReg {dbGroupId} -> do
+        (if isAdmin then withGroupAndReg sendReply else withOwnerGroupReg) gId gName $ \g@GroupInfo {groupProfile = GroupProfile {displayName, publicGroup = pg_}} GroupReg {dbGroupId} -> do
           let gt = maybe "group" groupTypeStr' pg_
           delGroupReg cc dbGroupId >>= \case
             Right () -> do
@@ -1110,7 +1110,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
               when (isJust pg_) $ leavePublicGroup g
             Left e -> sendReply $ "Error deleting " <> gt <> " " <> displayName <> ": " <> T.pack e
       DCMemberRole gId gName_ mRole_ ->
-        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g gr ->
+        (if isAdmin then withGroupAndReg_ sendReply else withOwnerGroupReg_) gId gName_ $ \g gr ->
           ifPublicGroup g (sendReply "This command is not available for public groups.") $ do
           let GroupInfo {groupProfile = GroupProfile {displayName = n}} = g
           case mRole_ of
@@ -1134,7 +1134,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
             GRSActive -> err
             _ -> "The group link for " <> n <> " is created when the group is approved."
       DCGroupFilter gId gName_ acceptance_ ->
-        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g _gr ->
+        (if isAdmin then withGroupAndReg_ sendReply else withOwnerGroupReg_) gId gName_ $ \g _gr ->
           ifPublicGroup g (sendReply "This command is not available for public groups.") $ do
           let GroupInfo {groupProfile = GroupProfile {displayName = n}} = g
               a = groupMemberAcceptance g
@@ -1230,6 +1230,12 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
             Right (g@GroupInfo {groupProfile = GroupProfile {displayName}}, gr)
               | maybe True (displayName ==) gName_ -> action g gr
               | otherwise -> sendReply $ "Group ID " <> tshow ugrId <> " has the display name " <> displayName
+        withOwnerGroupReg ugrId = withOwnerGroupReg_ ugrId . Just
+        withOwnerGroupReg_ ugrId gName_ action =
+          withUserGroupReg_ ugrId gName_ $ \g@GroupInfo {groupId} gr ->
+            getOwnerGroupMember groupId gr >>= \case
+              Right m@GroupMember {memberRole} | memberRole == GROwner && not (memberRemoved m) -> action g gr
+              _ -> sendReply $ "You must have a group **owner** role to view or change the settings of the group " <> userGroupReference gr g
         sendReply = mkSendReply ct ciId
         sendFoundListedGroups searchType lastGroup_ notFound replyStr =
           searchListedGroups cc user searchType lastGroup_ searchResults >>= \case
