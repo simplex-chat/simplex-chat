@@ -50,6 +50,8 @@ You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://si
 
 The agent is tested with Claude Code. Tell us which other apps and models you want to use in [an issue](https://github.com/simplex-chat/simplex-chat/issues), or contribute.
 
+You can switch the model of an agent that a script runs in opencode: start `serve` with `--models` and `--model-file`, then send `/model` in its agent control chat and tap one of the models you listed ([details](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md#the-agents-model)).
+
 ## Reference
 
 [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md) covers the plugin's options, recovery and security. It also explains shared settings for several machines or containers, and running the agent as an MCP server without the channel.

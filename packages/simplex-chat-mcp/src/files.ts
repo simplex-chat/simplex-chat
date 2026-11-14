@@ -27,6 +27,15 @@ export interface ServerFile {
   expireHours: number
 }
 
+// spec: spec/architecture.md#files-modelentry
+export type ModelEntry = {name: string; model: string}
+
+// spec: spec/architecture.md#files-modelentry
+export type ModelOptions = {models: ModelEntry[]; file: string}
+
+// spec: spec/architecture.md#files-modelentry
+export type ModelSelection = ModelOptions & {selected: ModelEntry}
+
 export class LockedError extends ExitError {}
 
 // spec: spec/architecture.md#files-dataroot
@@ -168,6 +177,21 @@ export function writeServerFile(dir: string, server: ServerFile): void {
 export function readServerFile(dir: string): ServerFile | undefined {
   const file = join(dir, "server.json")
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined
+}
+
+// spec: spec/architecture.md#files-modelatstart
+export function modelAtStart({models, file}: ModelOptions): ModelSelection {
+  const line = existsSync(file) ? readFileSync(file, "utf8").split("\n")[0] : undefined
+  const selected = models.find(({model}) => model === line) ?? models[0]
+  if (selected.model !== line) writeModelFile(file, selected.model)
+  return {models, file, selected}
+}
+
+// spec: spec/architecture.md#files-writemodelfile
+export function writeModelFile(file: string, model: string): void {
+  writeFileSync(`${file}.part`, `${model}\n`, {mode: 0o644})
+  if (process.platform !== "win32") chmodSync(`${file}.part`, 0o644)
+  renameSync(`${file}.part`, file)
 }
 
 // spec: spec/architecture.md#files-saveheldtitles

@@ -27,7 +27,11 @@ Until the package is published, the printed hint `npx -y @simplex-chat/mcp regis
 
 ### The tests of 0.2
 
-`serve` keeps the behaviour of 0.2, except the `reply_to` of a message: it has the quoted message's sender, type and text, and is present also without an ID. The 274 unit tests of 0.2 and its 13 end-to-end tests in `scenarios` and `mcp`, from commit be668564d, pass unchanged on this source, except one expectation: `reply_to` in the unit test "describes a group message" is now `{chat: "#15", item: 30, text: ""}`. They run in a copy of the package with the `test` folder of 0.2. Run these commands from the repository's root, with `SMP_SERVER` and `XFTP_SERVER` set as above:
+`serve` keeps the behaviour of 0.2, except the `reply_to` of a message, and the reply with the list of commands. `reply_to` has the quoted message's sender, type and text, and is present also without an ID. The reply with the list of commands also names `/model`. The 274 unit tests of 0.2 and its 13 end-to-end tests in `scenarios` and `mcp`, from commit be668564d, pass unchanged on this source, except the tests of these two changes:
+- `reply_to` in the unit test "describes a group message" is now `{chat: "#15", item: 30, text: ""}`.
+- The 4 unit tests in `commands.test.ts` that compare the reply with the list of commands.
+
+They run in a copy of the package with the `test` folder of 0.2. Run these commands from the repository's root, with `SMP_SERVER` and `XFTP_SERVER` set as above:
 
 ```
 mkdir -p /tmp/v02
@@ -105,6 +109,7 @@ Stop and restart:
 - Stop the server while a card waits: the terminal prints `Stopping: sending 1 cancelled card, up to 10 s. Ctrl-C to stop now.`, and the card ends with `Cancelled: the server stopped.` A second Ctrl-C during the wait stops the server at once. With no card waiting, Ctrl-C stops it at once. After a restart, `/approve` of that number replies `Action N is not pending.`, and the next card has the next number.
 - A second `serve my-agent` on the same data folder exits with `Another server uses ... (PID N). If no server runs, remove .../lock.` A port in use exits with `Port 5226 is in use. Start with --port N.`, before any link is printed.
 - Restart with `--new-token`, without `register`: after the reconnection, `list` returns the chats. Checked with `claude -p` and an `--mcp-config` entry with `headersHelper`, Claude Code 2.1.302, 2026-10-18.
+- `mkdir /tmp/agent-model`, then restart with `--models gemma=llama-swap/gemma-4-26b,coder=llama-swap/qwen3-coder-next --model-file /tmp/agent-model/model`: the start prints `Model: gemma (llama-swap/gemma-4-26b), in /tmp/agent-model/model`, and the command menu has `/model`. Tap it: ``The agent's model is `gemma`: `llama-swap/gemma-4-26b`.`` and `/model coder`. Tap `/model coder`: ``The agent's model is `coder`: `llama-swap/qwen3-coder-next`. The agent restarts with it. /model gemma``; the terminal prints `Model set to coder (llama-swap/qwen3-coder-next) by Alice.`, and `cat /tmp/agent-model/model` prints `llama-swap/qwen3-coder-next`. A restart with the same options prints `Model: coder (llama-swap/qwen3-coder-next), in /tmp/agent-model/model`; a restart without them removes `/model` from the menu, and `/model` then replies `This server runs without --models.`
 
 ## Claude Code checks
 

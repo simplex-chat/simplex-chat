@@ -1559,7 +1559,7 @@ describe("session channel", () => {
       {prompt: {text: "//compact\nthen go on", from: "Dan", item: 53}},
       {prompt: {text: "/!ls\nthen go on", from: "Dan", item: 54}},
     ])
-    expect(chat.replies).toEqual([unknownCommand, unknownCommand, unknownCommand, unknownCommand])
+    expect(chat.replies).toEqual(["This server runs without --models.", unknownCommand, unknownCommand, unknownCommand])
     expect(answers(chat)).toEqual([43, 44, 47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]))
   })
 

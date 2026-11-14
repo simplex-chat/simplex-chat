@@ -20,11 +20,11 @@
 
 The SimpleX core (libsimplex, release `core-7.1.3.0`) runs inside the same Node.js process, loaded by the `simplex-chat` library 7.1.3. The core keeps the profile, chats and connections in two SQLite databases of the data folder, and sends and receives files through XFTP servers. The MCP protocol is served by the MCP TypeScript SDK (`@modelcontextprotocol/server` 2.3.1 and `@modelcontextprotocol/node` 2.1.1).
 
-`connect`, `send`, `download` and `leave` are actions. In mode `requests` the server posts each action as a card in the agent control chat, a SimpleX group created and owned by the agent's profile. An owner approves or rejects the card with a command in that chat, and the server performs the action after the approval. An owner can also approve all messages to one chat, or all downloads of files on known servers from one chat, in advance. On a download card, the owner lets the agent receive the file, or has it forwarded only to the owner. In mode `host` the server performs actions at once and marks the four tools for the host's own confirmation.
+`connect`, `send`, `download` and `leave` are actions. In mode `requests` the server posts each action as a card in the agent control chat, a SimpleX group created and owned by the agent's profile. An owner approves or rejects the card with a command in that chat, and the server performs the action after the approval. An owner can also approve all messages to one chat, or all downloads of files on known servers from one chat, in advance. On a download card, the owner lets the agent receive the file, or has it forwarded only to the owner. In mode `host` the server performs actions at once and marks the four tools for the host's own confirmation. With `--models`, an owner selects the agent's model with `/model`, and the server writes it to a file for the script that runs the agent in opencode.
 
 A tool call is held open by the server until the owner decides and, for `connect` and `send`, until the replies arrive, and for `download`, until the file is received or `wait` passes. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
 
-The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
+The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat. The selected model is stored only in the file of `--model-file`, outside the data folder.
 
 The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server. The session server forwards tool calls over a local socket to `simplex-mcp service`, one service per data root. Requests on the socket are HTTP/1.1 with a bearer token. The service runs two cores:
 - `Claude` is the profile that peers see. It holds the Main group, one group per session and the chats with peers. In a session's group it posts the answers, one line for each of Claude Code's own prompts, and one line for each summary of the session's context.
@@ -60,6 +60,7 @@ graph TD
   cli --> messages["messages.ts"]
   cli --> log["log.ts"]
   cli -.-> actions["actions.ts"]
+  cli -.-> files["files.ts"]
   serve --> control["control.ts"]
   serve --> tools["tools.ts"]
   serve --> actions
@@ -130,6 +131,7 @@ graph TD
   control --> messages
   control --> qr
   control --> log
+  control --> files
   control -.-> serve
   tools --> actions
   tools --> messages
@@ -177,7 +179,7 @@ graph TD
 | [`control.ts`](../src/control.ts) | agent control chat and session groups: link, owners, owner commands, cards, counter |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
 | [`core.ts`](../src/core.ts) | one SimpleX core: init, user, network config, temp folder, event buffer, profile update |
-| [`files.ts`](../src/files.ts) | data folders, lock, token, `headers.json`, `server.json`, session folders, socket path, service log |
+| [`files.ts`](../src/files.ts) | data folders, lock, token, `headers.json`, `server.json`, session folders, socket path, service log, the model file |
 | [`log.ts`](../src/log.ts) | log lines, error texts, shell quoting |
 | [`qr.ts`](../src/qr.ts) | QR code text: `small` and `large` for terminals, `plain` for the hook message |
 | [`version.ts`](../src/version.ts) | package version from `package.json` |
@@ -230,6 +232,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Item watch | [`src/messages.ts`](../src/messages.ts) | `ChatItemsWatch` |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts) | `register` |
 | Data folder files | [`src/files.ts`](../src/files.ts) | `createDataFolder`, `acquireLock` |
+| Model file | [`src/files.ts`](../src/files.ts) | `modelAtStart`, `writeModelFile` |
 | Session server | [`src/session.ts`](../src/session.ts) | `startSession` |
 | Session to service link | [`src/session.ts`](../src/session.ts) | `ServiceLink` |
 | Service start by a client | [`src/client.ts`](../src/client.ts) | `ServiceClient.ensureService` |

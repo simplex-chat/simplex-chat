@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-36.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16 and 37, and the Claude Code plugin in flows 17-36.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -64,6 +64,10 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 35. [A summary of the session's context](#35-a-summary-of-the-sessions-context)
 36. [The list of sessions](#36-the-list-of-sessions)
 
+`serve`, continued:
+
+37. [`/model`](#37-model)
+
 ---
 
 ## 1. First start and the owner joins
@@ -77,8 +81,9 @@ sequenceDiagram
   participant O as Owner
   P->>S: simplex-mcp serve my-agent --display-name "My Agent"
   S->>S: DATA mode 0700, lock, token, headers.json
+  S->>S: with --models: FILE read, or the first model written to it
   S->>C: ChatApi.init DATA/simplex
-  S->>P: version line, data folder, approval mode
+  S->>P: version line, data folder, approval mode, with --models the model line
   S->>C: apiGetActiveUser (none)
   S->>C: apiCreateActiveUser {displayName: "My Agent", fullName: "", peerType: agent}
   S->>C: apiSetNetworkConfig smpProxyMode always, smpProxyFallback allowProtected
@@ -116,8 +121,9 @@ Notes:
 - With `--qr-code small`, the line `If the QR code does not scan, ...` is printed after the link ([`Control.openLink`](../src/control.ts)).
 - Events that arrive before the HTTP listener starts are buffered and handled in order ([`bufferEvents`](../src/core.ts)).
 - The server runs `ownerJoined` for every `joinedGroupMember` event of a human without `--owners`, and the link is deleted in that handler ([`Control.onEvent`, `ownerJoined`](../src/control.ts)).
+- With `--models`, the model line is `Model: NAME (PROVIDER/MODEL), in FILE`, and `load` sets the menu with `/model` by one `apiUpdateGroupProfile`, as the new group has the menu without it ([`startServer`](../src/serve.ts), [`Control.load`, `createControlChat`](../src/control.ts)).
 
-Source: [`main`, `readStdin`](../src/cli.ts), [`startServer`, `startAgent`](../src/serve.ts), [`prepareCore`, `deletePresetContacts`, `updatedUser`, `bufferEvents`, `setTempFolder`](../src/core.ts), [`createDataFolder`, `acquireLock`, `releaseLock`, `serverToken`, `headersFile`, `writeHeadersFile`, `writeServerFile`](../src/files.ts), [`startHttp`](../src/http.ts), [`Control.load`, `rename`, `describe`, `updateProfile`, `start`, `startOwners`, `openLink`, `deleteLink`, `findControlGroup`, `controlDataOf`, `createControlChat`, `createGroup`](../src/control.ts).
+Source: [`main`, `readStdin`](../src/cli.ts), [`startServer`, `startAgent`](../src/serve.ts), [`prepareCore`, `deletePresetContacts`, `updatedUser`, `bufferEvents`, `setTempFolder`](../src/core.ts), [`createDataFolder`, `acquireLock`, `releaseLock`, `serverToken`, `headersFile`, `writeHeadersFile`, `writeServerFile`, `modelAtStart`, `writeModelFile`](../src/files.ts), [`startHttp`](../src/http.ts), [`Control.load`, `rename`, `describe`, `updateProfile`, `start`, `startOwners`, `openLink`, `deleteLink`, `findControlGroup`, `controlDataOf`, `createControlChat`, `createGroup`](../src/control.ts).
 
 ---
 
@@ -958,7 +964,7 @@ sequenceDiagram
 
 Notes:
 
-- Every message of a member other than `User` is a prompt, however the member joined, except a one-line `/` text. Claude answers a one-line `/` text of a moderator, member or author with `Only admins and owners of this group can send / commands.` From an admin or owner, a one-line `/` text is a command of the group. For one outside the group's requests, such as `/model sonnet`, the reply is `Unknown command.` ([`Session.onMessage`, `prompt`, `refusesCommand`, `approves`](../src/hub.ts), [`Control.ownerCommand`, `parseCommand`](../src/control.ts)).
+- Every message of a member other than `User` is a prompt, however the member joined, except a one-line `/` text. Claude answers a one-line `/` text of a moderator, member or author with `Only admins and owners of this group can send / commands.` From an admin or owner, a one-line `/` text is a command of the group. For one outside the group's requests, such as `/compact`, the reply is `Unknown command.` `/model` and `/model NAME` are requests, and their reply is `This server runs without --models.` ([`Session.onMessage`, `prompt`, `refusesCommand`, `approves`](../src/hub.ts), [`Control.ownerCommand`, `switchModel`, `parseCommand`](../src/control.ts)).
 - The session handles messages in arrival order. So a prompt is delivered after the file of an earlier prompt. The reply to a one-line `/` text of a moderator, member or author is posted after the earlier prompts ([`Session.onMessage`, `queue`](../src/hub.ts)).
 - After a service start, a prompt that arrives before its session attaches again is held up to 30 s from the hub's open. So a prompt sent while the service was stopped is still delivered to the session ([`Session.deliver`, `Hub.open`](../src/hub.ts)).
 - In a session started without the channel flag, Claude Code receives the notification and drops it.
@@ -1691,3 +1697,37 @@ Notes:
 - An edit sends no SMP notification, and the apps alert for an edit only when it creates the item. The list's posts carry `priority: -1`; an app without silent messages alerts for them.
 
 Source: [`Hub.showSessions`, `Hub.sessionsText`, `Session.readRecord`, `Session.stateLine`](../src/hub.ts), [`MainGroup.showList`](../src/main-group.ts).
+
+---
+
+## 37. `/model`
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant K as Control
+  participant C as Core
+  participant O as Owner
+  participant F as FILE
+  Note over P,F: the person started serve with --models gemma=llama-swap/gemma-4-26b,coder=llama-swap/qwen3-coder-next,large=hosted/large-latest --model-file FILE
+  O->>C: /model
+  C->>K: newChatItems
+  K->>O: The agent's model is `gemma`: `llama-swap/gemma-4-26b`. /'model coder' /'model large'
+  O->>C: /model coder
+  C->>K: newChatItems
+  K->>F: FILE.part: llama-swap/qwen3-coder-next, mode 0644, renamed to FILE
+  K->>P: Model set to coder (llama-swap/qwen3-coder-next) by Alice.
+  K->>O: The agent's model is `coder`: `llama-swap/qwen3-coder-next`. The agent restarts with it. /'model gemma'
+  Note over F: the script that runs opencode reads FILE
+```
+
+Notes:
+
+- `/model` and `/model NAME` are accepted from approvers, in both modes; each reply quotes the command ([`Control.onMessage`, `ownerCommand`](../src/control.ts)).
+- `/model` with two or more words gets the commands reply ([`Control.ownerCommand`, `ownerRequest`](../src/control.ts)).
+- A NAME outside `--models`, also a PROVIDER/MODEL value, gets `No such model. /model shows the models.`, and the selected NAME gets ``The agent's model is already `NAME`.``; FILE is not written ([`Control.switchModel`](../src/control.ts)).
+- After a failed write of FILE, the selection is unchanged, no reply is sent, and the error is logged as `control chat command: ERROR` ([`Control.onMessage`, `switchModel`](../src/control.ts)).
+- At the next start, the model in the first line of FILE is selected again when it is a PROVIDER/MODEL of `--models` ([`modelAtStart`](../src/files.ts)).
+- The script that runs opencode is outside the server; its contract is in [Reference](../REFERENCE.md#the-agents-model).
+
+Source: [`Control.onMessage`, `switchModel`, `ownerRequest`](../src/control.ts), [`writeModelFile`](../src/files.ts).

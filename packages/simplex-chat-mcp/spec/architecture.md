@@ -56,7 +56,9 @@ flowchart LR
   serve --> tools
   serve --> messages
   serve --> files
+  control --> files
   files --> data[("DATA:<br/>token<br/>headers.json<br/>server.json<br/>lock")]
+  files --> modelfile[("FILE of --model-file:<br/>PROVIDER/MODEL")]
   tools --> folder[("DATA/files:<br/>group-N, contact-N<br/>sent")]
   tools --> lib
   control --> lib
@@ -93,10 +95,11 @@ Entry point of the `simplex-mcp` binary.
 | <a id="cli-plugincommands"></a>`pluginCommands` | `session`, `service`, `hook session-start`, `hook turn`, `link`, `reset-owners` |
 | <a id="cli-command"></a>`Command` | `help`, `serve` with `ServeOptions`, `register` with `RegisterOptions`, the plugin commands |
 | <a id="cli-parsecommand"></a>`parseCommand` | command, NAME and options to a `Command`, or the plugin command equal to the joined arguments |
-| <a id="cli-serveoptions"></a>`serveOptions` | defaults and option switch of `serve` |
+| <a id="cli-serveoptions"></a>`serveOptions` | defaults and option switch of `serve`; `--models` and `--model-file` only together, the file in a folder disjoint from the data folder |
 | <a id="cli-registeroptions"></a>`registerOptions` | defaults and option switch of `register` |
 | <a id="cli-optionreader"></a>`OptionReader` | `value`: the next argument, required<br>`optionalValue`: the next argument, absent when missing or starting with `--` |
 | <a id="cli-validagentname"></a>`validAgentName` | `^[a-z0-9](-?[a-z0-9])*-?$`, at most 32 characters |
+| <a id="cli-modellist"></a>`modelList` | `--models` items `NAME=PROVIDER/MODEL`, names and PROVIDER/MODEL values unique |
 | <a id="cli-usageerror"></a>`usageError` | `ExitError` with code 2 |
 | <a id="cli-main"></a>`main` | `help`, `serve`, `register`, `session`, `service`, the hooks, `link` and `reset-owners`. `help` prints to stdout. The hooks read stdin and print their JSON output. `link` and `reset-owners` print their text. `serve.ts`, `session.ts` and `service.ts` are imported only for their commands, so a hook process loads only the modules of the hooks: `require` of `dist/cli.js` took 244 ms in place of 680 ms, as the median of 7 runs on a host with a load average of 10 on 8 cores. |
 | top-level catch of `main` | `ExitError`: message on stderr, its code; other errors: `logError`, code 1 |
@@ -108,11 +111,11 @@ Start sequence, event dispatch and stop sequence of one agent.
 | Symbol | Contents |
 |---|---|
 | <a id="serve-ownerentry"></a>`OwnerEntry` | `{memberId, name}` of `--owners` |
-| <a id="serve-serveoptions"></a>`ServeOptions` | name, data folder and its `dataGiven` flag, display name, mode, owners, expiry, reset and token flags, port, QR code size, stop wait |
+| <a id="serve-serveoptions"></a>`ServeOptions` | name, data folder and its `dataGiven` flag, display name, mode, owners, expiry, reset and token flags, port, QR code size, stop wait, models and their file |
 | <a id="serve-runningserver"></a>`RunningServer` | token, `ChatApi`, user, `Actions`, `stop` |
 | <a id="serve-serve"></a>`serve` | `startServer`, then SIGINT and SIGTERM handlers: the first signal stops, a second ends the stop wait |
-| <a id="serve-startserver"></a>`startServer` | data folder, lock, token, headers file, `ChatApi.init`, `startAgent`; cleanup on error |
-| <a id="serve-startagent"></a>`startAgent` | user, `prepareCore`, control group, wiring of `Actions`, `AgentTools`, `Control`, HTTP, event handler, `stop` |
+| <a id="serve-startserver"></a>`startServer` | data folder, lock, token, headers file, the model file, `ChatApi.init`, `startAgent`; cleanup on error |
+| <a id="serve-startagent"></a>`startAgent` | user, `prepareCore`, control group, wiring of `Actions`, `AgentTools`, `Control` with the selected model, HTTP, event handler, `stop` |
 | <a id="serve-registerhint"></a>`registerHint` | the `register` command line printed after the owner setup |
 | <a id="serve-waitforcancelledcards"></a>`waitForCancelledCards` | the fixed wait at stop for cards edited or posted at the stop, used by the plugin's hub as well |
 | <a id="serve-controlgroup"></a>`controlGroup` | found, created or reset agent control chat |
@@ -212,10 +215,11 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 |---|---|
 | `qrCodeText` | the function of [`qr.ts`](../src/qr.ts), exported from `control.ts` as in 0.2 |
 | <a id="control-controlcommands"></a>`controlCommands` | the command menu |
+| <a id="control-modelcommand"></a>`modelCommand` | the menu entry `/model`, appended with `--models` |
 | <a id="control-standings"></a>`standings` | custom data key and reply words of the approvals of messages and files |
 | <a id="control-controldata"></a>`ControlData` | `{control: true, nextAction}` |
 | <a id="control-chatapproval"></a>`ChatApproval` | `{approvedBy, approvedById, approvedAt}` |
-| <a id="control-controloptions"></a>`ControlOptions`, `SessionOptions` | display name, `--owners`, register hint and QR code size. For a group of the plugin's session, its approver check, the session IDs by number, the check of `User` and `toolsChanged`, which sends the approved tools to the session, are added. |
+| <a id="control-controloptions"></a>`ControlOptions`, `SessionOptions` | display name, `--owners`, register hint and QR code size; with `--models`, the models, their file and the selected model. For a group of the plugin's session, its approver check, the session IDs by number, the check of `User` and `toolsChanged`, which sends the approved tools to the session, are added. |
 | <a id="control-ownerrequest-type"></a>`OwnerRequest` | parsed owner command |
 | <a id="control-control-load"></a>`Control.load` | lost check, group profile and menu through `updateProfile`, and member list |
 | <a id="control-control-rename"></a>`Control.rename`, `Control.describe`, `updateProfile` | the plugin's group name, and its short description. `updateProfile` makes one profile update at a time, and keeps the custom data in memory. A session group is updated from its current profile in the chat database. The agent control chat of `serve` is updated from the profile held in memory since the start, by `changeGroupProfile`. |
@@ -232,6 +236,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="control-control-approvechat"></a>`approveChat`, `revoke`, `forward`, `leave`, `deleteFiles` | owner requests |
 | <a id="control-control-approvedtools"></a>`approvedTools`, `endToolApprovals`, `approveTool`, `revokeTool` | the approvals of tools of a group of the plugin's session, in memory, by tool name, with the approver's name and member ID. `approvedTools` returns those whose approver is an approver now. `approveTool` records the tool of a pending `permission` action, logs, calls `toolsChanged`, approves the action and replies with `/'revoke TOOL'`. `revokeTool` deletes one, logs and calls `toolsChanged`. `endToolApprovals` drops all; it also runs when the session's group is lost. `chatsText` lists the approved tools after the chats, and `setObserver` calls `toolsChanged` after it reads the members again. |
 | <a id="control-control-give"></a>`give`, `setObserver` | `/give CHAT N` and `/observer #G ID` in a group of the plugin's session. `setObserver` replies `NAME's role can't be changed.` for a member with status `pending_approval` or `pending_review`. For a member who is neither current nor pending, such as an invited member who has not joined, the reply is `No member ID in this group.` ([`memberCurrentOrPending`](../src/tools.ts)). Only a current member's role is set to `observer`, when the sender's role is admin or owner and not below the member's role. The members are then read again, and the observer's rights are the reply. |
+| <a id="control-control-switchmodel"></a>`switchModel` | the owner request `/model`: the replies, the write of the model file, the log line |
 | <a id="control-control-isapprover"></a>`isApprover` | the session's check in a group of the plugin's session; otherwise role `owner`, and the `--owners` list when given |
 | <a id="control-roleorder"></a>`roleOrder`, `roleRank`, `canSend` | the roles of SimpleX from `relay` to `owner`, in the order of the core; a role above `observer` |
 | <a id="control-sessionapproverroles"></a>`sessionApproverRoles`, `rightsText` | `admin` and `owner`, the approvers of a session group. `rightsText` is `NAME is a ROLE and RIGHTS.`, with the rights of the approvers, of the other roles that send, or of an observer. |
@@ -275,6 +280,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 
 | Symbol | Contents |
 |---|---|
+| <a id="files-modelentry"></a>`ModelEntry`, `ModelOptions`, `ModelSelection` | `{name, model}` of a `--models` item; the items and FILE of `--model-file`; the same with the selected item |
 | <a id="files-createdatafolder"></a>`createDataFolder` | `mkdir -p` mode 0700; `chmod 0700` except on Windows |
 | <a id="files-acquirelock"></a>`acquireLock`, `releaseLock` | `DATA/lock`, or the file of the given name, with the PID. The holder is named in the error by the `user` argument, `server` or `service`. |
 | <a id="files-servertoken"></a>`serverToken` | `DATA/token`, or the file of the given name. An existing file is read, and is made private when the user owns it. A new token is 32 random bytes in base64url, and its file is created as the lock is. |
@@ -283,6 +289,8 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="files-takeover"></a>`takeOver` | The lock of a stopped process is claimed first, so that only one starter takes it over. The claim is a link of the lock to `lock.PID.claim`, or an exclusive write of `lock.PID.claim` where links fail. When that PID is still in the lock, the lock is removed and created again. The claim is then removed. |
 | <a id="files-writeheadersfile"></a>`writeHeadersFile` | `DATA/headers.json` |
 | <a id="files-writeserverfile"></a>`writeServerFile`, `readServerFile` | `DATA/server.json` |
+| <a id="files-modelatstart"></a>`modelAtStart` | the item whose PROVIDER/MODEL equals the first line of FILE; otherwise the first item, written to FILE |
+| <a id="files-writemodelfile"></a>`writeModelFile` | PROVIDER/MODEL and a newline to `FILE.part`, mode 0644, set again except on Windows; then renamed to FILE |
 
 ### [2.9 `register.ts`](../src/register.ts)
 
@@ -327,7 +335,8 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | Rejected files | [`AgentTools.rejectedFiles`](../src/tools.ts) | [`downloadResult`](../src/tools.ts) | the file field; [`download`](../src/tools.ts), which then skips the files approval |
 | Count of file descriptions | [`AgentTools.describedFiles`](../src/tools.ts), with the change signal `fileDescriptions` | `onFileDescription` | `fileServers` |
 | Members of the control chat | [`Control.members`](../src/control.ts) | [`refreshMembers`](../src/control.ts) | approver checks |
-| Mode, expiry, owners list, stop wait | `ServeOptions` of the run. The mode is kept in `Actions.mode` and in each action as well, [`ActionRecord.mode`](../src/actions.ts). | CLI | all modules |
+| Selected model | [`ControlOptions.model.selected`](../src/control.ts) | [`modelAtStart`](../src/files.ts), [`switchModel`](../src/control.ts) | `/model` |
+| Mode, expiry, owners list, stop wait, models and their file | `ServeOptions` of the run. The mode is kept in `Actions.mode` and in each action as well, [`ActionRecord.mode`](../src/actions.ts). | CLI | all modules |
 
 ### 3.2 Chat database custom data
 
@@ -352,6 +361,7 @@ The profile, chats, items, members and file transfers are stored by the core in 
 | `DATA/files/group-N/`, `DATA/files/contact-N/` | downloaded files and files received without a download, named by file ID and extension | folder 0700 | the core at the download path ([`startDownload`](../src/tools.ts)); moves ([`moveFile`](../src/tools.ts)) | `download` results, `/forward`, `/leave`, `/delete CHAT files` |
 | `DATA/forwarded/group-N/`, `DATA/forwarded/contact-N/` | files `/forward` downloaded, named as above, until a download moves them to `DATA/files/` | folder 0700 | the core at the forwarded path ([`forwardFile`, `startDownload`](../src/tools.ts)) | `/forward`; moved by `download` ([`downloadFile`](../src/tools.ts)); deleted by `leave`, `/leave` and `/delete CHAT files` ([`deleteChatFiles`, `leaveChat`](../src/tools.ts)) |
 | `DATA/files/sent/` | resized copies of sent images, and copies of the files `/forward` posts, one folder per copy | folder 0700; a resized copy 0600 | [`resizedCopy`, `copyForSending`, `sentCopyPath`](../src/tools.ts) | the core; deleted at `sndFileCompleteXFTP`, `sndFileError` and at start ([`prepareCore`](../src/core.ts), [`AgentTools.onEvent`, `onSentFile`](../src/tools.ts)) |
+| FILE of `--model-file`, outside `DATA/` | PROVIDER/MODEL of the selected model and a newline | 0644, set again at every write except on Windows | at start when its first line is no listed PROVIDER/MODEL, and at each switch; written to `FILE.part`, then renamed ([`modelAtStart`, `writeModelFile`](../src/files.ts), [`switchModel`](../src/control.ts)) | `modelAtStart`; the script that runs the agent in opencode |
 
 The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the Node.js add-on into `CACHE/nodejs-addon-cce06d8/`, each with a `Downloading ...` line on stderr. CACHE is `$XDG_CACHE_HOME/simplex-chat` or `~/.cache/simplex-chat`; on macOS `~/Library/Caches/simplex-chat`; on Windows `%LOCALAPPDATA%\simplex-chat` ([`cacheRoot`, `resolveLibsDir`, `resolveAddonPath`, `installLibs`, `installAddon`](../../simplex-chat-nodejs/src/libs.ts)).
 
@@ -361,24 +371,24 @@ The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the No
 
 ### 4.1 Start
 
-1. Data folder, lock, token and headers file are prepared ([`startServer`](../src/serve.ts)).
+1. Data folder, lock, token and headers file are prepared; with `--models`, FILE is read, and the first model is written to it when its first line is no listed PROVIDER/MODEL ([`startServer`](../src/serve.ts), [`modelAtStart`](../src/files.ts)).
 2. libsimplex for SQLite is loaded by `ChatApi.init`, and the databases are migrated with confirmation `yesUp` ([`startServer`](../src/serve.ts), [`ChatApi.init`](../../simplex-chat-nodejs/src/api.ts)).
-3. Three log lines: version and NAME, data folder, mode ([`startServer`](../src/serve.ts)).
+3. Three log lines: version and NAME, data folder, mode; with `--models`, a fourth with the selected model and FILE ([`startServer`](../src/serve.ts)).
 4. The active user is read, or created with display name `--display-name` or NAME, empty full name and peer type `agent` ([`startAgent`](../src/serve.ts)).
 5. `prepareCore` reads the network config and sets it with `smpProxyMode` `always` and `smpProxyFallback` `allowProtected` ([`startAgent`](../src/serve.ts), [`prepareCore`](../src/core.ts)).
 6. `prepareCore` sets `DATA/tmp` as the core's temp folder and deletes `DATA/files/sent` ([`prepareCore`](../src/core.ts)).
 7. Events are buffered, and the chat is started ([`startAgent`](../src/serve.ts)).
 8. A `--display-name` different from the profile, or a peer type other than `agent`, is applied with one `apiUpdateProfile` ([`startAgent`](../src/serve.ts), [`updatedUser`](../src/core.ts)).
 9. The agent control chat is found by its marker, created with counter 1, or reset with `--reset-owners` ([`startAgent`, `controlGroup`](../src/serve.ts)).
-10. `Actions`, `ChatItemsWatch`, `AgentTools` and `Control` are created; the counter is taken from the marker ([`startAgent`](../src/serve.ts)).
-11. `Control.load` sets `Actions.lost` for a lost control chat. Otherwise it updates the group name and command menu when they differ in the control chat's profile read at the start, as in 0.2, and reads the members ([`Control.load`, `updateProfile`, `changeGroupProfile`](../src/control.ts)).
+10. `Actions`, `ChatItemsWatch`, `AgentTools` and `Control` are created; the counter is taken from the marker, and the selected model is passed to `Control` ([`startAgent`](../src/serve.ts)).
+11. `Control.load` sets `Actions.lost` for a lost control chat. Otherwise it updates the group name and command menu, with `/model` appended when `--models` is given, when they differ in the control chat's profile read at the start, as in 0.2, and reads the members ([`Control.load`, `updateProfile`, `changeGroupProfile`](../src/control.ts)).
 12. The HTTP server listens; with the port in use, the process exits with code 1 ([`startAgent`, `listen`](../src/serve.ts)). Until step 14 ends, requests to `/mcp` that pass the token check get 503 with `Retry-After: 1` ([`startHttp`](../src/http.ts), the `started` flag of [`startAgent`](../src/serve.ts)).
 13. `server.json` is written ([`startAgent`](../src/serve.ts)).
 14. The server runs the owner setup, `Control.start`; after an error, HTTP is closed and the error is rethrown ([`startAgent`](../src/serve.ts)).
 15. `Listening on http://127.0.0.1:PORT/mcp` ([`startAgent`](../src/serve.ts)).
 16. Buffered events are replayed, then live events are dispatched ([`startAgent`](../src/serve.ts), [`bufferEvents`](../src/core.ts)).
 
-After an error inside `startAgent` (steps 4-16) the chat is closed; after any error once the lock is taken, the lock is released ([`startServer`](../src/serve.ts)).
+After an error inside `startAgent` (steps 4-16) the chat is closed; after any error once the lock is taken, the lock is released ([`startServer`](../src/serve.ts)). An error reading or writing FILE, such as a missing folder, ends the start in step 1, before the databases are opened.
 
 ### 4.2 Event dispatch
 
@@ -626,9 +636,11 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 | errors on cards | folded to one line, one code span | [`cardText`](../src/control.ts) |
 | `--owners` part of restart lines in the chat | one code span | [`inChat`, `restartText`](../src/control.ts) |
 | terminal names and errors of actions | folded to one line | [`Actions.create`, `performedText`](../src/actions.ts), [`inLog`](../src/control.ts) |
+| NAME of `/model NAME` | compared with the names of `--models`; left out of the replies, which contain only names and PROVIDER/MODEL values of `--models` | [`switchModel`](../src/control.ts) |
+| the sender's name in the `/model` log line | folded to one line | [`switchModel`](../src/control.ts) |
 | tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, file names, downloaded files, `description`, `welcome` and `commands` with their labels and params as data, not instructions; the instructions take a chat's messages as prompts only when the user said so in the session, and limit what the agent shares about its user | [`messageSchema`, `commandSchema`, `chatFieldSchemas`, `downloadOutput`, `instructions`](../src/tools.ts) |
 
-The server writes the tappable form `/'...'` only in the card's command line ([`commandsLine`](../src/control.ts)), in `/'revoke CHAT'` of standing cards and replies ([`cardText`, `Control.approveChat`](../src/control.ts)), and in `/'delete CHAT files'` of the kept-files message ([`Control.leftChatFilesNote`](../src/control.ts)).
+The server writes the tappable form `/'...'` only in the card's command line ([`commandsLine`](../src/control.ts)), in `/'revoke CHAT'` of standing cards and replies ([`cardText`, `Control.approveChat`](../src/control.ts)), in `/'delete CHAT files'` of the kept-files message ([`Control.leftChatFilesNote`](../src/control.ts)), and in `/'model NAME'` of the `/model` replies, with NAME of `--models` ([`switchModel`](../src/control.ts)).
 
 ### 6.4 Chat references
 
@@ -648,6 +660,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | A text outside the requests from any sender is answered with the help reply of `serve`, or with `Unknown command.` in a plugin session group. Other commands are accepted only from approvers. A command from another sender is answered in `serve`, and left without a reply in a plugin session group. | [`Control.ownerCommand`](../src/control.ts) |
 | commands run one at a time in arrival order | [`Control.onMessage`](../src/control.ts) |
 | `/approve`, `/reject`, `/receive` and `/forward` need a pending action with a card, and the action's chat when CHAT is given; `/receive` and `/forward` take downloads only, `/approve` the other actions only | [`Control.ownerCommand`](../src/control.ts) |
+| with `/model NAME`, only a model of `--models` is selected, by its NAME, in both modes; the server writes only its PROVIDER/MODEL to FILE | [`ownerRequest`, `switchModel`](../src/control.ts) |
 
 ### 6.6 Files
 
@@ -668,6 +681,18 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 - The join link is a group link of the control chat with role `member`, or `observer` with `--owners`; it is printed with a QR code on stdout and deleted at the first join event ([`Control.openLink`, `ownerJoined`, `observerJoined`](../src/control.ts)).
 - At every start the server sets private message routing: `smpProxyMode` `always`, `smpProxyFallback` `allowProtected` ([`prepareCore`](../src/core.ts)).
 - With `incognito: true` the join methods connect incognito ([`AgentTools.join`](../src/tools.ts)); the core then uses a random profile for that chat ([PLAN, Participants](../../../plans/2026-10-19-mcp-server.md#participants)).
+
+### 6.8 Model file
+
+<a id="model-file"></a>
+
+| Rule | Code |
+|---|---|
+| the folder of FILE is not the data folder, is not inside it and does not contain it; otherwise the CLI exits with code 2 | [`serveOptions`](../src/cli.ts) |
+| `--models` items are checked at start: NAME `^[a-z][a-z0-9-]{0,15}$`, PROVIDER/MODEL `^[A-Za-z0-9][\w.-]{0,31}/[\w.:/+@-]{1,64}$`, the provider without `/` | [`modelList`](../src/cli.ts) |
+| FILE contains only the PROVIDER/MODEL of an item of `--models` and a newline, with mode 0644 | [`modelAtStart`, `writeModelFile`](../src/files.ts), [`switchModel`](../src/control.ts) |
+| FILE is replaced whole: the server writes `FILE.part` in the same folder and renames it to FILE | [`writeModelFile`](../src/files.ts) |
+| at start, the model in the first line of FILE is selected only when it equals a PROVIDER/MODEL of `--models` | [`modelAtStart`](../src/files.ts) |
 
 ---
 
@@ -705,6 +730,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | agent NAME | 1 to 32 characters | [`validAgentName`](../src/cli.ts) |
 | display name | 50 characters, `mkValidName` rules | [`prohibitedNameChars`, `maxNameLength`, `validName`](../src/messages.ts) |
 | port | 1 to 65535, default 5226 | [`serveOptions`](../src/cli.ts) |
+| `--models` item | NAME 1 to 16 characters, provider 1 to 32, model 1 to 64 | [`modelList`](../src/cli.ts) |
 
 ---
 

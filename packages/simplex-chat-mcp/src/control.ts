@@ -1,6 +1,7 @@
 import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
 import {Action, ActionHooks, Actions, DownloadAction, PermissionAction, Standing, State, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
+import {ModelSelection, writeModelFile} from "./files"
 import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import {linkCommand} from "./owner"
@@ -17,9 +18,11 @@ export const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "list", label: "Chats and approvals"},
   {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
 ]
+// spec: spec/api.md#group-profile
+const modelCommand: T.ChatBotCommand = {type: "command", keyword: "model", label: "The agent's model"}
 
 // spec: spec/api.md#control-commands
-const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /model. Each card shows its commands."
 // spec: spec/api.md#control-commands
 const unknownCommand = "Unknown command."
 const filesAndMedia = "Files and media"
@@ -69,6 +72,7 @@ export interface ControlOptions {
   session?: SessionOptions
   registerHint: string
   qrCode: QrCodeSize
+  model?: ModelSelection
 }
 
 // spec: spec/architecture.md#control-controloptions
@@ -102,6 +106,7 @@ type OwnerRequest =
   | {type: "give"; chat: string; session: number}
   | {type: "observer"; group: string; member: number}
   | {type: "pending" | "list"}
+  | {type: "model"; name?: string}
 
 interface Shown {
   name: (name: string) => string
@@ -139,9 +144,10 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   // spec: spec/api.md#group-profile
   async load(): Promise<void> {
     if (isLost(this.group)) return this.lose()
-    const {displayName} = this.options
+    const {displayName, model} = this.options
+    const commands = model === undefined ? controlCommands : [...controlCommands, modelCommand]
     await this.updateProfile(profile =>
-      profile.displayName !== displayName || JSON.stringify(profile.groupPreferences?.commands) !== JSON.stringify(controlCommands) ? {...profile, displayName, groupPreferences: {...profile.groupPreferences, commands: controlCommands}} : undefined,
+      profile.displayName !== displayName || JSON.stringify(profile.groupPreferences?.commands) !== JSON.stringify(commands) ? {...profile, displayName, groupPreferences: {...profile.groupPreferences, commands}} : undefined,
     )
     await this.refreshMembers()
   }
@@ -311,6 +317,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         return this.give(sender, request.chat, request.session)
       case "observer":
         return this.setObserver(sender, request.group, request.member)
+      case "model":
+        return this.switchModel(sender, request.name)
       case "approve":
       case "reject":
       case "receive":
@@ -468,6 +476,21 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     await this.refreshMembers()
     this.options.session?.toolsChanged()
     return rightsText(name, T.GroupMemberRole.Observer)
+  }
+
+  // spec: spec/api.md#control-commands
+  private switchModel(sender: T.GroupMember, name: string | undefined): string {
+    const {model} = this.options
+    if (model === undefined) return "This server runs without --models."
+    const {models, selected} = model
+    if (name === undefined) return [`The agent's model is ${codeSpan(selected.name)}: ${codeSpan(selected.model)}.`, ...models.filter(entry => entry !== selected).map(entry => `/'model ${entry.name}'`)].join("\n")
+    const requested = models.find(entry => entry.name === name)
+    if (requested === undefined) return "No such model. /model shows the models."
+    if (requested === selected) return `The agent's model is already ${codeSpan(selected.name)}.`
+    writeModelFile(model.file, requested.model)
+    model.selected = requested
+    log(`Model set to ${requested.name} (${requested.model}) by ${oneLine(sender.memberProfile.displayName)}.`)
+    return `The agent's model is ${codeSpan(requested.name)}: ${codeSpan(requested.model)}. The agent restarts with it. /'model ${selected.name}'`
   }
 
   private queueAfterReplies(post: () => Promise<unknown>): void {
@@ -992,6 +1015,7 @@ function ownerRequest({keyword, params}: Command, session: boolean): OwnerReques
   if (session && keyword === "approve" && words.length === 2 && /^\d+$/.test(words[0]) && words[1] === "all") return {type: "approveTool", action: Number(words[0])}
   if (session && keyword === "revoke" && chat === undefined && value !== undefined && /^[\w-]+$/.test(value)) return {type: "revokeTool", tool: value}
   if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
+  if (keyword === "model" && words.length <= 1) return {type: keyword, name: words.at(0)}
   return undefined
 }
 
