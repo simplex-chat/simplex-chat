@@ -574,6 +574,7 @@ struct UserPickerUnread_Previews: PreviewProvider {
     static var previews: some View {
         let m = ChatModel()
         keepingCurrentColors { m.currentUser = User.sampleData }
+        m.chatRunning = true
         m.users = [
             UserInfo.sampleData,
             UserInfo(user: otherUser(2, "bob", image: nil), unreadCount: 3),
