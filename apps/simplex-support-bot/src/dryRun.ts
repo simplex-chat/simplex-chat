@@ -1,0 +1,151 @@
+import {api, core} from "simplex-chat"
+import {T} from "@simplex-chat/types"
+import {Config, IdName} from "./config.js"
+import {loadGrokContext} from "./context.js"
+
+export interface DryRunState {
+  teamGroupId?: number
+  grokContactId?: number
+  grokUserId?: number
+}
+
+export type DbProbe =
+  | {type: "current"}
+  | {type: "upgrade"; names: string[]}
+  | {type: "downgrade"; names: string[]}
+  | {type: "failed"; text: string}
+
+export type MigrationPlan =
+  | {ok: true; confirm: core.MigrationConfirmation; result: string}
+  | {ok: false; reason: string}
+
+export function migrationPlan(probe: DbProbe, config: Pick<Config, "allowMigrations" | "allowDownMigrations">): MigrationPlan {
+  switch (probe.type) {
+    case "current":
+      return {ok: true, confirm: core.MigrationConfirmation.Error, result: "schema up to date"}
+    case "upgrade": {
+      const list = `${probe.names.length} migration(s): ${probe.names.join(", ")}`
+      return config.allowMigrations
+        ? {ok: true, confirm: core.MigrationConfirmation.YesUp, result: `applied ${list}`}
+        : {ok: false, reason: `pending ${list}; a real start would apply them, --allow-migrations applies them now`}
+    }
+    case "downgrade": {
+      const list = `${probe.names.length} migration(s): ${probe.names.join(", ")}`
+      return config.allowDownMigrations
+        ? {ok: true, confirm: core.MigrationConfirmation.YesUpDown, result: `rolled back ${list}`}
+        : {ok: false, reason: `database is newer than this build, to roll back ${list}; a real start would refuse, --allow-down-migrations rolls them back`}
+    }
+    case "failed":
+      return {ok: false, reason: probe.text}
+  }
+}
+
+const SEARCH_LIMIT = 100
+const LISTING_LIMIT = 1000
+const GROK_PROFILE_NAME = "Grok"
+
+type Check = (ok: boolean, msg: string) => void
+type Unverified = (msg: string) => void
+
+export async function dryRun(chat: api.ChatApi, config: Config, state: DryRunState): Promise<boolean> {
+  const results: boolean[] = []
+  const check: Check = (ok, msg) => {
+    results.push(ok)
+    console.log(`${ok ? "ok  " : "FAIL"}  ${msg}`)
+  }
+  const unverified: Unverified = msg => console.log(`?     ${msg}`)
+
+  if (config.contextFile) {
+    try {
+      const context = loadGrokContext(config.contextFile)
+      check(true, `Grok context: ${context.length} message(s) from ${config.contextFile}`)
+    } catch (err) {
+      const e = err as NodeJS.ErrnoException
+      const missing = e.code === "ENOENT"
+      check(missing, `Grok context ${config.contextFile}: ${missing ? "not found, would start without it" : e.message}`)
+    }
+  }
+
+  const user = await chat.apiGetActiveUser()
+  if (!user) {
+    check(false, "no active user in database, the bot would create one")
+    return false
+  }
+  check(true, `active user: ${user.userId}:${user.profile.displayName}`)
+
+  if (state.grokUserId !== undefined) {
+    const users = await chat.apiListUsers()
+    const found = users.find(u => u.user.userId === state.grokUserId)
+    check(!!found, `Grok user ${state.grokUserId}: ${found ? found.user.profile.displayName : "missing, the bot would exit"}`)
+  }
+
+  if (state.teamGroupId === undefined) {
+    check(true, `no team group in state, "${config.teamGroup.name}" would be created`)
+  } else {
+    const group = await findGroup(chat, user.userId, config.teamGroup.name, state.teamGroupId)
+    if (!group) {
+      unverified(`team group ${state.teamGroupId} not in chat previews, the bot verifies it at startup`)
+    } else {
+      check(true, `team group ${state.teamGroupId}: ${group.groupProfile.displayName}`)
+      if (group.groupProfile.displayName !== config.teamGroup.name) {
+        check(true, `team group name differs from --team-group, profile would be updated to "${config.teamGroup.name}"`)
+      }
+    }
+  }
+
+  if (state.grokContactId !== undefined) {
+    const contact = await findContact(chat, user.userId, GROK_PROFILE_NAME, state.grokContactId)
+    if (contact) check(true, `Grok contact ${state.grokContactId}: ${contact.profile.displayName}`)
+    else unverified(`Grok contact ${state.grokContactId} not in chat previews, the bot verifies it at startup`)
+  }
+
+  await checkTeamMembers(chat, user.userId, config.teamMembers, check, unverified)
+
+  return results.every(Boolean)
+}
+
+async function checkTeamMembers(
+  chat: api.ChatApi,
+  userId: number,
+  members: IdName[],
+  check: Check,
+  unverified: Unverified
+): Promise<void> {
+  for (const {id, name} of members) {
+    const contact = await findContact(chat, userId, name, id)
+    if (!contact) {
+      unverified(`team member ${id}:${name} not in chat previews, the bot verifies it at startup`)
+    } else {
+      const match = contact.profile.displayName === name
+      check(match, `team member ${id}:${name}${match ? "" : ` has display name "${contact.profile.displayName}", the bot would exit`}`)
+    }
+  }
+}
+
+async function findGroup(chat: api.ChatApi, userId: number, search: string, groupId: number): Promise<T.GroupInfo | undefined> {
+  const group = (chats: T.AChat[]): T.GroupInfo | undefined => {
+    for (const {chatInfo} of chats) {
+      if (chatInfo.type === "group" && chatInfo.groupInfo.groupId === groupId) return chatInfo.groupInfo
+    }
+    return undefined
+  }
+  return group(await searchChats(chat, userId, search)) ?? group(await recentChats(chat, userId))
+}
+
+async function findContact(chat: api.ChatApi, userId: number, search: string, contactId: number): Promise<T.Contact | undefined> {
+  const contact = (chats: T.AChat[]): T.Contact | undefined => {
+    for (const {chatInfo} of chats) {
+      if (chatInfo.type === "direct" && chatInfo.contact.contactId === contactId) return chatInfo.contact
+    }
+    return undefined
+  }
+  return contact(await searchChats(chat, userId, search)) ?? contact(await recentChats(chat, userId))
+}
+
+function searchChats(chat: api.ChatApi, userId: number, search: string): Promise<T.AChat[]> {
+  return chat.apiGetChats(userId, {type: "last", count: SEARCH_LIMIT}, {type: "search", search})
+}
+
+function recentChats(chat: api.ChatApi, userId: number): Promise<T.AChat[]> {
+  return chat.apiGetChats(userId, {type: "last", count: LISTING_LIMIT})
+}

@@ -116,7 +116,7 @@ private fun fileFilterDescription(input: String): String = when(input) {
   else -> ""
 }
 
-internal fun saveDialogFileName(name: String): String = name.trimStart('.').ifEmpty { name }
+internal fun saveDialogFileName(name: String): String = name.trimStart('.', '<').ifEmpty { name }
 
 actual fun URI.inputStream(): InputStream? = toFile().inputStream()
 actual fun URI.outputStream(): OutputStream = toFile().outputStream()

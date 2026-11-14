@@ -157,7 +157,7 @@ fun MarkdownBlocks(
         is MarkdownBlock.Rule -> Box((if (chatTypography) cardMargins.widthIn(min = ruleMinWidth) else Modifier.padding(vertical = 6.dp)).fillMaxWidth().height(1.dp).background(lineColor))
       }
     }
-    Spacer(Modifier.height(emptyLineHeight * trailingEmptyLines))
+    Spacer(Modifier.height(emptyLineHeight * if (terminal && !lastIsText && metaLine != null) maxOf(trailingEmptyLines, 1) else trailingEmptyLines))
     if (!lastIsText) metaLine?.invoke()
   }
 }

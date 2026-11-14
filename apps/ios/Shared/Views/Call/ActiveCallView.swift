@@ -326,7 +326,7 @@ struct ActiveCallOverlay: View {
                             .foregroundColor(.white.opacity(0.8))
                     }
                     VStack {
-                        ProfileImage(imageStr: call.contact.profile.image, size: 192)
+                        ProfileImage(imageStr: call.contact.profile.image, icon: call.contact.chatIcon, size: 192)
                         audioCallInfoView(call)
                     }
                     .foregroundColor(.white)

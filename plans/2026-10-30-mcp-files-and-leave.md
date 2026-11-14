@@ -1,0 +1,555 @@
+# SimpleX MCP server 0.2.0: files, /leave and library methods
+
+Status: draft for review. Design agreed on 2026-10-22; C1-C3 decided on 2026-10-30; C4 decided on 2026-10-31. Code references: master `d7d180a42`; library references: `ep/bot-api` (#7808).
+
+Prerequisites, in order:
+1. #7808 merged: bot API commands documented, the Node library typed (`packages/simplex-chat-nodejs/src/api.ts`).
+2. `simplex-chat` and `@simplex-chat/types` published with those methods; `package.json` of the MCP server pins them.
+3. Image processing in the core: merged in #7941.
+
+Phases:
+1. Library methods, except the wait at stop, and `/leave CHAT`; `ep/bot-api` at `45c77f6aa` is merged into `ep/mcp-files`.
+2. Files: received files, `download`, `send` with `file`.
+3. The wait at stop: a fixed wait, decision 15.
+
+## Decisions
+
+1. Library methods only:
+   - the 15 command strings of the server are replaced by typed methods
+   - the wait at stop runs without `/sql`: decision 15
+   - exception, decided 2026-11-03: `/_temp_folder DATA/tmp` stays a command string (`setTempFolder`, `serve.ts:205-209`); the typed `apiSetTempFolder` comes with the next library release, so #7962 changes no library code
+2. `/leave CHAT` is an owner command in the agent control chat; it acts at once.
+3. A received file reaches the agent at once, in the message's `file` field, with status `offered`.
+4. `download` is a new action tool; the owner lets the agent receive each file, or all files of one chat.
+5. A download card shows the file's own preview and names the file's servers.
+6. Download card commands, decided 2026-11-03: `/receive CHAT N` performs the download for the agent; `/receive CHAT N all` also lets the agent receive all later files of the chat on known servers, ended by `/receive CHAT off`, and leaves other pending cards pending (decided 2026-11-05); `/forward CHAT N` makes the server download the file and forward it into the agent control chat, the card staying pending and the file kept outside the chat's folder until `/receive`; `/reject CHAT N` as for other actions. `/approve CHAT files` and `/revoke CHAT files` are removed; `/approve` is refused on download cards.
+7. Downloads go to `DATA/files/<folder>/<file ID><extension>`, one folder per chat, `group-N` for #N and `contact-N` for @N; commands keep the chat ID, as in `/delete #3 files`; the extension of the file's name is kept when it has only letters and digits. The file field has a path only for a file downloaded there. A file the core receives without a request is moved there when it is received in full.
+8. `send` takes `file`, an absolute path; `text` becomes the caption.
+9. Images are sent with a core-made preview and a core-resized copy; other files unchanged.
+10. Paths of private keys and of the server's own secrets are refused; the refusal is posted to the agent control chat.
+11. C1 (a): the download card names unknown servers before approval, from the item's `fileXftpServers` (`apiGetChatItemInfo`, `Messages.hs:1362`) and the user's XFTP servers (`APIGetUserServers`); both methods are added to #7808.
+12. C2 (a): a GIF or WebP, which the core does not decode (`Image.hs:62-70`), is sent as an image with a fixed preview, the file unchanged.
+13. C3 (a): a video's preview and duration come from `ffmpeg` and `ffprobe` when installed, otherwise a fixed preview and duration 0.
+14. `download` waits for the file description (`rcvFileDescrReady`) before it creates the action, at most `wait` seconds; at the end of `wait` it returns a tool error that asks to call again later. Decided 2026-11-05: without a description, no card and no action, for an offered file of any protocol; a file already received keeps its path. Known servers follow the core's rule (`Library/Internal.hs:898-904`, `Operators.hs:455-465`), compared without passwords.
+15. C4, for now: a fixed wait at stop, `--stop-wait SECONDS`, 0 to 60, 10 by default, only when cards were edited or posted at the stop; a second Ctrl-C ends it. The `/sql` count of pending deliveries is removed. A later change can post a final message and wait for its "sent" status for each owner.
+
+## Library methods
+
+```
+place                       now                                     method
+serve.ts:90                 /network socks=off smp-proxy=always …    apiGetNetworkConfig, apiSetNetworkConfig
+serve.ts:170-188            /sql chat, /sql agent                    removed: a fixed wait at stop, decision 15
+messages.ts:178-180         /_get chat REF PAGINATION                apiGetChat with ChatPagination
+messages.ts:182-184         /_read chat items REF IDS                apiChatItemsRead
+tools.ts:471                /_connect plan USER TARGET               apiConnectPlan, whole response
+tools.ts:539                /_connect USER incognito=… LINK          apiConnect, whole response
+tools.ts:527                /_prepare group …                        apiPrepareGroup
+tools.ts:535                /_prepare contact …                      apiPrepareContact
+tools.ts:520-521, :530      /_connect contact @N, /_connect group #N apiConnectPreparedContact, apiConnectPreparedGroup
+tools.ts:533                /_connect contact USER … CONTACT         apiConnectContactViaAddress
+tools.ts:702                /_get chats USER pcc=off count=N         apiGetChats
+tools.ts:771                /_info @N                                apiContactInfo
+```
+
+Phase 1 changes:
+```
+file          function           change
+serve.ts      startAgent         apiGetNetworkConfig, then apiSetNetworkConfig with smpProxyMode always and smpProxyFallback allowProtected
+messages.ts   chatType           new: the chat type of a chat reference
+              getChat            apiGetChat; pagination a T.ChatPagination or a count
+              markRead           apiChatItemsRead
+              chatCommand        removed
+tools.ts      plan               apiConnectPlan
+              classifyPlan       input: the result of apiConnectPlan
+              join               apiPrepareGroup
+                                 apiPrepareContact
+                                 apiConnectPreparedContact
+                                 apiConnectPreparedGroup
+                                 apiConnectContactViaAddress
+                                 apiConnectPreparedLink: APIConnect, the whole response
+              connectPrepared    input: the connect call; the prepared chat is deleted when it fails, as now
+              prepare            removed
+              connectResponse    removed
+              domainParam        removed
+              performSend        chatType
+              agentChats         apiGetChats with {type: "last", count: 1000000}
+              incognitoName      apiContactInfo
+```
+
+Changed command strings:
+```
+now                                                                after
+/_connect contact @N incognito=off[ json MSG]                      /_connect contact @N[ json MSG]
+/_connect group #N incognito=off[ json MSG]                        /_connect group #N[ json MSG]
+/_connect contact USER incognito=off N                             /_connect contact USER N
+/_connect USER incognito=off LINK                                  /_connect USER LINK
+/_get chats USER pcc=off count=N                                   /_get chats USER count=N {"type":"filters","favorite":false,"unread":false}
+/network socks=off smp-proxy=always smp-proxy-fallback=protected   /network
+                                                                   /_network JSON
+```
+- `incognito=off` and `pcc=off` are the parser defaults (`Library/Commands.hs:7110`, `:6750`); the query is `clqNoFilters` (`Controller.hs:1169`), the default at `:6752`.
+- `/network socks=off …` sets every field of `SimpleNetCfg` except the timeout (`netCfgP`, `Library/Commands.hs:7324-7335`). The library starts the core with the same values (`defaultSimpleNetCfg`, `Controller.hs:1329-1340`; `Mobile.hs:292`; `Chat.hs:274`), except `hostMode`: onionViaSocks in place of public. Without a SOCKS proxy, both select the same hosts (simplexmq `8bc4d3601`, `Client.hs:531-543`, `Agent/Client.hs:1263-1265`).
+
+Wait at stop, decision 15: `waitForCancelledCards` (`serve.ts`) waits `--stop-wait` seconds after the cards of the stopped actions are edited or posted, and a second signal ends the wait.
+
+## /leave CHAT
+
+```
+command        who               effect
+/leave @N      approving owner   deletes the contact, as the leave tool (tools.ts:646-651)
+/leave #N      approving owner   leaves the group and deletes the chat
+```
+
+- Pending actions for the chat end as rejected by that owner; their calls return.
+- Reply: `Left group X (#3), requested by Alice.` or `Deleted contact X (@5), requested by Alice.`
+- The same line goes to the log.
+- Both modes.
+
+Phase 1 changes:
+```
+file         function        change
+control.ts   OwnerRequest    {type: "leave", chat}
+             ownerRequest    /leave CHAT, read as /revoke CHAT
+             ownerCommand    leave: Control.leave
+             leave           new
+             chatName        showName parameter, safeName by default
+             commandsReply   /leave added
+tools.ts     leaveChat       performLeave, public, by chat reference; perform calls it
+             chatFiles       new: the folder of a chat, its file count and bytes
+             deleteChatFiles new: fails and cancels the chat's downloads, also those the core continues after a restart, then deletes its folder
+messages.ts  chatFolder      new: DATA/files/group-N for #N, DATA/files/contact-N for @N
+actions.ts   leaveVerbs      input: {chat}
+```
+
+`Control.leave(sender, CHAT)`:
+```
+CHAT not a chat of the agent: reply "No chat CHAT. /list shows the agent's chats."
+tools.leaveChat(CHAT); DATA/forwarded/<folder> deleted
+log the line, names on one line
+each pending action of CHAT with a card: reject, decidedBy the sender
+reply the line, names as in cards
+the folder of CHAT with files: after the reply, post "Files from business Ridgeline (#9) are kept in `FOLDER`: 3 files, 2.1 MB. /'delete #9 files'"
+```
+- An error of `leaveChat` is logged to stderr, as the errors of other owner commands; no reply.
+- `Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands.`
+- A leave action in state done posts the same message after its outcome card.
+
+`/delete CHAT files`, an approving owner, for a current or a left chat:
+```
+step                          effect
+each download of CHAT         rejected, "Your owner deleted the files of this chat."; apiCancelFile, an error logged; its partial file deleted
+each other file of CHAT       apiCancelFile, an error logged; files in status rcvAccepted, rcvTransfer or rcvWarning, read with apiGetChat in pages of 100; a left chat: none
+the folders of CHAT with files the folder and DATA/forwarded/<folder> deleted; reply "Deleted 3 files from #9, 2.1 MB.", forwarded files counted
+no files                      reply "No files from #9."
+```
+
+```mermaid
+sequenceDiagram
+  participant O as Owner
+  participant C as Control
+  participant T as AgentTools
+  O->>C: /leave #9
+  C->>T: leaveChat(#9)
+  C->>O: Left business Ridgeline (#9), requested by Alice.
+  C->>T: chatFiles(#9)
+  C->>O: Files from business Ridgeline (#9) are kept in `FOLDER`: 3 files, 2.1 MB. /'delete #9 files'
+  O->>C: /delete #9 files
+  C->>T: deleteChatFiles(#9)
+  T->>T: each download of #9: failDownload, apiCancelFile, its partial file deleted
+  T->>T: each other file of #9 in rcvAccepted, rcvTransfer or rcvWarning: apiCancelFile
+  T->>T: the folder of #9 and its forwarded folder deleted
+  C->>O: Deleted 3 files from #9, 2.1 MB.
+```
+
+## Received files
+
+The `file` field of a message (`messageSchema`, `tools.ts:119-139`; `toMessage`, `messages.ts:138-155`):
+```
+field     value
+name      fileName of the item's CIFile
+size      bytes
+type      image | video | voice | file, from the msgContent type
+status    offered | received | rejected | failed
+path      full path; with status received, for a file downloaded to its download path
+error     with status failed
+```
+
+Status from `CIFile.fileStatus`:
+```
+fileStatus                                   status
+rcvInvitation                                offered
+rcvAccepted, rcvTransfer                     offered, while a download action performs
+rcvComplete                                  received
+rcvCancelled, rcvAborted, rcvError           failed
+```
+
+- `rejected`: the last download action of the item was rejected or expired; kept in memory until a restart.
+- Instructions and the `send`, `receive` and `connect` descriptions: "When a message has a file with status offered, call download when your user's task needs it."
+
+Phase 2 changes:
+```
+file          function        change
+messages.ts   MessageFile     new: name, size, type, status, path, error
+              Message         file: received messages with a file
+              toMessage       file from chatItem.file and the server's rejected files
+log.ts        fileErrorText   new: the apps' words for FileError
+tools.ts      messageSchema   file
+              rejectedFiles   new: file IDs whose download call returned rejected or expired; a done download removes its ID
+```
+
+Status, completed:
+```
+fileStatus                         status
+rcvInvitation, rcvWarning          offered
+rcvAccepted, rcvTransfer           offered
+rcvComplete                        failed: "The received file is not in the agent's files folder.", when neither the download path nor the forwarded path has a file
+                                   received, when the download path has a file and fileSource is the download path or the forwarded path
+                                   offered otherwise: a file moved to the download path without a download, or a forwarded file before /receive
+rcvCancelled                       failed: "The file was cancelled."
+rcvAborted                         failed: "The download was aborted."
+rcvError                           failed: fileErrorText
+invalid                            failed: "Invalid file: TEXT"
+fileProhibited set                 failed: "Large file! The file is above the limit of N bytes for its sender.", and the badge issue; before the rows above
+file ID in rejectedFiles           rejected, before the rows above
+```
+
+`fileErrorText`, from `FileError.errorInfo` (`apps/multiplatform/.../ChatModel.kt:4949-4966`) and the base strings:
+```
+FileError   text
+auth        Wrong key or unknown file chunk address - most likely file is deleted.
+blocked     File is blocked by server operator: REASON.
+noFile      File not found - most likely file was deleted or cancelled.
+relay       File server error: SRV, from SrvError: host, version as the apps word them; other: its text
+other       Error: TEXT
+```
+
+## download
+
+Input:
+```
+field   value
+chat    chat reference
+item    item ID of a message with a file
+wait    seconds to wait for the sender's upload before the action, and for the download after the approval; default 60
+```
+
+Output:
+```
+field    value
+action   action number
+status   done | performing | failed | rejected | expired
+path     with done
+error    with failed
+```
+
+Card in the agent control chat, mode requests:
+- image: an image message with the sender's preview, the card text as caption
+- video: a video message with the sender's preview and duration, the card text as caption
+- voice and file: a text message
+- card text:
+  ```
+  I want to download a file from Alice in group Builders (#3):
+  `report.pdf`, 2.4 MB
+  Servers: known.
+  /'receive #3 7', /'receive #3 7 all', /'forward #3 7' or /'reject #3 7'
+  ```
+- unknown servers: ``Servers: `xftp.example.com`, unknown: downloading shows it this computer's IP address.``; the commands leave out `/'receive #3 7 all'`
+
+Owner commands:
+```
+command              effect
+/receive CHAT N      the agent receives the file: the download is performed and the call returns its path
+/receive CHAT N all  the same, and all later downloads in CHAT of files on known servers, which post no card; its other pending downloads stay pending
+/receive CHAT off    downloads in CHAT need a card again; /revoke CHAT keeps covering messages only
+/forward CHAT N      the server downloads the file to DATA/forwarded/<folder>/ and sends it into the agent control chat; the card stays pending; the agent's message shows the file as offered
+/reject CHAT N       the call returns status rejected
+/approve CHAT N      on a download: reply "Action N is a download: " + the card's commands line + "."
+```
+
+- The "files" approval is stored in the chat's custom data, next to the standing approval of messages (`approvalOf`, `control.ts:554-557`).
+- `/list` shows it per chat.
+- Mode host: the host confirms the call (`anthropic/requiresUserInteraction`, `tools.ts:361`); no card.
+- A file on unknown servers gets a card under the files approval too; the card leaves out `/'receive CHAT N all'`. A file in `rejectedFiles` gets a card too.
+- `/receive CHAT N` after `/forward CHAT N` moves the forwarded file into `DATA/files/<folder>/`, once the copy for the post is made.
+- The post of `/forward` replies to the card when the message, with the card as its quote, is within 15602 bytes by the length rule of `send`; otherwise it is posted without the quote.
+
+```mermaid
+sequenceDiagram
+  participant O as Owner
+  participant C as Control
+  participant T as AgentTools
+  participant K as Core
+  participant A as Agent
+  A->>T: download {chat: #3, item: 30}
+  T->>C: card N: /'receive #3 N', /'receive #3 N all', /'forward #3 N' or /'reject #3 N'
+  O->>C: /forward #3 N
+  C->>T: forwardFile(N)
+  T->>K: apiReceiveFile 7 DATA/forwarded/group-3/7.pdf
+  K->>T: rcvFileComplete
+  T->>T: copy for the post in DATA/files/sent/
+  C->>O: the file, replying to card N; the card stays pending
+  O->>C: /receive #3 N
+  C->>T: approve N: performDownload
+  T->>T: the forwarded file moved to DATA/files/group-3/7.pdf
+  T->>A: {status: done, path: DATA/files/group-3/7.pdf}
+```
+- The files approval and the approval of messages are read again just before the action is created.
+
+Perform:
+- `apiReceiveFile(fileId, "DATA/files/<folder>/<file ID><extension>", approvedRelays)`: true in mode requests for a download whose card named unknown servers; false otherwise, where the core checks the complete description and downloads a file on unknown servers only when the IP address is protected
+- `rcvFileComplete` for the file ends it with its path; `rcvFileError` or `rcvFileSndCancelled` fail it
+
+Restart: undecided cards show "Cancelled: the server stopped"; their files stay offered.
+
+Phase 2 changes:
+```
+file          function            change
+actions.ts    DownloadAction      new: input, subject, chat, item, from, file, startedAt, path, cardImage
+              FileOffer           new: fileId, name, size, type, preview, duration
+              Action, NewAction   DownloadAction
+              decided             until: the latest time to wait, Infinity by default
+              summary             download: "download NAME from <chat>"
+              performedText       download: "downloaded."
+messages.ts   anyScopeChatRef     new: @N or #N, also for a member chat of a group
+              chatRef             undefined for a member chat of a group, otherwise anyScopeChatRef
+              filePaths           new: the download path and the forwarded path of a received file
+              receivingFiles      new: the IDs of the chat's files in status rcvAccepted, rcvTransfer or rcvWarning
+tools.ts      download            new: attach; knownChat; the item and its file; action
+              actionResult        until; an action still performing at until: {action, status: "performing"}, kept in memory
+              performDownload     new: startedAt; downloadFile; path
+              downloadTo          new: one download per file ID to a target path, a promise settled by onFile
+              downloadFile        new: downloadTo the download path; a forwarded file moved to the download path
+              forwardFile         new, public: downloadTo the forwarded path, then its copy for the post
+              fitsMessage         the length rule of send, also for the post of /forward
+              onFile              new: settles the promise of the file's download
+              onFileComplete      new: moves the received file, also of a member chat of a group; settles as onFile
+              onFileCancelled     new: deletes the partial file of a download; rejects it
+serve.ts      startAgent          Agent.data: the data folder
+                                  /_temp_folder DATA/tmp, mode 0700, before startChat
+              events              rcvFileComplete: tools.onFileComplete
+                                  rcvFileError: tools.onFileError
+                                  rcvFileSndCancelled: tools.onFileCancelled
+                                  chatItemUpdated: tools.onFile
+control.ts    ownerRequest        /receive [CHAT] N; /receive CHAT N all; /receive CHAT off; /forward [CHAT] N
+              standings           new: messages and files, with the custom data key and the reply words
+              approveChat         standing kind
+              revoke              standing kind
+              standingApprover    standing kind
+              forward             new: forwardFile, then the copy posted into the agent control chat, replying to the card when the message fits
+              cardContent         new: image and video cards with the sender's preview, fitted to the card size
+              postCard, outcome   cardContent
+              outcome             no post for a download without a card
+              requestLines        download
+              commandsLine        download
+              chatsText           ", files approved by NAME"
+```
+
+Output status, completed:
+```
+status       meaning
+performing   wait passed after the approval; the download continues; the same call again attaches to the action
+```
+
+`downloadTo(action, TARGET)`: TARGET is the download path `DATA/files/<folder>/<file ID><extension>` for `downloadFile`, run by `download` and for each received file that `newChatItems` shows in status rcvAccepted, also in a member chat of a group; for `forwardFile`, run by `/forward`, the forwarded path `DATA/forwarded/<folder>/<file ID><extension>`:
+```
+a download of the file ID in memory: its promise
+otherwise a new promise in memory, then the item's file status:
+  rcvComplete              resolved with the download path or the forwarded path, the first that has a file; neither: rejected, "The received file is not in the agent's files folder."
+  failed                   partial file deleted; rejected
+  rcvAccepted, rcvTransfer the events settle it
+  other                    the folder of TARGET created with mode 0700; apiReceiveFile(fileId, TARGET); the core creates the file at that path (getRcvFilePath, Library/Internal.hs:958-965)
+```
+- `downloadFile` resolved with the forwarded path: after the copy for the post of `/forward`, the file moved to the download path when that has no file.
+
+Events and checks, for the received file of the event's item:
+```
+event                                        file and promise of the file ID
+rcvFileComplete                              moved to path; as rcvComplete above
+rcvFileError                                 as failed above, else rejected with the agent error (Library/Subscriber.hs:440-446)
+rcvFileSndCancelled                          partial file deleted; rejected: "The sender cancelled the file.", by rcvFileTransfer.fileId
+every 60 s, the item read again              gone: the partial file at the last fileSource deleted; rejected, "The message or its chat was deleted."; rcvComplete: moved to path; its file as the events above
+                                             rcvInvitation after the acceptance: rejected, "The file is on unknown servers that were not approved."
+30 minutes without rcvTransfer progress      rejected, "The download made no progress for 30 minutes and was cancelled."; apiCancelFile; the partial file at the last fileSource deleted
+chatItemUpdated                              as rcvComplete and failed above: file digest, relays not approved (Library/Subscriber.hs:415-439)
+```
+- Moved to path: when fileSource is neither the download path nor the forwarded path, the download path has no file, and a file is at fileSource, with fileSize bytes for a file without a download; also from a member chat of a group into the group's folder.
+- A move is a rename; across file systems (EXDEV), a copy to `<path>.part`, its rename to path and a delete of the source.
+- Partial file deleted: only for a file with a download, when the file has at most fileSize bytes.
+- Every other row changes only a file with a download.
+
+```mermaid
+flowchart TD
+  E[event or 60 s check] --> C{rcvFileComplete, or a check that reads rcvComplete}
+  C -- yes --> M{fileSource neither the download path nor the forwarded path, no file at the download path, a file at fileSource, with fileSize bytes without a download of the file ID}
+  M -- yes --> V[moved to the download path]
+  M -- no --> S{download of the file ID}
+  V --> S
+  C -- no --> S
+  S -- no --> N[unchanged]
+  S -- yes, rcvComplete --> R{a file at the download path or the forwarded path}
+  R -- yes --> D[resolved with the first of them]
+  R -- no --> Y
+  S -- yes, failed, cancelled, gone or stalled --> P{at most fileSize bytes at fileSource}
+  P -- yes --> X[deleted, rejected]
+  P -- no --> Y[rejected]
+```
+
+Card size: the image field of a card counts against 15000 bytes with its text:
+```
+image budget = 15000 - the largest card text, as aeson encodes it - the JSON of the image and duration fields
+preview within budget   used
+preview over budget     core.chatResizeImageUri(preview bytes, budget); an error: logged, a text card
+```
+
+Card text:
+```
+form      lines
+pending   I want to download a file from Alice in group Builders (#3):     (direct chats and channels: from bot X (@4):)
+          `report.pdf`, 2.4 MB
+          /'receive #3 7', /'receive #3 7 all', /'forward #3 7' or /'reject #3 7'
+done      I downloaded a file from ... and the file line
+```
+- Sizes: bytes, KB, MB, GB by 1000, one decimal.
+- The servers line, after the file line: `Servers: known.`, or the unknown servers by their first host as code (decision 14); from `apiGetChatItemInfo` and `apiGetUserServers` of #7808.
+
+Owner commands, completed:
+```
+command                 reply
+/receive CHAT N all     Files approved for business Ridgeline (#9) by Alice. /'receive #9 off'
+/receive CHAT off       Files from business Ridgeline (#9) need approval again.
+                        Files from #9 have no standing approval.
+/receive [CHAT] N       none; the card is edited at the outcome
+/forward [CHAT] N       none; the file arrives, as a reply to the card when the message fits
+                        Action N: the file was not received: `<error>`.   (the download or the post of the file failed)
+/receive, /forward      Action N is not a download.   (N not a download)
+/approve [CHAT] N       Action N is a download: /'receive #9 N', /'receive #9 N all', /'forward #9 N' or /'reject #9 N'.   (N a download)
+```
+- The files approval: custom data key `simplexMcpFiles`, `{approvedBy, approvedById, approvedAt}`; the approval of messages keeps `simplexMcp`.
+- The file posted by `/forward` has the item's type and the sender's preview, with no caption; it is a copy under the file's name in `DATA/files/sent/`, deleted as resized copies are, and when its post fails.
+
+## Sending files
+
+Input of `send`:
+```
+field   value
+file    absolute path of a file the server can read
+as      file: send an image or video unchanged as a file
+text    caption; required without file
+```
+
+Message type, by extension, unless `as` is `file`:
+```
+extension            type    preview                        file sent
+.jpg .jpeg .png      image   chatResizeImageUri, 14000      chatResizeImage, 261120 bytes, in DATA/files/sent/
+.gif .webp           image   fixed                          unchanged
+.mp4 .mov            video   ffmpeg, else fixed             unchanged
+other                file    none                           unchanged
+```
+
+- A copy in `DATA/files/sent/` is deleted after `sndFileCompleteXFTP` or `sndFileError`; the folder is deleted at start.
+- The send card adds the file's name, size and full path; an image card is an image message with the preview.
+
+Refused paths, checked after resolving symbolic links, each folder by its real path:
+```
+path
+~/.ssh/**
+~/.gnupg/**
+files named id_*, *.pem, *.key, *.p12, *.pfx
+the server's data folder and ~/.simplex-mcp/**, except DATA/files/
+```
+
+- The refusal is posted to the agent control chat and returned to the agent as a tool error.
+
+Phase 2 changes:
+```
+file          function        change
+actions.ts    Attachment      new: path, name, size, inode, changedAt, type, preview, duration
+              SendAction      file: Attachment; cardImage
+tools.ts      sendSchema      file, as; text optional
+              send            attach check first; attachment before the action
+              attachment      new: the checks, type, preview and duration
+              performSend     the file to send; ComposedMessage with fileSource and the image, video or file content
+              onSentFile      new: the copy in DATA/files/sent/ deleted
+control.ts    refusedFile     new: the refusal posted and logged
+              requestLines    send: the attaching line
+serve.ts      events          sndFileCompleteXFTP, sndFileError: tools.onSentFile; sndFileError: control.fileNotSent, posted and logged
+```
+
+`attachment(file, as)`, at the call, before the action:
+```
+check                                             tool error
+file not absolute                                 file: an absolute path is expected.
+realpath fails                                    file: no file at PATH.
+not a regular file                                file: PATH is not a file.
+not readable                                      file: PATH can't be read.
+refused path, on the real path                    file: PATH is refused: private keys and the server's own files are not sent.
+empty file                                        file: PATH is empty.
+text and file both absent                         text: required without file.
+as without file                                   as: applies only with file.
+the message over 15602 bytes                      text: too long for a message with this image; shorten it.
+                                                  (no file: text: too long for the message with its quote; shorten it.)
+```
+- The message length counts the quoted content as the core's `quoteContent` builds it, an image's preview included (`Library/Internal.hs:372-398`).
+- The refusal is posted: ``Refused to send `PATH` to bot SimpleX Directory (@4): private keys and the server's own files are not sent.``; the same line goes to the log.
+- The card shows the real path.
+
+Previews:
+```
+type          preview                                                                   duration
+image JPEG    core.resizeImage(file, MessagePreview); an error: logged, the fixed preview
+image PNG     as JPEG
+GIF, WebP     the fixed preview
+video         ffmpeg's first frame, then core.resizeImage(frame, MessagePreview);       ffprobe's format duration, rounded;
+              ffmpeg absent or failing: logged, the fixed preview                       absent or failing: 0
+```
+- The fixed preview: a 16 × 9 mid-gray PNG data URI.
+- `ffmpeg -nostdin -v error -protocol_whitelist file -f mov -i PATH -frames:v 1 -f image2pipe -vcodec mjpeg -` and `ffprobe -v error -protocol_whitelist file -f mov -show_entries format=duration -of csv=p=0 PATH`, 30 s each; `-f mov` reads both .mp4 and .mov.
+
+`performSend` with a file:
+```
+the real path, size, inode and change time read again; a difference: failed
+JPEG and PNG: core.resizeImage(file, Image) written to DATA/files/sent/send-XXXXXX/NAME, .jpg or .png by the result's format (Image.hs:47-57); an error: logged, the file unchanged
+apiSendMessages with fileSource {filePath}, msgContent {type, text, image, duration}
+an error of the send: the copy deleted
+```
+- `onSentFile`: the copy's folder is deleted when `fileTransferMeta.filePath` is in `DATA/files/sent/` (Library/Subscriber.hs:312, :364).
+- The send card adds ``attaching image `/home/alice/trail.jpg`, 3.1 MB`` after the text; an image or video send card shows the preview, fitted as download cards.
+
+## Tests
+
+- Unit: the `file` field from each `fileStatus`; type by extension; refused paths, symbolic links included; card texts.
+- End-to-end, with the local SMP and XFTP servers of `TESTING.md`:
+  - a received image: card with the preview; `/forward`: the file arrives in the control chat, the card stays pending, the file is outside the chat's folder; `/receive`: `download` returns the path
+  - `/receive CHAT N all`: a later download posts no card
+  - `/reject` and expiry
+  - sending a PNG: the peer receives an image of at most 261120 bytes with a preview
+  - a refused path: the refusal in the control chat
+  - `/leave #N` with a pending send for #N
+  - stop with an unsent card edit: the edit is delivered before close
+
+Phase 1 tests:
+- `test/unit/fixtures.ts`: `FakeChat` takes the library methods of the server from `api.ChatApi.prototype`; they send through its `sendChatCmd`, so the tests check the command strings. `/_get chats` is read with its query.
+- `test/unit/messages.test.ts`: the changed strings; `classifyPlan` with the result of `apiConnectPlan`.
+- `test/unit/commands.test.ts`, `/leave`:
+  - `/leave #N` with a pending send and a pending leave for #N: the group is left and deleted; both actions are rejected by the sender; a send to another chat stays pending; the reply and the log line
+  - `/leave @N`: the contact is deleted
+  - names as code in the reply and on one line in the log
+  - an unknown chat, the agent control chat, a member who is not an approver, mode host
+- `test/e2e/scenarios.test.ts`, `/leave #N` with a pending send for #N: the call returns rejected; the card ends with "Rejected by Alice."; the reply and the log line; the group's owner sees the agent leave; `list` leaves out the chat.
+- Development: `simplex-chat` and `@simplex-chat/types` built from this branch (`packages/simplex-chat-nodejs`, `packages/simplex-chat-client/types/typescript`) and installed in the MCP package with `npm install --no-save`.
+
+Phase 2 tests:
+- `test/unit/messages.test.ts`: the `file` field from each `fileStatus`, and rejected; `download`: attach, a file already received, an item without a file, `performing` at wait, the path at done, a failure by event; `send` with `file`: the type and preview by extension, the fixed preview when the core can't resize, ffmpeg absent, refused paths with symbolic links, the copy deleted at `sndFileCompleteXFTP`.
+- `test/unit/commands.test.ts`: `/receive CHAT N all` and `/receive CHAT off`, with messages approval kept; `/receive`, `/forward`, and `/approve` of a download refused; `/list` with files approval; the download card forms; an image card fitted to 15000 bytes.
+- `test/unit/cards.test.ts`: download cards; the attaching line of send cards.
+- `test/e2e/smpServer.ts`: `startXftpServer`, a local xftp-server from `XFTP_SERVER`, configured as the smp-server; every profile gets `/xftp`.
+- `test/e2e/scenarios.test.ts`: the end-to-end list above, except the stop wait.
+
+Phase 1 docs:
+- `PLAN.md`: the network configuration at start; the commands with `/leave`.
+- `REFERENCE.md`: the commands with `/leave`.
+
+Phase 2 docs:
+- `PLAN.md`: the `file` field, `download`, its cards and commands, `send` with `file`.
+- `REFERENCE.md`: files.
+- `TESTING.md`: `XFTP_SERVER`; files in the steps.

@@ -38,20 +38,20 @@ import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
 
 @Composable
-fun AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
+fun ModalData.AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
   val rhId = rh?.remoteHostId
   val view = LocalMultiplatformView()
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
-  val displayName = rememberSaveable { mutableStateOf("") }
+  val displayName = remember { stateGetOrPut("displayName") { "" } }
   val chosenImage = rememberSaveable { mutableStateOf<URI?>(null) }
   val profileImage = rememberSaveable { mutableStateOf<String?>(null) }
   val focusRequester = remember { FocusRequester() }
   val hasRelays = rememberSaveable { mutableStateOf(true) }
-  val groupInfo = remember { mutableStateOf<GroupInfo?>(null) }
-  val groupLink = rememberSaveable(stateSaver = GroupLink.nullableStateSaver) { mutableStateOf<GroupLink?>(null) }
+  val groupInfo = remember { stateGetOrPutNullable<GroupInfo>("groupInfo") { null } }
+  val groupLink = remember { stateGetOrPutNullable<GroupLink>("groupLink") { null } }
   val groupRelays = remember { mutableStateOf<List<GroupRelay>>(emptyList()) }
-  val creationInProgress = rememberSaveable { mutableStateOf(false) }
+  val creationInProgress = remember { stateGetOrPut("creationInProgress") { false } }
   val showLinkStep = rememberSaveable { mutableStateOf(false) }
   val relayListExpanded = rememberSaveable { mutableStateOf(false) }
 
@@ -664,6 +664,6 @@ fun RelayProgressIndicator(active: Int, total: Int) {
 @Composable
 fun PreviewAddChannelView() {
   SimpleXTheme {
-    AddChannelView(chatModel = ChatModel, rh = null, close = {}, closeAll = {})
+    ModalData().AddChannelView(chatModel = ChatModel, rh = null, close = {}, closeAll = {})
   }
 }

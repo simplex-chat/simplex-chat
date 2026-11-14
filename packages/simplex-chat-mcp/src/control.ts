@@ -1,46 +1,82 @@
-import {ChatEvent, T} from "@simplex-chat/types"
-import * as qrcode from "qrcode"
-import {api} from "simplex-chat"
-import {Action, ActionHooks, Actions, ConnectAction, Subject, ToolError, leaveVerbs, subjectText, summary} from "./actions"
-import {ExitError, chatErrorOf, log, logError, oneLine, shellWord} from "./log"
-import {chatNumber, chatRef, isChatRef, utcMinutes, validName, viewName} from "./messages"
+import {CEvt, ChatEvent, T} from "@simplex-chat/types"
+import {api, core} from "simplex-chat"
+import {Action, ActionHooks, Actions, DownloadAction, PermissionAction, Standing, State, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
+import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
+import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
+import {linkCommand} from "./owner"
+import type {ApprovedTool} from "./protocol"
+import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, isActive, isConnected, memberCurrent} from "./tools"
+import {AgentTools, chatSubject, customDataOf, featureOff, fitsMessage, isActive, isConnected, memberCurrent, memberCurrentOrPending, refusedFeature, refusedFileReason, setChatData} from "./tools"
 
-const controlCommands: T.ChatBotCommand[] = [
+export {qrCodeText}
+
+// spec: spec/api.md#group-profile
+export const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
   {type: "command", keyword: "list", label: "Chats and approvals"},
+  {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
 ]
 
-const commandsReply = "Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands."
-const cardTooLong = {send: "text: too long for its approval card; shorten it.", connect: "message: too long for its approval card; shorten it."}
+// spec: spec/api.md#control-commands
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+// spec: spec/api.md#control-commands
+const unknownCommand = "Unknown command."
+const filesAndMedia = "Files and media"
+const cardTooLong = {
+  send: "text: too long for its approval card; shorten it.",
+  connect: "message: too long for its approval card; shorten it.",
+  download: "item: the names of its file and chat are too long for its approval card.",
+}
+// spec: spec/architecture.md#control-standings
+const standings: {[standing in Standing]: {key: string; approved: string; scope: string; revoke: (chat: string) => string; listed: string}} = {
+  messages: {key: "simplexMcp", approved: "Approved for", scope: "Messages to", revoke: chat => `revoke ${chat}`, listed: "approved for this chat by"},
+  files: {key: "simplexMcpFiles", approved: "Files approved for", scope: "Files from", revoke: chat => `receive ${chat} off`, listed: "files approved by"},
+}
 const maxCardLength = 15_000
 const listedChats = 100
 const maxLineLength = 100
 const truncationMark = "…"
 const longestError = "€".repeat(600)
-const greeting = "I'm your agent. I ask here before I connect or send."
+// spec: spec/api.md#membership-messages
+const greeting = "I'm your agent. I ask here before I connect, send, download a file or leave a chat."
+// spec: spec/api.md#terminal-lines
 const noOwners = "No owners in the agent control chat."
 const qrCodeHint = "If the QR code does not scan, restart with --qr-code large, or paste the link into the app."
-const qrMargin = 2
-const darkCell = "\x1b[40m  "
-const lightCell = "\x1b[47m  "
-const darkHalfCell = "\x1b[40m "
-const lightHalfCell = "\x1b[47m "
-const darkTopCell = "\x1b[37;40m▄"
-const darkBottomCell = "\x1b[30;47m▄"
-const resetColors = "\x1b[0m"
+// spec: spec/api.md#plugin-results
+const noSessionApprover = `The group of this session has no admin or owner to approve actions. Members of the Main group join it by /join N there; without members, run ${linkCommand} in a terminal.`
+// spec: spec/api.md#session-groups
+const approverRights = "can send prompts to Claude and the group's commands, and approve tool use"
+// spec: spec/api.md#session-groups
+const senderRights = "can send prompts to Claude; the group's commands and approvals need the role admin or owner"
+// spec: spec/api.md#session-groups
+const observerRights = "can't send messages"
+// spec: spec/architecture.md#control-sessionapproverroles
+export const sessionApproverRoles: T.GroupMemberRole[] = [T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
+// spec: spec/architecture.md#control-roleorder
+const roleOrder: T.GroupMemberRole[] = [T.GroupMemberRole.Relay, T.GroupMemberRole.Observer, T.GroupMemberRole.Author, T.GroupMemberRole.Member, T.GroupMemberRole.Moderator, T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 
+// spec: spec/architecture.md#control-controldata
 export interface ControlData {
   control: true
   nextAction: number
 }
 
+// spec: spec/architecture.md#control-controloptions
 export interface ControlOptions {
   displayName: string
   owners?: OwnerEntry[]
+  session?: SessionOptions
   registerHint: string
   qrCode: QrCodeSize
+}
+
+// spec: spec/architecture.md#control-controloptions
+export interface SessionOptions {
+  approves: (member: T.GroupMember) => boolean
+  ownerOf: (session: number) => string | undefined
+  isUser: (member: T.GroupMember) => boolean
+  toolsChanged: () => void
 }
 
 export interface Command {
@@ -48,15 +84,23 @@ export interface Command {
   params: string
 }
 
+// spec: spec/architecture.md#control-chatapproval
 interface ChatApproval {
   approvedBy: string
   approvedById: number
   approvedAt: string
 }
 
+// spec: spec/architecture.md#control-ownerrequest-type
 type OwnerRequest =
-  | {type: "approve" | "reject"; action: number; chat?: string}
-  | {type: "approveChat" | "revoke"; chat: string}
+  | {type: "approve" | "reject" | "receive" | "forward"; action: number; chat?: string}
+  | {type: "receiveAll"; action: number; chat: string}
+  | {type: "approveTool"; action: number}
+  | {type: "revokeTool"; tool: string}
+  | {type: "approveChat" | "revoke"; chat: string; standing: Standing}
+  | {type: "leave" | "deleteFiles"; chat: string}
+  | {type: "give"; chat: string; session: number}
+  | {type: "observer"; group: string; member: number}
   | {type: "pending" | "list"}
 
 interface Shown {
@@ -64,12 +108,16 @@ interface Shown {
   command: (command: string) => string
 }
 
+// spec: spec/api.md#membership-messages
 const inLog: Shown = {name: oneLine, command: command => command}
+// spec: spec/api.md#membership-messages
 const inChat: Shown = {name: safeName, command: codeSpan}
 
 export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "postCard" | "outcome"> {
   private members: T.GroupMember[] = []
+  private readonly toolApprovals = new Map<string, ChatApproval>()
   private writes: Promise<unknown> = Promise.resolve()
+  private profileUpdates: Promise<unknown> = Promise.resolve()
   private ownerCommands: Promise<unknown> = Promise.resolve()
 
   constructor(
@@ -77,7 +125,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     private group: T.GroupInfo,
     private readonly options: ControlOptions,
     private readonly actions: Actions,
-    private readonly tools: Pick<AgentTools, "knownChat" | "agentChats">,
+    private readonly tools: Pick<AgentTools, "knownChat" | "agentChats" | "leaveChat" | "forwardFile" | "deleteSentCopy" | "chatFiles" | "deleteChatFiles" | "giveChat">,
   ) {}
 
   get groupId(): number {
@@ -88,15 +136,38 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return `#${this.group.groupId}`
   }
 
+  // spec: spec/api.md#group-profile
   async load(): Promise<void> {
     if (isLost(this.group)) return this.lose()
-    const {groupProfile} = this.group
-    if (groupProfile.displayName !== this.options.displayName || JSON.stringify(groupProfile.groupPreferences?.commands) !== JSON.stringify(controlCommands)) {
-      this.group = await this.chat.apiUpdateGroupProfile(this.groupId, {...groupProfile, displayName: this.options.displayName, groupPreferences: {...groupProfile.groupPreferences, commands: controlCommands}})
-    }
+    const {displayName} = this.options
+    await this.updateProfile(profile =>
+      profile.displayName !== displayName || JSON.stringify(profile.groupPreferences?.commands) !== JSON.stringify(controlCommands) ? {...profile, displayName, groupPreferences: {...profile.groupPreferences, commands: controlCommands}} : undefined,
+    )
     await this.refreshMembers()
   }
 
+  // spec: spec/architecture.md#control-control-rename
+  async rename(displayName: string): Promise<void> {
+    this.options.displayName = displayName
+    await this.load()
+  }
+
+  // spec: spec/api.md#session-group-profile
+  async describe(shortDescr: string): Promise<void> {
+    await this.updateProfile(profile => (profile.shortDescr === shortDescr ? undefined : {...profile, shortDescr}))
+  }
+
+  // spec: spec/api.md#group-profile
+  private updateProfile(change: (profile: T.GroupProfile) => T.GroupProfile | undefined): Promise<void> {
+    const update = this.profileUpdates.then(async () => {
+      const group = await (this.options.session === undefined ? changeGroupProfile : updateGroupProfile)(this.chat, this.group, change)
+      this.group = {...group, customData: this.group.customData}
+    })
+    this.profileUpdates = update.catch(() => undefined)
+    return update
+  }
+
+  // spec: spec/architecture.md#control-control-start
   async start(): Promise<void> {
     if (this.actions.lost) return
     const {owners} = this.options
@@ -105,55 +176,101 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return this.startListed(owners)
   }
 
+  // spec: spec/architecture.md#control-control-refusal
   refusal(action: Action): string | undefined {
-    const {mode} = this.actions
+    const {mode} = action
     const approver = this.longestApproverName()
     if (action.tool === "connect") action.linkTextBytes = maxCardLength - largestCard({...action, linkTextBytes: 0}, mode, approver)
-    if (action.tool !== "leave" && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
+    if (action.tool === "permission") action.previewBytes = maxCardLength - largestCard({...action, previewBytes: 0}, mode, approver)
+    if (action.tool !== "leave" && action.tool !== "mode" && action.tool !== "permission" && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
     if (this.approvers().length > 0) return undefined
+    if (this.options.session !== undefined) return noSessionApprover
     return this.options.owners === undefined
       ? "The agent has no owner. The person who runs it has to join its control chat with the link the server printed."
       : "The agent has no approving owner. The person who runs it has to restart it with the --owners options it printed."
   }
 
-  standingApprover(chatInfo: T.ChatInfo): string | undefined {
-    const approval = approvalOf(customDataOf(chatInfo))
+  // spec: spec/architecture.md#control-control-hasapprover
+  hasApprover(): boolean {
+    return this.approvers().length > 0
+  }
+
+  // spec: spec/architecture.md#control-control-standingapprover
+  standingApprover(chatInfo: T.ChatInfo, standing: Standing): string | undefined {
+    const approval = approvalOf(customDataOf(chatInfo), standings[standing].key)
     return this.actions.mode === "requests" && approval !== undefined && this.approvers().some(({groupMemberId}) => groupMemberId === approval.approvedById) ? safeName(approval.approvedBy) : undefined
   }
 
+  // spec: spec/architecture.md#control-control-savecounter
   saveCounter(nextAction: number): Promise<void> {
-    const write = this.writes.then(() => this.chat.apiSetGroupCustomData(this.groupId, controlData(nextAction)))
+    return this.saveData(controlData(nextAction))
+  }
+
+  // spec: spec/architecture.md#control-control-savecounter
+  saveData(data: object): Promise<void> {
+    const write = this.writes.then(async () => {
+      const customData = {...this.group.customData, ...data}
+      await this.chat.apiSetGroupCustomData(this.groupId, customData)
+      this.group = {...this.group, customData}
+    })
     this.writes = write.catch(() => undefined)
     return write
   }
 
+  // spec: spec/architecture.md#control-control-postcard
   async postCard(action: Action): Promise<number> {
-    return this.post(cardText(action, this.actions.mode))
+    return this.postCardContent(action, await this.cardContent(action))
   }
 
+  // spec: spec/api.md#cards
   async outcome(action: Action): Promise<void> {
-    const text = cardText(action, this.actions.mode)
-    if (action.card === undefined) await this.post(text)
-    else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, {type: "text", text}, false)
+    if (!hasOutcomeCard(action)) return
+    const content = await this.cardContent(action)
+    if (action.card === undefined) await this.postCardContent(action, content)
+    else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, content, false).catch(error => this.postRefusal(error, refusedCardSubject(action, "updated")))
+    const filesNote = action.tool === "leave" && action.state === "done" ? this.leftChatFilesNote(action.chat, action.subject) : undefined
+    if (filesNote !== undefined) await this.post(filesNote)
   }
 
+  // spec: spec/architecture.md#control-control-refusedfile
+  refusedFile(path: string, chatInfo: T.ChatInfo, chat: string): void {
+    const refused = (shown: Shown, shownPath: string): string => `Refused to send ${shownPath} to ${chatName(chatSubject(chatInfo), shown.name)} (${chat}): ${refusedFileReason}.`
+    log(refused(inLog, oneLine(path)))
+    if (!this.actions.lost) this.post(refused(inChat, codeSpan(oneLine(path)))).catch(error => logError("refused file", error))
+  }
+
+  // spec: spec/architecture.md#control-control-refusedfile
+  fileNotSent({chatItem_, errorMessage}: CEvt.SndFileError): void {
+    const file = chatItem_?.chatItem.file
+    const chat = chatItem_ === undefined ? undefined : chatRef(chatItem_.chatInfo)
+    if (chatItem_ === undefined || file === undefined || chat === undefined) return logError("file not sent", errorMessage)
+    const {chatInfo} = chatItem_
+    const reason = fileError(file) ?? errorMessage
+    const notSent = (shown: Shown, name: string, error: string): string => `The file ${name} was not sent to ${chatName(chatSubject(chatInfo), shown.name)} (${chat}): ${error}.`
+    log(notSent(inLog, oneLine(file.fileName), oneLine(reason)))
+    if (!this.actions.lost) this.post(notSent(inChat, codeSpan(oneLine(file.fileName)), codeSpan(oneLine(reason)))).catch(error => logError("file not sent", error))
+  }
+
+  // spec: spec/architecture.md#control-control-onmessage
   onMessage(ci: T.AChatItem): void {
     const {chatItem} = ci
     if (this.actions.lost || chatItem.chatDir.type !== "groupRcv" || chatItem.content.type !== "rcvMsgContent") return
     const command = parseCommand(chatItem.content.msgContent.text)
-    if (command === undefined) return
     const sender = chatItem.chatDir.groupMember
+    if (command === undefined || this.options.session?.isUser(sender)) return
     this.ownerCommands = this.ownerCommands
       .then(() => this.ownerCommand(sender, command))
       .then(reply => (reply === undefined ? undefined : this.chat.apiSendTextReply(ci, reply)))
       .catch(error => logError("control chat command", error))
   }
 
+  // spec: spec/architecture.md#control-control-onevent
   async onEvent(event: ChatEvent): Promise<void> {
     if (this.actions.lost) return
     if (losesControl(event)) return this.lose()
     const before = this.humanOwners()
     await this.refreshMembers()
+    if (this.options.session !== undefined) return
     const {owners} = this.options
     if (event.type === "joinedGroupMember" && this.isHuman(event.member)) {
       if (owners === undefined) return this.ownerJoined(event.member)
@@ -166,11 +283,12 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (owners !== undefined && owners.length > 0) await this.reportOwnerChanges(owners, before)
   }
 
+  // spec: spec/api.md#control-commands
   async ownerCommand(sender: T.GroupMember, command: Command): Promise<string | undefined> {
     this.actions.expireDue()
-    const request = ownerRequest(command)
-    if (request === undefined) return commandsReply
-    if (!this.isApprover(sender)) return this.options.owners === undefined ? "Only owners approve actions." : "Only the owners listed in --owners approve actions."
+    const request = ownerRequest(command, this.options.session !== undefined)
+    if (request === undefined) return this.options.session === undefined ? commandsReply : unknownCommand
+    if (!this.isApprover(sender)) return this.options.session !== undefined ? undefined : this.options.owners === undefined ? "Only owners approve actions." : "Only the owners listed in --owners approve actions."
     switch (request.type) {
       case "pending": {
         const lines = this.actions.pending().filter(({card}) => card !== undefined).map(pendingLine)
@@ -180,53 +298,196 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         return this.chatsText()
       case "approveChat":
         if (this.actions.mode === "host") return "Approvals apply in mode requests; this server runs in mode host."
-        return this.approveChat(sender, request.chat)
+        return this.approveChat(sender, request.chat, request.standing)
       case "revoke":
-        return this.revoke(request.chat)
+        return this.revoke(request.chat, request.standing)
+      case "revokeTool":
+        return this.revokeTool(request.tool)
+      case "leave":
+        return this.leave(sender, request.chat)
+      case "deleteFiles":
+        return this.deleteFiles(request.chat)
+      case "give":
+        return this.give(sender, request.chat, request.session)
+      case "observer":
+        return this.setObserver(sender, request.group, request.member)
       case "approve":
-      case "reject": {
+      case "reject":
+      case "receive":
+      case "forward":
+      case "receiveAll":
+      case "approveTool": {
         const action = this.actions.get(request.action)
         if (action === undefined || action.state !== "pending" || action.card === undefined) return `Action ${request.action} is not pending.`
+        if (request.type === "approveTool") return action.tool === "permission" ? this.approveTool(sender, action) : `Action ${request.action} is not a tool use.`
         if (request.chat !== undefined && (action.tool === "connect" || action.chat !== request.chat)) return `Action ${request.action} is not for ${request.chat}.`
         const approver = safeName(sender.memberProfile.displayName)
-        if (request.type === "approve") this.actions.approve(action, approver)
-        else this.actions.reject(action, approver)
+        if (request.type === "reject") this.actions.reject(action, approver)
+        else if (action.tool !== "download") {
+          if (request.type !== "approve") return `Action ${request.action} is not a download.`
+          this.actions.approve(action, approver)
+        } else if (request.type === "approve") return `Action ${action.n} is a download: ${commandsLine(action)}.`
+        else if (request.type === "receive") this.actions.approve(action, approver)
+        else if (request.type === "forward") this.forward(action)
+        else return this.approveChat(sender, action.chat, "files", action)
         return undefined
       }
     }
   }
 
-  private async approveChat(sender: T.GroupMember, chat: string): Promise<string> {
+  // spec: spec/api.md#control-commands
+  private async approveChat(sender: T.GroupMember, chat: string, standing: Standing, named?: Action): Promise<string> {
+    const {key, approved, revoke} = standings[standing]
     const chatInfo = await this.agentChat(chat)
     if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
     const approvedBy = sender.memberProfile.displayName
     const approval: ChatApproval = {approvedBy, approvedById: sender.groupMemberId, approvedAt: new Date().toISOString()}
-    await this.setCustomData(chat, {...customDataOf(chatInfo), simplexMcp: approval})
+    await this.setCustomData(chat, {...customDataOf(chatInfo), [key]: approval})
     const approver = safeName(approvedBy)
-    for (const action of this.actions.pending()) {
-      if (action.tool === "send" && action.chat === chat && action.card !== undefined) this.actions.approve(action, approver)
-    }
-    return `Approved for ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}. /'revoke ${chat}'`
+    const pending = this.actions.pending().filter(action => (named === undefined ? action.tool === "send" && action.chat === chat && action.card !== undefined : action === named))
+    for (const action of pending) this.actions.approve(action, approver)
+    return `${approved} ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}. /'${revoke(chat)}'`
   }
 
-  private async revoke(chat: string): Promise<string> {
+  // spec: spec/api.md#control-commands
+  private async revoke(chat: string, standing: Standing): Promise<string> {
+    const {key, scope} = standings[standing]
     const chatInfo = await this.agentChat(chat)
-    if (chatInfo === undefined || approvalOf(customDataOf(chatInfo)) === undefined) return `Messages to ${chat} have no standing approval.`
-    const {simplexMcp, ...customData} = customDataOf(chatInfo) as {simplexMcp: unknown}
+    if (chatInfo === undefined || approvalOf(customDataOf(chatInfo), key) === undefined) return `${scope} ${chat} have no standing approval.`
+    const {[key]: _, ...customData} = customDataOf(chatInfo) as {[key: string]: unknown}
     await this.setCustomData(chat, customData)
-    return `Messages to ${chatName(chatSubject(chatInfo))} (${chat}) need approval again.`
+    return `${scope} ${chatName(chatSubject(chatInfo))} (${chat}) need approval again.`
   }
 
+  // spec: spec/architecture.md#control-control-approvedtools
+  approvedTools(): ApprovedTool[] {
+    return [...this.toolApprovals].filter(([, {approvedById}]) => this.approvers().some(({groupMemberId}) => groupMemberId === approvedById)).map(([tool, {approvedBy}]) => ({tool, approvedBy}))
+  }
+
+  // spec: spec/architecture.md#control-control-approvedtools
+  endToolApprovals(): void {
+    this.toolApprovals.clear()
+  }
+
+  // spec: spec/api.md#session-groups
+  private approveTool(sender: T.GroupMember, action: PermissionAction): string {
+    const {toolName} = action.input
+    const approvedBy = sender.memberProfile.displayName
+    this.toolApprovals.set(toolName, {approvedBy, approvedById: sender.groupMemberId, approvedAt: new Date().toISOString()})
+    log(`${oneLine(toolName)} approved for the rest of the session in "${this.options.displayName}" by ${oneLine(approvedBy)}.`)
+    this.options.session?.toolsChanged()
+    const approver = safeName(approvedBy)
+    this.actions.approve(action, approver)
+    return `Approved ${codeSpan(oneLine(toolName))} for the rest of this session by ${approver}. /'revoke ${toolName}'`
+  }
+
+  // spec: spec/api.md#session-groups
+  private revokeTool(tool: string): string {
+    if (!this.toolApprovals.delete(tool)) return `Uses of ${codeSpan(tool)} have no standing approval.`
+    log(`${tool} needs approval again in "${this.options.displayName}".`)
+    this.options.session?.toolsChanged()
+    return `Uses of ${codeSpan(tool)} need approval again.`
+  }
+
+  // spec: spec/api.md#control-commands
+  private forward(action: DownloadAction): void {
+    this.tools
+      .forwardFile(action)
+      .then(copy =>
+        this.cardContent(action)
+          .then(card => {
+            const msgContent = fileContent(action.file, "")
+            return this.postMessage({fileSource: {filePath: copy}, msgContent, quotedItemId: fitsMessage(msgContent, action.file.name, {content: card}) ? action.card : undefined, mentions: {}})
+          })
+          .catch(error => {
+            this.tools.deleteSentCopy(copy)
+            throw error
+          }),
+      )
+      .catch(error => {
+        const feature = this.sessionRefusal(error)
+        return this.post(feature === undefined ? `Action ${action.n}: the file was not received: ${codeSpan(oneLine(errorText(error)))}.` : `Action ${action.n}: ${featureOff(feature)}`)
+      })
+      .catch(error => logError(`action ${action.n} file`, error))
+  }
+
+  // spec: spec/api.md#control-commands
+  private async leave(sender: T.GroupMember, chat: string): Promise<string> {
+    const chatInfo = await this.agentChat(chat)
+    if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
+    await this.tools.leaveChat(chat)
+    const {past} = leaveVerbs({chat})
+    const left = (shown: Shown): string => `${past[0].toUpperCase()}${past.slice(1)} ${chatName(chatSubject(chatInfo), shown.name)} (${chat}), requested by ${shown.name(sender.memberProfile.displayName)}.`
+    log(left(inLog))
+    const approver = safeName(sender.memberProfile.displayName)
+    for (const action of this.actions.pending()) {
+      if (action.chat === chat && action.card !== undefined) this.actions.reject(action, approver)
+    }
+    const filesNote = this.leftChatFilesNote(chat, chatSubject(chatInfo))
+    if (filesNote !== undefined) this.queueAfterReplies(() => this.post(filesNote))
+    return left(inChat)
+  }
+
+  // spec: spec/api.md#other-posts
+  private leftChatFilesNote(chat: string, subject: Subject): string | undefined {
+    const {folder, count, bytes} = this.tools.chatFiles(chat)
+    return count === 0 ? undefined : `Files from ${chatName(subject)} (${chat}) are kept in ${codeSpan(oneLine(folder))}: ${filesText(count)}, ${sizeText(bytes)}. /'delete ${chat} files'`
+  }
+
+  // spec: spec/api.md#control-commands
+  private async deleteFiles(chat: string): Promise<string> {
+    const {count, bytes} = await this.tools.deleteChatFiles(chat)
+    return count === 0 ? `No files from ${chat}.` : `Deleted ${filesText(count)} from ${chat}, ${sizeText(bytes)}.`
+  }
+
+  // spec: spec/api.md#session-groups
+  private async give(sender: T.GroupMember, chat: string, session: number): Promise<string> {
+    const chatInfo = await this.agentChat(chat)
+    if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
+    const owner = this.options.session?.ownerOf(session)
+    if (owner === undefined) return `No session ${session}. /sessions in the Main group lists the sessions.`
+    await this.tools.giveChat(chat, owner)
+    const approver = safeName(sender.memberProfile.displayName)
+    for (const action of this.actions.pending()) {
+      if (action.chat === chat && action.card !== undefined) this.actions.reject(action, approver)
+    }
+    return `Gave ${chatName(chatSubject(chatInfo))} (${chat}) to session ${session}.`
+  }
+
+  // spec: spec/api.md#session-groups
+  private async setObserver(sender: T.GroupMember, group: string, groupMemberId: number): Promise<string> {
+    if (group !== this.chatRef) return `${group} is not this group.`
+    await this.refreshMembers()
+    const target = this.members.find(member => member.groupMemberId === groupMemberId)
+    if (target === undefined || !memberCurrentOrPending(target)) return `No member ${groupMemberId} in this group.`
+    const name = safeName(target.memberProfile.displayName)
+    const pending = target.memberStatus === T.GroupMemberStatus.Pending_approval || target.memberStatus === T.GroupMemberStatus.Pending_review
+    if (groupMemberId === this.group.membership.groupMemberId || groupMemberId === sender.groupMemberId || target.memberRole === T.GroupMemberRole.Relay || pending) return `${name}'s role can't be changed.`
+    if (roleRank(sender.memberRole) < Math.max(roleRank(T.GroupMemberRole.Admin), roleRank(target.memberRole))) return `Your role does not let you change the role of ${name}.`
+    await this.chat.apiSetMembersRole(this.groupId, [groupMemberId], T.GroupMemberRole.Observer)
+    await this.refreshMembers()
+    this.options.session?.toolsChanged()
+    return rightsText(name, T.GroupMemberRole.Observer)
+  }
+
+  private queueAfterReplies(post: () => Promise<unknown>): void {
+    this.ownerCommands = this.ownerCommands.then(post).catch(error => logError("control chat command", error))
+  }
+
+  // spec: spec/api.md#control-commands
   private async chatsText(): Promise<string> {
     const chats = await this.tools.agentChats()
     const lines = chats.slice(0, listedChats).map(({chatInfo}) => {
-      const approvedBy = this.standingApprover(chatInfo)
-      const approval = approvedBy === undefined ? "" : `, approved for this chat by ${approvedBy}`
+      const approvals = (["messages", "files"] as const).map(standing => {
+        const approvedBy = this.standingApprover(chatInfo, standing)
+        return approvedBy === undefined ? "" : `, ${standings[standing].listed} ${approvedBy}`
+      })
       const connection = isConnected(chatInfo) ? "" : ", not connected"
-      return truncatedLine(`${chatRef(chatInfo)}  ${chatName(chatSubject(chatInfo))}${approval}${connection}`, maxLineLength)
+      return truncatedLine(`${chatRef(chatInfo)}  ${chatName(chatSubject(chatInfo))}${approvals.join("")}${connection}`, maxLineLength)
     })
     const rest = chats.length - lines.length
     if (rest > 0) lines.push(`${rest} older chat${rest === 1 ? " is" : "s are"} not shown.`)
+    lines.push(...this.approvedTools().map(({tool, approvedBy}) => `${codeSpan(oneLine(tool))}  approved for this session by ${safeName(approvedBy)}`))
     return lines.length > 0 ? lines.join("\n") : "No chats."
   }
 
@@ -240,20 +501,23 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   private setCustomData(chat: string, customData: object): Promise<void> {
-    return chat.startsWith("@") ? this.chat.apiSetContactCustomData(chatNumber(chat), customData) : this.chat.apiSetGroupCustomData(chatNumber(chat), customData)
+    return setChatData(this.chat, chat, customData)
   }
 
+  // spec: spec/api.md#terminal-lines
   private async startOwners(): Promise<void> {
     if (this.humanOwners().length > 0) return log(this.options.registerHint)
     if (this.humans().length > 0) log(noOwners)
     await this.openLink(T.GroupMemberRole.Member)
   }
 
+  // spec: spec/api.md#membership-messages
   private async startObserver(): Promise<void> {
     if (this.humans().length === 0) return this.openLink(T.GroupMemberRole.Observer)
     await this.announce(shown => `${this.humans().map(member => joinedText(member, shown.name)).join(". ")}. ${restartText(this.humans(), shown)}`)
   }
 
+  // spec: spec/api.md#exit-codes
   private async startListed(owners: OwnerEntry[]): Promise<void> {
     const humans = this.humans()
     const listed = owners.map(owner => {
@@ -273,6 +537,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     log(this.options.registerHint)
   }
 
+  // spec: spec/api.md#membership-messages
   private async ownerJoined(member: T.GroupMember): Promise<void> {
     await this.deleteLink()
     await this.chat.apiSetMembersRole(this.groupId, [member.groupMemberId], T.GroupMemberRole.Owner)
@@ -282,11 +547,13 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     log(this.options.registerHint)
   }
 
+  // spec: spec/api.md#membership-messages
   private async observerJoined(member: T.GroupMember): Promise<void> {
     await this.deleteLink()
     await this.announce(shown => `${joinedText(member, shown.name)}. ${restartText(this.humans(), shown)}`)
   }
 
+  // spec: spec/api.md#membership-messages
   private async reportOwnerChanges(owners: OwnerEntry[], before: T.GroupMember[]): Promise<void> {
     const after = this.humanOwners()
     const isListed = (member: T.GroupMember): boolean => owners.some(owner => listsMember(owner, member))
@@ -303,11 +570,15 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     }
   }
 
+  // spec: spec/api.md#terminal-lines
   private lose(): void {
     this.actions.loseControl()
-    log(`The agent lost its control chat. Restart the server with --reset-owners.`)
+    this.endToolApprovals()
+    this.options.session?.toolsChanged()
+    log(this.options.session === undefined ? `The agent lost its control chat. Restart the server with --reset-owners.` : `The group "${this.options.displayName}" is lost.`)
   }
 
+  // spec: spec/api.md#terminal-lines
   private async openLink(role: T.GroupMemberRole): Promise<void> {
     await this.deleteLink()
     const link = await this.chat.apiCreateGroupLink(this.groupId, role)
@@ -329,14 +600,71 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     }
   }
 
+  // spec: spec/api.md#membership-messages
   private async announce(text: (shown: Shown) => string): Promise<void> {
     log(text(inLog))
     await this.post(text(inChat))
   }
 
   private async post(text: string): Promise<number> {
-    const [item] = await this.chat.apiSendMessages([T.ChatType.Group, this.groupId], [{msgContent: {type: "text", text}, mentions: {}}])
+    return this.postMessage({msgContent: {type: "text", text}, mentions: {}})
+  }
+
+  private async postMessage(message: T.ComposedMessage): Promise<number> {
+    const [item] = await this.chat.apiSendMessages([T.ChatType.Group, this.groupId], [message])
     return item.chatItem.meta.itemId
+  }
+
+  // spec: spec/api.md#cards
+  private async postCardContent(action: Action, msgContent: T.MsgContent): Promise<number> {
+    try {
+      return await this.postMessage({msgContent, mentions: {}})
+    } catch (error) {
+      const feature = this.sessionRefusal(error)
+      if (feature === undefined) throw error
+      if (feature === filesAndMedia && msgContent.type !== "text") {
+        action.cardImage = ""
+        return this.postCardContent(action, {type: "text", text: msgContent.text})
+      }
+      await this.post(`${refusedCardSubject(action, "posted")}: ${featureOff(feature)}`)
+      throw new ToolError(featureOff(feature))
+    }
+  }
+
+  // spec: spec/api.md#cards
+  private sessionRefusal(error: unknown): string | undefined {
+    return this.options.session === undefined ? undefined : refusedFeature(error)
+  }
+
+  // spec: spec/api.md#cards
+  private async postRefusal(error: unknown, subject: string): Promise<void> {
+    const feature = this.sessionRefusal(error)
+    if (feature === undefined) throw error
+    await this.post(`${subject}: ${featureOff(feature)}`)
+  }
+
+  // spec: spec/api.md#cards
+  private async cardContent(action: Action): Promise<T.MsgContent> {
+    const text = cardText(action, action.mode)
+    const file = action.tool === "download" || action.tool === "send" ? action.file : undefined
+    const content = file === undefined ? undefined : fileContent(file, text)
+    if (content?.type !== "image" && content?.type !== "video") return {type: "text", text}
+    action.cardImage ??= await this.fittedImage(action, content)
+    return action.cardImage === "" ? {type: "text", text} : {...content, image: action.cardImage}
+  }
+
+  // spec: spec/api.md#cards
+  private async fittedImage(action: Action, content: T.MsgContent.Image | T.MsgContent.Video): Promise<string> {
+    const {image} = content
+    const fields = JSON.stringify({...content, text: "", image: ""}).length - JSON.stringify({type: "text", text: ""}).length
+    const budget = maxCardLength - largestCard(action, action.mode, this.longestApproverName()) - fields
+    if (encodedLength(image) <= budget) return image
+    try {
+      return await core.chatResizeImageUri(Buffer.from(image.slice(image.indexOf(",") + 1), "base64"), budget)
+    } catch (error) {
+      logError(`action ${action.n} card image`, error)
+      return ""
+    }
   }
 
   private async refreshMembers(): Promise<void> {
@@ -351,6 +679,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return this.humans().filter(({memberRole}) => memberRole === T.GroupMemberRole.Owner)
   }
 
+  // spec: spec/api.md#session-groups
   private approvers(): T.GroupMember[] {
     return this.humans().filter(member => this.isApprover(member))
   }
@@ -360,17 +689,26 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return names.reduce((longest, name) => (encodedLength(name) > encodedLength(longest) ? name : longest), "")
   }
 
+  // spec: spec/api.md#session-groups
   private isHuman(member: T.GroupMember): boolean {
     return member.groupMemberId !== this.group.membership.groupMemberId && isActive(member)
   }
 
+  // spec: spec/architecture.md#control-control-isapprover
   private isApprover(member: T.GroupMember): boolean {
-    const {owners} = this.options
+    const {owners, session} = this.options
+    if (session !== undefined) return session.approves(member)
     const owner = member.memberRole === T.GroupMemberRole.Owner
     return owners === undefined ? owner : owner && owners.some(entry => listsMember(entry, member))
   }
 }
 
+// spec: spec/api.md#cards
+export function hasOutcomeCard(action: Action): boolean {
+  return action.tool !== "download" || action.card !== undefined
+}
+
+// spec: spec/architecture.md#control-findcontrolgroup
 export async function findControlGroup(chat: api.ChatApi, userId: number): Promise<T.GroupInfo | undefined> {
   const groups = (await chat.apiListGroups(userId)).filter(({customData}) => controlDataOf(customData) !== undefined)
   return groups.reduce<T.GroupInfo | undefined>((latest, group) => (latest === undefined || group.groupId > latest.groupId ? group : latest), undefined)
@@ -381,26 +719,55 @@ export function controlDataOf(customData: object | undefined): ControlData | und
   return data?.control === true && typeof data.nextAction === "number" ? {control: true, nextAction: data.nextAction} : undefined
 }
 
+// spec: spec/api.md#group-profile
 export async function createControlChat(chat: api.ChatApi, userId: number, displayName: string, nextAction: number): Promise<T.GroupInfo> {
-  const group = await chat.apiNewGroup(userId, {
+  const group = await createGroup(chat, userId, {
     displayName,
     fullName: "",
     description: "Supervise your AI agent here: approve or reject its connections and messages with one tap.",
     groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, commands: controlCommands},
-  })
-  const customData = controlData(nextAction)
-  await chat.apiSetGroupCustomData(group.groupId, customData)
+  }, controlData(nextAction))
   log(`Agent control chat "${displayName}" created.`)
+  return group
+}
+
+// spec: spec/architecture.md#control-creategroup
+export async function createGroup(chat: api.ChatApi, userId: number, profile: T.GroupProfile, customData: object): Promise<T.GroupInfo> {
+  const group = await chat.apiNewGroup(userId, profile)
+  await chat.apiSetGroupCustomData(group.groupId, customData)
   return {...group, customData}
 }
 
+// spec: spec/api.md#main-group-profile
+export async function updateGroupProfile(chat: api.ChatApi, group: T.GroupInfo, change: (profile: T.GroupProfile) => T.GroupProfile | undefined): Promise<T.GroupInfo> {
+  const {chatInfo} = await chat.apiGetChat(T.ChatType.Group, group.groupId, 0)
+  return changeGroupProfile(chat, chatInfo.type === "group" ? chatInfo.groupInfo : group, change)
+}
+
+// spec: spec/api.md#group-profile
+async function changeGroupProfile(chat: api.ChatApi, group: T.GroupInfo, change: (profile: T.GroupProfile) => T.GroupProfile | undefined): Promise<T.GroupInfo> {
+  const profile = change(group.groupProfile)
+  return profile === undefined ? group : chat.apiUpdateGroupProfile(group.groupId, profile)
+}
+
+// spec: spec/architecture.md#control-findcontrolgroup
 export async function resetControlChat(chat: api.ChatApi, userId: number, group: T.GroupInfo, displayName: string, nextAction: number): Promise<T.GroupInfo> {
-  const {membership} = group
-  if (memberCurrent(membership) && membership.memberRole !== T.GroupMemberRole.Owner) await chat.apiLeaveGroup(group.groupId)
-  await chat.apiDeleteChat(T.ChatType.Group, group.groupId, {type: "full", notify: true})
+  await deleteGroup(chat, group)
   return createControlChat(chat, userId, displayName, nextAction)
 }
 
+// spec: spec/architecture.md#control-creategroup
+export async function deleteGroup(chat: api.ChatApi, {groupId, membership}: T.GroupInfo): Promise<void> {
+  if (memberCurrent(membership) && membership.memberRole !== T.GroupMemberRole.Owner) await chat.apiLeaveGroup(groupId)
+  await chat.apiDeleteChat(T.ChatType.Group, groupId, {type: "full", notify: true})
+}
+
+// spec: spec/architecture.md#control-isgroupmessage
+export function isGroupMessage({chatInfo}: Pick<T.AChatItem, "chatInfo">, groupId: number): boolean {
+  return chatInfo.type === "group" && chatInfo.groupInfo.groupId === groupId && chatInfo.groupChatScope === undefined
+}
+
+// spec: spec/architecture.md#control-iscontrolevent
 export function isControlEvent(event: ChatEvent, groupId: number): boolean {
   switch (event.type) {
     case "joinedGroupMember":
@@ -417,6 +784,7 @@ export function isControlEvent(event: ChatEvent, groupId: number): boolean {
   }
 }
 
+// spec: spec/api.md#control-commands
 export function parseCommand(text: string): Command | undefined {
   const lines = text.split("\n")
   if (lines.at(-1) === "") lines.pop()
@@ -424,6 +792,7 @@ export function parseCommand(text: string): Command | undefined {
   return match ? {keyword: match[1], params: match[2].trim()} : undefined
 }
 
+// spec: spec/api.md#cards
 export function cardText(action: Action, mode: Actions["mode"]): string {
   const request = requestLines(action)
   const approval = mode === "host" ? "Performed without approval (mode host)" : action.standing ? `Approved for this chat by ${action.decidedBy}` : `Approved by ${action.decidedBy}`
@@ -441,58 +810,91 @@ export function cardText(action: Action, mode: Actions["mode"]): string {
     case "rejected":
       return [...request, `Rejected by ${action.decidedBy}.`].join("\n")
     case "expired":
-      return [...request, "Expired."].join("\n")
+      return [...request, action.ended ? "Ended." : "Expired."].join("\n")
   }
 }
 
+// spec: spec/api.md#cards
 function requestLines(action: Action): string[] {
   const done = action.state === "done"
+  if (action.tool === "mode") return [`${done ? "I run" : "I want to run"} in mode ${action.input.mode}: Claude Code asks you before each of my actions, and they are performed without approval here.`]
+  if (action.tool === "permission") {
+    const {toolName, description, inputPreview} = action.input
+    const approved = action.toolApproved ? [`${codeSpan(oneLine(toolName))} is approved for this session, and Claude Code still asks for this use.`] : []
+    return [`I want to use ${codeSpan(oneLine(toolName))}: ${codeSpan(oneLine(description))}`, ...fittedLines(codeLines(inputPreview), action.previewBytes), ...approved]
+  }
   const subject = subjectText(action.subject, safeName)
   switch (action.tool) {
     case "connect": {
       const {input} = action
       const verb = !done ? "I want to connect" : action.connected ? "I connected" : "I asked to connect"
       const message = input.message === undefined ? [] : ["With the message:", ...codeLines(input.message)]
-      return [`${verb} to ${subject}, ${action.subject.incognito ? "incognito" : "as myself"}.`, ...linkLines(action), ...message]
+      return [`${verb} to ${subject}, ${action.subject.incognito ? "incognito" : "as myself"}.`, ...fittedLines([...codeLines(action.plan.description), ...codeLines(action.plan.welcome)], action.linkTextBytes), ...message]
     }
     case "send": {
-      const {replyTo, mentions} = action
+      const {file, replyTo, mentions} = action
+      const attaching = file === undefined ? [] : [`attaching ${file.type} ${codeSpan(oneLine(file.path))}, ${sizeText(file.size)}`]
       const reply = replyTo === undefined ? [] : [`replying to ${safeName(replyTo.from)}: ${codeSpan([...replyTo.text.replace(/\s+/g, " ")].slice(0, 100).join(""))}`]
       const mentioning = mentions.length === 0 ? [] : [`mentioning ${mentions.map(({name}) => mentionText(name)).join(", ")}`]
-      return [`${done ? "I sent" : "I want to send"} a message to ${subject}${action.subject.incognito ? ", where I am incognito" : ""}:`, ...codeLines(action.input.text), ...reply, ...mentioning]
+      return [`${done ? "I sent" : "I want to send"} a message to ${subject}${action.subject.incognito ? ", where I am incognito" : ""}:`, ...codeLines(action.input.text), ...attaching, ...reply, ...mentioning]
     }
     case "leave": {
       const {present, past} = leaveVerbs(action)
       return [`${done ? `I ${past}` : `I want to ${present}`} ${chatName(action.subject)} (${action.chat}).`]
     }
+    case "download": {
+      const {from, file, unknownServers} = action
+      const source = `${from === undefined ? "" : `${safeName(from)} in `}${chatName(action.subject)} (${action.chat})`
+      const servers = unknownServers === undefined ? [] : [serversLine(unknownServers)]
+      return [`${done ? "I downloaded" : "I want to download"} a file from ${source}:`, `${codeSpan(oneLine(file.name))}, ${sizeText(file.size)}`, ...servers]
+    }
   }
 }
 
+// spec: spec/api.md#cards
 function commandsLine(action: Action): string {
   switch (action.tool) {
     case "connect":
+    case "mode":
       return `/'approve ${action.n}' or /'reject ${action.n}'`
+    case "permission":
+      return action.toolApproved ? `/'approve ${action.n}' or /'reject ${action.n}'` : `/'approve ${action.n}', /'approve ${action.n} all' or /'reject ${action.n}'`
     case "send":
       return `/'approve ${action.chat} ${action.n}', /'approve ${action.chat} all' or /'reject ${action.chat} ${action.n}'`
     case "leave":
       return `/'approve ${action.chat} ${action.n}' or /'reject ${action.chat} ${action.n}'`
+    case "download": {
+      const all = hasUnknownServers(action) ? "" : `/'receive ${action.chat} ${action.n} all', `
+      return `/'receive ${action.chat} ${action.n}', ${all}/'forward ${action.chat} ${action.n}' or /'reject ${action.chat} ${action.n}'`
+    }
   }
 }
 
+// spec: spec/api.md#control-commands
 function pendingLine(action: Action): string {
   return `${action.n}  ${summary(action, safeName).what}  expires ${utcMinutes(action.expires)}`
 }
 
+// spec: spec/api.md#cards
+function refusedCardSubject({n, state, ended}: Action, card: "posted" | "updated"): string {
+  const outcomes: {[decided in State]?: string} = {done: "was performed", failed: "failed", rejected: "was rejected", expired: "expired"}
+  const outcome = ended ? "ended" : outcomes[state]
+  return outcome === undefined ? `Action ${n}` : `Action ${n} ${outcome}; its card was not ${card}`
+}
+
+// spec: spec/architecture.md#control-largestcard
 function largestCard(action: Action, mode: Actions["mode"], approver: string): number {
   const decidedBy = action.decidedBy ?? approver
   const cards: Action[] = [action, {...action, state: "done", decidedBy}, {...action, state: "failed", decidedBy, error: longestError}]
   return Math.max(...cards.map(card => encodedLength(cardText(card, mode))))
 }
 
+// spec: spec/architecture.md#control-largestcard
 function encodedLength(text: string): number {
   return [...text].reduce((length, c) => length + (/["\\\n\r\t]/.test(c) ? 2 : c < " " ? 6 : Buffer.byteLength(c)), 0)
 }
 
+// spec: spec/architecture.md#control-truncatedline
 function truncatedLine(line: string, maxLength: number): string {
   if (encodedLength(line) <= maxLength) return line
   let length = encodedLength(truncationMark)
@@ -505,39 +907,60 @@ function truncatedLine(line: string, maxLength: number): string {
   return `${kept}${truncationMark}`
 }
 
-function linkLines({plan, linkTextBytes = Infinity}: ConnectAction): string[] {
-  const lines: string[] = []
-  let left = linkTextBytes
-  for (const line of [...codeLines(plan.description), ...codeLines(plan.welcome)]) {
+// spec: spec/architecture.md#control-truncatedline
+function fittedLines(lines: string[], budget = Infinity): string[] {
+  const fitted: string[] = []
+  let left = budget
+  for (const line of lines) {
     const length = encodedLength(`\n${line}`)
     if (length > left) {
       const room = left - encodedLength("\n``")
-      if (room >= encodedLength(truncationMark)) lines.push(`\`${truncatedLine(line.slice(1, -1), room)}\``)
+      if (room >= encodedLength(truncationMark)) fitted.push(`\`${truncatedLine(line.slice(1, -1), room)}\``)
       break
     }
-    lines.push(line)
+    fitted.push(line)
     left -= length
   }
-  return lines
+  return fitted
 }
 
-function chatName(subject: Subject): string {
-  return subjectText({...subject, simplexName: undefined}, safeName)
+function chatName(subject: Subject, showName: (name: string) => string = safeName): string {
+  return subjectText({...subject, simplexName: undefined}, showName)
+}
+
+// spec: spec/architecture.md#control-serversline
+function serversLine(unknownServers: string[]): string {
+  if (unknownServers.length === 0) return "Servers: known."
+  const hosts = unknownServers.map(server => codeSpan(oneLine(serverHostname(server)))).join(", ")
+  return `Servers: ${hosts}, unknown: downloading shows ${unknownServers.length === 1 ? "it" : "them"} this computer's IP address.`
+}
+
+// spec: spec/architecture.md#control-serversline
+function sizeText(bytes: number): string {
+  const exponent = Math.min(Math.floor(Math.log10(Math.max(bytes, 1)) / 3), 3)
+  return exponent === 0 ? `${bytes} bytes` : `${(bytes / 1000 ** exponent).toFixed(1)} ${["KB", "MB", "GB"][exponent - 1]}`
+}
+
+function filesText(count: number): string {
+  return `${count} file${count === 1 ? "" : "s"}`
 }
 
 function codeLines(text: string | undefined): string[] {
   return text === undefined ? [] : text.split("\n").map(line => (line.trim() === "" ? "" : codeSpan(line)))
 }
 
-function codeSpan(text: string): string {
+// spec: spec/architecture.md#control-codespan
+export function codeSpan(text: string): string {
   return `\`${text.replace(/`/g, "'").replace(/^ | $/g, "\u00a0")}\``
 }
 
-function safeName(name: string): string {
+// spec: spec/architecture.md#control-codespan
+export function safeName(name: string): string {
   const line = oneLine(name)
   return validName(line) === line ? line : codeSpan(line)
 }
 
+// spec: spec/architecture.md#control-codespan
 function mentionText(name: string): string {
   const line = oneLine(name)
   return validName(line) === line ? `@${viewName(line)}` : codeSpan(`@${line}`)
@@ -547,43 +970,33 @@ function controlData(nextAction: number): {simplexMcp: ControlData} {
   return {simplexMcp: {control: true, nextAction}}
 }
 
-function customDataOf(chatInfo: T.ChatInfo): object | undefined {
-  return chatInfo.type === "direct" ? chatInfo.contact.customData : (chatInfo as T.ChatInfo.Group).groupInfo.customData
-}
-
-function approvalOf(customData: object | undefined): {approvedBy: string; approvedById: number} | undefined {
-  const data = (customData as {simplexMcp?: Partial<ChatApproval>} | undefined)?.simplexMcp
+function approvalOf(customData: object | undefined, key: string): {approvedBy: string; approvedById: number} | undefined {
+  const data = (customData as {[key: string]: Partial<ChatApproval> | undefined} | undefined)?.[key]
   return typeof data?.approvedBy === "string" && typeof data.approvedById === "number" ? {approvedBy: data.approvedBy, approvedById: data.approvedById} : undefined
 }
 
-function ownerRequest({keyword, params}: Command): OwnerRequest | undefined {
+// spec: spec/api.md#control-commands
+function ownerRequest({keyword, params}: Command, session: boolean): OwnerRequest | undefined {
   const words = params === "" ? [] : params.split(/\s+/)
   const chat = words.length === 2 && isChatRef(words[0]) ? words[0] : undefined
   const value = words.length === 1 || chat !== undefined ? words.at(-1) : undefined
-  if ((keyword === "approve" || keyword === "reject") && value !== undefined && /^\d+$/.test(value)) return {type: keyword, action: Number(value), chat}
-  if (keyword === "approve" && chat !== undefined && value === "all") return {type: "approveChat", chat}
-  if (keyword === "revoke" && chat === undefined && value !== undefined && isChatRef(value)) return {type: "revoke", chat: value}
+  if ((keyword === "approve" || keyword === "reject" || keyword === "receive" || keyword === "forward") && value !== undefined && /^\d+$/.test(value)) return {type: keyword, action: Number(value), chat}
+  if (keyword === "receive" && words.length === 3 && isChatRef(words[0]) && /^\d+$/.test(words[1]) && words[2] === "all") return {type: "receiveAll", action: Number(words[1]), chat: words[0]}
+  if (keyword === "receive" && chat !== undefined && value === "off") return {type: "revoke", chat, standing: "files"}
+  if (keyword === "approve" && chat !== undefined && value === "all") return {type: "approveChat", chat, standing: "messages"}
+  if (keyword === "revoke" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value, standing: "messages"}
+  if (keyword === "leave" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value}
+  if (keyword === "delete" && chat !== undefined && value === "files") return {type: "deleteFiles", chat}
+  if (session && keyword === "give" && chat !== undefined && value !== undefined && /^\d+$/.test(value)) return {type: keyword, chat, session: Number(value)}
+  if (session && keyword === "observer" && chat?.startsWith("#") && value !== undefined && /^\d+$/.test(value)) return {type: "observer", group: chat, member: Number(value)}
+  if (session && keyword === "approve" && words.length === 2 && /^\d+$/.test(words[0]) && words[1] === "all") return {type: "approveTool", action: Number(words[0])}
+  if (session && keyword === "revoke" && chat === undefined && value !== undefined && /^[\w-]+$/.test(value)) return {type: "revokeTool", tool: value}
   if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
   return undefined
 }
 
-export function qrCodeText(link: string, size: QrCodeSize): string {
-  const {modules} = qrcode.create(link, {errorCorrectionLevel: "L"})
-  const positions = Array.from({length: modules.size + 2 * qrMargin}, (_, i) => i - qrMargin)
-  const inside = (i: number): boolean => i >= 0 && i < modules.size
-  const dark = (row: number, col: number): boolean => inside(row) && inside(col) && modules.get(row, col) !== 0
-  const cell = (row: number, col: number): string => (dark(row, col) ? darkCell : lightCell)
-  const halfCell = (top: boolean, bottom: boolean): string => {
-    if (top === bottom) return top ? darkHalfCell : lightHalfCell
-    return top ? darkTopCell : darkBottomCell
-  }
-  const lines = size === "large"
-    ? positions.map(row => positions.map(col => cell(row, col)).join(""))
-    : positions.filter((_, i) => i % 2 === 0).map(row => positions.map(col => halfCell(dark(row, col), dark(row + 1, col))).join(""))
-  return lines.map(line => line + resetColors).join("\n")
-}
-
-function losesControl(event: ChatEvent): boolean {
+// spec: spec/architecture.md#control-losescontrol
+export function losesControl(event: ChatEvent): boolean {
   switch (event.type) {
     case "deletedMemberUser":
     case "groupDeleted":
@@ -595,9 +1008,26 @@ function losesControl(event: ChatEvent): boolean {
   }
 }
 
-function isLost({membership}: T.GroupInfo): boolean {
+// spec: spec/architecture.md#control-losescontrol
+export function isLost({membership}: T.GroupInfo): boolean {
   const statuses: T.GroupMemberStatus[] = [T.GroupMemberStatus.Creator, T.GroupMemberStatus.Connected, T.GroupMemberStatus.Complete]
   return membership.memberRole !== T.GroupMemberRole.Owner || !statuses.includes(membership.memberStatus)
+}
+
+// spec: spec/architecture.md#control-roleorder
+function roleRank(role: T.GroupMemberRole): number {
+  return roleOrder.indexOf(role)
+}
+
+// spec: spec/architecture.md#control-roleorder
+export function canSend(role: T.GroupMemberRole): boolean {
+  return roleRank(role) > roleRank(T.GroupMemberRole.Observer)
+}
+
+// spec: spec/architecture.md#control-sessionapproverroles
+export function rightsText(name: string, role: T.GroupMemberRole): string {
+  const rights = sessionApproverRoles.includes(role) ? approverRights : canSend(role) ? senderRights : observerRights
+  return `${name} is ${/^[aeiou]/.test(role) ? "an" : "a"} ${role} and ${rights}.`
 }
 
 function listsMember({memberId, name}: OwnerEntry, member: T.GroupMember): boolean {
@@ -612,18 +1042,22 @@ function memberText({groupMemberId, memberProfile}: T.GroupMember, showName: (na
   return `${showName(memberProfile.displayName)} (member ${groupMemberId})`
 }
 
-function joinedText(member: T.GroupMember, showName: (name: string) => string): string {
+// spec: spec/architecture.md#control-joinedtext
+export function joinedText(member: T.GroupMember, showName: (name: string) => string): string {
   return `${showName(member.memberProfile.displayName)} joined (member ${member.groupMemberId})`
 }
 
+// spec: spec/architecture.md#control-entrytext
 export function entryText({memberId, name}: OwnerEntry): string {
   return shellWord(`${memberId}:${name}`, /^\d+:[\p{L}\p{N}_-]+$/u)
 }
 
+// spec: spec/api.md#membership-messages
 function ownersText(members: T.GroupMember[]): string {
   return members.map(({groupMemberId, memberProfile}) => entryText({memberId: groupMemberId, name: oneLine(memberProfile.displayName)})).join(",")
 }
 
+// spec: spec/architecture.md#control-entrytext
 function restartText(members: T.GroupMember[], shown: Shown): string {
   return `Restart the server with ${shown.command(`--owners ${ownersText(members)}`)}`
 }
