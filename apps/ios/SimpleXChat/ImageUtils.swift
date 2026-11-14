@@ -30,7 +30,7 @@ public func getLoadedImage(_ file: CIFile?) -> UIImage? {
         do {
             let data = try getFileData(filePath, fileSource.cryptoArgs)
             guard isImageFile(data), let image = imageSource(data, maxSide: MAX_SOURCE_IMAGE_DIMENSION) else { return nil }
-            if image.side > MAX_IMAGE_DIMENSION { return downsampleImage(image.source, to: MAX_IMAGE_DIMENSION) }
+            if image.side > MAX_IMAGE_DIMENSION { return downsampleImage(image.source, maxPixelSize: MAX_IMAGE_DIMENSION as NSNumber) }
             let img = UIImage(data: data)
             do {
                 try img?.setGifFromData(data, levelOfIntegrity: 1.0)
@@ -204,7 +204,7 @@ public func imageHasAlpha(_ img: UIImage) -> Bool {
 /// - Returns: Downsampled image or `nil`, if the image can't be located
 public func downsampleImage(at url: URL, to size: Int64) -> UIImage? {
     autoreleasepool {
-        CGImageSourceCreateWithURL(url as CFURL, nil).flatMap { downsampleImage($0, to: Int(size)) }
+        CGImageSourceCreateWithURL(url as CFURL, nil).flatMap { downsampleImage($0, maxPixelSize: String(size) as CFString) }
     }
 }
 
@@ -218,7 +218,7 @@ private func imageSource(_ data: Data, maxSide: Int) -> (source: CGImageSource, 
     return (source, max(width, height))
 }
 
-private func downsampleImage(_ source: CGImageSource, to size: Int) -> UIImage? {
+private func downsampleImage(_ source: CGImageSource, maxPixelSize: CFTypeRef) -> UIImage? {
     CGImageSourceCreateThumbnailAtIndex(
         source,
         0,
@@ -226,7 +226,7 @@ private func downsampleImage(_ source: CGImageSource, to size: Int) -> UIImage? 
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceShouldCacheImmediately: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: size
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize
         ] as CFDictionary
     )
     .map { UIImage(cgImage: $0) }
@@ -450,7 +450,7 @@ public func imageFromBase64(_ base64Encoded: String?) -> UIImage? {
             return img
         } else if let data = Data(base64Encoded: dropImagePrefix(base64Encoded)),
             let image = imageSource(data, maxSide: MAX_IMAGE_DIMENSION),
-            let img = image.side > MAX_PREVIEW_DIMENSION ? downsampleImage(image.source, to: MAX_PREVIEW_DIMENSION) : UIImage(data: data) {
+            let img = image.side > MAX_PREVIEW_DIMENSION ? downsampleImage(image.source, maxPixelSize: MAX_PREVIEW_DIMENSION as NSNumber) : UIImage(data: data) {
             imageCacheQueue.async {
                 imageCache.setObject(img, forKey: base64Encoded as NSString)
             }
