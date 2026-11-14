@@ -1179,6 +1179,7 @@ A tool hook sends `step` with `tool_use_id` as `id` ([`turn`, `stepOf`, `stepTex
 |---|---|
 | Bash | `💻 ` and `description`, or `command` without a description |
 | Read, Edit, Write | `📖 Read PATH`, `✏️ Edit PATH`, `✏️ Write PATH`. PATH is `file_path`, relative to `cwd` unless the relative path is absolute or starts with `..` |
+| NotebookEdit | `✏️ Edit PATH`. PATH is `notebook_path`, shown as for Read |
 | Grep, Glob | `🔍 Grep PATTERN in PATH`, `🔍 Glob PATTERN in PATH`. PATTERN is `pattern`, and PATH is `path`, shown as for Read; ` in PATH` is left out without a path or for `cwd` itself |
 | WebFetch | `🌐 Fetch ` and `url` |
 | WebSearch | `🔍 Search ` and `query` |

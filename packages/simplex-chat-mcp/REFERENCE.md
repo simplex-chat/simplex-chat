@@ -662,7 +662,7 @@ With the channel, a message from a member of a session's group, other than `User
 - When Claude Code summarises the session's conversation, Claude posts one line without a quote, once the summary has replaced the conversation. A summary made by Claude Code at the context limit or in an idle session gets `⚙️ Context summarised automatically: 968K → 35K tokens`, and one after `/compact` or "Summarize from here" gets `⚙️ Context summarised on request: 399K → 25K tokens`. The numbers are the size of the context before and after the summary. The summary of a subagent's conversation posts nothing. Claude Code writes a summary made during a turn to the transcript with its next request, so the line can follow such a summary by a few seconds. It writes the summary of `/compact` and of an idle session at once.
 - Claude posts one line for each step of its work, a tool use of the main conversation, when the step starts:
   - Bash: `💻 ` and the command's description, or its first line without one, such as `💻 Run the tests`;
-  - Read, Edit and Write: `📖 Read PATH`, `✏️ Edit PATH` and `✏️ Write PATH`, with PATH relative to the session's folder when it is inside it;
+  - Read, Edit, NotebookEdit and Write: `📖 Read PATH`, `✏️ Edit PATH` for a file or a notebook, and `✏️ Write PATH`, with PATH relative to the session's folder when it is inside it;
   - Grep and Glob: `🔍 Grep PATTERN in PATH` and `🔍 Glob PATTERN in PATH`, with PATH as for Read, and without ` in PATH` when the search has no path;
   - WebFetch and WebSearch: `🌐 Fetch URL` and `🔍 Search QUERY`;
   - Agent: `🤖 Agent: ` and the agent's description;

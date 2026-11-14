@@ -462,6 +462,8 @@ function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string 
       return `✏️ Edit ${path("file_path")}`
     case "Write":
       return `✏️ Write ${path("file_path")}`
+    case "NotebookEdit":
+      return `✏️ Edit ${path("notebook_path")}`
     case "Grep":
     case "Glob": {
       const where = path("path")
