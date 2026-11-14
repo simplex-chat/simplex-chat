@@ -174,6 +174,7 @@ export class FakeChat {
   updates: {chatId: number; itemId: number; text: string; live?: true}[] = []
   replies: string[] = []
   deleted: {chatType: T.ChatType; chatId: number; mode?: T.ChatDeleteMode}[] = []
+  deletedItems: {chatType: T.ChatType; chatId: number; itemIds: number[]; deleteMode: T.CIDeleteMode}[] = []
   left: number[] = []
   customData: {chat: string; customData?: object}[] = []
   profiles: {groupId: number; groupProfile: T.GroupProfile}[] = []
@@ -224,6 +225,11 @@ export class FakeChat {
   async apiUpdateChatItem(_type: T.ChatType, chatId: number, itemId: number, msgContent: T.MsgContent, liveMessage?: boolean): Promise<T.ChatItem> {
     this.updates.push({chatId, itemId, text: msgContent.text, ...(liveMessage === true ? {live: true} : {})})
     return item(itemId, msgContent.text, {type: "groupSnd"})
+  }
+
+  async apiDeleteChatItems(chatType: T.ChatType, chatId: number, itemIds: number[], deleteMode: T.CIDeleteMode): Promise<T.ChatItemDeletion[]> {
+    this.deletedItems.push({chatType, chatId, itemIds, deleteMode})
+    return []
   }
 
   async apiSendTextReply(_ci: T.AChatItem, text: string): Promise<T.AChatItem[]> {
