@@ -348,7 +348,8 @@ export class Session {
     }
     if (startsTurn) this.boundOpenings(at ?? Date.now())
     const started = answer === undefined ? undefined : this.turnStart(at ?? Infinity)
-    const streamed = startsTurn || answer !== undefined ? this.endTexts(at ?? Infinity, answer, started) : undefined
+    const end = answer === undefined ? undefined : endLine(usage ?? (started === undefined ? undefined : duration((at ?? Date.now()) - started)), this.limits)
+    const streamed = startsTurn || answer !== undefined ? this.endTexts(at ?? Infinity, answer, started, answer?.trim() === "" ? undefined : end) : undefined
     const quoted = answer === undefined ? undefined : this.turnQuote(at ?? Infinity)
     if (answer !== undefined) this.answeredAt = Math.max(this.answeredAt, at ?? Date.now())
     const matched = prompt === undefined ? [] : this.pushedIn(prompt)
@@ -377,7 +378,7 @@ export class Session {
       const userPost = typedPrompt ? this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser)) : undefined
       if (startsTurn && (typedPrompt || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) this.openTurn(at ?? Date.now(), matched[0]?.item, userPost)
       await userPost
-      if (answer !== undefined) await this.answer(answer, quoted, at ?? Date.now(), (await streamed) === true, started, usage)
+      if (answer !== undefined && end !== undefined) await this.answer(answer, quoted, at ?? Date.now(), (await streamed) === true, end)
     } finally {
       const {model: shown, effort: level} = this.description
       if (described) await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
@@ -516,27 +517,23 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-deliver
-  private async answer(text: string, quoted: T.ChatItem | undefined, at: number, streamed: boolean, started: number | undefined, usage: string | undefined): Promise<void> {
-    const end = endLine(usage ?? (started === undefined ? undefined : duration(at - started)), this.limits)
+  private async answer(text: string, quoted: T.ChatItem | undefined, at: number, streamed: boolean, end: string): Promise<void> {
     if (text.trim() === "") {
       const opening = this.takeOpening(at)
       if (opening !== undefined) await this.finalize(opening.item, end, textLines)
-    } else {
-      if (!streamed) await this.postAnswer(text, quoted, at)
-      await this.post([{text: end, priority: 1}])
-    }
+    } else if (!streamed) await this.postAnswer(text, quoted, at, end)
     this.closeOpenings(({at: start, until}) => (until ?? start) <= at)
   }
 
   // spec: spec/architecture.md#hub-session-deliver
-  private async postAnswer(text: string, quoted: T.ChatItem | undefined, at: number): Promise<void> {
+  private async postAnswer(text: string, quoted: T.ChatItem | undefined, at: number, end: string): Promise<void> {
     const quote = quoteOf(quoted, text)
-    const parts = textParts(text, quote).map(part => ({text: part, priority: -1}))
+    const parts = withLine(textParts(text, quote), end, quote).map((part, i, all) => ({text: part, priority: i === all.length - 1 ? 1 : -1}))
     const opened = await this.takeOpening(at)?.item
-    const filled = opened === undefined ? undefined : await this.fill(opened, parts[0].text, false, answerLines)
+    const filled = opened === undefined ? undefined : await this.fill(opened, parts[0].text, false, answerLines, undefined, end)
     if (filled === "refused") return
     const posted = filled === "filled" ? (parts.length > 1 ? this.post(parts.slice(1)) : undefined) : this.post(parts, quote === undefined ? undefined : quoted?.meta.itemId)
-    await posted?.catch(error => this.postRefusal(error, answerLines.refused, featureOff, quoted?.meta.itemId))
+    await posted?.catch(error => this.postRefusal(error, answerLines.refused, featureOff, quoted?.meta.itemId, undefined, end))
   }
 
   // spec: spec/architecture.md#hub-session-step
@@ -568,7 +565,7 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-step
-  private async fill(itemId: number, text: string, live: boolean, kind: LineKind, onRefused?: () => void): Promise<"filled" | "refused" | "failed"> {
+  private async fill(itemId: number, text: string, live: boolean, kind: LineKind, onRefused?: () => void, line?: string): Promise<"filled" | "refused" | "failed"> {
     try {
       await this.updateItem(itemId, text, live)
       return "filled"
@@ -578,7 +575,7 @@ export class Session {
         void this.finalize(Promise.resolve(itemId), stoppedLine, kind)
         return "failed"
       }
-      if (await this.refused(error, kind, itemId)) onRefused?.()
+      if (await this.refused(error, kind, itemId, line)) onRefused?.()
       return "refused"
     }
   }
@@ -595,8 +592,8 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-step
-  private refused(error: unknown, kind: LineKind, itemId?: number): Promise<boolean> {
-    return this.postRefusal(error, kind.refused, featureOff, undefined, itemId).then(
+  private refused(error: unknown, kind: LineKind, itemId?: number, line?: string): Promise<boolean> {
+    return this.postRefusal(error, kind.refused, featureOff, undefined, itemId, line).then(
       () => true,
       failure => {
         logError(`${kind.log} of session ${this.number}`, failure)
@@ -716,11 +713,11 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-text
-  private async endPart(text: LiveText, [first, ...rest]: string[]): Promise<void> {
+  private async endPart(text: LiveText, [first, ...rest]: string[], alert = false): Promise<void> {
     clearTimeout(text.timer)
     const shown = text.item === undefined ? await this.postPart(text, first) : await this.updateText(text, first, false)
     if (shown && rest.length > 0) {
-      await this.post(rest.map(part => ({text: part, priority: -1}))).catch(async error => {
+      await this.post(rest.map((part, i) => ({text: part, priority: alert && i === rest.length - 1 ? 1 : -1}))).catch(async error => {
         if (await this.refused(error, textLines)) this.refuseText(text)
       })
     }
@@ -734,10 +731,10 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-text
-  private async endText(text: LiveText, value: string): Promise<void> {
+  private async endText(text: LiveText, value: string, line?: string): Promise<void> {
     this.dropText(text)
     text.part = value
-    await this.endPart(text, textParts(value))
+    await this.endPart(text, withLine(textParts(value), line), line !== undefined)
     if (text.refused !== true && (await text.item) !== undefined) this.keepRecent(text)
   }
 
@@ -762,24 +759,24 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-text
-  private endTexts(before: number, answer?: string, started = -Infinity): Promise<boolean> {
+  private endTexts(before: number, answer?: string, started = -Infinity, line?: string): Promise<boolean> {
     return this.queueLive(async () => {
-      const streamed = answer !== undefined && (await this.claim(answer, before, started))
+      const streamed = answer !== undefined && (await this.claim(answer, before, started, line))
       for (const text of [...this.texts.values()]) if (text.at < before) await this.endText(text, text.part)
       return streamed
     }).then(streamed => streamed === true)
   }
 
   // spec: spec/architecture.md#hub-session-text
-  private async claim(answer: string, before: number, started: number): Promise<boolean> {
+  private async claim(answer: string, before: number, started: number, line?: string): Promise<boolean> {
     const texts = [...this.texts.values(), ...this.recentTexts].filter(({at}) => at < before && at > started)
     const newest = texts.reduce<LiveText | undefined>((found, text) => (found === undefined || text.at > found.at ? text : found), undefined)
     const full = newest === undefined ? "" : (newest.done + newest.part).trim()
     if (newest === undefined || full === "" || !answer.trim().startsWith(full)) return false
     if (newest.refused) return true
     const rest = answer.trim().slice(newest.done.trimStart().length)
-    if (this.texts.has(newest.id)) await this.endText(newest, rest)
-    else if (rest !== newest.part.trim()) await this.endPart(newest, textParts(rest))
+    if (this.texts.has(newest.id)) await this.endText(newest, rest, line)
+    else if (line !== undefined || rest !== newest.part.trim()) await this.endPart(newest, withLine(textParts(rest), line), line !== undefined)
     return true
   }
 
@@ -833,11 +830,11 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-deliver
-  private async postRefusal(error: unknown, subject: string, refusal: (feature: string) => string, quotedItemId?: number, itemId?: number): Promise<void> {
+  private async postRefusal(error: unknown, subject: string, refusal: (feature: string) => string, quotedItemId?: number, itemId?: number, line?: string): Promise<void> {
     const feature = refusedFeature(error)
     if (feature === undefined) throw error
-    const text = `${subject}: ${refusal(feature)}`
-    await (itemId === undefined ? this.post([{text}], quotedItemId) : this.updateItem(itemId, text, false))
+    const text = `${subject}: ${refusal(feature)}${line === undefined ? "" : `\n${line}`}`
+    await (itemId === undefined ? this.post([{text, ...(line === undefined ? {} : {priority: 1})}], quotedItemId) : this.updateItem(itemId, text, false))
   }
 
   // spec: spec/architecture.md#hub-session-deliver
@@ -1201,7 +1198,18 @@ function quoteOf(quoted: T.ChatItem | undefined, text: string): Parameters<typeo
 function endLine(figures: string | undefined, {fiveHour, week}: Limits): string {
   const now = Date.now() / 1_000
   const current = (window: LimitWindow | undefined): LimitWindow | undefined => (window !== undefined && window.resetsAt > now ? window : undefined)
-  return small([`Done${figures === undefined ? "" : ` in ${figures}`}`,...limitParts({fiveHour: current(fiveHour), week: current(week)})].join(" · "))
+  return small([`Done${figures === undefined ? "" : ` in ${figures}`}`, ...limitParts({fiveHour: current(fiveHour), week: current(week)})].join(" · "))
+}
+
+// spec: spec/architecture.md#hub-quoteof
+function withLine(parts: string[], line: string | undefined, quote?: Parameters<typeof fitsMessage>[2]): string[] {
+  if (line === undefined) return parts
+  const last = parts.at(-1)?.trimEnd() ?? ""
+  const joined = last === "" ? line : `${last}\n${line}`
+  if (textParts(joined, parts.length <= 1 ? quote : undefined).length === 1) return [...parts.slice(0, -1), joined]
+  const chars = [...last]
+  const keep = chars.length - [...line].length - 1
+  return [...parts.slice(0, -1), chars.slice(0, keep).join(""), `${chars.slice(keep).join("")}\n${line}`]
 }
 
 // spec: spec/architecture.md#hub-quoteof
