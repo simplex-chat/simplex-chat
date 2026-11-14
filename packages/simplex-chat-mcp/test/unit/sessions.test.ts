@@ -1166,7 +1166,7 @@ describe("session channel", () => {
   it("posts the end line with the turn's usage and the plan's usage of the newest status line report, leaving out a window whose reset time has passed, in small print as important after the silent answer", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
-    const usage = "2 min 13 s · 1.5k output tokens · 535k tokens in context"
+    const usage = "2 min 13 s · 1.6K output tokens · 535K tokens in context"
     const later = Date.now() / 1_000 + 3_600
     await session.turn({id: id1, at: 1, answer: "Fixed.", usage})
     await session.turn({id: id1, at: 3, effort: "high", limits: {fiveHour: {percent: 34.7, resetsAt: later}, week: {percent: 61, resetsAt: later}}})

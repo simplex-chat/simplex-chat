@@ -420,7 +420,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   expect(await submitted).toEqual({})
   await typed
   const fixed = updated(alice.chat, message("Fixed.", "Claude"))
-  const fixedEnd = received(alice.chat, message("!- Done in 2.0 s · 861 output tokens · 35.6k tokens in context!", "Claude"))
+  const fixedEnd = received(alice.chat, message("!- Done in 2.0 s · 861 output tokens · 36K tokens in context!", "Claude"))
   const usage = {input_tokens: 3, cache_creation_input_tokens: 600, cache_read_input_tokens: 35_000, output_tokens: 861}
   appendFileSync(transcript, `${JSON.stringify({type: "assistant", timestamp: "2026-11-13T10:00:02.000Z", message: {id: "msg_1", model: "claude-opus-5", content: [{type: "text", text: "Fixed."}], usage}})}\n`)
   const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupId && toGroup.groupProfile.shortDescr === "claude-opus-5", 60_000)

@@ -644,7 +644,7 @@ With the channel, a message from a member of a session's group, other than `User
 - When a prompt that a person typed, or a prompt from the group, starts a turn, Claude posts an empty live message at once: the apps show it under the LIVE header, with typing dots. It replies to the prompt when the prompt came from the group. The turn's first post fills it: the first line of Claude's text, a step, or the answer. If someone deletes the empty message, that post comes as a new message. A prompt that Claude Code adds to the running turn, a `/` command and Claude Code's own prompts get no such message.
 - Claude's text appears live as Claude writes it, also its remarks between steps, which the terminal shows. Each text of Claude, from its first line, is a live message that grows by whole lines, updated at most every 3 seconds, and completed when Claude ends it, without an edited mark. A text longer than one message continues in a new live message.
 - Claude's final answer of a turn is its last text. When Claude Code streams no text, as in versions without the MessageDisplay hook, Claude posts the answer at the end of the turn, in the turn's empty live message when no other post filled it. When the turn's prompt came from the group, the answer replies to it, even when the next prompt arrives while Claude answers. Claude Code can add a prompt that arrives during a turn to that turn. Then an answer posted as a new message replies to the last message from the group added to the turn.
-- After a non-blank answer, Claude posts one line in small print with the turn's usage, such as `Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context`, also after the text that replaces a refused answer, see [Model, effort and usage](#model-effort-and-usage). After a blank answer, the line fills the turn's empty live message instead, without an alert. A turn that ends without an answer, as after an interruption or an error, gets no line: its live texts are completed as they are, and its empty live message gets `⏹️ Stopped` at the end of a later turn, or when the session ends. A text or an empty live message still live 23 hours after it was sent is completed the same way, because SimpleX allows edits of a message for 24 hours.
+- After a non-blank answer, Claude posts one line in small print with the turn's usage, such as `Done in 2 min 51 s · 16K output tokens · 673K tokens in context`, also after the text that replaces a refused answer, see [Model, effort and usage](#model-effort-and-usage). After a blank answer, the line fills the turn's empty live message instead, without an alert. A turn that ends without an answer, as after an interruption or an error, gets no line: its live texts are completed as they are, and its empty live message gets `⏹️ Stopped` at the end of a later turn, or when the session ends. A text or an empty live message still live 23 hours after it was sent is completed the same way, because SimpleX allows edits of a message for 24 hours.
 - Claude's replies to a prompt, its answer included, are posted without the quote when the prompt was deleted or the quote makes the message too large. An answer is also posted without the quote when the quote leaves no room for its first character.
 - While the plugin is enabled, Claude Code shows Claude's text in the terminal by whole lines, after the plugin's MessageDisplay hook passes each batch of lines to the service, about 0.1 s later.
 - `User` posts only the prompts a person typed, also one typed while Claude works. `User` skips commands such as `/compact`, empty prompts such as one with images only, and prompts made only of the plugin's `<channel source="plugin:simplex:simplex" ...>` tags. `User`'s posts are never commands of the group, even a part that starts with `/`.
@@ -722,14 +722,14 @@ When the model switches, Claude posts `Model changed to MODEL` in small print. W
 The line after each answer shows the turn's usage, from the session's transcript:
 
 ```
-Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context · 5 h: 34% · week: 61%
+Done in 2 min 51 s · 16K output tokens · 673K tokens in context · 5 h: 34% · week: 61%
 ```
 
 - The time runs from the turn's first entry in the transcript to the answer.
 - The output tokens are those of the turn's responses, thinking included, without subagents.
 - The tokens in context are the input, cache writes and cache reads of the turn's last response.
 - `5 h` and `week` are the plan's 5-hour and weekly usage, with the [status line](#status-line) only. A window whose reset time has passed is left out.
-- Numbers are rounded down: `861`, `16.0k`, `673k`, `1.2M`.
+- Token counts are shortened as in the line of a summary of the context: `861`, `1.6K`, `16K`, `673K`, `1.2M`.
 - When the transcript has no usage of the turn, as for a turn over 64 MB or a Claude Code version without prompt IDs, the line shows the time from the turn's prompt to its end, such as `Done in 2 min 14 s`, or only `Done` when the start of the turn is not known.
 
 #### Status line

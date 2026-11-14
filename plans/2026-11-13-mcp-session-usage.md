@@ -37,16 +37,16 @@ Outcome:
 After each non-blank answer, Claude posts the end line in small print. It is the turn's alert, and every part of the answer is silent. With the status line setting:
 
 ```
-!- Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context · 5 h: 34% · week: 61%!
+!- Done in 2 min 51 s · 16K output tokens · 673K tokens in context · 5 h: 34% · week: 61%!
 ```
 
 Without the setting:
 
 ```
-!- Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context!
+!- Done in 2 min 51 s · 16K output tokens · 673K tokens in context!
 ```
 
-The apps show the text between `!- ` and `!` smaller and in the secondary color. A notification shows it without the marks ([NtfManager.kt:134-145](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L134-L145), [Notifications.swift:200-214](../apps/ios/SimpleXChat/Notifications.swift#L200-L214)). These end lines are computed from turns of this machine's transcripts:
+The apps show the text between `!- ` and `!` smaller and in the secondary color. A notification shows it without the marks ([NtfManager.kt:134-145](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L134-L145), [Notifications.swift:200-214](../apps/ios/SimpleXChat/Notifications.swift#L200-L214)). These end lines are computed from turns of this machine's transcripts, in the first token format, rounded down:
 
 ```
 !- Done in 21 s · 1.6k output tokens · 689k tokens in context!
@@ -66,12 +66,12 @@ Number formats:
 ```
 duration       shown as            tokens           shown as        plan's usage   shown as
 under 1 s      931 ms              under 1,000      861             34.7           34%
-under 10 s     7.4 s               under 100,000    16.0k
-under 1 min    21 s                under 1,000,000  673k
-under 1 h      2 min 51 s          1,000,000 up     1.2M
+under 10 s     7.4 s               1,580            1.6K
+under 1 min    21 s                673,000          673K
+under 1 h      2 min 51 s          1,234,567        1.2M
 1 h or more    1 h 5 min
 ```
-The duration has the format of the step lines of `ep/mcp-activity`, by its `duration`, which `ep/mcp-live-answers` moves to `src/messages.ts`. Numbers are rounded down.
+The duration has the format of the step lines of `ep/mcp-activity`, by its `duration`, which `ep/mcp-live-answers` moves to `src/messages.ts`. Token counts use `tokenCount` of the compaction line, the compact notation of `Intl.NumberFormat`, by the user's rule of 2026-11-14: one token format across the chat. The plan's usage is rounded down.
 
 Other end lines:
 ```
@@ -364,7 +364,7 @@ Tests:
   - "posts a line when the model switches and when a known effort level changes, also from the status line, before the other posts of the request, and none for a first value, a model of an answer or a value older than the one taken last". Its effort part compiles on master and fails there.
   - "takes the effort level only from the status line once it reports, so the level of one turn in a hook, as after ultrathink, posts no line, and a change in the status line posts one". It fails without decision 31.
   - "keeps the shown model with [1m] and its description when an answer's model is that model without [1m]".
-- `test/e2e/service.test.ts`, the mirroring test, changed: the transcript entries get timestamps, message IDs and usage, and Alice receives `!- Done in 2.0 s · 861 output tokens · 35.6k tokens in context!` after `Fixed.`. After a status line request with limits, the next turn's end line ends with ` · 5 h: 34% · week: 61%`. It fails on master.
+- `test/e2e/service.test.ts`, the mirroring test, changed: the transcript entries get timestamps, message IDs and usage, and Alice receives `!- Done in 2.0 s · 861 output tokens · 36K tokens in context!` after `Fixed.`. After a status line request with limits, the next turn's end line ends with ` · 5 h: 34% · week: 61%`. It fails on master.
 - `test/e2e/launch.test.ts`, changed: `writeStatusLine` writes `status-line.js` for the unpacked package's `dist/status-line.js`, and the setting's command, run by `sh`, prints a status line from it, with `SIMPLEX_MCP_HOME` and with `~/.simplex-mcp`, without an install. The unit test of the service checks that `Service.start` writes the file.
 - Run: `npm test --prefix packages/simplex-chat-mcp`, and the end-to-end tests as TESTING.md states, in the reduced build. No app changes, so no app test workflows.
 

@@ -258,7 +258,7 @@ function usageOf(tail: string, promptId: string, {at, usage}: AnswerUsage): stri
   }
   const written = [...output.values()].reduce((sum, tokens) => sum + tokens, 0)
   const context = count(usage.input_tokens) + count(usage.cache_creation_input_tokens) + count(usage.cache_read_input_tokens)
-  return `${duration(ms)} · ${tokenText(written)} output tokens · ${tokenText(context)} tokens in context`
+  return `${duration(ms)} · ${tokenCount.format(written)} output tokens · ${tokenCount.format(context)} tokens in context`
 }
 
 // spec: spec/architecture.md#hook-turnusage
@@ -274,14 +274,6 @@ function timeOf(entry: TranscriptEntry | undefined): number {
 // spec: spec/architecture.md#hook-turnusage
 function count(value: unknown): number {
   return typeof value === "number" ? value : 0
-}
-
-// spec: spec/architecture.md#hook-turnusage
-function tokenText(tokens: number): string {
-  if (tokens < 1_000) return String(tokens)
-  if (tokens < 100_000) return `${(Math.floor(tokens / 100) / 10).toFixed(1)}k`
-  if (tokens < 1_000_000) return `${Math.floor(tokens / 1_000)}k`
-  return `${(Math.floor(tokens / 100_000) / 10).toFixed(1)}M`
 }
 
 // spec: spec/architecture.md#hook-answermodel

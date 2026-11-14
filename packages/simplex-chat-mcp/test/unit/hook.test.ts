@@ -226,7 +226,7 @@ describe("turn hooks", () => {
       for (const transcript of [near, far, beyond]) await stop(transcript)
       await stop(near, {})
       await stop(synthetic)
-      const usage = "2 min 13 s · 1.5k output tokens · 535k tokens in context"
+      const usage = "2 min 13 s · 1.6K output tokens · 535K tokens in context"
       expect(requests.map(request => (request as {body: object}).body)).toEqual([
         {id, at: 1, answer: "Fixed.", model: "claude-opus-5", usage},
         {id, at: 1, answer: "Fixed.", model: "claude-opus-5", usage},
