@@ -779,53 +779,36 @@ sudo rm -rf data config
 
 ### Caddy
 
-The Caddyfile is not in this repository. Its two host blocks, with `serve_webapp = off`, the
-folders the `webapps` container writes at `/srv/store-service/webapps/badges` and `…/names`,
-and the service at `127.0.0.1:8080`:
+The Caddyfile is not in this repository. Its two host blocks, with `serve_webapp = off` and the
+service at `127.0.0.1:8080`; `/path/to/webapps` stands for the folder the `webapps` container
+writes, `scripts/store-service/webapps` of the checkout:
 
 ```
 badges.simplex.chat {
 	encode zstd gzip
-	handle /api/* {
+	header Content-Security-Policy "default-src 'self'; script-src 'self' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' https://*.stripe.com; frame-ancestors 'self' https://simplex.chat https://*.simplex.chat"
+
+	@backend path /api /api/* /webhooks /webhooks/*
+	handle @backend {
 		reverse_proxy 127.0.0.1:8080
 	}
-	handle /webhooks/* {
-		reverse_proxy 127.0.0.1:8080
-	}
+
 	handle {
-		root * /srv/store-service/webapps/badges
+		@assets path /assets/*
+		header @assets {
+			Cache-Control "public, max-age=31536000, immutable"
+			match status 2xx
+		}
+		@rest not path /assets/*
+		header @rest Cache-Control "no-cache"
+
+		root * /path/to/webapps/badges
 		file_server
 	}
-	@shell path / /index.html /sw.js
-	header @shell Cache-Control "no-cache"
-	header /assets/* {
-		Cache-Control "public, max-age=31536000, immutable"
-		match status 2xx
-	}
-	header Content-Security-Policy "default-src 'self'; script-src 'self' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' https://*.stripe.com; frame-ancestors 'self' https://simplex.chat https://*.simplex.chat"
 }
 
 simplex.domains {
 	encode zstd gzip
-	handle /api/* {
-		reverse_proxy 127.0.0.1:8080
-	}
-	handle {
-		root * /srv/store-service/webapps/names
-		file_server
-	}
-	@shell path / /index.html /sw.js
-	header @shell Cache-Control "no-cache"
-	header /assets/* {
-		Cache-Control "public, max-age=31536000, immutable"
-		match status 2xx
-	}
-	header /manifest.webmanifest Content-Type "application/manifest+json"
-	@media path /fonts/* /img/*
-	header @media {
-		Cache-Control "public, max-age=86400"
-		match status 2xx
-	}
 	header {
 		Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-i5ar+ITNdQiucbmin4/AN6DAY5LbAWeq3at+RiFoUoY=' 'sha256-lxURZtAGLIPkeIfIfFjl4UIJp4ElJWSbFqE1ktKB8hk=' 'sha256-djvAKNENifE9sLU9+NrLdzdGftMgCwpvCvH/MAbkElY=' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' data: https://*.stripe.com; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
 		Strict-Transport-Security "max-age=63072000; includeSubDomains"
@@ -833,15 +816,38 @@ simplex.domains {
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Cross-Origin-Opener-Policy "same-origin-allow-popups"
 	}
+
+	@backend path /api /api/*
+	handle @backend {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	handle {
+		@assets path /assets/*
+		header @assets {
+			Cache-Control "public, max-age=31536000, immutable"
+			match status 2xx
+		}
+		@rest not path /assets/*
+		header @rest Cache-Control "no-cache"
+		header /manifest.webmanifest Content-Type "application/manifest+json"
+
+		root * /path/to/webapps/names
+		file_server
+	}
 }
 ```
 
 - Both sites call `/api/*` on their own origin, so there is no CORS.
 - `/webhooks/*` is proxied on badges.simplex.chat only. BTCPay and Stripe send every event there,
   names payments included.
-- The shells and `/sw.js` are `no-cache`, since they name the build's hashed files, and Caddy's
-  `file_server` sends no `Cache-Control` of its own. `/assets/*` file names carry a content hash.
-  The long lifetimes apply to found files only, so a missing asset is not cached for a year.
+- `/assets/*` file names carry a content hash, so they are kept a year, and only when found: a
+  missing asset is a 404 that is not cached. Everything else, the shells and `/sw.js` among them, is
+  `no-cache`, since the shells name the build's hashed files and Caddy's `file_server` sends no
+  `Cache-Control` of its own.
+- There is no `try_files` fallback to `index.html`: neither page routes by path (badges uses `?order=`
+  and `#…`, names `#/…`), and the fallback would answer a missing `/assets/*` file with the shell,
+  status 200, kept a year under that asset's URL.
 - `file_server` sends no type for `.webmanifest`, which the names site's manifest needs.
 - The badges policy is `web/README.md`'s. The names policy is the names webapp's (its README,
   "Hosting"), with `https://*.stripe.com` added to `img-src` beside `data:`, which the link
