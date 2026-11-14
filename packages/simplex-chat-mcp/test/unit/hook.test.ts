@@ -36,14 +36,17 @@ function fakeClient(owner: {owners: string[]; link?: string}, ensureError?: Erro
 }
 
 describe("SessionStart hook", () => {
-  it("starts the session with its title, folder, model, Claude Code process and the time the hook started, and stays quiet when the Main group has an owner", async () => {
+  it("starts the session with its title, folder, model, Claude Code process and the time the hook started, without the model after a compaction, and stays quiet when the Main group has an owner", async () => {
     const {client, requests} = fakeClient({owners: ["Alice"]})
     const started = JSON.stringify({...JSON.parse(input), model: "claude-opus-5"})
+    const compacted = JSON.stringify({...JSON.parse(input), source: "compact", model: "claude-haiku-5"})
     expect(await sessionStart(started, {CLAUDE_PID: "4321"}, {client, nodeVersion: "22.1.0"}, 5)).toEqual({})
     expect(await sessionStart(started, {}, {client, nodeVersion: "22.1.0"})).toEqual({})
+    expect(await sessionStart(compacted, {CLAUDE_PID: "4321"}, {client, nodeVersion: "22.1.0"}, 6)).toEqual({})
     expect(requests).toEqual([
       {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, at: 5, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
       {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", at: performance.timeOrigin, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, at: 6, name: "auth", project: "/p/app", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
     ])
   })
 
@@ -493,6 +496,116 @@ describe("turn hooks", () => {
     } finally {
       rmSync(folder, {recursive: true, force: true})
     }
+  })
+
+  it("post one line for a compaction of the session's conversation, from its boundary in the transcript after the boundary is written, with its trigger and token counts, and nothing for a subagent's compaction, a boundary of a subagent, a boundary older than 60 s or one stamped after the hook started", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const at = Date.now()
+      const boundary = (age: number, compactMetadata: object, extra: object = {}) => `${JSON.stringify({type: "system", subtype: "compact_boundary", content: "Conversation compacted", ...extra, timestamp: new Date(at - age).toISOString(), compactMetadata})}\n`
+      writeFileSync(transcript, `${boundary(61_000, {trigger: "auto", preTokens: 967_931, postTokens: 22_484})}${boundary(1_000, {trigger: "auto", preTokens: 972_401, postTokens: 9_145}, {isSidechain: true})}${boundary(-6_000, {trigger: "auto", preTokens: 968_000, postTokens: 30_000})}`)
+      const {client, requests} = turnClient()
+      const compact = (extra: object = {}) => turn(JSON.stringify({session_id: id, hook_event_name: "PostCompact", transcript_path: transcript, trigger: "auto", compact_summary: "Summary.", ...extra}), {}, client, 0, at, 1)
+      expect(await compact()).toEqual({})
+      expect(await compact({agent_id: "a1"})).toEqual({})
+      expect(requests).toEqual([])
+      const automatic = compact()
+      const written = new Promise<void>(resolve => setTimeout(() => resolve(appendFileSync(transcript, boundary(500, {trigger: "auto", preTokens: 967_558, postTokens: 34_754}))), 300))
+      await automatic
+      await written
+      appendFileSync(transcript, boundary(200, {trigger: "manual", preTokens: 398_983, postTokens: 25_399}))
+      await compact({trigger: "manual"})
+      appendFileSync(transcript, boundary(100, {trigger: "auto"}))
+      await compact()
+      expect(requests).toEqual([
+        {method: "POST", route: "/turn", body: {id, at, note: "⚙️ Context summarised automatically: 968K → 35K tokens"}},
+        {method: "POST", route: "/turn", body: {id, at, note: "⚙️ Context summarised on request: 399K → 25K tokens"}},
+        {method: "POST", route: "/turn", body: {id, at, note: "⚙️ Context summarised automatically"}},
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  const toolUse =(event: string, tool: string, input: object, extra: object = {}) => JSON.stringify({session_id: id, hook_event_name: event, cwd: "/p/app", prompt_id: "p1", effort: {level: "high"}, tool_name: tool, tool_input: input, tool_use_id: `toolu_${tool}`, ...extra})
+  const steps = (requests: unknown[]) => requests.map(request => (request as {body: {step?: unknown}}).body.step)
+
+  it("send a step at the start of each tool use of the main conversation, with its text from the tool's input and paths relative to the session's folder", async () => {
+    const {client, requests} = turnClient()
+    const started = (tool: string, input: object) => turn(toolUse("PreToolUse", tool, input), {CLAUDE_PID: "4321"}, client, 0, 1)
+    await started("Bash", {command: "npm test\nnpm run lint", description: "Run the tests"})
+    await started("Bash", {command: "\ngit status\ngit log"})
+    await started("Read", {file_path: "/p/app/src/hook.ts"})
+    await started("Edit", {file_path: "/etc/hosts", old_string: "a", new_string: "b"})
+    await started("Write", {file_path: "/p/app/rfcs/2026-09-11-proof-of-work.md", content: "# Proof of work"})
+    await started("Read", {file_path: "/p/app-old/src/hook.ts"})
+    await started("WebFetch", {url: "https://spec.torproject.org/hspow-spec/common-protocol.html", prompt: "Summarize"})
+    await started("WebSearch", {query: '"hs_pow.c" tor source'})
+    await started("Agent", {description: "Review pass 6 usage stats", prompt: "Review it.", subagent_type: "general-purpose"})
+    await started("ToolSearch", {query: "select:Monitor", max_results: 5})
+    await started("Glob", {pattern: "**/*.ts", path: "/p/app/src"})
+    await started("Grep", {pattern: "endSteps", path: "/p/app/src/hub.ts", output_mode: "content"})
+    await started("Grep", {pattern: "TODO"})
+    await started("TodoWrite", {todos: [{content: "Test", status: "pending"}]})
+    await started("NotebookEdit", {description: " \n", notebook_path: "/p/app/a.ipynb", url: "https://example.com/a"})
+    await started("Task", {description: `Review‮ ${"x".repeat(300)}`})
+    expect(requests[0]).toEqual({method: "POST", route: "/turn", body: {id, pid: 4321, at: 1, effort: "high", step: {id: "toolu_Bash", text: "💻 Run the tests"}}})
+    expect(steps(requests)).toEqual([
+      {id: "toolu_Bash", text: "💻 Run the tests"},
+      {id: "toolu_Bash", text: "💻 git status"},
+      {id: "toolu_Read", text: "📖 Read src/hook.ts"},
+      {id: "toolu_Edit", text: "✏️ Edit /etc/hosts"},
+      {id: "toolu_Write", text: "📝 Write rfcs/2026-09-11-proof-of-work.md"},
+      {id: "toolu_Read", text: "📖 Read /p/app-old/src/hook.ts"},
+      {id: "toolu_WebFetch", text: "🌐 Fetch https://spec.torproject.org/hspow-spec/common-protocol.html"},
+      {id: "toolu_WebSearch", text: '🔎 Search "hs_pow.c" tor source'},
+      {id: "toolu_Agent", text: "🤖 Agent: Review pass 6 usage stats"},
+      {id: "toolu_ToolSearch", text: "🔧 ToolSearch: select:Monitor"},
+      {id: "toolu_Glob", text: "🔍 Glob **/*.ts in src"},
+      {id: "toolu_Grep", text: "🔍 Grep endSteps in src/hub.ts"},
+      {id: "toolu_Grep", text: "🔍 Grep TODO"},
+      {id: "toolu_TodoWrite", text: "🔧 TodoWrite"},
+      {id: "toolu_NotebookEdit", text: "🔧 NotebookEdit: https://example.com/a"},
+      {id: "toolu_Task", text: `🔧 Task: Review  ${"x".repeat(199 - [..."🔧 Task: Review  "].length)}…`},
+    ])
+  })
+
+  it("send a step at the end of each tool use with its outcome and duration, or in background for a launch, and nothing for a tool use of a subagent or of this plugin, or without its ID or tool", async () => {
+    const {client, requests, ensured} = turnClient()
+    const bash = {command: "npm test", description: "Run the tests"}
+    const ended = (event: string, extra: object, tool = "Bash", input: object = bash) => turn(toolUse(event, tool, input, extra), {}, client, 0, 1)
+    await ended("PostToolUse", {tool_response: {stdout: "ok"}, duration_ms: 2018})
+    await ended("PostToolUseFailure", {error: "Exit code 1", is_interrupt: false, duration_ms: 39})
+    await ended("PostToolUseFailure", {error: "Interrupted", is_interrupt: true, duration_ms: 252_000})
+    await ended("PostToolUse", {duration_ms: 42_500})
+    await ended("PostToolUse", {duration_ms: 3_900_000})
+    await ended("PostToolUse", {})
+    await ended("PostToolUse", {duration_ms: 41.6})
+    await ended("PostToolUse", {duration_ms: 1999.6})
+    await ended("PostToolUse", {duration_ms: 25}, "Bash", {...bash, run_in_background: true})
+    await ended("PostToolUse", {duration_ms: 31}, "Agent", {description: "Review", prompt: "Review it.", run_in_background: true})
+    await ended("PostToolUseFailure", {error: "Exit code 127", is_interrupt: false, duration_ms: 12}, "Bash", {...bash, run_in_background: true})
+    await turn(toolUse("PreToolUse", "Bash", bash, {agent_id: "af945fc18f2e2d0d9", agent_type: "general-purpose"}), {}, client, 0, 1)
+    await ended("PostToolUse", {agent_id: "af945fc18f2e2d0d9", duration_ms: 13})
+    await turn(toolUse("PreToolUse", "mcp__plugin_simplex_simplex__send", {chat: "@1", text: "hi"}), {}, client, 0, 1)
+    await ended("PostToolUse", {duration_ms: 120}, "mcp__plugin_simplex_simplex__send")
+    await turn(JSON.stringify({session_id: id, hook_event_name: "PreToolUse", tool_input: bash, tool_use_id: "toolu_1"}), {}, client, 0, 1)
+    await turn(JSON.stringify({session_id: id, hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: bash, duration_ms: 5}), {}, client, 0, 1)
+    expect(steps(requests)).toEqual([
+      {id: "toolu_Bash", text: "💻 Run the tests ✅ 2.0 s", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ❌ 39 ms", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ⏹️ 4 min 12 s", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ✅ 42 s", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ✅ 1 h 5 min", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ✅", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ✅ 42 ms", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ✅ 2.0 s", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests (in background)", end: true},
+      {id: "toolu_Agent", text: "🤖 Agent: Review (in background)", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ❌ 12 ms", end: true},
+    ])
+    expect(ensured()).toBe(11)
   })
 
   it("cut a prompt or an answer over 250,000 characters, so that the request fits the socket's 1 MiB", async () => {

@@ -63,7 +63,7 @@ test("the unpacked plugin, with nothing installed, runs its hooks and its sessio
   const client = new LineClient(server.stdin, server.stdout)
   expect(await client.initialize()).toMatchObject({serverInfo: {name: "simplex-mcp", version}})
   const {result} = await client.request("tools/list")
-  expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave", "reply"])
+  expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave", "reply", "pre_tool_use"])
   server.stdin.end()
   await new Promise(resolve => server.on("close", resolve))
   expect(existsSync(join(dir, "home", "service.lock"))).toBe(false)

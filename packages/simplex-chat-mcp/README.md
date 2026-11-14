@@ -33,14 +33,15 @@ You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://si
 
    On several machines or containers, set `SIMPLEX_MCP_MACHINE` on each, for example `SIMPLEX_MCP_MACHINE=laptop`, to name its group "Claude Control - laptop".
 
-3. Each Claude Code session gets its own group, such as "1 · my-project". Join it from the invitation in "Claude Control".
+3. Each Claude Code session gets its own group, such as "1 · my-project". Join it from the invitation in "Claude Control". A list there shows every session and its state: working, waiting for you or idle.
 
-4. Send prompts in the session's group, and Claude answers there. Prompts you type in the terminal appear there too, and Claude Code's own prompts, such as a finished background task, appear as one line each. Before Claude acts in other chats or uses a tool such as Bash, it asks in the group, and one tap approves.
+4. Send prompts in the session's group, and Claude answers there. Reply to a message to show Claude which one you mean. Claude also gets your reactions, as emoji replies. Prompts you type in the terminal appear there too, and Claude Code's own prompts, such as a finished background task, appear as one line each. Each step of Claude's work, such as running the tests, appears as one line, completed with its outcome when the step ends. A line also shows when Claude Code summarises the session's context. Before Claude acts in other chats or uses a tool such as Bash, it asks in the group, and one tap approves. Another tap approves the tool for the rest of the session.
 
 ## Safety
 
 - Anyone in "Claude Control" can join your sessions as an admin, so only invite people you trust.
 - In a session, admins and owners can prompt Claude and approve what it does. Other members can only prompt, and observers can only read.
+- A tool approved for the session runs without asking until the session ends or `/revoke`. Claude Code still asks where its own rules require it, such as before a change to `.git` or `.bashrc`.
 - Claude Code doesn't run `!` or `/` commands sent in the group.
 - Claude sends files to the group only if the group allows them.
 - Claude has no SimpleX address, so nobody can contact it first.
