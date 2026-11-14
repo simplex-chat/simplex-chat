@@ -766,7 +766,7 @@ The session groups stay as they are when the membership or a role in the Main gr
 
 Claude updates only the display name and the command menu, starting each time from the group's current profile in the chat database. So the short description, the description and the preferences that owners set stay ([`MainGroup.load`](../src/main-group.ts), [`updateGroupProfile`, `changeGroupProfile`](../src/control.ts)).
 
-The hub's profile `Claude` posts in the group, with peer type `agent` ([`profileName`](../src/hub.ts), [`openCore`](../src/core.ts)).
+The hub's profile `Claude` posts in the group, with peer type `agent` ([`profileName`, `Hub.open`](../src/hub.ts), [`openCore`](../src/core.ts)).
 
 ### 4.3 Session groups
 
@@ -906,6 +906,7 @@ at = performance.timeOrigin of the hook process; absent: Infinity for an answer'
 | direct messages | off |
 | command menu | as in [2.5](#25-group-profile) |
 | members | `Claude`, the members invited through the Main group, the members others added directly, `User` |
+| peer types | `Claude` `agent`; `User` `human`, set at each service start ([`User.open`](../src/user.ts), [`updatedUser`](../src/core.ts)). A member who joined while `User` had `agent`, as in 0.3.0, gets `human` with `User`'s next post in the group, with the event `updated profile`: the core sends a member's profile to a group before the next message after a change of its name, full name, short description, description, image or peer type |
 
 Claude makes the profile updates one at a time. It starts each from the group's current profile in the chat database and changes only the display name, the short description or the command menu. So a rename and a model change that overlap both stay.
 

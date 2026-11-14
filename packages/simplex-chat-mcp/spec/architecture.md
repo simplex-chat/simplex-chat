@@ -123,7 +123,7 @@ These symbols of [`core.ts`](../src/core.ts) and [`version.ts`](../src/version.t
 | Symbol | Contents |
 |---|---|
 | <a id="core-preparecore"></a>[`prepareCore`](../src/core.ts) | network config, `DATA/tmp` as the core's temp folder, mode 0700, and `DATA/files/sent` deleted |
-| <a id="core-updateduser"></a>[`updatedUser`](../src/core.ts) | display name and peer type `agent` of the profile |
+| <a id="core-updateduser"></a>[`updatedUser`](../src/core.ts) | display name and the given peer type of the profile: `agent` for `serve` and `Claude`, `human` for `User` |
 | <a id="core-bufferevents"></a>[`bufferEvents`](../src/core.ts) | events received before the handler is installed are queued and replayed in order |
 | <a id="version-version"></a>[`version`](../src/version.ts) | the package version |
 
@@ -922,7 +922,7 @@ Data flow of a prompt from the session group:
 
 | Symbol | Contents |
 |---|---|
-| <a id="core-opencore"></a>`openCore` | folder, `ChatApi.init` with prefix `FOLDER/simplex`, active user or a new one with peer type `agent`, `prepareCore`, event buffer, `startChat`, preset contact deleted for a new user, profile update |
+| <a id="core-opencore"></a>`openCore` | folder, `ChatApi.init` with prefix `FOLDER/simplex`, active user or a new one with the given peer type, `prepareCore`, event buffer, `startChat`, preset contact deleted for a new user, profile update with the display name and the peer type |
 | <a id="core-deletepresetcontacts"></a>`deletePresetContacts` | the contact `Ask SimpleX Team`, deleted when it has no connection |
 
 #### [`hook.ts`](../src/hook.ts), [`display.ts`](../src/display.ts), [`service-request.ts`](../src/service-request.ts), [`owner.ts`](../src/owner.ts), [`qr.ts`](../src/qr.ts)

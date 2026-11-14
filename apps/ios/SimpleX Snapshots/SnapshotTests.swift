@@ -302,6 +302,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(OperatorView_Previews.self),
         SnapshotScene(PasscodeEntry_Previews.self),
         SnapshotScene(PasscodeViewView_Previews.self),
+        SnapshotScene(PeerTypePlaceholders_Previews.self),
         SnapshotScene(PreferencesView_Previews.self),
         SnapshotScene(PrivacySettings_Previews.self),
         SnapshotScene(ProfileImage_Previews.self),
