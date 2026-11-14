@@ -5,10 +5,13 @@ type Replacement = [form: string, mark: string]
 
 type Messages = {messages: {info: unknown; parts: unknown[]}[]}
 
+// spec: spec/architecture.md#simplex-secrets-secretname
 const secretName = /^[A-Z][A-Z0-9_]{0,63}$/
 const encodings: BufferEncoding[] = ["base64", "base64url"]
+// spec: spec/architecture.md#simplex-secrets-seen
 const seen = new Map<string, string>()
 
+// spec: spec/architecture.md#simplex-secrets-default
 export default {
   id: "simplex-secrets",
   server: async () => ({
@@ -22,6 +25,7 @@ export default {
   }),
 }
 
+// spec: spec/architecture.md#simplex-secrets-replacements
 export function replacements(folder: string): Replacement[] {
   const forms = readdirSync(folder)
     .filter(name => secretName.test(name))
@@ -33,6 +37,7 @@ export function replacements(folder: string): Replacement[] {
   return forms.sort(([a], [b]) => b.length - a.length)
 }
 
+// spec: spec/architecture.md#simplex-secrets-redacted
 export function redacted(value: unknown, forms: Replacement[]): unknown {
   if (typeof value === "string") return forms.reduce((text, [form, mark]) => text.replaceAll(form, mark), value)
   if (Array.isArray(value)) return value.map(item => redacted(item, forms))
@@ -40,6 +45,7 @@ export function redacted(value: unknown, forms: Replacement[]): unknown {
   return value
 }
 
+// spec: spec/architecture.md#simplex-secrets-base64forms
 function base64Forms(value: Buffer): string[] {
   return [0, 1, 2].flatMap(leading => {
     const bytes = Buffer.concat([Buffer.alloc(leading), value])
