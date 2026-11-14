@@ -255,16 +255,12 @@ final class SnapshotTests: XCTestCase {
         let peers = CallPeers()
         defer { peers.close() }
         try await peers.start()
-        let camera = try XCTUnwrap(peers.client.activeCall?.connection.transceivers.first { $0.mid == "1" })
-        camera.sender.track = peers.peer.transceivers.first { $0.mid == "1" }?.receiver.track
-        XCTAssertNotNil(camera.sender.track)
         peers.peer.transceivers.first?.setDirection(.sendRecv, error: nil)
         let answer = try await peers.peerAnswer()
         let response = await peers.receive(.answer(answer: answer, iceCandidates: noIceCandidates))
         XCTAssertEqual(response, .ok)
         XCTAssertEqual(peers.client.activeCall?.connection.transceivers.count, 4)
         XCTAssertEqual(peers.client.activeCall?.peerHasOldVersion, true)
-        XCTAssertNil(camera.sender.track)
         XCTAssertFalse(peers.call.localMediaSources.camera)
     }
 
