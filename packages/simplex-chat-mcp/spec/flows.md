@@ -1496,7 +1496,7 @@ sequenceDiagram
   N->>N: steps += (id, at, text, the promise of the item's ID)
   C->>O: Claude: 💻 Run the tests, live, silent
   CC->>HK: PostToolUse {tool_use_id, duration_ms: 2018}
-  HK->>D: POST /turn {step: {id, text: "💻 Run the tests ✅ 2.0 s", end: true}}
+  HK->>D: POST /turn {step: {id, text: "!- 💻 Run the tests 2.0 s!", end: true}}
   D->>N: turn, steps -= id
   N->>C: apiUpdateChatItem #35;G item, the final text, live off
   C->>O: the line updated, without an edited mark

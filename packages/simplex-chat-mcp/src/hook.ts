@@ -438,10 +438,15 @@ function peerName(origin: Origin): string {
 function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_name: event, tool_input: fields = {}, cwd, is_interrupt: interrupted, duration_ms: ms}: TurnInput): Step | undefined {
   if (id === undefined || tool === undefined || agent !== undefined || tool.startsWith(pluginTools)) return undefined
   const text = shortened(stepText(tool, fields, cwd))
-  if (event === "PreToolUse") return {id, text}
-  if (event === "PostToolUse" && fields.run_in_background === true) return {id, text: `${text} (in background)`, end: true}
-  const outcome = event === "PostToolUse" ? "✅" : interrupted === true ? "⏹️" : "❌"
-  return {id, text: `${text} ${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`, end: true}
+  if (event === "PreToolUse") return {id, text: small(text)}
+  if (event === "PostToolUse" && fields.run_in_background === true) return {id, text: small(`${text} (in background)`), end: true}
+  const outcome = event === "PostToolUse" ? "" : interrupted === true ? " ⏹️" : " ❌"
+  return {id, text: small(`${text}${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`), end: true}
+}
+
+// spec: spec/architecture.md#hook-stepof
+function small(text: string): string {
+  return `!- ${text.replaceAll("!", "ǃ")}!`
 }
 
 // spec: spec/architecture.md#hook-stepof
