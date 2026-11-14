@@ -1144,8 +1144,19 @@ only their gas, in ETH. The names' rent is spent from its allowance on the spons
 guardian sets. It holds no names.
 
 The commands run from `scripts/store-service/` on the service host, with Foundry's `cast`
-([getfoundry.sh](https://getfoundry.sh), checked with 1.5.1) and `jq`. They read the ini through this
-shell function, which takes a `[chain]` key's value without surrounding spaces, tabs or a CR:
+([getfoundry.sh](https://getfoundry.sh)) from its official image through this shell function:
+
+```
+cast() { docker run --rm -i --network host -e ETH_RPC_URL --entrypoint cast ghcr.io/foundry-rs/foundry:v1.5.1 "$@"; }
+```
+
+`--network host` reaches a node on the host's loopback, and `-e ETH_RPC_URL` passes the node set
+below. A command with `--interactive` prompts for a key, so it needs a terminal: run it with
+`docker run --rm -it` in place of `docker run --rm -i`. `--ledger` reaches no device from the
+container, so a Ledger signs with a `cast` installed on the host, which takes the same commands.
+
+They read the ini through this shell function, which takes a `[chain]` key's value without
+surrounding spaces, tabs or a CR:
 
 ```
 ini() { sudo sed -n "/^\[chain\]/,/^\[/s/^$1[[:space:]]*=[[:space:]]*\([^[:space:]]*\).*/\1/p" "${2:-config/store_service.ini}"; }
@@ -1164,21 +1175,30 @@ image.
 
 #### Create the key
 
-Fill `[names]` and `[chain]` in a copy, with a `service_key = 0x...` line under `[chain]`. Then
-generate the key into that line, so it is never printed, and put the copy in place:
+Generate the key into a file in a root-only directory, fill `[names]` and `[chain]` in a copy of
+the ini, and put the copy in place:
 
 ```
 sudo install -d -m 700 next && sudo cp -p config/store_service.ini next/store_service.ini
-sudoedit next/store_service.ini
-cast wallet new --json | jq -r '"s/^service_key[[:space:]]*=.*/service_key = " + .[0].private_key + "/"' | sudo sed -i -f - next/store_service.ini
+cast wallet new | sudo tee next/registrar-key.txt > /dev/null
+sudoedit next/store_service.ini next/registrar-key.txt
 cast wallet address "$(ini service_key next/store_service.ini)"
 sudo cp next/store_service.ini config/store_service.ini && sudo rm -r next
 ```
 
-The address check prints the key's address, as in `0xB2590B3a4fa5bEdda803F5f1F605803438C3F71E`, and
-fails when the line was not replaced. The key is `0x` and 64 hex digits.
+The file holds the key's address and the key:
 
-The ini holds the only copy of the key. It is gitignored, every `*.ini` is kept out of the image,
+```
+Successfully created new keypair.
+Address:     0xB2590B3a4fa5bEdda803F5f1F605803438C3F71E
+Private key: 0x...
+```
+
+Copy the private key into a `service_key = 0x...` line under `[chain]`: `0x` and 64 hex digits. The
+address check prints the file's address, and fails when the line is missing. The last line removes
+the file.
+
+The ini then holds the only copy of the key. It is gitignored, every `*.ini` is kept out of the image,
 and compose mounts its folder read-only. Keep it owned by the service user with mode 600. The
 service never logs the key; keep it out of logs and tickets too.
 If a key was ever shown on a terminal, clear the screen and its scrollback (`clear && printf
@@ -1387,13 +1407,15 @@ Error: a pending transaction of nonce <n> was signed by <old address>, not by <n
 Rotate only with no `pending` row, at a quiet time: every stop takes the store offline, and each order
 sends its register about a minute after its commit.
 
-1. Keep a copy of the old ini, create the new key in another, fund it, and have the guardian grant
-   it an allowance, as above for `$NEW`:
+1. Keep a copy of the old ini, create the new key into another as in [Create the key](#create-the-key),
+   fund it, and have the guardian grant it an allowance, as above for `$NEW`:
 
    ```
    sudo install -d -m 700 prev next
    sudo cp -p config/store_service.ini prev/store_service.ini && sudo cp -p config/store_service.ini next/store_service.ini
-   cast wallet new --json | jq -r '"s/^service_key[[:space:]]*=.*/service_key = " + .[0].private_key + "/"' | sudo sed -i -f - next/store_service.ini
+   cast wallet new | sudo tee next/registrar-key.txt > /dev/null
+   sudoedit next/store_service.ini next/registrar-key.txt
+   sudo rm next/registrar-key.txt
    OLD=$(cast wallet address "$(ini service_key prev/store_service.ini)")
    NEW=$(cast wallet address "$(ini service_key next/store_service.ini)")
    ```
