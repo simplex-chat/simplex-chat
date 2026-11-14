@@ -608,7 +608,7 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
 @Composable
 private fun InvalidDataView() {
   Row {
-    ProfileImage(72.dp, null, MR.images.ic_account_circle_filled, MaterialTheme.colors.secondary)
+    ProfileImage(60.dp, null, MR.images.ic_account_circle_filled, MaterialTheme.colors.secondary, modifier = Modifier.centeredIn(72.dp))
     Column(
       modifier = Modifier
         .padding(horizontal = 8.dp)
