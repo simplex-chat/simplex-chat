@@ -767,6 +767,9 @@ function publishableKey(): Promise<string | null> {
   return siteKey;
 }
 
+document.addEventListener("visibilitychange", () => { if (!document.hidden) siteKey = null; });
+window.addEventListener("pageshow", (e) => { if (e.persisted) siteKey = null; });
+
 function renderCardForm(view: CardView): void {
   releaseCardElement();
   void publishableKey().then((key) => {

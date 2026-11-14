@@ -33,7 +33,7 @@ export interface Page {
   confirmAnswer(answer: boolean): void;
   setOffline(on: boolean): void;
   reducedMotion(on: boolean): void;
-  fire(type: string): void;
+  fire(type: string, event?: unknown): void;
   press(key: string, init?: { shiftKey?: boolean }): void;
 }
 
@@ -48,7 +48,7 @@ export function installPage(opts: BootOptions = {}): Page {
   const fetches: Array<{ url: string; init?: RequestInit }> = [];
   const siteConfig: Page["siteConfig"] = { stripePublishableKey: null };
   const confirms: string[] = [];
-  const windowListeners = new Map<string, Array<() => void>>();
+  const windowListeners = new Map<string, Array<(event?: unknown) => void>>();
   const location = { pathname: "/", search: "", hash: "" };
 
   let offline = false;
@@ -58,9 +58,9 @@ export function installPage(opts: BootOptions = {}): Page {
   let reduced = false;
 
   const syncLocation = (): void => { Object.assign(location, locationOf(history.url)); };
-  const fire = (type: string): void => {
+  const fire = (type: string, event?: unknown): void => {
     syncLocation();
-    for (const fn of [...(windowListeners.get(type) ?? [])]) fn();
+    for (const fn of [...(windowListeners.get(type) ?? [])]) fn(event);
   };
   const press = (key: string, init: { shiftKey?: boolean } = {}): void => {
     const event = { key, shiftKey: false, ...init, preventDefault: () => {} };
@@ -83,7 +83,7 @@ export function installPage(opts: BootOptions = {}): Page {
         media: query,
         matches: query === "(prefers-reduced-motion: reduce)" && reduced,
       }),
-      addEventListener(type: string, fn: () => void) {
+      addEventListener(type: string, fn: (event?: unknown) => void) {
         const list = windowListeners.get(type) ?? [];
         list.push(fn);
         windowListeners.set(type, list);
