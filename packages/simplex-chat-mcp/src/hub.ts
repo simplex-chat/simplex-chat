@@ -52,6 +52,8 @@ const stepCheckMs = 60_000
 // spec: spec/architecture.md#hub-constants
 const textUpdateMs = 3_000
 // spec: spec/architecture.md#hub-constants
+const textEndMs = 10_000
+// spec: spec/architecture.md#hub-constants
 const maxRecentTexts = 20
 // spec: spec/architecture.md#hub-constants
 const stoppedLine = "⏹️ Stopped"
@@ -110,6 +112,7 @@ interface LiveText {
   liveAt?: number
   timer?: NodeJS.Timeout
   refused?: true
+  complete?: true
 }
 
 interface Opening {
@@ -543,7 +546,10 @@ export class Session {
     const started = this.steps.get(id)
     if (end !== true) {
       const sentAt = this.openingFor(at)?.sentAt ?? Date.now()
-      const item = this.queueLive(() => this.startLine(text, at, stepLines))
+      const item = this.queueLive(async () => {
+        await this.endComplete()
+        return this.startLine(text, at, stepLines)
+      })
       this.steps.set(id, {at, text, item, sentAt})
       this.watchLive()
       await item
@@ -657,13 +663,31 @@ export class Session {
     if (this.endedTexts.has(message)) return
     const known = this.texts.get(message)
     if (known === undefined && at < answeredAt) return keepLast(this.endedTexts, message)
+    if (known === undefined) await this.endComplete()
     const text = known ?? {id: message, at, batches: [], next: 0, done: "", part: "", sent: "", sentAt: 0}
     this.texts.set(message, text)
     text.batches[index] = delta
     if (final) text.last = index
     while (text.batches[text.next] !== undefined) text.part += text.batches[text.next++]
-    if (text.last !== undefined && text.next > text.last) await this.endText(text, text.part)
+    if (text.last !== undefined && text.next > text.last) await this.completeText(text)
     else await this.showText(text)
+  }
+
+  // spec: spec/architecture.md#hub-session-text
+  private async completeText(text: LiveText): Promise<void> {
+    await this.showText(text)
+    if (this.texts.get(text.id) !== text) return
+    if (text.item === undefined) return this.endText(text, text.part)
+    clearTimeout(text.timer)
+    await this.updateText(text, text.part, true)
+    if (this.texts.get(text.id) !== text) return
+    text.complete = true
+    text.timer = setTimeout(() => void this.queueLive(async () => (this.texts.get(text.id) === text ? this.endText(text, text.part) : undefined)), textEndMs).unref()
+  }
+
+  // spec: spec/architecture.md#hub-session-text
+  private async endComplete(): Promise<void> {
+    for (const text of [...this.texts.values()]) if (text.complete === true) await this.endText(text, text.part)
   }
 
   // spec: spec/architecture.md#hub-session-text

@@ -1341,7 +1341,7 @@ describe("session channel", () => {
     expect(chat.updates).toEqual([
       {chatId: 20, itemId: opening, text: "💻 Run the tests", live: true},
       {chatId: 20, itemId: opening, text: "💻 Run the tests ✅ 2.0 s"},
-      {chatId: 20, itemId: opening + 2, text: "Linted."},
+      {chatId: 20, itemId: opening + 2, text: "Linted.", live: true},
     ])
   })
 
@@ -1427,7 +1427,7 @@ describe("session channel", () => {
     await prompted
     await session["liveOrder"]
     expect(posted).toEqual(["User: Fix the build", "Claude live: "])
-    expect(chat.updates).toEqual([{chatId: 20, itemId: opening, text: "Fixed."}])
+    expect(chat.updates).toEqual([{chatId: 20, itemId: opening, text: "Fixed.", live: true}])
   })
 
   it("ends a live text with its text and an empty opening message with ⏹️ Stopped 23 hours after their send by the wall clock, a text in an opening message counted from the opening's send", async () => {
@@ -1462,7 +1462,7 @@ describe("session channel", () => {
     ])
   })
 
-  it("streams each text of Claude into a silent live message from its first line that is not blank, in index order, updated at most every 3 s, and finalized at its final batch", async () => {
+  it("streams each text of Claude into a silent live message from its first line that is not blank, in index order, updated at most every 3 s, shown whole at its final batch and finalized 10 s later", async () => {
     jest.useFakeTimers({doNotFake: ["nextTick", "setImmediate", "queueMicrotask"]})
     const chat = new FakeChat()
     const {session} = await channel(chat)
@@ -1488,9 +1488,35 @@ describe("session channel", () => {
     await batch(5, "Done.", true)
     expect(chat.updates).toEqual([
       {chatId: 20, itemId: line, text: fourLines, live: true},
-      {chatId: 20, itemId: line, text: `${fourLines}Fifth line.\nDone.`},
+      {chatId: 20, itemId: line, text: `${fourLines}Fifth line.\nDone.`, live: true},
     ])
+    await jest.advanceTimersByTimeAsync(9_999)
+    expect(chat.updates).toHaveLength(2)
+    await jest.advanceTimersByTimeAsync(1)
+    await session["liveOrder"]
+    expect(chat.updates.at(-1)).toEqual({chatId: 20, itemId: line, text: `${fourLines}Fifth line.\nDone.`})
     expect(sentTo(chat, 20)).toHaveLength(1)
+  })
+
+  it("keeps a text live after its final batch and finalizes it at the next step without the end line, or at the Stop hook with the end line", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const opening = chat.nextItemId
+    await session.turn({id: id1, at: 1, prompt: "Check the logs", typed: true})
+    await session.turn({id: id1, at: 2, text: {message: "m1", index: 0, final: true, delta: "Let me check."}})
+    await session.turn({id: id1, at: 3, step: {id: "toolu_1", text: "📖 Read build.log"}})
+    await session.turn({id: id1, at: 4, text: {message: "m2", index: 0, final: true, delta: "All good."}})
+    await session["liveOrder"]
+    await session.turn({id: id1, at: 5, answer: "All good."})
+    await session["finalizing"]
+    await session["liveOrder"]
+    expect(chat.updates).toEqual([
+      {chatId: 20, itemId: opening, text: "Let me check.", live: true},
+      {chatId: 20, itemId: opening, text: "Let me check."},
+      {chatId: 20, itemId: opening + 1, text: "📖 Read build.log"},
+      {chatId: 20, itemId: opening + 2, text: "All good.\n!- Done in 4 ms!"},
+    ])
+    expect(chat.sent.filter(({chat: [, groupId]}) => groupId === 20).map(({messages, live}) => [messages[0].msgContent.text, live])).toEqual([["", true], ["📖 Read build.log", true], ["All good.", true]])
   })
 
   it("returns from a batch of Claude's text before the hub posts it", async () => {

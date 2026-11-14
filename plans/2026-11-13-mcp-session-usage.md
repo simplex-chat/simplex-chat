@@ -1,6 +1,10 @@
 # SimpleX MCP: usage at the end of each turn, and model and effort switches
 
-Status: Q1, Q2 and Q3 answered A by the user on 2026-11-13, with a note on Q1 that adds the subscription usage (section 1). The end line of `ep/mcp-live-answers` and the usage line are one message, as its decision 36 states (`e3be97007`), with the wording of section 2. Approved by the user on 2026-11-13, and implemented on `ep/mcp-session-usage` on top of `ep/mcp-live-answers`. Code references: master `97bbbd9ac`. Claude Code references: version 2.1.322 and its binary at the byte offsets given, version 2.1.323 where named; the transcripts of this machine; R1, the interactive session of 2026-11-12 recorded for `ep/mcp-harness-notes` with a hook that logs its input; R4, the `claude -p` run of 2026-11-12 recorded for `ep/mcp-activity` with logging tool hooks. Decisions of the 0.3.0 plan are cited as "0.3.0 decision N".
+Status: Q1, Q2 and Q3 answered A by the user on 2026-11-13, with a note on Q1 that adds the subscription usage (section 1). The end line of `ep/mcp-live-answers` and the usage line are one message, as its decision 36 states (`e3be97007`), with the wording of section 2. Approved by the user on 2026-11-13, and implemented on `ep/mcp-session-usage` on top of `ep/mcp-live-answers`. Code references: master `97bbbd9ac`. Claude Code references: version 2.1.322 and its binary at the byte offsets given, version 2.1.323 where named; the transcripts of this machine; R1, the interactive session of 2026-11-12 recorded for `ep/mcp-harness-notes` with a hook that logs its input; R4, the `claude -p` run of 2026-11-12 recorded for `ep/mcp-activity` with logging tool hooks. Decisions of the 0.3.0 plan are cited as "0.3.0 decision N". Revised by the user on 2026-11-14: the end line is the last line of the answer's last message, not a message of its own (decision 19).
+
+The user's words, 2026-11-14:
+
+> another bad thing in status as a separate message is that it becomes the message in chat list - so not too helpful. I think your previous suggestion to append it to the end of turn was better. This way it will show in chat, but won't show in chat list.
 
 ## 1. Goal
 
@@ -27,24 +31,38 @@ The user's note on Q1 A, 2026-11-13:
 > can we maybe add subscription usage here too, not to include it in description?
 
 Outcome:
-- Each turn ends with one line in small print after the answer: `Done in` and the turn's usage.
+- The answer's last message ends with one line in small print: `Done in` and the turn's usage.
 - A person who sets the plugin's status line command in Claude Code's settings also gets the plan's 5-hour and weekly usage in that line, and a status line in the terminal.
 - A switch of the model or of the effort level gets its own line in small print.
 - The description keeps the model and the effort level.
 
 ## 2. What users see
 
-After each non-blank answer, Claude posts the end line in small print. It is the turn's alert, and every part of the answer is silent. With the status line setting:
+The last message of each non-blank answer ends with the end line in small print. A posted last message is the turn's alert, and the other parts are silent. With the status line setting:
 
 ```
+Fixed.
 !- Done in 2 min 51 s · 16K output tokens · 673K tokens in context · 5 h: 34% · week: 61%!
 ```
 
 Without the setting:
 
 ```
+Fixed.
 !- Done in 2 min 51 s · 16K output tokens · 673K tokens in context!
 ```
+
+```
+answer                          the message with the end line                       priority
+posted                          its last part; a last part with no room for the     1
+                                line moves its last N + 1 characters into a new
+                                last part with the line
+filling the opening message     the opening message, when the answer has one part   -1, set at its send
+streamed                        the live message of the answer's text, finalized    -1, set at its send
+                                with the line at Stop, without an edited mark
+```
+
+`apiUpdateChatItem` takes no priority, so an answer completed by an update keeps the silent priority of its send.
 
 The apps show the text between `!- ` and `!` smaller and in the secondary color. A notification shows it without the marks ([NtfManager.kt:134-145](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L134-L145), [Notifications.swift:200-214](../apps/ios/SimpleXChat/Notifications.swift#L200-L214)). These end lines are computed from turns of this machine's transcripts, in the first token format, rounded down:
 
@@ -82,8 +100,10 @@ the hook sends no usage, the turn's start unknown          !- Done · 5 h: 34% �
 a 5-hour or weekly window whose reset time has passed      the window is left out
 no report of the status line command since the service     no 5 h and week parts
 started
-a blank answer                                             no end line
-an answer that a group preference refuses                  its refusal text, then the end line
+a blank answer                                             the opening message finalized with the end line
+an answer that a group preference refuses                  its refusal text, the end line on its next line
+the refusal's update of the opening message fails          ⏹️ Stopped, no end line
+a streamed text that a group preference refuses            no end line
 ```
 
 The status line setting, in `~/.claude/settings.json`, one for every machine and container that shares `~/.claude`:
@@ -119,8 +139,8 @@ The short description stays `MODEL · effort LEVEL`, updated as in 0.3.0. An ans
 Before and after:
 ```
 moment                                  0.3.0                                  this pull request
-the end of a turn                       the answer, its alert                  the answer, silent, then the end line, its alert
-the chat list after a turn              the answer's last part                 the end line
+the end of a turn                       the answer, its alert                  the answer, ending with the end line, its alert
+the chat list after a turn              the answer's last part                 the answer's last part with the end line
 /model in the terminal or Remote        "updated group profile"                the model line, then "updated group profile"
 Control
 /effort, with the status line setting   "updated group profile" after the      the effort line, then "updated group profile",
@@ -152,8 +172,7 @@ sequenceDiagram
   CC->>HK: Stop {prompt_id, last_assistant_message, effort}
   HK->>T: the answer's entry, then back to the turn's prompt entry
   HK->>D: POST /turn {answer, model, effort, usage}
-  D->>O: Claude: the answer, silent
-  D->>O: Claude: Done in USAGE and the newest limits, small, important
+  D->>O: Claude: the answer, its last line Done in USAGE and the newest limits, small, important when posted
 ```
 
 ## 3. Questions for the user
@@ -189,7 +208,7 @@ Choices:
 16. The Stop hook computes the usage text, `DURATION · OUTPUT output tokens · CONTEXT tokens in context`, the wording settled with `ep/mcp-live-answers`. It finds the answer's entry as `answerModel` of 0.3.0 does, in `answerRecord` ([`hook.ts`](../packages/simplex-chat-mcp/src/hook.ts)). The turn's first entry is the first user entry of the main conversation with `promptId` equal to the hook's `prompt_id` that is not a tool result. When the tail of the answer's read lacks it, the hook reads tails of 4, 16 and 64 MiB, in order, until one has it. Fact 9 puts every turn of this machine within 64 MiB. The hook parses only the lines with that prompt ID or of an assistant entry.
 17. OUTPUT is the sum of `output_tokens` over the distinct `message.id` of the assistant entries after the first entry, without `isSidechain` and without `<synthetic>` (fact 6). CONTEXT is `input_tokens + cache_creation_input_tokens + cache_read_input_tokens` of the answer's entry, as Claude Code computes the context in use (`ngt` at 297207048). DURATION is the answer's `timestamp` minus the first entry's (fact 8).
 18. The hook sends no usage when the input has no `prompt_id`, when the answer's entry is not found, is `<synthetic>` or has no `message.usage`, or when the first entry is not within 64 MiB.
-19. The end line is decision 36 of `ep/mcp-live-answers`: `!- Done in FIGURES!`, priority 1, the turn's last post after a non-blank answer, also after the refusal text of a refused answer, with every part of the answer silent. FIGURES is the hook's usage text, or DURATION of `ep/mcp-live-answers` without it; without both, the line is `Done`. The hub appends ` · 5 h: N%` and ` · week: N%` for the windows of the newest limits whose `resets_at` has not passed. This replaces the silent usage line of the plan's first version: the line is important and starts with `Done in `, and every part of the answer is silent. Whichever of the two items merges first adds the line in this form, with its own figures: this item, as the last message of the answer's send, with the usage text, or `Done` without it. The second adds its part. The line has no ✅, by the user's rule of 2026-11-14: small print only, information without drawing attention.
+19. The end line is `!- Done in FIGURES!`, the last line of the last message of a non-blank answer, after a line break, by the user's decision of 2026-11-14, so the chat list shows the answer. FIGURES is the hook's usage text, or DURATION of `ep/mcp-live-answers` without it; without both, the line is `Done`. The hub appends ` · 5 h: N%` and ` · week: N%` for the windows of the newest limits whose `resets_at` has not passed. `withLine` appends it to the last part; when the result does not fit one message, the last part's last N + 1 characters, N the line's length, start a new last part with the line. A posted last part has priority 1 and the other parts -1. A refused answer gets the line on the next line of its refusal text, posted with priority 1 or filling the opening message. A streamed answer stays live after its final batch, so the Stop hook finalizes it with the line, without an edited mark; a text that ends before Stop, at the next step, the next text or 10 s after its final batch, gets the line in an edit. The line has no ✅, by the user's rule of 2026-11-14: small print only, information without drawing attention.
 20. The plugin's status line command, `dist/status-line.js`, reads its input, prints the status line of section 2, and then sends `{id: session_id, pid: CLAUDE_PID, at, effort, limits}` as `POST /turn` with `postToService` of `service-request.ts`. `limits` holds `fiveHour` and `week`, each `{percent, resetsAt}`, from `rate_limits`. It waits at most 1 s for the reply, starts no service, makes no retry and prints nothing about failures. It loads only Node modules, `paths.ts` and `service-request.ts`, the modules of decision 18 of `ep/mcp-live-answers`, which import only Node modules and each other (fact 15). When this item merges first, it adds the two modules as that decision describes them.
 21. An answer's model equal to the shown model without `[1m]` keeps the shown model. So the description and `session.json` keep `claude-opus-5-5[1m]`, and no "updated group profile" follows the first answer (fact 13).
 22. At each start, the service writes `ROOT/status-line.js`, which imports `status-line.js` of the service's own `dist` folder by its file URL and runs its `runStatusLine`. A dynamic import works also when an enclosing `package.json` makes the folder an ES module scope. It writes a temporary file and renames it into place, readable only by the user; a failed write is logged and the service runs on. A newer plugin's service rewrites it, so the setting of section 2 keeps working across updates (facts 4 and 5).
@@ -319,7 +338,7 @@ flowchart LR
   R2 --> H
   R3 --> H
   H --> L[switch lines, small, silent]
-  H --> E[end line: usage and the newest limits, small, important]
+  H --> E[end line: usage and the newest limits, small, the last line of the answer]
   H --> DS[short description, as in 0.3.0]
 ```
 
@@ -345,11 +364,14 @@ Done when:
 6  the status line command loads only Node modules, paths.ts and service-request.ts, and prints    unit: status-line
    its line without a service
 7  the service writes ROOT/status-line.js, which runs its own dist/status-line.js                  unit: service; e2e: launch
-8  the end line has the usage and the windows of the newest limits not reset, small, important    unit: sessions
+8  the end line has the usage and the windows of the newest limits not reset, small, as the last   unit: sessions
+   line of the answer's last message, posted as important; a streamed answer is finalized with
+   it at Stop, without an edited mark
 9  the switch lines: a switched model, a changed known effort, also from the status line; none     unit: sessions
    for first values or older at, and none for a hook's level once the status line reports
 10 an answer's model without [1m] keeps the shown model and the description                        unit: sessions
-11 a group member receives the answer and the end line with the turn's and the plan's usage        e2e
+11 a group member receives the answer ending with the end line with the turn's and the plan's      e2e
+   usage
 12 real session with the setting: the status line, the end line with 5 h and week, the effort      TESTING check 9
    line at /effort; without the setting, the end line without them
 ```
@@ -360,17 +382,19 @@ Tests:
 - `test/unit/status-line.test.ts`, new: "print the model, effort, context and the plan's usage of a status line input, and send the effort and the limits with the session ID and Claude Code's process", with a status line input built from the fields of fact 2; "print the line without a service and without rate limits"; "load only Node modules, paths.ts and service-request.ts", which reads the imports of `status-line.ts`, as the test of decision 18 of `ep/mcp-live-answers` reads those of its three modules.
 - `test/unit/service.test.ts`, new: "write status-line.js into the data folder at the start, loading the status line command of its own build, in place of an older one".
 - `test/unit/sessions.test.ts`, in "session channel", new:
-  - "posts the end line with the turn's usage and the plan's usage of the newest status line report, leaving out a window whose reset time has passed, in small print as important after the silent answer".
+  - "posts the end line with the turn's usage and the plan's usage of the newest status line report, leaving out a window whose reset time has passed, in small print as the last line of the answer, as important".
+  - "keeps a text live after its final batch and finalizes it at the next step without the end line, or at the Stop hook with the end line". It fails when the final batch finalizes the text.
+  - The tests of answers, parts, refusals and live texts expect the end line in the answer's last message, and no separate message.
   - "posts a line when the model switches and when a known effort level changes, also from the status line, before the other posts of the request, and none for a first value, a model of an answer or a value older than the one taken last". Its effort part compiles on master and fails there.
   - "takes the effort level only from the status line once it reports, so the level of one turn in a hook, as after ultrathink, posts no line, and a change in the status line posts one". It fails without decision 31.
   - "keeps the shown model with [1m] and its description when an answer's model is that model without [1m]".
-- `test/e2e/service.test.ts`, the mirroring test, changed: the transcript entries get timestamps, message IDs and usage, and Alice receives `!- Done in 2.0 s · 861 output tokens · 36K tokens in context!` after `Fixed.`. After a status line request with limits, the next turn's end line ends with ` · 5 h: 34% · week: 61%`. It fails on master.
+- `test/e2e/service.test.ts`, the mirroring test, changed: the transcript entries get timestamps, message IDs and usage, and Alice receives `Fixed.` with the end line `!- Done in 2.0 s · 861 output tokens · 36K tokens in context!` in the same message. After a status line request with limits, the streamed answer of the next turn is finalized at Stop with an end line that ends with ` · 5 h: 34% · week: 61%`, not edited. It fails on master.
 - `test/e2e/launch.test.ts`, changed: `writeStatusLine` writes `status-line.js` for the unpacked package's `dist/status-line.js`, and the setting's command, run by `sh`, prints a status line from it, with `SIMPLEX_MCP_HOME` and with `~/.simplex-mcp`, without an install. The unit test of the service checks that `Service.start` writes the file.
 - Run: `npm test --prefix packages/simplex-chat-mcp`, and the end-to-end tests as TESTING.md states, in the reduced build. No app changes, so no app test workflows.
 
 ## 8. Docs to change
 
-- `README.md:36`: each turn ends with a line in small print with its time and tokens. A new optional step: the status line setting, for the plan's usage.
+- `README.md:36`: the answer's last message ends with a line in small print with the turn's time and tokens. A new optional step: the status line setting, for the plan's usage.
 - `REFERENCE.md`: "Prompts and answers" (603-642), the end line; "Model and effort" (656-658) becomes "Model, effort and usage", with the switch lines, decision 21, and a part "Status line" with the setting, the terminal line and the cases of section 2; "Plugin data folder" (676-691), `status-line.js`.
 - `ROADMAP.md`: the line marked ✅.
 - `spec/api.md`: 4.3, the posts table (772-781) and the group profile (818-832); 4.6, `POST /turn` (887); 4.8, the hook inputs (1018) and the status line command.

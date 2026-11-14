@@ -1017,17 +1017,17 @@ sequenceDiagram
     N->>C: apiSendMessages #35;G [{text: "!- Effort changed to LEVEL!", priority: -1}]
   end
   N->>N: claim: no text of Claude streamed the answer, as without the display hook (flow 37)
+  N->>N: parts = withLine(parts(answer), "!- Done in USAGE · 5 h: N% · week: N%!")
   alt the opening message of the turn was posted
-    N->>C: apiUpdateChatItem #35;G the opening message, the answer's first part, live off
-    N->>C: apiSendMessages #35;G the other parts, priority -1
+    N->>C: apiUpdateChatItem #35;G the opening message, the first part, live off
+    N->>C: apiSendMessages #35;G the other parts, priority -1, the last priority 1
   else
-    N->>C: apiSendMessages #35;G parts, priority -1, the first quoting the quote when it came from the group and fits with the first character
+    N->>C: apiSendMessages #35;G parts, priority -1, the last priority 1, the first quoting the quote when it came from the group and fits with the first character
     opt the core refuses the quote
       N->>C: apiSendMessages #35;G parts without the quote
     end
   end
-  N->>C: apiSendMessages #35;G [{text: "!- Done in USAGE · 5 h: N% · week: N%!", priority: 1}]
-  C->>O: the answer and the end line, from Claude, one alert
+  C->>O: the answer ending with the end line, from Claude, one alert for a posted last part
   N->>C: apiUpdateGroupProfile #35;G shortDescr MODEL · effort LEVEL, when it changed
 ```
 
@@ -1042,7 +1042,7 @@ Notes:
 - For an answer without an earlier turn record, the hub quotes the oldest pushed prompt not quoted yet, and marks it quoted. That prompt stays pushed, so the hub still matches it to a prompt request handled after the Stop request, and `User` does not post it ([`Session.turnQuote`](../src/hub.ts)).
 - For an empty answer, the hub removes the turn record as for any other answer. It posts nothing, and fills the turn's opening message, when one is open, with the end line, live off and silent ([`Session.turn`, `answer`](../src/hub.ts)).
 - At a prompt that starts a turn, Claude posts the opening message: empty, live and silent. The hub keeps it before `User`'s post and sends it after that post, so a text or a step that arrives meanwhile waits for it. It replies to the member's prompt that the terminal prompt matched, when the quote fits. It is not posted for a prompt added to the running turn, a `/` command, a prompt that `User` does not post and that matched no pushed prompt, as Claude Code's own prompts, or a prompt whose hook started before the latest answer's hook. The turn's first post fills it: a text of Claude, a step's line, the answer's first part, or the end line of an empty answer, of a hook that started no earlier than the prompt's hook and before the next prompt's hook that starts a turn. When a group preference refuses that post, the text in its place fills the opening message. When the update fails for another reason, as after an admin deleted the opening message, the hub drops the opening message, logs the failure, updates it with `⏹️ Stopped`, and sends that post as a new message. That update fails without harm for a deleted message, and after a transient failure it ends the message's live state. An opening message that no post fills gets `⏹️ Stopped` at the first answer of a hook that started no earlier than the next prompt's hook that starts a turn, or than its own prompt's hook while no such prompt came, at the last detach, at the hub's stop, or 23 hours after its send by the wall clock ([`Session.openTurn`, `takeOpening`, `fill`, `closeOpenings`](../src/hub.ts)).
-- After a non-empty answer, Claude posts the end line `!- Done in USAGE!` with priority 1, the turn's alert. USAGE is the Stop hook's usage text, such as `2 min 51 s · 16K output tokens · 673K tokens in context`. Without it, the line has DURATION, the time from the newest turn record not added mid-turn to the Stop hook's start, as `duration` formats it, and the line is `!- Done!` without such a record. The plan's usage of the newest status line report follows, as ` · 5 h: N% · week: N%`, without a window whose reset time has passed ([flow 38](#38-the-status-line-command)). Every part of the answer is silent ([`Session.answer`, `endLine`, `small`](../src/hub.ts), [`duration`](../src/messages.ts)).
+- The last part of a non-empty answer ends with the end line `!- Done in USAGE!` after a line break. When the line does not fit in the last part, the last part's last N + 1 characters, N the line's length, move into a new last part before the line. A posted last part has priority 1, the turn's alert, and the other parts priority -1. A last part that fills the opening message, or a streamed text, keeps priority -1, because `apiUpdateChatItem` takes no priority. So the chat list shows the answer, not the end line. USAGE is the Stop hook's usage text, such as `2 min 51 s · 16K output tokens · 673K tokens in context`. Without it, the line has DURATION, the time from the newest turn record not added mid-turn to the Stop hook's start, as `duration` formats it, and the line is `!- Done!` without such a record. The plan's usage of the newest status line report follows, as ` · 5 h: N% · week: N%`, without a window whose reset time has passed ([flow 38](#38-the-status-line-command)) ([`Session.turn`, `answer`, `postAnswer`, `endLine`, `withLine`, `small`](../src/hub.ts), [`duration`](../src/messages.ts)).
 - No turn record is made for a prompt request whose hook started before an answer that was already handled. So that prompt is not quoted in a later answer ([`Session.turn`](../src/hub.ts)).
 - The UserPromptSubmit hook runs for every prompt of the session that queries the model, also for Claude Code's own prompts. It marks a prompt as typed only when the prompt's record in the transcript has the origin `human`. Task notifications, messages of other sessions and channel prompts have other origins. The record is the newest one whose text is the prompt: a user entry, or a `queued_command` attachment of a prompt that Claude Code added to a running turn. It is the entry with `prompt_id` as `promptId`, or a record after the first entry with that ID, tool results included, so a long turn whose first entry is out of the tail is found by its tool results. While a `queue-operation` `enqueue` entry with the prompt's text follows the record, the hook waits: the prompt is a later one with that text, still queued. Claude Code writes the entry only after the synchronous UserPromptSubmit hooks end, such as a slow hook in the user's settings, and it creates the transcript file with the session's first entry. So the hook reads the transcript up to 600 times, 100 ms apart, and it treats a missing file as empty. Until the entry with `prompt_id` is in the tail, the hook waits for it; at the last read it takes any record with the prompt's text, and without `prompt_id` it does so at once. Claude Code runs the hook of a person's prompt when it is submitted, and of its own prompts only when they are taken. So at the last read, the hook classifies a record still followed by such an `enqueue` entry by the record, and marks a typed one mid-turn: the queued prompt is the typed prompt itself, or a later prompt with the text of Claude Code's own prompt, as a repeated monitor event. When no record is written within the reads, an `enqueue` entry with the prompt's text after the entry with `prompt_id`, or anywhere without that entry, makes the prompt typed and mid-turn. Otherwise the prompt is typed when an entry with `prompt_id` has the origin `human` ([`promptReads`, `transcriptReadMs`, `turn`, `promptKind`, `findInTranscript`, `promptRecord`, `isPrompt`, `recordText`, `recordKind`](../src/hook.ts)).
 - Claude Code adds a prompt that arrives during a turn to that turn, and gives its hook the running turn's prompt ID. The hook sends `midTurn: true` for a prompt whose record is not the entry with `prompt_id`. A mid-turn prompt ends no tool-use card. A prompt adds a turn record only when its hook started no earlier than the hook of the last answer handled (`answeredAt`), and a mid-turn prompt only when it also matched a pushed prompt. So the answer of the turn quotes the turn's prompt, or an owner's prompt added to the turn ([`Session.turn`](../src/hub.ts)).
@@ -1069,7 +1069,7 @@ Notes:
   - the reply to a one-line `/` text of a moderator, member or author
   - the opening message of a turn
 - When the core refuses an answer or a terminal prompt with `feature not allowed NAME`, Claude posts a text in its place, and the turn goes on ([`Session.turn`, `answer`, `postRefusal`, `notAllowedForUser`](../src/hub.ts)). NAME is, for example, `SimpleX links` for a SimpleX link while that preference is off. A prompt of `User` is also refused while the preference is on only for roles above that of `User`. The texts are:
-  - for an answer, `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would, and then the end line. When the answer's first part would fill the turn's opening message, this text fills it in place of a post, or `⏹️ Stopped` does when that update fails too;
+  - for an answer, `Claude's answer was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.`, quoting the turn's prompt as the answer would, with the end line on its next line and priority 1. When the answer's first part would fill the turn's opening message, this text fills it in place of a post, or `⏹️ Stopped` does, without the end line, when that update fails too;
   - for a terminal prompt, `User's prompt was not posted: NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`
 - The hook cuts a prompt or an answer over 250,000 characters at that length and appends `…`, so that the request fits within the socket's limit of 1 MiB ([`maxText`, `cut`](../src/hook.ts)).
 - A card of a tool use that started after the hook stays pending, because the hook's start time `at` is earlier than the card's creation ([`turn`](../src/hook.ts), [`Session.endPermissions`](../src/hub.ts)).
@@ -1466,8 +1466,7 @@ sequenceDiagram
   D->>N: cards stay pending, and a turn record needs a matched pushed prompt
   N->>O: Claude: ❌ Background command "Lint" failed with exit code 1
   CC->>D: Stop hook: POST /turn {answer}
-  N->>O: Claude: the answer, without a quote, silent
-  N->>O: Claude: !- Done in DURATION!, important
+  N->>O: Claude: the answer, without a quote, ending with !- Done in DURATION!, important
 ```
 
 Notes:
@@ -1504,8 +1503,7 @@ sequenceDiagram
   CC->>D: Stop hook: POST /turn {answer}
   N->>N: endSteps(at), each step started before at and still without an end
   N->>C: apiUpdateChatItem #35;G item, the step's own text, live off
-  N->>C: apiSendMessages #35;G the answer, its parts with priority -1, unless a text of Claude streamed it (flow 37)
-  N->>C: apiSendMessages #35;G [{text: "!- Done in DURATION!", priority: 1}]
+  N->>C: apiSendMessages #35;G the answer's parts, the last ending with "!- Done in DURATION!" with priority 1, the others with priority -1, unless a text of Claude streamed it (flow 37)
 ```
 
 Notes:
@@ -1565,7 +1563,7 @@ sequenceDiagram
   CC->>D: UserPromptSubmit hook: POST /turn {prompt}, the channel tag matched
   N->>O: Claude: the opening message, quoting the reacted message
   CC->>D: Stop hook: POST /turn {answer}
-  N->>O: Claude: the answer in the opening message, then the end line
+  N->>O: Claude: the answer in the opening message, ending with the end line
 ```
 
 Notes:
@@ -1754,29 +1752,31 @@ sequenceDiagram
   HK->>D: POST /turn {at: 6, step}
   N->>C: apiSendMessages #35;G [{text: "📖 Read src/hook.ts", priority: -1}], live, after the queued text work
   CC->>DH: MessageDisplay {message_id: m1, index: 2, final: true, delta: ""}
-  N->>N: the timer cleared, m1 ended
-  N->>C: apiUpdateChatItem #35;G the opening message, the whole text of m1, live off
+  N->>N: the timer cleared, m1 complete, a timer to end it 10 s later
+  N->>C: apiUpdateChatItem #35;G the opening message, the whole text of m1, live
   CC->>DH: MessageDisplay {message_id: m2, index: 0, final: true, delta: the answer}
-  N->>C: apiSendMessages #35;G [{text: the answer, priority: -1}]
+  N->>C: apiUpdateChatItem #35;G the opening message, the whole text of m1, live off
+  N->>C: apiSendMessages #35;G [{text: the answer, priority: -1}], live
+  N->>N: m2 complete, a timer to end it 10 s later
   CC->>HK: Stop {last_assistant_message}
   HK->>D: POST /turn {at: 11, answer}
   N->>N: claim: m2, the newest text started after 0 and before 11, starts the answer
-  N->>C: apiSendMessages #35;G [{text: "!- Done in 11 s!", priority: 1}]
-  C->>O: the end line, small, with an alert
+  N->>C: apiUpdateChatItem #35;G m2's message, the answer and "!- Done in 11 s!", live off
+  C->>O: the answer ending with the end line in small print, without an edited mark
 ```
 
 Notes:
 
 - Claude Code runs the display hook for each batch of Claude's text in the main conversation: whole lines, at most every 100 ms, and a last batch with `final: true`, which may end within a line. In the terminal, Claude Code shows each batch only after the hook returns. The hook waits at most 1 s for the service, starts none and makes no retry, and Claude Code gives it 2 s. In `claude -p` and Agent SDK runs, the hook runs once per message with the whole text, and the service answers 409, because such runs have no session ([`display`](../src/display.ts), [`postToService`](../src/service-request.ts)).
 - `Session.turn` queues a batch and returns, so the service answers before the posts. One queue holds the text work and the step starts, so the texts and the steps' lines are posted in the order their requests arrive ([`Session.text`, `queueLive`, `step`](../src/hub.ts)).
-- The hub appends a text's batches in index order, and posts the text from its first part that is not blank, live and silent. The turn's first post fills the opening message ([flow 21](#21-a-terminal-prompt-and-the-answer)). The hub updates a live text at most once per 3 s, and finalizes it at once at its final batch, live off. A text whose first batch's hook started before the latest answer's hook is dropped, and so are the later batches of an ended text ([`Session.addBatch`, `showText`](../src/hub.ts)).
+- The hub appends a text's batches in index order, and posts the text from its first part that is not blank, live and silent. The turn's first post fills the opening message ([flow 21](#21-a-terminal-prompt-and-the-answer)). The hub updates a live text at most once per 3 s. At its final batch, it updates the text at once with its whole text, still live. It finalizes the text, live off, 10 s later, before the next step or the first batch of the next text, or at Stop with the end line when the text is the answer's message. So the answer's message ends without an edited mark. A text whose first batch's hook started before the latest answer's hook is dropped, and so are the later batches of an ended text ([`textEndMs`, `Session.addBatch`, `completeText`, `endComplete`, `showText`, `step`](../src/hub.ts)).
 - Each part of a text is measured as a part of an answer without a quote. When a text outgrows one message, the hub finalizes its message with the part that fits, and continues the rest in a new live message ([`Session.showText`, `textParts`](../src/hub.ts)).
-- At Stop, the hub first claims the answer, and then ends the live texts whose first batch's hook started before the Stop hook. The claimed text is the newest one, live or among the last 20 ended that have a message or were refused, whose first batch's hook started after the turn's start and before the Stop hook, when its text, trimmed, starts the trimmed answer. The rest of the answer after the text's finished parts then completes that text's message when it differs, as after a lost batch. Without such a text, the hub posts the answer as in [flow 21](#21-a-terminal-prompt-and-the-answer). The end line follows in both cases ([`Session.endTexts`, `claim`, `answer`](../src/hub.ts)).
+- At Stop, the hub first claims the answer, and then ends the live texts whose first batch's hook started before the Stop hook. The claimed text is the newest one, live or among the last 20 ended that have a message or were refused, whose first batch's hook started after the turn's start and before the Stop hook, when its text, trimmed, starts the trimmed answer. The rest of the answer after the text's finished parts, with the end line, then completes that text's message. A text that ended before Stop gets the end line in an edit, with an edited mark. Without such a text, the hub posts the answer with the end line as in [flow 21](#21-a-terminal-prompt-and-the-answer) ([`Session.endTexts`, `claim`, `endText`, `endPart`, `answer`, `withLine`](../src/hub.ts)).
 - At a prompt that starts a turn, the hub finalizes the live texts whose first batch's hook started before the prompt's hook with their text. At the last detach and at the hub's stop, it finalizes every live text. It also finalizes a live text 23 hours after the send of its message by the wall clock, as after an interruption with Esc and no prompt for a day; for a text in the opening message, that send is the opening message's ([`Session.turn`, `endLive`, `expireLive`](../src/hub.ts)).
 - When the core refuses a text's post or update with `feature not allowed NAME`, Claude posts `Claude's text was not posted: NAME are off in the group of this session; its owners can turn them on in the group's preferences.` once for that text. When the refused post would fill the turn's opening message, this text fills it in place of a post. The text's message, when one was posted, keeps the text accepted last. The text ends at once, also when it outgrows a message, the hub drops its later batches, and an update scheduled before its end is skipped. At Stop, the claim finds such a text as for any other text, and then posts nothing more of the answer, so the group gets one refusal ([`Session.updateText`, `startLine`, `refuseText`, `claim`](../src/hub.ts)).
 - The texts and the opening messages are kept in the service's memory. After a service restart during a text, its message stays live, its later batches show nothing, and the answer is posted at Stop.
 
-Source: [`hooks.json`](../hooks/hooks.json), [`display`](../src/display.ts), [`postToService`](../src/service-request.ts), [`Session.turn`, `text`, `addBatch`, `showText`, `updateText`, `endText`, `endTexts`, `claim`, `answer`](../src/hub.ts).
+Source: [`hooks.json`](../hooks/hooks.json), [`display`](../src/display.ts), [`postToService`](../src/service-request.ts), [`Session.turn`, `text`, `addBatch`, `completeText`, `endComplete`, `showText`, `updateText`, `endText`, `endTexts`, `claim`, `answer`](../src/hub.ts).
 
 ---
 
