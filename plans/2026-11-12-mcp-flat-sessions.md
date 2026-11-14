@@ -815,22 +815,24 @@ flowchart LR
 
 ## 14. Avatar column (direction set on 2026-11-14)
 
-The user, after reviewing #8169 with the text at the screen edge: "without this left padding it all get mixed, and you can't easily differentiate where message starts", and "restore the gap, reduce avatar as here, tighten the padding, make avatar overshoot into the padding like it does in new screenshot, fix inner paddings on android/desktop (like it also does), and reduce right padding too". Also: "image size fixes should also be preserved, except for the gap reducing image size". A sticky avatar, sliding down the column while one sender's run scrolls, is the next item; the column makes it possible.
+The user, after reviewing #8169 with the text at the screen edge: "without this left padding it all get mixed, and you can't easily differentiate where message starts", and "restore the gap, reduce avatar as here, tighten the padding, make avatar overshoot into the padding like it does in new screenshot, fix inner paddings on android/desktop (like it also does), and reduce right padding too". Also: "image size fixes should also be preserved, except for the gap reducing image size". Then: "By tighter I only meant gap and paddings ... Right padding was ok, left was ok too but needed avatar overshoot. Similarly, right padding will become equally smaller. There should be no changes in text layout, as it harms readability, text is fine as is." A sticky avatar, sliding down the column while one sender's run scrolls, is the next item; the column makes it possible.
 
 ### 14.1 Geometry
 
-Flat rows of chats with avatars (groups and channels), on both platforms; dp on Android and desktop, pt on iOS (after the slash).
+Flat rows of chats with avatars (groups and channels), on both platforms; dp on Android and desktop, pt on iOS (after the slash). Only the gap G is open: 8, 10 or 12.
 
 ```
-value                    recommended    variant (tighter)   current PR             master
-left padding P           8              6                   12                     12
-avatar start P − 2       6              4                   12 + H's bearing − 2   12 (Android: 31 inside a 37 box)
-avatar                   27 / 30        27 / 30             27 / 30                37 box, 31 visible / 34
-gap G, avatar to text    8              6                   text under the avatar  12 / 12
-text start               41 / 44        37 / 40             12                     61 / 58
-right padding R          8              6                   12                     12
-text width at 402        353 / 350      359 / 356           378                    329 / 332
+value                    column, G = 8 / 10 / 12          current PR             master
+left padding             12                               12                     12
+avatar start             10: 2 into the padding           12 + H's bearing − 2   12 (Android: 31 inside a 37 box)
+avatar                   27 / 30                          27 / 30                37 box, 31 visible / 34
+text start               10 + avatar + G:                 12, under the avatar   61 / 58
+                         45, 47, 49 / 48, 50, 52
+right padding            10: 2 less, as the avatar's 2    12                     12
+text width at 402        347, 345, 343 / 344, 342, 340    378                    329 / 332
 ```
+
+Text keeps its layout: font, line height, paragraph gaps, 0 between close one-line messages of one sender, the time's placement and the name line.
 
 ```
 avatar        centred on the name line; TERMINAL_HEADING_BOTTOM_GAP above a sender row with an avatar, as now
@@ -841,8 +843,8 @@ row height    the lower of the message bottom and the avatar bottom
 
 ```mermaid
 flowchart LR
-  Row[Flat row in a chat with avatars] --> Col[avatar column: P − 2, avatar, G]
-  Row --> Msg[message column: text start to R]
+  Row[Flat row in a chat with avatars] --> Col[avatar column: from 10, avatar, G]
+  Row --> Msg[message column: text start to 10 before the edge]
   Col --> Av[avatar, centred on the name line]
   Msg --> Name[name and role]
   Msg --> Item[ChatItemView: text, cards, media, time]
@@ -856,9 +858,9 @@ later rows of one sender                 the message column, without an avatar
 events, feature and E2EE items           the message column, as on master
 deleted, moderated and error cards       the message column
 date separators                          centred on the row, unchanged
-chats without avatars (direct, notes)    unchanged: text at 12, R 12
+chats without avatars (direct, notes)    unchanged: text at 12, right padding 12
 selection checkbox and offset            unchanged
-go-to button, time                       at the row end, R before the screen edge
+go-to button, time                       at the row end, 10 before the screen edge
 ```
 
 ### 14.3 Media
@@ -866,11 +868,11 @@ go-to button, time                       at the row end, R before the screen edg
 Every Flat media rule stays; it is measured from the message column.
 
 ```
-media                      rule                           rec / var at 402   current PR   master
-Android wide               the column width, at most 500  353 / 359          378          329
-Android tall or square     0.75 of it                     264.75 / 269.25    283.5        226.5
-iOS wide and link preview  the column width, at most 500  350 / 356          378          272
-iOS tall or square         0.75 of it                     262.5 / 267        283.5        204
+media at 402               rule                           G = 8 / 10 / 12           current PR   master
+Android wide               the column width, at most 500  347, 345, 343             378          329
+Android tall or square     0.75 of it                     260.25, 258.75, 257.25    283.5        226.5
+iOS wide and link preview  the column width, at most 500  344, 342, 340             378          272
+iOS tall or square         0.75 of it                     258, 256.5, 255           283.5        204
 time over or beside media  unchanged
 ```
 
@@ -879,10 +881,10 @@ time over or beside media  unchanged
 ```
 decision                          now                                  with the column
 round 1: text in the full width   text at 12, under the avatar         text after the column
-Q5 overshoot                      2 past the letters' edge at 12       2 into the padding P
+Q5 overshoot                      2 past the letters' edge at 12       2 into the 12 padding: the avatar at 10
 Q6 and D1 B                       text 6 below the avatar              removed: the text is beside the avatar
 decision 15                       name 12 after the avatar             name at the text start, G after the avatar
-time end padding                  12                                   R in chats with avatars
+time end padding                  12                                   10 in chats with avatars
 README image                      text at 12                           redrawn with the column
 roadmap line                      "the text using the full width"      reworded
 ```
@@ -893,15 +895,15 @@ Kept: the placeholder and compensation removal (Q1, Q4, Q8), Q9 to Q13, defects 
 
 ```
 Android, desktop   TerminalChatItemRow places the name and ChatItemView at the text start less CHAT_ITEM_TEXT_PADDING,
-                   and measures ChatItemView as wide as the row from there, plus CHAT_ITEM_TEXT_PADDING − R, so the
-                   item keeps its 12 dp text edges and ends R before the screen edge; FlatMediaWidth gets the column
-iOS                TerminalChatItemRow puts the avatar column before the content and the trailing padding R −
-                   chatItemTextPadding after it; terminalMediaWidth takes the column width
+                   and measures ChatItemView as wide as the row from there plus TERMINAL_AVATAR_OVERSHOOT, so the item
+                   keeps its 12 dp text edges and ends 10 before the screen edge; FlatMediaWidth gets the column
+iOS                TerminalChatItemRow puts the avatar column before the content and a trailing padding of −2 after
+                   it; terminalMediaWidth takes the column width
 ```
 
 ### 14.6 Renders
 
-Desktop, font 100, light, 2x, at 402 (the session also at 900); master emulated on this branch with master's geometry: `scratchpad/roadmap/img/flat-col-{master,pr,rec,var}-{session,group}.png` and `flat-col-*-session-900.png`. The session is the README conversation with a code block, a quote, close messages of one sender, an approval and an image.
+Desktop, font 100, light, 2x, at 402; master emulated on this branch with master's geometry: `scratchpad/roadmap/img/flat-col2-{master,g8,g10,g12}-{session,group}.png`, cropped to one top per scene. The session is the README conversation with a code block, a quote, close messages of one sender, an approval and an image.
 
 ### 14.7 Estimate
 
