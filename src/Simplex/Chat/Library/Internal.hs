@@ -1712,12 +1712,13 @@ shortLinkDataP l v = case l of
     CCTChannel -> Just <$> group isJust
     CCTRelay -> optionalData $ relayAddress <|> contact
   where
+    optionalData :: JT.Parser ShortLinkData -> JT.Parser (Maybe ShortLinkData)
     optionalData p = if v == J.Null then pure Nothing else Just <$> p
     contact = SLDContact <$> J.parseJSON v
     relayLink = SLDRelayLink <$> J.parseJSON v
     relayAddress = SLDRelayAddress <$> J.parseJSON v
     group ok = SLDGroup <$> mfilter (\GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} -> ok publicGroup) (J.parseJSON v)
-    notChannel = all (\PublicGroupProfile {groupType} -> groupType /= GTChannel)
+    notChannel = maybe True (\PublicGroupProfile {groupType} -> groupType /= GTChannel)
 
 getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m, Maybe ShortLinkData)
 getShortLinkConnReq nm user l = do
