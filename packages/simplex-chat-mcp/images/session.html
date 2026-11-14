@@ -19,7 +19,11 @@
   --body: 17px;
   --line: 23.4px;
   --gap: 7.8px;
+  --head: 2.52px;
   --avatar: 30px;
+  --avatar-left: calc(var(--pad) + 0.088em - 2px);
+  --avatar-gap: 6px;
+  --caps: 4.92px;
 }
 
 html, body { margin: 0; padding: 0; }
@@ -60,15 +64,15 @@ body { width: 742px; height: 1489px; background: url("approval.png") no-repeat 0
 
 .chat { position: absolute; left: 0; top: 85px; width: 390px; bottom: 87px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; }
 
-.row { position: relative; padding-top: var(--gap); }
-.row.first { padding-top: 0; }
-.sender { position: relative; height: var(--line); line-height: var(--line); padding-left: calc(var(--pad) + var(--avatar) + var(--pad)); font-size: var(--body); white-space: nowrap; }
+.row { position: relative; padding-top: calc(var(--gap) + var(--head)); }
+.row.first { padding-top: var(--head); }
+.sender { position: relative; height: var(--avatar); line-height: var(--avatar); padding-left: calc(var(--avatar-left) + var(--avatar) + var(--pad)); font-size: var(--body); white-space: nowrap; }
 .sender .name { font-weight: 600; color: var(--secondary); }
 .sender .name.own { color: var(--primary); }
 .sender .role { font-weight: 500; color: var(--secondary); margin-left: 15px; }
-.avatar { position: absolute; left: var(--pad); top: calc(var(--line) / 2 - var(--avatar) / 2); width: var(--avatar); height: var(--avatar); }
-.content { margin-top: calc(var(--avatar) / 2 - var(--line) / 2 + 2.5px); padding: 0 var(--pad); font-size: var(--body); line-height: var(--line); color: var(--text); }
-.content.card { margin-top: calc(var(--avatar) / 2 - var(--line) / 2 + var(--gap)); }
+.avatar { position: absolute; left: var(--avatar-left); top: 0; width: var(--avatar); height: var(--avatar); }
+.content { margin-top: max(calc((var(--line) - var(--avatar)) / 2), calc(var(--avatar-gap) - var(--caps))); padding: 0 var(--pad); font-size: var(--body); line-height: var(--line); color: var(--text); }
+.content.card { margin-top: max(calc((var(--line) - var(--avatar)) / 2 + var(--gap)), var(--avatar-gap)); }
 .content p { margin: 0; }
 code { font-family: "Mono"; font-size: 15.6px; letter-spacing: -0.4px; }
 .cmd { font-family: "Mono"; font-size: 15.6px; letter-spacing: -0.4px; color: var(--primary); }
