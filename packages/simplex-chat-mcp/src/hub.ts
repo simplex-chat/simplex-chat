@@ -1201,7 +1201,7 @@ function quoteOf(quoted: T.ChatItem | undefined, text: string): Parameters<typeo
 function endLine(figures: string | undefined, {fiveHour, week}: Limits): string {
   const now = Date.now() / 1_000
   const current = (window: LimitWindow | undefined): LimitWindow | undefined => (window !== undefined && window.resetsAt > now ? window : undefined)
-  return small([`✅ Done${figures === undefined ? "" : ` in ${figures}`}`, ...limitParts({fiveHour: current(fiveHour), week: current(week)})].join(" · "))
+  return small([`Done${figures === undefined ? "" : ` in ${figures}`}`,...limitParts({fiveHour: current(fiveHour), week: current(week)})].join(" · "))
 }
 
 // spec: spec/architecture.md#hub-quoteof

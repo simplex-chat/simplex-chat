@@ -27,7 +27,7 @@ The user's note on Q1 A, 2026-11-13:
 > can we maybe add subscription usage here too, not to include it in description?
 
 Outcome:
-- Each turn ends with one line in small print after the answer: `✅ Done in` and the turn's usage.
+- Each turn ends with one line in small print after the answer: `Done in` and the turn's usage.
 - A person who sets the plugin's status line command in Claude Code's settings also gets the plan's 5-hour and weekly usage in that line, and a status line in the terminal.
 - A switch of the model or of the effort level gets its own line in small print.
 - The description keeps the model and the effort level.
@@ -37,21 +37,21 @@ Outcome:
 After each non-blank answer, Claude posts the end line in small print. It is the turn's alert, and every part of the answer is silent. With the status line setting:
 
 ```
-!- ✅ Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context · 5 h: 34% · week: 61%!
+!- Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context · 5 h: 34% · week: 61%!
 ```
 
 Without the setting:
 
 ```
-!- ✅ Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context!
+!- Done in 2 min 51 s · 16.0k output tokens · 673k tokens in context!
 ```
 
 The apps show the text between `!- ` and `!` smaller and in the secondary color. A notification shows it without the marks ([NtfManager.kt:134-145](../apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L134-L145), [Notifications.swift:200-214](../apps/ios/SimpleXChat/Notifications.swift#L200-L214)). These end lines are computed from turns of this machine's transcripts:
 
 ```
-!- ✅ Done in 21 s · 1.6k output tokens · 689k tokens in context!
-!- ✅ Done in 6 min 49 s · 17.6k output tokens · 751k tokens in context!
-!- ✅ Done in 931 ms · 16 output tokens · 37.5k tokens in context!
+!- Done in 21 s · 1.6k output tokens · 689k tokens in context!
+!- Done in 6 min 49 s · 17.6k output tokens · 751k tokens in context!
+!- Done in 931 ms · 16 output tokens · 37.5k tokens in context!
 ```
 
 ```
@@ -76,9 +76,9 @@ The duration has the format of the step lines of `ep/mcp-activity`, by its `dura
 Other end lines:
 ```
 case                                                       end line
-the hook sends no usage                                    !- ✅ Done in DURATION · 5 h: 34% · week: 61%!, with DURATION of
+the hook sends no usage                                    !- Done in DURATION · 5 h: 34% · week: 61%!, with DURATION of
                                                            ep/mcp-live-answers, from the prompt's hook to the Stop hook
-the hook sends no usage, the turn's start unknown          !- ✅ Done · 5 h: 34% · week: 61%!
+the hook sends no usage, the turn's start unknown          !- Done · 5 h: 34% · week: 61%!
 a 5-hour or weekly window whose reset time has passed      the window is left out
 no report of the status line command since the service     no 5 h and week parts
 started
@@ -153,7 +153,7 @@ sequenceDiagram
   HK->>T: the answer's entry, then back to the turn's prompt entry
   HK->>D: POST /turn {answer, model, effort, usage}
   D->>O: Claude: the answer, silent
-  D->>O: Claude: ✅ Done in USAGE and the newest limits, small, important
+  D->>O: Claude: Done in USAGE and the newest limits, small, important
 ```
 
 ## 3. Questions for the user
@@ -189,7 +189,7 @@ Choices:
 16. The Stop hook computes the usage text, `DURATION · OUTPUT output tokens · CONTEXT tokens in context`, the wording settled with `ep/mcp-live-answers`. It finds the answer's entry as `answerModel` of 0.3.0 does, in `answerRecord` ([`hook.ts`](../packages/simplex-chat-mcp/src/hook.ts)). The turn's first entry is the first user entry of the main conversation with `promptId` equal to the hook's `prompt_id` that is not a tool result. When the tail of the answer's read lacks it, the hook reads tails of 4, 16 and 64 MiB, in order, until one has it. Fact 9 puts every turn of this machine within 64 MiB. The hook parses only the lines with that prompt ID or of an assistant entry.
 17. OUTPUT is the sum of `output_tokens` over the distinct `message.id` of the assistant entries after the first entry, without `isSidechain` and without `<synthetic>` (fact 6). CONTEXT is `input_tokens + cache_creation_input_tokens + cache_read_input_tokens` of the answer's entry, as Claude Code computes the context in use (`ngt` at 297207048). DURATION is the answer's `timestamp` minus the first entry's (fact 8).
 18. The hook sends no usage when the input has no `prompt_id`, when the answer's entry is not found, is `<synthetic>` or has no `message.usage`, or when the first entry is not within 64 MiB.
-19. The end line is decision 36 of `ep/mcp-live-answers`: `!- ✅ Done in FIGURES!`, priority 1, the turn's last post after a non-blank answer, also after the refusal text of a refused answer, with every part of the answer silent. FIGURES is the hook's usage text, or DURATION of `ep/mcp-live-answers` without it; without both, the line is `✅ Done`. The hub appends ` · 5 h: N%` and ` · week: N%` for the windows of the newest limits whose `resets_at` has not passed. This replaces the silent usage line of the plan's first version: the line is important and starts with `✅ Done in `, and every part of the answer is silent. Whichever of the two items merges first adds the line in this form, with its own figures: this item, as the last message of the answer's send, with the usage text, or `✅ Done` without it. The second adds its part.
+19. The end line is decision 36 of `ep/mcp-live-answers`: `!- Done in FIGURES!`, priority 1, the turn's last post after a non-blank answer, also after the refusal text of a refused answer, with every part of the answer silent. FIGURES is the hook's usage text, or DURATION of `ep/mcp-live-answers` without it; without both, the line is `Done`. The hub appends ` · 5 h: N%` and ` · week: N%` for the windows of the newest limits whose `resets_at` has not passed. This replaces the silent usage line of the plan's first version: the line is important and starts with `Done in `, and every part of the answer is silent. Whichever of the two items merges first adds the line in this form, with its own figures: this item, as the last message of the answer's send, with the usage text, or `Done` without it. The second adds its part. The line has no ✅, by the user's rule of 2026-11-14: small print only, information without drawing attention.
 20. The plugin's status line command, `dist/status-line.js`, reads its input, prints the status line of section 2, and then sends `{id: session_id, pid: CLAUDE_PID, at, effort, limits}` as `POST /turn` with `postToService` of `service-request.ts`. `limits` holds `fiveHour` and `week`, each `{percent, resetsAt}`, from `rate_limits`. It waits at most 1 s for the reply, starts no service, makes no retry and prints nothing about failures. It loads only Node modules, `paths.ts` and `service-request.ts`, the modules of decision 18 of `ep/mcp-live-answers`, which import only Node modules and each other (fact 15). When this item merges first, it adds the two modules as that decision describes them.
 21. An answer's model equal to the shown model without `[1m]` keeps the shown model. So the description and `session.json` keep `claude-opus-5-5[1m]`, and no "updated group profile" follows the first answer (fact 13).
 22. At each start, the service writes `ROOT/status-line.js`, which imports `status-line.js` of the service's own `dist` folder by its file URL and runs its `runStatusLine`. A dynamic import works also when an enclosing `package.json` makes the folder an ES module scope. It writes a temporary file and renames it into place, readable only by the user; a failed write is logged and the service runs on. A newer plugin's service rewrites it, so the setting of section 2 keeps working across updates (facts 4 and 5).
@@ -301,7 +301,7 @@ on POST /turn {at, answer, model, switched, effort, usage, limits, statusLine}:
   lines += "Effort changed to " + newEffort    when the shown effort is known and newEffort differs
   description and session.json as now
   posts: small(lines), silent  ->  note  ->  User's prompt  ->  the answer, silent  ->
-         answer not blank: small("✅ Done" + (" in " + FIGURES, when known) + windows not reset), important
+         answer not blank: small("Done" + (" in " + FIGURES, when known) + windows not reset), important
          ->  the short description when it changed
 ```
 
@@ -364,7 +364,7 @@ Tests:
   - "posts a line when the model switches and when a known effort level changes, also from the status line, before the other posts of the request, and none for a first value, a model of an answer or a value older than the one taken last". Its effort part compiles on master and fails there.
   - "takes the effort level only from the status line once it reports, so the level of one turn in a hook, as after ultrathink, posts no line, and a change in the status line posts one". It fails without decision 31.
   - "keeps the shown model with [1m] and its description when an answer's model is that model without [1m]".
-- `test/e2e/service.test.ts`, the mirroring test, changed: the transcript entries get timestamps, message IDs and usage, and Alice receives `!- ✅ Done in 2.0 s · 861 output tokens · 35.6k tokens in context!` after `Fixed.`. After a status line request with limits, the next turn's end line ends with ` · 5 h: 34% · week: 61%`. It fails on master.
+- `test/e2e/service.test.ts`, the mirroring test, changed: the transcript entries get timestamps, message IDs and usage, and Alice receives `!- Done in 2.0 s · 861 output tokens · 35.6k tokens in context!` after `Fixed.`. After a status line request with limits, the next turn's end line ends with ` · 5 h: 34% · week: 61%`. It fails on master.
 - `test/e2e/launch.test.ts`, changed: `writeStatusLine` writes `status-line.js` for the unpacked package's `dist/status-line.js`, and the setting's command, run by `sh`, prints a status line from it, with `SIMPLEX_MCP_HOME` and with `~/.simplex-mcp`, without an install. The unit test of the service checks that `Service.start` writes the file.
 - Run: `npm test --prefix packages/simplex-chat-mcp`, and the end-to-end tests as TESTING.md states, in the reduced build. No app changes, so no app test workflows.
 

@@ -420,7 +420,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   expect(await submitted).toEqual({})
   await typed
   const fixed = updated(alice.chat, message("Fixed.", "Claude"))
-  const fixedEnd = received(alice.chat, message("!- ✅ Done in 2.0 s · 861 output tokens · 35.6k tokens in context!", "Claude"))
+  const fixedEnd = received(alice.chat, message("!- Done in 2.0 s · 861 output tokens · 35.6k tokens in context!", "Claude"))
   const usage = {input_tokens: 3, cache_creation_input_tokens: 600, cache_read_input_tokens: 35_000, output_tokens: 861}
   appendFileSync(transcript, `${JSON.stringify({type: "assistant", timestamp: "2026-11-13T10:00:02.000Z", message: {id: "msg_1", model: "claude-opus-5", content: [{type: "text", text: "Fixed."}], usage}})}\n`)
   const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupId && toGroup.groupProfile.shortDescr === "claude-opus-5", 60_000)
@@ -515,7 +515,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   expect([summary.itemLive, summary.itemEdited]).toEqual([false, false])
   const resetsAt = Date.now() / 1_000 + 3_600
   await statusLine(JSON.stringify({session_id: five, model: {display_name: "Opus 5"}, rate_limits: {five_hour: {used_percentage: 34.7, resets_at: resetsAt}, seven_day: {used_percentage: 61, resets_at: resetsAt}}}), () => undefined, {SIMPLEX_MCP_HOME: root})
-  const endLine = received(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText.startsWith("!- ✅ Done in ") && chatItem.meta.itemText.endsWith(" · 5 h: 34% · week: 61%!")))
+  const endLine = received(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText.startsWith("!- Done in ") && chatItem.meta.itemText.endsWith(" · 5 h: 34% · week: 61%!")))
   await turn(JSON.stringify({session_id: five, hook_event_name: "Stop", last_assistant_message: "Summary:\nAll green."}), {}, client, undefined, Date.now())
   await endLine
   const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 50)

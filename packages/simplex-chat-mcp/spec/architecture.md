@@ -892,7 +892,7 @@ Data flow of a prompt from the session group:
 | <a id="hub-hub-onevent"></a>`Hub.onEvent` | event dispatch. Pending connections are claimed at `contactConnected` and `userJoinedGroup`. A session group's membership events go to its `Control`, `sendTools`, `announceRights` and `askMode`, one at a time. |
 | <a id="hub-notallowedforuser"></a>`notAllowedForUser` | `NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` It is posted for a prompt of `User` refused by a group preference, including one that is on only for roles above that of `User`. |
 | <a id="hub-textparts"></a>`textParts` | the longest runs of whole characters that each fit in one message by `fitsMessage`, the first with the given quote. Each part is found by a binary search among the next `maxMessageLength` characters. |
-| <a id="hub-quoteof"></a>`quoteOf`, `endLine`, `small`, `keepLast` | the quote of a received or sent message, when it fits with the first character of a text; `✅ Done in FIGURES`, or `✅ Done` without figures, followed by `limitParts` of the windows whose `resetsAt` has not passed, in small print by `small`; `!- TEXT!`, or TEXT unchanged when it has a `!`; a set of IDs that keeps its last 100 |
+| <a id="hub-quoteof"></a>`quoteOf`, `endLine`, `small`, `keepLast` | the quote of a received or sent message, when it fits with the first character of a text; `Done in FIGURES`, or `Done` without figures, followed by `limitParts` of the windows whose `resetsAt` has not passed, in small print by `small`; `!- TEXT!`, or TEXT unchanged when it has a `!`; a set of IDs that keeps its last 100 |
 | <a id="hub-isrefusedquote"></a>`isRefusedQuote` | `errorStore` `invalidQuote`, `chatItemNotFound` or `largeMsg` |
 
 #### [`main-group.ts`](../src/main-group.ts)
@@ -1286,7 +1286,7 @@ on /turn answer a, not blank:      claim found a text: nothing more of a
                                    the opening's update failed otherwise: the opening finalized with "⏹️ Stopped",
                                    parts(a) posted as without an opening
                                    then the end line with priority 1
-end line:                          "✅ Done in " usage, or "✅ Done in " duration(at - started) without usage, or "✅ Done"
+end line:                          "Done in " usage, or "Done in " duration(at - started) without usage, or "Done"
                                    without both; then " · 5 h: N%" and " · week: N%" of the kept limits not reset; in small print
 then, at an answer:                each opening with until, or its start without until, at or before at: finalized with "⏹️ Stopped"
 claim(a, before, started):         newest text, live or recent, with started below at below before
