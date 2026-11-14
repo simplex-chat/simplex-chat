@@ -3657,8 +3657,7 @@ fun providerForGallery(
     override val initialIndex: Int = initialIndex
     override val totalMediaSize = mutableStateOf(10000)
     override fun getMedia(index: Int): ProviderMedia? {
-      val internalIndex = initialIndex - index
-      val item = item(internalIndex, initialChatId)?.second ?: return null
+      val item = synchronized(this) { item(initialIndex - index, initialChatId) }?.second ?: return null
       return when (item.content.msgContent) {
         is MsgContent.MCImage -> {
           val res = runBlocking { getLoadedImage(item.file) }
@@ -3680,14 +3679,16 @@ fun providerForGallery(
     }
 
     override fun currentPageChanged(index: Int) {
-      val internalIndex = initialIndex - index
-      val item = item(internalIndex, initialChatId) ?: return
-      initialIndex = index
-      initialChatId = item.second.id
+      synchronized(this) {
+        val internalIndex = initialIndex - index
+        val item = item(internalIndex, initialChatId) ?: return
+        initialIndex = index
+        initialChatId = item.second.id
+      }
     }
 
     override fun scrollToStart() {
-      initialIndex = 0
+      synchronized(this) { initialIndex = 0 }
     }
 
     override fun onDismiss(index: Int) {

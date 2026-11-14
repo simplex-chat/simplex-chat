@@ -96,10 +96,14 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
         if (settledCurrentPage != provider.initialIndex)
           provider.currentPageChanged(index)
       }
-      val media = provider.getMedia(index)
+      var page by remember { mutableStateOf<Pair<Int, ProviderMedia?>?>(null) }
+      LaunchedEffect(index) {
+        page = index to withContext(Dispatchers.IO) { provider.getMedia(index) }
+      }
+      val (pageIndex, media) = page ?: return@Column
       if (media == null) {
         // No such image. Let's shrink total pages size or scroll to start of the list of pages to remove blank page automatically
-        SideEffect {
+        if (pageIndex == index) SideEffect {
           scope.launch {
             when (settledCurrentPage) {
               index - 1 -> provider.totalMediaSize.value = settledCurrentPage + 1
