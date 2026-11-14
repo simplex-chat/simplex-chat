@@ -464,6 +464,7 @@ fun ChatPreviewView(
             val showNtfsIcon = !chat.chatInfo.ntfsEnabled(false) && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
             if (n > 0 || chat.chatStats.unreadChat) {
               val unreadMentions = chat.chatStats.unreadMentions
+              val attentionIcon = if (chat.chatStats.unreadHighPriority > 0) MR.images.ic_notifications else MR.images.ic_alternate_email
               Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.sp.toDp())) {
                 val mentionColor = when {
                   disabled -> MaterialTheme.colors.secondary
@@ -476,7 +477,7 @@ fun ChatPreviewView(
                 }
                 if (unreadMentions > 0 && n > 1) {
                   Icon(
-                    painterResource(MR.images.ic_alternate_email),
+                    painterResource(attentionIcon),
                     contentDescription = generalGetString(MR.strings.notifications),
                     tint = mentionColor,
                     modifier = Modifier.size(12.sp.toDp()).offset(y = 3.sp.toDp())
@@ -486,7 +487,7 @@ fun ChatPreviewView(
                 if (unreadMentions > 0 && n == 1) {
                   Box(modifier = Modifier.offset(y = 2.sp.toDp()).size(15.sp.toDp()).background(mentionColor, shape = CircleShape), contentAlignment = Alignment.Center) {
                     Icon(
-                      painterResource(MR.images.ic_alternate_email),
+                      painterResource(attentionIcon),
                       contentDescription = generalGetString(MR.strings.notifications),
                       tint = Color.White,
                       modifier = Modifier.size(9.sp.toDp())
