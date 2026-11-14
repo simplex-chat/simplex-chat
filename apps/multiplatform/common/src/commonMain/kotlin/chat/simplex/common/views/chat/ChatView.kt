@@ -4072,19 +4072,68 @@ fun PreviewGroupChatLayoutTerminalHiddenItems() = CompositionLocalProvider(Local
   GroupChatLayoutPreview(hiddenItemsPreview())
 }
 
+@Preview
+@Composable
+fun PreviewGroupChatLayoutTerminalDefects() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  GroupChatLayoutPreview(defectsPreview())
+}
+
+@Preview
+@Composable
+fun PreviewGroupChatLayoutBanner() = GroupChatLayoutPreview(
+  listOf(
+    previewRcv(1, GroupMember.sampleData, 0, CIContent.ChatBanner),
+    previewRcv(2, GroupMember.sampleData, 60, previewText("hello"))
+  )
+)
+
+private fun previewMember(id: Long, name: String) =
+  GroupMember.sampleData.copy(groupMemberId = id, memberId = name, localDisplayName = name, memberProfile = LocalProfile.sampleData.copy(profileId = id, displayName = name, fullName = ""))
+
+private fun previewRcv(id: Long, member: GroupMember, seconds: Int, content: CIContent) =
+  ChatItem.getSampleData(id, CIDirection.GroupRcv(member), previewDate.plus(seconds, DateTimeUnit.SECOND), content.text).copy(content = content)
+
+private fun previewSnd(id: Long, seconds: Int, text: String, status: CIStatus = CIStatus.SndNew()) =
+  ChatItem.getSampleData(id, CIDirection.GroupSnd(), previewDate.plus(seconds, DateTimeUnit.SECOND), text, status)
+
+private fun previewText(text: String) = CIContent.RcvMsgContent(MsgContent.MCText(text))
+
 private fun hiddenItemsPreview(): List<ChatItem> {
-  fun member(id: Long, name: String) =
-    GroupMember.sampleData.copy(groupMemberId = id, memberId = name, localDisplayName = name, memberProfile = LocalProfile.sampleData.copy(profileId = id, displayName = name, fullName = ""))
-  fun rcv(id: Long, member: GroupMember, minutes: Int, content: CIContent) =
-    ChatItem.getSampleData(id, CIDirection.GroupRcv(member), previewDate.plus(minutes, DateTimeUnit.MINUTE), content.text).copy(content = content)
-  val bob = member(2, "bob")
-  val carol = member(3, "carol")
+  val bob = previewMember(2, "bob")
+  val carol = previewMember(3, "carol")
   return listOf(
-    rcv(1, GroupMember.sampleData, 0, CIContent.RcvMsgContent(MsgContent.MCText("Welcome, carol!"))),
-    rcv(2, carol, 2, CIContent.RcvMsgContent(MsgContent.MCText("Thanks!"))),
-    rcv(3, carol, 4, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(1, 1))),
-    rcv(4, bob, 5, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(2, 2))),
-    ChatItem.getSampleData(5, CIDirection.GroupSnd(), previewDate.plus(6, DateTimeUnit.MINUTE), "ok")
+    previewRcv(1, GroupMember.sampleData, 0, previewText("Welcome, carol!")),
+    previewRcv(2, carol, 120, previewText("Thanks!")),
+    previewRcv(3, carol, 240, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(1, 1))),
+    previewRcv(4, bob, 300, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(2, 2))),
+    previewSnd(5, 360, "ok")
+  )
+}
+
+private fun defectsPreview(): List<ChatItem> {
+  val bob = previewMember(2, "bob")
+  val carol = previewMember(3, "carol")
+  val code = previewRcv(1, GroupMember.sampleData, 0, previewText("Run:\n```\nnpm run publish\n```")).copy(
+    formattedText = listOf(
+      FormattedText("Run:"),
+      FormattedText("\n", Format.Markup(BlockToken.LineBreak())),
+      FormattedText("```", Format.Markup(BlockToken.FenceMark())),
+      FormattedText("\n", Format.Markup(BlockToken.HardBreak())),
+      FormattedText("npm run publish"),
+      FormattedText("\n", Format.Markup(BlockToken.HardBreak())),
+      FormattedText("```", Format.Markup(BlockToken.FenceMark()))
+    ),
+    markdownBlocks = listOf(MarkdownBlock.Paragraph(SegmentRange(0, 1)), MarkdownBlock.CodeBlock(content = SegmentRange(4, 5)))
+  )
+  return listOf(
+    code,
+    previewSnd(2, 120, "👍", CIStatus.SndSent(SndCIStatusProgress.Complete)),
+    previewSnd(3, 130, "ok", CIStatus.SndSent(SndCIStatusProgress.Complete)),
+    previewRcv(4, bob, 180, previewText("nice")).copy(reactions = listOf(CIReactionCount(MsgReaction.Emoji(MREmojiChar.Heart), userReacted = false, totalReacted = 2))),
+    previewRcv(5, bob, 190, previewText("see you there")),
+    previewRcv(6, carol, 240, previewText("hello")),
+    ChatItem.getDeletedContentSampleData(7, CIDirection.GroupRcv(carol), previewDate.plus(250, DateTimeUnit.SECOND)),
+    previewRcv(8, carol, 360, previewText("The release goes out tomorrow"))
   )
 }
 
