@@ -375,9 +375,10 @@ private final class CallPeers {
     }
 
     func start() async throws {
-        await client.sendCallCommand(command: .start(media: .audio))
-        let offer = try XCTUnwrap(client.activeCall?.connection.localDescription)
-        try await peer.setRemoteDescription(offer)
+        let response = await receive(.start(media: .audio))
+        let offer: CustomRTCSessionDescription? = if case let .offer(compressed, _, _) = response { decodeJSON(decompressFromBase64(input: compressed)) } else { nil }
+        let sdp = try XCTUnwrap(offer?.sdp)
+        try await peer.setRemoteDescription(RTCSessionDescription(type: .offer, sdp: sdp))
     }
 
     func peerAnswer() async throws -> String {
