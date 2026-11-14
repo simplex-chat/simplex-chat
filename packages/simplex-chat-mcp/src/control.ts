@@ -78,7 +78,9 @@ const commandsHelp = `/'approve N' or /'approve CHAT N' performs pending action 
 /'unschedule CHAT N' removes schedule N of CHAT.
 /schedules lists the schedules of all chats.`
 // spec: spec/api.md#session-groups
-const sessionCommandsHelp = `/'give CHAT N' gives the agent's chat CHAT to session N.
+const sessionCommandsHelp = `/'approve N all' allows pending tool use N and approves its tool for the rest of this session.
+/'revoke TOOL' ends the approval of all uses of TOOL.
+/'give CHAT N' gives the agent's chat CHAT to session N.
 /'observer #G ID' makes member ID of this group an observer.`
 // spec: spec/api.md#control-commands
 const helpLine = "/'help COMMAND' shows how to use COMMAND, such as /'help schedule'."
@@ -115,10 +117,19 @@ Example: \`/schedule #3 0 7 * * 1-5 Post the trail report.\`, at 07:00 on weekda
 const giveHelp = `/'give CHAT N' gives the agent's chat CHAT to session N, so that only session N and the commands of its group can use CHAT; the pending actions of CHAT here are rejected, and its schedules move to session N without their due prompts.
 CHAT: a chat ID from /list. N: a session number from /sessions in the Main group.
 Example: \`/give @3 2\`. Related: /list.`
-const observerHelp = `/'observer #G ID' makes member ID of this group, #G, an observer, who can't send messages. The approvals of all sends or files that the member gave, and the member's schedules, stop applying until the member is an admin or owner again.
+const observerHelp = `/'observer #G ID' makes member ID of this group, #G, an observer, who can't send messages. The member's approvals of all sends or files and of tools, and the member's schedules, stop applying until the member is an admin or owner again.
 Admins and owners use it for another member whose role is not above their own.
 #G and ID: as in Claude's post of the member's rights at a join or a role change, which shows this command for a member who can send, other than an owner.
 Example: \`/observer #2 6\`. Related: /'help approve', /'help schedule'.`
+// spec: spec/api.md#session-groups
+const sessionApproveHelp = `On the card of a tool use, /'approve N' allows the use, and /'approve N all' also approves its tool for the rest of this session: its later uses run without a card, while you approve actions, until /'revoke TOOL'. A use that Claude Code still asks for gets a card that says so.
+${approveHelp}`
+// spec: spec/api.md#session-groups
+const sessionRevokeHelp = `/'revoke TOOL' ends the approval of all uses of TOOL given with /'approve N all': each later use of TOOL needs approval again. TOOL: a tool name from /list, such as \`Bash\`.
+${revokeHelp}`
+// spec: spec/api.md#session-groups
+const sessionListHelp = `${listHelp}
+After the chats, /list lists each tool approved for this session, one line each, with the member who approved it.`
 const helpUsage = "/help lists the commands. /'help COMMAND' shows how to use COMMAND, written with or without its `/`, such as /'help schedule'."
 const helpHelp = `${helpUsage}
 Every member who can post in this chat may use /help; the other commands are for the owners who approve actions.`
@@ -146,6 +157,10 @@ const helpTexts = new Map<string, string>([
 const sessionHelpTexts = new Map<string, string>([
   ...helpTexts,
   ["", `${commandsHelp}\n${sessionCommandsHelp}\n${helpLine}`],
+  ["approve", sessionApproveHelp],
+  ["reject", sessionApproveHelp],
+  ["revoke", sessionRevokeHelp],
+  ["list", sessionListHelp],
   ["give", giveHelp],
   ["observer", observerHelp],
   ["help", sessionHelpHelp],

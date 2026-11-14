@@ -1774,3 +1774,8 @@ C6      Claude Code closes the request stream when a call times out or its task 
 
 - In a plugin session group, `/help help` states the rule of that group: only admins and owners send its `/` commands, `/help` included, and approve actions.
 - In a plugin session group, `/help` lists `/give` and `/observer` before the line of `/help COMMAND`, and `/help give` and `/help observer` explain them.
+
+## Decisions of 2026-11-14
+
+- In a plugin session group, `/help` also lists `/approve N all` and `/revoke TOOL` before `/give`.
+- There, `/help approve` and `/help revoke` start with a line on the approval of a tool and its end, `/help list` ends with a line on the approved tools, and `/help observer` counts the approvals of tools among the approvals that stop applying.

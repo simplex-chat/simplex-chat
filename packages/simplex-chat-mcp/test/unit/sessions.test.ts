@@ -1624,13 +1624,15 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([[{text: commandsApproversOnly, quotedItemId: 41}]])
   })
 
-  it("lists /give and /observer in /help before the line of /help, and explains each, written with or without its slash", async () => {
+  it("lists /approve N all, /revoke TOOL, /give and /observer in /help before the line of /help, and explains /give and /observer, each written with or without its slash", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const help = async (topic: string): Promise<string[]> => (await session.control.ownerCommand(invitedAlice, {keyword: "help", params: topic}))!.split("\n")
     const lines = await help("")
-    expect(lines.map(line => /^\/'?(\w+)/.exec(line)![1])).toEqual(["approve", "reject", "receive", "forward", "revoke", "leave", "delete", "pending", "list", "schedule", "unschedule", "schedules", "give", "observer", "help"])
-    expect(lines.slice(-3)).toEqual([
+    expect(lines.map(line => /^\/'?(\w+)/.exec(line)![1])).toEqual(["approve", "reject", "receive", "forward", "revoke", "leave", "delete", "pending", "list", "schedule", "unschedule", "schedules", "approve", "revoke", "give", "observer", "help"])
+    expect(lines.slice(-5)).toEqual([
+      "/'approve N all' allows pending tool use N and approves its tool for the rest of this session.",
+      "/'revoke TOOL' ends the approval of all uses of TOOL.",
       "/'give CHAT N' gives the agent's chat CHAT to session N.",
       "/'observer #G ID' makes member ID of this group an observer.",
       "/'help COMMAND' shows how to use COMMAND, such as /'help schedule'.",
@@ -1641,12 +1643,39 @@ describe("session channel", () => {
       "Example: `/give @3 2`. Related: /list.",
     ])
     expect(await help("observer")).toEqual([
-      "/'observer #G ID' makes member ID of this group, #G, an observer, who can't send messages. The approvals of all sends or files that the member gave, and the member's schedules, stop applying until the member is an admin or owner again.",
+      "/'observer #G ID' makes member ID of this group, #G, an observer, who can't send messages. The member's approvals of all sends or files and of tools, and the member's schedules, stop applying until the member is an admin or owner again.",
       "Admins and owners use it for another member whose role is not above their own.",
       "#G and ID: as in Claude's post of the member's rights at a join or a role change, which shows this command for a member who can send, other than an owner.",
       "Example: `/observer #2 6`. Related: /'help approve', /'help schedule'.",
     ])
     for (const topic of ["give", "observer"]) expect(await help(`/${topic}`)).toEqual(await help(topic))
+  })
+
+  it("explains the approval of a tool in /help approve and /help reject before the text of serve, its end in /help revoke before that text, and its line of /list in /help list after that text, each written with or without its slash", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const help = async (topic: string): Promise<string[]> => (await session.control.ownerCommand(invitedAlice, {keyword: "help", params: topic}))!.split("\n")
+    expect(await help("approve")).toEqual([
+      "On the card of a tool use, /'approve N' allows the use, and /'approve N all' also approves its tool for the rest of this session: its later uses run without a card, while you approve actions, until /'revoke TOOL'. A use that Claude Code still asks for gets a card that says so.",
+      "/'approve N' performs pending action N: a connect, send or leave. /'reject N' rejects pending action N, a download too. Its card then shows the outcome.",
+      "/'approve CHAT N' and /'reject CHAT N' do the same for an action of CHAT, as its card shows.",
+      "/'approve CHAT all' performs the pending sends to CHAT; later ones are performed at once and posted here, while you approve actions, until /'revoke CHAT'. It applies in mode requests only.",
+      "N: the number on the card and in /pending. CHAT: a chat ID from /list, such as `#3`.",
+      "Example: `/approve #3 12`. Related: /'help receive', /'help revoke'.",
+    ])
+    expect(await help("revoke")).toEqual([
+      "/'revoke TOOL' ends the approval of all uses of TOOL given with /'approve N all': each later use of TOOL needs approval again. TOOL: a tool name from /list, such as `Bash`.",
+      "/'revoke CHAT' ends the approval of all sends to CHAT given with /'approve CHAT all': each later send to CHAT needs approval again.",
+      "/'receive CHAT off' ends the approval of all files from CHAT in the same way.",
+      "Example: `/revoke #3`. Related: /list, /'help approve'.",
+    ])
+    expect(await help("list")).toEqual([
+      "/list lists the agent's 100 most recent chats, one line each, such as `#3  group Builders, approved for this chat by Alice`; a chat the agent is not connected to shows `not connected`.",
+      "CHAT in the other commands is a chat ID in this form, `#N` or `@N`. Related: /'help approve', /'help leave'.",
+      "After the chats, /list lists each tool approved for this session, one line each, with the member who approved it.",
+    ])
+    expect(await help("reject")).toEqual(await help("approve"))
+    for (const topic of ["approve", "reject", "revoke", "list"]) expect(await help(`/${topic}`)).toEqual(await help(topic))
   })
 
   it("answers nothing and performs nothing for a / command of a member that reaches the commands past the one refusal", async () => {

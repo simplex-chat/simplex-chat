@@ -986,7 +986,7 @@ describe("help", () => {
     expect(lines.map(line => /^\/'?(\w+)/.exec(line)![1])).toEqual(topics)
   })
 
-  it("explains each command, written with or without its slash, to every member, with one text for the commands that share a form", async () => {
+  it("explains each command, written with or without its slash, to every member, with one text for the commands that share a form, and none of the approvals of tools of session groups", async () => {
     const {control} = await setup()
     const help = (sender: T.GroupMember, topic: string): Promise<string | undefined> => control.ownerCommand(sender, parseCommand(`/help ${topic}`)!)
     const texts: {[topic: string]: string | undefined} = {}
@@ -999,6 +999,7 @@ describe("help", () => {
     expect([texts.reject, texts.forward, texts.unschedule, texts.schedules]).toEqual([texts.approve, texts.receive, texts.schedule, texts.schedule])
     expect(new Set(Object.values(texts)).size).toBe(9)
     expect(Object.values(texts)).not.toContain(await help(alice, ""))
+    expect(Object.values(texts).filter(text => text!.includes("TOOL"))).toEqual([])
   })
 
   it("explains the cron, the server time, the limits, when a prompt is due and who adds a schedule", async () => {
