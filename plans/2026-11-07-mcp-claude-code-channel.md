@@ -528,7 +528,7 @@ session N group  hub   Main group owners, invited by the hub,      prompts, repl
 preference         Main group                  session N group
 history            on                          on
 direct messages    on, role owner              off
-commands           /join, /sessions            /approve, /reject, /receive, /forward, /revoke, /pending, /list, /leave, /delete
+commands           /join, /sessions            /approve, /reject, /receive, /forward, /revoke, /copies, /pending, /list, /leave, /delete
 name               the plugin's main_group     N · session title or project folder
 ```
 

@@ -27,7 +27,7 @@ Until the package is published, the printed hint `npx -y @simplex-chat/mcp regis
 
 ### The tests of 0.2
 
-`serve` keeps the behaviour of 0.2, except the `reply_to` of a message: it has the quoted message's sender, type and text, and is present also without an ID. The 274 unit tests of 0.2 and its 13 end-to-end tests in `scenarios` and `mcp`, from commit be668564d, pass unchanged on this source, except one expectation: `reply_to` in the unit test "describes a group message" is now `{chat: "#15", item: 30, text: ""}`. They run in a copy of the package with the `test` folder of 0.2. Run these commands from the repository's root, with `SMP_SERVER` and `XFTP_SERVER` set as above:
+`serve` keeps the behaviour of 0.2, except in three places. The `reply_to` of a message has the quoted message's sender, type and text, and is present also without an ID. The list of commands has `/copies`. The card of a send under the approval of all messages to its chat ends with `or /'copies CHAT off'`. The 274 unit tests of 0.2 and its 13 end-to-end tests in `scenarios` and `mcp`, from commit be668564d, pass unchanged on this source, except one expectation and 6 tests that check these. `reply_to` in the unit test "describes a group message" is now `{chat: "#15", item: 30, text: ""}`. The 6 tests are, in `commands.test.ts`, "refuses chat references longer than 15 digits, such as an alias of the agent control chat", "answers other commands with the list", "answers /approve CHAT files and /revoke CHAT files with the command list", "answers the /leave template sent unedited with the list of commands" and "performs the send at once, without a card, and posts the outcome card"; in `cards.test.ts`, "shows a send under the standing approval of its chat". They run in a copy of the package with the `test` folder of 0.2. Run these commands from the repository's root, with `SMP_SERVER` and `XFTP_SERVER` set as above:
 
 ```
 mkdir -p /tmp/v02
@@ -68,8 +68,8 @@ The directory by its address (`docs/DIRECTORY.md`):
 Approval of all messages to a chat, and leaving:
 
 1. `Search the directory for Monero groups.` On the card, tap `/approve @N all`. The reply is `Approved for bot SimpleX Directory (@N) by Alice. /revoke @N`, and the search is sent.
-2. `Send /help to the directory.` It is sent without a card; the agent control chat then gets `I sent a message to bot SimpleX Directory:`, `` `/help` `` and `Approved for this chat by Alice. /revoke @N`. `list` shows `approved: true` for the directory.
-3. Tap `/list` in the command menu: one line per chat; the directory's line ends with `, approved for this chat by Alice`.
+2. `Search the directory for Bitcoin groups.` It is sent without a card; the agent control chat then gets `I sent a message to bot SimpleX Directory:`, the text and `Approved for this chat by Alice. /revoke @N or /copies @N off`. `list` shows `approved: true` for the directory.
+3. Tap `/copies @N off`: `Copies of messages to bot SimpleX Directory (@N) are off. /copies @N on`. `Search the directory for Linux groups.` It is sent without a card, and no copy is posted. Tap `/list` in the command menu: one line per chat; the directory's line ends with `, approved for this chat by Alice, copies off`. Tap `/copies @N on`: `Copies of messages to bot SimpleX Directory (@N) are on.`
 4. Tap `/revoke @N`: `Messages to bot SimpleX Directory (@N) need approval again.` The next send gets a card.
 5. `Leave the directory.` Card: `I want to delete bot SimpleX Directory (@N).` Approve it: the call returns `status: done`, and `list` no longer shows the directory.
 6. Join a group from the search results, then `Leave that group.` Card: `I want to leave group <name> (#N).` Approve it: the members see that the agent left.

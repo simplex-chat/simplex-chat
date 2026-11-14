@@ -332,7 +332,8 @@ sequenceDiagram
   X->>T: performSend
   T->>C: apiSendMessages #35;9 [...]
   X->>K: outcome
-  K->>O: I sent a message to business X: `text` Approved for this chat by Alice. /'revoke #35;9'
+  K->>C: apiGetChat #35;9 count 0
+  K->>O: I sent a message to business X: `text` Approved for this chat by Alice. /'revoke #35;9' or /'copies #35;9 off'
   T-->>A: {action, status: done, chat: #35;9, item, responses, more}
   O->>C: /revoke #35;9
   K->>C: apiGetChat #35;9 count 0

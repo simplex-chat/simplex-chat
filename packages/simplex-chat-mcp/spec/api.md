@@ -422,6 +422,8 @@ requests
   forward CHAT N
   approve CHAT all
   revoke CHAT
+  copies CHAT off
+  copies CHAT on
   leave CHAT
   delete CHAT files
   pending
@@ -434,7 +436,7 @@ The server reads commands from members' messages in the main conversation of the
 
 | Request | Condition | Reply | Code |
 |---|---|---|---|
-| one-line `/` text outside the requests | any sender | `Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands.` The reply in a plugin session group is in [4.3](#43-session-groups) | [`commandsReply`, `unknownCommand`, `Control.ownerCommand`](../src/control.ts) |
+| one-line `/` text outside the requests | any sender | `Commands: /approve, /reject, /receive, /forward, /revoke, /copies, /leave, /delete, /pending, /list. Each card shows its commands.` The reply in a plugin session group is in [4.3](#43-session-groups) | [`commandsReply`, `unknownCommand`, `Control.ownerCommand`](../src/control.ts) |
 | any request | sender not an approver, `--owners` absent | `Only owners approve actions.` | [`Control.ownerCommand`](../src/control.ts) |
 | any request | sender not an approver, `--owners` given | `Only the owners listed in --owners approve actions.` | [`Control.ownerCommand`](../src/control.ts) |
 | `approve`, `reject`, `receive`, `forward` with N | action N absent, not `pending`, or without a card | `Action N is not pending.` | [`Control.ownerCommand`](../src/control.ts) |
@@ -444,19 +446,22 @@ The server reads commands from members' messages in the main conversation of the
 | `approve`, `reject`, `receive`, `forward` | accepted | none; the card is edited at the outcome; `forward` posts the file, as a reply to the card when the message with the card as its quote is within 15602 bytes, and the card stays pending | [`Control.ownerCommand`, `forward`](../src/control.ts) |
 | `approve CHAT all` | mode `host`; nothing is stored | `Approvals apply in mode requests; this server runs in mode host.` | [`Control.ownerCommand`](../src/control.ts) |
 | `approve CHAT all`, `receive CHAT N all` | CHAT unknown or the control chat | `No chat CHAT. /list shows the agent's chats.` | [`Control.approveChat`](../src/control.ts) |
-| `approve CHAT all` | accepted; the pending sends of CHAT with a card are approved | `Approved for KIND NAME (CHAT) by APPROVER. /'revoke CHAT'` | [`Control.approveChat`](../src/control.ts) |
+| `approve CHAT all` | accepted; the pending sends of CHAT with a card are approved | `Approved for KIND NAME (CHAT) by APPROVER. /'revoke CHAT'`, then the line `Copies are off: /'copies CHAT on'` when CHAT's copies are off | [`Control.approveChat`, `copiesOff`](../src/control.ts) |
 | `receive CHAT N all` | accepted; download N is performed, and the other pending downloads of CHAT stay pending | `Files approved for KIND NAME (CHAT) by APPROVER. /'receive CHAT off'` | [`Control.ownerCommand`, `approveChat`](../src/control.ts) |
 | `revoke CHAT` | CHAT unknown, or without a standing approval | `Messages to CHAT have no standing approval.` | [`Control.revoke`](../src/control.ts) |
 | `revoke CHAT` | accepted | `Messages to KIND NAME (CHAT) need approval again.` | [`Control.revoke`](../src/control.ts) |
 | `receive CHAT off` | CHAT unknown, or without a files approval | `Files from CHAT have no standing approval.` | [`Control.revoke`](../src/control.ts) |
 | `receive CHAT off` | accepted | `Files from KIND NAME (CHAT) need approval again.` | [`Control.revoke`](../src/control.ts) |
+| `copies CHAT off`, `copies CHAT on` | CHAT unknown or the control chat | `No chat CHAT. /list shows the agent's chats.` | [`Control.copies`](../src/control.ts) |
+| `copies CHAT off` | accepted; `simplexMcpCopies: false` is stored, other keys kept; the outcome of a `done` send under a standing approval to CHAT is not posted | `Copies of messages to KIND NAME (CHAT) are off. /'copies CHAT on'` | [`Control.copies`, `outcome`, `copiesOff`](../src/control.ts) |
+| `copies CHAT on` | accepted; `simplexMcpCopies` is removed, other keys kept | `Copies of messages to KIND NAME (CHAT) are on.` | [`Control.copies`](../src/control.ts) |
 | `leave CHAT` | CHAT unknown or the control chat | `No chat CHAT. /list shows the agent's chats.` | [`Control.leave`](../src/control.ts) |
 | `leave CHAT` | accepted, at once in both modes; the pending actions of CHAT with a card are rejected by the sender | `Left KIND NAME (CHAT), requested by NAME.`, or `Deleted ...` for a contact; logged too | [`Control.leave`](../src/control.ts) |
 | `delete CHAT files` | the chat's downloads in memory fail and are cancelled; its other files in status `rcvAccepted`, `rcvTransfer` or `rcvWarning`, such as downloads the core continues after a restart, are cancelled; the folder of CHAT and its forwarded folder are deleted, for a current or a left chat | `Deleted K files from CHAT, SIZE.` (`1 file`), or `No files from CHAT.` | [`Control.deleteFiles`](../src/control.ts), [`AgentTools.deleteChatFiles`](../src/tools.ts), [`receivingFiles`](../src/messages.ts) |
 | `pending` | no pending action with a card | `No pending actions.` | [`Control.ownerCommand`](../src/control.ts) |
 | `pending` | otherwise | one line per action: `N  WHAT  expires YYYY-MM-DD HH:MM UTC` | [`Control.ownerCommand`, `pendingLine`](../src/control.ts) |
 | `list` | no chats | `No chats.` | [`Control.chatsText`](../src/control.ts) |
-| `list` | otherwise | one line per chat of the 100 most recent: `CHAT  KIND NAME`, then `, approved for this chat by APPROVER`, `, files approved by APPROVER` and `, not connected` when applicable, cut to 100 bytes with `…`; then `K older chats are not shown.` (`1 older chat is not shown.`) | [`Control.chatsText`](../src/control.ts) |
+| `list` | otherwise | one line per chat of the 100 most recent: `CHAT  KIND NAME`, then `, approved for this chat by APPROVER`, `, files approved by APPROVER`, `, copies off` in mode `requests` and `, not connected` when applicable, cut to 100 bytes with `…`; then `K older chats are not shown.` (`1 older chat is not shown.`) | [`Control.chatsText`, `copiesOff`](../src/control.ts) |
 
 KIND is `contact`, `bot`, `agent`, `business`, `group` or `channel` ([`contactKind`, `groupKind`](../src/tools.ts)). WHAT is `connect to SUBJECT`, `send to SUBJECT`, `download NAME from SUBJECT`, `delete SUBJECT` or `leave SUBJECT` ([`summary`](../src/actions.ts)). SIZE is in bytes, KB, MB or GB, by 1000, with one decimal ([`sizeText`](../src/control.ts)). Names are shown by [`safeName`](../src/control.ts).
 
@@ -494,7 +499,7 @@ Last line:
 | `pending` | | command line |
 | `pending` | interrupted | `Cancelled: the server stopped.` |
 | `performing` | interrupted | `DECIDER; interrupted: the server stopped.` |
-| `done` | standing | `Approved for this chat by NAME. /'revoke CHAT'` |
+| `done` | standing | `Approved for this chat by NAME. /'revoke CHAT' or /'copies CHAT off'` |
 | `done` | | `DECIDER.` |
 | `failed` | | ``DECIDER; failed: `ERROR`.`` |
 | `rejected` | | `Rejected by NAME.` |
@@ -514,7 +519,7 @@ Command lines ([`commandsLine`](../src/control.ts)):
 
 The app shows `/'approve N'` as the tappable command `/approve N` ([PLAN, What the owner sees](../../../plans/2026-10-19-mcp-server.md#what-the-owner-sees-the-agent-control-chat)).
 
-An action performed without a card, in mode `host` or under a standing approval, gets its outcome as a new message; a `download` without a card gets none ([`Control.outcome`, `hasOutcomeCard`](../src/control.ts)).
+An action performed without a card, in mode `host` or under a standing approval, gets its outcome as a new message; a `download` without a card gets none, and neither does a `done` standing send to a chat with copies off ([`Control.outcome`, `hasOutcomeCard`, `copiesOff`](../src/control.ts)).
 
 ### 2.3 Other posts
 
@@ -780,7 +785,7 @@ Commands and replies are those of [2.1](#21-commands-and-replies), from approver
 | `/give CHAT N` | CHAT is not a chat of this session | `No chat CHAT. /list shows the agent's chats.` | [`Control.give`](../src/control.ts) |
 | `/give CHAT N` | no session N | `No session N. /sessions in the Main group lists the sessions.` | [`Control.give`](../src/control.ts) |
 | `/give CHAT N` | accepted: CHAT's owner is set to session N, and the pending actions of CHAT with a card are rejected by the sender | `Gave KIND NAME (CHAT) to session N.` | [`Control.give`](../src/control.ts) |
-| `/list`, `/revoke CHAT`, `/leave CHAT` | | only the chats of this session, even while the session is closed | [`AgentTools.agentChats`, `knownChat`](../src/tools.ts) |
+| `/list`, `/revoke CHAT`, `/copies CHAT`, `/leave CHAT` | | only the chats of this session, even while the session is closed | [`AgentTools.agentChats`, `knownChat`](../src/tools.ts) |
 | `/give CHAT N` in the control chat of `serve` | any sender | the help reply, as in 0.2 | [`Control.ownerCommand`, `ownerRequest`](../src/control.ts) |
 | `/observer #G ID` | #G is not this group | `#G is not this group.` | [`Control.setObserver`](../src/control.ts) |
 | `/observer #G ID` | member ID is neither current nor pending, as it is absent, gone, or invited and not joined yet | `No member ID in this group.` | [`Control.setObserver`](../src/control.ts), [`memberCurrent`, `memberCurrentOrPending`](../src/tools.ts) |

@@ -19,7 +19,7 @@ export const controlCommands: T.ChatBotCommand[] = [
 ]
 
 // spec: spec/api.md#control-commands
-const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /copies, /leave, /delete, /pending, /list. Each card shows its commands."
 // spec: spec/api.md#control-commands
 const unknownCommand = "Unknown command."
 const filesAndMedia = "Files and media"
@@ -98,6 +98,7 @@ type OwnerRequest =
   | {type: "approveTool"; action: number}
   | {type: "revokeTool"; tool: string}
   | {type: "approveChat" | "revoke"; chat: string; standing: Standing}
+  | {type: "copies"; chat: string; on: boolean}
   | {type: "leave" | "deleteFiles"; chat: string}
   | {type: "give"; chat: string; session: number}
   | {type: "observer"; group: string; member: number}
@@ -224,7 +225,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   // spec: spec/api.md#cards
   async outcome(action: Action): Promise<void> {
-    if (!hasOutcomeCard(action)) return
+    if (!hasOutcomeCard(action) || (action.tool === "send" && action.standing && action.state === "done" && copiesOff(await this.agentChat(action.chat)))) return
     const content = await this.cardContent(action)
     if (action.card === undefined) await this.postCardContent(action, content)
     else await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, action.card, content, false).catch(error => this.postRefusal(error, refusedCardSubject(action, "updated")))
@@ -301,6 +302,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         return this.approveChat(sender, request.chat, request.standing)
       case "revoke":
         return this.revoke(request.chat, request.standing)
+      case "copies":
+        return this.copies(request.chat, request.on)
       case "revokeTool":
         return this.revokeTool(request.tool)
       case "leave":
@@ -346,7 +349,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const approver = safeName(approvedBy)
     const pending = this.actions.pending().filter(action => (named === undefined ? action.tool === "send" && action.chat === chat && action.card !== undefined : action === named))
     for (const action of pending) this.actions.approve(action, approver)
-    return `${approved} ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}. /'${revoke(chat)}'`
+    const copies = standing === "messages" && copiesOff(chatInfo) ? `\nCopies are off: /'copies ${chat} on'` : ""
+    return `${approved} ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}. /'${revoke(chat)}'${copies}`
   }
 
   // spec: spec/api.md#control-commands
@@ -357,6 +361,16 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const {[key]: _, ...customData} = customDataOf(chatInfo) as {[key: string]: unknown}
     await this.setCustomData(chat, customData)
     return `${scope} ${chatName(chatSubject(chatInfo))} (${chat}) need approval again.`
+  }
+
+  // spec: spec/api.md#control-commands
+  private async copies(chat: string, on: boolean): Promise<string> {
+    const chatInfo = await this.agentChat(chat)
+    if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
+    const {simplexMcpCopies: _, ...customData} = {...customDataOf(chatInfo)} as {[key: string]: unknown}
+    await this.setCustomData(chat, on ? customData : {...customData, simplexMcpCopies: false})
+    const copies = `Copies of messages to ${chatName(chatSubject(chatInfo))} (${chat})`
+    return on ? `${copies} are on.` : `${copies} are off. /'copies ${chat} on'`
   }
 
   // spec: spec/architecture.md#control-control-approvedtools
@@ -482,8 +496,9 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         const approvedBy = this.standingApprover(chatInfo, standing)
         return approvedBy === undefined ? "" : `, ${standings[standing].listed} ${approvedBy}`
       })
+      const copies = this.actions.mode === "requests" && copiesOff(chatInfo) ? ", copies off" : ""
       const connection = isConnected(chatInfo) ? "" : ", not connected"
-      return truncatedLine(`${chatRef(chatInfo)}  ${chatName(chatSubject(chatInfo))}${approvals.join("")}${connection}`, maxLineLength)
+      return truncatedLine(`${chatRef(chatInfo)}  ${chatName(chatSubject(chatInfo))}${approvals.join("")}${copies}${connection}`, maxLineLength)
     })
     const rest = chats.length - lines.length
     if (rest > 0) lines.push(`${rest} older chat${rest === 1 ? " is" : "s are"} not shown.`)
@@ -804,7 +819,7 @@ export function cardText(action: Action, mode: Actions["mode"]): string {
     case "performing":
       return [...request, `${approval}; interrupted: the server stopped.`].join("\n")
     case "done":
-      return [...request, action.standing ? `${approval}. /'revoke ${action.chat}'` : `${approval}.`].join("\n")
+      return [...request, action.standing ? `${approval}. /'revoke ${action.chat}' or /'copies ${action.chat} off'` : `${approval}.`].join("\n")
     case "failed":
       return [...request, `${approval}; failed: ${codeSpan(oneLine(action.error ?? ""))}.`].join("\n")
     case "rejected":
@@ -970,6 +985,11 @@ function controlData(nextAction: number): {simplexMcp: ControlData} {
   return {simplexMcp: {control: true, nextAction}}
 }
 
+// spec: spec/api.md#control-commands
+function copiesOff(chatInfo: T.ChatInfo | undefined): boolean {
+  return chatInfo !== undefined && (customDataOf(chatInfo) as {simplexMcpCopies?: unknown} | undefined)?.simplexMcpCopies === false
+}
+
 function approvalOf(customData: object | undefined, key: string): {approvedBy: string; approvedById: number} | undefined {
   const data = (customData as {[key: string]: Partial<ChatApproval> | undefined} | undefined)?.[key]
   return typeof data?.approvedBy === "string" && typeof data.approvedById === "number" ? {approvedBy: data.approvedBy, approvedById: data.approvedById} : undefined
@@ -985,6 +1005,7 @@ function ownerRequest({keyword, params}: Command, session: boolean): OwnerReques
   if (keyword === "receive" && chat !== undefined && value === "off") return {type: "revoke", chat, standing: "files"}
   if (keyword === "approve" && chat !== undefined && value === "all") return {type: "approveChat", chat, standing: "messages"}
   if (keyword === "revoke" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value, standing: "messages"}
+  if (keyword === "copies" && chat !== undefined && (value === "on" || value === "off")) return {type: keyword, chat, on: value === "on"}
   if (keyword === "leave" && chat === undefined && value !== undefined && isChatRef(value)) return {type: keyword, chat: value}
   if (keyword === "delete" && chat !== undefined && value === "files") return {type: "deleteFiles", chat}
   if (session && keyword === "give" && chat !== undefined && value !== undefined && /^\d+$/.test(value)) return {type: keyword, chat, session: Number(value)}

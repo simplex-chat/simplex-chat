@@ -253,6 +253,7 @@ Commands:
 | `/reject N`, `/reject #9 N` | Rejects action N. |
 | `/approve #9 all` | Approves all the agent's messages to chat #9: the pending ones and later ones. |
 | `/revoke #9` | Ends that approval: each message to #9 needs approval again. |
+| `/copies #9 off`, `/copies #9 on` | Stops or resumes the copies of the agent's messages to chat #9 that are posted here under that approval. |
 | `/receive #3 7` | The agent receives the file of download 7: the server downloads it, and the agent's call returns its path. |
 | `/receive #3 7 all` | The same, and the agent receives its later downloads from chat #3 of files on its XFTP servers without asking. Other pending downloads of #3 stay pending. |
 | `/receive #3 off` | Ends that: each download from #3 needs approval again. |
@@ -260,7 +261,7 @@ Commands:
 | `/leave #9`, `/leave @4` | Makes the agent leave group #9, or delete contact @4, at once, in both approval modes, and rejects the agent's pending actions for that chat. The reply, for example `Left business Ridgeline (#9), requested by Alice.`, is logged too. |
 | `/delete #9 files` | Cancels the running downloads from chat #9, which then fail, also those the core continues after a restart, and deletes the chat's files in the data folder, forwarded ones included, for a current or a left chat: `Deleted 3 files from #9, 2.1 MB.` or `No files from #9.` |
 | `/pending` | Lists pending actions. |
-| `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages or all files: `, approved for this chat by NAME` and `, files approved by NAME`; a last line counts the older chats. |
+| `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages or all files: `, approved for this chat by NAME` and `, files approved by NAME`; `, copies off` when their copies are off, in mode `requests`; a last line counts the older chats. |
 
 After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``. The files forwarded from #9 are deleted when the agent leaves it.
 
@@ -273,13 +274,14 @@ After `/approve #9 all`, the agent's messages to #9 are sent at once, and each o
 ```
 My Agent: I sent a message to business Ridgeline, where I am incognito:
           `Thanks, I'll order.`
-          Approved for this chat by Alice. /revoke #9
+          Approved for this chat by Alice. /revoke #9 or /copies #9 off
 ```
 
 - It covers messages only: connecting and leaving are approved one by one.
 - It lasts until `/revoke`, until the chat is deleted, or until the approving owner is no longer an approver. It survives restarts: it is kept in the agent's database, as custom data of that chat.
 - With it, the agent can send anything it can read, without asking, to everyone in that chat.
 - It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals.
+- `/copies #9 off` stops these copies, and `/copies #9 on` resumes them. The card of a failed send is still posted. The setting is kept in the chat's custom data, also after `/revoke`, so a later `/approve #9 all` replies with the line `Copies are off: /copies #9 on`.
 
 ### Receiving all files from a chat
 
@@ -443,7 +445,7 @@ register options:
 
 The folder is readable only by the user: every start sets its mode to 0700, except on Windows.
 
-The server keeps its action counter in the chat database, as custom data of the agent control chat, the approvals of all messages to a chat and of all files from it as custom data of that chat, and its actions in memory.
+The server keeps its action counter in the chat database, as custom data of the agent control chat, the approvals of all messages to a chat and of all files from it, and copies off, as custom data of that chat, and its actions in memory.
 
 The server keeps no log file: it writes its log to the terminal where `serve` runs, events to stdout and errors to stderr.
 
@@ -458,7 +460,7 @@ One server runs per data folder: a second one exits, because two processes on on
 - Names written by peers are folded to one line, with control and format characters replaced by spaces, in the terminal and in the agent control chat; there, a name that is not a valid display name is shown as code.
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
-- After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
+- After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it. With `/copies #N off`, these messages are not copied to the agent control chat.
 - The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
 - After `/receive #N 7 all`, the agent's later downloads from that chat, of files on its XFTP servers, run without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; any other download of it fails, unless the IP address is protected.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
@@ -623,7 +625,7 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`. Th
 - The group's description is `The Claude Code session N. Members send it prompts; admins and owners also send the group's commands and approve tool use.`, set when the group is created. Its short description shows the model and effort, see [Model and effort](#model-and-effort).
 - The group has the commands of the agent control chat of `serve` (see [What the owner sees](#what-the-owner-sees)), without a session prefix, such as `/approve 7`, `/receive @3 9` and `/leave #2`. It also has `/give CHAT N`, `/observer #G ID`, and `/approve N all` and `/revoke TOOL` for tools, see [Tool use](#tool-use).
 - A chat belongs to the session that connected it, even when the other side accepts after `connect` returned. The tools of other sessions don't show it. Their `connect` to its address returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` For example, `/give @3 2` in the group of the session that owns chat @3 gives it to session 2.
-- `/list` and `/revoke` also work in the group of a closed session. A `/revoke` sent while the service is stopped applies when the service starts again.
+- All commands also work in the group of a closed session. A `/revoke` sent while the service is stopped applies when the service starts again.
 - `claude --resume` and `claude --continue` reopen a session with its group and chats. `/clear` keeps the session's group, because the service links the new session IDs of a Claude Code process to that process's session. A fork made with `claude --resume ID --fork-session` continues in the group of the resumed session. After `/resume` of another session inside a running one, prompts and answers go to the running session's group. A later `claude --resume` of that other session reopens its own group and chats.
 - A session closes 10 minutes after its Claude Code session ends, once the expiry times of its actions have passed. The service stops 10 minutes after the last session closes. The next session start or tool call starts it again.
 - A non-interactive run, `claude -p` or the Agent SDK, gets no session and no group. Its hooks post nothing, and its SimpleX tools return `This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions.`
@@ -680,7 +682,7 @@ Owners set the group's preferences in the app, and SimpleX enforces them. Claude
   - For a card that waits for approval, or for `/forward` of a voice message: `Action N: ...`. The action then fails.
   - `reply` returns the same text without the prefix `Claude's answer was not posted: `.
 - After an action is decided, the text names the outcome and the card, and the action stays as it was:
-  - The card of an action performed in mode `host` or under a standing approval is posted after the action. When that post is refused, Claude posts `Action N was performed; its card was not posted: ...` or `Action N failed; its card was not posted: ...`.
+  - The card of an action performed in mode `host` or under a standing approval is posted after the action, except that of a done send under a standing approval to a chat with `/copies CHAT off`, see [Approval of all messages to a chat](#approval-of-all-messages-to-a-chat). When that post is refused, Claude posts `Action N was performed; its card was not posted: ...` or `Action N failed; its card was not posted: ...`.
   - When the edit of a card with its outcome is refused, Claude posts `Action N was performed; its card was not updated: ...`, with `failed`, `was rejected`, `expired` or `ended` in place of `was performed`.
   - A card posted or edited when the service stops gets `Action N: ...`.
 
