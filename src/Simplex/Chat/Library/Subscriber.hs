@@ -3065,6 +3065,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           -- (and replace it in ChatController)
           -- practically, this should not happen
           withStore' $ \db -> createCall db user call' $ chatItemTs' ci
+          lift $ startCallKeyExpiry call'
           call_ <- atomically (TM.lookupInsert contactId call' calls)
           forM_ call_ $ \call -> updateCallItemStatus user ct call WCSDisconnected Nothing
           toView $ CEvtCallInvitation RcvCallInvitation {user, contact = ct, callType, sharedKey, callUUID, callTs = chatItemTs' ci}

@@ -109,7 +109,7 @@ import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import System.FilePath (takeFileName, (</>))
 import System.IO (Handle, IOMode (..), hFlush)
-import UnliftIO.Concurrent (forkFinally, mkWeakThreadId)
+import UnliftIO.Concurrent (forkFinally, forkIO, mkWeakThreadId)
 import UnliftIO.Directory
 import UnliftIO.IO (hClose, openFile)
 import UnliftIO.STM
@@ -738,6 +738,17 @@ callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
     aciContent msgDir (callStatus', duration) = case msgDir of
       SMDSnd -> ACIContent SMDSnd $ CISndCall callStatus' duration
       SMDRcv -> ACIContent SMDRcv $ CIRcvCall callStatus' duration
+
+startCallKeyExpiry :: Call -> CM' ()
+startCallKeyExpiry Call {contactId, callId, callState, callTs} = case callState of
+  CallInvitationReceived {peerCallType, localDhPubKey, sharedKey = Just _, callVersion} -> void . forkIO $ do
+    ttl <- asks (callInvitationTTL . config)
+    ts <- liftIO getCurrentTime
+    liftIO $ threadDelay' $ diffToMicroseconds $ diffUTCTime (addUTCTime ttl callTs) ts
+    waitChatStartedAndActivated
+    let callState' = CallInvitationReceived {peerCallType, localDhPubKey, sharedKey = Nothing, callVersion}
+    withStore' (\db -> updateCallState db contactId callId callState') `catchAllErrors'` eToView'
+  _ -> pure ()
 
 -- mobile clients use file paths relative to app directory (e.g. for the reason ios app directory changes on updates),
 -- so we have to differentiate between the file path stored in db and communicated with frontend, and the file path

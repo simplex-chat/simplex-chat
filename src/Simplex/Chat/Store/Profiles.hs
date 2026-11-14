@@ -76,6 +76,7 @@ module Simplex.Chat.Store.Profiles
     setUserServers,
     setUserServers',
     createCall,
+    updateCallState,
     deleteCalls,
     getCalls,
     expireCalls,
@@ -1078,6 +1079,11 @@ createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, 
       VALUES (?,?,?,?,?,?,?,?,?)
     |]
     (contactId, callId, callUUID, chatItemId, callState, callTs, userId, currentTs, currentTs)
+
+updateCallState :: DB.Connection -> ContactId -> CallId -> CallState -> IO ()
+updateCallState db contactId callId callState = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE calls SET call_state = ?, updated_at = ? WHERE contact_id = ? AND shared_call_id = ?" (callState, currentTs, contactId, callId)
 
 deleteCalls :: DB.Connection -> User -> ContactId -> IO ()
 deleteCalls db User {userId} contactId = do

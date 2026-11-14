@@ -8306,6 +8306,10 @@ Query: UPDATE badge_store_receipts SET user_id = ?, payment = ?, next_attempt_at
 Plan:
 SEARCH badge_store_receipts USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE calls SET call_state = ?, updated_at = ? WHERE contact_id = ? AND shared_call_id = ?
+Plan:
+SEARCH calls USING INDEX idx_calls_contact_id (contact_id=?)
+
 Query: UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
