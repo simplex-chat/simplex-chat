@@ -110,5 +110,5 @@ peers of incognito chats              linking the chats by the time and text of 
 - `TESTING.md`: the notice at the first join; a restart step; `prepack` and `postpack`.
 - `plans/2026-10-19-mcp-server.md`: section Restart notice; the scope, package, first start, other lines, start sequence, peers, scenarios and tests; decisions.
 - `plans/2026-11-07-mcp-claude-code-channel.md`: decision 119 and the pack of the package, amended with `dist/commit.txt` and `postpack`.
-- `spec/`: api, architecture, flows and README, with line anchors remapped to the merged source; the flow of the notice is flow 32.
+- `spec/`: api, architecture, flows and README, with functions named and files linked without line numbers; each new declaration in an anchored row of architecture, with a `// spec` comment above it (README, "Code references"); the flow of the notice is flow 37.
 - `package.json`, `package-lock.json`, `.claude-plugin/plugin.json`: version unchanged, 0.3.0; the notice comes with the next version.
