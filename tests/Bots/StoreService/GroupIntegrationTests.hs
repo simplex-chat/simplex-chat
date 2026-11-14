@@ -167,7 +167,7 @@ namesBootTests = do
   it "refuses unverified store receipts with an issuer key clients trust, and takes them with a dev key" testUnverifiedReceiptsKey
   it "refuses a second instance on the same Postgres database until the first ends, exits when the lock's connection fails, and takes no lock on SQLite" testInstanceLock
   it "exits before the chat core starts while a pending transaction was signed by another key" testOtherKeyPendingStops
-  it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built" testNamesBootCodesOnly
+  it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built and /api/config in codes mode" testNamesBootCodesOnly
   it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
   it "searches with the configured price floor, answering a price at it and 503 to one cent under it" testNamesBootPriceFloor
 
@@ -349,7 +349,7 @@ testNamesBoot ps = do
 testNamesBootCodesOnly :: HasCallStack => TestParams -> IO ()
 testNamesBootCodesOnly ps = do
   svc@GroupSvc {gsStaticDir} <- prepareGroupService ps
-  let shell = "<!doctype html><meta name=\"simplex-names-mode\" content=\"open\">"
+  let shell = "<!doctype html><title>SimpleX badges</title>"
   B.writeFile (gsStaticDir </> "index.html") shell
   (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : codesOnlyNames <> chainSection} Nothing
   flip finally (stopGroupService t cc) $ do
@@ -366,6 +366,8 @@ testNamesBootCodesOnly ps = do
     posted "/api/code/check" "{}" `shouldReturn` answered "bad_request" 400
     badgesShell <- parseRequest ("http://127.0.0.1:" <> show port <> "/") >>= (`httpLbs` mgr)
     (statusCode $ responseStatus badgesShell, responseBody badgesShell) `shouldBe` (200, LB.fromStrict shell)
+    config <- parseRequest ("http://127.0.0.1:" <> show port <> "/api/config") >>= (`httpLbs` mgr)
+    (statusCode $ responseStatus config, J.decode $ responseBody config) `shouldBe` (200, Just $ J.object ["mode" J..= ("codes" :: Text), "stripePublishableKey" J..= J.Null])
     poll t >>= (`shouldSatisfy` isNothing)
 
 testNamesBootPriceFloor :: HasCallStack => TestParams -> IO ()

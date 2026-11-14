@@ -3,16 +3,10 @@ import type { Theme } from "./domain.js";
 // Stripe.js must load from js.stripe.com and may not be bundled or self-hosted, so this is a script tag.
 export const STRIPE_JS_URL = "https://js.stripe.com/dahlia/stripe.js";
 
-const KEY_ELEMENT_ID = "stripe-publishable-key";
-
 declare global {
   interface Window {
     Stripe?: StripeGlobal;
   }
-}
-
-export function publishableKey(): string {
-  return document.getElementById(KEY_ELEMENT_ID)?.getAttribute("content")?.trim() ?? "";
 }
 
 let loading: Promise<StripeGlobal> | null = null;

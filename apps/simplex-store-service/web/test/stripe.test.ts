@@ -7,12 +7,7 @@ const cardTest = timedTest(3000);
 const page = installPage();
 const { app, history, location, storage, fetches } = page;
 
-const keyMeta = new StubElement("meta");
-keyMeta.setAttribute("id", "stripe-publishable-key");
-keyMeta.setAttribute("name", "stripe-publishable-key");
-keyMeta.setAttribute("content", "");
-page.document.byId.set("stripe-publishable-key", keyMeta);
-function configureKey(key: string): void { keyMeta.setAttribute("content", key); }
+function configureKey(key: string): void { page.siteConfig.stripePublishableKey = key; }
 
 const stripe = await import("../src/stripe.js");
 const screens = await import("../src/screens.js");

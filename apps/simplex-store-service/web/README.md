@@ -208,14 +208,15 @@ the `app=true` ending at all.
 
 ### The Stripe key
 
-The publishable key lives in a `<meta id="stripe-publishable-key">` element
-in `public/index.html`, committed empty. `mock/server.py` substitutes
-`$STRIPE_PUBLISHABLE_KEY` into the served page and refuses to start if it is
-set to anything but a `pk_`-prefixed key (a secret or restricted key would
-otherwise be baked into a page anyone can read).
+The page reads the publishable key from `GET /api/config` at boot, so the built
+page carries no key and is served as it is. `mock/server.py` answers that route
+with `$STRIPE_PUBLISHABLE_KEY` and refuses to start if it is set to anything but
+a `pk_`-prefixed key (a secret or restricted key would otherwise reach any
+visitor). A read that fails, or finds no key, is made again at the next card
+form.
 
 With no key set there is no card path at all: `cardPlan` answers
-`unconfigured`, `renderCardForm` returns before it builds anything, and
+`unconfigured`, `showCardForm` returns before it builds anything, and
 choosing Card reaches "The card form did not load". Drive a purchase with
 Monero or Bitcoin instead, or set a test key:
 
