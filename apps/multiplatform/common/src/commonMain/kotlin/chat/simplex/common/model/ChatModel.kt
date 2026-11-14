@@ -2259,8 +2259,8 @@ fun profileChatLayout(user: User?): ChatLayoutMode =
 
 fun peerTypeIcon(peerType: ChatPeerType?): ImageResource =
   when (peerType) {
-    ChatPeerType.Bot -> MR.images.ic_cube
-    ChatPeerType.Agent -> MR.images.ic_agent
+    ChatPeerType.Bot -> MR.images.ic_avatar_bot
+    ChatPeerType.Agent -> MR.images.ic_avatar_agent
     else -> MR.images.ic_account_circle_filled
   }
 
@@ -2703,10 +2703,10 @@ data class GroupInfo (
 
   val chatIconName: ImageResource
     get() = if (useRelays) {
-      MR.images.ic_bigtop_updates_circle_filled
+      MR.images.ic_avatar_channel
     } else when (businessChat?.chatType) {
       null -> MR.images.ic_supervised_user_circle_filled
-      BusinessChatType.Business -> MR.images.ic_work_filled_padded
+      BusinessChatType.Business -> MR.images.ic_avatar_business
       BusinessChatType.Customer -> MR.images.ic_account_circle_filled
     }
 
@@ -5268,8 +5268,8 @@ sealed class MsgChatLink {
 
   val iconRes: ImageResource
     get() = when (this) {
-      is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_supervised_user_circle_filled
-      is Contact -> if (business) MR.images.ic_work_filled_padded else MR.images.ic_account_circle_filled
+      is Group -> if (groupProfile.isChannel) MR.images.ic_avatar_channel else MR.images.ic_supervised_user_circle_filled
+      is Contact -> if (business) MR.images.ic_avatar_business else MR.images.ic_account_circle_filled
       is Invitation -> MR.images.ic_account_circle_filled
     }
 

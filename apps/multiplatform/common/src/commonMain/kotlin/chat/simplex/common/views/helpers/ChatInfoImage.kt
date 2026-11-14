@@ -48,7 +48,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
   val icon =
     when (chatInfo) {
       is ChatInfo.Group -> chatInfo.groupInfo.chatIconName
-      is ChatInfo.Local -> MR.images.ic_folder_filled
+      is ChatInfo.Local -> MR.images.ic_avatar_folder
       is ChatInfo.Direct -> chatInfo.contact.chatIconName
       else -> MR.images.ic_account_circle_filled
     }
@@ -94,7 +94,7 @@ fun ProfileImage(
         )
       } else {
         Icon(
-          painterResource(avatarIcon(icon)),
+          painterResource(icon),
           contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
           tint = color,
           modifier = Modifier.fillMaxSize()
@@ -119,15 +119,6 @@ fun ProfileImage(
       }
     }
   }
-}
-
-private fun avatarIcon(icon: ImageResource): ImageResource = when (icon) {
-  MR.images.ic_folder_filled -> MR.images.ic_avatar_folder
-  MR.images.ic_bigtop_updates_circle_filled -> MR.images.ic_avatar_channel
-  MR.images.ic_work_filled_padded -> MR.images.ic_avatar_business
-  MR.images.ic_cube -> MR.images.ic_avatar_bot
-  MR.images.ic_agent -> MR.images.ic_avatar_agent
-  else -> icon
 }
 
 // badge height in em: calibrated visually so the badge top matches capital letters and digits

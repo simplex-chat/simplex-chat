@@ -345,7 +345,7 @@ private suspend fun planAndConnectTask(
                 ProfileImage(
                   size = alertProfileImageSize,
                   image = groupSLinkData.groupProfile.image,
-                  icon = MR.images.ic_bigtop_updates_circle_filled
+                  icon = MR.images.ic_avatar_channel
                 )
               },
               subtitle = generalGetString(MR.strings.channel_no_active_relays_try_later),
@@ -716,7 +716,7 @@ fun showPrepareContactAlert(
         size = alertProfileImageSize,
         image = contactShortLinkData.profile.image,
         icon =
-          if (contactShortLinkData.business) MR.images.ic_work_filled_padded
+          if (contactShortLinkData.business) MR.images.ic_avatar_business
           else peerTypeIcon(contactShortLinkData.profile.peerType)
       )
     },
@@ -767,7 +767,7 @@ fun showPrepareGroupAlert(
       ProfileImage(
         size = alertProfileImageSize,
         image = groupShortLinkData.groupProfile.image,
-        icon = if (isChannel) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_supervised_user_circle_filled
+        icon = if (isChannel) MR.images.ic_avatar_channel else MR.images.ic_supervised_user_circle_filled
       )
     },
     nameCaption = planSimplexName?.shortStr,
