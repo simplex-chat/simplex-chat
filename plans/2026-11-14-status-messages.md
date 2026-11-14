@@ -1,6 +1,6 @@
 # Status messages
 
-Status: plan for review, 2026-11-14. Branch `ep/status-messages`.
+Status: decided 2026-11-14 (Q1 a, Q2 a, Q3 b, Q4 a, Q5 a), implemented in commit a4d9e64f9 on `ep/status-messages`.
 
 A new message content type `status` carries status events, such as Claude's step lines. The apps merge consecutive status messages of one sender into one row. Silent text messages are never merged. A group preference `status`, off by default, allows status messages in a group. The preference has API and CLI, and no app UI.
 
@@ -24,13 +24,15 @@ option  collapsed row              expanded rows
 (b)     menu Expand, as events     menu Shrink, as events
 ```
 
-Q3. Alerts. Recommended: (a).
+Q3. Alerts. Decided: (b).
 
 ```
 option  rule
 (a)     the sender sets the priority; the plugin sends status messages with priority -1 (silent)
 (b)     the core never alerts for a status message
 ```
+
+A status message is sent without the notification flag (`eventHasNotification`), and the apps show no notification for it (`showNotification`), whatever its priority.
 
 Q4. A status message received in a group with `status` off. Recommended: (a).
 
@@ -147,13 +149,18 @@ Preferences.hs defaultBusinessGroupPrefs      off, no role
 Preferences.hs selectors, merge, setters      the status rows, as comments
 Preferences.hs GroupFeatureI, RoleI           GFStatus with role
 Preferences.hs allGroupFeatures               unchanged: GFStatus is left out, so no feature items
-Preferences.hs groupFeatureIn*                False
-Internal.hs prohibitedGroupContent            sent, MCStatus, not groupFeatureMemberAllowed SGFStatus: Just GFStatus
-Commands.hs APIUpdateChatItem, group          the same check for the new content
-Subscriber.hs newGroupContentMessage content  MCStatus from a member without the feature: MCText with the text
-Subscriber.hs groupMessageUpdate              the same conversion
+Preferences.hs groupFeatureIn*                True, so the CLI command is accepted in groups and channels
+Protocol.hs prohibitedStatus                  MCStatus and the role below the preference
+Protocol.hs groupRcvContent                   prohibited MCStatus becomes MCText with the text
+Protocol.hs eventHasNotification              False for x.msg.new with MCStatus; used for every notification flag
+Internal.hs prohibitedGroupContent            sent and prohibitedStatus: Just GFStatus
+Commands.hs APIUpdateChatItem, group          prohibitedStatus: the same error
+Subscriber.hs newGroupContentMessage content  groupRcvContent with the sender's role, owner for a post as the group
+Subscriber.hs groupMessageUpdate              groupRcvContent
 Commands.hs parser                            /set status #GROUP on|off [ROLE]
-bots/api, types.ts, _types.py                 StatusGroupPreference, regenerated
+View.hs viewGroupUpdated                      a change of status is shown in "updated group preferences:"
+bots TypeInfo.hs                              StatusGroupPreference as RoleGroupPreference
+bots/api, types.ts, _types.py                 status in GroupPreferences and FullGroupPreferences
 ```
 
 ```
@@ -176,16 +183,17 @@ ChatModel.kt mergesWith                       same category; for Status also the
 ChatItemsMerger.kt MergedItems.create         mergesWith in place of the category comparison
 ChatModel.kt getPrevShownChatItem             mergesWith: delete and select of a collapsed run take only that run
 ChatModel.kt getConnectedMemberNames          mergesWith
-MarkedDeletedItemView.kt, ChatView.kt gaps    mergesWith
+ChatView.kt gaps, selection                   mergesWith
+ChatModel.kt ChatItem.showNotification        false for a received status message
 ChatItemView.kt onClick                       tap toggles a run of more than one item
 ChatItemView.kt ContentItem                   collapsed run: newest item and StatusRunCount
 ComposeView.kt                                MCStatus branches of chatItemPreview and the edited content
 TerminalItemView.kt textOnly                  MCStatus, as MCText
 ChatView.kt previews, SnapshotTest.kt         four scenes, references
-desktopTest                                   MergedItems test: runs split by sender and by a text item
+ChatItemsMergerTest.kt                        runs split by sender and by a text item
 ```
 
-Commit 7a51170ed has the rows for MsgContent, CIMergeCategory, mergeCategory, mergesWith, MergedItems.create, onClick, ContentItem, ComposeView, TerminalItemView and the previews. `LocalRevealedItems` sets the revealed items of a preview.
+`LocalRevealedItems` sets the revealed items of a preview.
 
 ### 3.4 iOS
 
@@ -194,12 +202,12 @@ place                                          change
 ChatTypes.swift MsgContent                     .status(text:), coding "status"
 ChatTypes.swift CIMergeCategory, mergeCategory status
 ChatTypes.swift mergesWith                     as Kotlin
+ChatTypes.swift showNotification               false for a received status message, in the app and the NSE
 ChatItemsMerger.swift MergedItems.create       mergesWith
 ChatModel.swift getPrevShownChatItem, names    mergesWith
-ChatView.swift item gaps, menus, ranges        mergesWith
+ChatView.swift ranges, chatItemWithMenu        mergesWith; tap toggles; collapsed run with count
 MarkedDeletedItemView.swift                    mergesWith
-ChatItemView.swift                             tap toggles; collapsed run with count
-previews, SnapshotTests.swift                  the same four scenes, references; check-previews.py
+SnapshotTests.swift                            four scenes: Classic/TerminalStatusRunCollapsed/Expanded
 ```
 
 ### 3.5 Plugin
@@ -207,11 +215,10 @@ previews, SnapshotTests.swift                  the same four scenes, references;
 ```
 place                                    change
 Hub.createSessionGroup                   groupPreferences.status = {enable: on}
-Control.load, session groups             status set on at each start when it is off, as the command menu
 step lines of ep/mcp-step-lines          {type: "status", text} when the session group has status on; {type: "text", text} otherwise
 ```
 
-Each CLI feature change writes all preferences of the group, so an absent `status` can't be told from an owner's off. The plugin sets it on at each start, as it sets the command menu. The plugin bundles core 7.1.3, so these rows wait for a core release with `status`.
+The plugin bundles core 7.1.3, so these rows wait for a core release with `status`, in a later plugin commit.
 
 ## 4. Tests
 
