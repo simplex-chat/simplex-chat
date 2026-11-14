@@ -8,7 +8,7 @@ import qualified Data.Text as T
 import Database.SQLite.Simple (Query (..))
 import Database.SQLite.Simple.QQ (sql)
 
--- the same tables in the client and in the badge service; '@' is replaced with the table name prefix
+-- the same tables in the client and in the store service; '@' is replaced with the table name prefix
 badgeSchema :: Text -> Query
 badgeSchema pfx = withPrefix pfx badgeSchemaTables
 

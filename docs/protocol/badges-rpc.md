@@ -1,6 +1,6 @@
 # Badge service RPC protocol
 
-Schema: `badges-rpc.schema.json`, definitions `request` and `response`. Types: `Simplex.Chat.Badges.Service`. Model: `plans/2026-07-30-supporter-badges-v3-ux.md` §3 — cited below as "model".
+Schema: `badges-rpc.schema.json`, definitions `request` and `response`. Types: `Simplex.Chat.StoreService`. Model: `plans/2026-07-30-supporter-badges-v3-ux.md` §3 — cited below as "model".
 
 ## Transport
 

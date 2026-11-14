@@ -1,0 +1,206 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+module Bots.StoreService.GroupTests where
+
+import StoreService.Config (GroupConfig (..))
+import StoreService.Group (GroupAction (..), GroupEvent (..), TrackerAction (..), coalesceTrackerRefreshes, inertGroupConfig, noOwnerHint, orphanHint, trackerDecision)
+import StoreService.Group.Command
+import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (UTCTime (..), addUTCTime)
+import Simplex.Chat.Badges (BadgeType (..))
+import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, randomBadgeCode)
+import Simplex.Chat.Controller (ChatCommand (AcceptMember, DeleteGroup, MemberRole))
+import Simplex.Chat.Library.Commands (parseChatCommand)
+import Simplex.Chat.Types (GroupProfile (..))
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Util (tshow)
+import Test.Hspec
+
+badgeGroupTests :: Spec
+badgeGroupTests = describe "badge group" $ do
+  let p = groupCmdAction GROwner
+      issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+      bulkUsage = ReplyText "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–12, count 1–100\ne.g. /bulk legend months 3 count 10"
+      revokeUsage = ReplyText "Usage: /revoke <code>"
+  it "issue defaults" $ p "/issue supporter" `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
+  it "issue with months and uses" $ p "/issue legend months 6 uses 50" `shouldBe` RunCmd (GCIssue BTLegend 6 50)
+  it "bulk with count" $ p "/bulk supporter count 20" `shouldBe` RunCmd (GCBulk BTSupporter 1 20)
+  it "issue and bulk take every badge type" $ do
+    map p ["/issue supporter", "/issue legend", "/issue investor"]
+      `shouldBe` map (\bt -> RunCmd (GCIssue bt 1 1)) [BTSupporter, BTLegend, BTInvestor]
+    map p ["/bulk supporter count 2", "/bulk legend count 2", "/bulk investor count 2"]
+      `shouldBe` map (\bt -> RunCmd (GCBulk bt 1 2)) [BTSupporter, BTLegend, BTInvestor]
+  it "parses the examples in the usage replies" $ do
+    p "/issue supporter months 12" `shouldBe` RunCmd (GCIssue BTSupporter 12 1)
+    p "/issue investor uses 50" `shouldBe` RunCmd (GCIssue BTInvestor 1 50)
+    p "/bulk legend months 3 count 10" `shouldBe` RunCmd (GCBulk BTLegend 3 10)
+  it "rejects a length, the names unit or the other command's option for a badge" $ do
+    map p ["/issue supporter 6", "/issue supporter years 2", "/issue legend months 3 years 2", "/issue supporter count 2", "/issue supporter uses 2 months 3"]
+      `shouldBe` replicate 5 issueUsage
+    map p ["/bulk supporter 6 count 2", "/bulk supporter years 2 count 2", "/bulk supporter count 2 uses 2", "/bulk supporter uses 2 count 2", "/bulk supporter count 2 months 3"]
+      `shouldBe` replicate 5 bulkUsage
+  it "rejects values past the upper bounds" $ do
+    p "/issue supporter uses 1001" `shouldBe` issueUsage
+    p "/bulk supporter count 101" `shouldBe` bulkUsage
+    p "/issue supporter months 13" `shouldBe` issueUsage
+  it "rejects zero values" $ do
+    p "/bulk supporter count 0" `shouldBe` bulkUsage
+    p "/issue supporter months 0" `shouldBe` issueUsage
+  it "rejects values past the machine word" $ do
+    let past64 = tshow (2 ^ (64 :: Int) + 1 :: Integer)
+    p ("/issue supporter uses " <> past64) `shouldBe` issueUsage
+    p ("/bulk supporter count " <> past64) `shouldBe` bulkUsage
+    p ("/issue supporter months " <> past64) `shouldBe` issueUsage
+  it "accepts the upper bounds" $ do
+    p "/issue supporter uses 1000" `shouldBe` RunCmd (GCIssue BTSupporter 1 1000)
+    p "/bulk supporter count 100" `shouldBe` RunCmd (GCBulk BTSupporter 1 100)
+    p "/issue supporter months 12" `shouldBe` RunCmd (GCIssue BTSupporter 12 1)
+  it "revoke" $ do
+    code <- newCode
+    p ("/revoke " <> badgeCodeText code) `shouldBe` RunCmd (GCRevoke code)
+  it "authorization, per role, as (issue, bulk, revoke)" $ do
+    someCode <- newCode
+    let runs role t = case groupCmdAction role t of
+          RunCmd _ -> True
+          _ -> False
+        allowed role =
+          ( runs role "/issue supporter",
+            runs role "/bulk supporter count 1",
+            runs role ("/revoke " <> badgeCodeText someCode)
+          )
+        roles = [GRUnknown "future", GRRelay, GRObserver, GRAuthor, GRMember, GRModerator, GRAdmin, GROwner]
+    map (\role -> (role, allowed role)) roles
+      `shouldBe` [ (GRUnknown "future", (False, False, False)),
+                   (GRRelay, (False, False, False)),
+                   (GRObserver, (False, False, False)),
+                   (GRAuthor, (False, False, False)),
+                   (GRMember, (False, False, False)),
+                   (GRModerator, (True, True, False)),
+                   (GRAdmin, (True, True, True)),
+                   (GROwner, (True, True, True))
+                 ]
+  describe "log hints give commands --run-cli parses for a group name with a space" $ do
+    let hintCommands = map (fst . T.breakOn " in --run-cli") . drop 1 . T.splitOn " with "
+        parsedHint hint = map (\cmd -> (cmd, parseChatCommand (encodeUtf8 cmd))) (hintCommands hint)
+    it "owner" $
+      case parsedHint (T.replace "<member>" "alice" $ noOwnerHint "SimpleX Badges_1") of
+        [(_, Right (MemberRole g m GROwner)), (_, Right (AcceptMember g' m' GROwner))] -> [(g, m), (g', m')] `shouldBe` replicate 2 ("SimpleX Badges_1", "alice")
+        cmds -> expectationFailure $ "owner commands parsed as " <> show cmds
+    it "orphan group" $
+      case parsedHint (orphanHint "SimpleX Badges_1") of
+        [(_, Right (DeleteGroup g))] -> g `shouldBe` "SimpleX Badges_1"
+        cmds -> expectationFailure $ "delete command parsed as " <> show cmds
+  describe "classifying a group message" $ do
+    it "answers an advertised command that does not parse" $ do
+      map p
+        [ "/issue",
+          "/issue supporter uses 0",
+          "/issue supporter 3",
+          "/issue suporter",
+          "/issue supporter  uses 5",
+          "/bulk supporter",
+          "/revoke",
+          "/revoke not-a-badge-code"
+        ]
+        `shouldBe` replicate 5 issueUsage <> [bulkUsage, revokeUsage, revokeUsage]
+    it "answers a mistyped command only to a sender who may run it" $ do
+      map (`groupCmdAction` "/issue supporter uses 0") [GRMember, GRModerator, GRAdmin]
+        `shouldBe` [IgnoreMsg, issueUsage, issueUsage]
+      map (`groupCmdAction` "/bulk supporter") [GRMember, GRModerator, GRAdmin]
+        `shouldBe` [IgnoreMsg, bulkUsage, bulkUsage]
+      map (`groupCmdAction` "/revoke not-a-badge-code") [GRMember, GRModerator, GRAdmin]
+        `shouldBe` [IgnoreMsg, IgnoreMsg, revokeUsage]
+    it "runs a name code command for a moderator and above, saying nothing to a member" $ do
+      map (`groupCmdAction` "/issue name 6") [GRMember, GRModerator, GRAdmin, GROwner]
+        `shouldBe` [IgnoreMsg, RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2)]
+    it "runs /balance, /record_refund and /close only for an owner, saying nothing to others" $ do
+      let roles = [GRMember, GRModerator, GRAdmin, GROwner]
+          ownerOnly cmd = replicate 3 IgnoreMsg <> [RunCmd (GCMoney cmd)]
+      map (`groupCmdAction` "/balance s") roles `shouldBe` ownerOnly (MCBalance "s")
+      map (`groupCmdAction` "/record_refund inv-s 10000") roles `shouldBe` ownerOnly (MCRecordRefund "inv-s" 10000)
+      map (`groupCmdAction` "/close inv-f") roles `shouldBe` ownerOnly (MCClose "inv-f")
+      groupCmdAction GRAdmin "/record_refund s" `shouldBe` IgnoreMsg
+      p "/refund s 10000" `shouldBe` IgnoreMsg
+    it "answers a malformed /balance, /record_refund or /close with its usage" $
+      map p ["/balance", "/balance s junk", "/record_refund s", "/record_refund s 0", "/record_refund s -5", "/record_refund s 100.00", "/record_refund s 99999999999999999999", "/close", "/close s junk"]
+        `shouldBe` replicate 2 (ReplyText "Usage: /balance <reference>")
+          <> replicate 5 (ReplyText "Usage: /record_refund <reference> <cents>")
+          <> replicate 2 (ReplyText "Usage: /close <reference>")
+    it "accepts a command padded with whitespace" $ do
+      p " /issue supporter " `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
+      p "\t/bulk supporter count 1" `shouldBe` RunCmd (GCBulk BTSupporter 1 1)
+    it "says nothing to anything that is not an advertised command" $
+      map p ["", "hello", "issue supporter", "/issued supporter", "/help", "see /issue above"]
+        `shouldBe` replicate 6 IgnoreMsg
+    it "says nothing to a command the sender may not run" $ do
+      map (`groupCmdAction` "/issue supporter") [GRMember, GRAuthor] `shouldBe` [IgnoreMsg, IgnoreMsg]
+      groupCmdAction GRMember "/bulk supporter count 1" `shouldBe` IgnoreMsg
+    it "tells a sender below admin that their revoke did not happen" $ do
+      code <- newCode
+      map (`groupCmdAction` ("/revoke " <> badgeCodeText code)) [GRMember, GRModerator]
+        `shouldBe` replicate 2 (ReplyText "Only admins can revoke codes. This code is now visible to all members.")
+  describe "configured group name and description" $ do
+    let cfg name descr = GroupConfig {gDisplayName = name, gDescription = descr, gNameCodesPerDay = 10}
+        profile name descr =
+          GroupProfile
+            { displayName = name,
+              fullName = "",
+              shortDescr = Nothing,
+              description = descr,
+              image = Nothing,
+              publicGroup = Nothing,
+              groupPreferences = Nothing,
+              memberAdmission = Nothing,
+              chatLayout = Nothing
+            }
+    it "says nothing when the config matches the group profile" $ do
+      inertGroupConfig (cfg "SimpleX Badges" (Just "badge ops desk")) (profile "SimpleX Badges" (Just "badge ops desk"))
+        `shouldBe` Nothing
+      inertGroupConfig (cfg "SimpleX Badges" Nothing) (profile "SimpleX Badges" Nothing) `shouldBe` Nothing
+    it "says nothing when an omitted description meets an empty one" $
+      inertGroupConfig (cfg "SimpleX Badges" Nothing) (profile "SimpleX Badges" (Just "")) `shouldBe` Nothing
+    it "reports a name the config would change" $
+      inertGroupConfig (cfg "SimpleX Badges 2026" (Just "badge ops desk")) (profile "SimpleX Badges" (Just "badge ops desk"))
+        `shouldBe` Just "badge group config is not applied to an existing group: display_name \"SimpleX Badges 2026\", group has \"SimpleX Badges\""
+    it "shows a non-ASCII name as written" $
+      inertGroupConfig (cfg "Значки" Nothing) (profile "SimpleX Badges" Nothing)
+        `shouldBe` Just "badge group config is not applied to an existing group: display_name \"Значки\", group has \"SimpleX Badges\""
+    it "reports a description the config would change or remove" $ do
+      inertGroupConfig (cfg "SimpleX Badges" (Just "new desk")) (profile "SimpleX Badges" (Just "badge ops desk"))
+        `shouldBe` Just "badge group config is not applied to an existing group: description \"new desk\", group has \"badge ops desk\""
+      inertGroupConfig (cfg "SimpleX Badges" Nothing) (profile "SimpleX Badges" (Just "badge ops desk"))
+        `shouldBe` Just "badge group config is not applied to an existing group: description \"\", group has \"badge ops desk\""
+    it "reports both fields when both would change" $
+      inertGroupConfig (cfg "SimpleX Badges 2026" (Just "new desk")) (profile "SimpleX Badges" Nothing)
+        `shouldBe` Just
+          "badge group config is not applied to an existing group: \
+          \display_name \"SimpleX Badges 2026\", group has \"SimpleX Badges\"; \
+          \description \"new desk\", group has \"\""
+  describe "tracker" $
+    it "edits within 24h, reposts after" $ do
+      let t0 = UTCTime (fromGregorian 2026 1 1) 0
+          within = addUTCTime (23 * 3600) t0
+          past = addUTCTime (25 * 3600) t0
+      trackerDecision within t0 `shouldBe` Edit
+      trackerDecision past t0 `shouldBe` Repost
+  describe "coalescing tracker refreshes" $ do
+    it "keeps the last refresh of each code" $ do
+      code1 <- newCode
+      code2 <- newCode
+      coalesceTrackerRefreshes [GETracker 1 code1, GETracker 2 code2, GETracker 1 code1]
+        `shouldBe` [GETracker 2 code2, GETracker 1 code1]
+    it "keeps every other event, in order" $ do
+      code <- newCode
+      coalesceTrackerRefreshes
+        [ GEInGroup 7 (GACommand GRAdmin "a"),
+          GETracker 1 code,
+          GEInGroup 7 GAJoined,
+          GETracker 1 code
+        ]
+        `shouldBe` [GEInGroup 7 (GACommand GRAdmin "a"), GEInGroup 7 GAJoined, GETracker 1 code]
+
+newCode :: IO BadgeCode
+newCode = C.newRandom >>= randomBadgeCode

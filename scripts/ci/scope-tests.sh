@@ -6,7 +6,7 @@ cd "$(dirname "$0")/../.."
 
 case "${1:-}" in
   badge-web)
-    (cd apps/simplex-badge-service/web && npm ci && npm test)
+    (cd apps/simplex-store-service/web && npm ci && npm test)
     ;;
   ci-scripts)
     python3 scripts/ci/test_packages_release.py

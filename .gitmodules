@@ -1,3 +1,7 @@
 [submodule "apps/multiplatform/external/nanohttpd/upstream"]
 	path = apps/multiplatform/external/nanohttpd/upstream
 	url = https://github.com/NanoHttpd/nanohttpd
+[submodule "apps/simplex-domains"]
+	path = apps/simplex-domains
+	url = https://github.com/simplex-chat/simplex.domains
+	branch = sh/names-webapp

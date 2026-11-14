@@ -19,7 +19,7 @@ module Simplex.Chat.Badges.Types
     LedgerCreditType (..),
     LedgerDebitType (..),
     BadgeAlertKind (..),
-    BadgeServiceErrorCode (..),
+    StoreServiceErrorCode (..),
     SubscriptionState (..),
     BadgeIssueFailure (..),
     BadgeIssueError (..),
@@ -231,28 +231,28 @@ data BadgeAlertPrice = BadgeAlertPrice
   }
   deriving (Show)
 
-data BadgeServiceErrorCode
-  = BSEBadRequest
-  | BSEUnsupportedVersion
-  | BSEUnknownPurchaseKey
-  | BSEUnknownOfferId
-  | BSEOfferDisabled
-  | BSEOfferMismatch
-  | BSEProductUnavailable
-  | BSEPaymentNotEntitled
-  | BSEPaymentPending
-  | BSEProviderUnavailable
-  | BSEProviderNotConfigured -- no verifier deployed: a dev service, not the store failing to answer
-  | BSERateLimited
-  | BSECodeInvalid
-  | BSECodeUsed
-  | BSECodeExpired
-  | BSEReceiptInvalid
-  | BSEReceiptUsed
-  | BSETransferLimited -- the subscription moved from another key whose credential has not expired yet
-  | BSETestPurchase -- the store vouched for a purchase that cost nothing: Apple's sandbox, a Play license tester
-  | BSEInternal
-  | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
+data StoreServiceErrorCode
+  = STEBadRequest
+  | STEUnsupportedVersion
+  | STEUnknownPurchaseKey
+  | STEUnknownOfferId
+  | STEOfferDisabled
+  | STEOfferMismatch
+  | STEProductUnavailable
+  | STEPaymentNotEntitled
+  | STEPaymentPending
+  | STEProviderUnavailable
+  | STEProviderNotConfigured -- no verifier deployed: a dev service, not the store failing to answer
+  | STERateLimited
+  | STECodeInvalid
+  | STECodeUsed
+  | STECodeExpired
+  | STEReceiptInvalid
+  | STEReceiptUsed
+  | STETransferLimited -- the subscription moved from another key whose credential has not expired yet
+  | STETestPurchase -- the store vouched for a purchase that cost nothing: Apple's sandbox, a Play license tester
+  | STEInternal
+  | STEUnknown Text -- forwards-compatible: service is deployed ahead of clients
   deriving (Eq, Show)
 
 -- | The store's answer as the service last read it. A client reads a state it does not know as not ended.
@@ -267,7 +267,7 @@ data SubscriptionState
 -- | Why a renewal request ended without a credential stored. retryable is the service's own view of
 -- transience: it gave retryAfter, which holds for codes this version does not know.
 data BadgeIssueFailure
-  = BIFServiceError {code :: BadgeServiceErrorCode, retryable :: Bool}
+  = BIFServiceError {code :: StoreServiceErrorCode, retryable :: Bool}
   | BIFServiceTimeout
   | BIFNetwork {agentError :: Text}
   | BIFInvalidCredential
@@ -359,58 +359,58 @@ instance FromField BadgeCodePaymentStatus where fromField = fromTextField_ textD
 
 instance ToField BadgeCodePaymentStatus where toField = toField . textEncode
 
-instance TextEncoding BadgeServiceErrorCode where
+instance TextEncoding StoreServiceErrorCode where
   textEncode = \case
-    BSEBadRequest -> "bad_request"
-    BSEUnsupportedVersion -> "unsupported_version"
-    BSEUnknownPurchaseKey -> "unknown_purchase_key"
-    BSEUnknownOfferId -> "unknown_offer_id"
-    BSEOfferDisabled -> "offer_disabled"
-    BSEOfferMismatch -> "offer_mismatch"
-    BSEProductUnavailable -> "product_unavailable"
-    BSEPaymentNotEntitled -> "payment_not_entitled"
-    BSEPaymentPending -> "payment_pending"
-    BSEProviderUnavailable -> "provider_unavailable"
-    BSEProviderNotConfigured -> "provider_not_configured"
-    BSERateLimited -> "rate_limited"
-    BSECodeInvalid -> "code_invalid"
-    BSECodeUsed -> "code_used"
-    BSECodeExpired -> "code_expired"
-    BSEReceiptInvalid -> "receipt_invalid"
-    BSEReceiptUsed -> "receipt_used"
-    BSETransferLimited -> "transfer_limited"
-    BSETestPurchase -> "test_purchase"
-    BSEInternal -> "internal"
-    BSEUnknown t -> t
+    STEBadRequest -> "bad_request"
+    STEUnsupportedVersion -> "unsupported_version"
+    STEUnknownPurchaseKey -> "unknown_purchase_key"
+    STEUnknownOfferId -> "unknown_offer_id"
+    STEOfferDisabled -> "offer_disabled"
+    STEOfferMismatch -> "offer_mismatch"
+    STEProductUnavailable -> "product_unavailable"
+    STEPaymentNotEntitled -> "payment_not_entitled"
+    STEPaymentPending -> "payment_pending"
+    STEProviderUnavailable -> "provider_unavailable"
+    STEProviderNotConfigured -> "provider_not_configured"
+    STERateLimited -> "rate_limited"
+    STECodeInvalid -> "code_invalid"
+    STECodeUsed -> "code_used"
+    STECodeExpired -> "code_expired"
+    STEReceiptInvalid -> "receipt_invalid"
+    STEReceiptUsed -> "receipt_used"
+    STETransferLimited -> "transfer_limited"
+    STETestPurchase -> "test_purchase"
+    STEInternal -> "internal"
+    STEUnknown t -> t
   textDecode s = Just $ case s of
-    "bad_request" -> BSEBadRequest
-    "unsupported_version" -> BSEUnsupportedVersion
-    "unknown_purchase_key" -> BSEUnknownPurchaseKey
-    "unknown_offer_id" -> BSEUnknownOfferId
-    "offer_disabled" -> BSEOfferDisabled
-    "offer_mismatch" -> BSEOfferMismatch
-    "product_unavailable" -> BSEProductUnavailable
-    "payment_not_entitled" -> BSEPaymentNotEntitled
-    "payment_pending" -> BSEPaymentPending
-    "provider_unavailable" -> BSEProviderUnavailable
-    "provider_not_configured" -> BSEProviderNotConfigured
-    "rate_limited" -> BSERateLimited
-    "code_invalid" -> BSECodeInvalid
-    "code_used" -> BSECodeUsed
-    "code_expired" -> BSECodeExpired
-    "receipt_invalid" -> BSEReceiptInvalid
-    "receipt_used" -> BSEReceiptUsed
-    "transfer_limited" -> BSETransferLimited
-    "test_purchase" -> BSETestPurchase
-    "internal" -> BSEInternal
-    t -> BSEUnknown t
+    "bad_request" -> STEBadRequest
+    "unsupported_version" -> STEUnsupportedVersion
+    "unknown_purchase_key" -> STEUnknownPurchaseKey
+    "unknown_offer_id" -> STEUnknownOfferId
+    "offer_disabled" -> STEOfferDisabled
+    "offer_mismatch" -> STEOfferMismatch
+    "product_unavailable" -> STEProductUnavailable
+    "payment_not_entitled" -> STEPaymentNotEntitled
+    "payment_pending" -> STEPaymentPending
+    "provider_unavailable" -> STEProviderUnavailable
+    "provider_not_configured" -> STEProviderNotConfigured
+    "rate_limited" -> STERateLimited
+    "code_invalid" -> STECodeInvalid
+    "code_used" -> STECodeUsed
+    "code_expired" -> STECodeExpired
+    "receipt_invalid" -> STEReceiptInvalid
+    "receipt_used" -> STEReceiptUsed
+    "transfer_limited" -> STETransferLimited
+    "test_purchase" -> STETestPurchase
+    "internal" -> STEInternal
+    t -> STEUnknown t
 
-instance ToJSON BadgeServiceErrorCode where
+instance ToJSON StoreServiceErrorCode where
   toJSON = textToJSON
   toEncoding = textToEncoding
 
-instance FromJSON BadgeServiceErrorCode where
-  parseJSON = textParseJSON "BadgeServiceErrorCode"
+instance FromJSON StoreServiceErrorCode where
+  parseJSON = textParseJSON "StoreServiceErrorCode"
 
 instance TextEncoding SubscriptionState where
   textEncode = \case
@@ -465,7 +465,7 @@ instance StrEncoding BadgeIssueFailure where
           "retry" -> pure True
           "final" -> pure False
           _ -> fail "bad BadgeIssueFailure retry flag"
-      codeP = A.takeByteString >>= maybe (fail "bad BadgeServiceErrorCode") pure . textDecode . safeDecodeUtf8
+      codeP = A.takeByteString >>= maybe (fail "bad StoreServiceErrorCode") pure . textDecode . safeDecodeUtf8
       restP = safeDecodeUtf8 <$> (A.space *> A.takeByteString)
 
 instance ToField BadgeIssueFailure where toField = toField . decodeLatin1 . strEncode

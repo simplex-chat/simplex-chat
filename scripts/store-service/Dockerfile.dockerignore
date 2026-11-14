@@ -1,0 +1,33 @@
+# The build context is the repository root. Exclude everything, then add back
+# what the image is built from, one directory level at a time.
+*
+
+!cabal.project
+!simplex-chat.cabal
+!README.md
+!PRIVACY.md
+!src
+
+!scripts
+scripts/*
+!scripts/cabal.project.local.linux
+
+!apps
+apps/*
+!apps/simplex-store-service
+!apps/simplex-domains
+
+# Build output, caches, local state, and anything holding a secret. The ini is
+# mounted at run time and must never be baked into an image: it holds the issuer
+# secret, and with [btcpay] the API key and webhook secret too. A bare name would
+# match only at the context root, so every ini is excluded at any depth.
+**/*.ini
+**/dist
+**/dist-newstyle
+**/node_modules
+**/*.db
+**/*.db-*
+apps/simplex-store-service/test-fixtures
+apps/simplex-store-service/web-traversal-test
+apps/simplex-store-service/web/build
+apps/simplex-domains/.git
