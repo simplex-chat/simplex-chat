@@ -1982,7 +1982,7 @@ fun BoxScope.ChatItemsList(
                 highlightedItems.value = setOf()
               }
           }
-          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset, bubbleInteractionSource = bubbleInteractionSource)
+          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset, bubbleInteractionSource = bubbleInteractionSource)
         }
       }
 
@@ -2281,7 +2281,9 @@ fun BoxScope.ChatItemsList(
       if (itemSeparation.date != null) {
         DateSeparator(itemSeparation.date)
       }
-      ChatItemView(cItem, range, itemSeparation, previousItemSeparationLargeGap)
+      if (!cItem.hiddenInChat(developerTools)) {
+        ChatItemView(cItem, range, itemSeparation, previousItemSeparationLargeGap)
+      }
     }
   }
 
@@ -2470,7 +2472,7 @@ fun BoxScope.ChatItemsList(
         )
         val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
         val eventGapBelow = if (LocalTerminalLayout.current) null else eventRunLargeGap(item, listItem.prevItem)
-        val itemSeparation = rowItemSeparation(merged).let { if (eventGapBelow == null) it else it.copy(timestamp = it.timestamp || eventGapBelow, largeGap = eventGapBelow) }
+        val itemSeparation = rowItemSeparation(merged, developerTools).let { if (eventGapBelow == null) it else it.copy(timestamp = it.timestamp || eventGapBelow, largeGap = eventGapBelow) }
         val eventGapAbove = if (LocalTerminalLayout.current) null else eventRunLargeGap(merged.oldest().item, older)
         val prevItemSeparationLargeGap: Boolean
         if (eventGapAbove != null) {
@@ -3798,7 +3800,7 @@ private fun handleForwardConfirmation(
   )
 }
 
-private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSeparation {
+private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?, developerTools: Boolean): ItemSeparation {
   if (prevItem == null) {
     return ItemSeparation(timestamp = true, largeGap = true, date = null)
   }
@@ -3809,22 +3811,30 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSepa
     true
   } else chatItem.chatDir.sent == prevItem.chatDir.sent
   val largeGap = !sameMemberAndDirection || (abs(prevItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+  val prevDeletedOrHidden = prevItem.meta.itemDeleted != null || prevItem.isDeletedContent || prevItem.hiddenInChat(developerTools)
 
   return ItemSeparation(
-    timestamp = largeGap || prevItem.meta.timestampText != chatItem.meta.timestampText,
+    timestamp = largeGap || prevDeletedOrHidden || prevItem.meta.timestampText != chatItem.meta.timestampText,
     largeGap = largeGap,
-    date = if (getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(prevItem.meta.itemTs)) null else prevItem.meta.itemTs
+    date = separationDate(chatItem, prevItem)
   )
 }
 
-private fun rowItemSeparation(row: MergedItem): ItemSeparation {
+private fun separationDate(chatItem: ChatItem, prevItem: ChatItem?): Instant? =
+  if (prevItem == null || getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(prevItem.meta.itemTs)) null else prevItem.meta.itemTs
+
+private fun ChatItem.hiddenInChat(developerTools: Boolean): Boolean =
+  content is CIContent.RcvIntegrityError && !developerTools
+
+private fun rowItemSeparation(row: MergedItem, developerTools: Boolean): ItemSeparation {
   val newest = row.newest()
-  return getItemSeparation(newest.item, if (row.revealed) newest.prevItem else null)
+  return getItemSeparation(newest.item, if (row.revealed) newest.prevItem else null, developerTools)
 }
 
 fun terminalRowsSeparated(olderRow: MergedItem?): Boolean {
   if (olderRow == null) return false
-  return olderRow.newest().item.content is CIContent.ChatBanner || rowItemSeparation(olderRow).date != null
+  val newest = olderRow.newest()
+  return newest.item.content is CIContent.ChatBanner || separationDate(newest.item, if (olderRow.revealed) newest.prevItem else null) != null
 }
 
 private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
