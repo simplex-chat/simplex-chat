@@ -7,6 +7,7 @@ import {ExitError, shellPath} from "./log"
 
 const cmdNotFound = 9009
 const cmdMetaChars = /([()\][%!^"`<>&|;, *?])/g
+// spec: spec/architecture.md#register-hookevents
 const hookEvents = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PostToolBatch", "PermissionRequest", "PermissionDenied", "SubagentStart", "SubagentStop", "PreCompact", "PostCompact", "Stop", "StopFailure", "SessionEnd"]
 
 export type Scope = "user" | "local"
@@ -32,6 +33,7 @@ export interface Entry {
   timeout: number
 }
 
+// spec: spec/architecture.md#register-register
 export function register({name, data, scope}: RegisterOptions, run: Run = runCommand, projectFolder: () => string = projectRoot, configFolder: string = process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude")): string {
   const server = readServerFile(data)
   if (server === undefined) throw new ExitError(`Agent "${name}" was never started. Start it with: npx -y @simplex-chat/mcp serve ${name}`, 1)
@@ -51,6 +53,7 @@ export function register({name, data, scope}: RegisterOptions, run: Run = runCom
   return `Added to Claude Code: scope ${scope}, server ${serverName}, status hooks in ${file}.`
 }
 
+// spec: spec/architecture.md#register-registryentry
 export function registryEntry(port: number, data: string, expireHours: number): Entry {
   return {
     type: "http",
@@ -60,21 +63,25 @@ export function registryEntry(port: number, data: string, expireHours: number): 
   }
 }
 
+// spec: spec/architecture.md#register-statushooks
 export function statusHooks(port: number, data: string): {[event: string]: object[]} {
   const handler = {type: "command", command: "curl", args: ["-q", "--noproxy", "*", "-s", "-m", "2", "-o", process.platform === "win32" ? "NUL" : "/dev/null", "-H", `@${hookHeadersFile(data)}`, "-H", "Content-Type: application/json", "--data-binary", "@-", `http://127.0.0.1:${port}/hook`], async: true}
   return Object.fromEntries(hookEvents.map(event => [event, [{hooks: [handler]}]]))
 }
 
+// spec: spec/architecture.md#register-scopelocations
 function scopeLocations(scope: Scope, projectFolder: () => string, configFolder: string): {servers: string; settings: string} {
   if (scope === "user") return {servers: `"mcpServers"`, settings: join(configFolder, "settings.json")}
   const project = projectFolder()
   return {servers: `"projects" > "${project}" > "mcpServers"`, settings: join(project, ".claude", "settings.local.json")}
 }
 
+// spec: spec/architecture.md#register-manualentrytext
 function manualEntryText(location: string, serverName: string, entry: string): string {
   return `Add this entry under ${location} in ~/.claude.json: {"${serverName}": ${entry}}`
 }
 
+// spec: spec/architecture.md#register-settingsof
 function settingsOf(file: string): unknown {
   const text = existsSync(file) ? readFileSync(file, "utf8") : "{}"
   try {
@@ -84,6 +91,7 @@ function settingsOf(file: string): unknown {
   }
 }
 
+// spec: spec/architecture.md#register-settingsof
 function withStatusHooks(settings: unknown, hooks: {[event: string]: object[]}, headers: string): {[key: string]: unknown} | undefined {
   if (!isObject(settings)) return undefined
   const existing = settings.hooks ?? {}
@@ -92,6 +100,7 @@ function withStatusHooks(settings: unknown, hooks: {[event: string]: object[]}, 
   return {...settings, hooks: {...existing, ...merged}}
 }
 
+// spec: spec/architecture.md#register-settingsof
 function withoutHandlers(groups: unknown, headers: string): unknown[] {
   return (Array.isArray(groups) ? groups : []).flatMap(group => {
     if (!isObject(group) || !Array.isArray(group.hooks)) return [group]
@@ -100,10 +109,12 @@ function withoutHandlers(groups: unknown, headers: string): unknown[] {
   })
 }
 
+// spec: spec/architecture.md#register-settingsof
 function isObject(value: unknown): value is {[key: string]: unknown} {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
+// spec: spec/architecture.md#register-projectroot
 export function projectRoot(folder: string = process.cwd()): string {
   const start = resolve(folder)
   const root = gitRoot(start)
@@ -130,6 +141,7 @@ function repositoryRoot(root: string): string {
   }
 }
 
+// spec: spec/architecture.md#register-runcommand
 function runCommand(command: string, args: string[]): RunResult {
   const result = spawnSync(command, args, {encoding: "utf8"})
   const missing = (result.error as NodeJS.ErrnoException | undefined)?.code === "ENOENT"

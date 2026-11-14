@@ -1,6 +1,7 @@
 import {basename} from "path"
 import {fieldOf, textOf} from "./inference"
 
+// spec: spec/architecture.md#activity-running
 interface Running {
   session: string
   agent?: string
@@ -8,6 +9,7 @@ interface Running {
   file?: string
 }
 
+// spec: spec/architecture.md#activity-activitystate
 export interface ActivityState {
   asking: boolean
   compacting: boolean
@@ -15,12 +17,18 @@ export interface ActivityState {
   subagent?: {session: string; name?: string}
 }
 
+// spec: spec/architecture.md#activity-constants
 const maxSessions = 16
+// spec: spec/architecture.md#activity-constants
 const maxEntries = 64
+// spec: spec/architecture.md#activity-constants
 const maxEnded = 256
+// spec: spec/architecture.md#activity-constants
 const namePattern = /^[\w-]{1,64}$/
+// spec: spec/architecture.md#activity-constants
 const filePattern = /^[\w.+@-]{1,64}$/
 
+// spec: spec/architecture.md#activity-activity
 export class Activity {
   private readonly sessions = new Set<string>()
   private readonly tools = new Map<string, Running>()
@@ -31,6 +39,7 @@ export class Activity {
 
   constructor(private readonly name: string) {}
 
+  // spec: spec/architecture.md#activity-activity-record
   record(event: unknown): void {
     const session = textOf(event, "session_id")
     const tool = textOf(event, "tool_name", namePattern)
@@ -80,10 +89,12 @@ export class Activity {
     }
   }
 
+  // spec: spec/architecture.md#activity-activity-state
   state(): ActivityState {
     return {asking: this.asking.size > 0, compacting: this.compacting.size > 0, tool: [...this.tools.values()].at(-1), subagent: [...this.subagents.values()].at(-1)}
   }
 
+  // spec: spec/architecture.md#activity-activity-join
   private join(session: string): void {
     this.sessions.add(session)
     if (this.sessions.size <= maxSessions) return
@@ -92,6 +103,7 @@ export class Activity {
     this.clear(oldest)
   }
 
+  // spec: spec/architecture.md#activity-activity-join
   private clear(session: string): void {
     deleteWhere(this.tools, tool => tool.session === session)
     deleteWhere(this.subagents, subagent => subagent.session === session)
@@ -100,16 +112,19 @@ export class Activity {
   }
 }
 
+// spec: spec/architecture.md#activity-filename
 function fileName(input: unknown): string | undefined {
   const name = basename(textOf(input, "file_path") ?? textOf(input, "notebook_path") ?? "")
   return filePattern.test(name) ? name : undefined
 }
 
+// spec: spec/architecture.md#activity-filename
 function keepNewest(keys: Set<string> | Map<string, unknown>, max: number): void {
   const [oldest] = keys.keys()
   if (keys.size > max) keys.delete(oldest)
 }
 
+// spec: spec/architecture.md#activity-filename
 function deleteWhere<E>(entries: Map<string, E>, matches: (entry: E) => boolean): void {
   for (const [id, entry] of entries) if (matches(entry)) entries.delete(id)
 }

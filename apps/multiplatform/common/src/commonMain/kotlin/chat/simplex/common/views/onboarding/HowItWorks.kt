@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.MarkdownText
@@ -37,6 +38,7 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
       ReadableText(MR.strings.why_built_p6, padding = paraPadding)
       ReadableText(MR.strings.why_built_p7, padding = paraPadding)
       ReadableText(MR.strings.why_built_tagline, padding = paraPadding)
+      if (onboardingStage == null && appPrefs.oneHandUI.state.value) Spacer(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
     }
     if (onboardingStage != null) {
       Column(
