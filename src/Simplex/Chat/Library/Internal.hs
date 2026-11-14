@@ -28,6 +28,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -1693,14 +1694,35 @@ groupLinkData (GIK gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {p
 restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
 restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
 
-getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
+getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m, Maybe ShortLinkData)
 getShortLinkConnReq' nm user l = do
   l' <- restoreShortLink' l
-  withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  (fd, cData, cReq) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  linkData <- liftIO $ decodeLinkUserData cData
+  case JT.parseMaybe (shortLinkDataP l) (fromMaybe J.Null linkData) of
+    Just sLinkData_ -> pure (fd, cData, cReq, sLinkData_)
+    Nothing -> throwChatError CEInvalidConnReq
 
-getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
+shortLinkDataP :: ConnShortLink m -> J.Value -> JT.Parser (Maybe ShortLinkData)
+shortLinkDataP l v = case l of
+  CSLInvitation {} -> optionalData $ contact <|> group notChannel
+  CSLContact _ ct _ _ -> case ct of
+    CCTContact -> optionalData $ contact <|> relayAddress
+    CCTGroup -> optionalData $ group notChannel <|> relayLink
+    CCTChannel -> Just <$> group isJust
+    CCTRelay -> optionalData $ relayAddress <|> contact
+  where
+    optionalData :: JT.Parser ShortLinkData -> JT.Parser (Maybe ShortLinkData)
+    optionalData p = if v == J.Null then pure Nothing else Just <$> p
+    contact = SLDContact <$> J.parseJSON v
+    relayLink = SLDRelayLink <$> J.parseJSON v
+    relayAddress = SLDRelayAddress <$> J.parseJSON v
+    group ok = SLDGroup <$> mfilter (\GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} -> ok publicGroup) (J.parseJSON v)
+    notChannel = maybe True (\PublicGroupProfile {groupType} -> groupType /= GTChannel)
+
+getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m, Maybe ShortLinkData)
 getShortLinkConnReq nm user l = do
-  r@(_, cData, _) <- getShortLinkConnReq' nm user l
+  r@(_, cData, _, _) <- getShortLinkConnReq' nm user l
   case cData of
     ContactLinkData _ UserContactData {direct, relays}
       | not direct && null relays -> throwChatError CEUnsupportedConnReq

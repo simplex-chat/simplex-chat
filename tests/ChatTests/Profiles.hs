@@ -19,6 +19,7 @@ import Control.Concurrent.Async (concurrently, concurrently_)
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader (runReaderT)
+import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
@@ -26,14 +27,15 @@ import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
+import ProtocolTests (testGroupProfile)
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeProof, generateMasterKey, issueBadge, verifyPayment)
 import Simplex.Chat.Controller (CM, ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt, withAgent)
 import Simplex.Chat.Library.Internal (encodeConnInfo, encodeShortLinkData, getShortLinkConnReq, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage')
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XContact, XInfo, XOk), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
+import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XContact, XInfo, XOk), ContactShortLinkData (ContactShortLinkData), GroupShortLinkData (GroupShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
 import Simplex.Chat.Store.Groups (getGroupMembers)
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
-import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), ImageData (..), Profile (..), GroupRejectionReason (..), ShortLinkContact, User (..), aUserId, fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
+import Simplex.Chat.Types (AgentConnId (..), B64UrlByteString (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), GroupProfile (publicGroup), GroupType (..), ImageData (..), Profile (..), PublicGroupProfile (PublicGroupProfile), GroupRejectionReason (..), ShortLinkContact, User (..), aUserId, fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
@@ -41,7 +43,7 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent (joinConnection, prepareConnectionToJoin, setConnShortLink)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (SConnectionMode (..), UserConnLinkData (..))
+import Simplex.Messaging.Agent.Protocol (SConnectionMode (..), UserConnLinkData (..), UserContactData (..), UserLinkData (..))
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (pattern NRMInteractive)
@@ -182,6 +184,15 @@ chatProfileTests = do
     it "should connect via contact address" testShortLinkContactAddress
     it "should share contact address via chat" testShareAddressViaChat
     it "should join group" testShortLinkJoinGroup
+    describe "should validate link type" $ do
+      it "group link as address" $ testGroupLinkAsType "/a#"
+      it "group link as channel" $ testGroupLinkAsType "/c#"
+      it "group link as relay address" testGroupLinkAsRelay
+      it "address as group link and channel" testAddressAsGroupLink
+      it "group link as address in contact profile" testGroupLinkInContactProfile
+      it "contact data in group link" testContactDataInGroupLink
+      it "channel data in invitation" testChannelDataInInvitation
+      it "invitation, address and group link with their data" testLinksWithTheirData
   describe "short links with attached data" shortLinkTests
   describe "client services" $ do
     it "should create user as a service, disable and re-enable" testClientService
@@ -1167,11 +1178,20 @@ sendTestMemberProof cc groupId proof =
     runExceptT (sendGroupMessage' user g members (XInfo p (Just $ groupMemberKey gks))) `runReaderT` chatController cc
       >>= either (fail . show) (\_ -> pure ())
 
-setTestInvLinkData :: TestCC -> ContactShortLinkData -> IO ()
+setTestInvLinkData :: J.ToJSON a => TestCC -> a -> IO ()
 setTestInvLinkData cc linkData = do
   [Only (AgentConnId connId)] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT agent_conn_id FROM connections"
   let ChatController {smpAgent} = chatController cc
   runExceptT (setConnShortLink smpAgent NRMInteractive connId SCMInvitation (UserInvLinkData $ encodeShortLinkData linkData) Nothing False Nothing)
+    >>= either (fail . show) (\_ -> pure ())
+
+setTestGroupLinkData :: TestCC -> UserLinkData -> IO ()
+setTestGroupLinkData cc linkData = do
+  [Only (AgentConnId connId)] <- withCCTransaction cc $ \db ->
+    DB.query_ db "SELECT c.agent_conn_id FROM connections c JOIN user_contact_links l ON l.user_contact_link_id = c.user_contact_link_id WHERE l.group_id IS NOT NULL"
+  let ChatController {smpAgent} = chatController cc
+      contactData = UserContactData {direct = True, owners = [], relays = [], userData = linkData, ratchetKeys = Nothing}
+  runExceptT (setConnShortLink smpAgent NRMInteractive connId SCMContact (UserContactLinkData contactData) Nothing False Nothing)
     >>= either (fail . show) (\_ -> pure ())
 
 testUpdateProfileImage :: HasCallStack => TestParams -> IO ()
@@ -1871,7 +1891,7 @@ sendAddressRequest cc address encodeInfo =
   withCCUser cc $ \user -> do
     sLink <- either fail pure $ strDecode @ShortLinkContact (B.pack address)
     let sendRequest = do
-          (_, _, cReq) <- getShortLinkConnReq NRMInteractive user sLink
+          (_, _, cReq, _) <- getShortLinkConnReq NRMInteractive user sLink
           (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
           connInfo <- encodeInfo
           withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq connInfo PQSupportOff SMSubscribe
@@ -4266,6 +4286,104 @@ testShortLinkJoinGroup =
             cc <## "#team: joining the group..."
             cc <## "#team: you joined the group"
         ]
+
+testGroupLinkAsType :: HasCallStack => T.Text -> TestParams -> IO ()
+testGroupLinkAsType linkType =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- setLinkType "/g#" linkType <$> createGroupWithLink alice
+    bob ##> ("/_connect plan 1 " <> link)
+    invalidLink bob
+    bob ##> ("/c " <> link)
+    invalidLink bob
+
+testGroupLinkAsRelay :: HasCallStack => TestParams -> IO ()
+testGroupLinkAsRelay =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- setLinkType "/g#" "/r#" <$> createGroupWithLink alice
+    bob ##> ("/relay test " <> link)
+    bob <## "relay test failed at RTSGetLink, error: ChatError {errorType = CEInvalidConnReq}"
+
+testAddressAsGroupLink :: HasCallStack => TestParams -> IO ()
+testAddressAsGroupLink =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad"
+    (address, _) <- getContactLinks alice True
+    forM_ ["/g#", "/c#"] $ \linkType -> do
+      let link = setLinkType "/a#" linkType address
+      bob ##> ("/_connect plan 1 " <> link)
+      invalidLink bob
+      bob ##> ("/c " <> link)
+      invalidLink bob
+
+testGroupLinkInContactProfile :: HasCallStack => TestParams -> IO ()
+testGroupLinkInContactProfile =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- createGroupWithLink alice
+    void $ withCCUser bob $ \user -> withCCTransaction bob $ \db ->
+      runExceptT $ createContact db (storeCxt $ chatController bob) user aliceProfile {contactLink = either error Just $ strDecode $ B.pack link}
+    bob ##> "/_connect contact 1 2"
+    invalidLink bob
+
+testContactDataInGroupLink :: HasCallStack => TestParams -> IO ()
+testContactDataInGroupLink =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- createGroupWithLink alice
+    setTestGroupLinkData alice $ encodeShortLinkData $ ContactShortLinkData aliceProfile Nothing False Nothing Nothing
+    bob ##> ("/_connect plan 1 " <> link)
+    invalidLink bob
+
+testChannelDataInInvitation :: HasCallStack => TestParams -> IO ()
+testChannelDataInInvitation =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/_connect 1"
+    (link, _) <- getInvitations alice
+    setTestInvLinkData alice $ GroupShortLinkData testGroupProfile {publicGroup = Just channel} Nothing
+    bob ##> ("/_connect plan 1 " <> link)
+    invalidLink bob
+  where
+    channel = PublicGroupProfile GTChannel channelLink (B64UrlByteString "channel") Nothing
+    channelLink = either error id $ strDecode "https://localhost/c#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"
+
+testLinksWithTheirData :: HasCallStack => TestParams -> IO ()
+testLinksWithTheirData =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/_connect 1"
+    (invitation, _) <- getInvitations alice
+    setTestInvLinkData alice $ GroupShortLinkData testGroupProfile Nothing
+    bob ##> ("/_connect plan 1 " <> invitation)
+    bob <## "invitation link: ok to connect"
+    _ <- getTermLine bob
+    alice ##> "/ad"
+    (address, _) <- getContactLinks alice True
+    bob ##> ("/_connect plan 1 " <> address)
+    bob <## "contact address: ok to connect"
+    _ <- getTermLine bob
+    link <- createGroupWithLink alice
+    bob ##> ("/_connect plan 1 " <> link)
+    bob <## "group link: ok to connect directly"
+    _ <- getTermLine bob
+    setTestGroupLinkData alice $ UserLinkData ""
+    bob ##> ("/_connect plan 1 " <> link)
+    bob <## "group link: ok to connect directly"
+    void $ getTermLine bob
+
+createGroupWithLink :: HasCallStack => TestCC -> IO String
+createGroupWithLink cc = do
+  cc ##> "/g team"
+  cc <## "group #team is created"
+  cc <## "to add members use /a team <name> or /create link #team"
+  cc ##> "/create link #team"
+  fst <$> getGroupLinks cc "team" GRMember True
+
+setLinkType :: T.Text -> T.Text -> String -> String
+setLinkType from to = T.unpack . T.replace from to . T.pack
+
+invalidLink :: HasCallStack => TestCC -> IO ()
+invalidLink cc = do
+  cc <## ""
+  cc <## "Connection link is invalid, possibly it was created in a previous version."
+  cc <## "Please ask your contact to check /version and update if needed."
+  cc <##. "To update run: "
 
 testShortLinkInvitationPrepareContact :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationPrepareContact = testChat2 aliceProfile bobProfile test
