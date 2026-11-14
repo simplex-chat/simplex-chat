@@ -2,13 +2,18 @@ import {log} from "./log"
 import {utcMinutes} from "./messages"
 
 const minute = 60_000
+// spec: spec/architecture.md#schedule-cronranges
 const cronRanges = [{min: 0, max: 59}, {min: 0, max: 23}, {min: 1, max: 31}, {min: 1, max: 12}, {min: 0, max: 7}]
+// spec: spec/architecture.md#schedule-cronranges
 const cronItem = /^(\*|\d+-\d+)(\/\d+)?$|^\d+$/
 
+// spec: spec/architecture.md#schedule-scheduleentry
 export type ScheduleEntry = {cron: string; prompt: string; by: string; byId: number; at: string}
 
+// spec: spec/architecture.md#schedule-due
 type Due = {prompt: string; at: string}
 
+// spec: spec/architecture.md#schedule-schedules
 export class Schedules {
   private readonly chats = new Map<string, {entry: ScheduleEntry; due?: Due}[]>()
   private readonly listeners = new Set<{chat: string; wake: () => void}>()
@@ -16,25 +21,30 @@ export class Schedules {
 
   constructor(private readonly isApprover: (memberId: number) => boolean) {}
 
+  // spec: spec/architecture.md#schedule-schedules-set
   set(chat: string, entries: ScheduleEntry[]): void {
     const current = this.chats.get(chat) ?? []
     this.chats.set(chat, entries.map(entry => ({entry, due: current.find(scheduled => scheduled.entry.at === entry.at)?.due})))
   }
 
+  // spec: spec/architecture.md#schedule-schedules-start
   start(): void {
     this.tickAfter(Date.now())
   }
 
+  // spec: spec/architecture.md#schedule-schedules-start
   stop(): void {
     clearTimeout(this.timer)
   }
 
+  // spec: spec/architecture.md#schedule-schedules-listen
   listen(chat: string, wake: () => void): () => void {
     const listener = {chat, wake}
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
   }
 
+  // spec: spec/architecture.md#schedule-schedules-take
   take(chat: string): Due[] {
     const schedules = this.chats.get(chat) ?? []
     const taken = schedules.flatMap(({due}) => (due === undefined ? [] : [due]))
@@ -42,10 +52,12 @@ export class Schedules {
     return taken
   }
 
+  // spec: spec/architecture.md#schedule-schedules-take
   pending(chat: string): number {
     return (this.chats.get(chat) ?? []).filter(({due}) => due !== undefined).length
   }
 
+  // spec: spec/architecture.md#schedule-schedules-tickafter
   private tickAfter(after: number): void {
     const boundary = after - (after % minute) + minute
     this.timer = setTimeout(() => {
@@ -54,6 +66,7 @@ export class Schedules {
     }, boundary - Date.now()).unref()
   }
 
+  // spec: spec/architecture.md#schedule-schedules-markdue
   private markDue(time: number): void {
     const local = new Date(time)
     for (const [chat, schedules] of this.chats) {
@@ -68,6 +81,7 @@ export class Schedules {
   }
 }
 
+// spec: spec/api.md#control-commands
 export function cronError(cron: string): string | undefined {
   const fields = cron.split(" ")
   if (fields.length !== cronRanges.length || !fields.every(field => field.split(",").every(item => cronItem.test(item)))) return "Schedule: 5 cron fields expected, such as 0 7 * * *."
@@ -75,6 +89,7 @@ export function cronError(cron: string): string | undefined {
   return outOfRange === undefined ? undefined : `Schedule: cron field ${outOfRange} is out of range.`
 }
 
+// spec: spec/architecture.md#schedule-cronmatches
 function cronMatches(cron: string, time: Date): boolean {
   const fields = cron.split(" ")
   const [minutes, hours, days, months, weekdays] = fields.map((field, i) => fieldValues(field, cronRanges[i]))
@@ -84,6 +99,7 @@ function cronMatches(cron: string, time: Date): boolean {
   return minutes.includes(time.getMinutes()) && hours.includes(time.getHours()) && months.includes(time.getMonth() + 1) && (eitherDay ? day || weekday : day && weekday)
 }
 
+// spec: spec/architecture.md#schedule-cronmatches
 function fieldValues(field: string, {min, max}: {min: number; max: number}): number[] {
   const values: number[] = []
   for (const item of field.split(",")) {
