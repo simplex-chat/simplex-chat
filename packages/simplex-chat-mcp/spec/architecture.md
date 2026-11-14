@@ -5,7 +5,7 @@
 > Related specs: [README](README.md) | [Flows](flows.md) | [API](api.md)
 > Related docs: [README](../README.md) | [Reference](../REFERENCE.md) | [PLAN](../../../plans/2026-10-19-mcp-server.md)
 
-**Source:** [`cli.ts`](../src/cli.ts) | [`serve.ts`](../src/serve.ts) | [`http.ts`](../src/http.ts) | [`tools.ts`](../src/tools.ts) | [`actions.ts`](../src/actions.ts) | [`control.ts`](../src/control.ts) | [`messages.ts`](../src/messages.ts) | [`files.ts`](../src/files.ts) | [`register.ts`](../src/register.ts) | [`log.ts`](../src/log.ts) | [`core.ts`](../src/core.ts)
+**Source:** [`cli.ts`](../src/cli.ts) | [`serve.ts`](../src/serve.ts) | [`http.ts`](../src/http.ts) | [`tools.ts`](../src/tools.ts) | [`actions.ts`](../src/actions.ts) | [`control.ts`](../src/control.ts) | [`messages.ts`](../src/messages.ts) | [`files.ts`](../src/files.ts) | [`register.ts`](../src/register.ts) | [`log.ts`](../src/log.ts) | [`core.ts`](../src/core.ts) | [`status.ts`](../src/status.ts) | [`inference.ts`](../src/inference.ts)
 **Plugin source:** [`session.ts`](../src/session.ts) | [`client.ts`](../src/client.ts) | [`socket.ts`](../src/socket.ts) | [`protocol.ts`](../src/protocol.ts) | [`service.ts`](../src/service.ts) | [`hub.ts`](../src/hub.ts) | [`main-group.ts`](../src/main-group.ts) | [`user.ts`](../src/user.ts) | [`hook.ts`](../src/hook.ts) | [`owner.ts`](../src/owner.ts) | [`config.ts`](../src/config.ts) | [`qr.ts`](../src/qr.ts)
 
 ---
@@ -34,6 +34,8 @@ flowchart LR
     http["http.ts<br/>127.0.0.1:PORT/mcp<br/>Host and Origin guards<br/>bearer token<br/>path /mcp"]
     sdk["MCP SDK<br/>createMcpHandler<br/>McpServer per request"]
     tools["tools.ts<br/>AgentTools"]
+    status["status.ts<br/>Statuses"]
+    inference["inference.ts<br/>inferencePoller"]
     actions["actions.ts<br/>Actions"]
     control["control.ts<br/>Control"]
     messages["messages.ts<br/>ChatItemsWatch"]
@@ -61,6 +63,11 @@ flowchart LR
   tools --> lib
   control --> lib
   serve --> lib
+  tools --> status
+  status --> lib
+  status --> inference
+  serve --> inference
+  inference -->|"GET /running, /props, /slots"| llm["Inference endpoint:<br/>llama-swap or llama-server"]
   lib --> core
   core --> db[("DATA:<br/>simplex_chat.db<br/>simplex_agent.db<br/>tmp")]
   core <-->|"SMP<br/>private routing"| smp["SMP servers"]
@@ -93,10 +100,11 @@ Entry point of the `simplex-mcp` binary.
 | <a id="cli-plugincommands"></a>`pluginCommands` | `session`, `service`, `hook session-start`, `hook turn`, `link`, `reset-owners` |
 | <a id="cli-command"></a>`Command` | `help`, `serve` with `ServeOptions`, `register` with `RegisterOptions`, the plugin commands |
 | <a id="cli-parsecommand"></a>`parseCommand` | command, NAME and options to a `Command`, or the plugin command equal to the joined arguments |
-| <a id="cli-serveoptions"></a>`serveOptions` | defaults and option switch of `serve` |
+| <a id="cli-serveoptions"></a>`serveOptions` | defaults and option switch of `serve`; `--reset-owners` with an `--owners` list and `--inference` with `--approve host` refused |
 | <a id="cli-registeroptions"></a>`registerOptions` | defaults and option switch of `register` |
 | <a id="cli-optionreader"></a>`OptionReader` | `value`: the next argument, required<br>`optionalValue`: the next argument, absent when missing or starting with `--` |
 | <a id="cli-validagentname"></a>`validAgentName` | `^[a-z0-9](-?[a-z0-9])*-?$`, at most 32 characters |
+| <a id="cli-inferenceurl"></a>`inferenceUrl` | `--inference`: an `http` or `https` URL without user name and password, to its origin and path without trailing slashes |
 | <a id="cli-usageerror"></a>`usageError` | `ExitError` with code 2 |
 | <a id="cli-main"></a>`main` | `help`, `serve`, `register`, `session`, `service`, the hooks, `link` and `reset-owners`. `help` prints to stdout. The hooks read stdin and print their JSON output. `link` and `reset-owners` print their text. `serve.ts`, `session.ts` and `service.ts` are imported only for their commands, so a hook process loads only the modules of the hooks: `require` of `dist/cli.js` took 244 ms in place of 680 ms, as the median of 7 runs on a host with a load average of 10 on 8 cores. |
 | top-level catch of `main` | `ExitError`: message on stderr, its code; other errors: `logError`, code 1 |
@@ -108,13 +116,14 @@ Start sequence, event dispatch and stop sequence of one agent.
 | Symbol | Contents |
 |---|---|
 | <a id="serve-ownerentry"></a>`OwnerEntry` | `{memberId, name}` of `--owners` |
-| <a id="serve-serveoptions"></a>`ServeOptions` | name, data folder and its `dataGiven` flag, display name, mode, owners, expiry, reset and token flags, port, QR code size, stop wait |
+| <a id="serve-serveoptions"></a>`ServeOptions` | name, data folder and its `dataGiven` flag, display name, mode, owners, expiry, reset and token flags, port, QR code size, stop wait, inference URL |
 | <a id="serve-runningserver"></a>`RunningServer` | token, `ChatApi`, user, `Actions`, `stop` |
 | <a id="serve-serve"></a>`serve` | `startServer`, then SIGINT and SIGTERM handlers: the first signal stops, a second ends the stop wait |
-| <a id="serve-startserver"></a>`startServer` | data folder, lock, token, headers file, `ChatApi.init`, `startAgent`; cleanup on error |
-| <a id="serve-startagent"></a>`startAgent` | user, `prepareCore`, control group, wiring of `Actions`, `AgentTools`, `Control`, HTTP, event handler, `stop` |
+| <a id="serve-startserver"></a>`startServer` | inference poller with its key, data folder, lock, token, headers file, `ChatApi.init`, `startAgent`; cleanup on error |
+| <a id="serve-startagent"></a>`startAgent` | user, `prepareCore`, control group, wiring of `Actions`, `AgentTools` with the inference poller, `Control`, leftover status messages, HTTP, event handler, `stop` |
 | <a id="serve-registerhint"></a>`registerHint` | the `register` command line printed after the owner setup |
-| <a id="serve-waitforcancelledcards"></a>`waitForCancelledCards` | the fixed wait at stop for cards edited or posted at the stop, used by the plugin's hub as well |
+| <a id="serve-waitforstopmessages"></a>`waitForStopMessages` | the fixed wait at stop for cards edited or posted at the stop and for status deletions, used by the plugin's hub as well |
+| <a id="serve-inferencekey"></a>`inferenceKey` | `SIMPLEX_MCP_INFERENCE_KEY`: visible ASCII characters, otherwise `ExitError` with code 2 |
 | <a id="serve-controlgroup"></a>`controlGroup` | found, created or reset agent control chat |
 | <a id="serve-listen"></a>`listen` | `startHttp`; `EADDRINUSE` to `ExitError` code 1 |
 
@@ -145,7 +154,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-inputs"></a>`ConnectInput`, `SendInput`, `ReceiveInput`, `LeaveInput`, `DownloadInput` | tool inputs |
 | <a id="tools-plansummary"></a>`PlanSummary` | card kind, chat type, name, SimpleX name, peer type, description, welcome, commands, `takesMessage` |
 | <a id="tools-chatfields"></a>`ChatFields` | chat fields of `connect` and `list` results |
-| <a id="tools-agent"></a>`Agent` | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder. The plugin adds the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection. |
+| <a id="tools-agent"></a>`Agent` | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder, inference poller. The plugin adds the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection. |
 | <a id="tools-joinmethod"></a>`JoinMethod` | `prepared`, `prepareChannel`, `viaAddress`, `prepareContact`, `connect` |
 | <a id="tools-schemas"></a>schemas, from `messageSchema` to `downloadOutput` | input and output JSON schemas |
 | <a id="tools-instructions"></a>descriptions, from `connectDescription` to `leaveDescription`, and `instructions` | tool descriptions and server instructions. `instructions` names the host at whose restart actions are cancelled, `server` by default. |
@@ -154,8 +163,9 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-registertools"></a>`registerTools` | `registerTool` for each definition and each extra one, with `_meta` on action tools in mode `host` |
 | <a id="tools-download"></a>`Download` | one download: its promise, chat, item, file ID, size, path, the last fileSource seen, received bytes and their time, check timer |
 | <a id="tools-agenttools"></a>`AgentTools` | constructor with the `Agent`, the mode or a function that returns it, and the session number of the plugin. The mode is read at each use of `mode`. |
+| <a id="tools-agenttools-leaving"></a>`AgentTools.leaving`, `AgentTools.statuses` | the chats being left; the `Statuses`, with the eligibility read `showsStatus` after `knownChat` |
 | <a id="tools-agenttools-register"></a>`AgentTools.register` | `registerTools` with `AgentTools.call` |
-| <a id="tools-agenttools-call"></a>`AgentTools.call` | handler result to `CallToolResult`; errors to `isError` |
+| <a id="tools-agenttools-call"></a>`AgentTools.call` | the call registered as running in `Statuses` until it ends; handler result to `CallToolResult`; errors to `isError` |
 | <a id="tools-agenttools-perform"></a>`AgentTools.perform` | perform step of an approved action, which is the mode setter for a `mode` action |
 | <a id="tools-agenttools-givechat"></a>`giveChat`, `owns`, `claim` | the plugin's chat owners. A chat is the session's when no session ID is set or the chat's owner is that ID. `claim` sets the owner of a chat without one. It is called at a connection, and when `connect` names a known chat (`ownChat`). The hub calls it when a pending connection completes. |
 | <a id="tools-agenttools-onevent"></a>`onEvent` | events to the file handlers, connect completions and the item watch, for `serve` and the plugin's sessions |
@@ -165,15 +175,18 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-agenttools-onnewitems"></a>`onNewItems`, `onFile`, `onFileComplete`, `onFileError`, `onFileCancelled`, `onFileDescription` | file events |
 | <a id="tools-agenttools-oncontactconnected"></a>`onContactConnected`, `onUserJoinedGroup` | completion of connect actions by events |
 | <a id="tools-agenttools-actionresult"></a>`actionResult` | wait for the decision, result fields, removal |
+| <a id="tools-agenttools-shownote"></a>`showNote`, `statusRefusal`, `showsStatus` | the note of a `send` with `live: true` and its log line; the first refusal of a status message in a chat; eligibility: `postingRefusal` and `statusRefusal` both without a refusal |
 | <a id="tools-agenttools-attachment"></a>`attachment`, `isRefused`, `fileToSend`, `resizedCopy` | the file of a `send` |
 | <a id="tools-agenttools-copyforsending"></a>`copyForSending`, `chatFiles`, `deleteChatFiles` | `/forward` copies; the files of a chat, forwarded ones included; its downloads cancelled, also those the core continues after a restart |
-| <a id="tools-agenttools-leavechat"></a>`leaveChat` | perform step of `leave` and `/leave`; the chat's forwarded files deleted |
+| <a id="tools-agenttools-leavechat"></a>`leaveChat` | perform step of `leave` and `/leave`: the chat marked as being left, its status message deleted, then the chat; the chat's forwarded files deleted |
 | <a id="tools-agenttools-download"></a>`download`, `fileServers`, `unknownServers` | the `download` call before its action |
 | <a id="tools-agenttools-startdownload"></a>`startDownload`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived` | a download's steps |
+| <a id="tools-agenttools-deleteleftoverstatuses"></a>`deleteLeftoverStatuses` | at start, the leftover status messages of each eligible chat deleted |
 | <a id="tools-agenttools-agentchats"></a>`agentChats`, `knownChat` | the agent's chats; a checked chat reference |
 | <a id="tools-agenttools-selfsender"></a>`selfSender`, `toMessages` | the agent's name and peer type in a chat, its incognito name in an incognito chat, or its profile name when the incognito name can't be read; the items of one chat as messages with that name, for the results of `connect`, `send` and `receive` |
 | <a id="tools-classifyplan"></a>`classifyPlan` | `apiConnectPlan` response to a join plan or a known chat |
 | <a id="tools-chatsubject"></a>`chatSubject`, `isConnected`, `isActive`, `memberCurrent`, `memberCurrentOrPending` | chat and member predicates shared with `control.ts` and `hub.ts` |
+| <a id="tools-postingrefusal"></a>`postingRefusal` | a chat that is not connected, or a group where the agent's role is `observer` or `relay`; used by `send` and by `showsStatus` |
 | <a id="tools-customdataof"></a>`customDataOf`, `setChatData`, `ownerOf` | a chat's custom data; the plugin's owner key `simplexMcpOwner` |
 | <a id="tools-fitsmessage"></a>`tooLongText`, `fitsMessage`, `quoteContent` | the refusal text of `send` and `reply` for a message that is too long. `fitsMessage` checks that the message as the core sends it, with its quote, is within `maxMessageLength`, 15602 bytes. The check is used for `send`, `reply`, the post of `/forward`, and the parts and quotes of the plugin's posts. |
 | <a id="tools-realfile"></a>`realFile` | real path, size, inode and change time of a file |
@@ -309,6 +322,110 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="log-chaintext"></a>`chainText`, `errorChain` | `SimpleX error: <type chain>: <scalar fields>`, details at most 500 characters |
 | <a id="log-fulldomainname"></a>`fullDomainName` | `SimplexDomain` to `name.simplex` or `name.testing` |
 
+### [2.11 `status.ts`](../src/status.ts)
+
+Status messages: one per chat, owned by `AgentTools` (the `statuses` field and the constructor of [`AgentTools`](../src/tools.ts)). Texts, labels and events are listed in [API 1.10](api.md#110-status-message).
+
+| Symbol | Contents |
+|---|---|
+| <a id="status-status"></a>`Status` | `LiveMessage`, creation time, render count, label, note, tick timer |
+| <a id="status-constants"></a>constants, from `frames` to `deleteWindow` | frames; 50 renders by ticks, 59 in all; gaps of 3 s, 20 s and 5 min; 30 min without calls; 23 h lifetime; 30 h − 10 min leftover window |
+| <a id="status-statuses"></a>`Statuses` | statuses by chat, running calls, time of the last call start or end, deletions in progress, failed-poll flag, stop flag |
+| <a id="status-statuses-startcall"></a>`startCall` | one running call registered, and removed by the returned function; the time of the last call set at both |
+| <a id="status-statuses-start"></a>`start` | a status for a chat without one, before the stop; its first tick at once |
+| <a id="status-statuses-show"></a>`show` | a note: refused after the stop; a status 23 h old replaced; refused at 59 renders; rendered at once; a new status scheduled |
+| <a id="status-statuses-end"></a>`end` | the status removed, its timer cleared, `LiveMessage.end("")` kept among the deletions in progress |
+| <a id="status-statuses-stop"></a>`stop` | every status ended, the deletions awaited; the count of statuses with a render returned |
+| <a id="status-statuses-deleteleftovers"></a>`deleteLeftovers` | the agent's own live message items of a chat, younger than 30 h − 10 min, read in pages of 100 and deleted with mode `broadcast` |
+| <a id="status-statuses-created"></a>`created`, `isCurrent`, `failed` | a `LiveMessage` with interval 0; after its failed command, the error is logged and the status is ended while it is current; the identity check |
+| <a id="status-statuses-tick"></a>`tick` | eligibility read, end conditions, label, render, next tick |
+| <a id="status-statuses-render"></a>`render`, `schedule` | one `LiveMessage.update`; the next tick on an unreferenced timer |
+| <a id="status-statuses-label"></a>`label`, `inferred` | the inference state, the pending actions with open calls and the latest running call other than `receive`; a failed poll logged unless the previous poll failed |
+| <a id="status-statustext"></a>`statusText`, `statusLabel`, `modelText`, `otherLabel` | the line, the note under it, the labels |
+
+States of one chat:
+
+| State | `statuses` entry | Renders | `endings` |
+|---|---|---|---|
+| none | absent | | |
+| active | present | 0 to 49 | |
+| frozen | present | 50 to 59 | |
+| ending | absent | | its `LiveMessage.end("")` |
+
+```
+tick(chat, status):                                            status.ts
+  shown = allowed(chat): knownChat, then showsStatus           the constructor of AgentTools
+    a failure: shown false; logged while the status is current
+  the status ended or replaced meanwhile: return               isCurrent
+  idle = renders ≥ 50, no running call other than receive,
+         30 min since the last call start or end
+  not shown, 23 h since creation, or idle: end(chat); return   end
+  renders 1 to 48: label read                                  label
+    the status ended or replaced meanwhile: return             isCurrent
+  renders < 50: render                                         render
+  next tick: a tenth of the age, 3 s to 20 s; 5 min from 50    schedule
+```
+
+- Each await in `tick` is followed by the identity check, and the render is called after the check without an await between them ([`Statuses.tick`, `isCurrent`](../src/status.ts)).
+- In `end`, the status is removed from the map before `LiveMessage.end` is called; the library's pending update is cleared there, so the deletion is the last command of the item ([`Statuses.end`](../src/status.ts), [`LiveMessage.end`](../../simplex-chat-nodejs/src/api.ts)).
+- Commands of one `LiveMessage` are run in one chain; after a failed command, the error is logged, the status is ended, and its deletion is queued after the commands already queued ([`LiveMessage.queueText`](../../simplex-chat-nodejs/src/api.ts), [`Statuses.failed`](../src/status.ts)).
+- At run time, `actions`, `log`, `messages`, `simplex-chat` and `@simplex-chat/types` are imported by `status.ts`; `tools` and `inference` are imported as types only (the imports of [`status.ts`](../src/status.ts)).
+
+### [2.12 `inference.ts`](../src/inference.ts)
+
+The poller of `--inference`, created in `startServer` and passed to `AgentTools` in `Agent.inference` ([`startServer`, `startAgent`](../src/serve.ts)).
+
+| Symbol | Contents |
+|---|---|
+| <a id="inference-endpoint"></a>`Endpoint` | URL and key |
+| <a id="inference-inferencestate"></a>`InferenceState` | `loading` with a model; `prompt` with a model and the tokens read; `output` with a model and a rate; `idle` |
+| <a id="inference-slot"></a>`Slot` | proxy, model, slot ID, task ID, processing flag, tokens decoded, prompt tokens read, time of the answer |
+| <a id="inference-constants"></a>constants, from `deadline` to `largeBody` | 1 s deadline, 1 MiB body, 4 proxies, 64 slots, model ID pattern, loopback host names, the error text of a body over 1 MiB |
+| <a id="inference-inferencepoller"></a>`inferencePoller` | the poll function; for a call within 3 s of the last poll's start, that poll is returned |
+| <a id="inference-sample"></a>`sample` | `/running` of llama-swap, or a plain llama-server at URL; the slots of the allowed proxies |
+| <a id="inference-proxyslots"></a>`proxySlots` | `/props`, then `/slots` of one server |
+| <a id="inference-slotof"></a>`slotOf`, `stateOf`, `rateOf` | slot fields; the state of the processing slots; tokens per second |
+| <a id="inference-get"></a>`get`, `bodyJson`, `failureText` | one GET with `redirect: "error"`; the body as JSON within 1 MiB; the error text |
+| <a id="inference-allowedproxy"></a>`allowedProxy` | the origin of a proxy URL that may be polled |
+| <a id="inference-modelname"></a>`modelName`, `fieldOf`, `listOf`, `countOf` | a model ID by the pattern; reads of untyped JSON; counts as non-negative safe integers |
+
+```
+poll():                                                        inferencePoller, inference.ts
+  the last poll started less than 3 s ago: its promise
+  sample, with one 1 s deadline for all its requests            sample
+  a sample of slots: the state from these slots and the         stateOf
+    previous ones; these slots become the previous ones
+  another sample: the previous slots emptied; the sample is the state
+  a failed sample: the previous slots kept; the poll fails
+sample():                                                      sample
+  GET URL/running with the key                                  get
+    404: proxySlots(URL, with the key, model unknown)           proxySlots
+  entries: model by the pattern, state, proxy                   modelName
+  a model starting: loading, that model
+  no model ready: a model stopping ? loading : nothing known
+  proxies: allowed proxies of ready models, distinct, at most 4 allowedProxy
+    none: nothing known
+  proxySlots of each proxy without the key, in parallel         proxySlots
+    every read fails: the first failure
+    a read gives loading: loading
+    otherwise: the slots of all reads
+proxySlots(SERVER, model):                                     proxySlots
+  GET SERVER/props; 503: loading, model                         get
+  is_sleeping true: an empty slot list
+  GET SERVER/slots; 503: loading, model                         get
+  the first 64 slots, with the time of the answer               slotOf
+stateOf(slots, previous):                                      stateOf
+  no slot processes: idle
+  model: the model of the processing slots when they share one
+  no processing slot decoded a token: prompt, the sum of tokens read
+  otherwise: output, rate                                       rateOf
+rateOf(decoding, previous):                                    rateOf
+  per decoding slot, the previous slot of the same proxy, ID and task that
+    processed, had decoded tokens, no more than now, at an earlier time:
+    tokens decoded since, per second
+  the sum, when above 0
+```
+
 ---
 
 ## 3. State
@@ -326,8 +443,14 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | Forwards | [`AgentTools.forwarding`](../src/tools.ts), the copy for the post per file ID | `forwardFile` | `downloadFile`, before it moves a forwarded file |
 | Rejected files | [`AgentTools.rejectedFiles`](../src/tools.ts) | [`downloadResult`](../src/tools.ts) | the file field; [`download`](../src/tools.ts), which then skips the files approval |
 | Count of file descriptions | [`AgentTools.describedFiles`](../src/tools.ts), with the change signal `fileDescriptions` | `onFileDescription` | `fileServers` |
+| Chats being left | [`AgentTools.leaving`](../src/tools.ts) | [`leaveChat`](../src/tools.ts) | [`statusRefusal`](../src/tools.ts) |
+| Status messages | [`Statuses.statuses`](../src/status.ts), one per chat | `start`, `show`, `end` | ticks, `show`, `stop` |
+| Running calls | [`Statuses.calls`, `Statuses.lastCall`](../src/status.ts) | `startCall`, from [`AgentTools.call`](../src/tools.ts) | labels, the idle check of ticks |
+| Deletions in progress | [`Statuses.endings`](../src/status.ts) | `end` | `stop` |
+| Failed-poll flag | [`Statuses.inferenceFailed`](../src/status.ts) | `inferred` | `inferred` |
+| Last poll and previous slots | `latest` and `previous` of [`inferencePoller`](../src/inference.ts) | each poll | calls within 3 s; the rate of the next poll |
 | Members of the control chat | [`Control.members`](../src/control.ts) | [`refreshMembers`](../src/control.ts) | approver checks |
-| Mode, expiry, owners list, stop wait | `ServeOptions` of the run. The mode is kept in `Actions.mode` and in each action as well, [`ActionRecord.mode`](../src/actions.ts). | CLI | all modules |
+| Mode, expiry, owners list, stop wait, inference URL | `ServeOptions` of the run. The mode is kept in `Actions.mode` and in each action as well, [`ActionRecord.mode`](../src/actions.ts). | CLI | all modules |
 
 ### 3.2 Chat database custom data
 
@@ -361,24 +484,25 @@ The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the No
 
 ### 4.1 Start
 
-1. Data folder, lock, token and headers file are prepared ([`startServer`](../src/serve.ts)).
+1. With `--inference`, `SIMPLEX_MCP_INFERENCE_KEY` is checked and the poller is created; then the data folder, lock, token and headers file are prepared ([`startServer`, `inferenceKey`](../src/serve.ts)).
 2. libsimplex for SQLite is loaded by `ChatApi.init`, and the databases are migrated with confirmation `yesUp` ([`startServer`](../src/serve.ts), [`ChatApi.init`](../../simplex-chat-nodejs/src/api.ts)).
-3. Three log lines: version and NAME, data folder, mode ([`startServer`](../src/serve.ts)).
+3. Three log lines: version and NAME, data folder, mode; with `--inference`, a fourth: `Inference endpoint: URL` ([`startServer`](../src/serve.ts)).
 4. The active user is read, or created with display name `--display-name` or NAME, empty full name and peer type `agent` ([`startAgent`](../src/serve.ts)).
 5. `prepareCore` reads the network config and sets it with `smpProxyMode` `always` and `smpProxyFallback` `allowProtected` ([`startAgent`](../src/serve.ts), [`prepareCore`](../src/core.ts)).
 6. `prepareCore` sets `DATA/tmp` as the core's temp folder and deletes `DATA/files/sent` ([`prepareCore`](../src/core.ts)).
 7. Events are buffered, and the chat is started ([`startAgent`](../src/serve.ts)).
 8. A `--display-name` different from the profile, or a peer type other than `agent`, is applied with one `apiUpdateProfile` ([`startAgent`](../src/serve.ts), [`updatedUser`](../src/core.ts)).
 9. The agent control chat is found by its marker, created with counter 1, or reset with `--reset-owners` ([`startAgent`, `controlGroup`](../src/serve.ts)).
-10. `Actions`, `ChatItemsWatch`, `AgentTools` and `Control` are created; the counter is taken from the marker ([`startAgent`](../src/serve.ts)).
+10. `Actions`, `ChatItemsWatch`, `AgentTools` with the poller and its `Statuses`, and `Control` are created; the counter is taken from the marker ([`startAgent`](../src/serve.ts), the constructor of [`AgentTools`](../src/tools.ts)).
 11. `Control.load` sets `Actions.lost` for a lost control chat. Otherwise it updates the group name and command menu when they differ in the control chat's profile read at the start, as in 0.2, and reads the members ([`Control.load`, `updateProfile`, `changeGroupProfile`](../src/control.ts)).
-12. The HTTP server listens; with the port in use, the process exits with code 1 ([`startAgent`, `listen`](../src/serve.ts)). Until step 14 ends, requests to `/mcp` that pass the token check get 503 with `Retry-After: 1` ([`startHttp`](../src/http.ts), the `started` flag of [`startAgent`](../src/serve.ts)).
-13. `server.json` is written ([`startAgent`](../src/serve.ts)).
-14. The server runs the owner setup, `Control.start`; after an error, HTTP is closed and the error is rethrown ([`startAgent`](../src/serve.ts)).
-15. `Listening on http://127.0.0.1:PORT/mcp` ([`startAgent`](../src/serve.ts)).
-16. Buffered events are replayed, then live events are dispatched ([`startAgent`](../src/serve.ts), [`bufferEvents`](../src/core.ts)).
+12. Status messages left by an earlier run are deleted in each eligible chat; after the control chat is lost, every chat is ineligible. A failed chat list is logged as `status messages: ERROR`, and the start continues ([`startAgent`](../src/serve.ts), [`AgentTools.deleteLeftoverStatuses`, `statusRefusal`](../src/tools.ts), [`Statuses.deleteLeftovers`](../src/status.ts)).
+13. The HTTP server listens; with the port in use, the process exits with code 1 ([`startAgent`, `listen`](../src/serve.ts)). Until step 15 ends, requests to `/mcp` that pass the token check get 503 with `Retry-After: 1` ([`startHttp`](../src/http.ts), the `started` flag of [`startAgent`](../src/serve.ts)).
+14. `server.json` is written ([`startAgent`](../src/serve.ts)).
+15. The server runs the owner setup, `Control.start`; after an error, HTTP is closed and the error is rethrown ([`startAgent`](../src/serve.ts)).
+16. `Listening on http://127.0.0.1:PORT/mcp` ([`startAgent`](../src/serve.ts)).
+17. Buffered events are replayed, then live events are dispatched ([`startAgent`](../src/serve.ts), [`bufferEvents`](../src/core.ts)).
 
-After an error inside `startAgent` (steps 4-16) the chat is closed; after any error once the lock is taken, the lock is released ([`startServer`](../src/serve.ts)).
+After an error inside `startAgent` (steps 4-17) the chat is closed; after any error once the lock is taken, the lock is released ([`startServer`](../src/serve.ts)).
 
 ### 4.2 Event dispatch
 
@@ -405,15 +529,16 @@ Owner commands are queued in a second chain, independent of the membership chain
 
 ### 4.3 Stop
 
-On `SIGINT` or `SIGTERM` the server runs one stop; a later signal ends its wait for cancelled cards ([`serve`](../src/serve.ts)). `RunningServer.stop`, made by [`startAgent`](../src/serve.ts):
+On `SIGINT` or `SIGTERM` the server runs one stop; a later signal ends its wait for cancelled cards and status deletions ([`serve`](../src/serve.ts)). `RunningServer.stop`, made by [`startAgent`](../src/serve.ts):
 
 1. Events are ignored from now on.
 2. `Actions.stop` starts: new actions are refused with `The server is stopping.`; the expiry timers are cleared; cards being posted are awaited; pending and performing actions are marked interrupted; the stop signal of the performs is aborted, which ends the wait of a `connect` for its connection; their cards are edited, or posted when they have no card; outcome edits already in progress are awaited ([`Actions.stop`](../src/actions.ts)).
 3. In parallel with step 2, the HTTP server is closed with all connections, and open calls are aborted ([`stopHttp`](../src/http.ts)).
 4. `Cancelled K action(s).` when K > 0 (`stop` in [`startAgent`](../src/serve.ts)).
-5. When cards were edited or posted at the stop and the control chat is not lost, the server waits `--stop-wait` seconds, 10 by default, for them to be sent; a second signal ends the wait (`stop` in [`startAgent`](../src/serve.ts), [`waitForCancelledCards`](../src/serve.ts)).
-6. `chat.close()`: the chat is stopped, then the store is closed ([`ChatApi.close`](../../simplex-chat-nodejs/src/api.ts)).
-7. The lock is removed, `Stopped.` is logged, and the process exits with code 0, or 1 after an error (`stop` in [`startAgent`](../src/serve.ts), [`serve`](../src/serve.ts)).
+5. `Statuses.stop`: later starts are ignored and notes refused; each status message is ended, and the deletion commands are awaited; the status messages with a render are counted (`stop` in [`startAgent`](../src/serve.ts), [`Statuses.stop`](../src/status.ts)).
+6. When cards were edited or posted at the stop and the control chat is not lost, or status messages had a render, the server waits `--stop-wait` seconds, 10 by default, for them to be sent; a second signal ends the wait (`stop` in [`startAgent`](../src/serve.ts), [`waitForStopMessages`](../src/serve.ts)).
+7. `chat.close()`: the chat is stopped, then the store is closed ([`ChatApi.close`](../../simplex-chat-nodejs/src/api.ts)).
+8. The lock is removed, `Stopped.` is logged, and the process exits with code 0, or 1 after an error (`stop` in [`startAgent`](../src/serve.ts), [`serve`](../src/serve.ts)).
 
 Performs in progress are not awaited; when one ends, its card stays as edited at the stop and no line is logged, because the action is interrupted ([`Actions.runPerform`](../src/actions.ts)).
 
@@ -553,7 +678,7 @@ Outcomes are posted after `done` and `failed` ([`Actions.runPerform`](../src/act
 | mode `host` | nothing stored; reply `Approvals apply in mode requests; this server runs in mode host.` | downloads get no card, so the command has none to act on | [`Control.ownerCommand`](../src/control.ts) |
 | removal | `/revoke CHAT`: the `simplexMcp` key is removed, other keys kept | `/receive CHAT off`: the `simplexMcpFiles` key is removed | [`Control.revoke`](../src/control.ts) |
 | use | mode `requests`, and `approvedById` equal to the `groupMemberId` of a current approver | the same | [`Control.standingApprover`](../src/control.ts) |
-| scope | `send` | `download` of a file whose servers are all known | [`AgentTools.send`, `download`](../src/tools.ts) |
+| scope | `send`; status messages and notes in the chat ([API 1.10](api.md#110-status-message)), so after `/revoke` the chat's status message is deleted at its next tick | `download` of a file whose servers are all known | [`AgentTools.send`, `statusRefusal`, `download`](../src/tools.ts), [`Statuses.tick`](../src/status.ts) |
 | decider shown | `safeName(approvedBy)` | the same | [`Control.standingApprover`](../src/control.ts) |
 | storage | the chat's custom data; removed with the chat by `leave` | the same | [`AgentTools.leaveChat`](../src/tools.ts) |
 
@@ -669,6 +794,24 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 - At every start the server sets private message routing: `smpProxyMode` `always`, `smpProxyFallback` `allowProtected` ([`prepareCore`](../src/core.ts)).
 - With `incognito: true` the join methods connect incognito ([`AgentTools.join`](../src/tools.ts)); the core then uses a random profile for that chat ([PLAN, Participants](../../../plans/2026-10-19-mcp-server.md#participants)).
 
+### 6.8 Status message and inference endpoint
+
+| Rule | Code |
+|---|---|
+| status messages and notes are sent only in eligible chats: the agent can post there; a chat with a person, a group or a business chat; mode `requests`; the control chat not lost; a standing approval of messages by a current approver ([API 1.10](api.md#110-status-message)) | [`AgentTools.statusRefusal`, `showsStatus`, `postingRefusal`](../src/tools.ts) |
+| eligibility is read at each tick, so after `/revoke`, a lost approver, a lost control chat, a lost connection or an `observer` or `relay` role the status message is deleted within one gap: at most 20 s, or 5 min from 50 renders | [`Statuses.tick`, `schedule`](../src/status.ts) |
+| in a group, the status message, its labels and its notes are sent to the group; a status is started for any message returned by `receive`, whatever its sender | [`AgentTools.receive`](../src/tools.ts) |
+| labels are the same for every chat: running calls, waits for approval and the inference state of other chats are shown in each status message | [`Statuses.label`](../src/status.ts) |
+| a note is sent without an action, so without a card or an outcome in the control chat; it is text only, at most 2000 characters, and each note is printed in the terminal | [`AgentTools.send`, `showNote`](../src/tools.ts) |
+| a status message gets at most 59 renders and one deletion | [`liveRenders`, `maxRenders`, `Statuses.show`, `tick`](../src/status.ts) |
+| model IDs are kept only when they match `^[\w.:/+@-]{1,64}$`, and they are shown in a code span; counts are kept only as non-negative safe integers | [`modelPattern`, `modelName`, `countOf`](../src/inference.ts), [`statusLabel`, `modelText`](../src/status.ts) |
+| poll error texts are folded to one line; the parser's text is replaced by `invalid JSON` | [`get`, `bodyJson`](../src/inference.ts) |
+| URL is `http` or `https` without user name and password; the key is read from the environment, accepted with visible ASCII characters only, and sent to URL only | [`inferenceUrl`](../src/cli.ts), [`inferenceKey`](../src/serve.ts), [`get`](../src/inference.ts) |
+| a proxy of `/running` is polled at its origin, without the key, only when its host name equals URL's, or when both are `localhost`, `127.0.0.1` or `[::1]`; at most 4 distinct proxies per poll | [`sample`, `allowedProxy`](../src/inference.ts) |
+| requests are GET of `/running`, `/props` and `/slots` only; redirects are refused; one 1 s deadline is set for a whole poll; a body over 1 MiB, by `Content-Length` or by the bytes read, is refused; at most 64 slots of a server are read | [`inferencePoller`, `sample`, `proxySlots`, `get`, `bodyJson`](../src/inference.ts) |
+| `/slots` is skipped when `is_sleeping` of `/props` is true | [`proxySlots`](../src/inference.ts) |
+| polls are made only for renders 2 to 49, at most one per 3 s for all status messages | [`Statuses.tick`](../src/status.ts), [`inferencePoller`](../src/inference.ts) |
+
 ---
 
 ## 7. Limits
@@ -683,6 +826,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | error assumed in the largest card | 600 × `€` | [`longestError`](../src/control.ts) |
 | message as the core sends it | 15602 bytes, counted with 600 bytes of envelope; `send` refuses a longer one, and the post of `/forward` leaves out its quote of the card | [`maxMessageLength`, `messageEnvelope`, `fitsMessage`](../src/tools.ts), [`Control.forward`](../src/control.ts) |
 | `send.text` | 1 to 12000 characters | [`sendSchema`](../src/tools.ts) |
+| `send.text` with `live` | at most 2000 characters (code points) | [`liveTextLength`, `AgentTools.send`](../src/tools.ts) |
 | `connect.message` | 1 to 2000 characters | [`connectSchema`](../src/tools.ts) |
 | `send.mention` | 1 to 3 unique member IDs | [`sendSchema`](../src/tools.ts) |
 | `wait` | 0 to 86400 s | [`connectSchema`, `sendSchema`, `receiveSchema`, `downloadSchema`](../src/tools.ts) |
@@ -690,7 +834,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | `limit` | 1 to 100, default 50 | [`sendSchema`, `receiveSchema`, `defaultLimit`](../src/tools.ts) |
 | `connect` snapshot | last 50 items | [`messagesOnConnect`](../src/tools.ts) |
 | collected items per action or call | 100, then their IDs kept as overflow until deleted | [`maxCollected`, `ChatItemsWatch.collect`](../src/messages.ts) |
-| unread page | 100 items | [`pageSize`](../src/messages.ts) |
+| unread page, leftover status page | 100 items | [`pageSize`](../src/messages.ts), [`Statuses.deleteLeftovers`](../src/status.ts) |
 | chat list read | one read of 1000000 chats | [`maxChats`](../src/tools.ts) |
 | `download` wait, default | 60 s | [`downloadWait`](../src/tools.ts) |
 | download check | every 60 s | [`downloadCheck`](../src/tools.ts) |
@@ -705,6 +849,18 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | agent NAME | 1 to 32 characters | [`validAgentName`](../src/cli.ts) |
 | display name | 50 characters, `mkValidName` rules | [`prohibitedNameChars`, `maxNameLength`, `validName`](../src/messages.ts) |
 | port | 1 to 65535, default 5226 | [`serveOptions`](../src/cli.ts) |
+| status renders by ticks | 50; the 50th shows the frozen line | [`liveRenders`, `statusText`](../src/status.ts) |
+| status renders in all, with notes | 59 | [`maxRenders`, `Statuses.show`](../src/status.ts) |
+| status tick gap | a tenth of the age, 3 s to 20 s; 5 min from 50 renders | [`firstGap`, `lastGap`, `checkGap`, `Statuses.schedule`](../src/status.ts) |
+| status without calls | 30 min, from 50 renders, then deleted | [`idleEnd`, `Statuses.tick`](../src/status.ts) |
+| status lifetime | 23 h | [`statusLifetime`](../src/status.ts) |
+| leftover status age at start | below 30 h − 10 min | [`deleteWindow`, `Statuses.deleteLeftovers`](../src/status.ts) |
+| inference poll deadline | 1 s for all requests of a poll | [`deadline`, `inferencePoller`](../src/inference.ts) |
+| inference poll reuse | 3 s | [`inferencePoller`](../src/inference.ts) |
+| inference answer body | 1 MiB | [`maxBody`](../src/inference.ts) |
+| inference proxies | 4 per poll | [`maxProxies`](../src/inference.ts) |
+| inference slots | 64 per server | [`maxSlots`, `proxySlots`](../src/inference.ts) |
+| model ID | 1 to 64 characters of `[\w.:/+@-]` | [`modelPattern`](../src/inference.ts) |
 
 ---
 
@@ -874,12 +1030,12 @@ Data flow of a prompt from the session group:
 | <a id="hub-session-queue"></a>`Session.queue`, `refusesCommand` | the `delivery` chain; a one-line `/` text of a member other than `User` who is not an approver |
 | <a id="hub-session-approves"></a>`Session.approves`, `isUser`, `setMode`, `declineHost`, `store`, `savePending` | approver check: not `User`, the role `admin` or `owner` in the session group; the member of the contact `Hub.userContactId`; the mode and its record in the group's custom data; `hostDeclined` and its record; fields written into `session.json`; a pending connection recorded, those older than a day dropped |
 | `Hub.userContactId` | the hub's contact marked `simplexMcpUser`, read at the start |
-| <a id="hub-hub-open"></a>`Hub.open` | core `_hub`, Main group found or created, `MainGroup` load and start, `User` unless it fails, the contact of `User`, the stored sessions, events, the timer of the list of sessions, every 2 s |
+| <a id="hub-hub-open"></a>`Hub.open` | core `_hub`, Main group found or created, `MainGroup` load and start, `User` unless it fails, the contact of `User`, the stored sessions, the status messages left in their chats, events, the timer of the list of sessions, every 2 s |
 | <a id="hub-hub-configure"></a>`Hub.configure`, `resetOwners` | expiry of all sessions and the Main group name. The Main group is replaced at once, even while owners exist. |
 | <a id="hub-hub-session"></a>`Hub.session` | the open session, renamed when its name changed, or a new `Session` with its stored or new group. The owners are invited to a new group. |
 | <a id="hub-hub-sessionstext"></a>`Hub.sessionsText`, `join`, `inviteOwner` | `SessionGroups` of the Main group. `sessionsText` is the text of the list of sessions: the lines of the running sessions by number, then `⚪ Not running: ` with the other sessions newest first, or `No sessions.` The last line keeps the most names for which the text, with the count of the rest, fits one message with the given quote; a binary search finds them. |
 | <a id="hub-hub-showsessions"></a>`Hub.showSessions`, `notRunningLine` | one render at a time: the records of the sessions read, and the text passed to `MainGroup.showList`; a failure is logged as `list of sessions: ERROR`. `notRunningLine` is the last line with the first K names and the count of the rest. |
-| <a id="hub-hub-stop"></a>`Hub.stop` | the timer of the list cleared, actions stopped, events awaited, the running render awaited, one more render with every session not running, cancelled cards awaited up to 10 s, steps ended, cores closed |
+| <a id="hub-hub-stop"></a>`Hub.stop` | the timer of the list cleared, actions and then status messages of each session stopped, events awaited, the running render awaited, one more render with every session not running, a 10 s wait for the cancelled cards and the status deletions, steps ended, cores closed |
 | <a id="hub-hub-storedgroup"></a>`storedGroup`, `createSessionGroup` | the group of `session.json` with a matching session number; a new group with `User` added |
 | <a id="hub-hub-onevent"></a>`Hub.onEvent` | event dispatch. Pending connections are claimed at `contactConnected` and `userJoinedGroup`. A session group's membership events go to its `Control`, `sendTools`, `announceRights` and `askMode`, one at a time. |
 | <a id="hub-notallowedforuser"></a>`notAllowedForUser` | `NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` It is posted for a prompt of `User` refused by a group preference, including one that is on only for roles above that of `User`. |
@@ -1060,7 +1216,7 @@ ServiceClient.ensureService(VERSION):                 client.ts
    - Otherwise the ready line is `error: Another service uses ROOT (PID N). If no service runs, remove ROOT/service.lock.`, and the process exits with code 1.
 2. The stored sessions are read with their aliases, and the next number is set (the constructor of [`Service`](../src/service.ts)).
 3. The service listens on the socket before the hub opens, and requests wait for the hub ([`Service.start`, `withHub`](../src/service.ts)).
-4. The service reads the options in `openHub` ([`Service.openHub`](../src/service.ts)). `Hub.open` then opens the core `_hub` with profile `Claude`, and finds the Main group by its marker or creates it. It runs `MainGroup.load` and `start`, with a link while no owner is in the Main group. The core `_user` opens, and connects to `Claude` at the first start. A `Session` opens for each stored session, prompts are held for 30 s, and events are dispatched ([`Hub.open`](../src/hub.ts)).
+4. The service reads the options in `openHub` ([`Service.openHub`](../src/service.ts)). `Hub.open` then opens the core `_hub` with profile `Claude`, and finds the Main group by its marker or creates it. It runs `MainGroup.load` and `start`, with a link while no owner is in the Main group. The core `_user` opens, and connects to `Claude` at the first start. A `Session` opens for each stored session. In the eligible chats of each session, the status messages left by an earlier run are deleted, as in step 12 of [4.1](#41-start); a failed chat list is logged as `status messages of session N: ERROR` ([`Hub.open`](../src/hub.ts)). Prompts are held for 30 s, and events are dispatched ([`Hub.open`](../src/hub.ts)).
 5. When the hub fails to open, the listener closes and the lock is released. The service answers the requests that waited with status 500 ([`Service.start`](../src/service.ts)).
 6. The stop timer and the hourly log trim start. The titles held at the last stop are read from `ROOT/titles.json` and taken as new `/title` requests. The service logs `SimpleX MCP service VERSION, data folder ROOT` and writes the ready line `ready` ([`Service.start`, `runService`](../src/service.ts)).
 
@@ -1091,7 +1247,7 @@ After a stop, `Hub.onEvent` ignores events ([`Hub.onEvent`](../src/hub.ts)). Oth
 On `SIGINT`, `SIGTERM`, `POST /stop` or the stop timer ([`Service.shutdown`](../src/service.ts)):
 
 1. Timers are cleared, the held titles are saved in `ROOT/titles.json`, the listener closes, and open streams are destroyed.
-2. `Hub.stop` stops the actions of every session, and edits their cards to `Cancelled: the server stopped.` It awaits the queued group events, and Claude edits the list of sessions once more, with every session not running. When cards were cancelled, they and that edit get 10 s to be sent. Then the download checks stop, and the cores `_user` and `_hub` close ([`Hub.stop`](../src/hub.ts)).
+2. `Hub.stop` stops the actions of every session, and edits their cards to `Cancelled: the server stopped.` Then the status messages of the session are ended by `Statuses.stop`, and their deletion commands are awaited, as in step 5 of [4.3](#43-stop). It awaits the queued group events, and Claude edits the list of sessions once more, with every session not running. When cards were edited or posted in a session group that is not lost, or status messages had a render, `Stopping: sending ...` is logged, and they and that edit get 10 s to be sent. Then the download checks stop, and the cores `_user` and `_hub` close ([`Hub.stop`](../src/hub.ts), [`waitForStopMessages`](../src/serve.ts)).
 3. The service logs `Cancelled K action(s).`, releases the lock and logs `Stopped.` The process exits after the `/stop` reply is sent, or after its client disconnects before the reply is written.
 
 ### 8.5 Approval model
@@ -1268,7 +1424,7 @@ Sources: [`Session.onMessage`, `turn`, `endPermissions`, `prompt`, `deliver`, `r
 | length of a note of Claude Code's own prompt | 200 characters, the last one `…` when cut | [`maxNote`, `shortened`](../src/hook.ts) |
 | attachment retries of a session server | 1 s, doubled up to 30 s | [`firstRetry`, `lastRetry`](../src/session.ts) |
 | part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [`textParts`](../src/hub.ts), [`maxMessageLength`, `messageEnvelope`, `fitsMessage`](../src/tools.ts) |
-| cancelled cards wait at stop | 10 s | [`cardsWait`](../src/hub.ts) |
+| wait at stop for cancelled cards and status deletions | 10 s | [`stopWait`](../src/hub.ts) |
 | `service.log` | emptied over 10 MB, at a spawn and every hour | [`maxLogBytes`, `trimLog`](../src/files.ts), [`logCheck`](../src/service.ts) |
 | socket path | 103 bytes: `sun_path` of `sockaddr_un` holds 104 bytes on macOS and 108 on Linux, with the terminating NUL | [`maxSocketPath`](../src/files.ts) |
 | actions per session | 20 pending, 20 performing | [`maxPending`, `maxPerforming`, `Actions.create`](../src/actions.ts) |

@@ -8,15 +8,18 @@ import {T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Action, Actions, ConnectAction, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
-import {Changes, ChatItemsWatch, Collected, awaitResponses, nextChange, quoteLine, replyText, toMessage, toReplyTo} from "../../src/messages"
+import {Changes, ChatItemsWatch, Collected, awaitResponses, chatRef, nextChange, quoteLine, replyText, toMessage, toReplyTo} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
-import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
+import {FakeChat, FakeHooks, actionsWith, broadcastDeletion, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, livePost, member, settled, signal, texts, user} from "./fixtures"
+
+const createdTools: AgentTools[] = []
 
 beforeEach(() => {
   jest.spyOn(process.stdout, "write").mockImplementation(() => true)
 })
 
-afterEach(() => {
+afterEach(async () => {
+  for (const tools of createdTools.splice(0)) await tools.statuses.stop()
   jest.restoreAllMocks()
   jest.useRealTimers()
 })
@@ -283,7 +286,28 @@ function textOf(result: CallToolResult | undefined): string {
 
 function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined, session?: number): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, actions.mode, session), watch}
+  const tools = new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, actions.mode, session)
+  createdTools.push(tools)
+  return {tools, watch}
+}
+
+function approvedTools(chat: FakeChat, mode: Mode = "requests"): {tools: AgentTools; watch: ChatItemsWatch; actions: Actions; fake: FakeHooks; approved: Set<string>} {
+  const fake = fakeHooks()
+  const actions = actionsWith(mode, fake)
+  const approved = new Set(["@4"])
+  const {tools, watch} = agentTools(chat, actions, (chatInfo, standing) => (standing === "messages" && approved.has(chatRef(chatInfo) ?? "") ? "Alice" : undefined))
+  fake.hooks.perform = (action, signal) => tools.perform(action, signal)
+  return {tools, watch, actions, fake, approved}
+}
+
+async function statusChat(): Promise<ReturnType<typeof approvedTools> & {chat: FakeChat; status: number}> {
+  jest.useFakeTimers()
+  const chat = new FakeChat()
+  chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: [item(20, "summarize README.md")]})
+  const agent = approvedTools(chat)
+  await agent.tools.call("receive", {chat: "@4"}, signal().call)
+  await jest.advanceTimersByTimeAsync(0)
+  return {...agent, chat, status: chat.nextItemId - 1}
 }
 
 describe("receive", () => {
@@ -422,6 +446,88 @@ describe("receive", () => {
     expect(chat.commands.at(-1)).toBe("/_read chat items @4 21,20,22,24")
     const second = (await tools.call("receive", {chat: "@4", limit: 1}, signal().call))!.structuredContent as {messages: {item: number}[]; more: number}
     expect(second).toMatchObject({messages: [{item: 23}], more: 0})
+  })
+
+  it("starts a status for returned messages in an approved direct chat with a person", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: []})
+    const {tools, watch} = approvedTools(chat)
+    const {call, progress} = signal()
+    const receiving = tools.call("receive", {chat: "@4", wait: 3600}, call)
+    await jest.advanceTimersByTimeAsync(0)
+    expect(progress[0]).toMatch(/^No new messages in @4; waiting until /)
+    expect(chat.sent).toEqual([])
+    watch.deliver([chat.addItem("@4", item(20, "summarize README.md"))])
+    expect((await receiving)!.structuredContent).toMatchObject({messages: [{item: 20, text: "summarize README.md"}], more: 0})
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.sent).toEqual([livePost(T.ChatType.Direct, 4, "◐ thinking · 0:00")])
+  })
+
+  it("starts a status for returned messages in an approved group and in an approved business chat", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    chat.chats.set("#15", {chatInfo: groupChat(group(15, "Trail", member(1, "agent"))), items: [item(20, "summarize README.md", {type: "groupRcv", groupMember: member(44, "Alice")})]})
+    chat.chats.set("#16", {chatInfo: groupChat(group(16, "Ridgeline", member(1, "agent"), {businessChat: {}})), items: [item(21, "where is my order?", {type: "groupRcv", groupMember: member(45, "Bob")})]})
+    const {tools, approved} = approvedTools(chat)
+    for (const ref of ["#15", "#16"]) {
+      approved.add(ref)
+      expect((await tools.call("receive", {chat: ref}, signal().call))!.structuredContent).toMatchObject({messages: [{chat: ref}], more: 0})
+    }
+    await jest.advanceTimersByTimeAsync(0)
+    expect([...chat.sent].sort((a, b) => a.chat[1] - b.chat[1])).toEqual([15, 16].map(groupId => livePost(T.ChatType.Group, groupId, "◐ thinking · 0:00")))
+  })
+
+  it("starts no status for an aborted call, without returned messages, without the approval, with a bot or an agent, with a disconnected contact, in a channel, with the observer role in a group, after the control chat is lost, or in mode host", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: [item(20, "hi")]})
+    chat.chats.set("@3", {chatInfo: direct(contact(3, "Erin")), items: []})
+    chat.chats.set("@5", {chatInfo: direct(contact(5, "Bob")), items: [item(21, "hi")]})
+    chat.chats.set("@7", {chatInfo: direct(contact(7, "Switchback", {peerType: "bot"})), items: [item(22, "hi")]})
+    chat.chats.set("@8", {chatInfo: direct(contact(8, "Scout", {peerType: "agent"})), items: [item(23, "hi")]})
+    chat.chats.set("@2", {chatInfo: direct({...contact(2, "Carol"), activeConn: undefined}), items: [item(24, "hi")]})
+    chat.chats.set("#13", {chatInfo: groupChat(group(13, "Ridgeline News", member(1, "agent"), {useRelays: true})), items: [item(25, "hi", {type: "channelRcv"})]})
+    chat.chats.set("#12", {chatInfo: groupChat(group(12, "News", member(1, "agent", T.GroupMemberRole.Observer))), items: [item(26, "hi", {type: "groupRcv", groupMember: member(44, "Switchback")})]})
+    chat.chats.set("@6", {chatInfo: direct(contact(6, "Dana")), items: [item(27, "hi")]})
+    const {tools, actions, approved} = approvedTools(chat)
+    for (const ref of ["@3", "@7", "@8", "@2", "#13", "#12", "@6"]) approved.add(ref)
+    const returned = async (target: AgentTools, args: object): Promise<number> => ((await target.call("receive", args, signal().call))!.structuredContent as {messages: object[]}).messages.length
+    const {controller, call} = signal()
+    controller.abort()
+    expect(await tools.call("receive", {chat: "@4"}, call)).toBeUndefined()
+    expect(await returned(tools, {chat: "@3"})).toBe(0)
+    for (const ref of ["@5", "@7", "@8", "@2", "#13", "#12"]) expect(await returned(tools, {chat: ref})).toBe(1)
+    actions.loseControl()
+    expect(await returned(tools, {chat: "@6"})).toBe(1)
+    const host = new FakeChat()
+    host.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: [item(20, "hi")]})
+    expect(await returned(approvedTools(host, "host").tools, {chat: "@4"})).toBe(1)
+    await jest.advanceTimersByTimeAsync(3_000)
+    expect([chat.sent, host.sent]).toEqual([[], []])
+  })
+
+  it("deletes the status when a receive of its chat waits", async () => {
+    const {chat, tools, status} = await statusChat()
+    const {controller, call, progress} = signal()
+    const waiting = tools.call("receive", {chat: "@4", wait: 3600}, call)
+    await jest.advanceTimersByTimeAsync(0)
+    expect(progress).toEqual([expect.stringMatching(/^No new messages in @4; waiting until /)])
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
+    controller.abort()
+    expect(await waiting).toBeUndefined()
+  })
+
+  it("leaves the status when a receive of another chat waits", async () => {
+    const {chat, tools, status} = await statusChat()
+    chat.chats.set("@5", {chatInfo: direct(contact(5, "Bob")), items: []})
+    const {controller, call} = signal()
+    const waiting = tools.call("receive", {chat: "@5", wait: 3600}, call)
+    await jest.advanceTimersByTimeAsync(3_500)
+    expect(chat.deletedItems).toEqual([])
+    expect(chat.updates).toEqual([{chatId: 4, itemId: status, text: "◓ thinking · 0:03", live: true}])
+    controller.abort()
+    expect(await waiting).toBeUndefined()
   })
 
   it("names the agent in a quote of its own message by its name in the chat, the incognito name included", async () => {
@@ -683,6 +789,155 @@ describe("send", () => {
     actions.approve(actions.get(1)!, "Alice")
     expect((await sending)!.structuredContent).toMatchObject({status: "done", responses: [], more: 0})
     expect(chat.sent[0].messages[0]).toEqual({msgContent: {type: "text", text: "@'Ana Lu' hi @Switchback, any news?"}, mentions: {Switchback: 44, "Ana Lu": 45}, quotedItemId: undefined})
+  })
+
+  it("shows live text in the status of an approved chat with a person or of an approved group without an action, a counter write or an outcome, and prints the note", async () => {
+    jest.useFakeTimers()
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: []})
+    chat.chats.set("#15", {chatInfo: groupChat(group(15, "Trail", member(1, "agent"))), items: []})
+    const {tools, actions, fake, approved} = approvedTools(chat)
+    approved.add("#15")
+    expect((await tools.call("send", {chat: "@4", text: "Reading\nthe file…", live: true}, signal().call))!.structuredContent).toEqual({status: "live", chat: "@4"})
+    expect((await tools.call("send", {chat: "#15", text: "Checking the map…", live: true}, signal().call))!.structuredContent).toEqual({status: "live", chat: "#15"})
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.sent).toEqual([
+      livePost(T.ChatType.Direct, 4, "◐ thinking · 0:00\nReading\nthe file…"),
+      livePost(T.ChatType.Group, 15, "◐ thinking · 0:00\nChecking the map…"),
+    ])
+    expect([actions.all(), actions.next, fake.calls]).toEqual([[], 1, []])
+    expect(lines).toEqual(["Note to contact Alice (@4): Reading the file…", "Note to group Trail (#15): Checking the map…"])
+  })
+
+  it("returns nothing for an aborted live call, and shows and prints nothing", async () => {
+    jest.useFakeTimers()
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: []})
+    const {tools} = approvedTools(chat)
+    const {controller, call} = signal()
+    controller.abort()
+    expect(await tools.call("send", {chat: "@4", text: "Reading the file…", live: true}, call)).toBeUndefined()
+    await jest.advanceTimersByTimeAsync(3_000)
+    expect([chat.sent, lines]).toEqual([[], []])
+  })
+
+  it("refuses live with file, reply_to or mention, over 2000 characters, outside approved chats with connected people, groups and business chats, after the control chat is lost, and in mode host", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: [item(20, "hello")]})
+    chat.chats.set("@5", {chatInfo: direct(contact(5, "Bob")), items: []})
+    chat.chats.set("@7", {chatInfo: direct(contact(7, "Switchback", {peerType: "bot"})), items: []})
+    chat.chats.set("@8", {chatInfo: direct(contact(8, "Scout", {peerType: "agent"})), items: []})
+    chat.chats.set("@2", {chatInfo: direct({...contact(2, "Carol"), activeConn: undefined}), items: []})
+    chat.chats.set("#13", {chatInfo: groupChat(group(13, "Ridgeline News", member(1, "agent"), {useRelays: true})), items: []})
+    chat.chats.set("#12", {chatInfo: groupChat(group(12, "News", member(1, "agent", T.GroupMemberRole.Observer))), items: []})
+    chat.chats.set("#15", {chatInfo: groupChat(group(15, "Trail", member(1, "agent"))), items: []})
+    const {tools, actions, approved} = approvedTools(chat)
+    for (const ref of ["@7", "@8", "@2", "#13", "#12", "#15"]) approved.add(ref)
+    const host = approvedTools(chat, "host")
+    const refusal = async (target: AgentTools, args: object): Promise<string> => textOf(await target.call("send", {text: "x", live: true, ...args}, signal().call))
+    const textOnly = "live: applies to text only; send file, reply_to and mention without live."
+    expect(await refusal(tools, {chat: "@4", file: "/home/alice/notes.txt"})).toBe(textOnly)
+    expect(await refusal(tools, {chat: "@4", reply_to: 20})).toBe(textOnly)
+    expect(await refusal(tools, {chat: "#15", mention: [44]})).toBe(textOnly)
+    expect(await refusal(tools, {chat: "@4", text: "😀".repeat(2001)})).toBe("text: at most 2000 characters with live.")
+    expect(await refusal(tools, {chat: "@2"})).toBe("The agent is not connected to @2 and can't post; list shows connected: false.")
+    expect(await refusal(tools, {chat: "#12"})).toBe("The agent has role observer in #12 and can't post.")
+    for (const ref of ["@7", "@8", "#13"]) expect(await refusal(tools, {chat: ref})).toBe(`live: ${ref} is a channel or a chat with a bot or an agent; status messages are shown in chats with people, groups and business chats.`)
+    expect(await refusal(tools, {chat: "@5"})).toBe("live: your owner's approval of all messages to @5 is required; list shows approved: true for such chats.")
+    expect(await refusal(host.tools, {chat: "@4"})).toBe("live: status messages are shown in mode requests only; this server runs in mode host.")
+    await jest.advanceTimersByTimeAsync(0)
+    expect([chat.sent, actions.all(), host.actions.all()]).toEqual([[], [], []])
+    expect((await tools.call("send", {chat: "@4", text: "😀".repeat(2000), live: true}, signal().call))!.structuredContent).toEqual({status: "live", chat: "@4"})
+    actions.loseControl()
+    expect(await refusal(tools, {chat: "#15"})).toBe("live: The agent lost its control chat. The person who runs it has to restart it with --reset-owners.")
+  })
+
+  it("attaches a live call to no action, also when a pending send has its text", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: []})
+    const {tools, actions, approved} = approvedTools(chat)
+    approved.delete("@4")
+    const {controller, call} = signal()
+    const pending = tools.call("send", {chat: "@4", text: "Reading the file…"}, call)
+    await jest.advanceTimersByTimeAsync(0)
+    controller.abort()
+    expect(await pending).toBeUndefined()
+    approved.add("@4")
+    expect((await tools.call("send", {chat: "@4", text: "Reading the file…", live: true}, signal().call))!.structuredContent).toEqual({status: "live", chat: "@4"})
+    expect(actions.all()).toHaveLength(1)
+    expect(actions.get(1)).toMatchObject({state: "pending", open: 0})
+  })
+
+  it("sends the answer as a new message, then deletes the status, and returns the responses after the answer", async () => {
+    const {chat, tools, watch, status} = await statusChat()
+    const send = chat.apiSendMessages.bind(chat)
+    const deletionsAtAnswer: number[] = []
+    chat.apiSendMessages = async (target, messages, live) => {
+      if (!live) deletionsAtAnswer.push(chat.deletedItems.length)
+      return send(target, messages, live)
+    }
+    const sending = tools.call("send", {chat: "@4", text: "The README describes the server.", wait: 60, idle: 5}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    const answer = chat.nextItemId - 1
+    watch.deliver([chat.addItem("@4", item(answer + 1, "and the tests?"))])
+    await jest.advanceTimersByTimeAsync(5_000)
+    expect((await sending)!.structuredContent).toMatchObject({action: 1, status: "done", item: answer, responses: [{item: answer + 1, text: "and the tests?"}], more: 0})
+    expect(chat.sent.map(({messages: [{msgContent}], live}) => [msgContent.text, live])).toEqual([["◐ thinking · 0:00", true], ["The README describes the server.", undefined]])
+    expect(deletionsAtAnswer).toEqual([0])
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
+    expect(chat.updates).toEqual([])
+  })
+
+  it("leaves the status at a send to another chat", async () => {
+    const {chat, tools, approved, status} = await statusChat()
+    chat.chats.set("@5", {chatInfo: direct(contact(5, "Bob")), items: []})
+    approved.add("@5")
+    expect((await tools.call("send", {chat: "@5", text: "hi", wait: 0}, signal().call))!.structuredContent).toMatchObject({status: "done"})
+    await jest.advanceTimersByTimeAsync(3_500)
+    expect(chat.deletedItems).toEqual([])
+    expect(chat.updates.map(({itemId}) => itemId)).toEqual([status])
+  })
+
+  it("keeps the status when the answer fails", async () => {
+    const {chat, tools, status} = await statusChat()
+    const send = chat.apiSendMessages.bind(chat)
+    chat.apiSendMessages = async (target, messages, live) => {
+      if (!live) throw new Error("send failed")
+      return send(target, messages, live)
+    }
+    expect((await tools.call("send", {chat: "@4", text: "12:00", wait: 0}, signal().call))!.structuredContent).toEqual({action: 1, status: "failed", error: "send failed"})
+    await jest.advanceTimersByTimeAsync(3_500)
+    expect(chat.deletedItems).toEqual([])
+    expect(chat.updates).toEqual([{chatId: 4, itemId: status, text: "◓ thinking · 0:03", live: true}])
+  })
+
+  it("deletes the status at the next tick after the approval is revoked, and the answer then gets a card", async () => {
+    const {chat, tools, actions, fake, approved, status} = await statusChat()
+    approved.delete("@4")
+    await jest.advanceTimersByTimeAsync(3_500)
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
+    expect(texts(chat)).toEqual(["◐ thinking · 0:00"])
+    const {controller, call} = signal()
+    const sending = tools.call("send", {chat: "@4", text: "12:00"}, call)
+    await jest.advanceTimersByTimeAsync(0)
+    expect(actions.get(1)).toMatchObject({state: "pending"})
+    expect(fake.calls).toContain("card 1")
+    controller.abort()
+    expect(await sending).toBeUndefined()
+  })
+
+  it("deletes the status at the next tick after the control chat is lost", async () => {
+    const {chat, actions, status} = await statusChat()
+    actions.loseControl()
+    await jest.advanceTimersByTimeAsync(3_500)
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
+    expect(texts(chat)).toEqual(["◐ thinking · 0:00"])
   })
 })
 
@@ -1898,6 +2153,29 @@ describe("leave", () => {
     expect((await leaving)!.structuredContent).toEqual({action: 1, status: "rejected"})
     expect(chat.deleted).toEqual([])
   })
+
+  it("deletes the status before it leaves the chat, and starts and shows none while it leaves", async () => {
+    const {chat, tools, actions, status} = await statusChat()
+    const remove = chat.apiDeleteChat.bind(chat)
+    const deletionsAtLeave: number[] = []
+    const notesAtLeave: string[] = []
+    chat.apiDeleteChat = async (chatType, chatId, mode) => {
+      deletionsAtLeave.push(chat.deletedItems.length)
+      chat.addItem("@4", item(21, "and the tests?"))
+      await tools.call("receive", {chat: "@4"}, signal().call)
+      notesAtLeave.push(textOf(await tools.call("send", {chat: "@4", text: "Reading the file…", live: true}, signal().call)))
+      await jest.advanceTimersByTimeAsync(0)
+      return remove(chatType, chatId, mode)
+    }
+    const leaving = tools.call("leave", {chat: "@4"}, signal().call)
+    await jest.advanceTimersByTimeAsync(0)
+    actions.approve(actions.get(1)!, "Alice")
+    expect((await leaving)!.structuredContent).toEqual({action: 1, status: "done", chat: "@4"})
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, status)])
+    expect(deletionsAtLeave).toEqual([1])
+    expect(notesAtLeave).toEqual(["No chat @4. list shows the agent's chats."])
+    expect(chat.sent).toHaveLength(1)
+  })
 })
 
 describe("list", () => {
@@ -1922,5 +2200,51 @@ describe("list", () => {
     const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: {chat: string}[]}
     expect(chats.map(({chat: ref}) => ref)).toEqual(Array.from({length: 150}, (_, i) => `@${100 + i}`))
     expect(chat.commands.filter(cmd => cmd.startsWith("/_get chats "))).toEqual(['/_get chats 1 count=1000000 {"type":"filters","favorite":false,"unread":false}'])
+  })
+})
+
+describe("call", () => {
+  it("marks a call as running until it ends, also when it throws", async () => {
+    const {chat, tools} = await statusChat()
+    const trail = groupChat(group(15, "Trail", member(1, "agent")))
+    const offered = fileItem(30, {type: "file", text: "report"}, {type: "rcvInvitation"}, {chatDir: {type: "groupRcv", groupMember: member(44, "Switchback")}})
+    chat.chats.set("#15", {chatInfo: trail, items: [offered]})
+    chat.responses.set("/_get item info #15 30", {type: "chatItemInfo", user, chatItem: event(trail, offered), chatItemInfo: {itemVersions: [], fileXftpServers: []}})
+    chat.responses.set("/_servers 1", {type: "userServers", user, userServers: []})
+    const {controller, call, progress} = signal()
+    const downloading = tools.call("download", {chat: "#15", item: 30}, call)
+    await jest.advanceTimersByTimeAsync(3_500)
+    expect(progress).toEqual([expect.stringMatching(/^The sender is uploading the file of item 30 in #15; /)])
+    controller.abort()
+    expect(await downloading).toBeUndefined()
+    chat.apiGetChats = async () => {
+      throw new Error("database busy")
+    }
+    expect(textOf(await tools.call("list", {}, signal().call))).toBe("database busy")
+    await jest.advanceTimersByTimeAsync(3_000)
+    expect(chat.updates.map(({text}) => text)).toEqual(["◓ using download · 0:03", "◑ thinking · 0:06"])
+  })
+})
+
+describe("deleteLeftoverStatuses", () => {
+  it("reads only approved chats with connected people and approved groups, and none in mode host, and deletes their own live items", async () => {
+    jest.useFakeTimers({now: Date.parse("2026-10-17T12:00:00Z")})
+    const chat = new FakeChat()
+    const leftover = (itemId: number, chatDir: T.CIDirection = {type: "directSnd"}): T.ChatItem => item(itemId, "◐ thinking · 0:00", chatDir, {live: true})
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: [leftover(20)]})
+    chat.chats.set("@5", {chatInfo: direct(contact(5, "Bob")), items: [leftover(21)]})
+    chat.chats.set("@7", {chatInfo: direct(contact(7, "Switchback", {peerType: "bot"})), items: [leftover(22)]})
+    chat.chats.set("@2", {chatInfo: direct({...contact(2, "Carol"), activeConn: undefined}), items: [leftover(23)]})
+    chat.chats.set("#15", {chatInfo: groupChat(group(15, "Trail", member(1, "agent"))), items: [leftover(24, {type: "groupSnd"})]})
+    chat.chats.set("#13", {chatInfo: groupChat(group(13, "Ridgeline News", member(1, "agent"), {useRelays: true})), items: [leftover(25, {type: "groupSnd"})]})
+    chat.chats.set("#10", {chatInfo: groupChat(group(10, "agent")), items: []})
+    const reads = (): string[] => chat.commands.filter(cmd => cmd.startsWith("/_get chat "))
+    await approvedTools(chat, "host").tools.deleteLeftoverStatuses()
+    expect(reads()).toEqual([])
+    const {tools, approved} = approvedTools(chat)
+    for (const ref of ["@7", "@2", "#15", "#13", "#10"]) approved.add(ref)
+    await tools.deleteLeftoverStatuses()
+    expect(reads()).toEqual(["/_get chat @4 count=100", "/_get chat #15 count=100"])
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, 20), broadcastDeletion(T.ChatType.Group, 15, 24)])
   })
 })

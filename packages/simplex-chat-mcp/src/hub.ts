@@ -12,7 +12,7 @@ import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
 import {Changes, ChatItemsWatch, ReplyTo, ToolCall, getChat, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
 import {AttachLine, OwnerState, PermissionRequest, ResetReply, Step, TurnRequest} from "./protocol"
-import {waitForCancelledCards} from "./serve"
+import {waitForStopMessages} from "./serve"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
 import {User, userContact} from "./user"
 
@@ -23,7 +23,7 @@ const sessionKey = "simplexMcpSession"
 // spec: spec/architecture.md#hub-constants
 const firstAction = 1
 // spec: spec/architecture.md#hub-constants
-const cardsWait = 10
+const stopWait = 10
 // spec: spec/architecture.md#hub-constants
 const promptEcho = 60_000
 // spec: spec/architecture.md#hub-constants
@@ -620,6 +620,7 @@ export class Hub implements SessionGroups {
       hub.user = await User.open(root, chat, user).catch(error => (logError("User", error), undefined))
       hub.userContactId = (await userContact(chat, user.userId))?.contactId
       for (const {id, session} of stored) await hub.session(id, session)
+      for (const {number, tools} of hub.sessions.values()) await tools.deleteLeftoverStatuses().catch(error => logError(`status messages of session ${number}`, error))
       hub.promptsHeldUntil = Date.now() + attachWait
       await core.events(event => hub.onEvent(event))
       hub.listTimer = setInterval(() => hub.showSessions(), listCheckMs).unref()
@@ -736,11 +737,11 @@ export class Hub implements SessionGroups {
     this.stopped = true
     clearInterval(this.listTimer)
     const sessions = [...this.sessions.values()]
-    const stopped = await Promise.all(sessions.map(async ({actions}) => ({lost: actions.lost, cancelled: await actions.stop()})))
+    const stopped = await Promise.all(sessions.map(async ({actions, tools}) => ({lost: actions.lost, cancelled: await actions.stop(), deletions: await tools.statuses.stop()})))
     await this.controlEvents
     await this.listing
     await this.showSessions()
-    await waitForCancelledCards(stopped.flatMap(({lost, cancelled}) => (lost ? [] : cancelled)), cardsWait, new AbortController().signal)
+    await waitForStopMessages(stopped.flatMap(({lost, cancelled}) => (lost ? [] : cancelled)), stopWait, new AbortController().signal, stopped.reduce((sum, {deletions}) => sum + deletions, 0))
     await Promise.all(sessions.map(session => session.endSteps()))
     for (const {tools} of sessions) tools.close()
     await this.user?.close()

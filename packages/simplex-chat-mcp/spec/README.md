@@ -24,6 +24,8 @@ The SimpleX core (libsimplex, release `core-7.1.3.0`) runs inside the same Node.
 
 A tool call is held open by the server until the owner decides and, for `connect` and `send`, until the replies arrive, and for `download`, until the file is received or `wait` passes. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
 
+When `receive` returns messages, the server starts a status message in the chat: one live message, edited while the agent works and deleted after the agent's next message there is sent. Status messages are shown in chats with people, groups and business chats that have a standing approval of messages, in mode `requests`. With `live: true` on `send`, the text is shown at once under the status line, and the result is status `live`, without an action; each such note is printed in the terminal. With `--inference URL`, the server polls llama-swap or llama-server at URL, and the model loading, the prompt tokens read and the tokens per second are shown in the status line.
+
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
 The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server. The session server forwards tool calls over a local socket to `simplex-mcp service`, one service per data root. Requests on the socket are HTTP/1.1 with a bearer token. The service runs two cores:
@@ -134,6 +136,15 @@ graph TD
   tools --> actions
   tools --> messages
   tools --> log
+  tools --> status["status.ts"]
+  tools -.-> inference["inference.ts"]
+  serve --> inference
+  status --> actions
+  status --> messages
+  status --> log
+  status -.-> tools
+  status -.-> inference
+  inference --> log
   actions --> messages
   actions --> log
   actions -.-> tools
@@ -155,6 +166,7 @@ graph TD
   hub --> sc
   mainGroup --> sc
   user --> sc
+  status --> sc
   messages -.-> sc
   log --> sc
   tools --> mcps["@modelcontextprotocol/server"]
@@ -172,7 +184,9 @@ graph TD
 | [`serve.ts`](../src/serve.ts) | `serve`: start sequence, event dispatch, stop sequence |
 | [`http.ts`](../src/http.ts) | `serve`: HTTP listener, token check, `/mcp` route, SDK handler |
 | [`register.ts`](../src/register.ts) | `register` command: Claude Code entry of a `serve` agent |
-| [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send, chat owners |
+| [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send, chat owners, status message refusals |
+| [`status.ts`](../src/status.ts) | status messages: start, ticks, labels, notes, deletion, leftovers, running calls |
+| [`inference.ts`](../src/inference.ts) | inference endpoint poller: model states, prompt tokens, tokens per second |
 | [`actions.ts`](../src/actions.ts) | action records, state machine, expiry timers, per-session limits, stop |
 | [`control.ts`](../src/control.ts) | agent control chat and session groups: link, owners, owner commands, cards, counter |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
@@ -209,7 +223,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 |---|---|
 | [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits. Section 8 covers the plugin. |
 | [Flows](flows.md) | sequence diagrams of the main flows with source locations. Flows 17-36 cover the plugin. |
-| [API](api.md) | the six tools, the control chat commands, replies and cards, the CLI. Section 4 covers the plugin's tools, groups, channel, socket protocol, commands and files. |
+| [API](api.md) | the six tools, the status message, the control chat commands, replies and cards, the CLI. Section 4 covers the plugin's tools, groups, channel, socket protocol, commands and files. |
 
 ---
 
@@ -224,6 +238,8 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | HTTP listener | [`src/http.ts`](../src/http.ts) | `startHttp` |
 | Tool registration | [`src/tools.ts`](../src/tools.ts) | `registerTools` |
 | Downloads | [`src/tools.ts`](../src/tools.ts) | `AgentTools.downloadFile` |
+| Status messages | [`src/status.ts`](../src/status.ts) | `Statuses` |
+| Inference endpoint | [`src/inference.ts`](../src/inference.ts) | `inferencePoller` |
 | Action store | [`src/actions.ts`](../src/actions.ts) | `Actions` |
 | Agent control chat and session groups | [`src/control.ts`](../src/control.ts) | `Control` |
 | Card text | [`src/control.ts`](../src/control.ts) | `cardText` |

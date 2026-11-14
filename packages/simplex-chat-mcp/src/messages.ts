@@ -6,7 +6,7 @@ import {fileError} from "./log"
 
 const progressInterval = 60_000
 const maxTimer = 2_147_483_647
-const pageSize = 100
+export const pageSize = 100
 const maxCollected = 100
 const prohibitedNameChars = ".,;/\\#@'\"`~"
 export const maxNameLength = 50
@@ -405,6 +405,7 @@ export async function awaitResponses(collected: Collected, deadline: number, idl
   }
 }
 
+// spec: spec/api.md#status-message
 export function utcMinutes(time: number): string {
   return `${new Date(time).toISOString().slice(0, 16).replace("T", " ")} UTC`
 }

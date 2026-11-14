@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-36.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16 and 37, and the Claude Code plugin in flows 17-36.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -17,8 +17,10 @@ Participants:
 | C | the SimpleX core behind `ChatApi` |
 | O | the owner in the SimpleX app |
 | D | a peer |
+| L | `Statuses`, the status messages |
+| I | the inference endpoint of `--inference` |
 
-In flows 1-16, `#G` is the agent control chat, `USER` the agent's user ID, `DATA` the data folder. Calls to the core are shown as the `ChatApi` methods the server calls, with their arguments in short. Card and progress texts with a semicolon are shown with a comma in the diagrams; the exact texts are in [API](api.md).
+In flows 1-16 and 37, `#G` is the agent control chat, `USER` the agent's user ID, `DATA` the data folder. Calls to the core are shown as the `ChatApi` methods the server calls, with their arguments in short. Card and progress texts with a semicolon are shown with a comma in the diagrams; the exact texts are in [API](api.md).
 
 ---
 
@@ -64,6 +66,10 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 35. [A summary of the session's context](#35-a-summary-of-the-sessions-context)
 36. [The list of sessions](#36-the-list-of-sessions)
 
+`serve`, continued:
+
+37. [Status message while the agent works](#37-status-message-while-the-agent-works)
+
 ---
 
 ## 1. First start and the owner joins
@@ -91,6 +97,7 @@ sequenceDiagram
   S->>P: Agent control chat "My Agent" created.
   S->>K: load
   K->>C: apiListMembers #35;G
+  S->>C: apiGetChats USER: leftover status messages, none at the first start
   S->>S: HTTP listens on 127.0.0.1:5226, /mcp answers 503 until the control chat is started
   S->>S: server.json
   K->>C: apiDeleteGroupLink #35;G (groupLinkNotFound ignored)
@@ -117,7 +124,7 @@ Notes:
 - Events that arrive before the HTTP listener starts are buffered and handled in order ([`bufferEvents`](../src/core.ts)).
 - The server runs `ownerJoined` for every `joinedGroupMember` event of a human without `--owners`, and the link is deleted in that handler ([`Control.onEvent`, `ownerJoined`](../src/control.ts)).
 
-Source: [`main`, `readStdin`](../src/cli.ts), [`startServer`, `startAgent`](../src/serve.ts), [`prepareCore`, `deletePresetContacts`, `updatedUser`, `bufferEvents`, `setTempFolder`](../src/core.ts), [`createDataFolder`, `acquireLock`, `releaseLock`, `serverToken`, `headersFile`, `writeHeadersFile`, `writeServerFile`](../src/files.ts), [`startHttp`](../src/http.ts), [`Control.load`, `rename`, `describe`, `updateProfile`, `start`, `startOwners`, `openLink`, `deleteLink`, `findControlGroup`, `controlDataOf`, `createControlChat`, `createGroup`](../src/control.ts).
+Source: [`main`, `readStdin`](../src/cli.ts), [`startServer`, `startAgent`](../src/serve.ts), [`prepareCore`, `deletePresetContacts`, `updatedUser`, `bufferEvents`, `setTempFolder`](../src/core.ts), [`createDataFolder`, `acquireLock`, `releaseLock`, `serverToken`, `headersFile`, `writeHeadersFile`, `writeServerFile`](../src/files.ts), [`startHttp`](../src/http.ts), [`Control.load`, `rename`, `describe`, `updateProfile`, `start`, `startOwners`, `openLink`, `deleteLink`, `findControlGroup`, `controlDataOf`, `createControlChat`, `createGroup`](../src/control.ts), [`AgentTools.deleteLeftoverStatuses`, `agentChats`](../src/tools.ts).
 
 ---
 
@@ -270,6 +277,7 @@ Notes:
 - Mentioned names missing from the text are prefixed as `@name` ([`messageText`](../src/tools.ts)).
 - While a collected message is live, the server waits for its final update; live items are left out of `responses` and counted in `more` ([`awaitResponses`](../src/messages.ts), [`AgentTools.sendResult`](../src/tools.ts)).
 - At most 100 replies are kept per action; later ones are counted as overflow ([`maxCollected`, `ChatItemsWatch.collect`](../src/messages.ts)).
+- With `live: true`, the call is never attached to an action, and after the role check its text is shown in the status message of the chat ([`AgentTools.send`](../src/tools.ts), [37](#37-status-message-while-the-agent-works)).
 
 Source: [`AgentTools.send`, `sendResult`, `performSend`](../src/tools.ts), [`ChatItemsWatch.collect`, `awaitResponses`](../src/messages.ts), [`requestLines`](../src/control.ts).
 
@@ -303,6 +311,7 @@ Notes:
 - `more`: the arrived messages not returned, the overflow and the unread items not read ([`AgentTools.receive`](../src/tools.ts)).
 - Items received while the pages are read are returned once ([`AgentTools.receive`](../src/tools.ts)).
 - Exact progress text: `No new messages in CHAT; waiting until TIME.` ([`AgentTools.receive`](../src/tools.ts)).
+- Before the wait, the status message of the chat is deleted; when messages are returned in a chat eligible for a status message, a status message is started ([`AgentTools.receive`](../src/tools.ts), [37](#37-status-message-while-the-agent-works)).
 
 Source: [`AgentTools.receive`](../src/tools.ts), [`unreadItems`, `isNewMessage`, `reportProgress`, `nextChange`, `awaitResponses`](../src/messages.ts).
 
@@ -346,6 +355,7 @@ Notes:
 - For sends that were pending at `/approve CHAT all`, the card ends with the plain `Approved by Alice.` ([`cardText`](../src/control.ts)).
 - `connect` and `leave` actions are created without the standing approver, so they stay pending ([`AgentTools.connect`, `leave`](../src/tools.ts)).
 - `/receive CHAT N all` and `/receive CHAT off` work the same way for downloads, with the key `simplexMcpFiles`, except that download N alone is performed, and the other pending downloads of the chat stay pending ([`standings`, `Control.approveChat`](../src/control.ts), [`AgentTools.download`](../src/tools.ts)).
+- After `/revoke #9`, the status message of #9 is deleted at its next tick, and a `send` with `live: true` to #9 is refused ([`Statuses.tick`](../src/status.ts), [`AgentTools.statusRefusal`](../src/tools.ts), [37](#37-status-message-while-the-agent-works)).
 
 Source: [`Control.approveChat`, `revoke`, `setCustomData`](../src/control.ts), [`AgentTools.send`](../src/tools.ts), [`Actions.create`, `afterPosting`, `runPerform`](../src/actions.ts).
 
@@ -369,6 +379,7 @@ sequenceDiagram
   O->>C: /approve #35;9 N
   K->>X: approve(action, "Alice")
   X->>T: leaveChat(#35;9)
+  T->>C: apiDeleteChatItems #35;9 [status item] broadcast (when #35;9 has a status message)
   T->>C: apiGetChat #35;9 count 0
   T->>C: apiLeaveGroup #35;9 (membership current or pending)
   T->>C: apiDeleteChat #35;9 full, notify
@@ -384,6 +395,7 @@ Notes:
 - For a contact, the card text is `I want to delete KIND NAME (@N).`, and the perform step calls `apiDeleteChat` for the contact, full, with notify ([`requestLines`](../src/control.ts), [`AgentTools.leaveChat`](../src/tools.ts)).
 - The delete notifies, so the core notifies the contact or the members ([`AgentTools.leaveChat`](../src/tools.ts)).
 - The server looks for an attached action before it reads the chat, so a repeated call after the deletion is attached to the done action ([`AgentTools.leave`](../src/tools.ts)).
+- From before the status deletion until the chat is deleted, #9 is marked as being left: a `send` with `live: true` to #9 is refused with `No chat #9. list shows the agent's chats.` until the membership is marked left in `apiLeaveGroup`, and after that with `The agent is not connected to #9 and can't post; list shows connected: false.`; a status started meanwhile ends at its first tick without a post ([`AgentTools.leaveChat`, `send`, `statusRefusal`, `isConnected`](../src/tools.ts)).
 
 Source: [`AgentTools.leave`, `leaveResult`, `leaveChat`](../src/tools.ts), [`Control.outcome`, `leftChatFilesNote`](../src/control.ts).
 
@@ -523,7 +535,8 @@ sequenceDiagram
     S->>H: close, closeAllConnections (open calls aborted)
   end
   S->>P: Cancelled 2 actions.
-  S->>P: Stopping: sending 2 cancelled cards, up to 10 s. Ctrl-C to stop now.
+  S->>C: apiDeleteChatItems of each status message, broadcast, awaited
+  S->>P: Stopping: sending 2 cancelled cards and 1 status deletion, up to 10 s. Ctrl-C to stop now.
   S->>S: wait 10 s, or until a second Ctrl-C
   S->>C: close
   S->>S: remove DATA/lock
@@ -537,9 +550,10 @@ Notes:
 - An action of mode `host` or of a standing approval whose counter is being written at the stop is set to `pending` and cancelled without a perform ([`Actions.afterPosting`](../src/actions.ts)).
 - After a crash, the cards of that run are left with their commands; `/approve` of their numbers gets the reply `Action N is not pending.` ([`Control.ownerCommand`](../src/control.ts)).
 - The stop signal of the performs is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([`Actions.stop`, `runPerform`](../src/actions.ts), [`AgentTools.performConnect`](../src/tools.ts)).
-- The wait applies only when cards were edited or posted at the stop, a `download` without a card excluded, and `--stop-wait` is above 0 (`stop` in [`startAgent`](../src/serve.ts), [`waitForCancelledCards`](../src/serve.ts)).
+- The status messages are ended after the HTTP server is closed and `Actions.stop` returns; later starts are ignored, and notes are refused (`stop` in [`startAgent`](../src/serve.ts), [`Statuses.stop`](../src/status.ts)).
+- The wait applies only when cards were edited or posted at the stop, a `download` without a card excluded, or status messages had a render, and `--stop-wait` is above 0. Cards are counted only while the control chat is not lost (`stop` in [`startAgent`](../src/serve.ts), [`waitForStopMessages`](../src/serve.ts)).
 
-Source: [`serve`, `startAgent`, `waitForCancelledCards`](../src/serve.ts), [`Actions.stop`](../src/actions.ts), [`stopHttp`](../src/http.ts), [`cardText`](../src/control.ts).
+Source: [`serve`, `startAgent`, `waitForStopMessages`](../src/serve.ts), [`Statuses.stop`](../src/status.ts), [`Actions.stop`](../src/actions.ts), [`stopHttp`](../src/http.ts), [`cardText`](../src/control.ts).
 
 ---
 
@@ -728,6 +742,7 @@ sequenceDiagram
   O->>C: /leave #35;9
   K->>T: knownChat #35;9
   K->>T: leaveChat #35;9
+  T->>C: apiDeleteChatItems #35;9 [status item] broadcast (when #35;9 has a status message)
   T->>C: apiLeaveGroup #35;9, apiDeleteChat #35;9 full, notify
   C->>D: the agent left the group
   T->>T: DATA/forwarded/group-9 deleted
@@ -747,6 +762,7 @@ sequenceDiagram
 Notes:
 
 - `/leave` acts at once in both modes, and works for a contact as `Deleted bot X (@4), requested by Alice.` ([`Control.leave`](../src/control.ts)).
+- With `/leave`, the status message of the chat is deleted first, as with `leave` ([7](#7-leave), [`AgentTools.leaveChat`](../src/tools.ts)).
 - The line `Left ...` goes to the log and to the owners; the members of #9 see only that the agent left.
 - The files message is posted after the reply, and only when the folder has files ([`Control.leave`, `queueAfterReplies`](../src/control.ts)).
 - `/delete CHAT files` works for a current or a left chat; the failed downloads return `Your owner deleted the files of this chat.`, and the reply counts the forwarded files too ([`AgentTools.deleteChatFiles`](../src/tools.ts)).
@@ -829,6 +845,7 @@ Notes:
 - At each start, `openCore` sets the peer type of each profile: `agent` for Claude and `human` for `User`. In a data folder of 0.3.0, `User` is changed from `agent` to `human` at the first start, and the core sends the change to the hub's contact of `User` at once. Members who join a session group later get `human`; members already in a session group get it with `User`'s next post there, as the event `updated profile` ([`openCore`, `updatedUser`](../src/core.ts), [`Hub.open`](../src/hub.ts), [`User.open`](../src/user.ts)).
 - `User` connects only at the first start. At later starts, the service finds the hub's contact marked `simplexMcpUser`, the contact whose connection belongs to the invitation that the hub created. When `User` does not connect within 60 s, the service runs without it, and terminal prompts are not posted ([`User.open`, `connect`, `userContact`](../src/user.ts), [`Hub.open`](../src/hub.ts)).
 - At a later start without owners, the service keeps the Main group's link ([`MainGroup.start`](../src/main-group.ts)).
+- At a later start, once the stored sessions are open, the status messages left by an earlier run are deleted in the eligible chats of each session, as at the start of `serve` ([`Hub.open`](../src/hub.ts), [`AgentTools.deleteLeftoverStatuses`](../src/tools.ts)).
 - Owners are invited to the groups of the open sessions when they join the Main group. The groups of closed sessions are joined with `/join N` ([`Hub.inviteOwner`, `join`](../src/hub.ts)).
 - The trust given to the Main group's members is stated in the group's short description and welcome message, which Claude sets when it creates the group ([`welcome`, `joinRights`, `shortDescr`, `createMainGroup`](../src/main-group.ts)). Claude also states it in a post at each human's `joinedGroupMember` or `connectedToGroupMember` ([`MainGroup.handleEvent`](../src/main-group.ts)). The joiner is found as in [flow 28](#28-a-member-joins-the-main-group-and-a-sessions-group-and-a-person-is-added-to-it).
 - Claude changes only the name and the menu of the Main group's profile, and starts each change from the group's current profile. So the short description, the welcome message and the preferences that owners set are kept ([`MainGroup.load`](../src/main-group.ts), [`updateGroupProfile`, `changeGroupProfile`](../src/control.ts)).
@@ -1201,7 +1218,7 @@ sequenceDiagram
   D->>D: idle timer, 10 min
   D->>N: no call, no action in memory: entry closed, open false
   D->>D: no entry: stop timer, 10 min
-  D->>D: stop: actions cancelled, cards edited, cores closed, lock released
+  D->>D: stop: actions cancelled, cards edited, status messages deleted, cores closed, lock released
   S2->>D: GET /status: version lower than its own
   S2->>D: POST /stop
   S2->>D: spawn a service of its version
@@ -1685,10 +1702,69 @@ Notes:
 - The session process sends the absolute path of Claude Code's record of its parent process, `CLAUDE_CONFIG_DIR` or `~/.claude`, then `sessions/PID.json`, and the service keeps it in the session ([`startSession`](../src/session.ts), [`Service.onSession`](../src/service.ts)).
 - Claude Code writes `status` in its record at each change of its state: `busy` while a query runs or delegated work is active, `waiting` while a dialog or another request waits for the person, `idle` otherwise, and `shell` in place of `idle` while a background Bash task runs. It writes the file in place, so a read can find it half written; the hub then keeps the last status. The hub opens the record without blocking and reads only a regular file, and a render waits at most 1 s for a read; a slower read keeps the last status ([`Session.readRecord`, `recordStatus`](../src/hub.ts)).
 - A tool-use card counts while the status is `waiting` or unknown. When someone answers the dialog in the terminal, the status leaves `waiting`, and the card, which stays until the turn ends, no longer counts ([`Session.stateLine`](../src/hub.ts)).
-- When the session process detaches, the session's permissions end and the session moves into the last line. At the service's stop, the hub renders the list once more, with every session there, before it waits for the cancelled cards ([`Hub.stop`](../src/hub.ts)).
+- When the session process detaches, the session's permissions end and the session moves into the last line. At the service's stop, the hub renders the list once more, with every session there, before it waits for the cancelled cards and the status deletions ([`Hub.stop`](../src/hub.ts)).
 - The text fits one message: the last line keeps the newest names that fit and counts the others ([`Hub.sessionsText`](../src/hub.ts)).
 - The first list waits for an owner, so it follows the greeting. The item and its time are kept in the Main group's custom data, so a new service edits the same list. A reset of the owners creates a new Main group, which gets its own list once an owner joins ([`MainGroup.showList`, `postList`, `replace`](../src/main-group.ts)).
 - SimpleX allows edits of a message for 24 hours and deletions for everyone for 30 hours. The hub replaces a list 23 hours old, by the wall clock, at its next render, and deletes the old one; a refused deletion is logged ([`MainGroup.replaceList`](../src/main-group.ts)).
 - An edit sends no SMP notification, and the apps alert for an edit only when it creates the item. The list's posts carry `priority: -1`; an app without silent messages alerts for them.
 
 Source: [`Hub.showSessions`, `Hub.sessionsText`, `Session.readRecord`, `Session.stateLine`](../src/hub.ts), [`MainGroup.showList`](../src/main-group.ts).
+
+---
+
+## 37. Status message while the agent works
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant A as Agent
+  participant T as AgentTools
+  participant L as Statuses
+  participant I as Inference endpoint
+  participant X as Actions
+  participant C as Core
+  participant O as Owner
+  Note over T,O: #35;9 is a group, approved with /approve #35;9 all, the server runs with --inference
+  O->>C: summarize README.md (item 40 in #35;9)
+  A->>T: receive {chat: #35;9, wait: 3600}
+  T->>C: apiGetChat #35;9 initial 1, then the unread items
+  T->>C: apiChatItemsRead #35;9 [40]
+  T->>T: showsStatus(#35;9) with the chat read of the call
+  T->>L: start(#35;9)
+  T-->>A: {chat: #35;9, messages: [40], more: 0}
+  L->>T: allowed(#35;9): knownChat, showsStatus
+  L->>C: apiSendMessages #35;9 [◐ thinking · 0:00] live: item S
+  loop each tick, a tenth of the age after the previous one, 3 s to 20 s
+    L->>T: allowed(#35;9): knownChat, showsStatus
+    L->>I: GET /running, then /props and /slots of each allowed proxy, at most once per 3 s
+    L->>C: apiUpdateChatItem #35;9 S [◑ generating, 31 tokens/s · 0:18] live
+  end
+  A->>T: send {chat: #35;9, text: "Reading the file…", live: true}
+  T->>C: apiGetChat #35;9 count 0
+  T->>T: postingRefusal and statusRefusal: none
+  T->>L: show(#35;9, note)
+  L->>C: apiUpdateChatItem #35;9 S [◒ generating, 31 tokens/s · 0:21, the note under it] live
+  T->>P: Note to group Team (#35;9): Reading the file…
+  T-->>A: {status: live, chat: #35;9}
+  A->>T: send {chat: #35;9, text: "The README describes …", wait: 0}
+  T->>X: create(key, send fields, "Alice"): performing, standing
+  X->>T: performSend
+  T->>C: apiSendMessages #35;9 [The README describes …]
+  T->>L: end(#35;9)
+  L->>C: apiDeleteChatItems #35;9 [S] broadcast
+  T-->>A: {action: N, status: done, chat: #35;9, item, responses: [], more: 0}
+```
+
+Notes:
+
+- Eligibility is read before the first post and at each tick: the agent can post in #9, #9 is a chat with a person, a group or a business chat and is not being left, the mode is `requests`, the control chat is not lost, and #9 has a standing approval of messages ([`AgentTools.statusRefusal`, `showsStatus`, `postingRefusal`](../src/tools.ts), [`Statuses.tick`](../src/status.ts)). When #9 is not eligible at the first tick, the status ends without a post.
+- The status is started for any message returned by `receive`, whatever its sender, when the chat read of the call shows the chat eligible; a start in a chat with a status is ignored ([`AgentTools.receive`](../src/tools.ts), [`Statuses.start`](../src/status.ts)).
+- The label is read for renders 2 to 49, after the inference poll; the labels and their order are in [API 1.10](api.md#110-status-message) ([`Statuses.tick`, `label`, `statusLabel`, `modelText`, `otherLabel`](../src/status.ts)).
+- At the 50th render, the line is `◌ working since YYYY-MM-DD HH:MM UTC`; later ticks are run every 5 min without a render, and notes are rendered up to the 59th render ([`Statuses.tick`, `schedule`, `statusText`](../src/status.ts)).
+- A note is checked as a `send` up to the role check, then by `statusRefusal`; it is rendered at once without an action, and the result is returned without a wait ([`AgentTools.send`, `showNote`](../src/tools.ts), [`Statuses.show`](../src/status.ts)).
+- The answer is a new message; the status message is deleted after `apiSendMessages` returns, and it is kept after a failed answer ([`AgentTools.performSend`](../src/tools.ts)). The outcome of the answer is posted to the control chat as in [6](#6-send-under-a-standing-approval-and-revoke).
+- Other deletions: a `receive` of #9 that waits, `leave` and `/leave`, a tick of a chat that is not eligible, 23 hours, 30 minutes without calls from 50 renders, a failed send or update of the status, the stop ([API 1.10](api.md#110-status-message)).
+- A render queued while the first send of a status runs is sent after it. When that send fails, a new live item is posted for the queued render, and that item is removed by the deletion queued after it ([`LiveMessage.queueText`, `showMessage`](../../simplex-chat-nodejs/src/api.ts), [`Statuses.failed`](../src/status.ts)).
+- Polls are shared by all status messages for 3 s; one 1 s deadline is set for all requests of a poll; a failed poll is logged as `inference endpoint: ERROR` unless the previous one failed ([`inferencePoller`](../src/inference.ts), [`Statuses.inferred`](../src/status.ts)).
+
+Source: [`AgentTools.send`, `showNote`, `statusRefusal`, `showsStatus`, `performSend`, `receive`](../src/tools.ts), [`Statuses`, `statusText` to `otherLabel`](../src/status.ts), [`inferencePoller` to `rateOf`](../src/inference.ts).
