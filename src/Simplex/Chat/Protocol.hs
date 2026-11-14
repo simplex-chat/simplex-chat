@@ -654,12 +654,6 @@ raisesPriority = \case
   XMsgUpdate {priority = Just p} -> p >= 1
   _ -> False
 
-historyPriority :: ChatMsgEvent e -> ChatMsgEvent e
-historyPriority = \case
-  XMsgNew mc@MsgContainer {priority = Just p} | p > 0 -> XMsgNew (mc :: MsgContainer) {priority = Nothing}
-  XMsgUpdate msgId content mentions ttl live scope asGroup (Just p) | p > 0 -> XMsgUpdate msgId content mentions ttl live scope asGroup Nothing
-  ev -> ev
-
 cmPriority :: AChatMsgEvent -> Int
 cmPriority (ACME _ ev) = eventPriority ev
 

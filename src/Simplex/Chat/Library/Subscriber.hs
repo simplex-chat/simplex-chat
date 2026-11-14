@@ -4036,7 +4036,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         processForwardedMsg :: VerifiedMsg 'Json -> Maybe GroupMember -> CM ()
         processForwardedMsg verifiedMsg author_ = do
           rcvMsg_ <- saveGroupFwdRcvMsg user gInfo m author_ verifiedMsg brokerTs
-          forM_ (fromHistory <$> rcvMsg_) $ \rcvMsg@RcvMessage {sharedMsgId_, chatMsgEvent = ACME _ event} -> case event of
+          forM_ rcvMsg_ $ \rcvMsg@RcvMessage {sharedMsgId_, chatMsgEvent = ACME _ event} -> case event of
             XMsgNew mc ->
               void $ memberCanSend author_ scope $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
               where
@@ -4065,11 +4065,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             withAuthor tag action = case author_ of
               Just author -> action author
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
-        fromHistory :: RcvMessage -> RcvMessage
-        fromHistory rcvMsg@RcvMessage {chatMsgEvent = ACME e event}
-          | msgTs < joinedAt = (rcvMsg :: RcvMessage) {chatMsgEvent = ACME e (historyPriority event)}
-          | otherwise = rcvMsg
-        GroupMember {createdAt = joinedAt} = membership
 
     withVerifiedMsg :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> ParsedMsg e -> UTCTime -> (VerifiedMsg e -> CM a) -> CM (Maybe a)
     withVerifiedMsg gInfo@GroupInfo {membership} scopeInfo member@GroupMember {memberPubKey, memberId} (ParsedMsg _ signedMsg_ chatMsg@ChatMessage {chatMsgEvent}) ts action =
