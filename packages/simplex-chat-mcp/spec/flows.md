@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-36.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16 and 37, and the Claude Code plugin in flows 17-36.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -18,7 +18,7 @@ Participants:
 | O | the owner in the SimpleX app |
 | D | a peer |
 
-In flows 1-16, `#G` is the agent control chat, `USER` the agent's user ID, `DATA` the data folder. Calls to the core are shown as the `ChatApi` methods the server calls, with their arguments in short. Card and progress texts with a semicolon are shown with a comma in the diagrams; the exact texts are in [API](api.md).
+In flows 1-16 and 37, `#G` is the agent control chat, `USER` the agent's user ID, `DATA` the data folder. Calls to the core are shown as the `ChatApi` methods the server calls, with their arguments in short. Card and progress texts with a semicolon are shown with a comma in the diagrams; the exact texts are in [API](api.md).
 
 ---
 
@@ -64,6 +64,10 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 35. [A summary of the session's context](#35-a-summary-of-the-sessions-context)
 36. [The list of sessions](#36-the-list-of-sessions)
 
+`serve`, continued:
+
+37. [Scheduled prompts](#37-scheduled-prompts)
+
 ---
 
 ## 1. First start and the owner joins
@@ -86,16 +90,18 @@ sequenceDiagram
   S->>S: DATA/files/sent deleted
   S->>C: startChat, events buffered
   S->>C: apiListGroups USER (no control marker)
-  S->>C: apiNewGroup USER {My Agent, history on, menu pending, list and leave}
+  S->>C: apiNewGroup USER {My Agent, history on, menu pending, list, schedules and leave}
   S->>C: apiSetGroupCustomData #35;G {"simplexMcp":{"control":true,"nextAction":1}}
   S->>P: Agent control chat "My Agent" created.
   S->>K: load
   K->>C: apiListMembers #35;G
+  K->>C: apiGetChats USER, schedules from custom data (none)
   S->>S: HTTP listens on 127.0.0.1:5226, /mcp answers 503 until the control chat is started
   S->>S: server.json
   K->>C: apiDeleteGroupLink #35;G (groupLinkNotFound ignored)
   K->>C: apiCreateGroupLink #35;G member
   K->>P: join line, QR code, link, QR hint, owner line
+  S->>S: schedule timer started
   S->>P: Listening on http://127.0.0.1:5226/mcp
   O->>C: joins by the link
   C->>S: joinedGroupMember
@@ -303,6 +309,7 @@ Notes:
 - `more`: the arrived messages not returned, the overflow and the unread items not read ([`AgentTools.receive`](../src/tools.ts)).
 - Items received while the pages are read are returned once ([`AgentTools.receive`](../src/tools.ts)).
 - Exact progress text: `No new messages in CHAT; waiting until TIME.` ([`AgentTools.receive`](../src/tools.ts)).
+- The wait is also ended when a scheduled prompt of the chat is made due; the prompt is returned in `scheduled` ([37](#37-scheduled-prompts)).
 
 Source: [`AgentTools.receive`](../src/tools.ts), [`unreadItems`, `isNewMessage`, `reportProgress`, `nextChange`, `awaitResponses`](../src/messages.ts).
 
@@ -372,7 +379,7 @@ sequenceDiagram
   T->>C: apiGetChat #35;9 count 0
   T->>C: apiLeaveGroup #35;9 (membership current or pending)
   T->>C: apiDeleteChat #35;9 full, notify
-  T->>T: DATA/forwarded/group-9 deleted
+  T->>T: DATA/forwarded/group-9 deleted, schedules of #9 dropped
   X->>K: outcome
   K->>O: card edited: I left business X (#35;9). Approved by Alice.
   K->>O: Files from business X (#35;9) are kept in `DATA/files/group-9`: K files, SIZE. /'delete #35;9 files' (when the folder has files)
@@ -511,7 +518,7 @@ sequenceDiagram
   participant C as Core
   participant O as Owner
   P->>S: Ctrl-C (SIGINT)
-  S->>S: stopped: events ignored
+  S->>S: stopped: events ignored, schedule timer cleared
   par actions
     S->>X: stop()
     X->>X: stopping, timer cleared, cards being posted awaited
@@ -730,7 +737,7 @@ sequenceDiagram
   K->>T: leaveChat #35;9
   T->>C: apiLeaveGroup #35;9, apiDeleteChat #35;9 full, notify
   C->>D: the agent left the group
-  T->>T: DATA/forwarded/group-9 deleted
+  T->>T: DATA/forwarded/group-9 deleted, schedules of #9 dropped
   K->>P: Left business Ridgeline (#35;9), requested by Alice.
   K->>X: reject each pending action of #35;9 with a card
   K->>O: Left business Ridgeline (#35;9), requested by Alice.
@@ -1141,16 +1148,24 @@ sequenceDiagram
   participant K as Control of session 1
   participant T as AgentTools of session 1
   participant C as Core _hub
+  participant Q1 as Schedules of session 1
+  participant Q2 as Schedules of session 2
   O->>K: /give @4 2 in the group of session 1
   K->>T: agentChat @4: a chat of session 1
-  K->>K: session 2 has an ID
+  K->>K: session 2 of the hub: ID2 and its Schedules
   K->>T: giveChat @4 ID2
   T->>C: apiSetContactCustomData @4 {simplexMcpOwner: {session: ID2}}
+  K->>Q1: set(@4, [])
+  K->>Q2: set(@4, entries of the custom data of @4)
   K->>K: pending actions of @4 with a card rejected by Alice
   K->>O: Gave bot X (@4) to session 2.
 ```
 
-Source: [`Control.give`](../src/control.ts), [`AgentTools.giveChat`](../src/tools.ts), [`Hub.sessionId`](../src/hub.ts).
+Notes:
+
+- The due prompts of @4 are dropped. Member IDs differ between session groups, so an entry added in the group of session 1 becomes due again only after `/give @4 1` ([`Schedules.set`, `markDue`](../src/schedule.ts), [`Control.isCurrentApprover`](../src/control.ts)).
+
+Source: [`Control.give`](../src/control.ts), [`AgentTools.giveChat`](../src/tools.ts), [`Hub.numbered`](../src/hub.ts).
 
 ---
 
@@ -1692,3 +1707,50 @@ Notes:
 - An edit sends no SMP notification, and the apps alert for an edit only when it creates the item. The list's posts carry `priority: -1`; an app without silent messages alerts for them.
 
 Source: [`Hub.showSessions`, `Hub.sessionsText`, `Session.readRecord`, `Session.stateLine`](../src/hub.ts), [`MainGroup.showList`](../src/main-group.ts).
+
+---
+
+## 37. Scheduled prompts
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant A as Agent
+  participant T as AgentTools
+  participant Q as Schedules
+  participant K as Control
+  participant C as Core
+  participant O as Owner
+  O->>C: /schedule #35;15 0 7 * * 1-5 Post the trail report.
+  C->>K: newChatItems
+  K->>C: apiGetChat #35;15 count 0
+  K->>C: apiSetGroupCustomData #35;15 {...other keys, "simplexMcpSchedules":[{"cron":"0 7 * * 1-5","prompt":"Post the trail report.","by":"Alice","byId":3,"at":"..."}]}
+  K->>Q: set(#35;15, entries)
+  K->>P: Schedule 1 of #35;15 added by Alice: 0 7 * * 1-5.
+  K->>O: Schedule 1 of group Trail (#35;15): 0 7 * * 1-5, server time UTC+01:00. /'unschedule #35;15 1'
+  A->>T: receive {chat: #35;15, wait: 3600}
+  T->>Q: listen #35;15
+  T->>C: apiGetChat #35;15 initial 1
+  C-->>T: chatStats.unreadCount 0
+  T-->>A: progress: No new messages in #35;15, waiting until TIME.
+  Note over Q: minute boundary, 07:00 local time on a weekday
+  Q->>K: isCurrentApprover(3): true
+  Q->>P: Scheduled prompt 1 of #35;15 is due.
+  Q->>T: wake
+  T->>Q: take #35;15
+  T->>Q: stop listening
+  T-->>A: {chat: #35;15, messages: [], more: 0, scheduled: [{prompt: "Post the trail report.", at: "YYYY-MM-DD 06:00 UTC"}]}
+  A->>T: send {chat: #35;15, text}
+```
+
+Notes:
+
+- The command is accepted from approvers only, in both modes; CRON and PROMPT are checked before the custom data is written, and a chat has at most 10 schedules ([`Control.ownerCommand`, `addSchedule`](../src/control.ts)).
+- At its due time, an entry is skipped while member `byId` is not an approver or the control chat is lost ([`Schedules.markDue`](../src/schedule.ts), [`Control.isCurrentApprover`](../src/control.ts)).
+- One due prompt is kept per entry, with the minute it first became due; after `take`, the entry becomes due again at its next match ([`Schedules.take`, `markDue`](../src/schedule.ts)).
+- A call with a due prompt of its chat is answered without a wait; the prompts are taken after the returned messages are marked read, so after an aborted call they stay due ([`AgentTools.receive`](../src/tools.ts)).
+- By `/unschedule #15 1`, the entry and its due prompt are removed, and the later entries are renumbered; by `leave` and `/leave`, the schedules of the chat are dropped; by `/give` in a plugin session group, they are moved to the receiving session, without their due prompts ([`Control.removeSchedule`, `give`](../src/control.ts), [`Schedules.set`](../src/schedule.ts), [`AgentTools.leaveChat`](../src/tools.ts), [flow 24](#24-give)).
+- `/schedules` is answered from the custom data of all chats ([`Control.schedulesText`](../src/control.ts)).
+- Prompts due while the server is stopped are not delivered later ([`startAgent`](../src/serve.ts)).
+
+Source: [`Schedules`, `cronError`, `cronMatches`, `fieldValues`](../src/schedule.ts), [`Control.addSchedule`, `removeSchedule`, `schedulesOf`, `utcOffset`](../src/control.ts), [`AgentTools.receive`](../src/tools.ts), [`startAgent`](../src/serve.ts).

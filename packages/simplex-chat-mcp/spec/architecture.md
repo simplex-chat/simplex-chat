@@ -5,7 +5,7 @@
 > Related specs: [README](README.md) | [Flows](flows.md) | [API](api.md)
 > Related docs: [README](../README.md) | [Reference](../REFERENCE.md) | [PLAN](../../../plans/2026-10-19-mcp-server.md)
 
-**Source:** [`cli.ts`](../src/cli.ts) | [`serve.ts`](../src/serve.ts) | [`http.ts`](../src/http.ts) | [`tools.ts`](../src/tools.ts) | [`actions.ts`](../src/actions.ts) | [`control.ts`](../src/control.ts) | [`messages.ts`](../src/messages.ts) | [`files.ts`](../src/files.ts) | [`register.ts`](../src/register.ts) | [`log.ts`](../src/log.ts) | [`core.ts`](../src/core.ts)
+**Source:** [`cli.ts`](../src/cli.ts) | [`serve.ts`](../src/serve.ts) | [`http.ts`](../src/http.ts) | [`tools.ts`](../src/tools.ts) | [`actions.ts`](../src/actions.ts) | [`control.ts`](../src/control.ts) | [`messages.ts`](../src/messages.ts) | [`files.ts`](../src/files.ts) | [`register.ts`](../src/register.ts) | [`log.ts`](../src/log.ts) | [`core.ts`](../src/core.ts) | [`schedule.ts`](../src/schedule.ts)
 **Plugin source:** [`session.ts`](../src/session.ts) | [`client.ts`](../src/client.ts) | [`socket.ts`](../src/socket.ts) | [`protocol.ts`](../src/protocol.ts) | [`service.ts`](../src/service.ts) | [`hub.ts`](../src/hub.ts) | [`main-group.ts`](../src/main-group.ts) | [`user.ts`](../src/user.ts) | [`hook.ts`](../src/hook.ts) | [`owner.ts`](../src/owner.ts) | [`config.ts`](../src/config.ts) | [`qr.ts`](../src/qr.ts)
 
 ---
@@ -36,6 +36,7 @@ flowchart LR
     tools["tools.ts<br/>AgentTools"]
     actions["actions.ts<br/>Actions"]
     control["control.ts<br/>Control"]
+    schedule["schedule.ts<br/>Schedules"]
     messages["messages.ts<br/>ChatItemsWatch"]
     serve["serve.ts<br/>start, events, stop"]
     files["files.ts"]
@@ -56,6 +57,9 @@ flowchart LR
   serve --> tools
   serve --> messages
   serve --> files
+  serve --> schedule
+  control --> schedule
+  tools --> schedule
   files --> data[("DATA:<br/>token<br/>headers.json<br/>server.json<br/>lock")]
   tools --> folder[("DATA/files:<br/>group-N, contact-N<br/>sent")]
   tools --> lib
@@ -112,7 +116,7 @@ Start sequence, event dispatch and stop sequence of one agent.
 | <a id="serve-runningserver"></a>`RunningServer` | token, `ChatApi`, user, `Actions`, `stop` |
 | <a id="serve-serve"></a>`serve` | `startServer`, then SIGINT and SIGTERM handlers: the first signal stops, a second ends the stop wait |
 | <a id="serve-startserver"></a>`startServer` | data folder, lock, token, headers file, `ChatApi.init`, `startAgent`; cleanup on error |
-| <a id="serve-startagent"></a>`startAgent` | user, `prepareCore`, control group, wiring of `Actions`, `AgentTools`, `Control`, HTTP, event handler, `stop` |
+| <a id="serve-startagent"></a>`startAgent` | user, `prepareCore`, control group, wiring of `Actions`, `Schedules`, `AgentTools`, `Control`, HTTP, schedule timer, event handler, `stop` |
 | <a id="serve-registerhint"></a>`registerHint` | the `register` command line printed after the owner setup |
 | <a id="serve-waitforcancelledcards"></a>`waitForCancelledCards` | the fixed wait at stop for cards edited or posted at the stop, used by the plugin's hub as well |
 | <a id="serve-controlgroup"></a>`controlGroup` | found, created or reset agent control chat |
@@ -145,7 +149,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-inputs"></a>`ConnectInput`, `SendInput`, `ReceiveInput`, `LeaveInput`, `DownloadInput` | tool inputs |
 | <a id="tools-plansummary"></a>`PlanSummary` | card kind, chat type, name, SimpleX name, peer type, description, welcome, commands, `takesMessage` |
 | <a id="tools-chatfields"></a>`ChatFields` | chat fields of `connect` and `list` results |
-| <a id="tools-agent"></a>`Agent` | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder. The plugin adds the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection. |
+| <a id="tools-agent"></a>`Agent` | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder, `Schedules`. The plugin adds the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection. |
 | <a id="tools-joinmethod"></a>`JoinMethod` | `prepared`, `prepareChannel`, `viaAddress`, `prepareContact`, `connect` |
 | <a id="tools-schemas"></a>schemas, from `messageSchema` to `downloadOutput` | input and output JSON schemas |
 | <a id="tools-instructions"></a>descriptions, from `connectDescription` to `leaveDescription`, and `instructions` | tool descriptions and server instructions. `instructions` names the host at whose restart actions are cancelled, `server` by default. |
@@ -167,7 +171,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-agenttools-actionresult"></a>`actionResult` | wait for the decision, result fields, removal |
 | <a id="tools-agenttools-attachment"></a>`attachment`, `isRefused`, `fileToSend`, `resizedCopy` | the file of a `send` |
 | <a id="tools-agenttools-copyforsending"></a>`copyForSending`, `chatFiles`, `deleteChatFiles` | `/forward` copies; the files of a chat, forwarded ones included; its downloads cancelled, also those the core continues after a restart |
-| <a id="tools-agenttools-leavechat"></a>`leaveChat` | perform step of `leave` and `/leave`; the chat's forwarded files deleted |
+| <a id="tools-agenttools-leavechat"></a>`leaveChat` | perform step of `leave` and `/leave`; the chat's forwarded files deleted, its schedules dropped |
 | <a id="tools-agenttools-download"></a>`download`, `fileServers`, `unknownServers` | the `download` call before its action |
 | <a id="tools-agenttools-startdownload"></a>`startDownload`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived` | a download's steps |
 | <a id="tools-agenttools-agentchats"></a>`agentChats`, `knownChat` | the agent's chats; a checked chat reference |
@@ -215,23 +219,25 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="control-standings"></a>`standings` | custom data key and reply words of the approvals of messages and files |
 | <a id="control-controldata"></a>`ControlData` | `{control: true, nextAction}` |
 | <a id="control-chatapproval"></a>`ChatApproval` | `{approvedBy, approvedById, approvedAt}` |
-| <a id="control-controloptions"></a>`ControlOptions`, `SessionOptions` | display name, `--owners`, register hint and QR code size. For a group of the plugin's session, its approver check, the session IDs by number, the check of `User` and `toolsChanged`, which sends the approved tools to the session, are added. |
+| <a id="control-controloptions"></a>`ControlOptions`, `SessionOptions` | display name, `--owners`, register hint and QR code size. For a group of the plugin's session, its approver check, the sessions by number, each with its ID and `Schedules`, the check of `User` and `toolsChanged`, which sends the approved tools to the session, are added. |
 | <a id="control-ownerrequest-type"></a>`OwnerRequest` | parsed owner command |
-| <a id="control-control-load"></a>`Control.load` | lost check, group profile and menu through `updateProfile`, and member list |
+| <a id="control-control-load"></a>`Control.load` | lost check, group profile and menu through `updateProfile`, member list, and schedules of the agent's chats |
 | <a id="control-control-rename"></a>`Control.rename`, `Control.describe`, `updateProfile` | the plugin's group name, and its short description. `updateProfile` makes one profile update at a time, and keeps the custom data in memory. A session group is updated from its current profile in the chat database. The agent control chat of `serve` is updated from the profile held in memory since the start, by `changeGroupProfile`. |
 | <a id="control-control-start"></a>`Control.start` | owner setup per `--owners` |
 | <a id="control-control-refusal"></a>`Control.refusal` | bytes left for the link texts of a connect card and for the input preview of a tool-use card, card size of a send, connect or download, approver presence |
 | <a id="control-control-hasapprover"></a>`Control.hasApprover` | an approver is a member |
 | <a id="control-control-standingapprover"></a>`Control.standingApprover` | approver name of a chat's standing approval of messages or files |
+| <a id="control-control-iscurrentapprover"></a>`Control.isCurrentApprover` | whether a member ID is a current approver and the control chat is not lost; for standing approvals and schedules |
 | <a id="control-control-savecounter"></a>`Control.saveCounter`, `Control.saveData` | queued writes of the counter and of other keys of the group's custom data |
 | <a id="control-control-postcard"></a>`Control.postCard`, `Control.outcome` | card post and card edit; the kept-files message after a done leave |
 | <a id="control-control-refusedfile"></a>`Control.refusedFile`, `Control.fileNotSent` | posts about files |
 | <a id="control-control-onmessage"></a>`Control.onMessage` | owner commands, queued one at a time. In a group of the plugin's session, the session passes it the one-line `/` texts, and the texts of `User` are dropped. |
 | <a id="control-control-onevent"></a>`Control.onEvent` | membership changes and loss of the control chat. `lose`, at a loss of the group and at `load` of a lost group, ends the tool approvals and calls `toolsChanged`. |
 | <a id="control-control-ownercommand"></a>`Control.ownerCommand` | command dispatch and replies. A text outside the requests is answered with the command list, or with `Unknown command.` in a group of the plugin's session. |
-| <a id="control-control-approvechat"></a>`approveChat`, `revoke`, `forward`, `leave`, `deleteFiles` | owner requests |
+| <a id="control-control-approvechat"></a>`approveChat`, `revoke`, `addSchedule`, `removeSchedule`, `forward`, `leave`, `deleteFiles` | owner requests |
+| <a id="control-control-schedulestext"></a>`schedulesText` | the `/schedules` reply |
 | <a id="control-control-approvedtools"></a>`approvedTools`, `endToolApprovals`, `approveTool`, `revokeTool` | the approvals of tools of a group of the plugin's session, in memory, by tool name, with the approver's name and member ID. `approvedTools` returns those whose approver is an approver now. `approveTool` records the tool of a pending `permission` action, logs, calls `toolsChanged`, approves the action and replies with `/'revoke TOOL'`. `revokeTool` deletes one, logs and calls `toolsChanged`. `endToolApprovals` drops all; it also runs when the session's group is lost. `chatsText` lists the approved tools after the chats, and `setObserver` calls `toolsChanged` after it reads the members again. |
-| <a id="control-control-give"></a>`give`, `setObserver` | `/give CHAT N` and `/observer #G ID` in a group of the plugin's session. `setObserver` replies `NAME's role can't be changed.` for a member with status `pending_approval` or `pending_review`. For a member who is neither current nor pending, such as an invited member who has not joined, the reply is `No member ID in this group.` ([`memberCurrentOrPending`](../src/tools.ts)). Only a current member's role is set to `observer`, when the sender's role is admin or owner and not below the member's role. The members are then read again, and the observer's rights are the reply. |
+| <a id="control-control-give"></a>`give`, `setObserver` | `/give CHAT N` and `/observer #G ID` in a group of the plugin's session. At `give`, the entries of CHAT are moved from the session's `Schedules` to those of session N. `setObserver` replies `NAME's role can't be changed.` for a member with status `pending_approval` or `pending_review`. For a member who is neither current nor pending, such as an invited member who has not joined, the reply is `No member ID in this group.` ([`memberCurrentOrPending`](../src/tools.ts)). Only a current member's role is set to `observer`, when the sender's role is admin or owner and not below the member's role. The members are then read again, and the observer's rights are the reply. |
 | <a id="control-control-isapprover"></a>`isApprover` | the session's check in a group of the plugin's session; otherwise role `owner`, and the `--owners` list when given |
 | <a id="control-roleorder"></a>`roleOrder`, `roleRank`, `canSend` | the roles of SimpleX from `relay` to `owner`, in the order of the core; a role above `observer` |
 | <a id="control-sessionapproverroles"></a>`sessionApproverRoles`, `rightsText` | `admin` and `owner`, the approvers of a session group. `rightsText` is `NAME is a ROLE and RIGHTS.`, with the rights of the approvers, of the other roles that send, or of an observer. |
@@ -247,6 +253,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="control-truncatedline"></a>`truncatedLine`, `fittedLines` | a line cut with `…`; the code lines that fit a byte budget, the last one cut |
 | <a id="control-serversline"></a>`serversLine`, `sizeText` | servers line and sizes of download cards |
 | <a id="control-codespan"></a>`codeSpan`, `safeName`, `mentionText` | quoting of peer text |
+| <a id="control-schedulesof"></a>`schedulesOf`, `utcOffset` | valid schedule entries of a chat's custom data; the server's UTC offset |
 | <a id="control-ownerrequest"></a>`ownerRequest` | command words to an `OwnerRequest`, with `give CHAT N`, `observer #G ID`, `approve N all` and `revoke TOOL` only for a group of the plugin's session |
 | <a id="control-losescontrol"></a>`losesControl`, `isLost` | loss of the control chat or of a plugin group |
 | <a id="control-joinedtext"></a>`joinedText` | `NAME joined (member N)`, shared with the Main group |
@@ -309,6 +316,25 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="log-chaintext"></a>`chainText`, `errorChain` | `SimpleX error: <type chain>: <scalar fields>`, details at most 500 characters |
 | <a id="log-fulldomainname"></a>`fullDomainName` | `SimplexDomain` to `name.simplex` or `name.testing` |
 
+### [2.11 `schedule.ts`](../src/schedule.ts)
+
+Scheduled prompts of the agent's chats.
+
+| Symbol | Contents |
+|---|---|
+| <a id="schedule-cronranges"></a>`cronRanges`, `cronItem` | value ranges of the 5 cron fields; the forms of a field's item |
+| <a id="schedule-scheduleentry"></a>`ScheduleEntry` | `{cron, prompt, by, byId, at}`: cron text, prompt, author's display name and member ID, ISO creation time |
+| <a id="schedule-due"></a>`Due` | `{prompt, at}`: a due prompt and its due minute in UTC |
+| <a id="schedule-schedules"></a>`Schedules` | entries per chat reference, each with its due prompt; wake listeners; timer; the approver check of `byId` |
+| <a id="schedule-schedules-set"></a>`set` | a chat's entries replaced; the due prompt of an entry with the same creation time kept |
+| <a id="schedule-schedules-start"></a>`start`, `stop` | the first tick; the timer cleared |
+| <a id="schedule-schedules-listen"></a>`listen` | a wake callback for one chat, and its removal |
+| <a id="schedule-schedules-take"></a>`take`, `pending` | a chat's due prompts returned and cleared; their count |
+| <a id="schedule-schedules-tickafter"></a>`tickAfter` | an unreferenced timer to the next minute boundary; after the check, the next one |
+| <a id="schedule-schedules-markdue"></a>`markDue` | each entry not due, of an approver, whose cron matches the boundary minute in local time: due, log line, wake of the chat's listeners |
+| <a id="schedule-cronerror"></a>`cronError` | refusal text of a cron |
+| <a id="schedule-cronmatches"></a>`cronMatches`, `fieldValues` | match against local time, day fields as in vixie cron; the values of a field, none when out of range |
+
 ---
 
 ## 3. State
@@ -327,6 +353,8 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | Rejected files | [`AgentTools.rejectedFiles`](../src/tools.ts) | [`downloadResult`](../src/tools.ts) | the file field; [`download`](../src/tools.ts), which then skips the files approval |
 | Count of file descriptions | [`AgentTools.describedFiles`](../src/tools.ts), with the change signal `fileDescriptions` | `onFileDescription` | `fileServers` |
 | Members of the control chat | [`Control.members`](../src/control.ts) | [`refreshMembers`](../src/control.ts) | approver checks |
+| Schedules and due prompts | [`Schedules.chats`](../src/schedule.ts), per chat reference: the entries, each with at most one due prompt | `set` at load, `/schedule`, `/unschedule`, `/give` and `leaveChat`; `markDue`; `take` | timer, `receive` |
+| Schedule listeners | [`Schedules.listeners`](../src/schedule.ts), wake callbacks per chat reference | `listen`, from `receive` | `markDue` |
 | Mode, expiry, owners list, stop wait | `ServeOptions` of the run. The mode is kept in `Actions.mode` and in each action as well, [`ActionRecord.mode`](../src/actions.ts). | CLI | all modules |
 
 ### 3.2 Chat database custom data
@@ -336,6 +364,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | Control marker and counter | agent control chat | `{simplexMcp: {control: true, nextAction: N}}` | [`createControlChat`](../src/control.ts), [`saveCounter`](../src/control.ts) | [`findControlGroup`](../src/control.ts), [`controlDataOf`](../src/control.ts) |
 | Standing approval of messages | contact or group of the agent | `{...other keys, simplexMcp: {approvedBy, approvedById, approvedAt}}` | [`approveChat`](../src/control.ts), [`revoke`](../src/control.ts) | [`standingApprover`](../src/control.ts) |
 | Files approval | contact or group of the agent | `{...other keys, simplexMcpFiles: {approvedBy, approvedById, approvedAt}}` | [`approveChat`](../src/control.ts), [`revoke`](../src/control.ts) | [`standingApprover`](../src/control.ts) |
+| Schedules | contact or group of the agent | `{...other keys, simplexMcpSchedules: [{cron, prompt, by, byId, at}, ...]}` | [`addSchedule`](../src/control.ts), [`removeSchedule`](../src/control.ts) | [`schedulesOf`](../src/control.ts) |
 
 The profile, chats, items, members and file transfers are stored by the core in `DATA/simplex_chat.db`; connections and queues in `DATA/simplex_agent.db` (file prefix `DATA/simplex`, [`startServer`](../src/serve.ts)).
 
@@ -370,12 +399,12 @@ The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the No
 7. Events are buffered, and the chat is started ([`startAgent`](../src/serve.ts)).
 8. A `--display-name` different from the profile, or a peer type other than `agent`, is applied with one `apiUpdateProfile` ([`startAgent`](../src/serve.ts), [`updatedUser`](../src/core.ts)).
 9. The agent control chat is found by its marker, created with counter 1, or reset with `--reset-owners` ([`startAgent`, `controlGroup`](../src/serve.ts)).
-10. `Actions`, `ChatItemsWatch`, `AgentTools` and `Control` are created; the counter is taken from the marker ([`startAgent`](../src/serve.ts)).
-11. `Control.load` sets `Actions.lost` for a lost control chat. Otherwise it updates the group name and command menu when they differ in the control chat's profile read at the start, as in 0.2, and reads the members ([`Control.load`, `updateProfile`, `changeGroupProfile`](../src/control.ts)).
+10. `Actions`, `ChatItemsWatch`, `Schedules`, `AgentTools` and `Control` are created; the counter is taken from the marker ([`startAgent`](../src/serve.ts)).
+11. `Control.load` sets `Actions.lost` for a lost control chat. Otherwise it updates the group name and command menu when they differ in the control chat's profile read at the start, as in 0.2, reads the members, and reads the schedules of the agent's chats from their custom data with one `apiGetChats` ([`Control.load`, `updateProfile`, `changeGroupProfile`](../src/control.ts), [`AgentTools.agentChats`](../src/tools.ts)).
 12. The HTTP server listens; with the port in use, the process exits with code 1 ([`startAgent`, `listen`](../src/serve.ts)). Until step 14 ends, requests to `/mcp` that pass the token check get 503 with `Retry-After: 1` ([`startHttp`](../src/http.ts), the `started` flag of [`startAgent`](../src/serve.ts)).
 13. `server.json` is written ([`startAgent`](../src/serve.ts)).
 14. The server runs the owner setup, `Control.start`; after an error, HTTP is closed and the error is rethrown ([`startAgent`](../src/serve.ts)).
-15. `Listening on http://127.0.0.1:PORT/mcp` ([`startAgent`](../src/serve.ts)).
+15. The schedule timer is started; `Listening on http://127.0.0.1:PORT/mcp` ([`startAgent`](../src/serve.ts), [`Schedules.start`](../src/schedule.ts)).
 16. Buffered events are replayed, then live events are dispatched ([`startAgent`](../src/serve.ts), [`bufferEvents`](../src/core.ts)).
 
 After an error inside `startAgent` (steps 4-16) the chat is closed; after any error once the lock is taken, the lock is released ([`startServer`](../src/serve.ts)).
@@ -407,7 +436,7 @@ Owner commands are queued in a second chain, independent of the membership chain
 
 On `SIGINT` or `SIGTERM` the server runs one stop; a later signal ends its wait for cancelled cards ([`serve`](../src/serve.ts)). `RunningServer.stop`, made by [`startAgent`](../src/serve.ts):
 
-1. Events are ignored from now on.
+1. Events are ignored from now on, and the schedule timer is cleared.
 2. `Actions.stop` starts: new actions are refused with `The server is stopping.`; the expiry timers are cleared; cards being posted are awaited; pending and performing actions are marked interrupted; the stop signal of the performs is aborted, which ends the wait of a `connect` for its connection; their cards are edited, or posted when they have no card; outcome edits already in progress are awaited ([`Actions.stop`](../src/actions.ts)).
 3. In parallel with step 2, the HTTP server is closed with all connections, and open calls are aborted ([`stopHttp`](../src/http.ts)).
 4. `Cancelled K action(s).` when K > 0 (`stop` in [`startAgent`](../src/serve.ts)).
@@ -460,7 +489,7 @@ Sources: [`Actions.create`](../src/actions.ts), [`registerTools`](../src/tools.t
 | approver, `--owners` without a list | none | [`Control.isApprover`](../src/control.ts) |
 | approver, `--owners ID:NAME,...` | member with role `owner` whose `groupMemberId` and `displayName`, folded to one line by `oneLine`, match an entry | [`Control.isApprover`, `listsMember`](../src/control.ts) |
 
-The command sender's member record from the chat item is checked ([`Control.onMessage`, `ownerCommand`](../src/control.ts)). The approver count for refusals and standing approvals is taken from `Control.members`, refreshed at load and at each membership event ([`Control.onEvent`, `refreshMembers`](../src/control.ts)).
+The command sender's member record from the chat item is checked ([`Control.onMessage`, `ownerCommand`](../src/control.ts)). The approver count for refusals, standing approvals and schedules is taken from `Control.members`, refreshed at load and at each membership event ([`Control.onEvent`, `refreshMembers`](../src/control.ts)).
 
 Owner setup at start ([`Control.start`](../src/control.ts)):
 
@@ -552,7 +581,7 @@ Outcomes are posted after `done` and `failed` ([`Actions.runPerform`](../src/act
 | grant | `/approve CHAT all` from an approver in mode `requests`; pending sends of CHAT with a card are approved | `/receive CHAT N all` from an approver, on the card of download N; N is performed, and the other pending downloads of CHAT stay pending | [`Control.ownerCommand`, `approveChat`](../src/control.ts) |
 | mode `host` | nothing stored; reply `Approvals apply in mode requests; this server runs in mode host.` | downloads get no card, so the command has none to act on | [`Control.ownerCommand`](../src/control.ts) |
 | removal | `/revoke CHAT`: the `simplexMcp` key is removed, other keys kept | `/receive CHAT off`: the `simplexMcpFiles` key is removed | [`Control.revoke`](../src/control.ts) |
-| use | mode `requests`, and `approvedById` equal to the `groupMemberId` of a current approver | the same | [`Control.standingApprover`](../src/control.ts) |
+| use | mode `requests`, the control chat not lost, and `approvedById` equal to the `groupMemberId` of a current approver | the same | [`Control.standingApprover`, `isCurrentApprover`](../src/control.ts) |
 | scope | `send` | `download` of a file whose servers are all known | [`AgentTools.send`, `download`](../src/tools.ts) |
 | decider shown | `safeName(approvedBy)` | the same | [`Control.standingApprover`](../src/control.ts) |
 | storage | the chat's custom data; removed with the chat by `leave` | the same | [`AgentTools.leaveChat`](../src/tools.ts) |
@@ -581,6 +610,20 @@ A timer runs on the monotonic clock, while `expires` is a time on the wall clock
 | one write at a time, also after a failed write | [`Control.saveCounter`, `saveData`](../src/control.ts) |
 | `--reset-owners` copies the value into the new control chat | [`controlGroup`](../src/serve.ts), [`resetControlChat`](../src/control.ts) |
 | a refused call leaves the counter unchanged | [`Actions.create`](../src/actions.ts) |
+
+### 5.8 Scheduled prompts
+
+| Rule | Code |
+|---|---|
+| add: `/schedule CHAT CRON PROMPT` from an approver, in both modes; the entry is appended to the custom data of CHAT, at most 10 per chat | [`Control.addSchedule`](../src/control.ts) |
+| removal: `/unschedule CHAT N` from an approver; the later entries of CHAT are renumbered | [`Control.removeSchedule`](../src/control.ts) |
+| the entries in memory are set at load, at each add and removal, and to none when the agent leaves the chat; in a plugin session group, at `/give CHAT N`, they are set to none, and those of session N are set from the custom data, without due prompts | [`Control.load`, `addSchedule`, `removeSchedule`, `give`](../src/control.ts), [`AgentTools.leaveChat`](../src/tools.ts) |
+| at each minute boundary, an entry becomes due when it is not due already, member `byId` is an approver, the control chat is not lost, and its cron matches the boundary minute in local time; logged | [`Schedules.tickAfter`, `markDue`](../src/schedule.ts), [`Control.isCurrentApprover`](../src/control.ts) |
+| one due prompt per entry, with the minute it first became due; an entry set again with the same creation time keeps it; the due prompt of a removed entry is dropped | [`Schedules.set`, `markDue`](../src/schedule.ts) |
+| `receive` of CHAT: a waiting call ends when a prompt of CHAT becomes due; the due prompts are taken after the messages are marked read, and returned in `scheduled` | [`AgentTools.receive`](../src/tools.ts) |
+| prompts due while the server is stopped are not delivered later: due prompts are kept in memory only, and the timer starts after the owner setup | [`startAgent`](../src/serve.ts) |
+
+When a tick is delayed by a sleep of the computer, the minute it was set for is checked, and the minutes until the next boundary are skipped ([`Schedules.tickAfter`](../src/schedule.ts)).
 
 ---
 
@@ -628,14 +671,14 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 | terminal names and errors of actions | folded to one line | [`Actions.create`, `performedText`](../src/actions.ts), [`inLog`](../src/control.ts) |
 | tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, file names, downloaded files, `description`, `welcome` and `commands` with their labels and params as data, not instructions; the instructions take a chat's messages as prompts only when the user said so in the session, and limit what the agent shares about its user | [`messageSchema`, `commandSchema`, `chatFieldSchemas`, `downloadOutput`, `instructions`](../src/tools.ts) |
 
-The server writes the tappable form `/'...'` only in the card's command line ([`commandsLine`](../src/control.ts)), in `/'revoke CHAT'` of standing cards and replies ([`cardText`, `Control.approveChat`](../src/control.ts)), and in `/'delete CHAT files'` of the kept-files message ([`Control.leftChatFilesNote`](../src/control.ts)).
+The server writes the tappable form `/'...'` only in the card's command line ([`commandsLine`](../src/control.ts)), in `/'revoke CHAT'` of standing cards and replies ([`cardText`, `Control.approveChat`](../src/control.ts)), in `/'delete CHAT files'` of the kept-files message ([`Control.leftChatFilesNote`](../src/control.ts)), in `/'unschedule CHAT N'` of the `/schedule` replies ([`Control.addSchedule`](../src/control.ts)), and in `/schedules` lines, where an approver's prompt is shown with its `/'...'` forms ([`Control.schedulesText`](../src/control.ts)).
 
 ### 6.4 Chat references
 
 | Rule | Code |
 |---|---|
 | `^[@#][1-9]\d{0,14}$`: 1 to 15 digits; the core reads `#(2^64 + N)` as `#N` | [`isChatRef`](../src/messages.ts), [test "a chat reference over 15 digits, which the core reads as the agent control chat, is refused"](../test/e2e/scenarios.test.ts) |
-| the control chat is refused by `send`, `receive`, `download`, `leave` and the owner commands with CHAT, and left out of `list` and `/list` | [`AgentTools.receive`, `agentChats`, `knownChat`](../src/tools.ts), [`Control.agentChat`](../src/control.ts) |
+| the control chat is refused by `send`, `receive`, `download`, `leave` and the owner commands with CHAT, and left out of `list`, `/list` and `/schedules` | [`AgentTools.receive`, `agentChats`, `knownChat`](../src/tools.ts), [`Control.agentChat`, `schedulesText`](../src/control.ts) |
 | a store error of the chat read is reported as `No chat CHAT.` | [`AgentTools.receive`, `knownChat`](../src/tools.ts) |
 | the agent's own links are refused by `connect` (`ownLink` plans) | [`classifyPlan`](../src/tools.ts) |
 
@@ -648,6 +691,8 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | A text outside the requests from any sender is answered with the help reply of `serve`, or with `Unknown command.` in a plugin session group. Other commands are accepted only from approvers. A command from another sender is answered in `serve`, and left without a reply in a plugin session group. | [`Control.ownerCommand`](../src/control.ts) |
 | commands run one at a time in arrival order | [`Control.onMessage`](../src/control.ts) |
 | `/approve`, `/reject`, `/receive` and `/forward` need a pending action with a card, and the action's chat when CHAT is given; `/receive` and `/forward` take downloads only, `/approve` the other actions only | [`Control.ownerCommand`](../src/control.ts) |
+| only the key `simplexMcpSchedules` of the custom data of CHAT is changed by `/schedule` and `/unschedule` | [`Control.addSchedule`, `removeSchedule`](../src/control.ts) |
+| a scheduled prompt is returned to the agent only in `scheduled` of `receive`, apart from the chat's messages, and marked as written by the owner in the output schema and the description of `receive` | [`receiveOutput`, `receiveDescription`, `AgentTools.receive`](../src/tools.ts) |
 
 ### 6.6 Files
 
@@ -705,6 +750,10 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | agent NAME | 1 to 32 characters | [`validAgentName`](../src/cli.ts) |
 | display name | 50 characters, `mkValidName` rules | [`prohibitedNameChars`, `maxNameLength`, `validName`](../src/messages.ts) |
 | port | 1 to 65535, default 5226 | [`serveOptions`](../src/cli.ts) |
+| schedules per chat | 10 | [`maxSchedules`, `Control.addSchedule`](../src/control.ts) |
+| scheduled prompt | 1 to 2000 characters (code points), one line | [`maxPromptLength`, `Control.addSchedule`, `parseCommand`](../src/control.ts) |
+| `/schedules` reply | 100 lines of at most 100 bytes, then a count of the others | [`listedSchedules`, `maxLineLength`, `Control.schedulesText`](../src/control.ts) |
+| schedule tick | each minute boundary | [`minute`, `Schedules.tickAfter`](../src/schedule.ts) |
 
 ---
 
@@ -876,10 +925,10 @@ Data flow of a prompt from the session group:
 | `Hub.userContactId` | the hub's contact marked `simplexMcpUser`, read at the start |
 | <a id="hub-hub-open"></a>`Hub.open` | core `_hub`, Main group found or created, `MainGroup` load and start, `User` unless it fails, the contact of `User`, the stored sessions, events, the timer of the list of sessions, every 2 s |
 | <a id="hub-hub-configure"></a>`Hub.configure`, `resetOwners` | expiry of all sessions and the Main group name. The Main group is replaced at once, even while owners exist. |
-| <a id="hub-hub-session"></a>`Hub.session` | the open session, renamed when its name changed, or a new `Session` with its stored or new group. The owners are invited to a new group. |
+| <a id="hub-hub-session"></a>`Hub.session` | the open session, renamed when its name changed, or a new `Session` with its stored or new group. The schedule timer of a new `Session` is started after `Control.load`, and the owners are invited to a new group. |
 | <a id="hub-hub-sessionstext"></a>`Hub.sessionsText`, `join`, `inviteOwner` | `SessionGroups` of the Main group. `sessionsText` is the text of the list of sessions: the lines of the running sessions by number, then `⚪ Not running: ` with the other sessions newest first, or `No sessions.` The last line keeps the most names for which the text, with the count of the rest, fits one message with the given quote; a binary search finds them. |
 | <a id="hub-hub-showsessions"></a>`Hub.showSessions`, `notRunningLine` | one render at a time: the records of the sessions read, and the text passed to `MainGroup.showList`; a failure is logged as `list of sessions: ERROR`. `notRunningLine` is the last line with the first K names and the count of the rest. |
-| <a id="hub-hub-stop"></a>`Hub.stop` | the timer of the list cleared, actions stopped, events awaited, the running render awaited, one more render with every session not running, cancelled cards awaited up to 10 s, steps ended, cores closed |
+| <a id="hub-hub-stop"></a>`Hub.stop` | the timer of the list and the schedule timer of every session cleared, actions stopped, events awaited, the running render awaited, one more render with every session not running, cancelled cards awaited up to 10 s, steps ended, cores closed |
 | <a id="hub-hub-storedgroup"></a>`storedGroup`, `createSessionGroup` | the group of `session.json` with a matching session number; a new group with `User` added |
 | <a id="hub-hub-onevent"></a>`Hub.onEvent` | event dispatch. Pending connections are claimed at `contactConnected` and `userJoinedGroup`. A session group's membership events go to its `Control`, `sendTools`, `announceRights` and `askMode`, one at a time. |
 | <a id="hub-notallowedforuser"></a>`notAllowedForUser` | `NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` It is posted for a prompt of `User` refused by a group preference, including one that is on only for roles above that of `User`. |
@@ -983,6 +1032,7 @@ Memory of the service:
 | Updates of lines | [`Session.finalizing`](../src/hub.ts), the promise of every update of a line started so far | `endStep` | `endSteps`, so `Hub.stop` waits for them |
 | Check of live steps | [`stepCheckMs`, `Session.expiry`](../src/hub.ts), an unreferenced timer that runs `expireSteps` every minute while a step is live | `step`, `endStep` | `endStep` |
 | Actions of a session | [`Session.actions`](../src/hub.ts), numbered from 1 per session group | tools, `permission`, `requestMode` | `Control`, `busy` |
+| Schedules of a session | [`Session.schedules`](../src/hub.ts), as in [3.1](#31-memory), with the schedule timer started by `Hub.session` and cleared by `Hub.stop` | as in 3.1 | the same |
 | Pushed prompts | [`Session.pushed`](../src/hub.ts), at most 20, each kept until it is matched by a turn's prompt. An entry is marked `quoted` once it is quoted by an answer without a turn record. | `deliver`, `turnQuote` | `turn`, `turnQuote` |
 | Files of prompts in transfer | [`Session.receiving`](../src/hub.ts) | `receive`, its 10-minute timer | `fileDone` |
 | Model and effort | [`Session.description`](../src/hub.ts), also in `session.json` | constructor, `turn` | `turn` |
@@ -1109,7 +1159,7 @@ On `SIGINT`, `SIGTERM`, `POST /stop` or the stop timer ([`Service.shutdown`](../
 | The first human who joins the Main group while it has no owner becomes an owner, and the link is deleted | [`MainGroup.handleEvent`, `ownerJoined`](../src/main-group.ts) |
 | A session runs in mode `host` after an approver approves its `mode` card. The card is posted once an approver is in the group. After a rejection, the card is posted again only after `requests`. `requests` applies at once, and the hub ends a pending `mode` card. The mode is kept in the session group's custom data. | [`Session.requestMode`, `askMode`, `declineHost`, `Hub.onEvent`](../src/hub.ts), [`AgentTools.perform`](../src/tools.ts) |
 | At a reset of the owners from the computer that runs Claude Code, the service replaces the Main group at once, even while owners exist. No owner's approval is needed for `reset-owners` and `POST /reset-owners`. | [`Hub.resetOwners`](../src/hub.ts), [`resetOwners`](../src/owner.ts), [`MainGroup.replace`](../src/main-group.ts) |
-| A chat without an owner is given to the session that connects it. The owner is set at one of four points: the perform, the connection event of its action, the completion of a pending connection that the session recorded, or a `connect` to the chat as a known chat. The tools of other sessions don't show the chat. With `/give CHAT N`, an approver moves the chat to session N. | [`AgentTools.owns`, `claim`, `ownChat`, `performConnect`, `markConnected`](../src/tools.ts), [`Session.claimPending`, `Hub.onEvent`](../src/hub.ts), [`Control.give`](../src/control.ts) |
+| A chat without an owner is given to the session that connects it. The owner is set at one of four points: the perform, the connection event of its action, the completion of a pending connection that the session recorded, or a `connect` to the chat as a known chat. The tools of other sessions don't show the chat. With `/give CHAT N`, an approver moves the chat, with its schedules, to session N. Member IDs differ between session groups, so the prompts of a schedule added in another session's group do not become due. | [`AgentTools.owns`, `claim`, `ownChat`, `performConnect`, `markConnected`](../src/tools.ts), [`Session.claimPending`, `Hub.onEvent`, `Hub.numbered`](../src/hub.ts), [`Control.give`, `isCurrentApprover`](../src/control.ts), [`Schedules.markDue`](../src/schedule.ts) |
 
 Tool-use state machine, one action of tool `permission` per request:
 

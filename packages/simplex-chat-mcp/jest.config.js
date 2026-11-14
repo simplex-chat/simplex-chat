@@ -1,3 +1,5 @@
+process.env.TZ = "Pacific/Chatham"
+
 module.exports = {
   preset: "ts-jest",
   maxWorkers: 1,

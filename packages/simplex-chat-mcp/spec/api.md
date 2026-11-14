@@ -4,7 +4,7 @@
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [Flows](flows.md)
 
-**Source:** [`tools.ts`](../src/tools.ts) | [`control.ts`](../src/control.ts) | [`cli.ts`](../src/cli.ts) | [`messages.ts`](../src/messages.ts) | [`actions.ts`](../src/actions.ts) | [`session.ts`](../src/session.ts) | [`service.ts`](../src/service.ts) | [`hub.ts`](../src/hub.ts) | [`main-group.ts`](../src/main-group.ts) | [`hook.ts`](../src/hook.ts) | [`owner.ts`](../src/owner.ts) | [`protocol.ts`](../src/protocol.ts)
+**Source:** [`tools.ts`](../src/tools.ts) | [`control.ts`](../src/control.ts) | [`cli.ts`](../src/cli.ts) | [`messages.ts`](../src/messages.ts) | [`actions.ts`](../src/actions.ts) | [`session.ts`](../src/session.ts) | [`service.ts`](../src/service.ts) | [`hub.ts`](../src/hub.ts) | [`main-group.ts`](../src/main-group.ts) | [`hook.ts`](../src/hook.ts) | [`owner.ts`](../src/owner.ts) | [`protocol.ts`](../src/protocol.ts) | [`schedule.ts`](../src/schedule.ts)
 
 ---
 
@@ -211,20 +211,23 @@ Input:
 | Field | Type | Range | Default | Rule |
 |---|---|---|---|---|
 | `chat` | string | | required | `@N` or `#N` of the agent |
-| `wait` | number | 0 to 86400 | 0 | seconds to wait when no message is new |
+| `wait` | number | 0 to 86400 | 0 | seconds to wait when no message is new and no scheduled prompt of the chat is due |
 | `limit` | integer | 1 to 100 | 50 | most messages returned |
 
-Output (all fields always present):
+Output (`chat`, `messages` and `more` always present):
 
 | Field | Value |
 |---|---|
 | `chat` | the chat reference |
 | `messages` | unread received messages in chat order, then received messages that arrived during the call; live items left out; at most `limit` |
 | `more` | new messages not returned, overflow, and unread items left unread by the page reads |
+| `scheduled` | the due scheduled prompts of the chat, each `{prompt, at}`, `at` the minute it became due as `YYYY-MM-DD HH:MM UTC`; present only when one is due |
 
 Tool errors: `No chat CHAT. list shows the agent's chats.` for an invalid reference, the control chat, or a store error of the first read, `initial` 1 ([`AgentTools.receive`](../src/tools.ts)); other chat errors, a store error of a later page read included, as their error text ([`errorText`, `chatErrorText`](../src/log.ts)).
 
 Messages are read by `receive` without an action or an approval.
+
+A waiting call ends when a scheduled prompt of the chat becomes due, and a call with a due prompt is answered without a wait. The due prompts are taken after the returned messages are marked read, so after an aborted call they stay due for the next call ([`AgentTools.receive`](../src/tools.ts), [`Schedules.listen`, `pending`, `take`](../src/schedule.ts)). In the tool description, each is marked as a prompt from the owner, to be answered in that chat ([`receiveDescription`](../src/tools.ts)). Schedules are set by the owner commands in [2.1](#21-commands-and-replies).
 
 ### 1.5 `download`
 
@@ -409,6 +412,8 @@ line      spaces, "/", KEYWORD, PARAMS
 KEYWORD   characters up to the first whitespace
 PARAMS    the rest, trimmed, split on whitespace
 CHAT      @N or #N, 1 to 15 digits
+CRON      5 words of PARAMS, joined by single spaces
+PROMPT    the rest of PARAMS, its whitespace kept
 requests
   approve N
   approve CHAT N
@@ -426,6 +431,9 @@ requests
   delete CHAT files
   pending
   list
+  schedule CHAT CRON PROMPT
+  unschedule CHAT N
+  schedules
   give CHAT N         in a plugin session group only
   observer #G ID      in a plugin session group only
 ```
@@ -434,7 +442,7 @@ The server reads commands from members' messages in the main conversation of the
 
 | Request | Condition | Reply | Code |
 |---|---|---|---|
-| one-line `/` text outside the requests | any sender | `Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands.` The reply in a plugin session group is in [4.3](#43-session-groups) | [`commandsReply`, `unknownCommand`, `Control.ownerCommand`](../src/control.ts) |
+| one-line `/` text outside the requests | any sender | `Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /schedule, /unschedule, /schedules. Each card shows its commands.` The reply in a plugin session group is in [4.3](#43-session-groups) | [`commandsReply`, `unknownCommand`, `Control.ownerCommand`](../src/control.ts) |
 | any request | sender not an approver, `--owners` absent | `Only owners approve actions.` | [`Control.ownerCommand`](../src/control.ts) |
 | any request | sender not an approver, `--owners` given | `Only the owners listed in --owners approve actions.` | [`Control.ownerCommand`](../src/control.ts) |
 | `approve`, `reject`, `receive`, `forward` with N | action N absent, not `pending`, or without a card | `Action N is not pending.` | [`Control.ownerCommand`](../src/control.ts) |
@@ -457,10 +465,24 @@ The server reads commands from members' messages in the main conversation of the
 | `pending` | otherwise | one line per action: `N  WHAT  expires YYYY-MM-DD HH:MM UTC` | [`Control.ownerCommand`, `pendingLine`](../src/control.ts) |
 | `list` | no chats | `No chats.` | [`Control.chatsText`](../src/control.ts) |
 | `list` | otherwise | one line per chat of the 100 most recent: `CHAT  KIND NAME`, then `, approved for this chat by APPROVER`, `, files approved by APPROVER` and `, not connected` when applicable, cut to 100 bytes with `…`; then `K older chats are not shown.` (`1 older chat is not shown.`) | [`Control.chatsText`](../src/control.ts) |
+| `schedule CHAT CRON PROMPT`, `unschedule CHAT N` | CHAT unknown or the control chat | `No chat CHAT. /list shows the agent's chats.` | [`Control.addSchedule`, `removeSchedule`](../src/control.ts) |
+| `schedule CHAT CRON PROMPT` | a word of CRON of another form | `Schedule: 5 cron fields expected, such as 0 7 * * *.` | [`cronError`](../src/schedule.ts) |
+| `schedule CHAT CRON PROMPT` | a value out of its field's range, a range whose end is below its start, or a step 0 | `Schedule: cron field FIELD is out of range.`, FIELD as written | [`cronError`, `fieldValues`](../src/schedule.ts) |
+| `schedule CHAT CRON PROMPT` | PROMPT over 2000 characters (code points) | `Schedule: the prompt is over 2000 characters.` | [`Control.addSchedule`](../src/control.ts) |
+| `schedule CHAT CRON PROMPT` | CHAT has 10 schedules | `Schedule: KIND NAME (CHAT) has 10 schedules; /'unschedule CHAT N' removes one.` | [`Control.addSchedule`](../src/control.ts) |
+| `schedule CHAT CRON PROMPT` | accepted, in both modes; the schedule is appended as number N of CHAT; logged | `Schedule N of KIND NAME (CHAT): CRON, server time UTC±HH:MM. /'unschedule CHAT N'` | [`Control.addSchedule`, `utcOffset`](../src/control.ts) |
+| `unschedule CHAT N` | N is 0 or above the count of schedules of CHAT | `CHAT has no schedule N.` | [`Control.removeSchedule`](../src/control.ts) |
+| `unschedule CHAT N` | accepted, in both modes; the later schedules of CHAT are renumbered; logged | `Schedule N of KIND NAME (CHAT) is removed.` | [`Control.removeSchedule`](../src/control.ts) |
+| `schedules` | no schedules | `No schedules.` | [`Control.schedulesText`](../src/control.ts) |
+| `schedules` | otherwise | one line per schedule, chats in the order of `list`, then by N: `CHAT  N  CRON  PROMPT`, PROMPT folded to one line; each line cut to 100 bytes with `…`; after 100 lines, `K more schedules are not shown.` (`1 more schedule is not shown.`) | [`Control.schedulesText`](../src/control.ts) |
 
 KIND is `contact`, `bot`, `agent`, `business`, `group` or `channel` ([`contactKind`, `groupKind`](../src/tools.ts)). WHAT is `connect to SUBJECT`, `send to SUBJECT`, `download NAME from SUBJECT`, `delete SUBJECT` or `leave SUBJECT` ([`summary`](../src/actions.ts)). SIZE is in bytes, KB, MB or GB, by 1000, with one decimal ([`sizeText`](../src/control.ts)). Names are shown by [`safeName`](../src/control.ts).
 
-A standing approval is stored in the chat's custom data, `simplexMcp` for messages and `simplexMcpFiles` for files, as `{approvedBy, approvedById, approvedAt}`; it applies in mode `requests` while member `approvedById` is an approver ([`standings`, `Control.standingApprover`](../src/control.ts)).
+A standing approval is stored in the chat's custom data, `simplexMcp` for messages and `simplexMcpFiles` for files, as `{approvedBy, approvedById, approvedAt}`; it applies in mode `requests` while member `approvedById` is an approver and the control chat is not lost ([`standings`, `Control.standingApprover`, `isCurrentApprover`](../src/control.ts)).
+
+CRON has 5 fields: minute 0-59, hour 0-23, day of month 1-31, month 1-12 and day of week 0-7, 0 and 7 Sunday. Each field is a comma list of `*`, `N`, `A-B`, `*/S` and `A-B/S`. The fields are matched against the server's local time; when neither the day of month nor the day of week starts with `*`, a match of either day field suffices, as in vixie cron; otherwise both must match ([`cronRanges`, `cronItem`, `cronMatches`, `fieldValues`](../src/schedule.ts)). UTC±HH:MM is the offset of the server's local time from UTC at the reply ([`utcOffset`](../src/control.ts)).
+
+A schedule is stored in the chat's custom data, key `simplexMcpSchedules`, as an array of `{cron, prompt, by, byId, at}`: the author's display name and member ID, and the creation time in ISO 8601; other keys are kept. Entries of another shape, or with a refused cron, are ignored, and dropped at the next accepted `/schedule` or `/unschedule` of the chat ([`schedulesOf`](../src/control.ts)). A schedule applies in both modes while member `byId` is an approver and the control chat is not lost ([`Schedules.markDue`](../src/schedule.ts), [`Control.isCurrentApprover`](../src/control.ts)); its delivery is described in [Architecture: scheduled prompts](architecture.md#58-scheduled-prompts).
 
 ### 2.2 Cards
 
@@ -552,7 +574,7 @@ ENTRIES: `ID:NAME` of each human, or of each human owner, joined by commas; an e
 | full name | empty | [`createControlChat`](../src/control.ts) |
 | description | `Supervise your AI agent here: approve or reject its connections and messages with one tap.` | [`createControlChat`](../src/control.ts) |
 | history | on | [`createControlChat`](../src/control.ts) |
-| command menu | `/pending` "Pending actions"<br>`/list` "Chats and approvals"<br>`/leave` "Leave a chat", params `<chat ID>`<br>updated at start when it differs | [`controlCommands`, `Control.load`](../src/control.ts) |
+| command menu | `/pending` "Pending actions"<br>`/list` "Chats and approvals"<br>`/schedules` "Scheduled prompts"<br>`/leave` "Leave a chat", params `<chat ID>`<br>updated at start when it differs | [`controlCommands`, `Control.load`](../src/control.ts) |
 
 ---
 
@@ -659,6 +681,9 @@ stdout ([`log`](../src/log.ts)):
 | rejected | `Action N rejected by NAME.` | [`Actions.reject`](../src/actions.ts) |
 | expired | `Action N expired.` | [`Actions.expire`](../src/actions.ts) |
 | `/leave CHAT` | `Left KIND NAME (CHAT), requested by NAME.` or `Deleted ...` | [`Control.leave`](../src/control.ts) |
+| `/schedule CHAT CRON PROMPT` | `Schedule N of CHAT added by NAME: CRON.`, NAME on one line | [`Control.addSchedule`](../src/control.ts) |
+| `/unschedule CHAT N` | `Schedule N of CHAT removed by NAME.`, NAME on one line | [`Control.removeSchedule`](../src/control.ts) |
+| scheduled prompt due | `Scheduled prompt N of CHAT is due.` | [`Schedules.markDue`](../src/schedule.ts) |
 | refused file, file not sent | as in [2.3](#23-other-posts), names and paths on one line | [`Control.refusedFile`, `fileNotSent`](../src/control.ts) |
 | stop | `Cancelled K action.` or `Cancelled K actions.` when K > 0<br>`Stopping: sending K cancelled card(s), up to S s. Ctrl-C to stop now.` when cards were edited or posted and S > 0<br>`Stopped.` | `stop` in [`startAgent`](../src/serve.ts), [`waitForCancelledCards`](../src/serve.ts) |
 | membership messages | see [2.4](#24-membership-messages) | |
@@ -779,7 +804,7 @@ Commands and replies are those of [2.1](#21-commands-and-replies), from approver
 | any request | the sender is not an approver: a moderator, member, author or observer, or `User`. `Control` drops a request of `User` before this check. A moderator, member or author gets the reply of the last row instead | none, and nothing is performed | [`Control.onMessage`, `ownerCommand`](../src/control.ts) |
 | `/give CHAT N` | CHAT is not a chat of this session | `No chat CHAT. /list shows the agent's chats.` | [`Control.give`](../src/control.ts) |
 | `/give CHAT N` | no session N | `No session N. /sessions in the Main group lists the sessions.` | [`Control.give`](../src/control.ts) |
-| `/give CHAT N` | accepted: CHAT's owner is set to session N, and the pending actions of CHAT with a card are rejected by the sender | `Gave KIND NAME (CHAT) to session N.` | [`Control.give`](../src/control.ts) |
+| `/give CHAT N` | accepted: CHAT's owner is set to session N; the schedules of CHAT are moved from the `Schedules` of this session to those of session N, without their due prompts; the pending actions of CHAT with a card are rejected by the sender | `Gave KIND NAME (CHAT) to session N.` | [`Control.give`](../src/control.ts) |
 | `/list`, `/revoke CHAT`, `/leave CHAT` | | only the chats of this session, even while the session is closed | [`AgentTools.agentChats`, `knownChat`](../src/tools.ts) |
 | `/give CHAT N` in the control chat of `serve` | any sender | the help reply, as in 0.2 | [`Control.ownerCommand`, `ownerRequest`](../src/control.ts) |
 | `/observer #G ID` | #G is not this group | `#G is not this group.` | [`Control.setObserver`](../src/control.ts) |
@@ -796,7 +821,7 @@ Commands and replies are those of [2.1](#21-commands-and-replies), from approver
 | one-line `/` text outside the requests | an admin or owner | `Unknown command.` | [`unknownCommand`, `Control.ownerCommand`](../src/control.ts) |
 | any one-line `/` text | a moderator, member or author. The session replies before `Control`, and the text is passed to neither `Control` nor Claude | `Only admins and owners of this group can send / commands.`, quoting the message | [`commandsApproversOnly`, `Session.onMessage`, `refusesCommand`](../src/hub.ts) |
 
-The requests `give CHAT N` and `observer #G ID` of [2.1](#21-commands-and-replies), `approve N all` and `revoke TOOL` are parsed only in a plugin session group ([`ownerRequest`](../src/control.ts)). Approvers are the active members of the session group with the role `admin` or `owner`, other than Claude and `User`, however they joined. An observer can't send, because the core refuses an observer's message ([`Session.approves`, `isUser`](../src/hub.ts), [`sessionApproverRoles`, `Control.approvers`, `isHuman`, `isApprover`](../src/control.ts)). The core accepts an observer's reaction, and the hub ignores it ([`Session.onReaction`](../src/hub.ts), [`canSend`](../src/control.ts)).
+The requests `give CHAT N` and `observer #G ID` of [2.1](#21-commands-and-replies), `approve N all` and `revoke TOOL` are parsed only in a plugin session group ([`ownerRequest`](../src/control.ts)). Approvers are the active members of the session group with the role `admin` or `owner`, other than Claude and `User`, however they joined. An observer can't send, because the core refuses an observer's message ([`Session.approves`, `isUser`](../src/hub.ts), [`sessionApproverRoles`, `Control.approvers`, `isHuman`, `isApprover`](../src/control.ts)). The core accepts an observer's reaction, and the hub ignores it ([`Session.onReaction`](../src/hub.ts), [`canSend`](../src/control.ts)). Member IDs differ between session groups, so after `/give`, the prompts of a schedule added in the group of the giving session become due only when CHAT is given back ([`Schedules.markDue`](../src/schedule.ts), [`Control.isCurrentApprover`](../src/control.ts)).
 
 The hub handles other messages by these rules, in arrival order, one at a time ([`Session.onMessage`, `prompt`, `queue`, `refusesCommand`, `approves`](../src/hub.ts), [`Control.onMessage`](../src/control.ts)):
 
@@ -1062,8 +1087,9 @@ Environment:
 - `CLAUDE_PLUGIN_OPTION_MAIN_GROUP`, `CLAUDE_PLUGIN_OPTION_APPROVE` and `CLAUDE_PLUGIN_OPTION_EXPIRE_HOURS`: the options.
 - `SIMPLEX_MCP_MACHINE`: the machine part of the Main group's name, see [4.8](#48-plugin-options-files-and-hook-output).
 - `SIMPLEX_MCP_READY_FD`: the fd of the service's ready line.
+- `TZ`: the time zone of the service's local time, in which the cron fields of the session groups' schedules are matched.
 
-The service is spawned with the variables of the spawning process whose names match, case-insensitively, `PATH`, `PATHEXT`, `HOME`, `USERPROFILE`, `HOMEDRIVE`, `HOMEPATH`, `TMPDIR`, `TMP`, `TEMP`, `XDG_CACHE_HOME`, `LOCALAPPDATA`, `APPDATA`, `SYSTEMROOT`, `SYSTEMDRIVE`, `WINDIR`, `COMSPEC`, `LANG`, `LC_*`, `LD_LIBRARY_PATH`, `DYLD_LIBRARY_PATH`, `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`, `NODE_USE_ENV_PROXY`, `NODE_EXTRA_CA_CERTS`, `NODE_OPTIONS`, `SSL_CERT_FILE`, `SSL_CERT_DIR`, `SIMPLEX_*` and `CLAUDE_PLUGIN_OPTION_*` ([`serviceVariables`, `spawnService`](../src/client.ts)).
+The service is spawned with the variables of the spawning process whose names match, case-insensitively, `PATH`, `PATHEXT`, `HOME`, `USERPROFILE`, `HOMEDRIVE`, `HOMEPATH`, `TMPDIR`, `TMP`, `TEMP`, `XDG_CACHE_HOME`, `LOCALAPPDATA`, `APPDATA`, `SYSTEMROOT`, `SYSTEMDRIVE`, `WINDIR`, `COMSPEC`, `LANG`, `LC_*`, `TZ`, `LD_LIBRARY_PATH`, `DYLD_LIBRARY_PATH`, `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`, `NODE_USE_ENV_PROXY`, `NODE_EXTRA_CA_CERTS`, `NODE_OPTIONS`, `SSL_CERT_FILE`, `SSL_CERT_DIR`, `SIMPLEX_*` and `CLAUDE_PLUGIN_OPTION_*` ([`serviceVariables`, `spawnService`](../src/client.ts)).
 
 | Code | Message | Code location |
 |---|---|---|

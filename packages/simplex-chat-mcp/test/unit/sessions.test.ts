@@ -15,7 +15,7 @@ import {AttachLine} from "../../src/protocol"
 import * as tools from "../../src/tools"
 import {User} from "../../src/user"
 import {version} from "../../src/version"
-import {FakeChat, contact, direct, event, fileItem, group, groupChat, item, member, signal, until, user} from "./fixtures"
+import {FakeChat, clockStart, contact, direct, dueAt, event, fileItem, group, groupChat, item, member, signal, until, user} from "./fixtures"
 
 const unknownCommand = "Unknown command."
 
@@ -487,6 +487,30 @@ describe("session groups", () => {
     expect(await listed(one)).toEqual([])
     expect(await listed(two)).toEqual(["@4"])
     expect(await one.control.ownerCommand(invitedAlice, {keyword: "give", params: "@4 1"})).toBe("No chat @4. /list shows the agent's chats.")
+  })
+
+  it("move the schedules of a chat that /give gives to the receiving session, where only the prompts of its own approvers' schedules become due", async () => {
+    jest.useFakeTimers({now: clockStart, doNotFake: ["setImmediate"]})
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const one = await openSession(hub, id1, stored(1, "one"))
+    const two = await openSession(hub, id2, stored(2, "two"))
+    const aliceInTwo = member(2003, "Alice", T.GroupMemberRole.Owner)
+    chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1), items: []})
+    await withOwner(chat, one)
+    chat.members.set(two.control.groupId, [self, aliceInTwo])
+    await two.control.load()
+    await one.control.ownerCommand(invitedAlice, {keyword: "schedule", params: "@4 * * * * * Search for trail shoes."})
+    jest.advanceTimersByTime(1)
+    expect(await one.control.ownerCommand(invitedAlice, {keyword: "give", params: "@4 2"})).toBe("Gave bot SimpleX Directory (@4) to session 2.")
+    await two.control.ownerCommand(aliceInTwo, {keyword: "schedule", params: "@4 * * * * * Read the news."})
+    jest.advanceTimersByTime(30_000)
+    expect(one.schedules.pending("@4")).toBe(0)
+    expect(two.schedules.take("@4")).toEqual([{prompt: "Read the news.", at: dueAt(7, 0)}])
+    expect(await two.control.ownerCommand(aliceInTwo, {keyword: "give", params: "@4 1"})).toBe("Gave bot SimpleX Directory (@4) to session 1.")
+    jest.advanceTimersByTime(60_000)
+    expect(one.schedules.take("@4")).toEqual([{prompt: "Search for trail shoes.", at: dueAt(7, 1)}])
+    expect(two.schedules.pending("@4")).toBe(0)
   })
 
   it("list and revoke the standing approvals of a closed session in its group", async () => {

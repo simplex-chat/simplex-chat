@@ -54,7 +54,7 @@ describe("spawning the service", () => {
   })
 
   it("gives the service only the variables it uses", async () => {
-    const given = {ANTHROPIC_API_KEY: "secret", GITHUB_TOKEN: "secret", CLAUDE_PLUGIN_OPTION_APPROVE: "host", SIMPLEX_LIBS_DIR: "/libs", HTTPS_PROXY: "http://proxy:3128", LC_CTYPE: "C.UTF-8", NODE_OPTIONS: "--no-deprecation"}
+    const given = {ANTHROPIC_API_KEY: "secret", GITHUB_TOKEN: "secret", CLAUDE_PLUGIN_OPTION_APPROVE: "host", SIMPLEX_LIBS_DIR: "/libs", HTTPS_PROXY: "http://proxy:3128", LC_CTYPE: "C.UTF-8", TZ: "America/St_Johns", NODE_OPTIONS: "--no-deprecation"}
     Object.assign(process.env, given)
     try {
       await spawnService(root, script(`require("fs").writeFileSync(process.env.SIMPLEX_MCP_HOME + "/env", JSON.stringify(process.env)); require("fs").writeSync(3, "ready\\n")`))
@@ -62,7 +62,7 @@ describe("spawning the service", () => {
       for (const name of Object.keys(given)) delete process.env[name]
     }
     const env = JSON.parse(readFileSync(join(root, "env"), "utf8"))
-    expect(env).toMatchObject({CLAUDE_PLUGIN_OPTION_APPROVE: "host", SIMPLEX_LIBS_DIR: "/libs", HTTPS_PROXY: "http://proxy:3128", LC_CTYPE: "C.UTF-8", NODE_OPTIONS: "--no-deprecation", SIMPLEX_MCP_HOME: root, PATH: process.env.PATH})
+    expect(env).toMatchObject({CLAUDE_PLUGIN_OPTION_APPROVE: "host", SIMPLEX_LIBS_DIR: "/libs", HTTPS_PROXY: "http://proxy:3128", LC_CTYPE: "C.UTF-8", TZ: "America/St_Johns", NODE_OPTIONS: "--no-deprecation", SIMPLEX_MCP_HOME: root, PATH: process.env.PATH})
     expect(env).not.toHaveProperty("ANTHROPIC_API_KEY")
     expect(env).not.toHaveProperty("GITHUB_TOKEN")
   })
