@@ -461,7 +461,7 @@ signChatMsgBody MsgSigning {bindingTag, bindingData, keyRef, privKey} msgBody =
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr, fileExpires :: Maybe UTCTime, fileBadge :: Maybe BadgeProof} -> ChatMsgEvent 'Json
-  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool} -> ChatMsgEvent 'Json
+  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool, priority :: Maybe Int} -> ChatMsgEvent 'Json
   XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, onlyHistory :: Bool} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
@@ -639,18 +639,19 @@ cmToQuotedMsg = \case
   _ -> Nothing
 
 limitPriority :: Int -> Int
-limitPriority = max (-1) . min 0
+limitPriority = max (-1) . min 1
 
-sndPriority :: Maybe Int -> Maybe Int
-sndPriority = mfilter (/= 0) . fmap limitPriority
+sndPriority :: Bool -> Maybe Int -> Maybe Int
+sndPriority highAllowed = mfilter (\p -> p < 0 || (p > 0 && highAllowed)) . fmap limitPriority
 
-msgPriority :: ChatMsgEvent e -> Int
-msgPriority = \case
+eventPriority :: ChatMsgEvent e -> Int
+eventPriority = \case
   XMsgNew MsgContainer {priority = Just p} -> limitPriority p
+  XMsgUpdate {priority = Just p} | p >= 1 -> 1
   _ -> 0
 
 cmPriority :: AChatMsgEvent -> Int
-cmPriority (ACME _ ev) = msgPriority ev
+cmPriority (ACME _ ev) = eventPriority ev
 
 data MsgContentTag
   = MCText_
@@ -1364,7 +1365,10 @@ hasNotification = \case
   _ -> False
 
 eventHasNotification :: ChatMsgEvent e -> Bool
-eventHasNotification ev = msgPriority ev >= 0 && hasNotification (toCMEventTag ev)
+eventHasNotification ev = case compare (eventPriority ev) 0 of
+  LT -> False
+  EQ -> hasNotification (toCMEventTag ev)
+  GT -> True
 
 msgHasNotification :: VerifiedMsg e -> Bool
 msgHasNotification verifiedMsg = eventHasNotification chatMsgEvent
@@ -1451,7 +1455,8 @@ appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
         live <- opt "live"
         scope <- opt "scope"
         asGroup <- opt "asGroup"
-        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup}
+        priority <- opt "priority"
+        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, priority}
       XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> (fromMaybe False <$> opt "onlyHistory")
       XMsgDeleted_ -> pure XMsgDeleted
       XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> p "reaction" <*> p "add"
@@ -1536,7 +1541,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
         J.Object obj -> obj
         _ -> JM.empty
       XMsgFileDescr msgId' fileDescr fileExpires fileBadge -> o $ ("fileExpires" .=? fileExpires) $ ("fileBadge" .=? fileBadge) ["msgId" .= msgId', "fileDescr" .= fileDescr]
-      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
+      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, priority} -> o $ ("priority" .=? priority) $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId scope onlyHistory -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) $ ("onlyHistory" .=? justTrue onlyHistory) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XMsgReact msgId' memberId scope reaction add -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]

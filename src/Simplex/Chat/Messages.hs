@@ -460,6 +460,7 @@ data ChatStats = ChatStats
   { unreadCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
     unreadMentions :: Int, -- returned both in /_get chat initial API and in /_get chats API
     unreadSilent :: IntDef,
+    unreadHighPriority :: IntDef,
     reportsCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
     minUnreadItemId :: ChatItemId,
     unreadChat :: Bool
@@ -467,7 +468,7 @@ data ChatStats = ChatStats
   deriving (Show)
 
 emptyChatStats :: ChatStats
-emptyChatStats = ChatStats 0 0 (IntDef 0) 0 0 False
+emptyChatStats = ChatStats 0 0 (IntDef 0) (IntDef 0) 0 0 False
 
 data NavigationInfo = NavigationInfo
   { afterUnread :: Int,
@@ -534,6 +535,9 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   deriving (Show)
 
 type ShowGroupAsSender = Bool
+
+highPriority :: CIMeta c d -> Bool
+highPriority CIMeta {priority} = maybe False (> 0) priority
 
 mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Int -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention itemPriority hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified createdAt updatedAt =

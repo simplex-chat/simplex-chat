@@ -13,7 +13,7 @@ module ChatTests.Direct where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Groups (itemPriority, lastSndMsgFlags, lastSndMsgPriority, rcvItemPrioritiesCfg)
+import ChatTests.Groups (itemPriority, lastSndEventPriority, lastSndMsgFlags, lastSndMsgPriority, rcvItemPrioritiesCfg)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
@@ -1000,6 +1000,14 @@ testDirectSilentMessage ps = do
       sendWithPriority "hey" (-5) "F" (Just (-1))
       sendWithPriority "hello" 0 "T" Nothing
       sendWithPriority "hello again" 1 "T" Nothing
+      helloId <- lastItemId alice
+      alice ##> ("/_update item @2 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello again\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <## "message didn't change"
+      alice ##> ("/_update item @2 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello again!\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "@bob [edited] hello again!"
+      bob <# "alice> [edited] hello again!"
+      lastSndEventPriority alice "x.msg.update" `shouldReturn` Nothing
+      forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` Nothing
       alice #> "@bob bye"
       bob <# "alice> bye"
       lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["T"]

@@ -454,7 +454,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
     | testView && showReceipts ->
         ttyUser u [sShow (length chatItems) <> " message statuses updated"]
     | otherwise -> []
-  CEvtChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
+  CEvtChatItemUpdated u (AChatItem _ _ chat item) _ -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
   CEvtChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CEvtChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction u chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CEvtChatItemsDeleted u deletions byUser timed -> ttyUser u $ viewChatItemsDeleted (unmuted u) deletions byUser timed ts tz testView
@@ -741,7 +741,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
           CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to context mc
           _ -> showSndItem to
           where
-            to = ttyToGroup g scopeInfo
+            to = ttyToGroup g scopeInfo <> ttyToPriority meta
         CIGroupRcv m -> rcvGroupItem (Just m)
         CIChannelRcv -> rcvGroupItem Nothing
         where
@@ -753,7 +753,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
             CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
             _ -> showRcvItem from
             where
-              from = ttyFromGroupAttention g scopeInfo m_ userMention
+              from = ttyFromGroupAttention g scopeInfo m_ $ if highPriority meta then "!!" else if userMention then "!" else ""
           context =
             maybe
               (maybe [] forwardedFrom itemForwarded)
@@ -894,7 +894,7 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, itemEd
       CISndMsgContent mc -> hideLive meta $ viewSentMessage to context mc ts tz meta
       _ -> []
       where
-        to = if itemEdited then ttyToGroupEdited g scopeInfo else ttyToGroup g scopeInfo
+        to = ttyToGroup g scopeInfo <> ttyToPriority meta <> (if itemEdited then ttyTo "[edited] " else "")
     where
       updGroupItem :: Maybe GroupMember -> [StyledString]
       updGroupItem m_ = case content of
@@ -903,7 +903,7 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, itemEd
           | otherwise -> viewReceivedUpdatedMessage from context mc ts tz meta
         _ -> []
         where
-          from = if itemEdited then ttyFromGroupEdited g scopeInfo m_ else ttyFromGroup g scopeInfo m_
+          from = (if itemEdited then ttyFromGroupEdited else ttyFromGroupAttention) g scopeInfo m_ $ if highPriority meta then "!!" else ""
       context =
         maybe
           (maybe [] forwardedFrom itemForwarded)
@@ -2138,7 +2138,7 @@ viewGroupUpdated
         | null prefs = []
         | otherwise = bold' "updated group preferences:" : prefs
         where
-          prefs = mapMaybe viewPref (if useRelays' g' then channelGroupFeatures else regularGroupFeatures)
+          prefs = mapMaybe viewPref ((if useRelays' g' then channelGroupFeatures else regularGroupFeatures) <> [AGF SGFMsgPriority])
           viewPref (AGF f)
             | pref gps == pref gps' = Nothing
             | otherwise = Just . plain $ groupPreferenceText (pref gps')
@@ -2170,7 +2170,7 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {shortDescr, descripti
     <> maybe [] (const ["has profile image"]) image
     <> maybe [] ((bold' "welcome message:" :) . map plain . T.lines) description
     <> viewChatLayout chatLayout
-    <> (bold' "group preferences:" : map viewPref (if useRelays' g then channelGroupFeatures else regularGroupFeatures))
+    <> (bold' "group preferences:" : map viewPref ((if useRelays' g then channelGroupFeatures else regularGroupFeatures) <> [AGF SGFMsgPriority]))
   where
     viewPref (AGF f) = plain $ groupPreferenceText (pref gps)
       where
@@ -3121,28 +3121,27 @@ ttyFullGroup GroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullN
   ttyGroup g <> optFullName g fullName shortDescr
 
 ttyFromGroup :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> StyledString
-ttyFromGroup g scopeInfo m_ = ttyFromGroupAttention g scopeInfo m_ False
+ttyFromGroup g scopeInfo m_ = ttyFromGroupAttention g scopeInfo m_ ""
 
-ttyFromGroupAttention :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Bool -> StyledString
-ttyFromGroupAttention g scopeInfo m_ attention = membershipIncognito g <> ttyFrom (fromGroupAttention_ g scopeInfo m_ attention)
+ttyFromGroupAttention :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Text -> StyledString
+ttyFromGroupAttention g scopeInfo m_ attn = membershipIncognito g <> ttyFrom (fromGroupAttention_ g scopeInfo m_ attn)
 
-ttyFromGroupEdited :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> StyledString
-ttyFromGroupEdited g scopeInfo m_ = membershipIncognito g <> ttyFrom (fromGroup_ g scopeInfo m_ <> "[edited] ")
+ttyFromGroupEdited :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Text -> StyledString
+ttyFromGroupEdited g scopeInfo m_ attn = membershipIncognito g <> ttyFrom (fromGroupAttention_ g scopeInfo m_ attn <> "[edited] ")
 
 ttyFromGroupDeleted :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Maybe Text -> StyledString
 ttyFromGroupDeleted g scopeInfo m_ deletedText_ =
   membershipIncognito g <> ttyFrom (fromGroup_ g scopeInfo m_ <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
 
 fromGroup_ :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Text
-fromGroup_ g scopeInfo m_ = fromGroupAttention_ g scopeInfo m_ False
+fromGroup_ g scopeInfo m_ = fromGroupAttention_ g scopeInfo m_ ""
 
-fromGroupAttention_ :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Bool -> Text
-fromGroupAttention_ g scopeInfo m_ attention =
-  let attn = if attention then "!" else ""
-   in "#" <> viewGroupName g
-        <> maybe "" (" " <>) (groupScopeInfoStr scopeInfo)
-        <> maybe "" ((" " <>) . viewMemberName) m_
-        <> attn <> "> "
+fromGroupAttention_ :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Text -> Text
+fromGroupAttention_ g scopeInfo m_ attn =
+  "#" <> viewGroupName g
+    <> maybe "" (" " <>) (groupScopeInfoStr scopeInfo)
+    <> maybe "" ((" " <>) . viewMemberName) m_
+    <> attn <> "> "
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
@@ -3153,8 +3152,8 @@ ttyTo = styled $ colored Cyan
 ttyToGroup :: GroupInfo -> Maybe GroupChatScopeInfo -> StyledString
 ttyToGroup g scopeInfo = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> maybe "" (" " <>) (groupScopeInfoStr scopeInfo) <> " ")
 
-ttyToGroupEdited :: GroupInfo -> Maybe GroupChatScopeInfo -> StyledString
-ttyToGroupEdited g scopeInfo = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> maybe "" (" " <>) (groupScopeInfoStr scopeInfo) <> " [edited] ")
+ttyToPriority :: CIMeta c d -> StyledString
+ttyToPriority meta = if highPriority meta then ttyTo "!! " else ""
 
 groupScopeInfoStr :: Maybe GroupChatScopeInfo -> Maybe Text
 groupScopeInfoStr = \case

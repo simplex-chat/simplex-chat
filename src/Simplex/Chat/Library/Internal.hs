@@ -708,7 +708,7 @@ updateCallItemStatus user ct@Contact {contactId} Call {chatItemId} receivedStatu
 updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> CM ()
 updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) edited live timed_ msgId_ = do
   ci' <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
-  toView $ CEvtChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci')
+  toView $ CEvtChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci') Nothing
 
 callStatusItemContent :: User -> Contact -> ChatItemId -> WebRTCCallStatus -> CM (Maybe ACIContent)
 callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
@@ -854,7 +854,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
         lookupChatItemByFileId db cxt user fileId
       forM_ aci_ $ \aci -> do
         cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user aci
+        toView $ CEvtChatItemUpdated user aci Nothing
       throwChatError $ CEInvalidFileDescription "redirect not allowed"
     when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
@@ -887,7 +887,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
       forM_ aci_ $ \aci -> do
         cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user aci
+        toView $ CEvtChatItemUpdated user aci Nothing
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 cleanupACIFile :: AChatItem -> CM ()
@@ -3051,15 +3051,20 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
   createdAt <- liftIO getCurrentTime
   cxt <- chatStoreCxt
   withStore' $ \db -> do
-    (mentions' :: Map MemberName CIMention, userMention) <- case toChatInfo cd of
+    (mentions' :: Map MemberName CIMention, mentionOrReply) <- case toChatInfo cd of
       GroupChat g@GroupInfo {membership} _ -> groupMentions db g membership
       _ -> pure (M.empty, False)
+    let priority = case cmPriority chatMsgEvent of
+          p | p > 0 -> case content of
+            CIRcvMsgContent _ | rcvPriorityAllowed cd -> 1
+            _ -> 0
+          p -> p
+        userMention = mentionOrReply || priority > 0
     cInfo' <-
       if (ciRequiresAttention content || contactChatDeleted cd)
         then updateChatTsStats db cxt user cd createdAt (memberChatStats userMention)
         else pure $ toChatInfo cd
     let showAsGroup = case cd of CDChannelRcv {} -> True; _ -> False
-        priority = cmPriority chatMsgEvent
         hasLink_ = ciContentHasLink content ft_
     itemForwarded <- rcvForwardedFrom db user cd msg
     (ciId, quotedItem) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemForwarded itemTimed live userMention priority hasLink_ brokerTs createdAt
@@ -3090,6 +3095,12 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
         let unread = fromEnum $ ciCreateStatus content == CISRcvNew
          in Just (unread, memberAttentionChange unread (Just brokerTs) Nothing scope, fromEnum userMention)
       _ -> Nothing
+
+rcvPriorityAllowed :: ChatDirection c 'MDRcv -> Bool
+rcvPriorityAllowed = \case
+  CDGroupRcv g _ m -> groupFeatureMemberAllowed SGFMsgPriority m g && not (memberBlocked m)
+  CDChannelRcv g _ -> groupFeatureMemberAllowed' SGFMsgPriority GROwner (fullGroupPreferences g)
+  _ -> False
 
 -- TODO [mentions] optimize by avoiding unnecessary parsing
 mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> Maybe MsgVerified -> UTCTime -> ChatItem c d

@@ -994,7 +994,7 @@ data ChatEvent
   | CEvtChatInfoUpdated {user :: User, chatInfo :: AChatInfo}
   | CEvtNewChatItems {user :: User, chatItems :: [AChatItem]} -- there is the same command response
   | CEvtChatItemsStatusesUpdated {user :: User, chatItems :: [AChatItem]}
-  | CEvtChatItemUpdated {user :: User, chatItem :: AChatItem} -- there is the same command response
+  | CEvtChatItemUpdated {user :: User, chatItem :: AChatItem, priorityRaised :: Maybe PriorityRaised} -- there is the same command response
   | CEvtChatItemNotChanged {user :: User, chatItem :: AChatItem} -- there is the same command response
   | CEvtChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction} -- there is the same command response
   | CEvtGroupChatItemsDeleted {user :: User, groupInfo :: GroupInfo, chatItemIDs :: [ChatItemId], byUser :: Bool, member_ :: Maybe GroupMember} -- there is the same command response
@@ -1363,7 +1363,14 @@ data ComposedMessage = ComposedMessage
 
 data UpdatedMessage = UpdatedMessage
   { msgContent :: MsgContent,
-    mentions :: Map MemberName GroupMemberId
+    mentions :: Map MemberName GroupMemberId,
+    priority :: Maybe Int
+  }
+  deriving (Show)
+
+data PriorityRaised = PriorityRaised
+  { newAttention :: Bool,
+    wasSilent :: Bool
   }
   deriving (Show)
 
@@ -1944,6 +1951,8 @@ $(JQ.deriveJSON defaultJSON ''AddRelayResult)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "RTS") ''RelayTestStep)
 
 $(JQ.deriveJSON defaultJSON ''RelayTestFailure)
+
+$(JQ.deriveJSON defaultJSON ''PriorityRaised)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 

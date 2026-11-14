@@ -820,7 +820,7 @@ processChatCommand cxt nm = \case
     gId <- withFastStore $ \db -> getGroupIdByName db user groupName
     reportedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user gId contactName_ reportedMessage
     processChatCommand cxt nm $ APIReportMessage gId reportedItemId reportReason ""
-  APIUpdateChatItem (ChatRef cType chatId scope) itemId live (UpdatedMessage mc mentions) -> withUser $ \user -> assertAllowedContent mc >> case cType of
+  APIUpdateChatItem (ChatRef cType chatId scope) itemId live (UpdatedMessage mc mentions priority_) -> withUser $ \user -> assertAllowedContent mc >> case cType of
     CTDirect -> withContactLock "updateChatItem" chatId $ do
       unless (null mentions) $ throwCmdError "mentions are not supported in this chat"
       ct@Contact {contactId} <- withFastStore $ \db -> getContact db cxt user chatId
@@ -833,7 +833,7 @@ processChatCommand cxt nm = \case
               let changed = mc /= oldMC
               if changed || fromMaybe False itemLive
                 then do
-                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing
+                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing Nothing
                   (SndMessage {msgId}, _) <- sendDirectContactMessage user ct event
                   ci' <- withFastStore' $ \db -> do
                     currentTs <- liftIO getCurrentTime
@@ -856,26 +856,28 @@ processChatCommand cxt nm = \case
           -- TODO [knocking] check chat item scope?
           cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
           case cci of
-            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgVerified}, content = ciContent} -> do
+            CChatItem SMDSnd ci@ChatItem {meta = meta@CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgVerified, priority = itemPriority_}, content = ciContent} -> do
               case (ciContent, itemSharedMsgId, editable) of
                 (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
                   chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
                   recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
                   let changed = mc /= oldMC
-                  if changed || fromMaybe False itemLive
+                      raise = maybe False ((== 1) . limitPriority) priority_ && fromMaybe 0 itemPriority_ < 1 && isNothing scope && groupFeatureUserAllowed SGFMsgPriority gInfo
+                  if changed || fromMaybe False itemLive || raise
                     then do
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
                       let msgScope = toMsgScope gInfo <$> chatScopeInfo
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender)
+                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender) (if raise then Just 1 else Nothing)
                           reuseSign = case msgVerified of Just (MVSigned _) -> True; _ -> False
                       SndMessage {msgId} <- sendGroupMessage user g scope recipients reuseSign event
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
                         when changed $
                           addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-                        let edited = itemLive /= Just True
-                        ci' <- updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
+                        let edited = changed && itemLive /= Just True
+                            ciRaised = if raise then ci {meta = (meta :: CIMeta 'CTGroup 'MDSnd) {priority = Just 1}} else ci
+                        ci' <- updateGroupChatItem db user groupId ciRaised (CISndMsgContent mc) edited live $ Just msgId
                         updateGroupCIMentions db gInfo ci' ciMentions
                       startUpdatedTimedItemThread user (ChatRef CTGroup groupId scope) ci ci'
                       pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo) ci')
@@ -1496,7 +1498,7 @@ processChatCommand cxt nm = \case
       sendWelcomeMsg user ct ucl UserContactRequest {welcomeSharedMsgId} =
         forM_ (autoReply $ addressSettings ucl) $ \mc -> case welcomeSharedMsgId of
           Just smId ->
-            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing
+            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing
           Nothing -> do
             (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
@@ -2722,11 +2724,11 @@ processChatCommand cxt nm = \case
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     editedItemId <- getSentChatItemIdByText user chatRef editedMsg
     let mc = MCText msg
-    processChatCommand cxt nm $ APIUpdateChatItem chatRef editedItemId False $ UpdatedMessage mc mentions
+    processChatCommand cxt nm $ APIUpdateChatItem chatRef editedItemId False $ UpdatedMessage mc mentions Nothing
   UpdateLiveMessage chatName chatItemId live msg -> withUser $ \user -> do
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     let mc = MCText msg
-    processChatCommand cxt nm $ APIUpdateChatItem chatRef chatItemId live $ UpdatedMessage mc mentions
+    processChatCommand cxt nm $ APIUpdateChatItem chatRef chatItemId live $ UpdatedMessage mc mentions Nothing
   ReactToMessage add reaction chatName msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
@@ -4887,7 +4889,7 @@ processChatCommand cxt nm = \case
               let content' = CIRcvGroupInvitation (ciGroupInv {status = newStatus} :: CIGroupInvitation) memRole
               timed_ <- sndGroupCITimed False g Nothing
               ci' <- withFastStore' $ \db -> updateGroupChatItem db user (groupId' g) ci {meta = meta {itemTimed = timed_}} content' False False Nothing
-              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci')
+              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci') Nothing
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTGroup (groupId' g) Nothing, itemId)
         _ -> pure () -- prohibited
@@ -4919,7 +4921,7 @@ processChatCommand cxt nm = \case
           timed_ <- sndContactCITimed live ct itemTTL
           (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           msgs_ <- sendDirectContactMessages user ct $ L.map XMsgNew msgContainers
-          let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) msgs_
+          let itemsData = prepareSndItemsData False (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) msgs_
           when (length itemsData /= length cmrs) $ logError "sendContactContentMessages: cmrs and itemsData length mismatch"
           r@(_, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) False itemsData timed_ live
           processSendErrs r
@@ -4955,7 +4957,7 @@ processChatCommand cxt nm = \case
                         quotedItem = mkCIQuote qd (Just qiId) itemSharedMsgId itemTs qmc
                     pure (mcQuote QuotedMsg {msgRef, content = qmc} mc, Just quotedItem)
                   (Just _, Just _) -> throwError SEInvalidQuote
-                pure (mc' {file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, priority = sndPriority priority}, quotedItem_)
+                pure (mc' {file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, priority = sndPriority False priority}, quotedItem_)
               where
                 quoteData :: ChatItem c d -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTDirect, Bool)
                 quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwError SEInvalidQuote
@@ -5003,7 +5005,7 @@ processChatCommand cxt nm = \case
           timed_ <- sndGroupCITimed live gInfo itemTTL
           (chatMsgEvents, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           (msgs_, gsr) <- sendGroupMessages user g Nothing showGroupAsSender recipients signMsgs chatMsgEvents
-          let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
+          let itemsData = prepareSndItemsData (groupFeatureUserAllowed SGFMsgPriority gInfo) (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) showGroupAsSender itemsData timed_ live
           when (length cis_ /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
           createMemberSndStatuses cis_ msgs_ gsr
@@ -5034,7 +5036,7 @@ processChatCommand cxt nm = \case
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc, priority}, itemForwarded, _, ciMentions), fInv_) ->
                 let msgScope = toMsgScope gInfo <$> chatScopeInfo
                     mentions = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                 in prepareGroupMsg db user gInfo msgScope showGroupAsSender mc mentions quotedItemId itemForwarded fInv_ timed_ live (sndPriority priority)
+                 in prepareGroupMsg db user gInfo msgScope showGroupAsSender mc mentions quotedItemId itemForwarded fInv_ timed_ live (sndPriority (groupFeatureUserAllowed SGFMsgPriority gInfo) priority)
             createMemberSndStatuses ::
               [Either ChatError (ChatItem 'CTGroup 'MDSnd)] ->
               NonEmpty (Either ChatError SndMessage) ->
@@ -5096,14 +5098,15 @@ processChatCommand cxt nm = \case
             saveMemberFD _ = pure ()
       pure (fInv, ciFile)
     prepareSndItemsData ::
+      Bool ->
       [ComposedMessageReq] ->
       [Maybe (CIFile 'MDSnd)] ->
       [Maybe (CIQuote c)] ->
       [Either ChatError SndMessage] ->
       [Either ChatError (NewSndChatItemData c)]
-    prepareSndItemsData =
+    prepareSndItemsData highAllowed =
       zipWith4 $ \(ComposedMessage {msgContent, priority}, itemForwarded, ts, mm) f q -> \case
-        Right msg -> Right $ NewSndChatItemData msg (CISndMsgContent msgContent) ts mm f q itemForwarded (fromMaybe 0 $ sndPriority priority)
+        Right msg -> Right $ NewSndChatItemData msg (CISndMsgContent msgContent) ts mm f q itemForwarded (fromMaybe 0 $ sndPriority highAllowed priority)
         Left e -> Left e -- step over original error
     processSendErrs :: ([ChatError], [ChatItem c d]) -> CM ()
     processSendErrs = \case
@@ -7040,6 +7043,7 @@ chatCommandP =
       "/set bot commands " *> (SetBotCommands <$> botCommandsP),
       "/delete bot commands" $> SetBotCommands [],
       "/set voice #" *> (SetGroupFeatureRole (AGFR SGFVoice) <$> displayNameP <*> _strP <*> optional memberRole),
+      "/set priority #" *> (SetGroupFeatureRole (AGFR SGFMsgPriority) <$> displayNameP <*> _strP <*> optional memberRole),
       "/set voice @" *> (SetContactFeature (ACF SCFVoice) <$> displayNameP <*> optional (A.space *> strP)),
       "/set voice " *> (SetUserFeature (ACF SCFVoice) <$> strP),
       "/set files #" *> (SetGroupFeatureRole (AGFR SGFFiles) <$> displayNameP <*> _strP <*> optional memberRole),
@@ -7149,7 +7153,7 @@ chatCommandP =
     composedMessagesTextP = do
       text <- mcTextP
       pure [composedMessage Nothing text]
-    updatedMessagesTextP = (`UpdatedMessage` []) <$> mcTextP
+    updatedMessagesTextP = (\mc -> UpdatedMessage mc [] Nothing) <$> mcTextP
     liveMessageP = " live=" *> onOffP <|> pure False
     signMessagesP = " sign=" *> onOffP <|> pure False
     sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
