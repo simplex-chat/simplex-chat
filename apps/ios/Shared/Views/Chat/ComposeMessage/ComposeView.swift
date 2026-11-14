@@ -582,7 +582,7 @@ struct ComposeView: View {
             }
             var parsedMsg = parseSimpleXMarkdown(msg)
             if privacySanitizeLinks, let parsed = parsedMsg {
-                let r = sanitizeMessage(parsed)
+                let r = sanitizeMessage(msg, parsed)
                 if let sanitizedPos = r.sanitizedPos {
                     updatingCompose = true
                     composeState = composeState.copy(message: r.message, parsedMessage: r.parsedMsg)
@@ -2013,31 +2013,42 @@ struct ComposeView: View {
     }
 }
 
-func sanitizeMessage(_ parsedMsg: [FormattedText]) -> (message: String, parsedMsg: [FormattedText], sanitizedPos: Int?) {
-    var pos: Int = 0
+func sanitizeMessage(
+    _ text: String,
+    _ parsedMsg: [FormattedText],
+    sanitize: (String) -> String? = { parseSanitizeUri($0, safe: true)?.uriInfo?.sanitized }
+) -> (message: String, parsedMsg: [FormattedText], sanitizedPos: Int?) {
     var updatedMsg = ""
+    var copied = text.startIndex
+    var searched = text.startIndex
     var sanitizedPos: Int? = nil
     let updatedParsedMsg = parsedMsg.map { ft in
-        var updated = ft
+        var updated: FormattedText? = nil
         switch ft.format {
         case .uri:
-            if let sanitized = parseSanitizeUri(ft.text, safe: true)?.uriInfo?.sanitized {
+            if let sanitized = sanitize(ft.text) {
                 updated = FormattedText(text: sanitized, format: .uri)
-                pos += updated.text.count
-                sanitizedPos = pos
             }
-        case let .hyperLink(text, uri):
-            if let sanitized = parseSanitizeUri(uri, safe: true)?.uriInfo?.sanitized {
-                let updatedText = if let text { "[\(text)](\(sanitized))" } else { sanitized }
-                updated = FormattedText(text: updatedText, format: .hyperLink(showText: text, linkUri: sanitized))
-                pos += updated.text.count
-                sanitizedPos = pos
+        case let .hyperLink(showText, uri):
+            if let sanitized = sanitize(uri) {
+                let linkPart = "](\(uri))"
+                let updatedText =
+                    if ft.text.contains(linkPart) { ft.text.replacingOccurrences(of: linkPart, with: "](\(sanitized))") }
+                    else if let showText { "[\(showText)](\(sanitized))" }
+                    else { sanitized }
+                updated = FormattedText(text: updatedText, format: .hyperLink(showText: showText, linkUri: sanitized))
             }
-        default:
-            pos += ft.text.count
+        default: ()
         }
-        updatedMsg += updated.text
-        return updated
+        guard let r = text.range(of: ft.text, range: searched..<text.endIndex) else { return ft }
+        searched = r.upperBound
+        guard let sanitizedFt = updated else { return ft }
+        updatedMsg.append(contentsOf: text[copied..<r.lowerBound])
+        updatedMsg.append(sanitizedFt.text)
+        copied = r.upperBound
+        sanitizedPos = updatedMsg.count
+        return sanitizedFt
     }
+    updatedMsg.append(contentsOf: text[copied...])
     return (message: updatedMsg, parsedMsg: updatedParsedMsg, sanitizedPos: sanitizedPos)
 }

@@ -34,6 +34,7 @@ markdownTests = do
   textColor
   textWithUri
   textWithHyperlink
+  linksInStyles
   obfuscatedSimplexLinks
   textWithEmail
   textWithPhone
@@ -349,6 +350,46 @@ textWithHyperlink = describe "text with HyperLink without link text" do
   it "ignored as markdown" do
     "[click here](example.com)" <==> "[click here](" <> uri "example.com" <> ")"
     "[click here](https://example.com )" <==> "[click here](" <> uri "https://example.com" <> " )"
+
+linksInStyles :: Spec
+linksInStyles = describe "links inside bold, italic and strike-through" do
+  let link t = Just HyperLink {showText = Just t, linkUri = "https://x.com"}
+      addr = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
+      addr' = "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"
+      reconstructed = fmap (T.concat . map markdownText) . parseMaybeMarkdownList
+  it "a span that is a link parses as the link without the style" do
+    "**[t](https://x.com)**" <==> Markdown (link "t") "**[t](https://x.com)**"
+    "__[t](https://x.com)__" <==> Markdown (link "t") "__[t](https://x.com)__"
+    "*[t](https://x.com)*" <==> Markdown (link "t") "*[t](https://x.com)*"
+    "_[t](https://x.com)_" <==> Markdown (link "t") "_[t](https://x.com)_"
+    "~[t](https://x.com)~" <==> Markdown (link "t") "~[t](https://x.com)~"
+    "~~[two words](https://x.com)~~" <==> Markdown (link "two words") "~~[two words](https://x.com)~~"
+    "**<https://x.com>**" <==> Markdown (Just HyperLink {showText = Just "https://x.com", linkUri = "https://x.com"}) "**<https://x.com>**"
+    ("**[Connect to me](" <> addr <> ")**") <==> Markdown (simplexLinkFormat XLContact addr' ["smp6.simplex.im"] (Just "Connect to me")) ("**[Connect to me](" <> addr <> ")**")
+    "see **[t](https://x.com)** now" <==> "see " <> Markdown (link "t") "**[t](https://x.com)**" <> " now"
+  it "a span that is a bare link parses as the link" do
+    "**https://x.com/y**" ==> uri "https://x.com/y"
+    "*example.com*" ==> uri "example.com"
+    "**a@b.com**" ==> email "a@b.com"
+    ("**" <> addr <> "**") ==> simplexLink XLContact addr' ["smp6.simplex.im"] addr
+    reconstructed "**https://x.com/y**" `shouldBe` Just "https://x.com/y"
+  it "a link in a list item" do
+    "- **[t](https://x.com)**\n- b" <<==>> [bullet "- ", fmt (HyperLink (Just "t") "https://x.com") "**[t](https://x.com)**", lineBr, bullet "- ", "b"]
+  it "a style inside link text" do
+    "[**t**](https://x.com)" <==> Markdown (link "t") "[**t**](https://x.com)"
+    "[__t__](https://x.com)" <==> Markdown (link "t") "[__t__](https://x.com)"
+    "[*t*](https://x.com)" <==> Markdown (link "t") "[*t*](https://x.com)"
+    "[_t_](https://x.com)" <==> Markdown (link "t") "[_t_](https://x.com)"
+    "[~~two words~~](https://x.com)" <==> Markdown (link "two words") "[~~two words~~](https://x.com)"
+    "[**https://x.com**](https://x.com)" <==> Markdown (Just HyperLink {showText = Just "https://x.com", linkUri = "https://x.com"}) "[**https://x.com**](https://x.com)"
+  it "potentially spoofed link text inside a style" do
+    "[**x.com**](https://another.com)" <==> "[**x.com**](" <> uri "https://another.com" <> ")"
+    "**[x.com](https://another.com)**" <==> bold2 "[x.com](https://another.com)"
+  it "a span with more than a link keeps the style" do
+    "**see [t](https://x.com)**" <==> bold2 "see [t](https://x.com)"
+    "**https://x.com.**" <==> bold2 "https://x.com."
+    "**`x`**" <==> bold2 "`x`"
+    "**t**" <==> bold2 "t"
 
 obfuscatedSimplexLinks :: Spec
 obfuscatedSimplexLinks = describe "SimpleX links obfuscated with whitespace" do
