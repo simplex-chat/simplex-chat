@@ -66,8 +66,9 @@ private fun ActiveCallInteractiveAreaOneHand(call: Call, showMenu: MutableState<
     ProfileImage(
       image = call.contact.profile.image,
       icon = call.contact.chatIconName,
-      size = 37.dp * fontSizeSqrtMultiplier,
-      color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+      size = 31.dp * fontSizeSqrtMultiplier,
+      color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f),
+      modifier = Modifier.centeredIn(37.dp * fontSizeSqrtMultiplier)
     )
     Box(
       Modifier.offset(x = 1.dp, y = (-1).dp).background(SimplexGreen, CircleShape).padding(3.dp)
@@ -126,7 +127,7 @@ private fun ActiveCallInteractiveAreaNonOneHand(call: Call, showMenu: MutableSta
       contentAlignment = Alignment.Center
     ) {
       Box(Modifier.background(MaterialTheme.colors.background, CircleShape)) {
-        ProfileImageForActiveCall(size = 56.dp, image = call.contact.profile.image, icon = call.contact.chatIconName)
+        ProfileImage(size = 56.dp, image = call.contact.profile.image, icon = call.contact.chatIconName)
       }
       Box(
         Modifier.padding().background(SimplexGreen, CircleShape).padding(4.dp)
