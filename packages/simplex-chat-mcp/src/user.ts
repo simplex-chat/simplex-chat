@@ -15,7 +15,7 @@ export class User {
 
   // spec: spec/architecture.md#user-user-open
   static async open(root: string, hub: api.ChatApi, hubUser: T.User): Promise<User> {
-    const core = await openCore(join(root, "_user"), userName)
+    const core = await openCore(join(root, "_user"), userName, T.ChatPeerType.Human)
     try {
       const user = new User(core.chat, core.user)
       await core.events(event => user.onEvent(event))

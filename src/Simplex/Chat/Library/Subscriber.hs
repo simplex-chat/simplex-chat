@@ -86,6 +86,7 @@ import Simplex.Messaging.Agent.Env.SQLite (Worker (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
+import Simplex.Messaging.Agent.Store.Common (IsolationLevel (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkRequestMode (..), ProxyClientError (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -616,6 +617,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         RCVD msgMeta msgRcpt ->
           withAckMessage' "contact rcvd" agentConnId msgMeta $
             directMsgReceived ct conn msgMeta msgRcpt
+        MSGERR MsgMeta {integrity = MsgOk} -> logError "MSGERR with MsgOk integrity"
+        MSGERR msgMeta -> checkIntegrityCreateItem (CDDirectRcv ct) msgMeta `catchAllErrors` \_ -> pure ()
         CONF confId pqSupport _ connInfo -> do
           conn' <- processCONFpqSupport conn pqSupport
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn' connInfo
@@ -1184,6 +1187,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       RCVD msgMeta msgRcpt ->
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
+      MSGERR MsgMeta {integrity = MsgOk} -> logError "MSGERR with MsgOk integrity"
+      MSGERR msgMeta -> do
+        (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
+        checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
       SENT msgId proxy -> do
         continued <- continueSending connEntity conn
         (fileEvent_, acis) <- withStore $ \db -> do
@@ -4232,7 +4239,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
     (groupId, workerScope) = deliveryKey
     runDeliveryTaskOperation :: StoreCxt -> GroupInfo -> CM ()
     runDeliveryTaskOperation cxt gInfo = do
-      withWork_ a doWork (withStore' $ \db -> getNextDeliveryTask db deliveryKey) $ \task ->
+      withWork_ a doWork (withStoreIsolation' RepeatableRead $ \db -> getNextDeliveryTask db deliveryKey) $ \task ->
         processDeliveryTask task
           `catchAllErrors` \e -> do
             withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) (tshow e)
@@ -4246,7 +4253,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   logWarn "delivery task worker: relay inactive"
                   withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) "relay inactive"
               | otherwise ->
-                  withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
+                  withWorkItems a doWork (withStoreIsolation' RepeatableRead $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
                     let (body_, acceptedTasks, largeTasks) = batchDeliveryTasks1 (vr cxt) maxForwardBatchLength nextTasks
                         senderGMIds = S.toList . S.fromList $ map (\MessageDeliveryTask {senderGMId} -> senderGMId) acceptedTasks
                         notification = any (\MessageDeliveryTask {verifiedMsg} -> msgHasNotification verifiedMsg) acceptedTasks
@@ -4322,7 +4329,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
     (groupId, workerScope) = deliveryKey
     runDeliveryJobOperation :: StoreCxt -> User -> GroupInfo -> CM ()
     runDeliveryJobOperation cxt user gInfo = do
-      withWork_ a doWork (withStore' $ \db -> getNextDeliveryJob db deliveryKey) $ \job ->
+      withWork_ a doWork (withStoreIsolation' RepeatableRead $ \db -> getNextDeliveryJob db deliveryKey) $ \job ->
         processDeliveryJob job
           `catchAllErrors` \e -> do
             withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) (tshow e)
@@ -4548,7 +4555,7 @@ runRelayRequestWorker a Worker {doWork} = do
       where
         getReadyRelayRequest :: CM (Either StoreError (Maybe (GroupId, RelayRequestData)))
         getReadyRelayRequest =
-          withStore' getNextPendingRelayRequest >>= \case
+          withStoreIsolation' RepeatableRead getNextPendingRelayRequest >>= \case
             Right (Just (groupId, rrd@RelayRequestData {reqExecuteAt})) -> do
               currentTs <- liftIO getCurrentTime
               let delay = diffUTCTime reqExecuteAt currentTs

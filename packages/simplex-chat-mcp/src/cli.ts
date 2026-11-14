@@ -16,7 +16,7 @@ export const helpText = `Usage:
   simplex-mcp session                  MCP server of one Claude Code session (run by the plugin)
   simplex-mcp service                  the shared SimpleX service of the plugin (started on demand)
   simplex-mcp hook session-start       Claude Code SessionStart hook (run by the plugin)
-  simplex-mcp hook turn                Claude Code hooks of prompts, answers, model changes and tool uses (run by the plugin)
+  simplex-mcp hook turn                Claude Code hooks of prompts, answers, model changes, tool uses and compactions (run by the plugin)
   simplex-mcp link                     show the Main group link, or its owners
   simplex-mcp reset-owners             replace the Main group and its owners
 

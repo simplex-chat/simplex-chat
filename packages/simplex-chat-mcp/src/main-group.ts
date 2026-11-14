@@ -12,6 +12,10 @@ const mainCommands: T.ChatBotCommand[] = [
 ]
 // spec: spec/architecture.md#main-group-maincommands
 const mainKey = "simplexMcpMain"
+// spec: spec/api.md#main-group-profile
+const listKey = "simplexMcpList"
+// spec: spec/api.md#list-of-sessions
+const listAge = 23 * 3_600_000
 // spec: spec/architecture.md#main-group-maincommands
 const greeting = "I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N."
 // spec: spec/api.md#main-group
@@ -27,9 +31,15 @@ const shortDescr = "Everyone in this group can join the groups of your Claude Co
 
 // spec: spec/architecture.md#main-group-sessiongroups
 export interface SessionGroups {
-  sessionsText(): string
+  sessionsText(quote?: T.MsgContent): string
   join(member: T.GroupMember, session: number): Promise<string>
   inviteOwner(member: T.GroupMember): Promise<void>
+}
+
+// spec: spec/api.md#main-group-profile
+interface SessionList {
+  item: number
+  at: number
 }
 
 export class MainGroup {
@@ -38,6 +48,9 @@ export class MainGroup {
   private events: Promise<unknown> = Promise.resolve()
   private commands: Promise<unknown> = Promise.resolve()
   private linkText?: string
+  private list?: SessionList
+  private shown?: string
+  private tooLarge?: string
 
   constructor(
     private readonly chat: api.ChatApi,
@@ -45,7 +58,9 @@ export class MainGroup {
     private readonly userId: number,
     private name: string,
     private readonly sessions: SessionGroups,
-  ) {}
+  ) {
+    this.list = listOf(group.customData)
+  }
 
   get groupId(): number {
     return this.group.groupId
@@ -96,11 +111,12 @@ export class MainGroup {
   onMessage(ci: T.AChatItem): void {
     const {chatItem} = ci
     if (this.lost || chatItem.chatDir.type !== "groupRcv" || chatItem.content.type !== "rcvMsgContent") return
-    const command = parseCommand(chatItem.content.msgContent.text)
+    const {msgContent} = chatItem.content
+    const command = parseCommand(msgContent.text)
     if (command === undefined) return
     const sender = chatItem.chatDir.groupMember
     this.commands = this.commands
-      .then(() => this.command(sender, command))
+      .then(() => this.command(sender, command, msgContent))
       .then(reply => this.chat.apiSendTextReply(ci, reply))
       .catch(error => logError("Main group command", error))
   }
@@ -116,6 +132,7 @@ export class MainGroup {
       this.lost = true
       await deleteGroup(this.chat, this.group)
       this.group = await createMainGroup(this.chat, this.userId, this.name)
+      this.list = undefined
       this.lost = false
       await this.load()
       await this.openLink()
@@ -123,9 +140,64 @@ export class MainGroup {
     })
   }
 
+  // spec: spec/architecture.md#main-group-maingroup-showlist
+  showList(text: string): Promise<void> {
+    return this.serialize(async () => {
+      if (this.lost || text === this.tooLarge) return
+      await this.renderList(text).catch(error => {
+        if (!isTooLarge(error)) throw error
+        this.tooLarge = text
+        logError("list of sessions", error)
+      })
+    })
+  }
+
+  // spec: spec/architecture.md#main-group-maingroup-showlist
+  private async renderList(text: string): Promise<void> {
+    const {list} = this
+    if (list === undefined) {
+      if (this.owners().length > 0) await this.postList(text)
+      return
+    }
+    if (list.at <= Date.now() - listAge) return this.replaceList(list, text)
+    if (text === this.shown) return
+    try {
+      await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, list.item, {type: "text", text})
+      this.shown = text
+    } catch (error) {
+      if (!isRefusedEdit(error)) throw error
+      await this.replaceList(list, text)
+    }
+  }
+
+  // spec: spec/architecture.md#main-group-maingroup-showlist
+  private async replaceList(old: SessionList, text: string): Promise<void> {
+    await this.postList(text)
+    await this.deleteItem(old.item, "old list of sessions")
+  }
+
+  // spec: spec/architecture.md#main-group-maingroup-showlist
+  private async postList(text: string): Promise<void> {
+    const list = {item: await this.post(text, -1), at: Date.now()}
+    const customData = {...this.group.customData, [mainKey]: true, [listKey]: list}
+    try {
+      await this.chat.apiSetGroupCustomData(this.groupId, customData)
+    } catch (error) {
+      await this.deleteItem(list.item, "new list of sessions")
+      throw error
+    }
+    this.list = list
+    this.shown = text
+    this.group = {...this.group, customData}
+  }
+
+  private async deleteItem(item: number, subject: string): Promise<void> {
+    await this.chat.apiDeleteChatItems(T.ChatType.Group, this.groupId, [item], T.CIDeleteMode.Broadcast).catch(error => logError(subject, error))
+  }
+
   // spec: spec/api.md#main-group
-  private async command(sender: T.GroupMember, {keyword, params}: Command): Promise<string> {
-    if (keyword === "sessions" && params === "") return this.sessions.sessionsText()
+  private async command(sender: T.GroupMember, {keyword, params}: Command, quote: T.MsgContent): Promise<string> {
+    if (keyword === "sessions" && params === "") return this.sessions.sessionsText(quote)
     if (keyword === "join" && /^\d+$/.test(params)) return this.sessions.join(sender, Number(params))
     return unknownCommand
   }
@@ -180,8 +252,10 @@ export class MainGroup {
     }
   }
 
-  private async post(text: string): Promise<void> {
-    await this.chat.apiSendMessages([T.ChatType.Group, this.groupId], [{msgContent: {type: "text", text}, mentions: {}}])
+  private async post(text: string, priority?: number): Promise<number> {
+    const message: T.ComposedMessage & {priority?: number} = {msgContent: {type: "text", text}, mentions: {}, priority}
+    const [sent] = await this.chat.apiSendMessages([T.ChatType.Group, this.groupId], [message])
+    return sent.chatItem.meta.itemId
   }
 
   private serialize<R>(work: () => Promise<R>): Promise<R> {
@@ -212,6 +286,24 @@ export async function findMainGroup(chat: api.ChatApi, userId: number): Promise<
 function isMissingLink(error: unknown): boolean {
   const chatError = chatErrorOf(error)
   return chatError?.type === "errorStore" && chatError.storeError.type === "groupLinkNotFound"
+}
+
+// spec: spec/architecture.md#main-group-maingroup-showlist
+function isRefusedEdit(error: unknown): boolean {
+  const chatError = chatErrorOf(error)
+  return (chatError?.type === "error" && chatError.errorType.type === "invalidChatItemUpdate") || (chatError?.type === "errorStore" && chatError.storeError.type === "chatItemNotFound")
+}
+
+// spec: spec/architecture.md#main-group-maingroup-showlist
+function isTooLarge(error: unknown): boolean {
+  const chatError = chatErrorOf(error)
+  return chatError?.type === "errorStore" && chatError.storeError.type === "largeMsg"
+}
+
+// spec: spec/api.md#main-group-profile
+function listOf(customData: object | undefined): SessionList | undefined {
+  const list = (customData as {[listKey]?: Partial<SessionList>} | undefined)?.[listKey]
+  return typeof list?.item === "number" && typeof list.at === "number" ? {item: list.item, at: list.at} : undefined
 }
 
 // spec: spec/api.md#main-group-profile

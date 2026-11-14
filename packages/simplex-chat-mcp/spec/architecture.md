@@ -6,7 +6,7 @@
 > Related docs: [README](../README.md) | [Reference](../REFERENCE.md) | [PLAN](../../../plans/2026-10-19-mcp-server.md)
 
 **Source:** [`cli.ts`](../src/cli.ts) | [`serve.ts`](../src/serve.ts) | [`http.ts`](../src/http.ts) | [`tools.ts`](../src/tools.ts) | [`actions.ts`](../src/actions.ts) | [`control.ts`](../src/control.ts) | [`messages.ts`](../src/messages.ts) | [`files.ts`](../src/files.ts) | [`register.ts`](../src/register.ts) | [`log.ts`](../src/log.ts) | [`core.ts`](../src/core.ts)
-**Plugin source:** [`session.ts`](../src/session.ts) | [`client.ts`](../src/client.ts) | [`socket.ts`](../src/socket.ts) | [`protocol.ts`](../src/protocol.ts) | [`service.ts`](../src/service.ts) | [`hub.ts`](../src/hub.ts) | [`main-group.ts`](../src/main-group.ts) | [`user.ts`](../src/user.ts) | [`hook.ts`](../src/hook.ts) | [`owner.ts`](../src/owner.ts) | [`config.ts`](../src/config.ts) | [`qr.ts`](../src/qr.ts)
+**Plugin source:** [`session.ts`](../src/session.ts) | [`client.ts`](../src/client.ts) | [`socket.ts`](../src/socket.ts) | [`protocol.ts`](../src/protocol.ts) | [`service.ts`](../src/service.ts) | [`hub.ts`](../src/hub.ts) | [`main-group.ts`](../src/main-group.ts) | [`user.ts`](../src/user.ts) | [`hook.ts`](../src/hook.ts) | [`display.ts`](../src/display.ts) | [`service-request.ts`](../src/service-request.ts) | [`paths.ts`](../src/paths.ts) | [`owner.ts`](../src/owner.ts) | [`config.ts`](../src/config.ts) | [`qr.ts`](../src/qr.ts)
 
 ---
 
@@ -123,7 +123,7 @@ These symbols of [`core.ts`](../src/core.ts) and [`version.ts`](../src/version.t
 | Symbol | Contents |
 |---|---|
 | <a id="core-preparecore"></a>[`prepareCore`](../src/core.ts) | network config, `DATA/tmp` as the core's temp folder, mode 0700, and `DATA/files/sent` deleted |
-| <a id="core-updateduser"></a>[`updatedUser`](../src/core.ts) | display name and peer type `agent` of the profile |
+| <a id="core-updateduser"></a>[`updatedUser`](../src/core.ts) | display name and the given peer type of the profile: `agent` for `serve` and `Claude`, `human` for `User` |
 | <a id="core-bufferevents"></a>[`bufferEvents`](../src/core.ts) | events received before the handler is installed are queued and replayed in order |
 | <a id="version-version"></a>[`version`](../src/version.ts) | the package version |
 
@@ -215,7 +215,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="control-standings"></a>`standings` | custom data key and reply words of the approvals of messages and files |
 | <a id="control-controldata"></a>`ControlData` | `{control: true, nextAction}` |
 | <a id="control-chatapproval"></a>`ChatApproval` | `{approvedBy, approvedById, approvedAt}` |
-| <a id="control-controloptions"></a>`ControlOptions`, `SessionOptions` | display name, `--owners`, register hint and QR code size. For a group of the plugin's session, its approver check, the session IDs by number and the check of `User` are added. |
+| <a id="control-controloptions"></a>`ControlOptions`, `SessionOptions` | display name, `--owners`, register hint and QR code size. For a group of the plugin's session, its approver check, the session IDs by number, the check of `User` and `toolsChanged`, which sends the approved tools to the session, are added. |
 | <a id="control-ownerrequest-type"></a>`OwnerRequest` | parsed owner command |
 | <a id="control-control-load"></a>`Control.load` | lost check, group profile and menu through `updateProfile`, and member list |
 | <a id="control-control-rename"></a>`Control.rename`, `Control.describe`, `updateProfile` | the plugin's group name, and its short description. `updateProfile` makes one profile update at a time, and keeps the custom data in memory. A session group is updated from its current profile in the chat database. The agent control chat of `serve` is updated from the profile held in memory since the start, by `changeGroupProfile`. |
@@ -227,9 +227,10 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="control-control-postcard"></a>`Control.postCard`, `Control.outcome` | card post and card edit; the kept-files message after a done leave |
 | <a id="control-control-refusedfile"></a>`Control.refusedFile`, `Control.fileNotSent` | posts about files |
 | <a id="control-control-onmessage"></a>`Control.onMessage` | owner commands, queued one at a time. In a group of the plugin's session, the session passes it the one-line `/` texts, and the texts of `User` are dropped. |
-| <a id="control-control-onevent"></a>`Control.onEvent` | membership changes and loss of the control chat |
+| <a id="control-control-onevent"></a>`Control.onEvent` | membership changes and loss of the control chat. `lose`, at a loss of the group and at `load` of a lost group, ends the tool approvals and calls `toolsChanged`. |
 | <a id="control-control-ownercommand"></a>`Control.ownerCommand` | command dispatch and replies. A text outside the requests is answered with the command list, or with `Unknown command.` in a group of the plugin's session. |
 | <a id="control-control-approvechat"></a>`approveChat`, `revoke`, `forward`, `leave`, `deleteFiles` | owner requests |
+| <a id="control-control-approvedtools"></a>`approvedTools`, `endToolApprovals`, `approveTool`, `revokeTool` | the approvals of tools of a group of the plugin's session, in memory, by tool name, with the approver's name and member ID. `approvedTools` returns those whose approver is an approver now. `approveTool` records the tool of a pending `permission` action, logs, calls `toolsChanged`, approves the action and replies with `/'revoke TOOL'`. `revokeTool` deletes one, logs and calls `toolsChanged`. `endToolApprovals` drops all; it also runs when the session's group is lost. `chatsText` lists the approved tools after the chats, and `setObserver` calls `toolsChanged` after it reads the members again. |
 | <a id="control-control-give"></a>`give`, `setObserver` | `/give CHAT N` and `/observer #G ID` in a group of the plugin's session. `setObserver` replies `NAME's role can't be changed.` for a member with status `pending_approval` or `pending_review`. For a member who is neither current nor pending, such as an invited member who has not joined, the reply is `No member ID in this group.` ([`memberCurrentOrPending`](../src/tools.ts)). Only a current member's role is set to `observer`, when the sender's role is admin or owner and not below the member's role. The members are then read again, and the observer's rights are the reply. |
 | <a id="control-control-isapprover"></a>`isApprover` | the session's check in a group of the plugin's session; otherwise role `owner`, and the `--owners` list when given |
 | <a id="control-roleorder"></a>`roleOrder`, `roleRank`, `canSend` | the roles of SimpleX from `relay` to `owner`, in the order of the core; a role above `observer` |
@@ -241,12 +242,12 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="control-isgroupmessage"></a>`isGroupMessage` | an item of one group's main scope |
 | <a id="control-iscontrolevent"></a>`isControlEvent` | membership events of the control group |
 | <a id="control-parsecommand"></a>`parseCommand` | one-line `/keyword params` |
-| <a id="control-cardtext"></a>`cardText`, `requestLines`, `commandsLine` | card text per tool, state and mode |
+| <a id="control-cardtext"></a>`cardText`, `requestLines`, `commandsLine` | card text per tool, state and mode. A `permission` card offers `/'approve N all'`, or, for a tool approved at its creation, has the line that Claude Code still asks for this use. |
 | <a id="control-largestcard"></a>`largestCard`, `encodedLength` | card size check |
 | <a id="control-truncatedline"></a>`truncatedLine`, `fittedLines` | a line cut with `…`; the code lines that fit a byte budget, the last one cut |
 | <a id="control-serversline"></a>`serversLine`, `sizeText` | servers line and sizes of download cards |
 | <a id="control-codespan"></a>`codeSpan`, `safeName`, `mentionText` | quoting of peer text |
-| <a id="control-ownerrequest"></a>`ownerRequest` | command words to an `OwnerRequest`, with `observer #G ID` only for a group of the plugin's session |
+| <a id="control-ownerrequest"></a>`ownerRequest` | command words to an `OwnerRequest`, with `give CHAT N`, `observer #G ID`, `approve N all` and `revoke TOOL` only for a group of the plugin's session |
 | <a id="control-losescontrol"></a>`losesControl`, `isLost` | loss of the control chat or of a plugin group |
 | <a id="control-joinedtext"></a>`joinedText` | `NAME joined (member N)`, shared with the Main group |
 | <a id="control-entrytext"></a>`entryText`, `restartText` | `--owners` entries in restart lines |
@@ -268,6 +269,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="messages-getchat"></a>`getChat`, `receivingFiles`, `markRead` | `apiGetChat` and `apiChatItemsRead` by chat reference; the IDs of a chat's files in status `rcvAccepted`, `rcvTransfer` or `rcvWarning`, paged |
 | <a id="messages-unreaditems"></a>`unreadItems` | unread items of a chat after its `initial` read, paged |
 | <a id="messages-reportprogress"></a>`reportProgress`, `nextChange`, `awaitResponses` | waits |
+| <a id="messages-duration"></a>`duration` | a time rounded to whole milliseconds: `41 ms`, `2.0 s`, `42 s`, `4 min 12 s`, `1 h 5 min`, for the step lines and the end line of the plugin |
 | <a id="messages-validname"></a>`validName`, `viewName` | display name rules and `@name` form |
 
 ### [2.8 `files.ts`](../src/files.ts)
@@ -709,7 +711,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 
 ## 8. Claude Code plugin
 
-The plugin runs the same tools, `Actions` and `Control` as `serve`, in other processes. ROOT is the plugin's data root, `~/.simplex-mcp` or `SIMPLEX_MCP_HOME` ([`dataRoot`](../src/files.ts)).
+The plugin runs the same tools, `Actions` and `Control` as `serve`, in other processes. ROOT is the plugin's data root, `~/.simplex-mcp` or `SIMPLEX_MCP_HOME` ([`dataRoot`](../src/paths.ts)).
 
 ### 8.1 System diagram
 
@@ -717,7 +719,8 @@ The plugin runs the same tools, `Actions` and `Control` as `serve`, in other pro
 flowchart LR
   subgraph cc["Claude Code"]
     ses["session 1, session 2"]
-    hk["SessionStart, PreToolUse,<br/>UserPromptSubmit, Stop,<br/>PostModelSwitch hooks"]
+    hk["SessionStart, PreToolUse,<br/>UserPromptSubmit, Stop,<br/>PostModelSwitch, PostCompact hooks"]
+    dh["MessageDisplay hook"]
   end
   subgraph ps["simplex-mcp session, one per Claude Code session"]
     mcp["McpServer, stdio<br/>tools and channel"]
@@ -734,6 +737,7 @@ flowchart LR
   end
   ses -->|stdio| mcp
   hk -->|"node dist/cli.js hook ..."| link
+  dh -->|"node dist/display.js<br/>POST /turn, 1 s at most"| sock
   term["terminal"] -->|"npx ... link, reset-owners"| link
   mcp --> link
   link -->|"HTTP over ROOT/service.sock<br/>Authorization: Bearer"| sock
@@ -768,7 +772,7 @@ Data flow of a prompt from the session group:
 1. `Session.onMessage` receives a message of a member in the group of session N ([`Hub.onEvent`](../src/hub.ts)). A one-line `/` command goes to `Control`. Another message is queued after the earlier ones, with the `replyTo` of its quote when it is a reply ([`Session.onMessage`](../src/hub.ts), [`toReplyTo`](../src/messages.ts)). `Session.prompt` drops a message of `User` and delivers the rest ([`Session.prompt`](../src/hub.ts)). `Session.onReaction` receives a reaction in that group ([`Hub.onEvent`](../src/hub.ts)). An added reaction of a member whose role sends, other than `User`, to a message, is queued after the earlier messages. One of the apps' eight emoji is queued as the prompt EMOJI, with the `replyTo` of the reacted message and without its file. Any other reaction is queued as the reply `This reaction is not supported.`, once for each member and reacted message ([`Session.onReaction`, `refuseReaction`](../src/hub.ts)).
 2. In the first 30 s after the hub opened, a delivery without an attachment waits for one. With an attachment, the file of the message, if any, is received. Then, if the session is not attached, the hub replies `Session N is not running.` Otherwise the prompt, after the quote line of a reply or a reaction, is pushed, and the line `{prompt}` is written to every `/attach` stream of the session ([`Session.deliver`](../src/hub.ts), [`quoteLine`](../src/messages.ts), [`Service.onAttach`](../src/service.ts)).
 3. The session process sends it to Claude Code as `notifications/claude/channel`, with `reply_to` and `reply_to_from` of a reply or a reaction ([`startSession`, `channelNotification`](../src/session.ts)).
-4. The hooks post the terminal prompts and the final answer of each turn with `POST /turn` ([`turn`](../src/hook.ts), [`Session.turn`](../src/hub.ts)).
+4. The turn hooks post the terminal prompts, the final answer of each turn and a line for each summary of the session's context with `POST /turn`, and the display hook posts Claude's text in batches as Claude writes it ([`turn`](../src/hook.ts), [`display`](../src/display.ts), [`Session.turn`](../src/hub.ts)). Claude posts an opening message at a prompt that starts a turn, a live message for each text, and the end line after the answer ([flow 37](flows.md#37-the-texts-of-a-turn)).
 
 ### 8.2 Modules
 
@@ -777,15 +781,16 @@ Data flow of a prompt from the session group:
 | Symbol | Contents |
 |---|---|
 | <a id="session-unattendedrun"></a>`unattendedRun`, `channelInstructions`, `permissionRequest` | the text of a run that is not interactive; instructions of the channel; schema of a permission request |
-| <a id="session-startsession"></a>`startSession` | The session ID and the options are checked. Every call is answered with a text when the run is not interactive or the options are invalid. The `McpServer` gets the instructions, the capabilities `claude/channel` and `claude/channel/permission`, the tools with `reply`, the permission request handler and a stdio transport. Without such a text, the session process connects to the service in the background. |
+| <a id="session-startsession"></a>`startSession` | The session ID and the options are checked. Every call is answered with a text when the run is not interactive or the options are invalid. The `McpServer` gets the instructions, the capabilities `claude/channel` and `claude/channel/permission`, the tools with `reply`, `pre_tool_use`, the permission request handler and a stdio transport. `pre_tool_use`, with the description and schema of `hookTool`, answers with `hookOutput` of `ServiceLink.approvedBy`, also when the run is not interactive or the options are invalid ([API 4.1](api.md#41-tools-in-the-plugin)). Without such a text, the session process connects to the service in the background. Its `POST /session` has `record`, the absolute path of Claude Code's record of the parent process: `CLAUDE_CONFIG_DIR` or `~/.claude`, then `sessions/PID.json`. |
+| <a id="session-servicelink-approvedby"></a>`ServiceLink.approvedBy` | the approver of a tool in the approved tools of the current attachment, or none without an attachment |
 | <a id="session-servicelink-connect"></a>`ServiceLink.connect`, `start`, `close`, `reconnect` | one shared connect promise, refused at once after a 403 of `/session`. After that refusal, and after `close`, `start` neither logs nor reconnects. Otherwise `start` logs a failure on stderr, and connects again later unless the failure is a `ProtocolError`. `close` ends the attachment and the retries. `reconnect` sets one timer that starts the connection again after the delay. The delay is 1 s at first, and doubles each time the timer fires, up to 30 s. |
 | <a id="session-servicelink-permission"></a>`ServiceLink.permission` | `POST /permission` after the connect, and nothing after the refusal |
 | <a id="session-servicelink-call"></a>`ServiceLink.call` | `forward`, repeated once after status 409. The service returns 409 for an unknown session before it runs the call. Failures are returned as tool errors, with the text of a run that is not interactive after the refusal. |
 | <a id="session-servicelink-forward"></a>`ServiceLink.forward` | the `/call` stream of progress lines and the result line. The connection is dropped when the stream breaks. |
 | <a id="session-servicelink-disconnect"></a>`ServiceLink.disconnect` | drops the connection only when it is the current one |
-| <a id="session-servicelink-open"></a>`ServiceLink.open` | `ensureService`, then `/session` with the parent process ID. A 403 of `/session` is recorded as the refusal. `/attach` is awaited until its first line, and each line goes to the channel. When `/attach` ends, `reconnect` is called. |
+| <a id="session-servicelink-open"></a>`ServiceLink.open` | `ensureService`, then `/session` with the parent process ID. A 403 of `/session` is recorded as the refusal. `/attach` with the parent process ID is awaited until its first line, and each line goes to the channel. A `{tools}` line is kept as the approved tools of its attachment. When `/attach` ends, `reconnect` is called. |
 | <a id="session-failuretext"></a>`failureText` | not running or status 503: `The SimpleX service stopped; repeat the call.` |
-| <a id="session-channelnotification"></a>`channelNotification` | attach lines to `notifications/claude/channel`, with `reply_to` and `reply_to_from` from `replyTo`, and `notifications/claude/channel/permission` |
+| <a id="session-channelnotification"></a>`channelNotification` | attach lines to `notifications/claude/channel`, with `reply_to` and `reply_to_from` from `replyTo`, and `notifications/claude/channel/permission`; nothing for a `{tools}` line |
 
 #### [`client.ts`](../src/client.ts)
 
@@ -817,27 +822,29 @@ Data flow of a prompt from the session group:
 | <a id="protocol-sessionrequest"></a>`SessionRequest`, `TitleRequest` | `/session`, `/title`, with `unattended` for the mark of a process |
 | <a id="protocol-permissionrequest"></a>`PermissionRequest`, `TurnRequest` | `/permission`, `/turn` |
 | <a id="protocol-step"></a>`Step` | `step` of `/turn`: the tool use's ID, the line's text, and `end` at the tool use's end |
-| <a id="protocol-attachline"></a>`AttachLine` | `{prompt}` lines, with the `replyTo` of a reply or a reaction, and `{permission}` lines of `/attach` |
-| <a id="protocol-titlereply"></a>`TitleReply`, `SessionReply`, `AttachRequest`, `CallRequest`, `CallLine` | replies and `/call` |
+| <a id="protocol-textbatch"></a>`TextBatch` | `text` of `/turn`: the `message_id` of Claude's text, the batch's index, `final` at the text's last batch, and the batch's text |
+| <a id="protocol-attachline"></a>`AttachLine`, `ApprovedTool` | `{prompt}` lines, with the `replyTo` of a reply or a reaction, `{permission}` and `{tools}` lines of `/attach`; an approved tool with its approver's name |
+| <a id="protocol-titlereply"></a>`TitleReply`, `SessionReply`, `AttachRequest`, `CallRequest`, `CallLine` | replies, `/attach` with the session server's parent process ID, and `/call` |
 | <a id="protocol-statusreply"></a>`StatusReply`, `ResetReply` | `/status`, `/reset-owners` |
 
 #### [`service.ts`](../src/service.ts)
 
 | Symbol | Contents |
 |---|---|
-| <a id="service-hublike"></a>`HubLike`, `SessionLike`, `ServiceDeps` | interfaces that the service uses, so that tests can replace the hub |
-| <a id="service-entry"></a>`Entry` | opening promise, session, open attachments, their writers, running calls, idle timer, the session server's parent process ID and the time it was last seen |
+| <a id="service-hublike"></a>`HubLike`, `SessionLike`, `ServiceDeps` | interfaces that the service uses, so that tests can replace the hub and the start time of a process |
+| <a id="service-entry"></a>`Entry` | opening promise, session, open attachments, their writers with the process ID of each attachment, running calls, idle timer, the session server's parent process ID with its start time, and the time it was last seen |
 | <a id="service-service-start"></a>`Service.start` | The lock is taken, and the stored sessions are read with their aliases and the next number. The listener starts before the hub opens, so that a starter that lost the lock race gets an answer to `/status` right after `running`. After the hub opens, the stop timer starts, the titles held at the last stop are taken as new `/title` requests, and the hourly log trim starts. |
 | <a id="service-service-routes"></a>`Service.routes`, `withHub`, `expiring` | the ten routes. Requests wait for the hub, and due actions expire first. |
 | <a id="service-service-shutdown"></a>`Service.shutdown` | stop sequence; the held titles saved |
-| <a id="service-service-onsession"></a>`onSession`, `onTitle`, `markUnattended`, `refuseUnattended`, `applyTitle` | The options are checked. For a title with `unattended`, the service removes the marks of 10 s ago and older, marks the title's process, and ends a server's wait for the title of that process. It opens no session for such a title. The service refuses a registration from a process marked in the last 10 s with 403, before and after its wait. At a registration, the service records the parent process ID, names the session by a held title of its ID, and signals the registration. The service holds a title of a new ID that comes from a process without a known session, or from a process whose title is held. The title is held until the server of that process registers, 10 s at most, and is applied only while the service runs. When a title is applied, the service opens or creates the session, sets its name, passes its model with the title's `at`, and records the process of the title. |
+| <a id="service-service-onsession"></a>`onSession`, `onTitle`, `markUnattended`, `refuseUnattended`, `applyTitle` | The options are checked. For a title with `unattended`, the service removes the marks of 10 s ago and older, marks the title's process, and ends a server's wait for the title of that process. It opens no session for such a title. The service refuses a registration from a process marked in the last 10 s with 403, before and after its wait. At a registration, the service records the parent process ID with its start time, ends the session's approvals of tools when either differs from the recorded one or the start time is unknown, names the session by a held title of its ID, and signals the registration. The service holds a title of a new ID that comes from a process without a known session, or from a process whose title is held. The title is held until the server of that process registers, 10 s at most, and is applied only while the service runs. When a title is applied, the service opens or creates the session, sets its name, passes its model with the title's `at`, and records the process of the title. |
 | <a id="service-service-canonical"></a>`canonical`, `resolve`, `attachedSession`, `processSession`, `alias` | An alias is resolved to its session. With `session.json`, an ID is resolved to itself, or, for a hook, to the session attached by its Claude Code process, without an alias. For any other ID, a session server first waits for the title of its process. The ID is then resolved to the session of the same Claude Code process, when the process has one, and recorded as its alias in `session.json`. |
 | <a id="service-service-rename"></a>`rename` | A new name of the session is written into `session.json`, as read after the group's rename. |
-| <a id="service-service-onattach"></a>`onAttach`, `onCall`, `hold` | attachment with the session's line writer; call stream; streams refused while stopping |
+| <a id="service-service-onattach"></a>`onAttach`, `onCall`, `hold` | attachment with the session's line writer, and at the last detach the end of the session's permissions, and of its steps, opening messages and texts by `endLive`; a `{tools}` line reaches only the attachments of the recorded process, and the others get `{tools: []}`; call stream; streams refused while stopping |
 | <a id="service-service-entry"></a>`entry`, `refuseWhenStopping`, `folder`, `openAgent` | the session registry. The status is 503 while the service stops, and 400 for an ID that is not a session ID. The status is 409 for an unknown session on the routes other than `/session` and `/title`. A new session is given a new number and name, and the aliases that already point to it. |
-| <a id="service-service-scheduleidle"></a>`scheduleIdle`, `scheduleStop` | idle close of a session, idle stop of the service |
+| <a id="service-service-scheduleidle"></a>`scheduleIdle`, `scheduleStop` | idle close of a session, which ends its approvals of tools; idle stop of the service. `onSession` also ends them when the session is registered from a process other than the one recorded. |
 | <a id="service-runservice"></a>`runService` | the process entry: ROOT, start, ready line and signal handlers. For a held lock, the start runs again once the lock is released, and the ready line is `running` when its holder answers. |
-| <a id="service-productiondeps"></a>`productionDeps` | token, `Hub.open` |
+| <a id="service-productiondeps"></a>`productionDeps` | token, `Hub.open`, `processStart` |
+| <a id="service-processstart"></a>`processStart` | the start time of a process: field 22 of `/proc/PID/stat` on Linux, `/bin/ps -o lstart= -p PID` with a 2 s timeout on macOS; none on other systems, for a process that does not run, and for an ID that is not a positive integer |
 | <a id="service-processevent"></a>`processEvent` | the next event of a PID on `titled` or `registered`, 10 s at most |
 | <a id="service-lockholder"></a>`lockHolder` | up to 150 checks, 100 ms apart. The result is `released` when ROOT/service.lock is gone, and `answers` for any result of a socket request other than ENOENT and ECONNREFUSED. |
 | <a id="service-sessionname"></a>`sessionName` | session title, else the project folder name, else `Claude Code` |
@@ -848,36 +855,42 @@ Data flow of a prompt from the session group:
 
 | Symbol | Contents |
 |---|---|
-| <a id="hub-constants"></a>constants, from `profileName` to `unsupportedReaction` | profile name `Claude`, session data key, first action number, 10 s stop wait, 60 s echo of a raw prompt, 20 pushed prompts, 10 minutes for a prompt's file, 1 day for a pending connection, 30 s of held prompts after the hub opens, the channel tags of this plugin, the one reply to the `/` commands of a member who is not an admin or owner, the eight emoji of the apps' reactions, the reply to another reaction |
+| <a id="hub-constants"></a>constants, from `profileName` to `unsupportedReaction`, and `textUpdateMs`, `maxRecentTexts`, `stoppedLine` | profile name `Claude`, session data key, first action number, 10 s stop wait, 60 s echo of a raw prompt, 20 pushed prompts, 10 minutes for a prompt's file, 1 day for a pending connection, 30 s of held prompts after the hub opens, the channel tags of this plugin, the one reply to the `/` commands of a member who is not an admin or owner, the eight emoji of the apps' reactions, the reply to another reaction, 3 s between the updates of a live text, 20 ended texts kept for the claim of an answer, and `⏹️ Stopped`, the text of an opening message that no post filled |
 | <a id="hub-hubtexts"></a>`hubTexts` | refusal texts of a lost session group, of a stop and of the limit of pending actions, which names the approvers |
 | <a id="hub-sessiongroupdata"></a>`SessionGroupData` | session number; pending connections of `connect` with their time; the approved mode |
 | <a id="hub-session"></a>`Session` | one Claude Code session, built from its `session.json` and its group's data. `Actions` get the hub's texts and the mode of the group's data, or `requests` without one. `AgentTools` get the session's ID and folder and the group for `reply`. `Control` of the session group gets the session's approver checks. The stored model and effort are kept as well. |
 | <a id="hub-session-busy"></a>`Session.busy` | an action other than a `mode` card in memory |
+| <a id="hub-session-readrecord"></a>`Session.readRecord`, `stateLine`, `attached`, `recordStatus`, `withinTime` | `readRecord` reads `status` of Claude Code's record while the session is attached and the hub does not stop; otherwise, and for a missing path or file, the status is cleared, and a file that does not parse keeps it. One read of a record runs at a time, `Session.recordRead`, and a render waits for it at most 1 s, by `withinTime`. `recordStatus` opens the record with `O_NONBLOCK`, so a FIFO does not block, and reads only a regular file. `stateLine` is the session's line in the list of sessions, or none without a card and an attachment. A tool-use card counts while the status is `waiting` or not one of `claudeStates`, and a card cancelled by a stop never. |
 | <a id="hub-session-requestmode"></a>`Session.requestMode`, `askMode` | `requests` applies at once. The hub then ends pending `mode` cards and clears `hostDeclined`. `host` is remembered and asked as a `mode` action while an approver is in the group and `hostDeclined` is unset. The request is forgotten after a rejected or expired card, and `hostDeclined` is set after a rejection. |
-| <a id="hub-session-online"></a>`Session.onLine` | the writer of the session's attachments. The held prompts are woken at each change. |
+| <a id="hub-session-online"></a>`Session.onLine` | the writer of the session's attachments. The approved tools are sent to a new writer, and the held prompts are woken at each change. |
 | <a id="hub-session-onmessage"></a>`Session.onMessage` | The hub answers a `/` command from a member who is not an approver with the one refusal, found by `refusesCommand` and posted on the `delivery` chain. The remaining one-line `/` texts go to `Control`, and other messages go to `prompt` on the `delivery` chain, in arrival order. The `replyTo` of a reply is computed here from its quote, with the hub's profile name as Claude's name, and passed with the message and its file. |
 | <a id="hub-session-onreaction"></a>`Session.onReaction` | An added reaction of a member whose role sends, other than `User`, to a received or sent message, is handled on the `delivery` chain. One of the apps' eight emoji goes to `prompt` as the text EMOJI. Any other reaction goes to `refuseReaction`. The `replyTo` of an emoji is computed from the reacted item, with the item's file name for an empty text and the hub's profile name as Claude's name. The item's file is not passed. |
 | <a id="hub-session-claimpending"></a>`Session.claimPending` | When a connection of `connect` recorded in the last day completes, its record is removed and its chat is claimed. |
-| <a id="hub-session-permission"></a>`Session.permission` | a `permission` action in mode `requests`. Its verdict is written to the attachments, and the action is removed when decided. |
-| <a id="hub-session-turn"></a>`Session.turn` | Before any await, at an answer or a prompt that is not mid-turn, the permissions created before its hook started are ended, and so are the steps. An answer's quote is chosen, and its hook's start is recorded as the latest answer's hook start. A turn record is added for a prompt whose hook started no earlier than the latest answer's hook, unless the prompt is mid-turn and matched no pushed prompt. The model and the effort level of the request are taken only when its `at` is not older than the `at` of the value taken last, kept apart for each (`newer`). A `/title` passes its model with the `at` of its SessionStart hook. A request without `at` counts as the current time. A changed description is recorded in `session.json`. After these steps, the request's `step` goes to `step`, Claude posts the request's `note` without a quote, silent, and `User` posts the terminal prompt unless its `typed` is false, or it is blank, made only of this plugin's channel tags, pushed or a command. A prompt without `typed` is posted as typed. The turn record of a prompt is kept whatever its `typed`. Claude posts the answer unless it is blank. The changed short description is set, even after a failed post. A prompt, a note, a step's line or an answer that the core refuses for a group preference is replaced by Claude's post with the preference's name. |
-| <a id="hub-session-endpermissions"></a>`Session.endPermissions`, `endSteps`, `fileDone` | the end of pending permissions created before a time; the end of the steps started before a time, each removed by `endStep`, its ID kept as finished and its line updated with its own text, live off; it returns the promise of all updates started so far. The end of a prompt's file |
+| <a id="hub-session-permission"></a>`Session.permission` | a `permission` action in mode `requests`, marked `toolApproved` when its tool is approved for the session. Its verdict is written to the attachments, and the action is removed when decided. |
+| <a id="hub-session-turn"></a>`Session.turn` | Before any await, at an answer or a prompt that is not mid-turn, the permissions created before its hook started are ended, and so are the steps. At a prompt that is not mid-turn, each opening message without an end gets the hook's start as its end. At an answer, the turn's start is the newest turn record not marked as added whose hook started no later than the answer's hook. At both, `endTexts` is queued with the hook's start, and with the answer and the turn's start for an answer. An answer's quote is chosen, and its hook's start is recorded as the latest answer's hook start. A turn record is added for a prompt whose hook started no earlier than the latest answer's hook, unless the prompt is mid-turn and matched no pushed prompt. The record of a mid-turn prompt is marked as added. The model and the effort level of the request are taken only when its `at` is not older than the `at` of the value taken last, kept apart for each (`newer`). A `/title` passes its model with the `at` of its SessionStart hook. A request without `at` counts as the current time. A changed description is recorded in `session.json`. After these steps, the request's `text` goes to `text`, its `step` to `step`, Claude posts the request's `note` without a quote, silent, and `User` posts the terminal prompt unless its `typed` is false, or it is blank, made only of this plugin's channel tags, pushed or a command. A prompt without `typed` is posted as typed. The turn record of a prompt is kept whatever its `typed`. A prompt that is not mid-turn, that `User` posts or that matched a pushed prompt, and whose hook started no earlier than the latest answer's hook, gets the opening message from `openTurn`, kept before `User`'s post and sent after it. An answer goes to `answer`, with the result of the claim of `endTexts`. The changed short description is set, even after a failed post. A prompt, a note, a step's line, a text or an answer that the core refuses for a group preference is replaced by Claude's post with the preference's name. |
+| <a id="hub-session-endpermissions"></a>`Session.endPermissions`, `endSteps`, `endLive`, `fileDone` | the end of pending permissions created before a time; the end of the steps started before a time, each removed by `endStep`, its ID kept as finished and its line updated with its own text, live off; it returns the promise of all updates started so far. `endLive` ends every step, closes every opening message, queues the end of every text, and returns the promise of all updates started once that end has run. The end of a prompt's file |
+| <a id="hub-session-endtoolapprovals"></a>`Session.endToolApprovals`, `sendTools` | the approvals of tools dropped when the session closes or another process registers it, a process with another ID, another start time or an unknown one; the approved tools of `Control` written to the attachments as a `{tools}` line when they differ from the list sent last, which a new writer resets to empty |
 | <a id="hub-session-invite"></a>`Session.invite`, `announceRights` | invitation through the Main group. At a member's join or role change, other than `User`'s, the rights of the member's role are posted. The `/observer` command is added only for a role that can send, other than owner. |
 | <a id="hub-session-prompt"></a>`Session.prompt` | a message of `User` dropped; the rest delivered. `User`'s reactions are dropped before, by `onReaction`. |
 | <a id="hub-session-refusereaction"></a>`Session.refuseReaction` | The reply `This reaction is not supported.`, quoting the reacted message, posted on the `delivery` chain once for each member and reacted message, recorded in `refusedReactions`. A reaction to a sent message with that text gets no reply. |
-| <a id="hub-session-deliver"></a>`Session.deliver`, `receive`, `turnQuote`, `answer`, `postRefusal`, `post`, `pushedIn` | `deliver` waits for the held prompts, and then receives the given file while the session is attached. It writes the prompt line with the file's path. For a reply or a reaction, it writes the given `replyTo` as the quote line before the text, in the pushed prompt and in the line's `text`, and its ID and sender as the line's `replyTo`. After a failure of the file, the line is written without the path, and a reply is posted. Without an attachment, the reply is `Session N is not running.` `receive` receives the file into the session's folder within 10 minutes. `turnQuote` returns the newest turn record before an answer, or else the oldest pushed prompt not quoted yet, which it marks quoted. `answer` posts the answer in parts, with its quote when the quote fits with the answer's first character, the parts before the last with priority -1 and the last with priority 1. A received or sent message is quoted, so the answer to a reaction quotes Claude's own reacted message. `postRefusal` replaces a post that the core refuses with `feature not allowed NAME` by the subject and the text with the preference's name. The text is made by `featureOff` for an answer, and by `notAllowedForUser` for a prompt of `User`. `post` sends a post to the group, each part with its priority when one is given, and sends it again without its quote when the core refuses the quote. `pushedIn` returns the pushed prompts contained in a turn's prompt. Each of this plugin's channel tags in it matches one pushed prompt, the oldest with its item and text that no earlier tag matched. |
-| <a id="hub-session-step"></a>`Session.step`, `startLine`, `endStep`, `expireSteps`, `remember` | For a finished ID, `step` removes the ID and posts nothing. Otherwise `step` first ends the expired steps with `expireSteps`. At a start, `step` keeps the step's time, text, the promise of the line's ID from `startLine` and the wall-clock time of the send, set before the send is awaited, and starts the check of every minute when none runs. At an end, `step` ends its step with `endStep`, or, when no step is known, posts the final line with priority -1 and keeps the ID as finished. `startLine` sends the line as a live message with priority -1; after a refused send, the refusal is posted, after another failure the error is logged, and the promise gives no ID. `endStep` removes the step, stops the check when no step is left, and updates its line with a text and `liveMessage: false` when the line was posted, logging a failed update; the update is added to the session's promise of updates. `expireSteps` ends each step sent 23 hours ago or earlier by the wall clock with its own text, without keeping its ID as finished. `remember` keeps the last 100 finished IDs. |
+| <a id="hub-session-deliver"></a>`Session.deliver`, `receive`, `turnQuote`, `turnStart`, `answer`, `postAnswer`, `postRefusal`, `post`, `pushedIn` | `deliver` waits for the held prompts, and then receives the given file while the session is attached. It writes the prompt line with the file's path. For a reply or a reaction, it writes the given `replyTo` as the quote line before the text, in the pushed prompt and in the line's `text`, and its ID and sender as the line's `replyTo`. After a failure of the file, the line is written without the path, and a reply is posted. Without an attachment, the reply is `Session N is not running.` `receive` receives the file into the session's folder within 10 minutes. `turnQuote` returns the newest turn record before an answer, or else the oldest pushed prompt not quoted yet, which it marks quoted. `turnStart` returns the start of the newest turn record not marked as added at or before a time. `answer` makes the end line with the time from the turn's start to the answer's hook start, or `!- ✅ Done!` without a turn's start. For a blank answer, it fills the opening message of the answer's time with the end line, live off. Otherwise it posts the answer with `postAnswer` unless a text was claimed for it, and then the end line with priority 1. Last, it closes the opening messages whose end, or whose start when they have no end, is at or before the answer's hook start. `postAnswer` posts the answer in parts with priority -1. Its first part fills the opening message of the answer's time with `fill`, live off. Without an opening message, or after a failed update that is not a refusal, the parts are posted with the quote when the quote fits with the answer's first character. After a refusal for a group preference, nothing more of the answer is posted. A received or sent message is quoted, so the opening message and the answer of a reaction's turn quote Claude's own reacted message. `postRefusal` replaces a post that the core refuses with `feature not allowed NAME` by the subject and the text with the preference's name, posted, or as the update of a given item. The text is made by `featureOff` for an answer, and by `notAllowedForUser` for a prompt of `User`. `post` sends a post to the group, each part with its priority when one is given, as a live message when asked, and sends it again without its quote when the core refuses the quote. `pushedIn` returns the pushed prompts contained in a turn's prompt. Each of this plugin's channel tags in it matches one pushed prompt, the oldest with its item and text that no earlier tag matched. |
+| <a id="hub-session-step"></a>`Session.step`, `startLine`, `fill`, `sendLine`, `refused`, `endStep`, `finalize`, `expireLive`, `watchLive`, `remember` | For a finished ID, `step` removes the ID and posts nothing. Otherwise `step` first ends the expired live posts with `expireLive`. At a start, `step` queues `startLine` after the earlier live posts with `queueLive`. It keeps the step's time, text, the promise of the line's ID and the wall-clock time of the line's send: the send of the opening message the line would fill, or the queueing. That time is set before the send is awaited, and `watchLive` starts the check of every minute when none runs. At an end, `step` ends its step with `endStep`, or, when no step is known, posts the final line with priority -1 and keeps the ID as finished. `startLine` takes the opening message of the hook's start and fills it with the line through `fill`, live or not as asked. Without that opening message, or after a failed update that is not a refusal, `sendLine` sends the line with priority -1, live when asked, quoting a given item; the opening message is dropped. `fill` updates an item, and tells whether it was filled, refused for a group preference, or failed otherwise. After another failure it logs the failure and finalizes the item with `⏹️ Stopped`, an update that fails without harm for a deleted item. After a refused send or update, `refused` posts the refusal of the kind, a step's, a text's or an answer's, and after another failure the error is logged; the promise then gives no ID. A refusal of the opening message's update fills the opening message with the refusal's text, and when that update fails too, the opening message is finalized with `⏹️ Stopped`. `refused` returns whether it posted a refusal, and `startLine` and `sendLine` then call the given callback. `endStep` removes the step, calls `watchLive`, and passes its line to `finalize`. `finalize` updates a line with a text and `liveMessage: false` when the line was posted, logging a failed update; the update is added to the session's promise of updates. `expireLive` ends each step whose line was sent 23 hours ago or earlier by the wall clock with its own text, without keeping its ID as finished. It closes the opening messages sent as long ago with `⏹️ Stopped`, and queues the end of each live text whose message was sent as long ago, with its own text. `watchLive` runs the check of every minute while a step, an opening message or a text is live, and stops it otherwise. `remember` keeps the last 100 finished IDs. |
+| <a id="hub-session-openturn"></a>`Session.openTurn`, `boundOpenings`, `openingFor`, `takeOpening`, `closeOpenings` | `openTurn` keeps an opening message with the prompt hook's start and the wall-clock time, and sends it as an empty live line with priority -1 after the given post, `User`'s post of the prompt, has ended. It quotes the given prompt when the quote fits with an empty text. `boundOpenings` gives each opening message without an end, started at or before a time, that time as its end. `openingFor` returns the last kept opening message whose start is at or before a time and whose end, when it has one, is after that time, and `takeOpening` removes and returns it. `closeOpenings` removes the opening messages that a given test selects, and finalizes each with `⏹️ Stopped`. |
+| <a id="hub-session-text"></a>`Session.text`, `queueLive`, `addBatch`, `showText`, `updateText`, `endPart`, `postPart`, `endText`, `refuseText`, `keepRecent`, `dropText`, `endTexts`, `claim`, `updateItem` | `text` queues `addBatch` with `queueLive`, with the latest answer's hook start at the request's arrival. `queueLive` runs its work after the earlier live posts, logs a failure as `live posts of session N`, and returns the work's result, or none after a failure. `addBatch` drops a batch of an ended text, and the first batch of a text whose hook started before the latest answer's hook, whose ID it keeps as ended. It keeps the batch by its index, and appends the batches in index order to the text's part. After the final batch and all batches before it, `endText` ends the text; otherwise `showText` shows it. `showText` cuts the part by `textParts`. When it has more than one part, `endPart` ends the parts before the last, and the last part starts a new message unless that end refused the text. A part that is not blank and has no message starts one with `startLine`, live, and the text keeps the wall-clock time of that message's send: the send of the opening message it fills, or now. When that gives no ID, the text is dropped. Otherwise, when the part differs from the text sent last, a timer updates the message with the part 3 s after its last send. `updateText` updates the text's message, live or not as asked. It skips a live update with the text sent last, and a live update of a text that ended. After a refusal for a group preference, `refuseText` ends the text, the refusal is posted, and its message is finalized with the text accepted last; another failure is logged. `endPart` clears the timer and finalizes the message with the first part, or posts it with `postPart`, not live, when the text has no message. It then posts the other parts with priority -1. A refusal of the first send of a text or of a part also calls `refuseText`. `endText` drops the text and ends it with `endPart`, in parts by `textParts`. It then keeps the text among the last 20 ended texts with `keepRecent` when the text has a message and was not refused. `refuseText` drops the text, keeps it among the last 20 ended texts unless it was refused before, and marks it as refused. `dropText` clears the timer, removes the text and keeps its ID among the last 100 ended IDs. `endTexts` queues the claim of an answer, when one is given, and the end of every text whose hook started before a time. It returns whether the claim found the answer's text. `claim` takes the newest text, live or among the last 20 ended, whose first batch's hook started after the turn's start and before the answer's hook. When its finished parts and its part, trimmed, start the trimmed answer, the claim finds it. Then the rest of the answer after the finished parts ends a live text, or updates the message of an ended text that was not refused when the rest differs from its part. `updateItem` updates an item of the session group, live or not. |
 | <a id="hub-session-queue"></a>`Session.queue`, `refusesCommand` | the `delivery` chain; a one-line `/` text of a member other than `User` who is not an approver |
 | <a id="hub-session-approves"></a>`Session.approves`, `isUser`, `setMode`, `declineHost`, `store`, `savePending` | approver check: not `User`, the role `admin` or `owner` in the session group; the member of the contact `Hub.userContactId`; the mode and its record in the group's custom data; `hostDeclined` and its record; fields written into `session.json`; a pending connection recorded, those older than a day dropped |
 | `Hub.userContactId` | the hub's contact marked `simplexMcpUser`, read at the start |
-| <a id="hub-hub-open"></a>`Hub.open` | core `_hub`, Main group found or created, `MainGroup` load and start, `User` unless it fails, the contact of `User`, the stored sessions, events |
+| <a id="hub-hub-open"></a>`Hub.open` | core `_hub`, Main group found or created, `MainGroup` load and start, `User` unless it fails, the contact of `User`, the stored sessions, events, the timer of the list of sessions, every 2 s |
 | <a id="hub-hub-configure"></a>`Hub.configure`, `resetOwners` | expiry of all sessions and the Main group name. The Main group is replaced at once, even while owners exist. |
 | <a id="hub-hub-session"></a>`Hub.session` | the open session, renamed when its name changed, or a new `Session` with its stored or new group. The owners are invited to a new group. |
-| <a id="hub-hub-sessionstext"></a>`Hub.sessionsText`, `join`, `inviteOwner` | `SessionGroups` of the Main group |
-| <a id="hub-hub-stop"></a>`Hub.stop` | actions stopped, events awaited, cancelled cards awaited up to 10 s, steps ended, cores closed |
+| <a id="hub-hub-sessionstext"></a>`Hub.sessionsText`, `join`, `inviteOwner` | `SessionGroups` of the Main group. `sessionsText` is the text of the list of sessions: the lines of the running sessions by number, then `⚪ Not running: ` with the other sessions newest first, or `No sessions.` The last line keeps the most names for which the text, with the count of the rest, fits one message with the given quote; a binary search finds them. |
+| <a id="hub-hub-showsessions"></a>`Hub.showSessions`, `notRunningLine` | one render at a time: the records of the sessions read, and the text passed to `MainGroup.showList`; a failure is logged as `list of sessions: ERROR`. `notRunningLine` is the last line with the first K names and the count of the rest. |
+| <a id="hub-hub-stop"></a>`Hub.stop` | the timer of the list cleared, actions stopped, events awaited, the running render awaited, one more render with every session not running, cancelled cards awaited up to 10 s, steps, opening messages and texts ended by `endLive` with their updates awaited, cores closed |
 | <a id="hub-hub-storedgroup"></a>`storedGroup`, `createSessionGroup` | the group of `session.json` with a matching session number; a new group with `User` added |
-| <a id="hub-hub-onevent"></a>`Hub.onEvent` | event dispatch. Pending connections are claimed at `contactConnected` and `userJoinedGroup`. A session group's membership events go to its `Control`, `announceRights` and `askMode`, one at a time. |
+| <a id="hub-hub-onevent"></a>`Hub.onEvent` | event dispatch. Pending connections are claimed at `contactConnected` and `userJoinedGroup`. A session group's membership events go to its `Control`, `sendTools`, `announceRights` and `askMode`, one at a time. |
 | <a id="hub-notallowedforuser"></a>`notAllowedForUser` | `NAME are not allowed for User in the group of this session; its owners can allow them in the group's preferences.` It is posted for a prompt of `User` refused by a group preference, including one that is on only for roles above that of `User`. |
 | <a id="hub-textparts"></a>`textParts` | the longest runs of whole characters that each fit in one message by `fitsMessage`, the first with the given quote. Each part is found by a binary search among the next `maxMessageLength` characters. |
+| <a id="hub-quoteof"></a>`quoteOf`, `endLine`, `keepLast` | the quote of a received or sent message, when it fits with the first character of a text; `!- ✅ Done in DURATION!` by `duration`, or `!- ✅ Done!` without a time; a set of IDs that keeps its last 100 |
 | <a id="hub-isrefusedquote"></a>`isRefusedQuote` | `errorStore` `invalidQuote`, `chatItemNotFound` or `largeMsg` |
 
 #### [`main-group.ts`](../src/main-group.ts)
@@ -890,7 +903,8 @@ Data flow of a prompt from the session group:
 | <a id="main-group-maingroup-load"></a>`MainGroup.load`, `start` | lost check, name and menu from the group's current profile, and members. The short description and welcome message are kept. Without owners, `start` takes the existing link, or creates a new one. |
 | <a id="main-group-maingroup-onmessage"></a>`MainGroup.onMessage`, `command` | `/sessions`, `/join N`; `Unknown command.` for another |
 | <a id="main-group-maingroup-onevent"></a>`MainGroup.onEvent`, `handleEvent`, `ownerJoined` | The members are read again. The first human who joins becomes an owner. A new link is created when no owner remains. The statement of trust is posted at each human's join. New owners are invited to the open sessions. |
-| <a id="main-group-maingroup-replace"></a>`MainGroup.replace` | The Main group is deleted for all its members, and a new one is created with a new link. The session groups are kept. |
+| <a id="main-group-maingroup-replace"></a>`MainGroup.replace` | The Main group is deleted for all its members, and a new one is created with a new link, without a list of sessions. The session groups are kept. |
+| <a id="main-group-maingroup-showlist"></a>`MainGroup.showList`, `renderList`, `replaceList`, `postList`, `deleteItem`, `isRefusedEdit`, `isTooLarge` | `showList`, after the group's earlier events: nothing while the group is lost or for the text last refused as too large, `MainGroup.tooLarge`; such a refusal is kept and logged. `renderList`: without a list, a list posted while the group has an owner; a list 23 hours old replaced; an edit when the text differs from the text last shown; an edit refused with `invalidChatItemUpdate` or `chatItemNotFound` replaced. `postList` posts the text with priority -1 and saves the item and its time in the group's custom data; when the save fails, the new item is deleted for everyone and the error is passed on. `replaceList` posts a new list and deletes the old one for everyone, logging a refusal as `old list of sessions: ERROR`. |
 | <a id="main-group-maingroup-openlink"></a>`openLink`, `deleteLink` | group link with role `member` |
 | <a id="main-group-findmaingroup"></a>`findMainGroup`, `createMainGroup` | the newest group with `simplexMcpMain`; a new one with the short description and welcome message of trust, history, direct messages for owners and the menu |
 
@@ -908,25 +922,28 @@ Data flow of a prompt from the session group:
 
 | Symbol | Contents |
 |---|---|
-| <a id="core-opencore"></a>`openCore` | folder, `ChatApi.init` with prefix `FOLDER/simplex`, active user or a new one with peer type `agent`, `prepareCore`, event buffer, `startChat`, preset contact deleted for a new user, profile update |
+| <a id="core-opencore"></a>`openCore` | folder, `ChatApi.init` with prefix `FOLDER/simplex`, active user or a new one with the given peer type, `prepareCore`, event buffer, `startChat`, preset contact deleted for a new user, profile update with the display name and the peer type |
 | <a id="core-deletepresetcontacts"></a>`deletePresetContacts` | the contact `Ask SimpleX Team`, deleted when it has no connection |
 
-#### [`hook.ts`](../src/hook.ts), [`owner.ts`](../src/owner.ts), [`qr.ts`](../src/qr.ts)
+#### [`hook.ts`](../src/hook.ts), [`display.ts`](../src/display.ts), [`service-request.ts`](../src/service-request.ts), [`owner.ts`](../src/owner.ts), [`qr.ts`](../src/qr.ts)
 
 | Symbol | Contents |
 |---|---|
-| <a id="hook-sessionstart"></a>[`sessionStart`](../src/hook.ts) | `{}` for a run that is not interactive. When the run is not interactive only because of `CLAUDE_CODE_SESSION_ATTENDED`, its process is marked first. In an interactive run, the hook checks Node.js, reads the options, calls `ensureService`, sends `POST /title` with the title, the folder, the model and its own start time `performance.timeOrigin`, and returns the link message. |
+| <a id="hook-sessionstart"></a>[`sessionStart`](../src/hook.ts) | `{}` for a run that is not interactive. When the run is not interactive only because of `CLAUDE_CODE_SESSION_ATTENDED`, its process is marked first. In an interactive run, the hook checks Node.js, reads the options, calls `ensureService`, sends `POST /title` with the title, the folder, the model and its own start time `performance.timeOrigin`, and returns the link message. After a compaction, with `source: compact`, it sends no model, because Claude Code passes the model of the compacted conversation, a subagent's for a subagent's compaction. |
 | <a id="hook-markunattended"></a>[`markUnattended`](../src/hook.ts) | When `CLAUDE_PID` is set, the hook calls `ensureService` and sends `POST /title` with `unattended`. A failure is logged. |
-| <a id="hook-turn"></a>[`turn`](../src/hook.ts) | The output is `{}`. In a run that is not interactive, and for a tool use of a subagent or of this plugin, or without `tool_use_id` or `tool_name`, the hook sends nothing. Otherwise it calls `ensureService`, then sends `POST /turn` with the fields of [8.6](#86-channel-and-mirroring). The request is tried up to 15 times, 1 s apart, while the service returns status 409. |
-| <a id="hook-answermodel"></a>[`answerModel`, `promptKind`, `findInTranscript`, `readTail`, `lastAnswer`, `promptRecord`, `isPrompt`, `recordText`, `recordKind`](../src/hook.ts) | `answerModel` finds the model of Stop's answer. It is the `message.model` of the last entry of type `assistant` without `isSidechain` in the tail of `transcript_path`, once that entry's text is the answer. No model is sent for `<synthetic>`, an answer without text, an empty path, an unreadable transcript, or an entry not written within the reads. `promptKind` finds whether a person typed the prompt of UserPromptSubmit, its note and whether it is mid-turn. Its record, found by `promptRecord`, is the newest user entry or `queued_command` attachment whose text is the prompt, without subagent entries and tool results: the entry with the hook's `prompt_id` as `promptId`, or a record after the first user entry with that ID, a tool result included. Until such an entry is in the tail, `promptRecord` waits; at the last read, and at once without `prompt_id`, it takes any record with the prompt's text. It also waits while an `enqueue` entry with the prompt's text follows the record. The prompt is typed when the record's `origin.kind` is `human`, and mid-turn when the record is not the entry with `prompt_id`. A `queued_command` attachment without origin and with the `commandMode` `task-notification` is a task notification. At the last read, a record with an `enqueue` entry after it is classified by its origin, and a typed one is mid-turn. Without a record, an `enqueue` entry with the prompt's text makes the prompt typed and mid-turn; otherwise an entry with `prompt_id` and the origin `human` makes it typed. `findInTranscript` reads the tail, the last 1 MiB plus twice the bytes of the answer or the prompt, 100 ms apart: at most 20 times for an answer and 600 times for a prompt, and it tells its search which read is the last. It treats a failed read, as of a missing file, as an empty tail. |
+| <a id="hook-turn"></a>[`turn`, `eventFields`](../src/hook.ts) | The output is `{}`. `eventFields` makes the fields of the hook's event: the model of Stop's answer, the kind of UserPromptSubmit's prompt, the `step` of a tool hook and the `note` of PostCompact. In a run that is not interactive, for a tool use of a subagent or of this plugin, or without `tool_use_id` or `tool_name`, and for PostCompact without a note, the hook sends nothing. Otherwise it calls `ensureService`, then sends `POST /turn` with the fields of [8.6](#86-channel-and-mirroring). The request is tried up to 15 times, 1 s apart, while the service returns status 409. |
+| <a id="hook-answermodel"></a>[`answerModel`, `promptKind`, `findInTranscript`, `readTail`, `lastAnswer`, `promptRecord`, `isPrompt`, `recordText`, `recordKind`](../src/hook.ts) | `answerModel` finds the model of Stop's answer. It is the `message.model` of the last entry of type `assistant` without `isSidechain` in the tail of `transcript_path`, once that entry's text is the answer. No model is sent for `<synthetic>`, an answer without text, an empty path, an unreadable transcript, or an entry not written within the reads. `promptKind` finds whether a person typed the prompt of UserPromptSubmit, its note and whether it is mid-turn. Its record, found by `promptRecord`, is the newest user entry or `queued_command` attachment whose text is the prompt, without subagent entries and tool results: the entry with the hook's `prompt_id` as `promptId`, or a record after the first user entry with that ID, a tool result included. Until such an entry is in the tail, `promptRecord` waits; at the last read, and at once without `prompt_id`, it takes any record with the prompt's text. It also waits while an `enqueue` entry with the prompt's text follows the record. The prompt is typed when the record's `origin.kind` is `human`, and mid-turn when the record is not the entry with `prompt_id`. A `queued_command` attachment without origin and with the `commandMode` `task-notification` is a task notification. At the last read, a record with an `enqueue` entry after it is classified by its origin, and a typed one is mid-turn. Without a record, an `enqueue` entry with the prompt's text makes the prompt typed and mid-turn; otherwise an entry with `prompt_id` and the origin `human` makes it typed. `findInTranscript` reads the tail of the size its caller gives, plus twice the bytes of the answer or the prompt: the last 1 MiB, 100 ms apart, at most 20 times for an answer and 600 times for a prompt, and the last 4 MiB, 1 s apart, at most 120 times for a compaction. It gives its search the tail's bytes, tells it which read is the last, and treats a failed read, as of a missing file, as an empty tail. |
 | <a id="hook-noteof"></a>[`noteOf`, `taskNote`, `teammateNote`, `idleNotification`, `peerName`, `firstLine`, `decoded`, `stringOf`, `shortened`](../src/hook.ts) | `noteOf` makes the note of a record from its origin, its `turnOrigin` and the prompt, as [api.md](api.md#48-plugin-options-files-and-hook-output) lists the lines. `taskNote` reads `<summary>`, `<event>` and `<status>` of the first `<task-notification>` block, and takes the first line of a prompt without one. `teammateNote` reads the sender, the `summary` and the message of the first `<teammate-message>` tag of a prompt without origin whose message is not an idle notification; `idleNotification` checks whether a message's JSON `type` is `idle_notification`. `firstLine`, `peerName` and `teammateNote` replace control and format characters with spaces in each first line and in the sender's name, as `oneLine` does, so a note is one line. `shortened` cuts a note to 200 characters, counted in code points. |
-| <a id="hook-stepof"></a>[`stepOf`, `stepText`, `displayPath`, `duration`](../src/hook.ts) | `stepOf` makes the `step` of a tool hook: `{id, text}` at PreToolUse, and the text with the outcome and the duration, or with `(in background)` for a launch in the background, and `end: true` at PostToolUse and PostToolUseFailure, as [api.md](api.md#48-plugin-options-files-and-hook-output) lists them. It gives no step without `tool_use_id` or `tool_name`, with `agent_id` or for this plugin's tools, and the hook then sends nothing. `stepText` makes the text from the tool's name and input, cut by `shortened` in `stepOf`. `displayPath` gives a path relative to `cwd`, unless the relative path is absolute or starts with `..`. `duration` formats `duration_ms`, rounded to whole milliseconds. |
+| <a id="hook-compactionnote"></a>[`compactionNote`, `recentBoundary`](../src/hook.ts) | `compactionNote` makes the line of PostCompact, `⚙️ Context summarised automatically` or `on request`, with the token counts of the boundary that `recentBoundary` finds: the last entry of type `system` and subtype `compact_boundary` without `isSidechain`, created from 60 s before the hook's start to 5 s after it. A tail is decoded only when its bytes contain `"compact_boundary"`. It makes no line for an input with `agent_id`, or without such a boundary within the reads, as [api.md](api.md#48-plugin-options-files-and-hook-output) states. |
+| <a id="hook-stepof"></a>[`stepOf`, `stepText`, `displayPath`](../src/hook.ts) | `stepOf` makes the `step` of a tool hook: `{id, text}` at PreToolUse, and the text with the outcome and `duration_ms` formatted by `duration`, or with `(in background)` for a launch in the background, and `end: true` at PostToolUse and PostToolUseFailure, as [api.md](api.md#48-plugin-options-files-and-hook-output) lists them. It gives no step without `tool_use_id` or `tool_name`, with `agent_id` or for this plugin's tools, and the hook then sends nothing. `stepText` makes the text from the tool's name and input, cut by `shortened` in `stepOf`. `displayPath` gives a path relative to `cwd`, unless the relative path is absolute or starts with `..`. |
+| <a id="display-display"></a>[`display`](../src/display.ts) | The MessageDisplay hook. Without a string `session_id` and `message_id` and an integer `index`, it sends nothing. Otherwise it sends `POST /turn` with `id`, `pid`, its start time `at` and `text` `{message, index, final, delta}`, where `final` is true only for `true` and `delta` is empty when it is not a string. It waits for the reply at most 1 s, starts no service, makes no retry and logs nothing. The process prints `{}` after the request. |
+| <a id="service-request-posttoservice"></a>[`postToService`, `claudePid`](../src/service-request.ts) | `postToService` sends one request with the token of `ROOT/service.token` to the socket of ROOT, and resolves when the reply ends, at a failure, without a token file, or when the wait ends without a reply. `claudePid` is `CLAUDE_PID` when it is a positive integer. `display.ts`, `service-request.ts` and `paths.ts` import only Node modules and each other, so the display hook loads no `simplex-chat`. |
 | <a id="owner-linkcommand"></a>[`linkCommand`, `resetCommand`](../src/owner.ts) | `npx -y @simplex-chat/mcp@VERSION link` and `reset-owners`, VERSION of this package |
 | <a id="owner-linktext"></a>[`linkText`, `resetOwnersText`](../src/owner.ts) | the Main group's name with the owners, or with the link and a QR code on a terminal only |
 | <a id="owner-showlink"></a>[`showLink`, `resetOwners`](../src/owner.ts) | `link` takes the link from `GET /link` while no owner is in the Main group. `reset-owners` replaces the Main group at once, and shows the new link on a terminal only. |
 | <a id="qr-qrcodetext"></a>[`qrCodeText`](../src/qr.ts) | `small` and `large` with ANSI colors for terminals, `plain` for the hook message |
 
-#### [`config.ts`](../src/config.ts), [`files.ts`](../src/files.ts)
+#### [`config.ts`](../src/config.ts), [`files.ts`](../src/files.ts), [`paths.ts`](../src/paths.ts)
 
 | Symbol | Contents |
 |---|---|
@@ -934,9 +951,10 @@ Data flow of a prompt from the session group:
 | <a id="config-config"></a>[`Config`, `defaultConfig`, `configVariables`](../src/config.ts) | the Main group name, the mode and the expiry hours; their defaults `Claude Control`, `requests` and 23; their variables |
 | <a id="config-readconfig"></a>[`readConfig`](../src/config.ts) | `CLAUDE_PLUGIN_OPTION_*` to `Config`, defaults for blank values, `ConfigError` texts |
 | <a id="config-withmachine"></a>[`withMachine`](../src/config.ts) | ` - MACHINE` from `SIMPLEX_MCP_MACHINE` after the Main group name, checked by `validName`, with the `ConfigError` texts of the variable |
-| <a id="files-dataroot"></a>[`dataRoot`, `hubFolder`, `sessionFolder`](../src/files.ts) | ROOT, `ROOT/_hub`, `ROOT/_sessions/<lower-case ID>` |
+| <a id="files-dataroot"></a>[`dataRoot`](../src/paths.ts), [`hubFolder`, `sessionFolder`](../src/files.ts) | ROOT, `ROOT/_hub`, `ROOT/_sessions/<lower-case ID>`. `files.ts` exports `dataRoot` of `paths.ts`. |
 | <a id="files-sessionfile"></a>[`SessionFile`, `readSessionFile`, `writeSessionFile`, `storedSessions`](../src/files.ts) | `session.json` with number, name, project, creation time, group, aliases, model, effort and a rejected mode `host`. An unparsable file is skipped with a log line. Each write goes to `session.json.tmp`, which is renamed into place. |
-| <a id="files-socketpath"></a>[`socketPath`](../src/files.ts) | `ROOT/service.sock`. A path over 103 bytes is replaced by `TMP/simplex-mcp-HASH.sock`, and Windows uses `\\.\pipe\simplex-mcp-HASH`. |
+| <a id="files-socketpath"></a>[`socketPath`](../src/paths.ts) | `ROOT/service.sock`. A path over 103 bytes is replaced by `TMP/simplex-mcp-HASH.sock`, and Windows uses `\\.\pipe\simplex-mcp-HASH`. `files.ts` exports it. |
+| <a id="paths-servicetokenfile"></a>[`serviceTokenFile`](../src/paths.ts) | `service.token`, the name of the token file in ROOT |
 | <a id="files-logfile"></a>[`logFile`, `trimLog`, `openLog`](../src/files.ts) | `ROOT/service.log`, emptied when over 10 MB, mode 0600 |
 | <a id="files-servicelock"></a>[`serviceLock`, `serviceToken`](../src/files.ts) | `service.lock` and `ROOT/service.token`, the plugin's lock and token. Both names are written with a dot, which `serve` refuses in agent names, so the folders of agents in `~/.simplex-mcp` are not touched. |
 
@@ -946,7 +964,7 @@ Data flow of a prompt from the session group:
 |---|---|
 | [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json) | plugin `simplex`, version, description, `userConfig` |
 | [`.mcp.json`](../.mcp.json) | server `simplex`: `node dist/cli.js session` in the plugin's folder, tool call timeout, options as environment variables |
-| [`hooks/hooks.json`](../hooks/hooks.json) | SessionStart: `dist/cli.js hook session-start`; PreToolUse: `allow.js`; UserPromptSubmit, Stop, PostModelSwitch: `dist/cli.js hook turn`, in the background |
+| [`hooks/hooks.json`](../hooks/hooks.json) | SessionStart: `dist/cli.js hook session-start`; PreToolUse: `allow.js` for the plugin's tools, and for every tool `dist/cli.js hook turn` in the background and the `mcp_tool` hook that calls `pre_tool_use` of the server `plugin:simplex:simplex`; UserPromptSubmit, Stop, PostModelSwitch, PostToolUse, PostToolUseFailure, PostCompact: `dist/cli.js hook turn`, in the background; MessageDisplay: `dist/display.js`, with a 2 s timeout, which Claude Code waits for |
 | [`package.json`](../package.json) | `bundleDependencies: true`. The production packages are bundled in the package's `node_modules`, without a lockfile, so Claude Code installs nothing in the plugin's folder. [`package-lock.json`](../package-lock.json), the tree of `npm ci`, is not packed. |
 | [`plugin/allow.js`](../plugin/allow.js) | PreToolUse allow decision |
 | [`/.claude-plugin/marketplace.json`](../../../.claude-plugin/marketplace.json) | marketplace `simplex-chat`, plugin source npm `@simplex-chat/mcp` |
@@ -958,38 +976,48 @@ Memory of the service:
 | Item | Holder | Written by | Read by |
 |---|---|---|---|
 | Entries of open sessions | [`Service.entries`](../src/service.ts) | `entry`, idle close, stop | routes, `status` |
-| Line writers of the attachments | [`Entry.writers`](../src/service.ts) | `onAttach` | `Session.onLine` |
+| Line writers of the attachments | [`Entry.writers`](../src/service.ts), each with the process ID of its `/attach` | `onAttach` | `Session.onLine` |
 | Stored sessions, next number | [`Service.stored`, `nextNumber`](../src/service.ts) | `Service` constructor, `openAgent` | `openHub`, `openAgent` |
 | Aliases of sessions | [`Service.aliases`](../src/service.ts), ID to session ID | `Service` constructor, `alias` | `canonical`, `resolve` |
 | Titles by process | [`Service.titles`](../src/service.ts), PID to session ID, time and the name of a held title, and the `titled` signal | `onTitle`, `applyTitle` | `processSession`, the wait of `resolve`, `onSession` |
 | Registrations by process | [`Service.registered`](../src/service.ts), the signal of a `/session` with that PID | `onSession` | the wait of a held title |
 | Held titles | [`Service.held`](../src/service.ts), PID to its last held `/title` request | `onTitle`, the end of its wait | `onTitle`, `shutdown` |
 | Processes of unattended runs | [`Service.unattended`](../src/service.ts), PID to the time of its mark | `onTitle` with `unattended` | `onSession` |
-| Process of a session server | [`Entry.pid`, `Entry.seen`](../src/service.ts) | `onSession`, the end of the last attachment | `processSession` |
+| Process of a session server | [`Entry.pid`, `Entry.started`, `Entry.seen`](../src/service.ts) | `onSession`, the end of the last attachment | `processSession`, `onSession`, the line writer of `onAttach` |
 | Sessions | [`Hub.sessions`](../src/hub.ts), by number | `Hub.session` | events, Main group commands |
 | End of the held prompts | [`Hub.promptsHeldUntil`](../src/hub.ts), 30 s after the stored sessions opened | `Hub.open` | `Session.deliver` |
 | Prompts in delivery | [`Session.delivery`](../src/hub.ts), a promise chain in arrival order | `onMessage`, `onReaction` | `deliver` |
 | Refused reactions | [`Session.refusedReactions`](../src/hub.ts), the member and item IDs of each reaction that got `This reaction is not supported.` | `refuseReaction` | `refuseReaction` |
-| Live steps | [`LiveStep`, `Session.steps`](../src/hub.ts), by `tool_use_id`: the start time of the step's hook, its text, the promise of its line's ID and the wall-clock time of its send | `step` | `step`, `endSteps`, `expireSteps` |
+| Live steps | [`LiveStep`, `Session.steps`](../src/hub.ts), by `tool_use_id`: the start time of the step's hook, its text, the promise of its line's ID, and the wall-clock time of the send of the opening message the line would fill, or of the queueing | `step` | `step`, `endSteps`, `expireLive` |
 | Finished steps | [`maxFinished`, `Session.finished`](../src/hub.ts), the IDs of the last 100 steps whose line was completed at their end or by `endSteps`, or posted at their end | `step`, `endSteps` | `step` |
-| Updates of lines | [`Session.finalizing`](../src/hub.ts), the promise of every update of a line started so far | `endStep` | `endSteps`, so `Hub.stop` waits for them |
-| Check of live steps | [`stepCheckMs`, `Session.expiry`](../src/hub.ts), an unreferenced timer that runs `expireSteps` every minute while a step is live | `step`, `endStep` | `endStep` |
+| Updates of lines | [`Session.finalizing`](../src/hub.ts), the promise of every update of a line started so far, of steps, texts and opening messages | `finalize` | `endSteps`, `endLive`, so `Hub.stop` waits for them |
+| Opening messages | [`Opening`, `Session.openings`](../src/hub.ts): for each, the start of its prompt's hook, its end, the start of the next prompt's hook that starts a turn, the promise of its item's ID, and the wall-clock time of `openTurn` | `openTurn`, `boundOpenings`, `takeOpening`, `closeOpenings` | `openingFor`, `takeOpening`, `closeOpenings` |
+| Live texts | [`LiveText`, `Session.texts`](../src/hub.ts), by `message_id`: the start of its first batch's hook, the batches by index, the next index to append, the index of the final batch, the text of its finished parts, its current part, the promise of the item's ID, the text sent last and the wall-clock time of that send, the wall-clock time of the send of its live message, the update timer, and the mark of a refusal | `addBatch`, `showText`, `updateText`, `endText`, `refuseText`, `dropText` | `addBatch`, `endTexts`, `claim`, `expireLive` |
+| Ended texts | [`Session.endedTexts`, `recentTexts`](../src/hub.ts): the last 100 `message_id`s of texts that ended or were dropped; the last 20 texts that ended with a message or that a group preference refused | `dropText`, `addBatch`; `endText`, `refuseText` | `addBatch`; `claim` |
+| Order of live posts | [`Session.liveOrder`](../src/hub.ts), a promise chain of the text work and the step starts, in arrival order | `queueLive` | `queueLive` |
+| Check of live posts | [`stepCheckMs`, `Session.expiry`](../src/hub.ts), an unreferenced timer that runs `expireLive` every minute while a step, an opening message or a text is live | `watchLive` | `watchLive` |
 | Actions of a session | [`Session.actions`](../src/hub.ts), numbered from 1 per session group | tools, `permission`, `requestMode` | `Control`, `busy` |
 | Pushed prompts | [`Session.pushed`](../src/hub.ts), at most 20, each kept until it is matched by a turn's prompt. An entry is marked `quoted` once it is quoted by an answer without a turn record. | `deliver`, `turnQuote` | `turn`, `turnQuote` |
 | Files of prompts in transfer | [`Session.receiving`](../src/hub.ts) | `receive`, its 10-minute timer | `fileDone` |
 | Model and effort | [`Session.description`](../src/hub.ts), also in `session.json` | constructor, `turn` | `turn` |
-| Turn records | [`Session.turns`](../src/hub.ts), the start time of each prompt hook that started no earlier than the latest answer's hook, except a mid-turn prompt that matched no pushed prompt, with its pushed prompt, or `null` for a terminal prompt or a command | `turn`. At an answer, the records that started before its hook are removed. | `turnQuote` |
+| Turn records | [`Session.turns`](../src/hub.ts), the start time of each prompt hook that started no earlier than the latest answer's hook, except a mid-turn prompt that matched no pushed prompt, with its pushed prompt, or `null` for a terminal prompt or a command. The record of a mid-turn prompt is marked as added. | `turn`. At an answer, the records that started before its hook are removed. | `turnQuote`, `turnStart` |
 | A rejected mode `host` | [`Session.hostDeclined`](../src/hub.ts), also in `session.json` | constructor, `declineHost` | `askMode`, `requestMode` |
+| Approvals of tools | [`Control.toolApprovals`](../src/control.ts), by tool name: the approver's name and member ID and the time | `/approve N all`, `/revoke TOOL`, `endToolApprovals` when the session closes, another process registers it or its group is lost | `approvedTools`: `Session.sendTools`, `Session.permission`, `/list` |
+| Approved tools sent | [`Session.sentTools`](../src/hub.ts), the list last written to the attachments, empty for a new writer | `sendTools`, `onLine` | `sendTools` |
 | The requested mode | [`Session.requested`](../src/hub.ts) | `requestMode`, a rejected or expired `mode` card | `askMode` |
 | Members of the Main group, its link | [`MainGroup.members`, `linkText`](../src/main-group.ts) | `refreshMembers`, `openLink` | owner checks, the statement of trust at a join, `/status`, `/title`, `/link` |
+| The list of sessions | [`MainGroup.list`](../src/main-group.ts), its item and the time it was posted, also in the group's custom data; `MainGroup.shown`, the text last posted or edited; `MainGroup.tooLarge`, the text last refused as too large | constructor, `postList`, `replace`; `showList` | `showList`, `renderList` |
+| Claude Code's record of a session | [`Session.record`](../src/hub.ts), the path from the last `POST /session`; `Session.claudeStatus`, the last `status` read; `Session.recordRead`, the read in progress | `Service.onSession`; `readRecord` | `readRecord`; `stateLine` |
+| Renders of the list | [`Hub.listTimer`](../src/hub.ts), every 2 s; `Hub.listing`, the running render | `Hub.open`; `showSessions` | `Hub.stop` |
 
-A session process keeps one connection promise, one attachment, the refusal of the service, and the retry delay with its timer in memory (the fields of [`ServiceLink`](../src/session.ts)).
+A session process keeps one connection promise, one attachment, the refusal of the service, and the retry delay with its timer in memory (the fields of [`ServiceLink`](../src/session.ts)). It also keeps the approved tools of each attachment, and answers the PreToolUse hook from those of the current one (`ServiceLink.approvedTools`).
 
 Chat database custom data is in the core `_hub` unless noted:
 
 | Item | Entity | Value | Written by | Read by |
 |---|---|---|---|---|
 | Main group marker | Main group | `{simplexMcpMain: true}` | [`createMainGroup`](../src/main-group.ts) | [`findMainGroup`](../src/main-group.ts) |
+| List of sessions | Main group | `{simplexMcpMain: true, simplexMcpList: {item, at}}`, merged with the other keys | [`MainGroup.postList`](../src/main-group.ts) | [`MainGroup` constructor, `listOf`](../src/main-group.ts) |
 | Session group | group of session N | `{simplexMcpSession: {session: N, pending?: [{connId, at}], mode?}}`, where `mode` is the approved mode | [`createSessionGroup`](../src/hub.ts), [`setMode`](../src/hub.ts), [`savePending`](../src/hub.ts), [`claimPending`](../src/hub.ts) | [`storedGroup`](../src/hub.ts), [`Session` constructor](../src/hub.ts), [`claimPending`](../src/hub.ts) |
 | Action counter | group of session N | `{simplexMcp: {control: true, nextAction}}`, merged with the other keys | [`saveCounter`, `saveData`](../src/control.ts) | [`Session` constructor](../src/hub.ts) |
 | Chat owner | contact or group of a peer | `{...other keys, simplexMcpOwner: {session: ID}}` | [`claim`](../src/tools.ts), [`giveChat`](../src/tools.ts) | [`owns`](../src/tools.ts) |
@@ -1003,7 +1031,7 @@ Files:
 | Path | Contents | Written | Read |
 |---|---|---|---|
 | `ROOT/` | data root, mode 0700 | every client and the service ([`ServiceClient.forRoot`](../src/client.ts), [`runService`](../src/service.ts)) | |
-| `ROOT/service.token` | the bearer token, 0600 | the first client or service ([`serviceToken`, `serverToken`](../src/files.ts)) | every client, the service |
+| `ROOT/service.token` | the bearer token, 0600 | the first client or service ([`serviceToken`, `serverToken`](../src/files.ts)) | every client, the service, the display hook ([`postToService`](../src/service-request.ts)) |
 | `ROOT/service.lock` | PID of the service, linked from `ROOT/service.lock.PID.HEX.tmp`. A stopped service's lock is claimed through `ROOT/service.lock.PID.claim`, which is removed after the takeover. | [`Service.start`](../src/service.ts), with [`createLock`, `createExclusive`, `takeOver`](../src/files.ts) | the next service |
 | `ROOT/titles.json` | the `/title` requests held at a stop, each with its `at`, 0600 | [`Service.shutdown`](../src/service.ts) | the next [`Service.start`](../src/service.ts), which removes it |
 | `ROOT/service.sock` | the socket | [`listen`](../src/socket.ts) | clients |
@@ -1011,6 +1039,7 @@ Files:
 | `ROOT/_hub/`, `ROOT/_user/` | databases and `tmp/` of the profiles `Claude` and `User` | [`openCore`](../src/core.ts) | the cores |
 | `ROOT/_sessions/ID/session.json` | `{number, name, project, created, group?, aliases?, model?, effort?, hostDeclined?}`, 0600, replaced whole through `session.json.tmp` | [`Service.openAgent`, `rename`, `alias`](../src/service.ts), [`Hub.session`, `Session.declineHost`, `store`](../src/hub.ts) | `Service` constructor, `resolve`, `Hub.session`, `alias`, `store` |
 | `ROOT/_sessions/ID/files/` | downloads of the session's chats as in [3.3](#33-files). The files of the prompts from the group are in `group/`. `sent/` is deleted when the session opens. | the core ([`Session.receive`, `Hub.session`](../src/hub.ts)) | tools, Claude |
+| `CLAUDE_CONFIG_DIR/sessions/PID.json`, or `~/.claude/sessions/PID.json` | Claude Code's record of its process PID, with `status` `busy`, `waiting`, `idle` or `shell`, written in place at each change of its state | Claude Code | [`Session.readRecord`](../src/hub.ts), every 2 s while its session is attached |
 
 ### 8.4 Process lifecycle
 
@@ -1018,7 +1047,7 @@ Files:
 
 1. The SessionStart hook checks Node.js 22, reads the options, starts the service when it is not running, and sends `POST /title` with the session ID, `CLAUDE_PID`, its start time `at`, title, project folder, model and options ([`sessionStart`](../src/hook.ts)). In a run that is not interactive, the hook returns `{}`. When the run is not interactive only because `CLAUDE_CODE_SESSION_ATTENDED` is `0`, the hook first sends `POST /title` with `unattended`. Then the service refuses `/session` from that `CLAUDE_PID` with 403 for 10 s ([flow 30](flows.md#30-a-run-that-is-not-interactive)).
 2. `/title` resolves the ID to a session as in [API 4.6](api.md#46-socket-protocol). So `/clear`, `/resume` and `--continue` keep the session of the running Claude Code process. The service gives an alias only to an ID without `session.json`. For a new ID from a process without a known session, `/title` replies first, and then waits up to 10 s for the server of that process to register. `/title` then opens the session from `session.json`, or with a new number and the name from the title or the folder. `Hub.session` finds the group of `session.json` or creates one. It adds `User`, invites the Main group's owners and loads the group's `Control` ([`Service.onTitle`, `markUnattended`, `refuseUnattended`, `applyTitle`, `openAgent`](../src/service.ts), [`Hub.session`](../src/hub.ts)).
-3. At a new title, the service renames the group and `session.json`. The model, when Claude Code passes it, is written to the group's short description with the hook's `at`, so a model of a hook that started later stays ([`Service.applyTitle`](../src/service.ts)). The Stop hook of each turn sends the model of its answer from the transcript. So the model is shown in the short description from the first answer, even when the SessionStart hook has none ([`turn`, `answerModel`](../src/hook.ts)).
+3. At a new title, the service renames the group and `session.json`. The model, when Claude Code passes it, is written to the group's short description with the hook's `at`, so a model of a hook that started later stays ([`Service.applyTitle`](../src/service.ts)). The SessionStart hook after a compaction sends no model ([flow 35](flows.md#35-a-summary-of-the-sessions-context)). The Stop hook of each turn sends the model of its answer from the transcript. So the model is shown in the short description from the first answer, even when the SessionStart hook has none ([`turn`, `answerModel`](../src/hook.ts)).
 4. The hook prints the link message while no owner is in the Main group, and `{}` otherwise.
 5. The session process connects in the background. `/session` resolves its ID, and waits up to 10 s for the title of its process when the ID is new. It then registers the options and the parent process, and requests the mode ([`Service.onSession`](../src/service.ts)). `/attach` sets the session's line writer ([`Service.onAttach`](../src/service.ts)). When `/attach` ends or the connection fails, the session process connects again, except after a `ProtocolError` or a 403 of `/session` ([`ServiceLink.start`, `close`, `reconnect`](../src/session.ts)).
 
@@ -1067,7 +1096,7 @@ After a stop, `Hub.onEvent` ignores events ([`Hub.onEvent`](../src/hub.ts)). Oth
 
 #### Attach, idle close and idle stop
 
-- The service cancels the session's idle timer at each attachment. When the last attachment ends, the service records the time, clears the line writer, ends the pending permissions and the steps, and starts the timer ([`Service.onAttach`](../src/service.ts)).
+- The service cancels the session's idle timer at each attachment. When the last attachment ends, the service records the time, clears the line writer, ends the pending permissions, the steps, the opening messages and the texts, and starts the timer ([`Service.onAttach`](../src/service.ts)).
 - After 10 minutes, the idle timer closes the entry when no call of the session runs and none of its actions is in memory. Otherwise the timer starts again ([`Service.scheduleIdle`](../src/service.ts)). The hub keeps the `Session` of a closed session, so Claude still answers `/list` and `/revoke` in its group ([`Hub.session`](../src/hub.ts)).
 - When no entry remains, the stop timer stops the service after 10 minutes. The timer is cleared when a new entry opens ([`Service.scheduleStop`, `entry`](../src/service.ts)).
 
@@ -1076,7 +1105,7 @@ After a stop, `Hub.onEvent` ignores events ([`Hub.onEvent`](../src/hub.ts)). Oth
 On `SIGINT`, `SIGTERM`, `POST /stop` or the stop timer ([`Service.shutdown`](../src/service.ts)):
 
 1. Timers are cleared, the held titles are saved in `ROOT/titles.json`, the listener closes, and open streams are destroyed.
-2. `Hub.stop` stops the actions of every session, and edits their cards to `Cancelled: the server stopped.` It awaits the queued group events, and gives the cancelled cards 10 s to be sent. Then the download checks stop, and the cores `_user` and `_hub` close ([`Hub.stop`](../src/hub.ts)).
+2. `Hub.stop` stops the actions of every session, and edits their cards to `Cancelled: the server stopped.` It awaits the queued group events, and Claude edits the list of sessions once more, with every session not running. When cards were cancelled, they and that edit get 10 s to be sent. Then it ends the steps, the opening messages and the texts, and awaits their updates. Then the download checks stop, and the cores `_user` and `_hub` close ([`Hub.stop`](../src/hub.ts)).
 3. The service logs `Cancelled K action(s).`, releases the lock and logs `Stopped.` The process exits after the `/stop` reply is sent, or after its client disconnects before the reply is written.
 
 ### 8.5 Approval model
@@ -1102,6 +1131,7 @@ Tool-use state machine, one action of tool `permission` per request:
 |---|---|---|---|
 | `permission_request` | | `pending`, card posted | [`Session.permission`](../src/hub.ts) |
 | `/approve N` | `pending` | `performing`, `allow` pushed, then `done` | [`Session.permission`](../src/hub.ts), [`AgentTools.perform`](../src/tools.ts) |
+| `/approve N all` | `pending` | as `/approve N`, after the tool is approved for the session and the approved tools are pushed | [`Control.approveTool`](../src/control.ts) |
 | `/reject N` | `pending` | `rejected`, `deny` pushed | [`Session.permission`](../src/hub.ts) |
 | an answer, or a prompt that is not mid-turn, of a hook that started after the card's creation; end of the last attachment | `pending` | `expired`, card edited to `Ended.` | [`Session.turn`, `endPermissions`](../src/hub.ts), [`Service.onAttach`](../src/service.ts), [`Actions.end`](../src/actions.ts) |
 | expiry | `pending` | `expired`, card edited to `Expired.` | [`Actions.expire`](../src/actions.ts) |
@@ -1111,6 +1141,7 @@ Tool-use state machine, one action of tool `permission` per request:
 stateDiagram-v2
   [*] --> pending: permission_request
   pending --> performing: /approve N, allow pushed
+  pending --> performing: /approve N all, tools pushed, then allow pushed
   performing --> done
   pending --> rejected: /reject N, deny pushed
   pending --> expired: later answer or prompt that is not mid-turn, last detach, card Ended.
@@ -1118,6 +1149,29 @@ stateDiagram-v2
   done --> [*]: removed
   rejected --> [*]: removed
   expired --> [*]: removed
+```
+
+Approval of a tool for the rest of a session, kept in `Control` by tool name. The session server answers the PreToolUse hook with `allow` for an approved tool, and Claude Code then runs the tool without a prompt, unless a deny or ask rule, a safety check such as a write to a protected path, plan mode or the auto mode classifier requires its permission flow. A prompt of that flow is relayed as a card, with the line that the tool is approved and Claude Code still asks.
+
+| Event | From | To | Code |
+|---|---|---|---|
+| `/approve N all` of a pending `permission` card | | approved by the sender | [`Control.approveTool`](../src/control.ts) |
+| the approver is no longer an admin or owner, after a membership event or `/observer` | approved | inactive: not among the approved tools | [`Control.approvedTools`](../src/control.ts), [`Hub.onEvent`](../src/hub.ts) |
+| the approver is an admin or owner again | inactive | approved | the same |
+| `/approve N all` by another approver | inactive | approved by that approver | [`Control.approveTool`](../src/control.ts) |
+| `/revoke TOOL`; the session closes; `/session` from another process, by its ID or start time, or with an unknown start time | approved, inactive | removed | [`Control.revokeTool`, `endToolApprovals`](../src/control.ts), [`Service.onSession`, `scheduleIdle`, `processStart`](../src/service.ts) |
+| the session's group is lost: deleted, Claude removed, or Claude no longer its owner, at an event or at a load | approved, inactive | removed, and `{tools: []}` sent | [`Control.onEvent`, `load`, `lose`](../src/control.ts) |
+| the session's process attaches again, as after a failed call | approved, inactive | unchanged | [`Service.onAttach`](../src/service.ts) |
+| an attachment of a process other than the one of the last `/session` | approved, inactive | `{tools: []}` sent to that attachment in place of each `{tools}` line | [`Service.onAttach`](../src/service.ts) |
+
+```mermaid
+stateDiagram-v2
+  [*] --> approved: /approve N all
+  approved --> inactive: its approver is no longer an admin or owner
+  inactive --> approved: its approver is an admin or owner again
+  inactive --> approved: /approve N all by another approver, who is recorded
+  approved --> [*]: /revoke TOOL, the session closes, another process registers it, or the group is lost
+  inactive --> [*]: /revoke TOOL, the session closes, another process registers it, or the group is lost
 ```
 
 ### 8.6 Channel and mirroring
@@ -1128,7 +1182,7 @@ stateDiagram-v2
 | session to Claude Code | `notifications/claude/channel` `{content, meta: {from, item, file?, reply_to?, reply_to_from?}}`; `notifications/claude/channel/permission` `{request_id, behavior}` | [`channelNotification`](../src/session.ts) |
 | Claude Code to session | `notifications/claude/channel/permission_request` `{request_id, tool_name, description, input_preview}` | the notification handler of [`startSession`](../src/session.ts) |
 | session to service | `POST /permission` | [`ServiceLink.permission`](../src/session.ts) |
-| hooks to service | `POST /turn` `{id, pid?, at?, prompt?, typed?, note?, midTurn?, answer?, model?, effort?, step?}`. `step` is `{id, text, end?}`, the line of a tool use from PreToolUse, PostToolUse or PostToolUseFailure. `pid` is `CLAUDE_PID`, and `at` is the hook's `performance.timeOrigin`. `prompt` and `answer`, the last answer, are cut to 250,000 characters. `typed` of UserPromptSubmit is true when a person typed the prompt. `note` is the line about one of Claude Code's own prompts. `midTurn` is true for a prompt that Claude Code added to a running turn. `model` is the new model of PostModelSwitch, or the model of Stop's answer in the transcript. `effort` is the effort level. | [`turn`, `answerModel`, `promptKind`, `stepOf`, `cut`](../src/hook.ts) |
+| hooks to service | `POST /turn` `{id, pid?, at?, prompt?, typed?, note?, midTurn?, answer?, model?, effort?, step?, text?}`. `step` is `{id, text, end?}`, the line of a tool use from PreToolUse, PostToolUse or PostToolUseFailure. `text` is `{message, index, final, delta}`, a batch of Claude's text from MessageDisplay, sent by `dist/display.js` ([`display`](../src/display.ts)). `pid` is `CLAUDE_PID`, and `at` is the hook's `performance.timeOrigin`. `prompt` and `answer`, the last answer, are cut to 250,000 characters. `typed` of UserPromptSubmit is true when a person typed the prompt. `note` is the line about one of Claude Code's own prompts, or of PostCompact about a summary of the session's context. `midTurn` is true for a prompt that Claude Code added to a running turn. `model` is the new model of PostModelSwitch, or the model of Stop's answer in the transcript. `effort` is the effort level. | [`turn`, `eventFields`, `answerModel`, `promptKind`, `stepOf`, `compactionNote`, `cut`](../src/hook.ts) |
 
 ```
 on a message m in N:               one-line "/" text from a member who is neither an admin, an owner nor User:
@@ -1153,29 +1207,84 @@ on /turn at time at, before any await:
   prompt p not midTurn, or answer a:   end pending permissions created before at
                                    endSteps(at): each live step with at below at leaves steps, enters finished,
                                    and its line is updated with its text, live off
+  prompt p not midTurn:            each opening without until, started at or before at: until = at
+  answer a:                        started = the at of the newest turn record not added, at or before at
+  prompt p not midTurn, or answer a:   queued after the live posts: claim(a, at, started) for an answer,
+                                   then each live text with at below at: endText(text, its part)
   answer a, also empty:            earlier = turns with at below at; quoted = the item of the newest earlier,
                                    or the oldest pushed not quoted, marked quoted, when earlier is empty; earlier leave turns
                                    answeredAt = max(answeredAt, at)
   prompt p:                        matched = for each of this plugin's channel tags of p, the oldest pushed entry with its item and text
                                    not matched by an earlier tag; and the entries equal to p and pushed in the last 60 s
                                    at not below answeredAt, and not midTurn or matched not empty:
-                                   turns += (at, the oldest matched or null)
+                                   turns += (at, the oldest matched or null), marked added when midTurn
                                    matched leave pushed
   model or effort:                 skipped when at is older than modelAt or effortAt, the at of the value taken last
                                    else: modelAt or effortAt = at; a changed value: description, session.json
+on /turn text {message, index, final, delta}:
+                                   queued after the live posts, with answeredAt as it was at the request's arrival:
+                                   message ended: dropped
+                                   message new and at below answeredAt: dropped, message ended
+                                   batches[index] = delta; final: last = index; part += the next batches in index order
+                                   every batch up to last appended: endText(text, part); else showText
+showText:                          part cut by textParts: the parts before the last finalized, the last part in a new message
+                                   unless the text was refused
+                                   part not blank, no message: liveAt = sentAt of the opening it fills, or now;
+                                   startLine(part, at), live; no ID: dropText
+                                   else part not the text sent last, no timer: update, live, 3 s after the last send,
+                                   skipped when the text ended before it
+endText(text, value):              dropText; the message finalized with the first part of value,
+                                   or, without a message, startLine(the first part, at), not live
+                                   the other parts posted with priority -1 after a shown first part
+                                   the text has a message and is not refused: recent += text, at most 20
+dropText:                          timer cleared; text leaves texts; ended += message, at most 100
+a text's update refused for NAME:  refuseText; "Claude's text was not posted: " and the preference's text; the message finalized
+                                   with the text sent last
+a text's send refused for NAME:    refuseText, after the refusal of startLine
+refuseText:                        dropText; recent += text unless refused before, at most 20; text marked refused
 on /turn step {id, text, end}:     id finished: id leaves finished, nothing posted
-                                   no end: steps += (id, at, text, the line sent live with priority -1)
+                                   no end: steps += (id, at, text, startLine(text, at) queued after the live posts, live,
+                                   sentAt of the opening it would fill, or now)
                                    end, id in steps: id leaves steps; the line updated with text, live off
                                    end, else: id enters finished; Claude posts text with priority -1
                                    finished keeps the last 100 IDs; a refused send: the refusal post, no line
+startLine(text, at, live):         opening = the last kept opening with start at or before at and at before until
+                                   opening with an item: the item updated with text
+                                   refused for NAME: the item updated with the refusal's text, live off;
+                                   that update failed: the item finalized with "⏹️ Stopped", the failure logged
+                                   another failure: the error logged, the item finalized with "⏹️ Stopped",
+                                   and as without an opening
+                                   no opening: Claude posts text with priority -1, live when asked
 on /turn note:                     Claude posts note, without a quote, with priority -1; refused for NAME: Claude posts
                                    "Claude's note was not posted: " and the preference's text
 on /turn prompt p:                 typed not false, nothing matched, p not blank, not only this plugin's channel tags,
                                    not a one-line "/" command:
                                    User posts parts(p) in the group marked N
-on /turn answer a, not blank:      Claude posts parts(a), the first quoting quoted when the quote fits with the first character of a,
-                                   the parts before the last with priority -1 and the last with priority 1
-on the last detach, at Hub.stop:   endSteps()
+                                   not midTurn, User posts or matched not empty, at not below answeredAt, before User's post:
+                                   openings += (at, sentAt = now, an empty live line with priority -1, sent after User's post,
+                                   quoting the oldest matched when it fits)
+on /turn answer a, blank:          the opening of at finalized with the end line
+on /turn answer a, not blank:      claim found a text: nothing more of a
+                                   else: parts(a) with priority -1, the first filling the opening of at, live off,
+                                   or posted quoting quoted when the quote fits with the first character of a
+                                   the opening's update refused for NAME: "Claude's answer was not posted: " and the
+                                   preference's text fill the opening, or "⏹️ Stopped" when that update fails
+                                   the opening's update failed otherwise: the opening finalized with "⏹️ Stopped",
+                                   parts(a) posted as without an opening
+                                   then the end line with priority 1
+end line:                          "!- ✅ Done in " duration(at - started) "!", or "!- ✅ Done!" without started
+then, at an answer:                each opening with until, or its start without until, at or before at: finalized with "⏹️ Stopped"
+claim(a, before, started):         newest text, live or recent, with started below at below before
+                                   its finished parts and part, trimmed, start trimmed a:
+                                   the text found; refused: nothing more
+                                   else the rest of a after the finished parts ends the live text, or updates the recent text's
+                                   message when it differs from its part
+on the last detach, at Hub.stop:   endSteps(); every opening finalized with "⏹️ Stopped"; queued: every live text ended with its part
+expireLive, every minute while a step, an opening or a text is live, and before each step:
+                                   before = now - 23 hours, by the wall clock
+                                   steps with sentAt at or before before: line finalized with its text
+                                   openings with sentAt at or before before: finalized with "⏹️ Stopped"
+                                   queued: texts with liveAt at or before before: endText(text, its part)
 then, also after a failed post, a changed value: short description "MODEL · effort LEVEL"
 post with a quote:                 the core refuses it with invalidQuote, chatItemNotFound or largeMsg: the post again without the quote
 ```
@@ -1191,7 +1300,45 @@ sequenceDiagram
   Note over D: a later answer with at 4 quotes prompt N+1
 ```
 
-Sources: [`Session.onMessage`, `turn`, `endPermissions`, `prompt`, `deliver`, `receive`, `newer`, `turnQuote`, `answer`, `postRefusal`, `post`, `pushedIn`, `textParts`](../src/hub.ts).
+A text of Claude, by its `message_id`:
+
+```mermaid
+stateDiagram-v2
+  [*] --> waiting: first batch, its hook not before the latest answer's
+  waiting --> live: a part that is not blank, posted or filling an opening message
+  live --> live: later batches, an update at most every 3 s
+  live --> live: the part outgrows a message, the part that fits finalized
+  live --> ended: final batch, finalized with its part
+  live --> ended: claim at Stop, finalized with the rest of the answer
+  live --> ended: a prompt that starts a turn, the last detach or the stop, finalized with its part
+  live --> ended: 23 hours after its message's send by the wall clock, finalized with its part
+  live --> refused: an update or a part's post refused for a preference, finalized with the text sent last
+  waiting --> refused: its first post refused for a preference, the refusal filling an opening message
+  waiting --> ended: final batch, or the end of the texts
+  refused --> [*]: later batches dropped, found by the claim at Stop without a post
+  ended --> [*]: later batches dropped
+```
+
+An opening message:
+
+```mermaid
+stateDiagram-v2
+  [*] --> open: a prompt that starts a turn, kept before User's post, sent after it
+  open --> bounded: the next prompt that starts a turn, its hook start as the end
+  open --> filled: the first text, step or answer of a hook that started no earlier than the prompt's
+  bounded --> filled: such a post of a hook that started before the end
+  open --> filled: such a post refused for a preference, the refusal's text
+  open --> filled: a blank answer, the end line
+  open --> dropped: its update failed for another reason, ⏹️ Stopped, the post sent as a new message
+  open --> stopped: an answer, the last detach or the stop, ⏹️ Stopped
+  open --> stopped: 23 hours after its send by the wall clock, ⏹️ Stopped
+  bounded --> stopped: an answer of a hook not before the end, the last detach or the stop, ⏹️ Stopped
+  dropped --> [*]
+  filled --> [*]
+  stopped --> [*]
+```
+
+Sources: [`Session.onMessage`, `turn`, `endPermissions`, `prompt`, `deliver`, `receive`, `newer`, `turnQuote`, `answer`, `postRefusal`, `post`, `pushedIn`, `text`, `step`, `openTurn`, `endTexts`, `textParts`](../src/hub.ts).
 
 ### 8.7 Security boundaries
 
@@ -1224,10 +1371,16 @@ Sources: [`Session.onMessage`, `turn`, `endPermissions`, `prompt`, `deliver`, `r
 | wait of a session server for the title of its process, the time a detached session server's process is kept, and the mark of an unattended run's process, removed at a later mark | 10 s | [`processWait`, `Service.markUnattended`](../src/service.ts) |
 | attempts of a turn the service refuses with status 409 | 15, 1 s apart | [`unknownSession`, `turnAttempts`, `turnRetryMs`](../src/hook.ts) |
 | reads of the transcript for the model of Stop's answer and the origin of a prompt | 20 for the answer and 600 for the prompt, 100 ms apart, each of the last 1 MiB and twice the bytes of the answer or the prompt | [`answerReads`, `promptReads`, `transcriptReadMs`, `transcriptTailBytes`, `findInTranscript`, `readTail`](../src/hook.ts) |
+| reads of the transcript for the boundary of a compaction, and the boundary's time | 120, 1 s apart, each of the last 4 MiB; a boundary created from 60 s before the hook's start to 5 s after it | [`compactionReads`, `compactionReadFactor`, `compactionAge`, `compactionSkew`, `compactionTailBytes`](../src/hook.ts) |
 | length of a note of Claude Code's own prompt | 200 characters, the last one `…` when cut | [`maxNote`, `shortened`](../src/hook.ts) |
 | attachment retries of a session server | 1 s, doubled up to 30 s | [`firstRetry`, `lastRetry`](../src/session.ts) |
 | part of an answer or a terminal prompt | one message by `fitsMessage`: 15602 bytes with the 600-byte envelope; 14962 bytes of text without a quote | [`textParts`](../src/hub.ts), [`maxMessageLength`, `messageEnvelope`, `fitsMessage`](../src/tools.ts) |
 | cancelled cards wait at stop | 10 s | [`cardsWait`](../src/hub.ts) |
+| updates of a live text | one per 3 s, after its first post | [`textUpdateMs`, `showText`](../src/hub.ts) |
+| live text, opening message | finalized 23 hours after the send of its message by the wall clock, checked every minute while one is live | [`liveLineMs`, `expireLive`, `watchLive`](../src/hub.ts) |
+| part of a live text | one message by `fitsMessage`, as a part of an answer without a quote | [`showText`, `textParts`](../src/hub.ts) |
+| ended texts | the last 100 `message_id`s; the last 20 texts for the claim of an answer | [`maxFinished`, `maxRecentTexts`, `keepLast`](../src/hub.ts) |
+| wait of the display hook for the service | 1 s, without retries; Claude Code's timeout of the hook is 2 s | [`requestWaitMs`](../src/display.ts), [`hooks.json`](../hooks/hooks.json) |
 | `service.log` | emptied over 10 MB, at a spawn and every hour | [`maxLogBytes`, `trimLog`](../src/files.ts), [`logCheck`](../src/service.ts) |
-| socket path | 103 bytes: `sun_path` of `sockaddr_un` holds 104 bytes on macOS and 108 on Linux, with the terminating NUL | [`maxSocketPath`](../src/files.ts) |
+| socket path | 103 bytes: `sun_path` of `sockaddr_un` holds 104 bytes on macOS and 108 on Linux, with the terminating NUL | [`maxSocketPath`](../src/paths.ts) |
 | actions per session | 20 pending, 20 performing | [`maxPending`, `maxPerforming`, `Actions.create`](../src/actions.ts) |

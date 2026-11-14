@@ -1,3 +1,4 @@
+import {spawn} from "child_process"
 import {once} from "events"
 import * as fs from "fs"
 import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
@@ -10,7 +11,7 @@ import {ServiceClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
 import {LockedError, createDataFolder, readSessionFile, serviceToken, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
 import {protocolVersion} from "../../src/protocol"
-import {HubLike, Service, ServiceDeps, SessionLike, productionDeps, runService} from "../../src/service"
+import {HubLike, Service, ServiceDeps, SessionLike, processStart, productionDeps, runService} from "../../src/service"
 import * as socket from "../../src/socket"
 import {requestJson, streamLines} from "../../src/socket"
 import {closeServer, recordedRun, until} from "./fixtures"
@@ -41,6 +42,7 @@ function deps(root: string) {
   const configs: unknown[] = []
   const busy = new Set<number>()
   const stored: unknown[] = []
+  const starts = new Map<number, string | undefined>()
   let expiryChecks = 0
   const hubStops: number[] = []
   const gates: {open?: Promise<void>; call?: Promise<void>; hubStop?: Promise<void>} = {}
@@ -83,8 +85,11 @@ function deps(root: string) {
         endPermissions: () => {
           agent.turns.push("ended")
         },
-        endSteps: async () => {
-          agent.turns.push("steps ended")
+        endLive: async () => {
+          agent.turns.push("live posts ended")
+        },
+        endToolApprovals: () => {
+          agent.turns.push("tool approvals ended")
         },
         call: async (tool: string, _input: unknown, call: {signal: AbortSignal; progress: (m: string) => void}) => {
           agent.calls.push(tool)
@@ -117,13 +122,14 @@ function deps(root: string) {
       return hub
     },
     onStopped,
+    processStart: async pid => (starts.has(pid) ? starts.get(pid) : "100"),
   }
   const gate = (name: keyof typeof gates): (() => void) => {
     const {promise, resolve} = deferred()
     gates[name] = promise
     return resolve
   }
-  return {d, agents, configs, busy, stored, expiryChecks: () => expiryChecks, hubStops, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
+  return {d, agents, configs, busy, stored, starts, expiryChecks: () => expiryChecks, hubStops, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
 }
 
 let root: string
@@ -156,10 +162,10 @@ const titleReply = {mainGroup: "SimpleX MCP", owner: {owners: [], link: "https:/
 const sessionsFolder = () => join(root, "_sessions")
 const lockFile = () => join(root, "service.lock")
 
-function attach(id: string, signal: AbortSignal) {
+function attach(id: string, signal: AbortSignal, pid?: number) {
   const first = deferred()
   const lines: unknown[] = []
-  const attached = streamLines(socketPath(root), token, "/attach", {id}, line => (lines.push(line), first.resolve()), signal).catch(() => undefined)
+  const attached = streamLines(socketPath(root), token, "/attach", {id, pid}, line => (lines.push(line), first.resolve()), signal).catch(() => undefined)
   return {attached, firstLine: first.promise, lines}
 }
 
@@ -204,7 +210,7 @@ describe("service", () => {
     expect(agents).toHaveLength(2)
   })
 
-  it("passes the stored sessions to the hub, and the approval mode of each registration to its session", async () => {
+  it("passes the stored sessions to the hub, and the approval mode and Claude Code's record of each registration to its session", async () => {
     storeSession(id1, 1, "app")
     const {d, agents, stored} = deps(root)
     service = await Service.start(d, readDefaultConfig)
@@ -212,11 +218,14 @@ describe("service", () => {
     const host = {...defaultConfig, approve: "host" as const}
     await streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
     expect(agents[0].modes).toEqual([])
-    await post("/session", {id: id1, project: "/p/app", config: host})
+    expect(agents[0].record).toBeUndefined()
+    await post("/session", {id: id1, project: "/p/app", config: host, record: "/c/sessions/100.json"})
+    expect(agents[0].record).toBe("/c/sessions/100.json")
     await register(id2)
     await title(id2, "docs", host)
     await register(id1)
     expect(agents.map(({modes}) => modes)).toEqual([["host", "requests"], ["requests"]])
+    expect(agents.map(({record}) => record)).toEqual([undefined, undefined])
   })
 
   it("expires due actions at each request that touches sessions", async () => {
@@ -600,12 +609,14 @@ describe("service", () => {
     expect(await register(id1)).toMatchObject({number: 1, displayName: "1 · auth"})
   })
 
-  it("passes permission requests and turns to the session, and its lines to the attachments while they exist, and ends its permissions and steps at the last detach", async () => {
+  it("passes permission requests, turns and the batches of Claude's text to the session, and its lines to the attachments while they exist, and ends its permissions and live posts at the last detach", async () => {
     const {d, agents} = deps(root)
     service = await Service.start(d, readDefaultConfig)
     await register(id1)
     const permission = {id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"}
+    const text = {id: id1, at: 1, text: {message: "m1", index: 0, final: true, delta: "Done."}}
     expect(await post("/permission", permission)).toEqual({})
+    expect(await post("/turn", text)).toEqual({})
     expect(await post("/turn", {id: id1, answer: "Done."})).toEqual({})
     expect(agents[0].onLine).toBeUndefined()
     const controller = new AbortController()
@@ -616,10 +627,97 @@ describe("service", () => {
     expect(lines[1]).toEqual({prompt: {text: "hi", from: "Alice", item: 7}})
     controller.abort()
     await attached
-    await until(() => agents[0].turns.length === 4)
-    expect(agents[0].turns).toEqual([permission, {id: id1, answer: "Done."}, "ended", "steps ended"])
+    await until(() => agents[0].turns.length === 5)
+    expect(agents[0].turns).toEqual([permission, text, {id: id1, answer: "Done."}, "ended", "live posts ended"])
     expect(agents[0].onLine).toBeUndefined()
     await expect(post("/turn", {id: id2, answer: "x"})).rejects.toMatchObject({status: 409})
+  })
+
+  it("keeps the tool approvals of a session when its process attaches again, and ends them when another process registers the session and when the session closes", async () => {
+    jest.useFakeTimers(fakeTimers)
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    const approvalsEnded = () => agents[0].turns.filter(turn => turn === "tool approvals ended").length
+    await registerFrom(300)
+    const first = new AbortController()
+    const {attached, firstLine} = attach(id1, first.signal)
+    await firstLine
+    first.abort()
+    await attached
+    await turnsUntil(() => agents[0].turns.includes("live posts ended"))
+    await registerFrom(300)
+    const second = new AbortController()
+    const again = attach(id1, second.signal)
+    await again.firstLine
+    expect(approvalsEnded()).toBe(0)
+    await registerFrom(301)
+    expect(approvalsEnded()).toBe(1)
+    second.abort()
+    await again.attached
+    await turnsUntil(() => agents[0].turns.filter(turn => turn === "live posts ended").length === 2)
+    await jest.advanceTimersByTimeAsync(10 * minutes)
+    expect(agents[0].open).toBe(false)
+    expect(approvalsEnded()).toBe(2)
+  })
+
+  it("ends the tool approvals when a process with the PID of an ended process of the session registers it, by the start time of the process, and at each registration of a process whose start time is unknown", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents, starts} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    const approvalsEnded = () => agents[0].turns.filter(turn => turn === "tool approvals ended").length
+    starts.set(300, "100")
+    await registerFrom(300)
+    await registerFrom(300)
+    expect(approvalsEnded()).toBe(0)
+    starts.set(300, "200")
+    await registerFrom(300)
+    expect(approvalsEnded()).toBe(1)
+    starts.set(300, undefined)
+    await registerFrom(300)
+    await registerFrom(300)
+    expect(approvalsEnded()).toBe(3)
+  })
+
+  it("sends the approved tools only to the attachments of the process that registered the session last, and an empty list to the others", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    const controller = new AbortController()
+    await registerFrom(300)
+    const first = attach(id1, controller.signal, 300)
+    await first.firstLine
+    await registerFrom(301)
+    const second = attach(id1, controller.signal, 301)
+    await second.firstLine
+    const tools = {tools: [{tool: "Bash", approvedBy: "Alice"}]}
+    const prompt = {prompt: {text: "hi", from: "Alice", item: 7}}
+    agents[0].onLine!(tools)
+    agents[0].onLine!(prompt)
+    await until(() => first.lines.length === 3 && second.lines.length === 3)
+    expect(first.lines.slice(1)).toEqual([{tools: []}, prompt])
+    expect(second.lines.slice(1)).toEqual([tools, prompt])
+    controller.abort()
+    await first.attached
+    await second.attached
+  })
+
+  it("reads the start time of a running process, the same at each read and another for a later process, and nothing for a process that does not run or an ID that is not a positive integer", async () => {
+    const reads = process.platform === "linux" || process.platform === "darwin"
+    const start = await processStart(process.pid)
+    expect(start).toEqual(reads ? expect.stringMatching(/\S/) : undefined)
+    expect(await processStart(process.pid)).toBe(start)
+    const child = spawn(process.execPath, ["-e", "setInterval(() => undefined, 1000)"], {stdio: "ignore"})
+    const childStart = await processStart(child.pid!)
+    child.kill()
+    await once(child, "exit")
+    expect(childStart).toEqual(reads ? expect.stringMatching(/\S/) : undefined)
+    expect(reads && childStart === start).toBe(false)
+    expect(await processStart(2 ** 22 + 1)).toBeUndefined()
+    for (const pid of [0, -1, 1.5, "self"]) expect(await processStart(pid as number)).toBeUndefined()
   })
 
   it("does not delay the idle close of an open session with a title", async () => {

@@ -2257,11 +2257,11 @@ private val ChatLayoutMode?.known: ChatLayoutMode? get() = if (this is ChatLayou
 fun profileChatLayout(user: User?): ChatLayoutMode =
   user?.uiThemes?.chatLayout.known ?: ChatController.appPrefs.chatLayout.state.value.known ?: ChatLayoutMode.Classic
 
-fun peerTypeIcon(peerType: ChatPeerType?): ImageResource =
+fun peerTypeIcon(peerType: ChatPeerType?, person: ImageResource = MR.images.ic_account_circle_filled): ImageResource =
   when (peerType) {
     ChatPeerType.Bot -> MR.images.ic_cube
     ChatPeerType.Agent -> MR.images.ic_agent
-    else -> MR.images.ic_account_circle_filled
+    else -> person
   }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
@@ -5269,15 +5269,15 @@ sealed class MsgChatLink {
   val iconRes: ImageResource
     get() = when (this) {
       is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_supervised_user_circle_filled
-      is Contact -> if (business) MR.images.ic_work_filled_padded else MR.images.ic_account_circle_filled
-      is Invitation -> MR.images.ic_account_circle_filled
+      is Contact -> if (business) MR.images.ic_work_filled_padded else peerTypeIcon(profile.peerType)
+      is Invitation -> peerTypeIcon(profile.peerType)
     }
 
   val smallIconRes: ImageResource
     get() = when (this) {
       is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates else MR.images.ic_group
-      is Contact -> if (business) MR.images.ic_work else MR.images.ic_person
-      is Invitation -> MR.images.ic_person
+      is Contact -> if (business) MR.images.ic_work else peerTypeIcon(profile.peerType, MR.images.ic_person)
+      is Invitation -> peerTypeIcon(profile.peerType, MR.images.ic_person)
     }
 
   fun infoLine(signed: Boolean): String {
