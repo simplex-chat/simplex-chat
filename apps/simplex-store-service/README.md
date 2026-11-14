@@ -298,14 +298,12 @@ line is `stripe: intent <id> is cancelled after 3 declined card payments in a ro
 cannot be tried on it one after another, and the buyer starts a new checkout. Add Radar rules in the
 Dashboard too, such as blocking a card fingerprint or IP address that has failed several times.
 
-The service fills `publishable_key` into the shell at boot: the built `index.html` ships
-with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`
-(`web/public/index.html`), and the listener serves a copy with the configured key
-substituted in, so the ini is the only place the key is set. The names site's shell carries the
-same meta without the `id`, and is filled the same way. With no `[stripe]` section the
-pristine (empty) shell is served and the page shows its development stand-in card form. The
-dev mock (`web/mock/server.py`) does the same substitution from `$STRIPE_PUBLISHABLE_KEY`,
-since it runs without an ini.
+Both pages read `publishable_key` from `GET /api/config`, which every port answers with
+`{"mode": "open" | "codes", "stripePublishableKey": "pk_…" | null}`, so the ini is the only place
+the key is set and the built pages are served as they are. With no `[stripe]` section the key is
+`null` and the page shows its development stand-in card form. The dev mock
+(`web/mock/server.py`) answers the same route from `$STRIPE_PUBLISHABLE_KEY`, since it runs
+without an ini.
 
 `POST /webhooks/stripe` verifies `Stripe-Signature` against `webhook_secret` and queues a
 read, the same hint-only role as `POST /webhooks/btcpay`: the poller carries authority, so
@@ -565,8 +563,8 @@ badge without paying.
 `scripts/store-service/` holds the production deployment: the image (`Dockerfile`, built from
 the repository root), `compose.yml` and the ini template `store_service.ini.example`; `dev/` holds
 the scripts of the dev setup and the webapp's cases. The service
-runs with `+client_postgres` and host networking; one Caddy serves both sites from the folders the
-service exports at boot and proxies the API to it.
+runs with `+client_postgres` and host networking, and serves both sites from the builds in its
+image; one Caddy proxies each site's domain to its port. The service writes no file of either site.
 
 `compose.yml` mounts the folder `scripts/store-service/config/` read-only at
 `/etc/simplex-store-service`. It holds `store_service.ini`, and the App Store root and the Play
@@ -626,7 +624,7 @@ The rename to StoreService changed what the operator runs:
 | the binary `simplex-badge-service` | `simplex-store-service` |
 | `port = 8080` | `badges_port = 8080`, the default, which can be omitted |
 | `static_dir = /srv/web` | `badges_static_dir = /srv/badges`, the image's build and the default, which can be omitted in Docker |
-| `webapp_export_dir = /srv/webapp`, host folder `web` | `badges_export_dir = /srv/badges-export`, host folder `badges` |
+| `webapp_export_dir = /srv/webapp`, host folder `web` | removed: the service serves the build, and Caddy proxies to it |
 | `names_hosts`, the hosts that got the names site by `Host` | `names_port = 8081`, the default: the names site on its own port (see [Two sites](#two-sites)) |
 
 The service refuses to start with a key from the left column, naming the key that replaced it.
@@ -687,15 +685,14 @@ that pull request merges. The commit committed here is what builds.
 The names site is on when, and only when, the ini has `[names]`. Its `[listener]` keys:
 
 - `names_static_dir`: the names build, by default `/srv/names`, the image's;
-- `names_export_dir`: where the service writes the names site at boot, with the Stripe
-  publishable key in its shell, as `badges_export_dir` is for the badges site. `compose.yml`
-  bind-mounts `./names` there (`/srv/names-export`), and `./badges` at `/srv/badges-export`;
 - `names_port`: the port the names site is served on when `serve_webapp = on`, by default 8081,
   beside `badges_port` (by default 8080), which serves the badges site. The two must differ.
 
 The service refuses to start with any of these keys but no `[names]`, and with `names_port` and
-`serve_webapp = off`. It also refuses to start when a build it serves or exports is not a
-directory, naming the setting, so a local run that keeps a default path stops there.
+`serve_webapp = off`. It also refuses to start when a build it serves is not a directory, naming
+the setting, so a local run that keeps a default path stops there. It never writes to either build:
+both pages read what differs between deployments, the names mode and the Stripe publishable key,
+from `GET /api/config`.
 
 With `serve_webapp = on` (all in one), the service listens on both ports, and each serves only its
 own site: every path outside `/api/` and `/webhooks/` is a file of that site, `/` and `/index.html`
@@ -771,53 +768,20 @@ sudo rm -rf data config
 
 ### Caddy
 
-The Caddyfile is not in this repository. Its two host blocks for the split deployment
-(`serve_webapp = off`), with the exported folders at `/srv/store-service/badges` and
-`/srv/store-service/names` and the listener at `127.0.0.1:8080`:
+The Caddyfile is not in this repository. The service serves both sites itself (`serve_webapp = on`),
+so each host block proxies everything to its site's port, `badges_port` and `names_port`, and adds
+the security headers:
 
 ```
 badges.simplex.chat {
 	encode zstd gzip
-	handle /api/* {
-		reverse_proxy 127.0.0.1:8080
-	}
-	handle /webhooks/* {
-		reverse_proxy 127.0.0.1:8080
-	}
-	handle {
-		root * /srv/store-service/badges
-		file_server
-	}
-	@shell path / /index.html /sw.js
-	header @shell Cache-Control "no-cache"
-	header /assets/* {
-		Cache-Control "public, max-age=31536000, immutable"
-		match status 2xx
-	}
+	reverse_proxy 127.0.0.1:8080
 	header Content-Security-Policy "default-src 'self'; script-src 'self' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' https://*.stripe.com; frame-ancestors 'self' https://simplex.chat https://*.simplex.chat"
 }
 
 simplex.domains {
 	encode zstd gzip
-	handle /api/* {
-		reverse_proxy 127.0.0.1:8080
-	}
-	handle {
-		root * /srv/store-service/names
-		file_server
-	}
-	@shell path / /index.html /sw.js
-	header @shell Cache-Control "no-cache"
-	header /assets/* {
-		Cache-Control "public, max-age=31536000, immutable"
-		match status 2xx
-	}
-	header /manifest.webmanifest Content-Type "application/manifest+json"
-	@media path /fonts/* /img/*
-	header @media {
-		Cache-Control "public, max-age=86400"
-		match status 2xx
-	}
+	reverse_proxy 127.0.0.1:8081
 	header {
 		Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-i5ar+ITNdQiucbmin4/AN6DAY5LbAWeq3at+RiFoUoY=' 'sha256-lxURZtAGLIPkeIfIfFjl4UIJp4ElJWSbFqE1ktKB8hk=' 'sha256-djvAKNENifE9sLU9+NrLdzdGftMgCwpvCvH/MAbkElY=' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' data: https://*.stripe.com; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
 		Strict-Transport-Security "max-age=63072000; includeSubDomains"
@@ -828,41 +792,21 @@ simplex.domains {
 }
 ```
 
-- Both sites call `/api/*` on their own origin, so there is no CORS.
-- `/webhooks/*` is proxied on badges.simplex.chat only. BTCPay and Stripe send every event there,
-  names payments included.
-- The shell and `/sw.js` are `no-cache`, since they name the build's hashed files, and Caddy's
-  `file_server` sends no `Cache-Control` of its own. `/assets/*` file names carry a content hash.
-  The long lifetimes apply to found files only, so a missing asset is not cached for a year.
-- `file_server` sends no type for `.webmanifest`, which the names site's manifest needs.
+- Both sites call `/api/*` on their own origin, so there is no CORS. Both ports answer the API and
+  the webhooks; BTCPay and Stripe send every event to badges.simplex.chat, names payments included.
+- The service sets each file's type and `Cache-Control` itself: a year for `/assets/*`, whose file
+  names carry a content hash, and `no-cache` for everything else, the shells and `/sw.js` included.
 - The badges policy is `web/README.md`'s. The names policy is the names webapp's (its README,
   "Hosting"), with `https://*.stripe.com` added to `img-src` beside `data:`, which the link
-  profiles' pictures need. Its two hashes are those of the inline theme and font-preload scripts
-  in the names `index.html`, and change with them. It allows no inline style.
+  profiles' pictures need. Its hashes are those of the inline scripts in the names `index.html`,
+  and change with them. It allows no inline style.
 - Stripe.js runs on simplex.domains itself, in the document that keeps the owner codes and prepaid
   codes in `localStorage`. The owner accepted this on 2026-10-20, rather than a Checkout redirect
   or a separate card origin. Scripts and frames are allowed only from this origin and Stripe's
   hosts.
-
-With `serve_webapp = on`, the service serves both sites itself, so each host block proxies
-everything to its site's port, `badges_port` and `names_port`:
-
-```
-badges.simplex.chat {
-	encode zstd gzip
-	reverse_proxy 127.0.0.1:8080
-	# the Content-Security-Policy header of the badges.simplex.chat block above
-}
-
-simplex.domains {
-	encode zstd gzip
-	reverse_proxy 127.0.0.1:8081
-	# the last header { } block, the policy with it, of the simplex.domains block above
-}
-```
-
-The service sets each file's type and `Cache-Control` itself: `no-cache`, and a year for
-`/assets/*`, so the names site's fonts and images are revalidated rather than kept for a day.
+- Neither build carries a deployment's settings, so either can also be served as plain files by
+  any host, with `serve_webapp = off` and the API and webhooks proxied to `badges_port`; that host
+  then sets the cache headers above.
 
 ### Metrics
 
@@ -1076,17 +1020,16 @@ registers with no new signature.
 `[names] codes_only = on` lets only prepaid codes register names, as for the launch to the investors
 who hold them before anyone can pay. It is `off` by default. While it is on:
 
-- the names site's shell is served and exported with `<meta name="simplex-names-mode" content="codes">`
-  in place of the build's `content="open"`, and the page then offers only codes. The badges site's
-  shell is unchanged;
+- `GET /api/config` answers `"mode": "codes"` in place of `"open"`, and the names page then offers
+  only codes. The badges site ignores the mode;
 - `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
   `403 {"error": "codes_only"}`, before they read the order, so no order takes money for a name;
 - search, link previews, code checks, code orders (`POST /api/name/register`), the registration
   view, `find`, the reveal, Try again, another name and record edits work as before. Webhooks and the
   poller still settle the invoices already open, and badges sell as before.
 
-The setting is read at startup, and the export is written then, so switching it is an edit of the
-ini and a restart, with the same build. Codes for investors come from the group (needs `[group]`, see
+The setting is read at startup, so switching it is an edit of the ini and a restart, with the same
+build. Codes for investors come from the group (needs `[group]`, see
 [From the group](#from-the-group)) or from `//issue name` in `--run-cli` (see
 [From the command line](#from-the-command-line)).
 

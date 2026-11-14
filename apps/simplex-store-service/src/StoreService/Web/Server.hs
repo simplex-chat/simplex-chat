@@ -6,7 +6,6 @@
 module StoreService.Web.Server
   ( WebEnv (..),
     newWebEnv,
-    exportWebapp,
     maxWebhookBytes,
     refusalLogLimit,
     webApp,
@@ -37,12 +36,11 @@ import Control.Concurrent.Async (race)
 import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO)
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
-import Control.Monad (filterM, forM_, void, when)
+import Control.Monad (filterM, void, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
 import Data.Functor ((<&>))
@@ -53,7 +51,7 @@ import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8', encodeUtf8)
+import Data.Text.Encoding (decodeUtf8')
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Word (Word8)
 import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, status200, status400, status409, status413)
@@ -65,7 +63,7 @@ import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..), Pa
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (raceAny_, tshow)
-import System.Directory (canonicalizePath, copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist, listDirectory, removePathForcibly)
+import System.Directory (canonicalizePath, doesDirectoryExist, doesFileExist)
 import System.FilePath (pathSeparator, takeExtension, (</>))
 
 data WebEnv = WebEnv
@@ -76,10 +74,10 @@ data WebEnv = WebEnv
     weHoldMicros :: Int,
     weHints :: ReadHints,
     weHttp :: HttpEnv,
-    -- | @Nothing@ when @serve_webapp@ is off.
-    weBadgesSite :: Maybe Site,
-    -- | @Nothing@ unless the names site is served on @names_port@.
-    weNamesSite :: Maybe Site,
+    -- | The badges build, @Nothing@ when @serve_webapp@ is off.
+    weBadgesSite :: Maybe FilePath,
+    -- | The names build, @Nothing@ unless the names site is served on @names_port@.
+    weNamesSite :: Maybe FilePath,
     -- | @Nothing@ when the ini has no @[names]@ section.
     weNames :: Maybe NamesEnv,
     -- | The name orders' part of weNames, which tests set without a chat controller.
@@ -88,23 +86,15 @@ data WebEnv = WebEnv
     weWebhookAt :: TVar (Map Text UTCTime)
   }
 
--- | A built site, served when @serve_webapp@ is on.
-data Site = Site
-  { siteDir :: FilePath,
-    -- | @Nothing@ when the shell has nothing to fill, and the pristine one is served instead.
-    siteShell :: Maybe LB.ByteString
-  }
-
 newWebEnv :: DBStore -> ServiceConfig -> Waiters -> ReadHints -> [Provider] -> Maybe NamesEnv -> IO WebEnv
 newWebEnv weStore weConfig weWaiters weHints weProviders weNames = do
   weHttp <- newHttpEnv lc
-  weBadgesSite <- if lServeWebapp then Just <$> loadSite (keyFills weConfig) lBadgesStaticDir else pure Nothing
-  weNamesSite <- mapM (loadSite (namesFills weConfig)) (lNamesPort *> lNamesStaticDir)
   weWebhookAt <- newTVarIO M.empty
   pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weHttp, weBadgesSite, weNamesSite, weNames, weOrders = ordersEnv <$> weNames, weWebhookAt}
   where
     lc@ListenerConfig {lServeWebapp, lBadgesStaticDir, lNamesStaticDir, lNamesPort} = listener weConfig
-    loadSite fills dir = Site dir <$> prepareShell dir fills
+    weBadgesSite = if lServeWebapp then Just lBadgesStaticDir else Nothing
+    weNamesSite = lNamesPort *> lNamesStaticDir
 
 listenerConfig :: WebEnv -> ListenerConfig
 listenerConfig WebEnv {weConfig} = listener weConfig
@@ -128,9 +118,10 @@ webApp :: WebEnv -> Application
 webApp env = siteApp env (weBadgesSite env)
 
 -- | Every port answers the API and the webhooks, and serves its own site's files.
-siteApp :: WebEnv -> Maybe Site -> Application
+siteApp :: WebEnv -> Maybe FilePath -> Application
 siteApp env@WebEnv {weHttp} served req respond = case pathInfo req of
   path | Just site <- served, sitePath path -> only "GET" req respond $ serveSite site path respond
+  ["api", "config"] -> only "GET" req respond $ limited weHttp readLimit req respond $ respond $ jsonResponse status200 $ siteConfig $ weConfig env
   ["api", "invoice"] -> only "POST" req respond $ limited weHttp createLimit req respond $ createInvoiceHandler env req respond
   ["api", "invoice", iid] -> only "GET" req respond $ limited weHttp readLimit req respond $ readInvoiceHandler env (InvoiceId iid) req respond
   ["api", "invoice", iid, "cancel"] -> only "POST" req respond $ limited weHttp createLimit req respond $ cancelInvoiceHandler env (InvoiceId iid) respond
@@ -148,89 +139,19 @@ sitePath = \case
   _ -> True
 
 -- | A @".."@ check would miss separators WAI has already decoded, an absolute path, and a symlink out of the tree.
-serveSite :: Site -> [Text] -> Respond -> IO ResponseReceived
-serveSite Site {siteDir, siteShell} path respond =
-  resolveInside siteDir (if null path then [T.pack shellFile] else path) >>= \case
+serveSite :: FilePath -> [Text] -> Respond -> IO ResponseReceived
+serveSite siteDir path respond =
+  resolveInside siteDir (if null path then ["index.html"] else path) >>= \case
     Nothing -> respond notFound
-    Just (root, file)
-      | Just shell <- siteShell, file == root </> shellFile -> respond (responseLBS status200 (staticHeaders root file) shell)
-      | otherwise -> respond (responseFile status200 (staticHeaders root file) file Nothing)
+    Just (root, file) -> respond (responseFile status200 (staticHeaders root file) file Nothing)
 
-shellFile :: FilePath
-shellFile = "index.html"
-
--- | A meta tag of the shell by its name, the content the build ships it with, and the content served instead.
-type MetaFill = (Text, Text, Text)
-
--- | The badges shell also has an @id@ before @name@, and the names shell has none.
-fillMeta :: MetaFill -> Text -> Text
-fillMeta (name, shipped, served) = T.replace (meta shipped) (meta served)
-  where
-    meta content = "name=\"" <> name <> "\" content=\"" <> content <> "\""
-
-keyFills :: ServiceConfig -> [MetaFill]
-keyFills ServiceConfig {stripe} = [("stripe-publishable-key", "", sPublishableKey) | Just StripeConfig {sPublishableKey} <- [stripe]]
-
--- | The badges site's shell never carries the names mode.
-namesFills :: ServiceConfig -> [MetaFill]
-namesFills cfg@ServiceConfig {names} = keyFills cfg <> [codesMode | Just NamesConfig {nCodesOnly = True} <- [names]]
-
--- | The page offers only prepaid codes when it reads this mode.
-codesMode :: MetaFill
-codesMode = ("simplex-names-mode", "open", "codes")
-
--- | @Nothing@ (serve the pristine file) when there is nothing to fill, no shell is present, or it cannot be read.
-prepareShell :: FilePath -> [MetaFill] -> IO (Maybe LB.ByteString)
-prepareShell _ [] = pure Nothing
-prepareShell dir fills =
-  E.try attempt >>= \case
-    Right out -> pure out
-    Left (e :: E.IOException) -> do
-      logWarn ("could not read the shell in " <> T.pack dir <> ", serving the pristine one: " <> tshow e)
-      pure Nothing
-  where
-    attempt :: IO (Maybe LB.ByteString)
-    attempt = do
-      let shell = dir </> shellFile
-      present <- doesFileExist shell
-      if not present
-        then pure Nothing
-        else do
-          -- TIO.readFile would decode in the locale's encoding, which fails outright under a C locale.
-          bytes <- BS.readFile shell
-          case decodeUtf8' bytes of
-            Left e -> do
-              logWarn ("the shell in " <> T.pack dir <> " is not valid UTF-8, serving the pristine one: " <> tshow e)
-              pure Nothing
-            Right html -> pure (Just (LB.fromStrict (encodeUtf8 (foldr fillMeta html fills))))
-
-exportWebapp :: ServiceConfig -> IO ()
-exportWebapp cfg = do
-  forM_ lBadgesExportDir $ exportSite (keyFills cfg) lBadgesStaticDir
-  forM_ ((,) <$> lNamesStaticDir <*> lNamesExportDir) $ uncurry (exportSite (namesFills cfg))
-  where
-    ListenerConfig {lBadgesStaticDir, lBadgesExportDir, lNamesStaticDir, lNamesExportDir} = listener cfg
-    exportSite fills dir out = do
-      emptyDir out
-      copyTree dir out
-      prepareShell dir fills >>= mapM_ (LB.writeFile (out </> shellFile))
-      logNote ("store service: exported " <> T.pack dir <> " to " <> T.pack out)
-
--- | Contents only: the directory itself may be a bind or volume mount point that cannot be removed.
-emptyDir :: FilePath -> IO ()
-emptyDir dir = do
-  createDirectoryIfMissing True dir
-  entries <- listDirectory dir
-  forM_ entries (removePathForcibly . (dir </>))
-
-copyTree :: FilePath -> FilePath -> IO ()
-copyTree src dst = do
-  isDir <- doesDirectoryExist src
-  if isDir
-    then do
-      createDirectoryIfMissing True dst
-      listDirectory src >>= mapM_ (\e -> copyTree (src </> e) (dst </> e))
-    else copyFile src dst
+-- | What the pages read at load: the names mode, which the badges site ignores, and the Stripe publishable key.
+siteConfig :: ServiceConfig -> J.Value
+siteConfig ServiceConfig {names, stripe} =
+  J.object
+    [ "mode" .= (if maybe False nCodesOnly names then "codes" else "open" :: Text),
+      "stripePublishableKey" .= (sPublishableKey <$> stripe)
+    ]
 
 resolveInside :: FilePath -> [Text] -> IO (Maybe (FilePath, FilePath))
 resolveInside dir segments = either ioFailed id <$> E.try attempt
@@ -592,16 +513,16 @@ runWebListeners env = do
   where
     lc = listenerConfig env
 
--- | Each build that is served or exported must be a directory, or the service would serve nothing or fail its export.
+-- | Each build that is served must be a directory, or the service would serve nothing.
 checkSiteDirs :: ListenerConfig -> IO (Either String ())
-checkSiteDirs ListenerConfig {lServeWebapp, lBadgesStaticDir, lBadgesExportDir, lNamesStaticDir, lNamesExportDir, lNamesPort} =
+checkSiteDirs ListenerConfig {lServeWebapp, lBadgesStaticDir, lNamesStaticDir, lNamesPort} =
   filterM (fmap not . doesDirectoryExist . snd) used <&> \case
     (site, dir) : _ -> Left ("listener." <> site <> "_static_dir = " <> dir <> " is not a directory; set it to the " <> site <> " build, since the default is the Docker image's path")
     [] -> Right ()
   where
     used =
-      [("badges", lBadgesStaticDir) | lServeWebapp || isJust lBadgesExportDir]
-        <> [("names", dir) | Just dir <- [lNamesStaticDir], isJust lNamesPort || isJust lNamesExportDir]
+      [("badges", lBadgesStaticDir) | lServeWebapp]
+        <> [("names", dir) | Just dir <- [lNamesStaticDir], isJust lNamesPort]
 
 warnIfHeaderTrustIsExposed :: ListenerConfig -> IO ()
 warnIfHeaderTrustIsExposed ListenerConfig {lHost, lTrustForwardedFor} =

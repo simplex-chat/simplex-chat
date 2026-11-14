@@ -79,7 +79,7 @@ import StoreService.StoreReceipts.Google (PlayVerifier (..), playStoreVerifier)
 import StoreService.StoreReceipts.Mock (newMockStoreVerifier)
 import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Bucket, takeFrom)
-import StoreService.Web.Server (WebEnv (weWebhookAt), checkSiteDirs, exportWebapp, newWebEnv, runWebListeners)
+import StoreService.Web.Server (WebEnv (weWebhookAt), checkSiteDirs, newWebEnv, runWebListeners)
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM
 import Control.Logger.Simple (logError, logNote, logWarn)
@@ -326,7 +326,6 @@ storeService opts serviceCfg baseCfg env = do
       hints <- newReadHints
       namesEnv <- forM (names sc) (startNames cc turns ws providers)
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
-      exportWebapp sc
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
       nameLanes <- maybe (pure []) namesLanes namesEnv
       let metricsEnv = MetricsEnv {meStore = chatStore, meProviders = map (textEncode . pProvider) providers, meListedOk = peListedOk pollerEnv, meWebhookAt = weWebhookAt webEnv, meNames = namesSource <$> namesEnv}

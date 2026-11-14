@@ -6,7 +6,7 @@
 - `store_service.ini.example`: the template of `config/store_service.ini`.
 - `dev/chain.sh`: the dev chain, which also writes the dev `config/store_service.ini`.
 - `dev/contract-run.sh`: runs the names webapp's end-to-end cases against the service.
-- `config/`, `badges/`, `names/`, `data/`, `.env`: local state, gitignored.
+- `config/`, `data/`, `.env`: local state, gitignored.
 
 Production, with PostgreSQL at `BADGE_DB_CONN` (by default
 `postgresql://simplex@127.0.0.1:5432/badge_service`), and the ini filled in before the last command:
