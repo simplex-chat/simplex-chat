@@ -204,9 +204,7 @@ final class SnapshotTests: XCTestCase {
             WCallCommand.offer(
                 offer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: .offer, sdp: sdp))),
                 iceCandidates: iceCandidates(sdpMLineIndex: sdpMLineIndex),
-                media: .audio,
-                iceServers: [],
-                relay: true
+                media: .audio
             )
         }
         let outOfRangeResponse = await peers.receive(offerWithIndex(Int64(Int32.max) + 1))
@@ -368,17 +366,17 @@ private final class CallPeers {
     init() {
         let responses = CallResponses()
         let client = WebRTCClient({ await responses.add($0) }, .constant(nil))
-        client.notConnectedCall = WebRTCClient.NotConnectedCall()
         self.responses = responses
         self.client = client
-        peer = client.createPeerConnection([], true)
+        peer = client.createPeerConnection(client.defaultIceServers, nil)
         call = Call(direction: .incoming, contact: Contact.sampleData, callUUID: nil, callState: .invitationAccepted, initialCallType: .video)
         call.localMediaSources.camera = true
         ChatModel.shared.activeCall = call
     }
 
     func start() async throws {
-        let response = await receive(.start(media: .audio, iceServers: [], relay: true))
+        let response = await receive(.start(media: .audio))
+        client.activeCall?.connection.delegate = nil
         let offer: CustomRTCSessionDescription? = if case let .offer(compressed, _, _) = response { decodeJSON(decompressFromBase64(input: compressed)) } else { nil }
         let sdp = try XCTUnwrap(offer?.sdp)
         try await peer.setRemoteDescription(RTCSessionDescription(type: .offer, sdp: sdp))
