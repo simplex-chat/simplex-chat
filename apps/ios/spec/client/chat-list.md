@@ -251,6 +251,30 @@ Search is available via pull-down gesture or search button in the navigation bar
 
 ---
 
+## 7.1 Context Menu & History Preview
+
+Long pressing a conversation row activates the native system context menu backed by `UIContextMenuInteraction` via [`ChatContextMenuModifier`](../../Shared/Views/ChatList/ChatContextMenuModifier.swift).
+
+### Components
+
+- **`ChatContextMenuModifier`**: ViewModifier that attaches `ChatContextMenuRepresentable` (UIViewRepresentable) to the conversation row.
+- **`ChatContextMenuUIView`**: Hosts `UIContextMenuInteractionDelegate` and a transparent single-tap gesture recognizer. Handles both normal taps (instant navigation) and long press (context menu).
+- **Commit Support**: Implements `contextMenuInteraction(_:willPerformPreviewActionForMenuWith:animator:)` calling `ItemsModel.shared.loadOpenChat(chatId)` to smoothly transition from the preview to the full conversation view upon tapping the preview card.
+- **`ChatHistoryPreviewView`**: Standalone preview view loaded in `UIHostingController` with `preferredContentSize = CGSize(width: min(screenWidth - 32, 380), height: 440)`. Renders a header (avatar + name + subtitle) and the last 10 messages scrolled to the bottom.
+- **Privacy & State Guarantees**: Messages are fetched via `apiGetChat(chatId: scope: pagination: .last(count: 10))` directly from SQLite. This does not emit network traffic, does not trigger read receipts, does not invoke `apiMarkChatItemsRead`, and does not alter the unread count in `ChatModel`.
+
+### Key Actions
+
+| Action | Icon | Effect |
+|--------|------|--------|
+| Read / Unread | checkmark.circle / circlebadge.fill | Calls `markChatRead` or `markChatUnread` |
+| Mute / Unmute | bell.slash.fill / bell.fill | Toggles notification mode via `toggleNotifications` |
+| Favorite / Unfavorite | star.slash.fill / star.fill | Toggles favorite status via `toggleChatFavorite` |
+| Clear Chat | gobackward | Shows confirmation alert to clear chat items |
+| Delete / Leave | trash / rectangle.portrait.and.arrow.right.fill | Shows confirmation dialog to delete contact/group or leave group |
+
+---
+
 ## 8. [`UserPicker`](../../Shared/Views/ChatList/UserPicker.swift#L10) {#8-userpicker}
 
 **File**: `Shared/Views/ChatList/UserPicker.swift`
