@@ -150,13 +150,20 @@ export function serverToken(dir: string, renew = false, name = "token"): string 
   return readFileSync(file, "utf8").trim()
 }
 
+// spec: spec/architecture.md#files-headersfile
 export function headersFile(dir: string): string {
   return join(dir, "headers.json")
+}
+
+// spec: spec/architecture.md#files-headersfile
+export function hookHeadersFile(dir: string): string {
+  return join(dir, "hook-headers")
 }
 
 // spec: spec/architecture.md#files-writeheadersfile
 export function writeHeadersFile(dir: string, token: string): void {
   writePrivateFile(headersFile(dir), `${JSON.stringify({Authorization: `Bearer ${token}`})}\n`)
+  writePrivateFile(hookHeadersFile(dir), `Authorization: Bearer ${token}\n`)
 }
 
 // spec: spec/architecture.md#files-writeserverfile
@@ -168,6 +175,18 @@ export function writeServerFile(dir: string, server: ServerFile): void {
 export function readServerFile(dir: string): ServerFile | undefined {
   const file = join(dir, "server.json")
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined
+}
+
+// spec: spec/architecture.md#files-abortcounter
+export function abortCounter(file: string): () => void {
+  const line = existsSync(file) ? readFileSync(file, "utf8").split("\n")[0] : ""
+  let count = 0
+  if (/^\d{1,15}$/.test(line)) count = Number(line)
+  else writeReadableFile(file, "0\n")
+  return () => {
+    writeReadableFile(file, `${count + 1}\n`)
+    count++
+  }
 }
 
 // spec: spec/architecture.md#files-saveheldtitles
@@ -195,6 +214,13 @@ function sessionsFolder(root: string): string {
 function writePrivateFile(file: string, text: string): void {
   writeFileSync(file, text, {mode: 0o600})
   if (process.platform !== "win32") chmodSync(file, 0o600)
+}
+
+// spec: spec/architecture.md#files-abortcounter
+function writeReadableFile(file: string, text: string): void {
+  writeFileSync(`${file}.part`, text, {mode: 0o644})
+  if (process.platform !== "win32") chmodSync(`${file}.part`, 0o644)
+  renameSync(`${file}.part`, file)
 }
 
 // spec: spec/api.md#exit-codes

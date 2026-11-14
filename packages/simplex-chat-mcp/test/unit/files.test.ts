@@ -3,7 +3,7 @@ import * as fs from "fs"
 import {chmodSync, closeSync, existsSync, fstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
-import {LockedError, acquireLock, createDataFolder, dataRoot, hubFolder, logFile, openLog, readServerFile, readSessionFile, releaseLock, serverToken, sessionFolder, socketPath, storedSessions, writeHeadersFile, writeServerFile, writeSessionFile} from "../../src/files"
+import {LockedError, abortCounter, acquireLock, createDataFolder, dataRoot, hubFolder, logFile, openLog, readServerFile, readSessionFile, releaseLock, serverToken, sessionFolder, socketPath, storedSessions, writeHeadersFile, writeServerFile, writeSessionFile} from "../../src/files"
 import {ExitError} from "../../src/log"
 
 const id = "34B7AEBF-E707-4D6F-ADD0-ECDFB4FFE281"
@@ -178,12 +178,15 @@ describe("data folder", () => {
     expect(statSync(file).mode & 0o777).toBe(0o644)
   })
 
-  it("writes the headers for the MCP host, readable only by the user, and rewrites them", () => {
+  it("writes the headers for the MCP host and for the status hooks, readable only by the user, and rewrites them", () => {
     writeHeadersFile(dir, "first")
     expect(readFileSync(join(dir, "headers.json"), "utf8")).toBe('{"Authorization":"Bearer first"}\n')
+    expect(readFileSync(join(dir, "hook-headers"), "utf8")).toBe("Authorization: Bearer first\n")
     expect(statSync(join(dir, "headers.json")).mode & 0o777).toBe(0o600)
+    expect(statSync(join(dir, "hook-headers")).mode & 0o777).toBe(0o600)
     writeHeadersFile(dir, "second")
     expect(JSON.parse(readFileSync(join(dir, "headers.json"), "utf8"))).toEqual({Authorization: "Bearer second"})
+    expect(readFileSync(join(dir, "hook-headers"), "utf8")).toBe("Authorization: Bearer second\n")
   })
 
   it("keeps the token until renewed", () => {
@@ -195,7 +198,7 @@ describe("data folder", () => {
   })
 
   it("makes the token, the headers and the server record private again when they exist", () => {
-    const files = ["token", "headers.json", "server.json"].map(name => join(dir, name))
+    const files = ["token", "headers.json", "hook-headers", "server.json"].map(name => join(dir, name))
     for (const file of files) {
       writeFileSync(file, "{}\n")
       chmodSync(file, 0o644)
@@ -203,13 +206,69 @@ describe("data folder", () => {
     serverToken(dir, true)
     writeHeadersFile(dir, "token")
     writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
-    expect(files.map(file => statSync(file).mode & 0o777)).toEqual([0o600, 0o600, 0o600])
+    expect(files.map(file => statSync(file).mode & 0o777)).toEqual([0o600, 0o600, 0o600, 0o600])
   })
 
   it("records the server", () => {
     expect(readServerFile(dir)).toBeUndefined()
     writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
     expect(readServerFile(dir)).toEqual({name: "agent", port: 5226, expireHours: 23})
+  })
+})
+
+describe("abort counter", () => {
+  let file: string
+
+  beforeEach(() => {
+    file = join(dir, "..", "abort")
+  })
+
+  it("writes 0 when the file is missing, then each count, as one line readable by all, through FILE.part, also over a private file and a private FILE.part", () => {
+    const count = abortCounter(file)
+    expect(readFileSync(file, "utf8")).toBe("0\n")
+    expect(statSync(file).mode & 0o777).toBe(0o644)
+    expect(existsSync(`${file}.part`)).toBe(false)
+    count()
+    expect(readFileSync(file, "utf8")).toBe("1\n")
+    chmodSync(file, 0o600)
+    writeFileSync(`${file}.part`, "x", {mode: 0o600})
+    count()
+    expect(readFileSync(file, "utf8")).toBe("2\n")
+    expect(statSync(file).mode & 0o777).toBe(0o644)
+    expect(existsSync(`${file}.part`)).toBe(false)
+  })
+
+  it("adds 1 to the written count after a failed write", () => {
+    const count = abortCounter(file)
+    mkdirSync(`${file}.part`)
+    expect(count).toThrow(/EISDIR/)
+    expect(readFileSync(file, "utf8")).toBe("0\n")
+    rmSync(`${file}.part`, {recursive: true})
+    count()
+    expect(readFileSync(file, "utf8")).toBe("1\n")
+  })
+
+  it("keeps a count at the start and continues it", () => {
+    writeFileSync(file, "7\nchanged by hand\n")
+    const count = abortCounter(file)
+    expect(readFileSync(file, "utf8")).toBe("7\nchanged by hand\n")
+    count()
+    expect(readFileSync(file, "utf8")).toBe("8\n")
+    writeFileSync(file, `${"9".repeat(15)}\n`)
+    abortCounter(file)
+    expect(readFileSync(file, "utf8")).toBe(`${"9".repeat(15)}\n`)
+  })
+
+  it("writes 0 at the start over a first line that is not a count of at most 15 digits", () => {
+    for (const content of ["", "x\n", "-1\n", " 7\n", "7 \n", "1e3\n", `${"9".repeat(16)}\n`]) {
+      writeFileSync(file, content)
+      abortCounter(file)
+      expect(readFileSync(file, "utf8")).toBe("0\n")
+    }
+  })
+
+  it("fails at the start when the folder of the file is missing", () => {
+    expect(() => abortCounter(join(dir, "..", "missing", "abort"))).toThrow(/ENOENT/)
   })
 })
 

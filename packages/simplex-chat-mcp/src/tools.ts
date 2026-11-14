@@ -6,8 +6,10 @@ import {basename, dirname, extname, isAbsolute, join, sep} from "path"
 import {CallToolResult, JsonSchemaType, McpServer, ServerContext, fromJsonSchema} from "@modelcontextprotocol/server"
 import {CEvt, CR, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
-import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, NewAction, SendAction, Standing, Subject, ToolError, hasUnknownServers, isDecided} from "./actions"
-import {chatErrorOf, chatErrorText, errorText, fileError, fullDomainName, logError, oneLine} from "./log"
+import {Action, Actions, Attachment, ConnRef, ConnectAction, DownloadAction, LeaveAction, Mode, NewAction, SendAction, Standing, Subject, ToolError, hasUnknownServers, isDecided, lostMessage, subjectText} from "./actions"
+import type {Activity} from "./activity"
+import type {InferenceState} from "./inference"
+import {chatErrorOf, chatErrorText, errorText, fileError, fullDomainName, log, logError, oneLine} from "./log"
 import {
   Changes,
   ChatItemsWatch,
@@ -22,6 +24,7 @@ import {
   chatNumber,
   chatRef,
   chatType,
+  completesLive,
   fileContent,
   fileOffer,
   filePaths,
@@ -42,6 +45,7 @@ import {
   utcMinutes,
   viewName,
 } from "./messages"
+import {Statuses} from "./status"
 
 // spec: spec/architecture.md#tools-inputs
 export interface ConnectInput {
@@ -63,6 +67,7 @@ export interface SendInput {
   wait?: number
   idle?: number
   limit?: number
+  live?: boolean
 }
 
 // spec: spec/architecture.md#tools-inputs
@@ -136,6 +141,9 @@ export interface Agent {
   replyChat?: string
   setMode?: (mode: Mode) => void
   pending?: (connId: number) => void
+  inference?: () => Promise<InferenceState | undefined>
+  activity?: Activity
+  abort?: () => void
 }
 
 // spec: spec/architecture.md#tools-joinmethod
@@ -171,6 +179,8 @@ const messagesOnConnect = 50
 const mediaTimeout = 30_000
 export const maxMessageLength = 15_602
 const messageEnvelope = 600
+// spec: spec/api.md#tool-send
+const liveTextLength = 2000
 const quotesAsText: T.MsgContent["type"][] = ["link", "image", "video", "chat", "unknown"]
 const maxOutputBytes = 64 * 1024 * 1024
 // spec: spec/api.md#file-types
@@ -300,6 +310,7 @@ const sendSchema: Schema = {
     wait: {type: "number", minimum: 0, maximum: 86400, description: "Seconds to wait for responses after the message is sent. Default 60. Keep it below the host's tool-call time limit."},
     idle: {type: "number", minimum: 1, maximum: 300, description: "Seconds without a new response that end the wait once a response arrived. Default 30."},
     limit: {type: "integer", minimum: 1, maximum: 100, description: "Most responses returned. Default 50; the rest stay unread for receive."},
+    live: {type: "boolean", description: "true: text is shown at once under the line of the live status message in this chat, until your next message there without live; status live is returned at once, and no action is created. Text only, at most 2000 characters, in a chat with a person, a group or a business chat that has approved: true in list. Default false."},
   },
   required: ["chat"],
   additionalProperties: false,
@@ -365,14 +376,14 @@ const sendOutput: Schema = {
   type: "object",
   properties: {
     action: actionField,
-    status: {type: "string", enum: ["done", "failed", "rejected", "expired"], description: "done: the message was sent; rejected or expired: the owner rejected it or did not decide in time; failed: see error."},
+    status: {type: "string", enum: ["done", "failed", "rejected", "expired", "live"], description: "done: the message was sent; rejected or expired: the owner rejected it or did not decide in time; failed: see error; live: the text is shown in the status message."},
     chat: {type: "string", description: "Chat reference."},
     item: {type: "integer", description: "Item ID of your sent message."},
     responses: {type: "array", items: messageSchema, description: "Messages received in the chat after yours, in arrival order: the answers of a bot or of people."},
     more: {type: "integer", description: "Responses received but not returned; receive returns them."},
     error: errorField,
   },
-  required: ["action", "status"],
+  required: ["status"],
 }
 
 // spec: spec/api.md#tool-receive
@@ -462,12 +473,14 @@ messages has the chat's first messages, such as a welcome. When a message has a 
 const sendDescription = `Sends a message to one of your chats and returns every message received in that chat after it, until no new one arrives for idle seconds or wait ends.
 With file, it sends a file from this computer, with text as its caption; private keys and the server's own files are refused.
 It is an action: in approval mode requests the owner approves it in the SimpleX app first, and the call waits for the decision. A send to a chat with approved: true in list is performed without waiting for approval.
-Result status: done (item is your message; responses are the answers in arrival order, more counts the ones not returned), rejected, expired, failed (error).
+With live: true, in a chat with a person, a group or a business chat that has approved: true in list, text is shown at once in the chat's live status message, and status live is returned without an action. Your next message there without live is sent as a new message, and the status message is then deleted.
+Result status: done (item is your message; responses are the answers in arrival order, more counts the ones not returned), live (with live: true), rejected, expired, failed (error).
 Send bot commands as text, for example /help. When a message has a file with status offered, call download when your user's task needs it. If the call ends without a result, repeat it with the same arguments: it attaches to the same action and returns its responses.`
 
 // spec: spec/architecture.md#tools-instructions
 const receiveDescription = `Returns the new messages of a chat: the unread ones, then those that arrive during the call. With wait, it waits up to wait seconds when no message is new.
-The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.`
+The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.
+In a chat with a person, a group or a business chat that has approved: true in list, a live status message is shown there from the arrival of a message, while you work, until your next message there or a receive there that waits. In the chat where you receive prompts, send each answer with wait 0 and without live, so the next prompt stays unread for receive, and call receive again only after it. For a step that takes minutes, call send with live: true and a short note in the same response as the step's tool call; the note is shown in the status message.`
 
 // spec: spec/architecture.md#tools-instructions
 const downloadDescription = `Downloads the file of a received message to this computer and returns its full path.
@@ -583,8 +596,13 @@ export class AgentTools {
   private readonly rejectedFiles = new Set<number>()
   private readonly fileDescriptions = new Changes()
   private describedFiles = 0
+  private readonly leaving = new Set<string>()
+  private readonly abortItems = new Map<number, boolean>()
+  readonly statuses: Statuses
 
-  constructor(private readonly agent: Agent, private readonly approval: Mode | (() => Mode), readonly session?: number) {}
+  constructor(private readonly agent: Agent, private readonly approval: Mode | (() => Mode), readonly session?: number) {
+    this.statuses = new Statuses(agent, async chat => this.showsStatus(chat, (await this.knownChat(chat)).chatInfo))
+  }
 
   get mode(): Mode {
     return typeof this.approval === "function" ? this.approval() : this.approval
@@ -597,11 +615,14 @@ export class AgentTools {
 
   // spec: spec/architecture.md#tools-agenttools-call
   async call(name: ToolName, input: unknown, call: ToolCall): Promise<CallToolResult | undefined> {
+    const endCall = this.statuses.startCall(name)
     try {
       const result = await this.run(name, input as object, call)
       return result === undefined ? undefined : {content: [{type: "text", text: JSON.stringify(result)}], structuredContent: result as {[key: string]: unknown}}
     } catch (error) {
       return {content: [{type: "text", text: error instanceof ToolError ? error.message : errorText(error)}], isError: true}
+    } finally {
+      endCall()
     }
   }
 
@@ -676,14 +697,43 @@ export class AgentTools {
   }
 
   // spec: spec/architecture.md#tools-agenttools-onnewitems
-  onNewItems(items: T.AChatItem[]): void {
+  onNewItems(items: T.AChatItem[]): T.AChatItem[] {
     for (const {chatInfo, chatItem} of items) {
       const chat = anyScopeChatRef(chatInfo)
       const {content, file, meta} = chatItem
       if (chat !== undefined && this.owns(chatInfo) && content.type === "rcvMsgContent" && file?.fileStatus.type === "rcvAccepted") {
         this.downloadFile({chat, item: meta.itemId, file: fileOffer(content.msgContent, file)}).catch(error => logError(`file ${file.fileId}`, error))
       }
+      const ref = chatRef(chatInfo)
+      if (ref === undefined || !this.owns(chatInfo) || content.type !== "rcvMsgContent" || isLive(chatItem)) continue
+      this.decideAbort(ref, chatInfo, chatItem)
+      if (!this.abortItems.get(meta.itemId)) this.onArrival({chatInfo, chatItem})
     }
+    return items.filter(({chatItem}) => !this.abortItems.get(chatItem.meta.itemId))
+  }
+
+  // spec: spec/architecture.md#tools-agenttools-onnewitems
+  private decideAbort(chat: string, chatInfo: T.ChatInfo, chatItem: T.ChatItem): void {
+    const {content, meta} = chatItem
+    if (this.abortItems.has(meta.itemId) || meta.itemLive !== undefined || meta.itemEdited || content.type !== "rcvMsgContent" || content.msgContent.type !== "text" || content.msgContent.text.trim() !== "/abort") return
+    const aborts = this.statuses.offersAbort(chat)
+    this.abortItems.set(meta.itemId, aborts)
+    if (!aborts) return
+    markRead(this.agent.chat, chat, [meta.itemId]).catch(error => logError(`abort in ${chat}`, error))
+    const {from} = toMessage(chatInfo, chatItem, {name: ""}, this.rejectedFiles, this.agent.data)
+    log(`Abort by ${oneLine(from)} in ${subjectText({...chatSubject(chatInfo), simplexName: undefined}, oneLine)} (${chat}).`)
+    try {
+      this.agent.abort!()
+      this.statuses.abort()
+    } catch (error) {
+      logError(`abort in ${chat}`, error)
+    }
+  }
+
+  // spec: spec/architecture.md#tools-agenttools-onnewitems
+  private onArrival({chatInfo, chatItem: {content}}: T.AChatItem): void {
+    const chat = chatRef(chatInfo)
+    if (chat !== undefined && this.owns(chatInfo) && content.type === "rcvMsgContent" && this.showsStatus(chat, chatInfo)) this.statuses.queue(chat)
   }
 
   // spec: spec/architecture.md#tools-agenttools-onnewitems
@@ -737,10 +787,10 @@ export class AgentTools {
     const {watch} = this.agent
     switch (event.type) {
       case "newChatItems":
-        this.onNewItems(event.chatItems)
-        return watch.deliver(event.chatItems)
+        return watch.deliver(this.onNewItems(event.chatItems))
       case "chatItemUpdated":
         this.onFile(event.chatItem)
+        if (completesLive(event.chatItem.chatItem)) this.onArrival(event.chatItem)
         return watch.update(event.chatItem)
       case "chatItemsDeleted":
         return watch.remove(event.chatItemDeletions.map(({deletedChatItem}) => deletedChatItem))
@@ -983,16 +1033,16 @@ export class AgentTools {
   private async send(input: SendInput, call: ToolCall): Promise<object | undefined> {
     const {chat} = input
     const key = actionKey(this.session, "send", {chat, text: input.text ?? null, file: input.file ?? null, as: input.as ?? null, reply_to: input.reply_to ?? null, mention: input.mention ?? null})
-    const attached = this.agent.actions.find(key)
+    const attached = input.live === true ? undefined : this.agent.actions.find(key)
     if (attached !== undefined) return this.sendResult(attached as SendAction, input, call)
     if (input.text === undefined && input.file === undefined) throw new ToolError("text: required without file.")
     if (input.as !== undefined && input.file === undefined) throw new ToolError("as: applies only with file.")
+    if (input.live === true && (input.file !== undefined || input.reply_to !== undefined || input.mention !== undefined)) throw new ToolError("live: applies to text only; send file, reply_to and mention without live.")
+    if (input.live === true && [...input.text!].length > liveTextLength) throw new ToolError(`text: at most ${liveTextLength} characters with live.`)
     const {chatInfo} = await this.knownChat(chat)
-    if (!isConnected(chatInfo)) throw new ToolError(`The agent is not connected to ${chat} and can't post; list shows connected: false.`)
-    if (chatInfo.type === "group") {
-      const role = chatInfo.groupInfo.membership.memberRole
-      if (role === T.GroupMemberRole.Observer || role === T.GroupMemberRole.Relay) throw new ToolError(`The agent has role ${role} in ${chat} and can't post.`)
-    }
+    const refusal = postingRefusal(chat, chatInfo)
+    if (refusal !== undefined) throw new ToolError(refusal)
+    if (input.live === true) return this.showNote(chat, chatInfo, input.text!, call)
     const quoted = input.reply_to === undefined ? undefined : await this.quotedItem(chat, input.reply_to)
     const mentions = input.mention === undefined ? [] : await this.mentionedMembers(chatInfo, chat, input.mention)
     const file = input.file === undefined ? undefined : await this.attachment(input.file, input.as, chatInfo, chat)
@@ -1003,6 +1053,31 @@ export class AgentTools {
     const approver = this.agent.standingApprover((await this.knownChat(chat)).chatInfo, "messages")
     if (call.signal.aborted) return undefined
     return this.sendResult(this.action(key, {tool: "send", input, subject, chat, file, replyTo, mentions, responses}, approver) as SendAction, input, call)
+  }
+
+  // spec: spec/api.md#tool-send
+  private showNote(chat: string, chatInfo: T.ChatInfo, text: string, call: ToolCall): object | undefined {
+    const refusal = this.statusRefusal(chat, chatInfo)
+    if (refusal !== undefined) throw new ToolError(refusal)
+    if (call.signal.aborted) return undefined
+    this.statuses.show(chat, text)
+    log(`Note to ${subjectText({...chatSubject(chatInfo), simplexName: undefined}, oneLine)} (${chat}): ${oneLine(text)}`)
+    return {status: "live", chat}
+  }
+
+  // spec: spec/architecture.md#tools-agenttools-shownote
+  private statusRefusal(chat: string, chatInfo: T.ChatInfo): string | undefined {
+    return this.leaving.has(chat) ? unknownChat(chat).message
+      : ["bot", "agent", "channel"].includes(chatSubject(chatInfo).kind) ? `live: ${chat} is a channel or a chat with a bot or an agent; status messages are shown in chats with people, groups and business chats.`
+      : this.mode === "host" ? "live: status messages are shown in mode requests only; this server runs in mode host."
+      : this.agent.actions.lost ? `live: ${lostMessage}`
+      : this.agent.standingApprover(chatInfo, "messages") === undefined ? `live: your owner's approval of all messages to ${chat} is required; list shows approved: true for such chats.`
+      : undefined
+  }
+
+  // spec: spec/architecture.md#tools-agenttools-shownote
+  private showsStatus(chat: string, chatInfo: T.ChatInfo): boolean {
+    return postingRefusal(chat, chatInfo) === undefined && this.statusRefusal(chat, chatInfo) === undefined
   }
 
   // spec: spec/api.md#tool-send
@@ -1017,6 +1092,8 @@ export class AgentTools {
       if (!finished || call.signal.aborted) return undefined
       const returned = action.responses.items.filter(({chatItem}) => !isLive(chatItem)).slice(0, limit)
       await markRead(this.agent.chat, action.chat, returned.map(({chatItem}) => chatItem.meta.itemId))
+      if (call.signal.aborted) return undefined
+      if (returned.length > 0 && this.showsStatus(action.chat, returned[0].chatInfo)) this.statuses.start(action.chat)
       return {
         chat: action.chat,
         item: action.item,
@@ -1043,6 +1120,7 @@ export class AgentTools {
       ])
       action.item = sent.chatItem.meta.itemId
       action.sentAt = Date.now()
+      this.statuses.end(chat)
       const kept = responses.items.filter(({chatItem}) => chatItem.meta.itemId > action.item!)
       responses.items.splice(0, responses.items.length, ...kept)
       if (kept.length === 0) responses.lastAt = undefined
@@ -1167,11 +1245,17 @@ export class AgentTools {
 
   // spec: spec/api.md#tool-leave
   async leaveChat(chat: string): Promise<void> {
-    if (chat.startsWith("@")) await this.agent.chat.apiDeleteChat(T.ChatType.Direct, chatNumber(chat), {type: "full", notify: true})
-    else {
-      const {groupInfo} = (await getChat(this.agent.chat, chat, 0)).chatInfo as T.ChatInfo.Group
-      if (memberCurrentOrPending(groupInfo.membership)) await this.agent.chat.apiLeaveGroup(groupInfo.groupId)
-      await this.agent.chat.apiDeleteChat(T.ChatType.Group, groupInfo.groupId, {type: "full", notify: true})
+    this.leaving.add(chat)
+    try {
+      await this.statuses.end(chat)
+      if (chat.startsWith("@")) await this.agent.chat.apiDeleteChat(T.ChatType.Direct, chatNumber(chat), {type: "full", notify: true})
+      else {
+        const {groupInfo} = (await getChat(this.agent.chat, chat, 0)).chatInfo as T.ChatInfo.Group
+        if (memberCurrentOrPending(groupInfo.membership)) await this.agent.chat.apiLeaveGroup(groupInfo.groupId)
+        await this.agent.chat.apiDeleteChat(T.ChatType.Group, groupInfo.groupId, {type: "full", notify: true})
+      }
+    } finally {
+      this.leaving.delete(chat)
     }
     rmSync(chatFolder(this.agent.data, chat, "forwarded"), {recursive: true, force: true})
   }
@@ -1342,6 +1426,14 @@ export class AgentTools {
     }
   }
 
+  // spec: spec/architecture.md#tools-agenttools-deleteleftoverstatuses
+  async deleteLeftoverStatuses(): Promise<void> {
+    for (const {chatInfo} of await this.agentChats()) {
+      const chat = chatRef(chatInfo)!
+      if (this.showsStatus(chat, chatInfo)) await this.statuses.deleteLeftovers(chat)
+    }
+  }
+
   // spec: spec/api.md#tool-receive
   private async receive(input: ReceiveInput, call: ToolCall): Promise<object | undefined> {
     const {chat, wait = 0, limit = defaultLimit} = input
@@ -1354,12 +1446,14 @@ export class AgentTools {
       })
       if (!this.owns(initial.chatInfo)) throw unknownChat(chat)
       const {chatInfo, items, unreadRest} = await unreadItems(this.agent.chat, chat, initial, limit + 1)
-      const unread = items.filter(({content}) => content.type === "rcvMsgContent").map(chatItem => arrived.items.find(copy => copy.chatItem.meta.itemId === chatItem.meta.itemId) ?? {chatInfo, chatItem})
+      for (const chatItem of items) this.decideAbort(chat, chatInfo, chatItem)
+      const unread = items.filter(({content, meta}) => content.type === "rcvMsgContent" && !this.abortItems.get(meta.itemId)).map(chatItem => arrived.items.find(copy => copy.chatItem.meta.itemId === chatItem.meta.itemId) ?? {chatInfo, chatItem})
       const skipped = items.filter(({content}) => content.type !== "rcvMsgContent").map(({meta}) => meta.itemId)
       const later = arrived.items.filter(a => !unread.some(u => u.chatItem.meta.itemId === a.chatItem.meta.itemId))
       arrived.items.splice(0, arrived.items.length, ...unread, ...later)
       const fresh = (): T.AChatItem[] => arrived.items.filter(({chatItem}) => !isLive(chatItem))
       if (fresh().length === 0 && wait > 0) {
+        this.statuses.end(chat)
         const deadline = Date.now() + wait * 1000
         const stopProgress = reportProgress(call, () => `No new messages in ${chat}; waiting until ${utcMinutes(deadline)}.`)
         try {
@@ -1374,6 +1468,7 @@ export class AgentTools {
       if (call.signal.aborted) return undefined
       await markRead(this.agent.chat, chat, [...returned.map(({chatItem}) => chatItem.meta.itemId), ...skipped])
       if (call.signal.aborted) return undefined
+      if (returned.length > 0 && this.showsStatus(chat, chatInfo)) this.statuses.start(chat)
       return {chat, messages: await this.toMessages(returned), more: arrived.items.length - returned.length + arrived.overflow.size + unreadRest}
     } finally {
       stop()
@@ -1664,6 +1759,16 @@ export function ownerOf(chatInfo: T.ChatInfo): string | undefined {
 export function isConnected(chatInfo: T.ChatInfo): boolean {
   if (chatInfo.type === "direct") return chatInfo.contact.activeConn?.connStatus.type === "ready"
   return chatInfo.type === "group" && isActive(chatInfo.groupInfo.membership)
+}
+
+// spec: spec/architecture.md#tools-postingrefusal
+function postingRefusal(chat: string, chatInfo: T.ChatInfo): string | undefined {
+  if (!isConnected(chatInfo)) return `The agent is not connected to ${chat} and can't post; list shows connected: false.`
+  if (chatInfo.type === "group") {
+    const role = chatInfo.groupInfo.membership.memberRole
+    if (role === T.GroupMemberRole.Observer || role === T.GroupMemberRole.Relay) return `The agent has role ${role} in ${chat} and can't post.`
+  }
+  return undefined
 }
 
 // spec: spec/architecture.md#tools-chatsubject

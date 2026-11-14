@@ -6,8 +6,9 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Action, Actions, Mode, NewAction, ToolError} from "../../src/actions"
 import {Control, cardText, parseCommand} from "../../src/control"
+import {ExitError} from "../../src/log"
 import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
-import {OwnerEntry, waitForCancelledCards} from "../../src/serve"
+import {OwnerEntry, ServeOptions, startServer, waitForStopMessages} from "../../src/serve"
 import {AgentTools} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -973,15 +974,15 @@ describe("wait at the stop", () => {
     jest.useFakeTimers()
     const lines = logged()
     let ended = false
-    const waiting = waitForCancelledCards([send, connect, download], 10, new AbortController().signal).then(() => (ended = true))
+    const waiting = waitForStopMessages([send, connect, download], 10, new AbortController().signal).then(() => (ended = true))
     expect(lines).toEqual(["Stopping: sending 2 cancelled cards, up to 10 s. Ctrl-C to stop now."])
     await jest.advanceTimersByTimeAsync(9_999)
     expect(ended).toBe(false)
     await jest.advanceTimersByTimeAsync(1)
     await waiting
-    await waitForCancelledCards([download], 10, new AbortController().signal)
-    await waitForCancelledCards([send], 0, new AbortController().signal)
-    await waitForCancelledCards([], 10, new AbortController().signal)
+    await waitForStopMessages([download], 10, new AbortController().signal)
+    await waitForStopMessages([send], 0, new AbortController().signal)
+    await waitForStopMessages([], 10, new AbortController().signal)
     expect(lines).toHaveLength(1)
     expect(jest.getTimerCount()).toBe(0)
   })
@@ -991,14 +992,67 @@ describe("wait at the stop", () => {
     const lines = logged()
     const endWait = new AbortController()
     let ended = false
-    const waiting = waitForCancelledCards([send], 10, endWait.signal).then(() => (ended = true))
+    const waiting = waitForStopMessages([send], 10, endWait.signal).then(() => (ended = true))
     expect(lines).toEqual(["Stopping: sending 1 cancelled card, up to 10 s. Ctrl-C to stop now."])
     await jest.advanceTimersByTimeAsync(1_000)
     expect(ended).toBe(false)
     endWait.abort()
     await waiting
     expect(jest.getTimerCount()).toBe(0)
-    await waitForCancelledCards([send], 10, endWait.signal)
+    await waitForStopMessages([send], 10, endWait.signal)
     expect(jest.getTimerCount()).toBe(0)
+  })
+
+  it("waits for status deletions alone and with cancelled cards, and names each part", async () => {
+    jest.useFakeTimers()
+    const lines = logged()
+    let ended = false
+    const waiting = waitForStopMessages([download], 10, new AbortController().signal, 1).then(() => (ended = true))
+    expect(lines).toEqual(["Stopping: sending 1 status deletion, up to 10 s. Ctrl-C to stop now."])
+    await jest.advanceTimersByTimeAsync(9_999)
+    expect(ended).toBe(false)
+    await jest.advanceTimersByTimeAsync(1)
+    await waiting
+    const both = waitForStopMessages([send, connect, download], 10, new AbortController().signal, 1)
+    await jest.advanceTimersByTimeAsync(10_000)
+    await both
+    const plural = waitForStopMessages([send], 10, new AbortController().signal, 2)
+    await jest.advanceTimersByTimeAsync(10_000)
+    await plural
+    await waitForStopMessages([], 0, new AbortController().signal, 2)
+    expect(lines).toEqual([
+      "Stopping: sending 1 status deletion, up to 10 s. Ctrl-C to stop now.",
+      "Stopping: sending 2 cancelled cards and 1 status deletion, up to 10 s. Ctrl-C to stop now.",
+      "Stopping: sending 1 cancelled card and 2 status deletions, up to 10 s. Ctrl-C to stop now.",
+    ])
+    expect(jest.getTimerCount()).toBe(0)
+  })
+})
+
+describe("inference key at the start", () => {
+  afterEach(() => {
+    delete process.env.SIMPLEX_MCP_INFERENCE_KEY
+  })
+
+  it("refuses a key with a line break, a space or a non-ASCII character with exit code 2, without the key in the text, before the data folder is created", async () => {
+    const folder = join(data, "inference-key")
+    const options: ServeOptions = {name: "agent", data: folder, dataGiven: true, approve: "requests", expireHours: 23, resetOwners: false, newToken: false, port: 5226, qrCode: "small", stopWait: 10, inference: "http://127.0.0.1:8080"}
+    for (const key of ["secret\nkey", "secret key", "sécret"]) {
+      process.env.SIMPLEX_MCP_INFERENCE_KEY = key
+      const error = await startServer(options).catch((reason: unknown) => reason)
+      expect(error).toBeInstanceOf(ExitError)
+      expect([(error as ExitError).message, (error as ExitError).code]).toEqual(["SIMPLEX_MCP_INFERENCE_KEY: visible ASCII characters expected.", 2])
+      expect(existsSync(folder)).toBe(false)
+    }
+  })
+})
+
+describe("abort file at the start", () => {
+  it("stops the start before the chat database is created when the folder of --abort-file is missing, and releases the lock", async () => {
+    const folder = join(data, "abort-start")
+    const options: ServeOptions = {name: "agent", data: folder, dataGiven: true, approve: "requests", expireHours: 23, resetOwners: false, newToken: false, port: 5226, qrCode: "small", stopWait: 10, abortFile: join(data, "missing", "abort")}
+    const error = await startServer(options).catch((reason: unknown) => reason)
+    expect((error as NodeJS.ErrnoException).code).toBe("ENOENT")
+    expect(readdirSync(folder).sort()).toEqual(["headers.json", "hook-headers", "token"])
   })
 })

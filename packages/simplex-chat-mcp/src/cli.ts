@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import {homedir} from "os"
-import {join, resolve} from "path"
+import {dirname, join, resolve, sep} from "path"
 import {Mode} from "./actions"
 import {sessionStart, turn} from "./hook"
 import {ExitError, log, logError} from "./log"
@@ -37,12 +37,19 @@ serve options:
                          Without --owners, whoever joins becomes an owner and
                          every owner approves.
   --expire HOURS         pending actions expire after HOURS, 1 to 23 (default: 23)
-  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,
-                         0 to 60 (default: 10)
+  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards and status
+                         deletions to be sent, 0 to 60 (default: 10)
   --reset-owners         replace the owners: a new agent control chat and link
   --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)
   --qr-code SIZE         QR code of the link: small (default) or large
+  --inference URL        poll llama-swap or llama-server at URL for the model
+                         state and tokens per second shown in status messages;
+                         the API key, if any, is read from
+                         SIMPLEX_MCP_INFERENCE_KEY; mode requests only
+  --abort-file FILE      show /abort in status messages and count it in FILE
+                         for the script that runs the agent; FILE in a folder
+                         disjoint from the data folder; mode requests only
 
 register options:
   --scope SCOPE          user (default) or local
@@ -120,6 +127,12 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
       case "--qr-code":
         serve.qrCode = qrCodeSize(options.value(option))
         break
+      case "--inference":
+        serve.inference = inferenceUrl(options.value(option))
+        break
+      case "--abort-file":
+        serve.abortFile = resolve(options.value(option))
+        break
       default:
         throw unknownOption(option)
     }
@@ -127,6 +140,12 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
   if (serve.resetOwners && serve.owners !== undefined && serve.owners.length > 0) {
     throw usageError("--reset-owners takes --owners without a list: member IDs change in a new agent control chat.")
   }
+  if (serve.inference !== undefined && serve.approve === "host") {
+    throw usageError("--inference: status messages are shown only in mode requests.")
+  }
+  if (serve.abortFile !== undefined && serve.approve === "host") throw usageError("--abort-file: status messages are shown only in mode requests.")
+  const within = (folder: string, path: string): boolean => join(path, sep).startsWith(join(folder, sep))
+  if (serve.abortFile !== undefined && (within(serve.data, serve.abortFile) || within(dirname(serve.abortFile), serve.data))) throw usageError(`--abort-file: a file in a folder disjoint from the data folder expected, got ${serve.abortFile}`)
   return serve
 }
 
@@ -200,6 +219,13 @@ function qrCodeSize(value: string): QrCodeSize {
 function scope(value: string): Scope {
   if (value !== "user" && value !== "local") throw usageError(`--scope: user or local expected, got ${value}`)
   return value
+}
+
+// spec: spec/architecture.md#cli-inferenceurl
+function inferenceUrl(value: string): string {
+  const url = URL.canParse(value) ? new URL(value) : undefined
+  if (url === undefined || !["http:", "https:"].includes(url.protocol) || url.username !== "" || url.password !== "") throw usageError(`--inference: an http or https URL without user name and password expected, got ${value}`)
+  return `${url.origin}${url.pathname.replace(/\/+$/, "")}`
 }
 
 // spec: spec/api.md#serve-options

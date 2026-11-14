@@ -24,7 +24,13 @@ The SimpleX core (libsimplex, release `core-7.1.3.0`) runs inside the same Node.
 
 A tool call is held open by the server until the owner decides and, for `connect` and `send`, until the replies arrive, and for `download`, until the file is received or `wait` passes. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
 
-The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
+When `receive` returns messages, the server starts a status message in the chat: one live message, edited while the agent works and deleted after the agent's next message there is sent. The server also posts a status message at each message received in such a chat while it has none, a live message when its sender completes it, with the label `received, waiting for the agent` until a `receive` or a `send` returns messages of that chat. Status messages are shown in chats with people, groups and business chats that have a standing approval of messages, in mode `requests`. With `live: true` on `send`, the text is shown at once under the status line, and the result is status `live`, without an action; each such note is printed in the terminal. With `--inference URL`, the server polls llama-swap or llama-server at URL, and the model loading, the prompt tokens read and the tokens per second are shown in the status line.
+
+With `--abort-file FILE`, the status line ends with ` · /abort`. At a message `/abort` from anyone in a chat whose status message is shown, the message is kept from the agent, 1 is added to the count in FILE, and every status message is ended with `◼ aborted`; the script that runs the agent reads FILE and restarts the agent at each change of the count.
+
+`register` also adds status hooks to the Claude Code settings file of its scope. Claude Code then runs curl at each hook event, and curl posts the event to `/hook` of the server with the token. For the sessions that called a tool of this server, the Claude Code tool, permission prompt, subagent or compaction in progress is shown in the status line.
+
+The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers files for the host and its hooks, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
 The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server. The session server forwards tool calls over a local socket to `simplex-mcp service`, one service per data root. Requests on the socket are HTTP/1.1 with a bearer token. The service runs two cores:
 - `Claude` is the profile that peers see. It holds the Main group, one group per session and the chats with peers. In a session's group it posts the answers, one line for each of Claude Code's own prompts, and one line for each summary of the session's context.
@@ -134,6 +140,19 @@ graph TD
   tools --> actions
   tools --> messages
   tools --> log
+  tools --> status["status.ts"]
+  tools -.-> inference["inference.ts"]
+  serve --> inference
+  serve --> activity["activity.ts"]
+  tools -.-> activity
+  status --> actions
+  status --> messages
+  status --> log
+  status -.-> tools
+  status -.-> inference
+  status -.-> activity
+  activity --> inference
+  inference --> log
   actions --> messages
   actions --> log
   actions -.-> tools
@@ -155,6 +174,7 @@ graph TD
   hub --> sc
   mainGroup --> sc
   user --> sc
+  status --> sc
   messages -.-> sc
   log --> sc
   tools --> mcps["@modelcontextprotocol/server"]
@@ -170,14 +190,17 @@ graph TD
 |---|---|
 | [`cli.ts`](../src/cli.ts) | `simplex-mcp` entry point: commands, options, exit codes |
 | [`serve.ts`](../src/serve.ts) | `serve`: start sequence, event dispatch, stop sequence |
-| [`http.ts`](../src/http.ts) | `serve`: HTTP listener, token check, `/mcp` route, SDK handler |
-| [`register.ts`](../src/register.ts) | `register` command: Claude Code entry of a `serve` agent |
-| [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send, chat owners |
+| [`http.ts`](../src/http.ts) | `serve`: HTTP listener, token check, `/mcp` route, SDK handler, `/hook` route |
+| [`register.ts`](../src/register.ts) | `register` command: Claude Code entry of a `serve` agent, status hooks |
+| [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send, chat owners, status message refusals, `/abort` |
+| [`status.ts`](../src/status.ts) | status messages: start, ticks, labels, notes, deletion, the end at an `/abort`, leftovers, running calls |
+| [`inference.ts`](../src/inference.ts) | inference endpoint poller: model states, prompt tokens, tokens per second |
+| [`activity.ts`](../src/activity.ts) | Claude Code activity from hook events: agent sessions, running tools, subagents, permission prompts, compaction |
 | [`actions.ts`](../src/actions.ts) | action records, state machine, expiry timers, per-session limits, stop |
 | [`control.ts`](../src/control.ts) | agent control chat and session groups: link, owners, owner commands, cards, counter |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
 | [`core.ts`](../src/core.ts) | one SimpleX core: init, user, network config, temp folder, event buffer, profile update |
-| [`files.ts`](../src/files.ts) | data folders, lock, token, `headers.json`, `server.json`, session folders, socket path, service log |
+| [`files.ts`](../src/files.ts) | data folders, lock, token, `headers.json`, `hook-headers`, `server.json`, session folders, socket path, service log, the abort count of `--abort-file` |
 | [`log.ts`](../src/log.ts) | log lines, error texts, shell quoting |
 | [`qr.ts`](../src/qr.ts) | QR code text: `small` and `large` for terminals, `plain` for the hook message |
 | [`version.ts`](../src/version.ts) | package version from `package.json` |
@@ -209,7 +232,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 |---|---|
 | [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits. Section 8 covers the plugin. |
 | [Flows](flows.md) | sequence diagrams of the main flows with source locations. Flows 17-36 cover the plugin. |
-| [API](api.md) | the six tools, the control chat commands, replies and cards, the CLI. Section 4 covers the plugin's tools, groups, channel, socket protocol, commands and files. |
+| [API](api.md) | the six tools, the status message, the control chat commands, replies and cards, the CLI, the hook endpoint. Section 4 covers the plugin's tools, groups, channel, socket protocol, commands and files. |
 
 ---
 
@@ -222,13 +245,18 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Server start | [`src/serve.ts`](../src/serve.ts) | `startServer` |
 | Agent wiring and event dispatch | [`src/serve.ts`](../src/serve.ts) | `startAgent` |
 | HTTP listener | [`src/http.ts`](../src/http.ts) | `startHttp` |
+| Hook endpoint | [`src/http.ts`](../src/http.ts) | `receiveHook` |
 | Tool registration | [`src/tools.ts`](../src/tools.ts) | `registerTools` |
 | Downloads | [`src/tools.ts`](../src/tools.ts) | `AgentTools.downloadFile` |
+| Status messages | [`src/status.ts`](../src/status.ts) | `Statuses` |
+| Inference endpoint | [`src/inference.ts`](../src/inference.ts) | `inferencePoller` |
+| Claude Code activity | [`src/activity.ts`](../src/activity.ts) | `Activity` |
 | Action store | [`src/actions.ts`](../src/actions.ts) | `Actions` |
 | Agent control chat and session groups | [`src/control.ts`](../src/control.ts) | `Control` |
 | Card text | [`src/control.ts`](../src/control.ts) | `cardText` |
 | Item watch | [`src/messages.ts`](../src/messages.ts) | `ChatItemsWatch` |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts) | `register` |
+| Status hooks | [`src/register.ts`](../src/register.ts) | `statusHooks` |
 | Data folder files | [`src/files.ts`](../src/files.ts) | `createDataFolder`, `acquireLock` |
 | Session server | [`src/session.ts`](../src/session.ts) | `startSession` |
 | Session to service link | [`src/session.ts`](../src/session.ts) | `ServiceLink` |
@@ -242,6 +270,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Hooks | [`src/hook.ts`](../src/hook.ts) | `sessionStart`, `turn` |
 | `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts) | `showLink`, `resetOwners` |
 | SimpleX core | [`src/core.ts`](../src/core.ts) | `openCore` |
+| Abort count | [`src/files.ts`](../src/files.ts) | `abortCounter` |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` |
 
 ---

@@ -4,7 +4,7 @@ import {McpServer} from "@modelcontextprotocol/server"
 import {Actions, Mode} from "../../src/actions"
 import {startHttp, stopHttp} from "../../src/http"
 import {ChatItemsWatch} from "../../src/messages"
-import {AgentTools} from "../../src/tools"
+import {AgentTools, instructions} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, fakeHooks, user} from "./fixtures"
 
 const token = "secret-token"
@@ -13,9 +13,11 @@ let server: Server
 let url: string
 let actions: Actions
 let ready: boolean
+let hookEvents: unknown[]
 
 async function start(mode: Mode = "requests"): Promise<void> {
   ready = true
+  hookEvents = []
   const chat = new FakeChat()
   chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory")), items: []})
   actions = actionsWith(mode, fakeHooks())
@@ -25,7 +27,7 @@ async function start(mode: Mode = "requests"): Promise<void> {
     tools.register(mcp)
     return mcp
   }
-  server = await startHttp({port: 0, token, factory, ready: () => ready})
+  server = await startHttp({port: 0, token, factory, ready: () => ready, hook: event => hookEvents.push(event)})
   url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
 }
 
@@ -63,11 +65,11 @@ function statusWithHost(host: string): Promise<number> {
   })
 }
 
-function rawStatusLine(target: string): Promise<string> {
+function rawStatusLine(target: string, headers = "Content-Length: 0\r\n"): Promise<string> {
   return new Promise((resolve, reject) => {
     const {port} = server.address() as AddressInfo
     const socket = connect(port, "127.0.0.1", () => {
-      socket.write(`POST ${target} HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nAuthorization: Bearer ${token}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n`)
+      socket.write(`POST ${target} HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nAuthorization: Bearer ${token}\r\n${headers}Connection: close\r\n\r\n`)
     })
     let response = ""
     socket.on("data", chunk => (response += chunk))
@@ -121,6 +123,43 @@ describe("HTTP", () => {
   })
 })
 
+describe("status hook endpoint", () => {
+  const hookHeaders = {authorization: `Bearer ${token}`, "content-type": "application/json"}
+
+  function postHook(body: string, headers: {[name: string]: string} = hookHeaders): Promise<Response> {
+    return fetch(`${url}/hook`, {method: "POST", headers, body})
+  }
+
+  it("passes the parsed body to the hook and answers 204 without a body, also before the server is ready", async () => {
+    await start()
+    ready = false
+    const event = {session_id: "s1", hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: {command: "npm test"}, tool_use_id: "t1"}
+    const response = await postHook(JSON.stringify(event))
+    expect([response.status, await response.text()]).toEqual([204, ""])
+    expect(hookEvents).toEqual([event])
+    expect((await post(modern("tools/list"), modernHeaders("tools/list"))).status).toBe(503)
+  })
+
+  it("accepts a body of 4 MiB, and refuses a longer Content-Length and a request without it", async () => {
+    await start()
+    expect((await postHook(JSON.stringify({pad: "x".repeat(4 * 1_048_576 - 10)}))).status).toBe(204)
+    expect(await rawStatusLine("/hook", `Content-Length: ${4 * 1_048_576 + 1}\r\n`)).toMatch(/^HTTP\/1\.1 413 /)
+    expect(await rawStatusLine("/hook", "")).toBe("HTTP/1.1 411 Length Required")
+    expect(hookEvents).toHaveLength(1)
+  })
+
+  it("refuses requests without the token, from another Origin, with another method and with invalid JSON, without calling the hook", async () => {
+    await start()
+    expect((await postHook("{}", {...hookHeaders, authorization: "Bearer other"})).status).toBe(401)
+    expect((await postHook("{}", {...hookHeaders, origin: "https://example.com"})).status).toBe(403)
+    const get = await fetch(`${url}/hook`, {headers: hookHeaders})
+    expect([get.status, get.headers.get("allow")]).toEqual([405, "POST"])
+    expect((await postHook("{")).status).toBe(400)
+    expect((await postHook("")).status).toBe(400)
+    expect(hookEvents).toEqual([])
+  })
+})
+
 describe("MCP", () => {
   it("initializes a legacy client with the instructions", async () => {
     await start()
@@ -135,8 +174,24 @@ describe("MCP", () => {
     expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave"])
     const send = result.tools.find(({name}: {name: string}) => name === "send")
     expect(send.inputSchema.properties.idle).toEqual({type: "number", minimum: 1, maximum: 300, description: "Seconds without a new response that end the wait once a response arrived. Default 30."})
-    expect(send.outputSchema.required).toEqual(["action", "status"])
+    expect(send.inputSchema.properties.live).toEqual({
+      type: "boolean",
+      description: "true: text is shown at once under the line of the live status message in this chat, until your next message there without live; status live is returned at once, and no action is created. Text only, at most 2000 characters, in a chat with a person, a group or a business chat that has approved: true in list. Default false.",
+    })
+    expect(send.outputSchema.required).toEqual(["status"])
+    expect(send.outputSchema.properties.status.enum).toEqual(["done", "failed", "rejected", "expired", "live"])
     expect(send._meta).toBeUndefined()
+    expect(send.description.split("\n")).toContain("With live: true, in a chat with a person, a group or a business chat that has approved: true in list, text is shown at once in the chat's live status message, and status live is returned without an action. Your next message there without live is sent as a new message, and the status message is then deleted.")
+    const receive = result.tools.find(({name}: {name: string}) => name === "receive")
+    expect(Object.keys(receive.inputSchema.properties)).toEqual(["chat", "wait", "limit"])
+    expect(receive.description.split("\n").at(-1)).toBe("In a chat with a person, a group or a business chat that has approved: true in list, a live status message is shown there from the arrival of a message, while you work, until your next message there or a receive there that waits. In the chat where you receive prompts, send each answer with wait 0 and without live, so the next prompt stays unread for receive, and call receive again only after it. For a step that takes minutes, call send with live: true and a short note in the same response as the step's tool call; the note is shown in the status message.")
+  })
+
+  it("keeps each tool description, and the instructions for a 15-character name, within Claude Code's 2048 characters", async () => {
+    await start()
+    const {result} = await body(await post(modern("tools/list"), modernHeaders("tools/list")))
+    for (const {description} of result.tools) expect(description.length).toBeLessThanOrEqual(2048)
+    expect(instructions("Ridgeline Scout").length).toBeLessThanOrEqual(2048)
   })
 
   it("asks the host for each action in mode host", async () => {
@@ -163,6 +218,7 @@ describe("MCP", () => {
     expect(await text({chat: "@4", text: "😀".repeat(12001)})).toMatch(/data\/text must NOT have more than 12000 characters$/)
     expect(await text({chat: "@4", text: "x", mention: [44, 44]})).toMatch(/data\/mention must NOT have duplicate items/)
     expect(await text({chat: "@4", text: "x", wait: -1})).toMatch(/data\/wait must be >= 0$/)
+    expect(await text({chat: "@4", text: "x", live: "yes"})).toMatch(/data\/live must be boolean$/)
     expect(await text({chat: "@4", text: "x", colour: "red"})).toMatch(/data must NOT have additional properties$/)
     expect(await text({text: "x"})).toMatch(/data must have required property 'chat'$/)
     expect(actions.all()).toHaveLength(0)
