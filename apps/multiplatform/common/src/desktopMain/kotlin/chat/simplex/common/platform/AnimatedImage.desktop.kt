@@ -27,7 +27,6 @@ private const val DEFAULT_FRAME_DURATION_MS = 100L
 private const val MIN_FRAME_DURATION_MS = 20L
 // A frame costing more than this holds most of a core to show under 10 frames a second
 private const val MAX_FRAME_DECODE_MS = 100L
-// Far above what a frame within the bounds above can cost, so only a stall reaches it
 private const val MAX_WAITED_FRAME_COST_MS = 10 * MAX_FRAME_DECODE_MS
 private const val SLOW_FRAME_COST = 2
 internal const val MAX_SLOW_FRAME_DEBT = 4
@@ -66,7 +65,7 @@ fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, hidden: () -> Boo
 private val animationDecoder = Dispatchers.Default.limitedParallelism(2)
 
 private fun openAnimation(data: ByteArray): Animation? {
-  if (!looksAnimatable(data) || !fileSizeWithinBounds(data.size)) return null
+  if (!looksAnimatable(data) || !fileSizeWithinBounds(data.size) || !frameCountWithinBounds(encodedFrameCount(data))) return null
   var codec: Codec? = null
   var animation: Animation? = null
   try {
@@ -111,6 +110,47 @@ private fun ByteArray.startsWith(ascii: String, offset: Int = 0): Boolean {
   return ascii.indices.all { this[offset + it] == ascii[it].code.toByte() }
 }
 
+internal fun encodedFrameCount(data: ByteArray): Int =
+  if (data.startsWith("GIF8")) gifFrameCount(data) else webpFrameCount(data)
+
+private fun gifFrameCount(data: ByteArray): Int {
+  fun colorTableSize(flags: Int) = if (flags and 0x80 != 0) 3 shl ((flags and 7) + 1) else 0
+  fun afterSubBlocks(start: Int): Int {
+    var pos = start
+    while (data.byteAt(pos) != 0) pos += 1 + data.byteAt(pos)
+    return pos + 1
+  }
+  fun afterApplicationExtension(start: Int): Int {
+    val loopCountAt = start + 12
+    val isLoopExtension = data.byteAt(start) == 11 &&
+      (data.startsWith("NETSCAPE2.0", offset = start + 1) || data.startsWith("ANIMEXTS1.0", offset = start + 1))
+    return afterSubBlocks(if (isLoopExtension && data.byteAt(loopCountAt) == 0) loopCountAt + 1 else start)
+  }
+  var pos = 13 + colorTableSize(data.byteAt(10))
+  var frames = 0
+  while (pos < data.size && frames <= MAX_ANIMATED_FRAMES) {
+    when (data.byteAt(pos)) {
+      0x21 -> pos = if (data.byteAt(pos + 1) == 0xFF) afterApplicationExtension(pos + 2) else afterSubBlocks(pos + 2)
+      0x2C -> {
+        frames++
+        pos = afterSubBlocks(pos + 11 + colorTableSize(data.byteAt(pos + 9)))
+      }
+      else -> return frames
+    }
+  }
+  return frames
+}
+
+private fun webpFrameCount(data: ByteArray): Int {
+  var frames = 0
+  var pos = 12
+  while (pos < data.size && frames <= MAX_ANIMATED_FRAMES) {
+    if (data.startsWith("ANMF", offset = pos)) frames++
+    pos++
+  }
+  return frames
+}
+
 internal fun rasterWithinBounds(width: Int, height: Int, bytesPerPixel: Int): Boolean {
   if (width !in 1..MAX_ANIMATED_SIDE || height !in 1..MAX_ANIMATED_SIDE) return false
   // 0 bytes per pixel would let any raster pass the bound below
@@ -138,7 +178,7 @@ private suspend fun playFrames(animation: Animation, hidden: () -> Boolean, show
         debt = slowFrameDebt(debt, decodedIn > MAX_FRAME_DECODE_MS * 1_000_000)
         // The bitmap is never closed, as the wrapper points at its pixels and a frame may still be drawn
         showFrame(bitmap.asComposeImageBitmap())
-        if (debt >= MAX_SLOW_FRAME_DEBT) {
+        if (debt >= MAX_SLOW_FRAME_DEBT || !frameCostWithinBounds(decodedIn / 1_000_000)) {
           Log.d(TAG, "Animation too expensive to decode, stopping on this frame")
           return
         }
@@ -163,10 +203,11 @@ private suspend fun awaitFramesAreSeen(hidden: () -> Boolean) {
 private fun framesAreSeen(hidden: () -> Boolean): Boolean =
   simplexWindowState.windowVisible.value && !simplexWindowState.windowState.isMinimized && !hidden()
 
-// Waiting out the cost as well as the delay leaves an animation about half a decoder thread. The cost is
-// wall time, so a stall is only waited out so far.
+// Waiting out the cost as well as the delay leaves an animation about half a decoder thread
 internal fun frameWait(delayMs: Long, costMs: Long): Long =
-  maxOf(delayMs, costMs.coerceAtMost(MAX_WAITED_FRAME_COST_MS))
+  maxOf(delayMs, costMs)
+
+internal fun frameCostWithinBounds(costMs: Long): Boolean = costMs <= MAX_WAITED_FRAME_COST_MS
 
 internal fun fileSizeWithinBounds(size: Int): Boolean = size <= MAX_ANIMATED_FILE_SIZE
 
