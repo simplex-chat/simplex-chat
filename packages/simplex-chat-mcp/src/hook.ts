@@ -461,7 +461,7 @@ function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string 
     case "Edit":
       return `✏️ Edit ${path("file_path")}`
     case "Write":
-      return `📝 Write ${path("file_path")}`
+      return `✏️ Write ${path("file_path")}`
     case "Grep":
     case "Glob": {
       const where = path("path")
@@ -470,12 +470,13 @@ function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string 
     case "WebFetch":
       return `🌐 Fetch ${field("url")}`
     case "WebSearch":
-      return `🔎 Search ${field("query")}`
+      return `🔍 Search ${field("query")}`
     case "Agent":
       return `🤖 Agent: ${field("description")}`
     default: {
       const value = stepFields.map(field).find(text => text !== "")
-      return `🔧 ${oneLine(tool)}${value === undefined ? "" : `: ${value}`}`
+      const icon = /search/i.test(tool.split("__").at(-1) ?? "") ? "🔍" : "🔧"
+      return `${icon} ${oneLine(tool)}${value === undefined ? "" : `: ${value}`}`
     }
   }
 }

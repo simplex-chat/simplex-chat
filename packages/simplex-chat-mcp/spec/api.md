@@ -1178,12 +1178,12 @@ A tool hook sends `step` with `tool_use_id` as `id` ([`turn`, `stepOf`, `stepTex
 | Tool | Text |
 |---|---|
 | Bash | `💻 ` and `description`, or `command` without a description |
-| Read, Edit, Write | `📖 Read PATH`, `✏️ Edit PATH`, `📝 Write PATH`. PATH is `file_path`, relative to `cwd` unless the relative path is absolute or starts with `..` |
+| Read, Edit, Write | `📖 Read PATH`, `✏️ Edit PATH`, `✏️ Write PATH`. PATH is `file_path`, relative to `cwd` unless the relative path is absolute or starts with `..` |
 | Grep, Glob | `🔍 Grep PATTERN in PATH`, `🔍 Glob PATTERN in PATH`. PATTERN is `pattern`, and PATH is `path`, shown as for Read; ` in PATH` is left out without a path or for `cwd` itself |
 | WebFetch | `🌐 Fetch ` and `url` |
-| WebSearch | `🔎 Search ` and `query` |
+| WebSearch | `🔍 Search ` and `query` |
 | Agent | `🤖 Agent: ` and `description` |
-| another tool | `🔧 TOOL`, and `: ` with the first of `description`, `query`, `url`, `file_path`, `path`, `pattern` and `command` that is not blank |
+| another tool | `🔧 TOOL`, or `🔍 TOOL` when the name after its last `__` contains `search` in any case, and `: ` with the first of `description`, `query`, `url`, `file_path`, `path`, `pattern` and `command` that is not blank |
 
 At PreToolUse, `step` is `{id, text: "!- TEXT!"}`. At PostToolUse and PostToolUseFailure, it is `{id, text: "!- TEXT OUTCOME DURATION!", end: true}`. Both are in small print; each `!` of TEXT is replaced with `ǃ` (U+01C3), which looks the same, because `!` would end the small print. OUTCOME is left out with its space for PostToolUse, ⏹️ for PostToolUseFailure with `is_interrupt` true, and ❌ for another PostToolUseFailure. DURATION, from `duration_ms` rounded to whole milliseconds, is `N ms` below 1 s, and otherwise rounded down: `N.N s` below 10 s, `N s` below 1 min, `M min S s` below 1 h and `H h M min` from 1 h; without `duration_ms` it is left out with its space. The PostToolUse of a tool use whose `run_in_background` is true is `!- TEXT (in background)!`: Claude Code ends such a tool use when it starts the command or the agent, and the completion is reported by a task notification. A tool hook without `tool_use_id` or `tool_name`, with `agent_id`, of a subagent, or of a tool whose name starts with `mcp__plugin_simplex_simplex__` sends nothing. The matcher of the tool hooks is `*`, and the hook skips the plugin's tools: Claude Code 2.1.322 tests a matcher as a JavaScript regular expression locally, and with another engine in a cloud session, which refuses some patterns with `This hook's matcher cannot be tested in a cloud session: it has to be rewritten.` (`uTr`, binary offset 291099155).
 
