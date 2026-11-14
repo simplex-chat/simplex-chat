@@ -3678,10 +3678,10 @@ object ChatController {
     }
   }
 
-  private fun cleanupFile(aChatItem: AChatItem) {
+  internal fun cleanupFile(aChatItem: AChatItem) {
     val cItem = aChatItem.chatItem
     val mc = cItem.content.msgContent
-    val fileName = cItem.file?.fileName
+    val fileName = cItem.file?.fileSource?.filePath
     if (
       mc is MsgContent.MCFile
       && fileName != null

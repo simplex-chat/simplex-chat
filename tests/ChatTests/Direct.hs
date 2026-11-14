@@ -1569,10 +1569,11 @@ testMaintenanceModeWithFiles ps = withXFTPServer ps $ do
 
       let backupDBs = [tmpPath ps <> "/alice_chat.db.bak", tmpPath ps <> "/alice_agent.db.bak"]
       forM_ backupDBs $ \f -> B.writeFile f ""
+      B.writeFile (aliceFiles </> "c:test.jpg") ""
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> ("/_db export {\"archivePath\": \"" <> archive <> "\"}")
-      alice <## "ok"
+      alice <## "archive export errors: [AEFileError {file = \"c:test.jpg\", fileError = \"Cannot build selector from \\\"simplex_v1_files/c:test.jpg\\\"\"}]"
       let exportedDBs = [tmpPath ps <> "/alice_chat.db.exported", tmpPath ps <> "/alice_agent.db.exported"]
       forM_ exportedDBs $ \f -> B.writeFile f ""
       alice ##> "/_db delete"

@@ -61,6 +61,9 @@ remoteTests = describe "Remote" $ do
       filter (not . sanitized) fileNames `shouldBe` []
     it "sanitizes to a name with no directory components" $ \_ ->
       filter (not . bareName) fileNames `shouldBe` []
+    it "replaces control and text direction characters" $ \_ ->
+      map safeFileNameStr ["a\nx.txt", "a\r\nx.txt", "a\x85x.txt", "a\x2028x.txt", "a\x202Ex.txt", "a\x2067x\x2069.txt", "a\x1F468\x200D\x1F469.txt"]
+        `shouldBe` ["a_x.txt", "a__x.txt", "a_x.txt", "a_x.txt", "a_x.txt", "a_x_.txt", "a\x1F468\x200D\x1F469.txt"]
   describe "skipped keys" $ do
     it "keeps the most recent skipped keys" $ \_ -> do
       (_, pk) <- atomically . C.generateKeyPair =<< C.newRandom

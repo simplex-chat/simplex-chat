@@ -15,9 +15,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -29,6 +32,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import java.io.File
 import java.net.URI
+import java.text.Bidi
 
 @Composable
 fun CIFileView(
@@ -230,10 +234,7 @@ fun CIFileView(
       }
       if (file != null) {
         Column(if (terminal) Modifier else Modifier.alignBy(LastBaseline)) {
-          Text(
-            file.fileName,
-            maxLines = 1
-          )
+          FileNameText(file.fileName)
           Text(
             buildAnnotatedString {
               append(formatBytes(file.fileSize))
@@ -258,6 +259,25 @@ const val FILE_ICON_INK_INSET = 85f / 960f
 fun RowScope.fileIconOnBaseline(iconSize: TextUnit): Modifier {
   val density = LocalDensity.current
   return Modifier.alignBy { it.measuredHeight - with(density) { (iconSize * FILE_ICON_INK_INSET).toPx().toInt() } }
+}
+
+private val fileNameControlChar = Regex("[\\p{Cc}\\u2028-\\u202E\\u2066-\\u2069]")
+
+@Composable
+private fun FileNameText(fileName: String) {
+  val shownName = fileName.replace(fileNameControlChar) { unicodeMarker(it.value) }
+  val name = shownName.trimEnd(' ', '.').substringBeforeLast('.')
+  val defaultDirection = if (LocalLayoutDirection.current == LayoutDirection.Ltr) Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT else Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT
+  val ltr = Bidi(shownName, defaultDirection).baseIsLeftToRight()
+  CompositionLocalProvider(
+    LocalLayoutDirection provides if (ltr) LayoutDirection.Ltr else LayoutDirection.Rtl,
+    LocalTextStyle provides LocalTextStyle.current.copy(textDirection = if (ltr) TextDirection.Ltr else TextDirection.Rtl)
+  ) {
+    Row {
+      Text(name, Modifier.weight(1f, fill = false).alignByBaseline(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+      Text(shownName.substring(name.length), Modifier.alignByBaseline(), maxLines = 1)
+    }
+  }
 }
 
 // the core decides whether a received file is above the size the sender's badge allows

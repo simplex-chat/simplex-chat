@@ -424,9 +424,13 @@ chatParseUri :: Bool -> ByteString -> JSONByteString
 chatParseUri safe s = J.encode $ case parseUri s of
   Left e -> ParsedUri Nothing e
   Right uri@U.URI {uriScheme = U.Scheme sch} ->
-    let sanitized = safeDecodeUtf8 . U.serializeURIRef' <$> sanitizeUri safe uri
+    let sanitized = safeDecodeUtf8 . replaceQuery <$> sanitizeUri safe uri
         uriInfo = UriInfo {scheme = safeDecodeUtf8 sch, sanitized}
      in ParsedUri (Just uriInfo) ""
+  where
+    replaceQuery :: U.URI -> ByteString
+    replaceQuery U.URI {uriQuery, uriFragment} =
+      B.takeWhile (/= '?') s <> U.serializeQuery' U.noNormalization uriQuery <> U.serializeFragment' uriFragment
 
 chatPasswordHash :: ByteString -> ByteString -> ByteString
 chatPasswordHash pwd salt = either (const "") passwordHash salt'

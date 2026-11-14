@@ -350,7 +350,19 @@ testChatParseServer _ = do
 
 testChatParseUri :: TestParams -> IO ()
 testChatParseUri _ = do
-  pure ()
+  "https://example.com/page?name=abc" `sanitizedAs` Nothing
+  "https://example.com/page?name=abc&ref=123" `sanitizedAs` Just "https://example.com/page?name=abc"
+  "https://example.com/page?ref=123#section" `sanitizedAs` Just "https://example.com/page#section"
+  "https://user:pass@example.com:8080/page?ref=123" `sanitizedAs` Just "https://user:pass@example.com:8080/page"
+  "https://user%40name@example.com/page?ref=123" `sanitizedAs` Just "https://user%40name@example.com/page"
+  "https://ex%61mple.com/page?ref=123" `sanitizedAs` Just "https://ex%61mple.com/page"
+  "https://[::ffff:1.2.3.4]/page?ref=123" `sanitizedAs` Just "https://[::ffff:1.2.3.4]/page"
+  "https://example.com/a%2Fb?ref=123" `sanitizedAs` Just "https://example.com/a%2Fb"
+  where
+    s `sanitizedAs` res = mapM_ (\safe -> parsedSanitized (chatParseUri safe s) `shouldBe` Just res) [False, True]
+    parsedSanitized r = case J.decode r of
+      Just ParsedUri {uriInfo = Just UriInfo {sanitized}} -> Just sanitized
+      _ -> Nothing
 
 -- Generate a server keypair and issue a badge credential via the C FFI,
 -- constructing the request from the typed records, then verify the issued
