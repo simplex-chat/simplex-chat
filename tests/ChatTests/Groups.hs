@@ -251,7 +251,6 @@ chatGroupTests = do
     it "block left/removed members" testBlockForAllLeftRemoved
     it "mentions of blocked member are ignored" testBlockForAllMentionsIgnored
     it "replies of blocked member are not mentions" testBlockedMemberReplyNotMention
-    it "profile updates of blocked member are marked blocked" testBlockedMemberProfileUpdate
     it "message updates of blocked member are marked blocked" testBlockedMemberUpdatesMarkedBlocked
     it "mentions in message updates of blocked member are ignored" testBlockedMemberUpdateMentionsIgnored
     it "message updates of member blocked by admin are ignored" testBlockedByAdminUpdatesIgnored
@@ -7940,46 +7939,6 @@ testBlockedMemberReplyNotMention =
       bob <##. "      hey again!"
       cath <# "#team alice> > bob hi"
       cath <## "      hey again!"
-
-testBlockedMemberProfileUpdate :: HasCallStack => TestParams -> IO ()
-testBlockedMemberProfileUpdate =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-
-      threadDelay 1000000
-
-      cath ##> "/_member settings #1 3 {\"showMessages\": false}"
-      cath <## "ok"
-
-      bob ##> "/p rob"
-      bob <## "user profile is changed to rob (your 1 contacts are notified)"
-      alice <## "contact bob changed to rob"
-      alice <## "use @rob <message> to send messages"
-
-      bob #> "#team 1"
-      alice <# "#team rob> 1"
-      cath <# "#team rob> 1 [blocked] <muted>"
-
-      cath #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed) [blocked]"), (0, "1 [blocked]")])
-
-      alice ##> "/block for all #team rob"
-      alice <## "#team: you blocked rob (signed)"
-      cath <## "#team: alice blocked rob (signed)"
-      bob <// 50000
-
-      threadDelay 1000000
-
-      bob ##> "/p robert"
-      bob <## "user profile is changed to robert (your 1 contacts are notified)"
-      alice <## "contact rob changed to robert"
-      alice <## "use @robert <message> to send messages"
-
-      bob #> "#team 2"
-      alice <# "#team robert> 2 [blocked by admin] <muted>"
-      cath <# "#team robert> 2 [blocked by admin] <muted>"
-
-      cath #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed) [blocked by admin]"), (0, "2 [blocked by admin]")])
 
 testBlockedMemberUpdatesMarkedBlocked :: HasCallStack => TestParams -> IO ()
 testBlockedMemberUpdatesMarkedBlocked =

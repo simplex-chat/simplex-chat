@@ -2971,8 +2971,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
                     cd = CDGroupRcv gInfo' scopeInfo_ m_
                 (ci, cInfo) <- saveRcvChatItemNoParse user cd msg brokerTs ciContent
-                ci' <- blockedMemberCI gInfo' m_ ci
-                groupMsgToView cInfo ci'
+                groupMsgToView cInfo ci
           case scopeInfo of
             Just _ -> createItem scopeInfo m''
             Nothing
