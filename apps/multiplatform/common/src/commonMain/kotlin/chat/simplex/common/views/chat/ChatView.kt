@@ -1827,9 +1827,9 @@ fun BoxScope.ChatItemsList(
   val searchValueIsNotBlank = remember { derivedStateOf { searchValue.value.isNotBlank() || contentFilter.value != null } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
   // not using reversedChatItems inside to prevent possible derivedState bug in Compose when one derived state access can cause crash asking another derived state
-  val mergedItems = remember {
+  val mergedItems = remember(developerTools) {
     derivedStateOf {
-      MergedItems.create(chatsCtx.chatItems.value.asReversed(), unreadCount, revealedItems.value, chatsCtx.chatState)
+      MergedItems.create(chatsCtx.chatItems.value.asReversed(), unreadCount, revealedItems.value, chatsCtx.chatState, developerTools)
     }
   }
   val reversedChatItems = remember { derivedStateOf { chatsCtx.chatItems.value.asReversed() } }
@@ -2472,7 +2472,7 @@ fun BoxScope.ChatItemsList(
         )
         val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
         val eventGapBelow = if (LocalTerminalLayout.current) null else eventRunLargeGap(item, listItem.prevItem)
-        val itemSeparation = rowItemSeparation(merged, developerTools).let { if (eventGapBelow == null) it else it.copy(timestamp = it.timestamp || eventGapBelow, largeGap = eventGapBelow) }
+        val itemSeparation = rowItemSeparation(merged, LocalTerminalLayout.current).let { if (eventGapBelow == null) it else it.copy(timestamp = it.timestamp || eventGapBelow, largeGap = eventGapBelow) }
         val eventGapAbove = if (LocalTerminalLayout.current) null else eventRunLargeGap(merged.oldest().item, older)
         val prevItemSeparationLargeGap: Boolean
         if (eventGapAbove != null) {
@@ -3800,7 +3800,7 @@ private fun handleForwardConfirmation(
   )
 }
 
-private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?, developerTools: Boolean): ItemSeparation {
+private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?, terminal: Boolean): ItemSeparation {
   if (prevItem == null) {
     return ItemSeparation(timestamp = true, largeGap = true, date = null)
   }
@@ -3811,10 +3811,10 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?, developer
     true
   } else chatItem.chatDir.sent == prevItem.chatDir.sent
   val largeGap = !sameMemberAndDirection || (abs(prevItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
-  val prevDeletedOrHidden = prevItem.meta.itemDeleted != null || prevItem.isDeletedContent || prevItem.hiddenInChat(developerTools)
+  val prevDeletedInFlat = terminal && (prevItem.meta.itemDeleted != null || prevItem.isDeletedContent)
 
   return ItemSeparation(
-    timestamp = largeGap || prevDeletedOrHidden || prevItem.meta.timestampText != chatItem.meta.timestampText,
+    timestamp = largeGap || prevDeletedInFlat || prevItem.meta.timestampText != chatItem.meta.timestampText,
     largeGap = largeGap,
     date = separationDate(chatItem, prevItem)
   )
@@ -3823,12 +3823,9 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?, developer
 private fun separationDate(chatItem: ChatItem, prevItem: ChatItem?): Instant? =
   if (prevItem == null || getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(prevItem.meta.itemTs)) null else prevItem.meta.itemTs
 
-private fun ChatItem.hiddenInChat(developerTools: Boolean): Boolean =
-  content is CIContent.RcvIntegrityError && !developerTools
-
-private fun rowItemSeparation(row: MergedItem, developerTools: Boolean): ItemSeparation {
+private fun rowItemSeparation(row: MergedItem, terminal: Boolean): ItemSeparation {
   val newest = row.newest()
-  return getItemSeparation(newest.item, if (row.revealed) newest.prevItem else null, developerTools)
+  return getItemSeparation(newest.item, if (row.revealed) newest.prevItem else null, terminal)
 }
 
 fun terminalRowsSeparated(olderRow: MergedItem?): Boolean {
@@ -4114,9 +4111,11 @@ private fun hiddenItemsPreview(): List<ChatItem> {
   return listOf(
     previewRcv(1, GroupMember.sampleData, 0, previewText("Welcome, carol!")),
     previewRcv(2, carol, 120, previewText("Thanks!")),
-    previewRcv(3, carol, 240, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(1, 1))),
-    previewRcv(4, bob, 300, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(2, 2))),
-    previewSnd(5, 360, "ok")
+    previewRcv(3, bob, 130, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(1, 1))),
+    previewRcv(4, carol, 140, previewText("Glad to be here")),
+    previewRcv(5, carol, 240, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(2, 2))),
+    previewRcv(6, bob, 300, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(3, 3))),
+    previewSnd(7, 360, "ok")
   )
 }
 
