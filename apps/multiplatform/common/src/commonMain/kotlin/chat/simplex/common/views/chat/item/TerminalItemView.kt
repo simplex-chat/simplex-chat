@@ -435,9 +435,10 @@ fun TerminalChatItemRow(
     },
     modifier.fillMaxWidth()
   ) { measurables, constraints ->
-    val nameStart = gutter.roundToPx()
     val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
     val avatar = measurables[0].measure(looseConstraints)
+    val avatarStart = (CHAT_ITEM_TEXT_PADDING.toPx() + (bodyFontSize * INTER_SIDE_BEARING).toPx() - TERMINAL_AVATAR_OVERSHOOT.toPx()).roundToInt()
+    val nameStart = if (avatar.width > 0) avatarStart + avatar.width else gutter.roundToPx()
     val name = measurables[1].measure(looseConstraints.copy(maxWidth = (constraints.maxWidth - nameStart).coerceAtLeast(0)))
     val message = measurables[2].measure(looseConstraints)
     val avatarOffset = (name.height - avatar.height) / 2
@@ -449,9 +450,8 @@ fun TerminalChatItemRow(
     val lettersTop = if (startsWithCard || firstBaseline == AlignmentLine.Unspecified) 0 else firstBaseline - ceil((bodyFontSize * INTER_CAP_HEIGHT).toPx()).toInt()
     val belowAvatar = if (avatar.height > 0) avatarTop + avatar.height + TERMINAL_AVATAR_TEXT_GAP.roundToPx() - lettersTop else 0
     val messageTop = max(belowName, belowAvatar)
-    val avatarStart = CHAT_ITEM_TEXT_PADDING.toPx() + (bodyFontSize * INTER_SIDE_BEARING).toPx() - TERMINAL_AVATAR_OVERSHOOT.toPx()
     layout(constraints.maxWidth, max(messageTop + message.height, avatarTop + avatar.height)) {
-      avatar.placeRelative(avatarStart.roundToInt(), avatarTop)
+      avatar.placeRelative(avatarStart, avatarTop)
       name.placeRelative(nameStart, nameTop)
       message.placeRelative(0, messageTop)
     }
