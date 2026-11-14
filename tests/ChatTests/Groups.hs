@@ -1685,8 +1685,13 @@ testGroupStatusMessages =
     threadDelay 1000000
     alice ##> sendStatus "" "Run type check"
     alice <## "bad chat command: feature not allowed Status messages"
-    (bob </)
-    (cath </)
+    alice `send` "#team <- #team Run unit tests 42 s"
+    alice <# "#team <- you #team"
+    alice <## "      Run unit tests 42 s"
+    bob <# "#team alice> -> forwarded"
+    bob <## "      Run unit tests 42 s"
+    cath <# "#team alice> -> forwarded"
+    cath <## "      Run unit tests 42 s"
   where
     sendStatus live text = "/_send #1" <> live <> " json [{\"msgContent\": {\"type\": \"status\", \"text\": \"" <> text <> "\"}}]"
     statusUpdated cc pref = do

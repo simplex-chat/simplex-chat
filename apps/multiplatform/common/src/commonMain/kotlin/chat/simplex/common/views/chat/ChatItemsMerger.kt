@@ -12,11 +12,13 @@ data class MergedItems (
   val splits: List<SplitRange>,
   // chat item id, index in list
   val indexInParentItems: Map<Long, Int>,
+  val revealedIds: Set<Long> = emptySet(),
 ) {
   companion object {
     fun create(items: List<ChatItem>, unreadCount: State<Int>, revealedItems: Set<Long>, chatState: ActiveChatState): MergedItems {
       if (items.isEmpty()) return MergedItems(emptyList(), emptyList(), emptyMap())
 
+      val revealedIds = revealedStatusRuns(items, revealedItems)
       val unreadAfterItemId = chatState.unreadAfterItemId
       val itemSplits = chatState.splits.value
       val mergedItems = ArrayList<MergedItem>()
@@ -42,8 +44,8 @@ data class MergedItems (
         }
         if (item.isRcvNew) unreadBefore--
 
-        val revealed = item.mergeCategory == null || revealedItems.contains(item.id)
-        if (recent is MergedItem.Grouped && recent.items.first().item.mergesWith(item) && !revealedItems.contains(recent.items.first().item.id) && !itemIsSplit) {
+        val revealed = item.mergeCategory == null || revealedIds.contains(item.id)
+        if (recent is MergedItem.Grouped && recent.items.first().item.mergesWith(item) && !revealedIds.contains(recent.items.first().item.id) && !itemIsSplit) {
           val listItem = ListItem(item, prev, next, unreadBefore)
           recent.items.add(listItem)
 
@@ -61,7 +63,7 @@ data class MergedItems (
           val listItem = ListItem(item, prev, next, unreadBefore)
           recent = if (item.mergeCategory != null) {
             if (!item.mergesWith(prev) || lastRevealedIdsInMergedItems == null) {
-              lastRevealedIdsInMergedItems = if (revealedItems.contains(item.id)) mutableListOf(item.id) else mutableListOf()
+              lastRevealedIdsInMergedItems = if (revealedIds.contains(item.id)) mutableListOf(item.id) else mutableListOf()
             } else if (revealed) {
               lastRevealedIdsInMergedItems += item.id
             }
@@ -102,8 +104,21 @@ data class MergedItems (
       return MergedItems(
         mergedItems,
         splitRanges,
-        indexInParentItems
+        indexInParentItems,
+        revealedIds
       )
+    }
+
+    private fun revealedStatusRuns(items: List<ChatItem>, revealedItems: Set<Long>): Set<Long> {
+      var revealedIds = revealedItems
+      for (i in items.lastIndex - 1 downTo 0) {
+        val item = items[i]
+        val older = items[i + 1]
+        if (item.mergeCategory == CIMergeCategory.Status && item.id !in revealedIds && older.id in revealedIds && item.mergesWith(older)) {
+          revealedIds = revealedIds + item.id
+        }
+      }
+      return revealedIds
     }
   }
 }

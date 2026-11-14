@@ -151,12 +151,16 @@ Preferences.hs GroupFeatureI, RoleI           GFStatusMessages with role
 Preferences.hs allGroupFeatures               unchanged: GFStatusMessages is left out, so no feature items
 Preferences.hs groupFeatureIn*                True, so the CLI command is accepted in groups and channels
 Protocol.hs prohibitedStatus                  MCStatus and the role below the preference
-Protocol.hs groupRcvContent                   prohibited MCStatus becomes MCText with the text
+Protocol.hs allowedGroupContent               prohibited MCStatus becomes MCText with the text
 Protocol.hs eventHasNotification              False for x.msg.new with MCStatus; used for every notification flag
+Protocol.hs isStatusMsgBody                   a stored message body is x.msg.new with MCStatus
 Internal.hs prohibitedGroupContent            sent and prohibitedStatus: Just GFStatusMessages
+Internal.hs sendPendingGroupMessages          no notification flag when all pending messages are status messages
 Commands.hs APIUpdateChatItem, group          prohibitedStatus: the same error
-Subscriber.hs newGroupContentMessage content  groupRcvContent with the sender's role, owner for a post as the group
-Subscriber.hs groupMessageUpdate              groupRcvContent
+Commands.hs APIForwardChatItems, to a group   allowedGroupContent with the user's role: forwarded as text where it is off
+Subscriber.hs newGroupContentMessage content  allowedGroupContent with the sender's role, owner for a post as the group
+Subscriber.hs groupMessageUpdate              allowedGroupContent
+Terminal/Output.hs chatEventNotification      no notification and no active chat change for a status message, new or updated
 Commands.hs parser                            /set status #GROUP on|off [ROLE]
 View.hs viewGroupUpdated                      a change of statusMessages is shown in "updated group preferences:"
 bots TypeInfo.hs                              StatusMessagesGroupPreference as RoleGroupPreference
@@ -170,7 +174,7 @@ group, off      never                          error "feature not allowed Status
 direct chat     always                         sent                                          MCStatus
 ```
 
-The apps get no UI: GroupPreferences decoding ignores unknown keys, and no item names the feature.
+The apps get no UI and no item names the feature. The apps keep `statusMessages`, `sessions` and `comments` when they re-encode the group preferences after an edit (SimpleXAPI.kt and ChatTypes.swift GroupPreferences, FullGroupPreferences, toGroupPreferences), so an edit in the app does not turn them off.
 
 ### 3.3 Kotlin
 
@@ -190,7 +194,9 @@ ChatItemView.kt ContentItem                   collapsed run: newest item and Sta
 ComposeView.kt                                MCStatus branches of chatItemPreview and the edited content
 TerminalItemView.kt textOnly                  MCStatus, as MCText
 ChatView.kt previews, SnapshotTest.kt         four scenes, references
-ChatItemsMergerTest.kt                        runs split by sender and by a text item
+ChatItemsMerger.kt revealedStatusRuns        a new status of an expanded run is revealed too; ChatView reads MergedItems.revealedIds
+ChatItemsMergerTest.kt                        runs split by sender and by a text item; an expanded run stays expanded
+GroupPreferencesTest.kt                       an app round trip keeps statusMessages, sessions and comments
 ```
 
 `LocalRevealedItems` sets the revealed items of a preview.
@@ -203,7 +209,8 @@ ChatTypes.swift MsgContent                     .status(text:), coding "status"
 ChatTypes.swift CIMergeCategory, mergeCategory status
 ChatTypes.swift mergesWith                     as Kotlin
 ChatTypes.swift showNotification               false for a received status message, in the app and the NSE
-ChatItemsMerger.swift MergedItems.create       mergesWith
+ChatItemsMerger.swift MergedItems.create       mergesWith; revealedStatusRuns, as Kotlin
+ChatView.swift ChatItemWithMenu.revealed       the revealed flag of the merged row
 ChatModel.swift getPrevShownChatItem, names    mergesWith
 ChatView.swift ranges, chatItemWithMenu        mergesWith; tap toggles; collapsed run with count
 MarkedDeletedItemView.swift                    mergesWith
@@ -216,6 +223,7 @@ SnapshotTests.swift                            four scenes: Classic/TerminalStat
 place                                    change
 Hub.createSessionGroup                   groupPreferences.statusMessages = {enable: on}
 step lines of ep/mcp-step-lines          {type: "status", text} when the session group has statusMessages on; {type: "text", text} otherwise
+final update of a live step line         {type: "text", text} when the preference was turned off after the line started
 ```
 
 The plugin bundles core 7.1.3, so these rows wait for a core release with `status`, in a later plugin commit.
@@ -225,8 +233,9 @@ The plugin bundles core 7.1.3, so these rows wait for a core release with `statu
 ```
 test                                                                       place
 JSON round trip of status; no notification flag                           tests/ProtocolTests.hs
-groupRcvContent: off, role below, role met                                 tests/ProtocolTests.hs
-group: off refuses, /set status #team on owner, member refused, live and final update, off refuses again   tests/ChatTests/Groups.hs
+allowedGroupContent: off, role below, role met; isStatusMsgBody            tests/ProtocolTests.hs
+group: off refuses, /set status #team on owner, member refused, live and final update, off refuses again, forward as text   tests/ChatTests/Groups.hs
+app round trip of statusMessages, sessions and comments                    GroupPreferencesTest.kt, SnapshotTests.swift
 status in a direct chat                                                    tests/ChatTests/Direct.hs
 regenerated API docs                                                       tests/APIDocs.hs
 MergedItems: one run per sender, a text ends a run                         ChatItemsMergerTest.kt

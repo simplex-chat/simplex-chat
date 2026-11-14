@@ -2470,7 +2470,7 @@ fun BoxScope.ChatItemsList(
           largeGap = older != null && getItemSeparationLargeGap(older, merged.oldest().item),
           hasSenderRow = showAvatar
         )
-        val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
+        val isRevealed = remember { derivedStateOf { mergedItems.value.revealedIds.contains(item.id) } }
         val eventGapBelow = if (LocalTerminalLayout.current) null else eventRunLargeGap(item, listItem.prevItem)
         val itemSeparation = rowItemSeparation(merged).let { if (eventGapBelow == null) it else it.copy(timestamp = it.timestamp || eventGapBelow, largeGap = eventGapBelow) }
         val eventGapAbove = if (LocalTerminalLayout.current) null else eventRunLargeGap(merged.oldest().item, older)

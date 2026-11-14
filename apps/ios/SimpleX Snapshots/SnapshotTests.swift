@@ -169,6 +169,20 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(voiceMessageTime_(nil), "00:00")
         XCTAssertEqual(voiceMessageTime_(TimeInterval(Int.max)), "00:00")
     }
+
+    func testGroupPreferencesRoundTrip() throws {
+        let json = """
+        {"timedMessages":{"enable":"off"},"directMessages":{"enable":"off"},"fullDelete":{"enable":"off"},"reactions":{"enable":"on"},\
+        "voice":{"enable":"on"},"files":{"enable":"on"},"simplexLinks":{"enable":"on"},"reports":{"enable":"on"},"history":{"enable":"on"},\
+        "support":{"enable":"on"},"signMessages":{"enable":"off"},"sessions":{"enable":"on","role":"admin"},\
+        "comments":{"enable":"on","duration":3600},"statusMessages":{"enable":"on","role":"owner"},"commands":[]}
+        """
+        let full = try JSONDecoder().decode(FullGroupPreferences.self, from: Data(json.utf8))
+        let prefs = try JSONDecoder().decode(GroupPreferences.self, from: JSONEncoder().encode(toGroupPreferences(full)))
+        XCTAssertEqual(prefs.sessions, RoleGroupPreference(enable: .on, role: .admin))
+        XCTAssertEqual(prefs.comments, CommentsGroupPreference(enable: .on, duration: 3600))
+        XCTAssertEqual(prefs.statusMessages, RoleGroupPreference(enable: .on, role: .owner))
+    }
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {

@@ -828,8 +828,13 @@ isStatus = \case
 prohibitedStatus :: FullGroupPreferences -> GroupMemberRole -> MsgContent -> Bool
 prohibitedStatus prefs role mc = isStatus mc && not (groupFeatureMemberAllowed' SGFStatusMessages role prefs)
 
-groupRcvContent :: FullGroupPreferences -> GroupMemberRole -> MsgContent -> MsgContent
-groupRcvContent prefs role mc
+isStatusMsgBody :: ByteString -> Bool
+isStatusMsgBody body = case J.eitherDecodeStrict' body :: Either String (ChatMessage 'Json) of
+  Right ChatMessage {chatMsgEvent = XMsgNew MsgContainer {content = MCStatus {}}} -> True
+  _ -> False
+
+allowedGroupContent :: FullGroupPreferences -> GroupMemberRole -> MsgContent -> MsgContent
+allowedGroupContent prefs role mc
   | prohibitedStatus prefs role mc = MCText $ msgContentText mc
   | otherwise = mc
 

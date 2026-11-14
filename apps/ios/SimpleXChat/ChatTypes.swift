@@ -1779,6 +1779,9 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var history: GroupPreference
     public var support: GroupPreference
     public var signMessages: GroupPreference
+    public var sessions: RoleGroupPreference
+    public var comments: CommentsGroupPreference
+    public var statusMessages: RoleGroupPreference
     public var commands: [ChatBotCommand]
 
     public init(
@@ -1793,6 +1796,9 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         history: GroupPreference,
         support: GroupPreference,
         signMessages: GroupPreference,
+        sessions: RoleGroupPreference = RoleGroupPreference(enable: .off, role: nil),
+        comments: CommentsGroupPreference = CommentsGroupPreference(enable: .off),
+        statusMessages: RoleGroupPreference = RoleGroupPreference(enable: .off, role: nil),
         commands: [ChatBotCommand]
     ) {
         self.timedMessages = timedMessages
@@ -1806,6 +1812,9 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         self.history = history
         self.support = support
         self.signMessages = signMessages
+        self.sessions = sessions
+        self.comments = comments
+        self.statusMessages = statusMessages
         self.commands = commands
     }
 
@@ -1837,6 +1846,9 @@ public struct GroupPreferences: Codable, Hashable {
     public var history: GroupPreference?
     public var support: GroupPreference?
     public var signMessages: GroupPreference?
+    public var sessions: RoleGroupPreference?
+    public var comments: CommentsGroupPreference?
+    public var statusMessages: RoleGroupPreference?
     public var commands: [ChatBotCommand]?
 
     public init(
@@ -1851,6 +1863,9 @@ public struct GroupPreferences: Codable, Hashable {
         history: GroupPreference? = nil,
         support: GroupPreference? = nil,
         signMessages: GroupPreference? = nil,
+        sessions: RoleGroupPreference? = nil,
+        comments: CommentsGroupPreference? = nil,
+        statusMessages: RoleGroupPreference? = nil,
         commands: [ChatBotCommand]? = nil
     ) {
         self.timedMessages = timedMessages
@@ -1864,6 +1879,9 @@ public struct GroupPreferences: Codable, Hashable {
         self.history = history
         self.support = support
         self.signMessages = signMessages
+        self.sessions = sessions
+        self.comments = comments
+        self.statusMessages = statusMessages
         self.commands = commands
     }
 
@@ -1895,6 +1913,9 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         history: fullPreferences.history,
         support: fullPreferences.support,
         signMessages: fullPreferences.signMessages,
+        sessions: fullPreferences.sessions,
+        comments: fullPreferences.comments,
+        statusMessages: fullPreferences.statusMessages,
         commands: fullPreferences.commands
     )
 }
@@ -1950,6 +1971,16 @@ public struct TimedMessagesGroupPreference: Codable, Equatable, Hashable {
     public init(enable: GroupFeatureEnabled, ttl: Int? = nil) {
         self.enable = enable
         self.ttl = ttl
+    }
+}
+
+public struct CommentsGroupPreference: Codable, Equatable, Hashable {
+    public var enable: GroupFeatureEnabled
+    public var duration: Int?
+
+    public init(enable: GroupFeatureEnabled, duration: Int? = nil) {
+        self.enable = enable
+        self.duration = duration
     }
 }
 

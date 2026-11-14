@@ -234,14 +234,16 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "status message has no notification" $ do
     eventHasNotification (XMsgNew (mcSimple (MCStatus "Run unit tests"))) `shouldBe` False
     eventHasNotification (XMsgNew (mcSimple (MCText "hello"))) `shouldBe` True
+    isStatusMsgBody "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"Run unit tests\",\"type\":\"status\"}}}" `shouldBe` True
+    isStatusMsgBody "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}" `shouldBe` False
   it "status message in a group without the status preference is text" $ do
     let statusMC = MCStatus "Run unit tests"
         statusFor minRole = mergeGroupPreferences $ Just $ setGroupPreferenceRole SGFStatusMessages FEOn minRole Nothing
-    groupRcvContent defaultGroupPrefs GROwner statusMC `shouldBe` MCText "Run unit tests"
-    groupRcvContent (statusFor Nothing) GRMember statusMC `shouldBe` statusMC
-    groupRcvContent (statusFor $ Just GROwner) GRMember statusMC `shouldBe` MCText "Run unit tests"
-    groupRcvContent (statusFor $ Just GROwner) GROwner statusMC `shouldBe` statusMC
-    groupRcvContent defaultGroupPrefs GRMember (MCText "hello") `shouldBe` MCText "hello"
+    allowedGroupContent defaultGroupPrefs GROwner statusMC `shouldBe` MCText "Run unit tests"
+    allowedGroupContent (statusFor Nothing) GRMember statusMC `shouldBe` statusMC
+    allowedGroupContent (statusFor $ Just GROwner) GRMember statusMC `shouldBe` MCText "Run unit tests"
+    allowedGroupContent (statusFor $ Just GROwner) GROwner statusMC `shouldBe` statusMC
+    allowedGroupContent defaultGroupPrefs GRMember (MCText "hello") `shouldBe` MCText "hello"
   it "x.msg.new simple link" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"
       #==# XMsgNew (mcSimple (MCLink "https://simplex.chat" $ LinkPreview {uri = "https://simplex.chat", title = "SimpleX Chat", description = "SimpleX Chat", image = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA", content = Nothing}))

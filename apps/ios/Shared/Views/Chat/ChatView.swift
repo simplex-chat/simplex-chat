@@ -1758,7 +1758,10 @@ struct ChatView: View {
         @State private var swipeOffset: CGFloat = 0
         @State private var swipeExclusionFrames: [CGRect] = []
 
-        var revealed: Bool { revealedItems.contains(chatItem.id) }
+        var revealed: Bool {
+            if case let .grouped(_, revealed, _, _, _, _, _, _) = merged { return revealed }
+            return revealedItems.contains(chatItem.id)
+        }
 
         private var memberImageSize: CGFloat {
             scaledMemberImageSize(userFont)

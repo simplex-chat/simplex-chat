@@ -24,10 +24,12 @@ struct MergedItems: Hashable, Equatable {
         hasher.combine("\(items.hashValue)")
     }
 
-    static func create(_ im: ItemsModel, _ revealedItems: Set<Int64>) -> MergedItems {
+    static func create(_ im: ItemsModel, _ revealedSet: Set<Int64>) -> MergedItems {
         if im.reversedChatItems.isEmpty {
             return MergedItems(im: im, items: [], splits: [], indexInParentItems: [:])
         }
+
+        let revealedItems = revealedStatusRuns(im.reversedChatItems, revealedSet)
 
         let unreadCount = im.chatState.unreadTotal
 
@@ -123,6 +125,20 @@ struct MergedItems: Hashable, Equatable {
             splits: splitRanges,
             indexInParentItems: indexInParentItems
         )
+    }
+
+    private static func revealedStatusRuns(_ items: [ChatItem], _ revealedSet: Set<Int64>) -> Set<Int64> {
+        var revealedIds = revealedSet
+        var i = items.count - 2
+        while i >= 0 {
+            let item = items[i]
+            let older = items[i + 1]
+            if item.mergeCategory == .status && !revealedIds.contains(item.id) && revealedIds.contains(older.id) && item.mergesWith(older) {
+                revealedIds.insert(item.id)
+            }
+            i -= 1
+        }
+        return revealedIds
     }
 
     // Use this check to ensure that mergedItems state based on currently actual state of global

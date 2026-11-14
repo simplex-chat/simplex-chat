@@ -1121,8 +1121,9 @@ processChatCommand cxt nm = \case
       case L.nonEmpty cmrs of
         Just cmrs' ->
           withGroupLock "forwardChatItem, to group" toChatId $ do
-            gInfo <- withFastStore $ \db -> getGroupInfoKeys db cxt user toChatId
-            sendGroupContentMessages user gInfo toScope sendAsGroup False itemTTL False cmrs'
+            gInfo@(GIK GroupInfo {fullGroupPreferences, membership} _) <- withFastStore $ \db -> getGroupInfoKeys db cxt user toChatId
+            let allowedReq (cm@ComposedMessage {msgContent = mc}, fwdFrom, fwdTexts, fwdMentions) = (cm {msgContent = allowedGroupContent fullGroupPreferences (memberRole' membership) mc} :: ComposedMessage, fwdFrom, fwdTexts, fwdMentions)
+            sendGroupContentMessages user gInfo toScope sendAsGroup False itemTTL False (L.map allowedReq cmrs')
         Nothing -> pure $ CRNewChatItems user []
     CTLocal -> do
       cmrs <- prepareForward user

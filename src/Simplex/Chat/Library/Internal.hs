@@ -2916,7 +2916,7 @@ sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM
 sendPendingGroupMessages user gInfo GroupMember {groupMemberId} conn = do
   msgs <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
-    void $ batchSendConnMessages gInfo user conn MsgFlags {notification = True} msgs'
+    void $ batchSendConnMessages gInfo user conn MsgFlags {notification = not (all (\SndMessage {msgBody} -> isStatusMsgBody msgBody) msgs')} msgs'
     lift . void . withStoreBatch' $ \db -> L.map (\SndMessage {msgId} -> deletePendingGroupMessage db groupMemberId msgId) msgs'
 
 saveDirectRcvMSG :: forall e. MsgEncodingI e => Connection -> MsgMeta -> ChatMessage e -> CM (Connection, RcvMessage)

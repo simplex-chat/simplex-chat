@@ -166,15 +166,16 @@ class ChatItemsMergerTest {
       item(6L, claude, MsgContent.MCStatus("Edit src/core.ts")),
       item(5L, claude, MsgContent.MCStatus("Read src/core.ts")),
     )
-    val merged = MergedItems.create(items, mutableStateOf(0), emptySet(), ActiveChatState())
-    assertEquals(
-      listOf(listOf(10L, 9L), listOf(8L), listOf(7L), listOf(6L, 5L)),
-      merged.items.map { m ->
-        when (m) {
-          is MergedItem.Grouped -> m.items.map { it.item.id }
-          is MergedItem.Single -> listOf(m.item.item.id)
-        }
+    fun rows(merged: MergedItems) = merged.items.map { m ->
+      when (m) {
+        is MergedItem.Grouped -> m.items.map { it.item.id }
+        is MergedItem.Single -> listOf(m.item.item.id)
       }
-    )
+    }
+    val merged = MergedItems.create(items, mutableStateOf(0), emptySet(), ActiveChatState())
+    assertEquals(listOf(listOf(10L, 9L), listOf(8L), listOf(7L), listOf(6L, 5L)), rows(merged))
+    val expanded = MergedItems.create(items, mutableStateOf(0), setOf(9L), ActiveChatState())
+    assertEquals(listOf(listOf(10L), listOf(9L), listOf(8L), listOf(7L), listOf(6L, 5L)), rows(expanded))
+    assertEquals(setOf(9L, 10L), expanded.revealedIds)
   }
 }
