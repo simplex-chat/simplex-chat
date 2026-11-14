@@ -169,6 +169,63 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(voiceMessageTime_(nil), "00:00")
         XCTAssertEqual(voiceMessageTime_(TimeInterval(Int.max)), "00:00")
     }
+
+    @MainActor
+    func testLongFileNameExtensionShown() throws {
+        for c in ["a", "\u{05E9}"] {
+            let name = String(repeating: c, count: 200)
+            for end in ["", ".", ". ."] {
+                XCTAssertNotEqual(try fileItemImage("\(name).txt\(end)"), try fileItemImage("\(name).pdf\(end)"), "\(c)\(end)")
+            }
+        }
+    }
+
+    @MainActor
+    func testFileNameControlAndTextDirectionCharactersShown() throws {
+        for c in ["\n", "\u{2028}", "\u{202E}", "\u{2066}"] {
+            XCTAssertNotEqual(try fileItemImage("a.txt\(c)"), try fileItemImage("a.txt"), c.unicodeScalars.map { String(format: "U+%04X", $0.value) }.joined())
+        }
+    }
+
+    @MainActor
+    func testLinkAlertShowsFullHost() throws {
+        let host = Array(repeating: String(repeating: "a", count: 60), count: 3).joined(separator: ".") + ".example.com"
+        let userInfo = String(repeating: "a", count: 180)
+        let path = String(repeating: "b", count: 200)
+        XCTAssertEqual(try linkAlert("https://example.com/page?q=1").message, "https://example.com/page?q=1")
+        XCTAssertEqual(try linkAlert("https://example.com/\(path)").message, "https://example.com/\(path.prefix(140))…")
+        XCTAssertEqual(try linkAlert("https://\(host)/\(path)").message, "https://\(host)…")
+        XCTAssertEqual(try linkAlert("https://\(userInfo)@example.com?q=\(path)").message, "https://\(userInfo)@example.com…")
+        XCTAssertEqual(try linkAlert("ftp://example.com/file").title, "Invalid link")
+    }
+}
+
+@MainActor
+private func fileItemImage(_ fileName: String) throws -> Data {
+    let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+    let item = CIFileView(chat: Chat.sampleData, file: CIFile.getSample(fileName: fileName), meta: CIMeta.getSample(1, previewDate, ""))
+        .environmentObject(ChatModel.shared)
+        .environmentObject(snapshotTheme(false).toAppTheme())
+    let window = UIWindow(windowScene: windowScene)
+    window.overrideUserInterfaceStyle = .light
+    window.rootViewController = UIHostingController(rootView: item)
+    window.frame = CGRect(x: 0, y: 0, width: 300, height: 200)
+    window.isHidden = false
+    settle()
+    let image = windowImage(window)
+    window.isHidden = true
+    window.rootViewController = nil
+    return try XCTUnwrap(image.pngData())
+}
+
+@MainActor
+private func linkAlert(_ uri: String) throws -> UIAlertController {
+    openBrowserAlert(uri: uri)
+    settle()
+    let alert = try XCTUnwrap(getTopViewController() as? UIAlertController)
+    alert.dismiss(animated: false)
+    settle()
+    return alert
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {
