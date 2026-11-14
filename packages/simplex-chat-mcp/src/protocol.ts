@@ -102,7 +102,7 @@ export interface TextBatch {
 
 // spec: spec/architecture.md#protocol-attachline
 export interface AttachLine {
-  prompt?: {text: string; from: string; item: number; file?: string; replyTo?: {item?: number; from?: string}}
+  prompt?: {text: string; from: string; item: number; file?: string; replyTo?: {item?: number; from?: string}; edited?: boolean}
   permission?: {requestId: string; behavior: "allow" | "deny"}
   tools?: ApprovedTool[]
 }

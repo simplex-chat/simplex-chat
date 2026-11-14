@@ -902,6 +902,52 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([57, 57, 58].map(quotedItemId => [{text: "This reaction is not supported.", quotedItemId}]))
   })
 
+  const received = (...items: T.ChatItem[]): ChatEvent => ({type: "newChatItems", user, chatItems: items.map(ci => event(sessionGroup, ci))}) as unknown as ChatEvent
+  const updated = (ci: T.ChatItem, edited = true): ChatEvent => ({type: "chatItemUpdated", user, chatItem: event(sessionGroup, {...ci, meta: {...ci.meta, itemEdited: edited}})}) as unknown as ChatEvent
+
+  it("passes an edit of a passed prompt with the same item and edited, with the quote line of a reply, once per new text, and nothing for an edit to a command, of a message not passed, of User's message or an update without an edit", async () => {
+    const chat = new FakeChat()
+    const {hub, session, lines} = await channel(chat)
+    hub.userContactId = 6
+    const sessionUser = {...member(1006, "User"), memberContactId: 6}
+    const reply = (text: string): T.ChatItem => ({...item(44, text, from(invitedAlice)), quotedItem: {chatDir: from(bob), itemId: 35, sentAt: "", content: {type: "text", text: "Meet at 9"}}}) as unknown as T.ChatItem
+    await hub["onEvent"](received(item(43, "Run the tests", from(invitedAlice)), reply("Who?"), item(47, "Fix the build", from(sessionUser))))
+    await until(() => lines.length === 2)
+    for (const update of [
+      updated(item(43, "Run the unit tests", from(invitedAlice))),
+      updated(item(43, "Run the unit tests", from(invitedAlice))),
+      updated(reply("Who said it?")),
+      updated(item(45, "Never passed", from(invitedAlice))),
+      updated(item(43, "/'approve 1'", from(invitedAlice))),
+      updated(item(47, "Fix the tests", from(sessionUser))),
+      updated(item(43, "Run all tests", from(invitedAlice)), false),
+    ]) await hub["onEvent"](update)
+    await until(() => lines.length === 4)
+    await session["delivery"]
+    expect(lines).toEqual([
+      {prompt: {text: "Run the tests", from: "Alice", item: 43}},
+      {prompt: {text: "> Meet at 9\nWho?", from: "Alice", item: 44, replyTo: {item: 35, from: "Bob"}}},
+      {prompt: {text: "Run the unit tests", from: "Alice", item: 43, edited: true}},
+      {prompt: {text: "> Meet at 9\nWho said it?", from: "Alice", item: 44, replyTo: {item: 35, from: "Bob"}, edited: true}},
+    ])
+    expect(answers(chat)).toEqual([])
+  })
+
+  it("passes a message typed in live mode once, at its final version, and an edit after it as edited", async () => {
+    const chat = new FakeChat()
+    const {hub, lines} = await channel(chat)
+    await hub["onEvent"](received(item(50, "Ru", from(invitedAlice), {live: true})))
+    await hub["onEvent"](updated(item(50, "Run th", from(invitedAlice), {live: true}), false))
+    await hub["onEvent"](updated(item(50, "Run the tests", from(invitedAlice), {live: false}), false))
+    await until(() => lines.length === 1)
+    await hub["onEvent"](updated(item(50, "Run all tests", from(invitedAlice), {live: false})))
+    await until(() => lines.length === 2)
+    expect(lines).toEqual([
+      {prompt: {text: "Run the tests", from: "Alice", item: 50}},
+      {prompt: {text: "Run all tests", from: "Alice", item: 50, edited: true}},
+    ])
+  })
+
   it("quotes in the prompt of a reaction to a reply the reacted message, not the message that the reply quotes", async () => {
     const chat = new FakeChat()
     const {hub, lines} = await channel(chat)
