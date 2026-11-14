@@ -70,6 +70,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             logger.debug("CallController chat started \(chatIsReady) \(ChatModel.shared.chatInitialized) \(ChatModel.shared.chatRunning == true) \(String(describing: AppChatState.shared.value))")
             if !chatIsReady {
                 action.fail()
+                await MainActor.run { suspendOnEndCall() }
                 return
             }
             if !ChatModel.shared.callInvitations.values.contains(where: { inv in inv.callUUID == action.callUUID.uuidString.lowercased() }) {
@@ -87,6 +88,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                 } else {
                     logger.debug("CallController.provider will fail the call")
                     action.fail()
+                    suspendOnEndCall()
                 }
             }
         }
@@ -167,6 +169,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func suspendOnEndCall() {
         if shouldSuspendChat {
+            let endTask = beginBGTask()
             // The delay allows to accept the second call before suspending a chat
             // see `.onChange(of: scenePhase)` in SimpleXApp
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
@@ -176,6 +179,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                     suspendChat()
                     BGManager.shared.schedule()
                 }
+                endTask()
             }
         }
     }
@@ -225,6 +229,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                 self.provider.reportNewIncomingCall(with: uuid, update: update) { error in
                     if error != nil {
                         m.callInvitations.removeValue(forKey: contactId)
+                        DispatchQueue.main.async { self.suspendOnEndCall() }
                     }
                     // Tell PushKit that the notification is handled.
                     completion()
@@ -232,10 +237,12 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             } else {
                 logger.debug("CallController will expire call 1")
                 self.reportExpiredCall(update: update, completion)
+                return
             }
         } else {
             logger.debug("CallController will expire call 2")
             self.reportExpiredCall(payload: payload, completion)
+            return
         }
 
         //DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
