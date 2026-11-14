@@ -650,7 +650,7 @@ private struct ChatRows: View {
             scrollToItem: { _ in },
             scrollToItemId: .constant(nil),
             merged: mergedItem,
-            olderRow: mergedItems.items.indices.contains(index + 1) ? mergedItems.items[index + 1] : nil,
+            olderRow: mergedItems.olderShownRow(of: mergedItem),
             listWidth: width,
             maxWidth: rowMaxWidth(ci, mergedItem, chat.chatInfo, width),
             composeState: .constant(ComposeState()),
