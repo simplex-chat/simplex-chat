@@ -36,8 +36,9 @@ export class Activity {
   private readonly ended = new Set<string>()
   private readonly asking = new Set<string>()
   private readonly compacting = new Set<string>()
+  private readonly idle = new Set<string>()
 
-  constructor(private readonly name: string) {}
+  constructor(private readonly name: string, private readonly turnsEnded: () => void) {}
 
   // spec: spec/architecture.md#activity-activity-record
   record(event: unknown): void {
@@ -82,10 +83,11 @@ export class Activity {
         this.compacting.delete(session)
         return
       case "UserPromptSubmit":
+        return this.clear(session)
       case "Stop":
       case "StopFailure":
       case "SessionEnd":
-        return this.clear(session)
+        return this.endTurn(session)
     }
   }
 
@@ -109,6 +111,14 @@ export class Activity {
     deleteWhere(this.subagents, subagent => subagent.session === session)
     this.asking.delete(session)
     this.compacting.delete(session)
+    this.idle.delete(session)
+  }
+
+  // spec: spec/architecture.md#activity-activity-join
+  private endTurn(session: string): void {
+    this.clear(session)
+    this.idle.add(session)
+    if ([...this.sessions].every(followed => this.idle.has(followed))) this.turnsEnded()
   }
 }
 

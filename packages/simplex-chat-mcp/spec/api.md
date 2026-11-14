@@ -502,6 +502,7 @@ Deletion, at the first of:
 | a tick: 23 hours after the status was created | [`Statuses.tick`](../src/status.ts) |
 | `send` with `live: true`, 23 hours or more after the status was created; a new status is created with the note | [`Statuses.show`](../src/status.ts) |
 | a tick: 50 renders or more, no running call other than `receive`, and 30 minutes since a call last started or ended | [`Statuses.tick`](../src/status.ts) |
+| a `Stop`, `StopFailure` or `SessionEnd` of the status hooks after which no agent session runs a turn ([5.2](#52-events)), while no call runs; a waiting status is kept | [`Activity.record`, `endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts), the `Activity` of [`startAgent`](../src/serve.ts) |
 | a failed send or update of the status | [`Statuses.created`, `failed`](../src/status.ts) |
 | the stop of `serve` or of the plugin's service | [`Statuses.stop`](../src/status.ts), `stop` in [`startAgent`](../src/serve.ts), [`Hub.stop`](../src/hub.ts) |
 
@@ -1367,8 +1368,10 @@ Effects on the agent session, by `hook_event_name` ([`Activity.record`](../src/a
 | `SubagentStop` | the subagent of `agent_id` is removed |
 | `PreCompact` | the compaction flag is set |
 | `PostCompact` | the compaction flag is cleared |
-| `UserPromptSubmit`<br>`Stop`<br>`StopFailure`<br>`SessionEnd` | the running tools and subagents of the session are removed, and both flags are cleared ([`Activity.clear`](../src/activity.ts)) |
+| `UserPromptSubmit` | the running tools and subagents of the session are removed, and both flags are cleared; the session runs a turn ([`Activity.clear`](../src/activity.ts)) |
+| `Stop`<br>`StopFailure`<br>`SessionEnd` | as `UserPromptSubmit`, and the session's turn has ended; when no agent session runs a turn, `Statuses.turnsEnded` is called, and the status messages other than waiting ones are deleted while no call runs ([1.10](#110-status-message), [`Activity.endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts)) |
 
+- A session runs a turn from its first event with a tool of this server, and from its `UserPromptSubmit`, until its `Stop`, `StopFailure` or `SessionEnd`. Other events leave the turn unchanged, so an end event of a tool received after `Stop` leaves the turn ended ([`Activity.record`, `clear`, `endTurn`](../src/activity.ts)).
 - Running tools and subagents are kept up to 64 each, and ended IDs up to 256; beyond a limit, the earliest entry is removed ([`maxEntries`, `maxEnded`, `keepNewest`](../src/activity.ts)).
 - Claude Code runs each hook in a separate process, so the posts of one session may be received out of order; for an end event received before its `PreToolUse`, the ID is kept as ended, and the late `PreToolUse` is skipped ([`Activity.record`](../src/activity.ts)).
 - Labels are chosen from the state of all agent sessions together: the permission flag and the compaction flag of any of them, the running tool recorded last and the subagent recorded last ([`Activity.state`](../src/activity.ts), [1.10](#110-status-message)).

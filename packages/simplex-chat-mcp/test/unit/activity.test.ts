@@ -9,7 +9,7 @@ function ownCall(session: string): object {
 }
 
 function joined(...sessions: string[]): Activity {
-  const activity = new Activity("agent")
+  const activity = new Activity("agent", () => undefined)
   for (const session of sessions) activity.record(ownCall(session))
   return activity
 }
@@ -22,7 +22,7 @@ function runningTool(name: unknown, input: unknown = {}): ActivityState["tool"] 
 
 describe("Claude Code activity", () => {
   it("tracks a session from its first event with a tool of this server, and ignores other sessions and the servers of other agents", () => {
-    const activity = new Activity("agent")
+    const activity = new Activity("agent", () => undefined)
     activity.record(event("PreToolUse", {tool_name: "Bash", tool_use_id: "t1"}))
     activity.record(event("PreToolUse", {tool_name: "mcp__simplex-agent2__receive", tool_use_id: "t2"}))
     activity.record(event("PreToolUse", {tool_name: "mcp__simplex-other__receive", tool_use_id: "t3"}))
@@ -129,6 +129,37 @@ describe("Claude Code activity", () => {
     }
     const kept = {asking: true, compacting: true, tool: {session: "s2", name: "Grep"}, subagent: {session: "s2", name: "Explore"}}
     expect(states).toEqual(ends.flatMap(() => [kept, {asking: false, compacting: false}]))
+  })
+
+  it("reports the end of the turns at each Stop, StopFailure or SessionEnd after which no agent session runs a turn; a session runs one from its first event with a tool of this server and from its UserPromptSubmit", () => {
+    let ends = 0
+    const activity = new Activity("agent", () => ends++)
+    const endsAfter = (name: string, session: string, fields: object = {}): number => {
+      activity.record(event(name, fields, session))
+      return ends
+    }
+    expect(endsAfter("Stop", "s0")).toBe(0)
+    activity.record(ownCall("s1"))
+    activity.record(ownCall("s2"))
+    expect(endsAfter("Stop", "s1")).toBe(0)
+    expect(endsAfter("PostToolUse", "s1", {tool_name: "Bash", tool_use_id: "t1"})).toBe(0)
+    expect(endsAfter("PostToolUse", "s1", {tool_name: "mcp__simplex-agent__receive", tool_use_id: "receive s1"})).toBe(0)
+    expect(endsAfter("StopFailure", "s2", {error: "rate_limit"})).toBe(1)
+    expect(endsAfter("UserPromptSubmit", "s2", {prompt: "next"})).toBe(1)
+    expect(endsAfter("SessionEnd", "s1", {reason: "clear"})).toBe(1)
+    expect(endsAfter("Stop", "s2")).toBe(2)
+    expect(endsAfter("SessionEnd", "s2", {reason: "prompt_input_exit"})).toBe(3)
+  })
+
+  it("reports the end of the turns without a session that was dropped during its turn", () => {
+    let ends = 0
+    const activity = new Activity("agent", () => ends++)
+    for (let n = 0; n < 16; n++) activity.record(ownCall(`s${n}`))
+    for (let n = 1; n < 16; n++) activity.record(event("Stop", {}, `s${n}`))
+    expect(ends).toBe(0)
+    activity.record(ownCall("s16"))
+    activity.record(event("Stop", {}, "s16"))
+    expect(ends).toBe(1)
   })
 
   it("keeps 16 sessions and drops the oldest with its activity", () => {

@@ -128,6 +128,7 @@ Status messages with Claude Code's work, after steps 1 and 2 of "Status messages
 5. Stop `serve`, and ask a Claude Code session to run `ls`: Claude Code runs it, and the failures of the hooks are hidden. Start `serve` again, and run `/mcp reconnect all`.
 6. `mkdir /tmp/cc`, `echo '[]' > /tmp/cc/settings.json`, then `CLAUDE_CONFIG_DIR=/tmp/cc node dist/cli.js register my-agent`: it prints `Added to Claude Code: scope user, server simplex-my-agent. /tmp/cc/settings.json is not a valid settings file; add these status hooks to it: {"hooks":{...}}` and exits with code 1, and the file still holds `[]`.
 7. In a new folder outside a git repository, for example `/tmp/project`, `node <this folder>/dist/cli.js register my-agent --scope local` prints `Added to Claude Code: scope local, server simplex-my-agent, status hooks in /tmp/project/.claude/settings.local.json.`, and that file has the hooks.
+8. Give Claude Code the prompt of step 2 of "Status messages" without `Answer my stop message there too before you finish.`, and send `stop` from the app. When Claude Code ends its turn without an answer, the status message is deleted at once. Send another prompt: `◐ received, waiting for the agent · 0:00` is shown and kept.
 
 Stop and restart:
 

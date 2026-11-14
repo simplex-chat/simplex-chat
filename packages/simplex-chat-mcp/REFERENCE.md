@@ -398,10 +398,11 @@ The server deletes the status message for everyone:
 - at the next update or check once the conditions above are no longer met in the chat, for example after `/revoke`, or after the agent loses its control chat;
 - 23 hours after the start, at the next check or note; a note at that age is shown in a new status message;
 - from the 50th version, 30 minutes after the last start or end of one of the agent's calls, at the next check, while the agent runs no call other than `receive`;
+- with the [status hooks](#status-hooks), at the end of a turn after which no Claude Code session that the server follows runs a turn, while the agent runs no call, unless the label is `received, waiting for the agent`;
 - at an error of a command for the status message, with `status of CHAT: ERROR` logged;
 - when the server stops.
 
-When the agent ends its turn without an answer in that chat, for example after a message it leaves unanswered, the status message is shown until one of the other deletions above, such as the agent's next wait in a `receive` of that chat. If no call of the agent follows the `receive` that started it, the status message is deleted about 35 minutes after the start, at the first check at least 30 minutes after that `receive` ended.
+When the agent ends its turn without an answer in that chat, for example after a message it leaves unanswered, the status message is deleted with the status hooks at the end of that turn, when the other sessions that the server follows have ended theirs and the agent runs no call. Without the status hooks, the status message is shown until one of the other deletions above, such as the agent's next wait in a `receive` of that chat. If no call of the agent follows the `receive` that started it, the status message is then deleted about 35 minutes after the start, at the first check at least 30 minutes after that `receive` ended.
 
 At the start, before it accepts calls, the server deletes its own live messages younger than 29 hours 50 minutes in the chats where these conditions are met: the status messages left by a crash.
 
@@ -431,6 +432,7 @@ Notifications, by each recipient's apps:
 With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-agent-to-claude-code)), Claude Code passes its events to curl, which posts them to `http://127.0.0.1:PORT/hook` of the agent's server, with the token.
 
 - The server follows a session of Claude Code from its first event with a tool of this agent, such as `mcp__simplex-my-agent__receive`, and ignores the events of other sessions. It follows at most 16 sessions, and drops the oldest one with its state.
+- A followed session runs a turn from its first event and from each `UserPromptSubmit`, until its `Stop`, `StopFailure` or `SessionEnd`. At the end of a turn after which no followed session runs a turn, while the agent runs no call, the server deletes the status messages, except those with the label `received, waiting for the agent`.
 - Of each event, the server uses only `hook_event_name`, `session_id`, `tool_name`, `tool_use_id`, `agent_id`, `agent_type`, and the base name of `tool_input.file_path` or `tool_input.notebook_path`. The rest of the event, prompts, commands, file contents and tool results included, is discarded after parsing; nothing of it is saved or logged.
 - A file's base name is kept only when it consists of 1 to 64 ASCII letters, digits and characters of `_.+@-`. Tool names and subagent types follow the same rule, with `_` and `-` as the only characters besides ASCII letters and digits.
 - At most 64 running tools and 64 running subagents are kept, and 256 IDs of ended tool calls; the oldest is dropped.
@@ -445,7 +447,8 @@ With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-age
 | `SubagentStop` | its subagent ended |
 | `PreCompact` | compaction running |
 | `PostCompact` | compaction ended |
-| `UserPromptSubmit`, `Stop`, `StopFailure`, `SessionEnd` | all its tools, subagents, permission prompt and compaction ended |
+| `UserPromptSubmit` | all its tools, subagents, permission prompt and compaction ended; a turn running |
+| `Stop`, `StopFailure`, `SessionEnd` | all its tools, subagents, permission prompt and compaction ended; its turn ended |
 
 - Claude Code runs curl in the background and hides the outcome outside verbose mode (Ctrl+O), so the failures of the posts while the server is stopped are hidden too.
 - The server checks the token, `Host` and `Origin` of a request to `/hook` as for `/mcp`. It answers a `POST` with 204, or with 411 without Content-Length, 413 for a body over 4 MiB and 400 for invalid JSON, and another method with 405.

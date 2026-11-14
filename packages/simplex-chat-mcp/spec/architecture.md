@@ -57,6 +57,7 @@ flowchart LR
   http --> sdk --> tools
   http --> activity
   status --> activity
+  activity -->|"turnsEnded"| status
   tools --> actions
   actions <--> control
   tools --> messages
@@ -98,6 +99,7 @@ Data flow of a hook event:
 2. The server checks Host, Origin, token and path, then method, `Content-Length` and JSON, passes the event to `Activity.record` and answers 204 ([`startHttp`, `receiveHook`](../src/http.ts), [`startAgent`](../src/serve.ts)).
 3. The fields of the event are kept for agent sessions only ([`Activity.record`](../src/activity.ts), [API 5.2](api.md#52-events)).
 4. At each tick with a label read, `Activity.state` is read by `Statuses` ([`Statuses.label`](../src/status.ts), [`Activity.state`](../src/activity.ts)).
+5. At a `Stop`, `StopFailure` or `SessionEnd` after which no agent session runs a turn, `Statuses.turnsEnded` is called, and it ends the statuses other than waiting ones while no call runs ([`Activity.endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts)).
 
 ---
 
@@ -133,7 +135,7 @@ Start sequence, event dispatch and stop sequence of one agent.
 | <a id="serve-runningserver"></a>`RunningServer` | token, `ChatApi`, user, `Actions`, `stop` |
 | <a id="serve-serve"></a>`serve` | `startServer`, then SIGINT and SIGTERM handlers: the first signal stops, a second ends the stop wait |
 | <a id="serve-startserver"></a>`startServer` | inference poller with its key, data folder, lock, token, headers files, `ChatApi.init`, `startAgent`; cleanup on error |
-| <a id="serve-startagent"></a>`startAgent` | user, `prepareCore`, control group, wiring of `Actions`, `Activity`, `AgentTools` with the inference poller and the activity, `Control`, leftover status messages, HTTP with `Activity.record` for `/hook`, event handler, `stop` |
+| <a id="serve-startagent"></a>`startAgent` | user, `prepareCore`, control group, wiring of `Actions`, `Activity` with `Statuses.turnsEnded`, `AgentTools` with the inference poller and the activity, `Control`, leftover status messages, HTTP with `Activity.record` for `/hook`, event handler, `stop` |
 | <a id="serve-registerhint"></a>`registerHint` | the `register` command line printed after the owner setup |
 | <a id="serve-waitforstopmessages"></a>`waitForStopMessages` | the fixed wait at stop for cards edited or posted at the stop and for status deletions, used by the plugin's hub as well |
 | <a id="serve-inferencekey"></a>`inferenceKey` | `SIMPLEX_MCP_INFERENCE_KEY`: visible ASCII characters, otherwise `ExitError` with code 2 |
@@ -356,6 +358,7 @@ Status messages: one per chat, owned by `AgentTools` (the `statuses` field and t
 | <a id="status-statuses-queue"></a>`queue` | a waiting status for a chat without one, before the stop; its first tick at once |
 | <a id="status-statuses-start"></a>`start` | `queue`, with the label `thinking`; a waiting status taken: the label `thinking`, rendered at once from 1 to 58 renders |
 | <a id="status-statuses-show"></a>`show` | a note: refused after the stop; a status 23 h old replaced; refused at 59 renders; rendered at once; a new status scheduled |
+| <a id="status-statuses-turnsended"></a>`turnsEnded` | called by `Activity` when no agent session runs a turn: while no call runs, every status other than a waiting one ended |
 | <a id="status-statuses-end"></a>`end` | the status removed, its timer cleared, `LiveMessage.end("")` kept among the deletions in progress |
 | <a id="status-statuses-stop"></a>`stop` | every status ended, the deletions awaited; the count of statuses with a render returned |
 | <a id="status-statuses-deleteleftovers"></a>`deleteLeftovers` | the agent's own live message items of a chat, younger than 30 h − 10 min, read in pages of 100 and deleted with mode `broadcast` |
@@ -450,17 +453,17 @@ rateOf(decoding, previous):                                    rateOf
 
 ### [2.13 `activity.ts`](../src/activity.ts)
 
-Claude Code activity from the events of the status hooks, created in `startAgent` with the agent NAME, passed to `startHttp` for `/hook` and to `AgentTools` in `Agent.activity` ([`startAgent`](../src/serve.ts)). Fields and events are listed in [API 5.2](api.md#52-events).
+Claude Code activity from the events of the status hooks, created in `startAgent` with the agent NAME and `Statuses.turnsEnded` of its `AgentTools`, passed to `startHttp` for `/hook` and to `AgentTools` in `Agent.activity` ([`startAgent`](../src/serve.ts)). Fields and events are listed in [API 5.2](api.md#52-events).
 
 | Symbol | Contents |
 |---|---|
 | <a id="activity-running"></a>`Running` | a running tool: session, `agent_id`, tool name, file name |
 | <a id="activity-activitystate"></a>`ActivityState` | permission flag, compaction flag, the latest running tool, the latest subagent |
 | <a id="activity-constants"></a>constants, from `maxSessions` to `filePattern` | 16 sessions; 64 running tools and 64 subagents; 256 ended IDs; the name pattern `^[\w-]{1,64}$`; the file name pattern `^[\w.+@-]{1,64}$` |
-| <a id="activity-activity"></a>`Activity` | agent sessions; running tools by `tool_use_id`; subagents by `agent_id`; ended tool IDs; sessions with the permission flag; sessions with the compaction flag |
+| <a id="activity-activity"></a>`Activity` | agent sessions; running tools by `tool_use_id`; subagents by `agent_id`; ended tool IDs; sessions with the permission flag; sessions with the compaction flag; sessions whose turn has ended; the function called when no agent session runs a turn |
 | <a id="activity-activity-record"></a>`record` | one event: its fields read by type and pattern, the agent session joined, the effect of its `hook_event_name` |
 | <a id="activity-activity-state"></a>`state` | both flags over all agent sessions; the last entries of the running tools and of the subagents |
-| <a id="activity-activity-join"></a>`join`, `clear` | an agent session added, the earliest one removed with its state beyond 16; the running tools, subagents and flags of one session removed |
+| <a id="activity-activity-join"></a>`join`, `clear`, `endTurn` | an agent session added, the earliest one removed with its state beyond 16; the running tools, subagents, flags and turn end of one session removed; a session cleared and its turn ended, and `turnsEnded` called when every agent session has ended its turn |
 | <a id="activity-filename"></a>`fileName`, `keepNewest`, `deleteWhere` | the base name of `file_path` or `notebook_path`, by its pattern; the earliest entry removed beyond a limit; entries removed by a predicate |
 
 - `basename` of `path` and `fieldOf` and `textOf` of `inference.ts` are imported at run time (the imports of [`activity.ts`](../src/activity.ts)).
@@ -484,13 +487,13 @@ Claude Code activity from the events of the status hooks, created in `startAgent
 | Rejected files | [`AgentTools.rejectedFiles`](../src/tools.ts) | [`downloadResult`](../src/tools.ts) | the file field; [`download`](../src/tools.ts), which then skips the files approval |
 | Count of file descriptions | [`AgentTools.describedFiles`](../src/tools.ts), with the change signal `fileDescriptions` | `onFileDescription` | `fileServers` |
 | Chats being left | [`AgentTools.leaving`](../src/tools.ts) | [`leaveChat`](../src/tools.ts) | [`statusRefusal`](../src/tools.ts) |
-| Status messages | [`Statuses.statuses`](../src/status.ts), one per chat | `queue`, `start`, `show`, `end` | ticks, `queue`, `start`, `show`, `stop` |
-| Running calls | [`Statuses.calls`, `Statuses.lastCall`](../src/status.ts) | `startCall`, from [`AgentTools.call`](../src/tools.ts) | labels, the idle check of ticks |
+| Status messages | [`Statuses.statuses`](../src/status.ts), one per chat | `queue`, `start`, `show`, `end` | ticks, `queue`, `start`, `show`, `turnsEnded`, `stop` |
+| Running calls | [`Statuses.calls`, `Statuses.lastCall`](../src/status.ts) | `startCall`, from [`AgentTools.call`](../src/tools.ts) | labels, the idle check of ticks, `turnsEnded` |
 | Deletions in progress | [`Statuses.endings`](../src/status.ts) | `end` | `stop` |
 | Failed-poll flag | [`Statuses.inferenceFailed`](../src/status.ts) | `inferred` | `inferred` |
 | Last poll and previous slots | `latest` and `previous` of [`inferencePoller`](../src/inference.ts) | each poll | calls within 3 s; the rate of the next poll |
 | Agent sessions | [`Activity.sessions`](../src/activity.ts), at most 16 | `record` | `record` |
-| Claude Code activity | [`Activity.tools`, `subagents`, `ended`, `asking`, `compacting`](../src/activity.ts) | `record` | `record`; `state`, read by labels |
+| Claude Code activity | [`Activity.tools`, `subagents`, `ended`, `asking`, `compacting`, `idle`](../src/activity.ts) | `record` | `record`; `state`, read by labels |
 | Members of the control chat | [`Control.members`](../src/control.ts) | [`refreshMembers`](../src/control.ts) | approver checks |
 | Mode, expiry, owners list, stop wait, inference URL | `ServeOptions` of the run. The mode is kept in `Actions.mode` and in each action as well, [`ActionRecord.mode`](../src/actions.ts). | CLI | all modules |
 
@@ -858,6 +861,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | the base names of the files that Claude Code reads and edits are shown in the status message, so in a group every member sees them | [`toolLabel`](../src/status.ts) |
 | `/hook` is guarded by the token of `/mcp`, so a local process without the token can't change the labels; a body is read only within 4 MiB by `Content-Length` | [`startHttp`, `receiveHook`](../src/http.ts) |
 | a running tool whose end event is lost is removed at the next `PostToolBatch` of its agent; every entry of a session is removed at its `UserPromptSubmit`, `Stop`, `StopFailure` or `SessionEnd` | [`Activity.record`, `clear`](../src/activity.ts) |
+| status messages are deleted at the end of the turns only by the end events of agent sessions, while no call runs; a waiting status is kept, so a received message stays shown as received | [`Activity.record`, `endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts) |
 | poll error texts are folded to one line; the parser's text is replaced by `invalid JSON` | [`get`, `bodyJson`](../src/inference.ts) |
 | URL is `http` or `https` without user name and password; the key is read from the environment, accepted with visible ASCII characters only, and sent to URL only | [`inferenceUrl`](../src/cli.ts), [`inferenceKey`](../src/serve.ts), [`get`](../src/inference.ts) |
 | a proxy of `/running` is polled at its origin, without the key, only when its host name equals URL's, or when both are `localhost`, `127.0.0.1` or `[::1]`; at most 4 distinct proxies per poll | [`sample`, `allowedProxy`](../src/inference.ts) |

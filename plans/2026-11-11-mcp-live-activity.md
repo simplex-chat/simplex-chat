@@ -1,6 +1,6 @@
 # SimpleX MCP server 0.3.0: Claude Code activity in the status message
 
-Status: draft for review. Design of 2026-11-11; decisions 6 and 7 by the user; decision 8 of 2026-11-12 and decision 9 of 2026-11-13 at the user's request; decision 10 of 2026-11-13 after an end-to-end test. Code: stacked on the live status (`plans/2026-11-10-mcp-live-status.md`) at `0fa30e4f34`. Hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11.
+Status: draft for review. Design of 2026-11-11; decisions 6 and 7 by the user; decision 8 of 2026-11-12 and decision 9 of 2026-11-13 at the user's request; decision 10 of 2026-11-13 after an end-to-end test; decision 11 of 2026-11-14 at the user's request, after end-to-end tests with Claude Code 2.1.281. Code: stacked on the live status (`plans/2026-11-10-mcp-live-status.md`) at `0fa30e4f34`. Hook events: the Claude Code hooks reference (code.claude.com/docs/en/hooks.md) of 2026-11-11.
 
 Dependencies:
 1. The status message of `plans/2026-11-10-mcp-live-status.md`.
@@ -19,6 +19,7 @@ Dependencies:
 8. Arrival, 2026-11-12, at the user's request: after a `receive` with `typing: true` in a chat, the status is started at once at a message received there, as in section Arrival; about 25 changed lines in `src`.
 9. Every approved chat, 2026-11-13, at the user's request: `typing` is removed from `receive` (decision 23 of `plans/2026-11-10-mcp-live-status.md`); the status is queued at each message received in a chat that meets the conditions of status messages, by the chat of the event, as in section Arrival.
 10. Live arrival, 2026-11-13: a received live message queues the status at the update that completes it, with `itemLive` false and `itemEdited` false; edits queue none, as in section Arrival.
+11. Turn end, 2026-11-14: at a `Stop`, `StopFailure` or `SessionEnd` after which no agent session runs a turn, the statuses other than waiting ones are ended while no call of the agent runs, as in section Turn end; `serve` without the hooks is unchanged.
 
 ## Transport
 
@@ -79,6 +80,8 @@ subagents    agent_id → {session, name}, in start order; at most 64
 ended        tool_use_ids of end events without an entry in tools; the last 256
 asking       sessions with a permission prompt
 compacting   sessions compacting
+idle         sessions whose turn ended (decision 11)
+turnsEnded   the function called when every agent session is in idle (decision 11)
 ```
 
 ```
@@ -94,10 +97,10 @@ SubagentStart        subagents[agent_id] = {session, agent_type}
 SubagentStop         subagents[agent_id] deleted
 PreCompact           compacting set
 PostCompact          compacting cleared
-UserPromptSubmit     tools, subagents, asking and compacting of the session cleared
-Stop                 as UserPromptSubmit
-StopFailure          as UserPromptSubmit
-SessionEnd           as UserPromptSubmit
+UserPromptSubmit     tools, subagents, asking, compacting and idle of the session cleared
+Stop                 as UserPromptSubmit; then idle set; every agent session in idle: turnsEnded() (decision 11)
+StopFailure          as Stop
+SessionEnd           as Stop
 ```
 
 ```
@@ -199,7 +202,7 @@ waiting label    kept at the ticks of a waiting status; the label read only for 
 frozen line      ◌ received, waiting for the agent since YYYY-MM-DD HH:MM UTC for a waiting status;
                  ◌ working since YYYY-MM-DD HH:MM UTC otherwise
 lifetime         unchanged: the eligibility read at each tick; the deletion at the answer, at a receive of the chat that
-                 waits, at 23 h, when idle in the frozen phase, and at stop
+                 waits, at 23 h, when idle in the frozen phase, and at stop; kept at the end of the turns (decision 11)
 ```
 
 - At a message received while the chat has a status, the status is kept unchanged.
@@ -224,6 +227,48 @@ sequenceDiagram
   L->>C: apiSendMessages [◐ received, waiting for the agent · 0:00] live
   P->>C: an edit of a message
   C->>T: chatItemUpdated, itemEdited true: no arrival
+```
+
+## Turn end
+
+Decision 11.
+
+```
+item             rule
+turn             from the join of the session and from its UserPromptSubmit, until its Stop, StopFailure or SessionEnd
+                 (idle set); other events leave idle unchanged
+turnsEnded       Statuses.turnsEnded, bound in startAgent
+condition        at an end event: every agent session in idle
+effect           no running call of the agent: end(chat) for each status whose label is not the waiting label
+waiting status   kept: a message received while the agent is idle stays shown as received
+without hooks    no end event, so serve is unchanged
+```
+
+```
+Activity.endTurn(session):
+  clear(session)
+  idle.add(session)
+  every session of sessions in idle: turnsEnded()
+
+Statuses.turnsEnded():
+  a running call: return
+  for each status whose label is not "received, waiting for the agent": end(chat)
+```
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code hooks
+  participant H as HTTP /hook
+  participant Y as Activity
+  participant L as Statuses
+  participant C as Core
+  Note over CC,C: receive returned "stop" in @3; the status S of @3 is "thinking"
+  CC->>H: POST /hook {Stop, S1}
+  H->>Y: record: clear(S1), idle.add(S1)
+  Y->>Y: every agent session in idle
+  Y->>L: turnsEnded()
+  L->>L: no running call
+  L->>C: apiDeleteChatItems @3 [S] broadcast
 ```
 
 ## Threat model
@@ -303,12 +348,19 @@ tools.ts       Agent                 activity
                sendResult            decisions 8 and 9: the abort check after markRead; start at responses in a chat
                                      that meets the conditions
 messages.ts    completesLive         new, decision 10: itemLive false and itemEdited false
+activity.ts    Activity              decision 11: idle; the parameter turnsEnded
+               record                decision 11: Stop, StopFailure and SessionEnd by endTurn
+               clear                 decision 11: idle cleared
+               endTurn               new, decision 11
+status.ts      turnsEnded            new, decision 11
+serve.ts       startAgent            decision 11: Activity with tools.statuses.turnsEnded
 ```
 
 - `actions.ts`, `cli.ts`, `control.ts` and `log.ts` are unchanged; `messages.ts` only by decision 10.
 - Lines in `src`: 239 added, 115 of them in `activity.ts`, and 28 removed. `status.ts` has 211 lines (decision 18 of `plans/2026-11-10-mcp-live-status.md`: 192, up to 20% above).
 - Decision 8: 22 lines added and 6 removed in `src`; `status.ts` has 220 lines.
 - Decision 10: 12 lines added and 2 removed in `src`.
+- Decision 11: 19 lines added and 3 removed in `src`.
 
 ## Tests
 
@@ -320,6 +372,7 @@ messages.ts    completesLive         new, decision 10: itemLive false and itemEd
 - Decision 8, `test/unit/status.test.ts`: one queued status per chat, the waiting label at its ticks, `thinking` at once at the start, the labels after it; a start before the first post, posted as `thinking` after the eligibility read; the frozen waiting line, and the frozen working line at a later start; no queued status after the stop.
 - Decisions 8 and 9, `test/unit/messages.test.ts`: one waiting status for several messages received in an approved chat, `thinking` at once when a `receive` returns them; none, and no chat read, for an own or live message, a member support chat, a chat without the approval, or a chat with a bot; the waiting status of responses taken by their `send`.
 - Decision 10, `test/unit/messages.test.ts`: the waiting status at the update that completes a live message received in an approved chat; none while it is live, at its later edit, or at an edit of an older message. `test/unit/fixtures.ts`: `item` with `edited`.
+- Decision 11, `test/unit/activity.test.ts`: `turnsEnded` at each Stop, StopFailure or SessionEnd after which no agent session runs a turn; none for a session that is not an agent session, while another agent session runs a turn from its join or its UserPromptSubmit, or for an end event of a tool after Stop; a session dropped during its turn left out. `test/unit/status.test.ts`: with an `Activity` bound as in `startAgent`, no deletion while another session runs a turn or a call runs; then the statuses of a taken message and of a note deleted, and the waiting status kept.
 - Decisions 8 and 9, `test/e2e/scenarios.test.ts`: in the direct chat and in the group, the live item `◐ received, waiting for the agent · 0:00` at the prompt; in the direct chat, its update with `thinking` when `receive` returns the prompt.
 
 ## Docs
@@ -331,6 +384,7 @@ messages.ts    completesLive         new, decision 10: itemLive false and itemEd
 - `spec/`: `api.md`, `architecture.md`, `flows.md` and `README.md`; anchors remapped from `git diff -U0 0fa30e4f34`.
 - Decision 8: `README.md`, one sentence; `REFERENCE.md`, the start of a status and the labels table; `TESTING.md`, a step after `stop`; `PLAN.md`, the status message, `receive`, `send`, processing, tests and decisions of 2026-11-12; `spec/`, the rows of the waiting status, and anchors of `tools.ts` and `status.ts` remapped from `git diff -U0 e831b8e5c9`.
 - Decision 10: `REFERENCE.md`, the start of a status; `TESTING.md`, step 8 of the status messages; `plans/2026-10-19-mcp-server.md`, the status message, processing and decisions of 2026-11-13; `spec/`, the arrival rows, and anchors of `tools.ts` and `messages.ts` remapped from `git diff -U0 dc27ee21a`.
+- Decision 11: `REFERENCE.md`, the deletions of a status message, the turn of a followed session and the events table of the status hooks; `TESTING.md`, step 8 of the status messages with Claude Code's work; `plans/2026-10-19-mcp-server.md`, the deletions, the Claude Code activity and decisions of 2026-11-14; `spec/`, the deletion row, the events of `/hook`, the rows of `endTurn` and `turnsEnded`, and flow 38.
 
 ## Pull request
 
