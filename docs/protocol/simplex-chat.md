@@ -184,7 +184,7 @@ See `/definition/msgContent` in [JTD schema](./simplex-chat.schema.json) for mes
 
 Optional `priority` property of the container is an integer set by the sender: -1 or below is silent, 0 or absent is normal, 1 or above is high. Receiving clients show a silent message and count it as unread, without a notification, a sound or a push. The sending client, and the members and relays that forward the message, send it with the SMP notification flag off, unless it is sent in one SMP message with a normal message, or as a pending message when a member connects. Silent messages are accepted from every sender in every chat.
 
-High priority is accepted in groups only, from a member whose role is allowed by the group preference `msgPriority`, by default admins and owners; a channel post is checked with the owner role. A high priority message of another sender, of a member blocked by the recipient, and every high priority message in a direct chat is received as normal. Receiving clients treat a high priority message as a mention of the user: it notifies also in a chat set to notify about mentions only, and it is shown with a bell.
+High priority is accepted in groups only, from a member whose role is allowed by the group preference `msgPriority`, by default admins and owners; a channel post is checked with the owner role. A high priority message of another sender, of a member blocked by the recipient, a message forwarded as group history, sent before the recipient joined, and every high priority message in a direct chat is received as normal. Receiving clients treat a high priority message as a mention of the user: it notifies also in a chat set to notify about mentions only, and it is shown with a bell.
 
 Clients that do not support this property receive the message as normal.
 
@@ -194,7 +194,7 @@ This message is used to update previously created chat item. Its `params` proper
 
 If the referenced message does not exist, the clients MUST create a new chat item with the ID of the referenced message. If the referenced message is not a content message, the clients MUST ignore this message.
 
-Optional `priority` property with the value 1 or above raises the chat item to high priority, with or without a change of the content. It is accepted from the author of the item in the main scope of a group, when the author is allowed to send high priority messages; other values do not change the item priority. The sending client sends this update with the SMP notification flag on. An item already read stays read, and receiving clients notify about the raise once.
+Optional `priority` property with the value 1 or above raises the chat item to high priority, with or without a change of the content. It is accepted from the author of an item that is not deleted, in the main scope of a group, when the author is allowed to send high priority messages; other values do not change the item priority. A chat item created for a missing message has normal priority. The sending client sends this update with the SMP notification flag on. An item already read stays read, and receiving clients notify about the raise once.
 
 ### x.msg.del - request to delete previously sent message
 

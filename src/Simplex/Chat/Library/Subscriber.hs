@@ -2368,11 +2368,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     Nothing -> createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs) $> Nothing
               | otherwise = action
         updateCI :: ShowGroupAsSender -> ChatDirection 'CTGroup 'MDRcv -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
-        updateCI showGroupAsSender cd ci@ChatItem {meta = meta@CIMeta {priority = itemPriority_, userMention}} scopeInfo oldMC itemLive memberId = do
+        updateCI showGroupAsSender cd ci@ChatItem {meta = meta@CIMeta {priority = itemPriority_, userMention, itemDeleted}} scopeInfo oldMC itemLive memberId = do
           let changed = mc /= oldMC
               requested = maybe False (>= 1) priority_
               itemPriority = fromMaybe 0 itemPriority_
-              raise = requested && itemPriority < 1 && isNothing scopeInfo && rcvPriorityAllowed cd
+              raise = requested && itemPriority < 1 && isNothing scopeInfo && isNothing itemDeleted && rcvPriorityAllowed cd
               ciRaised = if raise then ci {meta = meta {priority = Just 1, userMention = True}} else ci
               priorityRaised = if raise then Just PriorityRaised {newAttention = not userMention, wasSilent = itemPriority < 0} else Nothing
           if changed || fromMaybe False itemLive || requested
@@ -4036,7 +4036,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         processForwardedMsg :: VerifiedMsg 'Json -> Maybe GroupMember -> CM ()
         processForwardedMsg verifiedMsg author_ = do
           rcvMsg_ <- saveGroupFwdRcvMsg user gInfo m author_ verifiedMsg brokerTs
-          forM_ rcvMsg_ $ \rcvMsg@RcvMessage {sharedMsgId_, chatMsgEvent = ACME _ event} -> case event of
+          forM_ (fromHistory <$> rcvMsg_) $ \rcvMsg@RcvMessage {sharedMsgId_, chatMsgEvent = ACME _ event} -> case event of
             XMsgNew mc ->
               void $ memberCanSend author_ scope $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
               where
@@ -4065,6 +4065,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             withAuthor tag action = case author_ of
               Just author -> action author
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
+        fromHistory :: RcvMessage -> RcvMessage
+        fromHistory rcvMsg@RcvMessage {chatMsgEvent = ACME e event}
+          | msgTs < joinedAt = (rcvMsg :: RcvMessage) {chatMsgEvent = ACME e (historyPriority event)}
+          | otherwise = rcvMsg
+        GroupMember {createdAt = joinedAt} = membership
 
     withVerifiedMsg :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> ParsedMsg e -> UTCTime -> (VerifiedMsg e -> CM a) -> CM (Maybe a)
     withVerifiedMsg gInfo@GroupInfo {membership} scopeInfo member@GroupMember {memberPubKey, memberId} (ParsedMsg _ signedMsg_ chatMsg@ChatMessage {chatMsgEvent}) ts action =

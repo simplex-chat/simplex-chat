@@ -854,7 +854,7 @@ processChatCommand cxt nm = \case
         then throwCmdError ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
         else do
           -- TODO [knocking] check chat item scope?
-          cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
+          (cci, itemScopeInfo) <- withFastStore $ \db -> (,) <$> getGroupCIWithReactions db user gInfo itemId <*> getGroupChatScopeInfoForItem db cxt user gInfo itemId
           case cci of
             CChatItem SMDSnd ci@ChatItem {meta = meta@CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgVerified, priority = itemPriority_}, content = ciContent} -> do
               case (ciContent, itemSharedMsgId, editable) of
@@ -862,7 +862,7 @@ processChatCommand cxt nm = \case
                   chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
                   recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
                   let changed = mc /= oldMC
-                      raise = maybe False ((== 1) . limitPriority) priority_ && fromMaybe 0 itemPriority_ < 1 && isNothing scope && groupFeatureUserAllowed SGFMsgPriority gInfo
+                      raise = maybe False ((== 1) . limitPriority) priority_ && fromMaybe 0 itemPriority_ < 1 && isNothing scope && isNothing itemScopeInfo && groupFeatureUserAllowed SGFMsgPriority gInfo
                   if changed || fromMaybe False itemLive || raise
                     then do
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions

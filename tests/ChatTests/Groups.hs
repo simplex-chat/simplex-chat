@@ -221,7 +221,7 @@ chatGroupTests = do
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "silent message" testGroupHistorySilent
-    it "high priority message" testGroupHistoryHighPriority
+    it "high priority message is received as normal" testGroupHistoryHighPriority
     it "history is sent when joining via group link" testGroupHistoryGroupLink
     it "file with badge proof is received from history" testGroupHistoryFileBadgeProof
     it "file received from member with badge proof is received from history" testGroupHistoryRcvFileBadgeProof
@@ -276,7 +276,7 @@ chatGroupTests = do
     it "raise priority by update" testGroupRaisePriority
     it "raise priority of live message" testGroupRaisePriorityLive
     it "raise priority below role and in support chat is ignored" testGroupRaisePriorityIgnored
-    it "update with priority of deleted item creates high priority item" testGroupRaisePriorityDeletedItem
+    it "update with priority of deleted item creates normal item" testGroupRaisePriorityDeletedItem
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
@@ -6494,8 +6494,8 @@ testGroupRaisePriorityDeletedItem =
       alice ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"mentions\": {}, \"priority\": 1}")
       alice <# "#team !! done"
       bob <# "#team alice!!> done"
-      cath <# "#team alice!!> [edited] done"
-      itemPriority cath "/_get chat #1 count=1" `shouldReturn` Just 1
+      cath <# "#team alice> [edited] done"
+      itemPriority cath "/_get chat #1 count=1" `shouldReturn` Nothing
 
 testGroupMsgForwardReaction :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReaction =
@@ -6827,15 +6827,15 @@ testGroupHistoryHighPriority ps = do
           [ alice <## "#team: cath joined the group",
             cath
               <### [ "#team: you joined the group",
-                     WithTime "#team bob!!> hey! [>>]",
+                     WithTime "#team bob> hey! [>>]",
                      "#team: member bob (Bob) is connected"
                    ],
             do
               bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
               bob <## "#team: new member cath is connected"
           ]
-        itemPriority cath "/_get chat #1 count=1 search=hey!" `shouldReturn` Just 1
-        readTVarIO rcvItems `shouldReturn` [("hey!", Just 1)]
+        itemPriority cath "/_get chat #1 count=1 search=hey!" `shouldReturn` Nothing
+        readTVarIO rcvItems `shouldReturn` [("hey!", Nothing)]
 
 testGroupHistoryGroupLink :: HasCallStack => TestParams -> IO ()
 testGroupHistoryGroupLink =
