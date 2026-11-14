@@ -1777,6 +1777,10 @@ struct ChatView: View {
             merged.revealItems(yes, $revealedItems)
         }
 
+        private func isHidden(_ ci: ChatItem) -> Bool {
+            if case .rcvIntegrityError = ci.content { !developerTools } else { false }
+        }
+
         func getItemSeparation(_ chatItem: ChatItem, _ prevItem: ChatItem?) -> ItemSeparation {
             guard let prevItem else {
                 return ItemSeparation(timestamp: true, largeGap: true, date: nil)
@@ -1790,9 +1794,10 @@ struct ChatView: View {
                 chatItem.chatDir.sent == prevItem.chatDir.sent
             }
             let largeGap = !sameMemberAndDirection || prevItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
+            let prevDeletedOrHidden = prevItem.meta.itemDeleted != nil || prevItem.isDeletedContent || isHidden(prevItem)
 
             return ItemSeparation(
-                timestamp: largeGap || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(prevItem.meta.itemTs),
+                timestamp: largeGap || prevDeletedOrHidden || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(prevItem.meta.itemTs),
                 largeGap: largeGap,
                 date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: prevItem.meta.itemTs) ? nil : prevItem.meta.itemTs
             )
@@ -1813,12 +1818,11 @@ struct ChatView: View {
             default: false
             }
             let itemSeparation = getItemSeparation(item, single || revealed ? listItem.prevItem: nil)
-            let hidden = if case .rcvIntegrityError = item.content { !developerTools } else { false }
             return VStack(spacing: 0) {
                 if let last {
                     DateSeparator(date: last.meta.itemTs).padding(8)
                 }
-                if !hidden {
+                if !isHidden(item) {
                     chatItemListView(range, showAvatar, item, itemSeparation)
                         .overlay {
                             if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
