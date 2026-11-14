@@ -17,7 +17,7 @@ import dev.icerock.moko.resources.compose.stringResource
 @Composable
 fun CIChatLinkHeader(
   chatLink: MsgChatLink,
-  ownerSig: LinkOwnerSig?,
+  signed: Boolean,
   hasText: Boolean,
 ) {
   Column(
@@ -65,7 +65,7 @@ fun CIChatLinkHeader(
         )
       }
       Text(
-        chatLink.infoLine(signed = ownerSig != null),
+        chatLink.infoLine(signed = signed),
         color = MaterialTheme.colors.secondary,
         fontSize = 13.sp,
         lineHeight = 18.sp,

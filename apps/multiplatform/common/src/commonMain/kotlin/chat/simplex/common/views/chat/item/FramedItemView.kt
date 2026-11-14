@@ -450,7 +450,7 @@ fun FramedItemView(
                       onLongClick = { showMenu.value = true }
                     )
                   ) {
-                    CIChatLinkHeader(chatLink = mc.chatLink, ownerSig = mc.ownerSig, hasText = hasText)
+                    CIChatLinkHeader(chatLink = mc.chatLink, signed = ci.chatLinkSigned, hasText = hasText)
                   }
                   if (hasText) {
                     CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp, stripLink = mc.chatLink.connLinkStr)
