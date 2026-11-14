@@ -2605,8 +2605,9 @@ private fun NotifyChatListOnFinishingComposition(
   listState: State<LazyListState>,
   onComposed: suspend (chatId: String) -> Unit
 ) {
+  val initialRevealedItems = LocalRevealedItems.current
   LaunchedEffect(chatInfo.id) {
-    revealedItems.value = emptySet()
+    revealedItems.value = initialRevealedItems
     snapshotFlow { listState.value.layoutInfo.visibleItemsInfo.lastIndex }
       .distinctUntilChanged()
       .collect {

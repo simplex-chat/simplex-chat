@@ -235,12 +235,12 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     eventHasNotification (XMsgNew (mcSimple (MCStatus "Run unit tests"))) `shouldBe` False
     eventHasNotification (XMsgNew (mcSimple (MCText "hello"))) `shouldBe` True
   it "status message in a group without the status preference is text" $ do
-    let status = MCStatus "Run unit tests"
-        statusFor role = mergeGroupPreferences $ Just $ setGroupPreferenceRole SGFStatus FEOn role Nothing
-    groupRcvContent defaultGroupPrefs GROwner status `shouldBe` MCText "Run unit tests"
-    groupRcvContent (statusFor Nothing) GRMember status `shouldBe` status
-    groupRcvContent (statusFor $ Just GROwner) GRMember status `shouldBe` MCText "Run unit tests"
-    groupRcvContent (statusFor $ Just GROwner) GROwner status `shouldBe` status
+    let statusMC = MCStatus "Run unit tests"
+        statusFor minRole = mergeGroupPreferences $ Just $ setGroupPreferenceRole SGFStatus FEOn minRole Nothing
+    groupRcvContent defaultGroupPrefs GROwner statusMC `shouldBe` MCText "Run unit tests"
+    groupRcvContent (statusFor Nothing) GRMember statusMC `shouldBe` statusMC
+    groupRcvContent (statusFor $ Just GROwner) GRMember statusMC `shouldBe` MCText "Run unit tests"
+    groupRcvContent (statusFor $ Just GROwner) GROwner statusMC `shouldBe` statusMC
     groupRcvContent defaultGroupPrefs GRMember (MCText "hello") `shouldBe` MCText "hello"
   it "x.msg.new simple link" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"

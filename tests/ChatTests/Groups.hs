@@ -1672,8 +1672,8 @@ testGroupStatusMessages =
     alice <# "#team [LIVE started] Run unit tests"
     bob <#. "#team alice> [LIVE started]"
     cath <#. "#team alice> [LIVE started]"
-    itemId <- lastItemId alice
-    alice ##> ("/_update item #1 " <> itemId <> " json {\"msgContent\": {\"type\": \"status\", \"text\": \"Run unit tests 42 s\"}, \"mentions\": {}}")
+    statusItemId <- lastItemId alice
+    alice ##> ("/_update item #1 " <> statusItemId <> " json {\"msgContent\": {\"type\": \"status\", \"text\": \"Run unit tests 42 s\"}, \"mentions\": {}}")
     alice <# "#team [LIVE] Run unit tests 42 s"
     bob <# "#team alice> [LIVE ended] Run unit tests 42 s"
     cath <# "#team alice> [LIVE ended] Run unit tests 42 s"

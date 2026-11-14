@@ -176,8 +176,8 @@ runGroupServiceAs svc groupCfg action = do
 
 settleServingLane :: HasCallStack => ChatController -> ServiceState -> Int64 -> IO ()
 settleServingLane cc env gid = do
-  status <- memberStatus cc gid badgeBotName
-  forM_ status $ \s -> unless (s `elem` ["removed", "left", "deleted"]) $ settleLane cc env gid
+  botStatus <- memberStatus cc gid badgeBotName
+  forM_ botStatus $ \s -> unless (s `elem` ["removed", "left", "deleted"]) $ settleLane cc env gid
 
 -- It returns once chat has started, while group start-up may still run; the Int is its web listener's port.
 startGroupService :: HasCallStack => GroupSvc -> Maybe GroupConfig -> IO (Async (), ChatController, ServiceState, Int)
@@ -1261,8 +1261,8 @@ awaitBroadcasts :: HasCallStack => ChatController -> Int64 -> Text -> TestCC -> 
 awaitBroadcasts cc joined name TestCC {chatController = memberCC} = do
   lastBroadcast <- listToMaybe <$> queryRows cc lastBroadcastSql (Only joined)
   forM_ lastBroadcast $ \(gid, sharedMsgId :: Text) -> do
-    status <- memberStatus cc gid name
-    when (maybe False (`notElem` ["removed", "left", "deleted"]) status) $
+    mStatus <- memberStatus cc gid name
+    when (maybe False (`notElem` ["removed", "left", "deleted"]) mStatus) $
       pollUntilTrue $ isJust <$> (queryFirst memberCC receivedSql (Only sharedMsgId) :: IO (Maybe Int64))
   where
     lastBroadcastSql =
