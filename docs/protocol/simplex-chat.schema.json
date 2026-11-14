@@ -121,7 +121,7 @@
         "live": {"type": "boolean"},
         "priority": {
           "type": "integer",
-          "metadata": {"comment": "-1 or below: silent, receiving clients do not alert; 0 or absent: normal; 1 or above: reserved for high priority, received as normal"}
+          "metadata": {"comment": "-1 or below: silent, receiving clients do not alert; 0 or absent: normal; 1 or above: high, in groups from members allowed by the preference msgPriority, otherwise received as normal"}
         },
         "quote": {
           "properties": {
@@ -485,7 +485,11 @@
           },
           "optionalProperties": {
             "ttl": {"type": "integer"},
-            "live": {"type": "boolean"}
+            "live": {"type": "boolean"},
+            "priority": {
+              "type": "integer",
+              "metadata": {"comment": "1 or above: raises the item to high priority, sent by its author in the main scope of a group; other values do not change the item"}
+            }
           }
         }
       }

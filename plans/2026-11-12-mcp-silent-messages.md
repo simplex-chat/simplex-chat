@@ -1,6 +1,6 @@
 # Silent messages
 
-Status: Q1, Q2 and Q3 answered A by the user on 2026-11-12; Q4, the two tiers of unread items asked for in the note on Q3, and Q5, the look of a silent-only count, answered B on 2026-11-13. On 2026-11-14 the user replaced Q2: silent and high priority ship together, as one message priority feature; section 11 is the delta to the approved priority plan, with Q6 and Q7 open. Code references: master `9d3241b06`. simplexmq at the commit of `cabal.project`, `71179c4d4`. Related plans: `2026-10-13-message-priority.md` (approved on 2026-10-13, not implemented), `2026-10-13-forwarded-notification-flag.md` (implemented by #7706).
+Status: Q1, Q2 and Q3 answered A by the user on 2026-11-12; Q4, the two tiers of unread items asked for in the note on Q3, and Q5, the look of a silent-only count, answered B on 2026-11-13. On 2026-11-14 the user replaced Q2: silent and high priority ship together, as one message priority feature; section 11 is the delta to the approved priority plan; Q6 and Q7 were decided A by the lead on 2026-11-14. Code references: master `9d3241b06`. simplexmq at the commit of `cabal.project`, `71179c4d4`. Related plans: `2026-10-13-message-priority.md` (approved on 2026-10-13, not implemented), `2026-10-13-forwarded-notification-flag.md` (implemented by #7706).
 
 ## 1. Goal
 
@@ -286,7 +286,9 @@ approved text                                      becomes
 2     PriorityRaised {newAttention}                adds wasSilent: a raised silent item leaves the gray tier
 6     migration M20261013_msg_priority             M20261113_item_priority, then M20261113_silent_indexes
 6     "indexes are unchanged"                      two partial indexes (Q4 B, decision 16)
-6     high priority sums inside ChatStats          Q7: a partial index counts both tiers
+6     high priority sums inside ChatStats          one partial index of group items with item_priority <> 0 counts both tiers
+                                                   (Q7 A, decided by the lead on 2026-11-14; closes the approved open question 1)
+2     cmPriority over msgPriority (built)           eventPriority: msgPriority is the field name of the group preference
 8     UnreadTag None | Unread | HighPriority        Read | Silent | Unread | HighPriority
 8     unreadTags, priorityTags                     unreadTags, priorityTags, silentTags
 10    Output.hs: notification for a raise          kept; the built silent checks stay; a raised item is no longer silent
@@ -344,9 +346,11 @@ A raise of a silent item, for an unread item: `unreadSilent` - 1, `unreadHighPri
 
 ### 11.5 Delivery
 
-One pull request carries the three parts: silent, the gray tier and high priority. `#8177` is not ready to merge and stays open until Q6 is answered.
+One pull request carries the three parts: silent, the gray tier and high priority, from the branch `ep/message-priority` (Q6 A). `#8177` is closed with a link to it when it opens.
 
 ### 11.6 Questions
+
+Q6 and Q7 were decided A by the lead on 2026-11-14.
 
 Q6. Which pull request carries it?
 - A, recommended: a new branch `ep/message-priority` from the head of `ep/mcp-silent-unread`, one new pull request "core, ui: message priority", and `#8177` closed with a link to it. The history and the review fixes are kept; the title, the branch and the page describe the whole feature.
