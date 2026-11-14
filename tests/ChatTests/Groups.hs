@@ -3747,6 +3747,7 @@ testGroupLinkIgnoreRelayJoinRequest ps =
       (gShortLink, _gLink) <- getGroupLinks alice "team" GRMember True
       sendMemberJoinRequest bob gShortLink
       alice <## "warning: memberJoinRequestViaRelay (group team): ignored relay join request from bob (group does not use relays)"
+      checkPendingInvitations alice 0
       alice ##> "/ms team"
       alice <## "alice (Alice): owner, you, created group"
 
@@ -12193,6 +12194,7 @@ testChannelRelayInvUnsigned ps =
       (cathSLink, _cLink) <- getContactLinks cath True
       sendUnsignedRelayInv alice cathSLink
       cath <##. "error: x.grp.relay.inv: invitation is not signed by the owner"
+      checkPendingInvitations cath 0
 
 sendUnsignedRelayInv :: TestCC -> String -> IO ()
 sendUnsignedRelayInv cc relayAddress =
