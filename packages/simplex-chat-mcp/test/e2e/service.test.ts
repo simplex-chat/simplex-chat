@@ -476,21 +476,21 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await hook({hook_event_name: "Stop", last_assistant_message: "Lint passes."})
   await alice.chat.apiSendTextReply(await linted, "Why so fast?")
   await until(() => attached.length === 4)
-  expect(attached[3]).toEqual({prompt: {text: "> Lint passes.…\nWhy so fast?", from: "Alice", item: expect.any(Number), replyTo: {item: expect.any(Number), from: "Claude"}}})
+  expect(attached[3]).toEqual({prompt: {text: "> Lint passes.\nWhy so fast?", from: "Alice", item: expect.any(Number), replyTo: {item: expect.any(Number), from: "Claude"}}})
   const testsPass = await passed
   const react = (emoji: string, add = true) => alice.chat.apiChatItemReaction(T.ChatType.Group, groupId, testsPass.chatItem.meta.itemId, add, {type: "emoji", emoji})
   await react("👍")
   await until(() => attached.length === 5)
   const reacted = (attached[4] as {prompt: {item: number}}).prompt.item
-  expect(attached[4]).toEqual({prompt: {text: "> Tests pass.…\n👍", from: "Alice", item: reacted, replyTo: {item: reacted, from: "Claude"}}})
+  expect(attached[4]).toEqual({prompt: {text: "> Tests pass.\n👍", from: "Alice", item: reacted, replyTo: {item: reacted, from: "Claude"}}})
   const thanked = updated(alice.chat, withEnd("Thanks.", testsPass.chatItem.meta.itemId))
-  await hook({hook_event_name: "UserPromptSubmit", prompt: `<channel source="plugin:simplex:simplex" from="Alice" item="${reacted}" reply_to="${reacted}" reply_to_from="Claude">\n> Tests pass.…\n👍\n</channel>`})
+  await hook({hook_event_name: "UserPromptSubmit", prompt: `<channel source="plugin:simplex:simplex" from="Alice" item="${reacted}" reply_to="${reacted}" reply_to_from="Claude">\n> Tests pass.\n👍\n</channel>`})
   await hook({hook_event_name: "Stop", last_assistant_message: "Thanks."})
   await thanked
   await react("👍", false)
   await react("🚀")
   await until(() => attached.length === 6)
-  expect((attached[5] as {prompt: {text: string}}).prompt.text).toBe("> Tests pass.…\n🚀")
+  expect((attached[5] as {prompt: {text: string}}).prompt.text).toBe("> Tests pass.\n🚀")
   const bash = {tool_name: "Bash", tool_input: {command: "npm test", description: "Run the tests"}, tool_use_id: "toolu_1"}
   const started = received(alice.chat, message("💻 Run the tests", "Claude"))
   await hook({hook_event_name: "PreToolUse", cwd: "/p", ...bash})

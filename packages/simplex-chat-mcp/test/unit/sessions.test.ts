@@ -788,7 +788,7 @@ describe("session channel", () => {
     expect(lines).toHaveLength(2)
   })
 
-  it("passes a member's reply to the session as the quote line and the text, with the ID and sender of the quoted message: Claude's answer, a card of several lines, a post of User, another member's prompt, an image whose quote has the file name, a video without text, and a message absent from the group", async () => {
+  it("passes a member's reply to the session as the quote line and the text, with the ID and sender of the quoted message: Claude's answer without its end line, a card of several lines, a post of User, another member's prompt, an image whose quote has the file name, a video without text, and a message absent from the group", async () => {
     const chat = new FakeChat()
     const {session, lines} = await channel(chat)
     const reply = (n: number, text: string, quotedItem: object): T.AChatItem => event(sessionGroup, {...item(n, text, from(invitedAlice)), quotedItem: {sentAt: "", ...quotedItem}} as unknown as T.ChatItem)
@@ -796,10 +796,10 @@ describe("session channel", () => {
     const text = (value: string): object => ({type: "text", text: value})
     const card = "I want to use `Bash`: `Run shell command`\n`rm -rf build`\n/'approve 3' or /'reject 3'"
     const replies = [
-      reply(43, "No, the other test", quoted({type: "groupSnd"}, 41, text("Fixed: the build passes."))),
+      reply(43, "No, the other test", quoted({type: "groupSnd"}, 41, text("Fixed: the build passes.\n!- Done in 2 min 51 s · 16K output tokens · 673K tokens in context · 5 h: 34% · week: 61%!"))),
       reply(44, "Why?", quoted({type: "groupSnd"}, 38, text(card))),
       reply(45, "Is it done?", quoted(from(member(8, "User")), 36, text("Fix the build"))),
-      reply(46, "Agreed", quoted(from(bob), 35, text("Run the tests"))),
+      reply(46, "Agreed", quoted(from(bob), 35, text("Run the tests\n!- Done!"))),
       reply(47, "What is it?", quoted(from(bob), 34, {type: "image", text: "IMG_2041.jpg", image: ""})),
       reply(48, "Play it", quoted(from(bob), 33, {type: "video", text: "", image: "", duration: 5})),
       reply(49, "Shorter", quoted({type: "groupSnd"}, 32, text("a".repeat(300)))),
@@ -811,7 +811,7 @@ describe("session channel", () => {
       {prompt: {text: "> Fixed: the build passes.\nNo, the other test", from: "Alice", item: 43, replyTo: {item: 41, from: "agent"}}},
       {prompt: {text: "> I want to use `Bash`: `Run shell command`…\nWhy?", from: "Alice", item: 44, replyTo: {item: 38, from: "agent"}}},
       {prompt: {text: "> Fix the build\nIs it done?", from: "Alice", item: 45, replyTo: {item: 36, from: "User"}}},
-      {prompt: {text: "> Run the tests\nAgreed", from: "Alice", item: 46, replyTo: {item: 35, from: "Bob"}}},
+      {prompt: {text: "> Run the tests…\nAgreed", from: "Alice", item: 46, replyTo: {item: 35, from: "Bob"}}},
       {prompt: {text: "> image: IMG_2041.jpg\nWhat is it?", from: "Alice", item: 47, replyTo: {item: 34, from: "Bob"}}},
       {prompt: {text: "> video\nPlay it", from: "Alice", item: 48, replyTo: {item: 33, from: "Bob"}}},
       {prompt: {text: `> ${"a".repeat(200)}…\nShorter`, from: "Alice", item: 49, replyTo: {item: 32, from: "agent"}}},
@@ -819,7 +819,7 @@ describe("session channel", () => {
     ])
   })
 
-  it("matches the prompt of a reply in the channel tag with the quote line and the reply attributes, escaped as Claude Code escapes them, so User posts nothing and the answer in the turn's opening message quotes the reply", async () => {
+  it("matches the prompt of a reply in the channel tag with the quote line and the reply attributes, escaped as Claude Code escapes them, so User posts nothing and the answer in the turn's opening message quotes the reply, with priority 1 in the update", async () => {
     const chat = new FakeChat()
     const {hub, session} = await channel(chat)
     const posts: string[] = []
@@ -827,19 +827,21 @@ describe("session channel", () => {
     const quoted = {chatDir: from(member(7, `Bob "B" O'Neil`)), itemId: 41, sentAt: "", content: {type: "text", text: 'Fixed: <b>the</b> build & "tests"'}}
     session.onMessage(event(sessionGroup, {...item(43, 'No, the other "test"', from(invitedAlice)), quotedItem: quoted} as unknown as T.ChatItem))
     await until(() => session["pushed"].length === 1)
+    const opening = chat.nextItemId
     await session.turn({id: id1, prompt: '<channel source="plugin:simplex:simplex" from="Alice" item="43" reply_to="41" reply_to_from="Bob &quot;B&quot; O&apos;Neil">\n> Fixed: <b>the</b> build & "tests"\nNo, the other "test"\n</channel>'})
     await session.turn({id: id1, answer: "Done."})
     expect(posts).toEqual([])
     expect(shown(chat)).toEqual([ended("Done.", 43)])
+    expect(chat.updatePriorities).toEqual([{itemId: opening, priority: 1}])
   })
 
-  it("passes a reaction of a member whose role sends as the quote line of the reacted message and the emoji, with the message's ID and sender, and nothing, with no reply to an unknown value either, for an observer, User, a removed reaction or a reaction in the Main group", async () => {
+  it("passes a reaction of a member whose role sends as the quote line of the reacted message, without the end line of Claude's answer, and the emoji, with the message's ID and sender, and nothing, with no reply to an unknown value either, for an observer, User, a removed reaction or a reaction in the Main group", async () => {
     const chat = new FakeChat()
     const {hub, lines} = await channel(chat)
     hub.userContactId = 6
     const sessionUser = {...member(1006, "User"), memberContactId: 6}
     const observer = member(11, "Oscar", T.GroupMemberRole.Observer)
-    const answer = item(57, "Tests pass: 212 of 212.", {type: "groupSnd"})
+    const answer = item(57, "Tests pass: 212 of 212.\n!- Done in 2.0 s!", {type: "groupSnd"})
     const prompt = item(46, "Run the tests", from(bob))
     for (const reacted of [
       reaction(sessionGroup, answer, observer, emoji("👍")),
@@ -1498,7 +1500,7 @@ describe("session channel", () => {
     expect(sentTo(chat, 20)).toHaveLength(1)
   })
 
-  it("keeps a text live after its final batch and finalizes it at the next step without the end line, or at the Stop hook with the end line", async () => {
+  it("keeps a text live after its final batch and finalizes it at the next step without the end line, or at the Stop hook with the end line and priority 1", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const opening = chat.nextItemId
@@ -1516,6 +1518,7 @@ describe("session channel", () => {
       {chatId: 20, itemId: opening + 1, text: "📖 Read build.log"},
       {chatId: 20, itemId: opening + 2, text: "All good.\n!- Done in 4 ms!"},
     ])
+    expect(chat.updatePriorities).toEqual([{itemId: opening + 2, priority: 1}])
     expect(chat.sent.filter(({chat: [, groupId]}) => groupId === 20).map(({messages, live}) => [messages[0].msgContent.text, live])).toEqual([["", true], ["📖 Read build.log", true], ["All good.", true]])
   })
 

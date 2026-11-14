@@ -1,7 +1,7 @@
 import {constants, mkdirSync, rmSync} from "fs"
 import {open} from "fs/promises"
 import {dirname, join} from "path"
-import {CEvt, ChatEvent, T} from "@simplex-chat/types"
+import {CC, CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, HostTexts, Mode, isDecided, maxPending} from "./actions"
 import {Config} from "./config"
@@ -307,7 +307,7 @@ export class Session {
     const {text} = content.msgContent
     if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([{text: commandsApproversOnly}], ci.chatItem.meta.itemId))
     if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
-    const replyTo = quotedItem === undefined ? undefined : toReplyTo(ci.chatInfo, quotedItem, {name: this.hub.profile.profile.displayName})
+    const replyTo = quotedItem === undefined ? undefined : toReplyTo(ci.chatInfo, {...quotedItem, content: withoutEndLine(quotedItem.content, quotedItem.chatDir)}, {name: this.hub.profile.profile.displayName})
     this.queue(() => this.prompt(ci, text, chatDir.groupMember, ci.chatItem.file, replyTo))
   }
 
@@ -317,7 +317,7 @@ export class Session {
     const {content} = chatItem
     if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || this.isUser(chatDir.groupMember) || (content.type !== "rcvMsgContent" && content.type !== "sndMsgContent")) return
     if (reaction.type !== "emoji" || !reactionEmoji.includes(reaction.emoji)) return this.refuseReaction(chatDir.groupMember, chatItem)
-    const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: content.msgContent, fileName: chatItem.file?.fileName}, {name: this.hub.profile.profile.displayName})
+    const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: withoutEndLine(content.msgContent, chatItem.chatDir), fileName: chatItem.file?.fileName}, {name: this.hub.profile.profile.displayName})
     this.queue(() => this.prompt({chatInfo, chatItem}, reaction.emoji, chatDir.groupMember, undefined, replyTo))
   }
 
@@ -533,7 +533,7 @@ export class Session {
     const quote = quoteOf(quoted, text)
     const parts = withLine(textParts(text, quote), end, quote).map((part, i, all) => ({text: part, priority: i === all.length - 1 ? 1 : -1}))
     const opened = await this.takeOpening(at)?.item
-    const filled = opened === undefined ? undefined : await this.fill(opened, parts[0].text, false, answerLines, undefined, end)
+    const filled = opened === undefined ? undefined : await this.fill(opened, parts[0].text, false, answerLines, undefined, end, parts.length === 1 ? 1 : undefined)
     if (filled === "refused") return
     const posted = filled === "filled" ? (parts.length > 1 ? this.post(parts.slice(1)) : undefined) : this.post(parts, quote === undefined ? undefined : quoted?.meta.itemId)
     await posted?.catch(error => this.postRefusal(error, answerLines.refused, featureOff, quoted?.meta.itemId, undefined, end))
@@ -571,9 +571,9 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-step
-  private async fill(itemId: number, text: string, live: boolean, kind: LineKind, onRefused?: () => void, line?: string): Promise<"filled" | "refused" | "failed"> {
+  private async fill(itemId: number, text: string, live: boolean, kind: LineKind, onRefused?: () => void, line?: string, priority?: number): Promise<"filled" | "refused" | "failed"> {
     try {
-      await this.updateItem(itemId, text, live)
+      await this.updateItem(itemId, text, live, priority)
       return "filled"
     } catch (error) {
       if (refusedFeature(error) === undefined) {
@@ -713,14 +713,14 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-text
-  private async updateText(text: LiveText, value: string, live: boolean): Promise<boolean> {
+  private async updateText(text: LiveText, value: string, live: boolean, priority?: number): Promise<boolean> {
     text.timer = undefined
     if (live && this.texts.get(text.id) !== text) return false
     const itemId = await text.item
     if (itemId === undefined) return false
     if (live && value === text.sent) return true
     try {
-      await this.updateItem(itemId, value, live)
+      await this.updateItem(itemId, value, live, priority)
       text.sent = value
       text.sentAt = Date.now()
       return true
@@ -739,7 +739,7 @@ export class Session {
   // spec: spec/architecture.md#hub-session-text
   private async endPart(text: LiveText, [first, ...rest]: string[], alert = false): Promise<void> {
     clearTimeout(text.timer)
-    const shown = text.item === undefined ? await this.postPart(text, first) : await this.updateText(text, first, false)
+    const shown = text.item === undefined ? await this.postPart(text, first) : await this.updateText(text, first, false, alert && rest.length === 0 ? 1 : undefined)
     if (shown && rest.length > 0) {
       await this.post(rest.map((part, i) => ({text: part, priority: alert && i === rest.length - 1 ? 1 : -1}))).catch(async error => {
         if (await this.refused(error, textLines)) this.refuseText(text)
@@ -805,8 +805,12 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-text
-  private updateItem(itemId: number, text: string, live: boolean): Promise<T.ChatItem> {
-    return this.hub.chat.apiUpdateChatItem(T.ChatType.Group, this.control.groupId, itemId, {type: "text", text}, live)
+  private async updateItem(itemId: number, text: string, live: boolean, priority?: number): Promise<T.ChatItem> {
+    if (priority === undefined) return this.hub.chat.apiUpdateChatItem(T.ChatType.Group, this.control.groupId, itemId, {type: "text", text}, live)
+    const updatedMessage: T.UpdatedMessage & {priority: number} = {msgContent: {type: "text", text}, mentions: {}, priority}
+    const r = await this.hub.chat.sendChatCmd(CC.APIUpdateChatItem.cmdString({chatRef: {chatType: T.ChatType.Group, chatId: this.control.groupId}, chatItemId: itemId, liveMessage: live, updatedMessage}))
+    if (r.type === "chatItemUpdated" || r.type === "chatItemNotChanged") return r.chatItem.chatItem
+    throw new api.ChatCommandError("error updating chat item", r)
   }
 
   // spec: spec/architecture.md#hub-session-step
@@ -858,7 +862,7 @@ export class Session {
     const feature = refusedFeature(error)
     if (feature === undefined) throw error
     const text = `${subject}: ${refusal(feature)}${line === undefined ? "" : `\n${line}`}`
-    await (itemId === undefined ? this.post([{text, ...(line === undefined ? {} : {priority: 1})}], quotedItemId) : this.updateItem(itemId, text, false))
+    await (itemId === undefined ? this.post([{text, ...(line === undefined ? {} : {priority: 1})}], quotedItemId) : this.updateItem(itemId, text, false, line === undefined ? undefined : 1))
   }
 
   // spec: spec/architecture.md#hub-session-deliver
@@ -1223,6 +1227,11 @@ function endLine(figures: string | undefined, {fiveHour, week}: Limits): string 
   const now = Date.now() / 1_000
   const current = (window: LimitWindow | undefined): LimitWindow | undefined => (window !== undefined && window.resetsAt > now ? window : undefined)
   return small([`Done${figures === undefined ? "" : ` in ${figures}`}`, ...limitParts({fiveHour: current(fiveHour), week: current(week)})].join(" · "))
+}
+
+// spec: spec/architecture.md#hub-quoteof
+function withoutEndLine(content: T.MsgContent, chatDir: T.CIDirection | undefined): T.MsgContent {
+  return chatDir?.type === "groupSnd" ? {...content, text: content.text.replace(/\n!- Done(?: [^\n!]*)?!$/, "")} : content
 }
 
 // spec: spec/architecture.md#hub-quoteof
