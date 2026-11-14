@@ -17,8 +17,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-// The bounds an animated image must satisfy, checked as arithmetic: skiko's native library is not on the
-// test runtime classpath, and these numbers are the part that has to be right about someone else's file.
+// The bounds an animated image must satisfy, checked as arithmetic: these numbers are the part that has to be
+// right about someone else's file.
 class AnimatedImageBoundsTest {
   private val BYTES_PER_PIXEL = 4 // what a GIF or WebP decodes to
 

@@ -21,7 +21,9 @@ import java.io.File
 import java.io.IOException
 import java.util.Base64
 import java.util.UUID
+import javax.imageio.IIOImage
 import javax.imageio.ImageIO
+import javax.imageio.ImageWriteParam
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -123,6 +125,31 @@ class ImageDecodeBoundsTest {
     assertFailsWith<IOException> { decodeBoundedBufferedImage(sequentialJpegHeaders(4097, 4096, scanComponents = 1), 1000) }
     assertEquals(1024, decodeBoundedBufferedImage(progressiveJpegHeaders(4096, 4096), 1000).width)
     assertEquals(1024, decodeBoundedBufferedImage(sequentialJpegHeaders(4096, 4097, scanComponents = 3), 1000).width)
+  }
+
+  @Test
+  fun testDecodeRejectsProgressiveJpegAfterTablesOnlyImage() {
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(jpeg(0xFF, 0xD8, 0xFF, 0xD9) + progressiveJpegHeaders(4097, 4096), 1000) }
+  }
+
+  @Test
+  fun testDecodeRejectsProgressiveJpegAfterReservedMarker() {
+    val frame = segment(0xC2, 8, 0x10, 0x00, 0x10, 0x01, 3, 1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0)
+    val data = jpeg(
+      0xFF, 0xD8,
+      0xFF, 0xF0, 0, frame.size + 2,
+      *frame,
+      *segment(0xDB, 0, *IntArray(64) { 1 }),
+      *segment(0xC4, 0, 1, *IntArray(16)),
+      *segment(0xDA, 3, 1, 0, 2, 0, 3, 0, 0, 0, 0),
+    )
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(data, 1000) }
+  }
+
+  @Test
+  fun testBase64InterlacedImageIsRenderedInFull() {
+    val image = base64ToBitmap(Base64.getEncoder().encodeToString(encodeInterlacedPng(8, 8, 0xFF0000)))
+    assertEquals(0xFFFF0000.toInt(), image.toAwtImage().getRGB(1, 1))
   }
 
   @Test
@@ -270,6 +297,20 @@ class ImageDecodeBoundsTest {
   private fun jpeg(vararg bytes: Int): ByteArray = bytes.map { it.toByte() }.toByteArray()
 
   private fun encodePng(width: Int, height: Int): ByteArray = encodeImage(width, height, "png")
+
+  private fun encodeInterlacedPng(width: Int, height: Int, rgb: Int): ByteArray {
+    val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+    for (x in 0 until width) for (y in 0 until height) image.setRGB(x, y, rgb)
+    val writer = ImageIO.getImageWritersByFormatName("png").next()
+    return ByteArrayOutputStream().use { out ->
+      ImageIO.createImageOutputStream(out).use { stream ->
+        writer.output = stream
+        writer.write(null, IIOImage(image, null, null), writer.defaultWriteParam.apply { progressiveMode = ImageWriteParam.MODE_DEFAULT })
+      }
+      writer.dispose()
+      out.toByteArray()
+    }
+  }
 
   private fun encodeMarkedPng(width: Int, height: Int, mark: Int): ByteArray {
     val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB).also { it.setRGB(0, 0, mark) }

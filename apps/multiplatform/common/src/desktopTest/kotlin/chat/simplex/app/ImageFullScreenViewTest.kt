@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.imageio.IIOImage
 import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -55,6 +56,15 @@ class ImageFullScreenViewTest {
     }
     scene { FullScreenImageView(Modifier.fillMaxSize(), data, solidImage(Color.BLUE)) }.use { scene ->
       assertTrue(scene.renderUntil { it.pixels().contentEquals(placeholder) })
+    }
+  }
+
+  @Test
+  fun testFullScreenAnimationShowsItsFrames() {
+    simplexWindowState.windowState = WindowState(size = DpSize(SCENE_SIZE.dp, SCENE_SIZE.dp))
+    val data = encodeAnimatedGif(Color.GREEN, Color.YELLOW)
+    scene { FullScreenImageView(Modifier.fillMaxSize(), data, solidImage(Color.BLUE)) }.use { scene ->
+      assertTrue(scene.renderUntil { it.centerColor() == Color.YELLOW.rgb })
     }
   }
 
@@ -131,6 +141,20 @@ class ImageFullScreenViewTest {
       ImageIO.write(filledImage(width, height, color), "png", out)
       out.toByteArray()
     }
+
+  private fun encodeAnimatedGif(vararg colors: Color): ByteArray {
+    val writer = ImageIO.getImageWritersByFormatName("gif").next()
+    return ByteArrayOutputStream().use { out ->
+      ImageIO.createImageOutputStream(out).use { stream ->
+        writer.output = stream
+        writer.prepareWriteSequence(null)
+        colors.forEach { writer.writeToSequence(IIOImage(filledImage(4, 4, it), null, null), null) }
+        writer.endWriteSequence()
+      }
+      writer.dispose()
+      out.toByteArray()
+    }
+  }
 
   private fun filledImage(width: Int, height: Int, color: Color): BufferedImage =
     BufferedImage(width, height, BufferedImage.TYPE_INT_RGB).also { image ->
