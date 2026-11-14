@@ -7,6 +7,7 @@ import {logError} from "./log"
 import {chatNumber, chatType, getChat, isLive, pageSize, utcMinutes} from "./messages"
 import type {Agent, ToolName} from "./tools"
 
+// spec: spec/architecture.md#status-status
 interface Status {
   live: api.LiveMessage
   started: number
@@ -16,19 +17,32 @@ interface Status {
   timer?: NodeJS.Timeout
 }
 
+// spec: spec/architecture.md#status-constants
 const frames = ["◐", "◓", "◑", "◒"]
+// spec: spec/architecture.md#status-constants
 const liveRenders = 50
+// spec: spec/architecture.md#status-constants
 const maxRenders = 59
+// spec: spec/architecture.md#status-constants
 const firstGap = 3_000
+// spec: spec/architecture.md#status-constants
 const lastGap = 20_000
+// spec: spec/architecture.md#status-constants
 const checkGap = 300_000
+// spec: spec/architecture.md#status-constants
 const idleEnd = 30 * 60_000
+// spec: spec/architecture.md#status-constants
 const statusLifetime = 23 * 3_600_000
+// spec: spec/architecture.md#status-constants
 const deleteWindow = 30 * 3_600_000 - 10 * 60_000
+// spec: spec/architecture.md#status-constants
 const waitingLabel = "received, waiting for the agent"
+// spec: spec/architecture.md#status-constants
 const toolLabels = new Map<string | undefined, string>(Object.entries({Bash: "running a command", PowerShell: "running a command", Monitor: "running a command", Grep: "searching files", Glob: "searching files", WebSearch: "searching the web", WebFetch: "searching the web"}))
+// spec: spec/architecture.md#status-constants
 const fileVerbs = new Map<string | undefined, string>(Object.entries({Read: "reading", Edit: "editing", Write: "editing", MultiEdit: "editing", NotebookEdit: "editing"}))
 
+// spec: spec/architecture.md#status-statuses
 export class Statuses {
   private readonly statuses = new Map<string, Status>()
   private readonly calls: {tool: ToolName}[] = []
@@ -39,6 +53,7 @@ export class Statuses {
 
   constructor(private readonly agent: Pick<Agent, "chat" | "actions" | "inference" | "activity" | "abort">, private readonly allowed: (chat: string) => Promise<boolean>) {}
 
+  // spec: spec/architecture.md#status-statuses-startcall
   startCall(tool: ToolName): () => void {
     const call = {tool}
     this.calls.push(call)
@@ -49,12 +64,14 @@ export class Statuses {
     }
   }
 
+  // spec: spec/architecture.md#status-statuses-queue
   queue(chat: string): void {
     if (this.stopping || this.statuses.has(chat)) return
     const status = this.created(chat, waitingLabel)
     this.tick(chat, status).catch(error => logError(`status of ${chat}`, error))
   }
 
+  // spec: spec/architecture.md#status-statuses-start
   start(chat: string): void {
     this.queue(chat)
     const status = this.statuses.get(chat)
@@ -63,6 +80,7 @@ export class Statuses {
     if (status.renders > 0 && status.renders < maxRenders) this.render(status)
   }
 
+  // spec: spec/architecture.md#status-statuses-show
   show(chat: string, note: string): void {
     if (this.stopping) throw new ToolError(stoppingMessage)
     const current = this.statuses.get(chat)
@@ -75,6 +93,7 @@ export class Statuses {
     if (kept === undefined) this.schedule(chat, status)
   }
 
+  // spec: spec/architecture.md#status-statuses-end
   end(chat: string, text = ""): Promise<void> {
     const status = this.statuses.get(chat)
     if (status === undefined) return Promise.resolve()
@@ -85,14 +104,17 @@ export class Statuses {
     return ending.finally(() => this.endings.delete(ending))
   }
 
+  // spec: spec/architecture.md#status-statuses-offersabort
   offersAbort(chat: string): boolean {
     return this.agent.abort !== undefined && (this.statuses.get(chat)?.renders ?? 0) > 0
   }
 
+  // spec: spec/architecture.md#status-statuses-abort
   abort(): void {
     for (const [chat, {renders}] of [...this.statuses]) this.end(chat, renders > 0 ? "◼ aborted" : "")
   }
 
+  // spec: spec/architecture.md#status-statuses-stop
   async stop(): Promise<number> {
     this.stopping = true
     const deletions = [...this.statuses.values()].filter(({renders}) => renders > 0).length
@@ -101,6 +123,7 @@ export class Statuses {
     return deletions
   }
 
+  // spec: spec/architecture.md#status-statuses-deleteleftovers
   async deleteLeftovers(chat: string): Promise<void> {
     const now = Date.now()
     const recent = ({meta}: T.ChatItem): boolean => now - Date.parse(meta.itemTs) < deleteWindow
@@ -118,21 +141,25 @@ export class Statuses {
     }
   }
 
+  // spec: spec/architecture.md#status-statuses-created
   private created(chat: string, label = "thinking"): Status {
     const status: Status = {live: new api.LiveMessage(this.agent.chat, chatType(chat), chatNumber(chat), 0, error => this.failed(chat, status, error)), started: Date.now(), renders: 0, label}
     this.statuses.set(chat, status)
     return status
   }
 
+  // spec: spec/architecture.md#status-statuses-created
   private isCurrent(chat: string, status: Status): boolean {
     return this.statuses.get(chat) === status
   }
 
+  // spec: spec/architecture.md#status-statuses-created
   private failed(chat: string, status: Status, error: unknown): void {
     logError(`status of ${chat}`, error)
     if (this.isCurrent(chat, status)) this.end(chat)
   }
 
+  // spec: spec/architecture.md#status-statuses-tick
   private async tick(chat: string, status: Status): Promise<void> {
     const shown = await this.allowed(chat).catch(error => {
       if (this.isCurrent(chat, status)) logError(`status of ${chat}`, error)
@@ -150,17 +177,20 @@ export class Statuses {
     this.schedule(chat, status)
   }
 
+  // spec: spec/architecture.md#status-statuses-render
   private render(status: Status): void {
     status.renders++
     status.live.update(statusText(status, Date.now(), this.agent.abort === undefined ? "" : " · /abort"))
   }
 
+  // spec: spec/architecture.md#status-statuses-render
   private schedule(chat: string, status: Status): void {
     const age = Date.now() - status.started
     const delay = status.renders < liveRenders ? Math.min(Math.max(age / 10, firstGap), lastGap) : checkGap
     status.timer = setTimeout(() => this.tick(chat, status).catch(error => logError(`status of ${chat}`, error)), delay).unref()
   }
 
+  // spec: spec/architecture.md#status-statuses-label
   private async label(): Promise<string> {
     const state = await this.inferred()
     const waiting = this.agent.actions.pending().some(({open}) => open > 0)
@@ -168,6 +198,7 @@ export class Statuses {
     return statusLabel(waiting, state, tool, this.agent.activity?.state())
   }
 
+  // spec: spec/architecture.md#status-statuses-label
   private async inferred(): Promise<InferenceState | undefined> {
     if (this.agent.inference === undefined) return undefined
     try {
@@ -182,12 +213,14 @@ export class Statuses {
   }
 }
 
+// spec: spec/api.md#status-message
 function statusText({started, renders, label, note}: Status, now: number, offer: string): string {
   const seconds = Math.floor((now - started) / 1000)
   const line = renders < liveRenders ? `${frames[(renders - 1) % frames.length]} ${label} · ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}` : `◌ ${label === waitingLabel ? label : "working"} since ${utcMinutes(started)}`
   return note === undefined ? `${line}${offer}` : `${line}${offer}\n${note}`
 }
 
+// spec: spec/api.md#status-message
 function statusLabel(waiting: boolean, state: InferenceState | undefined, tool: ToolName | undefined, activity: ActivityState | undefined): string {
   switch (state?.type) {
     case "loading":
@@ -203,10 +236,12 @@ function statusLabel(waiting: boolean, state: InferenceState | undefined, tool: 
   }
 }
 
+// spec: spec/architecture.md#status-statustext
 function modelText(model: string | undefined): string {
   return model === undefined ? "" : ` with \`${model}\``
 }
 
+// spec: spec/architecture.md#status-statustext
 function otherLabel(waiting: boolean, tool: ToolName | undefined, activity: ActivityState | undefined, rest: string): string {
   return waiting ? "waiting for approval"
     : activity?.asking ? "waiting for permission in Claude Code"
@@ -217,12 +252,14 @@ function otherLabel(waiting: boolean, tool: ToolName | undefined, activity: Acti
     : rest
 }
 
+// spec: spec/architecture.md#status-statustext
 function toolLabel({name, file}: {name?: string; file?: string}): string {
   const verb = fileVerbs.get(name)
   if (verb !== undefined) return named(verb, file, `${verb} a file`)
   return toolLabels.get(name) ?? named("using", name?.replace(/^mcp__.+?__(?=.)/, ""), "using a tool")
 }
 
+// spec: spec/architecture.md#status-statustext
 function named(text: string, name: string | undefined, fallback: string): string {
   return name === undefined ? fallback : `${text} \`${name}\``
 }

@@ -5,6 +5,7 @@ import {localhostHostValidation, localhostOriginValidation, toNodeHandler} from 
 import {McpServerFactory, createMcpHandler} from "@modelcontextprotocol/server"
 import {logError} from "./log"
 
+// spec: spec/architecture.md#http-httpoptions
 export interface HttpOptions {
   port: number
   token: string
@@ -13,8 +14,10 @@ export interface HttpOptions {
   hook: (event: unknown) => void
 }
 
+// spec: spec/architecture.md#http-maxhookbody
 const maxHookBody = 4 * 1_048_576
 
+// spec: spec/architecture.md#http-starthttp
 export function startHttp({port, token, factory, ready, hook}: HttpOptions): Promise<Server> {
   const expectedAuthorization = Buffer.from(`Bearer ${token}`)
   const validHost = localhostHostValidation()
@@ -40,6 +43,7 @@ export function startHttp({port, token, factory, ready, hook}: HttpOptions): Pro
   server.keepAliveTimeout = 5_000
   server.timeout = 0
 
+  // spec: spec/architecture.md#http-authorized
   function authorized(authorization: string | undefined): boolean {
     const given = Buffer.from(authorization ?? "")
     return given.length === expectedAuthorization.length && timingSafeEqual(given, expectedAuthorization)
@@ -54,12 +58,14 @@ export function startHttp({port, token, factory, ready, hook}: HttpOptions): Pro
   })
 }
 
+// spec: spec/architecture.md#http-stophttp
 export function stopHttp(server: Server): Promise<void> {
   const closed = new Promise<void>(resolve => server.close(() => resolve()))
   server.closeAllConnections()
   return closed
 }
 
+// spec: spec/api.md#hook-request
 async function receiveHook(req: IncomingMessage, res: ServerResponse, hook: (event: unknown) => void): Promise<void> {
   if (req.method !== "POST") return plain(res, 405, {Allow: "POST"})
   const length = Number(req.headers["content-length"])
