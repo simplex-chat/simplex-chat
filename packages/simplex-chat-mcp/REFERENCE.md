@@ -451,7 +451,7 @@ With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-age
 | `Stop`, `StopFailure`, `SessionEnd` | all its tools, subagents, permission prompt and compaction ended; its turn ended |
 | `Notification` with `notification_type` `idle_prompt`, Claude Code's idle notification | as `Stop` |
 
-- After a refusal in Claude Code's permission prompt, Claude Code 2.1.281 sends none of the other end events of the table. The label `waiting for permission in Claude Code` is then shown until Claude Code's idle notification, about one minute after the end of the turn. Claude Code sends that notification only when its terminal received no input since the end of the turn and no dialog of Claude Code is open; otherwise the label is shown until the session's next prompt or its end.
+- After a refusal in Claude Code's permission prompt, Claude Code 2.1.281 sends no `PostToolUse`, `PostToolUseFailure`, `PermissionDenied`, `PostToolBatch` or `Stop`. The label `waiting for permission in Claude Code` is then shown until Claude Code's idle notification, about one minute after the end of the turn. Claude Code sends that notification only when its terminal received no input since the end of the turn and no dialog of Claude Code is open; otherwise the label is shown until the session's next prompt or its end.
 - Claude Code runs curl in the background and hides the outcome outside verbose mode (Ctrl+O), so the failures of the posts while the server is stopped are hidden too.
 - The server checks the token, `Host` and `Origin` of a request to `/hook` as for `/mcp`. It answers a `POST` with 204, or with 411 without Content-Length, 413 for a body over 4 MiB and 400 for invalid JSON, and another method with 405.
 
