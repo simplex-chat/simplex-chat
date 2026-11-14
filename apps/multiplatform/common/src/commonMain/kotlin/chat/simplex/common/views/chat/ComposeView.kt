@@ -411,6 +411,45 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
   }
 }
 
+fun sanitizeMessage(
+  text: String,
+  parsedMsg: List<FormattedText>,
+  sanitize: (String) -> String? = { parseSanitizeUri(it, safe = true)?.uriInfo?.sanitized }
+): Triple<String, List<FormattedText>, Int?> {
+  val updatedMsg = StringBuilder()
+  var copied = 0
+  var searched = 0
+  var sanitizedPos: Int? = null
+  val updatedParsedMsg = parsedMsg.map { ft ->
+    val updated = when (ft.format) {
+      is Format.Uri -> sanitize(ft.text)?.let { FormattedText(text = it, format = Format.Uri()) }
+      is Format.HyperLink -> sanitize(ft.format.linkUri)?.let { sanitized ->
+        val linkPart = "](${ft.format.linkUri})"
+        val updatedText =
+          if (ft.text.contains(linkPart)) ft.text.replace(linkPart, "]($sanitized)")
+          else if (ft.format.showText == null) sanitized
+          else "[${ft.format.showText}]($sanitized)"
+        FormattedText(text = updatedText, format = Format.HyperLink(showText = ft.format.showText, linkUri = sanitized))
+      }
+      else -> null
+    }
+    val i = text.indexOf(ft.text, searched)
+    if (i < 0) ft
+    else {
+      searched = i + ft.text.length
+      if (updated == null) ft
+      else {
+        updatedMsg.append(text, copied, i).append(updated.text)
+        copied = searched
+        sanitizedPos = updatedMsg.length
+        updated
+      }
+    }
+  }
+  updatedMsg.append(text, copied, text.length)
+  return Triple(updatedMsg.toString(), updatedParsedMsg, sanitizedPos)
+}
+
 // Spec: spec/client/compose.md#ComposeView
 @Composable
 fun ComposeView(
@@ -1019,43 +1058,10 @@ fun ComposeView(
     }
   }
 
-  fun sanitizeMessage(parsedMsg: List<FormattedText>): Triple<String, List<FormattedText>, Int?> {
-    var pos = 0
-    var updatedMsg = ""
-    var sanitizedPos: Int? = null
-    val updatedParsedMsg = parsedMsg.map { ft ->
-      var updated = ft
-      when(ft.format) {
-        is Format.Uri -> {
-          val sanitized = parseSanitizeUri(ft.text, safe = true)?.uriInfo?.sanitized
-          if (sanitized != null) {
-            updated = FormattedText(text = sanitized, format = Format.Uri())
-            pos += updated.text.count()
-            sanitizedPos = pos
-          }
-        }
-        is Format.HyperLink -> {
-          val sanitized = parseSanitizeUri(ft.format.linkUri, safe = true)?.uriInfo?.sanitized
-          if (sanitized != null) {
-            val updatedText = if (ft.format.showText == null) sanitized else "[${ft.format.showText}]($sanitized)"
-            updated = FormattedText(text = updatedText, format = Format.HyperLink(showText = ft.format.showText, linkUri = sanitized))
-            pos += updated.text.count()
-            sanitizedPos = pos
-          }
-        }
-        else ->
-          pos += ft.text.count()
-      }
-      updatedMsg += updated.text
-      updated
-    }
-    return Triple(updatedMsg, updatedParsedMsg, sanitizedPos)
-  }
-
   fun onMessageChange(s: ComposeMessage) {
     var parsedMessage = parseToMarkdown(s.text)
     if (chatModel.controller.appPrefs.privacySanitizeLinks.get() && parsedMessage != null) {
-      val (updatedMsg, updatedParsedMsg, sanitizedPos) = sanitizeMessage(parsedMessage)
+      val (updatedMsg, updatedParsedMsg, sanitizedPos) = sanitizeMessage(s.text, parsedMessage)
       if (sanitizedPos == null) {
         composeState.value = composeState.value.copy(message = s, parsedMessage = parsedMessage)
       } else {
