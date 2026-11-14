@@ -6,6 +6,7 @@ import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "
 import {linkCommand} from "./owner"
 import type {ApprovedTool} from "./protocol"
 import {qrCodeText} from "./qr"
+import {ScheduleEntry, Schedules, cronError} from "./schedule"
 import type {OwnerEntry, QrCodeSize} from "./serve"
 import {AgentTools, chatSubject, customDataOf, featureOff, fitsMessage, isActive, isConnected, memberCurrent, memberCurrentOrPending, refusedFeature, refusedFileReason, setChatData} from "./tools"
 
@@ -15,11 +16,15 @@ export {qrCodeText}
 export const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
   {type: "command", keyword: "list", label: "Chats and approvals"},
+  {type: "command", keyword: "schedules", label: "Scheduled prompts"},
   {type: "command", keyword: "leave", label: "Leave a chat", params: "<chat ID>"},
+  {type: "command", keyword: "help", label: "Help"},
 ]
 
 // spec: spec/api.md#control-commands
-const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /schedule, /unschedule, /schedules, /help. Each card shows its commands."
+// spec: spec/api.md#control-commands
+const noHelp = "No help for that. /help lists the commands."
 // spec: spec/api.md#control-commands
 const unknownCommand = "Unknown command."
 const filesAndMedia = "Files and media"
@@ -35,7 +40,10 @@ const standings: {[standing in Standing]: {key: string; approved: string; scope:
 }
 const maxCardLength = 15_000
 const listedChats = 100
+const listedSchedules = 100
 const maxLineLength = 100
+const maxSchedules = 10
+const maxPromptLength = 2000
 const truncationMark = "…"
 const longestError = "€".repeat(600)
 // spec: spec/api.md#membership-messages
@@ -56,6 +64,93 @@ export const sessionApproverRoles: T.GroupMemberRole[] = [T.GroupMemberRole.Admi
 // spec: spec/architecture.md#control-roleorder
 const roleOrder: T.GroupMemberRole[] = [T.GroupMemberRole.Relay, T.GroupMemberRole.Observer, T.GroupMemberRole.Author, T.GroupMemberRole.Member, T.GroupMemberRole.Moderator, T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 
+// spec: spec/api.md#control-commands
+const commandsHelp = `/'approve N' or /'approve CHAT N' performs pending action N, other than a download; /'approve CHAT all' approves all sends to CHAT.
+/'reject N' or /'reject CHAT N' rejects pending action N.
+/'receive CHAT N' downloads the file of pending download N; /'receive CHAT N all' also approves later files from CHAT on the agent's XFTP servers.
+/'forward CHAT N' sends you the file of pending download N here.
+/'revoke CHAT' ends the approval of all sends to CHAT.
+/'leave CHAT' leaves the group or deletes the contact CHAT.
+/'delete CHAT files' deletes the agent's files from CHAT.
+/pending lists the pending actions.
+/list lists the agent's chats and their approvals.
+/'schedule CHAT CRON PROMPT' schedules a prompt for the agent in CHAT.
+/'unschedule CHAT N' removes schedule N of CHAT.
+/schedules lists the schedules of all chats.`
+// spec: spec/api.md#session-groups
+const sessionCommandsHelp = `/'give CHAT N' gives the agent's chat CHAT to session N.
+/'observer #G ID' makes member ID of this group an observer.`
+// spec: spec/api.md#control-commands
+const helpLine = "/'help COMMAND' shows how to use COMMAND, such as /'help schedule'."
+const approveHelp = `/'approve N' performs pending action N: a connect, send or leave. /'reject N' rejects pending action N, a download too. Its card then shows the outcome.
+/'approve CHAT N' and /'reject CHAT N' do the same for an action of CHAT, as its card shows.
+/'approve CHAT all' performs the pending sends to CHAT; later ones are performed at once and posted here, while you approve actions, until /'revoke CHAT'. It applies in mode requests only.
+N: the number on the card and in /pending. CHAT: a chat ID from /list, such as \`#3\`.
+Example: \`/approve #3 12\`. Related: /'help receive', /'help revoke'.`
+const receiveHelp = `/'receive CHAT N' downloads the file of pending download N for the agent.
+/'receive CHAT N all' does the same, and later downloads from CHAT of files on the agent's XFTP servers are performed at once, without a card, while you approve actions. /'receive CHAT off' ends that. A file whose download was rejected or expired can get a card again.
+/'forward CHAT N' downloads the file and sends it to you here; its card stays pending, and the agent gets nothing.
+N: the number on the card. CHAT: the chat the card names.
+Example: \`/receive #3 7\`. Related: /'help reject', /'help delete'.`
+const revokeHelp = `/'revoke CHAT' ends the approval of all sends to CHAT given with /'approve CHAT all': each later send to CHAT needs approval again.
+/'receive CHAT off' ends the approval of all files from CHAT in the same way.
+Example: \`/revoke #3\`. Related: /list, /'help approve'.`
+const leaveHelp = `/'leave CHAT' makes the agent leave the group CHAT, or delete the contact CHAT, at once; the chat is deleted with its messages and schedules, and its pending actions are rejected.
+The files downloaded for the agent from CHAT are kept until /'delete CHAT files'.
+Example: \`/leave #3\`. Related: /list.`
+const deleteHelp = `/'delete CHAT files' deletes the files downloaded from CHAT, forwarded ones too, and cancels its running downloads, also for a chat the agent left.
+Example: \`/delete #3 files\`. Related: /'help leave'.`
+const pendingHelp = `/pending lists the pending actions, one line each: number, request and expiry time, such as \`5  send to bot SimpleX Directory  expires 2026-11-12 18:00 UTC\`.
+Each card shows the commands of its action. Related: /'help approve'.`
+const listHelp = `/list lists the agent's ${listedChats} most recent chats, one line each, such as \`#3  group Builders, approved for this chat by Alice\`; a chat the agent is not connected to shows \`not connected\`.
+CHAT in the other commands is a chat ID in this form, \`#N\` or \`@N\`. Related: /'help approve', /'help leave'.`
+const scheduleHelp = `/'schedule CHAT CRON PROMPT' makes PROMPT due for the agent in CHAT at each minute that CRON matches, in the server's time zone; the reply shows its UTC offset.
+CRON: 5 fields, minute 0-59, hour 0-23, day of month 1-31, month 1-12 and day of week 0-7, with 0 and 7 for Sunday.
+A field is \`*\`, \`N\`, \`A-B\`, \`*/S\` or \`A-B/S\`, or a comma list of them. When neither day field starts with \`*\`, a match of either one suffices.
+CHAT: a chat ID from /list. PROMPT: the rest of the line, at most ${maxPromptLength} characters. A chat has at most ${maxSchedules} schedules.
+The agent's \`receive\` of CHAT returns a due prompt once; until then, the later times of its schedule are skipped, and it is lost when the server stops.
+A member who approves actions adds a schedule, and its prompts become due only while that member approves actions.
+/'unschedule CHAT N' removes schedule N of CHAT and renumbers the later ones. /schedules lists up to ${listedSchedules} schedules of all chats.
+Example: \`/schedule #3 0 7 * * 1-5 Post the trail report.\`, at 07:00 on weekdays.`
+const giveHelp = `/'give CHAT N' gives the agent's chat CHAT to session N, so that only session N and the commands of its group can use CHAT; the pending actions of CHAT here are rejected, and its schedules move to session N without their due prompts.
+CHAT: a chat ID from /list. N: a session number from /sessions in the Main group.
+Example: \`/give @3 2\`. Related: /list.`
+const observerHelp = `/'observer #G ID' makes member ID of this group, #G, an observer, who can't send messages. The approvals of all sends or files that the member gave, and the member's schedules, stop applying until the member is an admin or owner again.
+Admins and owners use it for another member whose role is not above their own.
+#G and ID: as in Claude's post of the member's rights at a join or a role change, which shows this command for a member who can send, other than an owner.
+Example: \`/observer #2 6\`. Related: /'help approve', /'help schedule'.`
+const helpUsage = "/help lists the commands. /'help COMMAND' shows how to use COMMAND, written with or without its `/`, such as /'help schedule'."
+const helpHelp = `${helpUsage}
+Every member who can post in this chat may use /help; the other commands are for the owners who approve actions.`
+// spec: spec/api.md#session-groups
+const sessionHelpHelp = `${helpUsage}
+Only admins and owners of this group can send / commands, /help included, and approve actions.`
+// spec: spec/api.md#control-commands
+const helpTexts = new Map<string, string>([
+  ["", `${commandsHelp}\n${helpLine}`],
+  ["approve", approveHelp],
+  ["reject", approveHelp],
+  ["receive", receiveHelp],
+  ["forward", receiveHelp],
+  ["revoke", revokeHelp],
+  ["leave", leaveHelp],
+  ["delete", deleteHelp],
+  ["pending", pendingHelp],
+  ["list", listHelp],
+  ["schedule", scheduleHelp],
+  ["unschedule", scheduleHelp],
+  ["schedules", scheduleHelp],
+  ["help", helpHelp],
+])
+// spec: spec/api.md#session-groups
+const sessionHelpTexts = new Map<string, string>([
+  ...helpTexts,
+  ["", `${commandsHelp}\n${sessionCommandsHelp}\n${helpLine}`],
+  ["give", giveHelp],
+  ["observer", observerHelp],
+  ["help", sessionHelpHelp],
+])
+
 // spec: spec/architecture.md#control-controldata
 export interface ControlData {
   control: true
@@ -74,7 +169,7 @@ export interface ControlOptions {
 // spec: spec/architecture.md#control-controloptions
 export interface SessionOptions {
   approves: (member: T.GroupMember) => boolean
-  ownerOf: (session: number) => string | undefined
+  ownerOf: (session: number) => {id: string; schedules: Schedules} | undefined
   isUser: (member: T.GroupMember) => boolean
   toolsChanged: () => void
 }
@@ -101,7 +196,10 @@ type OwnerRequest =
   | {type: "leave" | "deleteFiles"; chat: string}
   | {type: "give"; chat: string; session: number}
   | {type: "observer"; group: string; member: number}
-  | {type: "pending" | "list"}
+  | {type: "schedule"; chat: string; cron: string; prompt: string}
+  | {type: "unschedule"; chat: string; n: number}
+  | {type: "pending" | "list" | "schedules"}
+  | {type: "help"; topic: string}
 
 interface Shown {
   name: (name: string) => string
@@ -126,6 +224,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     private readonly options: ControlOptions,
     private readonly actions: Actions,
     private readonly tools: Pick<AgentTools, "knownChat" | "agentChats" | "leaveChat" | "forwardFile" | "deleteSentCopy" | "chatFiles" | "deleteChatFiles" | "giveChat">,
+    private readonly schedules: Schedules,
   ) {}
 
   get groupId(): number {
@@ -144,6 +243,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       profile.displayName !== displayName || JSON.stringify(profile.groupPreferences?.commands) !== JSON.stringify(controlCommands) ? {...profile, displayName, groupPreferences: {...profile.groupPreferences, commands: controlCommands}} : undefined,
     )
     await this.refreshMembers()
+    for (const {chatInfo} of await this.tools.agentChats()) this.schedules.set(chatRef(chatInfo)!, schedulesOf(customDataOf(chatInfo)))
   }
 
   // spec: spec/architecture.md#control-control-rename
@@ -198,7 +298,12 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   // spec: spec/architecture.md#control-control-standingapprover
   standingApprover(chatInfo: T.ChatInfo, standing: Standing): string | undefined {
     const approval = approvalOf(customDataOf(chatInfo), standings[standing].key)
-    return this.actions.mode === "requests" && approval !== undefined && this.approvers().some(({groupMemberId}) => groupMemberId === approval.approvedById) ? safeName(approval.approvedBy) : undefined
+    return this.actions.mode === "requests" && approval !== undefined && this.isCurrentApprover(approval.approvedById) ? safeName(approval.approvedBy) : undefined
+  }
+
+  // spec: spec/architecture.md#control-control-iscurrentapprover
+  isCurrentApprover(memberId: number): boolean {
+    return !this.actions.lost && this.approvers().some(({groupMemberId}) => groupMemberId === memberId)
   }
 
   // spec: spec/architecture.md#control-control-savecounter
@@ -288,6 +393,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     this.actions.expireDue()
     const request = ownerRequest(command, this.options.session !== undefined)
     if (request === undefined) return this.options.session === undefined ? commandsReply : unknownCommand
+    if (request.type === "help") return (this.options.session === undefined ? helpTexts : sessionHelpTexts).get(request.topic) ?? noHelp
     if (!this.isApprover(sender)) return this.options.session !== undefined ? undefined : this.options.owners === undefined ? "Only owners approve actions." : "Only the owners listed in --owners approve actions."
     switch (request.type) {
       case "pending": {
@@ -296,6 +402,12 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       }
       case "list":
         return this.chatsText()
+      case "schedules":
+        return this.schedulesText()
+      case "schedule":
+        return this.addSchedule(sender, request.chat, request.cron, request.prompt)
+      case "unschedule":
+        return this.removeSchedule(sender, request.chat, request.n)
       case "approveChat":
         if (this.actions.mode === "host") return "Approvals apply in mode requests; this server runs in mode host."
         return this.approveChat(sender, request.chat, request.standing)
@@ -357,6 +469,36 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const {[key]: _, ...customData} = customDataOf(chatInfo) as {[key: string]: unknown}
     await this.setCustomData(chat, customData)
     return `${scope} ${chatName(chatSubject(chatInfo))} (${chat}) need approval again.`
+  }
+
+  // spec: spec/api.md#control-commands
+  private async addSchedule(sender: T.GroupMember, chat: string, cron: string, prompt: string): Promise<string> {
+    const chatInfo = await this.agentChat(chat)
+    if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
+    const refusal = cronError(cron)
+    if (refusal !== undefined) return refusal
+    if ([...prompt].length > maxPromptLength) return `Schedule: the prompt is over ${maxPromptLength} characters.`
+    const entries = schedulesOf(customDataOf(chatInfo))
+    if (entries.length >= maxSchedules) return `Schedule: ${chatName(chatSubject(chatInfo))} (${chat}) has ${maxSchedules} schedules; /'unschedule ${chat} N' removes one.`
+    const by = sender.memberProfile.displayName
+    const added = [...entries, {cron, prompt, by, byId: sender.groupMemberId, at: new Date().toISOString()}]
+    await this.setCustomData(chat, {...customDataOf(chatInfo), simplexMcpSchedules: added})
+    this.schedules.set(chat, added)
+    log(`Schedule ${added.length} of ${chat} added by ${oneLine(by)}: ${cron}.`)
+    return `Schedule ${added.length} of ${chatName(chatSubject(chatInfo))} (${chat}): ${cron}, server time ${utcOffset()}. /'unschedule ${chat} ${added.length}'`
+  }
+
+  // spec: spec/api.md#control-commands
+  private async removeSchedule(sender: T.GroupMember, chat: string, n: number): Promise<string> {
+    const chatInfo = await this.agentChat(chat)
+    if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
+    const entries = schedulesOf(customDataOf(chatInfo))
+    if (n < 1 || n > entries.length) return `${chat} has no schedule ${n}.`
+    const kept = entries.filter((_, i) => i !== n - 1)
+    await this.setCustomData(chat, {...customDataOf(chatInfo), simplexMcpSchedules: kept})
+    this.schedules.set(chat, kept)
+    log(`Schedule ${n} of ${chat} removed by ${oneLine(sender.memberProfile.displayName)}.`)
+    return `Schedule ${n} of ${chatName(chatSubject(chatInfo))} (${chat}) is removed.`
   }
 
   // spec: spec/architecture.md#control-control-approvedtools
@@ -446,7 +588,9 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (chatInfo === undefined) return `No chat ${chat}. /list shows the agent's chats.`
     const owner = this.options.session?.ownerOf(session)
     if (owner === undefined) return `No session ${session}. /sessions in the Main group lists the sessions.`
-    await this.tools.giveChat(chat, owner)
+    await this.tools.giveChat(chat, owner.id)
+    this.schedules.set(chat, [])
+    owner.schedules.set(chat, schedulesOf(customDataOf(chatInfo)))
     const approver = safeName(sender.memberProfile.displayName)
     for (const action of this.actions.pending()) {
       if (action.chat === chat && action.card !== undefined) this.actions.reject(action, approver)
@@ -489,6 +633,14 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (rest > 0) lines.push(`${rest} older chat${rest === 1 ? " is" : "s are"} not shown.`)
     lines.push(...this.approvedTools().map(({tool, approvedBy}) => `${codeSpan(oneLine(tool))}  approved for this session by ${safeName(approvedBy)}`))
     return lines.length > 0 ? lines.join("\n") : "No chats."
+  }
+
+  // spec: spec/api.md#control-commands
+  private async schedulesText(): Promise<string> {
+    const lines = (await this.tools.agentChats()).flatMap(({chatInfo}) => schedulesOf(customDataOf(chatInfo)).map(({cron, prompt}, i) => truncatedLine(`${chatRef(chatInfo)}  ${i + 1}  ${cron}  ${oneLine(prompt)}`, maxLineLength)))
+    const rest = lines.length - listedSchedules
+    if (rest > 0) lines.splice(listedSchedules, rest, `${rest} more schedule${rest === 1 ? " is" : "s are"} not shown.`)
+    return lines.length > 0 ? lines.join("\n") : "No schedules."
   }
 
   private async agentChat(chat: string): Promise<T.ChatInfo | undefined> {
@@ -975,11 +1127,27 @@ function approvalOf(customData: object | undefined, key: string): {approvedBy: s
   return typeof data?.approvedBy === "string" && typeof data.approvedById === "number" ? {approvedBy: data.approvedBy, approvedById: data.approvedById} : undefined
 }
 
+// spec: spec/architecture.md#control-schedulesof
+function schedulesOf(customData: object | undefined): ScheduleEntry[] {
+  const entries = (customData as {simplexMcpSchedules?: unknown} | undefined)?.simplexMcpSchedules
+  const valid = (entry: Partial<ScheduleEntry> | null): entry is ScheduleEntry => typeof entry?.cron === "string" && typeof entry.prompt === "string" && typeof entry.by === "string" && typeof entry.byId === "number" && typeof entry.at === "string" && cronError(entry.cron) === undefined
+  return Array.isArray(entries) ? entries.filter(valid) : []
+}
+
+// spec: spec/architecture.md#control-schedulesof
+function utcOffset(): string {
+  const offset = -new Date().getTimezoneOffset()
+  return `UTC${offset < 0 ? "-" : "+"}${new Date(Math.abs(offset) * 60_000).toISOString().slice(11, 16)}`
+}
+
 // spec: spec/api.md#control-commands
 function ownerRequest({keyword, params}: Command, session: boolean): OwnerRequest | undefined {
   const words = params === "" ? [] : params.split(/\s+/)
   const chat = words.length === 2 && isChatRef(words[0]) ? words[0] : undefined
   const value = words.length === 1 || chat !== undefined ? words.at(-1) : undefined
+  const schedule = /^(\S+)\s+(\S+(?:\s+\S+){4})\s+([\s\S]+)$/.exec(params)
+  if (keyword === "schedule" && schedule !== null && isChatRef(schedule[1])) return {type: keyword, chat: schedule[1], cron: schedule[2].split(/\s+/).join(" "), prompt: schedule[3]}
+  if (keyword === "unschedule" && chat !== undefined && value !== undefined && /^\d+$/.test(value)) return {type: keyword, chat, n: Number(value)}
   if ((keyword === "approve" || keyword === "reject" || keyword === "receive" || keyword === "forward") && value !== undefined && /^\d+$/.test(value)) return {type: keyword, action: Number(value), chat}
   if (keyword === "receive" && words.length === 3 && isChatRef(words[0]) && /^\d+$/.test(words[1]) && words[2] === "all") return {type: "receiveAll", action: Number(words[1]), chat: words[0]}
   if (keyword === "receive" && chat !== undefined && value === "off") return {type: "revoke", chat, standing: "files"}
@@ -991,7 +1159,8 @@ function ownerRequest({keyword, params}: Command, session: boolean): OwnerReques
   if (session && keyword === "observer" && chat?.startsWith("#") && value !== undefined && /^\d+$/.test(value)) return {type: "observer", group: chat, member: Number(value)}
   if (session && keyword === "approve" && words.length === 2 && /^\d+$/.test(words[0]) && words[1] === "all") return {type: "approveTool", action: Number(words[0])}
   if (session && keyword === "revoke" && chat === undefined && value !== undefined && /^[\w-]+$/.test(value)) return {type: "revokeTool", tool: value}
-  if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
+  if ((keyword === "pending" || keyword === "list" || keyword === "schedules") && words.length === 0) return {type: keyword}
+  if (keyword === "help") return {type: keyword, topic: params.replace(/^\/(?=.)/, "")}
   return undefined
 }
 

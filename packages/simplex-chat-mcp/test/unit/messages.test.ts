@@ -9,8 +9,9 @@ import {core} from "simplex-chat"
 import {Action, Actions, ConnectAction, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
 import {Changes, ChatItemsWatch, Collected, awaitResponses, nextChange, quoteLine, replyText, toMessage, toReplyTo} from "../../src/messages"
+import {ScheduleEntry, Schedules} from "../../src/schedule"
 import {AgentTools, classifyPlan} from "../../src/tools"
-import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
+import {FakeChat, actionsWith, clockStart, contact, data, direct, dueAt, event, fakeHooks, fileItem, group, groupChat, item, member, scheduleEntry, settled, signal, user} from "./fixtures"
 
 beforeEach(() => {
   jest.spyOn(process.stdout, "write").mockImplementation(() => true)
@@ -281,9 +282,9 @@ function textOf(result: CallToolResult | undefined): string {
   return (result!.content[0] as {text: string}).text
 }
 
-function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined, session?: number): {tools: AgentTools; watch: ChatItemsWatch} {
+function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo, standing: Standing) => string | undefined = () => undefined, session?: number, schedules?: Schedules): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data}, actions.mode, session), watch}
+  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover, refusedFile: () => undefined, data, schedules}, actions.mode, session), watch}
 }
 
 describe("receive", () => {
@@ -452,6 +453,100 @@ describe("receive", () => {
     expect(result.messages).toMatchObject([{item: 21, reply_to: {chat: "@6", item: 20, from: "agent", text: "Which trail?"}}])
     expect(chat.commands).toContain("/_read chat items @6 21")
     expect(errors).toEqual([expect.stringMatching(/^incognito name in @6: /)])
+  })
+})
+
+describe("scheduled prompts in receive", () => {
+  function scheduledTools(chat: FakeChat, entries: {[chat: string]: ScheduleEntry[]}): {tools: AgentTools; schedules: Schedules} {
+    const schedules = new Schedules(() => true)
+    for (const [ref, chatEntries] of Object.entries(entries)) schedules.set(ref, chatEntries)
+    return {tools: agentTools(chat, actionsWith("requests", fakeHooks()), () => undefined, undefined, schedules).tools, schedules}
+  }
+
+  it("returns the due prompts of its chat in scheduled once, with wait 0 and at once with wait, and leaves those of other chats due", async () => {
+    jest.useFakeTimers({now: clockStart})
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Switchback")), items: [item(21, "Trail closed at the pass.", {type: "directRcv"})]})
+    const {tools, schedules} = scheduledTools(chat, {
+      "@4": [scheduleEntry("0 7 * * *", "Check the trail report."), scheduleEntry("0-1 7 * * *", "Post the report.", "2026-11-10T09:00:00.000Z")],
+      "#2": [scheduleEntry("0 7 * * *", "Read the news.")],
+    })
+    schedules.start()
+    jest.advanceTimersByTime(30_000)
+    expect((await tools.call("receive", {chat: "@4", wait: 0}, signal().call))!.structuredContent).toMatchObject({
+      messages: [{item: 21, text: "Trail closed at the pass."}],
+      more: 0,
+      scheduled: [
+        {prompt: "Check the trail report.", at: dueAt(7, 0)},
+        {prompt: "Post the report.", at: dueAt(7, 0)},
+      ],
+    })
+    expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toEqual({chat: "@4", messages: [], more: 0})
+    jest.advanceTimersByTime(60_000)
+    const {call, progress} = signal()
+    expect((await tools.call("receive", {chat: "@4", wait: 3600}, call))!.structuredContent).toEqual({chat: "@4", messages: [], more: 0, scheduled: [{prompt: "Post the report.", at: dueAt(7, 1)}]})
+    expect(progress).toEqual([])
+    expect(schedules.take("#2")).toEqual([{prompt: "Read the news.", at: dueAt(7, 0)}])
+    schedules.stop()
+  })
+
+  it("ends a waiting call when a prompt of its chat becomes due, and waits while a prompt of another chat is due", async () => {
+    jest.useFakeTimers({now: clockStart})
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Switchback")), items: []})
+    const {tools, schedules} = scheduledTools(chat, {"#2": [scheduleEntry("0 7 * * *", "Read the news.")], "@4": [scheduleEntry("1 7 * * *", "Check the trail report.")]})
+    schedules.start()
+    jest.advanceTimersByTime(30_000)
+    const {call, progress} = signal()
+    const receiving = tools.call("receive", {chat: "@4", wait: 3600}, call)
+    let finished = false
+    receiving.then(() => (finished = true))
+    await jest.advanceTimersByTimeAsync(30_000)
+    expect(progress[0]).toMatch(/^No new messages in @4; waiting until /)
+    expect([finished, schedules.pending("#2")]).toEqual([false, 1])
+    await jest.advanceTimersByTimeAsync(60_000)
+    expect((await receiving)!.structuredContent).toEqual({chat: "@4", messages: [], more: 0, scheduled: [{prompt: "Check the trail report.", at: dueAt(7, 1)}]})
+    schedules.stop()
+  })
+
+  it("leaves the due prompts due when the call is aborted while it marks the messages read", async () => {
+    jest.useFakeTimers({now: clockStart})
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Switchback")), items: [item(21, "Trail closed at the pass.", {type: "directRcv"})]})
+    const {tools, schedules} = scheduledTools(chat, {"@4": [scheduleEntry("0 7 * * *", "Check the trail report.")]})
+    schedules.start()
+    jest.advanceTimersByTime(30_000)
+    const {controller, call} = signal()
+    const read = chat.sendChatCmd.bind(chat)
+    chat.sendChatCmd = async cmd => {
+      if (cmd.startsWith("/_read chat items")) controller.abort()
+      return read(cmd)
+    }
+    expect(await tools.call("receive", {chat: "@4"}, call)).toBeUndefined()
+    expect(schedules.pending("@4")).toBe(1)
+    expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toEqual({chat: "@4", messages: [], more: 0, scheduled: [{prompt: "Check the trail report.", at: dueAt(7, 0)}]})
+    schedules.stop()
+  })
+
+  it("leaves the due prompts due when the call is aborted while it reads the agent's incognito name", async () => {
+    jest.useFakeTimers({now: clockStart})
+    const chat = new FakeChat()
+    const incognito = {...contact(4, "Switchback"), activeConn: {connId: 204, connStatus: {type: "ready"}, customUserProfileId: 77}} as unknown as T.Contact
+    chat.chats.set("@4", {chatInfo: direct(incognito), items: [item(21, "Trail closed at the pass.", {type: "directRcv"})]})
+    chat.responses.set("/_info @4", {type: "contactInfo", user, contact: incognito, customUserProfile: {displayName: "Quiet Fox"}})
+    const {tools, schedules} = scheduledTools(chat, {"@4": [scheduleEntry("0 7 * * *", "Check the trail report.")]})
+    schedules.start()
+    jest.advanceTimersByTime(30_000)
+    const {controller, call} = signal()
+    const read = chat.sendChatCmd.bind(chat)
+    chat.sendChatCmd = async cmd => {
+      if (cmd === "/_info @4") controller.abort()
+      return read(cmd)
+    }
+    expect(await tools.call("receive", {chat: "@4"}, call)).toBeUndefined()
+    expect(schedules.pending("@4")).toBe(1)
+    expect((await tools.call("receive", {chat: "@4"}, signal().call))!.structuredContent).toEqual({chat: "@4", messages: [], more: 0, scheduled: [{prompt: "Check the trail report.", at: dueAt(7, 0)}]})
+    schedules.stop()
   })
 })
 

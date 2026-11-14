@@ -2,7 +2,7 @@
 
 [README](README.md) explains how to install and use the plugin.
 
-`@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and files, and receives all the responses, with the files people send it. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends, downloads a file or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust, or all files from it. Six tools cover it: `connect`, `send`, `receive`, `download`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
+`@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and files, and receives all the responses, with the files people send it. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends, downloads a file or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust, or all files from it; you also schedule prompts for it there. Six tools cover it: `connect`, `send`, `receive`, `download`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
 
 The package is also a Claude Code plugin, which gives each Claude Code session its own SimpleX group. There you prompt the session, approve its actions and tool use, and read its answers, see [Claude Code plugin](#claude-code-plugin).
 
@@ -261,10 +261,15 @@ Commands:
 | `/delete #9 files` | Cancels the running downloads from chat #9, which then fail, also those the core continues after a restart, and deletes the chat's files in the data folder, forwarded ones included, for a current or a left chat: `Deleted 3 files from #9, 2.1 MB.` or `No files from #9.` |
 | `/pending` | Lists pending actions. |
 | `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages or all files: `, approved for this chat by NAME` and `, files approved by NAME`; a last line counts the older chats. |
+| `/schedule #3 0 7 * * 1-5 TEXT` | Schedules the prompt TEXT for chat #3 at 07:00 on weekdays, server time: [Scheduled prompts](#scheduled-prompts). |
+| `/unschedule #3 1` | Removes schedule 1 of chat #3. |
+| `/schedules` | Lists the schedules of all chats. |
+| `/help` | Lists the commands, one line each: [Help](#help). |
+| `/help schedule` | Shows how to use `/schedule`, with an example. |
 
 After `/leave #9`, or after the agent's `leave` of #9 is performed in either mode, when the chat's folder has files, the agent posts ``Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agent/files/group-9`: 3 files, 2.1 MB. /delete #9 files``. The files forwarded from #9 are deleted when the agent leaves it.
 
-`/pending`, `/list` and `/leave` are in the chat's command menu, and the cards carry the others. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in the [design record](../../plans/2026-10-19-mcp-server.md), section "What the owner sees: the agent control chat".
+`/pending`, `/list`, `/schedules`, `/leave` and `/help` are in the chat's command menu, and each pending card shows the commands of its action. Tapping `/leave` in the menu puts `/leave <chat ID>` into the entry field: replace `<chat ID>` with the chat's ID from `/list`, such as `#9`, and send it. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in the [design record](../../plans/2026-10-19-mcp-server.md), section "What the owner sees: the agent control chat".
 
 ### Approval of all messages to a chat
 
@@ -291,6 +296,73 @@ After `/receive #3 7 all`, the agent's later downloads from #3 are performed at 
 - It lasts as the approval of messages does, until `/receive #3 off`, and is kept next to it in the chat's custom data.
 - `/list` shows it as `, files approved by Alice`.
 
+### Scheduled prompts
+
+An owner schedules a prompt for a chat with `/schedule CHAT CRON PROMPT`. After `/schedule #3 0 7 * * 1-5 Post the trail report for today.`, the agent replies:
+
+```
+My Agent: Schedule 1 of group Builders (#3): 0 7 * * 1-5, server time UTC+01:00. /unschedule #3 1
+```
+
+- CHAT: a chat ID from `/list`.
+- CRON: the 5 words after CHAT; the fields are minute, hour, day of month, month and day of week, in server time. A field is `*`, `N`, `A-B`, `*/S` or `A-B/S`, or a comma list of these; names such as `MON` are refused. Ranges: minute 0-59, hour 0-23, day of month 1-31, month 1-12, day of week 0-7, with 0 and 7 for Sunday. When neither day field starts with `*`, a match of either one suffices, as in vixie cron.
+- PROMPT: the rest of the one-line message, at most 2000 characters; a sixth cron field is read as the first word of PROMPT.
+- Server time: the local time of the server, in the system's time zone, or in the one set by the `TZ` environment variable, such as `TZ=Europe/Berlin npx -y @simplex-chat/mcp serve my-agent`. In the group of a [Claude Code session](#sessions-and-their-groups), server time is the local time of the plugin's service. The service takes `TZ` from the environment of the Claude Code session or command that started it; while it runs, that time zone applies to the schedules of all sessions. The current UTC offset of server time is shown in the reply to `/schedule`. At a daylight saving change, a skipped local time is never matched, and a repeated one can be matched twice.
+
+At each minute matched by a schedule, its prompt becomes due:
+- `receive` of the chat returns it once, in `scheduled` ([What the agent sees](#what-the-agent-sees)), and a `receive` waiting in the chat ends at once. A session waiting in `receive` of the chat, as asked by the prompt in [Prompt the agent from the app](#prompt-the-agent-from-the-app), gets it at that minute.
+- Each schedule has at most one due prompt: until `receive` returns it, the later times of that schedule are skipped, and its `at` is the first due minute.
+- Due prompts are kept in memory and lost when the server stops; times while it is stopped are skipped.
+- Prompts become due only while the owner who added the schedule is an approver, and while the agent keeps its control chat.
+
+A chat has at most 10 schedules. They are kept across restarts in the agent's database, as custom data of the chat, and deleted with the chat when the agent leaves it. The commands are accepted in both approval modes.
+
+The reply to `/schedules` has one line per schedule: chat, number, cron and prompt. The chats are in the order of `/list`, and a long line is cut to at most 100 bytes, ending with `…`. The schedules after the first 100 are counted in a last line; without schedules, the reply is `No schedules.`
+
+```
+My Agent: #3  1  0 7 * * 1-5  Post the trail report for today.
+          #3  2  30 18 * * *  Summarize the day's messages.
+```
+
+The reply to `/unschedule #3 1` is `Schedule 1 of group Builders (#3) is removed.` The later schedules of #3 are renumbered, and the due prompt of the removed one is dropped.
+
+Refusals:
+
+```
+situation                                  reply
+CHAT unknown, or the agent control chat    No chat #3. /list shows the agent's chats.
+a word of CRON not of these forms          Schedule: 5 cron fields expected, such as 0 7 * * *.
+a field out of its range, A above B, S 0   Schedule: cron field 60 is out of range.
+PROMPT over 2000 characters                Schedule: the prompt is over 2000 characters.
+CHAT with 10 schedules                     Schedule: group Builders (#3) has 10 schedules; /unschedule #3 N removes one.
+/unschedule of a missing number            #3 has no schedule 3.
+```
+
+The server logs each change and each due prompt, with names on one line:
+
+```
+Schedule 1 of #3 added by Alice: 0 7 * * 1-5.
+Scheduled prompt 1 of #3 is due.
+Schedule 1 of #3 removed by Alice.
+```
+
+### Help
+
+The agent answers `/help` with the commands, one line each:
+
+```
+My Agent: /approve N or /approve CHAT N performs pending action N, other than a download; /approve CHAT all approves all sends to CHAT.
+          /reject N or /reject CHAT N rejects pending action N.
+          ...
+          /help COMMAND shows how to use COMMAND, such as /help schedule.
+```
+
+`/help COMMAND` is answered with how to use COMMAND, a command of the list, written with or without its `/`: its forms and, where they apply, its parameters, rules, limits, an example and related commands. For `/help schedule`, these include the cron fields, the server's time zone, the limits of schedules and prompts, and when a prompt becomes due. The reply to other text after `/help` is `No help for that. /help lists the commands.`
+
+The forms in the reply to `/help` are tappable, and each is sent as written, placeholders included.
+
+Every member who can post in the agent control chat gets these replies; the agent accepts the other commands from approvers only.
+
 ## What the agent sees
 
 Six tools:
@@ -299,7 +371,7 @@ Six tools:
 |---|---|
 | `connect` | Joins a contact, bot, business, group or channel by a link or a SimpleX name, as the agent's profile or incognito. Returns the chat, its profile, welcome message, the commands a bot advertises, and the messages so far. |
 | `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
-| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. |
+| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked, and the chat's due scheduled prompts. |
 | `download` | Downloads the file of a received message to the data folder and returns its full path. |
 | `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
 | `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
@@ -311,6 +383,8 @@ A received message with a file has a `file` field: its name, size, type (image, 
 A received reply has `reply_to`: `item`, the quoted message's ID when the chat has it; `from`, its sender; `type`, its type when it is not a text, such as `image`; and `text`, the first line of its text, up to 200 characters, with `…` when it continues. A quoted image or file without a caption has its file name as `text`. The agent replies to the quoted message with `send` and that `item` as `reply_to`.
 
 A short voice message can arrive with its file already received. The server moves such a file into the chat's folder under the same naming when it is received in full, and its message shows it as `offered`; `download` returns its path there after the approval. A partial file of a download, or of a short voice message that arrives while the server runs, is deleted when its transfer fails or is cancelled.
+
+`receive` returns the chat's due [scheduled prompts](#scheduled-prompts) in `scheduled`, a field present only when a prompt is due: `{"chat": "#3", "messages": [], "more": 0, "scheduled": [{"prompt": "Post the trail report for today.", "at": "2026-11-11 06:00 UTC"}]}`, where `at` is the minute the prompt became due. A `receive` with a due prompt returns at once; after a call that ends without a result, its prompts stay due. The agent is told, in the description of `receive`, to handle each one as a prompt from its owner and to answer in that chat.
 
 `send` with `file`, an absolute path, sends that file with `text` as its caption:
 - `.jpg`, `.jpeg` and `.png` as an image, resized by the SimpleX core to the size the apps send, with a preview the core makes;
@@ -347,6 +421,14 @@ answer each one in that chat, and call receive again after every answer, until I
 ```
 
 Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
+
+To prompt it on a schedule, send in "My Agent", with your chat's ID from `/list` in place of `@5`:
+
+```
+/schedule @5 0 7 * * 1-5 Search the SimpleX Directory for new security groups.
+```
+
+`0 7 * * 1-5` is cron syntax for 07:00 on weekdays, server time. At that time the agent gets this prompt from its next `receive` in your chat, and answers you there. Send `/schedules` to list the schedules, and `/unschedule @5 1` to remove this one.
 
 ## Several agents
 
@@ -443,7 +525,7 @@ register options:
 
 The folder is readable only by the user: every start sets its mode to 0700, except on Windows.
 
-The server keeps its action counter in the chat database, as custom data of the agent control chat, the approvals of all messages to a chat and of all files from it as custom data of that chat, and its actions in memory.
+The server keeps its action counter in the chat database, as custom data of the agent control chat; the approvals of all messages to a chat and of all files from it, and the chat's schedules, as custom data of that chat; and its actions and due scheduled prompts in memory.
 
 The server keeps no log file: it writes its log to the terminal where `serve` runs, events to stdout and errors to stderr.
 
@@ -459,6 +541,7 @@ One server runs per data folder: a second one exits, because two processes on on
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
 - After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
+- Only approvers schedule prompts, and a schedule's prompts become due only while the owner who added it is an approver. `receive` returns them in `scheduled`, apart from the chat's messages.
 - The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
 - After `/receive #N 7 all`, the agent's later downloads from that chat, of files on its XFTP servers, run without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; any other download of it fails, unless the IP address is protected.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
@@ -621,8 +704,8 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`. Th
 - When someone joins or their role changes, Claude posts their rights. For an admin the post is `Bob is an admin and can send prompts to Claude and the group's commands, and approve tool use. You can change role to observer to stop it: /'observer #G ID'`, with the group's and the member's IDs. For a moderator, member or author it is `NAME is a ROLE and can send prompts to Claude; the group's commands and approvals need the role admin or owner.`, followed by the same command. The posts for an owner and for an observer have no command: `NAME is an owner and can send prompts to Claude and the group's commands, and approve tool use.` and `NAME is an observer and can't send messages.` Claude posts nothing for `User`.
 - `/observer #G ID` makes that member an observer, and Claude replies `NAME is an observer and can't send messages.` Admins and owners can use it on a member whose role isn't above their own. Standing approvals that the observer gave, of all messages to a chat or all files from it, stop counting while they aren't an admin or owner, and count again if they become one. For a member who was invited and hasn't joined yet, Claude replies `No member ID in this group.` That member joins with the role of the invitation, which can be changed after the join.
 - The group's description is `The Claude Code session N. Members send it prompts; admins and owners also send the group's commands and approve tool use.`, set when the group is created. Its short description shows the model and effort, see [Model and effort](#model-and-effort).
-- The group has the commands of the agent control chat of `serve` (see [What the owner sees](#what-the-owner-sees)), without a session prefix, such as `/approve 7`, `/receive @3 9` and `/leave #2`. It also has `/give CHAT N`, `/observer #G ID`, and `/approve N all` and `/revoke TOOL` for tools, see [Tool use](#tool-use).
-- A chat belongs to the session that connected it, even when the other side accepts after `connect` returned. The tools of other sessions don't show it. Their `connect` to its address returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` For example, `/give @3 2` in the group of the session that owns chat @3 gives it to session 2.
+- The group has the commands of the agent control chat of `serve` (see [What the owner sees](#what-the-owner-sees)), without a session prefix, such as `/approve 7`, `/receive @3 9` and `/leave #2`. It also has `/give CHAT N`, `/observer #G ID`, and `/approve N all` and `/revoke TOOL` for tools, see [Tool use](#tool-use). `/help` there lists `/give` and `/observer` before the line of `/help COMMAND`, and `/help give` and `/help observer` explain them.
+- A chat belongs to the session that connected it, even when the other side accepts after `connect` returned. The tools of other sessions don't show it. Their `connect` to its address returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` For example, `/give @3 2` in the group of the session that owns chat @3 gives it to session 2. The chat's [schedules](#scheduled-prompts) are moved with it, and their due prompts are dropped. A schedule's prompts become due only while the member who added it is an approver in the group of the session that owns the chat. Each group has its own member IDs, so the prompts of a schedule added in another session's group become due only after the chat is given back to that session.
 - `/list` and `/revoke` also work in the group of a closed session. A `/revoke` sent while the service is stopped applies when the service starts again.
 - `claude --resume` and `claude --continue` reopen a session with its group and chats. `/clear` keeps the session's group, because the service links the new session IDs of a Claude Code process to that process's session. A fork made with `claude --resume ID --fork-session` continues in the group of the resumed session. After `/resume` of another session inside a running one, prompts and answers go to the running session's group. A later `claude --resume` of that other session reopens its own group and chats.
 - A session closes 10 minutes after its Claude Code session ends, once the expiry times of its actions have passed. The service stops 10 minutes after the last session closes. The next session start or tool call starts it again.
@@ -639,7 +722,7 @@ With the channel, a message from a member of a session's group, other than `User
 - When you react to a message, Claude gets your emoji as a reply to that message: after its quote line, with its ID and sender, as for a reply. Claude gets the eight emoji of the apps: 👍 👎 😀 😂 😢 ❤ 🚀 ✅. To any other reaction, Claude replies `This reaction is not supported.` once for each member and message, and the session gets nothing. A video or a voice message without text is quoted with its file name, such as `> video: ride.mp4`. Claude answers as for any prompt, and its answer replies to the reacted message. A reaction is never a command or an approval: a 👍 on a card leaves the card pending. Reactions of observers, a removed reaction and reactions in the Main group reach no session. Owners turn reactions off with the group's preference "Message reactions".
 - Prompts reach the session in the order they were sent. A later prompt waits for the file of an earlier one.
 - Every message from a member who can send is a prompt, including one that starts with `!`. Only one-line messages that start with `/` are not prompts, see below. Claude Code runs no command from a prompt. Claude gets the text, and runs shell commands only as tool use, such as Bash, under Claude Code's permissions, see [Tool use](#tool-use).
-- A one-line message that starts with `/` is a command of the group, such as `/approve 5` or `/list`. From an admin or owner, an unknown command gets `Unknown command.` From a moderator, member or author, any such message gets `Only admins and owners of this group can send / commands.`, and it reaches neither the commands nor Claude.
+- A one-line message that starts with `/` is a command of the group, such as `/approve 5` or `/list`. From an admin or owner, an unknown command gets `Unknown command.` From a moderator, member or author, any such message gets `Only admins and owners of this group can send / commands.`, `/help` included, and it reaches neither the commands nor Claude. `/help help` in the group states this rule.
 - While the service runs and the session's Claude Code doesn't, Claude replies `Session N is not running.` It also replies so when Claude Code ends while a prompt's file arrives. For 30 seconds after the service starts, a prompt waits for its session to attach again, so a prompt sent while the service was stopped still arrives.
 - Claude posts its final answer of each turn in the group. When the turn's prompt came from the group, the answer replies to it, even when the next prompt arrives while Claude answers. Claude Code can add a prompt that arrives during a turn to that turn. Then the answer replies to the turn's prompt, or to the last message from the group added to the turn.
 - Claude's replies to a prompt, its answer included, are posted without the quote when the prompt was deleted or the quote makes the message too large. An answer is also posted without the quote when the quote leaves no room for its first character.
@@ -764,7 +847,7 @@ The folders, and the files the service writes, are readable only by the user, ex
 ### Plugin security
 
 - The service listens only on its local socket, in a folder only the user can read, and every request needs the token. On Windows the named pipe has no folder permissions, so the token is the only check.
-- The service gets only the environment variables it uses: the paths of the home, temporary and cache folders, the locale, the proxy and certificate settings, `NODE_OPTIONS`, the `SIMPLEX_` variables and the plugin options.
+- The service gets only the environment variables it uses: the paths of the home, temporary and cache folders, the locale and the time zone, the proxy and certificate settings, `NODE_OPTIONS`, the `SIMPLEX_` variables and the plugin options.
 - Everyone in the Main group is trusted with all sessions. In a session's group, rights follow the member's role, see [Sessions and their groups](#sessions-and-their-groups).
 - Claude Code runs no command from a message of a session's group, even one that starts with `!`. Claude gets the text, and its tool use follows Claude Code's permissions.
 - Only you get the Main group link. The session start shows it, and `link` prints it in a terminal.

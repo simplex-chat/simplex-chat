@@ -24,13 +24,15 @@ The SimpleX core (libsimplex, release `core-7.1.3.0`) runs inside the same Node.
 
 A tool call is held open by the server until the owner decides and, for `connect` and `send`, until the replies arrive, and for `download`, until the file is received or `wait` passes. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
 
-The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
+An owner can also schedule prompts for a chat with `/schedule CHAT CRON PROMPT` in the agent control chat. At each minute that the cron expression matches in the server's local time, the prompt becomes due; it is returned by the next `receive` of that chat in the field `scheduled`, and a waiting `receive` of that chat ends at once. A schedule applies only while its author is an approver.
+
+The server keeps actions, downloads and due scheduled prompts in memory, and they are lost when the process exits. The action counter, the standing approvals and the schedules are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
 The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server. The session server forwards tool calls over a local socket to `simplex-mcp service`, one service per data root. Requests on the socket are HTTP/1.1 with a bearer token. The service runs two cores:
 - `Claude` is the profile that peers see. It holds the Main group, one group per session and the chats with peers. In a session's group it posts the answers, one line for each of Claude Code's own prompts, and one line for each summary of the session's context.
 - `User` is a member of every session group. It posts the prompts typed in the terminal.
 
-Each session has the six tools and `reply`, and its group has its own `Actions` and `Control`. A chat belongs to the session that connected it. Admins and owners of the session group move a chat to another session with `/give`.
+Each session has the six tools and `reply`, and its group has its own `Actions` and `Control`. A chat belongs to the session that connected it. Admins and owners of the session group move a chat, with its schedules, to another session with `/give`.
 
 Every member of the Main group is trusted with all sessions. The Main group's owners are invited to each session group as owners. Another member of the Main group joins a session group as an admin with `/join N` there.
 
@@ -68,6 +70,7 @@ graph TD
   serve --> files["files.ts"]
   serve --> messages
   serve --> log
+  serve --> schedule["schedule.ts"]
   serve --> version["version.ts"]
   session --> client["client.ts"]
   session --> config["config.ts"]
@@ -99,6 +102,7 @@ graph TD
   hub --> messages
   hub --> log
   hub --> config
+  hub --> schedule
   hub -.-> protocol
   mainGroup --> control
   mainGroup --> tools
@@ -131,12 +135,16 @@ graph TD
   control --> qr
   control --> log
   control -.-> serve
+  control --> schedule
   tools --> actions
   tools --> messages
   tools --> log
+  tools -.-> schedule
   actions --> messages
   actions --> log
   actions -.-> tools
+  schedule --> messages
+  schedule --> log
   config --> messages
   config -.-> actions
   protocol -.-> config
@@ -174,7 +182,8 @@ graph TD
 | [`register.ts`](../src/register.ts) | `register` command: Claude Code entry of a `serve` agent |
 | [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send, chat owners |
 | [`actions.ts`](../src/actions.ts) | action records, state machine, expiry timers, per-session limits, stop |
-| [`control.ts`](../src/control.ts) | agent control chat and session groups: link, owners, owner commands, cards, counter |
+| [`control.ts`](../src/control.ts) | agent control chat and session groups: link, owners, owner commands, cards, counter, schedule storage |
+| [`schedule.ts`](../src/schedule.ts) | scheduled prompts: cron check and matching, minute timer, due prompts per chat |
 | [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names |
 | [`core.ts`](../src/core.ts) | one SimpleX core: init, user, network config, temp folder, event buffer, profile update |
 | [`files.ts`](../src/files.ts) | data folders, lock, token, `headers.json`, `server.json`, session folders, socket path, service log |
@@ -227,6 +236,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Action store | [`src/actions.ts`](../src/actions.ts) | `Actions` |
 | Agent control chat and session groups | [`src/control.ts`](../src/control.ts) | `Control` |
 | Card text | [`src/control.ts`](../src/control.ts) | `cardText` |
+| Scheduled prompts | [`src/schedule.ts`](../src/schedule.ts) | `Schedules` |
 | Item watch | [`src/messages.ts`](../src/messages.ts) | `ChatItemsWatch` |
 | Claude Code entry of `serve` | [`src/register.ts`](../src/register.ts) | `register` |
 | Data folder files | [`src/files.ts`](../src/files.ts) | `createDataFolder`, `acquireLock` |
