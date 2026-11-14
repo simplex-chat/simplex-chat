@@ -86,7 +86,7 @@ Emoji reactions bar displayed below messages with reaction counts.
 
 | Element | Description |
 |---|---|
-| Text input | `NativeTextEditor` with markdown support and auto-growing height |
+| Text input | `NativeTextEditor` with native markdown formatting edit menu (Bold, Italic, Strikethrough, Monospace, Spoiler) and auto-growing height |
 | Attachment button | Opens picker for images, videos, files, camera |
 | Send button | Sends composed message; changes to voice record button when empty |
 | Voice record | Hold-to-record with waveform preview; swipe-to-cancel |
