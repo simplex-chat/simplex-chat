@@ -20,6 +20,7 @@
    - [1.7 `leave`](#17-leave)
    - [1.8 Message, file and command objects](#18-message-file-and-command-objects)
    - [1.9 Action refusals](#19-action-refusals)
+   - [1.10 Voice messages](#110-voice-messages)
 2. [Agent control chat](#2-agent-control-chat)
    - [2.1 Commands and replies](#21-commands-and-replies)
    - [2.2 Cards](#22-cards)
@@ -52,6 +53,7 @@
 | Rule | Code |
 |---|---|
 | Tools are registered on each per-request `McpServer` with description, input schema, output schema and, in mode `host`, `_meta: {"anthropic/requiresUserInteraction": true}` for `connect`, `send`, `download` and `leave` | [`definitions`, `registerTools`, `AgentTools.register`](../src/tools.ts) |
+| With `--audio`, `voice` is in the input schema of `send`, and the description of `text` names `voice` beside `file` | [`voiceSendSchema`, `registerTools`, `AgentTools.register`](../src/tools.ts) |
 | Tool descriptions and server instructions; the instructions name the agent's display name | [`connectDescription` to `leaveDescription`, `instructions`](../src/tools.ts), [`startAgent`](../src/serve.ts) |
 | Arguments are validated by the SDK; a failure is a result with `isError: true` and the text `Input validation error: Invalid arguments for tool NAME: ERRORS` | [`McpServer.validateToolInput`](../node_modules/@modelcontextprotocol/server/dist/mcp-BumlNux0.cjs) |
 | `additionalProperties: false` is set in every input schema | [`connectSchema`, `sendSchema`, `receiveSchema`, `listSchema`, `leaveSchema`, `downloadSchema`](../src/tools.ts) |
@@ -68,7 +70,7 @@ Action fields of the key:
 | Tool | Fields |
 |---|---|
 | `connect` | `target`<br>`incognito` (default `false`)<br>`message` (default `null`) |
-| `send` | `chat`<br>`text` (default `null`)<br>`file` (default `null`)<br>`as` (default `null`)<br>`reply_to` (default `null`)<br>`mention` (default `null`) |
+| `send` | `chat`<br>`text` (default `null`)<br>`file` (default `null`)<br>`as` (default `null`)<br>`reply_to` (default `null`)<br>`mention` (default `null`)<br>`voice` (default `null`) |
 | `download` | `chat`<br>`item` |
 | `leave` | `chat` |
 
@@ -139,18 +141,19 @@ Tool errors:
 
 ### 1.3 `send`
 
-<a id="tool-send"></a>Handler: [`AgentTools.send`](../src/tools.ts). Result: [`sendResult`](../src/tools.ts). Perform: [`performSend`](../src/tools.ts). Schemas: input [`sendSchema`](../src/tools.ts), output [`sendOutput`](../src/tools.ts).
+<a id="tool-send"></a>Handler: [`AgentTools.send`](../src/tools.ts). Result: [`sendResult`](../src/tools.ts). Perform: [`performSend`](../src/tools.ts). Schemas: input [`sendSchema`](../src/tools.ts), with `--audio` [`voiceSendSchema`](../src/tools.ts), output [`sendOutput`](../src/tools.ts).
 
 Input:
 
 | Field | Type | Range | Default | Rule |
 |---|---|---|---|---|
 | `chat` | string | | required | `@N` or `#N` of the agent |
-| `text` | string | 1 to 12000 characters | required without `file` | the message text, or the caption of `file` |
+| `text` | string | 1 to 12000 characters | required without `file` and `voice` | the message text, or the caption of `file` or `voice` |
 | `file` | string | 1 character or more | | absolute path of a file of this computer |
 | `as` | string | `file` | | sends an image or video unchanged, as a file; only with `file` |
 | `reply_to` | integer | 1 or more | | item ID of a message in `chat` |
 | `mention` | integer array | 1 to 3, unique, each 1 or more | | member IDs of a group; names missing from `text` are prefixed as `@name` |
+| `voice` | string | 1 to 4096 characters | | with `--audio` only: the text spoken by the audio API and sent as a voice message; not with `file` ([1.10](#110-voice-messages)) |
 | `wait` | number | 0 to 86400 | 60 | seconds from the send; from the call when it attaches to a done action |
 | `idle` | number | 1 to 300 | 30 | seconds without a new response, once one arrived |
 | `limit` | integer | 1 to 100 | 50 | most responses returned |
@@ -164,7 +167,7 @@ Input:
 | `.mp4`, `.mov` | video | unchanged | the first frame from `ffmpeg`, resized as a preview; duration from `ffprobe`, rounded; the fixed preview and 0 when they fail |
 | other, or `as: "file"` | file | unchanged | |
 
-The fixed preview is a 16 × 9 mid-gray PNG ([`fixedPreview`](../src/tools.ts)). `ffmpeg` and `ffprobe` run with `-protocol_whitelist file -f mov`, 30 s and 64 MB of output each ([`videoFrame`, `videoDuration`, `commandOutput`](../src/tools.ts)).
+The fixed preview is a 16 × 9 mid-gray PNG ([`fixedPreview`](../src/tools.ts)). `ffmpeg` and `ffprobe` run with `-protocol_whitelist file -f mov`, 30 s and 64 MB of output each ([`videoFrame`, `mediaDuration`, `commandOutput`](../src/tools.ts)). With `voice`, `voice.m4a`, made from the speech of the audio API, is sent as a voice message with its duration ([1.10](#110-voice-messages)).
 
 Output:
 
@@ -174,15 +177,16 @@ Output:
 | `status` | always | `done`, `failed`, `rejected`, `expired` |
 | `chat` | `done` | the chat reference |
 | `item` | `done` | item ID of the sent message |
-| `responses` | `done` | received message items with IDs above `item`, in arrival order, live items left out, at most `limit` |
-| `more` | `done` | collected responses not returned, live ones and overflow included |
+| `responses` | `done` | received message items with IDs above `item`, in arrival order, live and held items left out ([1.10](#110-voice-messages)), at most `limit` |
+| `more` | `done` | collected responses not returned, live and held ones and overflow included |
 | `error` | `failed` | error text |
 
 Tool errors:
 
 | Text | Condition | Code |
 |---|---|---|
-| `text: required without file.` | neither `text` nor `file` | [`AgentTools.send`](../src/tools.ts) |
+| `text: required without file.`, with `--audio` `text: required without file or voice.` | none of `text`, `file` and `voice` | [`AgentTools.send`](../src/tools.ts) |
+| `voice: not with file.` | `voice` with `file` | [`AgentTools.send`](../src/tools.ts) |
 | `as: applies only with file.` | `as` without `file` | [`AgentTools.send`](../src/tools.ts) |
 | `No chat CHAT. list shows the agent's chats.` | invalid reference, the control chat, or a store error when the chat is read | [`AgentTools.knownChat`, `unknownChat`](../src/tools.ts) |
 | `The agent is not connected to CHAT and can't post; list shows connected: false.` | the chat is not connected | [`AgentTools.send`](../src/tools.ts) |
@@ -195,12 +199,12 @@ Tool errors:
 | `file: an absolute path is expected.`<br>`file: no file at FILE.`<br>`file: PATH is not a file.`<br>`file: PATH can't be read.` | the path, after symbolic links | [`realFile`](../src/tools.ts) |
 | `file: PATH is refused: private keys and the server's own files are not sent.` | a file named `id_*`, `*.pem`, `*.key`, `*.p12` or `*.pfx`, or under `~/.ssh`, `~/.gnupg`, or the data folder or `~/.simplex-mcp` outside `DATA/files/`; each folder by its real path | [`AgentTools.attachment`, `isRefused`](../src/tools.ts) |
 | `file: PATH is empty.` | size 0 | [`AgentTools.attachment`](../src/tools.ts) |
-| `text: too long for the message with its quote; shorten it.`<br>`text: too long for a message with this TYPE; shorten it.` | the message, as the core sends it, above 15602 bytes | [`AgentTools.send`, `tooLongText`, `fitsMessage`, `quoteContent`](../src/tools.ts) |
+| `text: too long for the message with its quote; shorten it.`<br>`text: too long for a message with this TYPE; shorten it.` | the message, as the core sends it, above 15602 bytes; a send with `voice` is measured as a voice message of 300 s named `voice.m4a`, TYPE `voice` | [`AgentTools.send`, `tooLongText`, `fitsMessage`, `quoteContent`, `voiceFile`](../src/tools.ts) |
 | refusals | see [1.9](#19-action-refusals) | |
 
 The message is measured as 600 bytes plus the JSON of its content, the file's name, the quote and the mentioned names. The quote is the quoted text, or its file's name when the text is empty; a sent image or video quotes it as text, otherwise an image's preview is kept ([`fitsMessage`, `quoteContent`](../src/tools.ts)).
 
-The perform fails with `file: PATH changed after the request.` when the file's real path, size, inode or change time differs from the request ([`AgentTools.fileToSend`](../src/tools.ts)). A resized copy is deleted at `sndFileCompleteXFTP`, at `sndFileError` and after a failed send ([`AgentTools.performSend`, `onSentFile`, `deleteSentCopy`, `isSentCopy`, `onEvent`](../src/tools.ts)).
+The perform fails with `file: PATH changed after the request.` when the file's real path, size, inode or change time differs from the request ([`AgentTools.fileToSend`](../src/tools.ts)). With `voice`, an error of the audio API or of `ffmpeg` is the failure text of the perform ([1.10](#110-voice-messages)). A resized copy is deleted at `sndFileCompleteXFTP`, at `sndFileError` and after a failed send ([`AgentTools.performSend`, `onSentFile`, `deleteSentCopy`, `isSentCopy`, `onEvent`](../src/tools.ts)).
 
 ### 1.4 `receive`
 
@@ -219,7 +223,7 @@ Output (all fields always present):
 | Field | Value |
 |---|---|
 | `chat` | the chat reference |
-| `messages` | unread received messages in chat order, then received messages that arrived during the call; live items left out; at most `limit` |
+| `messages` | unread received messages in chat order, then received messages that arrived during the call; live and held items left out ([1.10](#110-voice-messages)); at most `limit` |
 | `more` | new messages not returned, overflow, and unread items left unread by the page reads |
 
 Tool errors: `No chat CHAT. list shows the agent's chats.` for an invalid reference, the control chat, or a store error of the first read, `initial` 1 ([`AgentTools.receive`](../src/tools.ts)); other chat errors, a store error of a later page read included, as their error text ([`errorText`, `chatErrorText`](../src/log.ts)).
@@ -246,6 +250,7 @@ Output:
 | `status` | always | `done`, `performing`, `failed`, `rejected`, `expired` |
 | `chat`, `item` | `done` | the message |
 | `path` | `done` | `DATA/files/FOLDER/<file ID><extension>` |
+| `transcript`, `transcript_error` | `done` | the fields of the file's transcript file, when present ([1.10](#110-voice-messages)) |
 | `error` | `failed` | error text |
 
 FOLDER is `group-N` for `#N` and `contact-N` for `@N`; the extension is the file name's extension when it has 1 to 16 ASCII letters and digits ([`filePaths`, `storedName`, `chatFolder`](../src/messages.ts)). `/forward` downloads a file to `DATA/forwarded/FOLDER/` under the same name; a later perform of the download moves it to the download path, after the copy for the post is made ([`AgentTools.downloadFile`, `forwardFile`](../src/tools.ts)).
@@ -258,7 +263,7 @@ Steps before the action:
 | unknown servers: the file's servers that are not among the XFTP servers of `apiGetUserServers`, of no operator or of an enabled one, compared without their passwords | [`AgentTools.unknownServers`](../src/tools.ts) |
 | without unknown servers, and for a file ID not in rejected files, the chat's files approval, read again, makes the action performed at once | [`AgentTools.download`](../src/tools.ts) |
 
-Perform: `apiReceiveFile(fileId, path, approvedRelays)`, for a file in status `rcvInvitation`. `approvedRelays` is true when the action's mode is `requests` and unknown servers are named on its card, and false otherwise. The core then checks the complete description ([`AgentTools.downloadTo`, `startDownload`](../src/tools.ts)). The download ends at `rcvFileComplete`, `rcvFileError`, `rcvFileSndCancelled` or `chatItemUpdated` of its file, or at a check every 60 s ([`AgentTools.onFile`, `onFileComplete`, `onFileError`, `onFileCancelled`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived`, `failDownload`, `settleDownload`](../src/tools.ts)).
+Perform: `apiReceiveFile(fileId, path, approvedRelays)`, for a file in status `rcvInvitation`. `approvedRelays` is true when the action's mode is `requests` and unknown servers are named on its card, and false otherwise. The core then checks the complete description ([`AgentTools.downloadTo`, `startDownload`](../src/tools.ts)). The download ends at `rcvFileComplete`, `rcvFileError`, `rcvFileSndCancelled` or `chatItemUpdated` of its file, or at a check every 60 s ([`AgentTools.onFile`, `onFileComplete`, `onFileError`, `onFileCancelled`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived`, `failDownload`, `settleDownload`](../src/tools.ts)). With `--audio`, a voice file is then transcribed in the perform ([1.10](#110-voice-messages)).
 
 Failure texts of the perform:
 
@@ -365,6 +370,8 @@ Tool errors: `No chat CHAT. list shows the agent's chats.` when no action with t
 | `status` | first match:<br>`rejected`: the file ID is in rejected files<br>`failed`: `fileProhibited` is set, the status is `rcvCancelled`, `rcvAborted`, `rcvError` or `invalid`, or the status is `rcvComplete` and neither the download path nor the forwarded path has a file<br>`received`: `rcvComplete`, a file at the download path, and `fileSource` at the download path or the forwarded path<br>`offered`: otherwise, a file that `/forward` downloaded included |
 | `path` | `received`: the download path |
 | `error` | `failed`: the error text ([`fileError`, `fileStatusError`, `fileErrorText`, `srvErrorText`](../src/log.ts)) |
+| `transcript` | `received`: the string `transcript` of the transcript file ([1.10](#110-voice-messages)) |
+| `transcript_error` | `received`: the string `transcript_error` of the transcript file, without `transcript` |
 
 Only received message items (`rcvMsgContent`) are returned by `send` and `receive`; `connect` also returns sent ones (`sndMsgContent`) ([`ChatItemsWatch.collect`](../src/messages.ts), [`AgentTools.connectedChat`](../src/tools.ts)).
 
@@ -394,6 +401,62 @@ The plugin's refusals are in [4.4](#44-tool-results-in-the-plugin). Refusals of 
 Largest card form ([`largestCard`, `encodedLength`](../src/control.ts)): the maximum of the creation form, the `done` form and a `failed` form with an error of 600 × `€`, with the action's own decider or the longest current approver name; each form is measured as JSON-escaped UTF-8: `"`, `\`, `\n`, `\r`, `\t` 2 bytes, other characters below U+0020 6 bytes.
 
 The link texts of a `connect` card are its description and welcome lines. These lines, and the input preview lines of a tool-use card in the plugin, are fitted into 15000 bytes minus the largest form without them ([`Control.refusal`, `fittedLines`](../src/control.ts)). Lines are kept while they fit. The next line is cut to the bytes left and ends in `…`, and later lines are left out. Both link texts are whole in the tool result.
+
+### 1.10 Voice messages
+
+<a id="voice-messages"></a>With `--audio` ([3.1](#31-serve)), voice messages are transcribed and voice replies spoken by the audio API at URL ([`audio.ts`](../src/audio.ts)).
+
+A received voice message is transcribed at its arrival under these conditions ([`AgentTools.transcribesAtArrival`](../src/tools.ts)):
+
+| Condition | Code |
+|---|---|
+| `--audio` given | [`AgentTools.transcribesAtArrival`](../src/tools.ts) |
+| the main conversation of a contact or group | [`chatRef`](../src/messages.ts) |
+| a received message with a file of type `voice`, a duration of at most 300 s and a size of at most 1500000 bytes | [`AgentTools.onNewItems`, `isTranscribed`, `maxVoiceSeconds`](../src/tools.ts), [`maxVoiceBytes`](../src/audio.ts) |
+| file status `rcvInvitation`, protocol XFTP, no file error | [`AgentTools.transcribesAtArrival`](../src/tools.ts) |
+| fewer than 20 voice files in transcription; the control chat not lost | [`maxTranscribing`, `AgentTools.transcribesAtArrival`](../src/tools.ts) |
+| the chat's files approval by a current approver, in mode `requests` | [`Control.standingApprover`](../src/control.ts) |
+
+Steps of the arrival ([`AgentTools.transcribeOnArrival`](../src/tools.ts)):
+
+| Step | Code |
+|---|---|
+| the file ID added to `transcribing`, before `ChatItemsWatch.deliver` | [`AgentTools.onNewItems`, `onEvent`](../src/tools.ts) |
+| the file's servers, waiting for the upload until 60 s after the arrival; none: `item: the sender has not uploaded the file of item N in CHAT yet; call download again later.` | [`AgentTools.transcribeOnArrival`, `fileServers`](../src/tools.ts) |
+| unknown servers: `The file is on unknown servers that were not approved.` | [`AgentTools.transcribeOnArrival`](../src/tools.ts) |
+| the files approval read again; absent, or the control chat lost: no download | [`AgentTools.transcribeOnArrival`](../src/tools.ts) |
+| the download, `approvedRelays` false, then the transcription | [`AgentTools.transcribeOnArrival`](../src/tools.ts) |
+| an error logged as `voice message of file N: ERROR` | [`AgentTools.transcribeOnArrival`](../src/tools.ts) |
+| the item read again; the file ID removed from `transcribing`; the item passed to the item watch as an update | [`AgentTools.transcribeOnArrival`](../src/tools.ts) |
+
+A message is final when it is not live and its file ID is not in `transcribing` ([`AgentTools.isFinal`](../src/tools.ts)). Unread pages are read by `receive` until `limit + 1` final messages, and only final messages are returned; only final responses are returned by `send`, and its wait is ended by `idle` only when every collected response is final ([`unreadItems`, `awaitResponses`](../src/messages.ts), [`AgentTools.sendResult`, `receive`](../src/tools.ts)). A held message is kept unread and counted in `more`. Messages are not held by `connect`.
+
+Speech-to-text ([`transcript`, `transcribe`, `post`, `send`](../src/audio.ts)):
+
+| Item | Value |
+|---|---|
+| request | `POST URL/v1/audio/transcriptions`, a multipart form: `model` STT, `file` the bytes of the voice file, named `<file ID><extension>` |
+| order | one request at a time, in the order of the calls |
+| limits | 10 minutes from the request's turn; redirects refused; files over 1500000 bytes not sent |
+| result | the string `text` of the JSON response, trimmed |
+| errors | `Speech-to-text failed: HTTP N.`, also for a redirect<br>`Speech-to-text failed: The operation was aborted due to timeout.`<br>`Speech-to-text failed: ERROR.` with the system error of a failed connection, such as `connect ECONNREFUSED HOST:PORT`, or only its code when the connection is refused at each address of the host<br>`Speech-to-text failed: no text.`<br>`Speech-to-text failed: the file has more than 1500000 bytes.` |
+
+The transcript file is `PATH.transcript.json` beside the voice file PATH, mode 0600: `{"transcript": TEXT}`, or `{"transcript_error": ERROR}` with the error logged as `transcription of file N: ERROR` ([`writeTranscript`](../src/audio.ts)). Its string fields are read by `transcriptOf`; none are read from a missing or unreadable file ([`transcriptOf`](../src/audio.ts), [`messageFile`](../src/messages.ts)).
+
+`download`, with `--audio`, for a voice file within the limits: after the download, the file's arrival run is awaited, and the file is transcribed when its transcript file lacks `transcript`; the fields of the transcript file are added to the result ([`AgentTools.performDownload`, `downloadResult`](../src/tools.ts)).
+
+Voice replies, the perform of a `send` with `voice` ([`AgentTools.spokenFile`, `performSend`](../src/tools.ts), [`speech`](../src/audio.ts)):
+
+| Step | Value |
+|---|---|
+| speech | `POST URL/v1/audio/speech`, JSON `{model: TTS, input: voice, response_format: "wav", voice: VOICE}`, `voice` only with VOICE; 10 minutes; redirects refused |
+| WAV | `DATA/files/sent/send-XXXXXX/voice.m4a.wav`, mode 0600 |
+| conversion | `ffmpeg -nostdin -v error -protocol_whitelist file -f wav -i voice.m4a.wav -ac 1 -ar 16000 -c:a aac -b:a 32k -f ipod voice.m4a`, 30 s ([`AgentTools.spokenFile`, `commandOutput`](../src/tools.ts)) |
+| duration | `ffprobe -f mov`, rounded; 0 when it fails ([`mediaDuration`](../src/tools.ts)) |
+| message | the file `voice.m4a`; `{type: "voice", text: the caption with the mentions, duration}` |
+| failure | the folder deleted; `Text-to-speech failed: HTTP N.`, also for a redirect, `Text-to-speech failed: The operation was aborted due to timeout.`, `Text-to-speech failed: ERROR.` with the error of a failed connection, or the error of `ffmpeg` |
+
+The folder of `voice.m4a` is deleted as a resized copy is ([1.3](#13-send)).
 
 ---
 
@@ -471,7 +534,7 @@ Request lines:
 | Tool | First line | Further lines |
 |---|---|---|
 | `connect` | `I want to connect to SUBJECT, as myself.` or `, incognito.`<br>done and connected: `I connected to ...`<br>done and not connected: `I asked to connect to ...` | link description, one code span per line<br>welcome, one code span per line<br>both cut to fit the card ([1.9](#19-action-refusals))<br>with `message`: `With the message:` and its lines |
-| `send` | `I want to send a message to SUBJECT:`, with `, where I am incognito` before the colon in incognito chats<br>done: `I sent a message to ...` | text, one code span per line<br>with `file`: ``attaching TYPE `PATH`, SIZE``<br>`replying to NAME: QUOTE` with `reply_to`, the quote cut to 100 characters<br>`mentioning @A, @'B C'` with `mention` |
+| `send` | `I want to send a message to SUBJECT:`, with `, where I am incognito` before the colon in incognito chats<br>done: `I sent a message to ...` | text, one code span per line<br>with `file`: ``attaching TYPE `PATH`, SIZE``<br>with `voice`: `attaching as a voice message:`, then the voice text, one code span per line<br>`replying to NAME: QUOTE` with `reply_to`, the quote cut to 100 characters<br>`mentioning @A, @'B C'` with `mention` |
 | `download` | `I want to download a file from SENDER in KIND NAME (CHAT):`, without `SENDER in ` outside groups<br>done: `I downloaded a file from ...` | ``` `NAME`, SIZE ```<br>an XFTP file: `Servers: known.`, or ``Servers: `HOST`, `HOST`, unknown: downloading shows them this computer's IP address.`` (`it` for one) |
 | `leave` | `I want to delete KIND NAME (@N).` or `I want to leave KIND NAME (#N).`<br>done: `I deleted ...` or `I left ...` | |
 
@@ -586,6 +649,7 @@ NAME: 1 to 32 characters of `[a-z0-9]` and single hyphens, starting with a lette
 | `--new-token` | flag | off | | [`serveOptions`](../src/cli.ts) |
 | `--port` | number | 5226 | integer 1 to 65535 | [`serveOptions`](../src/cli.ts) |
 | `--qr-code` | `small` or `large` | `small` | | [`serveOptions`](../src/cli.ts) |
+| `--audio` | `URL,STT,TTS` or `URL,STT,TTS,VOICE` | absent | 3 or 4 non-empty parts; URL `http:` or `https:`, without a user name or password; its trailing slashes removed | [`serveOptions`, `audioOptions`, `isHttpUrl`](../src/cli.ts) |
 
 ### 3.2 `register`
 
@@ -619,6 +683,7 @@ Server name: `simplex-NAME` ([`register`](../src/register.ts)).
 | 2 | `--display-name: not a valid SimpleX name; try VALID` | [`displayName`](../src/cli.ts) |
 | 2 | `--approve: requests or host expected, got VALUE` | [`approveMode`](../src/cli.ts) |
 | 2 | `--qr-code: small or large expected, got VALUE` | [`qrCodeSize`](../src/cli.ts) |
+| 2 | `--audio: URL,STT,TTS or URL,STT,TTS,VOICE with an http or https URL expected, got VALUE` | [`audioOptions`](../src/cli.ts) |
 | 2 | `--scope: user or local expected, got VALUE` | [`scope`](../src/cli.ts) |
 | 2 | `--owners: ID:NAME expected, got ENTRY` | [`ownerEntry`](../src/cli.ts) |
 | 2 | `--expire: hours from 1 to 23 expected, got VALUE` | [`serveOptions`, `integer`](../src/cli.ts) |
@@ -643,7 +708,7 @@ stdout ([`log`](../src/log.ts)):
 
 | Moment | Line | Code |
 |---|---|---|
-| start | `SimpleX MCP server VERSION, agent "NAME"`<br>`Data folder: DATA`<br>`Approval mode: MODE` | [`startServer`](../src/serve.ts) |
+| start | `SimpleX MCP server VERSION, agent "NAME"`<br>`Data folder: DATA`<br>`Approval mode: MODE`<br>with `--audio`: `Audio: URL, speech-to-text STT, text-to-speech TTS`, with `, voice VOICE` | [`startServer`](../src/serve.ts) |
 | control chat created | `Agent control chat "DISPLAY" created.` | [`createControlChat`](../src/control.ts) |
 | link opened | `Join the agent control chat in the SimpleX app. The link works once:`<br>QR code<br>link<br>small QR code: `If the QR code does not scan, restart with --qr-code large, or paste the link into the app.`<br>role line | [`Control.openLink`](../src/control.ts) |
 | listening | `Listening on http://127.0.0.1:PORT/mcp` | [`startAgent`](../src/serve.ts) |
@@ -665,7 +730,7 @@ stdout ([`log`](../src/log.ts)):
 
 In the plugin's lines with `failed: ERROR.`, logged for the actions of a session, the last period is added only when ERROR does not end with one ([`sentence`](../src/actions.ts)). In `serve`, a period is added after every ERROR of these lines, and after every REASON of the line of a file not sent, as in 0.2.
 
-stderr: `CONTEXT: ERROR` from [`logError`](../src/log.ts), with CONTEXT one of `action N`, `action N card`, `action N card image`, `action N file`, `control chat command`, `EVENT in the agent control chat`, `EVENT event`, `refused file`, `file not sent`, `download of file N`, `file N`, `moving file N`, `cancelling file N`, `resizing PATH`, `preview`, `MCP`, `HTTP request`, `stop`, `simplex-mcp`. The library's download lines are written to stderr.
+stderr: `CONTEXT: ERROR` from [`logError`](../src/log.ts), with CONTEXT one of `action N`, `action N card`, `action N card image`, `action N file`, `control chat command`, `EVENT in the agent control chat`, `EVENT event`, `refused file`, `file not sent`, `download of file N`, `file N`, `moving file N`, `cancelling file N`, `voice message of file N`, `transcription of file N`, `resizing PATH`, `preview`, `MCP`, `HTTP request`, `stop`, `simplex-mcp`. The library's download lines are written to stderr.
 
 ---
 

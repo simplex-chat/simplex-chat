@@ -1,9 +1,10 @@
 import {execFileSync} from "child_process"
 import {readFileSync} from "fs"
+import {AddressInfo} from "net"
 import {tmpdir} from "os"
 import {join} from "path"
 import {ChatResponse, T} from "@simplex-chat/types"
-import {Server} from "http"
+import {Server, createServer} from "http"
 import {api, core} from "simplex-chat"
 import {Readable, Writable} from "stream"
 import {Action, Actions, ActionHooks, Mode, NewAction} from "../../src/actions"
@@ -136,8 +137,57 @@ export async function settled(): Promise<void> {
 }
 
 export async function until(condition: () => boolean): Promise<void> {
-  for (let i = 0; i < 200 && !condition(); i++) await new Promise(resolve => setTimeout(resolve, 5))
+  for (let i = 0; i < 400 && !condition(); i++) await new Promise(resolve => setTimeout(resolve, 5))
   expect(condition()).toBe(true)
+}
+
+export interface AudioRequest {
+  path: string
+  type: string
+  body: Buffer
+}
+
+export interface AudioReply {
+  status?: number
+  headers?: {[name: string]: string}
+  body?: string | Buffer
+  hold?: Promise<unknown>
+  stall?: Promise<unknown>
+}
+
+export interface AudioServer {
+  url: string
+  requests: AudioRequest[]
+  replies: Map<string, AudioReply>
+  close: () => Promise<void>
+}
+
+export async function audioServer(): Promise<AudioServer> {
+  const requests: AudioRequest[] = []
+  const replies = new Map<string, AudioReply>()
+  const server = createServer((req, res) => {
+    const chunks: Buffer[] = []
+    req.on("data", (chunk: Buffer) => chunks.push(chunk))
+    req.on("end", () => {
+      const path = req.url ?? ""
+      requests.push({path, type: req.headers["content-type"] ?? "", body: Buffer.concat(chunks)})
+      const reply: AudioReply = replies.get(path) ?? {}
+      Promise.resolve(reply.hold).then(() => res.writeHead(reply.status ?? 200, reply.headers).write(reply.body ?? "")).then(() => reply.stall).then(() => res.end())
+    })
+  })
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", () => resolve()))
+  return {
+    url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+    requests,
+    replies,
+    close: () => closeServer(server),
+  }
+}
+
+export async function formFields({type, body}: AudioRequest): Promise<{[field: string]: unknown}> {
+  const form = await new Response(body, {headers: {"content-type": type}}).formData()
+  const fields = [...form.entries()].map(async ([field, value]): Promise<[string, unknown]> => [field, typeof value === "string" ? value : {name: value.name, content: Buffer.from(await value.arrayBuffer()).toString()}])
+  return Object.fromEntries(await Promise.all(fields))
 }
 
 export function descendants(pid: number): number[] {

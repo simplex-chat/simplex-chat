@@ -5,7 +5,7 @@
 > Related specs: [README](README.md) | [Flows](flows.md) | [API](api.md)
 > Related docs: [README](../README.md) | [Reference](../REFERENCE.md) | [PLAN](../../../plans/2026-10-19-mcp-server.md)
 
-**Source:** [`cli.ts`](../src/cli.ts) | [`serve.ts`](../src/serve.ts) | [`http.ts`](../src/http.ts) | [`tools.ts`](../src/tools.ts) | [`actions.ts`](../src/actions.ts) | [`control.ts`](../src/control.ts) | [`messages.ts`](../src/messages.ts) | [`files.ts`](../src/files.ts) | [`register.ts`](../src/register.ts) | [`log.ts`](../src/log.ts) | [`core.ts`](../src/core.ts)
+**Source:** [`cli.ts`](../src/cli.ts) | [`serve.ts`](../src/serve.ts) | [`http.ts`](../src/http.ts) | [`tools.ts`](../src/tools.ts) | [`actions.ts`](../src/actions.ts) | [`control.ts`](../src/control.ts) | [`messages.ts`](../src/messages.ts) | [`audio.ts`](../src/audio.ts) | [`files.ts`](../src/files.ts) | [`register.ts`](../src/register.ts) | [`log.ts`](../src/log.ts) | [`core.ts`](../src/core.ts)
 **Plugin source:** [`session.ts`](../src/session.ts) | [`client.ts`](../src/client.ts) | [`socket.ts`](../src/socket.ts) | [`protocol.ts`](../src/protocol.ts) | [`service.ts`](../src/service.ts) | [`hub.ts`](../src/hub.ts) | [`main-group.ts`](../src/main-group.ts) | [`user.ts`](../src/user.ts) | [`hook.ts`](../src/hook.ts) | [`owner.ts`](../src/owner.ts) | [`config.ts`](../src/config.ts) | [`qr.ts`](../src/qr.ts)
 
 ---
@@ -37,6 +37,7 @@ flowchart LR
     actions["actions.ts<br/>Actions"]
     control["control.ts<br/>Control"]
     messages["messages.ts<br/>ChatItemsWatch"]
+    audio["audio.ts<br/>speech-to-text<br/>text-to-speech"]
     serve["serve.ts<br/>start, events, stop"]
     files["files.ts"]
     log["log.ts"]
@@ -52,12 +53,14 @@ flowchart LR
   tools --> actions
   actions <--> control
   tools --> messages
+  tools --> audio
+  audio -->|"HTTP<br/>/v1/audio/transcriptions<br/>/v1/audio/speech"| api["OpenAI-compatible<br/>audio API, --audio"]
   serve --> control
   serve --> tools
   serve --> messages
   serve --> files
   files --> data[("DATA:<br/>token<br/>headers.json<br/>server.json<br/>lock")]
-  tools --> folder[("DATA/files:<br/>group-N, contact-N<br/>sent")]
+  tools --> folder[("DATA/files:<br/>group-N, contact-N<br/>transcripts<br/>sent")]
   tools --> lib
   control --> lib
   serve --> lib
@@ -108,10 +111,10 @@ Start sequence, event dispatch and stop sequence of one agent.
 | Symbol | Contents |
 |---|---|
 | <a id="serve-ownerentry"></a>`OwnerEntry` | `{memberId, name}` of `--owners` |
-| <a id="serve-serveoptions"></a>`ServeOptions` | name, data folder and its `dataGiven` flag, display name, mode, owners, expiry, reset and token flags, port, QR code size, stop wait |
+| <a id="serve-serveoptions"></a>`ServeOptions` | name, data folder and its `dataGiven` flag, display name, mode, owners, expiry, reset and token flags, port, QR code size, stop wait, audio options |
 | <a id="serve-runningserver"></a>`RunningServer` | token, `ChatApi`, user, `Actions`, `stop` |
 | <a id="serve-serve"></a>`serve` | `startServer`, then SIGINT and SIGTERM handlers: the first signal stops, a second ends the stop wait |
-| <a id="serve-startserver"></a>`startServer` | data folder, lock, token, headers file, `ChatApi.init`, `startAgent`; cleanup on error |
+| <a id="serve-startserver"></a>`startServer` | data folder, lock, token, headers file, `ChatApi.init`, start lines, `startAgent`; cleanup on error |
 | <a id="serve-startagent"></a>`startAgent` | user, `prepareCore`, control group, wiring of `Actions`, `AgentTools`, `Control`, HTTP, event handler, `stop` |
 | <a id="serve-registerhint"></a>`registerHint` | the `register` command line printed after the owner setup |
 | <a id="serve-waitforcancelledcards"></a>`waitForCancelledCards` | the fixed wait at stop for cards edited or posted at the stop, used by the plugin's hub as well |
@@ -145,16 +148,16 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-inputs"></a>`ConnectInput`, `SendInput`, `ReceiveInput`, `LeaveInput`, `DownloadInput` | tool inputs |
 | <a id="tools-plansummary"></a>`PlanSummary` | card kind, chat type, name, SimpleX name, peer type, description, welcome, commands, `takesMessage` |
 | <a id="tools-chatfields"></a>`ChatFields` | chat fields of `connect` and `list` results |
-| <a id="tools-agent"></a>`Agent` | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder. The plugin adds the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection. |
+| <a id="tools-agent"></a>`Agent` | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder, audio options. The plugin adds the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection. |
 | <a id="tools-joinmethod"></a>`JoinMethod` | `prepared`, `prepareChannel`, `viaAddress`, `prepareContact`, `connect` |
 | <a id="tools-schemas"></a>schemas, from `messageSchema` to `downloadOutput` | input and output JSON schemas |
 | <a id="tools-instructions"></a>descriptions, from `connectDescription` to `leaveDescription`, and `instructions` | tool descriptions and server instructions. `instructions` names the host at whose restart actions are cancelled, `server` by default. |
 | <a id="tools-replytool"></a>`replyTool` | the plugin's seventh tool, `reply` |
 | <a id="tools-definitions"></a>`definitions` | name, description, schemas and action flag of the six tools |
-| <a id="tools-registertools"></a>`registerTools` | `registerTool` for each definition and each extra one, with `_meta` on action tools in mode `host` |
+| <a id="tools-registertools"></a>`registerTools` | `registerTool` for each definition and each extra one, with the input schema of `inputs` for a tool named there, and `_meta` on action tools in mode `host` |
 | <a id="tools-download"></a>`Download` | one download: its promise, chat, item, file ID, size, path, the last fileSource seen, received bytes and their time, check timer |
 | <a id="tools-agenttools"></a>`AgentTools` | constructor with the `Agent`, the mode or a function that returns it, and the session number of the plugin. The mode is read at each use of `mode`. |
-| <a id="tools-agenttools-register"></a>`AgentTools.register` | `registerTools` with `AgentTools.call` |
+| <a id="tools-agenttools-register"></a>`AgentTools.register` | `registerTools` with `AgentTools.call`; with audio options, the input schema of `send` with `voice` |
 | <a id="tools-agenttools-call"></a>`AgentTools.call` | handler result to `CallToolResult`; errors to `isError` |
 | <a id="tools-agenttools-perform"></a>`AgentTools.perform` | perform step of an approved action, which is the mode setter for a `mode` action |
 | <a id="tools-agenttools-givechat"></a>`giveChat`, `owns`, `claim` | the plugin's chat owners. A chat is the session's when no session ID is set or the chat's owner is that ID. `claim` sets the owner of a chat without one. It is called at a connection, and when `connect` names a known chat (`ownChat`). The hub calls it when a pending connection completes. |
@@ -163,21 +166,26 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-refusedfeature"></a>`refusedFeature`, `featureOff` | the preference NAME of a command error `feature not allowed NAME`, and the text `NAME are off in the group of this session; its owners can turn them on in the group's preferences.` The text is used for `reply`, the cards, `/forward` and the answers of a session group. |
 | <a id="tools-agenttools-downloadfile"></a>`downloadFile`, `forwardFile`, `downloadTo` | one download per file ID, shared by `download` and `/forward`; a forwarded file moved to the download path for `download` |
 | <a id="tools-agenttools-onnewitems"></a>`onNewItems`, `onFile`, `onFileComplete`, `onFileError`, `onFileCancelled`, `onFileDescription` | file events |
+| <a id="tools-agenttools-transcribesatarrival"></a>`transcribesAtArrival`, `transcribeOnArrival` | the conditions and the run of a voice message's transcription at arrival |
 | <a id="tools-agenttools-oncontactconnected"></a>`onContactConnected`, `onUserJoinedGroup` | completion of connect actions by events |
 | <a id="tools-agenttools-actionresult"></a>`actionResult` | wait for the decision, result fields, removal |
 | <a id="tools-agenttools-attachment"></a>`attachment`, `isRefused`, `fileToSend`, `resizedCopy` | the file of a `send` |
 | <a id="tools-agenttools-copyforsending"></a>`copyForSending`, `chatFiles`, `deleteChatFiles` | `/forward` copies; the files of a chat, forwarded ones included; its downloads cancelled, also those the core continues after a restart |
+| <a id="tools-agenttools-spokenfile"></a>`spokenFile` | the voice file of a `send` with `voice`: speech, conversion, duration |
 | <a id="tools-agenttools-leavechat"></a>`leaveChat` | perform step of `leave` and `/leave`; the chat's forwarded files deleted |
 | <a id="tools-agenttools-download"></a>`download`, `fileServers`, `unknownServers` | the `download` call before its action |
+| <a id="tools-agenttools-performdownload"></a>`performDownload` | the download of an approved action, then the transcription of a voice file |
 | <a id="tools-agenttools-startdownload"></a>`startDownload`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived` | a download's steps |
+| <a id="tools-agenttools-isfinal"></a>`isFinal` | a message that is neither live nor held for its transcription |
 | <a id="tools-agenttools-agentchats"></a>`agentChats`, `knownChat` | the agent's chats; a checked chat reference |
 | <a id="tools-agenttools-selfsender"></a>`selfSender`, `toMessages` | the agent's name and peer type in a chat, its incognito name in an incognito chat, or its profile name when the incognito name can't be read; the items of one chat as messages with that name, for the results of `connect`, `send` and `receive` |
 | <a id="tools-classifyplan"></a>`classifyPlan` | `apiConnectPlan` response to a join plan or a known chat |
 | <a id="tools-chatsubject"></a>`chatSubject`, `isConnected`, `isActive`, `memberCurrent`, `memberCurrentOrPending` | chat and member predicates shared with `control.ts` and `hub.ts` |
 | <a id="tools-customdataof"></a>`customDataOf`, `setChatData`, `ownerOf` | a chat's custom data; the plugin's owner key `simplexMcpOwner` |
+| <a id="tools-istranscribed"></a>`isTranscribed` | a voice file of at most 300 s and 1500000 bytes |
 | <a id="tools-fitsmessage"></a>`tooLongText`, `fitsMessage`, `quoteContent` | the refusal text of `send` and `reply` for a message that is too long. `fitsMessage` checks that the message as the core sends it, with its quote, is within `maxMessageLength`, 15602 bytes. The check is used for `send`, `reply`, the post of `/forward`, and the parts and quotes of the plugin's posts. |
 | <a id="tools-realfile"></a>`realFile` | real path, size, inode and change time of a file |
-| <a id="tools-attachmentmedia"></a>`attachmentMedia`, `videoFrame`, `videoDuration` | previews and durations |
+| <a id="tools-attachmentmedia"></a>`attachmentMedia`, `videoFrame`, `mediaDuration` | previews and durations, also of voice replies |
 | <a id="tools-toolcall"></a>`toolCall` | `ServerContext` to `ToolCall`: abort signal and progress notifications |
 
 ### [2.5 `actions.ts`](../src/actions.ts)
@@ -267,8 +275,8 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="messages-filepaths"></a>`filePaths`, `storedName`, `chatFolder` | `DATA/files/group-N`, `DATA/files/contact-N` or the same under `DATA/forwarded`, and the download path and the forwarded path of a received file in them. A stored file is named by its file ID and extension, and so are the files of the plugin's prompts. |
 | <a id="messages-fileoffer"></a>`fileOffer`, `fileContent` | file fields of an item; message content of a file |
 | <a id="messages-getchat"></a>`getChat`, `receivingFiles`, `markRead` | `apiGetChat` and `apiChatItemsRead` by chat reference; the IDs of a chat's files in status `rcvAccepted`, `rcvTransfer` or `rcvWarning`, paged |
-| <a id="messages-unreaditems"></a>`unreadItems` | unread items of a chat after its `initial` read, paged |
-| <a id="messages-reportprogress"></a>`reportProgress`, `nextChange`, `awaitResponses` | waits |
+| <a id="messages-unreaditems"></a>`unreadItems` | unread items of a chat after its `initial` read, paged until a count of final messages |
+| <a id="messages-reportprogress"></a>`reportProgress`, `nextChange`, `awaitResponses` | waits; the wait of `awaitResponses` ended at idle only when every collected item is final |
 | <a id="messages-validname"></a>`validName`, `viewName` | display name rules and `@name` form |
 
 ### [2.8 `files.ts`](../src/files.ts)
@@ -309,6 +317,21 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="log-chaintext"></a>`chainText`, `errorChain` | `SimpleX error: <type chain>: <scalar fields>`, details at most 500 characters |
 | <a id="log-fulldomainname"></a>`fullDomainName` | `SimplexDomain` to `name.simplex` or `name.testing` |
 
+### [2.11 `audio.ts`](../src/audio.ts)
+
+| Symbol | Contents |
+|---|---|
+| <a id="audio-audiooptions"></a>`AudioOptions` | `url`, `stt`, `tts`, optional `voice` of `--audio` |
+| <a id="audio-transcript-type"></a>`Transcript` | `transcript`, `transcript_error` |
+| <a id="audio-maxvoicebytes"></a>`maxVoiceBytes` | 1500000 |
+| <a id="audio-transcript"></a>`transcript` | the queue of transcriptions: one request at a time, in call order |
+| <a id="audio-speech"></a>`speech` | `POST URL/v1/audio/speech`; the WAV bytes |
+| <a id="audio-writetranscript"></a>`writeTranscript` | `PATH.transcript.json`, mode 0600; failures logged |
+| <a id="audio-transcriptof"></a>`transcriptOf` | the string fields of `PATH.transcript.json`; none when unreadable |
+| <a id="audio-transcribe"></a>`transcribe` | the size check; `POST URL/v1/audio/transcriptions` with `model` and `file`; the trimmed `text` |
+| <a id="audio-post"></a>`post` | the request, 10 minutes; a status other than 2xx, a redirect included, is an error; `SERVICE failed: ERROR.`, with the timeout's error after the timeout, and the error code for an error without a message |
+| <a id="audio-send"></a>`send` | `http.request` or `https.request` with the body and headers of a `Request`, a new connection each, the timeout's signal |
+
 ---
 
 ## 3. State
@@ -326,6 +349,8 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | Forwards | [`AgentTools.forwarding`](../src/tools.ts), the copy for the post per file ID | `forwardFile` | `downloadFile`, before it moves a forwarded file |
 | Rejected files | [`AgentTools.rejectedFiles`](../src/tools.ts) | [`downloadResult`](../src/tools.ts) | the file field; [`download`](../src/tools.ts), which then skips the files approval |
 | Count of file descriptions | [`AgentTools.describedFiles`](../src/tools.ts), with the change signal `fileDescriptions` | `onFileDescription` | `fileServers` |
+| Voice files in transcription at arrival, at most 20 | [`AgentTools.transcribing`](../src/tools.ts) | `onNewItems`, `transcribeOnArrival` | `isFinal`, `performDownload` |
+| Queue of transcriptions | [`transcriptions`](../src/audio.ts) | `transcript` | `transcript` |
 | Members of the control chat | [`Control.members`](../src/control.ts) | [`refreshMembers`](../src/control.ts) | approver checks |
 | Mode, expiry, owners list, stop wait | `ServeOptions` of the run. The mode is kept in `Actions.mode` and in each action as well, [`ActionRecord.mode`](../src/actions.ts). | CLI | all modules |
 
@@ -350,8 +375,9 @@ The profile, chats, items, members and file transfers are stored by the core in 
 | `DATA/lock` | PID and a newline | 0600 | start ([`createLock`, `createExclusive`, `takeOver`](../src/files.ts)) | next start |
 | `DATA/tmp/` | the core's temp folder: files in transfer | 0700, set at every start | [`prepareCore`, `setTempFolder`](../src/core.ts) | the core |
 | `DATA/files/group-N/`, `DATA/files/contact-N/` | downloaded files and files received without a download, named by file ID and extension | folder 0700 | the core at the download path ([`startDownload`](../src/tools.ts)); moves ([`moveFile`](../src/tools.ts)) | `download` results, `/forward`, `/leave`, `/delete CHAT files` |
+| `DATA/files/group-N/PATH.transcript.json` and the same under `contact-N` | the transcript of the voice file PATH: `{"transcript": TEXT}` or `{"transcript_error": ERROR}` | 0600 | [`writeTranscript`](../src/audio.ts) | messages and `download` results ([`transcriptOf`](../src/audio.ts), [`messageFile`](../src/messages.ts), [`downloadResult`](../src/tools.ts)); deleted with the folder |
 | `DATA/forwarded/group-N/`, `DATA/forwarded/contact-N/` | files `/forward` downloaded, named as above, until a download moves them to `DATA/files/` | folder 0700 | the core at the forwarded path ([`forwardFile`, `startDownload`](../src/tools.ts)) | `/forward`; moved by `download` ([`downloadFile`](../src/tools.ts)); deleted by `leave`, `/leave` and `/delete CHAT files` ([`deleteChatFiles`, `leaveChat`](../src/tools.ts)) |
-| `DATA/files/sent/` | resized copies of sent images, and copies of the files `/forward` posts, one folder per copy | folder 0700; a resized copy 0600 | [`resizedCopy`, `copyForSending`, `sentCopyPath`](../src/tools.ts) | the core; deleted at `sndFileCompleteXFTP`, `sndFileError` and at start ([`prepareCore`](../src/core.ts), [`AgentTools.onEvent`, `onSentFile`](../src/tools.ts)) |
+| `DATA/files/sent/` | resized copies of sent images, copies of the files `/forward` posts, and voice replies with their WAV, one folder per copy | folder 0700; a resized copy and a WAV 0600 | [`resizedCopy`, `copyForSending`, `spokenFile`, `sentCopyPath`](../src/tools.ts) | the core; deleted at `sndFileCompleteXFTP`, `sndFileError` and at start ([`prepareCore`](../src/core.ts), [`AgentTools.onEvent`, `onSentFile`](../src/tools.ts)) |
 
 The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the Node.js add-on into `CACHE/nodejs-addon-cce06d8/`, each with a `Downloading ...` line on stderr. CACHE is `$XDG_CACHE_HOME/simplex-chat` or `~/.cache/simplex-chat`; on macOS `~/Library/Caches/simplex-chat`; on Windows `%LOCALAPPDATA%\simplex-chat` ([`cacheRoot`, `resolveLibsDir`, `resolveAddonPath`, `installLibs`, `installAddon`](../../simplex-chat-nodejs/src/libs.ts)).
 
@@ -363,7 +389,7 @@ The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the No
 
 1. Data folder, lock, token and headers file are prepared ([`startServer`](../src/serve.ts)).
 2. libsimplex for SQLite is loaded by `ChatApi.init`, and the databases are migrated with confirmation `yesUp` ([`startServer`](../src/serve.ts), [`ChatApi.init`](../../simplex-chat-nodejs/src/api.ts)).
-3. Three log lines: version and NAME, data folder, mode ([`startServer`](../src/serve.ts)).
+3. Three log lines: version and NAME, data folder, mode; with `--audio`, a fourth: URL and models ([`startServer`](../src/serve.ts)).
 4. The active user is read, or created with display name `--display-name` or NAME, empty full name and peer type `agent` ([`startAgent`](../src/serve.ts)).
 5. `prepareCore` reads the network config and sets it with `smpProxyMode` `always` and `smpProxyFallback` `allowProtected` ([`startAgent`](../src/serve.ts), [`prepareCore`](../src/core.ts)).
 6. `prepareCore` sets `DATA/tmp` as the core's temp folder and deletes `DATA/files/sent` ([`prepareCore`](../src/core.ts)).
@@ -553,7 +579,7 @@ Outcomes are posted after `done` and `failed` ([`Actions.runPerform`](../src/act
 | mode `host` | nothing stored; reply `Approvals apply in mode requests; this server runs in mode host.` | downloads get no card, so the command has none to act on | [`Control.ownerCommand`](../src/control.ts) |
 | removal | `/revoke CHAT`: the `simplexMcp` key is removed, other keys kept | `/receive CHAT off`: the `simplexMcpFiles` key is removed | [`Control.revoke`](../src/control.ts) |
 | use | mode `requests`, and `approvedById` equal to the `groupMemberId` of a current approver | the same | [`Control.standingApprover`](../src/control.ts) |
-| scope | `send` | `download` of a file whose servers are all known | [`AgentTools.send`, `download`](../src/tools.ts) |
+| scope | `send` | `download` of a file whose servers are all known; with `--audio`, the download and transcription of a voice message at its arrival | [`AgentTools.send`, `download`, `transcribesAtArrival`, `transcribeOnArrival`](../src/tools.ts) |
 | decider shown | `safeName(approvedBy)` | the same | [`Control.standingApprover`](../src/control.ts) |
 | storage | the chat's custom data; removed with the chat by `leave` | the same | [`AgentTools.leaveChat`](../src/tools.ts) |
 
@@ -626,7 +652,8 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 | errors on cards | folded to one line, one code span | [`cardText`](../src/control.ts) |
 | `--owners` part of restart lines in the chat | one code span | [`inChat`, `restartText`](../src/control.ts) |
 | terminal names and errors of actions | folded to one line | [`Actions.create`, `performedText`](../src/actions.ts), [`inLog`](../src/control.ts) |
-| tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, file names, downloaded files, `description`, `welcome` and `commands` with their labels and params as data, not instructions; the instructions take a chat's messages as prompts only when the user said so in the session, and limit what the agent shares about its user | [`messageSchema`, `commandSchema`, `chatFieldSchemas`, `downloadOutput`, `instructions`](../src/tools.ts) |
+| tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, file names, downloaded files, transcripts, `description`, `welcome` and `commands` with their labels and params as data, not instructions; the instructions take a chat's messages as prompts only when the user said so in the session, and limit what the agent shares about its user | [`messageSchema`, `commandSchema`, `chatFieldSchemas`, `downloadOutput`, `instructions`](../src/tools.ts) |
+| transcripts | kept off cards and out of the log | [`writeTranscript`](../src/audio.ts) |
 
 The server writes the tappable form `/'...'` only in the card's command line ([`commandsLine`](../src/control.ts)), in `/'revoke CHAT'` of standing cards and replies ([`cardText`, `Control.approveChat`](../src/control.ts)), and in `/'delete CHAT files'` of the kept-files message ([`Control.leftChatFilesNote`](../src/control.ts)).
 
@@ -656,7 +683,9 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | `send` refuses files named `id_*`, `*.pem`, `*.key`, `*.p12` or `*.pfx`, and files under `~/.ssh`, `~/.gnupg`, the data folder and `~/.simplex-mcp` except the agent's own `DATA/files/`, each by its real path; the refusal is posted to the control chat and logged | [`AgentTools.attachment`, `isRefused`, `realFile`, `realFolder`](../src/tools.ts), [`Control.refusedFile`](../src/control.ts) |
 | the file of a `send` is sent only when its real path, size, inode and change time at the perform are those of the request | [`AgentTools.fileToSend`](../src/tools.ts) |
 | a sent JPEG or PNG is a resized copy made by the core | [`AgentTools.resizedCopy`](../src/tools.ts) |
-| `ffmpeg` and `ffprobe` read a video as MP4 or QuickTime, local files only, without standard input, 30 s and 64 MiB of output each | [`videoFrame`, `videoDuration`, `commandOutput`](../src/tools.ts) |
+| `ffmpeg` and `ffprobe` read a video as MP4 or QuickTime, local files only, without standard input, 30 s and 64 MiB of output each | [`videoFrame`, `mediaDuration`, `commandOutput`](../src/tools.ts) |
+| `ffmpeg` reads the speech of a voice reply as WAV, a local file only, without standard input, within 30 s, and writes AAC in MPEG-4 | [`AgentTools.spokenFile`, `commandOutput`](../src/tools.ts) |
+| with `--audio` and a files approval, a voice message of at most 300 s and 1500000 bytes on known XFTP servers is downloaded at its arrival, without approved relays, and its bytes are sent to the audio API | [`AgentTools.transcribesAtArrival`, `transcribeOnArrival`](../src/tools.ts), [`transcribe`](../src/audio.ts) |
 | a download is saved only at `DATA/files/group-N/` or `DATA/files/contact-N/`, or for `/forward` at the same name under `DATA/forwarded/`, named by its file ID and an extension of 1 to 16 ASCII letters and digits | [`filePaths`, `storedName`, `chatFolder`](../src/messages.ts) |
 | a forwarded file is outside `DATA/files/`, so `send` refuses it; a download moves it into `DATA/files/` after the copy for the post is made | [`AgentTools.downloadFile`, `forwardFile`, `isRefused`](../src/tools.ts) |
 | a file on unknown servers gets a card that names them, also under a files approval; relays are approved only for such a card, and for every other download, and in mode `host`, the core checks the complete description and downloads a file on unknown servers only when the IP address is protected | [`AgentTools.download`, `downloadTo`, `startDownload`](../src/tools.ts), [`commandsLine`](../src/control.ts) |
@@ -668,6 +697,16 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 - The join link is a group link of the control chat with role `member`, or `observer` with `--owners`; it is printed with a QR code on stdout and deleted at the first join event ([`Control.openLink`, `ownerJoined`, `observerJoined`](../src/control.ts)).
 - At every start the server sets private message routing: `smpProxyMode` `always`, `smpProxyFallback` `allowProtected` ([`prepareCore`](../src/core.ts)).
 - With `incognito: true` the join methods connect incognito ([`AgentTools.join`](../src/tools.ts)); the core then uses a random profile for that chat ([PLAN, Participants](../../../plans/2026-10-19-mcp-server.md#participants)).
+
+### 6.8 Audio API
+
+| Rule | Code |
+|---|---|
+| URL is set only by `--audio`, `http` or `https` without a user name or password, and logged at start | [`audioOptions`, `isHttpUrl`](../src/cli.ts), [`startServer`](../src/serve.ts) |
+| a transcription request: two fields, `model` and the voice file named `<file ID><extension>` | [`transcribe`](../src/audio.ts) |
+| a speech request: `model`, the voice text as `input`, `response_format` and the optional `voice` | [`speech`](../src/audio.ts) |
+| redirects are refused; each request is aborted after 10 minutes | [`requestTimeout`, `post`, `send`](../src/audio.ts) |
+| transcription requests are sent one at a time | [`transcriptions`, `transcript`](../src/audio.ts) |
 
 ---
 
@@ -682,7 +721,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | send, connect and download card | 15000 bytes JSON-escaped, in its largest form | [`maxCardLength`, `largestCard`, `encodedLength`](../src/control.ts) |
 | error assumed in the largest card | 600 × `€` | [`longestError`](../src/control.ts) |
 | message as the core sends it | 15602 bytes, counted with 600 bytes of envelope; `send` refuses a longer one, and the post of `/forward` leaves out its quote of the card | [`maxMessageLength`, `messageEnvelope`, `fitsMessage`](../src/tools.ts), [`Control.forward`](../src/control.ts) |
-| `send.text` | 1 to 12000 characters | [`sendSchema`](../src/tools.ts) |
+| `send.text` | 1 to 12000 characters | [`sendSchema`, `voiceSendSchema`](../src/tools.ts) |
 | `connect.message` | 1 to 2000 characters | [`connectSchema`](../src/tools.ts) |
 | `send.mention` | 1 to 3 unique member IDs | [`sendSchema`](../src/tools.ts) |
 | `wait` | 0 to 86400 s | [`connectSchema`, `sendSchema`, `receiveSchema`, `downloadSchema`](../src/tools.ts) |
@@ -696,6 +735,11 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | download check | every 60 s | [`downloadCheck`](../src/tools.ts) |
 | download without progress | 30 min, then cancelled | [`downloadStall`](../src/tools.ts) |
 | `ffmpeg`, `ffprobe` | 30 s, 64 MiB of output | [`mediaTimeout`, `maxOutputBytes`](../src/tools.ts) |
+| `send.voice` | 1 to 4096 characters | [`voiceSendSchema`](../src/tools.ts) |
+| voice file transcribed at arrival or at `download` | 300 s declared, 1500000 bytes | [`maxVoiceSeconds`, `isTranscribed`](../src/tools.ts), [`maxVoiceBytes`](../src/audio.ts) |
+| voice files in transcription at arrival | 20 | [`maxTranscribing`](../src/tools.ts) |
+| wait for the upload of a voice file at arrival | 60 s | [`downloadWait`, `AgentTools.transcribeOnArrival`](../src/tools.ts) |
+| audio API request | 10 min; transcriptions one at a time | [`requestTimeout`, `transcript`](../src/audio.ts) |
 | stop wait | 0 to 60 s, default 10 | [`serveOptions`](../src/cli.ts) |
 | error details | 500 characters | [`maxDetails`](../src/log.ts) |
 | progress interval | 60 s | [`progressInterval`](../src/messages.ts) |

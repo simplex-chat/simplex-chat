@@ -38,7 +38,7 @@ describe("serve options", () => {
 
   it("reads every option", () => {
     const {options} = parseCommand(
-      ["serve", "agent-2", "--data", "/tmp/a", "--display-name", "Agent Two", "--approve", "host", "--expire", "1", "--stop-wait", "0", "--port", "5227", "--qr-code", "large", "--new-token", "--reset-owners", "--owners"],
+      ["serve", "agent-2", "--data", "/tmp/a", "--display-name", "Agent Two", "--approve", "host", "--expire", "1", "--stop-wait", "0", "--port", "5227", "--qr-code", "large", "--audio", "http://127.0.0.1:8080,stt,tts,ana", "--new-token", "--reset-owners", "--owners"],
       home,
     ) as {options: object}
     expect(options).toEqual({
@@ -51,10 +51,21 @@ describe("serve options", () => {
       stopWait: 0,
       port: 5227,
       qrCode: "large",
+      audio: {url: "http://127.0.0.1:8080", stt: "stt", tts: "tts", voice: "ana"},
       newToken: true,
       resetOwners: true,
       owners: [],
     })
+  })
+
+  it("takes the audio API with its models and voice", () => {
+    const audio = (value: string): object | undefined => (parseCommand(["serve", "agent", "--audio", value], home) as {options: ServeOptions}).options.audio
+    expect(audio("http://127.0.0.1:8080/,stt,tts")).toEqual({url: "http://127.0.0.1:8080", stt: "stt", tts: "tts"})
+    expect(audio("https://audio.example.com/api//,whisper,kokoro,af_heart")).toEqual({url: "https://audio.example.com/api", stt: "whisper", tts: "kokoro", voice: "af_heart"})
+    for (const value of ["http://h,stt", "http://h,stt,tts,ana,extra", "http://h,,tts", "ftp://h,stt,tts", "http://u:p@h,stt,tts", "h:8080,stt,tts"]) {
+      expect(usage(["serve", "agent", "--audio", value])).toBe(`--audio: URL,STT,TTS or URL,STT,TTS,VOICE with an http or https URL expected, got ${value}`)
+    }
+    expect(usage(["serve", "agent", "--audio"])).toBe("--audio: a value expected.")
   })
 
   it("takes the QR code size", () => {
@@ -169,6 +180,9 @@ describe("help", () => {
     expect(parseCommand(["--help"], home)).toEqual({command: "help"})
     expect(helpText).toContain("  --owners [ID:NAME,...] only these owners approve; without a list, the link\n")
     expect(helpText).toContain("  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,\n                         0 to 60 (default: 10)\n")
+    expect(helpText).toContain(
+      "  --audio URL,STT,TTS[,VOICE]\n                         transcribe voice messages and send voice replies with\n                         the OpenAI-compatible audio API at URL: speech-to-text\n                         model STT, text-to-speech model TTS, its voice VOICE\n",
+    )
     expect(helpText.endsWith("--reset-owners takes --owners without a list.\n")).toBe(true)
   })
 })
