@@ -407,6 +407,7 @@ Connect to me as yourself at <your SimpleX address>, with the message:
 "I'm your agent, connected as you asked in Claude Code. I'll act on your prompts here, except security-sensitive ones."
 Then take my prompts from that chat and answer there: wait for my messages with receive (wait 3600),
 answer each one in that chat with send (wait 0), and call receive again after every answer, until I say stop.
+Answer my stop message there too before you finish.
 ```
 
 Or give it the link of a group of yours, where every member prompts it:
@@ -415,6 +416,7 @@ Or give it the link of a group of yours, where every member prompts it:
 Connect as yourself to my group at <your group link>.
 Then take the prompts of its members from that group and answer there: wait for their messages with receive (wait 3600),
 answer each one in that group with send (wait 0), and call receive again after every answer, until I say stop.
+Answer my stop message there too before you finish.
 ```
 
 Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers in that chat need no approval.

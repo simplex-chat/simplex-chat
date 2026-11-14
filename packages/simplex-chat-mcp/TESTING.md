@@ -103,11 +103,12 @@ Incognito, as a second agent, because the first one already knows the directory:
 Status messages, in your chat with the agent:
 
 1. `Connect to me as yourself at <your SimpleX address>.` Approve the card, and accept the request in the app. In "My Agent", send `/approve @N all`, with the chat's ID from `/list`: the reply is `Approved for contact <your name> (@N) by <your name>. /revoke @N`.
-2. `Take my prompts from that chat and answer there: wait for my messages with receive (wait 3600), answer each one in that chat with send (wait 0), and call receive again after every answer, until I say stop. Before each step that takes a while, send a short note with live: true.`
+2. `Take my prompts from that chat and answer there: wait for my messages with receive (wait 3600), answer each one in that chat with send (wait 0), and call receive again after every answer, until I say stop. Answer my stop message there too before you finish. Before each step that takes a while, send a short note with live: true.`
 3. Send a prompt from the app. A message with the header `LIVE` is shown: `◐ thinking · 0:00`, then `◓ thinking · 0:03`, with the next frame at each update. Each note is shown under the line, and the terminal prints `Note to contact <your name> (@N): <the note>`.
 4. The answer is received as a new message, and the status message is shown as `marked deleted`. Set "Delete for everyone" to "always" in the agent contact's preferences, and send another prompt: after the answer, the status message is removed.
 5. Send a prompt, and send `/revoke @N` in "My Agent" while the status message is shown: the status message is deleted within about 20 seconds, and a card is posted for the answer.
 6. With a group of yours and a second member in it: give Claude Code the group prompt of [Prompt the agent from the app](REFERENCE.md#prompt-the-agent-from-the-app), approve its card, and send `/approve #N all` in "My Agent". After a message of either member, a status message is posted; both members see it and its notes, and the terminal prints `Note to group <name> (#N): <the note>`.
+7. Send `stop` in the group. Claude answers it there, and the status message is deleted after the answer.
 
 Status messages with llama-swap:
 
