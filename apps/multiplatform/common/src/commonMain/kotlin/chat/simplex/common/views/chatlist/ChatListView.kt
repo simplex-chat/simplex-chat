@@ -863,7 +863,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
       if (hasText.value) {
         val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
         BackHandler(onBack = hideSearchOnBack)
-        KeyChangeEffect(chatModel.currentRemoteHost.value) {
+        KeyChangeEffect(chatModel.currentRemoteHost.value, chatModel.currentUser.value?.userId) {
           hideSearchOnBack()
         }
       } else {
