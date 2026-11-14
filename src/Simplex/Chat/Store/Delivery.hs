@@ -41,6 +41,7 @@ import Simplex.Chat.Delivery
 import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences (SGroupFeature (..), groupFeatureAllowed', groupPrefsFromRow, mergeGroupPreferences)
 import Simplex.Chat.Types.Shared (MsgSigStatus (..))
 import Simplex.Messaging.Agent.Store.AgentStore (getWorkItem, getWorkItems, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
@@ -132,7 +133,7 @@ getNextDeliveryTask db deliveryKey = do
           |]
           (groupId, workerScope, DTSNew)
 
-type MessageDeliveryTaskRow = (Only Int64) :. DeliveryJobScopeRow :. (GroupMemberId, MemberId, ContactName, UTCTime, Binary ByteString, Maybe ChatBinding, Maybe (Binary ByteString), BoolInt)
+type MessageDeliveryTaskRow = (Only Int64) :. DeliveryJobScopeRow :. (GroupMemberId, MemberId, ContactName, UTCTime, Binary ByteString, Maybe ChatBinding, Maybe (Binary ByteString), BoolInt) :. (Maybe Text, Maybe Text)
 
 getMsgDeliveryTask_ :: DB.Connection -> Int64 -> IO (Either StoreError MessageDeliveryTask)
 getMsgDeliveryTask_ db taskId =
@@ -143,31 +144,39 @@ getMsgDeliveryTask_ db taskId =
         SELECT
           t.delivery_task_id,
           t.worker_scope, t.job_scope_spec_tag, t.job_scope_include_pending, t.job_scope_support_gm_id,
-          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_chat_binding, msg.msg_signatures, t.message_from_channel
+          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_chat_binding, msg.msg_signatures, t.message_from_channel,
+          gp.preferences, gp.preferences_json
         FROM delivery_tasks t
         JOIN messages msg ON msg.message_id = t.message_id
         JOIN group_members m ON m.group_member_id = t.sender_group_member_id
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        JOIN groups g ON g.group_id = t.group_id
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         WHERE t.delivery_task_id = ?
       |]
       (Only taskId)
   where
     toTask :: MessageDeliveryTaskRow -> Either StoreError MessageDeliveryTask
-    toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, Binary msgBody, chatBinding_, sigs_, BI showGroupAsSender)) =
+    toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, Binary msgBody, chatBinding_, sigs_, BI showGroupAsSender) :. (encodedPrefs, receivedPrefs)) =
       case (toJobScope_ jobScopeRow, J.eitherDecodeStrict' msgBody) of
         (Just jobScope, Right chatMsg) ->
           let fwdSender = if showGroupAsSender && isNothing chatBinding_ then FwdChannel else FwdMember senderMemberId (fwdMemberName senderMemberName)
+              timedAllowed = groupFeatureAllowed' SGFTimedMessages $ mergeGroupPreferences $ groupPrefsFromRow encodedPrefs receivedPrefs
               -- Re-parsed from msg_body: validates stored content against current code.
               -- Signed: original bytes preserved (re-encoding would invalidate signature).
               -- Unsigned: re-encoded from parsed ChatMessage on forward (sanitizes content).
               verifiedMsg = case (chatBinding_, decodeSigs sigs_) of
                 (Just cb, Just sigs) -> VMSigned MSSVerified (SignedMsg cb sigs msgBody) chatMsg
-                _ -> VMUnsigned chatMsg
+                _ -> VMUnsigned $ if timedAllowed then chatMsg else withoutTimer chatMsg
            in Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, fwdSender, brokerTs, verifiedMsg}
         (Nothing, _) -> Left $ SEInvalidDeliveryTask taskId'
         (_, Left _) -> Left $ SEInvalidDeliveryTask taskId'
     decodeSigs :: Maybe (Binary ByteString) -> Maybe (L.NonEmpty MsgSignature)
     decodeSigs = (>>= eitherToMaybe . smpDecode . (\(Binary bs) -> bs))
+    withoutTimer :: ChatMessage 'Json -> ChatMessage 'Json
+    withoutTimer chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case chatMsgEvent of
+      XMsgNew mc -> ChatMessage {chatVRange, msgId, chatMsgEvent = XMsgNew (mc :: MsgContainer) {ttl = Nothing}}
+      _ -> chatMsg
 
 markDeliveryTaskFailed_ :: DB.Connection -> Int64 -> IO ()
 markDeliveryTaskFailed_ db taskId =

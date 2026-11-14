@@ -1083,7 +1083,7 @@ Plan:
 SCAN groups
 USE TEMP B-TREE FOR ORDER BY
 
-Query:
+Query: 
             SELECT i.chat_item_id, i.contact_id, i.group_id, i.group_scope_tag, i.group_scope_group_member_id, i.note_folder_id
             FROM chat_items i
             JOIN files f ON f.chat_item_id = i.chat_item_id
@@ -3496,11 +3496,14 @@ Query:
         SELECT
           t.delivery_task_id,
           t.worker_scope, t.job_scope_spec_tag, t.job_scope_include_pending, t.job_scope_support_gm_id,
-          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_chat_binding, msg.msg_signatures, t.message_from_channel
+          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_chat_binding, msg.msg_signatures, t.message_from_channel,
+          gp.preferences, gp.preferences_json
         FROM delivery_tasks t
         JOIN messages msg ON msg.message_id = t.message_id
         JOIN group_members m ON m.group_member_id = t.sender_group_member_id
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        JOIN groups g ON g.group_id = t.group_id
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         WHERE t.delivery_task_id = ?
       
 Plan:
@@ -3508,8 +3511,10 @@ SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 
-Query:
+Query: 
         SELECT COUNT(1)
         FROM chat_item_reactions r
         WHERE r.group_id = ? AND r.group_member_id = ? AND r.reaction_sent = ?
@@ -3521,18 +3526,18 @@ Query:
                                     OR i.group_member_id = m.group_member_id)
             WHERE i.group_id = r.group_id AND i.shared_msg_id = r.shared_msg_id AND m.member_id = r.item_member_id
           )
-
+      
 Plan:
 SEARCH r USING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
 CORRELATED SCALAR SUBQUERY 1
 SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?)
 SEARCH i USING INDEX idx_chat_items_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
 
-Query:
+Query: 
         SELECT COUNT(1)
         FROM chat_items
         WHERE user_id = ? AND contact_id = ? AND item_status = ?
-
+      
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND contact_id=? AND item_status=?)
 
