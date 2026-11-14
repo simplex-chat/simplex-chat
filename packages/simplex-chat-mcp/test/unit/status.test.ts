@@ -51,7 +51,7 @@ function labelOf(text: string): string {
 }
 
 function claudeCodeSession(): {activity: Activity; hook: (name: string, fields?: object) => void} {
-  const activity = new Activity("agent")
+  const activity = new Activity("agent", () => undefined)
   const hook = (name: string, fields: object = {}): void => activity.record({session_id: "s1", hook_event_name: name, ...fields})
   hook("PreToolUse", {tool_name: "mcp__simplex-agent__receive", tool_use_id: "t0"})
   return {activity, hook}
@@ -237,6 +237,29 @@ describe("status message", () => {
     for (const [name, input] of cases) labels.push(await activityLabel("PreToolUse", {tool_name: name, tool_use_id: "t1", tool_input: input}))
     expect(labels).toEqual(cases.map(([, , label]) => label))
     expect(await activityLabel("SubagentStart", {agent_id: "a1", agent_type: "my-plugin:reviewer"})).toBe("running a subagent")
+  })
+
+  it("deletes the statuses other than waiting ones when every Claude Code session it follows has ended its turn and no call runs", async () => {
+    const activity: Activity = new Activity("agent", () => tested.statuses.turnsEnded())
+    const tested = statusesWith({activity})
+    const {chat, statuses} = tested
+    const hook = (session: string, name: string, fields: object = {}): void => activity.record({session_id: session, hook_event_name: name, ...fields})
+    for (const session of ["s1", "s2"]) hook(session, "PreToolUse", {tool_name: "mcp__simplex-agent__receive", tool_use_id: session})
+    const endReceive = statuses.startCall("receive")
+    statuses.start("@4")
+    statuses.queue("@5")
+    statuses.show("@6", "Reading the file…")
+    await jest.advanceTimersByTimeAsync(1_000)
+    hook("s1", "Stop")
+    hook("s2", "Stop")
+    await jest.advanceTimersByTimeAsync(0)
+    expect(chat.deletedItems).toEqual([])
+    endReceive()
+    hook("s2", "UserPromptSubmit")
+    hook("s2", "Stop")
+    await jest.advanceTimersByTimeAsync(3_000)
+    expect(chat.deletedItems.map(({chatId}) => chatId).sort()).toEqual([4, 6])
+    expect(chat.updates.map(({chatId, text}) => [chatId, text])).toEqual([[5, "◓ received, waiting for the agent · 0:03"]])
   })
 
   it("deletes the status when the chat is not eligible or its read fails, and sends nothing after it", async () => {

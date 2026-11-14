@@ -93,6 +93,12 @@ export class Statuses {
     if (kept === undefined) this.schedule(chat, status)
   }
 
+  // spec: spec/architecture.md#status-statuses-turnsended
+  turnsEnded(): void {
+    if (this.calls.length > 0) return
+    for (const [chat, {label}] of [...this.statuses]) if (label !== waitingLabel) this.end(chat)
+  }
+
   // spec: spec/architecture.md#status-statuses-end
   end(chat: string, text = ""): Promise<void> {
     const status = this.statuses.get(chat)

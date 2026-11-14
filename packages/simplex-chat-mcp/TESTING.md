@@ -103,13 +103,14 @@ Incognito, as a second agent, because the first one already knows the directory:
 Status messages, in your chat with the agent:
 
 1. `Connect to me as yourself at <your SimpleX address>.` Approve the card, and accept the request in the app. In "My Agent", send `/approve @N all`, with the chat's ID from `/list`: the reply is `Approved for contact <your name> (@N) by <your name>. /revoke @N`.
-2. `Take my prompts from that chat and answer there: wait for my messages with receive (wait 3600), answer each one in that chat with send (wait 0), and call receive again after every answer, until I say stop. For each step that takes minutes, send a short note with live: true in the same response as the step's tool call.`
+2. `Take my prompts from that chat and answer there: wait for my messages with receive (wait 3600), answer each one in that chat with send (wait 0), and call receive again after every answer, until I say stop. Answer my stop message there too before you finish. For each step that takes minutes, send a short note with live: true in the same response as the step's tool call.`
 3. Send a prompt from the app. A message with the header `LIVE` is shown at once: `◐ received, waiting for the agent · 0:00`, or `◐ thinking · 0:00` when `receive` returns the prompt first; then `thinking`, with the next frame at each update. Each note is shown under the line, and the terminal prints `Note to contact <your name> (@N): <the note>`.
 4. The answer is received as a new message, and the status message is shown as `marked deleted`. Set "Delete for everyone" to "always" in the agent contact's preferences, and send another prompt: after the answer, the status message is removed.
 5. Send a prompt, and send `/revoke @N` in "My Agent" while the status message is shown: the status message is deleted within about 20 seconds, and a card is posted for the answer.
 6. With a group of yours and a second member in it: give Claude Code the group prompt of [Prompt the agent from the app](REFERENCE.md#prompt-the-agent-from-the-app), approve its card, and send `/approve #N all` in "My Agent". After a message of either member, a status message is posted; both members see it and its notes, and the terminal prints `Note to group <name> (#N): <the note>`.
-7. In your chat with the agent, send `stop`: the agent answers and stops calling `receive`. Send another prompt: `◐ received, waiting for the agent · 0:00` is shown at once and kept, with the next frame at each update. Ask Claude Code in the terminal to take your prompts again: when its `receive` returns the prompt, the label is `thinking` at once.
-8. Send `stop` again, then start a live message with a prompt: no status message is posted while it is live. Send it: `◐ received, waiting for the agent · 0:00` is shown at once. Ask Claude Code to take your prompts again; after its answer, edit one of your earlier messages: no status message is posted.
+7. Send `stop` in the group. Claude answers it there, and the status message is deleted after the answer.
+8. In your chat with the agent, send `stop`: the agent answers and stops calling `receive`. Send another prompt: `◐ received, waiting for the agent · 0:00` is shown at once and kept, with the next frame at each update. Ask Claude Code in the terminal to take your prompts again: when its `receive` returns the prompt, the label is `thinking` at once.
+9. Send `stop` again, then start a live message with a prompt: no status message is posted while it is live. Send it: `◐ received, waiting for the agent · 0:00` is shown at once. Ask Claude Code to take your prompts again; after its answer, edit one of your earlier messages: no status message is posted.
 
 Status messages with llama-swap:
 
@@ -120,13 +121,15 @@ Status messages with llama-swap:
 
 Status messages with Claude Code's work, after steps 1 and 2 of "Status messages":
 
-1. `~/.claude/settings.json` has a group with the `curl` handler shown in REFERENCE.md, "Add the agent to Claude Code", for each of the 14 events named there; `/hooks` in Claude Code labels them as user settings. `~/.simplex-mcp/my-agent/hook-headers` holds `Authorization: Bearer <token>`, with mode 0600.
+1. `~/.claude/settings.json` has a group with the `curl` handler shown in REFERENCE.md, "Add the agent to Claude Code", for each of the 15 events named there; `/hooks` in Claude Code labels them as user settings. `~/.simplex-mcp/my-agent/hook-headers` holds `Authorization: Bearer <token>`, with mode 0600.
 2. Send `Run sleep 90 in the shell, then tell me that it is done.` from the app. When Claude Code asks for permission to run it, the label is `waiting for permission in Claude Code` until the command ends.
 3. Add `"Bash(sleep *)"` to `permissions.allow` in `~/.claude/settings.json`, and send the prompt of step 2 again: Claude Code runs the command without asking. Meanwhile, ask a second `claude` session in another terminal, which has not called the agent's tools, to search the web for SimpleX: the label is `running a command` until `sleep 90` ends.
 4. Send `Use a subagent to list the files of this folder.` The labels include `running subagent TYPE`, with TYPE as code.
 5. Stop `serve`, and ask a Claude Code session to run `ls`: Claude Code runs it, and the failures of the hooks are hidden. Start `serve` again, and run `/mcp reconnect all`.
 6. `mkdir /tmp/cc`, `echo '[]' > /tmp/cc/settings.json`, then `CLAUDE_CONFIG_DIR=/tmp/cc node dist/cli.js register my-agent`: it prints `Added to Claude Code: scope user, server simplex-my-agent. /tmp/cc/settings.json is not a valid settings file; add these status hooks to it: {"hooks":{...}}` and exits with code 1, and the file still holds `[]`.
 7. In a new folder outside a git repository, for example `/tmp/project`, `node <this folder>/dist/cli.js register my-agent --scope local` prints `Added to Claude Code: scope local, server simplex-my-agent, status hooks in /tmp/project/.claude/settings.local.json.`, and that file has the hooks.
+8. Give Claude Code the prompt of step 2 of "Status messages" without `Answer my stop message there too before you finish.`, and send `stop` from the app. When Claude Code ends its turn without an answer, the status message is deleted at once. Send another prompt: `◐ received, waiting for the agent · 0:00` is shown and kept.
+9. Remove `"Bash(sleep *)"` from `permissions.allow`, and give Claude Code the prompt of step 2 of "Status messages" again. Send `Run sleep 90 in the shell, then tell me that it is done.` from the app, refuse the command in Claude Code's permission prompt with No, and leave the terminal alone. The label stays `waiting for permission in Claude Code` until Claude Code's idle notification, about one minute later; then the status message is deleted.
 
 Status messages with /abort, after steps 1 and 2 of "Status messages":
 

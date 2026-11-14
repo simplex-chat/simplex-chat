@@ -28,7 +28,7 @@ When `receive` returns messages, the server starts a status message in the chat:
 
 With `--abort-file FILE`, the status line ends with ` · /abort`. At a message `/abort` from anyone in a chat whose status message is shown, the message is kept from the agent, 1 is added to the count in FILE, and every status message is ended with `◼ aborted`; the script that runs the agent reads FILE and restarts the agent at each change of the count.
 
-`register` also adds status hooks to the Claude Code settings file of its scope. Claude Code then runs curl at each hook event, and curl posts the event to `/hook` of the server with the token. For the sessions that called a tool of this server, the Claude Code tool, permission prompt, subagent or compaction in progress is shown in the status line.
+`register` also adds status hooks to the Claude Code settings file of its scope. Claude Code then runs curl at each hook event, and curl posts the event to `/hook` of the server with the token. For the sessions that called a tool of this server, the Claude Code tool, permission prompt, subagent or compaction in progress is shown in the status line. At the end of a turn after which none of these sessions runs a turn, while no call runs, the status messages are deleted, except those of messages not yet taken.
 
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers files for the host and its hooks, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 

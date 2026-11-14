@@ -176,7 +176,7 @@ When `claude mcp add-json` succeeds, `register` adds the [status hooks](#status-
 - `user`: `settings.json` in `CLAUDE_CONFIG_DIR`, or in `~/.claude` when it is unset or empty;
 - `local`: `.claude/settings.local.json` in the project folder.
 
-The hooks are one group without a matcher for each of the events `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`, `PermissionRequest`, `PermissionDenied`, `SubagentStart`, `SubagentStop`, `PreCompact`, `PostCompact`, `Stop`, `StopFailure` and `SessionEnd`, with this handler:
+The hooks are one group without a matcher for each of the events `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`, `PermissionRequest`, `PermissionDenied`, `SubagentStart`, `SubagentStop`, `PreCompact`, `PostCompact`, `Notification`, `Stop`, `StopFailure` and `SessionEnd`, with this handler:
 
 ```
 {"type": "command", "command": "curl", "args": ["-q", "--noproxy", "*", "-s", "-m", "2", "-o", "/dev/null", "-H", "@/home/alice/.simplex-mcp/my-agent/hook-headers", "-H", "Content-Type: application/json", "--data-binary", "@-", "http://127.0.0.1:5226/hook"], "async": true}
@@ -198,7 +198,7 @@ invalid settings file      Added to Claude Code: scope user, server simplex-my-a
                            valid settings file; add these status hooks to it: {"hooks":{...}}
 ```
 
-A settings file is invalid when it is not a JSON object, when its `hooks` is neither an object nor `null`, or when the value of one of the 14 events above in `hooks` is not an array; `register` then leaves it unchanged. At each of these errors `register` exits with code 1.
+A settings file is invalid when it is not a JSON object, when its `hooks` is neither an object nor `null`, or when the value of one of the 15 events above in `hooks` is not an array; `register` then leaves it unchanged. At each of these errors `register` exits with code 1.
 
 The token is created at the agent's first start and saved in its data folder; every start writes it to `headers.json` and `hook-headers`. `serve my-agent --new-token` replaces it, and Claude Code sends the new token from its next connection, and curl from its next post, without a new `register`.
 
@@ -368,7 +368,7 @@ The apps show it under the header `LIVE`. The first line is the status line: a f
 | `reading the prompt with MODEL, N tokens read` | `--inference`: a model reads the prompt |
 | `generating with MODEL, N tokens/s` | `--inference`: a model generates |
 | `waiting for approval` | the agent waits in a call for your decision on a card |
-| `waiting for permission in Claude Code` | from Claude Code's permission prompt to the end of a tool call, a batch or the turn of its session ([Status hooks](#status-hooks)), so also during the allowed call |
+| `waiting for permission in Claude Code` | from Claude Code's permission prompt to the end of a tool call, a batch or the turn of its session ([Status hooks](#status-hooks)), so also during the allowed call; after a refusal in the prompt, to Claude Code's idle notification |
 | `using TOOL` | the agent runs `connect`, `send`, `download`, `list` or `leave`; TOOL is the latest of them |
 | `compacting the conversation` | Claude Code compacts the conversation |
 | `running a command`, `reading FILE`, `editing FILE`, `searching files`, `searching the web` or `using NAME` | Claude Code runs a tool; the latest running tool is named, as the next table shows |
@@ -398,8 +398,11 @@ The server deletes the status message for everyone:
 - at the next update or check once the conditions above are no longer met in the chat, for example after `/revoke`, or after the agent loses its control chat;
 - 23 hours after the start, at the next check or note; a note at that age is shown in a new status message;
 - from the 50th version, 30 minutes after the last start or end of one of the agent's calls, at the next check, while the agent runs no call other than `receive`;
+- with the [status hooks](#status-hooks), at the end of a turn after which no Claude Code session that the server follows runs a turn, while the agent runs no call, unless the label is `received, waiting for the agent`;
 - at an error of a command for the status message, with `status of CHAT: ERROR` logged;
 - when the server stops.
+
+When the agent ends its turn without an answer in that chat, for example after a message it leaves unanswered, the status message is deleted with the status hooks at the end of that turn, when the other sessions that the server follows have ended theirs and the agent runs no call. Without the status hooks, the status message is shown until one of the other deletions above, such as the agent's next wait in a `receive` of that chat. If no call of the agent follows the `receive` that started it, the status message is then deleted about 35 minutes after the start, at the first check at least 30 minutes after that `receive` ended.
 
 At an `/abort`, every status message is ended with `◼ aborted` in place of the deletion ([/abort](#abort)).
 
@@ -431,7 +434,8 @@ Notifications, by each recipient's apps:
 With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-agent-to-claude-code)), Claude Code passes its events to curl, which posts them to `http://127.0.0.1:PORT/hook` of the agent's server, with the token.
 
 - The server follows a session of Claude Code from its first event with a tool of this agent, such as `mcp__simplex-my-agent__receive`, and ignores the events of other sessions. It follows at most 16 sessions, and drops the oldest one with its state.
-- Of each event, the server uses only `hook_event_name`, `session_id`, `tool_name`, `tool_use_id`, `agent_id`, `agent_type`, and the base name of `tool_input.file_path` or `tool_input.notebook_path`. The rest of the event, prompts, commands, file contents and tool results included, is discarded after parsing; nothing of it is saved or logged.
+- A followed session runs a turn from its first event and from each `UserPromptSubmit`, until its `Stop`, `StopFailure`, `SessionEnd` or idle notification. At the end of a turn after which no followed session runs a turn, while the agent runs no call, the server deletes the status messages, except those with the label `received, waiting for the agent`.
+- Of each event, the server uses only `hook_event_name`, `session_id`, `tool_name`, `tool_use_id`, `agent_id`, `agent_type`, `notification_type`, and the base name of `tool_input.file_path` or `tool_input.notebook_path`. The rest of the event, prompts, commands, file contents and tool results included, is discarded after parsing; nothing of it is saved or logged.
 - A file's base name is kept only when it consists of 1 to 64 ASCII letters, digits and characters of `_.+@-`. Tool names and subagent types follow the same rule, with `_` and `-` as the only characters besides ASCII letters and digits.
 - At most 64 running tools and 64 running subagents are kept, and 256 IDs of ended tool calls; the oldest is dropped.
 
@@ -445,8 +449,11 @@ With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-age
 | `SubagentStop` | its subagent ended |
 | `PreCompact` | compaction running |
 | `PostCompact` | compaction ended |
-| `UserPromptSubmit`, `Stop`, `StopFailure`, `SessionEnd` | all its tools, subagents, permission prompt and compaction ended |
+| `UserPromptSubmit` | all its tools, subagents, permission prompt and compaction ended; a turn running |
+| `Stop`, `StopFailure`, `SessionEnd` | all its tools, subagents, permission prompt and compaction ended; its turn ended |
+| `Notification` with `notification_type` `idle_prompt`, Claude Code's idle notification | as `Stop` |
 
+- After a refusal in Claude Code's permission prompt, Claude Code 2.1.281 sends no `PostToolUse`, `PostToolUseFailure`, `PermissionDenied`, `PostToolBatch` or `Stop`. The label `waiting for permission in Claude Code` is then shown until Claude Code's idle notification, about one minute after the end of the turn. Claude Code sends that notification only when its terminal received no input since the end of the turn and no dialog of Claude Code is open; otherwise the label is shown until the session's next prompt or its end.
 - Claude Code runs curl in the background and hides the outcome outside verbose mode (Ctrl+O), so the failures of the posts while the server is stopped are hidden too.
 - The server checks the token, `Host` and `Origin` of a request to `/hook` as for `/mcp`. It answers a `POST` with 204, or with 411 without Content-Length, 413 for a body over 4 MiB and 400 for invalid JSON, and another method with 405.
 
@@ -502,6 +509,7 @@ Connect to me as yourself at <your SimpleX address>, with the message:
 "I'm your agent, connected as you asked in Claude Code. I'll act on your prompts here, except security-sensitive ones."
 Then take my prompts from that chat and answer there: wait for my messages with receive (wait 3600),
 answer each one in that chat with send (wait 0), and call receive again after every answer, until I say stop.
+Answer my stop message there too before you finish.
 ```
 
 Or give it the link of a group of yours, where every member prompts it:
@@ -510,6 +518,7 @@ Or give it the link of a group of yours, where every member prompts it:
 Connect as yourself to my group at <your group link>.
 Then take the prompts of its members from that group and answer there: wait for their messages with receive (wait 3600),
 answer each one in that group with send (wait 0), and call receive again after every answer, until I say stop.
+Answer my stop message there too before you finish.
 ```
 
 Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers in that chat need no approval.
@@ -649,7 +658,7 @@ One server runs per data folder: a second one exits, because two processes on on
 
 ## Claude Code plugin
 
-The plugin gives every Claude Code session its own SimpleX group. In that group you send the session prompts, approve its actions and tool use, and read its answers. One service runs all sessions that share a data folder. Peers see one SimpleX profile, `Claude`. Sessions have the tools of `serve` (`connect`, `send`, `receive`, `download`, `list` and `leave`), and `reply`, which sends files to the session's group. In mode `requests`, the service shows the [status messages](#status-while-the-agent-works) of sessions as `serve` does. When the service stops, it deletes them and waits 10 seconds for the deletions and the cancelled cards to be sent; when it starts, it deletes those left by a crash.
+The plugin gives every Claude Code session its own SimpleX group. In that group you send the session prompts, approve its actions and tool use, and read its answers. One service runs all sessions that share a data folder. Peers see one SimpleX profile, `Claude`. Sessions have the tools of `serve` (`connect`, `send`, `receive`, `download`, `list` and `leave`), and `reply`, which sends files to the session's group. In mode `requests`, the service shows the [status messages](#status-while-the-agent-works) of sessions as `serve` does without the [status hooks](#status-hooks) and `--inference`: from the arrival of a message, with the labels `received, waiting for the agent`, `waiting for approval`, `using TOOL` and `thinking`, and with the notes of `send` with `live: true`. Plugin sessions get neither the labels of Claude Code's work and the deletion at the end of its turns, which come from the status hooks of `register`, nor the model labels of `--inference`. When the service stops, it deletes the status messages and waits 10 seconds for the deletions and the cancelled cards to be sent; when it starts, it deletes those left by a crash.
 
 ### Install
 

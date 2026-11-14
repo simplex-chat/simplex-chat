@@ -1782,7 +1782,7 @@ Notes:
 - At the 50th render, the line is `◌ working since YYYY-MM-DD HH:MM UTC`, or `◌ received, waiting for the agent since YYYY-MM-DD HH:MM UTC` for a waiting status; later ticks are run every 5 min without a render, and notes are rendered up to the 59th render ([`Statuses.tick`, `schedule`, `statusText`](../src/status.ts)).
 - A note is checked as a `send` up to the role check, then by `statusRefusal`; it is rendered at once without an action, and the result is returned without a wait ([`AgentTools.send`, `showNote`](../src/tools.ts), [`Statuses.show`](../src/status.ts)).
 - The answer is a new message; the status message is deleted after `apiSendMessages` returns, and it is kept after a failed answer ([`AgentTools.performSend`](../src/tools.ts)). The outcome of the answer is posted to the control chat as in [6](#6-send-under-a-standing-approval-and-revoke).
-- Other deletions: a `receive` of #9 that waits, `leave` and `/leave`, a tick of a chat that is not eligible, 23 hours, 30 minutes without calls from 50 renders, a failed send or update of the status, the stop ([API 1.10](api.md#110-status-message)). At an `/abort`, the status is ended with `◼ aborted` in place of the deletion ([39](#39-abort-in-a-status-message)).
+- Other deletions: a `receive` of #9 that waits, `leave` and `/leave`, a tick of a chat that is not eligible, 23 hours, 30 minutes without calls from 50 renders, the end of the turns of the Claude Code sessions with the status hooks ([38](#38-claude-code-activity-in-the-status-message)), a failed send or update of the status, the stop ([API 1.10](api.md#110-status-message)). At an `/abort`, the status is ended with `◼ aborted` in place of the deletion ([39](#39-abort-in-a-status-message)).
 - A render queued while the first send of a status runs is sent after it. When that send fails, a new live item is posted for the queued render, and that item is removed by the deletion queued after it ([`LiveMessage.queueText`, `showMessage`](../../simplex-chat-nodejs/src/api.ts), [`Statuses.failed`](../src/status.ts)).
 - Polls are shared by all status messages for 3 s; one 1 s deadline is set for all requests of a poll; a failed poll is logged as `inference endpoint: ERROR` unless the previous one failed ([`inferencePoller`](../src/inference.ts), [`Statuses.inferred`](../src/status.ts)).
 
@@ -1821,7 +1821,9 @@ sequenceDiagram
   CC->>H: POST /hook {PostToolUse, S1, U3}
   H->>Y: record: permission flag cleared, U3 removed
   CC->>H: POST /hook {Stop, S1}
-  H->>Y: record: the running tools, subagents and flags of S1 removed
+  H->>Y: record: the running tools, subagents and flags of S1 removed; the turn of S1 ended
+  Y->>L: turnsEnded: no agent session runs a turn
+  L->>C: apiDeleteChatItems #35;9 [S] broadcast, as no call runs
 ```
 
 Notes:
@@ -1832,9 +1834,10 @@ Notes:
 - `agent_id` is set in the tool events of a subagent; at `PostToolBatch`, only the running tools of the same agent are removed ([`Activity.record`](../src/activity.ts)).
 - Labels are read at ticks, 3 s to 20 s apart, so a tool call started and ended between two ticks is not shown ([`Statuses.tick`, `schedule`](../src/status.ts)).
 - The posts of one session may be received out of order; for an end event received before its `PreToolUse`, the ID is kept as ended, and the late `PreToolUse` is skipped ([`Activity.record`](../src/activity.ts)).
+- A session runs a turn from its first event with a tool of this server and from its `UserPromptSubmit`, until its `Stop`, `StopFailure`, `SessionEnd` or idle notification, a `Notification` with `notification_type` `idle_prompt`. After a refusal in the permission prompt, Claude Code sends only the idle notification, about one minute later, so the label `waiting for permission in Claude Code` is shown until then ([API 5.2](api.md#52-events)). At such an end, when no agent session runs a turn, the status messages other than waiting ones are deleted while no call of the agent runs, so a status message of a prompt left unanswered ends with the turn. A waiting status is kept ([`Activity.endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts), the `Activity` of [`startAgent`](../src/serve.ts)).
 - While the server is down, curl fails with a refused connection; Claude Code hides the completion notices of async hooks by default ([Claude Code hooks: background](https://code.claude.com/docs/en/hooks#run-hooks-in-the-background)).
 
-Source: [`hookEvents`, `statusHooks`](../src/register.ts), [`startHttp`, `receiveHook`](../src/http.ts), [`startAgent`](../src/serve.ts), [`Activity` to `deleteWhere`](../src/activity.ts), [`Statuses.label`, `otherLabel`, `toolLabel`, `named`](../src/status.ts).
+Source: [`hookEvents`, `statusHooks`](../src/register.ts), [`startHttp`, `receiveHook`](../src/http.ts), [`startAgent`](../src/serve.ts), [`Activity` to `deleteWhere`](../src/activity.ts), [`Statuses.turnsEnded`, `label`, `otherLabel`, `toolLabel`, `named`](../src/status.ts).
 
 ---
 
