@@ -349,12 +349,12 @@ async def test_help_replies_command_failed_when_send_fails(ctx, api):
     calls = 0
     original = api.api_send_text_reply
 
-    async def flaky_once(chat_item, text):
+    async def flaky_once(chat_item, text, priority=None):
         nonlocal calls
         calls += 1
         if calls == 1:
             raise ChatCommandError("boom", {"type": "chatCmdError"})
-        return await original(chat_item, text)
+        return await original(chat_item, text, priority)
 
     api.api_send_text_reply = flaky_once
     await handlers.help_cmd(ctx, make_group_message(api, make_member(1), "/help"))
