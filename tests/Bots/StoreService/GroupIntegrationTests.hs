@@ -417,7 +417,7 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     row <- fromMaybe (error "no prepaid code row") <$> withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
     placeCode st "r1" ownerA (order "alicebakery" 1) row `shouldReturn` Right ()
     timeout waitLimit (awaitSent node 1) >>= (`shouldSatisfy` isJust)
-    pollUntilTrue $ (== 2) <$> countRows cc "sx_badge_service_name_terms"
+    pollUntilTrue $ (== 2) <$> countRows cc "sx_badge_service_name_terms" ()
     poll t >>= (`shouldSatisfy` isNothing)
 
 namesCodesChatTests :: SpecWith TestParams
@@ -438,7 +438,7 @@ testGroupNameCodes ps = do
     prepaidTerms cc five `shouldReturn` Just (7, 5, CPSFree)
     replyTo cc alice "/bulk name 6 count 3" `shouldReturn` bulkUsage
     replyTo cc alice "/issue name 8 years 11" `shouldReturn` issueUsage
-    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 2
+    countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 2
 
 testGroupNameCodesPerDay :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesPerDay ps = do
@@ -448,8 +448,8 @@ testGroupNameCodesPerDay ps = do
     replicateM_ 2 $ issueNameRaw cc "name 6"
     replicateM_ 3 $ T.isPrefixOf "Code: " <$> replyTo cc alice "/issue name 6" `shouldReturn` True
     replyTo cc alice "/issue name 6" `shouldReturn` "At most 3 name codes are issued in a day, 3 so far. Issue more with //issue name in --run-cli."
-    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 5
-    countRows cc "sx_badge_service_name_prepaid_codes WHERE issued_in_group = 1" `shouldReturn` 3
+    countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 5
+    countRows cc "sx_badge_service_name_prepaid_codes WHERE issued_in_group = 1" () `shouldReturn` 3
 
 testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
 testOperatorNameCodes ps = do
@@ -461,7 +461,7 @@ testOperatorNameCodes ps = do
       (args,) <$> issueRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
     forM_ [(5, 2), (64, 2), (7, 1), (7, 11)] $ \(len, years) ->
       ((len, years),) . isLeft <$> issueNameCode cc IssuedInConsole len years CPSFree `shouldReturn` ((len, years), True)
-    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 0
+    countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 0
     paid <- issueNameRaw cc "name 7 years 3 paid"
     prepaidTerms cc paid `shouldReturn` Just (7, 3, CPSPaid)
     let check code = checkPrepaid port (formatNameCode (NCPrepaid code))
@@ -1131,11 +1131,11 @@ testModeratorAdmitsPendingMember ps = do
         awaitOnConsole bob ("Code: " <> code)
         receivedItemsWithCode cath code `shouldReturn` 0
         admitMember cc gid bob "cath"
-        pollUntilTrue $ (`elem` [Just "connected", Just ("complete" :: Text)]) <$> queryFirst (chatController cath) "SELECT member_status FROM group_members WHERE member_category = 'user'"
+        pollUntilTrue $ (`elem` [Just "connected", Just ("complete" :: Text)]) <$> queryFirst (chatController cath) "SELECT member_status FROM group_members WHERE member_category = 'user'" ()
         receivedItemsWithCode cath code `shouldReturn` 0
         drainConsole cath
   where
-    receivedItemsWithCode member code = countRows (chatController member) ("chat_items WHERE item_sent = 0 AND item_text LIKE '%" <> T.unpack code <> "%'")
+    receivedItemsWithCode member code = countRows (chatController member) "chat_items WHERE item_sent = 0 AND item_text LIKE ?" (Only ("%" <> code <> "%"))
 
 testFailedPromotionNotRetried :: HasCallStack => TestParams -> IO ()
 testFailedPromotionNotRetried ps = do
@@ -1151,7 +1151,7 @@ testFailedPromotionNotRetried ps = do
       withNewTestChat ps "bob" bobProfile $ \bob -> do
         joinGroup cc bob
         drainUntil bob ["connecting to group moderators for admission to group"]
-        pollUntilTrue $ (== Just (1 :: Int)) <$> queryFirst cc ("SELECT members_require_attention FROM groups WHERE group_id = " <> show gid)
+        pollUntilTrue $ (== Just (1 :: Int)) <$> queryFirst cc "SELECT members_require_attention FROM groups WHERE group_id = ?" (Only gid)
         memberStatus cc gid "bob" `shouldReturn` Just "pending_review"
         awaitLaneOnConsoles cc env [alice]
         drainConsole bob
@@ -1529,7 +1529,7 @@ testGroupNameCodesNamesOff :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesNamesOff ps =
   withGroupOwner ps $ \_ cc _ alice -> do
     replyTo cc alice "/issue name 8" `shouldReturn` namesOffReply
-    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 0
+    countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 0
     unissued <- formatNameCode . NCPrepaid <$> randomNamePrepaidCode (random cc) 8
     revokeInGroup cc alice unissued "No such code."
   where
@@ -1864,7 +1864,7 @@ profileUpdatedAt cc gid =
 
 profileMemberAdmission :: HasCallStack => ChatController -> Int64 -> IO (Maybe GroupMemberAdmission)
 profileMemberAdmission cc gid =
-  queryOne cc "no group profile to read member admission from" (groupProfileSql "p.member_admission" gid)
+  queryOne cc "no group profile to read member admission from" (groupProfileSql "p.member_admission") (Only gid)
 
 groupInfoOf :: HasCallStack => ChatController -> Int64 -> IO GroupInfo
 groupInfoOf cc gid =
