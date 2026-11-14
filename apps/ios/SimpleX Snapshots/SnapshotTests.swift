@@ -2,6 +2,8 @@ import XCTest
 import SwiftUI
 import UIKit
 import AVFoundation
+import CallKit
+import PushKit
 import WebRTC
 import LZString
 @testable import SimpleX
@@ -177,47 +179,146 @@ final class SnapshotTests: XCTestCase {
         let client = WebRTCClient({ await responses.add($0) }, .constant(nil))
         client.activeCall = client.initializeCall(nil, .audio, nil, nil)
         defer { client.endCall() }
-        let ice = { (index: Int64) in
-            WCallCommand.ice(iceCandidates: compressToBase64(input: #"[{"candidate":"candidate:1 1 udp 1 192.0.2.1 9 typ host","sdpMid":"0","sdpMLineIndex":\#(index)}]"#))
-        }
-        let valid = ice(0)
-        let outOfRange = ice(Int64(Int32.max) + 1)
+        let valid = WCallCommand.ice(iceCandidates: iceCandidates(sdpMLineIndex: 0))
+        let aboveRange = WCallCommand.ice(iceCandidates: iceCandidates(sdpMLineIndex: Int64(Int32.max) + 1))
+        let belowRange = WCallCommand.ice(iceCandidates: iceCandidates(sdpMLineIndex: Int64(Int32.min) - 1))
         await client.sendCallCommand(command: valid)
-        await client.sendCallCommand(command: outOfRange)
+        await client.sendCallCommand(command: aboveRange)
+        await client.sendCallCommand(command: belowRange)
         let validResponse = await responses.response(to: valid)
-        let outOfRangeResponse = await responses.response(to: outOfRange)
+        let aboveRangeResponse = await responses.response(to: aboveRange)
+        let belowRangeResponse = await responses.response(to: belowRange)
         XCTAssertEqual(validResponse?.respType, "ok")
-        XCTAssertEqual(outOfRangeResponse?.respType, "error")
+        XCTAssertEqual(aboveRangeResponse?.respType, "error")
+        XCTAssertEqual(belowRangeResponse?.respType, "error")
+    }
+
+    @MainActor
+    func testOfferIceCandidateIndexValidation() async throws {
+        let peers = CallPeers()
+        defer { peers.close() }
+        peers.peer.addTransceiver(of: .audio)
+        let (offer, _) = await peers.peer.offer()
+        let sdp = try XCTUnwrap(offer?.sdp)
+        let offerWithIndex = { (sdpMLineIndex: Int64) in
+            WCallCommand.offer(
+                offer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: .offer, sdp: sdp))),
+                iceCandidates: iceCandidates(sdpMLineIndex: sdpMLineIndex),
+                media: .audio
+            )
+        }
+        let outOfRangeResponse = await peers.receive(offerWithIndex(Int64(Int32.max) + 1))
+        XCTAssertNil(outOfRangeResponse)
+        XCTAssertNil(peers.client.activeCall)
+        let validResponse = await peers.receive(offerWithIndex(0))
+        XCTAssertEqual(validResponse?.respType, "answer")
+    }
+
+    @MainActor
+    func testAnswerIceCandidateIndexValidation() async throws {
+        let peers = CallPeers()
+        defer { peers.close() }
+        try await peers.start()
+        let answer = try await peers.peerAnswer()
+        let outOfRangeResponse = await peers.receive(.answer(answer: answer, iceCandidates: iceCandidates(sdpMLineIndex: Int64(Int32.max) + 1)))
+        XCTAssertNil(outOfRangeResponse)
+        XCTAssertNil(peers.client.activeCall?.connection.remoteDescription)
+        let validResponse = await peers.receive(.answer(answer: answer, iceCandidates: iceCandidates(sdpMLineIndex: 0)))
+        XCTAssertEqual(validResponse, .ok)
+    }
+
+    func testLocalIceCandidateIndex() throws {
+        let local = WebRTC.RTCIceCandidate(sdp: "candidate:1 1 udp 1 192.0.2.1 9 typ host", sdpMLineIndex: 3, sdpMid: "3")
+        let sent = encodeJSON([local.toCandidate(nil, nil)])
+        let received: [SimpleX.RTCIceCandidate] = try XCTUnwrap(decodeJSON(sent))
+        XCTAssertEqual(received.map { $0.toWebRTCCandidate().sdpMLineIndex }, [3])
+    }
+
+    @MainActor
+    func testAnswerFromCurrentVersion() async throws {
+        let peers = CallPeers()
+        defer { peers.close() }
+        try await peers.start()
+        peers.peer.transceivers.forEach { $0.setDirection(.sendRecv, error: nil) }
+        let answer = try await peers.peerAnswer()
+        let response = await peers.receive(.answer(answer: answer, iceCandidates: noIceCandidates))
+        XCTAssertEqual(response, .ok)
+        XCTAssertEqual(peers.client.activeCall?.connection.transceivers.count, 4)
+        XCTAssertEqual(peers.client.activeCall?.peerHasOldVersion, false)
+        XCTAssertTrue(peers.call.localMediaSources.camera)
+    }
+
+    @MainActor
+    func testAnswerFromOldVersion() async throws {
+        let peers = CallPeers()
+        defer { peers.close() }
+        try await peers.start()
+        peers.peer.transceivers.first?.setDirection(.sendRecv, error: nil)
+        let answer = try await peers.peerAnswer()
+        let response = await peers.receive(.answer(answer: answer, iceCandidates: noIceCandidates))
+        XCTAssertEqual(response, .ok)
+        XCTAssertEqual(peers.client.activeCall?.connection.transceivers.count, 4)
+        XCTAssertEqual(peers.client.activeCall?.peerHasOldVersion, true)
+        XCTAssertFalse(peers.call.localMediaSources.camera)
     }
 
     @MainActor
     func testAnswerWithRejectedMediaSections() async throws {
-        let responses = CallResponses()
-        let client = WebRTCClient({ await responses.add($0) }, .constant(nil))
-        let peer = client.createPeerConnection(client.defaultIceServers, nil)
-        let call = Call(direction: .incoming, contact: Contact.sampleData, callUUID: nil, callState: .invitationAccepted, initialCallType: .video)
-        call.localMediaSources.camera = true
-        ChatModel.shared.activeCall = call
-        defer {
-            ChatModel.shared.activeCall = nil
-            client.endCall()
-            peer.close()
-        }
-        await client.sendCallCommand(command: .start(media: .audio))
-        let offer = try XCTUnwrap(client.activeCall?.connection.localDescription)
-        try await peer.setRemoteDescription(offer)
-        peer.transceivers.dropFirst().forEach { $0.stopInternal() }
-        let (answer, _) = await peer.answer()
-        let sdp = try XCTUnwrap(answer?.sdp)
-        let command = WCallCommand.answer(
-            answer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: .answer, sdp: sdp))),
-            iceCandidates: compressToBase64(input: "[]")
-        )
-        await client.sendCallCommand(command: command)
-        let response = await responses.response(to: command)
+        let peers = CallPeers()
+        defer { peers.close() }
+        try await peers.start()
+        peers.peer.transceivers.dropFirst().forEach { $0.stopInternal() }
+        let answer = try await peers.peerAnswer()
+        let response = await peers.receive(.answer(answer: answer, iceCandidates: noIceCandidates))
         XCTAssertEqual(response, .ok)
-        XCTAssertEqual(client.activeCall?.connection.transceivers.count, 1)
-        XCTAssertFalse(call.localMediaSources.camera)
+        XCTAssertEqual(peers.client.activeCall?.connection.transceivers.count, 1)
+        XCTAssertEqual(peers.client.activeCall?.peerHasOldVersion, true)
+        XCTAssertFalse(peers.call.localMediaSources.camera)
+    }
+
+    @MainActor
+    func testVoIPPushForExpiredCallSuspendsChat() async throws {
+        let chatActive = await waitUntilChatActive()
+        guard chatActive else { return XCTFail("chat is not active") }
+        let callKit = try CallKitFailingEndCallActions(callKitProvider())
+        defer { callKit.restore() }
+        let handled = await receiveCallPush(callTs: Date.now.addingTimeInterval(-600))
+        let suspended = await waitUntil(20) { appStateGroupDefault.get().inactive }
+        await activateChatAfterCallPush()
+        XCTAssertTrue(handled)
+        XCTAssertTrue(suspended)
+    }
+
+    @MainActor
+    func testVoIPPushForRefusedCallSuspendsChat() async throws {
+        let chatActive = await waitUntilChatActive()
+        guard chatActive else { return XCTFail("chat is not active") }
+        let provider = try callKitProvider()
+        let callKit = CallKitFailingEndCallActions(provider)
+        defer { callKit.restore() }
+        let callUUID = UUID()
+        try await provider.reportNewIncomingCall(with: callUUID, update: CXCallUpdate())
+        let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
+        let suspended = await waitUntil(20) { appStateGroupDefault.get().inactive }
+        provider.reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
+        await activateChatAfterCallPush()
+        XCTAssertTrue(handled)
+        XCTAssertTrue(suspended)
+    }
+
+    @MainActor
+    func testVoIPPushKeepsChatActiveWhenAppOpens() async throws {
+        let chatActive = await waitUntilChatActive()
+        guard chatActive else { return XCTFail("chat is not active") }
+        let callKit = try CallKitFailingEndCallActions(callKitProvider())
+        defer { callKit.restore() }
+        let handled = await receiveCallPush(callTs: Date.now.addingTimeInterval(-600))
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        CallController.shared.shouldSuspendChat = false
+        let suspended = await waitUntil(5) { appStateGroupDefault.get().inactive }
+        await activateChatAfterCallPush()
+        XCTAssertTrue(handled)
+        XCTAssertFalse(suspended)
     }
 }
 
@@ -231,6 +332,126 @@ private actor CallResponses {
     func response(to command: WCallCommand) -> WCallResponse? {
         messages.last { $0.command == command }?.resp
     }
+}
+
+private let noIceCandidates = compressToBase64(input: "[]")
+
+private func iceCandidates(sdpMLineIndex: Int64) -> String {
+    compressToBase64(input: #"[{"candidate":"candidate:1 1 udp 1 192.0.2.1 9 typ host","sdpMid":"0","sdpMLineIndex":\#(sdpMLineIndex)}]"#)
+}
+
+@MainActor
+private final class CallPeers {
+    let responses: CallResponses
+    let client: WebRTCClient
+    let peer: RTCPeerConnection
+    let call: Call
+
+    init() {
+        let responses = CallResponses()
+        let client = WebRTCClient({ await responses.add($0) }, .constant(nil))
+        self.responses = responses
+        self.client = client
+        peer = client.createPeerConnection(client.defaultIceServers, nil)
+        call = Call(direction: .incoming, contact: Contact.sampleData, callUUID: nil, callState: .invitationAccepted, initialCallType: .video)
+        call.localMediaSources.camera = true
+        ChatModel.shared.activeCall = call
+    }
+
+    func start() async throws {
+        await client.sendCallCommand(command: .start(media: .audio))
+        let offer = try XCTUnwrap(client.activeCall?.connection.localDescription)
+        try await peer.setRemoteDescription(offer)
+    }
+
+    func peerAnswer() async throws -> String {
+        let (answer, _) = await peer.answer()
+        let sdp = try XCTUnwrap(answer?.sdp)
+        return compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: .answer, sdp: sdp)))
+    }
+
+    func receive(_ command: WCallCommand) async -> WCallResponse? {
+        await client.sendCallCommand(command: command)
+        return await responses.response(to: command)
+    }
+
+    func close() {
+        ChatModel.shared.activeCall = nil
+        client.endCall()
+        peer.close()
+    }
+}
+
+private final class CallPushPayload: PKPushPayload {
+    private let payload: [AnyHashable: Any]
+
+    init(callUUID: UUID, callTs: Date) {
+        payload = [
+            "contactId": "@1",
+            "displayName": "alice",
+            "callUUID": callUUID.uuidString.lowercased(),
+            "callTs": callTs.timeIntervalSince1970,
+            "media": CallMediaType.audio.rawValue
+        ]
+        super.init()
+    }
+
+    override var dictionaryPayload: [AnyHashable: Any] { payload }
+}
+
+private final class CallKitFailingEndCallActions: NSObject, CXProviderDelegate {
+    private let provider: CXProvider
+
+    init(_ provider: CXProvider) {
+        self.provider = provider
+        super.init()
+        provider.setDelegate(self, queue: nil)
+    }
+
+    func restore() {
+        provider.setDelegate(CallController.shared, queue: nil)
+    }
+
+    func providerDidReset(_ provider: CXProvider) {}
+
+    func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
+        action.fail()
+    }
+}
+
+private func callKitProvider() throws -> CXProvider {
+    try XCTUnwrap(Mirror(reflecting: CallController.shared).descendant("provider") as? CXProvider)
+}
+
+@MainActor
+private func waitUntilChatActive() async -> Bool {
+    await waitUntil(30) { ChatModel.shared.chatRunning == true && AppChatState.shared.value == .active }
+}
+
+@MainActor
+private func receiveCallPush(callUUID: UUID = UUID(), callTs: Date) async -> Bool {
+    var handled = false
+    CallController.shared.pushRegistry(PKPushRegistry(queue: nil), didReceiveIncomingPushWith: CallPushPayload(callUUID: callUUID, callTs: callTs), for: .voIP) {
+        handled = true
+    }
+    return await waitUntil(10) { handled }
+}
+
+@MainActor
+private func activateChatAfterCallPush() async {
+    CallController.shared.shouldSuspendChat = false
+    _ = await waitUntil(20) { AppChatState.shared.value != .suspending }
+    startChatForCall()
+}
+
+@MainActor
+private func waitUntil(_ seconds: TimeInterval, _ condition: () -> Bool) async -> Bool {
+    let deadline = Date.now.addingTimeInterval(seconds)
+    while !condition() {
+        if Date.now > deadline { return false }
+        try? await Task.sleep(nanoseconds: 100_000_000)
+    }
+    return true
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {
