@@ -505,60 +505,38 @@ Kept as they are, named on the pull request page: tall link previews keep each p
 
 The user, after reviewing #8169: the Android and desktop placeholder avatars have padding inside their vectors; remove it at the source with every compensation, fix every screen with avatars, and let avatars overshoot the text edge and the name line as round glyphs overshoot flat ones. Also: "I just don't see the point of saying 'it's not our problem', because it kind of is - we are making a better app, holistically", so five Flat-layout defects that master also has are fixed here. Sources: the inventory at `scratchpad/flat-avatar-inventory.md` (review-flat, 2026-11-13), checked against the code below; the call sites in 12.3, read site by site.
 
-### 12.1 Questions for the user
+### 12.1 Questions and answers
+
+Numbered as the user answered them on the plans page.
 
 ```
-Q1  premise   In the code, placeholders and photos are drawn at the same size: the vector circle is 20/24 of
-              its box, and a photo is padded by size/12 (ProfileIconModifier), also 5/6 of the box. Removing
-              the inset and re-tuning the sizes keeps every screen as it looks now.
-              (a) recommended: same visible sizes on every screen, the inset and its compensations removed
-              (b) avatars grow to their boxes, 1.2 × today, with the gaps around them shrinking by size/12
-Q2  overshoot How far a round avatar passes the text edge, from the fonts (12.4); renders at three amounts:
-              (a) none: the avatar's edge on the ink of flat letters
-              (b) recommended: as Inter's O passes its H, 0.039 of the height
-              (c) as now: the avatar at the text box edge
-Q3  D1        Below the avatar (decision 14): (a) recommended, implemented: the text at the bottom of the name
-              line; (b) half the level step below the avatar, as approved before. Renders A and B.
-Q4  defects   For each defect of 12.5, the recommended fix or its alternative.
-Q5  iOS ports Channel members, channel relays and the badge preview pass the iOS sizes and gaps, so today
-              they draw 31.7 and 106.7 with gaps 13.2 and 22.7. (a) recommended: no call-site change, as iOS;
-              (b) keep today's look
-Q6  blur      Blocked photos: (a) recommended: blur size / 4, as iOS, 17% weaker than today outside Flat rows;
-              (b) size × 0.3, as today
-Q7  banner    The chat banner: (a) recommended: top 20, gap 10, as its comment intends; (b) 21.5 and 11.5, as today
-Q8  settings  (a) recommended: the Appearance profile-images row 70 dp, as the font-scale row below it, and one
-              unread-badge offset on both platforms (the desktop badge moves 0.5 left, 2.5 up); (b) as today
-Q9  share     The share list draws channels and business chats with the group icon, bots and agents with the
-              person icon: (a) recommended: ChatInfoImage draws the right icons; (b) as today
-```
-
-Answers:
-
-```
-Q1  (a), 2026-11-13: "yes, of course remove compensations, we don't want avatars to grow where there already
-    was a compensation. The test would pass when correct screens don't change in previews." and "it would only
-    change where compensations were missing".
-Q5  (a), by the Q1 answer: the iOS ports are the missing compensations, so their avatars grow to the iOS sizes.
-Q2  2 dp past the letters' edge, on both platforms (iOS 2 pt).
-Q3  "looks like we need 6dp": 6 dp from the avatar to the letters below it (iOS 6 pt), between A and B.
-Q4  all five fixed, "but you need to show, I cannot approve from text": before and after renders of each, on iOS
-    and Android/desktop.
-Q6  (a): blur size / 4, as iOS.
-Q7  (a): top 20, gap 10; before and after renders.
-Q8  open: renders of the Android/desktop row now and proposed, beside the iOS screen.
-Q9  (a): ChatInfoImage in the share list.
-12.2 placeholders: as iOS: business a filled circle with the briefcase cut out; bot and agent fill the box.
+Q4   premise       (a), 2026-11-13: "yes, of course remove compensations, we don't want avatars to grow where
+                   there already was a compensation. The test would pass when correct screens don't change in
+                   previews." and "it would only change where compensations were missing".
+Q5   overshoot     2 dp past the letters' edge, on both platforms (iOS 2 pt).
+Q6   gap           "looks like we need 6dp": 6 dp from the avatar to the letters below it (iOS 6 pt), between A
+                   (the text at the bottom of the name line) and B (half the level step below the avatar).
+Q7   defects       all five fixed, "but you need to show, I cannot approve from text": before and after renders
+                   of each, on iOS and Android/desktop.
+Q8   iOS ports     (a), by the Q4 answer: the iOS ports are the missing compensations, so their avatars grow to
+                   the iOS sizes.
+Q9   blur          (a): blocked photos blurred by size / 4, as iOS.
+Q10  banner        (a): top 20, gap 10.
+Q11  settings      open, shown as renders of the Android/desktop row now and proposed, beside the iOS screen:
+                   (a) the Appearance profile-images row 70 dp, as the font-scale row below it, and one
+                   unread-badge offset on both platforms (the desktop badge moves 0.5 left, 2.5 up); (b) as today.
+Q12  share icons   (a): ChatInfoImage in the share list.
+Q13  placeholders  (a), as iOS: business a filled circle with the briefcase cut out; bot and agent fill the box.
 ```
 
 ```mermaid
 flowchart TB
-  Q1{Q1 premise} -->|a| S[same visible sizes, inset removed]
-  Q1 -->|b| G[avatars 1.2 x, gaps re-tuned]
-  S --> Q2{Q2 overshoot}
-  G --> Q2
-  Q2 --> Q3{Q3 D1}
-  Q3 --> Q4{Q4 defects}
-  Q4 --> D[Q5-Q9 screen details, each with a recommended option]
+  Q4{Q4 premise} -->|a| S[same visible sizes, inset removed]
+  S --> Q5[Q5 overshoot 2 dp]
+  S --> Q6[Q6 gap 6 dp]
+  S --> Q7[Q7 five defects fixed]
+  S --> R[Q8 Q9 Q10 Q12 Q13 answered]
+  S --> Q11{Q11 settings row, open}
 ```
 
 ### 12.2 Placeholders fill their box
@@ -658,12 +636,12 @@ InfoView headers
 GroupChatInfoView MemberRow, MemberSupportView     35 in MEMBER_ROW_AVATAR_SIZE (42)
 SupportChatRow
 AddGroupMembersView ContactCheckRow                30 in 36
-ChannelMembersView, ChannelRelaysView              38, unchanged: the avatar grows from 31.7 to 38, as on iOS (Q5)
+ChannelMembersView, ChannelRelaysView              38, unchanged: the avatar grows from 31.7 to 38, as on iOS (Q8)
 GroupProfileView, UserProfileView                  90 in 108
 profiles, creation, settings
 WelcomeView, AddGroupView, AddChannelView          107 in 128
 AddChannelView ProgressStepView                    90 in 108
-BadgeUserPreview                                   128, unchanged: the avatar grows from 106.7 to 128, as on iOS (Q5)
+BadgeUserPreview                                   128, unchanged: the avatar grows from 106.7 to 128, as on iOS (Q8)
 Appearance ProfileImageSection                     50 with vertical padding 5; offset removed; Spacer 15
 alerts
 ConnectPlan open-chat alerts                       alertProfileImageSize 115 in a 138 box in AlertManager
@@ -678,7 +656,8 @@ ChatInfoImage PreviewChatInfoImage                 46 in 55
 Helpers:
 - `Modifier.centeredIn(size)` (`Modifiers.kt`): `size(size).wrapContentSize()`.
 - `ProfileImage`: `toEdge`, `iconSize` and `requiredSize` removed; a `modifier` parameter, also in `ChatInfoImage`, `IncognitoImage`, `MemberProfileImage` and `MemberImage`; the disc behind the placeholder is `size * 0.84f`, as the cut-outs reach 0.72 (person) and 0.80 (group) of the radius.
-- `ProfileIconModifier`: the `padding` parameter removed; the blur of blocked photos is size × 0.3, today's blur relative to the visible photo outside Flat rows (Q6).
+- `ProfileIconModifier`: the `padding` parameter removed; the blur of blocked photos is size / 4 (Q9).
+- `chatIconName`, `peerTypeIcon`, `iconRes` and `ChatInfoImage` return the avatar assets `ic_avatar_channel`, `ic_avatar_business`, `ic_avatar_bot`, `ic_avatar_agent` and `ic_avatar_folder`; `ic_folder_filled`, `ic_work_filled_padded`, `ic_cube` and `ic_agent` are deleted; `ic_bigtop_updates_circle_filled` stays for the Channels item of the tag menu. The chat-link thumbnail of the chat list (`ChatPreviewView`) draws `ProfileImage` at 36.5 sp, the visible size of the former 44 sp icon.
 - `MemberImage`: the default size removed; each caller passes the visible size.
 - `ProfileImageForActiveCall` removed; its callers use `ProfileImage`.
 - `ChatInfoToolbarTitle`, `MemberSupportChatToolbarTitle`: `imageBox` beside `imageSize`.
@@ -687,12 +666,10 @@ Helpers:
 Snapshot evidence: the desktop scenes `Avatars.*` (`AvatarScenes.kt`) and the existing previews, recorded on the code before the change. After it, every changed pixel of an avatar screen lies within the colours of its 3 × 3 neighbourhood in the reference, so edges moved by at most 1 px, except the screens below. Without a desktop scene: the alerts, `ChatBannerView`, the reactions member list, `ChatItemInfoView`, `ComposeContextProfilePickerView`, `NewChatView`, the profile editors (`previewsCallingCore`) and the Android-only call screens and user picker; each uses `centeredIn` as the scenes do.
 
 Screens that change (missing compensations):
-- `ChannelMembersView`, `ChannelRelaysView` and `BadgeUserPreview` pass the iOS sizes and gaps (38 with spacing 8; 128 with spacing 12), so they drew 31.7 and 106.7 with gaps 13.2 and 22.7; now they match iOS (Q5).
+- `ChannelMembersView`, `ChannelRelaysView` and `BadgeUserPreview` pass the iOS sizes and gaps (38 with spacing 8; 128 with spacing 12), so they drew 31.7 and 106.7 with gaps 13.2 and 22.7; now they match iOS (Q8).
 - Active calls: `ProfileImageForActiveCall` scaled the glyph by 58/44 and 70/56, not 1.2; with `ProfileImage` the circles stay 44 and 56 and the glyph shrinks by 9% and 4%.
-- Channel placeholders: the circle of `ic_bigtop_updates_circle_filled` is 790/960 = 0.823 of the box, not 5/6; the cropped asset fills N, 1.3% wider (0.75 dp at 72).
-- Flat rows, blocked photos: blur size × 0.3 of the 27 dp photo, as on the other screens; Flat rows had size / 4 (Q6).
-
-Unchanged until answered: `ChatBannerView` 21.5 and 11.5 (Q7); the Appearance row, 80 dp, and the unread-badge offsets (Q8); the share list icons (Q9).
+- Channel placeholders: the circle of `ic_bigtop_updates_circle_filled` is 790/960 = 0.823 of the box, not 5/6; `ic_avatar_channel` fills N, 1.3% wider (0.75 dp at 72).
+- Blocked photos outside Flat rows: blur size / 4, as iOS and Flat rows, 17% weaker than before (Q9).
 
 ### 12.4 Overshoot
 
@@ -738,17 +715,19 @@ Vertically the avatar is centred on the name line box. The renders also show it 
                                                time (metaReserveCopy, CIMetaView.kt:265;      in bubbles (breakBefore): the time alone
                                                metaCopyJoiner, TerminalItemView.swift:212;    moves to its own line, only when the
                                                ciMetaText unbreakable, CIMetaView.swift:122)  last line is full
-6   an integrity error without developer    the row is drawn with its gaps, and with a    the row draws only its date separators;    none (fixed with Q1, by the
+6   an integrity error without developer    the row is drawn with its gaps, and with a    the row draws only its date separators;    none (fixed with Q4, by the
     tools leaves an empty row, in Flat      sender row when it starts a run; only the     the content view always draws the error    user's rule for defects found
     rows and in bubbles, on both            content is empty (ChatItemContentView,        (one decision, in the row)                 in the area)
     platforms                               ChatItemView.swift:147-152; ChatItemView
                                             .kt:721-726)
 ```
 
-Defect 6 leaves two effects to defect 3, because a hidden item is still the neighbour of the rows around it: a message of the same sender before it in the same minute hides its time, and a hidden item of another sender between two messages of one sender repeats that sender's row. The fix with defect 3 links each row to its nearest shown neighbours (`MergedItems.create` on both platforms).
+Neighbours of a row are its nearest shown items: `MergedItems.create` on both platforms gives each row the nearest items that are not hidden as `prevItem` and `nextItem`, and keeps the immediate neighbours for its own grouping of merge categories. Sender rows (`terminalItemShowsSender`, `shouldShowAvatar`), row gaps and the time grouping (`getItemSeparation`) read these neighbours, so carol, a hidden integrity error of bob, carol shows one sender row, in Flat rows and in bubbles, and X, hidden Y, X within a minute groups as X, X. `getItemSeparation` therefore has no clause for hidden items.
+
+The clause of defect 3 applies in Flat rows only: a message before a deleted or marked deleted item keeps its time. Classic keeps master's grouping (decision 2.2): a bubble before a deleted item in the same minute shows no time, and the deleted bubble shows its own (`DeletedItemView`, `MarkedDeletedItemView`). A Flat deleted pill also shows its own time; the clause is there because the user's decision on defect 3 gives the message its time.
 
 Also in this scope:
-- D1: A as implemented; B rendered for Q3 (one line on each platform: the message half the level step below the lower of the name line and the avatar).
+- D1: A as implemented; B rendered for Q6 (one line on each platform: the message half the level step below the lower of the name line and the avatar).
 - `FlatMediaTest.maxIntrinsicHeightAtUnboundedWidth`: link previews are checked only with a height above 0, and tall media not at all. The test asserts the expected heights of tall and wide images, videos and link previews in both layouts. A flat link preview reports 113 at an unbounded width, while it is drawn 500 wide; the cause (the image's intrinsic height at its own size) is checked and fixed if a layout reads it.
 
 Scenes for the snapshots, on both platforms:
@@ -762,10 +741,12 @@ As implemented on Android and desktop (2026-11-14; scenes `ChatView.PreviewGroup
 
 ```
 decision          change                                                        measured at font 100, 2x render
-Q2 overshoot      avatar start = 12 + 0.088 em of the body font − 2 dp           letters' ink 13.44 dp, avatar 11.5 dp
+Q5 overshoot      avatar start = 12 + 0.088 em of the body font − 2 dp           letters' ink 13.44 dp, avatar 11.5 dp
                   (TerminalChatItemRow; INTER_SIDE_BEARING,
                   TERMINAL_AVATAR_OVERSHOOT)
-Q3 gap            message top = the lower of A and 6 dp below the avatar,        5.5 dp with the metric cap height,
+decision 15       the name starts 12 dp after the avatar: its start is the
+                  avatar's start and width (TerminalChatItemRow)
+Q6 gap            message top = the lower of A and 6 dp below the avatar,        5.5 dp with the metric cap height,
                   less the inset of the letters (first baseline − the cap        6 dp with it rounded up; at font 150
                   height rounded up) or of a card                                A stays lower, 8.5 dp
 defect 1a         Flat rows draw no trailing empty lines (TextItemView)          the time on the list's last line
@@ -774,24 +755,27 @@ defect 1b         none: a short code card is as wide as its code and the time
 defect 2          terminalShowsStatus: a complete sent or received status is     the 👍 row has no ✓
                   drawn only with the time (CIMetaView, metaReserveCopy,
                   CIFileView)
-defect 3          getItemSeparation: a deleted, marked deleted or hidden         "hello" before a deleted item has
+defect 3          getItemSeparation, Flat rows: a deleted or marked deleted      "hello" before a deleted item has
                   newer item does not hide the time                               its time
 defect 4          terminalRowGap: no gap below a reactions row                   18 px gap removed
 defect 5          metaReserveCopy starts with a breaking space in Flat rows      "tomorrow" stays, the time alone
                   too (TextItemView)                                              on the next line
 defect 6          a hidden integrity error renders no row (ChatViewListItem);    the gap and bob's empty sender row
-                  IntegrityErrorItemView always draws it (ChatItemView)          are gone
-Q6 blur           blur size / 4
-Q7 banner         top 20, 10 below the image                                     the banner 3 dp shorter
-Q9 share list     ChatInfoImage
-12.2 placeholders business a filled circle with the briefcase cut out (scaled
+                  IntegrityErrorItemView always draws it (ChatItemView); rows    are gone; carol's second message
+                  skip hidden neighbours (MergedItems.create)                     has no sender row
+Q9 blur           blur size / 4
+Q10 banner        top 20, 10 below the image                                     the banner 3 dp shorter
+Q12 share list    ChatInfoImage
+Q13 placeholders  business a filled circle with the briefcase cut out (scaled
                   0.785); bot and agent in the cube's box, 124.5 −878.5 711 797,
                   as iOS agent.svg
 ```
 
+Measured note on Q5 (review-flat): the 2 dp and 2 pt apply to the avatar's frame. The visible overshoot is 1.7 pt on iOS placeholders, because the SF Symbol draws its circle 0.34 pt inside its frame, and about 1.5 on photos at the default corner radius on both platforms (`ProfileIconModifier`, `clipProfileImage`). The user removed every compensation, so these insets stay.
+
 ### 12.6 Renders
 
-- Decision renders, before the implementation: Q2 at three amounts and Q3 A and B, in the Android group and media scenes and iOS `TerminalOverviewGroup`, each with photos and placeholders.
+- Decision renders, before the implementation: Q5 at five amounts and Q6 A and B, in the Android group and media scenes and iOS `TerminalOverviewGroup`, each with photos and placeholders.
 - Before and after for every screen with an avatar (12.3.1), from the Kotlin snapshots (`SnapshotTest.previewScenes`) and the iOS snapshots: the scenes without a photo get a second variant with one, and each avatar kind (person, group, channel, business, bot, agent, notes, incognito, pending link) appears in one scene.
 - iOS renders depend on a macOS runner of GitHub; a run waits for one.
 
@@ -813,7 +797,7 @@ total                                               about 31 hours of work
 
 ```mermaid
 flowchart LR
-  P[plan and questions on the page] --> R[decision renders: Q2, Q3]
+  P[plan and questions on the page] --> R[decision renders: Q5, Q6]
   R --> U[user's answers]
   U --> A[assets and compensations]
   A --> O[overshoot]
