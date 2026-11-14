@@ -107,6 +107,8 @@ chatDirectTests = do
     it "negotiate call" testNegotiateCall
     it "negotiate call between current and v1 clients" testNegotiateCallV1
     it "mark expired call invitation missed on restore" testExpireCallInvitation
+    it "remove stored media key of call invitation after TTL" testCallInvitationKeyTTL
+    it "remove stored media key of restored call invitation after TTL" testRestoredCallInvitationKeyTTL
   describe "maintenance mode" $ do
     it "stop chat stops all threads, start chat restarts them" testStopStartChat
 #if !defined(dbPostgres)
@@ -1442,6 +1444,46 @@ testExpireCallInvitation ps =
       callRowCount bob `shouldReturn` 0
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
 
+testCfgCallTTL :: ChatConfig
+testCfgCallTTL = testCfg {callInvitationTTL = 8}
+
+storedCallKeys :: TestCC -> IO [Bool]
+storedCallKeys cc = map hasKey <$> withCCTransaction cc (\db -> DB.query_ db "SELECT call_state FROM calls")
+  where
+    hasKey (Only CallInvitationReceived {sharedKey}) = isJust sharedKey
+    hasKey _ = False
+
+acceptCall :: HasCallStack => TestCC -> TestCC -> IO ()
+acceptCall alice bob = do
+  Call {callState = CallInvitationReceived {sharedKey = Just _}} <- currentCall bob 2
+  bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: calling...")])
+  bob ##> ("/_call offer @2 " <> serialize testWebRTCCallOffer)
+  bob <## "ok"
+  alice <## "bob accepted your WebRTC video call (e2e encrypted)"
+  repeatM_ 3 $ getTermLine alice
+  callRowCount bob `shouldReturn` 0
+
+testCallInvitationKeyTTL :: HasCallStack => TestParams -> IO ()
+testCallInvitationKeyTTL =
+  runTestCfg2 testCfg testCfgCallTTL $ \alice bob -> do
+    connectUsers alice bob
+    inviteToCall alice bob
+    storedCallKeys bob `shouldReturn` [True]
+    storedCallKeys bob `shouldEventuallyReturn` [False]
+    acceptCall alice bob
+
+testRestoredCallInvitationKeyTTL :: HasCallStack => TestParams -> IO ()
+testRestoredCallInvitationKeyTTL ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg ps testCfgCallTTL "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      inviteToCall alice bob
+      storedCallKeys bob `shouldReturn` [True]
+    withTestChatCfg ps testCfgCallTTL "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
+      storedCallKeys bob `shouldEventuallyReturn` [False]
+      acceptCall alice bob
+
 testStopStartChat :: HasCallStack => TestParams -> IO ()
 testStopStartChat ps =
   withNewTestChat ps "bob" bobProfile $ \bob ->
@@ -1518,6 +1560,7 @@ testMaintenanceMode ps = do
       doesFileExist archive `shouldReturn` True
       alice ##> ("/_db import {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "ok"
+      aliceBackupsExist ps `shouldReturn` [False, False]
       -- cannot start chat after import
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
@@ -1525,6 +1568,9 @@ testMaintenanceMode ps = do
     withTestChat ps "alice" $ \alice -> testChatWorking alice bob
   where
     archive = tmpFile ps "alice-chat.zip"
+
+aliceBackupsExist :: TestParams -> IO [Bool]
+aliceBackupsExist ps = mapM doesFileExist [tmpPath ps <> "/alice_chat.db.bak", tmpPath ps <> "/alice_agent.db.bak"]
 
 testChatWorking :: HasCallStack => TestCC -> TestCC -> IO ()
 testChatWorking alice bob = do
@@ -1612,6 +1658,7 @@ testDatabaseEncryption ps = do
       alice <## "error: chat database is not encrypted"
       alice ##> "/db encrypt mykey"
       alice <## "ok"
+      aliceBackupsExist ps `shouldReturn` [False, False]
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
     withTestChatOpts ps (getTestOpts True "mykey") "alice" $ \alice -> do
@@ -1626,8 +1673,10 @@ testDatabaseEncryption ps = do
       alice <## "ok"
       alice ##> "/db key wrongkey nextkey"
       alice <## "error encrypting database: wrong passphrase or invalid database file"
+      aliceBackupsExist ps `shouldReturn` [True, True]
       alice ##> "/db key mykey nextkey"
       alice <## "ok"
+      aliceBackupsExist ps `shouldReturn` [False, False]
       alice ##> "/_db encryption {\"currentKey\":\"nextkey\",\"newKey\":\"anotherkey\"}"
       alice <## "ok"
     withTestChatOpts ps (getTestOpts True "anotherkey") "alice" $ \alice -> do
@@ -1638,6 +1687,7 @@ testDatabaseEncryption ps = do
       alice <## "chat stopped"
       alice ##> "/db decrypt anotherkey"
       alice <## "ok"
+      aliceBackupsExist ps `shouldReturn` [False, False]
     withTestChat ps "alice" $ \alice -> do
       testChatWorking alice bob
 #endif
