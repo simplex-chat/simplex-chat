@@ -2350,10 +2350,10 @@ fun BoxScope.ChatItemsList(
         modifier = bannerModifier
           .padding(horizontal = DEFAULT_PADDING)
           .padding(bottom = DEFAULT_PADDING)
-          .padding(top = DEFAULT_PADDING_HALF)
+          .padding(top = DEFAULT_PADDING)
           .background(MaterialTheme.appColors.receivedMessage)
       ) {
-        ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f), modifier = Modifier.centeredIn(138.dp))
+        ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f), modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF))
         val bannerBadge = chatInfo.nameBadge
         val uriHandler = LocalUriHandler.current
         Text(
