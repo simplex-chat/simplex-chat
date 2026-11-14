@@ -172,6 +172,7 @@ export class FakeChat {
   commands: string[] = []
   sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]; live?: true}[] = []
   updates: {chatId: number; itemId: number; text: string; live?: true}[] = []
+  updatePriorities: {itemId: number; priority?: number}[] = []
   replies: string[] = []
   deleted: {chatType: T.ChatType; chatId: number; mode?: T.ChatDeleteMode}[] = []
   deletedItems: {chatType: T.ChatType; chatId: number; itemIds: number[]; deleteMode: T.CIDeleteMode}[] = []
@@ -202,6 +203,14 @@ export class FakeChat {
         .slice(0, Number(count))
         .map(({chatInfo, items}) => ({chatInfo, chatItems: [], chatStats: chatStats(items)}))
       return structuredClone({type: "apiChats", user, chats}) as unknown as ChatResponse
+    }
+    const update = /^\/_update item ([@#])(\d+) (\d+)( live=on)? json (.+)$/.exec(cmd)
+    if (update) {
+      const {msgContent, priority} = JSON.parse(update[5]) as {msgContent: T.MsgContent; priority?: number}
+      this.updatePriorities.push({itemId: Number(update[3]), priority})
+      const chatType = update[1] === "@" ? T.ChatType.Direct : T.ChatType.Group
+      const chatItem = await this.apiUpdateChatItem(chatType, Number(update[2]), Number(update[3]), msgContent, update[4] !== undefined)
+      return {type: "chatItemUpdated", user, chatItem: {chatInfo: groupChat(group(Number(update[2]), "control")), chatItem}} as unknown as ChatResponse
     }
     if (cmd.startsWith("/_read chat items ")) {
       const [, ref, ids] = /^\/_read chat items ([@#]\d+) (.+)$/.exec(cmd)!
