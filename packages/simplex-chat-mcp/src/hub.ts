@@ -13,7 +13,7 @@ import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-g
 import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
 import {AttachLine, LimitWindow, Limits, OwnerState, PermissionRequest, ResetReply, Step, TextBatch, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
-import {limitParts} from "./status-line"
+import {Machine, limitParts, machineParts, machineState} from "./status-line"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
 import {User, userContact} from "./user"
 
@@ -351,7 +351,7 @@ export class Session {
     }
     if (startsTurn) this.boundOpenings(at ?? Date.now())
     const started = answer === undefined ? undefined : this.turnStart(at ?? Infinity)
-    const end = answer === undefined ? undefined : endLine(usage ?? (started === undefined ? undefined : duration((at ?? Date.now()) - started)), this.limits)
+    const end = answer === undefined ? undefined : endLine(usage ?? (started === undefined ? undefined : duration((at ?? Date.now()) - started)), this.limits, this.hub.machine())
     const streamed = startsTurn || answer !== undefined ? this.endTexts(at ?? Infinity, answer, started, answer?.trim() === "" ? undefined : end) : undefined
     const quoted = answer === undefined ? undefined : this.turnQuote(at ?? Infinity)
     if (answer !== undefined) this.answeredAt = Math.max(this.answeredAt, at ?? Date.now())
@@ -943,6 +943,7 @@ export class Hub implements SessionGroups {
   user?: User
   userContactId?: number
   promptsHeldUntil = 0
+  machine = (): Machine | undefined => machineState(this.root)
   private readonly sessions = new Map<number, Session>()
   stopped = false
   private controlEvents: Promise<void> = Promise.resolve()
@@ -1224,10 +1225,10 @@ function quoteOf(quoted: T.ChatItem | undefined, text: string): Parameters<typeo
 }
 
 // spec: spec/architecture.md#hub-quoteof
-function endLine(figures: string | undefined, {fiveHour, week}: Limits): string {
+function endLine(figures: string | undefined, {fiveHour, week}: Limits, machine: Machine | undefined): string {
   const now = Date.now() / 1_000
   const current = (window: LimitWindow | undefined): LimitWindow | undefined => (window !== undefined && window.resetsAt > now ? window : undefined)
-  return small([`Done${figures === undefined ? "" : ` in ${figures}`}`, ...limitParts({fiveHour: current(fiveHour), week: current(week)})].join(" · "))
+  return small([`Done${figures === undefined ? "" : ` in ${figures}`}`, ...limitParts({fiveHour: current(fiveHour), week: current(week)}), ...machineParts(machine)].join(" · "))
 }
 
 // spec: spec/architecture.md#hub-quoteof

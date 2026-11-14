@@ -720,10 +720,10 @@ The short description of a session's group shows `MODEL · effort LEVEL`. The mo
 
 When the model switches, Claude posts `Model changed to MODEL` in small print. When a known effort level changes, Claude posts `Effort changed to LEVEL`. The first model and the first effort level of a session get no line. Both lines are silent.
 
-The last line of each answer shows the turn's usage, from the session's transcript, in small print:
+The last line of each answer shows the turn's usage, from the session's transcript, and the machine's free memory and disk, in small print:
 
 ```
-Done in 2 min 51 s · 16K output tokens · 673K tokens in context · 5 h: 34% · week: 61%
+Done in 2 min 51 s · 16K output tokens · 673K tokens in context · 5 h: 34% · week: 61% · RAM 12 GB free · disk 7.3 GB free
 ```
 
 - The time runs from the turn's first entry in the transcript to the answer.
@@ -731,6 +731,8 @@ Done in 2 min 51 s · 16K output tokens · 673K tokens in context · 5 h: 34% ·
 - The tokens in context are the input, cache writes and cache reads of the turn's last response.
 - `5 h` and `week` are the plan's 5-hour and weekly usage, with the [status line](#status-line) only. A window whose reset time has passed is left out.
 - Token counts are shortened as in the line of a summary of the context: `861`, `1.6K`, `16K`, `673K`, `1.2M`.
+- `RAM` is the memory available to processes on the machine of the SimpleX service, within the limit of its container. `disk` is the free space of the volume with the plugin's data folder, `~/.simplex-mcp` or `SIMPLEX_MCP_HOME`. The service reads them when the answer ends, without the status line.
+- Sizes are in decimal units, rounded down: `850 MB`, `7.3 GB`, `12 GB`, `1.2 TB`. A part ends with ❗️ when less than 5% of the memory or less than 5 GB of disk is free, such as `disk 3.4 GB free❗️`.
 - When the transcript has no usage of the turn, as for a turn over 64 MB or a Claude Code version without prompt IDs, the line shows the time from the turn's prompt to its end, such as `Done in 2 min 14 s`, or only `Done` when the start of the turn is not known.
 
 #### Status line
@@ -748,7 +750,8 @@ Claude Code passes the plan's usage only to the status line command of your sett
 
 - The shell expands the command to the plugin's data folder of each machine or container, so one setting serves all of them when they share `~/.claude`.
 - The service writes `status-line.js` there at each start, pointing to its own version, so the setting stays the same across updates.
-- Claude Code shows the status line in the terminal, such as `Opus 5.5 · effort xhigh · 67% context · 5 h: 34% · week: 61%`: the model, the effort level, the share of the context window in use and the plan's usage, each when Claude Code passes it.
+- Claude Code shows the status line in the terminal, such as `Opus 5.5 · effort xhigh · 67% context · 5 h: 34% · week: 61% · RAM 12 GB free · disk 7.3 GB free`: the model, the effort level, the share of the context window in use and the plan's usage, each when Claude Code passes it, and the machine's memory and disk.
+- The memory and the disk are those of the answer's last line, read by the command on the machine of Claude Code.
 - The command also sends the effort level and the plan's usage to the service, so an effort change shows at once. It waits at most 1 second for the service, and starts none.
 - The setting replaces a status line command of your own. On Windows, it needs Git Bash as the shell of commands.
 - Claude Code runs `status-line.js` of the data folder also when no service could start there, so the data folder, `~/.simplex-mcp` or `SIMPLEX_MCP_HOME`, must be writable only by you.
