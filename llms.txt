@@ -82,6 +82,7 @@ Every page of simplex.chat is also available as Markdown: replace `.html` with `
 
 - [All posts](https://simplex.chat/blog.md)
 - [SimpleX Network News](https://simplex.chat/news.md): the news channel, with links to its recent posts in JSON
+- [SimpleX Chat Security Audit by Trail of Bits and Our Security Process](https://simplex.chat/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.md) (2026-11-21)
 - [SimpleX Supporter Badges — Send Larger Files That Stay Available Longer, Without Being Identified](https://simplex.chat/blog/20260919-simplex-supporter-badges.md) (2026-09-19)
 - [Nick Rogers: Why I Backed SimpleX Chat in 2022, and Why I Doubled Down](https://simplex.chat/blog/20260908-nick-rogers-why-i-backed-simplex-chat.md) (2026-09-08)
 - [Equity Crowdfunding Launched — You Can Get a Stake in SimpleX Chat](https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.md) (2026-08-20)
@@ -91,7 +92,6 @@ Every page of simplex.chat is also available as Markdown: replace `.html` with `
 - [SimpleX network: new experience of connecting with people — available in SimpleX Chat v6.4-beta.4](https://simplex.chat/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.md) (2025-07-03)
 - [SimpleX Chat v6.3: new user experience and safety in public groups](https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.md) (2025-03-08)
 - [SimpleX network: large groups and privacy-preserving content moderation](https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md) (2025-01-14)
-- [Oppose digital IDs – they break the law and lead to mass scale surveillance](https://simplex.chat/blog/20241218-oppose-digital-ids-they-break-law-lead-to-mass-scale-surveillance.md) (2024-12-18)
 
 ## Optional
 
