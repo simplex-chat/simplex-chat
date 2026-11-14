@@ -3756,7 +3756,7 @@ sendMemberJoinRequest cc groupLink =
     gLink :: ShortLinkContact <- either fail pure $ strDecode (B.pack groupLink)
     (memberKey, _) <- atomically . C.generateKeyPair =<< C.newRandom
     let joinGroup = do
-          (_, _, cReq) <- getShortLinkConnReq NRMInteractive user gLink
+          (_, _, cReq, _) <- getShortLinkConnReq NRMInteractive user gLink
           (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
           dm <- encodeConnInfo $ XMember bobProfile (MemberId "member") (MemberKey memberKey) Nothing
           withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq dm PQSupportOff SMSubscribe
@@ -12200,7 +12200,7 @@ sendUnsignedRelayInv cc relayAddress =
               fromMemberKey = Just $ MemberKey memberKey
             }
         joinRelay = do
-          (_, _, cReq) <- getShortLinkConnReq NRMInteractive user relayLink
+          (_, _, cReq, _) <- getShortLinkConnReq NRMInteractive user relayLink
           (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
           dm <- encodeConnInfo $ XGrpRelayInv inv
           withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq dm PQSupportOff SMSubscribe

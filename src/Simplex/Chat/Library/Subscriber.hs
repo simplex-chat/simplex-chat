@@ -4588,8 +4588,8 @@ runRelayRequestWorker a Worker {doWork} = do
               memberPrivKey' <- case gks of
                 GKRelayRequest {memberPrivKey} -> pure memberPrivKey
                 _ -> throwChatError $ CEException "getLinkDataCreateRelayLink: group is not a relay request"
-              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners}), _) <- getShortLinkConnReq' NRMBackground user reqGroupLink
-              liftIO (decodeLinkUserData cData) >>= \case
+              (FixedLinkData {linkEntityId, rootKey}, ContactLinkData _ UserContactData {owners}, _, sLinkData_) <- getShortLinkConnReq' NRMBackground user reqGroupLink
+              case shortLinkGroupData =<< sLinkData_ of
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just GroupShortLinkData {groupProfile = gp@GroupProfile {publicGroup}} -> do
                   pg <- case (linkEntityId, publicGroup) of
