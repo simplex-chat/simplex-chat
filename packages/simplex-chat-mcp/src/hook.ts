@@ -446,7 +446,7 @@ function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_n
 
 // spec: spec/architecture.md#hook-stepof
 function small(text: string): string {
-  return text.includes("!") ? text : `!- ${text}!`
+  return `!- ${text.replaceAll("!", "ǃ")}!`
 }
 
 // spec: spec/architecture.md#hook-stepof

@@ -616,7 +616,7 @@ describe("turn hooks", () => {
       {id: "toolu_TodoWrite", text: "!- 🔧 TodoWrite!"},
       {id: "toolu_NotebookEdit", text: "!- 🔧 NotebookEdit: https://example.com/a!"},
       {id: "toolu_Task", text: `!- 🔧 Task: Review  ${"x".repeat(199 - [..."🔧 Task: Review  "].length)}…!`},
-      {id: "toolu_Bash", text: "💻 Say hi!"},
+      {id: "toolu_Bash", text: "!- 💻 Say hiǃ!"},
     ])
   })
 
