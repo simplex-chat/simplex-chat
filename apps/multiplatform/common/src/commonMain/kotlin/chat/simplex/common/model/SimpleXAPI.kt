@@ -5237,7 +5237,7 @@ data class ProtocolTestFailure(
       testError is AgentErrorType.BROKER && testError.brokerErr is BrokerErrorType.NETWORK && testError.brokerErr.networkError is NetworkError.UnknownCAError ->
         err + " " + generalGetString(MR.strings.error_smp_test_certificate)
       else ->
-        err + " " + String.format(generalGetString(MR.strings.error_with_info), testError.toString())
+        err + " " + String.format(generalGetString(MR.strings.error_with_info), testError.string)
     }
   }
 }

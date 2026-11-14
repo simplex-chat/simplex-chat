@@ -27,24 +27,26 @@ import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeProof, generateMasterKey, issueBadge, verifyPayment)
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt)
-import Simplex.Chat.Library.Internal (encodeShortLinkData, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendDirectMemberMessage, sendGroupMessage')
+import Simplex.Chat.Controller (CM, ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt, withAgent)
+import Simplex.Chat.Library.Internal (encodeConnInfo, encodeShortLinkData, getShortLinkConnReq, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendDirectMemberMessage, sendGroupMessage')
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo, XMsgNew, XMsgUpdate), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, LinkPreview (LinkPreview), MsgChatLink (..), MsgContent (..), encodeChatBinding, mcSimple)
+import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XContact, XInfo, XMsgNew, XMsgUpdate, XOk), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, LinkPreview (LinkPreview), MsgChatLink (..), MsgContent (..), encodeChatBinding, mcSimple)
 import Simplex.Chat.Store.Groups (getGroupMembers)
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
-import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), ImageData (..), Profile (..), GroupRejectionReason (..), SharedMsgId (..), User (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
+import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), ImageData (..), Profile (..), GroupRejectionReason (..), SharedMsgId (..), ShortLinkContact, User (..), aUserId, fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
+import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent (setConnShortLink)
+import Simplex.Messaging.Agent (joinConnection, prepareConnectionToJoin, setConnShortLink)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (SConnectionMode (..), UserConnLinkData (..))
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (pattern NRMInteractive)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (decodeJSON, encodeJSON)
@@ -111,6 +113,8 @@ chatProfileTests = do
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
+    it "duplicate contact request from connected contact" testDuplicateContactRequestConnected
+    it "contact requests with invalid or unsupported messages" testContactRequestsInvalidMessages
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "keep connection requests when contact link deleted" testKeepConnectionRequests
     it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
@@ -1711,12 +1715,14 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice <#? bob
     alice @@@ [("@bob", "Audio/video calls: enabled")]
     bob @@@! [(":3", "", Just ConnJoined), (":2", "", Just ConnJoined), (":1", "", Just ConnJoined)]
+    checkPendingInvitations alice 1
 
     alice ##> "/ac bob"
     alice <## "bob (Bob): accepting contact request, you can send messages to contact"
     concurrently_
       (bob <## "alice (Alice): contact is connected")
       (alice <## "bob (Bob): contact is connected")
+    checkPendingInvitations alice 0
 
     bob ##> ("/c " <> cLink)
     bob <## "contact address: known contact alice"
@@ -1831,6 +1837,53 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     threadDelay 100000
     alice @@@ [("@cath", lastChatFeature), ("@robert", "hey")]
     alice <##> cath
+
+testDuplicateContactRequestConnected :: HasCallStack => TestParams -> IO ()
+testDuplicateContactRequestConnected = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/ad"
+    (sLink, cLink) <- getContactLinks alice True
+    bob ##> ("/c " <> cLink)
+    alice <#? bob
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+    concurrently_
+      (bob <## "alice (Alice): contact is connected")
+      (alice <## "bob (Bob): contact is connected")
+    [Only xContactId] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT xcontact_id FROM contacts WHERE local_display_name = 'bob'"
+    sendAddressRequest bob sLink $ encodeConnInfo $ XContact bobProfile Nothing (Just xContactId) Nothing Nothing
+    alice <## "bob (Bob): sent you a duplicate contact request, but you are already connected, no action needed"
+    checkPendingInvitations alice 0
+    alice <##> bob
+
+testContactRequestsInvalidMessages :: HasCallStack => TestParams -> IO ()
+testContactRequestsInvalidMessages = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/ad"
+    (sLink, cLink) <- getContactLinks alice True
+    sendAddressRequest bob sLink $ pure "invalid"
+    alice <##. "chat message error: "
+    sendAddressRequest bob sLink $ encodeConnInfo XOk
+    bob ##> ("/c " <> cLink)
+    alice <#? bob
+    checkPendingInvitations alice 1
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+    concurrently_
+      (bob <## "alice (Alice): contact is connected")
+      (alice <## "bob (Bob): contact is connected")
+    alice <##> bob
+
+sendAddressRequest :: TestCC -> String -> CM B.ByteString -> IO ()
+sendAddressRequest cc address encodeInfo =
+  withCCUser cc $ \user -> do
+    sLink <- either fail pure $ strDecode @ShortLinkContact (B.pack address)
+    let sendRequest = do
+          (_, _, cReq) <- getShortLinkConnReq NRMInteractive user sLink
+          (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+          connInfo <- encodeInfo
+          withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq connInfo PQSupportOff SMSubscribe
+    runExceptT sendRequest `runReaderT` chatController cc >>= either (fail . show) (\_ -> pure ())
 
 testRejectContactAndDeleteUserContact :: HasCallStack => TestParams -> IO ()
 testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathProfile $
