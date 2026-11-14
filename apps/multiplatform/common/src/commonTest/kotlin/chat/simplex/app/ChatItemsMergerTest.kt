@@ -57,7 +57,7 @@ class ChatItemsMergerTest {
 
     val unreadCount = mutableStateOf(0)
     val chatState = ActiveChatState()
-    val merged1 = MergedItems.create(items, unreadCount, emptySet(), chatState)
+    val merged1 = MergedItems.create(items, unreadCount, emptySet(), chatState, developerTools = false)
     assertEquals(
       listOf(
         listOf(0, false,
@@ -102,7 +102,7 @@ class ChatItemsMergerTest {
       }.toString()
     )
 
-    val merged2 = MergedItems.create(items, unreadCount, setOf(98L, 97L), chatState)
+    val merged2 = MergedItems.create(items, unreadCount, setOf(98L, 97L), chatState, developerTools = false)
     assertEquals(
       listOf(
         listOf(0, false,
@@ -172,10 +172,27 @@ class ChatItemsMergerTest {
         is MergedItem.Single -> listOf(m.item.item.id)
       }
     }
-    val merged = MergedItems.create(items, mutableStateOf(0), emptySet(), ActiveChatState())
+    val merged = MergedItems.create(items, mutableStateOf(0), emptySet(), ActiveChatState(), developerTools = false)
     assertEquals(listOf(listOf(10L, 9L), listOf(8L), listOf(7L), listOf(6L, 5L)), rows(merged))
-    val expanded = MergedItems.create(items, mutableStateOf(0), setOf(9L), ActiveChatState())
+    val expanded = MergedItems.create(items, mutableStateOf(0), setOf(9L), ActiveChatState(), developerTools = false)
     assertEquals(listOf(listOf(10L), listOf(9L), listOf(8L), listOf(7L), listOf(6L, 5L)), rows(expanded))
     assertEquals(setOf(9L, 10L), expanded.revealedIds)
+  }
+
+  @Test
+  fun neighboursSkipHiddenIntegrityErrors() {
+    fun item(id: Long, content: CIContent) = ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(id, Clock.System.now(), text = ""), content, reactions = emptyList())
+    val text = CIContent.RcvMsgContent(MsgContent.MCText(""))
+    val items = listOf(item(3L, text), item(2L, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(1, 1))), item(1L, text))
+    fun rows(developerTools: Boolean) =
+      MergedItems.create(items, mutableStateOf(0), emptySet(), ActiveChatState(), developerTools).items.map { (it as MergedItem.Single).item }
+    val hidden = rows(developerTools = false)
+    assertEquals(1L, hidden[0].nextItem?.id)
+    assertEquals(3L, hidden[2].prevItem?.id)
+    val shown = rows(developerTools = true)
+    assertEquals(2L, shown[0].nextItem?.id)
+    assertEquals(2L, shown[2].prevItem?.id)
+    val markedDeleted = ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(2L, Clock.System.now(), text = "", itemDeleted = CIDeleted.Deleted(null)), CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(1, 1)), reactions = emptyList())
+    assertEquals(false, markedDeleted.hiddenInChat(developerTools = false))
   }
 }

@@ -111,7 +111,6 @@ fun ChatItemView(
   reveal: (Boolean) -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   showChatInfo: () -> Unit,
-  developerTools: Boolean,
   showViaProxy: Boolean,
   showTimestamp: Boolean,
   itemSeparation: ItemSeparation,
@@ -221,7 +220,7 @@ fun ChatItemView(
               reactionMenuItems.value.forEach { m ->
                 ItemAction(
                   text = m.name,
-                  composable = { ProfileImage(44.dp, m.image, m.icon) },
+                  composable = { ProfileImage(37.dp, m.image, m.icon, modifier = Modifier.centeredIn(44.dp)) },
                   onClick = {
                     val click = m.onClick
                     if (click != null) {
@@ -728,11 +727,9 @@ fun ChatItemView(
                 is CIContent.RcvDeleted -> LegacyDeletedItem()
                 is CIContent.SndCall -> CallItem(c.status, c.duration)
                 is CIContent.RcvCall -> CallItem(c.status, c.duration)
-                is CIContent.RcvIntegrityError -> if (developerTools) {
+                is CIContent.RcvIntegrityError -> {
                   IntegrityErrorItemView(c.msgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
                   DeleteItemMenu()
-                } else {
-                  Box(Modifier.size(0.dp)) {}
                 }
                 is CIContent.RcvMsgErrorContent -> {
                   RcvMsgErrorItemView(c.rcvMsgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
@@ -1285,6 +1282,9 @@ fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = fal
   }
 }
 
+@Composable
+fun terminalCardShape(): Shape = RoundedCornerShape(msgRectMaxRadius * remember { appPreferences.chatItemRoundness.state }.value.coerceIn(0f, 1f))
+
 private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape = GenericShape { size, _ ->
   val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()) }
   val width = size.width
@@ -1575,7 +1575,6 @@ fun PreviewChatItemView(
     reveal = {},
     showMemberInfo = { _, _ ->},
     showChatInfo = {},
-    developerTools = false,
     showViaProxy = false,
     showTimestamp = true,
     preview = true,
@@ -1664,7 +1663,6 @@ fun PreviewChatItemViewDeletedContent() = BubblePreview {
       reveal = {},
       showMemberInfo = { _, _ ->},
       showChatInfo = {},
-      developerTools = false,
       showViaProxy = false,
       preview = true,
       showTimestamp = true,

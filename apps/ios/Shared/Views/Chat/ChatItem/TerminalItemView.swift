@@ -129,7 +129,7 @@ private func sameSender(_ item: ChatItem, _ older: ChatItem) -> Bool {
 
 func terminalRowGap(_ item: ChatItem, _ older: ChatItem?, separated: Bool, largeGap: Bool, hasSenderRow: Bool) -> CGFloat {
     guard let older, !separated else { return 0 }
-    return largeGap || hasSenderRow || !item.isOneLine || !older.isOneLine || !older.reactions.isEmpty
+    return largeGap || hasSenderRow || !item.isOneLine || !older.isOneLine
     ? terminalParagraphGap
     : 0
 }
@@ -211,6 +211,13 @@ struct MessageLastBlock: ViewModifier {
 
 func metaCopyJoiner(_ rightToLeft: Bool) -> Text {
     Text(verbatim: rightToLeft ? "\u{2060}\u{200F}" : "\u{2060}\u{200E}")
+}
+
+func terminalShowsStatus(_ status: CIStatus, showTimestamp: Bool) -> Bool {
+    switch status {
+    case .sndNew, .sndSent(sndProgress: .complete), .sndRcvd(msgRcptStatus: .ok, sndProgress: .complete), .rcvNew, .rcvRead: showTimestamp
+    default: true
+    }
 }
 
 struct ItemWithMeta<Meta: View, Content: View>: View {
@@ -373,6 +380,20 @@ struct ChatEventWithMeta<Content: View>: View {
 
 let terminalEventPadding = EdgeInsets(top: 0, leading: chatItemTextPadding, bottom: 0, trailing: chatItemTextPadding)
 
+let terminalMaxMediaWidth: CGFloat = 500
+
+func terminalMediaWidth(_ row: CGFloat) -> CGFloat {
+    min(terminalMaxMediaWidth, row - 2 * chatItemTextPadding)
+}
+
+let terminalMemberImageBaseSize: CGFloat = 30
+let terminalAvatarOvershoot: CGFloat = 2
+let terminalAvatarGap: CGFloat = 10
+
+func terminalColumn(_ avatarSize: CGFloat) -> CGFloat {
+    avatarSize > 0 ? avatarSize + terminalAvatarGap - terminalAvatarOvershoot : 0
+}
+
 struct ChatItemSender {
     var name: Text
     var badge: LocalBadge?
@@ -384,27 +405,26 @@ struct ChatItemSender {
 struct TerminalChatItemRow<Content: View>: View {
     @EnvironmentObject private var theme: AppTheme
     var sender: ChatItemSender?
-    var gutter: CGFloat
+    var avatarSize: CGFloat
     var topGap: CGFloat
     var contentStartsWithCard: Bool
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            if gutter > 0 {
-                ZStack(alignment: .topLeading) {
-                    Color.clear.frame(width: gutter, height: 0)
-                    sender?.image?.padding(.leading, chatItemTextPadding)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            if let sender {
+                senderNameAndRole(sender)
+                    .padding(.leading, terminalColumn(avatarSize) + chatItemTextPadding)
+                    .overlay(alignment: .leading) {
+                        if avatarSize > 0, let image = sender.image {
+                            image.padding(.leading, chatItemTextPadding - terminalAvatarOvershoot)
+                        }
+                    }
+                    .padding(.bottom, contentStartsWithCard ? terminalParagraphGap : 0)
             }
-            VStack(alignment: .leading, spacing: 0) {
-                if let sender {
-                    senderNameAndRole(sender)
-                        .padding(.leading, chatItemTextPadding)
-                        .padding(.bottom, contentStartsWithCard ? terminalParagraphGap : 0)
-                }
-                content()
-            }
+            content()
+                .environment(\.terminalMessageColumn, terminalColumn(avatarSize))
+                .padding(.leading, terminalColumn(avatarSize))
         }
         .padding(.top, topGap)
     }
@@ -424,4 +444,19 @@ struct TerminalChatItemRow<Content: View>: View {
         }
         .modifier(terminalLineBox(UIFont.preferredFont(forTextStyle: .body), nil, theme))
     }
+}
+
+extension EnvironmentValues {
+    struct TerminalMessageColumn: EnvironmentKey {
+        static let defaultValue: CGFloat = 0
+    }
+
+    var terminalMessageColumn: CGFloat {
+        get { self[TerminalMessageColumn.self] }
+        set { self[TerminalMessageColumn.self] = newValue }
+    }
+}
+
+func terminalPillStart(_ column: CGFloat) -> CGFloat {
+    max(0, chatItemTextPadding - column)
 }

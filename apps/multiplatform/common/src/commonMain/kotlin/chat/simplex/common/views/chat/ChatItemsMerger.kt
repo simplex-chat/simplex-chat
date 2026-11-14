@@ -15,7 +15,7 @@ data class MergedItems (
   val revealedIds: Set<Long> = emptySet(),
 ) {
   companion object {
-    fun create(items: List<ChatItem>, unreadCount: State<Int>, revealedItems: Set<Long>, chatState: ActiveChatState): MergedItems {
+    fun create(items: List<ChatItem>, unreadCount: State<Int>, revealedItems: Set<Long>, chatState: ActiveChatState, developerTools: Boolean): MergedItems {
       if (items.isEmpty()) return MergedItems(emptyList(), emptyList(), emptyMap())
 
       val revealedIds = revealedStatusRuns(items, revealedItems)
@@ -36,7 +36,8 @@ data class MergedItems (
       while (index < items.size) {
         val item = items[index]
         val prev = items.getOrNull(index - 1)
-        val next = items.getOrNull(index + 1)
+        val shownPrev = shownNeighbour(items, index, -1, developerTools)
+        val shownNext = shownNeighbour(items, index, 1, developerTools)
         val itemIsSplit = itemSplits.contains(item.id)
 
         if (item.id == unreadAfterItemId.value) {
@@ -46,7 +47,7 @@ data class MergedItems (
 
         val revealed = item.mergeCategory == null || revealedIds.contains(item.id)
         if (recent is MergedItem.Grouped && recent.items.first().item.mergesWith(item) && !revealedIds.contains(recent.items.first().item.id) && !itemIsSplit) {
-          val listItem = ListItem(item, prev, next, unreadBefore)
+          val listItem = ListItem(item, shownPrev, shownNext, unreadBefore)
           recent.items.add(listItem)
 
           if (item.isRcvNew) {
@@ -60,7 +61,7 @@ data class MergedItems (
           }
         } else {
           visibleItemIndexInParent++
-          val listItem = ListItem(item, prev, next, unreadBefore)
+          val listItem = ListItem(item, shownPrev, shownNext, unreadBefore)
           recent = if (item.mergeCategory != null) {
             if (!item.mergesWith(prev) || lastRevealedIdsInMergedItems == null) {
               lastRevealedIdsInMergedItems = if (revealedIds.contains(item.id)) mutableListOf(item.id) else mutableListOf()
@@ -121,6 +122,20 @@ data class MergedItems (
       return revealedIds
     }
   }
+
+  fun olderShownRow(row: MergedItem): MergedItem? {
+    val older = row.oldest().nextItem ?: return null
+    return indexInParentItems[older.id]?.let { items.getOrNull(it) }
+  }
+}
+
+fun ChatItem.hiddenInChat(developerTools: Boolean): Boolean =
+  content is CIContent.RcvIntegrityError && meta.itemDeleted == null && !developerTools
+
+private fun shownNeighbour(items: List<ChatItem>, index: Int, step: Int, developerTools: Boolean): ChatItem? {
+  var i = index + step
+  while (i in items.indices && items[i].hiddenInChat(developerTools)) i += step
+  return items.getOrNull(i)
 }
 
 sealed class MergedItem {
