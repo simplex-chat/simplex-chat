@@ -4,6 +4,7 @@ services:
     build:
       context: ../..
       dockerfile: scripts/store-service/Dockerfile
+      target: runtime
       args:
         USER_UID: ${USER_UID:-1000}
         USER_GID: ${USER_GID:-1000}
@@ -26,3 +27,24 @@ services:
         bind:
           create_host_path: false
     stop_grace_period: 10s
+
+  webapps:
+    image: simplex-store-webapps:latest
+    build:
+      context: ../..
+      dockerfile: scripts/store-service/Dockerfile
+      target: webapps
+    restart: "no"
+    user: "${USER_UID:-1000}:${USER_GID:-1000}"
+    network_mode: none
+    volumes:
+      - type: bind
+        source: ./badges
+        target: /out/badges
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./names
+        target: /out/names
+        bind:
+          create_host_path: false

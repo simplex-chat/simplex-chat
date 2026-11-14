@@ -27,6 +27,15 @@ RUN npm ci
 COPY apps/simplex-domains /names
 RUN npm run build
 
+# The webapps service: the two builds and the script that copies them into the folders Caddy serves.
+FROM ubuntu:${UBUNTU} AS webapps
+
+COPY --from=badges /badges/dist /srv/badges
+COPY --from=names /names/webapp/dist /srv/names
+COPY --chmod=755 scripts/store-service/export-webapps.sh /usr/local/bin/export-webapps
+
+ENTRYPOINT ["export-webapps"]
+
 FROM ubuntu:${UBUNTU} AS build
 
 ARG GHC

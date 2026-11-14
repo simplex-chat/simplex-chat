@@ -1,12 +1,14 @@
 # Store service deployment
 
-- `compose.yml`: the service, built from `Dockerfile`, with `./config` mounted read-only.
+- `compose.yml`: the service, built from `Dockerfile`, with `./config` mounted read-only, and the
+  webapps service, which copies both built sites into `./badges` and `./names` for Caddy and exits.
+- `export-webapps.sh`: that copy, the webapps image's entrypoint.
 - `compose.dev.yml`: adds a local chain and database to `compose.yml`, for development.
 - `Dockerfile`, `Dockerfile.dockerignore`: the image, built from the repository root.
 - `store_service.ini.example`: the template of `config/store_service.ini`.
 - `dev/chain.sh`: the dev chain, which also writes the dev `config/store_service.ini`.
 - `dev/contract-run.sh`: runs the names webapp's end-to-end cases against the service.
-- `config/`, `data/`, `.env`: local state, gitignored.
+- `config/`, `badges/`, `names/`, `data/`, `.env`: local state, gitignored.
 
 Production, with PostgreSQL at `BADGE_DB_CONN` (by default
 `postgresql://simplex@127.0.0.1:5432/badge_service`), and the ini filled in before the last command:
@@ -14,6 +16,7 @@ Production, with PostgreSQL at `BADGE_DB_CONN` (by default
 ```
 git submodule update --init ../../apps/simplex-domains
 install -d -m 700 config
+install -d badges names
 install -m 600 store_service.ini.example config/store_service.ini
 docker compose up -d --build
 ```
@@ -25,6 +28,7 @@ git clone https://github.com/simplex-chat/simplex-chat && cd simplex-chat
 git checkout names && git submodule update --init apps/simplex-domains
 cd scripts/store-service
 echo "COMPOSE_FILE=compose.yml:compose.dev.yml" > .env
+install -d badges names
 docker compose up -d --build
 ```
 

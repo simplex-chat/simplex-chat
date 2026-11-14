@@ -1,16 +1,16 @@
 [listener]
 ; loopback, where only Caddy reaches it: trust_forwarded_for below believes any caller's X-Forwarded-For
 host = 127.0.0.1
-; the API, the webhooks and the badges site; Caddy proxies badges.simplex.chat here
+; the API and the webhooks; Caddy proxies /api and /webhooks of both sites here
 badges_port = 8080
-; the builds are served as they are from the image's /srv/badges and /srv/names, the defaults of
-; badges_static_dir and names_static_dir; the names site (simplex.domains, with [names] only) on
-; names_port (default 8081), which also answers the API and the webhooks
-serve_webapp = on
+; off: Caddy serves both sites from ./badges and ./names, which the webapps service writes. On, this
+; service serves them itself from the image's /srv/badges and /srv/names, the names site (with
+; [names] only) on names_port (default 8081)
+serve_webapp = off
 ; Prometheus metrics of the store, on 127.0.0.1 whatever host is; Caddy proxies them on the host's
 ; monitoring site
 ;metrics_port = 9300
-; on because Caddy proxies every request to this service; without it the rate limiter keys on
+; on because Caddy proxies the API to this service; without it the rate limiter keys on
 ; Caddy's address and shares one bucket across all callers
 trust_forwarded_for = on
 

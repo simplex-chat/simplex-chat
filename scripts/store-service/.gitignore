@@ -1,3 +1,5 @@
 .env
 config/
 data/
+badges/
+names/

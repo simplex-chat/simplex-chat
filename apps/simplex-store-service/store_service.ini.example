@@ -8,7 +8,8 @@ badges_port = 8080
 ; is the Docker image's path, so a local run sets it
 badges_static_dir = ./apps/simplex-store-service/web/dist
 ; serve the sites over HTTP, as built (default). Off leaves only the API and the webhooks, for sites
-; another host serves as plain files.
+; a reverse proxy serves as plain files, as in the Docker deployment, whose webapps container
+; copies them out.
 serve_webapp = on
 ; on behind the reverse proxy above: without it every request keys the rate limiter on the
 ; proxy's own address, so one bucket is shared by everyone. Set it off only where this
