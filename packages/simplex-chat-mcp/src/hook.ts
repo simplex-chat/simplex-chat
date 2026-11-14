@@ -372,8 +372,8 @@ function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_n
   const text = shortened(stepText(tool, fields, cwd))
   if (event === "PreToolUse") return {id, text}
   if (event === "PostToolUse" && fields.run_in_background === true) return {id, text: `${text} (in background)`, end: true}
-  const outcome = event === "PostToolUse" ? "✅" : interrupted === true ? "⏹️" : "❌"
-  return {id, text: `${text} ${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`, end: true}
+  const outcome = event === "PostToolUse" ? "" : interrupted === true ? " ⏹️" : " ❌"
+  return {id, text: `${text}${outcome}${ms === undefined ? "" : ` !- ${duration(ms)}!`}`, end: true}
 }
 
 // spec: spec/architecture.md#hook-stepof

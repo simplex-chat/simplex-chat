@@ -491,7 +491,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   const started = received(alice.chat, message("💻 Run the tests", "Claude"))
   await hook({hook_event_name: "PreToolUse", cwd: "/p", ...bash})
   expect((await started).chatItem.meta.itemLive).toBe(true)
-  const ended = updated(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "💻 Run the tests ✅ 2.0 s"))
+  const ended = updated(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "💻 Run the tests !- 2.0 s!"))
   await hook({hook_event_name: "PostToolUse", cwd: "/p", ...bash, tool_response: {stdout: "ok"}, duration_ms: 2018})
   const {meta: finalized} = (await ended).chatItem
   expect([finalized.itemLive, finalized.itemEdited]).toEqual([false, false])

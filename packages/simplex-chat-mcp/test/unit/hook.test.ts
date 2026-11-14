@@ -593,17 +593,17 @@ describe("turn hooks", () => {
     await turn(JSON.stringify({session_id: id, hook_event_name: "PreToolUse", tool_input: bash, tool_use_id: "toolu_1"}), {}, client, 0, 1)
     await turn(JSON.stringify({session_id: id, hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: bash, duration_ms: 5}), {}, client, 0, 1)
     expect(steps(requests)).toEqual([
-      {id: "toolu_Bash", text: "💻 Run the tests ✅ 2.0 s", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests ❌ 39 ms", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests ⏹️ 4 min 12 s", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests ✅ 42 s", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests ✅ 1 h 5 min", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests ✅", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests ✅ 42 ms", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests ✅ 2.0 s", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests !- 2.0 s!", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ❌ !- 39 ms!", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ⏹️ !- 4 min 12 s!", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests !- 42 s!", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests !- 1 h 5 min!", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests !- 42 ms!", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests !- 2.0 s!", end: true},
       {id: "toolu_Bash", text: "💻 Run the tests (in background)", end: true},
       {id: "toolu_Agent", text: "🤖 Agent: Review (in background)", end: true},
-      {id: "toolu_Bash", text: "💻 Run the tests ❌ 12 ms", end: true},
+      {id: "toolu_Bash", text: "💻 Run the tests ❌ !- 12 ms!", end: true},
     ])
     expect(ensured()).toBe(11)
   })
