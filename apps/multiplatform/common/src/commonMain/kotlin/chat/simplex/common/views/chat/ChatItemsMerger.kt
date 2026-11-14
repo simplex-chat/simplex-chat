@@ -35,7 +35,6 @@ data class MergedItems (
         val item = items[index]
         val prev = items.getOrNull(index - 1)
         val next = items.getOrNull(index + 1)
-        val category = item.mergeCategory
         val itemIsSplit = itemSplits.contains(item.id)
 
         if (item.id == unreadAfterItemId.value) {
@@ -44,7 +43,7 @@ data class MergedItems (
         if (item.isRcvNew) unreadBefore--
 
         val revealed = item.mergeCategory == null || revealedItems.contains(item.id)
-        if (recent is MergedItem.Grouped && recent.mergeCategory == category && !revealedItems.contains(recent.items.first().item.id) && !itemIsSplit) {
+        if (recent is MergedItem.Grouped && recent.items.first().item.mergesWith(item) && !revealedItems.contains(recent.items.first().item.id) && !itemIsSplit) {
           val listItem = ListItem(item, prev, next, unreadBefore)
           recent.items.add(listItem)
 
@@ -61,7 +60,7 @@ data class MergedItems (
           visibleItemIndexInParent++
           val listItem = ListItem(item, prev, next, unreadBefore)
           recent = if (item.mergeCategory != null) {
-            if (item.mergeCategory != prev?.mergeCategory || lastRevealedIdsInMergedItems == null) {
+            if (!item.mergesWith(prev) || lastRevealedIdsInMergedItems == null) {
               lastRevealedIdsInMergedItems = if (revealedItems.contains(item.id)) mutableListOf(item.id) else mutableListOf()
             } else if (revealed) {
               lastRevealedIdsInMergedItems += item.id

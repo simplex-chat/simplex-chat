@@ -3643,6 +3643,8 @@ data class ChatItem (
           is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft, is SndGroupEvent.MemberAccepted, is SndGroupEvent.UserPendingReview -> null
           else -> CIMergeCategory.SndGroupEvent
         }
+        is CIContent.SndMsgContent, is CIContent.RcvMsgContent ->
+          if (content.msgContent is MsgContent.MCStatus) CIMergeCategory.Status else null
         else ->
           null
       }
@@ -4000,6 +4002,15 @@ enum class CIMergeCategory {
   SndItemDeleted,
   RcvItemDeleted,
   ChatFeature,
+  Status,
+}
+
+fun ChatItem.mergesWith(other: ChatItem?): Boolean =
+  other != null && mergeCategory == other.mergeCategory && (mergeCategory != CIMergeCategory.Status || sameSender(other))
+
+private fun ChatItem.sameSender(other: ChatItem): Boolean = when (val dir = chatDir) {
+  is CIDirection.GroupRcv -> (other.chatDir as? CIDirection.GroupRcv)?.groupMember?.groupMemberId == dir.groupMember.groupMemberId
+  else -> other.chatDir !is CIDirection.GroupRcv && other.chatDir.sent == dir.sent
 }
 
 @Serializable
@@ -4982,6 +4993,7 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCReport(override val text: String, val reason: ReportReason): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCChat(override val text: String, val chatLink: MsgChatLink, val ownerSig: LinkOwnerSig? = null): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCStatus(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val isVoice: Boolean get() =
@@ -5066,6 +5078,9 @@ object MsgContentSerializer : KSerializer<MsgContent> {
       element<String>("text")
       element<MsgChatLink>("chatLink")
     })
+    element("MCStatus", buildClassSerialDescriptor("MCStatus") {
+      element<String>("text")
+    })
     element("MCUnknown", buildClassSerialDescriptor("MCUnknown"))
   }
 
@@ -5105,6 +5120,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
             val ownerSig = json["ownerSig"]?.let { decoder.json.decodeFromJsonElement<LinkOwnerSig>(it) }
             MsgContent.MCChat(text, chatLink, ownerSig)
           }
+          "status" -> MsgContent.MCStatus(text)
           else -> MsgContent.MCUnknown(t, text, json)
         }
       } else {
@@ -5165,6 +5181,11 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("text", value.text)
           put("chatLink", json.encodeToJsonElement(value.chatLink))
           value.ownerSig?.let { put("ownerSig", json.encodeToJsonElement(it)) }
+        }
+      is MsgContent.MCStatus ->
+        buildJsonObject {
+          put("type", "status")
+          put("text", value.text)
         }
       is MsgContent.MCUnknown -> value.json
     }
