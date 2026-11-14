@@ -1,12 +1,15 @@
 import {oneLine} from "./log"
 
+// spec: spec/architecture.md#inference-endpoint
 export interface Endpoint {
   url: string
   key: string | undefined
 }
 
+// spec: spec/architecture.md#inference-inferencestate
 export type InferenceState = {type: "loading"; model?: string} | {type: "prompt"; model?: string; tokens: number} | {type: "output"; model?: string; rate?: number} | {type: "idle"}
 
+// spec: spec/architecture.md#inference-slot
 interface Slot {
   proxy: string
   model?: string
@@ -20,14 +23,22 @@ interface Slot {
 
 type Sample = Extract<InferenceState, {type: "loading"}> | {type: "slots"; slots: Slot[]}
 
+// spec: spec/architecture.md#inference-constants
 const deadline = 1_000
+// spec: spec/architecture.md#inference-constants
 const maxBody = 1_048_576
+// spec: spec/architecture.md#inference-constants
 const maxProxies = 4
+// spec: spec/architecture.md#inference-constants
 const maxSlots = 64
+// spec: spec/architecture.md#inference-constants
 const modelPattern = /^[\w.:/+@-]{1,64}$/
+// spec: spec/architecture.md#inference-constants
 const loopback = ["localhost", "127.0.0.1", "[::1]"]
+// spec: spec/architecture.md#inference-constants
 const largeBody = "body over 1 MiB"
 
+// spec: spec/architecture.md#inference-inferencepoller
 export function inferencePoller(endpoint: Endpoint, reuse = 3_000): () => Promise<InferenceState | undefined> {
   let latest: {at: number; promise: Promise<InferenceState | undefined>} | undefined
   let previous: Slot[] = []
@@ -48,6 +59,7 @@ export function inferencePoller(endpoint: Endpoint, reuse = 3_000): () => Promis
   }
 }
 
+// spec: spec/architecture.md#inference-sample
 async function sample(endpoint: Endpoint, signal: AbortSignal): Promise<Sample | undefined> {
   const {url, key} = endpoint
   const running = await get(`${url}/running`, key, signal, 404)
@@ -74,6 +86,7 @@ async function sample(endpoint: Endpoint, signal: AbortSignal): Promise<Sample |
   return {type: "slots", slots}
 }
 
+// spec: spec/architecture.md#inference-proxyslots
 async function proxySlots({url, key}: Endpoint, signal: AbortSignal, model?: string): Promise<Sample> {
   const props = await get(`${url}/props`, key, signal, 503)
   if (props.status === 503) return {type: "loading", model}
@@ -84,11 +97,13 @@ async function proxySlots({url, key}: Endpoint, signal: AbortSignal, model?: str
   return {type: "slots", slots: listOf(slots.json).slice(0, maxSlots).map(slot => slotOf(slot, url, model, at))}
 }
 
+// spec: spec/architecture.md#inference-slotof
 function slotOf(slot: unknown, proxy: string, model: string | undefined, at: number): Slot {
   const decoded = countOf(fieldOf(listOf(fieldOf(slot, "next_token"))[0], "n_decoded")) ?? 0
   return {proxy, model, id: countOf(fieldOf(slot, "id")), task: countOf(fieldOf(slot, "id_task")), processing: fieldOf(slot, "is_processing") === true, decoded, prompt: countOf(fieldOf(slot, "n_prompt_tokens_processed")) ?? 0, at}
 }
 
+// spec: spec/architecture.md#inference-slotof
 function stateOf(slots: Slot[], previous: Slot[]): InferenceState {
   const processing = slots.filter(({processing}) => processing)
   if (processing.length === 0) return {type: "idle"}
@@ -98,6 +113,7 @@ function stateOf(slots: Slot[], previous: Slot[]): InferenceState {
   return {type: "output", model, rate: rateOf(decoding, previous)}
 }
 
+// spec: spec/architecture.md#inference-slotof
 function rateOf(decoding: Slot[], previous: Slot[]): number | undefined {
   const rate = decoding.reduce((sum, slot) => {
     const before = previous.find(old => old.proxy === slot.proxy && old.id === slot.id && old.task === slot.task && old.processing && old.decoded > 0 && old.decoded <= slot.decoded && old.at < slot.at)
@@ -106,6 +122,7 @@ function rateOf(decoding: Slot[], previous: Slot[]): number | undefined {
   return rate > 0 ? rate : undefined
 }
 
+// spec: spec/architecture.md#inference-get
 async function get(url: string, key: string | undefined, signal: AbortSignal, handled: number): Promise<{status: number; json?: unknown}> {
   try {
     const response = await fetch(url, {headers: key === undefined ? {} : {Authorization: `Bearer ${key}`}, redirect: "error", signal})
@@ -117,6 +134,7 @@ async function get(url: string, key: string | undefined, signal: AbortSignal, ha
   }
 }
 
+// spec: spec/architecture.md#inference-get
 async function bodyJson(response: Response): Promise<unknown> {
   if (Number(response.headers.get("content-length")) > maxBody) throw new Error(largeBody)
   const chunks: Uint8Array[] = []
@@ -133,6 +151,7 @@ async function bodyJson(response: Response): Promise<unknown> {
   }
 }
 
+// spec: spec/architecture.md#inference-get
 function failureText(error: unknown): string {
   const cause = fieldOf(error, "cause") ?? error
   const first = listOf(fieldOf(cause, "errors"))[0] ?? cause
@@ -140,6 +159,7 @@ function failureText(error: unknown): string {
   return typeof message === "string" && message !== "" ? message : String(first)
 }
 
+// spec: spec/architecture.md#inference-allowedproxy
 function allowedProxy(url: string, proxy: unknown): string | undefined {
   const target = typeof proxy === "string" && URL.canParse(proxy) ? new URL(proxy) : undefined
   if (target === undefined || !["http:", "https:"].includes(target.protocol) || target.username !== "" || target.password !== "") return undefined
@@ -147,18 +167,22 @@ function allowedProxy(url: string, proxy: unknown): string | undefined {
   return target.hostname === hostname || (loopback.includes(target.hostname) && loopback.includes(hostname)) ? target.origin : undefined
 }
 
+// spec: spec/architecture.md#inference-modelname
 function modelName(value: unknown): string | undefined {
   return typeof value === "string" && modelPattern.test(value) ? value : undefined
 }
 
+// spec: spec/architecture.md#inference-modelname
 function fieldOf(value: unknown, key: string): unknown {
   return typeof value === "object" && value !== null ? (value as {[key: string]: unknown})[key] : undefined
 }
 
+// spec: spec/architecture.md#inference-modelname
 function listOf(value: unknown): unknown[] {
   return Array.isArray(value) ? value : []
 }
 
+// spec: spec/architecture.md#inference-modelname
 function countOf(value: unknown): number | undefined {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined
 }
