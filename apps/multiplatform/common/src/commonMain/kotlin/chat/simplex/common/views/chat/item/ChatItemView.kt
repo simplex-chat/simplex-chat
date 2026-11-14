@@ -925,9 +925,8 @@ fun DeleteItemAction(
       if (!revealed.value) {
         val reversedChatItems = chatsCtx.chatItems.value.asReversed()
         val currIndex = chatModel.getChatItemIndexOrNull(cItem, reversedChatItems)
-        val ciCategory = cItem.mergeCategory
-        if (currIndex != null && ciCategory != null) {
-          val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, ciCategory, reversedChatItems)
+        if (currIndex != null && cItem.mergeCategory != null) {
+          val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, cItem, reversedChatItems)
           val range = chatViewItemsRange(currIndex, prevHidden)
           if (range != null) {
             val itemIds: ArrayList<Long> = arrayListOf()

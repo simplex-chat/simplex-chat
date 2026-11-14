@@ -4026,16 +4026,28 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 case .userPendingReview: nil
                 default: .sndGroupEvent
                 }
+            case let .sndMsgContent(msgContent), let .rcvMsgContent(msgContent):
+                msgContent.isStatus ? .status : nil
             default:
                 nil
             }
         }
     }
 
+    public func mergesWith(_ other: ChatItem?) -> Bool {
+        guard let other, mergeCategory != nil, mergeCategory == other.mergeCategory else { return false }
+        if mergeCategory != .status { return true }
+        switch (chatDir, other.chatDir) {
+        case let (.groupRcv(member), .groupRcv(otherMember)): return member.groupMemberId == otherMember.groupMemberId
+        case (.groupRcv, _), (_, .groupRcv): return false
+        default: return chatDir.sent == other.chatDir.sent
+        }
+    }
+
     public var showNotification: Bool {
         switch content {
         case .sndMsgContent: return false
-        case .rcvMsgContent: return meta.itemDeleted == nil
+        case let .rcvMsgContent(msgContent): return meta.itemDeleted == nil && !msgContent.isStatus
         case .sndDeleted: return false
         case .rcvDeleted: return false
         case .sndCall: return false
@@ -4201,7 +4213,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
 
     public var textAtItemTop: Bool {
         let textContent = switch content.msgContent {
-        case .text: true
+        case .text, .status: true
         case .unknown: file == nil
         default: false
         }
@@ -4398,6 +4410,7 @@ public enum CIMergeCategory: Hashable {
     case sndItemDeleted
     case rcvItemDeleted
     case chatFeature
+    case status
 }
 
 public enum CIDirection: Decodable, Hashable {
@@ -5446,6 +5459,7 @@ public enum MsgContent: Equatable, Hashable {
     case file(String)
     case report(text: String, reason: ReportReason)
     case chat(text: String, chatLink: MsgChatLink, ownerSig: LinkOwnerSig?)
+    case status(text: String)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
@@ -5463,6 +5477,7 @@ public enum MsgContent: Equatable, Hashable {
         case let .file(text): return text
         case let .report(text, _): return text
         case let .chat(text, _, _): return text
+        case let .status(text): return text
         case let .unknown(_, text): return text
         }
     }
@@ -5477,6 +5492,13 @@ public enum MsgContent: Equatable, Hashable {
     public var isVoice: Bool {
         switch self {
         case .voice: return true
+        default: return false
+        }
+    }
+
+    public var isStatus: Bool {
+        switch self {
+        case .status: return true
         default: return false
         }
     }
@@ -5538,6 +5560,7 @@ public enum MsgContent: Equatable, Hashable {
         case let (.file(lf), .file(rf)): return lf == rf
         case let (.report(lt, lr), .report(rt, rr)): return lt == rt && lr == rr
         case let (.chat(lt, ll, ls), .chat(rt, rl, rs)): return lt == rt && ll == rl && ls == rs
+        case let (.status(lt), .status(rt)): return lt == rt
         case let (.unknown(lType, lt), .unknown(rType, rt)): return lType == rType && lt == rt
         default: return false
         }
@@ -5582,6 +5605,9 @@ extension MsgContent: Decodable {
                 let chatLink = try container.decode(MsgChatLink.self, forKey: CodingKeys.chatLink)
                 let ownerSig = try container.decodeIfPresent(LinkOwnerSig.self, forKey: CodingKeys.ownerSig)
                 self = .chat(text: text, chatLink: chatLink, ownerSig: ownerSig)
+            case "status":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                self = .status(text: text)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")
@@ -5628,6 +5654,9 @@ extension MsgContent: Encodable {
             try container.encode(text, forKey: .text)
             try container.encode(chatLink, forKey: .chatLink)
             try container.encodeIfPresent(ownerSig, forKey: .ownerSig)
+        case let .status(text):
+            try container.encode("status", forKey: .type)
+            try container.encode(text, forKey: .text)
         // TODO use original JSON and type
         case let .unknown(_, text):
             try container.encode("text", forKey: .type)

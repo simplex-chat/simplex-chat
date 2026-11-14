@@ -255,5 +255,6 @@ toTypeInfo tr =
         "VoiceGroupPreference",
         "FilesGroupPreference",
         "SessionsGroupPreference",
-        "SimplexLinksGroupPreference"
+        "SimplexLinksGroupPreference",
+        "StatusGroupPreference"
       ]

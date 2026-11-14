@@ -852,6 +852,8 @@ processChatCommand cxt nm = \case
       let (_, ParsedMarkdown ft_ _) = msgContentTexts mc
       if prohibitedSimplexLinks gInfo membership mc ft_
         then throwCmdError ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
+        else if prohibitedStatus (fullGroupPreferences gInfo) (memberRole' membership) mc
+        then throwCmdError ("feature not allowed " <> T.unpack (groupFeatureNameText GFStatus))
         else do
           -- TODO [knocking] check chat item scope?
           cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
@@ -1103,6 +1105,7 @@ processChatCommand cxt nm = \case
                 MCFile t -> t /= ""
                 MCReport {} -> True
                 MCChat {} -> True
+                MCStatus {} -> True
                 MCUnknown {} -> True
   -- TODO [knocking] forward from / to scope
   APIForwardChatItems toChat@(ChatRef toCType toChatId toScope) sendAsGroup fromChat@(ChatRef fromCType fromChatId _fromScope) itemIds itemTTL -> withUser $ \user -> case toCType of
@@ -2697,7 +2700,7 @@ processChatCommand cxt nm = \case
       ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)
       ctSndEvent (_, Connection {connId}) = (ConnectionId connId, Nothing, XMsgNew $ mcSimple mc)
       ctMsgReq :: (Contact, Connection) -> SndMessage -> ChatMsgReq
-      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, (vrValue msgBody, [msgId]))
+      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = eventHasNotification (XMsgNew $ mcSimple mc)}, (vrValue msgBody, [msgId]))
       combineResults :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError ([Int64], PQEncryption) -> Either ChatError (Contact, SndMessage)
       combineResults (ct, _) (Right msg') (Right _) = Right (ct, msg')
       combineResults _ (Left e) _ = Left e
@@ -7060,6 +7063,7 @@ chatCommandP =
       "/set signatures #" *> (SetGroupFeature (AGFNR SGFSignMessages) <$> displayNameP <*> _strP),
       "/set support #" *> (SetGroupFeature (AGFNR SGFSupport) <$> displayNameP <*> (A.space *> strP)),
       "/set links #" *> (SetGroupFeatureRole (AGFR SGFSimplexLinks) <$> displayNameP <*> _strP <*> optional memberRole),
+      "/set status #" *> (SetGroupFeatureRole (AGFR SGFStatus) <$> displayNameP <*> _strP <*> optional memberRole),
       "/set admission review #" *> (SetGroupMemberAdmissionReview <$> displayNameP <*> (A.space *> memberCriteriaP)),
       "/set layout #" *> (SetGroupChatLayout <$> displayNameP <* A.space <*> chatLayoutP_),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,

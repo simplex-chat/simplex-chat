@@ -391,6 +391,7 @@ quoteContent mc qmc ciFile_
       MCVoice {} -> False
       MCReport {} -> False
       MCChat {} -> True
+      MCStatus {} -> False
       MCUnknown {} -> True
     qText = msgContentText qmc
     getFileName :: CIFile d -> String
@@ -405,6 +406,7 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
   | isNothing scopeInfo && not (isVoice mc) && (isJust file_ || isMedia mc) && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
   | isNothing scopeInfo && isReport mc && (badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
   | isNothing scopeInfo && prohibitedSimplexLinks gInfo m mc ft = Just GFSimplexLinks
+  | sent && prohibitedStatus (fullGroupPreferences gInfo) (memberRole' m) mc = Just GFStatus
   | otherwise = Nothing
   where
     supportAllowed = case scopeInfo of
@@ -2252,7 +2254,7 @@ sendDirectContactMessages :: MsgEncodingI e => User -> Contact -> NonEmpty (Chat
 sendDirectContactMessages user ct events = do
   conn@Connection {connId} <- liftEither $ contactSendConn_ ct
   let idsEvts = L.map (ConnectionId connId,Nothing,) events
-      msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
+      msgFlags = MsgFlags {notification = any eventHasNotification events}
   sndMsgs_ <- lift $ createSndMessages idsEvts
   (sndMsgs', pqEnc_) <- batchSendConnMessagesB BMJson user conn msgFlags sndMsgs_
   forM_ pqEnc_ $ \pqEnc' -> void $ createContactPQSndItem user ct conn pqEnc'
@@ -2339,7 +2341,7 @@ sendDirectMessage_ conn chatMsgEvent connOrGroupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
   msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent connOrGroupId
   -- TODO move compressed body to SndMessage and compress in createSndMessage
-  (msgDeliveryId, pqEnc') <- deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
+  (msgDeliveryId, pqEnc') <- deliverMessage conn chatMsgEvent msgBody msgId
   pure (msg, msgDeliveryId, pqEnc')
 
 createSndMessage :: MsgEncodingI e => ChatMsgEvent e -> ConnOrGroupId -> CM SndMessage
@@ -2554,9 +2556,9 @@ encodeXGrpAcpt user g@(GIK gInfo@GroupInfo {membership = GroupMember {memberId}}
       signing_ = if maxVersion peerVRange >= relayWebCapVersion then groupMsgSigning False g msg else Nothing
   encodeConnInfoSigning PQSupportOff signing_ msg
 
-deliverMessage :: Connection -> CMEventTag e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
-deliverMessage conn cmEventTag msgBody msgId = do
-  let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
+deliverMessage :: Connection -> ChatMsgEvent e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
+deliverMessage conn chatMsgEvent msgBody msgId = do
+  let msgFlags = MsgFlags {notification = eventHasNotification chatMsgEvent}
   deliverMessage' conn msgFlags msgBody msgId
 
 deliverMessage' :: Connection -> MsgFlags -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
@@ -2752,7 +2754,7 @@ sendGroupSignedMessages_ :: MsgEncodingI e => GroupInfo -> [GroupMember] -> NonE
 sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents = do
   sndMsgs_ <- lift $ createSndMessages idsEvts
   recipientMembers' <- liftIO $ shuffleMembers recipientMembers
-  let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
+  let msgFlags = MsgFlags {notification = any eventHasNotification events}
       (toSend, toPending, forwarded, _, dups) =
         foldr' (addMember recipientMembers') (([], []), [], [], S.empty, 0 :: Int) recipientMembers'
   when (dups /= 0) $ logError $ "sendGroupMessages_: " <> tshow dups <> " duplicate members"
@@ -2898,7 +2900,7 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
   where
     messageMember :: SndMessage -> CM ()
     messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo (chatMsgEvent :| []) [m] m) $ \case
-      MSASend conn -> void $ deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
+      MSASend conn -> void $ deliverMessage conn chatMsgEvent msgBody msgId
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId
       MSAForwarded -> pure ()
 

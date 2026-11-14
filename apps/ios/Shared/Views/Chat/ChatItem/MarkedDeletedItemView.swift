@@ -36,7 +36,7 @@ struct MarkedDeletedItemView: View {
 
     var mergedMarkedDeletedText: LocalizedStringKey {
         if !revealed,
-           let ciCategory = chatItem.mergeCategory,
+           chatItem.mergeCategory != nil,
            var i = m.getChatItemIndex(im, chatItem) {
             var moderated = 0
             var blocked = 0
@@ -45,7 +45,7 @@ struct MarkedDeletedItemView: View {
             var moderatedBy: Set<String> = []
             while i < im.reversedChatItems.count,
                   let ci = .some(im.reversedChatItems[i]),
-                  ci.mergeCategory == ciCategory,
+                  chatItem.mergesWith(ci),
                   let itemDeleted = ci.meta.itemDeleted {
                 switch itemDeleted {
                 case let .moderated(_, byGroupMember):

@@ -189,7 +189,7 @@ testChatPreferences :: Maybe Preferences
 testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing, _json = NoJSON Nothing}
 
 testGroupPreferences :: Maybe GroupPreferences
-testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing, _json = NoJSON Nothing}
+testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, status = Nothing, commands = Nothing, _json = NoJSON Nothing}
 
 testProfile :: Profile
 testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}
@@ -228,6 +228,20 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.msg.new simple text - live message" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"live\":true}}"
       #==# XMsgNew ((mcSimple (MCText "hello")) {live = Just True})
+  it "x.msg.new status" $
+    "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"Run unit tests\",\"type\":\"status\"},\"live\":true}}"
+      #==# XMsgNew ((mcSimple (MCStatus "Run unit tests")) {live = Just True})
+  it "status message has no notification" $ do
+    eventHasNotification (XMsgNew (mcSimple (MCStatus "Run unit tests"))) `shouldBe` False
+    eventHasNotification (XMsgNew (mcSimple (MCText "hello"))) `shouldBe` True
+  it "status message in a group without the status preference is text" $ do
+    let status = MCStatus "Run unit tests"
+        statusFor role = mergeGroupPreferences $ Just $ setGroupPreferenceRole SGFStatus FEOn role Nothing
+    groupRcvContent defaultGroupPrefs GROwner status `shouldBe` MCText "Run unit tests"
+    groupRcvContent (statusFor Nothing) GRMember status `shouldBe` status
+    groupRcvContent (statusFor $ Just GROwner) GRMember status `shouldBe` MCText "Run unit tests"
+    groupRcvContent (statusFor $ Just GROwner) GROwner status `shouldBe` status
+    groupRcvContent defaultGroupPrefs GRMember (MCText "hello") `shouldBe` MCText "hello"
   it "x.msg.new simple link" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"
       #==# XMsgNew (mcSimple (MCLink "https://simplex.chat" $ LinkPreview {uri = "https://simplex.chat", title = "SimpleX Chat", description = "SimpleX Chat", image = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA", content = Nothing}))

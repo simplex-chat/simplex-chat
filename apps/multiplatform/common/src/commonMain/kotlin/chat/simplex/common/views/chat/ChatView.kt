@@ -2479,7 +2479,7 @@ fun BoxScope.ChatItemsList(
           prevItemSeparationLargeGap = eventGapAbove
         } else if (merged is MergedItem.Single || isRevealed.value) {
           val prev = listItem.prevItem
-          val nextForGap = if ((item.mergeCategory != null && item.mergeCategory == prev?.mergeCategory) || isLastItem) null else listItem.nextItem
+          val nextForGap = if (item.mergesWith(prev) || isLastItem) null else listItem.nextItem
           prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
         } else {
           prevItemSeparationLargeGap = false
@@ -3396,9 +3396,8 @@ private fun selectUnselectChatItem(
   val itemIds = mutableSetOf<Long>()
   if (!revealed.value) {
     val currIndex = chatModel.getChatItemIndexOrNull(ci, reversedChatItems.value)
-    val ciCategory = ci.mergeCategory
-    if (currIndex != null && ciCategory != null) {
-      val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, ciCategory, reversedChatItems.value)
+    if (currIndex != null && ci.mergeCategory != null) {
+      val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, ci, reversedChatItems.value)
       val range = chatViewItemsRange(currIndex, prevHidden)
       if (range != null) {
         val reversed = reversedChatItems.value

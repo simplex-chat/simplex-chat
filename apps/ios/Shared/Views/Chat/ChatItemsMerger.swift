@@ -49,7 +49,6 @@ struct MergedItems: Hashable, Equatable {
             let item = im.reversedChatItems[index]
             let prev = index >= 1 ? im.reversedChatItems[index - 1] : nil
             let next = index + 1 < im.reversedChatItems.count ? im.reversedChatItems[index + 1] : nil
-            let category = item.mergeCategory
             let itemIsSplit = itemSplits.contains(item.id)
 
             if item.id == unreadAfterItemId {
@@ -60,7 +59,7 @@ struct MergedItems: Hashable, Equatable {
             }
 
             let revealed = item.mergeCategory == nil || revealedItems.contains(item.id)
-            if recent != nil, case let .grouped(items, _, _, _, mergeCategory, unreadIds, _, _) = recent, mergeCategory == category, let first = items.boxedValue.first, !revealedItems.contains(first.item.id) && !itemIsSplit {
+            if recent != nil, case let .grouped(items, _, _, _, _, unreadIds, _, _) = recent, let first = items.boxedValue.first, first.item.mergesWith(item), !revealedItems.contains(first.item.id) && !itemIsSplit {
                 let listItem = ListItem(item: item, prevItem: prev, nextItem: next, unreadBefore: unreadBefore)
                 items.boxedValue.append(listItem)
 
@@ -77,7 +76,7 @@ struct MergedItems: Hashable, Equatable {
                 visibleItemIndexInParent += 1
                 let listItem = ListItem(item: item, prevItem: prev, nextItem: next, unreadBefore: unreadBefore)
                 if item.mergeCategory != nil {
-                    if item.mergeCategory != prev?.mergeCategory || lastRevealedIdsInMergedItems == nil {
+                    if !item.mergesWith(prev) || lastRevealedIdsInMergedItems == nil {
                         lastRevealedIdsInMergedItems = BoxedValue(revealedItems.contains(item.id) ? [item.id] : [])
                     } else if revealed, let lastRevealedIdsInMergedItems {
                         lastRevealedIdsInMergedItems.boxedValue.append(item.id)

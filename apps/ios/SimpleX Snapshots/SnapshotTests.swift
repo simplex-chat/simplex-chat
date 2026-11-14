@@ -244,6 +244,8 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ClassicOverviewDirect_Previews.self),
         SnapshotScene(ClassicOverviewGroup_Previews.self),
         SnapshotScene(ClassicParagraphs_Previews.self, allSizes: true),
+        SnapshotScene(ClassicStatusRunCollapsed_Previews.self),
+        SnapshotScene(ClassicStatusRunExpanded_Previews.self),
         SnapshotScene(ComposeVoiceView_Previews.self),
         SnapshotScene(ConnectDesktopView_Previews.self, device: true),
         SnapshotScene(ContactConnectionInfo_Previews.self),
@@ -330,6 +332,8 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalRightToLeft_Previews.self),
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
         SnapshotScene(TerminalSpacing_Previews.self, allSizes: true),
+        SnapshotScene(TerminalStatusRunCollapsed_Previews.self),
+        SnapshotScene(TerminalStatusRunExpanded_Previews.self),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
         SnapshotScene(UserPicker_Previews.self),
@@ -512,6 +516,30 @@ struct ClassicParagraphs_Previews: PreviewProvider {
     }
 }
 
+struct ClassicStatusRunCollapsed_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().statusRun(terminal: false, revealed: false)
+    }
+}
+
+struct ClassicStatusRunExpanded_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().statusRun(terminal: false, revealed: true)
+    }
+}
+
+struct TerminalStatusRunCollapsed_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().statusRun(terminal: true, revealed: false)
+    }
+}
+
+struct TerminalStatusRunExpanded_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().statusRun(terminal: true, revealed: true)
+    }
+}
+
 private struct ChatRows: View {
     @EnvironmentObject var theme: AppTheme
     let chat: Chat
@@ -519,6 +547,7 @@ private struct ChatRows: View {
     let mergedItems: MergedItems
     let terminal: Bool
     var selected: Set<Int64>? = nil
+    var revealed: Set<Int64> = []
 
     private var width: CGFloat {
         UIScreen.main.bounds.width
@@ -568,7 +597,7 @@ private struct ChatRows: View {
             composeState: .constant(ComposeState()),
             selectedMember: .constant(nil),
             showChatInfoSheet: .constant(false),
-            revealedItems: .constant([]),
+            revealedItems: .constant(revealed),
             selectedChatItems: .constant(selected),
             forwardedChatItems: .constant([]),
             searchText: .constant(""),
@@ -915,11 +944,12 @@ private final class SnapshotFixtures {
         CIFile.getSample(fileId: id(), fileName: name, fileSize: 184_320, filePath: nil, fileStatus: .rcvInvitation)
     }
 
-    private func chatRows(_ chatInfo: ChatInfo, _ items: [ChatItem], terminal: Bool, selected: Set<Int64>? = nil) -> ChatRows {
+    private func chatRows(_ chatInfo: ChatInfo, _ items: [ChatItem], terminal: Bool, selected: Set<Int64>? = nil, revealed: Bool = false) -> ChatRows {
         let im = ItemsModel(secondaryIMFilter: nil)
         im.reversedChatItems = items.reversed()
-        let merged = MergedItems.create(im, [])
-        return ChatRows(chat: Chat(chatInfo: chatInfo), im: im, mergedItems: merged, terminal: terminal, selected: selected)
+        let revealedIds: Set<Int64> = revealed ? Set(items.map { $0.id }) : []
+        let merged = MergedItems.create(im, revealedIds)
+        return ChatRows(chat: Chat(chatInfo: chatInfo), im: im, mergedItems: merged, terminal: terminal, selected: selected, revealed: revealedIds)
     }
 
     private var direct: ChatInfo { .direct(contact: contact) }
@@ -1061,5 +1091,34 @@ private final class SnapshotFixtures {
             msg(.channelRcv, "## What's new\n- terminal layout\n- faster sync", -190),
             msg(.channelRcv, "Screenshot of the new layout", -180, content: .image(text: "Screenshot of the new layout", image: landscape), file: imageFile("screenshot.jpg"))
         ], terminal: terminal)
+    }
+
+    func statusRun(terminal: Bool, revealed: Bool) -> ChatRows {
+        var claude = Self.member(5, "Claude", .owner)
+        claude.memberProfile.peerType = .agent
+        let steps = [
+            ("📖 Read src/hub.ts", "0.1 s"),
+            ("🔎 Grep \"updatedUser\"", "0.2 s"),
+            ("✏️ Edit src/core.ts", "0.1 s"),
+            ("💻 Run unit tests", "42 s"),
+            ("💻 Run type check", "2.1 s")
+        ]
+        let statuses: [ChatItem] = steps.enumerated().map { (i, step) in
+            let text = "\(step.0) !- \(step.1)!"
+            return ChatItem(
+                chatDir: .groupRcv(groupMember: claude),
+                meta: CIMeta.getSample(id(), ts(Double(i) * 0.1 - 1.9), text, .rcvRead),
+                content: .rcvMsgContent(msgContent: .status(text: text)),
+                formattedText: [FormattedText(text: "\(step.0) "), FormattedText(text: step.1, format: .small)]
+            )
+        }
+        return chatRows(
+            teamChat,
+            [msg(.groupSnd, "Run the unit tests and fix what fails.", -2)]
+            + statuses
+            + [msg(.groupRcv(groupMember: claude), "All 616 unit tests pass, and the type check is clean.", -1.3)],
+            terminal: terminal,
+            revealed: revealed
+        )
     }
 }

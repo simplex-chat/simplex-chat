@@ -179,6 +179,7 @@ Message content can be one of four types:
 - `video` - attached file is required, `text` property MAY be empty.
 - `voice` - attached file is required, `text` property MAY be empty.
 - `link` - no file attachment is expected, `text` property MUST be non-empty. `preview` property contains information about link preview.
+- `status` - a status event, such as a step of an agent's work; no file attachment is expected, `text` property MUST be non-empty. Clients MUST NOT alert about a status message. In a group, status messages are allowed by the group preference `status`, which is off by default; a client MUST NOT send a status message to a group where it is off, and MUST save a status message received in such a group as `text`. Direct chats allow status messages without a preference.
 
 See `/definition/msgContent` in [JTD schema](./simplex-chat.schema.json) for message container format.
 
