@@ -16,8 +16,10 @@ const edgeSpace = /^[\s\u0085]+|[\s\u0085]+$/g
 const bidiControls = /[\u{202A}-\u{202E}\u{2066}-\u{2069}]/gu
 const graphemes = new Intl.Segmenter(undefined, {granularity: "grapheme"})
 const receivingStatuses: T.CIFileStatus["type"][] = ["rcvAccepted", "rcvTransfer", "rcvWarning"]
+// spec: spec/api.md#tool-download
 export const missingFile = "The received file is not in the agent's files folder."
 
+// spec: spec/api.md#message-object
 export interface Message {
   chat: string
   item: number
@@ -43,6 +45,7 @@ export type FileType = "image" | "video" | "voice" | "file"
 
 export type FilesRoot = "files" | "forwarded"
 
+// spec: spec/architecture.md#messages-message
 export interface MessageFile {
   name: string
   size: number
@@ -52,6 +55,7 @@ export interface MessageFile {
   error?: string
 }
 
+// spec: spec/architecture.md#messages-message
 export interface FileOffer {
   fileId: number
   name: string
@@ -66,11 +70,13 @@ export interface Sender {
   type?: string
 }
 
+// spec: spec/architecture.md#messages-toolcall
 export interface ToolCall {
   signal: AbortSignal
   progress: (message: string) => void
 }
 
+// spec: spec/architecture.md#messages-collected
 export class Collected {
   readonly items: T.AChatItem[] = []
   readonly changes = new Changes()
@@ -78,6 +84,7 @@ export class Collected {
   lastAt?: number
 }
 
+// spec: spec/architecture.md#messages-changes
 export class Changes {
   private readonly wakes = new Set<() => void>()
 
@@ -95,6 +102,7 @@ type ItemChange = "new" | "updated" | "deleted"
 
 type ItemListener = (item: T.AChatItem, change: ItemChange) => void
 
+// spec: spec/architecture.md#messages-chatitemswatch
 export class ChatItemsWatch {
   private readonly listeners = new Map<string, Set<ItemListener>>()
 
@@ -108,6 +116,7 @@ export class ChatItemsWatch {
     }
   }
 
+  // spec: spec/api.md#message-object
   collect(chat: string, collected: Collected, accepts: (item: T.ChatItem) => boolean = () => true): () => void {
     return this.listen(chat, (item, change) => {
       if (item.chatItem.content.type !== "rcvMsgContent" || !accepts(item.chatItem)) return
@@ -144,10 +153,12 @@ export class ChatItemsWatch {
   }
 }
 
+// spec: spec/architecture.md#messages-chatref
 export function chatRef(chatInfo: T.ChatInfo): string | undefined {
   return chatInfo.type === "group" && chatInfo.groupChatScope !== undefined ? undefined : anyScopeChatRef(chatInfo)
 }
 
+// spec: spec/architecture.md#messages-chatref
 export function anyScopeChatRef(chatInfo: T.ChatInfo): string | undefined {
   switch (chatInfo.type) {
     case "direct":
@@ -159,6 +170,7 @@ export function anyScopeChatRef(chatInfo: T.ChatInfo): string | undefined {
   }
 }
 
+// spec: spec/architecture.md#messages-chatref
 export function isChatRef(value: string): boolean {
   return /^[@#][1-9]\d{0,14}$/.test(value)
 }
@@ -183,6 +195,7 @@ export function isLive({meta}: T.ChatItem): boolean {
   return meta.itemLive === true
 }
 
+// spec: spec/api.md#message-object
 export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, rejectedFiles: ReadonlySet<number>, data: string): Message {
   const chat = chatRef(chatInfo) ?? ""
   const {meta, content, quotedItem} = item
@@ -204,6 +217,7 @@ export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, 
   }
 }
 
+// spec: spec/api.md#quote-object
 export function toReplyTo(chatInfo: T.ChatInfo, {itemId, chatDir, content, fileName}: {itemId?: number; chatDir?: T.CIDirection; content: T.MsgContent; fileName?: string}, self: Sender): ReplyTo {
   const from = chatDir === undefined || chatDir.type === "channelRcv" ? undefined : itemSender(chatInfo, chatDir, self).name
   const type = content.type === "text" || content.type === "unknown" ? undefined : content.type
@@ -215,21 +229,25 @@ export function toReplyTo(chatInfo: T.ChatInfo, {itemId, chatDir, content, fileN
   }
 }
 
+// spec: spec/api.md#quote-object
 export function replyText(text: string): string {
   const [line, ...rest] = trimmed(text).split(lineBreak)
   const chars = [...graphemes.segment(trimmed(line))].map(({segment}) => segment)
   return chars.length > replyTextLength || rest.length > 0 ? `${chars.slice(0, replyTextLength).join("").trimEnd()}…` : chars.join("")
 }
 
+// spec: spec/architecture.md#messages-toreplyto
 export function quoteLine({type, text}: ReplyTo): string {
   const body = replyText(type === undefined ? text : trimmed(text) === "" ? type : `${type}: ${trimmed(text)}`)
   return body === "" ? ">" : `> ${body}`
 }
 
+// spec: spec/api.md#quote-object
 function trimmed(text: string): string {
   return text.replace(bidiControls, "").replace(edgeSpace, "")
 }
 
+// spec: spec/api.md#file-object
 function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, rejectedFiles: ReadonlySet<number>, data: string): MessageFile {
   const {name, size, type} = fileOffer(msgContent, ciFile)
   const file = {name, size, type}
@@ -242,29 +260,35 @@ function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, r
   return {...file, status: "offered"}
 }
 
+// spec: spec/api.md#file-object
 export function receivedFileError(data: string, chat: string, file: T.CIFile): string | undefined {
   return fileError(file) ?? (file.fileStatus.type === "rcvComplete" && receivedPath(data, chat, file) === undefined ? missingFile : undefined)
 }
 
+// spec: spec/architecture.md#messages-tomessage
 export function receivedPath(data: string, chat: string, {fileId, fileName}: T.CIFile): string | undefined {
   const {path, forwarded} = filePaths(data, chat, fileId, fileName)
   return [path, forwarded].find(file => existsSync(file))
 }
 
+// spec: spec/architecture.md#messages-filepaths
 export function filePaths(data: string, chat: string, fileId: number, name: string): {path: string; forwarded: string} {
   const file = storedName(fileId, name)
   return {path: join(chatFolder(data, chat), file), forwarded: join(chatFolder(data, chat, "forwarded"), file)}
 }
 
+// spec: spec/architecture.md#messages-filepaths
 export function storedName(fileId: number, name: string): string {
   const extension = extname(name)
   return `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`
 }
 
+// spec: spec/architecture.md#messages-filepaths
 export function chatFolder(data: string, chat: string, root: FilesRoot = "files"): string {
   return join(data, root, `${chatType(chat) === T.ChatType.Direct ? "contact" : "group"}-${chatNumber(chat)}`)
 }
 
+// spec: spec/architecture.md#messages-fileoffer
 export function fileOffer(msgContent: T.MsgContent, {fileId, fileName, fileSize}: T.CIFile): FileOffer {
   const file = {fileId, name: fileName, size: fileSize}
   switch (msgContent.type) {
@@ -279,6 +303,7 @@ export function fileOffer(msgContent: T.MsgContent, {fileId, fileName, fileSize}
   }
 }
 
+// spec: spec/architecture.md#messages-fileoffer
 export function fileContent({type, preview = "", duration = 0}: Pick<FileOffer, "type" | "preview" | "duration">, text: string): T.MsgContent {
   switch (type) {
     case "image":
@@ -307,10 +332,12 @@ function itemSender(chatInfo: T.ChatInfo, chatDir: T.CIDirection, self: Sender):
   }
 }
 
+// spec: spec/architecture.md#messages-getchat
 export async function getChat(chat: api.ChatApi, ref: string, pagination: T.ChatPagination | number): Promise<T.AChat> {
   return chat.apiGetChat(chatType(ref), chatNumber(ref), pagination)
 }
 
+// spec: spec/architecture.md#messages-getchat
 export async function receivingFiles(chat: api.ChatApi, ref: string): Promise<number[]> {
   const fileIds: number[] = []
   for (let pagination: T.ChatPagination = {type: "last", count: pageSize}; ; ) {
@@ -321,10 +348,12 @@ export async function receivingFiles(chat: api.ChatApi, ref: string): Promise<nu
   }
 }
 
+// spec: spec/architecture.md#messages-getchat
 export async function markRead(chat: api.ChatApi, ref: string, itemIds: number[]): Promise<void> {
   if (itemIds.length > 0) await chat.apiChatItemsRead(chatType(ref), chatNumber(ref), itemIds)
 }
 
+// spec: spec/architecture.md#messages-unreaditems
 export async function unreadItems(chat: api.ChatApi, ref: string, {chatInfo, chatStats}: T.AChat, messages: number): Promise<{chatInfo: T.ChatInfo; items: T.ChatItem[]; unreadRest: number}> {
   if (chatStats.unreadCount === 0) return {chatInfo, items: [], unreadRest: 0}
   const items = (await getChat(chat, ref, {type: "around", chatItemId: chatStats.minUnreadItemId, count: 0})).chatItems
@@ -341,12 +370,14 @@ function isNewMessage(item: T.ChatItem): boolean {
   return item.content.type === "rcvMsgContent" && isNew(item) && !isLive(item)
 }
 
+// spec: spec/architecture.md#messages-reportprogress
 export function reportProgress(call: ToolCall, message: () => string): () => void {
   call.progress(message())
   const timer = setInterval(() => call.progress(message()), progressInterval)
   return () => clearInterval(timer)
 }
 
+// spec: spec/architecture.md#messages-reportprogress
 export function nextChange(changes: Changes, signal: AbortSignal, ms?: number): Promise<boolean> {
   return new Promise(resolve => {
     if (signal.aborted) return resolve(false)
@@ -363,6 +394,7 @@ export function nextChange(changes: Changes, signal: AbortSignal, ms?: number): 
   })
 }
 
+// spec: spec/architecture.md#messages-reportprogress
 export async function awaitResponses(collected: Collected, deadline: number, idle: number, call: ToolCall): Promise<boolean> {
   for (;;) {
     const live = collected.items.some(({chatItem}) => isLive(chatItem))
@@ -377,6 +409,18 @@ export function utcMinutes(time: number): string {
   return `${new Date(time).toISOString().slice(0, 16).replace("T", " ")} UTC`
 }
 
+// spec: spec/architecture.md#messages-duration
+export function duration(exact: number): string {
+  const ms = Math.round(exact)
+  const seconds = Math.floor(ms / 1000)
+  if (ms < 1000) return `${ms} ms`
+  if (ms < 10_000) return `${(Math.floor(ms / 100) / 10).toFixed(1)} s`
+  if (seconds < 60) return `${seconds} s`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ${seconds % 60} s`
+  return `${Math.floor(seconds / 3600)} h ${Math.floor(seconds / 60) % 60} min`
+}
+
+// spec: spec/architecture.md#messages-validname
 export function validName(name: string): string {
   const chars: string[] = []
   let previous = ""
@@ -401,6 +445,7 @@ export function validName(name: string): string {
   return trimmed.replace(/^([\s\S]+)_(\d+)$/, "$1-$2")
 }
 
+// spec: spec/architecture.md#messages-validname
 export function viewName(name: string): string {
   return /\s/u.test(name) || /\p{P}$/u.test(name) ? `'${name}'` : name
 }
