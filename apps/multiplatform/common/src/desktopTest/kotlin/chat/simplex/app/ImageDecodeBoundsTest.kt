@@ -28,7 +28,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class ImageDecodeBoundsTest {
@@ -99,8 +102,33 @@ class ImageDecodeBoundsTest {
   fun testBase64ImageRendersLimitedNumberOfProgressiveJpegScans() {
     fun pixel(data: ByteArray) = base64ToBitmap(Base64.getEncoder().encodeToString(data)).toAwtImage().getRGB(0, 0)
     val unchanged = pixel(progressiveJpegChangedByLastScan(0, changed = false))
-    assertNotEquals(unchanged, pixel(progressiveJpegChangedByLastScan(9)))
-    assertEquals(unchanged, pixel(progressiveJpegChangedByLastScan(1000)))
+    assertNotEquals(unchanged, pixel(progressiveJpegChangedByLastScan(1)))
+    assertEquals(unchanged, pixel(progressiveJpegChangedByLastScan(2)))
+  }
+
+  @Test
+  fun testBase64ImagesAreCachedWithinMemoryLimit() {
+    val images = (0..16).map { Base64.getEncoder().encodeToString(encodeMarkedPng(1023, 1023, it)) }
+    val first = base64ToBitmap(images[0])
+    val second = base64ToBitmap(images[1])
+    assertSame(first, base64ToBitmap(images[0]))
+    images.drop(2).forEach { base64ToBitmap(it) }
+    assertSame(first, base64ToBitmap(images[0]))
+    assertNotSame(second, base64ToBitmap(images[1]))
+  }
+
+  @Test
+  fun testDecodeRejectsMultiScanJpegOverLowerPixelLimit() {
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(progressiveJpegHeaders(4097, 4096), 1000) }
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(sequentialJpegHeaders(4097, 4096, scanComponents = 1), 1000) }
+    assertEquals(1024, decodeBoundedBufferedImage(progressiveJpegHeaders(4096, 4096), 1000).width)
+    assertEquals(1024, decodeBoundedBufferedImage(sequentialJpegHeaders(4096, 4097, scanComponents = 3), 1000).width)
+  }
+
+  @Test
+  fun testDecodeRejectsGifWithTooManyMetadataBlocks() {
+    assertEquals(2, decodeBoundedBufferedImage(gifWithComment(1000), 4320).width)
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(gifWithComment(1025), 4320) }
   }
 
   @Test
@@ -136,6 +164,21 @@ class ImageDecodeBoundsTest {
     }.join()
     assertFalse(loaded)
     assertEquals(100, getLoadedImage(file)?.first?.width)
+  }
+
+  @Test
+  fun testReceivedImageLoadedTogetherIsDecodedOnce() = runBlocking {
+    val file = receivedFile(encodePng(2400, 2400))
+    val images = (1..8).map { async(Dispatchers.IO) { getLoadedImage(file)?.first } }.awaitAll()
+    assertTrue(images.all { it != null && it === images[0] })
+  }
+
+  @Test
+  fun testReceivedImageThatCannotBeDecodedIsNotDecodedAgain() = runBlocking {
+    val file = receivedFile(encodePng(100, 100).copyOf(8) + ByteArray(32))
+    assertNull(getLoadedImage(file))
+    File(appFilesDir, assertNotNull(file.fileSource).filePath).writeBytes(encodePng(100, 100))
+    assertNull(getLoadedImage(file))
   }
 
   @Test
@@ -192,6 +235,24 @@ class ImageDecodeBoundsTest {
       *segment(0xDA, 3, 1, 0, 2, 0, 3, 0, 0, 0, 0),
     )
 
+  private fun sequentialJpegHeaders(width: Int, height: Int, scanComponents: Int): ByteArray =
+    jpeg(
+      0xFF, 0xD8,
+      *segment(0xDB, 0, *IntArray(64) { 1 }),
+      *segment(0xC0, 8, height shr 8, height and 0xFF, width shr 8, width and 0xFF, 3, 1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0),
+      *segment(0xC4, 0, 1, *IntArray(16)),
+      *segment(0xC4, 0x10, 1, *IntArray(16)),
+      *segment(0xDA, scanComponents, *(1..scanComponents).flatMap { listOf(it, 0) }.toIntArray(), 0, 63, 0),
+    )
+
+  private fun gifWithComment(subBlocks: Int): ByteArray {
+    val gif = encodeImage(2, 2, "gif")
+    val flags = gif[10].toInt()
+    val headerSize = 13 + if (flags and 0x80 != 0) 3 shl ((flags and 7) + 1) else 0
+    val comment = byteArrayOf(0x21, 0xFE.toByte()) + ByteArray(subBlocks * 2) { if (it % 2 == 0) 1 else 'x'.code.toByte() } + byteArrayOf(0)
+    return gif.copyOf(headerSize) + comment + gif.copyOfRange(headerSize, gif.size)
+  }
+
   private fun progressiveJpegChangedByLastScan(scansBefore: Int, changed: Boolean = true): ByteArray =
     jpeg(
       0xFF, 0xD8,
@@ -209,6 +270,14 @@ class ImageDecodeBoundsTest {
   private fun jpeg(vararg bytes: Int): ByteArray = bytes.map { it.toByte() }.toByteArray()
 
   private fun encodePng(width: Int, height: Int): ByteArray = encodeImage(width, height, "png")
+
+  private fun encodeMarkedPng(width: Int, height: Int, mark: Int): ByteArray {
+    val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB).also { it.setRGB(0, 0, mark) }
+    return ByteArrayOutputStream().use { out ->
+      ImageIO.write(image, "png", out)
+      out.toByteArray()
+    }
+  }
 
   private fun encodeImage(width: Int, height: Int, format: String): ByteArray {
     val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)

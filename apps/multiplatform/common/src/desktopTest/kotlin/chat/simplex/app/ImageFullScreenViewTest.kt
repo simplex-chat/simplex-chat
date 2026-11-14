@@ -24,11 +24,14 @@ import org.jetbrains.skia.Image
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
 import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -56,24 +59,52 @@ class ImageFullScreenViewTest {
   }
 
   @Test
-  fun testGalleryLooksForPreviousImageOffTheUiThread() {
+  fun testGalleryLoadsImagesOffTheUiThread() {
     simplexWindowState.windowState = WindowState(size = DpSize(SCENE_SIZE.dp, SCENE_SIZE.dp))
     val image = ProviderMedia.Image(encodePng(2, 2, Color.RED), solidImage(Color.RED))
-    val lookedUpOn = AtomicReference<Thread>()
+    val loadedOn = ConcurrentLinkedQueue<Thread>()
     val scrolledToStart = AtomicBoolean(false)
     val provider = object : ImageGalleryProvider {
       override val initialIndex = 5000
       override val totalMediaSize = mutableStateOf(10000)
-      override fun getMedia(index: Int): ProviderMedia? =
-        if (index == initialIndex - 1) null.also { lookedUpOn.set(Thread.currentThread()) } else image
+      override fun getMedia(index: Int): ProviderMedia? {
+        loadedOn += Thread.currentThread()
+        return if (index == initialIndex - 1) null else image
+      }
       override fun currentPageChanged(index: Int) {}
       override fun scrollToStart() = scrolledToStart.set(true)
       override fun onDismiss(index: Int) {}
     }
     scene { ImageFullScreenView({ provider }, close = {}) }.use { scene ->
-      assertTrue(scene.renderUntil { scrolledToStart.get() })
+      assertTrue(scene.renderUntil { scrolledToStart.get() && it.centerColor() == Color.RED.rgb })
     }
-    assertNotEquals(Thread.currentThread(), assertNotNull(lookedUpOn.get()))
+    assertTrue(loadedOn.isNotEmpty())
+    assertTrue(loadedOn.none { it == Thread.currentThread() })
+  }
+
+  @Test
+  fun testGalleryShowsNothingUntilTheImageIsLoaded() {
+    simplexWindowState.windowState = WindowState(size = DpSize(SCENE_SIZE.dp, SCENE_SIZE.dp))
+    val image = ProviderMedia.Image(encodePng(2, 2, Color.RED), solidImage(Color.RED))
+    val imageLoaded = CountDownLatch(1)
+    val closed = AtomicBoolean(false)
+    val provider = object : ImageGalleryProvider {
+      override val initialIndex = 5000
+      override val totalMediaSize = mutableStateOf(10000)
+      override fun getMedia(index: Int): ProviderMedia? {
+        if (index == initialIndex) imageLoaded.await(3, TimeUnit.SECONDS)
+        return image
+      }
+      override fun currentPageChanged(index: Int) {}
+      override fun scrollToStart() {}
+      override fun onDismiss(index: Int) {}
+    }
+    scene { ImageFullScreenView({ provider }, close = { closed.set(true) }) }.use { scene ->
+      repeat(3) { assertNotEquals(Color.RED.rgb, scene.render().centerColor()) }
+      imageLoaded.countDown()
+      assertTrue(scene.renderUntil { it.centerColor() == Color.RED.rgb })
+    }
+    assertFalse(closed.get())
   }
 
   private fun scene(content: @Composable () -> Unit): ImageComposeScene =
