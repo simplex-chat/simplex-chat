@@ -227,11 +227,13 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(validResponse, .ok)
     }
 
-    func testLocalIceCandidateIndex() throws {
+    func testIceCandidateIndexConversion() throws {
         let local = WebRTC.RTCIceCandidate(sdp: "candidate:1 1 udp 1 192.0.2.1 9 typ host", sdpMLineIndex: 3, sdpMid: "3")
         let sent = encodeJSON([local.toCandidate(nil, nil)])
         let received: [SimpleX.RTCIceCandidate] = try XCTUnwrap(decodeJSON(sent))
+        let withoutIndex: [SimpleX.RTCIceCandidate] = try XCTUnwrap(decodeJSON(#"[{"candidate":"candidate:1 1 udp 1 192.0.2.1 9 typ host","sdpMid":"0"}]"#))
         XCTAssertEqual(received.map { $0.toWebRTCCandidate().sdpMLineIndex }, [3])
+        XCTAssertEqual(withoutIndex.map { $0.toWebRTCCandidate().sdpMLineIndex }, [0])
     }
 
     @MainActor
@@ -253,12 +255,16 @@ final class SnapshotTests: XCTestCase {
         let peers = CallPeers()
         defer { peers.close() }
         try await peers.start()
+        let camera = try XCTUnwrap(peers.client.activeCall?.connection.transceivers.first { $0.mid == "1" })
+        camera.sender.track = peers.peer.transceivers.first { $0.mid == "1" }?.receiver.track
+        XCTAssertNotNil(camera.sender.track)
         peers.peer.transceivers.first?.setDirection(.sendRecv, error: nil)
         let answer = try await peers.peerAnswer()
         let response = await peers.receive(.answer(answer: answer, iceCandidates: noIceCandidates))
         XCTAssertEqual(response, .ok)
         XCTAssertEqual(peers.client.activeCall?.connection.transceivers.count, 4)
         XCTAssertEqual(peers.client.activeCall?.peerHasOldVersion, true)
+        XCTAssertNil(camera.sender.track)
         XCTAssertFalse(peers.call.localMediaSources.camera)
     }
 
@@ -274,6 +280,20 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(peers.client.activeCall?.connection.transceivers.count, 1)
         XCTAssertEqual(peers.client.activeCall?.peerHasOldVersion, true)
         XCTAssertFalse(peers.call.localMediaSources.camera)
+    }
+
+    @MainActor
+    func testVoIPPushForDeclinedCallSuspendsChat() async throws {
+        let chatActive = await waitUntilChatActive()
+        guard chatActive else { return XCTFail("chat is not active") }
+        let callUUID = UUID()
+        let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
+        CallController.shared.endCall(callUUID: callUUID.uuidString.lowercased())
+        let suspended = await waitUntil(20) { appStateGroupDefault.get().inactive }
+        try callKitProvider().reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
+        await activateChatAfterCallPush()
+        XCTAssertTrue(handled)
+        XCTAssertTrue(suspended)
     }
 
     @MainActor
