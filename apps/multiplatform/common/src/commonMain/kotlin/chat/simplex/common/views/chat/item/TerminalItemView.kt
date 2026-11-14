@@ -52,6 +52,7 @@ import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -73,6 +74,7 @@ const val TERMINAL_HEADING_RATIO = 1.25f
 private const val CHAT_LINE_HEIGHT_RATIO = 22f / 16f
 private const val CHAT_LINE_HEIGHT_CONTRAST_SLOPE = 0.1515f
 const val INTER_CAP_HEIGHT = 2048f / 2816f
+const val INTER_SIDE_BEARING = 0.088f
 const val INTER_LINE_HEIGHT = 3408f / 2816f
 private val CHAT_LINE_HEIGHT_STYLE = LineHeightStyle(LineHeightStyle.Alignment.Proportional, LineHeightStyle.Trim.None)
 
@@ -136,7 +138,7 @@ private val ChatItem.channelIsSender: Boolean get() =
   chatDir is CIDirection.ChannelRcv || (chatDir is CIDirection.GroupSnd && meta.showGroupAsSender)
 
 fun terminalRowGap(item: ChatItem, older: ChatItem?, separated: Boolean, largeGap: Boolean, hasSenderRow: Boolean): TextUnit =
-  if (older != null && !separated && (largeGap || hasSenderRow || !item.isOneLine || !older.isOneLine || older.reactions.isNotEmpty())) TERMINAL_PARAGRAPH_GAP else 0.sp
+  if (older != null && !separated && (largeGap || hasSenderRow || !item.isOneLine || !older.isOneLine)) TERMINAL_PARAGRAPH_GAP else 0.sp
 
 fun terminalTextTop(item: ChatItem): TextUnit = when {
   item.cardAboveText || item.hasQuoteOrHeader && item.startsWithCard -> if (item.startsWithEmptyLines) 0.sp else TERMINAL_PARAGRAPH_GAP
@@ -152,6 +154,12 @@ fun terminalQuoteTop(item: ChatItem): TextUnit =
 
 fun terminalReactionsGap(item: ChatItem): TextUnit =
   if (item.reactions.isNotEmpty()) TERMINAL_PARAGRAPH_GAP else 0.sp
+
+fun terminalShowsStatus(status: CIStatus, showTimestamp: Boolean): Boolean = when {
+  status is CIStatus.SndSent && status.sndProgress == SndCIStatusProgress.Complete -> showTimestamp
+  status is CIStatus.SndRcvd && status.msgRcptStatus == MsgReceiptStatus.Ok && status.sndProgress == SndCIStatusProgress.Complete -> showTimestamp
+  else -> true
+}
 
 val ChatItem.isOneLine: Boolean get() =
   textAtItemTop && markdownBlocks == null && '\n' !in content.text
@@ -391,6 +399,8 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
 }
 
 val TERMINAL_MEMBER_IMAGE_SIZE: Dp = 27.dp
+val TERMINAL_AVATAR_OVERSHOOT: Dp = 2.dp
+val TERMINAL_AVATAR_TEXT_GAP: Dp = 6.dp
 
 @Composable
 fun terminalGutter(chatInfo: ChatInfo): Dp =
@@ -406,6 +416,7 @@ fun TerminalChatItemRow(
 ) {
   val cardGap = TERMINAL_PARAGRAPH_GAP.toDp()
   val avatarGap = if (sender?.image != null) TERMINAL_HEADING_BOTTOM_GAP.toDp() else 0.dp
+  val bodyFontSize = MaterialTheme.typography.body1.fontSize
   Layout(
     content = {
       Box {
@@ -432,9 +443,15 @@ fun TerminalChatItemRow(
     val avatarOffset = (name.height - avatar.height) / 2
     val nameTop = (topGap + avatarGap).roundToPx() + max(0, -avatarOffset)
     val avatarTop = nameTop + avatarOffset
-    val messageTop = nameTop + name.height + if (sender != null && message[CardTop] == 0) cardGap.roundToPx() else 0
+    val startsWithCard = message[CardTop] == 0
+    val belowName = nameTop + name.height + if (sender != null && startsWithCard) cardGap.roundToPx() else 0
+    val firstBaseline = message[FirstBaseline]
+    val lettersTop = if (startsWithCard || firstBaseline == AlignmentLine.Unspecified) 0 else firstBaseline - ceil((bodyFontSize * INTER_CAP_HEIGHT).toPx()).toInt()
+    val belowAvatar = if (avatar.height > 0) avatarTop + avatar.height + TERMINAL_AVATAR_TEXT_GAP.roundToPx() - lettersTop else 0
+    val messageTop = max(belowName, belowAvatar)
+    val avatarStart = CHAT_ITEM_TEXT_PADDING.toPx() + (bodyFontSize * INTER_SIDE_BEARING).toPx() - TERMINAL_AVATAR_OVERSHOOT.toPx()
     layout(constraints.maxWidth, max(messageTop + message.height, avatarTop + avatar.height)) {
-      avatar.placeRelative(CHAT_ITEM_TEXT_PADDING.roundToPx(), avatarTop)
+      avatar.placeRelative(avatarStart.roundToInt(), avatarTop)
       name.placeRelative(nameStart, nameTop)
       message.placeRelative(0, messageTop)
     }

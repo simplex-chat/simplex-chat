@@ -11,8 +11,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.views.chat.item.*
 import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.roundToInt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -64,18 +67,25 @@ class TerminalChatItemRowTest {
   }
 
   @Test
-  fun messagesStartAtRowStartBelowNameLine() {
-    val nameLine = messageTop(alice) { Box(it.fixed(100, 22, 17)) }
+  fun lettersStartSixDpBelowAvatar() {
     val message = messagePlaced(aliceWithAvatar, gutter = 39.dp) { Box(it.fixed(100, 22, 17)) }
     val avatar = avatar()
+    val capHeight = with(density) { ceil((16.sp * INTER_CAP_HEIGHT).toPx()).toInt() }
     assertEquals(0, message.x)
-    assertEquals(avatar.y - (nameLine - avatar.height) / 2 + nameLine, message.y)
+    assertEquals(avatar.y + avatar.height + with(density) { TERMINAL_AVATAR_TEXT_GAP.roundToPx() }, message.y + 17 - capHeight)
+  }
+
+  @Test
+  fun avatarPassesLettersEdge() {
+    messagePlaced(aliceWithAvatar, gutter = 39.dp) { Box(it.fixed(100, 22, 17)) }
+    val lettersEdge = with(density) { CHAT_ITEM_TEXT_PADDING.toPx() + (16.sp * INTER_SIDE_BEARING).toPx() }
+    assertEquals((lettersEdge - with(density) { TERMINAL_AVATAR_OVERSHOOT.toPx() }).roundToInt(), avatar().x)
   }
 
   @Test
   fun avatarCentredOnNameLine() {
-    val nameLine = messageTop(alice) { Box(it.fixed(100, 22, 17)) }
-    val message = messagePlaced(aliceWithAvatar, gutter = 39.dp, topGap = 20.dp) { Box(it.fixed(100, 22, 17)) }
+    val nameLine = messageTop(alice) { Box(it.fixed(100, 40, 30)) }
+    val message = messagePlaced(aliceWithAvatar, gutter = 39.dp, topGap = 20.dp) { Box(it.fixed(100, 40, 30)) }
     val avatar = avatar()
     assertTrue(abs(2 * avatar.y + avatar.height - (2 * message.y - nameLine)) <= 1, "avatar at ${avatar.y}, name line of $nameLine above ${message.y}")
   }
@@ -89,16 +99,16 @@ class TerminalChatItemRowTest {
   }
 
   @Test
-  fun cardBelowAvatarTakesParagraphGapBelowNameLine() {
-    val text = messageTop(aliceWithAvatar) { Box(it.fixed(100, 22, 17)) }
+  fun cardStartsSixDpBelowAvatar() {
     val card = messageTop(aliceWithAvatar) { Box(it.messageCard().fixed(100, 40, null)) }
-    assertEquals(text + cardGap, card)
+    val avatar = avatar()
+    assertEquals(avatar.y + avatar.height + with(density) { TERMINAL_AVATAR_TEXT_GAP.roundToPx() }, card)
   }
 
   @Test
   fun textBelowNameLineTallerThanAvatarStartsAtItsBottom() {
-    val nameLine = messagePlaced(alice, fontScale = 2f) { Box(it.fixed(100, 22, 17)) }.y
-    val message = messagePlaced(aliceWithAvatar, gutter = 39.dp, fontScale = 2f) { Box(it.fixed(100, 22, 17)) }
+    val nameLine = messagePlaced(alice, fontScale = 2f) { Box(it.fixed(100, 44, 34)) }.y
+    val message = messagePlaced(aliceWithAvatar, gutter = 39.dp, fontScale = 2f) { Box(it.fixed(100, 44, 34)) }
     assertTrue(nameLine > 27, "name line $nameLine")
     assertEquals(with(Density(1f, 2f)) { TERMINAL_HEADING_BOTTOM_GAP.roundToPx() } + nameLine, message.y)
   }

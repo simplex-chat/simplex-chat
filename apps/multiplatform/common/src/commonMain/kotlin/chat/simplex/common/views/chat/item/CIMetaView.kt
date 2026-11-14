@@ -68,7 +68,7 @@ fun CIMetaView(
         metaColor,
         paleMetaColor,
         timeStyle,
-        showStatus = showStatus,
+        showStatus = shownStatus(showStatus, chatItem.meta, showTimestamp),
         showEdited = showEdited,
         showViaProxy = showViaProxy,
         showTimestamp = showTimestamp,
@@ -237,7 +237,7 @@ fun metaReserveCopy(
   breakBefore: Boolean = false
 ): AnnotatedString =
   metaReserveCopy(
-    meta, chatTTL, encrypted, signedFileVerified, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp,
+    meta, chatTTL, encrypted, signedFileVerified, secondaryColor, shownStatus(showStatus, meta, showTimestamp), showEdited, showViaProxy, showTimestamp,
     density = LocalDensity.current,
     bodyFontSize = MaterialTheme.typography.body1.fontSize,
     direction = LocalLayoutDirection.current,
@@ -270,6 +270,10 @@ fun metaReserveCopy(
     )
   }
 }
+
+@Composable
+fun shownStatus(showStatus: Boolean, meta: CIMeta, showTimestamp: Boolean): Boolean =
+  showStatus && (!LocalTerminalLayout.current || terminalShowsStatus(meta.itemStatus, showTimestamp))
 
 private val CIMeta.tallStatusIcon: Boolean get() =
   itemStatus is CIStatus.SndSent || itemStatus is CIStatus.SndRcvd

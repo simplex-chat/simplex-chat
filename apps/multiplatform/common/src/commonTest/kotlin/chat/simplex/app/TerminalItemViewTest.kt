@@ -180,9 +180,9 @@ class TerminalItemViewTest {
   }
 
   @Test
-  fun rowGapBelowReactions() {
+  fun noRowGapBelowReactions() {
     val older = msg(1, CIDirection.DirectSnd(), 0)
-    assertEquals(TERMINAL_PARAGRAPH_GAP, gap(msg(2, CIDirection.DirectSnd(), 10), older.copy(reactions = thumbsUp)))
+    assertEquals(0.sp, gap(msg(2, CIDirection.DirectSnd(), 10), older.copy(reactions = thumbsUp)))
     assertEquals(0.sp, gap(msg(2, CIDirection.DirectSnd(), 10).copy(reactions = thumbsUp), older))
   }
 
