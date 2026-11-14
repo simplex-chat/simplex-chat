@@ -456,12 +456,12 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await hook({hook_event_name: "Stop", last_assistant_message: "Tests pass."})
   await passed
   const notification = '<task-notification>\n<task-id>b1</task-id>\n<status>completed</status>\n<summary>Background command "Build" completed (exit code 0)</summary>\n</task-notification>'
-  const noted = received(alice.chat, message('✅ Background command "Build" completed (exit code 0)', "Claude"))
+  const noted = received(alice.chat, message('!- ✅ Background command "Build" completed (exit code 0)!', "Claude"))
   appendFileSync(transcript, userEntry("p2", notification, "task-notification"))
   await hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p2", prompt: notification})
   await noted
   const midTurn = '<task-notification>\n<task-id>b2</task-id>\n<status>failed</status>\n<summary>Background command "Lint" failed with exit code 1</summary>\n</task-notification>'
-  const midTurnNoted = received(alice.chat, message('❌ Background command "Lint" failed with exit code 1', "Claude"))
+  const midTurnNoted = received(alice.chat, message('!- ❌ Background command "Lint" failed with exit code 1!', "Claude"))
   appendFileSync(transcript, `${JSON.stringify({type: "attachment", attachment: {type: "queued_command", prompt: midTurn, origin: {kind: "task-notification"}, commandMode: "task-notification"}})}\n`)
   await hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p2", prompt: midTurn})
   await midTurnNoted

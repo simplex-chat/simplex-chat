@@ -375,7 +375,7 @@ function recordKind(record: TranscriptEntry, id: string | undefined, text: strin
   const origin = record.type === "attachment" ? (record.attachment?.origin ?? (record.attachment?.commandMode === "task-notification" ? {kind: "task-notification"} : undefined)) : record.origin
   const note = noteOf(origin, record.turnOrigin, text)
   const midTurn = record.type !== "user" || (id !== undefined && record.promptId !== id)
-  return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: shortened(note)}), ...(midTurn ? {midTurn} : {})}
+  return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: small(shortened(note))}), ...(midTurn ? {midTurn} : {})}
 }
 
 // spec: spec/architecture.md#hook-noteof

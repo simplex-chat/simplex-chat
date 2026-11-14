@@ -300,7 +300,8 @@ describe("turn hooks", () => {
   const userEntry = (promptId: string, content: unknown, extra: object = {}) => `${JSON.stringify({type: "user", promptId, ...extra, message: {role: "user", content}})}\n`
   const queuedEntry = (prompt: string, origin: object) => `${JSON.stringify({type: "attachment", attachment: {type: "queued_command", prompt, origin, commandMode: "prompt"}})}\n`
   const enqueueEntry = (content: string) => `${JSON.stringify({type: "queue-operation", operation: "enqueue", content})}\n`
-  const kinds = (requests: unknown[]) => requests.map(request => (request as {body: {note?: string; typed: boolean; midTurn?: boolean}}).body).map(({note, typed, midTurn}) => [note, typed, midTurn])
+  const notes = (requests: unknown[]) => requests.map(request => (request as {body: {note?: string; typed: boolean; midTurn?: boolean}}).body)
+  const kinds = (requests: unknown[]) => notes(requests).map(({note, typed, midTurn}) => [note?.replace(/^!- ([\s\S]*)!$/, "$1"), typed, midTurn])
 
   it("send a one-line note of each kind of Claude Code's own prompt, from the origin of its transcript entry, and none for a typed or a channel prompt", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
@@ -345,6 +346,8 @@ describe("turn hooks", () => {
         [undefined, false, undefined],
         [`${prefix}${"x".repeat(199 - [...prefix].length)}…`, false, undefined],
       ])
+      expect(notes(requests).flatMap(({note}) => (note === undefined ? [] : [note.startsWith("!- ") && note.endsWith("!")]))).toEqual(Array(12).fill(true))
+      expect(notes(requests)[5].note).toBe("!- ✉️ Message from mcp-impl2: I read the evidence.!")
     } finally {
       rmSync(folder, {recursive: true, force: true})
     }
