@@ -564,14 +564,14 @@ badge without paying.
 the repository root), `compose.yml` and the ini template `store_service.ini.example`; `dev/` holds
 the scripts of the dev setup and the webapp's cases. The service
 runs with `+client_postgres` and host networking, and serves the API and the webhooks. A second
-container, `webapps`, copies both built sites into `scripts/store-service/badges/` and `names/` at
+container, `webapps`, copies both built sites into `scripts/store-service/webapps/`, as `badges/` and `names/`, at
 every `docker compose up` and exits; one Caddy serves those folders and proxies the API to the
 service. The service writes no file of either site.
 
 `webapps` is built from the same `Dockerfile` (target `webapps`), and its `export-webapps.sh` writes
 each site's files before its `index.html` and `sw.js`, then deletes what the build no longer has, so
-Caddy never serves a shell whose assets are missing. Both folders must exist before
-`docker compose up`, owned by `USER_UID`, which the container runs as: `install -d badges names`.
+Caddy never serves a shell whose assets are missing. The folder must exist before
+`docker compose up`, owned by `USER_UID`, which the container runs as: `install -d webapps`.
 
 `compose.yml` mounts the folder `scripts/store-service/config/` read-only at
 `/etc/simplex-store-service`. It holds `store_service.ini`, and the App Store root and the Play
@@ -631,7 +631,7 @@ The rename to StoreService changed what the operator runs:
 | the binary `simplex-badge-service` | `simplex-store-service` |
 | `port = 8080` | `badges_port = 8080`, the default, which can be omitted |
 | `static_dir = /srv/web` | `badges_static_dir = /srv/badges`, the image's build and the default, which can be omitted in Docker |
-| `webapp_export_dir = /srv/webapp`, host folder `web` | removed: the `webapps` container writes host folders `badges` and `names` |
+| `webapp_export_dir = /srv/webapp`, host folder `web` | removed: the `webapps` container writes host folder `webapps`, with `badges` and `names` in it |
 | `names_hosts`, the hosts that got the names site by `Host` | `names_port = 8081`, the default: the names site on its own port (see [Two sites](#two-sites)) |
 
 The service refuses to start with a key from the left column, naming the key that replaced it.
@@ -642,7 +642,8 @@ to `store_service.ini`, and change its keys and paths as the table says, the
 same machine, also set `[listener] host = 127.0.0.1`: an ini copied from the earlier template binds
 `0.0.0.0` with `trust_forwarded_for = on`, so a caller reaching the port past Caddy picks its own rate
 limit bucket. Point Caddy's badges root at
-`scripts/store-service/badges`, which the `webapps` container fills. Compose names a project after its
+`scripts/store-service/webapps/badges`, which the `webapps` container fills; create
+`scripts/store-service/webapps` first, as [Deployment](#deployment) says. Compose names a project after its
 folder, so the new `store-service` project does not see the old `badge-service` container, which
 would keep running on the same port and database: stop it first, from `scripts/badge-service/` or
 anywhere with `-p`. The image builds the names site from the `apps/simplex-domains` submodule, a
@@ -726,7 +727,7 @@ git clone https://github.com/simplex-chat/simplex-chat && cd simplex-chat
 git checkout names && git submodule update --init apps/simplex-domains
 cd scripts/store-service
 echo "COMPOSE_FILE=compose.yml:compose.dev.yml" > .env
-install -d badges names
+install -d webapps
 docker compose up -d --build
 ```
 
@@ -779,7 +780,7 @@ sudo rm -rf data config
 ### Caddy
 
 The Caddyfile is not in this repository. Its two host blocks, with `serve_webapp = off`, the
-folders the `webapps` container writes at `/srv/store-service/badges` and `/srv/store-service/names`,
+folders the `webapps` container writes at `/srv/store-service/webapps/badges` and `…/names`,
 and the service at `127.0.0.1:8080`:
 
 ```
@@ -792,7 +793,7 @@ badges.simplex.chat {
 		reverse_proxy 127.0.0.1:8080
 	}
 	handle {
-		root * /srv/store-service/badges
+		root * /srv/store-service/webapps/badges
 		file_server
 	}
 	@shell path / /index.html /sw.js
@@ -810,7 +811,7 @@ simplex.domains {
 		reverse_proxy 127.0.0.1:8080
 	}
 	handle {
-		root * /srv/store-service/names
+		root * /srv/store-service/webapps/names
 		file_server
 	}
 	@shell path / /index.html /sw.js

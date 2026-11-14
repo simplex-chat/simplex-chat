@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copies the built sites in /srv into the folders mounted at /out, which Caddy serves.
+# Copies the built sites in /srv into /out/badges and /out/names, the folder Caddy serves mounted at /out.
 set -eu
 
 export_site() {

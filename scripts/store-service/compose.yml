@@ -39,12 +39,7 @@ services:
     network_mode: none
     volumes:
       - type: bind
-        source: ./badges
-        target: /out/badges
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ./names
-        target: /out/names
+        source: ./webapps
+        target: /out
         bind:
           create_host_path: false

@@ -1,5 +1,4 @@
 .env
 config/
 data/
-badges/
-names/
+webapps/

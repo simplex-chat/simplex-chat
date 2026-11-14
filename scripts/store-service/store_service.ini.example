@@ -3,7 +3,7 @@
 host = 127.0.0.1
 ; the API and the webhooks; Caddy proxies /api and /webhooks of both sites here
 badges_port = 8080
-; off: Caddy serves both sites from ./badges and ./names, which the webapps service writes. On, this
+; off: Caddy serves both sites from ./webapps, which the webapps service writes. On, this
 ; service serves them itself from the image's /srv/badges and /srv/names, the names site (with
 ; [names] only) on names_port (default 8081)
 serve_webapp = off
