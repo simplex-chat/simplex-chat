@@ -8,7 +8,7 @@ import {promisify} from "util"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {Action, Mode} from "./actions"
 import {Config, readConfig} from "./config"
-import {LockedError, SessionFile, acquireLock, createDataFolder, dataRoot, logFile, readSessionFile, releaseLock, saveHeldTitles, serviceLock, serviceToken, sessionFolder, socketPath, storedSessions, takeHeldTitles, trimLog, writeSessionFile} from "./files"
+import {LockedError, SessionFile, acquireLock, createDataFolder, dataRoot, logFile, readSessionFile, releaseLock, saveHeldTitles, serviceLock, serviceToken, sessionFolder, socketPath, storedSessions, takeHeldTitles, trimLog, writeSessionFile, writeStatusLine} from "./files"
 import {Hub, StoredSession, hubTexts} from "./hub"
 import {ExitError, errorText, log, logError} from "./log"
 import {ToolCall, validName} from "./messages"
@@ -53,7 +53,7 @@ export interface SessionLike {
   permission(request: PermissionRequest): void
   turn(request: TurnRequest): Promise<void>
   endPermissions(): void
-  endSteps(): Promise<void>
+  endLive(): Promise<void>
   endToolApprovals(): void
 }
 
@@ -65,6 +65,7 @@ export interface ServiceDeps {
   openHub(config: Config, stored: StoredSession[]): Promise<HubLike>
   onStopped(code: number): void
   processStart(pid: number): Promise<string | undefined>
+  statusLine?: string
 }
 
 // spec: spec/architecture.md#service-entry
@@ -118,6 +119,13 @@ export class Service {
         throw error
       }
       service.scheduleStop()
+      if (deps.statusLine !== undefined) {
+        try {
+          writeStatusLine(deps.root, deps.statusLine)
+        } catch (error) {
+          logError("status line", error)
+        }
+      }
       for (const request of takeHeldTitles(deps.root)) service.onTitle(request as TitleRequest).catch(error => logError("title", error))
       service.logTimer = setInterval(() => {
         try {
@@ -355,7 +363,7 @@ export class Service {
       entry.seen = Date.now()
       agent.onLine = undefined
       agent.endPermissions()
-      agent.endSteps()
+      agent.endLive()
       this.scheduleIdle(id, entry)
     })
   }
@@ -510,6 +518,7 @@ export function productionDeps(root: string): ServiceDeps {
     openHub: (config, stored) => Hub.open(root, config, stored),
     onStopped: code => process.exit(code),
     processStart,
+    statusLine: join(__dirname, "status-line.js"),
   }
 }
 

@@ -352,7 +352,7 @@ fun ContactCheckRow(
       }
     } else null
   ) {
-    ProfileImage(size = 30.dp, contact.image, modifier = Modifier.centeredIn(36.dp))
+    ProfileImage(size = 30.dp, contact.image, contact.chatIconName, modifier = Modifier.centeredIn(36.dp))
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
     NameWithBadge(
       contact.chatViewName,

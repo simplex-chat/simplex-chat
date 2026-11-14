@@ -1,4 +1,4 @@
-import {spawn} from "child_process"
+import {execFile, spawn} from "child_process"
 import {once} from "events"
 import * as fs from "fs"
 import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
@@ -6,6 +6,8 @@ import {Server, request} from "http"
 import {Socket} from "net"
 import {tmpdir} from "os"
 import {join} from "path"
+import {pathToFileURL} from "url"
+import {promisify} from "util"
 import {Mode} from "../../src/actions"
 import {ServiceClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
@@ -85,8 +87,8 @@ function deps(root: string) {
         endPermissions: () => {
           agent.turns.push("ended")
         },
-        endSteps: async () => {
-          agent.turns.push("steps ended")
+        endLive: async () => {
+          agent.turns.push("live posts ended")
         },
         endToolApprovals: () => {
           agent.turns.push("tool approvals ended")
@@ -247,6 +249,18 @@ describe("service", () => {
     await attached
     await post("/reset-owners")
     expect(expiryChecks()).toBe(5)
+  })
+
+  it("writes status-line.js into the data folder at the start, which runs the status line command of its own build, in place of an older one", async () => {
+    const build = join(root, "_build")
+    mkdirSync(build)
+    writeFileSync(join(build, "status-line.js"), 'exports.runStatusLine = () => process.stdout.write("status line\\n")\n')
+    writeFileSync(join(root, "status-line.js"), "older\n")
+    const {d} = deps(root)
+    service = await Service.start({...d, statusLine: join(build, "status-line.js")}, readDefaultConfig)
+    expect(readFileSync(join(root, "status-line.js"), "utf8")).toBe(`import(${JSON.stringify(pathToFileURL(join(build, "status-line.js")).href)}).then(module => module.runStatusLine())\n`)
+    expect((await promisify(execFile)("node", [join(root, "status-line.js")])).stdout).toBe("status line\n")
+    expect(productionDeps(root).statusLine).toBe(join(__dirname, "../../src/status-line.js"))
   })
 
   it("opens one agent for concurrent registrations", async () => {
@@ -609,12 +623,14 @@ describe("service", () => {
     expect(await register(id1)).toMatchObject({number: 1, displayName: "1 · auth"})
   })
 
-  it("passes permission requests and turns to the session, and its lines to the attachments while they exist, and ends its permissions and steps at the last detach", async () => {
+  it("passes permission requests, turns and the batches of Claude's text to the session, and its lines to the attachments while they exist, and ends its permissions and live posts at the last detach", async () => {
     const {d, agents} = deps(root)
     service = await Service.start(d, readDefaultConfig)
     await register(id1)
     const permission = {id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"}
+    const text = {id: id1, at: 1, text: {message: "m1", index: 0, final: true, delta: "Done."}}
     expect(await post("/permission", permission)).toEqual({})
+    expect(await post("/turn", text)).toEqual({})
     expect(await post("/turn", {id: id1, answer: "Done."})).toEqual({})
     expect(agents[0].onLine).toBeUndefined()
     const controller = new AbortController()
@@ -625,8 +641,8 @@ describe("service", () => {
     expect(lines[1]).toEqual({prompt: {text: "hi", from: "Alice", item: 7}})
     controller.abort()
     await attached
-    await until(() => agents[0].turns.length === 4)
-    expect(agents[0].turns).toEqual([permission, {id: id1, answer: "Done."}, "ended", "steps ended"])
+    await until(() => agents[0].turns.length === 5)
+    expect(agents[0].turns).toEqual([permission, text, {id: id1, answer: "Done."}, "ended", "live posts ended"])
     expect(agents[0].onLine).toBeUndefined()
     await expect(post("/turn", {id: id2, answer: "x"})).rejects.toMatchObject({status: 409})
   })
@@ -644,7 +660,7 @@ describe("service", () => {
     await firstLine
     first.abort()
     await attached
-    await turnsUntil(() => agents[0].turns.includes("steps ended"))
+    await turnsUntil(() => agents[0].turns.includes("live posts ended"))
     await registerFrom(300)
     const second = new AbortController()
     const again = attach(id1, second.signal)
@@ -654,7 +670,7 @@ describe("service", () => {
     expect(approvalsEnded()).toBe(1)
     second.abort()
     await again.attached
-    await turnsUntil(() => agents[0].turns.filter(turn => turn === "steps ended").length === 2)
+    await turnsUntil(() => agents[0].turns.filter(turn => turn === "live posts ended").length === 2)
     await jest.advanceTimersByTimeAsync(10 * minutes)
     expect(agents[0].open).toBe(false)
     expect(approvalsEnded()).toBe(2)

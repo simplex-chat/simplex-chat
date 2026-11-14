@@ -167,7 +167,7 @@ struct ContactListNavLink: View {
 
     func contactPreview(_ contact: Contact, titleColor: Color) -> some View {
         HStack{
-            ProfileImage(imageStr: contact.image, size: 30)
+            ProfileImage(imageStr: contact.image, icon: contact.chatIcon, size: 30)
 
             previewTitle(contact, titleColor: titleColor)
 
@@ -262,7 +262,7 @@ struct ContactListNavLink: View {
 
     func contactCardPreview(_ contact: Contact) -> some View {
         HStack{
-            ProfileImage(imageStr: contact.image, size: 30)
+            ProfileImage(imageStr: contact.image, icon: contact.chatIcon, size: 30)
 
             Text(chat.chatInfo.chatViewName)
                 .foregroundColor(.accentColor)
@@ -315,7 +315,7 @@ struct ContactListNavLink: View {
 
     func contactRequestPreview(color: Color) -> some View {
         HStack{
-            ProfileImage(imageStr: chat.chatInfo.image, size: 30)
+            ProfileImage(imageStr: chat.chatInfo.image, icon: chatIcon(chat.chatInfo), size: 30)
 
             NameWithBadge(Text(chat.chatInfo.chatViewName).foregroundColor(color), chat.chatInfo.nameBadge)
                 .lineLimit(1)

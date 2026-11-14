@@ -1,11 +1,13 @@
-import {createHash, randomBytes} from "crypto"
+import {randomBytes} from "crypto"
 import {chmodSync, existsSync, fchmodSync, mkdirSync, linkSync, openSync, readFileSync, readdirSync, renameSync, rmSync, statSync, truncateSync, unlinkSync, writeFileSync} from "fs"
-import {homedir, tmpdir} from "os"
-import {join, resolve} from "path"
+import {join} from "path"
+import {pathToFileURL} from "url"
 import {ExitError, logError} from "./log"
+import {serviceTokenFile} from "./paths"
+
+export {dataRoot, socketPath} from "./paths"
 
 const sessionIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const maxSocketPath = 103
 const maxLogBytes = 10 * 1_048_576
 
 // spec: spec/architecture.md#files-sessionfile
@@ -28,12 +30,6 @@ export interface ServerFile {
 }
 
 export class LockedError extends ExitError {}
-
-// spec: spec/architecture.md#files-dataroot
-export function dataRoot(env: NodeJS.ProcessEnv = process.env, home: string = homedir()): string {
-  const given = env.SIMPLEX_MCP_HOME
-  return given ? resolve(given) : join(home, ".simplex-mcp")
-}
 
 // spec: spec/architecture.md#files-dataroot
 export function hubFolder(root: string): string {
@@ -78,14 +74,6 @@ export function storedSessions(root: string): {id: string; session: SessionFile}
   })
 }
 
-// spec: spec/architecture.md#files-socketpath
-export function socketPath(root: string, platform: NodeJS.Platform = process.platform): string {
-  const hash = createHash("sha256").update(root).digest("hex").slice(0, 16)
-  if (platform === "win32") return `\\\\.\\pipe\\simplex-mcp-${hash}`
-  const path = join(root, "service.sock")
-  return Buffer.byteLength(path) <= maxSocketPath ? path : join(tmpdir(), `simplex-mcp-${hash}.sock`)
-}
-
 // spec: spec/architecture.md#files-logfile
 export function logFile(root: string): string {
   return join(root, "service.log")
@@ -96,7 +84,7 @@ export const serviceLock = "service.lock"
 
 // spec: spec/architecture.md#files-servicelock
 export function serviceToken(root: string): string {
-  return serverToken(root, false, "service.token")
+  return serverToken(root, false, serviceTokenFile)
 }
 
 // spec: spec/architecture.md#files-logfile
@@ -186,6 +174,13 @@ export function takeHeldTitles(root: string): unknown[] {
   } finally {
     rmSync(file, {force: true})
   }
+}
+
+// spec: spec/architecture.md#files-writestatusline
+export function writeStatusLine(root: string, command: string): void {
+  const file = join(root, "status-line.js")
+  writePrivateFile(`${file}.tmp`, `import(${JSON.stringify(pathToFileURL(command).href)}).then(module => module.runStatusLine())\n`)
+  renameSync(`${file}.tmp`, file)
 }
 
 function sessionsFolder(root: string): string {

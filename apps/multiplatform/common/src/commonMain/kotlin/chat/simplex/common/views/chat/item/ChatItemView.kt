@@ -61,7 +61,8 @@ fun chatEventText(eventText: String, ts: AnnotatedString): AnnotatedString =
 data class ChatItemReactionMenuItem (
   val name: String,
   val image: String?,
-  val onClick: (() -> Unit)?
+  val onClick: (() -> Unit)?,
+  val icon: ImageResource = MR.images.ic_account_circle_filled
 )
 
 private val REACTION_SPACING = 5.dp
@@ -171,7 +172,7 @@ fun ChatItemView(
                         reactionMenuItems.value = members.map {
                           val enabled = cInfo.groupInfo.membership.groupMemberId != it.groupMember.groupMemberId
                           val click = if (enabled) ({ showMemberInfo(cInfo.groupInfo, it.groupMember) }) else null
-                          ChatItemReactionMenuItem(it.groupMember.displayName, it.groupMember.image, click)
+                          ChatItemReactionMenuItem(it.groupMember.displayName, it.groupMember.image, click, peerTypeIcon(it.groupMember.memberProfile.peerType))
                         }
                       }
                     } catch (e: Exception) {
@@ -185,7 +186,7 @@ fun ChatItemView(
 
                   if (!r.userReacted || r.totalReacted > 1) {
                     val contact = cInfo.contact
-                    reactions.add(ChatItemReactionMenuItem(contact.displayName, contact.image, showChatInfo))
+                    reactions.add(ChatItemReactionMenuItem(contact.displayName, contact.image, showChatInfo, contact.chatIconName))
                   }
 
                   if (r.userReacted) {
@@ -217,7 +218,7 @@ fun ChatItemView(
               reactionMenuItems.value.forEach { m ->
                 ItemAction(
                   text = m.name,
-                  composable = { ProfileImage(37.dp, m.image, modifier = Modifier.centeredIn(44.dp)) },
+                  composable = { ProfileImage(37.dp, m.image, m.icon, modifier = Modifier.centeredIn(44.dp)) },
                   onClick = {
                     val click = m.onClick
                     if (click != null) {

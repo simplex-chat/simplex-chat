@@ -36,6 +36,16 @@ export function spawnSessionStart(env: NodeJS.ProcessEnv, input: object): ChildP
   return child
 }
 
+export async function runDisplay(env: NodeJS.ProcessEnv, input: object): Promise<string> {
+  const child = spawn(process.execPath, [join(__dirname, "../../dist/display.js")], {env, stdio: ["pipe", "pipe", "inherit"]})
+  let stdout = ""
+  child.stdout.setEncoding("utf8")
+  child.stdout.on("data", chunk => (stdout += chunk))
+  child.stdin.end(JSON.stringify(input))
+  await once(child, "close")
+  return stdout
+}
+
 export function servicePid(root: string): number {
   return Number(readFileSync(join(root, "service.lock"), "utf8").trim())
 }

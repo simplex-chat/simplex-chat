@@ -383,7 +383,7 @@ fun IncomingCallLockScreenAlertLayout(
       if (chatModel.controller.appPrefs.notificationPreviewMode.get() == NotificationPreviewMode.HIDDEN.name) {
         ProfileImage(size = 160.dp, modifier = Modifier.centeredIn(192.dp))
       } else {
-        ProfileImage(size = 160.dp, image = invitation.contact.profile.image, modifier = Modifier.centeredIn(192.dp))
+        ProfileImage(size = 160.dp, image = invitation.contact.profile.image, icon = invitation.contact.chatIconName, modifier = Modifier.centeredIn(192.dp))
         Text(invitation.contact.chatViewName, style = MaterialTheme.typography.h2)
       }
       Spacer(Modifier.fillMaxHeight().weight(1f))

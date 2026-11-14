@@ -940,12 +940,28 @@ fun MemberProfileImage(
   ProfileImage(
     size = size,
     image = mem.image,
+    icon = peerTypeIcon(mem.memberProfile.peerType),
     color = color,
     backgroundColor = backgroundColor,
     blurred = mem.blocked,
     async = async,
     modifier = modifier
   )
+}
+
+@Preview
+@Composable
+fun PreviewPeerTypePlaceholders() {
+  SimpleXTheme {
+    val peerTypes = listOf(null, ChatPeerType.Human, ChatPeerType.Agent, ChatPeerType.Bot)
+    fun contactLink(peerType: ChatPeerType?) = MsgChatLink.Contact("", Profile.sampleData.copy(peerType = peerType), false)
+    Column(Modifier.background(MaterialTheme.colors.background)) {
+      Row { peerTypes.forEach { MemberImage(GroupMember.sampleData.copy(memberProfile = LocalProfile.sampleData.copy(peerType = it)), 31.dp, Modifier.centeredIn(MEMBER_IMAGE_SIZE)) } }
+      Row { peerTypes.forEach { ChatInfoImage(ChatInfo.ContactRequest(UserContactRequest(1, VersionRange(1, 1), "alice", LocalProfile.sampleData.copy(peerType = it), Clock.System.now(), Clock.System.now())), 31.dp, modifier = Modifier.centeredIn(MEMBER_IMAGE_SIZE)) } }
+      Row { peerTypes.forEach { ProfileImage(31.dp, null, contactLink(it).iconRes, modifier = Modifier.centeredIn(MEMBER_IMAGE_SIZE)) } }
+      Row { peerTypes.forEach { Icon(painterResource(contactLink(it).smallIconRes), null, Modifier.size(MEMBER_IMAGE_SIZE), MaterialTheme.colors.secondary) } }
+    }
+  }
 }
 
 fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onFailure: () -> Unit = {}, onSuccess: () -> Unit = {}) {
