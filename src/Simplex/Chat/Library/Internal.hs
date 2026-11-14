@@ -296,7 +296,7 @@ rcvQuotedItem db user chatDirection RcvMessage {chatMsgEvent} = case chatMsgEven
         let ParsedMarkdown formattedText markdownBlocks = parsedMsgContent qmc'
             (qmc'', ft', _) = updatedMentionNames qmc' formattedText mentions
         pure CIQuote {chatDir = quoteDirection ci, itemId = Just itemId, sharedMsgId = sharedMsgId_, sentAt, content = qmc'', formattedText = ft', markdownBlocks}
-      quoteDirection :: ChatItem c d -> CIQDirection c
+      quoteDirection :: ChatTypeQuotable q => ChatItem q d -> CIQDirection q
       quoteDirection ChatItem {chatDir, meta = CIMeta {showGroupAsSender}} = case chatDir of
         CIDirectSnd -> CIQDirectSnd
         CIDirectRcv -> CIQDirectRcv
