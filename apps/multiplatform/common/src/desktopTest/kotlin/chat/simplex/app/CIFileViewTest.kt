@@ -29,7 +29,7 @@ class CIFileViewTest {
 
   @Test
   fun testControlAndTextDirectionCharactersShown() {
-    listOf('\n', ' ', '‮', '⁦').forEach { c ->
+    listOf('\n', Char(0x2028), Char(0x202E), Char(0x2066)).forEach { c ->
       assertFalse(drawn("a.txt$c").contentEquals(drawn("a.txt")), "U+%04X".format(c.code))
     }
   }
