@@ -419,9 +419,10 @@ struct TerminalChatItemRow<Content: View>: View {
                 HStack(spacing: 0) {
                     if avatarSize > 0 {
                         ZStack(alignment: .topLeading) {
-                            Color.clear.frame(width: avatarSize + chatItemTextPadding, height: 0)
-                            sender.image?.padding(.leading, chatItemTextPadding + flatLetterSideBearing(UIFont.preferredFont(forTextStyle: .body)) - terminalAvatarOvershoot)
+                            Color.clear.frame(width: avatarSize, height: 0)
+                            sender.image
                         }
+                        .padding(.leading, chatItemTextPadding + flatLetterSideBearing(UIFont.preferredFont(forTextStyle: .body)) - terminalAvatarOvershoot)
                     }
                     senderNameAndRole(sender)
                         .padding(.leading, chatItemTextPadding)

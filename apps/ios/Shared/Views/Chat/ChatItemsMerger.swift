@@ -45,10 +45,13 @@ struct MergedItems: Hashable, Equatable {
         var lastRevealedIdsInMergedItems: BoxedValue<[Int64]>? = nil
         var lastRangeInReversedForMergedItems: BoxedValue<ClosedRange<Int>>? = nil
         var recent: MergedItem? = nil
+        let developerTools = UserDefaults.standard.bool(forKey: DEFAULT_DEVELOPER_TOOLS)
+        var newerShown: ChatItem? = nil
         while index < im.reversedChatItems.count {
             let item = im.reversedChatItems[index]
             let prev = index >= 1 ? im.reversedChatItems[index - 1] : nil
             let next = index + 1 < im.reversedChatItems.count ? im.reversedChatItems[index + 1] : nil
+            let olderShown = im.reversedChatItems[(index + 1)...].first { !$0.isHidden(developerTools: developerTools) }
             let category = item.mergeCategory
             let itemIsSplit = itemSplits.contains(item.id)
 
@@ -61,7 +64,7 @@ struct MergedItems: Hashable, Equatable {
 
             let revealed = item.mergeCategory == nil || revealedItems.contains(item.id)
             if recent != nil, case let .grouped(items, _, _, _, mergeCategory, unreadIds, _, _) = recent, mergeCategory == category, let first = items.boxedValue.first, !revealedItems.contains(first.item.id) && !itemIsSplit {
-                let listItem = ListItem(item: item, prevItem: prev, nextItem: next, unreadBefore: unreadBefore)
+                let listItem = ListItem(item: item, prevItem: newerShown, nextItem: olderShown, unreadBefore: unreadBefore)
                 items.boxedValue.append(listItem)
 
                 if item.isRcvNew {
@@ -75,7 +78,7 @@ struct MergedItems: Hashable, Equatable {
                 }
             } else {
                 visibleItemIndexInParent += 1
-                let listItem = ListItem(item: item, prevItem: prev, nextItem: next, unreadBefore: unreadBefore)
+                let listItem = ListItem(item: item, prevItem: newerShown, nextItem: olderShown, unreadBefore: unreadBefore)
                 if item.mergeCategory != nil {
                     if item.mergeCategory != prev?.mergeCategory || lastRevealedIdsInMergedItems == nil {
                         lastRevealedIdsInMergedItems = BoxedValue(revealedItems.contains(item.id) ? [item.id] : [])
@@ -116,6 +119,9 @@ struct MergedItems: Hashable, Equatable {
                 splitRanges.append(SplitRange(itemId: im.reversedChatItems[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent))
             }
             indexInParentItems[item.id] = visibleItemIndexInParent
+            if !item.isHidden(developerTools: developerTools) {
+                newerShown = item
+            }
             index += 1
         }
         return MergedItems(
@@ -124,6 +130,11 @@ struct MergedItems: Hashable, Equatable {
             splits: splitRanges,
             indexInParentItems: indexInParentItems
         )
+    }
+
+    func olderShownRow(of row: MergedItem) -> MergedItem? {
+        guard let older = row.oldest().nextItem, let index = indexInParentItems[older.id] else { return nil }
+        return items[index]
     }
 
     // Use this check to ensure that mergedItems state based on currently actual state of global
@@ -283,6 +294,12 @@ struct ListItem: Hashable {
     // using meta.hashValue instead of parts takes much more time so better to use partial meta here
     func genHash(_ prevRevealed: Bool, _ nextRevealed: Bool) -> String {
         "\(item.meta.itemId) \(item.meta.updatedAt.hashValue) \(item.meta.itemEdited) \(item.meta.isLive) \(item.meta.itemDeleted?.hashValue ?? 0) \(item.meta.itemTimed?.hashValue ?? 0) \(item.meta.itemStatus.hashValue) \(item.meta.sentViaProxy ?? false) \(item.mergeCategory?.hashValue ?? 0) \(chatDirHash(item.chatDir)) \(item.reactions.hashValue) \(item.meta.isRcvNew) \(item.text.hash) \(item.file?.hashValue ?? 0) \(item.quotedItem?.itemId ?? 0) \(unreadBefore) \(prevItem?.id ?? 0) \(chatDirHash(prevItem?.chatDir)) \(prevItem?.mergeCategory?.hashValue ?? 0) \(prevItem?.isDeletedContent ?? false) \(prevRevealed) \(nextItem?.id ?? 0) \(chatDirHash(nextItem?.chatDir)) \(nextItem?.mergeCategory?.hashValue ?? 0) \(nextItem?.isOneLine ?? false) \(nextRevealed)"
+    }
+}
+
+extension ChatItem {
+    func isHidden(developerTools: Bool) -> Bool {
+        if case .rcvIntegrityError = content { meta.itemDeleted == nil && !developerTools } else { false }
     }
 }
 

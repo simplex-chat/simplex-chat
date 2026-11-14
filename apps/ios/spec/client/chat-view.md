@@ -147,7 +147,9 @@ Each [`ChatItemWithMenu`](../../Shared/Views/Chat/ChatView.swift#L1600) may depe
 - Whether to show the sender name (group messages, different sender than previous)
 - Whether to show the tail on the bubble (last consecutive message from same sender)
 - Date separator between messages on different days
-- Whether to show the time (`getItemSeparation`): hidden when the newer item has the same sender, is at most 60 seconds newer and shows the same minute, unless the newer item is deleted, marked deleted or hidden (an integrity error without developer tools, `isHidden`), in both layouts
+- Whether to show the time (`getItemSeparation`): hidden when the newer item has the same sender, is at most 60 seconds newer and shows the same minute; in Flat rows also shown when the newer item is deleted or marked deleted, whose card shows its own time
+
+The previous and next items (`ListItem.prevItem`, `nextItem`) are the nearest shown items: `MergedItems.create` skips hidden items, integrity errors that are not marked deleted while developer tools are off (`ChatItem.isHidden(developerTools:)`). Grouping by `mergeCategory` and the revealed flags of the hash use the adjacent items. A hidden row draws only the date separator at the top of the oldest loaded row, with the date of the nearest shown newer item. `ChatView` creates `MergedItems` again when developer tools are turned on or off.
 
 `ChatItemDummyModel.shared.sendUpdate()` forces a re-render of all items when global appearance changes.
 
@@ -360,11 +362,11 @@ row padding        top: topGap; with an avatar topGap + terminalHeadingBottomGap
 avatarBelowNameLine the avatar's part above and below the name line: (avatarSize − the body line height) / 2,
                    negative when the name line is taller; 0 in a row without an avatar
 sender row         HStack, centred: the avatar column and the name; as tall as the taller of the two
-  avatar column    groups and channels: avatarSize + chatItemTextPadding, with the sender avatar
-                   terminalAvatarOvershoot (2pt) before the ink of flat letters of the message text: chatItemTextPadding
-                   + the side bearing of H in the body font (flatLetterSideBearing) − 2pt, as round glyphs pass flat ones
-                   (user, 2026-11-13); other chats: none (avatarSize 0)
-                   one 12pt padding (user, I26): screen edge to the text, avatar column to the name, time to the screen edge
+  avatar column    groups and channels: avatarSize wide, terminalAvatarOvershoot (2pt) before the ink of flat letters
+                   of the message text: chatItemTextPadding + the side bearing of H in the body font
+                   (flatLetterSideBearing) − 2pt, as round glyphs pass flat ones (user, 2026-11-13); other chats: none
+                   (avatarSize 0)
+                   one 12pt padding (user, I26): screen edge to the text, avatar to the name, time to the screen edge
   avatar           avatarSize: scaledMemberImageSize(font, terminalMemberImageBaseSize), 30pt × chat list profileImageSize ÷ 63
                    (dynamicSize at the text size, at most 75), centred on the name line
                    classic rows: memberImageSize, scaledMemberImageSize(font), 34pt (memberImageBaseSize) × the same ratio
@@ -372,7 +374,7 @@ sender row         HStack, centred: the avatar column and the name; as tall as t
                    classic sender name: memberImageSize + 10pt after the avatar's start, on the bubble edge (user, I23)
   name             name and badge in the body text style, semibold (primary for own items, secondary otherwise)
                    role label in the body text style, medium, secondary, 15pt after the name; line box of the body font
-                   start padding chatItemTextPadding
+                   start padding chatItemTextPadding after the avatar, so the name is 12pt after the visible avatar
   below            contentGap below the name line, less the avatar's part below it (at least 0), as the bottom padding
 contentGap         terminalParagraphGap when the content starts with a card (contentStartsWithCard: terminalItemStartsWithCard),
                    otherwise 0; with an avatar, at least terminalAvatarBottomGap (6pt) from the avatar's bottom to the card's
@@ -401,7 +403,7 @@ bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; o
 | [`chatItemSender(ci, range)`](../../Shared/Views/Chat/ChatView.swift#L2193) | Images of the flat avatar size, `terminalImageSize`. Channel as sender: group name, role "channel", group image. Received direct: contact name and badge. Group member: `memberNames`, badge and role of a single member, member image (tap: member info). Own group items: membership name, badge, role, image. Other own items: user name and badge, or "Incognito" |
 | `CIContent.hasTerminalSender` | Sent messages, deleted and moderated items, calls and group invitations; received content with `showMemberName` |
 
-`ChatView` passes `olderRow`, the next merged item. `MergedItem.revealed`: true for `.single`, the flag of `.grouped`.
+`ChatView` passes `olderRow`, the row of the nearest shown older item (`MergedItems.olderShownRow`). `MergedItem.revealed`: true for `.single`, the flag of `.grouped`.
 
 A visible cell is rebuilt when the hash of its merged item changes ([`ListItem.genHash`](../../Shared/Views/Chat/ChatItemsMerger.swift#L284)). The hash of a single item includes whether the older item (`nextItem`) is one-line, so the cell is rebuilt, and `terminalRowGap` computed again, when an edit adds or removes its line break or block markdown. The gap of a grouped row does not depend on the older item's lines: its newest item is a deleted item or an event (`mergeCategory`), which is not one-line. The hash also includes whether the newer item (`prevItem`) has deleted content, as its `mergeCategory` does for marked deleted items, so the time is shown again when the newer item is deleted (`getItemSeparation`).
 

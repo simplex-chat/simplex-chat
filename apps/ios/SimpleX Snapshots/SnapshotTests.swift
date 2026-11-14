@@ -650,7 +650,7 @@ private struct ChatRows: View {
             scrollToItem: { _ in },
             scrollToItemId: .constant(nil),
             merged: mergedItem,
-            olderRow: mergedItems.items.indices.contains(index + 1) ? mergedItems.items[index + 1] : nil,
+            olderRow: mergedItems.olderShownRow(of: mergedItem),
             listWidth: width,
             maxWidth: rowMaxWidth(ci, mergedItem, chat.chatInfo, width),
             composeState: .constant(ComposeState()),
@@ -1058,8 +1058,9 @@ private final class SnapshotFixtures {
             msg(.groupRcv(groupMember: carol), "Hello", -16),
             ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-16 + 20.0 / 60), "Thanks!", .rcvRead, itemDeleted: .moderated(deletedTs: ts(-15), byGroupMember: alice)), content: .rcvMsgContent(msgContent: .text("Thanks!"))),
             msg(.groupRcv(groupMember: carol), "Glad to be here", -14),
-            ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-14 + 20.0 / 60), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 1))),
-            ChatItem(chatDir: .groupRcv(groupMember: bob), meta: CIMeta.getSample(id(), ts(-13), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 2, toMsgId: 2))),
+            ChatItem(chatDir: .groupRcv(groupMember: bob), meta: CIMeta.getSample(id(), ts(-14 + 20.0 / 60), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 2, toMsgId: 2))),
+            msg(.groupRcv(groupMember: carol), "Let's start", -14 + 40.0 / 60),
+            ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-13), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 1))),
             msg(.groupSnd, "ok", -12)
         ], terminal: terminal)
     }

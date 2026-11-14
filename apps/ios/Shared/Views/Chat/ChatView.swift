@@ -98,6 +98,7 @@ struct ChatView: View {
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     let userSupportScopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
 
@@ -954,7 +955,7 @@ struct ChatView: View {
                             scrollToItem: scrollToItem,
                             scrollToItemId: $scrollToItemId,
                             merged: mergedItem,
-                            olderRow: mergedItems.boxedValue.items.indices.contains(index + 1) ? mergedItems.boxedValue.items[index + 1] : nil,
+                            olderRow: mergedItems.boxedValue.olderShownRow(of: mergedItem),
                             listWidth: g.size.width,
                             maxWidth: maxWidth,
                             composeState: $composeState,
@@ -1000,6 +1001,10 @@ struct ChatView: View {
             .onChange(of: revealedItems) { revealed in
                 mergedItems.boxedValue = MergedItems.create(im, revealed)
                 scrollView.updateItems(mergedItems.boxedValue.items)
+            }
+            .onChange(of: developerTools) { _ in
+                mergedItems.boxedValue = MergedItems.create(im, revealedItems)
+                scrollView.updateItems(mergedItems.boxedValue.items, true)
             }
             .onChange(of: terminal) { _ in
                 scrollView.updateItems(mergedItems.boxedValue.items, true)
@@ -1777,10 +1782,6 @@ struct ChatView: View {
             merged.revealItems(yes, $revealedItems)
         }
 
-        private func isHidden(_ ci: ChatItem) -> Bool {
-            if case .rcvIntegrityError = ci.content { !developerTools } else { false }
-        }
-
         func getItemSeparation(_ chatItem: ChatItem, _ prevItem: ChatItem?) -> ItemSeparation {
             guard let prevItem else {
                 return ItemSeparation(timestamp: true, largeGap: true, date: nil)
@@ -1794,19 +1795,20 @@ struct ChatView: View {
                 chatItem.chatDir.sent == prevItem.chatDir.sent
             }
             let largeGap = !sameMemberAndDirection || prevItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
-            let prevDeletedOrHidden = prevItem.meta.itemDeleted != nil || prevItem.isDeletedContent || isHidden(prevItem)
+            let prevDeleted = prevItem.meta.itemDeleted != nil || prevItem.isDeletedContent
 
             return ItemSeparation(
-                timestamp: largeGap || prevDeletedOrHidden || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(prevItem.meta.itemTs),
+                timestamp: largeGap || (terminal && prevDeleted) || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(prevItem.meta.itemTs),
                 largeGap: largeGap,
                 date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: prevItem.meta.itemTs) ? nil : prevItem.meta.itemTs
             )
         }
 
         var body: some View {
-            let last = isLastItem ? im.reversedChatItems.last : nil
             let listItem = merged.newest()
             let item = listItem.item
+            let hidden = item.isHidden(developerTools: developerTools)
+            let last = isLastItem ? (hidden ? listItem.prevItem : im.reversedChatItems.last) : nil
             let range: ClosedRange<Int>? = if case let .grouped(_, _, _, rangeInReversed, _, _, _, _) = merged {
                 rangeInReversed.boxedValue
             } else {
@@ -1822,7 +1824,7 @@ struct ChatView: View {
                 if let last {
                     DateSeparator(date: last.meta.itemTs).padding(8)
                 }
-                if !isHidden(item) {
+                if !hidden {
                     chatItemListView(range, showAvatar, item, itemSeparation)
                         .overlay {
                             if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
@@ -1834,9 +1836,9 @@ struct ChatView: View {
                                     })
                             }
                         }
-                }
-                if let date = itemSeparation.date {
-                    DateSeparator(date: date).padding(8)
+                    if let date = itemSeparation.date {
+                        DateSeparator(date: date).padding(8)
+                    }
                 }
             }
             .onAppear {
