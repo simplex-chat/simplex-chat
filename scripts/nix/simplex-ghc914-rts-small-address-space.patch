@@ -1,0 +1,25 @@
+# Preserve the mobile RTS's small-address-space default with the v2 builder.
+# Patch both autoconf input and its generated script: slices use configure
+# directly, without rerunning autoreconf.
+--- a/configure.ac
++++ b/configure.ac
+@@ -266,7 +266,7 @@
+     [AS_HELP_STRING([--enable-large-address-space],
+         [Use a single large address space on 64 bit systems (enabled by default on 64 bit platforms)])],
+     EnableLargeAddressSpace=$enableval,
+-    EnableLargeAddressSpace=yes
++    EnableLargeAddressSpace=no
+ )
+ 
+ use_large_address_space=no
+--- a/configure
++++ b/configure
+@@ -8721,7 +8721,7 @@
+ then :
+   enableval=$enable_large_address_space; EnableLargeAddressSpace=$enableval
+ else case e in #(
+-  e) EnableLargeAddressSpace=yes
++  e) EnableLargeAddressSpace=no
+  ;;
+ esac
+ fi

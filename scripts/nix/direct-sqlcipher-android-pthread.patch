@@ -1,0 +1,12 @@
+--- a/direct-sqlcipher.cabal
++++ b/direct-sqlcipher.cabal
+@@ -91,9 +91,6 @@
+
+     extra-libraries: dl
+
+-    if !os(windows) && !os(android)
+-      extra-libraries: pthread
+-
+     if flag(fulltextsearch)
+       cc-options: -DSQLITE_ENABLE_FTS3 -DSQLITE_ENABLE_FTS3_PARENTHESIS
+                   -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS5
