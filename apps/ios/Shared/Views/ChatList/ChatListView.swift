@@ -696,7 +696,7 @@ struct ChatListView: View {
             switch chatTagsModel.activeFilter {
             case let .presetTag(tag): presetTagMatchesChat(tag, chat.chatInfo, chat.chatStats)
             case let .userTag(tag): chat.chatInfo.chatTags?.contains(tag.chatTagId) == true
-            case .unread: chat.unreadTag == .unread
+            case .unread: chat.unreadTag == .unread || chat.unreadTag == .highPriority
             case .none: true
             }
         }
@@ -1080,9 +1080,10 @@ struct TagsView: View {
                             .foregroundColor(color)
                     }
                     ZStack {
+                        let priority = (chatTagsModel.priorityTags[tag.chatTagId] ?? 0) > 0
                         let unread = (chatTagsModel.unreadTags[tag.chatTagId] ?? 0) > 0
                         let silent = (chatTagsModel.silentTags[tag.chatTagId] ?? 0) > 0
-                        let badge = Text(verbatim: unread ? " ●" : silent ? " ○" : "").font(.footnote)
+                        let badge = (priority ? Text(verbatim: " ") + Text(Image(systemName: "bell.fill")) : Text(verbatim: unread ? " ●" : silent ? " ○" : "")).font(.footnote)
                         (Text(tag.chatTagText).fontWeight(.semibold) + badge).foregroundColor(.clear)
                         Text(tag.chatTagText).fontWeight(current ? .semibold : .regular).foregroundColor(color) + badge.foregroundColor(unread ? theme.colors.primary : theme.colors.secondary)
                     }

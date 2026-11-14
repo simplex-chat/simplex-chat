@@ -1246,7 +1246,7 @@ indirect enum ChatEvent: Decodable, ChatAPIResult {
     case chatInfoUpdated(user: UserRef, chatInfo: ChatInfo)
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case chatItemsStatusesUpdated(user: UserRef, chatItems: [AChatItem])
-    case chatItemUpdated(user: UserRef, chatItem: AChatItem)
+    case chatItemUpdated(user: UserRef, chatItem: AChatItem, priorityRaised: PriorityRaised?)
     case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
     case chatItemsDeleted(user: UserRef, chatItemDeletions: [ChatItemDeletion], byUser: Bool)
     // group events
@@ -1414,7 +1414,7 @@ indirect enum ChatEvent: Decodable, ChatAPIResult {
         case let .chatItemsStatusesUpdated(u, chatItems):
             let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
             return withUser(u, itemsString)
-        case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
+        case let .chatItemUpdated(u, chatItem, _): return withUser(u, String(describing: chatItem))
         case let .chatItemReaction(u, added, reaction): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
         case let .chatItemsDeleted(u, items, byUser):
             let itemsString = items.map { item in

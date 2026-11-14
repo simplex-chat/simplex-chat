@@ -1050,12 +1050,20 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
             } else {
                 .noNtf
             }
-            let chatIdOrMemberId = if case let .group(groupInfo, _) = cInfo, let memberId = cItem.meta.forwardedByMember ?? cItem.chatDir.groupMemberId {
-                groupMemberEntityId(groupInfo.groupId, memberId)
+            return (itemNtfEntityId(cInfo, cItem), ntf)
+        } else {
+            return nil
+        }
+    case let .chatItemUpdated(user, chatItem, priorityRaised):
+        if priorityRaised != nil {
+            let cInfo = chatItem.chatInfo
+            let cItem = chatItem.chatItem
+            let ntf: NSENotificationData = if cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification {
+                .messageReceived(user, cInfo, cItem)
             } else {
-                chatItem.chatInfo.id
+                .noNtf
             }
-            return (chatIdOrMemberId, ntf)
+            return (itemNtfEntityId(cInfo, cItem), ntf)
         } else {
             return nil
         }
@@ -1080,6 +1088,14 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
     case .chatSuspended:
         chatSuspended()
         return nil
+    }
+}
+
+private func itemNtfEntityId(_ cInfo: ChatInfo, _ cItem: ChatItem) -> String {
+    if case let .group(groupInfo, _) = cInfo, let memberId = cItem.meta.forwardedByMember ?? cItem.chatDir.groupMemberId {
+        groupMemberEntityId(groupInfo.groupId, memberId)
+    } else {
+        cInfo.id
     }
 }
 

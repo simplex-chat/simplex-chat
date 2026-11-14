@@ -1836,15 +1836,15 @@ struct ChatView: View {
                     markedRead = true
                 }
                 if let range {
-                    let (itemIds, unreadMentions, unreadSilent) = unreadItemIds(range)
+                    let (itemIds, unreadMentions, unreadSilent, unreadHighPriority) = unreadItemIds(range)
                     if !itemIds.isEmpty {
                         waitToMarkRead {
-                            await apiMarkChatItemsRead(im, chat.chatInfo, itemIds, mentionsRead: unreadMentions, silentRead: unreadSilent)
+                            await apiMarkChatItemsRead(im, chat.chatInfo, itemIds, mentionsRead: unreadMentions, silentRead: unreadSilent, highPriorityRead: unreadHighPriority)
                         }
                     }
                 } else if chatItem.isRcvNew  {
                     waitToMarkRead {
-                        await apiMarkChatItemsRead(im, chat.chatInfo, [chatItem.id], mentionsRead: chatItem.meta.userMention ? 1 : 0, silentRead: chatItem.meta.silent ? 1 : 0)
+                        await apiMarkChatItemsRead(im, chat.chatInfo, [chatItem.id], mentionsRead: chatItem.meta.userMention ? 1 : 0, silentRead: chatItem.meta.silent ? 1 : 0, highPriorityRead: chatItem.meta.highPriority ? 1 : 0)
                     }
                 }
             }
@@ -1865,10 +1865,11 @@ struct ChatView: View {
             }
         }
 
-        private func unreadItemIds(_ range: ClosedRange<Int>) -> ([ChatItem.ID], Int, Int) {
+        private func unreadItemIds(_ range: ClosedRange<Int>) -> ([ChatItem.ID], Int, Int, Int) {
             var unreadItems: [ChatItem.ID] = []
             var unreadMentions: Int = 0
             var unreadSilent: Int = 0
+            var unreadHighPriority: Int = 0
 
             for i in range {
                 if i < 0 || i >= im.reversedChatItems.count {
@@ -1883,10 +1884,13 @@ struct ChatView: View {
                     if ci.meta.silent {
                         unreadSilent += 1
                     }
+                    if ci.meta.highPriority {
+                        unreadHighPriority += 1
+                    }
                 }
             }
 
-            return (unreadItems, unreadMentions, unreadSilent)
+            return (unreadItems, unreadMentions, unreadSilent, unreadHighPriority)
         }
 
         private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {

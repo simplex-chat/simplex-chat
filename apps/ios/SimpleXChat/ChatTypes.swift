@@ -1779,6 +1779,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var history: GroupPreference
     public var support: GroupPreference
     public var signMessages: GroupPreference
+    public var msgPriority: RoleGroupPreference
     public var commands: [ChatBotCommand]
 
     public init(
@@ -1793,6 +1794,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         history: GroupPreference,
         support: GroupPreference,
         signMessages: GroupPreference,
+        msgPriority: RoleGroupPreference = RoleGroupPreference(enable: .on, role: .admin),
         commands: [ChatBotCommand]
     ) {
         self.timedMessages = timedMessages
@@ -1806,6 +1808,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         self.history = history
         self.support = support
         self.signMessages = signMessages
+        self.msgPriority = msgPriority
         self.commands = commands
     }
 
@@ -1837,6 +1840,7 @@ public struct GroupPreferences: Codable, Hashable {
     public var history: GroupPreference?
     public var support: GroupPreference?
     public var signMessages: GroupPreference?
+    public var msgPriority: RoleGroupPreference?
     public var commands: [ChatBotCommand]?
 
     public init(
@@ -1851,6 +1855,7 @@ public struct GroupPreferences: Codable, Hashable {
         history: GroupPreference? = nil,
         support: GroupPreference? = nil,
         signMessages: GroupPreference? = nil,
+        msgPriority: RoleGroupPreference? = nil,
         commands: [ChatBotCommand]? = nil
     ) {
         self.timedMessages = timedMessages
@@ -1864,6 +1869,7 @@ public struct GroupPreferences: Codable, Hashable {
         self.history = history
         self.support = support
         self.signMessages = signMessages
+        self.msgPriority = msgPriority
         self.commands = commands
     }
 
@@ -1895,6 +1901,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         history: fullPreferences.history,
         support: fullPreferences.support,
         signMessages: fullPreferences.signMessages,
+        msgPriority: fullPreferences.msgPriority,
         commands: fullPreferences.commands
     )
 }
@@ -2416,6 +2423,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings?.enableNtfs == .all
     }
 
+    public func raiseCounted(_ raised: PriorityRaised) -> Bool {
+        switch chatSettings?.enableNtfs {
+        case .all: raised.wasSilent
+        case .mentions: raised.newAttention
+        default: false
+        }
+    }
+
     public var chatSettings: ChatSettings? {
         switch self {
         case let .direct(contact): return contact.chatSettings
@@ -2554,6 +2569,7 @@ public struct ChatStats: Decodable, Hashable {
         unreadCount: Int = 0,
         unreadMentions: Int = 0,
         unreadSilent: Int = 0,
+        unreadHighPriority: Int = 0,
         reportsCount: Int = 0,
         minUnreadItemId: Int64 = 0,
         unreadChat: Bool = false
@@ -2561,6 +2577,7 @@ public struct ChatStats: Decodable, Hashable {
         self.unreadCount = unreadCount
         self.unreadMentions = unreadMentions
         self.unreadSilent = unreadSilent
+        self.unreadHighPriority = unreadHighPriority
         self.reportsCount = reportsCount
         self.minUnreadItemId = minUnreadItemId
         self.unreadChat = unreadChat
@@ -2569,11 +2586,17 @@ public struct ChatStats: Decodable, Hashable {
     public var unreadCount: Int = 0
     public var unreadMentions: Int = 0
     public var unreadSilent: Int = 0
+    public var unreadHighPriority: Int = 0
     // actual only via getChats() and getChat(.initial), otherwise, zero
     public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0
     // actual only via getChats(), otherwise, false
     public var unreadChat: Bool = false
+}
+
+public struct PriorityRaised: Decodable, Hashable {
+    public var newAttention: Bool
+    public var wasSilent: Bool
 }
 
 public enum GroupChatScope: Decodable {
@@ -4468,6 +4491,7 @@ public struct CIMeta: Decodable, Hashable {
     public var recent: Bool { updatedAt + 10 > .now }
     public var isLive: Bool { itemLive == true }
     public var silent: Bool { (priority ?? 0) < 0 }
+    public var highPriority: Bool { (priority ?? 0) > 0 }
     public var disappearing: Bool { !isRcvNew && itemTimed?.deleteAt != nil }
 
     public var isRcvNew: Bool {

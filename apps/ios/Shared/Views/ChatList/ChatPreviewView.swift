@@ -228,9 +228,10 @@ struct ChatPreviewView: View {
         let s = chat.chatStats
         if s.unreadCount > 0 || s.unreadChat {
             let mentionColor = mentionColor(chat)
+            let attentionSign = s.unreadHighPriority > 0 ? Text(Image(systemName: "bell.fill")) : Text("\(MENTION_START)")
             HStack(alignment: .center, spacing: 2) {
                 if s.unreadMentions > 0 && s.unreadCount > 1 {
-                    Text("\(MENTION_START)")
+                    attentionSign
                         .font(userFont <= .xxxLarge ? .body : .callout)
                         .foregroundColor(mentionColor)
                         .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
@@ -239,7 +240,7 @@ struct ChatPreviewView: View {
                 }
                 let singleUnreadIsMention = s.unreadMentions > 0 && s.unreadCount == 1
                 let onlySilent = !singleUnreadIsMention && s.unreadCount == s.unreadSilent && !s.unreadChat
-                (singleUnreadIsMention ? Text("\(MENTION_START)") : unreadCountText(s.unreadCount))
+                (singleUnreadIsMention ? attentionSign : unreadCountText(s.unreadCount))
                     .font(userFont <= .xxxLarge ? .caption : .caption2)
                     .foregroundColor(onlySilent ? theme.colors.secondary : .white)
                     .padding(.horizontal, dynamicSize(userFont).unreadPadding)
