@@ -163,6 +163,26 @@ See [API Commands and Responses](./api/COMMANDS.md) reference about specific com
 - "interactive" - all or some network requests will complete before command response is sent to the bot,
 - "background" - command response will be sent to the bot before scheduled network requests are sent.
 
+### Message priority
+
+`"priority"` in a [ComposedMessage](./api/TYPES.md#composedmessage) sets the priority of a message: -1 is silent, 0 or absent is normal, 1 is high.
+
+A silent message is shown in the chat and counted as unread, without a notification, a sound or a push. It is accepted in every chat. Bots can send progress updates as silent messages and the result as a normal or a high priority message:
+
+```
+/_send #1 json [{"msgContent": {"type": "text", "text": "Ran the tests"}, "priority": -1}]
+```
+
+A high priority message notifies as a mention, also in a chat set to notify about mentions only, and is shown with a bell. It is accepted in groups, business chats and channels from members whose role is allowed by the group preference "Message priority", by default admins and owners. The group owner changes it with `/set priority #<group> on|off [<role>]`. In direct chats and from other members a high priority message is sent and received as normal, without an error.
+
+An update with `"priority": 1` raises a sent message to high priority, with or without a change of the text, for example when a streamed message is completed:
+
+```
+/_update item #1 5 json {"msgContent": {"type": "text", "text": "Tests passed"}, "mentions": {}, "priority": 1}
+```
+
+The received item has `"priority"` in its [CIMeta](./api/TYPES.md#cimeta), and the [ChatItemUpdated](./api/EVENTS.md#chatitemupdated) event of a raise has `priorityRaised`. Apps that do not support message priority show these messages as normal messages.
+
 ## Processing events
 
 Chat event is a WebSocket message in this format:

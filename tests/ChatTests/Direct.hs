@@ -13,6 +13,7 @@ module ChatTests.Direct where
 
 import ChatClient
 import ChatTests.DBUtils
+import ChatTests.Groups (itemPriority, lastSndEventPriority, lastSndMsgFlags, lastSndMsgPriority, rcvItemPrioritiesCfg)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
@@ -33,6 +34,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServ
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
+import Simplex.Chat.Terminal.Output (ChatTerminal (ChatTerminal, activeTo))
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -75,6 +77,8 @@ chatDirectTests = do
     it "direct message delete multiple (many chat batches)" testDirectMessageDeleteMultipleManyBatches
     it "direct live message" testDirectLiveMessage
     it "direct timed message" testDirectTimedMessage
+    it "direct silent message" testDirectSilentMessage
+    it "silent message does not change terminal active chat" testDirectSilentMessageTerminal
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
@@ -971,6 +975,70 @@ testDirectTimedMessage =
       alice ##> "/_send @2 live=off text hi"
       alice <# "@bob hi"
       bob <# "alice> hi"
+
+testDirectSilentMessage :: HasCallStack => TestParams -> IO ()
+testDirectSilentMessage ps = do
+  (rcvItems, cfg) <- rcvItemPrioritiesCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      [Only bobConnId] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT agent_conn_id FROM connections WHERE contact_id IS NOT NULL"
+      let sendWithPriority t p flag stored = do
+            alice ##> ("/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> t <> "\"}, \"priority\": " <> show (p :: Int) <> "}]")
+            alice <# ("@bob " <> t)
+            bob <# ("alice> " <> t)
+            lastSndMsgFlags alice bobConnId 1 `shouldReturn` [flag]
+            lastSndMsgPriority alice `shouldReturn` stored
+            forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` stored
+
+      sendWithPriority "hi" (-1) "F" (Just (-1))
+      alice ##> "! @bob hi there"
+      alice <# "@bob [edited] hi there"
+      bob <# "alice> [edited] hi there"
+      forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` Just (-1)
+
+      sendWithPriority "hey" (-5) "F" (Just (-1))
+      sendWithPriority "hello" 0 "T" Nothing
+      sendWithPriority "hello again" 1 "T" Nothing
+      helloId <- lastItemId alice
+      alice ##> ("/_update item @2 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello again\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <## "message didn't change"
+      alice ##> ("/_update item @2 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello again!\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "@bob [edited] hello again!"
+      bob <# "alice> [edited] hello again!"
+      lastSndEventPriority alice "x.msg.update" `shouldReturn` Nothing
+      forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` Nothing
+      alice #> "@bob bye"
+      bob <# "alice> bye"
+      lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["T"]
+      readTVarIO rcvItems `shouldReturn` [("hi", Just (-1)), ("hey", Just (-1)), ("hello", Nothing), ("hello again", Nothing), ("bye", Nothing)]
+
+testDirectSilentMessageTerminal :: HasCallStack => TestParams -> IO ()
+testDirectSilentMessageTerminal =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers cath bob
+      cath #> "@bob hi"
+      bob <# "cath> hi"
+      activeChat bob `shouldEventuallyReturn` "@cath "
+
+      alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}, \"priority\": -1}]"
+      alice <# "@bob hello"
+      bob <# "alice> hello"
+      alice ##> "! @bob hello there"
+      alice <# "@bob [edited] hello there"
+      bob <# "alice> [edited] hello there"
+      alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hey\"}, \"priority\": -1}]"
+      alice <# "@bob hey"
+      bob <# "alice> hey"
+      activeChat bob `shouldReturn` "@cath "
+
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      activeChat bob `shouldEventuallyReturn` "@alice "
+  where
+    activeChat TestCC {chatTerminal = ChatTerminal {activeTo}} = readTVarIO activeTo
 
 testRepeatAuthErrorsDisableContact :: HasCallStack => TestParams -> IO ()
 testRepeatAuthErrorsDisableContact =

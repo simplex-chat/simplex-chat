@@ -1095,6 +1095,7 @@ export interface CIMeta {
   itemTimed?: CITimed
   itemLive?: boolean
   userMention: boolean
+  priority?: number // int
   hasLink: boolean
   deletable: boolean
   editable: boolean
@@ -2005,6 +2006,8 @@ export interface ChatSettings {
 export interface ChatStats {
   unreadCount: number // int
   unreadMentions: number // int
+  unreadSilent: number // int
+  unreadHighPriority: number // int
   reportsCount: number // int
   minUnreadItemId: number // int64
   unreadChat: boolean
@@ -2137,6 +2140,7 @@ export interface ComposedMessage {
   quotedItemId?: number // int64
   msgContent: MsgContent
   mentions: {[key: string]: number} // string : int64
+  priority?: number // int
 }
 
 export type ConditionsAcceptance = ConditionsAcceptance.Accepted | ConditionsAcceptance.Required
@@ -2930,6 +2934,7 @@ export interface FullGroupPreferences {
   sessions: RoleGroupPreference
   comments: CommentsGroupPreference
   signMessages: GroupPreference
+  msgPriority: RoleGroupPreference
   commands: ChatBotCommand[]
 }
 
@@ -3005,6 +3010,7 @@ export enum GroupFeature {
   Sessions = "sessions",
   Comments = "comments",
   SignMessages = "signMessages",
+  MsgPriority = "msgPriority",
 }
 
 export enum GroupFeatureEnabled {
@@ -3220,6 +3226,7 @@ export interface GroupPreferences {
   sessions?: RoleGroupPreference
   comments?: CommentsGroupPreference
   signMessages?: GroupPreference
+  msgPriority?: RoleGroupPreference
   commands?: ChatBotCommand[]
 }
 
@@ -3985,6 +3992,11 @@ export interface PreparedGroup {
   connLinkStartedConnection: boolean
   welcomeSharedMsgId?: string
   requestSharedMsgId?: string
+}
+
+export interface PriorityRaised {
+  newAttention: boolean
+  wasSilent: boolean
 }
 
 export interface Profile {
@@ -5757,6 +5769,7 @@ export interface UIThemeEntityOverrides {
 export interface UpdatedMessage {
   msgContent: MsgContent
   mentions: {[key: string]: number} // string : int64
+  priority?: number // int
 }
 
 export interface User {

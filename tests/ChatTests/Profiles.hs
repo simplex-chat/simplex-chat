@@ -122,6 +122,7 @@ chatProfileTests = do
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
       it "update profiles with business address" testBusinessUpdateProfiles
+      it "high priority messages of the business" testBusinessHighPriority
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -2061,6 +2062,26 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
       (alice <# "#bob bob_1> hey there")
       (biz <# "#bob bob_1> hey there")
 
+testBusinessHighPriority :: HasCallStack => TestParams -> IO ()
+testBusinessHighPriority = testChat2 businessProfile aliceProfile $
+  \biz alice -> do
+    biz ##> "/ad"
+    cLink <- getContactLink biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+    alice ##> ("/c " <> cLink)
+    alice <## "connection request sent!"
+    biz <## "#alice (Alice): accepting business address request..."
+    alice <## "#biz: joining the group..."
+    biz <## "#alice: alice_1 joined the group"
+    alice <## "#biz: you joined the group"
+    biz ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}, \"priority\": 1}]"
+    biz <# "#alice !! hi"
+    alice <# "#biz biz_1!!> hi"
+    alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}, \"priority\": 1}]"
+    alice <# "#biz hello"
+    biz <# "#alice alice_1> hello"
+
 checkBusinessPlanWhileJoining :: HasCallStack => TestCC -> String -> IO ()
 checkBusinessPlanWhileJoining cc link = do
   let cmd = "/_connect plan 1 " <> link
@@ -3937,6 +3958,7 @@ testGroupChatLayout =
     alice <## "chat layout: classic"
     alice <## "group preferences:"
     mapM_ (\((_, feature), _, _) -> alice <## feature) $ groupFeatures_ 0 False
+    alice <## "Message priority: on for admins"
     bob ##> ("/_connect plan 1 " <> shortLink)
     bob <## "group link: ok to connect directly"
     groupSLinkData <- getTermLine bob

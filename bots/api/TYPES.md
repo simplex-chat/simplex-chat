@@ -175,6 +175,7 @@ This file is generated automatically.
 - [Preferences](#preferences)
 - [PreparedContact](#preparedcontact)
 - [PreparedGroup](#preparedgroup)
+- [PriorityRaised](#priorityraised)
 - [Profile](#profile)
 - [ProxyClientError](#proxyclienterror)
 - [ProxyError](#proxyerror)
@@ -1085,6 +1086,7 @@ GroupLink:
 - itemTimed: [CITimed](#citimed)?
 - itemLive: bool?
 - userMention: bool
+- priority: int?
 - hasLink: bool
 - deletable: bool
 - editable: bool
@@ -1769,6 +1771,8 @@ ChatType_cmd_string(chatType) + str(chatId) + ((GroupChatScope_cmd_string(chatSc
 **Record type**:
 - unreadCount: int
 - unreadMentions: int
+- unreadSilent: int
+- unreadHighPriority: int
 - reportsCount: int
 - minUnreadItemId: int64
 - unreadChat: bool
@@ -1909,6 +1913,7 @@ LARGE:
 - quotedItemId: int64?
 - msgContent: [MsgContent](#msgcontent)
 - mentions: {string : int64}
+- priority: int?
 
 
 ---
@@ -2587,6 +2592,7 @@ Markup:
 - sessions: [RoleGroupPreference](#rolegrouppreference)
 - comments: [CommentsGroupPreference](#commentsgrouppreference)
 - signMessages: [GroupPreference](#grouppreference)
+- msgPriority: [RoleGroupPreference](#rolegrouppreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
 
 
@@ -2680,6 +2686,7 @@ MemberSupport:
 - "sessions"
 - "comments"
 - "signMessages"
+- "msgPriority"
 
 
 ---
@@ -2935,6 +2942,7 @@ contact=<contactId> owner=<memberId>
 - sessions: [RoleGroupPreference](#rolegrouppreference)?
 - comments: [CommentsGroupPreference](#commentsgrouppreference)?
 - signMessages: [GroupPreference](#grouppreference)?
+- msgPriority: [RoleGroupPreference](#rolegrouppreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
@@ -3711,6 +3719,15 @@ self == 'allGroups' ? ' resolve=allGroups' : self == 'never' ? ' resolve=never' 
 - connLinkStartedConnection: bool
 - welcomeSharedMsgId: string?
 - requestSharedMsgId: string?
+
+
+---
+
+## PriorityRaised
+
+**Record type**:
+- newAttention: bool
+- wasSilent: bool
 
 
 ---
@@ -5107,6 +5124,7 @@ Handshake:
 **Record type**:
 - msgContent: [MsgContent](#msgcontent)
 - mentions: {string : int64}
+- priority: int?
 
 
 ---

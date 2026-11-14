@@ -277,6 +277,9 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (deleteAt != null) {
         InfoRow(stringResource(MR.strings.info_row_disappears_at), localTimestamp(deleteAt))
       }
+      if (ci.meta.highPriority) {
+        InfoRow(stringResource(MR.strings.info_row_high_priority), "", icon = painterResource(MR.images.ic_notifications))
+      }
       val file = ci.file
       if (file?.fileExpires != null) {
         val expiresRes = if (file.expired) MR.strings.info_row_file_expired else MR.strings.info_row_file_expires
@@ -592,6 +595,9 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
   val deleteAt = ci.meta.itemTimed?.deleteAt
   if (deleteAt != null) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_disappears_at), localTimestamp(deleteAt)))
+  }
+  if (ci.meta.highPriority) {
+    shareText.add(generalGetString(MR.strings.info_row_high_priority))
   }
   if (ci.meta.msgVerified?.verified == true) {
     shareText.add(generalGetString(if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified))

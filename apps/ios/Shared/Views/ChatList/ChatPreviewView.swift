@@ -228,9 +228,10 @@ struct ChatPreviewView: View {
         let s = chat.chatStats
         if s.unreadCount > 0 || s.unreadChat {
             let mentionColor = mentionColor(chat)
+            let attentionSign = s.unreadHighPriority > 0 ? Text(Image(systemName: "bell.fill")) : Text("\(MENTION_START)")
             HStack(alignment: .center, spacing: 2) {
                 if s.unreadMentions > 0 && s.unreadCount > 1 {
-                    Text("\(MENTION_START)")
+                    attentionSign
                         .font(userFont <= .xxxLarge ? .body : .callout)
                         .foregroundColor(mentionColor)
                         .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
@@ -238,13 +239,17 @@ struct ChatPreviewView: View {
                         .padding(.bottom, 1)
                 }
                 let singleUnreadIsMention = s.unreadMentions > 0 && s.unreadCount == 1
-                (singleUnreadIsMention ? Text("\(MENTION_START)") : unreadCountText(s.unreadCount))
+                let onlySilent = !singleUnreadIsMention && s.unreadCount == s.unreadSilent && !s.unreadChat
+                (singleUnreadIsMention ? attentionSign : unreadCountText(s.unreadCount))
                     .font(userFont <= .xxxLarge ? .caption : .caption2)
-                    .foregroundColor(.white)
+                    .foregroundColor(onlySilent ? theme.colors.secondary : .white)
                     .padding(.horizontal, dynamicSize(userFont).unreadPadding)
                     .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
-                    .background(singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(false) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
+                    .background(onlySilent ? Color.clear : singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(false) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
                     .cornerRadius(dynamicSize(userFont).unreadCorner)
+                    .if(onlySilent) {
+                        $0.overlay(RoundedRectangle(cornerRadius: dynamicSize(userFont).unreadCorner).stroke(theme.colors.secondary))
+                    }
             }
             .frame(height: dynamicChatInfoSize)
         } else if let ntfMode = chat.chatInfo.chatSettings?.enableNtfs, ntfMode != .all {

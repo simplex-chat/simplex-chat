@@ -2322,6 +2322,13 @@ instance FromJSON BoolDef where
   parseJSON v = BoolDef <$> parseJSON v
   omittedField = Just (BoolDef False)
 
+newtype IntDef = IntDef Int
+  deriving newtype (Eq, Show, ToJSON)
+
+instance FromJSON IntDef where
+  parseJSON v = IntDef <$> parseJSON v
+  omittedField = Just (IntDef 0)
+
 $(JQ.deriveJSON defaultJSON ''UserContact)
 
 $(JQ.deriveJSON defaultJSON ''Profile)

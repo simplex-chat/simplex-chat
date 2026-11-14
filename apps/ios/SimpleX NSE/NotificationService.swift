@@ -31,6 +31,7 @@ public enum NSENotificationData {
     case messageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem)
     case callInvitation(_ invitation: RcvCallInvitation)
     case msgInfo(NtfMsgAckInfo)
+    case silentMsg
     case noNtf
 
     @inline(__always)
@@ -49,6 +50,7 @@ public enum NSENotificationData {
         case let .messageReceived(user, cInfo, cItem): createMessageReceivedNtf(user, cInfo, cItem, badgeCount)
         case let .callInvitation(invitation): createCallInvitationNtf(invitation, badgeCount)
         case .msgInfo: UNMutableNotificationContent()
+        case .silentMsg: UNMutableNotificationContent()
         case .noNtf: UNMutableNotificationContent()
         }
     }
@@ -62,6 +64,7 @@ public enum NSENotificationData {
         case .messageReceived: self
         case .callInvitation: self
         case .msgInfo: nil
+        case .silentMsg: nil
         case .noNtf: nil
         }
     }
@@ -265,6 +268,7 @@ struct NotificationEntity {
     var expectedMsg: NtfMsgInfo?
     var allowedGetNextAttempts: Int = 3
     var msgBestAttemptNtf: NSENotificationData
+    var silentMsgReceived: Bool = false
 
     // startedProcessingNewMsgs determines that the entity stared processing events once it processed dropped notifications.
     // It remains true when shouldProcessNtf is set to false, to prevent NSE from being chosen as the next for the entity.
@@ -546,6 +550,9 @@ class NotificationService: UNNotificationServiceExtension {
             if info.msgId == expectedMsg.msgId {
                 // The message for this instance is processed, no more expected, deliver.
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): expected")
+                if let entity = notificationEntities[id], entity.silentMsgReceived, case .connectionEvent = entity.msgBestAttemptNtf {
+                    notificationEntities[id]?.msgBestAttemptNtf = .noNtf
+                }
                 return true
             } else if let msgTs = info.msgTs_, msgTs > expectedMsg.msgTs {
                 // Otherwise check timestamp - if it is after the currently expected timestamp, preserve .msgInfo marker for the next instance.
@@ -572,6 +579,11 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unknown message, let other instance to process it")
                 return true
             }
+        } else if case .silentMsg = ntf {
+            logger.debug("NotificationService processNtf: silent message, get next message without using an attempt")
+            notificationEntities[id]?.allowedGetNextAttempts += 1
+            notificationEntities[id]?.silentMsgReceived = true
+            return false
         } else if ntfEntity.ntfConn.user.showNotifications {
             // This is the notification event for the user with enabled notifications.
             logger.debug("NotificationService processNtf: setting best attempt")
@@ -1031,13 +1043,27 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
             if let file = cItem.autoReceiveFile() {
                 cItem = autoReceiveFile(file) ?? cItem
             }
-            let ntf: NSENotificationData = (cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification) ? .messageReceived(user, cInfo, cItem) : .noNtf
-            let chatIdOrMemberId = if case let .group(groupInfo, _) = cInfo, let memberId = cItem.meta.forwardedByMember ?? cItem.chatDir.groupMemberId {
-                groupMemberEntityId(groupInfo.groupId, memberId)
+            let ntf: NSENotificationData = if cItem.meta.silent {
+                .silentMsg
+            } else if cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification {
+                .messageReceived(user, cInfo, cItem)
             } else {
-                chatItem.chatInfo.id
+                .noNtf
             }
-            return (chatIdOrMemberId, ntf)
+            return (itemNtfEntityId(cInfo, cItem), ntf)
+        } else {
+            return nil
+        }
+    case let .chatItemUpdated(user, chatItem, priorityRaised):
+        if priorityRaised != nil {
+            let cInfo = chatItem.chatInfo
+            let cItem = chatItem.chatItem
+            let ntf: NSENotificationData = if cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification {
+                .messageReceived(user, cInfo, cItem)
+            } else {
+                .noNtf
+            }
+            return (itemNtfEntityId(cInfo, cItem), ntf)
         } else {
             return nil
         }
@@ -1062,6 +1088,14 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
     case .chatSuspended:
         chatSuspended()
         return nil
+    }
+}
+
+private func itemNtfEntityId(_ cInfo: ChatInfo, _ cItem: ChatItem) -> String {
+    if case let .group(groupInfo, _) = cInfo, let memberId = cItem.meta.forwardedByMember ?? cItem.chatDir.groupMemberId {
+        groupMemberEntityId(groupInfo.groupId, memberId)
+    } else {
+        cInfo.id
     }
 }
 

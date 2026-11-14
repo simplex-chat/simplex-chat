@@ -9,7 +9,8 @@ References are to `/code/simplex-chat-4`, commit `be2e1c1cc`. Haskell paths with
 ## 1. Rules
 ```
 priority          integer of a message: -1 low, 0 normal, 1 high; absent: 0
-                  a received value of 0 or below is normal, of 1 or above is high
+                  a received value of -1 or below is silent, of 0 normal, of 1 or above high
+                  silent is accepted in every chat from every sender (2026-11-12-mcp-silent-messages.md, Q1)
 scope             groups, business chats and channels
 senders           the API, the CLI and the libraries; the apps send normal priority
 item priority     set from x.msg.new when the item is created, limited to -1 .. 1
@@ -19,7 +20,7 @@ normal priority   a priority message of a sender who is not allowed (section 3),
 read item         an item already read when its priority is raised stays read; a notification is shown
 attention item    received item with userMention: mention or reply (as now), or high priority (new)
 ```
-- Notifications are created for every message, as now. Notification text and sound are unchanged. The SMP notification flag is set as now for new messages, and also for an update that raises the priority.
+- Notifications are created for every message except a silent one. Notification text and sound are unchanged. The SMP notification flag is set as now for new messages, and also for an update that raises the priority.
 - Mode `MFMentions`: the apps notify for attention items, as now; a high priority item is one of them. A raise is notified once, for an unread and for a read item.
 - An item that is a mention and high priority is shown as high priority.
 
@@ -110,13 +111,13 @@ default     enable = on, role = admin: admins and owners, in groups, channels an
 - CLI views, `AGF SGFMsgPriority` appended to the feature list of `viewGroupUpdated` (`View.hs:2121`) and `viewGroupProfile` (`:2149`): `Message priority: on for admins`.
 
 ## 4. Core: sending
-New message:
+New message, the rules below are for high priority (1 or above); silent (-1 or below) is sent in every chat and scope without a preference (2026-11-12-mcp-silent-messages.md):
 ```
-contact    priority of a composed message is ignored: the message is sent without the field; the item has priority 0
-group      sent value = limitPriority of the value, when it differs from 0 and groupFeatureUserAllowed SGFMsgPriority gInfo (Types.hs:689); every scope
+contact    high priority of a composed message is ignored: the message is sent without the field; the item has priority 0
+group      sent value = 1, when the value is 1 or above and groupFeatureUserAllowed SGFMsgPriority gInfo (Types.hs:689); every scope
            otherwise the message is sent with normal priority, without an error, as ttl without the timed messages feature (sndCITimed_, Library/Internal.hs:185)
 ```
-- `Library/Commands.hs:4861` `sendContactContentMessages`: `priority` of each composed message is replaced with Nothing.
+- `Library/Commands.hs:4861` `sendContactContentMessages`: high `priority` of each composed message is replaced with Nothing.
 - `Library/Commands.hs:4931` `sendGroupContentMessages_`: `priority` of each composed message is replaced with the sent value.
 - `Library/Internal.hs:212` `prepareGroupMsg`: new parameter `priority :: Maybe Int`, set in the container (`:229`); passed at:
   - `Library/Commands.hs:4994`: `priority` of the composed message
@@ -145,16 +146,18 @@ group (:824)
 ## 5. Core: receiving
 New item, `Library/Internal.hs:3030` `saveRcvChatItem'`, with unchanged callers:
 ```
-priority = if content is CIRcvMsgContent && rcvPriorityAllowed cd then cmPriority chatMsgEvent else 0
+priority = -1 when cmPriority chatMsgEvent is -1 (silent, from every sender in every chat)
+           1 if content is CIRcvMsgContent && rcvPriorityAllowed cd and cmPriority chatMsgEvent is 1
+           otherwise 0
 userMention = (mention or reply, :3062, as now) || priority > 0
 priority is passed to createNewRcvChatItem and mkChatItem_
 
-rcvPriorityAllowed cd =          -- new, Library/Internal.hs
+rcvPriorityAllowed cd =          -- new, Library/Internal.hs, for high priority only
   CDGroupRcv g _ m   -> groupFeatureMemberAllowed SGFMsgPriority m g && not (memberBlocked m)
   CDChannelRcv g _   -> groupFeatureMemberAllowed' SGFMsgPriority GROwner (fullGroupPreferences g)
   CDDirectRcv, CDLocalRcv -> False
 ```
-- A message of a sender who is not allowed, and every direct message, is received as a normal message.
+- A high priority message of a sender who is not allowed, and every direct high priority message, is received as a normal message.
 - Items of group and forwarded messages (`Library/Subscriber.hs:2209, 4008`), of history, and the item created by `x.msg.update` for a missing item (`:2327`) are created by this function: that item has the priority of the update.
 - Support chat counters (`memberChatStats`, `Library/Internal.hs:3064`; `Store/Messages.hs:2195-2212`) are computed from `userMention`, unchanged.
 
@@ -179,7 +182,8 @@ forwarding    the received event is forwarded: signed as its bytes; unsigned enc
 history       unsigned item: encoded with the priority of the stored item
               signed item: its stored bytes, the last signed message of the item (updateChatItemSignedMsg, Store/Messages.hs:2780)
 abuse         every member with MFAll or MFMentions is notified by one message of an allowed member
-limits        the role of the preference; a message of a blocked member is received with normal priority; MFNone
+limits        the role of the preference; a high priority message of a blocked member is received with normal priority; MFNone
+              a silent message stays silent, from every sender
 ```
 
 ## 6. Storage

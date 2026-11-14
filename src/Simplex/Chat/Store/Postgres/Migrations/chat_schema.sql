@@ -516,7 +516,8 @@ CREATE TABLE test_chat_schema.chat_items (
     fwd_from_group_link bytea,
     fwd_from_public_group_id bytea,
     fwd_from_member_id bytea,
-    fwd_from_shared_msg_id bytea
+    fwd_from_shared_msg_id bytea,
+    item_priority smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -2380,6 +2381,10 @@ CREATE INDEX idx_chat_items_contacts_msg_content_tag_created_at ON test_chat_sch
 
 
 
+CREATE INDEX idx_chat_items_contacts_silent ON test_chat_schema.chat_items USING btree (user_id, item_status, contact_id, item_priority) WHERE (item_priority < 0);
+
+
+
 CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON test_chat_schema.chat_items USING btree (user_id, contact_id, shared_msg_id);
 
 
@@ -2457,6 +2462,10 @@ CREATE INDEX idx_chat_items_groups_msg_content_tag_deleted ON test_chat_schema.c
 
 
 CREATE INDEX idx_chat_items_groups_msg_content_tag_item_ts ON test_chat_schema.chat_items USING btree (user_id, group_id, msg_content_tag, item_ts);
+
+
+
+CREATE INDEX idx_chat_items_groups_priority ON test_chat_schema.chat_items USING btree (user_id, item_status, group_id, group_scope_tag, group_scope_group_member_id, item_priority) WHERE (item_priority <> 0);
 
 
 

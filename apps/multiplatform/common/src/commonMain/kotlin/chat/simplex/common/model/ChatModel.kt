@@ -179,6 +179,15 @@ object ChatModel {
   val activeChatTagFilter = mutableStateOf<ActiveFilter?>(null)
   val presetTags = mutableStateMapOf<PresetTagKind, Int>()
   val unreadTags = mutableStateMapOf<Long, Int>()
+  val silentTags = mutableStateMapOf<Long, Int>()
+  val priorityTags = mutableStateMapOf<Long, Int>()
+
+  fun tagCounts(unreadTag: UnreadTag): List<MutableMap<Long, Int>> = when (unreadTag) {
+    UnreadTag.HighPriority -> listOf(unreadTags, priorityTags)
+    UnreadTag.Unread -> listOf(unreadTags)
+    UnreadTag.Silent -> listOf(silentTags)
+    UnreadTag.Read -> emptyList()
+  }
 
   // false: default placement, true: floating window.
   // Used for deciding to add terminal items on main thread or not. Floating means appPrefs.terminalAlwaysVisible
@@ -319,6 +328,8 @@ object ChatModel {
   fun updateChatTags(rhId: Long?) {
     val newPresetTags = mutableMapOf<PresetTagKind, Int>()
     val newUnreadTags = mutableMapOf<Long, Int>()
+    val newSilentTags = mutableMapOf<Long, Int>()
+    val newPriorityTags = mutableMapOf<Long, Int>()
 
     for (chat in chats.value.filter { it.remoteHostId == rhId }) {
       for (tag in PresetTagKind.entries) {
@@ -326,14 +337,20 @@ object ChatModel {
           newPresetTags[tag] = (newPresetTags[tag] ?: 0) + 1
         }
       }
-      if (chat.unreadTag) {
-        val chatTags: List<Long> = when (val cInfo = chat.chatInfo) {
-          is ChatInfo.Direct -> cInfo.contact.chatTags
-          is ChatInfo.Group -> cInfo.groupInfo.chatTags
-          else -> emptyList()
-        }
+      val newTagCounts = when (chat.unreadTag) {
+        UnreadTag.HighPriority -> listOf(newUnreadTags, newPriorityTags)
+        UnreadTag.Unread -> listOf(newUnreadTags)
+        UnreadTag.Silent -> listOf(newSilentTags)
+        UnreadTag.Read -> emptyList()
+      }
+      val chatTags: List<Long> = when (val cInfo = chat.chatInfo) {
+        is ChatInfo.Direct -> cInfo.contact.chatTags
+        is ChatInfo.Group -> cInfo.groupInfo.chatTags
+        else -> emptyList()
+      }
+      newTagCounts.forEach { counts ->
         chatTags.forEach { tag ->
-          newUnreadTags[tag] = (newUnreadTags[tag] ?: 0) + 1
+          counts[tag] = (counts[tag] ?: 0) + 1
         }
       }
     }
@@ -342,6 +359,10 @@ object ChatModel {
     presetTags.putAll(newPresetTags)
     unreadTags.clear()
     unreadTags.putAll(newUnreadTags)
+    silentTags.clear()
+    silentTags.putAll(newSilentTags)
+    priorityTags.clear()
+    priorityTags.putAll(newPriorityTags)
 
     clearActiveChatFilterIfNeeded()
   }
@@ -378,16 +399,16 @@ object ChatModel {
   }
 
   fun moveChatTagUnread(chat: Chat, oldTags: List<Long>?, newTags: List<Long>) {
-    if (chat.unreadTag) {
+    tagCounts(chat.unreadTag).forEach { counts ->
       oldTags?.forEach { t ->
-        val oldCount = unreadTags[t]
+        val oldCount = counts[t]
         if (oldCount != null) {
-          unreadTags[t] = maxOf(0, oldCount - 1)
+          counts[t] = maxOf(0, oldCount - 1)
         }
       }
 
       newTags.forEach { t ->
-        unreadTags[t] = (unreadTags[t] ?: 0) + 1
+        counts[t] = (counts[t] ?: 0) + 1
       }
     }
   }
@@ -617,8 +638,8 @@ object ChatModel {
             chatItems = arrayListOf(newPreviewItem),
             chatStats =
             if (cItem.meta.itemStatus is CIStatus.RcvNew && secondaryContextFilter == null) {
-              increaseUnreadCounter(rhId, currentUser.value!!)
-              chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, unreadMentions = if (cItem.meta.userMention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions)
+              if (!(cItem.meta.silent && cInfo.silentNotCounted)) increaseUnreadCounter(rhId, currentUser.value!!)
+              chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, unreadMentions = if (cItem.meta.userMention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions, unreadSilent = if (cItem.meta.silent) chat.chatStats.unreadSilent + 1 else chat.chatStats.unreadSilent, unreadHighPriority = if (cItem.meta.highPriority) chat.chatStats.unreadHighPriority + 1 else chat.chatStats.unreadHighPriority)
             } else
               chat.chatStats
           )
@@ -681,7 +702,7 @@ object ChatModel {
             chats[i] = chat.copy(chatItems = arrayListOf(cItem))
             if (pItem.isRcvNew && !cItem.isRcvNew) {
               // status changed from New to Read, update counter
-              decreaseCounterInPrimaryContext(rhId, cInfo.id)
+              decreaseCounterInPrimaryContext(rhId, cInfo.id, pItem)
             }
           }
         } else {
@@ -731,7 +752,7 @@ object ChatModel {
       // update chat list
       if (cInfo.groupChatScope() == null) {
         if (cItem.isRcvNew) {
-          decreaseCounterInPrimaryContext(rhId, cInfo.id)
+          decreaseCounterInPrimaryContext(rhId, cInfo.id, cItem)
         }
         // update preview
         val i = getChatIndex(rhId, cInfo.id)
@@ -783,7 +804,7 @@ object ChatModel {
           for (item in chatItems.value) {
             if (isRemovedMemberItem(item)) {
               if (item.isRcvNew) {
-                decreaseCounterInPrimaryContext(rhId, groupInfo.id)
+                decreaseCounterInPrimaryContext(rhId, groupInfo.id, item)
               }
               if (item.isActiveReport) {
                 decreaseGroupReportsCounter(rhId, groupInfo.id)
@@ -828,7 +849,7 @@ object ChatModel {
       // clear preview
       val i = getChatIndex(rhId, cInfo.id)
       if (i >= 0) {
-        decreaseUnreadCounter(rhId, currentUser.value!!, chats[i].chatStats.unreadCount)
+        decreaseUnreadCounter(rhId, currentUser.value!!, chats[i].chatStats.unreadCount - (if (chats[i].chatInfo.silentNotCounted) chats[i].chatStats.unreadSilent else 0))
         val chatBefore = chats[i]
         chats[i] = chats[i].copy(chatItems = arrayListOf(), chatStats = Chat.ChatStats(), chatInfo = cInfo)
         markChatTagRead(chatBefore)
@@ -891,7 +912,7 @@ object ChatModel {
     }
 
     fun markChatItemsRead(remoteHostId: Long?, id: ChatId, itemIds: List<Long>? = null) {
-      val (markedRead, mentionsMarkedRead) = markItemsReadInCurrentChat(id, itemIds)
+      val (markedRead, mentionsMarkedRead, silentMarkedRead, highPriorityMarkedRead) = markItemsReadInCurrentChat(id, itemIds)
       // update preview
       val chatIdx = getChatIndex(remoteHostId, id)
       if (chatIdx >= 0) {
@@ -901,18 +922,24 @@ object ChatModel {
           val wasUnread = chat.unreadTag
           val unreadCount = if (itemIds != null) chat.chatStats.unreadCount - markedRead else 0
           val unreadMentions = if (itemIds != null) chat.chatStats.unreadMentions - mentionsMarkedRead else 0
-          decreaseUnreadCounter(remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
+          val unreadSilent = if (itemIds != null) chat.chatStats.unreadSilent - silentMarkedRead else 0
+          val unreadHighPriority = if (itemIds != null) chat.chatStats.unreadHighPriority - highPriorityMarkedRead else 0
+          decreaseUnreadCounter(remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount - (if (chat.chatInfo.silentNotCounted) chat.chatStats.unreadSilent - unreadSilent else 0))
           chats[chatIdx] = chat.copy(
-            chatStats = chat.chatStats.copy(unreadCount = unreadCount, unreadMentions = unreadMentions)
+            chatStats = chat.chatStats.copy(unreadCount = unreadCount, unreadMentions = unreadMentions, unreadSilent = unreadSilent, unreadHighPriority = unreadHighPriority)
           )
           updateChatTagReadInPrimaryContext(chats[chatIdx], wasUnread)
         }
       }
     }
 
-    private fun markItemsReadInCurrentChat(id: ChatId, itemIds: List<Long>? = null): Pair<Int, Int> {
+    private data class ItemsMarkedRead(val read: Int, val mentions: Int, val silent: Int, val highPriority: Int)
+
+    private fun markItemsReadInCurrentChat(id: ChatId, itemIds: List<Long>? = null): ItemsMarkedRead {
       var markedRead = 0
       var mentionsMarkedRead = 0
+      var silentMarkedRead = 0
+      var highPriorityMarkedRead = 0
       if (chatId.value == id) {
         val items = chatItems.value
         var i = items.lastIndex
@@ -933,6 +960,12 @@ object ChatModel {
             if (item.meta.userMention) {
               mentionsMarkedRead++
             }
+            if (item.meta.silent) {
+              silentMarkedRead++
+            }
+            if (item.meta.highPriority) {
+              highPriorityMarkedRead++
+            }
             if (itemIds != null) {
               itemIdsFromRange.remove(item.id)
               // already set all needed items as read, can finish the loop
@@ -943,10 +976,10 @@ object ChatModel {
         }
         chatState.itemsRead(if (itemIds != null) markedReadIds else null, items)
       }
-      return markedRead to mentionsMarkedRead
+      return ItemsMarkedRead(markedRead, mentionsMarkedRead, silentMarkedRead, highPriorityMarkedRead)
     }
 
-    private fun decreaseCounterInPrimaryContext(rhId: Long?, chatId: ChatId) {
+    private fun decreaseCounterInPrimaryContext(rhId: Long?, chatId: ChatId, item: ChatItem) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
       if (secondaryContextFilter != null) return
 
@@ -955,11 +988,36 @@ object ChatModel {
 
       val chat = chats[chatIndex]
       val unreadCount = kotlin.math.max(chat.chatStats.unreadCount - 1, 0)
+      val unreadMentions = if (item.meta.userMention) kotlin.math.max(chat.chatStats.unreadMentions - 1, 0) else chat.chatStats.unreadMentions
+      val unreadSilent = if (item.meta.silent) kotlin.math.max(chat.chatStats.unreadSilent - 1, 0) else chat.chatStats.unreadSilent
+      val unreadHighPriority = if (item.meta.highPriority) kotlin.math.max(chat.chatStats.unreadHighPriority - 1, 0) else chat.chatStats.unreadHighPriority
       val wasUnread = chat.unreadTag
-      decreaseUnreadCounter(rhId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
+      if (!(item.meta.silent && chat.chatInfo.silentNotCounted)) decreaseUnreadCounter(rhId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
       chats[chatIndex] = chat.copy(
         chatStats = chat.chatStats.copy(
           unreadCount = unreadCount,
+          unreadMentions = unreadMentions,
+          unreadSilent = unreadSilent,
+          unreadHighPriority = unreadHighPriority,
+        )
+      )
+      updateChatTagReadInPrimaryContext(chats[chatIndex], wasUnread)
+    }
+
+    fun raisePriority(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, raised: PriorityRaised) {
+      if (secondaryContextFilter != null || cInfo.groupChatScope() != null || !cItem.isRcvNew) return
+
+      val chatIndex = getChatIndex(rhId, cInfo.id)
+      if (chatIndex == -1) return
+
+      val chat = chats[chatIndex]
+      val wasUnread = chat.unreadTag
+      if (raised.wasSilent && cInfo.silentNotCounted) increaseUnreadCounter(rhId, currentUser.value!!)
+      chats[chatIndex] = chat.copy(
+        chatStats = chat.chatStats.copy(
+          unreadMentions = if (raised.newAttention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions,
+          unreadSilent = if (raised.wasSilent) kotlin.math.max(chat.chatStats.unreadSilent - 1, 0) else chat.chatStats.unreadSilent,
+          unreadHighPriority = chat.chatStats.unreadHighPriority + 1,
         )
       )
       updateChatTagReadInPrimaryContext(chats[chatIndex], wasUnread)
@@ -1058,38 +1116,39 @@ object ChatModel {
       }
     }
 
-    fun updateChatTagReadInPrimaryContext(chat: Chat, wasUnread: Boolean) {
+    fun updateChatTagReadInPrimaryContext(chat: Chat, wasUnread: UnreadTag) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
       if (secondaryContextFilter != null) return
 
       val tags = chat.chatInfo.chatTags ?: return
       val nowUnread = chat.unreadTag
 
-      if (nowUnread && !wasUnread) {
-        tags.forEach { tag ->
-          unreadTags[tag] = (unreadTags[tag] ?: 0) + 1
+      if (nowUnread != wasUnread) {
+        tagCounts(wasUnread).forEach { counts -> markChatTagReadInPrimaryContext_(counts, tags) }
+        tagCounts(nowUnread).forEach { counts ->
+          tags.forEach { tag ->
+            counts[tag] = (counts[tag] ?: 0) + 1
+          }
         }
-      } else if (!nowUnread && wasUnread) {
-        markChatTagReadInPrimaryContext_(chat, tags)
       }
     }
 
     fun markChatTagRead(chat: Chat) {
-      if (chat.unreadTag) {
+      tagCounts(chat.unreadTag).forEach { counts ->
         chat.chatInfo.chatTags?.let { tags ->
-          markChatTagReadInPrimaryContext_(chat, tags)
+          markChatTagReadInPrimaryContext_(counts, tags)
         }
       }
     }
 
-    private fun markChatTagReadInPrimaryContext_(chat: Chat, tags: List<Long>) {
+    private fun markChatTagReadInPrimaryContext_(counts: MutableMap<Long, Int>, tags: List<Long>) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
       if (secondaryContextFilter != null) return
 
       for (tag in tags) {
-        val count = unreadTags[tag]
+        val count = counts[tag]
         if (count != null) {
-          unreadTags[tag] = maxOf(0, count - 1)
+          counts[tag] = maxOf(0, count - 1)
         }
       }
     }
@@ -1482,10 +1541,19 @@ data class Chat(
       else -> false
     }
 
-  val unreadTag: Boolean get() = when (chatInfo.chatSettings?.enableNtfs) {
-    All -> chatStats.unreadChat || chatStats.unreadCount > 0
-    Mentions -> chatStats.unreadChat || chatStats.unreadMentions > 0
-    else -> chatStats.unreadChat
+  val unreadTag: UnreadTag get() = when (chatInfo.chatSettings?.enableNtfs) {
+    All -> when {
+      chatStats.unreadHighPriority > 0 -> UnreadTag.HighPriority
+      chatStats.unreadChat || chatStats.unreadCount > chatStats.unreadSilent -> UnreadTag.Unread
+      chatStats.unreadCount > 0 -> UnreadTag.Silent
+      else -> UnreadTag.Read
+    }
+    Mentions -> when {
+      chatStats.unreadHighPriority > 0 -> UnreadTag.HighPriority
+      chatStats.unreadChat || chatStats.unreadMentions > 0 -> UnreadTag.Unread
+      else -> UnreadTag.Read
+    }
+    else -> if (chatStats.unreadChat) UnreadTag.Unread else UnreadTag.Read
   }
 
   val id: String get() = chatInfo.id
@@ -1512,6 +1580,8 @@ data class Chat(
   data class ChatStats(
     val unreadCount: Int = 0,
     val unreadMentions: Int = 0,
+    val unreadSilent: Int = 0,
+    val unreadHighPriority: Int = 0,
     // actual only via getChats() and getChat(.initial), otherwise, zero
     val reportsCount: Int = 0,
     val minUnreadItemId: Long = 0,
@@ -1527,6 +1597,8 @@ data class Chat(
     )
   }
 }
+
+enum class UnreadTag { Read, Silent, Unread, HighPriority }
 
 // Spec: spec/state.md#ChatInfo
 @Serializable
@@ -1823,6 +1895,16 @@ sealed class ChatInfo: SomeChat, NamedChat {
     when (chatSettings?.enableNtfs) {
       All -> true
       Mentions -> userMention
+      else -> false
+    }
+
+  val silentNotCounted: Boolean
+    get() = chatSettings?.enableNtfs == All
+
+  fun raiseCounted(raised: PriorityRaised): Boolean =
+    when (chatSettings?.enableNtfs) {
+      All -> raised.wasSilent
+      Mentions -> raised.newAttention
       else -> false
     }
 
@@ -3694,7 +3776,7 @@ data class ChatItem (
   val showNotification: Boolean get() =
     when (content) {
       is CIContent.SndMsgContent -> false
-      is CIContent.RcvMsgContent -> meta.itemDeleted == null
+      is CIContent.RcvMsgContent -> meta.itemDeleted == null && !meta.silent
       is CIContent.SndDeleted -> false
       is CIContent.RcvDeleted -> false
       is CIContent.SndCall -> false
@@ -4041,12 +4123,15 @@ data class CIMeta (
   val deletable: Boolean,
   val editable: Boolean,
   val showGroupAsSender: Boolean,
-  val msgVerified: MsgVerified? = null
+  val msgVerified: MsgVerified? = null,
+  val priority: Int? = null
 ) {
   val timestampText: String get() = getTimestampText(itemTs, true)
 
   val recent: Boolean get() = updatedAt + 10.toDuration(DurationUnit.SECONDS) > Clock.System.now()
   val isLive: Boolean get() = itemLive == true
+  val silent: Boolean get() = (priority ?: 0) < 0
+  val highPriority: Boolean get() = (priority ?: 0) > 0
   val disappearing: Boolean get() = !isRcvNew && itemTimed?.deleteAt != null
 
   val isRcvNew: Boolean get() = itemStatus is CIStatus.RcvNew

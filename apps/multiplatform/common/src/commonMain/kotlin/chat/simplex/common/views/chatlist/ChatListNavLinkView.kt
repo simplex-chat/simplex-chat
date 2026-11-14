@@ -981,7 +981,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
     }
     if (res && newChatInfo != null) {
       val chat = chatModel.getChat(chatInfo.id)
-      val wasUnread = chat?.unreadTag ?: false
+      val wasUnread = chat?.unreadTag ?: UnreadTag.Read
       val wasFavorite = chatInfo.chatSettings?.favorite ?: false
       chatModel.updateChatFavorite(favorite = chatSettings.favorite, wasFavorite)
       withContext(Dispatchers.Main) {

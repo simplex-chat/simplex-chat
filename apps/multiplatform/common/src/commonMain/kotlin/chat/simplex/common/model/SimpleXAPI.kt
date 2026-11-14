@@ -3081,7 +3081,7 @@ object ChatController {
               }
               chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
             }
-          } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
+          } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem) && !(cItem.meta.silent && cInfo.silentNotCounted)) {
             withContext(Dispatchers.Main) {
               chatModel.chatsContext.increaseUnreadCounter(rhId, r.user)
             }
@@ -3113,7 +3113,7 @@ object ChatController {
           }
         }
       is CR.ChatItemUpdated ->
-        chatItemUpdateNotify(rhId, r.user, r.chatItem)
+        chatItemUpdateNotify(rhId, r.user, r.chatItem, r.priorityRaised)
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
@@ -3127,7 +3127,7 @@ object ChatController {
       is CR.ChatItemsDeleted -> {
         if (!active(r.user)) {
           r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
-            if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled(deletedChatItem.chatItem)) {
+            if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled(deletedChatItem.chatItem) && !(deletedChatItem.chatItem.meta.silent && deletedChatItem.chatInfo.silentNotCounted)) {
               withContext(Dispatchers.Main) {
                 chatModel.chatsContext.decreaseUnreadCounter(rhId, r.user)
               }
@@ -3822,20 +3822,30 @@ object ChatController {
     }
   }
 
-  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem) {
+  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem, priorityRaised: PriorityRaised?) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
     val notify = { ntfManager.notifyMessageReceived(rh, user, cInfo, cItem) }
     if (!activeUser(rh, user)) {
+      if (priorityRaised != null && cItem.isRcvNew && cInfo.raiseCounted(priorityRaised)) {
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.increaseUnreadCounter(rh, user)
+        }
+      }
       notify()
     } else {
+      if (priorityRaised != null) {
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.raisePriority(rh, cInfo, cItem, priorityRaised)
+        }
+      }
       val createdChat = withContext(Dispatchers.Main) {
         chatModel.chatsContext.upsertChatItem(rh, cInfo, cItem)
       }
       withContext(Dispatchers.Main) {
         chatModel.secondaryChatsContext.value?.upsertChatItem(rh, cInfo, cItem)
       }
-      if (createdChat) {
+      if (createdChat || priorityRaised != null) {
         notify()
       } else if (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed) {
         notify()
@@ -6481,6 +6491,7 @@ data class FullGroupPreferences(
   val history: GroupPreference,
   val support: GroupPreference,
   val signMessages: GroupPreference,
+  val msgPriority: RoleGroupPreference = RoleGroupPreference(GroupFeatureEnabled.ON, role = GroupMemberRole.Admin),
   val commands: List<ChatBotCommand>,
 ) {
   fun toGroupPreferences(): GroupPreferences =
@@ -6496,6 +6507,7 @@ data class FullGroupPreferences(
       history = history,
       support = support,
       signMessages = signMessages,
+      msgPriority = msgPriority,
       commands = commands,
     )
 
@@ -6530,6 +6542,7 @@ data class GroupPreferences(
   val history: GroupPreference? = null,
   val support: GroupPreference? = null,
   val signMessages: GroupPreference? = null,
+  val msgPriority: RoleGroupPreference? = null,
   val commands: List<ChatBotCommand>? = null
 ) {
   companion object {
@@ -6824,6 +6837,9 @@ private fun parseChatItem(j: JsonElement): ChatItem {
 private fun <T> decodeObject(deserializer: DeserializationStrategy<T>, obj: JsonElement?): T? =
   runCatching { json.decodeFromJsonElement(deserializer, obj!!) }.getOrNull()
 
+@Serializable
+data class PriorityRaised(val newAttention: Boolean, val wasSilent: Boolean)
+
 // ChatResponse
 // Spec: spec/api.md#CR
 @Serializable
@@ -6905,7 +6921,7 @@ sealed class CR {
   @Serializable @SerialName("newChatItems") class NewChatItems(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatMsgContent") class ChatMsgContent(val user: UserRef, val msgContent: MsgContent): CR()
   @Serializable @SerialName("chatItemsStatusesUpdated") class ChatItemsStatusesUpdated(val user: UserRef, val chatItems: List<AChatItem>): CR()
-  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem, val priorityRaised: PriorityRaised? = null): CR()
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
   @Serializable @SerialName("reactionMembers") class ReactionMembers(val user: UserRef, val memberReactions: List<MemberReaction>): CR()

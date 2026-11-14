@@ -1928,12 +1928,12 @@ func markSupportChatRead(_ groupInfo: GroupInfo, _ member: GroupMember) async {
     }
 }
 
-func apiMarkChatItemsRead(_ im: ItemsModel, _ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], mentionsRead: Int) async {
+func apiMarkChatItemsRead(_ im: ItemsModel, _ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], mentionsRead: Int, silentRead: Int, highPriorityRead: Int) async {
     do {
         let updatedChatInfo = try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemIds: itemIds)
         await MainActor.run {
             ChatModel.shared.updateChatInfo(updatedChatInfo)
-            ChatModel.shared.markChatItemsRead(im, cInfo, itemIds, mentionsRead)
+            ChatModel.shared.markChatItemsRead(im, cInfo, itemIds, mentionsRead, silentRead, highPriorityRead)
         }
     } catch {
         logger.error("apiChatItemsRead error: \(responseError(error))")
@@ -2710,7 +2710,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
                     if cItem.isActiveReport {
                         m.increaseGroupReportsCounter(cInfo.id)
                     }
-                } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
+                } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) && !(cItem.meta.silent && cInfo.silentNotCounted) {
                     m.increaseUnreadCounter(user: user)
                 }
             }
@@ -2744,8 +2744,12 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 }
             }
         }
-    case let .chatItemUpdated(user, aChatItem):
-        await chatItemSimpleUpdate(user, aChatItem)
+    case let .chatItemUpdated(user, aChatItem, priorityRaised):
+        if let priorityRaised {
+            await chatItemPriorityRaised(user, aChatItem, priorityRaised)
+        } else {
+            await chatItemSimpleUpdate(user, aChatItem)
+        }
     case let .chatItemReaction(user, _, r):
         if active(user) {
             await MainActor.run {
@@ -2756,7 +2760,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if !active(user) {
             for item in items {
                 let d = item.deletedChatItem
-                if item.toChatItem == nil && d.chatItem.isRcvNew && d.chatInfo.ntfsEnabled(chatItem: d.chatItem) {
+                if item.toChatItem == nil && d.chatItem.isRcvNew && d.chatInfo.ntfsEnabled(chatItem: d.chatItem) && !(d.chatItem.meta.silent && d.chatInfo.silentNotCounted) {
                     await MainActor.run {
                         m.decreaseUnreadCounter(user: user)
                     }
@@ -3216,6 +3220,23 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
                 NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
         }
+    }
+}
+
+func chatItemPriorityRaised(_ user: any UserLike, _ aChatItem: AChatItem, _ raised: PriorityRaised) async {
+    let m = ChatModel.shared
+    let cInfo = aChatItem.chatInfo
+    let cItem = aChatItem.chatItem
+    await MainActor.run {
+        if active(user) {
+            m.raisePriority(cInfo, cItem, raised)
+            _ = m.upsertChatItem(cInfo, cItem)
+        } else if cItem.isRcvNew && cInfo.raiseCounted(raised) {
+            m.increaseUnreadCounter(user: user)
+        }
+    }
+    if cItem.showNotification {
+        NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
     }
 }
 

@@ -752,6 +752,7 @@ class CIMeta(TypedDict):
     itemTimed: NotRequired["CITimed"]
     itemLive: NotRequired[bool]
     userMention: bool
+    priority: NotRequired[int]  # int
     hasLink: bool
     deletable: bool
     editable: bool
@@ -1399,6 +1400,8 @@ class ChatSettings(TypedDict):
 class ChatStats(TypedDict):
     unreadCount: int  # int
     unreadMentions: int  # int
+    unreadSilent: int  # int
+    unreadHighPriority: int  # int
     reportsCount: int  # int
     minUnreadItemId: int  # int64
     unreadChat: bool
@@ -1487,6 +1490,7 @@ class ComposedMessage(TypedDict):
     quotedItemId: NotRequired[int]  # int64
     msgContent: "MsgContent"
     mentions: dict[str, int]  # str : int64
+    priority: NotRequired[int]  # int
 
 class ConditionsAcceptance_accepted(TypedDict):
     type: Literal["accepted"]
@@ -2054,6 +2058,7 @@ class FullGroupPreferences(TypedDict):
     sessions: "RoleGroupPreference"
     comments: "CommentsGroupPreference"
     signMessages: "GroupPreference"
+    msgPriority: "RoleGroupPreference"
     commands: list["ChatBotCommand"]
 
 class FullPreferences(TypedDict):
@@ -2097,7 +2102,7 @@ class GroupDirectInvitation(TypedDict):
     fromGroupMemberConnId_: NotRequired[int]  # int64
     groupDirectInvStartedConnection: bool
 
-GroupFeature = Literal["timedMessages", "directMessages", "fullDelete", "reactions", "voice", "files", "simplexLinks", "reports", "history", "support", "sessions", "comments", "signMessages"]
+GroupFeature = Literal["timedMessages", "directMessages", "fullDelete", "reactions", "voice", "files", "simplexLinks", "reports", "history", "support", "sessions", "comments", "signMessages", "msgPriority"]
 
 GroupFeatureEnabled = Literal["on", "off"]
 
@@ -2249,6 +2254,7 @@ class GroupPreferences(TypedDict):
     sessions: NotRequired["RoleGroupPreference"]
     comments: NotRequired["CommentsGroupPreference"]
     signMessages: NotRequired["GroupPreference"]
+    msgPriority: NotRequired["RoleGroupPreference"]
     commands: NotRequired[list["ChatBotCommand"]]
 
 class GroupProfile(TypedDict):
@@ -2788,6 +2794,10 @@ class PreparedGroup(TypedDict):
     connLinkStartedConnection: bool
     welcomeSharedMsgId: NotRequired[str]
     requestSharedMsgId: NotRequired[str]
+
+class PriorityRaised(TypedDict):
+    newAttention: bool
+    wasSilent: bool
 
 class Profile(TypedDict):
     displayName: str
@@ -4007,6 +4017,7 @@ class UIThemeEntityOverrides(TypedDict):
 class UpdatedMessage(TypedDict):
     msgContent: "MsgContent"
     mentions: dict[str, int]  # str : int64
+    priority: NotRequired[int]  # int
 
 class User(TypedDict):
     userId: int  # int64

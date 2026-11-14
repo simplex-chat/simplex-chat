@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -1341,6 +1343,8 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
   val alwaysShownPresetTags = presetTags.filter { !presetCanBeCollapsed(it.key) && it.value > 0 }
   val activeFilter = remember { chatModel.activeChatTagFilter }
   val unreadTags = remember { chatModel.unreadTags }
+  val silentTags = remember { chatModel.silentTags }
+  val priorityTags = remember { chatModel.priorityTags }
   val rhId = chatModel.remoteHostId()
 
   val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
@@ -1401,11 +1405,19 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
           }
           Spacer(Modifier.width(4.dp))
           Box {
-            val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
+            val priorityTag = (priorityTags[tag.chatTagId] ?: 0) > 0
+            val (badgeText, badgeColor) = when {
+              priorityTag -> " " to MaterialTheme.colors.primary
+              (unreadTags[tag.chatTagId] ?: 0) > 0 -> " ●" to MaterialTheme.colors.primary
+              (silentTags[tag.chatTagId] ?: 0) > 0 -> " ○" to MaterialTheme.colors.secondary
+              else -> "" to MaterialTheme.colors.primary
+            }
+            val bellPlaceholder = Placeholder(12.5.sp, 12.5.sp, PlaceholderVerticalAlign.TextCenter)
             val invisibleText = buildAnnotatedString {
               append(tag.chatTagText)
               withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {
                 append(badgeText)
+                if (priorityTag) appendInlineContent("bell")
               }
             }
             Text(
@@ -1414,13 +1426,15 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
               fontSize = 15.sp,
               color = Color.Transparent,
               maxLines = 1,
-              overflow = TextOverflow.Ellipsis
+              overflow = TextOverflow.Ellipsis,
+              inlineContent = mapOf("bell" to InlineTextContent(bellPlaceholder) {})
             )
             // Visible text with styles
             val visibleText = buildAnnotatedString {
               append(tag.chatTagText)
-              withStyle(SpanStyle(fontSize = 12.5.sp, color = MaterialTheme.colors.primary)) {
+              withStyle(SpanStyle(fontSize = 12.5.sp, color = badgeColor)) {
                 append(badgeText)
+                if (priorityTag) appendInlineContent("bell")
               }
             }
             Text(
@@ -1429,7 +1443,10 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
               fontSize = 15.sp,
               color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
               maxLines = 1,
-              overflow = TextOverflow.Ellipsis
+              overflow = TextOverflow.Ellipsis,
+              inlineContent = mapOf("bell" to InlineTextContent(bellPlaceholder) {
+                Icon(painterResource(MR.images.ic_notifications), null, Modifier.fillMaxSize(), tint = badgeColor)
+              })
             )
           }
         }
@@ -1628,7 +1645,7 @@ private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
   when (activeFilter) {
     is ActiveFilter.PresetTag -> presetTagMatchesChat(activeFilter.tag, chat.chatInfo, chat.chatStats)
     is ActiveFilter.UserTag -> chat.chatInfo.chatTags?.contains(activeFilter.tag.chatTagId) ?: false
-    is ActiveFilter.Unread -> chat.unreadTag
+    is ActiveFilter.Unread -> chat.unreadTag == UnreadTag.Unread || chat.unreadTag == UnreadTag.HighPriority
     else -> true
   }
 
