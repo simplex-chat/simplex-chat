@@ -7,8 +7,6 @@ const ASSETS = `/assets/${BUILD}/`;
 /** One cache per build, so eviction is "everything that is not this one". */
 const CACHE = `sb-${BUILD}`;
 const SHELL = "/";
-// past this the cached shell is served instead; an answer that arrives later is dropped
-const SHELL_TIMEOUT_MS = 3000;
 /** Proves a document really is this build's shell and not an interstitial. */
 const ENTRY = `${ASSETS}main.js`;
 
@@ -117,24 +115,17 @@ async function fromPrecache(request) {
 /** Network-first, and the one response that must be: the shell is the only file whose URL
  * carries no build hash, so it decides which build a page runs. Served cache-first, a redeploy
  * could not reach a returning buyer at all, which once shipped a checkout generating codes
- * the service could not redeem. */
+ * the service could not redeem. A slow answer is waited for, however long it takes, as the cached
+ * shell served in its place would be the build before a deploy. */
 async function shellFirst(request) {
-  let deadline;
   try {
     // SHELL rather than the request: every page URL is the same document, so one fetch serves
     // them all and it is the key the fallback is stored under. `reload` because the HTTP cache
     // can pin a build just as the Cache API can.
-    const network = fetch(SHELL, { cache: "reload", credentials: "same-origin" });
-    // a captive portal or a tunnel accepts the connection and never answers, and `fetch` does
-    // not reject on that: without a deadline the page is blank for the browser's own timeout
-    const stall = new Promise((resolve) => { deadline = setTimeout(() => { resolve(undefined); }, SHELL_TIMEOUT_MS); });
-    const fresh = await Promise.race([network, stall]);
-    if (fresh !== undefined && fresh.ok) return fresh;
+    const fresh = await fetch(SHELL, { cache: "reload", credentials: "same-origin" });
+    if (fresh.ok) return fresh;
   } catch {
     // offline, or the listener is down: the precached shell is what is left
-  } finally {
-    // the offline path throws past a clear that followed the await, and left the worker awake
-    clearTimeout(deadline);
   }
   const cache = await caches.open(CACHE);
   const hit = await cache.match(SHELL);
