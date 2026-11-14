@@ -413,6 +413,8 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
     inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === text && chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === sender && chatItem.quotedItem?.itemId === quoted)
   const withEnd = (text: string, quoted?: number): ItemCheck =>
     inGroup(groupId, ({chatItem}) => chatItem.meta.itemText.startsWith(`${text}\n!- Done`) && chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === "Claude" && chatItem.quotedItem?.itemId === quoted)
+  const machine = " · RAM [\\d.]+ [TGM]B free(❗️)? · disk [\\d.]+ [TGM]B free(❗️)?!$"
+  const matches = (pattern: string): ItemCheck => inGroup(groupId, ({chatItem}) => new RegExp(pattern).test(chatItem.meta.itemText) && chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === "Claude")
   let hookStart = 0
   const hook = (input: object) => turn(JSON.stringify({session_id: five, ...input}), {}, client, undefined, ++hookStart)
 
@@ -424,7 +426,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   writeFileSync(transcript, userEntry("p1", "Fix the build", "human", {timestamp: "2026-11-13T10:00:00.000Z"}))
   expect(await submitted).toEqual({})
   await typed
-  const fixed = updated(alice.chat, message("Fixed.\n!- Done in 2.0 s · 861 output tokens · 36K tokens in context!", "Claude"))
+  const fixed = updated(alice.chat, matches(`^Fixed\\.\\n!- Done in 2\\.0 s · 861 output tokens · 36K tokens in context${machine}`))
   const usage = {input_tokens: 3, cache_creation_input_tokens: 600, cache_read_input_tokens: 35_000, output_tokens: 861}
   appendFileSync(transcript, `${JSON.stringify({type: "assistant", timestamp: "2026-11-13T10:00:02.000Z", message: {id: "msg_1", model: "claude-opus-5", content: [{type: "text", text: "Fixed."}], usage}})}\n`)
   const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupId && toGroup.groupProfile.shortDescr === "claude-opus-5", 60_000)
@@ -517,7 +519,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   expect((await summarized).chatItem.meta.itemLive).toBe(true)
   const resetsAt = Date.now() / 1_000 + 3_600
   await statusLine(JSON.stringify({session_id: five, model: {display_name: "Opus 5"}, rate_limits: {five_hour: {used_percentage: 34.7, resets_at: resetsAt}, seven_day: {used_percentage: 61, resets_at: resetsAt}}}), () => undefined, {SIMPLEX_MCP_HOME: root})
-  const endLine = updated(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText.startsWith("Summary:\nAll green.\n!- Done in ") && chatItem.meta.itemText.endsWith(" · 5 h: 34% · week: 61%!")))
+  const endLine = updated(alice.chat, matches(`^Summary:\\nAll green\\.\\n!- Done in .* · 5 h: 34% · week: 61%${machine}`))
   await turn(JSON.stringify({session_id: five, hook_event_name: "Stop", last_assistant_message: "Summary:\nAll green."}), {}, client, undefined, Date.now())
   const {meta: summary} = (await endLine).chatItem
   expect([summary.itemLive, summary.itemEdited]).toEqual([false, false])
