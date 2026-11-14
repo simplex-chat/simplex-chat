@@ -434,7 +434,7 @@ Notifications, by each recipient's apps:
 With the hooks that `register` adds ([Add the agent to Claude Code](#add-the-agent-to-claude-code)), Claude Code passes its events to curl, which posts them to `http://127.0.0.1:PORT/hook` of the agent's server, with the token.
 
 - The server follows a session of Claude Code from its first event with a tool of this agent, such as `mcp__simplex-my-agent__receive`, and ignores the events of other sessions. It follows at most 16 sessions, and drops the oldest one with its state.
-- A followed session runs a turn from its first event and from each `UserPromptSubmit`, until its `Stop`, `StopFailure`, `SessionEnd` or idle notification. At the end of a turn after which no followed session runs a turn, while the agent runs no call, the server deletes the status messages, except those with the label `received, waiting for the agent`.
+- A followed session runs a turn from its first event and from each `UserPromptSubmit`, until its `Stop`, `StopFailure`, `SessionEnd` or idle notification, or until an [/abort](#abort). At the end of a turn after which no followed session runs a turn, while the agent runs no call, the server deletes the status messages, except those with the label `received, waiting for the agent`.
 - Of each event, the server uses only `hook_event_name`, `session_id`, `tool_name`, `tool_use_id`, `agent_id`, `agent_type`, `notification_type`, and the base name of `tool_input.file_path` or `tool_input.notebook_path`. The rest of the event, prompts, commands, file contents and tool results included, is discarded after parsing; nothing of it is saved or logged.
 - A file's base name is kept only when it consists of 1 to 64 ASCII letters, digits and characters of `_.+@-`. Tool names and subagent types follow the same rule, with `_` and `-` as the only characters besides ASCII letters and digits.
 - At most 64 running tools and 64 running subagents are kept, and 256 IDs of ended tool calls; the oldest is dropped.
@@ -475,9 +475,10 @@ Anyone who can post in that chat may send it: the contact of a direct chat, and 
 1. keeps the message from the agent: `receive` and `send` never return it, and it is marked read;
 2. prints, for example, `Abort by Bob in group Team (#15).`, with the names on one line;
 3. adds 1 to the count in FILE;
-4. ends every status message of the server, in all chats: a shown status message is edited to `◼ aborted`, which stays in the chat as an ordinary message, and a status message not yet shown is not posted.
+4. ends every status message of the server, in all chats: a shown status message is edited to `◼ aborted`, which stays in the chat as an ordinary message, and a status message not yet shown is not posted;
+5. ends the turn of every Claude Code session that it follows with the [status hooks](#status-hooks), as at its `Stop`, since the script stops these sessions.
 
-When a write of FILE fails, `abort in #15: ERROR` is printed on stderr, and the status messages and the count are kept; the message is still kept from the agent and marked read. After an abort, `/abort` is an ordinary message until a status message is shown again. When a `receive` of the chat waits, the server deletes the chat's status message first, so an `/abort` sent then is returned by that `receive`.
+When a write of FILE fails, `abort in #15: ERROR` is printed on stderr, and the status messages, the turns and the count are kept; the message is still kept from the agent and marked read. After an abort, `/abort` is an ordinary message until a status message is shown again. When a `receive` of the chat waits, the server deletes the chat's status message first, so an `/abort` sent then is returned by that `receive`.
 
 FILE holds the count in decimal on one line. At the start, a count of 1 to 15 digits in its first line is kept; otherwise, and for a missing FILE, `0` is written. At a missing folder of FILE, or a failed write, the start ends with exit code 1. Each count is written to `FILE.part`, with mode 0644, readable by all users, and FILE is then replaced by `FILE.part` in one rename.
 

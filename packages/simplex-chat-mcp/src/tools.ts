@@ -725,6 +725,7 @@ export class AgentTools {
     try {
       this.agent.abort!()
       this.statuses.abort()
+      this.agent.activity?.endTurns()
     } catch (error) {
       logError(`abort in ${chat}`, error)
     }

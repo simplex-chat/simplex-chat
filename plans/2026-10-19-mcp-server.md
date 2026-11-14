@@ -1827,6 +1827,7 @@ record(event):
 join(session): sessions.add(session); above 16: the oldest session deleted, then cleared
 clear(session): delete its tools and subagents; asking.delete(session); compacting.delete(session); idle.delete(session)
 endTurn(session): clear(session); idle.add(session); every session of sessions in idle: turnsEnded()
+endTurns(): endTurn(session) for each session of sessions; called at an /abort after Statuses.abort
 
 Statuses.turnsEnded():
   a running call: return
@@ -1839,7 +1840,7 @@ state(): {asking: asking not empty, compacting: compacting not empty, tool: the 
 - Events of a session are discarded until its first event with a tool of this server; Claude Code runs the hooks of the user scope in every session of the user.
 - The body is discarded after record(); /hook logs nothing.
 - The calls of this server's tools are tracked by `AgentTools.call`, and the subagents of `Agent` calls by SubagentStart.
-- A session runs a turn from its join and from its UserPromptSubmit until its Stop, StopFailure, SessionEnd or idle notification; other events leave `idle` unchanged, so an end event of a tool received after Stop leaves the turn ended. A status of a prompt left unanswered is deleted at the end of the turn; a waiting status is kept.
+- A session runs a turn from its join and from its UserPromptSubmit until its Stop, StopFailure, SessionEnd or idle notification, or until an `/abort`; other events leave `idle` unchanged, so an end event of a tool received after Stop leaves the turn ended. A status of a prompt left unanswered is deleted at the end of the turn; a waiting status is kept.
 - After a refusal in its permission prompt, Claude Code 2.1.281 sends no end event of a tool, batch or turn; it sends the idle notification (Notification, `notification_type` `idle_prompt`) a fixed time after the end of every turn, 60 s by default, an aborted one included, when its terminal received no input and no dialog is open.
 
 ## Sequence diagrams
@@ -2126,3 +2127,4 @@ C6      Claude Code closes the request stream when a call times out or its task 
 
 - With the status hooks, the status messages other than waiting ones are deleted when every agent session has ended its turn, at Stop, StopFailure or SessionEnd, and no call runs; `serve` without the hooks is unchanged (`plans/2026-11-11-mcp-live-activity.md`, decision 11).
 - `register` adds a status hook of `Notification`; Claude Code's idle notification, `notification_type` `idle_prompt`, ends the turn of its session as Stop does, so the label of a refused permission prompt ends about one minute after the refusal (`plans/2026-11-11-mcp-live-activity.md`, decision 12).
+- At an `/abort`, after the statuses are ended, the turn of every agent session is ended as at its Stop, so a session that the script stops without a Stop keeps neither a turn nor labels (`plans/2026-11-12-mcp-abort.md`, decision 13).

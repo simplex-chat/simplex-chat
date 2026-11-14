@@ -1834,7 +1834,7 @@ Notes:
 - `agent_id` is set in the tool events of a subagent; at `PostToolBatch`, only the running tools of the same agent are removed ([`Activity.record`](../src/activity.ts)).
 - Labels are read at ticks, 3 s to 20 s apart, so a tool call started and ended between two ticks is not shown ([`Statuses.tick`, `schedule`](../src/status.ts)).
 - The posts of one session may be received out of order; for an end event received before its `PreToolUse`, the ID is kept as ended, and the late `PreToolUse` is skipped ([`Activity.record`](../src/activity.ts)).
-- A session runs a turn from its first event with a tool of this server and from its `UserPromptSubmit`, until its `Stop`, `StopFailure`, `SessionEnd` or idle notification, a `Notification` with `notification_type` `idle_prompt`. After a refusal in the permission prompt, Claude Code sends only the idle notification, about one minute later, so the label `waiting for permission in Claude Code` is shown until then ([API 5.2](api.md#52-events)). At such an end, when no agent session runs a turn, the status messages other than waiting ones are deleted while no call of the agent runs, so a status message of a prompt left unanswered ends with the turn. A waiting status is kept ([`Activity.endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts), the `Activity` of [`startAgent`](../src/serve.ts)).
+- A session runs a turn from its first event with a tool of this server and from its `UserPromptSubmit`, until its `Stop`, `StopFailure`, `SessionEnd` or idle notification, a `Notification` with `notification_type` `idle_prompt`. After a refusal in the permission prompt, Claude Code sends only the idle notification, about one minute later, so the label `waiting for permission in Claude Code` is shown until then ([API 5.2](api.md#52-events)). At such an end, when no agent session runs a turn, the status messages other than waiting ones are deleted while no call of the agent runs, so a status message of a prompt left unanswered ends with the turn. A waiting status is kept ([`Activity.endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts), the `Activity` of [`startAgent`](../src/serve.ts)). An `/abort` ends the turns of all agent sessions ([39](#39-abort-in-a-status-message)).
 - While the server is down, curl fails with a refused connection; Claude Code hides the completion notices of async hooks by default ([Claude Code hooks: background](https://code.claude.com/docs/en/hooks#run-hooks-in-the-background)).
 
 Source: [`hookEvents`, `statusHooks`](../src/register.ts), [`startHttp`, `receiveHook`](../src/http.ts), [`startAgent`](../src/serve.ts), [`Activity` to `deleteWhere`](../src/activity.ts), [`Statuses.turnsEnded`, `label`, `otherLabel`, `toolLabel`, `named`](../src/status.ts).
@@ -1850,6 +1850,7 @@ sequenceDiagram
   participant T as AgentTools
   participant W as ChatItemsWatch
   participant L as Statuses
+  participant Y as Activity
   participant C as Core
   participant D as Member
   Note over R,D: serve runs with --abort-file FILE#59; #35;9 is an approved group whose status message S has renders
@@ -1868,6 +1869,7 @@ sequenceDiagram
   T->>T: 1 written to FILE.part with mode 0644, renamed to FILE#59; then the count 1
   T->>L: abort()
   L->>C: apiUpdateChatItem #35;9 S [◼ aborted], not live
+  T->>Y: endTurns(): the turn of each agent session ended
   T-->>W: at the event: item 42 delivered, item 41 left out
   R->>R: FILE's first line 1: a change
   R->>R: the agent's process group stopped, the agent started again
@@ -1877,9 +1879,10 @@ Notes:
 
 - An item is an `/abort` when it is received, neither sent as a live message nor edited, in the main conversation, a text message whose trimmed text is `/abort`, and the chat's status has 1 or more renders while `--abort-file` is set, when the server first handles it: at its event, or at a read by `receive` before the event; the sender is any contact or member ([`AgentTools.onNewItems`, `decideAbort`, `receive`](../src/tools.ts), [`Statuses.offersAbort`](../src/status.ts)).
 - Every status of the server is ended: one with 1 or more renders by a final update to `◼ aborted`, not live; one with 0 renders without a message ([`Statuses.abort`, `end`](../src/status.ts), [`LiveMessage.showMessage`](../../simplex-chat-nodejs/src/api.ts)).
+- Then the turn of every agent session of the status hooks is ended, as at its `Stop`, with its running tools, subagents and flags. The ended statuses are no longer held by `Statuses`, so a later `Stop` of an aborted session leaves `◼ aborted` unchanged; a session that the script stops without a `Stop` leaves no turn running, so the `Stop` of a session of the restarted agent deletes its status messages as in [38](#38-claude-code-activity-in-the-status-message) ([`AgentTools.decideAbort`](../src/tools.ts), [`Activity.endTurns`, `endTurn`](../src/activity.ts)).
 - The other items of the event are delivered to the item watch; item 41 is also left out of the unread items of `receive`. After a read that came first, that `receive` returns item 42, and at the event item 41 is found in `abortItems`, is not decided again and is left out ([`AgentTools.onNewItems`, `onEvent`, `decideAbort`, `receive`](../src/tools.ts)).
-- A failed write of FILE is logged as `abort in #9: ERROR`; the count and the statuses are kept, and item 41 stays withheld and marked read ([`AgentTools.decideAbort`](../src/tools.ts), [`abortCounter`](../src/files.ts)).
+- A failed write of FILE is logged as `abort in #9: ERROR`; the count, the statuses and the turns are kept, and item 41 stays withheld and marked read ([`AgentTools.decideAbort`](../src/tools.ts), [`abortCounter`](../src/files.ts)).
 - After the abort, `/abort` is an ordinary message until a status is rendered again ([`Statuses.offersAbort`](../src/status.ts)).
 - The script's reads of FILE are described in [Reference](../REFERENCE.md#abort).
 
-Source: [`startServer`, `startAgent`](../src/serve.ts), [`AgentTools.onNewItems`, `decideAbort`, `onEvent`, `receive`](../src/tools.ts), [`Statuses.end`, `offersAbort`, `abort`, `render`, `statusText`](../src/status.ts), [`abortCounter`, `writeReadableFile`](../src/files.ts).
+Source: [`startServer`, `startAgent`](../src/serve.ts), [`AgentTools.onNewItems`, `decideAbort`, `onEvent`, `receive`](../src/tools.ts), [`Statuses.end`, `offersAbort`, `abort`, `render`, `statusText`](../src/status.ts), [`Activity.endTurns`](../src/activity.ts), [`abortCounter`, `writeReadableFile`](../src/files.ts).

@@ -146,6 +146,7 @@ Status messages with /abort, after steps 1 and 2 of "Status messages":
 8. Restart `serve` with the same option: `cat /tmp/agent-abort/count` prints `3`, and the loop prints nothing.
 9. `node dist/cli.js serve my-agent --abort-file ~/.simplex-mcp/my-agent/count` exits with `--abort-file: a file in a folder disjoint from the data folder expected, got <your home folder>/.simplex-mcp/my-agent/count`, and `node dist/cli.js serve my-agent --approve host --abort-file /tmp/agent-abort/count` with `--abort-file: status messages are shown only in mode requests.`; both exit with code 2.
 10. In your chat with the agent, send `stop`, and after the answer send `/abort`: `◐ received, waiting for the agent · 0:00 · /abort` is shown, and the loop prints nothing. Ask Claude Code in the terminal to take your prompts again: its `receive` returns `/abort` as a message.
+11. With the status hooks of "Status messages with Claude Code's work" and without `"Bash(sleep *)"` in `permissions.allow`, give Claude Code the prompt of step 8 there, and send `Run sleep 90 in the shell, then tell me that it is done.` While the label is `waiting for permission in Claude Code`, send `/abort`: the status message is edited to `◼ aborted`. Stop Claude Code with `kill -9` and its PID, start `claude` again, and give it the same prompt. Send a prompt: the label is `thinking`, not `waiting for permission in Claude Code`. Send `stop`: when Claude Code ends its turn without an answer, the status message is deleted at once.
 
 Stop and restart:
 

@@ -7,6 +7,7 @@ import {CallToolResult} from "@modelcontextprotocol/server"
 import {ChatEvent, T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Action, Actions, ConnectAction, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
+import {Activity} from "../../src/activity"
 import {cardText} from "../../src/control"
 import {Changes, ChatItemsWatch, Collected, awaitResponses, chatRef, nextChange, quoteLine, replyText, toMessage, toReplyTo} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
@@ -1134,6 +1135,32 @@ describe("abort", () => {
     expect(errors).toEqual(["abort in @4: EACCES: permission denied"])
     expect(chat.commands.filter(cmd => cmd.startsWith("/_read"))).toEqual(["/_read chat items @4 20", "/_read chat items @4 21"])
     expect(chat.updates).toEqual([{chatId: 4, itemId: status, text: "◓ thinking · 0:03 · /abort", live: true}])
+  })
+
+  it("ends the turn of every Claude Code session at an /abort: ◼ aborted is kept whether an aborted session sends Stop or not, and the status of a later session's turn shows its work and is deleted at its Stop", async () => {
+    jest.useFakeTimers()
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Alice")), items: [item(20, "summarize README.md")]})
+    const activity: Activity = new Activity("agent", () => tools.statuses.turnsEnded())
+    const tools = new AgentTools({chat: chat.api(), user, actions: actionsWith("requests", fakeHooks()), watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => "Alice", refusedFile: () => undefined, data, activity, abort: () => undefined}, "requests")
+    createdTools.push(tools)
+    const hook = (session: string, name: string, fields: object = {}): void => activity.record({session_id: session, hook_event_name: name, ...fields})
+    for (const session of ["s1", "s2"]) hook(session, "PreToolUse", {tool_name: "mcp__simplex-agent__receive", tool_use_id: session})
+    await tools.call("receive", {chat: "@4"}, signal().call)
+    hook("s1", "PreToolUse", {tool_name: "Bash", tool_use_id: "t1"})
+    hook("s2", "PermissionRequest", {tool_name: "Bash"})
+    await jest.advanceTimersByTimeAsync(0)
+    expect(tools.onNewItems([chat.addItem("@4", item(21, "/abort"))])).toEqual([])
+    hook("s1", "Stop")
+    hook("s3", "PreToolUse", {tool_name: "mcp__simplex-agent__receive", tool_use_id: "s3"})
+    tools.onNewItems([chat.addItem("@4", item(22, "run the tests"))])
+    await jest.advanceTimersByTimeAsync(0)
+    await tools.call("receive", {chat: "@4"}, signal().call)
+    await jest.advanceTimersByTimeAsync(3_500)
+    hook("s3", "Stop")
+    await jest.advanceTimersByTimeAsync(0)
+    expect(texts(chat)).toEqual(["◐ thinking · 0:00 · /abort", "◐ received, waiting for the agent · 0:00 · /abort", "◼ aborted", "◓ thinking · 0:00 · /abort", "◑ thinking · 0:03 · /abort"])
+    expect(chat.deletedItems).toEqual([broadcastDeletion(T.ChatType.Direct, 4, 501)])
   })
 })
 

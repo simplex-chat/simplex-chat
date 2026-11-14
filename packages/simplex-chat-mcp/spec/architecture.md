@@ -58,6 +58,7 @@ flowchart LR
   http --> activity
   status --> activity
   activity -->|"turnsEnded"| status
+  tools -->|"endTurns at an /abort"| activity
   tools --> actions
   actions <--> control
   tools --> messages
@@ -469,6 +470,7 @@ Claude Code activity from the events of the status hooks, created in `startAgent
 | <a id="activity-activity"></a>`Activity` | agent sessions; running tools by `tool_use_id`; subagents by `agent_id`; ended tool IDs; sessions with the permission flag; sessions with the compaction flag; sessions whose turn has ended; the function called when no agent session runs a turn |
 | <a id="activity-activity-record"></a>`record` | one event: its fields read by type and pattern, the agent session joined, the effect of its `hook_event_name` |
 | <a id="activity-activity-state"></a>`state` | both flags over all agent sessions; the last entries of the running tools and of the subagents |
+| <a id="activity-activity-endturns"></a>`endTurns` | `endTurn` of every agent session, called by `AgentTools.decideAbort` at an `/abort` after `Statuses.abort` |
 | <a id="activity-activity-join"></a>`join`, `clear`, `endTurn` | an agent session added, the earliest one removed with its state beyond 16; the running tools, subagents, flags and turn end of one session removed; a session cleared and its turn ended, and `turnsEnded` called when every agent session has ended its turn |
 | <a id="activity-filename"></a>`fileName`, `keepNewest`, `deleteWhere` | the base name of `file_path` or `notebook_path`, by its pattern; the earliest entry removed beyond a limit; entries removed by a predicate |
 
@@ -500,8 +502,8 @@ Claude Code activity from the events of the status hooks, created in `startAgent
 | Deletions in progress | [`Statuses.endings`](../src/status.ts) | `end` | `stop` |
 | Failed-poll flag | [`Statuses.inferenceFailed`](../src/status.ts) | `inferred` | `inferred` |
 | Last poll and previous slots | `latest` and `previous` of [`inferencePoller`](../src/inference.ts) | each poll | calls within 3 s; the rate of the next poll |
-| Agent sessions | [`Activity.sessions`](../src/activity.ts), at most 16 | `record` | `record` |
-| Claude Code activity | [`Activity.tools`, `subagents`, `ended`, `asking`, `compacting`, `idle`](../src/activity.ts) | `record` | `record`; `state`, read by labels |
+| Agent sessions | [`Activity.sessions`](../src/activity.ts), at most 16 | `record` | `record`, `endTurns` |
+| Claude Code activity | [`Activity.tools`, `subagents`, `ended`, `asking`, `compacting`, `idle`](../src/activity.ts) | `record`, `endTurns` | `record`; `state`, read by labels |
 | Members of the control chat | [`Control.members`](../src/control.ts) | [`refreshMembers`](../src/control.ts) | approver checks |
 | Mode, expiry, owners list, stop wait, inference URL, abort file | `ServeOptions` of the run. The mode is kept in `Actions.mode` and in each action as well, [`ActionRecord.mode`](../src/actions.ts). | CLI | all modules |
 
@@ -864,7 +866,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | labels are the same for every chat: running calls, waits for approval, the inference state and the Claude Code activity of other chats are shown in each status message | [`Statuses.label`](../src/status.ts) |
 | a note is sent without an action, so without a card or an outcome in the control chat; it is text only, at most 2000 characters, and each note is printed in the terminal | [`AgentTools.send`, `showNote`](../src/tools.ts) |
 | a status message gets at most 59 renders and one deletion, or the final text `◼ aborted` | [`liveRenders`, `maxRenders`, `Statuses.start`, `show`, `tick`, `abort`](../src/status.ts) |
-| with `--abort-file`, anyone who can post in a chat whose status message has a render stops the agent's work in all chats with `/abort`: the count in FILE is incremented, and every status message of the server is ended; each abort is logged with its sender, folded to one line, and its chat ([API 1.11](api.md#111-abort)) | [`AgentTools.onNewItems`, `decideAbort`, `receive`](../src/tools.ts), [`Statuses.offersAbort`, `abort`](../src/status.ts) |
+| with `--abort-file`, anyone who can post in a chat whose status message has a render stops the agent's work in all chats with `/abort`: the count in FILE is incremented, every status message of the server is ended, and the turn of every agent session is ended; each abort is logged with its sender, folded to one line, and its chat ([API 1.11](api.md#111-abort)) | [`AgentTools.onNewItems`, `decideAbort`, `receive`](../src/tools.ts), [`Statuses.offersAbort`, `abort`](../src/status.ts), [`Activity.endTurns`](../src/activity.ts) |
 | an `/abort` is decided once, at its event or at an earlier read by `receive`; an abort is kept from the agent: it is left out of the items of the item watch and of the unread items of `receive`, and it is marked read; an `/abort` in a member chat of a group, sent by the agent, sent as a live message or edited before its decision is never recognized | [`AgentTools.onNewItems`, `onEvent`, `decideAbort`, `receive`](../src/tools.ts) |
 | FILE lies in a folder disjoint from the data folder and holds only the count, with mode 0644 | [`serveOptions`](../src/cli.ts), [`writeReadableFile`](../src/files.ts) |
 | model IDs are kept only when they match `^[\w.:/+@-]{1,64}$`, and they are shown in a code span; counts are kept only as non-negative safe integers | [`modelPattern`, `sample`, `textOf`, `countOf`](../src/inference.ts), [`statusLabel`, `modelText`, `named`](../src/status.ts) |
@@ -872,7 +874,7 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 | tool names and subagent types are kept only when they match `^[\w-]{1,64}$`, and file names only as base names that match `^[\w.+@-]{1,64}$`; each is shown in a code span, and a backtick matches neither pattern; the other Claude Code labels are fixed texts | [`namePattern`, `filePattern`, `Activity.record`, `fileName`](../src/activity.ts), [`toolLabels`, `fileVerbs`, `otherLabel`, `toolLabel`, `named`](../src/status.ts) |
 | the base names of the files that Claude Code reads and edits are shown in the status message, so in a group every member sees them | [`toolLabel`](../src/status.ts) |
 | `/hook` is guarded by the token of `/mcp`, so a local process without the token can't change the labels; a body is read only within 4 MiB by `Content-Length` | [`startHttp`, `receiveHook`](../src/http.ts) |
-| a running tool whose end event is lost is removed at the next `PostToolBatch` of its agent; every entry of a session is removed at its `UserPromptSubmit`, `Stop`, `StopFailure`, `SessionEnd` or idle notification, the end of a refused permission prompt included | [`Activity.record`, `clear`, `endTurn`](../src/activity.ts) |
+| a running tool whose end event is lost is removed at the next `PostToolBatch` of its agent; every entry of a session is removed at its `UserPromptSubmit`, `Stop`, `StopFailure`, `SessionEnd` or idle notification, the end of a refused permission prompt included, and every entry of every agent session at an `/abort` | [`Activity.record`, `endTurns`, `clear`, `endTurn`](../src/activity.ts) |
 | status messages are deleted at the end of the turns only by the end events of agent sessions, while no call runs; a waiting status is kept, so a received message stays shown as received | [`Activity.record`, `endTurn`](../src/activity.ts), [`Statuses.turnsEnded`](../src/status.ts) |
 | poll error texts are folded to one line; the parser's text is replaced by `invalid JSON` | [`get`, `bodyJson`](../src/inference.ts) |
 | URL is `http` or `https` without user name and password; the key is read from the environment, accepted with visible ASCII characters only, and sent to URL only | [`inferenceUrl`](../src/cli.ts), [`inferenceKey`](../src/serve.ts), [`get`](../src/inference.ts) |

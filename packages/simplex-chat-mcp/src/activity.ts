@@ -99,6 +99,11 @@ export class Activity {
     return {asking: this.asking.size > 0, compacting: this.compacting.size > 0, tool: [...this.tools.values()].at(-1), subagent: [...this.subagents.values()].at(-1)}
   }
 
+  // spec: spec/architecture.md#activity-activity-endturns
+  endTurns(): void {
+    for (const session of this.sessions) this.endTurn(session)
+  }
+
   // spec: spec/architecture.md#activity-activity-join
   private join(session: string): void {
     this.sessions.add(session)

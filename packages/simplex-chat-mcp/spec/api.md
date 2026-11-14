@@ -537,7 +537,8 @@ Steps, in order:
 | `Abort by SENDER in KIND NAME (CHAT).` on stdout ([3.4](#34-terminal-lines)) | [`AgentTools.decideAbort`](../src/tools.ts) |
 | the count plus 1 is written to FILE ([3.1](#31-serve)), and the count is then incremented | [`AgentTools.decideAbort`](../src/tools.ts), [`abortCounter`](../src/files.ts) |
 | every status is ended: one with 1 or more renders with the text `◼ aborted`, one with 0 renders with `""` | [`AgentTools.decideAbort`](../src/tools.ts), [`Statuses.abort`](../src/status.ts) |
-| a failure of the two steps above: `abort in CHAT: ERROR` on stderr; the statuses are kept | [`AgentTools.decideAbort`](../src/tools.ts) |
+| the turn of every agent session of the status hooks is ended, as at its `Stop` ([5.2](#52-events)) | [`AgentTools.decideAbort`](../src/tools.ts), [`Activity.endTurns`](../src/activity.ts) |
+| a failure of the three steps above: `abort in CHAT: ERROR` on stderr; the statuses and the turns are kept | [`AgentTools.decideAbort`](../src/tools.ts) |
 
 - `onNewItems` returns the items not recorded as aborts in `abortItems`, and only these are delivered to the item watch: no `/abort` is collected as a response of a `send`, and a `receive` that waits is not woken by it ([`AgentTools.onNewItems`, `onEvent`](../src/tools.ts)).
 - `receive` decides the unread items it reads, then leaves out the aborts, also an item read before it was marked read or before its event was handled ([`AgentTools.receive`](../src/tools.ts)).
@@ -1419,6 +1420,7 @@ Effects on the agent session, by `hook_event_name` ([`Activity.record`](../src/a
 | `Notification` | with `notification_type` `idle_prompt`, Claude Code's idle notification: as `Stop`; with another type: none |
 
 - A session runs a turn from its first event with a tool of this server, and from its `UserPromptSubmit`, until its `Stop`, `StopFailure`, `SessionEnd` or idle notification. Other events leave the turn unchanged, so an end event of a tool received after `Stop` leaves the turn ended ([`Activity.record`, `clear`, `endTurn`](../src/activity.ts)).
+- An `/abort` of [1.11](#111-abort) ends the turn of every agent session, as its `Stop` does, after the statuses are ended; a session that the script then stops without a `Stop` keeps neither a turn nor a label ([`AgentTools.decideAbort`](../src/tools.ts), [`Activity.endTurns`](../src/activity.ts)).
 - Running tools and subagents are kept up to 64 each, and ended IDs up to 256; beyond a limit, the earliest entry is removed ([`maxEntries`, `maxEnded`, `keepNewest`](../src/activity.ts)).
 - Claude Code 2.1.281 sends no `PostToolUse`, `PostToolUseFailure`, `PermissionDenied`, `PostToolBatch` or `Stop` after a refusal in its permission prompt. In the code of that version, Claude Code sends its idle notification a fixed time after the end of every turn, 60 s by default, an aborted turn included, when its terminal received no input since then and no dialog is open. So the permission flag of such a turn is cleared then, or at the session's next `UserPromptSubmit` or its `SessionEnd`.
 - Claude Code runs each hook in a separate process, so the posts of one session may be received out of order; for an end event received before its `PreToolUse`, the ID is kept as ended, and the late `PreToolUse` is skipped ([`Activity.record`](../src/activity.ts)).
