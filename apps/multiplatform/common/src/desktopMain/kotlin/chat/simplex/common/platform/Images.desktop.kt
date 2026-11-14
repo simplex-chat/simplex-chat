@@ -51,7 +51,7 @@ internal fun receivedImageReader(stream: ImageInputStream): ImageReader =
 
 internal fun receivedImageReadParam(reader: ImageReader, sampleSize: Int, progressivePasses: Int): ImageReadParam =
   reader.defaultReadParam.apply {
-    setSourceProgressivePasses(0, progressivePasses)
+    if (reader.formatName.lowercase() == "jpeg") setSourceProgressivePasses(0, progressivePasses)
     if (sampleSize > 1) setSourceSubsampling(sampleSize, sampleSize, 0, 0)
   }
 
