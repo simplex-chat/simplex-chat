@@ -78,6 +78,7 @@ importArchive cfg@ArchiveConfig {archivePath} =
     backup `withDBs` fs
     copyFile (dir </> archiveChatDbFile) $ dbFilePath chatStore
     copyFile (dir </> archiveAgentDbFile) $ dbFilePath agentStore
+    removeBackup `withDBs` fs
     errs <- copyFiles (dir </> archiveFilesFolder) filesPath
     errs' <- copyFiles (dir </> archiveAssetsFolder </> wallpapersFolder) ((</> wallpapersFolder) <$> assetsPath)
     pure $ errs <> errs'
@@ -132,8 +133,12 @@ deleteStorage = do
   where
     remove f = whenM (doesFileExist f) $ removeFile f
     removeExported f = remove $ f <> ".exported"
-    removeBackup f = remove $ f <> ".bak"
     removeDir d = whenM (doesDirectoryExist d) $ removePathForcibly d
+
+removeBackup :: MonadIO m => FilePath -> m ()
+removeBackup f = whenM (doesFileExist f') $ removeFile f'
+  where
+    f' = f <> ".bak"
 
 data StorageFiles = StorageFiles
   { chatStore :: DBStore,
@@ -163,6 +168,7 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
     liftIO $ closeDBStore `withStores` fs
     (moveExported `withStores` fs)
       `catchAllErrors` \e -> (restore `withDBs` fs) >> throwError e
+    removeBackup `withDBs` fs
   where
     backup f = copyFile f (f <> ".bak")
     restore f = copyFile (f <> ".bak") f
