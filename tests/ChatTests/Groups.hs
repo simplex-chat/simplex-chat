@@ -39,7 +39,7 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel, XMsgReact), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MREmojiChar (..), MsgContainer (..), MsgMention (..), MsgContent (..), MsgReaction (MREmoji), MsgScope (..), ReportReason (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), MsgScope (..), ReportReason (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -251,8 +251,6 @@ chatGroupTests = do
     it "block left/removed members" testBlockForAllLeftRemoved
     it "mentions of blocked member are ignored" testBlockForAllMentionsIgnored
     it "replies of blocked member are not mentions" testBlockedMemberReplyNotMention
-    it "reactions of blocked member are ignored" testBlockedMemberReactionsIgnored
-    it "reactions of blocked member to messages not yet received are ignored" testBlockedMemberEarlyReactionsIgnored
     it "profile updates of blocked member are marked blocked" testBlockedMemberProfileUpdate
     it "message updates of blocked member are marked blocked" testBlockedMemberUpdatesMarkedBlocked
     it "mentions in message updates of blocked member are ignored" testBlockedMemberUpdateMentionsIgnored
@@ -7943,108 +7941,6 @@ testBlockedMemberReplyNotMention =
       cath <# "#team alice> > bob hi"
       cath <## "      hey again!"
 
-testBlockedMemberReactionsIgnored :: HasCallStack => TestParams -> IO ()
-testBlockedMemberReactionsIgnored =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-
-      threadDelay 1000000
-
-      alice #> "#team hi"
-      bob <# "#team alice> hi"
-      cath <# "#team alice> hi"
-
-      bob ##> "+1 #team hi"
-      bob <## "added 👍"
-      alice <# "#team bob> > alice hi"
-      alice <## "    + 👍"
-      cath <# "#team bob> > alice hi"
-      cath <## "    + 👍"
-
-      cath ##> "/_member settings #1 3 {\"showMessages\": false}"
-      cath <## "ok"
-
-      bob ##> "+^ #team hi"
-      bob <## "added 🚀"
-      alice <# "#team bob> > alice hi"
-      alice <## "    + 🚀"
-      (cath </)
-      alice ##> "/tail #team 1"
-      alice <# "#team hi"
-      alice <## "      👍 1 🚀 1"
-      cath ##> "/tail #team 1"
-      cath <# "#team alice> hi"
-      cath <## "      👍 1"
-
-      cath ##> "/_member settings #1 3 {\"showMessages\": true}"
-      cath <## "ok"
-
-      alice ##> "/block for all #team bob"
-      alice <## "#team: you blocked bob (signed)"
-      cath <## "#team: alice blocked bob (signed)"
-      bob <// 50000
-
-      bob ##> "+- #team hi"
-      bob <## "added 👎"
-      (alice </)
-      (cath </)
-
-      bob ##> "-1 #team hi"
-      bob <## "removed 👍"
-      alice <# "#team bob> > alice hi <muted>"
-      alice <## "    - 👍 <muted>"
-      cath <# "#team bob> > alice hi <muted>"
-      cath <## "    - 👍 <muted>"
-      alice ##> "/tail #team 2"
-      alice <# "#team hi"
-      alice <## "      🚀 1"
-      alice <# "#team blocked bob (signed)"
-      cath ##> "/tail #team 2"
-      cath <# "#team alice> hi"
-      cath <# "#team alice> blocked bob (signed)"
-
-testBlockedMemberEarlyReactionsIgnored :: HasCallStack => TestParams -> IO ()
-testBlockedMemberEarlyReactionsIgnored =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-
-      threadDelay 1000000
-
-      aliceMemId <- memberIdByName bob "alice"
-      bobMemId <- memberIdByName bob "bob"
-      bobConnId <- relayConnIdToMember bob "cath"
-      aliceConnId <- relayConnIdToMember alice "cath"
-      let sendReaction smId msgScope =
-            agentSendBody bob bobConnId . chatMsgToBody $
-              ChatMessage chatInitialVRange Nothing (XMsgReact (SharedMsgId smId) (Just aliceMemId) msgScope (MREmoji $ MREmojiChar '👍') True)
-          sendMessage smId msgText =
-            agentSendBody alice aliceConnId . chatMsgToBody $
-              ChatMessage chatInitialVRange (Just $ SharedMsgId smId) (XMsgNew $ mcSimple $ MCText msgText)
-
-      sendReaction "msg_1" Nothing
-      sendReaction "msg_2" (Just $ MSMember bobMemId)
-      bob #> "#team 1"
-      [alice, cath] *<# "#team bob> 1"
-      (,) <$> reactionsCount cath "msg_1" <*> reactionsCount cath "msg_2" `shouldReturn` (1, 1)
-      sendMessage "msg_1" "hi"
-      cath <# "#team alice> hi"
-      cath <## "      👍 1"
-
-      cath ##> "/_member settings #1 3 {\"showMessages\": false}"
-      cath <## "ok"
-
-      sendReaction "msg_3" Nothing
-      sendReaction "msg_4" (Just $ MSMember bobMemId)
-      bob #> "#team 2"
-      alice <# "#team bob> 2"
-      cath <# "#team bob> 2 [blocked] <muted>"
-      (,) <$> reactionsCount cath "msg_3" <*> reactionsCount cath "msg_4" `shouldReturn` (0, 0)
-      sendMessage "msg_3" "hey"
-      cath <# "#team alice> hey"
-      (cath </)
-
 testBlockedMemberProfileUpdate :: HasCallStack => TestParams -> IO ()
 testBlockedMemberProfileUpdate =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -14160,12 +14056,6 @@ lastJobNotification cc = do
   [Only (BI ntf)] <- withCCTransaction cc $ \db ->
     DB.query_ db "SELECT notification FROM delivery_jobs ORDER BY delivery_job_id DESC LIMIT 1"
   pure ntf
-
-reactionsCount :: TestCC -> ByteString -> IO Int
-reactionsCount cc smId = do
-  [Only n] <- withCCTransaction cc $ \db ->
-    DB.query db "SELECT count(1) FROM chat_item_reactions WHERE shared_msg_id = ?" (Only $ SharedMsgId smId)
-  pure n
 
 itemMentionsCount :: TestCC -> IO Int
 itemMentionsCount cc = do

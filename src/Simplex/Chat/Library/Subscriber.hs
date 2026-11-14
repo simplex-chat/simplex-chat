@@ -2165,17 +2165,16 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 Just (MSMember scopeMemberId)
                   | memberRole' m >= GRModerator || scopeMemberId == memberId' m -> do
                       djScope <- withStore $ \db -> do
-                        liftIO $ unless blockedReaction $ setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
+                        liftIO $ setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
                         Just . DJSMemberSupport <$> getScopeMemberIdViaMemberId db user g m scopeMemberId
                       pure $ fmap (\js -> DeliveryTaskContext js False) djScope
                   | otherwise -> pure Nothing
                 Nothing -> do
-                  withStore' $ \db -> unless blockedReaction $ setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
+                  withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
                   pure $ Just $ DeliveryTaskContext (DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}) False
             else pure Nothing
       | otherwise = pure Nothing
       where
-        blockedReaction = add && memberBlocked m
         updateChatItemReaction = do
           (CChatItem md ci, scopeInfo) <- withStore $ \db -> do
             cci <- case itemMemberId of
@@ -2186,11 +2185,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           if ciReactionAllowed ci
             then do
               reactions <- withStore' $ \db -> do
-                unless blockedReaction $ setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
+                setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
                 getGroupCIReactions db g itemMemberId sharedMsgId
               let ci' = CChatItem md ci {reactions}
                   r = ACIReaction SCTGroup SMDRcv (GroupChat g scopeInfo) $ CIReaction (CIGroupRcv m) ci' brokerTs reaction
-              unless blockedReaction $ toView $ CEvtChatItemReaction user add r
+              toView $ CEvtChatItemReaction user add r
               pure $ Just $ infoToDeliveryContext g scopeInfo False
             else pure Nothing
 
