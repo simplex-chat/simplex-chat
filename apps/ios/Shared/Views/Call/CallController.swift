@@ -70,6 +70,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             logger.debug("CallController chat started \(chatIsReady) \(ChatModel.shared.chatInitialized) \(ChatModel.shared.chatRunning == true) \(String(describing: AppChatState.shared.value))")
             if !chatIsReady {
                 action.fail()
+                suspendOnEndCall()
                 return
             }
             if !ChatModel.shared.callInvitations.values.contains(where: { inv in inv.callUUID == action.callUUID.uuidString.lowercased() }) {
@@ -87,6 +88,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                 } else {
                     logger.debug("CallController.provider will fail the call")
                     action.fail()
+                    suspendOnEndCall()
                 }
             }
         }
