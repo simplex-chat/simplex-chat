@@ -1,23 +1,44 @@
 package chat.simplex.app
 
 import androidx.compose.ui.graphics.toAwtImage
+import chat.simplex.common.model.CIFile
+import chat.simplex.common.platform.appFilesDir
 import chat.simplex.common.platform.base64ToBitmap
+import chat.simplex.common.ui.theme.ThemeWallpaper
 import chat.simplex.common.views.helpers.decodeBoundedBufferedImage
+import chat.simplex.common.views.helpers.getLoadedImage
 import chat.simplex.common.views.helpers.imageSampleSize
 import chat.simplex.common.views.helpers.sourceDimensionsWithinLimits
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.IOException
 import java.util.Base64
+import java.util.UUID
 import javax.imageio.ImageIO
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ImageDecodeBoundsTest {
+  private val receivedFiles = mutableListOf<File>()
+
+  @AfterTest
+  fun deleteReceivedFiles() {
+    receivedFiles.forEach { it.delete() }
+  }
+
   @Test
   fun testSampleSizeKeepsSmallerSideAtTarget() {
     // At or below the target on both sides -> no subsampling
@@ -89,6 +110,40 @@ class ImageDecodeBoundsTest {
   }
 
   @Test
+  fun testReceivedImageIsLoadedAtChatSize() = runBlocking {
+    assertEquals(1200, getLoadedImage(receivedFile(encodePng(2400, 2400)))?.first?.width)
+  }
+
+  @Test
+  fun testReceivedImageOverSourcePixelLimitIsNotLoaded() = runBlocking {
+    assertNull(getLoadedImage(receivedFile(progressiveJpegHeaders(8193, 8192))))
+  }
+
+  @Test
+  fun testReceivedImagesLoadedTogetherAreAllLoaded() = runBlocking {
+    val files = (1..4).map { receivedFile(encodePng(1000 + it, 1000)) }
+    assertEquals(listOf(1001, 1002, 1003, 1004), files.map { async(Dispatchers.IO) { getLoadedImage(it)?.first?.width } }.awaitAll())
+  }
+
+  @Test
+  fun testReceivedImageIsNotDecodedForCancelledLoad() = runBlocking {
+    val file = receivedFile(encodePng(100, 100))
+    var loaded = false
+    launch {
+      cancel()
+      getLoadedImage(file)
+      loaded = true
+    }.join()
+    assertFalse(loaded)
+    assertEquals(100, getLoadedImage(file)?.first?.width)
+  }
+
+  @Test
+  fun testWallpaperThatCannotBeDecodedIsNotImported() {
+    assertEquals(ThemeWallpaper(), ThemeWallpaper(image = "data:image/png;base64,AAAA").importFromString())
+  }
+
+  @Test
   fun testDecodeAcceptsElongatedImageWithinSourceLimit() {
     // Long, thin image at the source-dimension boundary: the raster is small, so it is decoded at full size
     // (like Android) rather than over-subsampled to fit the larger side under the target
@@ -119,6 +174,13 @@ class ImageDecodeBoundsTest {
       it[34] = -1; it[35] = -1; it[36] = -1; it[37] = 0x7f
     }
     assertFailsWith<IOException> { decodeBoundedBufferedImage(bmp, 4320) }
+  }
+
+  private fun receivedFile(data: ByteArray): CIFile {
+    val name = "received-image-test-${UUID.randomUUID()}"
+    appFilesDir.mkdirs()
+    receivedFiles += File(appFilesDir, name).also { it.writeBytes(data) }
+    return CIFile.getSample(fileName = name, fileSize = data.size.toLong(), filePath = name)
   }
 
   private fun progressiveJpegHeaders(width: Int, height: Int): ByteArray =
