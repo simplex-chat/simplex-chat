@@ -5,12 +5,14 @@ import email.message
 import hashlib
 import io
 import json
+import os
 import re
 import subprocess
 import tomllib
 import urllib.error
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 from unittest import mock
@@ -486,7 +488,7 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("scripts/ci/prune-old-builds.sh"), {"haskell"})
 
     def test_app_test_scripts_build_nothing(self):
-        self.assertEqual(self.builds("scripts/ci/ios-sim/smoke-test.sh", "scripts/ci/desktop-linux/smoke-test.sh", "scripts/ci/android/ui", "scripts/ci/snapshots-compare.py", "scripts/ci/README.md"), set())
+        self.assertEqual(self.builds("scripts/ci/ios-sim/smoke-test.sh", "scripts/ci/desktop-linux/smoke-test.sh", "scripts/ci/android/ui", "scripts/ci/snapshots-compare.py", "scripts/ci/README.md", "scripts/ci/app-tests/feature-tests.sh", "scripts/ci/desktop-linux/tests/private-notes.sh"), set())
 
     def test_build_image_change_builds_the_core_and_kotlin(self):
         self.assertEqual(self.builds("Dockerfile.build"), {"haskell", "kotlin"})
@@ -513,6 +515,496 @@ class ChangesTest(GitRepoTest):
     def test_release_script_change_tests_the_ci_scripts(self):
         self.assertEqual(self.builds("scripts/ci/packages_release.py"), set())
         self.assertEqual(self.values["scopes"], "ci-scripts")
+
+    def test_feature_test_selection_change_tests_the_ci_scripts(self):
+        self.assertEqual(self.builds("scripts/ci/app-tests/select-tests.sh"), set())
+        self.assertEqual(self.values["scopes"], "ci-scripts")
+
+    def test_android_driver_change_tests_the_ci_scripts(self):
+        for file in ["scripts/ci/android/ui", "scripts/ci/android/screen-tree.py"]:
+            self.assertEqual(self.builds(file), set())
+            self.assertEqual(self.values["scopes"], "ci-scripts")
+            self.base = self.head()
+
+
+class SelectTestsTest(GitRepoTest):
+    SHARED_FILES = [
+        "scripts/ci/app-tests/checks.sh",
+        "scripts/ci/desktop-linux/lib.sh",
+        "scripts/ci/desktop-linux/ui",
+        "scripts/ci/desktop-linux/screen-text.py",
+        "scripts/ci/desktop-linux/backend.sh",
+    ]
+
+    def setUp(self):
+        super().setUp()
+        for file in [
+            *self.SHARED_FILES,
+            "scripts/ci/android/lib.sh",
+            "apps/mp/views/chat/Compose.kt",
+            "apps/mp/Other.kt",
+            "apps/ios/View.swift",
+        ]:
+            self.write(file, "x")
+        self.write("scripts/ci/desktop-linux/tests/alpha.sh", "# covers: apps/mp/views/chat/*\n")
+        self.write(
+            "scripts/ci/desktop-linux/tests/beta.sh",
+            "# covers: apps/mp/views/chatlist/* apps/ios/*.swift\n# covers: apps/ios/SimpleX?NSE/*\n",
+        )
+        self.write("scripts/ci/android/tests/alpha.sh", "# covers: apps/mp/views/chat/*\n")
+        self.commit("base")
+        self.base = self.head()
+
+    def change_from_base(self, *files):
+        self.git("switch", "-q", "--detach", self.base)
+        for file in files:
+            self.write(file, "changed")
+        self.commit("change")
+
+    def select(self, tests_input=""):
+        script = packages_release.ROOT / "scripts/ci/app-tests/select-tests.sh"
+        base = "" if tests_input else self.base
+        return subprocess.run(
+            [script, "scripts/ci/desktop-linux", base, tests_input], cwd=self.repo, capture_output=True, text=True
+        )
+
+    def selected(self, tests_input=""):
+        result = self.select(tests_input)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout.split()
+
+    def test_input_selects_names_all_or_none(self):
+        self.assertEqual(self.selected(), [])
+        self.assertEqual(self.selected("none"), [])
+        self.assertEqual(self.selected("all"), ["alpha", "beta"])
+        self.assertEqual(self.selected("beta"), ["beta"])
+        self.assertEqual(self.selected("alpha beta"), ["alpha", "beta"])
+        self.assertEqual(self.selected("beta alpha beta"), ["alpha", "beta"])
+
+    def test_other_words_in_the_input_fail(self):
+        self.assertEqual(self.select("../alpha").returncode, 2)
+        self.assertEqual(self.select("../tests/alpha").returncode, 2)
+        self.assertEqual(self.select("-x").returncode, 2)
+        self.assertEqual(self.select("Alpha").returncode, 2)
+        self.assertEqual(self.select("all beta").returncode, 2)
+        self.assertEqual(self.select("none beta").returncode, 2)
+
+    def test_name_no_platform_has_fails(self):
+        self.assertEqual(self.select("gamma").returncode, 2)
+        self.assertEqual(self.select("alpha gamma").returncode, 2)
+
+    def test_name_only_another_platform_has_selects_nothing(self):
+        self.write("scripts/ci/android/tests/delta.sh", "")
+        self.assertEqual(self.selected("delta"), [])
+
+    def test_none_overrides_changes(self):
+        self.change_from_base("apps/mp/views/chat/Compose.kt")
+        self.assertEqual(self.selected("none"), [])
+
+    def test_added_or_changed_test_is_selected(self):
+        self.change_from_base("scripts/ci/desktop-linux/tests/gamma.sh")
+        self.assertEqual(self.selected(), ["gamma"])
+        self.change_from_base("scripts/ci/desktop-linux/tests/beta.sh")
+        self.assertEqual(self.selected(), ["beta"])
+
+    def test_deleted_or_moved_file_selects_the_tests_covering_it(self):
+        self.git("rm", "-q", "apps/mp/views/chat/Compose.kt")
+        self.commit("delete covered file")
+        self.assertEqual(self.selected(), ["alpha"])
+        self.git("switch", "-q", "--detach", self.base)
+        self.git("mv", "apps/mp/views/chat/Compose.kt", "apps/mp/Moved.kt")
+        self.commit("move covered file")
+        self.assertEqual(self.selected(), ["alpha"])
+
+    def test_deleted_shared_file_selects_every_remaining_test(self):
+        self.git("rm", "-q", "scripts/ci/desktop-linux/lib.sh", "scripts/ci/desktop-linux/tests/beta.sh")
+        self.commit("delete shared file and test")
+        self.assertEqual(self.selected(), ["alpha"])
+
+    def test_change_selects_the_tests_covering_it(self):
+        self.change_from_base("apps/mp/views/chat/Compose.kt")
+        self.assertEqual(self.selected(), ["alpha"])
+        self.change_from_base("apps/mp/Other.kt")
+        self.assertEqual(self.selected(), [])
+
+    def test_covers_line_lists_patterns_separated_by_spaces(self):
+        self.change_from_base("apps/ios/View.swift")
+        self.assertEqual(self.selected(), ["beta"])
+
+    def test_star_matches_a_slash_and_question_mark_a_space(self):
+        self.change_from_base("apps/mp/views/chat/item/Item.kt")
+        self.assertEqual(self.selected(), ["alpha"])
+        self.change_from_base("apps/ios/SimpleX NSE/Info.plist")
+        self.assertEqual(self.selected(), ["beta"])
+
+    def test_change_to_a_shared_file_selects_every_test(self):
+        for file in self.SHARED_FILES:
+            self.change_from_base(file)
+            self.assertEqual(self.selected(), ["alpha", "beta"], file)
+
+    def test_docs_claude_files_and_other_platforms_select_nothing(self):
+        self.change_from_base(
+            "scripts/ci/desktop-linux/README.md",
+            "scripts/ci/desktop-linux/claude-test.md",
+            "scripts/ci/desktop-linux/claude-scope",
+            "scripts/ci/android/lib.sh",
+            "scripts/ci/android/tests/alpha.sh",
+        )
+        self.assertEqual(self.selected(), [])
+
+    def test_test_file_whose_name_cannot_be_selected_fails(self):
+        self.change_from_base("scripts/ci/desktop-linux/tests/Bad_Name.sh")
+        self.assertEqual(self.select().returncode, 2)
+
+    def test_platform_without_tests_selects_nothing(self):
+        self.git("rm", "-q", "-r", "scripts/ci/desktop-linux/tests")
+        self.commit("delete the tests")
+        self.assertEqual(self.selected(), [])
+        self.assertEqual(self.selected("all"), [])
+
+    def test_only_changes_between_the_base_and_head_count(self):
+        self.change_from_base("apps/mp/views/chat/Compose.kt")
+        self.write("apps/mp/Other.kt", "changed")
+        self.commit("second change")
+        branch = self.head()
+        self.change_from_base("apps/ios/View.swift")
+        self.git("switch", "-q", "--detach", branch)
+        self.assertEqual(self.selected(), ["alpha"])
+
+
+class FeatureTestsTest(unittest.TestCase):
+    TESTS = {
+        "passes": 'check "one" true\ncheck "two" true\n',
+        "fails-a-check": 'check "good" true\ncheck "bad" false\ncheck "after" true\n',
+        "stops": 'check "before" true\nfail "cannot go on"\ncheck "never" true\n',
+        "needs-backend": '# needs: backend\ncheck "backend at $BACKEND_DIR" true\n',
+        "no-checks": "",
+    }
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        work = Path(directory.name)
+        self.platform = work / "platform"
+        self.out = work / "out"
+        self.summary = work / "summary"
+        self.ui_log = work / "ui.log"
+        self.backend = work / "backend"
+        (self.platform / "tests").mkdir(parents=True)
+        ui = self.platform / "ui"
+        ui.write_text(
+            '#!/bin/bash\necho "$* $UI_OUT" >> "$UI_LOG"\n'
+            '[ "$1" != layout ] || [ -z "$UI_LAYOUT_FAILS" ] || exit 1\n'
+            '[ "$1" != shot ] || [ -z "$UI_SHOT_FAILS" ]\n'
+        )
+        ui.chmod(0o755)
+        checks = packages_release.ROOT / "scripts/ci/app-tests/checks.sh"
+        (self.platform / "lib.sh").write_text(f'ui="{ui}"\n. "{checks}"\n')
+        for name, steps in self.TESTS.items():
+            (self.platform / "tests" / f"{name}.sh").write_text(
+                f'#!/bin/bash\nset -euo pipefail\n. "$(dirname "$0")/../lib.sh"\n{steps}'
+            )
+
+    def run_tests(self, *names, backend_dir="", layout_fails=False, shot_fails=False):
+        script = packages_release.ROOT / "scripts/ci/app-tests/feature-tests.sh"
+        env = {
+            "GITHUB_STEP_SUMMARY": str(self.summary),
+            "UI_LOG": str(self.ui_log),
+            "BACKEND_DIR": backend_dir,
+            "UI_LAYOUT_FAILS": "1" if layout_fails else "",
+            "UI_SHOT_FAILS": "1" if shot_fails else "",
+        }
+        with mock.patch.dict("os.environ", env):
+            return subprocess.run([script, self.platform, self.out, *names], capture_output=True, text=True)
+
+    def run_every_kind(self):
+        return self.run_tests("passes", "fails-a-check", "stops", "needs-backend")
+
+    def checks(self, name):
+        return (self.out / name / "checks.txt").read_text().splitlines()
+
+    def test_failed_test_fails_the_run(self):
+        self.assertEqual(self.run_every_kind().returncode, 1)
+
+    def test_test_continues_after_a_failed_check(self):
+        self.run_tests("fails-a-check")
+        self.assertEqual(self.checks("fails-a-check"), ["PASS good", "FAIL bad", "PASS after"])
+
+    def test_fail_ends_the_test_and_records_the_reason(self):
+        self.run_tests("stops")
+        self.assertEqual(
+            self.checks("stops"),
+            ["PASS before", "NOTE stopped: cannot go on", "NOTE the test exited with status 1"],
+        )
+
+    def test_test_needing_the_backend_is_skipped_without_it(self):
+        self.assertEqual(self.run_tests("needs-backend").returncode, 0)
+        self.assertEqual(
+            self.checks("needs-backend"), ["NOTE skipped: requires the test backend, absent from this run"]
+        )
+
+    def test_test_needing_the_backend_runs_with_it(self):
+        self.assertEqual(self.run_tests("passes", "needs-backend", backend_dir=str(self.backend)).returncode, 0)
+        self.assertEqual(self.checks("needs-backend"), [f"PASS backend at {self.backend}"])
+
+    def test_summary_has_each_tests_result_and_checks(self):
+        self.run_every_kind()
+        self.assertEqual(
+            self.summary.read_text().splitlines(),
+            [
+                "### Feature test passes: passed",
+                "",
+                "- PASS one",
+                "- PASS two",
+                "### Feature test fails-a-check: failed",
+                "",
+                "- PASS good",
+                "- FAIL bad",
+                "- PASS after",
+                "### Feature test stops: failed",
+                "",
+                "- PASS before",
+                "- NOTE stopped: cannot go on",
+                "- NOTE the test exited with status 1",
+                "### Feature test needs-backend: skipped",
+                "",
+                "- NOTE skipped: requires the test backend, absent from this run",
+            ],
+        )
+
+    def test_app_restarts_before_each_test_and_a_failed_test_has_a_screenshot_in_its_folder(self):
+        self.run_every_kind()
+        self.assertEqual(
+            self.ui_log.read_text().splitlines(),
+            [
+                f"layout reachable {self.out}/passes",
+                f"layout reachable {self.out}/fails-a-check",
+                f"shot final {self.out}/fails-a-check",
+                f"layout reachable {self.out}/stops",
+                f"shot final {self.out}/stops",
+            ],
+        )
+
+    def test_name_that_is_not_a_test_is_rejected_before_any_test_runs(self):
+        for name in ["../tests/passes", "nonexistent"]:
+            self.assertEqual(self.run_tests("passes", name).returncode, 2, name)
+        self.assertFalse(self.ui_log.exists())
+
+    def test_failed_restart_fails_the_test(self):
+        self.assertEqual(self.run_tests("passes", layout_fails=True).returncode, 1)
+        self.assertEqual(self.checks("passes"), ["FAIL the app restarted at the chat list in the reachable layout"])
+        self.assertEqual(self.summary.read_text().splitlines()[0], "### Feature test passes: failed")
+
+    def test_failed_screenshot_leaves_the_remaining_tests_running(self):
+        self.assertEqual(self.run_tests("stops", "passes", shot_fails=True).returncode, 1)
+        self.assertEqual(self.checks("passes"), ["PASS one", "PASS two"])
+
+    def test_test_without_checks_passes_with_a_note_in_the_summary(self):
+        self.assertEqual(self.run_tests("no-checks").returncode, 0)
+        self.assertEqual(
+            self.summary.read_text().splitlines(),
+            ["### Feature test no-checks: passed", "", "- NOTE no checks were recorded"],
+        )
+
+
+class AndroidTypeTest(unittest.TestCase):
+    ADB = r"""#!/bin/bash
+case "$*" in
+  "shell rm -f /sdcard/ui.xml" | "shell uiautomator dump /sdcard/ui.xml") ;;
+  "exec-out cat /sdcard/ui.xml")
+    printf '<hierarchy><node class="android.widget.EditText" text="%s" bounds="[0,0][100,50]" focused="true" /></hierarchy>\n' "$(cat "$STUB_DIR/field")"
+    ;;
+  shell\ input\ text\ *)
+    word=${2#input text \'}
+    word=${word%\'}
+    word=${word//%s/ }
+    word=$(cat "$STUB_DIR/late")$word
+    : > "$STUB_DIR/late"
+    drops=$(cat "$STUB_DIR/drops")
+    if [ "$drops" -gt 0 ]; then
+      echo $((drops - 1)) > "$STUB_DIR/drops"
+      case "$LOSS" in
+        end) word=${word%?} ;;
+        late)
+          printf '%s' "${word: -1}" > "$STUB_DIR/late"
+          word=${word%?}
+          ;;
+        all) word="" ;;
+      esac
+    fi
+    printf '%s' "$word" >> "$STUB_DIR/field"
+    ;;
+  *) exit 1 ;;
+esac
+"""
+    CASES = {
+        "no_loss": {"drops": 0},
+        "two_lost_ends": {"drops": 2},
+        "three_lost_ends": {"drops": 3},
+        "late_end": {"drops": 1, "loss": "late"},
+        "lost_input": {"drops": 1, "loss": "all"},
+        "other_text": {"drops": 1, "start": "other"},
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        directory = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(directory.cleanup)
+        cls.work = Path(directory.name)
+        adb = cls.work / "sdk" / "platform-tools" / "adb"
+        adb.parent.mkdir(parents=True)
+        adb.write_text(cls.ADB)
+        adb.chmod(0o755)
+        with ThreadPoolExecutor(len(cls.CASES)) as pool:
+            cls.results = dict(zip(cls.CASES, pool.map(cls.type_text, cls.CASES)))
+
+    @classmethod
+    def type_text(cls, name):
+        case = cls.CASES[name]
+        stub = cls.work / name
+        stub.mkdir()
+        (stub / "field").write_text(case.get("start", ""))
+        (stub / "drops").write_text(str(case["drops"]))
+        (stub / "late").write_text("")
+        result = subprocess.run(
+            [packages_release.ROOT / "scripts/ci/android/ui", "type", "scripted note"],
+            env={
+                **os.environ,
+                "ANDROID_HOME": str(cls.work / "sdk"),
+                "UI_OUT": str(stub / "out"),
+                "UI_STATE": str(stub / "ui"),
+                "STUB_DIR": str(stub),
+                "LOSS": case.get("loss", "end"),
+            },
+            capture_output=True,
+            text=True,
+        )
+        return result.returncode, result.stdout, (stub / "field").read_text()
+
+    def assert_typed(self, name):
+        status, output, field = self.results[name]
+        self.assertEqual((status, field), (0, "scripted note"), output)
+
+    def assert_field_error(self, name, shown):
+        status, output, _ = self.results[name]
+        self.assertEqual(status, 1, output)
+        self.assertIn(f'error: the field shows "{shown}", not "scripted"', output)
+
+    def test_text_without_a_loss_is_typed_once(self):
+        self.assert_typed("no_loss")
+
+    def test_two_lost_ends_are_typed_again(self):
+        self.assert_typed("two_lost_ends")
+
+    def test_third_lost_end_fails(self):
+        self.assert_field_error("three_lost_ends", "scripte")
+
+    def test_late_end_arriving_with_the_retry_fails(self):
+        self.assert_field_error("late_end", "scriptedd")
+
+    def test_empty_field_fails(self):
+        self.assert_field_error("lost_input", "")
+
+    def test_field_starting_with_other_text_fails(self):
+        self.assert_field_error("other_text", "otherscripte")
+
+
+class ChecksTest(unittest.TestCase):
+    def run_checks(self, *steps):
+        script = packages_release.ROOT / "scripts/ci/app-tests/checks.sh"
+        with tempfile.TemporaryDirectory() as out:
+            with mock.patch.dict("os.environ", {"UI_OUT": out}):
+                return subprocess.run(
+                    ["bash", "-c", "\n".join([f'. "{script}"', *steps])], capture_output=True, text=True
+                )
+
+    def test_fail_on_failed_checks_exits_1_after_a_failed_check(self):
+        result = self.run_checks('check "good" true', 'check "bad" false', 'fail_on_failed_checks "the smoke test"')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("error: the smoke test failed checks: 1 of 2", result.stdout)
+
+    def test_fail_on_failed_checks_returns_0_for_passed_checks_and_notes(self):
+        result = self.run_checks('check "good" true', 'note "remark"', 'fail_on_failed_checks "the smoke test"')
+        self.assertEqual(result.returncode, 0)
+
+
+class ChooseFeatureTestsTest(GitRepoTest):
+    def setUp(self):
+        super().setUp()
+        self.write("scripts/ci/desktop-linux/lib.sh", "x")
+        self.write("scripts/ci/desktop-linux/tests/alpha.sh", "# covers: apps/mp/*\n")
+        self.write("scripts/ci/desktop-linux/tests/beta.sh", "# covers: apps/ios/*\n")
+        self.write("apps/mp/Compose.kt", "x")
+        self.commit("base")
+        self.base = self.head()
+        self.write("apps/mp/Compose.kt", "changed")
+        self.commit("change")
+        self.work = self.repo / ".git" / "choose-test"
+        self.work.mkdir()
+        origin = self.work / "origin.git"
+        self.git("clone", "-q", "--bare", ".", str(origin))
+        self.git("-C", str(origin), "config", "uploadpack.allowAnySHA1InWant", "true")
+        self.checkout = self.work / "checkout"
+        self.git("clone", "-q", "--depth=1", f"file://{origin}", str(self.checkout))
+        self.gh_log = self.work / "gh.log"
+        self.output = self.work / "output"
+        self.summary = self.work / "summary"
+        gh = self.work / "bin" / "gh"
+        gh.parent.mkdir()
+        gh.write_text(
+            "#!/bin/bash\n"
+            'echo "$*" >> "$GH_LOG"\n'
+            'case "$2" in\n'
+            '  */compare/*) echo "$BASE_COMMIT" ;;\n'
+            "  *) echo root-owner ;;\n"
+            "esac\n"
+        )
+        gh.chmod(0o755)
+
+    def choose(self, tests_input):
+        script = packages_release.ROOT / "scripts/ci/app-tests/choose-feature-tests.sh"
+        env = {
+            "PATH": f"{self.work / 'bin'}:{os.environ['PATH']}",
+            "TESTS": tests_input,
+            "GH_LOG": str(self.gh_log),
+            "BASE_COMMIT": self.base,
+            "GITHUB_REPOSITORY": "fork-owner/simplex-chat",
+            "GITHUB_SHA": self.head(),
+            "GITHUB_OUTPUT": str(self.output),
+            "GITHUB_STEP_SUMMARY": str(self.summary),
+        }
+        with mock.patch.dict("os.environ", env):
+            return subprocess.run(
+                [script, "scripts/ci/desktop-linux"], cwd=self.checkout, capture_output=True, text=True
+            )
+
+    def test_blank_input_selects_from_the_changes_since_the_root_repository_master(self):
+        result = self.choose("  ")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.output.read_text(), "tests=alpha\n")
+        self.assertEqual(self.summary.read_text(), "- Feature tests: alpha\n")
+        self.assertEqual(
+            self.gh_log.read_text().splitlines(),
+            [
+                "api repos/fork-owner/simplex-chat --jq .source.owner.login // .owner.login",
+                f"api repos/fork-owner/simplex-chat/compare/root-owner:master...{self.head()} --jq .merge_base_commit.sha",
+            ],
+        )
+
+    def test_named_input_selects_without_github_calls(self):
+        result = self.choose("beta")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.output.read_text(), "tests=beta\n")
+        self.assertFalse(self.gh_log.exists())
+
+    def test_none_gives_an_empty_output(self):
+        self.assertEqual(self.choose("none").returncode, 0)
+        self.assertEqual(self.output.read_text(), "tests=\n")
+        self.assertEqual(self.summary.read_text(), "- Feature tests: none\n")
+
+    def test_name_no_platform_has_fails_the_step(self):
+        self.assertNotEqual(self.choose("gamma").returncode, 0)
+        self.assertFalse(self.output.exists())
 
 
 class PackageStateTest(GitRepoTest):
