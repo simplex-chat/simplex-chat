@@ -809,7 +809,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     withStore' $ \db -> do
                       setRelayLinkConfId db m confId relayLink
                       updateRelayCapabilities db m relayCap
-                    void $ getAgentConnShortLinkAsync user CFGetRelayDataAccept (Just conn') relayLink
+                    getAgentConnShortLinkAsync user CFGetRelayDataAccept conn' relayLink
                 | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               XGrpRelayReject reason
                 | memberRole' membership == GROwner && isRelay m -> do
@@ -4326,7 +4326,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   throwChatError $ CEInternalError "delivery job worker: relay removed job in wrong worker scope"
               | otherwise -> do
                   sendBodyToMembers
-                  deleteGroupConnections user gInfo True
+                  withGroupLock "relayRemoved" groupId $ deleteGroupConnections user gInfo True
                   withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
             MessageDeliveryJob {jobId, jobScope, senderGMIds, body, notification, cursorGMId_ = startingCursor} = job

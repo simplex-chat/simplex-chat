@@ -82,6 +82,7 @@ module Simplex.Chat.Store.Groups
     cleanupHostGroupLinkConn,
     deleteGroup,
     getInProgressGroups,
+    isGroupInProgress,
     getBaseGroupDetails,
     getContactGroupPreferences,
     getGroupInvitation,
@@ -1074,6 +1075,10 @@ getInProgressGroups db cxt user@User {userId} createdAtCutoff = do
       "SELECT group_id FROM groups WHERE user_id = ? AND creating_in_progress = 1 AND created_at <= ?"
       (userId, createdAtCutoff)
   rights <$> mapM (runExceptT . getGroupInfo db cxt user) groupIds
+
+isGroupInProgress :: DB.Connection -> GroupInfo -> IO Bool
+isGroupInProgress db GroupInfo {groupId} =
+  fromMaybe False <$> maybeFirstRow fromOnlyBI (DB.query db "SELECT creating_in_progress FROM groups WHERE group_id = ?" (Only groupId))
 
 getBaseGroupDetails :: DB.Connection -> StoreCxt -> User -> Maybe ContactId -> Maybe Text -> IO [GroupInfo]
 getBaseGroupDetails db cxt User {userId, userContactId} _contactId_ search_ = do
