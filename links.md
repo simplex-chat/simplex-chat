@@ -1,5 +1,139 @@
 # Community Links
 
+## WhatsApp Alternative: The 3 Best Options to Switch To in 2026 [#](https://simplex.chat/links/#link=whatsapp-alternative-the-3-best-options-to-switch-to-in-2026)
+
+Mailfence Blog
+
+Nov 13, 2026 (updated) English Comparison
+
+Mailfence names SimpleX Chat the best WhatsApp alternative for metadata protection.
+
+[https://blog.mailfence.com/whatsapp-alternative/](https://blog.mailfence.com/whatsapp-alternative/)
+
+## SimpleX Chat: Messaging Without an Account, Phone Number, or Identity [#](https://simplex.chat/links/#link=simplex-chat-messaging-without-an-account-phone-number-or-identity)
+
+PrivacyGear.nl
+
+Nov 6, 2026 (reviewed) English Guide
+
+PrivacyGear recommends SimpleX Chat when messaging without a phone number is a requirement.
+
+[https://privacygear.nl/en/guides/simplex-chat-guide/](https://privacygear.nl/en/guides/simplex-chat-guide/)
+
+## SimpleX Chat [#](https://simplex.chat/links/#link=simplex-chat-english)
+
+FOSS Index
+
+Nov 2026 English Guide
+
+FOSS Index lists SimpleX Chat as a messenger with no user identifiers of any kind.
+
+[https://index.fossadmin.com/tools/simplex-chat/](https://index.fossadmin.com/tools/simplex-chat/)
+
+## SimpleX Chat Crowdfunding: A Chance to Support the Future of Private Messaging [#](https://simplex.chat/links/#link=simplex-chat-crowdfunding-a-chance-to-support-the-future-of-private-messaging)
+
+Darwin Dynamic
+
+Oct 29, 2026 English Article
+
+Darwin Dynamic presents SimpleX Chat's equity crowdfunding on Wefunder as a way to support private messaging.
+
+[https://darwindynamic.com/simplex-chat-crowdfunding-a-chance-to-support-the-future-of-private-messaging/](https://darwindynamic.com/simplex-chat-crowdfunding-a-chance-to-support-the-future-of-private-messaging/)
+
+## SimpleX Chat: Privacy Record and Alternatives [#](https://simplex.chat/links/#link=simplex-chat-privacy-record-and-alternatives)
+
+Default Privacy
+
+Oct 16, 2026 English Guide
+
+Default Privacy lists SimpleX Chat as its pick for encrypted messaging.
+
+[https://defaultprivacy.com/directory/simplex-chat](https://defaultprivacy.com/directory/simplex-chat)
+
+## Self-Host a SimpleX Chat Server on a VPS [#](https://simplex.chat/links/#link=self-host-a-simplex-chat-server-on-a-vps)
+
+SSD Nodes
+
+Oct 11, 2026 English Guide
+
+SSD Nodes explains how to self-host a SimpleX relay server on a VPS.
+
+[https://www.ssdnodes.com/learn/self-host-simplex-chat-server](https://www.ssdnodes.com/learn/self-host-simplex-chat-server)
+
+## Signal vs SimpleX: Which Private Messenger Should You Use? [#](https://simplex.chat/links/#link=signal-vs-simplex-which-private-messenger-should-you-use)
+
+Default Privacy
+
+Oct 9, 2026 English Comparison
+
+Default Privacy compares SimpleX with Signal on identifiers, metadata, encryption and audits.
+
+[https://defaultprivacy.com/guides/signal-vs-simplex](https://defaultprivacy.com/guides/signal-vs-simplex)
+
+## 7 Best Open Source Messaging Apps in 2026 [#](https://simplex.chat/links/#link=7-best-open-source-messaging-apps-in-2026)
+
+Nerd Techy
+
+Sep 29, 2026 English Comparison
+
+Nerd Techy names SimpleX Chat the best open-source messenger for maximum metadata privacy.
+
+[https://nerdtechy.com/best-open-source-messaging-app](https://nerdtechy.com/best-open-source-messaging-app)
+
+## What Is SimpleX Chat? How to Use It, Japanese Settings and How "No User ID" Works [#](https://simplex.chat/links/#link=what-is-simplex-chat-how-to-use-it-japanese-settings-and-how-no-user-id-works)
+
+SimpleX Chatとは？使い方・日本語設定と「ユーザーID不要」の仕組みを解説
+
+txtBase
+
+Sep 27, 2026 Japanese Guide
+
+txtBase explains how SimpleX Chat works without user IDs and how to set it up in Japanese.
+
+[https://txtbase.net/ja/blog/simplex-chat-guide-japanese](https://txtbase.net/ja/blog/simplex-chat-guide-japanese)
+
+## The Ultimate Instant Messenger Tier List [#](https://simplex.chat/links/#link=the-ultimate-instant-messenger-tier-list)
+
+Privacy Guides
+
+Sep 18, 2026 English Comparison
+
+Privacy Guides covers SimpleX in its own chapter of its 2026 instant messenger tier list.
+
+[https://www.youtube.com/watch?v=p3uEh0GUma4](https://www.youtube.com/watch?v=p3uEh0GUma4)
+
+## Messaging Apps Without a Phone Number: Options and Limits [#](https://simplex.chat/links/#link=messaging-apps-without-a-phone-number-options-and-limits)
+
+Apps de mensajería sin número de teléfono: opciones y límites
+
+TuAppPara
+
+Sep 8, 2026 (updated) Spanish Comparison
+
+TuAppPara names SimpleX Chat one of the clearest options for messaging without a phone number.
+
+[https://tuapppara.com/aplicaciones/android/mensajeria-instantanea-sin-numero-telefono/](https://tuapppara.com/aplicaciones/android/mensajeria-instantanea-sin-numero-telefono/)
+
+## 9 Best Signal Alternatives for Private Messaging in 2026 [#](https://simplex.chat/links/#link=9-best-signal-alternatives-for-private-messaging-in-2026)
+
+Setapp
+
+Aug 18, 2026 English Comparison
+
+Setapp names SimpleX Chat the best truly identifier-less alternative to Signal.
+
+[https://setapp.com/app-reviews/best-signal-alternatives](https://setapp.com/app-reviews/best-signal-alternatives)
+
+## SimpleX Chat Opens Its Capital to Its 400,000 Users to Fund Its Independence [#](https://simplex.chat/links/#link=simplex-chat-opens-its-capital-to-its-400000-users-to-fund-its-independence)
+
+ETTAYEB
+
+Aug 18, 2026 English Article
+
+Walid Ettayeb presents SimpleX Chat's equity crowdfunding as a way to fund the messenger without advertising.
+
+[https://ettayeb.fr/en/selfhosted/simplex-chat-community-funding-2026/](https://ettayeb.fr/en/selfhosted/simplex-chat-community-funding-2026/)
+
 ## SimpleX Chat Wants Its 400K+ Users to Become Investors Too [#](https://simplex.chat/links/#link=simplex-chat-wants-its-400k-users-to-become-investors-too)
 
 It's FOSS
@@ -18,6 +152,38 @@ SimpleX Chat calls itself “the messaging network that can’t identify you,”
 
 [https://blog.monerica.com/articles/simplex-chat-private-monero-communities](https://blog.monerica.com/articles/simplex-chat-private-monero-communities)
 
+## Secure Messengers in Russia: A Review of Protected Services in 2026 [#](https://simplex.chat/links/#link=secure-messengers-in-russia-a-review-of-protected-services-in-2026)
+
+Безопасные мессенджеры в России: обзор защищенных сервисов в 2026 году
+
+vc.ru / ТОПчик
+
+Aug 7, 2026 Russian Comparison
+
+This Russian review lists SimpleX Chat as a decentralized messenger without a shared account database.
+
+[https://vc.ru/services/3067089-obzor-bezopasnyh-messendzherov-v-rossii](https://vc.ru/services/3067089-obzor-bezopasnyh-messendzherov-v-rossii)
+
+## The Best Secure Messaging Apps of 2026, Ranked by What They Can Actually Hand Over [#](https://simplex.chat/links/#link=the-best-secure-messaging-apps-of-2026-ranked-by-what-they-can-actually-hand-ove)
+
+ModemGuides
+
+Aug 1, 2026 English Comparison
+
+ModemGuides ranks SimpleX as the strictest secure messenger.
+
+[https://www.modemguides.com/blogs/modemguides-blog/best-secure-messaging-apps](https://www.modemguides.com/blogs/modemguides-blog/best-secure-messaging-apps)
+
+## Private Messaging for Bitcoiners: SimpleX, Briar, Signal & Nostr DMs [#](https://simplex.chat/links/#link=private-messaging-for-bitcoiners-simplex-briar-signal-and-nostr-dms)
+
+D-Central
+
+Jul 8, 2026 English Comparison
+
+D-Central presents SimpleX Chat to Bitcoiners as a messenger designed to remove metadata.
+
+[https://d-central.tech/private-messaging-for-bitcoiners/](https://d-central.tech/private-messaging-for-bitcoiners/)
+
 ## Web3 Summit Talk: "SimpleX Community Credits: Making Privacy Profitable" [#](https://simplex.chat/links/#link=web3-summit-talk-simplex-community-credits-making-privacy-profitable)
 
 SimpleX Chat
@@ -27,6 +193,110 @@ Jul 2026 English Conference talk
 Alain Brenzikofer presents our design for Community Credits at Web3 Summit – a payment solution for private infrastructure payments on SimpleX network. See the whitepaper at: https://simplex.chat/credits/whitepaper.pdf
 
 [https://www.youtube.com/watch?v=UhW8AuoRgxg](https://www.youtube.com/watch?v=UhW8AuoRgxg)
+
+## SimpleX: The Messenger Without Accounts [#](https://simplex.chat/links/#link=simplex-the-messenger-without-accounts)
+
+Rob Hoeijmakers
+
+Jun 27, 2026 English Review
+
+Rob Hoeijmakers tests SimpleX as a messenger without accounts, phone numbers or usernames.
+
+[https://hoeijmakers.net/simplex-the-messenger-without-accounts/](https://hoeijmakers.net/simplex-the-messenger-without-accounts/)
+
+## The Complete SimpleX Chat Hardening Guide (2025–2026) [#](https://simplex.chat/links/#link=the-complete-simplex-chat-hardening-guide-2025-2026)
+
+SparkForge
+
+Jun 23, 2026 English Guide
+
+SparkForge explains how to harden SimpleX Chat with passphrases, Tor and self-hosted relays.
+
+[https://sparkforge.pro/the-complete-simplex-chat-hardening-guide-2025-2026/](https://sparkforge.pro/the-complete-simplex-chat-hardening-guide-2025-2026/)
+
+## Secure Messaging Compared [#](https://simplex.chat/links/#link=secure-messaging-compared)
+
+anoni.net
+
+Jun 23, 2026 English Comparison
+
+anoni.net compares secure messengers and notes that SimpleX has no user identifier at all.
+
+[https://anoni.net/docs/en/tools/messaging-comparison/](https://anoni.net/docs/en/tools/messaging-comparison/)
+
+## Best Private Messengers in 2026: Signal vs Session vs SimpleX [#](https://simplex.chat/links/#link=best-private-messengers-in-2026-signal-vs-session-vs-simplex)
+
+MeshWorld
+
+Jun 2, 2026 English Comparison
+
+MeshWorld presents SimpleX as the maximum-privacy option among private messengers.
+
+[https://meshworld.in/blog/privacy/private-messengers-comparison/](https://meshworld.in/blog/privacy/private-messengers-comparison/)
+
+## Encrypted Messaging: Which Apps Are Actually Private? [#](https://simplex.chat/links/#link=encrypted-messaging-which-apps-are-actually-private)
+
+Techlore
+
+Jun 1, 2026 English Guide
+
+Techlore recommends SimpleX for the highest-sensitivity situations.
+
+[https://techlore.tech/encrypted-messaging-which-apps-are-actually-private/](https://techlore.tech/encrypted-messaging-which-apps-are-actually-private/)
+
+## SimpleX Chat: Messaging Without User Identifiers [#](https://simplex.chat/links/#link=simplex-chat-messaging-without-user-identifiers)
+
+Haven Blog
+
+May 28, 2026 English Article
+
+The Haven blog explains how SimpleX Chat delivers messages without user identifiers.
+
+[https://havenmessenger.com/blog/posts/simplex-chat-no-identifiers/](https://havenmessenger.com/blog/posts/simplex-chat-no-identifiers/)
+
+## SimpleX Chat | Hermes Agent [#](https://simplex.chat/links/#link=simplex-chat-or-hermes-agent)
+
+Nous Research
+
+May 15, 2026 English Guide
+
+The Hermes Agent documentation explains how to connect the Nous Research AI agent to SimpleX Chat.
+
+[https://hermes-agent.nousresearch.com/docs/user-guide/messaging/simplex](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/simplex)
+
+## SimpleX | Flux Documentation [#](https://simplex.chat/links/#link=simplex-or-flux-documentation)
+
+Flux Documentation
+
+May 14, 2026 English Guide
+
+Flux explains how to run SimpleX relay servers on FluxCloud.
+
+[https://docs.runonflux.com/fluxcloud/marketplace/simplex/](https://docs.runonflux.com/fluxcloud/marketplace/simplex/)
+
+## The Messenger for the Paranoid Got Even More Convenient: In SimpleX You Can Now Run a Channel and Stay Incognito [#](https://simplex.chat/links/#link=the-messenger-for-the-paranoid-got-even-more-convenient-in-simplex-you-can-now-r)
+
+Мессенджер для параноиков стал еще удобнее. В SimpleX теперь можно вести канал и оставаться инкогнито
+
+SecurityLab.ru
+
+May 2, 2026 Russian News
+
+SecurityLab.ru reports the SimpleX Chat 6.5 release with public channels.
+
+[https://www.securitylab.ru/news/572241.php](https://www.securitylab.ru/news/572241.php)
+
+## Anonymous Communication Tools Compared [#](https://simplex.chat/links/#link=anonymous-communication-tools-compared)
+
+匿名通訊工具比較
+
+anoni.net
+
+May 1, 2026 Chinese (Tr.) Comparison
+
+This Traditional Chinese guide from anoni.net compares anonymous messengers and notes that SimpleX has no user identifier at all.
+
+[https://anoni.net/docs/tools/messaging-comparison/](https://anoni.net/docs/tools/messaging-comparison/)
 
 ## Best Secure Messaging Apps: Signal vs Session vs SimpleX vs Briar [#](https://simplex.chat/links/#link=best-secure-messaging-apps-signal-vs-session-vs-simplex-vs-briar)
 
@@ -47,6 +317,26 @@ Apr 29, 2026 English Review
 Help Net Security showcases SimpleX Chat as a free, private, open-source messenger that eliminates traditional user identifiers and stores data locally on devices. The article highlights end-to-end encrypted communications, contact addition through one-time links or QR codes, encrypted audio/video calls via WebRTC with hidden IP addresses, and security verification through comparable security codes between contacts.
 
 [https://www.helpnetsecurity.com/2026/04/29/product-showcase-simplex-chat-secure-messaging/](https://www.helpnetsecurity.com/2026/04/29/product-showcase-simplex-chat-secure-messaging/)
+
+## The Battle for Digital Privacy: Messaging Apps vs. Europe's Chat Control [#](https://simplex.chat/links/#link=the-battle-for-digital-privacy-messaging-apps-vs-europes-chat-control)
+
+Raf Vantongerloo / Peerlist
+
+Apr 26, 2026 English Article
+
+Raf Vantongerloo argues that SimpleX's lack of user identifiers makes Chat Control compliance nearly impossible.
+
+[https://peerlist.io/r4fken/articles/the-battle-for-digital-privacy-messaging-apps-vs-europes-cha](https://peerlist.io/r4fken/articles/the-battle-for-digital-privacy-messaging-apps-vs-europes-cha)
+
+## Designing Private Agent Messaging for OpenClaw with SimpleX [#](https://simplex.chat/links/#link=designing-private-agent-messaging-for-openclaw-with-simplex)
+
+Bijaya Dangol
+
+Apr 6, 2026 English Article
+
+Bijaya Dangol presents a SimpleX Chat channel plugin for the OpenClaw agent platform.
+
+[https://dangoldbj.github.io/designing-private-agent-messaging-for-openclaw-with-simplex/](https://dangoldbj.github.io/designing-private-agent-messaging-for-openclaw-with-simplex/)
 
 ## The Only TRULY Anonymous Chat: SimpleX [#](https://simplex.chat/links/#link=the-only-truly-anonymous-chat-simplex)
 
@@ -77,6 +367,18 @@ Mar 20, 2026 English Podcast
 This Citadel Dispatch podcast episode features Evgeny Poberezkin discussing SimpleX Chat's radically different approach to user identity, where addresses are assigned to connections rather than endpoints. The conversation covers critiques of the MLS protocol, upcoming scalable channels to rival Telegram, and a sustainability model where large channels fund network operations.
 
 [https://podcasts.apple.com/is/podcast/cd196-evgeny-poberezkin-simplex-private-chat/id1546393840?i=1000756411661](https://podcasts.apple.com/is/podcast/cd196-evgeny-poberezkin-simplex-private-chat/id1546393840?i=1000756411661)
+
+## Which Secure Instant Messenger to Choose? [#](https://simplex.chat/links/#link=which-secure-instant-messenger-to-choose)
+
+Quelle messagerie instantanée sécurisée choisir ?
+
+Korben
+
+Mar 11, 2026 (updated) French Comparison
+
+Korben recommends SimpleX as the messenger for maximum anonymity.
+
+[https://korben.info/quel-logiciel-messagerie-securisee-choisir.html](https://korben.info/quel-logiciel-messagerie-securisee-choisir.html)
 
 ## SimpleX Chat Video Review [#](https://simplex.chat/links/#link=simplex-chat-video-review)
 
@@ -144,6 +446,16 @@ This Polish article describes SimpleX as a fully open-source, decentralized mess
 
 [https://opentech.guru/simplex-chat-prywatnosc-bez-kompromisow/](https://opentech.guru/simplex-chat-prywatnosc-bez-kompromisow/)
 
+## SimpleX Chat Review 2026: UK Messenger [#](https://simplex.chat/links/#link=simplex-chat-review-2026-uk-messenger)
+
+European Purpose
+
+Jan 29, 2026 English Review
+
+European Purpose ranks SimpleX Chat second among European messaging alternatives to US tech.
+
+[https://europeanpurpose.com/tool/simplex](https://europeanpurpose.com/tool/simplex)
+
 ## The Messaging App With No User IDs [#](https://simplex.chat/links/#link=the-messaging-app-with-no-user-ids)
 
 SimpleX Interview
@@ -165,6 +477,26 @@ Jan 2, 2026 French Comparison
 This French-language article positions SimpleX between Signal and Session in a security hierarchy, noting its protocol design prevents servers from mapping social connections by using separate channels for incoming and outgoing messages. SimpleX is praised for stronger privacy protections including app-level locking, ephemeral messages, and Tor/VPN compatibility, though the author notes lower adoption rates may be a practical drawback.
 
 [https://nicolasforcet.com/messagerie-chiffree-2026-signal-simplex-session/](https://nicolasforcet.com/messagerie-chiffree-2026-signal-simplex-session/)
+
+## SimpleX Chat Review: Private Messaging in 2026 [#](https://simplex.chat/links/#link=simplex-chat-review-private-messaging-in-2026)
+
+PrivacyTools.io
+
+2026 English Review
+
+PrivacyTools.io rates SimpleX Chat 4.7 out of 5 as the only mainstream messenger that collects no metadata about who talks to whom.
+
+[https://privacytools.io/app/simplex-chat](https://privacytools.io/app/simplex-chat)
+
+## SimpleX Chat: Messaging With No User IDs [#](https://simplex.chat/links/#link=simplex-chat-messaging-with-no-user-ids)
+
+Reclaim The Net
+
+2026 (est.) English Guide
+
+Reclaim The Net says SimpleX Chat goes further than any other messenger it recommends on hiding who you talk to.
+
+[https://reclaimthenet.org/recommended-tool/simplex-chat](https://reclaimthenet.org/recommended-tool/simplex-chat)
 
 ## SimpleX Chat Review 2026: Open-Source Secure Messaging [#](https://simplex.chat/links/#link=simplex-chat-review-2026-open-source-secure-messaging)
 
@@ -2100,7 +2432,7 @@ Sep 26, 2023 English Review
 
 Freedom.tech's review praises SimpleX Chat's beautiful UI, metadata protection through its peer-to-relay architecture, double ratchet encryption, and incognito mode for pseudonymous communication. The review identifies key weaknesses including intermittent notifications on both iOS and Android and flaky audio/video calls in beta, but concludes it is a fantastic tool ideal for activists, journalists, and privacy-focused users.
 
-[https://freedom.tech/simplex-chat-review/](https://freedom.tech/simplex-chat-review/)
+[https://foundation.xyz/blog/simplex-chat-review](https://foundation.xyz/blog/simplex-chat-review)
 
 ## Messaging Applications on Medium [#](https://simplex.chat/links/#link=messaging-applications-on-medium)
 
