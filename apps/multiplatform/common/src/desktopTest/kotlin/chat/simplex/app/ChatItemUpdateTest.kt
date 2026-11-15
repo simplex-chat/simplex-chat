@@ -75,4 +75,12 @@ class ChatItemUpdateTest {
     chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(1, "hello", status = CIStatus.RcvRead()), rcvItem(1, "hello @alice", mention = true))
     assertEquals(Triple(0, 0, 0), counts(chatsCtx))
   }
+
+  @Test
+  fun updateNotifiesOnlyForAddedItemOrMissedCall() {
+    assertFalse(chatItemUpdateNotifies(rcvItem(1, "edited"), itemAdded = false))
+    assertTrue(chatItemUpdateNotifies(rcvItem(1, "inserted"), itemAdded = true))
+    val missedCall = rcvItem(2, "").copy(content = CIContent.RcvCall(status = CICallStatus.Missed, duration = 0))
+    assertTrue(chatItemUpdateNotifies(missedCall, itemAdded = false))
+  }
 }

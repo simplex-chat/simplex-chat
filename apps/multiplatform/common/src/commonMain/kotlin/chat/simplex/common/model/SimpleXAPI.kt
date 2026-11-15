@@ -3833,7 +3833,7 @@ object ChatController {
       } else if (unreadChange < 0) {
         withContext(Dispatchers.Main) { chatModel.chatsContext.decreaseUnreadCounter(rh, user) }
       }
-      notify()
+      if (chatItemUpdateNotifies(cItem, itemAdded = false)) notify()
     } else {
       val createdChat = withContext(Dispatchers.Main) {
         chatModel.chatsContext.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
@@ -3841,11 +3841,7 @@ object ChatController {
       withContext(Dispatchers.Main) {
         chatModel.secondaryChatsContext.value?.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
-      if (createdChat) {
-        notify()
-      } else if (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed) {
-        notify()
-      }
+      if (chatItemUpdateNotifies(cItem, itemAdded = createdChat)) notify()
     }
   }
 
