@@ -856,7 +856,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
         pure $ (,) <$> prevAci_ <*> aci_
       forM_ acis_ $ \(prevAci, aci) -> do
         cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user (aChatItemUpdate aci prevAci)
+        toView $ CEvtChatItemUpdated user (aChatItemUpdate prevAci aci)
       throwChatError $ CEInvalidFileDescription "redirect not allowed"
     when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
@@ -889,7 +889,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       acis_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
       forM_ acis_ $ \(prevAci, aci) -> do
         cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user (aChatItemUpdate aci prevAci)
+        toView $ CEvtChatItemUpdated user (aChatItemUpdate prevAci aci)
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 cleanupACIFile :: AChatItem -> CM ()

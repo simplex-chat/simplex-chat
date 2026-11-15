@@ -447,7 +447,7 @@ Haskell core generates ChatEvent.newChatItems
 ```
 Haskell core generates ChatEvent.chatItemUpdated(user, chatItem: AChatItemUpdate)
     → ChatModel.applyChatItemUpdate(chatInfo, chatItem, prevChatItem):
-        prevItem == nil (an event from an older remote host):
+        prevItem == nil (a fallback; the bundled core always sets prevChatItem):
             upsertChatItem: counters unchanged, the item is inserted if it is not loaded
         prevItem != nil:
             1. Change ChatStats by the difference between prevItem and cItem

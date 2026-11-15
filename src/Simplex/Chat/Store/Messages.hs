@@ -2824,13 +2824,13 @@ createGroupCIMentions db GroupInfo {groupId} ci mentions = do
     rows = map (\(name, CIMention {memberId}) -> (ciId, groupId, memberId, name)) $ M.assocs mentions
     ciId = chatItemId' ci
 
-updateGroupCIMentions :: DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> Map MemberName CIMention -> IO (ChatItem 'CTGroup d)
+updateGroupCIMentions :: forall d. DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> Map MemberName CIMention -> IO (ChatItem 'CTGroup d)
 updateGroupCIMentions db g ci@ChatItem {mentions} mentions'
   | mentions' == mentions = pure ci
   | otherwise = do
       unless (null mentions) deleteMentions
       if null mentions'
-        then pure ci
+        then pure (ci :: ChatItem 'CTGroup d) {mentions = mentions'}
         else -- This is a fallback for the error that should not happen in practice.
         -- In theory, it may happen in item mentions in database are different from item record.
           withSavepoint db "create_mentions" createMentions >>= \case

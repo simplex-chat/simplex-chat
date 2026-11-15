@@ -1951,7 +1951,7 @@ $(JQ.deriveJSON defaultJSON ''RelayTestFailure)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CEvt") {J.fieldLabelModifier = \case "chatItemUpdate" -> "chatItem"; f -> f} ''ChatEvent)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CEvt") {J.fieldLabelModifier = chatEventJSONField} ''ChatEvent)
 
 $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 

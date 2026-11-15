@@ -488,9 +488,14 @@ deriving instance Show AChatItemUpdate
 data JSONAnyChatItemUpdate c d = JSONAnyChatItemUpdate {chatInfo :: ChatInfo c, chatItem :: ChatItem c d, prevChatItem :: Maybe (ChatItem c d)}
 
 aChatItemUpdate :: AChatItem -> AChatItem -> AChatItemUpdate
-aChatItemUpdate (AChatItem c d chatInfo ci) (AChatItem c' d' _ prevCi) = AChatItemUpdate c d chatInfo ci $ case (testEquality c c', testEquality d d') of
+aChatItemUpdate (AChatItem c' d' _ prevCi) (AChatItem c d chatInfo ci) = AChatItemUpdate c d chatInfo ci $ case (testEquality c c', testEquality d d') of
   (Just Refl, Just Refl) -> Just prevCi
   _ -> Nothing
+
+chatEventJSONField :: String -> String
+chatEventJSONField = \case
+  "chatItemUpdate" -> "chatItem"
+  f -> f
 
 aChatItems :: AChat -> [AChatItem]
 aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems
@@ -1577,7 +1582,6 @@ instance (ChatTypeI c, MsgDirectionI d) => ToJSON (JSONAnyChatItemUpdate c d) wh
   toJSON = $(JQ.mkToJSON defaultJSON ''JSONAnyChatItemUpdate)
   toEncoding = $(JQ.mkToEncoding defaultJSON ''JSONAnyChatItemUpdate)
 
--- if JSON encoding changes, update AChatItemUpdate type definition in bots/src/API/Docs/Types.hs
 instance FromJSON AChatItemUpdate where
   parseJSON = J.withObject "AChatItemUpdate" $ \o -> do
     AChatInfo c chatInfo <- o .: "chatInfo"

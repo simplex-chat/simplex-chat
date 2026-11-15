@@ -19,6 +19,7 @@ import Control.Concurrent.Async (concurrently_, poll, wait)
 import Control.Monad (forM_, void, (>=>))
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (intercalate, isPrefixOf, stripPrefix)
@@ -30,7 +31,7 @@ import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtChatItemUpdated), ChatHooks (..), PresetServers (..), defaultChatHooks)
-import Simplex.Chat.Messages (AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
+import Simplex.Chat.Messages (AChatItem (..), AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
@@ -789,7 +790,11 @@ testDirectMessageEditHistory =
 testDirectMessageUpdatePrevItem :: HasCallStack => TestParams -> IO ()
 testDirectMessageUpdatePrevItem ps = do
   updates <- newTVarIO []
+  encoded <- newTVarIO []
   let hook _ evt = do
+        case evt of
+          Right e@CEvtChatItemUpdated {} -> atomically $ modifyTVar' encoded (<> [J.toJSON e])
+          _ -> pure ()
         case J.decode . J.encode <$> evt of
           Right (Just (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi_))) -> atomically $ modifyTVar' updates (<> [(itemText' ci, itemText' <$> prevCi_)])
           _ -> pure ()
@@ -810,6 +815,14 @@ testDirectMessageUpdatePrevItem ps = do
       alice <# "bob> hello again"
       alice #$> ("/_get chat @2 count=1", chat, [(0, "hello again")])
       readTVarIO updates `shouldReturn` [("hello there", Just "hello")]
+      [J.Object evt] <- readTVarIO encoded
+      KM.member "chatItemUpdate" evt `shouldBe` False
+      Just item@(J.Object itemObj) <- pure $ KM.lookup "chatItem" evt
+      KM.member "prevChatItem" itemObj `shouldBe` True
+      J.Success (AChatItem c d cInfo ci) <- pure $ J.fromJSON item
+      itemText' ci `shouldBe` "hello there"
+      J.Success (AChatItemUpdate _ _ _ _ prevCi_) <- pure $ J.fromJSON $ J.toJSON $ AChatItem c d cInfo ci
+      isNothing prevCi_ `shouldBe` True
 
 testDirectMessageDelete :: HasCallStack => TestParams -> IO ()
 testDirectMessageDelete =
