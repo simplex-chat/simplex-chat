@@ -4887,7 +4887,7 @@ processChatCommand cxt nm = \case
               let content' = CIRcvGroupInvitation (ciGroupInv {status = newStatus} :: CIGroupInvitation) memRole
               timed_ <- sndGroupCITimed False g Nothing
               ci' <- withFastStore' $ \db -> updateGroupChatItem db user (groupId' g) ci {meta = meta {itemTimed = timed_}} content' False False Nothing
-              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci') (Just $ AChatItem SCTGroup SMDRcv cInfo ci)
+              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci') (AChatItem SCTGroup SMDRcv cInfo ci)
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTGroup (groupId' g) Nothing, itemId)
         _ -> pure () -- prohibited

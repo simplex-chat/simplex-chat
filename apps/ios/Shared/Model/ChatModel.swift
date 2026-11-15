@@ -797,11 +797,7 @@ final class ChatModel: ObservableObject {
         return itemAdded
     }
 
-    func applyChatItemUpdate(_ cInfo: ChatInfo, _ cItem: ChatItem, _ prevItem: ChatItem?) -> Bool {
-        guard let prevItem else {
-            addChatItem(cInfo, cItem)
-            return true
-        }
+    func applyChatItemUpdate(_ cInfo: ChatInfo, _ cItem: ChatItem, _ prevItem: ChatItem) -> Bool {
         var chatAdded = false
         if cInfo.groupChatScope() == nil {
             if let chat = getChat(cInfo.id) {

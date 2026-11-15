@@ -3825,7 +3825,7 @@ object ChatController {
   private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem, prevChatItem: AChatItem?) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
-    val prevItem = prevChatItem?.chatItem
+    val prevItem = prevChatItem?.chatItem ?: cItem
     val notify = { ntfManager.notifyMessageReceived(rh, user, cInfo, cItem) }
     if (!activeUser(rh, user)) {
       val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && cInfo.ntfsEnabled(it) }

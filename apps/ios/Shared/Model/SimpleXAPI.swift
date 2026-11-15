@@ -3219,11 +3219,11 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     }
 }
 
-func chatItemUpdate(_ user: any UserLike, _ aChatItem: AChatItem, _ prevChatItem: AChatItem?) async {
+func chatItemUpdate(_ user: any UserLike, _ aChatItem: AChatItem, _ prevChatItem: AChatItem) async {
     let m = ChatModel.shared
     let cInfo = aChatItem.chatInfo
     let cItem = aChatItem.chatItem
-    let prevItem = prevChatItem?.chatItem
+    let prevItem = prevChatItem.chatItem
     if active(user) {
         if await MainActor.run(body: { m.applyChatItemUpdate(cInfo, cItem, prevItem) }) {
             if cItem.showNotification {

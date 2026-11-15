@@ -342,7 +342,7 @@ Events handled in `processReceivedMsg` include:
 | `ContactDeletedByContact` | A contact deleted their side of the conversation |
 | `ReceivedContactRequest` | An incoming contact request arrived |
 | `NewChatItems` | New messages received |
-| `ChatItemUpdated` | A message was edited; `prevChatItem` is the item before the update, null when the update created the item |
+| `ChatItemUpdated` | A message was edited; `prevChatItem` is the item before the update |
 | `ChatItemsDeleted` | Messages were deleted |
 | `ChatItemReaction` | A reaction was added/removed |
 | `ChatItemsStatusesUpdated` | Delivery statuses updated |

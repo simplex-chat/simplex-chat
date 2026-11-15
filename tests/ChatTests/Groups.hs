@@ -1438,7 +1438,7 @@ testGroupMessageEditHistory =
 
       alice ##> ("/_update item #1 " <> aliceItemId <> " text hey there")
       alice <# "#team [edited] hey there"
-      bob <# "#team alice> [edited] hey there"
+      bob <# "#team alice> hey there"
 
       alice ##> "/item info #team hey"
       alice <##. "sent at: "
@@ -1506,7 +1506,7 @@ testGroupMessageDelete =
       bob <# "#team [edited] > alice hello!"
       bob <## "      hi alice"
       concurrently_
-        (alice <# "#team bob> [edited] hi alice")
+        (alice <# "#team bob> hi alice")
         ( do
             cath <# "#team bob> [edited] > alice hello!"
             cath <## "      hi alice"
@@ -13554,8 +13554,8 @@ testChannelUpdateFallbackSendAsGroup ps =
             aliceMsgId <- lastItemId alice
             alice ##> ("/_update item #1 " <> aliceMsgId <> " text channel msg updated")
             alice <# "#team [edited] channel msg updated"
-            -- bob's item was locally deleted, fallback recreates it with [edited] marker
-            bob <# "#team> [edited] channel msg updated"
+            -- bob's item was locally deleted, fallback recreates it as a new item
+            bob <# "#team> channel msg updated"
             [cath, dan, eve] *<# "#team> [edited] channel msg updated"
 
             -- now test sendAsGroup=False case
@@ -13574,7 +13574,7 @@ testChannelUpdateFallbackSendAsGroup ps =
             alice ##> ("/_update item #1 " <> aliceMsgId2 <> " text member msg updated")
             alice <# "#team [edited] member msg updated"
             -- bob's internally deleted item is re-created as from member (sendAsGroup=False)
-            bob <# "#team alice> [edited] member msg updated"
+            bob <# "#team alice> member msg updated"
             -- forwarded members see correct member attribution
             [cath, dan, eve] *<# "#team alice> [edited] member msg updated"
 

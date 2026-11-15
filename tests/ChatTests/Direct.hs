@@ -771,7 +771,7 @@ testDirectMessageEditHistory =
 
       alice ##> ("/_update item @2 " <> itemId 1 <> " text hey there")
       alice <# "@bob [edited] hey there"
-      bob <# "alice> [edited] hey there"
+      bob <# "alice> hey there"
 
       alice ##> "/item info @bob hey"
       alice <##. "sent at: "
@@ -791,7 +791,7 @@ testDirectMessageUpdatePrevItem ps = do
   updates <- newTVarIO []
   let hook _ evt = do
         case evt of
-          Right (CEvtChatItemUpdated _ aci prevAci_) -> atomically $ modifyTVar' updates (<> [(itemText' aci, itemText' <$> prevAci_)])
+          Right (CEvtChatItemUpdated _ aci prevAci) -> atomically $ modifyTVar' updates (<> [(itemText' aci, itemText' prevAci)])
           _ -> pure ()
         pure evt
       itemText' :: AChatItem -> T.Text
@@ -807,9 +807,9 @@ testDirectMessageUpdatePrevItem ps = do
       alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
       bob ##> ("/_update item @2 " <> itemId 1 <> " text hello again")
       bob <# "@alice [edited] hello again"
-      alice <# "bob> [edited] hello again"
+      alice <# "bob> hello again"
       alice #$> ("/_get chat @2 count=1", chat, [(0, "hello again")])
-      readTVarIO updates `shouldReturn` [("hello there", Just "hello"), ("hello again", Nothing)]
+      readTVarIO updates `shouldReturn` [("hello there", "hello")]
 
 testDirectMessageDelete :: HasCallStack => TestParams -> IO ()
 testDirectMessageDelete =
@@ -845,7 +845,7 @@ testDirectMessageDelete =
       bob ##> ("/_update item @2 " <> itemId 2 <> " text hey alice")
       bob <# "@alice [edited] > hello 🙂"
       bob <## "      hey alice"
-      alice <# "bob> [edited] hey alice"
+      alice <# "bob> hey alice"
       alice @@@ [("@bob", "hey alice")]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hey alice")])
 

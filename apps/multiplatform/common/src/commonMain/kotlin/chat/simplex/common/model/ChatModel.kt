@@ -699,11 +699,7 @@ object ChatModel {
       return  itemAdded
     }
 
-    suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem?): Boolean {
-      if (prevItem == null) {
-        addChatItem(rhId, cInfo, cItem)
-        return true
-      }
+    suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem): Boolean {
       var chatAdded = false
       if (cInfo.groupChatScope() == null) {
         val i = getChatIndex(rhId, cInfo.id)
@@ -4282,8 +4278,8 @@ sealed class CIStatus {
   }
 }
 
-fun unreadCountChange(prevItem: ChatItem?, cItem: ChatItem, counted: (ChatItem) -> Boolean): Int =
-  (if (counted(cItem)) 1 else 0) - (if (prevItem != null && counted(prevItem)) 1 else 0)
+fun unreadCountChange(prevItem: ChatItem, cItem: ChatItem, counted: (ChatItem) -> Boolean): Int =
+  (if (counted(cItem)) 1 else 0) - (if (counted(prevItem)) 1 else 0)
 
 fun shouldKeepOldSndCIStatus(oldStatus: CIStatus, newStatus: CIStatus): Boolean =
   when {
