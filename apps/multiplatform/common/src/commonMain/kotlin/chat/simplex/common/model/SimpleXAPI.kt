@@ -3822,10 +3822,9 @@ object ChatController {
     }
   }
 
-  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem, prevChatItem: AChatItem?) {
+  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem, prevItem: ChatItem?) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
-    val prevItem = prevChatItem?.chatItem ?: cItem
     val notify = { ntfManager.notifyMessageReceived(rh, user, cInfo, cItem) }
     if (!activeUser(rh, user)) {
       val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && cInfo.ntfsEnabled(it) }
@@ -6912,7 +6911,7 @@ sealed class CR {
   @Serializable @SerialName("newChatItems") class NewChatItems(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatMsgContent") class ChatMsgContent(val user: UserRef, val msgContent: MsgContent): CR()
   @Serializable @SerialName("chatItemsStatusesUpdated") class ChatItemsStatusesUpdated(val user: UserRef, val chatItems: List<AChatItem>): CR()
-  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem, val prevChatItem: AChatItem? = null): CR()
+  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem, val prevChatItem: ChatItem? = null): CR()
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
   @Serializable @SerialName("reactionMembers") class ReactionMembers(val user: UserRef, val memberReactions: List<MemberReaction>): CR()

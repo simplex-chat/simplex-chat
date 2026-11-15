@@ -481,6 +481,13 @@ deriving instance Show AChatItem
 
 data JSONAnyChatItem c d = JSONAnyChatItem {chatInfo :: ChatInfo c, chatItem :: ChatItem c d}
 
+data ACChatItem = forall c d. (ChatTypeI c, MsgDirectionI d) => ACChatItem (SChatType c) (SMsgDirection d) (ChatItem c d)
+
+deriving instance Show ACChatItem
+
+toACChatItem :: AChatItem -> ACChatItem
+toACChatItem (AChatItem c d _ ci) = ACChatItem c d ci
+
 aChatItems :: AChat -> [AChatItem]
 aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems
   where
@@ -1561,6 +1568,18 @@ instance forall c. ChatTypeI c => FromJSON (CChatItem c) where
 instance ChatTypeI c => ToJSON (CChatItem c) where
   toJSON (CChatItem _ ci) = J.toJSON ci
   toEncoding (CChatItem _ ci) = J.toEncoding ci
+
+instance FromJSON ACChatItem where
+  parseJSON v = J.withObject "ACChatItem" parse v
+    where
+      parse o = do
+        ACID c d (_ :: CIDirection c d) <- o .: "chatDir"
+        ci <- J.parseJSON @(ChatItem c d) v
+        pure $ ACChatItem c d ci
+
+instance ToJSON ACChatItem where
+  toJSON (ACChatItem _ _ ci) = J.toJSON ci
+  toEncoding (ACChatItem _ _ ci) = J.toEncoding ci
 
 $(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 

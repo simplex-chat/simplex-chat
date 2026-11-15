@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ChatItemUpdateTest {
   private fun rcvItem(id: Long, text: String, status: CIStatus = CIStatus.RcvNew(), mention: Boolean = false): ChatItem {
@@ -53,6 +54,16 @@ class ChatItemUpdateTest {
     assertEquals("hello edited", chatsCtx.chats.value[0].chatItems.last().text)
     assertFalse(chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(5, "not loaded edited"), rcvItem(5, "not loaded")))
     assertEquals(listOf(1L), chatsCtx.chatItems.value.map { it.id })
+    assertEquals(Triple(1, 0, 1), counts(chatsCtx))
+  }
+
+  @Test
+  fun updateWithoutPreviousItemInsertsAndKeepsCounters() = withOpenChat { chatsCtx, cInfo ->
+    chatsCtx.addChatItem(null, cInfo, rcvItem(1, "hello"))
+    assertTrue(chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(2, "from an older host"), null))
+    assertEquals(listOf(1L, 2L), chatsCtx.chatItems.value.map { it.id })
+    assertFalse(chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(2, "from an older host, read", status = CIStatus.RcvRead()), null))
+    assertEquals("from an older host, read", chatsCtx.chatItems.value.last().text)
     assertEquals(Triple(1, 0, 1), counts(chatsCtx))
   }
 

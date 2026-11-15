@@ -388,7 +388,7 @@ Event processing entry point: [`processReceivedMsg`](../Shared/Model/SimpleXAPI.
 | Event | Key Fields | Description | Source |
 |-------|-----------|-------------|--------|
 | `newChatItems` | `user, chatItems: [AChatItem]` | New messages received | [L1084](../Shared/Model/AppAPITypes.swift#L1084) |
-| `chatItemUpdated` | `user, chatItem: AChatItem, prevChatItem: AChatItem` | Message edited remotely; `prevChatItem` is the item before the update | [L1086](../Shared/Model/AppAPITypes.swift#L1086) |
+| `chatItemUpdated` | `user, chatItem: AChatItem, prevChatItem: ChatItem?` | Message edited remotely; `prevChatItem` is the item before the update, nil from older cores | [L1086](../Shared/Model/AppAPITypes.swift#L1086) |
 | `chatItemReaction` | `user, added, reaction: ACIReaction` | Reaction added/removed | [L1087](../Shared/Model/AppAPITypes.swift#L1087) |
 | `chatItemsDeleted` | `user, chatItemDeletions, byUser` | Messages deleted | [L1088](../Shared/Model/AppAPITypes.swift#L1088) |
 | `chatItemsStatusesUpdated` | `user, chatItems: [AChatItem]` | Delivery status changed | [L1085](../Shared/Model/AppAPITypes.swift#L1085) |

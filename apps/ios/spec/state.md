@@ -447,11 +447,14 @@ Haskell core generates ChatEvent.newChatItems
 ```
 Haskell core generates ChatEvent.chatItemUpdated(user, chatItem, prevChatItem)
     → ChatModel.applyChatItemUpdate(cInfo, cItem, prevItem):
-        1. Change ChatStats by the difference between prevItem and cItem
-           (unread: isRcvNew; mentions: isRcvNew && userMention)
-        2. Replace the preview if it is this item
-        3. Replace the item in ItemsModel.reversedChatItems if it is loaded,
-           never insert it
+        prevItem == nil (an event from an older remote host):
+            upsertChatItem: counters unchanged, the item is inserted if it is not loaded
+        prevItem != nil:
+            1. Change ChatStats by the difference between prevItem and cItem
+               (unread: isRcvNew; mentions: isRcvNew && userMention)
+            2. Replace the preview if it is this item
+            3. Replace the item in ItemsModel.reversedChatItems if it is loaded,
+               never insert it
     → Another user's event changes that user's unread counter by the same difference
     → An update of a locally deleted message creates it again: the core sends newChatItems
 ```

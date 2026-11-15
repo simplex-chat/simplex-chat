@@ -708,7 +708,7 @@ updateCallItemStatus user ct@Contact {contactId} Call {chatItemId} receivedStatu
 updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> CM ()
 updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) edited live timed_ msgId_ = do
   (ci, ci') <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
-  toView $ CEvtChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci') (AChatItem SCTDirect msgDir (DirectChat ct) ci)
+  toView $ CEvtChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci') (Just $ ACChatItem SCTDirect msgDir ci)
 
 callStatusItemContent :: User -> Contact -> ChatItemId -> WebRTCCallStatus -> CM (Maybe ACIContent)
 callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
@@ -856,7 +856,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
         pure $ (,) <$> prevAci_ <*> aci_
       forM_ acis_ $ \(prevAci, aci) -> do
         cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user aci prevAci
+        toView $ CEvtChatItemUpdated user aci (Just $ toACChatItem prevAci)
       throwChatError $ CEInvalidFileDescription "redirect not allowed"
     when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
@@ -889,7 +889,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       acis_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
       forM_ acis_ $ \(prevAci, aci) -> do
         cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user aci prevAci
+        toView $ CEvtChatItemUpdated user aci (Just $ toACChatItem prevAci)
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 cleanupACIFile :: AChatItem -> CM ()

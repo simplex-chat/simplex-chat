@@ -30,7 +30,7 @@ import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtChatItemUpdated), ChatHooks (..), PresetServers (..), defaultChatHooks)
-import Simplex.Chat.Messages (AChatItem (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
+import Simplex.Chat.Messages (AChatItem (..), ACChatItem (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
@@ -790,12 +790,12 @@ testDirectMessageUpdatePrevItem :: HasCallStack => TestParams -> IO ()
 testDirectMessageUpdatePrevItem ps = do
   updates <- newTVarIO []
   let hook _ evt = do
-        case evt of
-          Right (CEvtChatItemUpdated _ aci prevAci) -> atomically $ modifyTVar' updates (<> [(itemText' aci, itemText' prevAci)])
+        case J.decode . J.encode <$> evt of
+          Right (Just (CEvtChatItemUpdated _ (AChatItem _ _ _ ci) prevCi_)) -> atomically $ modifyTVar' updates (<> [(itemText' ci, (\(ACChatItem _ _ pci) -> itemText' pci) <$> prevCi_)])
           _ -> pure ()
         pure evt
-      itemText' :: AChatItem -> T.Text
-      itemText' (AChatItem _ _ _ ChatItem {meta = CIMeta {itemText}}) = itemText
+      itemText' :: ChatItem c d -> T.Text
+      itemText' ChatItem {meta = CIMeta {itemText}} = itemText
   withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "alice" aliceProfile $ \alice ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       connectUsers alice bob
@@ -809,7 +809,7 @@ testDirectMessageUpdatePrevItem ps = do
       bob <# "@alice [edited] hello again"
       alice <# "bob> hello again"
       alice #$> ("/_get chat @2 count=1", chat, [(0, "hello again")])
-      readTVarIO updates `shouldReturn` [("hello there", "hello")]
+      readTVarIO updates `shouldReturn` [("hello there", Just "hello")]
 
 testDirectMessageDelete :: HasCallStack => TestParams -> IO ()
 testDirectMessageDelete =

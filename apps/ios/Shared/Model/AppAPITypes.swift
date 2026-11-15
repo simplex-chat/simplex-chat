@@ -1246,7 +1246,7 @@ indirect enum ChatEvent: Decodable, ChatAPIResult {
     case chatInfoUpdated(user: UserRef, chatInfo: ChatInfo)
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case chatItemsStatusesUpdated(user: UserRef, chatItems: [AChatItem])
-    case chatItemUpdated(user: UserRef, chatItem: AChatItem, prevChatItem: AChatItem)
+    case chatItemUpdated(user: UserRef, chatItem: AChatItem, prevChatItem: ChatItem?)
     case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
     case chatItemsDeleted(user: UserRef, chatItemDeletions: [ChatItemDeletion], byUser: Bool)
     // group events
