@@ -27,7 +27,7 @@ A tool call is held open by the server until the owner decides and, for `connect
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 
 The package is also a Claude Code plugin. Each Claude Code session runs `simplex-mcp session`, a stdio MCP server. The session server forwards tool calls over a local socket to `simplex-mcp service`, one service per data root. Requests on the socket are HTTP/1.1 with a bearer token. The service runs two cores:
-- `Claude` is the profile that peers see. It holds the Main group, one group per session and the chats with peers. In a session's group it posts Claude's texts and answers, one line for each step, for each of Claude Code's own prompts and for each summary of the session's context, and the end line of each turn.
+- `Claude` is the profile that peers see. It holds the Main group, one group per session and the chats with peers. In a session's group it posts Claude's texts and answers, one line for each step, for each of Claude Code's own prompts and for each summary of the session's context. The last message of each answer ends with the end line of its turn.
 - `User` is a member of every session group. It posts the prompts typed in the terminal.
 
 Each session has the six tools and `reply`, and its group has its own `Actions` and `Control`. A chat belongs to the session that connected it. Admins and owners of the session group move a chat to another session with `/give`.
@@ -41,7 +41,7 @@ Rights in a session group follow the member's role there, however the member joi
 
 Claude posts a member's rights at each join and each role change. Claude posts the files of `reply` in a session group at once. The core sends them only while files and media are allowed in the group's preferences.
 
-The session server is also a Claude Code channel. The plugin passes each message in the session group to the running session as a prompt, except the messages of `User` and one-line `/` texts. It passes a reaction with one of the apps' eight emoji, of a member whose role sends, other than `User`, as the emoji after the quote line of the reacted message. It replies `This reaction is not supported.` to any other reaction, once for each member and reacted message. Claude Code runs no command from such a prompt. The plugin posts Claude Code's permission prompts in the group as cards. An admin or owner can approve a tool for the rest of the session there, and a PreToolUse hook of the plugin then allows its uses, while Claude Code's own rules still apply. The plugin's hooks post the terminal prompts, Claude's text as Claude writes it, and the end line of each turn in the group. The hooks keep the model and the effort level in the group's short description.
+The session server is also a Claude Code channel. The plugin passes each message in the session group to the running session as a prompt, except the messages of `User` and one-line `/` texts. It passes a reaction with one of the apps' eight emoji, of a member whose role sends, other than `User`, as the emoji after the quote line of the reacted message. It replies `This reaction is not supported.` to any other reaction, once for each member and reacted message. Claude Code runs no command from such a prompt. The plugin posts Claude Code's permission prompts in the group as cards. An admin or owner can approve a tool for the rest of the session there, and a PreToolUse hook of the plugin then allows its uses, while Claude Code's own rules still apply. The plugin's hooks post the terminal prompts and Claude's text as Claude writes it in the group, and end each answer with the end line of its turn, with its usage. The hooks keep the model and the effort level in the group's short description, and post their switches. An optional status line command adds the plan's usage to the end line.
 
 ---
 
@@ -118,6 +118,9 @@ graph TD
   hook -.-> protocol
   display["display.ts"] --> paths["paths.ts"]
   display --> serviceRequest
+  statusLine["status-line.ts"] --> paths
+  statusLine --> serviceRequest
+  hub --> statusLine
   serviceRequest --> paths
   files --> paths
   owner --> client
@@ -197,6 +200,7 @@ graph TD
 | [`user.ts`](../src/user.ts) | plugin: the profile `User` |
 | [`hook.ts`](../src/hook.ts) | plugin: `hook session-start` and `hook turn` |
 | [`display.ts`](../src/display.ts) | plugin: the MessageDisplay hook, `dist/display.js` |
+| [`status-line.ts`](../src/status-line.ts) | plugin: the status line command, `dist/status-line.js`, and the plan's usage parts of the end line |
 | [`service-request.ts`](../src/service-request.ts) | plugin: one request to the running service within a time limit; `CLAUDE_PID` |
 | [`paths.ts`](../src/paths.ts) | plugin: the data root, the socket path and the token file's name, with Node modules only |
 | [`owner.ts`](../src/owner.ts) | plugin: `link` and `reset-owners` |
@@ -217,7 +221,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Document | Contents |
 |---|---|
 | [Architecture](architecture.md) | system diagram, modules and types, state, process lifecycle, approval model, security boundaries, limits. Section 8 covers the plugin. |
-| [Flows](flows.md) | sequence diagrams of the main flows with source locations. Flows 17-37 cover the plugin. |
+| [Flows](flows.md) | sequence diagrams of the main flows with source locations. Flows 17-38 cover the plugin. |
 | [API](api.md) | the six tools, the control chat commands, replies and cards, the CLI. Section 4 covers the plugin's tools, groups, channel, socket protocol, commands and files. |
 
 ---
@@ -250,6 +254,7 @@ Claude Code uses these files of the plugin, described in [API 4.8](api.md#48-plu
 | Profile `User` | [`src/user.ts`](../src/user.ts) | `User` |
 | Hooks | [`src/hook.ts`](../src/hook.ts) | `sessionStart`, `turn` |
 | Display hook | [`src/display.ts`](../src/display.ts) | `display` |
+| Status line command | [`src/status-line.ts`](../src/status-line.ts) | `runStatusLine` |
 | `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts) | `showLink`, `resetOwners` |
 | SimpleX core | [`src/core.ts`](../src/core.ts) | `openCore` |
 | Package manifest | [`package.json`](../package.json) | `bin.simplex-mcp` |

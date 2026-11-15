@@ -67,6 +67,22 @@ export interface TurnRequest {
   effort?: string
   step?: Step
   text?: TextBatch
+  usage?: string
+  switched?: boolean
+  limits?: Limits
+  statusLine?: boolean
+}
+
+// spec: spec/architecture.md#protocol-limits
+export interface Limits {
+  fiveHour?: LimitWindow
+  week?: LimitWindow
+}
+
+// spec: spec/architecture.md#protocol-limits
+export interface LimitWindow {
+  percent: number
+  resetsAt: number
 }
 
 // spec: spec/architecture.md#protocol-step
