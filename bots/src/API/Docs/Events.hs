@@ -12,7 +12,6 @@ import API.TypeInfo
 import Data.List (find)
 import GHC.Generics
 import Simplex.Chat.Controller
-import Simplex.Chat.Messages (chatEventJSONField)
 import Simplex.Messaging.Parsers (dropPrefix)
 
 data CECategory = CECategory
@@ -52,7 +51,8 @@ deriving instance Generic ChatEvent
 chatEventsTypeInfo :: [RecordTypeInfo]
 chatEventsTypeInfo = map jsonFieldNames $ recordTypesInfo @ChatEvent
   where
-    jsonFieldNames r@RecordTypeInfo {fieldInfos} = r {fieldInfos = map (\(FieldInfo n t) -> FieldInfo (chatEventJSONField n) t) fieldInfos}
+    jsonFieldNames r@RecordTypeInfo {fieldInfos} = r {fieldInfos = map jsonFieldName fieldInfos}
+    jsonFieldName f@(FieldInfo n t) = if n == "chatItemUpdate" then FieldInfo "chatItem" t else f
 
 chatEventsDocsData :: [(String, String, [(ConsName, String)], [(ConsName, String)])]
 chatEventsDocsData =

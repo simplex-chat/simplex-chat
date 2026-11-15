@@ -492,11 +492,6 @@ aChatItemUpdate (AChatItem c' d' _ prevCi) (AChatItem c d chatInfo ci) = AChatIt
   (Just Refl, Just Refl) -> Just prevCi
   _ -> Nothing
 
-chatEventJSONField :: String -> String
-chatEventJSONField = \case
-  "chatItemUpdate" -> "chatItem"
-  f -> f
-
 aChatItems :: AChat -> [AChatItem]
 aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems
   where
