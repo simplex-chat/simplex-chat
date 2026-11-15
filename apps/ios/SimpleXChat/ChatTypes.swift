@@ -4650,6 +4650,10 @@ public enum CIStatus: Decodable, Hashable {
     }
 }
 
+public func unreadCountChange(_ prevItem: ChatItem?, _ cItem: ChatItem, _ counted: (ChatItem) -> Bool) -> Int {
+    (counted(cItem) ? 1 : 0) - (prevItem.map(counted) == true ? 1 : 0)
+}
+
 public func shouldKeepOldSndCIStatus(oldStatus: CIStatus, newStatus: CIStatus) -> Bool {
     switch (oldStatus, newStatus) {
     case (.sndRcvd, let new) where !new.isSndRcvd:

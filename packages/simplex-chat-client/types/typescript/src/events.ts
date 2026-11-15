@@ -186,6 +186,7 @@ export namespace CEvt {
     type: "chatItemUpdated"
     user: T.User
     chatItem: T.AChatItem
+    prevChatItem?: T.AChatItem
   }
 
   export interface GroupChatItemsDeleted extends Interface {

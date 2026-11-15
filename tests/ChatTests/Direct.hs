@@ -29,8 +29,8 @@ import GHC.Conc (ThreadStatus (..), threadStatus)
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServers (..))
-import Simplex.Chat.Messages (ChatItemId)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtChatItemUpdated), ChatHooks (..), PresetServers (..), defaultChatHooks)
+import Simplex.Chat.Messages (AChatItem (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
@@ -38,7 +38,7 @@ import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkTimeout (..))
-import Control.Concurrent.STM (atomically, readTVarIO)
+import Control.Concurrent.STM (atomically, modifyTVar', newTVarIO, readTVarIO)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
@@ -69,6 +69,7 @@ chatDirectTests = do
     it "delete conversation keeping contact" testDeleteConversationKeepContact
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
+    it "updated item event has the previous item" testDirectMessageUpdatePrevItem
     it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
     it "direct message delete multiple" testDirectMessageDeleteMultiple
@@ -784,6 +785,31 @@ testDirectMessageEditHistory =
       bob <##. "received at: "
       bob <## "message history:"
       bob .<## ": hey there"
+
+testDirectMessageUpdatePrevItem :: HasCallStack => TestParams -> IO ()
+testDirectMessageUpdatePrevItem ps = do
+  updates <- newTVarIO []
+  let hook _ evt = do
+        case evt of
+          Right (CEvtChatItemUpdated _ aci prevAci_) -> atomically $ modifyTVar' updates (<> [(itemText' aci, itemText' <$> prevAci_)])
+          _ -> pure ()
+        pure evt
+      itemText' :: AChatItem -> T.Text
+      itemText' (AChatItem _ _ _ ChatItem {meta = CIMeta {itemText}}) = itemText
+  withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      bob #> "@alice hello"
+      alice <# "bob> hello"
+      bob ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
+      bob <# "@alice [edited] hello there"
+      alice <# "bob> [edited] hello there"
+      alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
+      bob ##> ("/_update item @2 " <> itemId 1 <> " text hello again")
+      bob <# "@alice [edited] hello again"
+      alice <# "bob> [edited] hello again"
+      alice #$> ("/_get chat @2 count=1", chat, [(0, "hello again")])
+      readTVarIO updates `shouldReturn` [("hello there", Just "hello"), ("hello again", Nothing)]
 
 testDirectMessageDelete :: HasCallStack => TestParams -> IO ()
 testDirectMessageDelete =

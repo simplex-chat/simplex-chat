@@ -3113,7 +3113,7 @@ object ChatController {
           }
         }
       is CR.ChatItemUpdated ->
-        chatItemUpdateNotify(rhId, r.user, r.chatItem)
+        chatItemUpdateNotify(rhId, r.user, r.chatItem, r.prevChatItem)
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
@@ -3822,18 +3822,25 @@ object ChatController {
     }
   }
 
-  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem) {
+  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem, prevChatItem: AChatItem?) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
+    val prevItem = prevChatItem?.chatItem
     val notify = { ntfManager.notifyMessageReceived(rh, user, cInfo, cItem) }
     if (!activeUser(rh, user)) {
+      val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && cInfo.ntfsEnabled(it) }
+      if (unreadChange > 0) {
+        withContext(Dispatchers.Main) { chatModel.chatsContext.increaseUnreadCounter(rh, user) }
+      } else if (unreadChange < 0) {
+        withContext(Dispatchers.Main) { chatModel.chatsContext.decreaseUnreadCounter(rh, user) }
+      }
       notify()
     } else {
       val createdChat = withContext(Dispatchers.Main) {
-        chatModel.chatsContext.upsertChatItem(rh, cInfo, cItem)
+        chatModel.chatsContext.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
       withContext(Dispatchers.Main) {
-        chatModel.secondaryChatsContext.value?.upsertChatItem(rh, cInfo, cItem)
+        chatModel.secondaryChatsContext.value?.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
       if (createdChat) {
         notify()
@@ -6905,7 +6912,7 @@ sealed class CR {
   @Serializable @SerialName("newChatItems") class NewChatItems(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatMsgContent") class ChatMsgContent(val user: UserRef, val msgContent: MsgContent): CR()
   @Serializable @SerialName("chatItemsStatusesUpdated") class ChatItemsStatusesUpdated(val user: UserRef, val chatItems: List<AChatItem>): CR()
-  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem, val prevChatItem: AChatItem? = null): CR()
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
   @Serializable @SerialName("reactionMembers") class ReactionMembers(val user: UserRef, val memberReactions: List<MemberReaction>): CR()
@@ -7307,7 +7314,7 @@ sealed class CR {
     is NewChatItems -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
     is ChatMsgContent -> withUser(user, msgContent.toString())
     is ChatItemsStatusesUpdated -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
-    is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
+    is ChatItemUpdated -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nprevChatItem: ${json.encodeToString(prevChatItem)}")
     is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
     is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
     is ReactionMembers -> withUser(user, "memberReactions: ${json.encodeToString(memberReactions)}")

@@ -230,10 +230,13 @@ Message was deleted by another user.
 
 Message was updated by another user.
 
+`prevChatItem` is the message before the update. It is absent when the update created the message, e.g., when the bot deleted the message locally before the update.
+
 **Record type**:
 - type: "chatItemUpdated"
 - user: [User](./TYPES.md#user)
 - chatItem: [AChatItem](./TYPES.md#achatitem)
+- prevChatItem: [AChatItem](./TYPES.md#achatitem)?
 
 ---
 
