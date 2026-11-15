@@ -994,7 +994,7 @@ data ChatEvent
   | CEvtChatInfoUpdated {user :: User, chatInfo :: AChatInfo}
   | CEvtNewChatItems {user :: User, chatItems :: [AChatItem]} -- there is the same command response
   | CEvtChatItemsStatusesUpdated {user :: User, chatItems :: [AChatItem]}
-  | CEvtChatItemUpdated {user :: User, chatItem :: AChatItem, prevChatItem :: Maybe ACChatItem} -- there is the same command response
+  | CEvtChatItemUpdated {user :: User, chatItemUpdate :: AChatItemUpdate} -- there is the same command response
   | CEvtChatItemNotChanged {user :: User, chatItem :: AChatItem} -- there is the same command response
   | CEvtChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction} -- there is the same command response
   | CEvtGroupChatItemsDeleted {user :: User, groupInfo :: GroupInfo, chatItemIDs :: [ChatItemId], byUser :: Bool, member_ :: Maybe GroupMember} -- there is the same command response
@@ -1951,7 +1951,7 @@ $(JQ.deriveJSON defaultJSON ''RelayTestFailure)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CEvt") ''ChatEvent)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CEvt") {J.fieldLabelModifier = \case "chatItemUpdate" -> "chatItem"; f -> f} ''ChatEvent)
 
 $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 

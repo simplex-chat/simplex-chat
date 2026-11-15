@@ -3891,6 +3891,12 @@ public struct AChatItem: Decodable, Hashable {
     public var chatItem: ChatItem
 }
 
+public struct AChatItemUpdate: Decodable, Hashable {
+    public var chatInfo: ChatInfo
+    public var chatItem: ChatItem
+    public var prevChatItem: ChatItem?
+}
+
 public struct CIMentionMember: Decodable, Hashable {
     public var groupMemberId: Int64
     public var displayName: String

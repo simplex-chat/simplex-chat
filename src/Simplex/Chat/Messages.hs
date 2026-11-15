@@ -20,7 +20,7 @@ module Simplex.Chat.Messages where
 
 import Control.Applicative ((<|>))
 import Control.Monad ((>=>))
-import Data.Aeson (FromJSON, ToJSON, (.:))
+import Data.Aeson (FromJSON, ToJSON, (.:), (.:?))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
@@ -481,12 +481,16 @@ deriving instance Show AChatItem
 
 data JSONAnyChatItem c d = JSONAnyChatItem {chatInfo :: ChatInfo c, chatItem :: ChatItem c d}
 
-data ACChatItem = forall c d. (ChatTypeI c, MsgDirectionI d) => ACChatItem (SChatType c) (SMsgDirection d) (ChatItem c d)
+data AChatItemUpdate = forall c d. (ChatTypeI c, MsgDirectionI d) => AChatItemUpdate (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d) (Maybe (ChatItem c d))
 
-deriving instance Show ACChatItem
+deriving instance Show AChatItemUpdate
 
-toACChatItem :: AChatItem -> ACChatItem
-toACChatItem (AChatItem c d _ ci) = ACChatItem c d ci
+data JSONAnyChatItemUpdate c d = JSONAnyChatItemUpdate {chatInfo :: ChatInfo c, chatItem :: ChatItem c d, prevChatItem :: Maybe (ChatItem c d)}
+
+aChatItemUpdate :: AChatItem -> AChatItem -> AChatItemUpdate
+aChatItemUpdate (AChatItem c d chatInfo ci) (AChatItem c' d' _ prevCi) = AChatItemUpdate c d chatInfo ci $ case (testEquality c c', testEquality d d') of
+  (Just Refl, Just Refl) -> Just prevCi
+  _ -> Nothing
 
 aChatItems :: AChat -> [AChatItem]
 aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems
@@ -1569,17 +1573,21 @@ instance ChatTypeI c => ToJSON (CChatItem c) where
   toJSON (CChatItem _ ci) = J.toJSON ci
   toEncoding (CChatItem _ ci) = J.toEncoding ci
 
-instance FromJSON ACChatItem where
-  parseJSON v = J.withObject "ACChatItem" parse v
-    where
-      parse o = do
-        ACID c d (_ :: CIDirection c d) <- o .: "chatDir"
-        ci <- J.parseJSON @(ChatItem c d) v
-        pure $ ACChatItem c d ci
+instance (ChatTypeI c, MsgDirectionI d) => ToJSON (JSONAnyChatItemUpdate c d) where
+  toJSON = $(JQ.mkToJSON defaultJSON ''JSONAnyChatItemUpdate)
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''JSONAnyChatItemUpdate)
 
-instance ToJSON ACChatItem where
-  toJSON (ACChatItem _ _ ci) = J.toJSON ci
-  toEncoding (ACChatItem _ _ ci) = J.toEncoding ci
+-- if JSON encoding changes, update AChatItemUpdate type definition in bots/src/API/Docs/Types.hs
+instance FromJSON AChatItemUpdate where
+  parseJSON = J.withObject "AChatItemUpdate" $ \o -> do
+    AChatInfo c chatInfo <- o .: "chatInfo"
+    CChatItem d chatItem <- o .: "chatItem"
+    prev <- o .:? "prevChatItem"
+    pure $ AChatItemUpdate c d chatInfo chatItem prev
+
+instance ToJSON AChatItemUpdate where
+  toJSON (AChatItemUpdate _ _ chat item prev) = J.toJSON $ JSONAnyChatItemUpdate chat item prev
+  toEncoding (AChatItemUpdate _ _ chat item prev) = J.toEncoding $ JSONAnyChatItemUpdate chat item prev
 
 $(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 

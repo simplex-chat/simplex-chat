@@ -3544,6 +3544,13 @@ class AChatItem (
 )
 
 @Serializable
+class AChatItemUpdate (
+  val chatInfo: ChatInfo,
+  val chatItem: ChatItem,
+  val prevChatItem: ChatItem? = null
+)
+
+@Serializable
 class ACIReaction(
   val chatInfo: ChatInfo,
   val chatReaction: CIReaction

@@ -2744,8 +2744,8 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 }
             }
         }
-    case let .chatItemUpdated(user, aChatItem, prevChatItem):
-        await chatItemUpdate(user, aChatItem, prevChatItem)
+    case let .chatItemUpdated(user, update):
+        await chatItemUpdate(user, update)
     case let .chatItemReaction(user, _, r):
         if active(user) {
             await MainActor.run {
@@ -3219,10 +3219,11 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     }
 }
 
-func chatItemUpdate(_ user: any UserLike, _ aChatItem: AChatItem, _ prevItem: ChatItem?) async {
+func chatItemUpdate(_ user: any UserLike, _ update: AChatItemUpdate) async {
     let m = ChatModel.shared
-    let cInfo = aChatItem.chatInfo
-    let cItem = aChatItem.chatItem
+    let cInfo = update.chatInfo
+    let cItem = update.chatItem
+    let prevItem = update.prevChatItem
     if active(user) {
         if await MainActor.run(body: { m.applyChatItemUpdate(cInfo, cItem, prevItem) }) {
             if cItem.showNotification {

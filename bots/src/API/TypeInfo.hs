@@ -180,7 +180,6 @@ toTypeInfo tr =
       "ServerOperator'" -> ST "ServerOperator" []
       "UserServer'" -> ST "UserServer" []
       "CChatItem" -> ST "ChatItem" []
-      "ACChatItem" -> ST "ChatItem" []
       "FormatColor" -> ST "Color" []
       "CustomData" -> ST "JSONObject" []
       "KeyMap" -> ST "JSONObject" []

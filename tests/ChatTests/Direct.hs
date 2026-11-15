@@ -30,7 +30,7 @@ import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtChatItemUpdated), ChatHooks (..), PresetServers (..), defaultChatHooks)
-import Simplex.Chat.Messages (AChatItem (..), ACChatItem (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
+import Simplex.Chat.Messages (AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
@@ -791,7 +791,7 @@ testDirectMessageUpdatePrevItem ps = do
   updates <- newTVarIO []
   let hook _ evt = do
         case J.decode . J.encode <$> evt of
-          Right (Just (CEvtChatItemUpdated _ (AChatItem _ _ _ ci) prevCi_)) -> atomically $ modifyTVar' updates (<> [(itemText' ci, (\(ACChatItem _ _ pci) -> itemText' pci) <$> prevCi_)])
+          Right (Just (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi_))) -> atomically $ modifyTVar' updates (<> [(itemText' ci, itemText' <$> prevCi_)])
           _ -> pure ()
         pure evt
       itemText' :: ChatItem c d -> T.Text

@@ -445,8 +445,8 @@ Haskell core generates ChatEvent.newChatItems
 
 ### Updating a Message (Event)
 ```
-Haskell core generates ChatEvent.chatItemUpdated(user, chatItem, prevChatItem)
-    → ChatModel.applyChatItemUpdate(cInfo, cItem, prevItem):
+Haskell core generates ChatEvent.chatItemUpdated(user, chatItem: AChatItemUpdate)
+    → ChatModel.applyChatItemUpdate(chatInfo, chatItem, prevChatItem):
         prevItem == nil (an event from an older remote host):
             upsertChatItem: counters unchanged, the item is inserted if it is not loaded
         prevItem != nil:

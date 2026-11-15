@@ -5,6 +5,7 @@ This file is generated automatically.
 - [ACIReaction](#acireaction)
 - [AChat](#achat)
 - [AChatItem](#achatitem)
+- [AChatItemUpdate](#achatitemupdate)
 - [AddRelayResult](#addrelayresult)
 - [AddressSettings](#addresssettings)
 - [AgentCryptoError](#agentcryptoerror)
@@ -286,6 +287,18 @@ This file is generated automatically.
 **Record type**:
 - chatInfo: [ChatInfo](#chatinfo)
 - chatItem: [ChatItem](#chatitem)
+
+
+---
+
+## AChatItemUpdate
+
+Updated message, with the message before the update; `prevChatItem` is absent in events from earlier versions.
+
+**Record type**:
+- chatInfo: [ChatInfo](#chatinfo)
+- chatItem: [ChatItem](#chatitem)
+- prevChatItem: [ChatItem](#chatitem)?
 
 
 ---
