@@ -51,7 +51,7 @@ struct CIChatLinkHeader: View {
         HStack(alignment: .top) {
             ProfileImage(
                 imageStr: chatLink.image,
-                icon: Image(systemName: chatLink.iconName),
+                icon: chatLink.icon,
                 size: 44,
                 color: Color(uiColor: .tertiaryLabel)
             )
