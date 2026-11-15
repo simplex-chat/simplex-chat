@@ -324,7 +324,7 @@ suspend fun PointerInputScope.detectTransformGestures(
               onGesture(centroid, panChange, zoomChange, effectiveRotation)
             }
             event.changes.forEach {
-              if (it.positionChanged() && zoom != 1f && allowIntercept()) {
+              if (it.positionChanged() && allowIntercept()) {
                 it.consume()
               }
             }

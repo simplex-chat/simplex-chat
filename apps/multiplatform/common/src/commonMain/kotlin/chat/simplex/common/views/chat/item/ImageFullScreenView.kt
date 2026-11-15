@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -21,6 +22,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.net.URI
 import kotlin.math.absoluteValue
+import kotlin.math.pow
+
+private const val WHEEL_ZOOM_STEP = 1.2f
 
 interface ImageGalleryProvider {
   val initialIndex: Int
@@ -146,6 +150,23 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
                 }
               }
             )
+          }
+          .pointerInput(Unit) {
+            awaitPointerEventScope {
+              while (true) {
+                val event = awaitPointerEvent()
+                if (event.type != PointerEventType.Scroll) continue
+                val change = event.changes.first()
+                val zoomed = (scale * WHEEL_ZOOM_STEP.pow(-change.scrollDelta.y)).coerceIn(1f, 20f)
+                val shift = (change.position - Offset(size.width / 2f, size.height / 2f)) * (scale - zoomed)
+                val maxX = size.width * (zoomed - 1f) / 2
+                val maxY = size.height * (zoomed - 1f) / 2
+                translationX = (translationX + shift.x).coerceIn(-maxX, maxX)
+                translationY = (translationY + shift.y).coerceIn(-maxY, maxY)
+                scale = zoomed
+                change.consume()
+              }
+            }
           }
           .fillMaxSize()
         if (media is ProviderMedia.Image) {
