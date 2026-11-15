@@ -65,7 +65,8 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 36. [The list of sessions](#36-the-list-of-sessions)
 37. [The texts of a turn](#37-the-texts-of-a-turn)
 38. [The status line command](#38-the-status-line-command)
-39. [A teammate in the session's group](#39-a-teammate-in-the-sessions-group)
+39. [An edit and a live message in the session group](#39-an-edit-and-a-live-message-in-the-session-group)
+40. [A teammate in the session's group](#40-a-teammate-in-the-sessions-group)
 
 ---
 
@@ -1048,7 +1049,7 @@ Notes:
 - No turn record is made for a prompt request whose hook started before an answer that was already handled. So that prompt is not quoted in a later answer ([`Session.turn`](../src/hub.ts)).
 - The UserPromptSubmit hook runs for every prompt of the session that queries the model, also for Claude Code's own prompts. It marks a prompt as typed only when the prompt's record in the transcript has the origin `human`. Task notifications, messages of other sessions and channel prompts have other origins. The record is the newest one whose text is the prompt: a user entry, or a `queued_command` attachment of a prompt that Claude Code added to a running turn. It is the entry with `prompt_id` as `promptId`, or a record after the first entry with that ID, tool results included, so a long turn whose first entry is out of the tail is found by its tool results. While a `queue-operation` `enqueue` entry with the prompt's text follows the record, the hook waits: the prompt is a later one with that text, still queued. Claude Code writes the entry only after the synchronous UserPromptSubmit hooks end, such as a slow hook in the user's settings, and it creates the transcript file with the session's first entry. So the hook reads the transcript up to 600 times, 100 ms apart, and it treats a missing file as empty. Until the entry with `prompt_id` is in the tail, the hook waits for it; at the last read it takes any record with the prompt's text, and without `prompt_id` it does so at once. Claude Code runs the hook of a person's prompt when it is submitted, and of its own prompts only when they are taken. So at the last read, the hook classifies a record still followed by such an `enqueue` entry by the record, and marks a typed one mid-turn: the queued prompt is the typed prompt itself, or a later prompt with the text of Claude Code's own prompt, as a repeated monitor event. When no record is written within the reads, an `enqueue` entry with the prompt's text after the entry with `prompt_id`, or anywhere without that entry, makes the prompt typed and mid-turn. Otherwise the prompt is typed when an entry with `prompt_id` has the origin `human` ([`promptReads`, `transcriptReadMs`, `turn`, `promptKind`, `findInTranscript`, `promptRecord`, `isPrompt`, `recordText`, `recordKind`](../src/hook.ts)).
 - Claude Code adds a prompt that arrives during a turn to that turn, and gives its hook the running turn's prompt ID. The hook sends `midTurn: true` for a prompt whose record is not the entry with `prompt_id`. A mid-turn prompt ends no tool-use card. A prompt adds a turn record only when its hook started no earlier than the hook of the last answer handled (`answeredAt`), and a mid-turn prompt only when it also matched a pushed prompt. So the answer of the turn quotes the turn's prompt, or an owner's prompt added to the turn ([`Session.turn`](../src/hub.ts)).
-- The hook sends `note`, a line about one of Claude Code's own prompts, and Claude posts it without a quote, silent ([`recordKind`, `noteOf`, `taskNote`, `teammateEvents`, `idleNotification`, `peerName`, `shortened`](../src/hook.ts), [`Session.turn`](../src/hub.ts)). A teammate's message and a subagent's report come as items of `teammates` instead, each with its note: the teammate posts the whole text under its own profile, and Claude posts the note only for a teammate without a profile ([flow 39](#39-a-teammate-in-the-sessions-group)). A typed prompt, a channel prompt and a teammate's prompt of idle notifications only have no note, nor has another record without origin that is not scheduled. The line is cut to 200 characters and ends with `…`. A note that a group preference refuses is replaced by `Claude's note was not posted: ` and the preference's text.
+- The hook sends `note`, a line about one of Claude Code's own prompts, and Claude posts it without a quote, silent ([`recordKind`, `noteOf`, `taskNote`, `teammateEvents`, `idleNotification`, `peerName`, `shortened`](../src/hook.ts), [`Session.turn`](../src/hub.ts)). A teammate's message and a subagent's report come as items of `teammates` instead, each with its note: the teammate posts the whole text under its own profile, and Claude posts the note only for a teammate without a profile ([flow 40](#40-a-teammate-in-the-sessions-group)). A typed prompt, a channel prompt and a teammate's prompt of idle notifications only have no note, nor has another record without origin that is not scheduled. The line is cut to 200 characters and ends with `…`. A note that a group preference refuses is replaced by `Claude's note was not posted: ` and the preference's text.
 
   | Kind | Record | Line |
   |---|---|---|
@@ -1821,7 +1822,63 @@ Source: [`statusLine`, `limitParts`, `runStatusLine`](../src/status-line.ts), [`
 
 ---
 
-## 39. A teammate in the session's group
+## 39. An edit and a live message in the session group
+
+```mermaid
+sequenceDiagram
+  participant O as Member
+  participant C as Core _hub
+  participant N as Session N
+  participant D as Service
+  participant S as Session process
+  participant CC as Claude Code
+  O->>C: a message typed in live mode, first fragment
+  C->>N: newChatItems, itemLive: Session.onMessage
+  N->>N: liveItems[item] = the message, nothing passed
+  O->>C: more fragments
+  C->>N: chatItemUpdated, itemLive: Session.onUpdate
+  N->>N: liveItems[item] = the message with its current text, nothing passed
+  alt the message sent
+    O->>C: the message sent
+    C->>N: chatItemUpdated, live off: Session.onUpdate
+    N->>N: liveItems -= item, pass: a new message
+  else no final version, and the member's next message
+    O->>C: the next message
+    C->>N: newChatItems: Session.onMessage
+    N->>N: passLive: liveItems -= item, pass at its current text, then the next message
+  end
+  N->>D: onLine {prompt: {text, from, item}}
+  D->>S: the line on /attach
+  S->>CC: notifications/claude/channel {content, meta: {from, item}}
+  N->>N: prompted[item] = text, the newest 100
+  O->>C: edits the message, or its final version arrives late
+  C->>N: chatItemUpdated: Session.onUpdate
+  alt a / command, the item not in prompted, or the same text
+    N->>N: nothing
+  else another text
+    N->>N: delivery = delivery then prompt: after the earlier messages of the session
+    N->>D: onLine {prompt: {text, from, item, replyTo?, edited: true}}
+    D->>S: the line on /attach
+    S->>CC: notifications/claude/channel {content, meta: {from, item, edited: "true"}}
+    N->>N: prompted[item] = new text
+  end
+  CC->>D: UserPromptSubmit hook: POST /turn {prompt}, the channel tag matched
+  N->>O: Claude: the opening message, quoting the edited message
+```
+
+Notes:
+
+- Claude gets an edit as a new prompt with the same item, `edited="true"` in the channel tag, and the new text, after the quote line of a reply. The earlier version is in Claude's context ([`Session.onUpdate`, `deliver`](../src/hub.ts), [`channelNotification`, `channelInstructions`](../src/session.ts)).
+- Only the edit of a message passed to Claude since the service started, among the newest 100, is passed, so an edit of a message of `User` or of a teammate, or of a command, passes nothing. An edit to a `/` command passes nothing, and gets no reply ([`maxPrompted`, `Session.prompted`, `onUpdate`, `bounded`](../src/hub.ts)).
+- An update with the same text, such as a file's status, passes nothing. The core marks no update of a live message as an edit, and the hub tells its final version by `liveItems` ([`Session.liveItems`, `onMessage`, `onUpdate`](../src/hub.ts)).
+- A live message that never gets its final version, as when the sender's app closes while they type, reaches Claude at its last text before that member's next message, and not before another member's. Its final version, when it arrives later, reaches Claude as an edit. The hub uses no timer ([`Session.passLive`, `keepLive`, `pass`](../src/hub.ts)).
+- A live message deleted before it is sent passes nothing, unless the member sends another message first.
+
+Source: [`Session.onMessage`, `onUpdate`, `pass`, `keepLive`, `passLive`, `replyTo`, `prompt`, `deliver`, `bounded`, `Hub.onEvent`](../src/hub.ts), [`channelNotification`](../src/session.ts).
+
+---
+
+## 40. A teammate in the session's group
 
 ```mermaid
 sequenceDiagram
