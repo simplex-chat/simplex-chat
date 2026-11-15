@@ -907,7 +907,7 @@ sequenceDiagram
 
 Notes:
 
-- Approvers in the session group are its active members with the role `admin` or `owner`, other than Claude and `User`, however they joined ([`Session.approves`, `isUser`](../src/hub.ts), [`Control.approvers`](../src/control.ts)).
+- Approvers in the session group are its active members with the role `admin` or `owner`, other than Claude, `User` and the teammates, however they joined ([`Session.approves`, `isOwnProfile`](../src/hub.ts), [`Control.approvers`](../src/control.ts)).
 - Without an approver in `#G`, the action is refused with the text of [API 4.4](api.md#44-tool-results-in-the-plugin).
 - The session's ID is set as the owner of the connected chat ([`AgentTools.claim`, `performConnect`](../src/tools.ts)).
 
@@ -1357,7 +1357,7 @@ Notes:
 
   After the role change, the members are read again. So the standing approvals that the new observer gave are not counted while that member is not an admin or owner. They stay in the chat's custom data and are counted again when the member becomes one again ([`Control.standingApprover`](../src/control.ts)).
 - Claude finds the joiner of the Main group's post among the refreshed members, because in `connectedToGroupMember` the member's status is the one before the connection. The post is made only for a human joiner ([`MainGroup.handleEvent`](../src/main-group.ts)).
-- Claude posts nothing when `User` joins a session group or when its role changes ([`Session.announceRights`, `isUser`](../src/hub.ts)).
+- Claude posts nothing when `User` or a teammate joins a session group or when its role changes ([`Session.announceRights`, `isOwnProfile`](../src/hub.ts)).
 - One post is made for each join. For each connection, the core raises one of two events:
   - `joinedGroupMember` for a member who joined through the hub, by its invitation or link;
   - `connectedToGroupMember` for a member whom another member added.
