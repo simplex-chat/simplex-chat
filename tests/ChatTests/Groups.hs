@@ -14138,7 +14138,7 @@ testChannelSignedHistory ps =
 
       -- catch-up subscriber joins late: as-group edited content + signed member post (author unknown to dan, shown by id hash), deleted excluded
       memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
-      dan <# "#team> [edited] history one edited (signed)"
+      dan <# "#team> history one edited (signed) [>>]"
       dan .<## "> from cath member (signed) [>>]"
       dan #$> ("/_get chat #1 count=100 search=history one edited", chat, [(0, "history one edited (signed)")])
       dan #$> ("/_get chat #1 count=100 search=from cath member", chat, [(0, "from cath member (signed)")])
