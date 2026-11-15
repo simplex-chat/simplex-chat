@@ -45,7 +45,7 @@ Kotlin suspend fun api*()
 | `CC` (sealed class) | Command definitions (~165 subclasses) | [SimpleXAPI.kt#L3529](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L3529) |
 | `API` (sealed class) | Top-level response wrapper (`Result` / `Error`) | [SimpleXAPI.kt#L5975](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L5975) |
 | `CR` (sealed class) | Chat response variants (~180 subclasses) | [SimpleXAPI.kt#L6114](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6114) |
-| `ChatError` (sealed class) | Error hierarchy | [SimpleXAPI.kt#L6974](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6974) |
+| `ChatError` (sealed class) | Error hierarchy | [SimpleXAPI.kt#L6989](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6989) |
 | `ChatController` (object) | Singleton hosting all `api*` functions | [SimpleXAPI.kt#L493](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L493) |
 
 **JNI bridge functions** (declared in [Core.kt#L25](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L25)):
@@ -370,7 +370,7 @@ Each event triggers updates to `ChatModel` (reactive Compose state) and optional
 
 ## 5. Error Types
 
-### ChatError ([SimpleXAPI.kt#L6974](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6974))
+### ChatError ([SimpleXAPI.kt#L6989](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6989))
 
 ```kotlin
 sealed class ChatError {
@@ -384,7 +384,7 @@ sealed class ChatError {
 }
 ```
 
-### ChatErrorType ([SimpleXAPI.kt#L7004](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7004))
+### ChatErrorType ([SimpleXAPI.kt#L7019](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7019))
 
 Common application error codes (~70 variants):
 
@@ -403,11 +403,11 @@ Common application error codes (~70 variants):
 | `HasCurrentCall` / `NoCurrentCall` | Call state conflicts |
 | `CommandError` / `InternalError` / `CEException` | Generic/internal errors |
 
-### StoreError ([SimpleXAPI.kt#L7168](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7168))
+### StoreError ([SimpleXAPI.kt#L7183](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7183))
 
 Database-level errors: `DuplicateName`, `UserNotFound`, `GroupNotFound`, `ChatItemNotFound`, `LargeMsg`, `UserContactLinkNotFound`, etc.
 
-### ArchiveError ([SimpleXAPI.kt#L7658](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7658))
+### ArchiveError ([SimpleXAPI.kt#L7673](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7673))
 
 ```kotlin
 sealed class ArchiveError {
