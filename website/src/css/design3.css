@@ -262,7 +262,7 @@ p {
 .gradient-text {
     background: linear-gradient(100deg,
             #ffb55d 0%,
-            #fff494 50%,
+            #fff494 85%,
             #fbffdd 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -514,7 +514,7 @@ html:not(.dark) section.cover div.content p.invest a {
 html:not(.dark) section.cover div.content .gradient-text {
     background: linear-gradient(90deg,
             #ffb55d 0%,
-            #fff494 50%,
+            #fff494 85%,
             #fbffdd 100%);
     -webkit-background-clip: text;
     background-clip: text;

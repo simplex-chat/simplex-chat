@@ -731,8 +731,9 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
       Box {
         ProfileImage(
           image = image,
-          size = 37.dp * fontSizeSqrtMultiplier,
-          color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+          size = 31.dp * fontSizeSqrtMultiplier,
+          color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f),
+          modifier = Modifier.centeredIn(37.dp * fontSizeSqrtMultiplier)
         )
         if (!allRead) {
           unreadBadge()
