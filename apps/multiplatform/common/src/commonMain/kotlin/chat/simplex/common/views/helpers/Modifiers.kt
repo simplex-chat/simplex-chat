@@ -2,14 +2,27 @@ package chat.simplex.common.views.helpers
 
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.roundToInt
+
+fun Modifier.centeredIn(size: Dp): Modifier =
+  size(size).layout { measurable, constraints ->
+    val box = constraints.maxWidth
+    val inset = box / 12
+    val placeable = measurable.measure(Constraints.fixed(box - 2 * inset, box - 2 * inset))
+    layout(box, box) {
+      placeable.place(inset, inset)
+    }
+  }
 
 fun Modifier.badgeLayout() =
   layout { measurable, constraints ->

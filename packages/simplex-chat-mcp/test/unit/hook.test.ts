@@ -36,14 +36,17 @@ function fakeClient(owner: {owners: string[]; link?: string}, ensureError?: Erro
 }
 
 describe("SessionStart hook", () => {
-  it("starts the session with its title, folder, model, Claude Code process and the time the hook started, and stays quiet when the Main group has an owner", async () => {
+  it("starts the session with its title, folder, model, Claude Code process and the time the hook started, without the model after a compaction, and stays quiet when the Main group has an owner", async () => {
     const {client, requests} = fakeClient({owners: ["Alice"]})
     const started = JSON.stringify({...JSON.parse(input), model: "claude-opus-5"})
+    const compacted = JSON.stringify({...JSON.parse(input), source: "compact", model: "claude-haiku-5"})
     expect(await sessionStart(started, {CLAUDE_PID: "4321"}, {client, nodeVersion: "22.1.0"}, 5)).toEqual({})
     expect(await sessionStart(started, {}, {client, nodeVersion: "22.1.0"})).toEqual({})
+    expect(await sessionStart(compacted, {CLAUDE_PID: "4321"}, {client, nodeVersion: "22.1.0"}, 6)).toEqual({})
     expect(requests).toEqual([
       {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, at: 5, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
       {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", at: performance.timeOrigin, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, at: 6, name: "auth", project: "/p/app", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
     ])
   })
 
@@ -136,7 +139,7 @@ describe("turn hooks", () => {
     return {client, requests, ensured: () => ensured}
   }
 
-  it("pass the prompt, the final answer with the effort, and the new model to the session with the process and the time of the event, and stay quiet without a service", async () => {
+  it("pass the prompt, the final answer with the effort, and the new model as a switch to the session with the process and the time of the event, and stay quiet without a service", async () => {
     const errors = captureStderr()
     const {client, requests, ensured} = turnClient()
     expect(await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", prompt: "fix the build"}), {CLAUDE_PID: "4321"}, client)).toEqual({})
@@ -146,7 +149,7 @@ describe("turn hooks", () => {
     expect(requests).toEqual([
       {method: "POST", route: "/turn", body: {id, pid: 4321, at, prompt: "fix the build", typed: false}},
       {method: "POST", route: "/turn", body: {id, at, answer: "Fixed.", effort: "high"}},
-      {method: "POST", route: "/turn", body: {id, at, model: "claude-sonnet-5"}},
+      {method: "POST", route: "/turn", body: {id, at, model: "claude-sonnet-5", switched: true}},
     ])
     expect(ensured()).toBe(3)
     const stopped = {ensureService: async () => Promise.reject(Object.assign(new Error("connect ENOENT"), {code: "ENOENT"}))} as unknown as HookDeps["client"]
@@ -182,7 +185,54 @@ describe("turn hooks", () => {
         {method: "POST", route: "/turn", body: {id, at: 1, answer: "Never written."}},
         {method: "POST", route: "/turn", body: {id, at: 1, answer: "Lost."}},
         {method: "POST", route: "/turn", body: {id, at: 1, prompt: "fix the build", typed: false}},
-        {method: "POST", route: "/turn", body: {id, at: 1, model: "claude-opus-5"}},
+        {method: "POST", route: "/turn", body: {id, at: 1, model: "claude-opus-5", switched: true}},
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("pass the usage of a Stop hook's turn from its transcript: the time from the turn's prompt entry to the answer, the output tokens of its distinct responses and the context of the answer, also when the prompt entry is more than 1 MiB back, and none past 64 MiB, without a prompt ID or for a synthetic answer", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const line = (entry: object) => `${JSON.stringify(entry)}\n`
+      const time = (seconds: number) => new Date(Date.UTC(2026, 10, 13, 10) + seconds * 1_000).toISOString()
+      const prompt = (promptId: string, seconds: number, extra: object = {}) => line({type: "user", promptId, timestamp: time(seconds), ...extra, message: {role: "user", content: "Fix the build"}})
+      const toolResult = (seconds: number, content = "ok") => line({type: "user", promptId: "p1", timestamp: time(seconds), message: {role: "user", content: [{type: "tool_result", tool_use_id: "t1", content}]}})
+      const response = (messageId: string, seconds: number, output: number, content: object[], extra: object = {}, model = "claude-opus-5") =>
+        line({type: "assistant", timestamp: time(seconds), ...extra, message: {id: messageId, model, content, usage: {input_tokens: 2, cache_creation_input_tokens: 1_099, cache_read_input_tokens: 534_289, output_tokens: output}}})
+      const answer = (model = "claude-opus-5") => response("msg_3", 133.4, 580, [{type: "text", text: "Fixed."}], {}, model)
+      const turnLines = (between = "") =>
+        [
+          prompt("p0", -100),
+          response("msg_0", -90, 999, [{type: "text", text: "Earlier."}]),
+          prompt("p1", 0, {isMeta: true}),
+          prompt("p1", 0.1, {origin: {kind: "human"}}),
+          response("msg_1", 2, 1_000, [{type: "thinking", thinking: "The build."}]),
+          response("msg_1", 2.1, 1_000, [{type: "tool_use", id: "t1", name: "Bash", input: {}}]),
+          toolResult(5),
+          between,
+          response("msg_2", 6, 5_000, [{type: "text", text: "Subagent done."}], {isSidechain: true}),
+        ].join("")
+      const write = (name: string, text: string) => (writeFileSync(join(folder, name), text), join(folder, name))
+      const near = write("near.jsonl", `${turnLines()}${answer()}`)
+      const far = write("far.jsonl", `${turnLines(toolResult(5.5, "x".repeat(1_600_000)))}${answer()}`)
+      const beyond = write("beyond.jsonl", turnLines())
+      truncateSync(beyond, 65 * 1_048_576)
+      appendFileSync(beyond, `\n${answer()}`)
+      const synthetic = write("synthetic.jsonl", `${turnLines()}${answer("<synthetic>")}`)
+      const {client, requests} = turnClient()
+      const stop = (transcript: string, extra: object = {prompt_id: "p1"}) => turn(JSON.stringify({session_id: id, hook_event_name: "Stop", transcript_path: transcript, last_assistant_message: "Fixed.", ...extra}), {}, client, 0, 1, 10)
+      for (const transcript of [near, far, beyond]) await stop(transcript)
+      await stop(near, {})
+      await stop(synthetic)
+      const usage = "2 min 13 s · 1.6K output tokens · 535K tokens in context"
+      expect(requests.map(request => (request as {body: object}).body)).toEqual([
+        {id, at: 1, answer: "Fixed.", model: "claude-opus-5", usage},
+        {id, at: 1, answer: "Fixed.", model: "claude-opus-5", usage},
+        {id, at: 1, answer: "Fixed.", model: "claude-opus-5"},
+        {id, at: 1, answer: "Fixed.", model: "claude-opus-5"},
+        {id, at: 1, answer: "Fixed."},
       ])
     } finally {
       rmSync(folder, {recursive: true, force: true})
@@ -250,7 +300,8 @@ describe("turn hooks", () => {
   const userEntry = (promptId: string, content: unknown, extra: object = {}) => `${JSON.stringify({type: "user", promptId, ...extra, message: {role: "user", content}})}\n`
   const queuedEntry = (prompt: string, origin: object) => `${JSON.stringify({type: "attachment", attachment: {type: "queued_command", prompt, origin, commandMode: "prompt"}})}\n`
   const enqueueEntry = (content: string) => `${JSON.stringify({type: "queue-operation", operation: "enqueue", content})}\n`
-  const kinds = (requests: unknown[]) => requests.map(request => (request as {body: {note?: string; typed: boolean; midTurn?: boolean}}).body).map(({note, typed, midTurn}) => [note, typed, midTurn])
+  const notes = (requests: unknown[]) => requests.map(request => (request as {body: {note?: string; typed: boolean; midTurn?: boolean}}).body)
+  const kinds = (requests: unknown[]) => notes(requests).map(({note, typed, midTurn}) => [note?.replace(/^!- ([\s\S]*)!$/, "$1"), typed, midTurn])
 
   it("send a one-line note of each kind of Claude Code's own prompt, from the origin of its transcript entry, and none for a typed or a channel prompt", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
@@ -295,6 +346,8 @@ describe("turn hooks", () => {
         [undefined, false, undefined],
         [`${prefix}${"x".repeat(199 - [...prefix].length)}…`, false, undefined],
       ])
+      expect(notes(requests).flatMap(({note}) => (note === undefined ? [] : [note.startsWith("!- ") && note.endsWith("!")]))).toEqual(Array(12).fill(true))
+      expect(notes(requests)[5].note).toBe("!- ✉️ Message from mcp-impl2: I read the evidence.!")
     } finally {
       rmSync(folder, {recursive: true, force: true})
     }
@@ -493,6 +546,118 @@ describe("turn hooks", () => {
     } finally {
       rmSync(folder, {recursive: true, force: true})
     }
+  })
+
+  it("post one line for a compaction of the session's conversation, from its boundary in the transcript after the boundary is written, with its trigger and token counts, and nothing for a subagent's compaction, a boundary of a subagent, a boundary older than 60 s or one stamped after the hook started", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const at = Date.now()
+      const boundary = (age: number, compactMetadata: object, extra: object = {}) => `${JSON.stringify({type: "system", subtype: "compact_boundary", content: "Conversation compacted", ...extra, timestamp: new Date(at - age).toISOString(), compactMetadata})}\n`
+      writeFileSync(transcript, `${boundary(61_000, {trigger: "auto", preTokens: 967_931, postTokens: 22_484})}${boundary(1_000, {trigger: "auto", preTokens: 972_401, postTokens: 9_145}, {isSidechain: true})}${boundary(-6_000, {trigger: "auto", preTokens: 968_000, postTokens: 30_000})}`)
+      const {client, requests} = turnClient()
+      const compact = (extra: object = {}) => turn(JSON.stringify({session_id: id, hook_event_name: "PostCompact", transcript_path: transcript, trigger: "auto", compact_summary: "Summary.", ...extra}), {}, client, 0, at, 1)
+      expect(await compact()).toEqual({})
+      expect(await compact({agent_id: "a1"})).toEqual({})
+      expect(requests).toEqual([])
+      const automatic = compact()
+      const written = new Promise<void>(resolve => setTimeout(() => resolve(appendFileSync(transcript, boundary(500, {trigger: "auto", preTokens: 967_558, postTokens: 34_754}))), 300))
+      await automatic
+      await written
+      appendFileSync(transcript, boundary(200, {trigger: "manual", preTokens: 398_983, postTokens: 25_399}))
+      await compact({trigger: "manual"})
+      appendFileSync(transcript, boundary(100, {trigger: "auto"}))
+      await compact()
+      expect(requests).toEqual([
+        {method: "POST", route: "/turn", body: {id, at, note: "⚙️ Context summarised automatically: 968K → 35K tokens"}},
+        {method: "POST", route: "/turn", body: {id, at, note: "⚙️ Context summarised on request: 399K → 25K tokens"}},
+        {method: "POST", route: "/turn", body: {id, at, note: "⚙️ Context summarised automatically"}},
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  const toolUse =(event: string, tool: string, input: object, extra: object = {}) => JSON.stringify({session_id: id, hook_event_name: event, cwd: "/p/app", prompt_id: "p1", effort: {level: "high"}, tool_name: tool, tool_input: input, tool_use_id: `toolu_${tool}`, ...extra})
+  const steps = (requests: unknown[]) => requests.map(request => (request as {body: {step?: unknown}}).body.step)
+
+  it("send a step at the start of each tool use of the main conversation, with its text from the tool's input and paths relative to the session's folder", async () => {
+    const {client, requests} = turnClient()
+    const started = (tool: string, input: object) => turn(toolUse("PreToolUse", tool, input), {CLAUDE_PID: "4321"}, client, 0, 1)
+    await started("Bash", {command: "npm test\nnpm run lint", description: "Run the tests"})
+    await started("Bash", {command: "\ngit status\ngit log"})
+    await started("Read", {file_path: "/p/app/src/hook.ts"})
+    await started("Edit", {file_path: "/etc/hosts", old_string: "a", new_string: "b"})
+    await started("Write", {file_path: "/p/app/rfcs/2026-09-11-proof-of-work.md", content: "# Proof of work"})
+    await started("Read", {file_path: "/p/app-old/src/hook.ts"})
+    await started("WebFetch", {url: "https://spec.torproject.org/hspow-spec/common-protocol.html", prompt: "Summarize"})
+    await started("WebSearch", {query: '"hs_pow.c" tor source'})
+    await started("Agent", {description: "Review pass 6 usage stats", prompt: "Review it.", subagent_type: "general-purpose"})
+    await started("ToolSearch", {query: "select:Monitor", max_results: 5})
+    await started("Glob", {pattern: "**/*.ts", path: "/p/app/src"})
+    await started("Grep", {pattern: "endSteps", path: "/p/app/src/hub.ts", output_mode: "content"})
+    await started("Grep", {pattern: "TODO"})
+    await started("TodoWrite", {todos: [{content: "Test", status: "pending"}]})
+    await started("NotebookEdit", {description: " \n", notebook_path: "/p/app/a.ipynb", url: "https://example.com/a"})
+    await started("Task", {description: `Review‮ ${"x".repeat(300)}`})
+    await started("Bash", {description: "Say hi!", command: "echo hi"})
+    expect(requests[0]).toEqual({method: "POST", route: "/turn", body: {id, pid: 4321, at: 1, effort: "high", step: {id: "toolu_Bash", text: "!- 💻 Run the tests!"}}})
+    expect(steps(requests)).toEqual([
+      {id: "toolu_Bash", text: "!- 💻 Run the tests!"},
+      {id: "toolu_Bash", text: "!- 💻 git status!"},
+      {id: "toolu_Read", text: "!- 📖 Read src/hook.ts!"},
+      {id: "toolu_Edit", text: "!- ✏️ Edit /etc/hosts!"},
+      {id: "toolu_Write", text: "!- 📝 Write rfcs/2026-09-11-proof-of-work.md!"},
+      {id: "toolu_Read", text: "!- 📖 Read /p/app-old/src/hook.ts!"},
+      {id: "toolu_WebFetch", text: "!- 🌐 Fetch https://spec.torproject.org/hspow-spec/common-protocol.html!"},
+      {id: "toolu_WebSearch", text: '!- 🔎 Search "hs_pow.c" tor source!'},
+      {id: "toolu_Agent", text: "!- 🤖 Agent: Review pass 6 usage stats!"},
+      {id: "toolu_ToolSearch", text: "!- 🔧 ToolSearch: select:Monitor!"},
+      {id: "toolu_Glob", text: "!- 🔍 Glob **/*.ts in src!"},
+      {id: "toolu_Grep", text: "!- 🔍 Grep endSteps in src/hub.ts!"},
+      {id: "toolu_Grep", text: "!- 🔍 Grep TODO!"},
+      {id: "toolu_TodoWrite", text: "!- 🔧 TodoWrite!"},
+      {id: "toolu_NotebookEdit", text: "!- 🔧 NotebookEdit: https://example.com/a!"},
+      {id: "toolu_Task", text: `!- 🔧 Task: Review  ${"x".repeat(199 - [..."🔧 Task: Review  "].length)}…!`},
+      {id: "toolu_Bash", text: "!- 💻 Say hiǃ!"},
+    ])
+  })
+
+  it("send a step at the end of each tool use with its outcome and duration, or in background for a launch, and nothing for a tool use of a subagent or of this plugin, or without its ID or tool", async () => {
+    const {client, requests, ensured} = turnClient()
+    const bash = {command: "npm test", description: "Run the tests"}
+    const ended = (event: string, extra: object, tool = "Bash", input: object = bash) => turn(toolUse(event, tool, input, extra), {}, client, 0, 1)
+    await ended("PostToolUse", {tool_response: {stdout: "ok"}, duration_ms: 2018})
+    await ended("PostToolUseFailure", {error: "Exit code 1", is_interrupt: false, duration_ms: 39})
+    await ended("PostToolUseFailure", {error: "Interrupted", is_interrupt: true, duration_ms: 252_000})
+    await ended("PostToolUse", {duration_ms: 42_500})
+    await ended("PostToolUse", {duration_ms: 3_900_000})
+    await ended("PostToolUse", {})
+    await ended("PostToolUse", {duration_ms: 41.6})
+    await ended("PostToolUse", {duration_ms: 1999.6})
+    await ended("PostToolUse", {duration_ms: 25}, "Bash", {...bash, run_in_background: true})
+    await ended("PostToolUse", {duration_ms: 31}, "Agent", {description: "Review", prompt: "Review it.", run_in_background: true})
+    await ended("PostToolUseFailure", {error: "Exit code 127", is_interrupt: false, duration_ms: 12}, "Bash", {...bash, run_in_background: true})
+    await turn(toolUse("PreToolUse", "Bash", bash, {agent_id: "af945fc18f2e2d0d9", agent_type: "general-purpose"}), {}, client, 0, 1)
+    await ended("PostToolUse", {agent_id: "af945fc18f2e2d0d9", duration_ms: 13})
+    await turn(toolUse("PreToolUse", "mcp__plugin_simplex_simplex__send", {chat: "@1", text: "hi"}), {}, client, 0, 1)
+    await ended("PostToolUse", {duration_ms: 120}, "mcp__plugin_simplex_simplex__send")
+    await turn(JSON.stringify({session_id: id, hook_event_name: "PreToolUse", tool_input: bash, tool_use_id: "toolu_1"}), {}, client, 0, 1)
+    await turn(JSON.stringify({session_id: id, hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: bash, duration_ms: 5}), {}, client, 0, 1)
+    expect(steps(requests)).toEqual([
+      {id: "toolu_Bash", text: "!- 💻 Run the tests 2.0 s!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests ❌ 39 ms!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests ⏹️ 4 min 12 s!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests 42 s!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests 1 h 5 min!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests 42 ms!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests 2.0 s!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests (in background)!", end: true},
+      {id: "toolu_Agent", text: "!- 🤖 Agent: Review (in background)!", end: true},
+      {id: "toolu_Bash", text: "!- 💻 Run the tests ❌ 12 ms!", end: true},
+    ])
+    expect(ensured()).toBe(11)
   })
 
   it("cut a prompt or an answer over 250,000 characters, so that the request fits the socket's 1 MiB", async () => {
