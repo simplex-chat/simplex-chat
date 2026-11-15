@@ -175,7 +175,6 @@ This file is generated automatically.
 - [Preferences](#preferences)
 - [PreparedContact](#preparedcontact)
 - [PreparedGroup](#preparedgroup)
-- [PriorityRaised](#priorityraised)
 - [Profile](#profile)
 - [ProxyClientError](#proxyclienterror)
 - [ProxyError](#proxyerror)
@@ -3719,15 +3718,6 @@ self == 'allGroups' ? ' resolve=allGroups' : self == 'never' ? ' resolve=never' 
 - connLinkStartedConnection: bool
 - welcomeSharedMsgId: string?
 - requestSharedMsgId: string?
-
-
----
-
-## PriorityRaised
-
-**Record type**:
-- newAttention: bool
-- wasSilent: bool
 
 
 ---

@@ -35,11 +35,11 @@ import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage, CEvtNewChatItems), ChatHooks (..), ChatLogLevel (..), ChatResponse (CRApiChat, CRApiChats), PriorityRaised (..), defaultChatHooks, withAgent)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage, CEvtNewChatItems), ChatHooks (..), ChatLogLevel (..), ChatResponse (CRApiChat, CRApiChats), defaultChatHooks, withAgent)
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (AChat (..), AChatItem (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, priority), Chat (Chat, chatItems, chatStats), ChatItem (ChatItem, content, meta), ChatItemId, ChatStats (..), ChatType (CTGroup), toChatType)
+import Simplex.Chat.Messages (AChat (..), AChatItem (..), ACChatItem (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, priority, userMention), Chat (Chat, chatItems, chatStats), ChatItem (ChatItem, content, meta), ChatItemId, ChatStats (..), ChatType (CTGroup), highPriority, toChatType)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (MsgDirection (MDRcv), ciMsgContent, publicGroupNoE2EText, toMsgDirection)
 import Simplex.Chat.Options
@@ -1457,7 +1457,7 @@ testGroupMessageEditHistory =
 
       alice ##> ("/_update item #1 " <> aliceItemId <> " text hey there")
       alice <# "#team [edited] hey there"
-      bob <# "#team alice> [edited] hey there"
+      bob <# "#team alice> hey there"
 
       alice ##> "/item info #team hey"
       alice <##. "sent at: "
@@ -1525,7 +1525,7 @@ testGroupMessageDelete =
       bob <# "#team [edited] > alice hello!"
       bob <## "      hi alice"
       concurrently_
-        (alice <# "#team bob> [edited] hi alice")
+        (alice <# "#team bob> hi alice")
         ( do
             cath <# "#team bob> [edited] > alice hello!"
             cath <## "      hi alice"
@@ -6495,7 +6495,7 @@ testGroupRaisePriorityDeletedItem =
       alice ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"mentions\": {}, \"priority\": 1}")
       alice <# "#team !! done"
       bob <# "#team alice!!> done"
-      cath <# "#team alice> [edited] done"
+      cath <# "#team alice> done"
       itemPriority cath "/_get chat #1 count=1" `shouldReturn` Nothing
 
 testGroupMsgForwardReaction :: HasCallStack => TestParams -> IO ()
@@ -14014,8 +14014,8 @@ testChannelUpdateFallbackSendAsGroup ps =
             aliceMsgId <- lastItemId alice
             alice ##> ("/_update item #1 " <> aliceMsgId <> " text channel msg updated")
             alice <# "#team [edited] channel msg updated"
-            -- bob's item was locally deleted, fallback recreates it with [edited] marker
-            bob <# "#team> [edited] channel msg updated"
+            -- bob's item was locally deleted, fallback recreates it as a new item
+            bob <# "#team> channel msg updated"
             [cath, dan, eve] *<# "#team> [edited] channel msg updated"
 
             -- now test sendAsGroup=False case
@@ -14034,7 +14034,7 @@ testChannelUpdateFallbackSendAsGroup ps =
             alice ##> ("/_update item #1 " <> aliceMsgId2 <> " text member msg updated")
             alice <# "#team [edited] member msg updated"
             -- bob's internally deleted item is re-created as from member (sendAsGroup=False)
-            bob <# "#team alice> [edited] member msg updated"
+            bob <# "#team alice> member msg updated"
             -- forwarded members see correct member attribution
             [cath, dan, eve] *<# "#team alice> [edited] member msg updated"
 
@@ -14259,8 +14259,9 @@ priorityRaisedCfg = do
   raised <- newTVarIO []
   let hook _ evt = do
         case evt of
-          Right (CEvtChatItemUpdated _ (AChatItem _ _ _ ChatItem {content}) (Just PriorityRaised {newAttention, wasSilent})) ->
-            atomically $ modifyTVar' raised (<> [(msgContentText mc, newAttention, wasSilent) | Just mc <- [ciMsgContent content]])
+          Right (CEvtChatItemUpdated _ (AChatItem _ _ _ ChatItem {content, meta}) (Just (ACChatItem _ _ ChatItem {meta = prevMeta@CIMeta {userMention, priority}})))
+            | highPriority meta && not (highPriority prevMeta) ->
+                atomically $ modifyTVar' raised (<> [(msgContentText mc, not userMention, maybe False (< 0) priority) | Just mc <- [ciMsgContent content]])
           _ -> pure ()
         pure evt
   pure (raised, testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
@@ -14654,7 +14655,7 @@ testChannelSignedHistory ps =
 
       -- catch-up subscriber joins late: as-group edited content + signed member post (author unknown to dan, shown by id hash), deleted excluded
       memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
-      dan <# "#team> [edited] history one edited (signed)"
+      dan <# "#team> history one edited (signed) [>>]"
       dan .<## "> from cath member (signed) [>>]"
       dan #$> ("/_get chat #1 count=100 search=history one edited", chat, [(0, "history one edited (signed)")])
       dan #$> ("/_get chat #1 count=100 search=from cath member", chat, [(0, "from cath member (signed)")])

@@ -2744,12 +2744,8 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 }
             }
         }
-    case let .chatItemUpdated(user, aChatItem, priorityRaised):
-        if let priorityRaised {
-            await chatItemPriorityRaised(user, aChatItem, priorityRaised)
-        } else {
-            await chatItemSimpleUpdate(user, aChatItem)
-        }
+    case let .chatItemUpdated(user, aChatItem, prevChatItem):
+        await chatItemUpdate(user, aChatItem, prevChatItem)
     case let .chatItemReaction(user, _, r):
         if active(user) {
             await MainActor.run {
@@ -3223,19 +3219,24 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     }
 }
 
-func chatItemPriorityRaised(_ user: any UserLike, _ aChatItem: AChatItem, _ raised: PriorityRaised) async {
+func chatItemUpdate(_ user: any UserLike, _ aChatItem: AChatItem, _ prevItem: ChatItem?) async {
     let m = ChatModel.shared
     let cInfo = aChatItem.chatInfo
     let cItem = aChatItem.chatItem
-    await MainActor.run {
-        if active(user) {
-            m.raisePriority(cInfo, cItem, raised)
-            _ = m.upsertChatItem(cInfo, cItem)
-        } else if cItem.isRcvNew && cInfo.raiseCounted(raised) {
-            m.increaseUnreadCounter(user: user)
+    var notify = cItem.isRaised(from: prevItem)
+    if active(user) {
+        if await MainActor.run(body: { m.applyChatItemUpdate(cInfo, cItem, prevItem) }) {
+            notify = true
+        }
+    } else {
+        let change = unreadCountChange(prevItem, cItem) { $0.isRcvNew && cInfo.ntfsEnabled(chatItem: $0) && !($0.meta.silent && cInfo.silentNotCounted) }
+        if change > 0 {
+            await MainActor.run { m.increaseUnreadCounter(user: user) }
+        } else if change < 0 {
+            await MainActor.run { m.decreaseUnreadCounter(user: user) }
         }
     }
-    if cItem.showNotification {
+    if notify && cItem.showNotification {
         NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
     }
 }

@@ -2795,10 +2795,6 @@ class PreparedGroup(TypedDict):
     welcomeSharedMsgId: NotRequired[str]
     requestSharedMsgId: NotRequired[str]
 
-class PriorityRaised(TypedDict):
-    newAttention: bool
-    wasSilent: bool
-
 class Profile(TypedDict):
     displayName: str
     fullName: str

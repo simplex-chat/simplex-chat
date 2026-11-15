@@ -89,7 +89,7 @@ enum NSEChatEvent: Decodable, ChatAPIResult {
     case contactConnected(user: UserRef, contact: Contact, userCustomProfile: Profile?)
     case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest)
     case newChatItems(user: UserRef, chatItems: [AChatItem])
-    case chatItemUpdated(user: UserRef, chatItem: AChatItem, priorityRaised: PriorityRaised?)
+    case chatItemUpdated(user: UserRef, chatItem: AChatItem, prevChatItem: ChatItem?)
     case duplicateGroupMessage(user: UserRef, member: GroupMember)
     case rcvFileSndCancelled(user: UserRef, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
     case sndFileComplete(user: UserRef, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)

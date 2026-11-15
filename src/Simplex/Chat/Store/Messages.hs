@@ -2576,10 +2576,10 @@ setDirectSndChatItemViaProxy db User {userId} Contact {contactId} ci viaProxy = 
   DB.execute db "UPDATE chat_items SET via_proxy = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?" (BI viaProxy, userId, contactId, chatItemId' ci)
   pure ci {meta = (meta ci) {sentViaProxy = Just viaProxy}}
 
-updateDirectChatItem :: MsgDirectionI d => DB.Connection -> User -> Contact -> ChatItemId -> CIContent d -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
+updateDirectChatItem :: MsgDirectionI d => DB.Connection -> User -> Contact -> ChatItemId -> CIContent d -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d, ChatItem 'CTDirect d)
 updateDirectChatItem db user ct@Contact {contactId} itemId newContent edited live timed_ msgId_ = do
   ci <- liftEither . correctDir =<< getDirectCIWithReactions db user ct itemId
-  liftIO $ updateDirectChatItem' db user contactId ci newContent edited live timed_ msgId_
+  (ci,) <$> liftIO (updateDirectChatItem' db user contactId ci newContent edited live timed_ msgId_)
 
 getDirectCIWithReactions :: DB.Connection -> User -> Contact -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTDirect)
 getDirectCIWithReactions db user ct@Contact {contactId} itemId =

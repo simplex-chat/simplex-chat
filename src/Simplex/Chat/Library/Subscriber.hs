@@ -415,10 +415,10 @@ processAgentMsgRcvFile _corrId aFileId msg = do
                 _ -> pure False
               if badDigest
                 then do
-                  aci_ <- resetRcvCIFileStatus user fileId (CIFSRcvError $ FileErrOther "file digest")
-                  forM_ aci_ cleanupACIFile
+                  acis_ <- resetRcvCIFileStatus user fileId (CIFSRcvError $ FileErrOther "file digest")
+                  forM_ acis_ $ cleanupACIFile . snd
                   agentXFTPDeleteRcvFile aFileId fileId
-                  forM_ aci_ $ \aci -> toView $ CEvtChatItemUpdated user aci Nothing
+                  forM_ acis_ $ \(prevAci, aci) -> toView $ CEvtChatItemUpdated user aci (Just $ toACChatItem prevAci)
                 else do
                   ci_ <- withStore $ \db -> do
                     liftIO $ do
@@ -434,10 +434,10 @@ processAgentMsgRcvFile _corrId aFileId msg = do
           toView $ CEvtRcvFileWarning user ci e ft
         RFERR e
           | e == FILE NOT_APPROVED -> do
-              aci_ <- resetRcvCIFileStatus user fileId CIFSRcvAborted
-              forM_ aci_ cleanupACIFile
+              acis_ <- resetRcvCIFileStatus user fileId CIFSRcvAborted
+              forM_ acis_ $ cleanupACIFile . snd
               agentXFTPDeleteRcvFile aFileId fileId
-              forM_ aci_ $ \aci -> toView $ CEvtChatItemUpdated user aci Nothing
+              forM_ acis_ $ \(prevAci, aci) -> toView $ CEvtChatItemUpdated user aci (Just $ toACChatItem prevAci)
           | otherwise -> do
               aci_ <- withStore $ \db -> do
                 liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ agentFileError e)
@@ -723,10 +723,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               ci_ <- withStore $ \db ->
                 getDirectChatItemLast db user contactId
                   >>= liftIO
-                    . mapM (\(ci, content') -> updateDirectChatItem' db user contactId ci content' False False Nothing Nothing)
+                    . mapM (\(ci, content') -> (ci,) <$> updateDirectChatItem' db user contactId ci content' False False Nothing Nothing)
                     . mdeUpdatedCI e
               case ci_ of
-                Just ci -> toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci) Nothing
+                Just (ci, ci') -> toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci') (Just $ ACChatItem SCTDirect SMDRcv ci)
                 _ -> do
                   toView $ CEvtContactRatchetSync user ct (RatchetSyncProgress rss cStats)
                   createInternalChatItem user (CDDirectRcv ct) (CIRcvDecryptionError mde n) Nothing
@@ -1226,10 +1226,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             ci_ <- withStore $ \db ->
               getGroupMemberChatItemLast db user groupId (groupMemberId' m')
                 >>= liftIO
-                  . mapM (\(ci, content') -> updateGroupChatItem db user groupId ci content' False False Nothing)
+                  . mapM (\(ci, content') -> (ci,) <$> updateGroupChatItem db user groupId ci content' False False Nothing)
                   . mdeUpdatedCI e
             case ci_ of
-              Just ci -> toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo' scopeInfo) ci) Nothing
+              Just (ci, ci') -> toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo' scopeInfo) ci') (Just $ ACChatItem SCTGroup SMDRcv ci)
               _ -> do
                 toView $ CEvtGroupMemberRatchetSync user gInfo' m' (RatchetSyncProgress rss cStats)
                 createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvDecryptionError mde n) Nothing
@@ -1578,7 +1578,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                               aci <- withStore' $ \db -> do
                                 addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (currentTs, mc)
                                 aChatItem <$> updateDirectChatItem' db user contactId ci (CIRcvMsgContent mc) True False Nothing Nothing
-                              toView $ CEvtChatItemUpdated user aci Nothing
+                              toView $ CEvtChatItemUpdated user aci (Just $ ACChatItem SCTDirect SMDRcv ci)
                               pure $ Just aci
                           | otherwise -> pure $ Just $ aChatItem ci
                         _ -> pure Nothing
@@ -1607,7 +1607,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                                   aci <- withStore' $ \db -> do
                                     addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (currentTs, mc)
                                     aChatItem <$> updateGroupChatItem db user groupId ci (CIRcvMsgContent mc) True False Nothing
-                                  toView $ CEvtChatItemUpdated user aci Nothing
+                                  toView $ CEvtChatItemUpdated user aci (Just $ ACChatItem SCTGroup SMDRcv ci)
                                   pure $ Just aci
                                 else pure $ Just $ aChatItem ci
                         _ -> pure Nothing
@@ -2050,8 +2050,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           -- the file may already be accepted, so it is reset to an invitation the apps refuse by its prohibition
           Just prohibited -> do
             withStore' $ \db -> setFileProhibited db user fileId prohibited
-            aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
-            forM_ aci_ $ \aci' -> toView $ CEvtChatItemUpdated user aci' Nothing
+            acis_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+            forM_ acis_ $ \(prevAci, aci') -> toView $ CEvtChatItemUpdated user aci' (Just $ toACChatItem prevAci)
 
     descrBadgeStatus :: Maybe ByteString -> Integer -> RcvFileDescr -> Maybe UTCTime -> BadgeProof -> CM BadgeStatus
     descrBadgeStatus binding_ fileSize RcvFileDescr {fileDescrText} fileExpires badge = do
@@ -2101,7 +2101,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           then do
             let ciContent = ciContentNoParse $ CIRcvChatFeatureRejected CFVoice
             (ci, cInfo) <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) brokerTs ciContent Nothing Nothing False M.empty
-            toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv cInfo ci) Nothing
+            toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
           else do
             let timed_ = rcvContactCITimed ct ttl
                 ts = ciContentTexts content
@@ -2109,7 +2109,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             ci' <- withStore' $ \db -> do
               createChatItemVersion db (chatItemId' ci) brokerTs mc
               updateDirectChatItem' db user contactId ci content True live Nothing Nothing
-            toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv cInfo ci') Nothing
+            toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci']
       where
         brokerTs = metaBrokerTs msgMeta
         content = CIRcvMsgContent mc
@@ -2128,7 +2128,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                         reactions <- getDirectCIReactions db ct sharedMsgId
                         let edited = itemLive /= Just True
                         updateDirectChatItem' db user contactId ci {reactions} content edited live Nothing $ Just msgId
-                      toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci') Nothing
+                      toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci') (Just $ ACChatItem SCTDirect SMDRcv ci)
                       startUpdatedTimedItemThread user (ChatRef CTDirect contactId Nothing) ci ci'
                     else toView $ CEvtChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
             _ -> messageError "x.msg.update: contact attempted invalid message update"
@@ -2358,7 +2358,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     ci'' <- case chatDir of
                       CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
                       CDChannelRcv {} -> pure ci'
-                    toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'') Nothing
+                    groupMsgToView cInfo ci''
                     pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
       where
         content = CIRcvMsgContent mc
@@ -2393,13 +2393,12 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     Nothing -> createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs) $> Nothing
               | otherwise = action
         updateCI :: ShowGroupAsSender -> ChatDirection 'CTGroup 'MDRcv -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
-        updateCI showGroupAsSender cd ci@ChatItem {meta = meta@CIMeta {priority = itemPriority_, userMention, itemDeleted}} scopeInfo oldMC itemLive memberId = do
+        updateCI showGroupAsSender cd ci@ChatItem {meta = meta@CIMeta {priority = itemPriority_, itemDeleted}} scopeInfo oldMC itemLive memberId = do
           let changed = mc /= oldMC
               requested = maybe False (>= 1) priority_
               itemPriority = fromMaybe 0 itemPriority_
               raise = requested && itemPriority < 1 && isNothing scopeInfo && isNothing itemDeleted && rcvPriorityAllowed cd
               ciRaised = if raise then ci {meta = meta {priority = Just 1, userMention = True}} else ci
-              priorityRaised = if raise then Just PriorityRaised {newAttention = not userMention, wasSilent = itemPriority < 0} else Nothing
           if changed || fromMaybe False itemLive || requested
             then do
               ci' <- withStore' $ \db -> do
@@ -2411,7 +2410,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 ci' <- updateGroupChatItem db user groupId ciRaised {reactions} content edited live $ Just msgId
                 updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
                 updateGroupCIMentions db gInfo ci' ciMentions
-              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci') priorityRaised
+              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci') (Just $ ACChatItem SCTGroup SMDRcv ci)
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
               pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
             else do

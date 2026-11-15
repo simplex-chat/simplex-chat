@@ -207,6 +207,7 @@ The secondary context is used for:
 - `addChat(chat)` -- adds chat at index 0, triggers pop animation
 - `reorderChat(chat, toIndex)` -- reorders chat list (e.g., when a chat receives a new message)
 - `updateChatInfo(rhId, cInfo)` -- updates chat metadata while preserving connection stats
+- `applyChatItemUpdate(rhId, cInfo, cItem, prevItem)` -- applies the `chatItemUpdated` event. The item is replaced if it is loaded and the preview if it is the last item. When `prevItem` is present, the counters change by the difference between `prevItem` and `cItem` (unread: `isRcvNew`; mentions: `isRcvNew` and `userMention`), and the item is not inserted into the loaded items. When `prevItem` is absent (an event from an older remote host), the counters do not change, and the item is inserted if it is not loaded. An update of a locally deleted message creates it again, and the core sends it in `newChatItems`.
 - `hasChat(rhId, id)` / `getChat(id)` -- lookup methods
 
 ### ActiveChatState
@@ -282,7 +283,7 @@ data class ChatStats(
 
 `unreadSilent` counts unread silent items. The user's unread counter leaves them out in mode "All" (`ChatInfo.silentNotCounted`); in mode "Mentions" a silent mention counts as a mention.
 
-`unreadHighPriority` counts unread high priority items (`CIMeta.highPriority`, priority 1), groups only; they are also counted in `unreadMentions`. `decreaseCounterInPrimaryContext` reduces `unreadMentions` and `unreadHighPriority` by the flags of the item. The event `chatItemUpdated` with `priorityRaised` is applied by `ChatsContext.raisePriority` for an unread item in the main scope: `unreadHighPriority` + 1, `unreadMentions` + 1 when `newAttention`, `unreadSilent` - 1 and the user's counter + 1 when `wasSilent` in mode "All". In another profile, `ChatInfo.raiseCounted` adds 1 to the profile total: in mode "All" for a raised silent item, in mode "Mentions" for a new attention item.
+`unreadHighPriority` counts unread high priority items (`CIMeta.highPriority`, priority 1), groups only; they are also counted in `unreadMentions`. `decreaseCounterInPrimaryContext` reduces `unreadMentions` and `unreadHighPriority` by the flags of the item. `applyChatItemUpdate` changes `unreadSilent` and `unreadHighPriority` by the difference between the previous and the new item, like `unreadCount` and `unreadMentions`, and the user's counter by the difference in the items counted for the user (silent items are not counted in mode "All"). In another profile, the profile total changes by the difference in the items counted with `ntfsEnabled`, without silent items in mode "All".
 
 ### Derived Properties
 

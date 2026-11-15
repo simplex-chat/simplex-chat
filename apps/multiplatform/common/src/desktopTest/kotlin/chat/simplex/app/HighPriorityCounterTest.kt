@@ -82,7 +82,7 @@ class HighPriorityCounterTest {
     val silent = rcvItem(1, priority = -1)
     chatsCtx.addChatItem(null, cInfo, silent)
     assertEquals(Counts(1, 0, 1, 0, 0, 0, 0, 1), counts(chatsCtx))
-    chatsCtx.raisePriority(null, cInfo, raised(silent), PriorityRaised(newAttention = true, wasSilent = true))
+    chatsCtx.applyChatItemUpdate(null, cInfo, raised(silent), silent)
     assertEquals(Counts(1, 1, 0, 1, 1, 1, 1, 0), counts(chatsCtx))
     chatsCtx.removeChatItem(null, cInfo, raised(silent))
     assertEquals(Counts(0, 0, 0, 0, 0, 0, 0, 0), counts(chatsCtx))
@@ -93,7 +93,7 @@ class HighPriorityCounterTest {
     val mention = rcvItem(1, priority = null, mention = true)
     chatsCtx.addChatItem(null, cInfo, mention)
     assertEquals(Counts(1, 1, 0, 0, 1, 1, 0, 0), counts(chatsCtx))
-    chatsCtx.raisePriority(null, cInfo, raised(mention), PriorityRaised(newAttention = false, wasSilent = false))
+    chatsCtx.applyChatItemUpdate(null, cInfo, raised(mention), mention)
     assertEquals(Counts(1, 1, 0, 1, 1, 1, 1, 0), counts(chatsCtx))
     chatsCtx.markChatItemsRead(null, cInfo.id, null)
     assertEquals(Counts(0, 0, 0, 0, 0, 0, 0, 0), counts(chatsCtx))
@@ -104,8 +104,7 @@ class HighPriorityCounterTest {
     val item = rcvItem(1, priority = null)
     chatsCtx.addChatItem(null, cInfo, item)
     chatsCtx.markChatItemsRead(null, cInfo.id, listOf(1))
-    val read = raised(item).withStatus(CIStatus.RcvRead())
-    chatsCtx.raisePriority(null, cInfo, read, PriorityRaised(newAttention = true, wasSilent = false))
+    chatsCtx.applyChatItemUpdate(null, cInfo, raised(item).withStatus(CIStatus.RcvRead()), item.withStatus(CIStatus.RcvRead()))
     assertEquals(Counts(0, 0, 0, 0, 0, 0, 0, 0), counts(chatsCtx))
   }
 }

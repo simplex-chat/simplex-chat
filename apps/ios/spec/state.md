@@ -331,7 +331,7 @@ struct ChatStats: Decodable, Hashable {
 
 `unreadSilent` counts unread silent items. The user's unread counter leaves them out in mode "All" (`ChatInfo.silentNotCounted`); in mode "Mentions" a silent mention counts as a mention.
 
-`unreadHighPriority` counts unread high priority items (`CIMeta.highPriority`, priority 1), groups only; they are also counted in `unreadMentions`. The event `chatItemUpdated` with `priorityRaised` is applied by `ChatModel.raisePriority` for an unread item in the main scope: `unreadHighPriority` + 1, `unreadMentions` + 1 when `newAttention`, `unreadSilent` - 1 when `wasSilent`; the user's counter changes by the silent delta in mode "All". In another profile, `ChatInfo.raiseCounted` adds 1 to the profile total: in mode "All" for a raised silent item, in mode "Mentions" for a new attention item.
+`unreadHighPriority` counts unread high priority items (`CIMeta.highPriority`, priority 1), groups only; they are also counted in `unreadMentions`. `ChatModel.applyChatItemUpdate` changes `unreadSilent` and `unreadHighPriority` by the difference between the previous and the new item, like `unreadCount` and `unreadMentions`; the user's counter changes by the silent delta in mode "All". In another profile, the profile total changes by the difference in the items counted with `ntfsEnabled`, without silent items in mode "All".
 
 ### Computed Properties
 
@@ -451,6 +451,22 @@ Haskell core generates ChatEvent.newChatItems
         3. Update ChatStats (unread counts)
         4. Update ChatTagsModel (tag unread counts)
     → SwiftUI re-renders affected views via @Published observation
+```
+
+### Updating a Message (Event)
+```
+Haskell core generates ChatEvent.chatItemUpdated(user, chatItem, prevChatItem)
+    → ChatModel.applyChatItemUpdate(cInfo, cItem, prevItem):
+        prevItem == nil (an event from an older remote host):
+            upsertChatItem: counters unchanged, the item is inserted if it is not loaded
+        prevItem != nil:
+            1. Change ChatStats by the difference between prevItem and cItem
+               (unread: isRcvNew; mentions: isRcvNew && userMention)
+            2. Replace the preview if it is this item
+            3. Replace the item in ItemsModel.reversedChatItems if it is loaded,
+               never insert it
+    → Another user's event changes that user's unread counter by the same difference
+    → An update of a locally deleted message creates it again: the core sends newChatItems
 ```
 
 ### Sending a Message

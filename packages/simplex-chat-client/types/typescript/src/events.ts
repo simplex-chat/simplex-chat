@@ -186,7 +186,7 @@ export namespace CEvt {
     type: "chatItemUpdated"
     user: T.User
     chatItem: T.AChatItem
-    priorityRaised?: T.PriorityRaised
+    prevChatItem?: T.ChatItem
   }
 
   export interface GroupChatItemsDeleted extends Interface {

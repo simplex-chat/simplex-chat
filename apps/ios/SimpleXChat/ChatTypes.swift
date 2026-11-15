@@ -2423,14 +2423,6 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings?.enableNtfs == .all
     }
 
-    public func raiseCounted(_ raised: PriorityRaised) -> Bool {
-        switch chatSettings?.enableNtfs {
-        case .all: raised.wasSilent
-        case .mentions: raised.newAttention
-        default: false
-        }
-    }
-
     public var chatSettings: ChatSettings? {
         switch self {
         case let .direct(contact): return contact.chatSettings
@@ -2592,11 +2584,6 @@ public struct ChatStats: Decodable, Hashable {
     public var minUnreadItemId: Int64 = 0
     // actual only via getChats(), otherwise, false
     public var unreadChat: Bool = false
-}
-
-public struct PriorityRaised: Decodable, Hashable {
-    public var newAttention: Bool
-    public var wasSilent: Bool
 }
 
 public enum GroupChatScope: Decodable {
@@ -4680,6 +4667,17 @@ public enum CIStatus: Decodable, Hashable {
         case .sndRcvd: return true
         default: return false
         }
+    }
+}
+
+public func unreadCountChange(_ prevItem: ChatItem?, _ cItem: ChatItem, _ counted: (ChatItem) -> Bool) -> Int {
+    guard let prevItem else { return 0 }
+    return (counted(cItem) ? 1 : 0) - (counted(prevItem) ? 1 : 0)
+}
+
+extension ChatItem {
+    public func isRaised(from prevItem: ChatItem?) -> Bool {
+        meta.highPriority && prevItem.map { !$0.meta.highPriority } == true
     }
 }
 

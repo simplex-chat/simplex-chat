@@ -3994,11 +3994,6 @@ export interface PreparedGroup {
   requestSharedMsgId?: string
 }
 
-export interface PriorityRaised {
-  newAttention: boolean
-  wasSilent: boolean
-}
-
 export interface Profile {
   displayName: string
   fullName: string

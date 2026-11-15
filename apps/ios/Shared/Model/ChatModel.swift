@@ -816,16 +816,49 @@ final class ChatModel: ObservableObject {
         return itemAdded
     }
 
+    func applyChatItemUpdate(_ cInfo: ChatInfo, _ cItem: ChatItem, _ prevItem: ChatItem?) -> Bool {
+        guard let prevItem else { return upsertChatItem(cInfo, cItem) }
+        var chatAdded = false
+        if cInfo.groupChatScope() == nil {
+            if let chat = getChat(cInfo.id) {
+                if chat.chatItems.last?.id == cItem.id {
+                    chat.chatItems = [cItem]
+                }
+                let unread = unreadCountChange(prevItem, cItem) { $0.isRcvNew }
+                let mentions = unreadCountChange(prevItem, cItem) { $0.isRcvNew && $0.meta.userMention }
+                let silent = unreadCountChange(prevItem, cItem) { $0.isRcvNew && $0.meta.silent }
+                let highPriority = unreadCountChange(prevItem, cItem) { $0.isRcvNew && $0.meta.highPriority }
+                if unread != 0 || mentions != 0 || silent != 0 || highPriority != 0 {
+                    unreadCollector.changeUnreadCounter(cInfo.id, by: unread, unreadMentions: mentions, unreadSilent: silent, unreadHighPriority: highPriority)
+                }
+            } else {
+                addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
+                chatAdded = true
+            }
+            if cItem.isDeletedContent || cItem.meta.itemDeleted != nil {
+                VoiceItemState.stopVoiceInChatView(cInfo, cItem)
+            }
+        }
+        if let ciIM = getCIItemsModel(cInfo, cItem), let i = getChatItemIndex(ciIM, cItem) {
+            _replaceChatItem(ciIM, at: i, with: cItem)
+        }
+        return chatAdded
+    }
+
+    private func _replaceChatItem(_ ciIM: ItemsModel, at i: Int, with cItem: ChatItem) {
+        let oldStatus = ciIM.reversedChatItems[i].meta.itemStatus
+        let newStatus = cItem.meta.itemStatus
+        var ci = cItem
+        if shouldKeepOldSndCIStatus(oldStatus: oldStatus, newStatus: newStatus) {
+            ci.meta.itemStatus = oldStatus
+        }
+        _updateChatItem(ciIM: ciIM, at: i, with: ci)
+        ChatItemDummyModel.shared.sendUpdate() // TODO [knocking] review what's this
+    }
+
     private func _upsertChatItem(_ ciIM: ItemsModel, _ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         if let i = getChatItemIndex(ciIM, cItem) {
-            let oldStatus = ciIM.reversedChatItems[i].meta.itemStatus
-            let newStatus = cItem.meta.itemStatus
-            var ci = cItem
-            if shouldKeepOldSndCIStatus(oldStatus: oldStatus, newStatus: newStatus) {
-                ci.meta.itemStatus = oldStatus
-            }
-            _updateChatItem(ciIM: ciIM, at: i, with: ci)
-            ChatItemDummyModel.shared.sendUpdate() // TODO [knocking] review what's this
+            _replaceChatItem(ciIM, at: i, with: cItem)
             return false
         } else {
             ciIM.reversedChatItems.insert(cItem, at: hasLiveDummy ? 1 : 0)
@@ -1073,12 +1106,6 @@ final class ChatModel: ObservableObject {
             chatIM.chatState.itemsRead(unreadItemIds, chatIM.reversedChatItems.reversed())
         }
         self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count, unreadMentions: -mentionsRead, unreadSilent: -silentRead, unreadHighPriority: -highPriorityRead)
-    }
-
-    func raisePriority(_ cInfo: ChatInfo, _ cItem: ChatItem, _ raised: PriorityRaised) {
-        if cInfo.groupChatScope() == nil && cItem.isRcvNew {
-            unreadCollector.changeUnreadCounter(cInfo.id, by: 0, unreadMentions: raised.newAttention ? 1 : 0, unreadSilent: raised.wasSilent ? -1 : 0, unreadHighPriority: 1)
-        }
     }
 
     private let unreadCollector = UnreadCollector()

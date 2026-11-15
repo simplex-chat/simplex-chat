@@ -707,8 +707,8 @@ updateCallItemStatus user ct@Contact {contactId} Call {chatItemId} receivedStatu
 
 updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> CM ()
 updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) edited live timed_ msgId_ = do
-  ci' <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
-  toView $ CEvtChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci') Nothing
+  (ci, ci') <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
+  toView $ CEvtChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci') (Just $ ACChatItem SCTDirect msgDir ci)
 
 callStatusItemContent :: User -> Contact -> ChatItemId -> WebRTCCallStatus -> CM (Maybe ACIContent)
 callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
@@ -849,12 +849,14 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     -- TODO re-enable redirects with relay checks
     when (isJust redirect) $ do
       cxt <- chatStoreCxt
-      aci_ <- withStore $ \db -> do
+      acis_ <- withStore $ \db -> do
+        prevAci_ <- lookupChatItemByFileId db cxt user fileId
         liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ FileErrOther "redirect not allowed")
-        lookupChatItemByFileId db cxt user fileId
-      forM_ aci_ $ \aci -> do
+        aci_ <- lookupChatItemByFileId db cxt user fileId
+        pure $ (,) <$> prevAci_ <*> aci_
+      forM_ acis_ $ \(prevAci, aci) -> do
         cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user aci Nothing
+        toView $ CEvtChatItemUpdated user aci (Just $ toACChatItem prevAci)
       throwChatError $ CEInvalidFileDescription "redirect not allowed"
     when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
@@ -884,10 +886,10 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       pure $ all (ipAddressProtected netCfg) srvs
     relaysNotApproved :: [XFTPServer] -> CM ()
     relaysNotApproved unknownSrvs = do
-      aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
-      forM_ aci_ $ \aci -> do
+      acis_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+      forM_ acis_ $ \(prevAci, aci) -> do
         cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user aci Nothing
+        toView $ CEvtChatItemUpdated user aci (Just $ toACChatItem prevAci)
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 cleanupACIFile :: AChatItem -> CM ()
@@ -910,15 +912,17 @@ protoServer' ServerCfg {server} = protoServer server
 getNetworkConfig :: CM' NetworkConfig
 getNetworkConfig = withAgent' $ liftIO . getFastNetworkConfig
 
-resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItem)
+resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe (AChatItem, AChatItem))
 resetRcvCIFileStatus user fileId ciFileStatus = do
   cxt <- chatStoreCxt
   withStore $ \db -> do
+    prevAci_ <- lookupChatItemByFileId db cxt user fileId
     liftIO $ do
       updateCIFileStatus db user fileId ciFileStatus
       updateRcvFileStatus db fileId FSNew
       updateRcvFileAgentId db fileId Nothing
-    lookupChatItemByFileId db cxt user fileId
+    aci_ <- lookupChatItemByFileId db cxt user fileId
+    pure $ (,) <$> prevAci_ <*> aci_
 
 receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do

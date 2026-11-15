@@ -3622,7 +3622,7 @@ processChatCommand cxt nm = \case
                   liftIO $ removeFile fsFilePath `catchAll_` pure ()
                 lift . forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
                   withAgent' (`xftpDeleteRcvFile` aFileId)
-                aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+                aci_ <- fmap snd <$> resetRcvCIFileStatus user fileId CIFSRcvInvitation
                 pure $ CRRcvFileCancelled user aci_ ftr
   FileStatus fileId -> withUser $ \user -> do
     withFastStore (\db -> lookupChatItemByFileId db cxt user fileId) >>= \case
@@ -4889,7 +4889,7 @@ processChatCommand cxt nm = \case
               let content' = CIRcvGroupInvitation (ciGroupInv {status = newStatus} :: CIGroupInvitation) memRole
               timed_ <- sndGroupCITimed False g Nothing
               ci' <- withFastStore' $ \db -> updateGroupChatItem db user (groupId' g) ci {meta = meta {itemTimed = timed_}} content' False False Nothing
-              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci') Nothing
+              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci') (Just $ ACChatItem SCTGroup SMDRcv ci)
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTGroup (groupId' g) Nothing, itemId)
         _ -> pure () -- prohibited

@@ -17,7 +17,6 @@ import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.Reader
 import Data.List (intercalate)
-import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
@@ -180,10 +179,11 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
     when (chatDirNtf u cInfo chatDir (isUserMention ci) && all (>= 0) priority) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       msgNtf cInfo chatDir $ msgText mc formattedText
-  CEvtChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText, meta = CIMeta {priority}}) priorityRaised ->
+  CEvtChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText, meta = meta@CIMeta {priority}}) prevCi_ ->
     when (chatDirNtf u cInfo chatDir (isUserMention ci) && all (>= 0) priority) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
-      when (isJust priorityRaised) $ msgNtf cInfo chatDir $ msgText mc formattedText
+      when (highPriority meta && any (\(ACChatItem _ _ ChatItem {meta = prevMeta}) -> not $ highPriority prevMeta) prevCi_) $
+        msgNtf cInfo chatDir $ msgText mc formattedText
   CEvtContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct
     sendNtf (viewContactName ct <> "> ", "connected")

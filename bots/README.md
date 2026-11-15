@@ -181,7 +181,7 @@ An update with `"priority": 1` raises a sent message to high priority, with or w
 /_update item #1 5 json {"msgContent": {"type": "text", "text": "Tests passed"}, "mentions": {}, "priority": 1}
 ```
 
-The received item has `"priority"` in its [CIMeta](./api/TYPES.md#cimeta), and the [ChatItemUpdated](./api/EVENTS.md#chatitemupdated) event of a raise has `priorityRaised`. Apps that do not support message priority show these messages as normal messages.
+The received item has `"priority"` in its [CIMeta](./api/TYPES.md#cimeta). A raise is the [ChatItemUpdated](./api/EVENTS.md#chatitemupdated) event where `chatItem` has priority 1 and `prevChatItem` has a lower priority. Apps that do not support message priority show these messages as normal messages.
 
 ## Processing events
 

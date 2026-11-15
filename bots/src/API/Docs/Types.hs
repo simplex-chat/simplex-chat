@@ -362,7 +362,6 @@ chatTypesDocsData =
     (sti @PreparedContact, STRecord, "", [], "", ""),
     (sti @GroupDirectInvitation, STRecord, "", [], "", ""),
     (sti @PreparedGroup, STRecord, "", [], "", ""),
-    (sti @PriorityRaised, STRecord, "", [], "", ""),
     (sti @Profile, STRecord, "", [], "", ""),
     (sti @ProxyClientError, STUnion, "Proxy", [], "", ""),
     (sti @ProxyError, STUnion, "", [], "", ""),
@@ -627,7 +626,6 @@ deriving instance Generic Preferences
 deriving instance Generic PreparedContact
 deriving instance Generic GroupDirectInvitation
 deriving instance Generic PreparedGroup
-deriving instance Generic PriorityRaised
 deriving instance Generic Profile
 deriving instance Generic ProxyClientError
 deriving instance Generic ProxyError
